@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-    import { computed, onBeforeMount, onMounted } from 'vue';
+    import { computed, onBeforeMount, onMounted, watch } from 'vue';
 
     import { addGameLogEvent, getGameLogTable } from './coordinators/gameLogCoordinator';
     import { runCheckVRChatDebugLoggingFlow, runUpdateIsGameRunningFlow } from './coordinators/gameCoordinator';
@@ -44,6 +44,17 @@
 
     const store = createGlobalStores();
 
+    function syncNativeTheme() {
+        const themeName = document.documentElement.getAttribute('data-theme');
+        if (themeName === 'midnight') {
+            AppApi.ChangeTheme(2);
+        } else if (store.appearanceSettings.isDarkMode) {
+            AppApi.ChangeTheme(1);
+        } else {
+            AppApi.ChangeTheme(0);
+        }
+    }
+
     if (typeof window !== 'undefined') {
         window.$pinia = store;
         // Register backend push event handlers
@@ -55,11 +66,22 @@
         onBackendEvent('browserFocus', () => store.vrcStatus.onBrowserFocus());
     }
 
+    watch(
+        () => store.appearanceSettings.themeMode,
+        (value) => {
+            if (!value) {
+                return;
+            }
+            syncNativeTheme();
+        }
+    );
+
     onBeforeMount(() => {
         store.updateLoop.updateLoop();
     });
 
     onMounted(async () => {
+        syncNativeTheme();
         getGameLogTable();
         await store.auth.migrateStoredUsers();
         store.auth.autoLoginAfterMounted();
