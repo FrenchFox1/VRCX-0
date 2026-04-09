@@ -2663,6 +2663,12 @@
             "loading": "検索プロバイダーでアバターを検索中"
         },
         "database": {
+            "migration_found_title": "既存の VRCX データベースが検出されました",
+            "migration_found_description": "このコンピューターで既存の VRCX データベースが見つかりました。VRCX-0 に移行しますか？元の VRCX データは変更されません。",
+            "migration_start": "移行",
+            "migration_skip": "スキップ",
+            "migration_restarting_title": "データを移行中",
+            "migration_restarting": "VRCX-0 を再起動して移行を完了します...",
             "upgrade_complete": "データベースのアップグレードが完了しました",
             "upgrade_in_progress_title": "データベースのアップグレードが進行中",
             "upgrade_in_progress_description": "データベースのバージョン {from} から {to} への更新が進行中です。完了するまで VRCX-0 を閉じないでください。",

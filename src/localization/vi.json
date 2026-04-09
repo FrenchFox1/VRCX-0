@@ -1236,6 +1236,14 @@
             "download": "Tải xuống",
             "install": "Cài đặt"
         },
+        "database": {
+            "migration_found_title": "Đã phát hiện cơ sở dữ liệu VRCX hiện có",
+            "migration_found_description": "Đã tìm thấy một cơ sở dữ liệu VRCX hiện có trên máy tính này. Bạn có muốn di chuyển nó sang VRCX-0 không? Dữ liệu VRCX gốc sẽ không bị thay đổi.",
+            "migration_start": "Di chuyển",
+            "migration_skip": "Bỏ qua",
+            "migration_restarting_title": "Đang di chuyển dữ liệu",
+            "migration_restarting": "VRCX-0 sẽ khởi động lại để hoàn tất quá trình di chuyển..."
+        },
         "change_log": {
             "header": "Thông tin về thay đổi (log)",
             "description": "Nếu bạn thích thì hãy xem xét donate để phát triển tương lai VRCX-0",

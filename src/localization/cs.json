@@ -1317,6 +1317,14 @@
             "download": "Download",
             "install": "Install"
         },
+        "database": {
+            "migration_found_title": "Byla zjištěna existující databáze VRCX",
+            "migration_found_description": "Na tomto počítači byla nalezena existující databáze VRCX. Chcete ji přenést do VRCX-0? Původní data VRCX nebudou změněna.",
+            "migration_start": "Přenést",
+            "migration_skip": "Přeskočit",
+            "migration_restarting_title": "Probíhá migrace dat",
+            "migration_restarting": "VRCX-0 se restartuje, aby dokončil migraci..."
+        },
         "change_log": {
             "header": "Change Log",
             "description": "Consider donating to support future development of VRCX-0",

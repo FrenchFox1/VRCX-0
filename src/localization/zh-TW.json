@@ -2679,6 +2679,12 @@
             "loading": "正在透過搜尋來源尋找角色"
         },
         "database": {
+            "migration_found_title": "偵測到現有的 VRCX 資料庫",
+            "migration_found_description": "在這台電腦上偵測到現有的 VRCX 資料庫。要將它移轉至 VRCX-0 嗎？原始的 VRCX 資料將不會被修改。",
+            "migration_start": "移轉",
+            "migration_skip": "略過",
+            "migration_restarting_title": "正在移轉資料",
+            "migration_restarting": "VRCX-0 將重新啟動以完成移轉...",
             "upgrade_complete": "資料庫升級完成",
             "upgrade_in_progress_title": "資料庫升級中",
             "upgrade_in_progress_description": "正在將資料庫從版本 {from} 更新至 {to}，請勿關閉 VRCX-0。",

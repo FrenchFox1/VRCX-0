@@ -1488,6 +1488,14 @@
             "install": "ติดตั้ง",
             "cancel": "ยกเลิก"
         },
+        "database": {
+            "migration_found_title": "ตรวจพบฐานข้อมูล VRCX ที่มีอยู่",
+            "migration_found_description": "พบฐานข้อมูล VRCX ที่มีอยู่บนคอมพิวเตอร์เครื่องนี้ ต้องการย้ายไปยัง VRCX-0 หรือไม่? ข้อมูล VRCX เดิมจะไม่ถูกแก้ไข",
+            "migration_start": "ย้าย",
+            "migration_skip": "ข้าม",
+            "migration_restarting_title": "กำลังย้ายข้อมูล",
+            "migration_restarting": "VRCX-0 จะเริ่มใหม่เพื่อให้การย้ายเสร็จสมบูรณ์..."
+        },
         "change_log": {
             "header": "บันทึกการเปลี่ยนแปลง",
             "description": "พิจารณาบริจาคเพื่อสนับสนุนการพัฒนา VRCX-0 ในอนาคต",

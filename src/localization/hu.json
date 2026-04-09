@@ -1236,6 +1236,14 @@
       "download": "Letöltés",
       "install": "Telepítés"
     },
+    "database": {
+      "migration_found_title": "Meglévő VRCX adatbázis észlelve",
+      "migration_found_description": "Ezen a számítógépen egy meglévő VRCX adatbázist találtunk. Szeretnéd VRCX-0-ra migrálni? Az eredeti VRCX adatok nem módosulnak.",
+      "migration_start": "Migrálás",
+      "migration_skip": "Kihagyás",
+      "migration_restarting_title": "Adatok migrálása",
+      "migration_restarting": "A VRCX-0 újraindul a migráció befejezéséhez..."
+    },
     "change_log": {
       "header": "Változásnapló",
       "description": "Fontold meg a támogatást a VRCX-0 jövőbeli fejlesztése érdekében",

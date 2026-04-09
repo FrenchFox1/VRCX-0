@@ -1437,6 +1437,14 @@
             "install": "Instalar",
             "cancel": "Cancelar"
         },
+        "database": {
+            "migration_found_title": "Se detectó una base de datos existente de VRCX",
+            "migration_found_description": "Se encontró una base de datos existente de VRCX en este equipo. ¿Quieres migrarla a VRCX-0? Los datos originales de VRCX no se modificarán.",
+            "migration_start": "Migrar",
+            "migration_skip": "Omitir",
+            "migration_restarting_title": "Migrando datos",
+            "migration_restarting": "VRCX-0 se reiniciará para completar la migración..."
+        },
         "change_log": {
             "header": "Registro de Cambios",
             "description": "Considera donar para apoyar el desarrollo futuro de VRCX-0",

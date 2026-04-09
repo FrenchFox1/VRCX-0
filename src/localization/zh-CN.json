@@ -2705,6 +2705,12 @@
             "loading": "正在从指定的模型数据库中查找模型"
         },
         "database": {
+            "migration_found_title": "检测到现存的 VRCX 数据库",
+            "migration_found_description": "在此计算机上发现了现存的 VRCX 数据库。是否要将其迁移到 VRCX-0？原始 VRCX 数据库的数据不会被修改。",
+            "migration_start": "迁移",
+            "migration_skip": "跳过",
+            "migration_restarting_title": "正在迁移数据",
+            "migration_restarting": "VRCX-0 将重新启动以完成迁移工作",
             "upgrade_complete": "数据库升级完成",
             "upgrade_in_progress_title": "数据库升级进行中",
             "upgrade_in_progress_description": "正在将数据库从版本 {from} 更新到 {to}，请不要关闭 VRCX。",

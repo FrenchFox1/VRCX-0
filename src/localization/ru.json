@@ -1423,6 +1423,14 @@
             "install": "Установить",
             "cancel": "Отмена"
         },
+        "database": {
+            "migration_found_title": "Обнаружена существующая база данных VRCX",
+            "migration_found_description": "На этом компьютере найдена существующая база данных VRCX. Хотите перенести её в VRCX-0? Исходные данные VRCX не будут изменены.",
+            "migration_start": "Перенести",
+            "migration_skip": "Пропустить",
+            "migration_restarting_title": "Миграция данных",
+            "migration_restarting": "VRCX-0 перезапустится для завершения миграции..."
+        },
         "change_log": {
             "header": "Список изменений",
             "description": "Пожертвуйте для поддержки будущего развития VRCX-0",

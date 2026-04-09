@@ -1247,6 +1247,14 @@
             "download": "다운로드",
             "install": "설치"
         },
+        "database": {
+            "migration_found_title": "기존 VRCX 데이터베이스가 감지되었습니다",
+            "migration_found_description": "이 컴퓨터에서 기존 VRCX 데이터베이스를 찾았습니다. 이를 VRCX-0으로 마이그레이션하시겠습니까? 원본 VRCX 데이터는 수정되지 않습니다.",
+            "migration_start": "마이그레이션",
+            "migration_skip": "건너뛰기",
+            "migration_restarting_title": "데이터 마이그레이션 중",
+            "migration_restarting": "VRCX-0이 다시 시작되어 마이그레이션을 완료합니다..."
+        },
         "change_log": {
             "header": "변경사항",
             "description": "VRCX-0가 마음에 드시나요? 개발자에게 후원도 가능합니다♥",

@@ -2705,8 +2705,8 @@
             "loading": "Searching for avatar using search providers"
         },
         "database": {
-            "migration_found_title": "Existing VRCX-0 database detected",
-            "migration_found_description": "An existing VRCX-0 database was found on this computer. Would you like to migrate it to VRCX-0? The original VRCX-0 data will not be modified.",
+            "migration_found_title": "Existing VRCX database detected",
+            "migration_found_description": "An existing VRCX database was found on this computer. Would you like to migrate it to VRCX-0? The original VRCX data will not be modified.",
             "migration_start": "Migrate",
             "migration_skip": "Skip",
             "migration_restarting_title": "Migrating data",
