@@ -1725,7 +1725,7 @@
                 "screenshot": "Capture d'écran",
                 "screenshot_description": "Afficher et gérer les captures d'écran",
                 "gallery": "Galerie",
-                "gallery_description": "Gérer la galerie de photos, les icônes de profil et les impressions VRChat",
+                "gallery_description": "Gérer la galerie de photos, les icônes de profil et les imprimés VRChat",
                 "inventory": "Inventaire",
                 "inventory_description": "Gérer les emojis, autocollants, objets et cosmétiques"
             },
@@ -2495,22 +2495,22 @@
                         "description": "Collecter uniquement les informations anonymes nécessaires pour aider à améliorer VRCX-0."
                     },
                     "save_instance_prints_to_file": {
-                        "header": "Enregistrement des Impressions d'instance dans un fichier",
+                        "header": "Enregistrement des imprimés de l'instance dans un fichier",
                         "header_tooltip": "Nécessite l'option de lancement du VRChat « --enable-sdk-log-levels ».",
-                        "description": "Enregistre les impressions générées dans votre dossier VRChat Pictures",
+                        "description": "Enregistre les imprimés générées dans votre dossier Images -> VRChat",
                         "crop": "Retirer automatiquement la bordure blanche des imprimés"
                     },
                     "save_instance_stickers_to_file": {
-                        "header": "Enregistrer les autocollants d'instance dans un fichier",
-                        "description": "Enregistrer les autocollants placés dans votre dossier VRChat Pictures"
+                        "header": "Enregistrer les autocollants de l'instance dans un fichier",
+                        "description": "Enregistrer les autocollants placés dans votre dossier Images -> VRChat"
                     },
                     "save_instance_emoji_to_file": {
                         "header": "Enregistrer les émoji de l'instance dans un fichier",
-                        "description": "Enregistrer les émoji apparus dans votre dossier Pictures de VRChat"
+                        "description": "Enregistrer les émoji apparus dans votre dossier Images -> VRChat"
                     },
                     "delete_all_screenshot_metadata": {
                         "button": "Supprimer les métadonnées des captures d'écran",
-                        "ask": "Voulez-vous vraiment supprimer toutes les métadonnées des captures d'écran VRChat et VRCX-0 de votre dossier Pictures de VRChat ?",
+                        "ask": "Voulez-vous vraiment supprimer toutes les métadonnées des captures d'écran VRChat et VRCX-0 de votre dossier Images -> VRChat ?",
                         "confirm": "La suppression de toutes les métadonnées des captures d'écran est une action très destructrice et irréversible ! Cela inclut tous les imprimés, sous-dossiers et autres images sans rapport présents dans votre dossier Pictures de VRChat ; si ces photos vous sont précieuses, veuillez faire une sauvegarde avant de continuer.",
                         "confirm_yes": "Oui",
                         "confirm_no": "Non"
@@ -4321,7 +4321,7 @@
             "icons": "Icônes",
             "emojis": "Émojis",
             "stickers": "Autocollants",
-            "prints": "Impressions",
+            "prints": "Imprimés",
             "inventory": "Inventaire",
             "refresh": "Actualiser",
             "upload": "Téléverser",
