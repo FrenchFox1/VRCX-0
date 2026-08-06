@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -128,6 +129,9 @@ function DeepLinkRegistrationField() {
 }
 
 export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
+    const gameLogPersistenceSupported = useRuntimeStore(
+        (state) => state.hostCapabilities.runtimeGameLogIngest.supported
+    );
     const {
         prefs,
         avatarAutoCleanupOptions,
@@ -142,6 +146,7 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
         onUdonExceptionLoggingChange,
         onLogResourceLoadChange,
         onGameLogDisabledChange,
+        onFeedPersistenceDisabledChange,
         onAvatarAutoCleanupChange,
         onOpenPurgeDialog,
         onMigrateLegacyVrcxData,
@@ -404,6 +409,38 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                     </Select>
                 </Field>
                 <BrowseHistoryRetentionField />
+                {gameLogPersistenceSupported ? (
+                    <Field
+                        label={t(
+                            'view.settings.advanced.advanced_ui.troubleshooting.gamelog'
+                        )}
+                        description={t(
+                            'view.settings.advanced.advanced_ui.troubleshooting.gamelog_description'
+                        )}
+                    >
+                        <Switch
+                            checked={!prefs.gameLogDisabled}
+                            onCheckedChange={(checked) =>
+                                onGameLogDisabledChange(!checked)
+                            }
+                        />
+                    </Field>
+                ) : null}
+                <Field
+                    label={t(
+                        'view.settings.advanced.advanced_ui.troubleshooting.feed_history'
+                    )}
+                    description={t(
+                        'view.settings.advanced.advanced_ui.troubleshooting.feed_history_description'
+                    )}
+                >
+                    <Switch
+                        checked={!prefs.feedPersistenceDisabled}
+                        onCheckedChange={(checked) =>
+                            onFeedPersistenceDisabledChange(!checked)
+                        }
+                    />
+                </Field>
             </SettingsGroup>
 
             <AdvancedTroubleshootingGroup
@@ -416,7 +453,6 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                 onRefreshOnlineVisits={onRefreshOnlineVisits}
                 onRefreshConfigTreeData={onRefreshConfigTreeData}
                 onClearConfigTreeData={onClearConfigTreeData}
-                onGameLogDisabledChange={onGameLogDisabledChange}
                 onLogResourceLoadChange={onLogResourceLoadChange}
                 onUdonExceptionLoggingChange={onUdonExceptionLoggingChange}
             />

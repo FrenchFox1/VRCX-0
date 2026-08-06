@@ -22,10 +22,6 @@ const labels: Record<string, string> = {
         'Diagnostic tools',
     'view.settings.advanced.advanced_ui.troubleshooting.show': 'Show tools',
     'view.settings.advanced.advanced_ui.troubleshooting.hide': 'Hide tools',
-    'view.settings.advanced.advanced_ui.troubleshooting.gamelog':
-        'GameLog processing',
-    'view.settings.advanced.advanced_ui.troubleshooting.gamelog_description':
-        'Required by log features',
     'view.settings.advanced.advanced_ui.troubleshooting.tools': 'Diagnostics',
     'view.settings.advanced.advanced_ui.troubleshooting.database_usage':
         'Database usage',
@@ -63,7 +59,6 @@ function createProps(
     return {
         configTreeData: {},
         onClearConfigTreeData: vi.fn(),
-        onGameLogDisabledChange: vi.fn(),
         onLogResourceLoadChange: vi.fn(),
         onRefreshConfigTreeData: vi.fn(),
         onRefreshOnlineVisits: vi.fn(),
@@ -72,6 +67,7 @@ function createProps(
         onlineVisitCount: null,
         prefs: {
             gameLogDisabled: false,
+            feedPersistenceDisabled: false,
             logResourceLoad: false,
             udonExceptionLogging: false
         },
@@ -115,32 +111,14 @@ describe('AdvancedTroubleshootingGroup', () => {
         const user = userEvent.setup();
         renderGroup(createProps());
 
-        expect(screen.queryByText('GameLog processing')).toBeNull();
+        expect(screen.queryByText('Resource load logging')).toBeNull();
         const trigger = await openTools(user);
 
         expect(trigger.getAttribute('aria-expanded')).toBe('true');
-        expect(screen.getByText('GameLog processing')).toBeTruthy();
+        expect(screen.getByText('Resource load logging')).toBeTruthy();
 
         await user.keyboard('{Enter}');
         expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    });
-
-    it('maps the positive GameLog switch back to gameLogDisabled', async () => {
-        const user = userEvent.setup();
-        const onGameLogDisabledChange = vi.fn();
-        renderGroup(createProps({ onGameLogDisabledChange }));
-        await openTools(user);
-
-        const gameLogSwitch = screen.getByRole('switch', {
-            name: 'GameLog processing'
-        });
-        expect(gameLogSwitch.getAttribute('aria-checked')).toBe('true');
-
-        await user.click(gameLogSwitch);
-
-        expect(onGameLogDisabledChange).toHaveBeenCalledOnce();
-        expect(onGameLogDisabledChange).toHaveBeenCalledWith(true);
-        expect(gameLogSwitch.getAttribute('aria-checked')).toBe('true');
     });
 
     it.each([

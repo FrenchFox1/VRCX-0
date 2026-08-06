@@ -29,6 +29,7 @@
         "retention": {
             "label": "Срок хранения истории",
             "description": "Записи старше этого срока удаляются автоматически.",
+            "off": "Отключено",
             "days": "{count} дней",
             "forever": "Хранить всегда",
             "update_failed": "Не удалось изменить срок хранения истории."
@@ -522,6 +523,14 @@
         "edit_dashboard": "Правка Dashboard",
         "delete_dashboard": "Удалить Dashboard",
         "custom_nav": {
+            "dialog_description": "Перетаскивайте, чтобы изменить порядок, или бросьте пункт в папку, чтобы сгруппировать. Скрытые пункты попадают в список «Скрытые» и в любой момент возвращаются. Изменения панелей применяются сразу.",
+            "visible_items": "В меню",
+            "hidden_empty": "Ничего не скрыто",
+            "folder_item_count": "{count} шт.",
+            "ungroup_folder": "Расформировать папку",
+            "move_into_folder": "Переместить пункт в эту папку",
+            "restore_default_description": "Текущее расположение будет заменено расположением по умолчанию.",
+            "applies_immediately": "Действие применяется сразу, отмена его не вернёт.",
             "header": "Настроить навигацию",
             "dialog_title": "Упорядочить навигационную панель",
             "new_folder": "Новая папка",
@@ -537,12 +546,12 @@
             "cancel": "Отмена",
             "restore_default": "Восстановить по умолчанию",
             "dynamic": {
+                "rename_value": "Переименовать {value}",
                 "drag_value": "Перетащить {value}",
                 "icon_for_value": "Значок для {value}",
                 "edit_value": "Изменить {value}",
                 "delete_value": "Удалить {value}",
                 "hide_value": "Скрыть {value}",
-                "remove_value": "Удалить {value}",
                 "show_value": "Показать {value}"
             }
         }
@@ -716,7 +725,7 @@
             "favorites_section": "Избранное",
             "group_by_instance": "Группировать по инстансу",
             "split_favorite_friends": "Показать избранные группы",
-            "hide_friends_in_same_instance": "Скрывать друзей в том же инстансе",
+            "show_grouped_friends": "Показывать друзей в том же инстансе",
             "show_current_user_in_same_instance": "Показывать себя в том же инстансе",
             "same_instance_above_favorites": "Показывать тот же инстанс выше избранного",
             "sort_secondary": "Тогда к",
@@ -830,6 +839,7 @@
         },
         "feed": {
             "filter": "Фильтр",
+            "feed_persistence_disabled_tooltip": "История Feed не сохраняется",
             "favorites_only_tooltip": "Фильтровать только избранных",
             "search_placeholder": "Поиск",
             "date_range": "Диапазон дат",
@@ -982,7 +992,7 @@
                 "session_date_range": "Диапазон дат сессии",
                 "start": "Запуск",
                 "end": "Конец",
-                "game_log_is_disabled": "Журнал игры отключен",
+                "game_log_is_disabled": "Запись GameLog отключена",
                 "showing": "Показать",
                 "of": "В тыс.",
                 "game_log_row": "запись игрового журнала",
@@ -996,7 +1006,7 @@
                 "open_link": "Открыть ссылку",
                 "copy_detail": "Копировать",
                 "show_instance_history": "Показать историю случая",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Включите игровой журнал в настройках, чтобы видеть локальную активность VRChat"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Новые записи GameLog не сохраняются; существующая история и функции журнала в реальном времени остаются доступными."
             },
             "loading": {
                 "loading_the_game_log_snapshot": "Загрузка игрового журнала"
@@ -2447,8 +2457,10 @@
                         "description": "Средства журналирования и диагностики для поиска проблем.",
                         "show": "Показать инструменты",
                         "hide": "Скрыть инструменты",
-                        "gamelog": "Обработка GameLog",
-                        "gamelog_description": "Требуется функциям, использующим журналы VRChat.",
+                        "gamelog": "Сохранять историю GameLog",
+                        "gamelog_description": "Если отключено, новая история GameLog не сохраняется. Player List, Now Playing, метаданные снимков, Instance Media и другие функции реального времени остаются доступными.",
+                        "feed_history": "Сохранять историю Feed",
+                        "feed_history_description": "Если отключено, история Feed не сохраняется и не загружается. Feed запускается пустым и показывает только события реального времени этой сессии. Friends Sidebar и другие функции реального времени остаются доступными.",
                         "tools": "Диагностика",
                         "database_usage": "Использование базы данных",
                         "refresh_database_usage": "Обновить сведения об использовании базы данных",
@@ -4674,6 +4686,10 @@
             }
         },
         "previous_instances": {
+            "action": {
+                "copy_instance_id": "Копировать ID инстанса",
+                "more_actions": "Ещё действия"
+            },
             "header": "История случая",
             "info": "Подробности случая",
             "search_placeholder": "Поиск по истории инстансов",
@@ -4696,10 +4712,13 @@
                 "loading_instance_details": "Загрузка..."
             },
             "error": {
+                "failed_to_copy_instance_id": "Не удалось скопировать ID инстанса",
                 "failed_to_load_instance_details": "Не удалось загрузить сведения об инстансе.",
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "Это посещение нельзя удалить"
             },
             "label": {
+                "showing_recent_only": "Показаны последние {count} посещений — открыть полную историю",
+                "search_limited_to_recent": "Поиск по последним {count} посещениям — искать во всей истории",
                 "players_count": "{count} игроки",
                 "recorded_instance_visits": "зарегистрированных посещений инстансов",
                 "recorded_instance_visits_count": "Зарегистрировано посещений инстансов: {count}.",
@@ -4710,6 +4729,7 @@
                 "sort_descending": "Сортировка"
             },
             "success": {
+                "instance_id_copied": "ID инстанса скопирован",
                 "instance_record_deleted": "Посещение удалено из истории инстансов"
             }
         },
@@ -5001,7 +5021,8 @@
         "close_instance": "Закрыть этот инстанс? После закрытия никто не сможет к нему присоединиться.",
         "logout": "Продолжить?",
         "delete_log": "Удалить журнал?",
-        "disable_gamelog": "Отключить GameLog",
+        "disable_gamelog": "Прекратить сохранять новую историю GameLog? Player List, Now Playing, метаданные снимков, Instance Media и другие функции реального времени останутся доступными.",
+        "disable_feed_persistence": "Прекратить сохранять историю Feed? Feed начнёт работу с пустого представления реального времени, а в анализе истории останется постоянный пробел. Friends Sidebar и другие функции реального времени останутся доступными.",
         "delete_vrc_registry": "Удалить существующие настройки реестра VRChat?",
         "clear_cache": "Продолжить? VRChat Кэш"
     },

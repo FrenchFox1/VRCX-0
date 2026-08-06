@@ -29,6 +29,7 @@
         "retention": {
             "label": "조회 기록 보관 기간",
             "description": "이 기간이 지난 기록은 자동으로 삭제됩니다.",
+            "off": "끄기",
             "days": "{count}일",
             "forever": "계속 보관",
             "update_failed": "기록 보관 기간을 변경하지 못했습니다."
@@ -521,6 +522,14 @@
         "edit_dashboard": "대시보드 편집",
         "delete_dashboard": "대시보드 삭제",
         "custom_nav": {
+            "dialog_description": "끌어서 순서를 바꾸고, 폴더에 넣으면 묶을 수 있습니다. 숨긴 항목은 \"숨김\" 목록으로 이동하며 언제든 되돌릴 수 있습니다. 대시보드 변경은 즉시 적용됩니다.",
+            "visible_items": "메뉴에 표시",
+            "hidden_empty": "숨긴 항목 없음",
+            "folder_item_count": "{count}개",
+            "ungroup_folder": "폴더 해제",
+            "move_into_folder": "이 폴더로 항목 옮기기",
+            "restore_default_description": "현재 배치를 기본 배치로 덮어씁니다.",
+            "applies_immediately": "이 작업은 즉시 적용되며 취소해도 되돌릴 수 없습니다.",
             "header": "탐색 사용자 정의",
             "dialog_title": "탐색 메뉴 사용자 정의",
             "new_folder": "새 폴더",
@@ -536,12 +545,12 @@
             "cancel": "취소",
             "restore_default": "기본값 복원",
             "dynamic": {
+                "rename_value": "{value} 이름 변경",
                 "drag_value": "{value} 드래그",
                 "icon_for_value": "{value} 아이콘",
                 "edit_value": "{value} 편집",
                 "delete_value": "{value} 삭제",
                 "hide_value": "{value} 숨기기",
-                "remove_value": "{value} 제거",
                 "show_value": "{value} 표시"
             }
         }
@@ -714,7 +723,7 @@
             "favorites_section": "즐겨찾기",
             "group_by_instance": "인스턴스별로 그룹화",
             "split_favorite_friends": "즐겨찾는 그룹 표시",
-            "hide_friends_in_same_instance": "그룹화된 친구 숨기기",
+            "show_grouped_friends": "그룹화된 친구 표시",
             "show_current_user_in_same_instance": "같은 인스턴스의 나 표시",
             "same_instance_above_favorites": "동일한 인스턴스 우선순위 지정",
             "sort_secondary": "그런 다음",
@@ -825,6 +834,7 @@
         },
         "feed": {
             "filter": "필터",
+            "feed_persistence_disabled_tooltip": "Feed 기록을 저장하지 않는 상태입니다",
             "favorites_only_tooltip": "친한 친구만 보기",
             "search_placeholder": "검색",
             "date_range": "기간",
@@ -977,7 +987,7 @@
                 "session_date_range": "세션 기간",
                 "start": "시작",
                 "end": "종료",
-                "game_log_is_disabled": "게임 로그가 비활성화되었습니다.",
+                "game_log_is_disabled": "GameLog 쓰기가 꺼져 있습니다",
                 "showing": "표시",
                 "of": "의",
                 "game_log_row": "게임 로그 항목",
@@ -991,7 +1001,7 @@
                 "open_link": "링크 열기",
                 "copy_detail": "세부정보 복사",
                 "show_instance_history": "인스턴스 기록 표시",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "로컬 VRChat 활동을 보려면 설정에서 게임 로그를 활성화하세요."
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "새 GameLog 기록은 저장되지 않으며, 기존 기록과 실시간 로그 기능은 계속 사용할 수 있습니다."
             },
             "loading": {
                 "loading_the_game_log_snapshot": "게임 로그 불러오는 중"
@@ -2397,8 +2407,10 @@
                         "description": "문제를 조사하기 위한 로그 및 진단 도구입니다.",
                         "show": "도구 표시",
                         "hide": "도구 숨기기",
-                        "gamelog": "GameLog 처리",
-                        "gamelog_description": "VRChat 로그를 사용하는 기능에 필요합니다.",
+                        "gamelog": "GameLog 기록 저장",
+                        "gamelog_description": "끄면 새 GameLog 기록이 저장되지 않습니다. Player List, Now Playing, 스크린샷 메타데이터, Instance Media 및 기타 실시간 로그 기능은 계속 사용할 수 있습니다.",
+                        "feed_history": "Feed 기록 저장",
+                        "feed_history_description": "끄면 Feed 기록을 저장하거나 불러오지 않습니다. Feed는 빈 상태에서 시작하며 이번 세션의 실시간 활동만 표시합니다. Friends Sidebar 및 기타 실시간 기능은 계속 사용할 수 있습니다.",
                         "tools": "진단",
                         "database_usage": "데이터베이스 사용량",
                         "refresh_database_usage": "데이터베이스 사용량 새로 고침",
@@ -4618,6 +4630,10 @@
             }
         },
         "previous_instances": {
+            "action": {
+                "copy_instance_id": "인스턴스 ID 복사",
+                "more_actions": "추가 작업"
+            },
             "header": "인스턴스 기록",
             "info": "인스턴스 세부정보",
             "search_placeholder": "인스턴스 기록 검색",
@@ -4640,10 +4656,13 @@
                 "loading_instance_details": "인스턴스 세부정보 로드 중..."
             },
             "error": {
+                "failed_to_copy_instance_id": "인스턴스 ID를 복사하지 못했습니다",
                 "failed_to_load_instance_details": "인스턴스 세부정보를 로드하지 못했습니다.",
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "이 방문 기록은 삭제할 수 없습니다."
             },
             "label": {
+                "showing_recent_only": "최근 {count}건만 표시 중 — 전체 기록 열기",
+                "search_limited_to_recent": "최근 {count}건에서 검색 중 — 전체 기록에서 검색",
                 "recorded_instance_visits": "기록된 인스턴스 방문",
                 "rows": "행",
                 "location": "위치",
@@ -4652,6 +4671,7 @@
                 "recorded_instance_visits_count": "{count} 기록된 인스턴스 방문."
             },
             "success": {
+                "instance_id_copied": "인스턴스 ID를 복사했습니다",
                 "instance_record_deleted": "인스턴스 방문 기록을 삭제했습니다."
             }
         },
@@ -4932,7 +4952,8 @@
         "close_instance": "이 인스턴스를 닫으시겠어요? 닫으면 아무도 참가할 수 없습니다.",
         "logout": "계속하시겠습니까? 로그아웃",
         "delete_log": "계속하시겠습니까? 로그 삭제",
-        "disable_gamelog": "계속하시겠습니까? 게임로그 비활성화",
+        "disable_gamelog": "새 GameLog 기록 저장을 중지할까요? Player List, Now Playing, 스크린샷 메타데이터, Instance Media 및 기타 실시간 로그 기능은 계속 사용할 수 있습니다.",
+        "disable_feed_persistence": "Feed 기록 저장을 중지할까요? Feed는 빈 실시간 화면에서 시작하며 기록 기반 분석에는 영구적인 공백이 생깁니다. Friends Sidebar 및 기타 실시간 기능은 계속 사용할 수 있습니다.",
         "delete_vrc_registry": "계속하시겠습니까? 기존 VRChat 레지스트리 설정 삭제",
         "clear_cache": "계속하시겠습니까? 모든 VRChat 캐시 지우기"
     },

@@ -29,6 +29,7 @@
         "retention": {
             "label": "View history retention",
             "description": "Entries older than this are deleted automatically.",
+            "off": "Off",
             "days": "{count} days",
             "forever": "Keep forever",
             "update_failed": "History retention could not be updated."
@@ -522,6 +523,14 @@
         "edit_dashboard": "Edit Dashboard",
         "delete_dashboard": "Delete Dashboard",
         "custom_nav": {
+            "dialog_description": "Drag to reorder, or drop an item into a folder to group it. Items you hide move to the Hidden list and can be brought back any time. Dashboard changes apply immediately.",
+            "visible_items": "In the menu",
+            "hidden_empty": "Nothing hidden",
+            "folder_item_count": "{count} items",
+            "ungroup_folder": "Ungroup folder",
+            "move_into_folder": "Move an item into this folder",
+            "restore_default_description": "This replaces your current arrangement with the default one.",
+            "applies_immediately": "This applies immediately and is not undone by cancelling.",
             "header": "Customize Navigation",
             "dialog_title": "Customize Navigation Menu",
             "new_folder": "New Folder",
@@ -537,12 +546,12 @@
             "cancel": "Cancel",
             "restore_default": "Restore Default",
             "dynamic": {
+                "rename_value": "Rename {value}",
                 "drag_value": "Drag {value}",
                 "icon_for_value": "Icon for {value}",
                 "edit_value": "Edit {value}",
                 "delete_value": "Delete {value}",
                 "hide_value": "Hide {value}",
-                "remove_value": "Remove {value}",
                 "show_value": "Show {value}"
             }
         }
@@ -716,7 +725,7 @@
             "favorites_section": "Favorites",
             "group_by_instance": "Group by Instance",
             "split_favorite_friends": "Show Favorite Groups",
-            "hide_friends_in_same_instance": "Hide Grouped Friends",
+            "show_grouped_friends": "Show Grouped Friends",
             "show_current_user_in_same_instance": "Show yourself in the same instance",
             "same_instance_above_favorites": "Prioritize Same Instance",
             "sort_secondary": "Then by",
@@ -830,6 +839,7 @@
         },
         "feed": {
             "filter": "Filter",
+            "feed_persistence_disabled_tooltip": "Feed history is not being saved",
             "favorites_only_tooltip": "Filter favorites only",
             "search_placeholder": "Search",
             "date_range": "Date range",
@@ -982,7 +992,7 @@
                 "session_date_range": "Session date range",
                 "start": "Start",
                 "end": "End",
-                "game_log_is_disabled": "Game log is disabled",
+                "game_log_is_disabled": "You have turned off GameLog writing",
                 "showing": "Showing",
                 "of": "of",
                 "game_log_row": "game log entry",
@@ -996,7 +1006,7 @@
                 "open_link": "Open link",
                 "copy_detail": "Copy detail",
                 "show_instance_history": "Show instance history",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Enable game log in Settings to view your local VRChat activity"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "New GameLog records will not be saved; existing history and live log features remain available."
             },
             "loading": {
                 "loading_the_game_log_snapshot": "Loading game log"
@@ -1186,7 +1196,7 @@
             "avatars": {
                 "search": "Search",
                 "vrchat_favorites": "VRChat Favorites",
-                "local_favorites": "Local Favorites (VRChat+)",
+                "local_favorites": "Local Favorites (VRC+)",
                 "new_group": "New Group",
                 "local_history": "Local History",
                 "styles": "Styles",
@@ -1445,7 +1455,7 @@
                     "earned": "Badge Earned"
                 },
                 "vrcplus": {
-                    "gift": "VRChat+ Gift"
+                    "gift": "VRC+ Gift"
                 },
                 "economy": {
                     "received": {
@@ -2445,8 +2455,10 @@
                         "description": "Logging and diagnostic tools for investigating problems.",
                         "show": "Show tools",
                         "hide": "Hide tools",
-                        "gamelog": "GameLog processing",
-                        "gamelog_description": "Required by features that depend on VRChat logs.",
+                        "gamelog": "Save GameLog history",
+                        "gamelog_description": "When off, new GameLog history is not saved. Player List, Now Playing, screenshot metadata, Instance Media, and other live log features remain available.",
+                        "feed_history": "Save Feed history",
+                        "feed_history_description": "When off, Feed history is not saved or loaded. Feed starts empty and shows only live activity from this session. Friends Sidebar and other realtime features remain available.",
                         "tools": "Diagnostics",
                         "database_usage": "Database usage",
                         "refresh_database_usage": "Refresh database usage",
@@ -4134,7 +4146,7 @@
         "favorite": {
             "vrchat_favorites": "VRChat Favorites",
             "local_favorites": "Local Favorites",
-            "local_avatar_favorites": "Local Favorites (VRChat+)"
+            "local_avatar_favorites": "Local Favorites (VRC+)"
         },
         "social_status": {
             "presets": "Presets"
@@ -4670,6 +4682,10 @@
             }
         },
         "previous_instances": {
+            "action": {
+                "copy_instance_id": "Copy instance ID",
+                "more_actions": "More actions"
+            },
             "header": "Instance History",
             "info": "Instance Details",
             "search_placeholder": "Search instance history",
@@ -4692,10 +4708,13 @@
                 "loading_instance_details": "Loading instance details..."
             },
             "error": {
+                "failed_to_copy_instance_id": "Couldn't copy the instance ID",
                 "failed_to_load_instance_details": "Failed to load instance details.",
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "This visit can't be deleted"
             },
             "label": {
+                "showing_recent_only": "Showing the {count} most recent visits — open full history",
+                "search_limited_to_recent": "Searching the {count} most recent visits — search full history",
                 "players_count": "{count} players",
                 "recorded_instance_visits": "recorded instance visits",
                 "recorded_instance_visits_count": "{count} recorded instance visits.",
@@ -4706,6 +4725,7 @@
                 "sort_descending": "Sort descending"
             },
             "success": {
+                "instance_id_copied": "Instance ID copied",
                 "instance_record_deleted": "Visit removed from instance history"
             }
         },
@@ -4997,7 +5017,8 @@
         "close_instance": "Continue? Close Instance, nobody will be able to join",
         "logout": "Log out?",
         "delete_log": "Delete log?",
-        "disable_gamelog": "Disable GameLog?",
+        "disable_gamelog": "Stop saving new GameLog history? Player List, Now Playing, screenshot metadata, Instance Media, and other live log features will remain available.",
+        "disable_feed_persistence": "Stop saving Feed history? Feed will start from an empty live view, and history-based analysis will have a permanent gap. Friends Sidebar and other realtime features will remain available.",
         "delete_vrc_registry": "Delete existing VRChat registry settings?",
         "clear_cache": "Clear all VRChat cache?"
     },
@@ -5199,7 +5220,7 @@
             "url_copied": "World URL copied to clipboard"
         },
         "vrcplus": {
-            "required": "VRChat+"
+            "required": "VRC+"
         },
         "screenshot_metadata": {
             "deleted": "Screenshot metadata deleted",

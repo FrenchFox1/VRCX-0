@@ -895,8 +895,10 @@ export const commands = {
             patch
         });
     },
-    async appFeedAddEntry(userId: string, entry: RawJson): Promise<null> {
-        return await TAURI_INVOKE('app__feed_add_entry', { userId, entry });
+    async appFeedPersistenceSetDisabled(disabled: boolean): Promise<null> {
+        return await TAURI_INVOKE('app__feed_persistence_set_disabled', {
+            disabled
+        });
     },
     async appAvatarFeedHistoryCleanup(
         cutoffDate: string | null
@@ -927,6 +929,11 @@ export const commands = {
         return await TAURI_INVOKE('app__game_log_entries_add', {
             kind,
             entries
+        });
+    },
+    async appGameLogPersistenceSetDisabled(disabled: boolean): Promise<null> {
+        return await TAURI_INVOKE('app__game_log_persistence_set_disabled', {
+            disabled
         });
     },
     async appGameLogInstanceDeleteByLocation(
@@ -3880,7 +3887,6 @@ export type DebugLoggingOutcome = {
     error: string | null;
 };
 export type DebugLoggingOutcomeKind =
-    | 'disabled'
     | 'unavailable'
     | 'enabled'
     | 'repaired'

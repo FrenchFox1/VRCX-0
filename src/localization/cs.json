@@ -29,6 +29,7 @@
         "retention": {
             "label": "Doba uchování historie",
             "description": "Starší položky se automaticky mažou.",
+            "off": "Vypnuto",
             "days": "{count} dní",
             "forever": "Uchovat navždy",
             "update_failed": "Dobu uchování historie se nepodařilo změnit."
@@ -522,6 +523,14 @@
         "edit_dashboard": "Upravit nástěnku",
         "delete_dashboard": "Odstranit nástěnku",
         "custom_nav": {
+            "dialog_description": "Přetažením změníte pořadí, přetažením do složky položky seskupíte. Skryté položky se přesunou do seznamu „Skryté“ a kdykoli je vrátíte. Změny nástěnek platí okamžitě.",
+            "visible_items": "V nabídce",
+            "hidden_empty": "Nic není skryté",
+            "folder_item_count": "{count} položek",
+            "ungroup_folder": "Zrušit složku",
+            "move_into_folder": "Přesunout položku do této složky",
+            "restore_default_description": "Nahradí vaše současné uspořádání výchozím.",
+            "applies_immediately": "Projeví se okamžitě a zrušením se to nevrátí zpět.",
             "header": "Přizpůsobit navigaci",
             "dialog_title": "Přizpůsobit navigační menu",
             "new_folder": "Nová složka",
@@ -537,12 +546,12 @@
             "cancel": "Zrušit",
             "restore_default": "Obnovit výchozí",
             "dynamic": {
+                "rename_value": "Přejmenovat {value}",
                 "drag_value": "Přetáhnout {value}",
                 "icon_for_value": "Ikona pro {value}",
                 "edit_value": "Upravit {value}",
                 "delete_value": "Odstranit {value}",
                 "hide_value": "Skrýt {value}",
-                "remove_value": "Odebrat {value}",
                 "show_value": "Zobrazit {value}"
             }
         }
@@ -716,7 +725,7 @@
             "favorites_section": "Oblíbené",
             "group_by_instance": "Seskupit podle instance",
             "split_favorite_friends": "Zobrazit oblíbené skupiny",
-            "hide_friends_in_same_instance": "Skrýt seskupené přátele",
+            "show_grouped_friends": "Zobrazit seskupené přátele",
             "show_current_user_in_same_instance": "Zobrazit sebe ve stejné instanci",
             "same_instance_above_favorites": "Upřednostnit stejnou instanci",
             "sort_secondary": "Poté podle",
@@ -830,6 +839,7 @@
         },
         "feed": {
             "filter": "Filtr",
+            "feed_persistence_disabled_tooltip": "Historie Feedu se neukládá",
             "favorites_only_tooltip": "Zobrazit pouze oblíbené",
             "search_placeholder": "Vyhledat",
             "date_range": "Časové rozmezí",
@@ -982,7 +992,7 @@
                 "session_date_range": "Časové rozmezí relace",
                 "start": "Začátek",
                 "end": "Konec",
-                "game_log_is_disabled": "Záznam hry je vypnutý",
+                "game_log_is_disabled": "Zápis do GameLogu je vypnutý",
                 "showing": "Zobrazeno",
                 "of": "z",
                 "game_log_row": "položka záznamu hry",
@@ -996,7 +1006,7 @@
                 "open_link": "Otevřít odkaz",
                 "copy_detail": "Kopírovat detail",
                 "show_instance_history": "Zobrazit historii instancí",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Chcete-li zobrazit místní aktivitu ve VRChatu, povolte v nastavení záznam hry"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Nové záznamy GameLogu se nebudou ukládat; stávající historie a funkce živého protokolu zůstanou dostupné."
             },
             "loading": {
                 "loading_the_game_log_snapshot": "Načítání záznamu hry"
@@ -2447,8 +2457,10 @@
                         "description": "Nástroje protokolování a diagnostiky pro hledání problémů.",
                         "show": "Zobrazit nástroje",
                         "hide": "Skrýt nástroje",
-                        "gamelog": "Zpracování GameLogu",
-                        "gamelog_description": "Vyžadují jej funkce závislé na protokolech VRChatu.",
+                        "gamelog": "Ukládat historii GameLogu",
+                        "gamelog_description": "Při vypnutí se nová historie GameLogu neukládá. Player List, Now Playing, metadata snímků, Instance Media a další živé funkce zůstanou dostupné.",
+                        "feed_history": "Ukládat historii Feedu",
+                        "feed_history_description": "Při vypnutí se historie Feedu neukládá ani nenačítá. Feed začne prázdný a zobrazí pouze živou aktivitu z této relace. Friends Sidebar a další funkce v reálném čase zůstanou dostupné.",
                         "tools": "Diagnostika",
                         "database_usage": "Využití databáze",
                         "refresh_database_usage": "Obnovit využití databáze",
@@ -4674,6 +4686,10 @@
             }
         },
         "previous_instances": {
+            "action": {
+                "copy_instance_id": "Kopírovat ID instance",
+                "more_actions": "Další akce"
+            },
             "header": "Historie instancí",
             "info": "Podrobnosti instance",
             "search_placeholder": "Hledat v historii instancí",
@@ -4696,10 +4712,13 @@
                 "loading_instance_details": "Načítání podrobností instance..."
             },
             "error": {
+                "failed_to_copy_instance_id": "ID instance se nepodařilo zkopírovat",
                 "failed_to_load_instance_details": "Nepodařilo se načíst podrobnosti instance.",
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "Tuto návštěvu nelze odstranit"
             },
             "label": {
+                "showing_recent_only": "Zobrazeno posledních {count} návštěv — otevřít celou historii",
+                "search_limited_to_recent": "Prohledává se posledních {count} návštěv — hledat v celé historii",
                 "players_count": "{count} hráčů",
                 "recorded_instance_visits": "zaznamenaných návštěv instance",
                 "recorded_instance_visits_count": "{count} zaznamenaných návštěv instance.",
@@ -4710,6 +4729,7 @@
                 "sort_descending": "Seřadit sestupně"
             },
             "success": {
+                "instance_id_copied": "ID instance zkopírováno",
                 "instance_record_deleted": "Návštěva byla odstraněna z historie instancí"
             }
         },
@@ -5001,7 +5021,8 @@
         "close_instance": "Opravdu chcete tuto instanci zavřít? Po zavření se už nikdo nebude moci připojit.",
         "logout": "Odhlásit se?",
         "delete_log": "Smazat záznam?",
-        "disable_gamelog": "Vypnout GameLog?",
+        "disable_gamelog": "Přestat ukládat novou historii GameLogu? Player List, Now Playing, metadata snímků, Instance Media a další živé funkce zůstanou dostupné.",
+        "disable_feed_persistence": "Přestat ukládat historii Feedu? Feed začne prázdným živým zobrazením a v analýzách založených na historii zůstane trvalá mezera. Friends Sidebar a další funkce v reálném čase zůstanou dostupné.",
         "delete_vrc_registry": "Smazat stávající nastavení registru VRChat?",
         "clear_cache": "Vymazat celou mezipaměť VRChat?"
     },

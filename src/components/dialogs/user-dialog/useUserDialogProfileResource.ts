@@ -46,7 +46,6 @@ export function useUserDialogProfileResource({
     activitySnapshot = null,
     currentEndpoint,
     currentUserSnapshot,
-    gameLogDisabled,
     gameState,
     isFriend = false,
     isTargetCurrentUser,
@@ -103,15 +102,13 @@ export function useUserDialogProfileResource({
         const base = isTargetCurrentUser
             ? buildCurrentUserPresenceView(activeBaseProfile, {
                   currentUserSnapshot: currentUserPresenceSnapshot,
-                  gameState: normalizedGameState,
-                  gameLogDisabled
+                  gameState: normalizedGameState
               })
             : activeBaseProfile;
         return overlayFriendPresence(base, friendPresenceSource);
     }, [
         activeBaseProfile,
         currentUserPresenceSnapshot,
-        gameLogDisabled,
         isTargetCurrentUser,
         friendPresenceSource,
         normalizedGameState
@@ -214,21 +211,29 @@ export function useUserDialogProfileResource({
             })
             .catch(() => null);
 
-        userProfileRepository
-            .getUserProfile({
+        const friendStatusRequest = isTargetCurrentUser
+            ? Promise.resolve(null)
+            : userProfileRepository
+                  .getFriendStatus({ userId: normalizedUserId })
+                  .catch(() => null);
+
+        Promise.all([
+            userProfileRepository.getUserProfile({
                 userId: normalizedUserId,
                 force: isTargetCurrentUser || reloadToken > 0,
                 dialog: true,
                 isFriend
-            })
-            .then((nextProfile) => {
+            }),
+            friendStatusRequest
+        ])
+            .then(([nextProfile, friendStatus]) => {
                 if (!active) {
                     return;
                 }
-                const remoteProfile = stripSyntheticSnapshotDefaults(
-                    nextProfile,
-                    {}
-                );
+                const remoteProfile = {
+                    ...stripSyntheticSnapshotDefaults(nextProfile, {}),
+                    ...(friendStatus ?? {})
+                };
 
                 setBaseProfile((currentProfile) =>
                     preserveProfileIdentity(

@@ -29,6 +29,7 @@
         "retention": {
             "label": "浏览记录保留时间",
             "description": "超过该时间的记录会自动删除。",
+            "off": "关闭",
             "days": "{count} 天",
             "forever": "永久保留",
             "update_failed": "无法更新记录保留时间。"
@@ -522,6 +523,14 @@
         "edit_dashboard": "编辑仪表板",
         "delete_dashboard": "删除仪表板",
         "custom_nav": {
+            "dialog_description": "拖动可排序,把条目拖进文件夹即可分组。隐藏的条目会进入「已隐藏」列表,随时可以放回来。仪表盘的改动立即生效。",
+            "visible_items": "菜单中",
+            "hidden_empty": "没有隐藏的条目",
+            "folder_item_count": "{count} 项",
+            "ungroup_folder": "解散文件夹",
+            "move_into_folder": "把条目移入此文件夹",
+            "restore_default_description": "会用默认排列覆盖你当前的排列。",
+            "applies_immediately": "此操作立即生效,取消也无法撤销。",
             "header": "自定义导航栏",
             "dialog_title": "自定义导航栏",
             "new_folder": "添加文件夹",
@@ -537,12 +546,12 @@
             "cancel": "取消",
             "restore_default": "恢复默认",
             "dynamic": {
+                "rename_value": "重命名 {value}",
                 "drag_value": "拖动 {value}",
                 "icon_for_value": "{value} 的图标",
                 "edit_value": "编辑 {value}",
                 "delete_value": "删除 {value}",
                 "hide_value": "隐藏 {value}",
-                "remove_value": "移除 {value}",
                 "show_value": "显示 {value}"
             }
         }
@@ -716,7 +725,7 @@
             "favorites_section": "收藏",
             "group_by_instance": "按房间分组",
             "split_favorite_friends": "按分组显示好友",
-            "hide_friends_in_same_instance": "隐藏同一房间中的好友",
+            "show_grouped_friends": "显示同一房间中的好友",
             "show_current_user_in_same_instance": "显示同一房间中的自己",
             "same_instance_above_favorites": "优先显示同一房间中的好友",
             "sort_secondary": "次要排序方式",
@@ -830,6 +839,7 @@
         },
         "feed": {
             "filter": "筛选",
+            "feed_persistence_disabled_tooltip": "Feed 历史未保存",
             "favorites_only_tooltip": "仅显示被分组的好友",
             "search_placeholder": "搜索",
             "date_range": "日期范围",
@@ -982,7 +992,7 @@
                 "session_date_range": "会话日期范围",
                 "start": "开始",
                 "end": "结束",
-                "game_log_is_disabled": "游戏日志已禁用",
+                "game_log_is_disabled": "你已关闭 GameLog 写入",
                 "showing": "显示",
                 "of": "/",
                 "game_log_row": "游戏日志行",
@@ -996,7 +1006,7 @@
                 "open_link": "在浏览器打开",
                 "copy_detail": "复制详情",
                 "show_instance_history": "显示房间历史",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "请先在设置中启用游戏日志采集，才能在此页面加载本地 VRChat 活动"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "新的 GameLog 记录不会保存；已有历史和实时日志功能仍可使用。"
             },
             "loading": {
                 "loading_the_game_log_snapshot": "正在加载游戏日志"
@@ -2445,8 +2455,10 @@
                         "description": "用于排查问题的日志与诊断工具。",
                         "show": "显示工具",
                         "hide": "隐藏工具",
-                        "gamelog": "GameLog 处理",
-                        "gamelog_description": "依赖 VRChat 日志的功能需要启用此项。",
+                        "gamelog": "保存 GameLog 历史",
+                        "gamelog_description": "关闭后不会保存新的 GameLog 历史；Player List、Now Playing、截图元数据、Instance Media 和其他实时日志功能仍可使用。",
+                        "feed_history": "保存 Feed 历史",
+                        "feed_history_description": "关闭后不会保存或加载 Feed 历史。Feed 将从空白状态开始，仅显示本次会话收到的实时动态；Friends Sidebar 和其他实时功能仍可使用。",
                         "tools": "诊断",
                         "database_usage": "数据库占用",
                         "refresh_database_usage": "刷新数据库占用",
@@ -4670,6 +4682,10 @@
             }
         },
         "previous_instances": {
+            "action": {
+                "copy_instance_id": "复制房间 ID",
+                "more_actions": "更多操作"
+            },
             "header": "游玩过的房间",
             "info": "房间详情",
             "search_placeholder": "搜索",
@@ -4692,10 +4708,13 @@
                 "loading_instance_details": "正在加载房间详情..."
             },
             "error": {
+                "failed_to_copy_instance_id": "复制房间 ID 失败",
                 "failed_to_load_instance_details": "加载房间详情失败",
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "缺少事件 ID，无法删除此玩家房间记录"
             },
             "label": {
+                "showing_recent_only": "仅显示最近 {count} 次访问 — 打开完整历史",
+                "search_limited_to_recent": "仅搜索最近 {count} 次访问 — 在完整历史中搜索",
                 "players_count": "{count} 名玩家",
                 "recorded_instance_visits": "条房间访问记录",
                 "recorded_instance_visits_count": "{count} 条房间访问记录",
@@ -4706,6 +4725,7 @@
                 "sort_descending": "降序"
             },
             "success": {
+                "instance_id_copied": "已复制房间 ID",
                 "instance_record_deleted": "已删除房间记录"
             }
         },
@@ -4997,7 +5017,8 @@
         "close_instance": "确定要关闭这个房间吗？关闭后任何人都将无法进入",
         "logout": "确定要登出吗？",
         "delete_log": "确定要删除日志吗？",
-        "disable_gamelog": "确定要禁用游戏日志吗？",
+        "disable_gamelog": "确定停止保存新的 GameLog 历史吗？Player List、Now Playing、截图元数据、Instance Media 和其他实时日志功能仍可使用。",
+        "disable_feed_persistence": "确定停止保存 Feed 历史吗？Feed 将从空白实时状态开始，依赖历史的分析会出现永久空档；Friends Sidebar 和其他实时功能仍可使用。",
         "delete_vrc_registry": "确定要删除 VRC 的设置数据吗？",
         "clear_cache": "确定要清除所有 VRChat 缓存吗？"
     },

@@ -7,17 +7,17 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use chrono::{Local, NaiveDateTime, Utc};
-use vrcx_0_core::log_watcher::LogLocationSnapshot;
+use vrcx_0_core::game_log_parser::LogLocationSnapshot;
 
-use super::context::LogContext;
-use super::event::{GameLogEvent, GameLogEventSink};
-use super::parser;
+use crate::game_log_parser::{self, GameLogEvent, LogContext};
+
 use super::queue;
+use super::sink::GameLogEventSink;
 
 const INACTIVE_POLL_KEEPALIVE: Duration = Duration::from_secs(120);
 #[derive(Clone)]
 pub struct LogWatcher {
-    inner: Arc<Inner>,
+    pub(super) inner: Arc<Inner>,
 }
 
 pub trait LogLocationSnapshotScanner: Send + Sync {
@@ -54,6 +54,7 @@ pub(super) struct Inner {
     pub(super) started: AtomicBool,
     pub(super) stop_requested: AtomicBool,
     pub(super) generation: AtomicU64,
+    pub(super) initial_scan_latest_file_only: AtomicBool,
     pub(super) handle: Mutex<Option<JoinHandle<()>>>,
 }
 
@@ -87,6 +88,7 @@ impl LogWatcher {
                 started: AtomicBool::new(false),
                 stop_requested: AtomicBool::new(false),
                 generation: AtomicU64::new(0),
+                initial_scan_latest_file_only: AtomicBool::new(false),
                 handle: Mutex::new(None),
             }),
         }
@@ -151,6 +153,12 @@ impl LogWatcher {
         *self.inner.active.lock().unwrap() = true;
         *self.inner.keep_polling_until.lock().unwrap() =
             Some(Instant::now() + INACTIVE_POLL_KEEPALIVE);
+    }
+
+    pub fn set_initial_scan_latest_file_only(&self, enabled: bool) {
+        self.inner
+            .initial_scan_latest_file_only
+            .store(enabled, Ordering::Release);
     }
 
     pub fn reset(&self) {
@@ -254,7 +262,7 @@ fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, generation: u64) {
     }
 }
 
-fn update(
+pub(super) fn update(
     inner: &Inner,
     log_dir: &Path,
     contexts: &mut HashMap<String, LogContext>,
@@ -285,8 +293,23 @@ fn update(
         })
         .collect();
 
-    entries.sort_by_key(|e| e.metadata().and_then(|m| m.created()).ok());
+    if *first_run
+        && inner.initial_scan_latest_file_only.load(Ordering::Acquire)
+        && entries.len() > 1
+    {
+        let latest = entries
+            .into_iter()
+            .max_by_key(|entry| entry.file_name())
+            .expect("multiple GameLog entries");
+        entries = vec![latest];
+    } else {
+        entries.sort_by_key(|entry| entry.metadata().and_then(|meta| meta.created()).ok());
+    }
 
+    let mut sink = queue::WatcherParseSink {
+        inner,
+        first_run: *first_run,
+    };
     let mut saw_new_data = false;
     for entry in entries {
         let name = entry.file_name().to_string_lossy().to_string();
@@ -306,17 +329,14 @@ fn update(
 
         let ctx = contexts.entry(name.clone()).or_insert_with(LogContext::new);
 
-        saw_new_data |= parser::parse_log(inner, &entry.path(), &name, ctx, till_date, *first_run);
+        saw_new_data |= game_log_parser::parse_log(&mut sink, &entry.path(), &name, ctx, till_date);
     }
 
     for name in deleted {
         contexts.remove(&name);
     }
 
-    queue::flush_game_log_events(inner);
+    queue::flush_game_log_events(inner, *first_run);
     *first_run = false;
     saw_new_data
 }
-
-#[cfg(test)]
-mod tests;

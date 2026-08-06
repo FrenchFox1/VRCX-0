@@ -29,6 +29,7 @@
         "retention": {
             "label": "Retenção do histórico",
             "description": "As entradas mais antigas são eliminadas automaticamente.",
+            "off": "Desativado",
             "days": "{count} dias",
             "forever": "Manter para sempre",
             "update_failed": "Não foi possível alterar o período de retenção."
@@ -522,6 +523,14 @@
         "edit_dashboard": "Editar Painel",
         "delete_dashboard": "Excluir Painel",
         "custom_nav": {
+            "dialog_description": "Arraste para reordenar ou solte um item em uma pasta para agrupá-lo. O que você ocultar vai para a lista \"Ocultos\" e pode voltar a qualquer momento. Alterações em painéis valem imediatamente.",
+            "visible_items": "No menu",
+            "hidden_empty": "Nada oculto",
+            "folder_item_count": "{count} itens",
+            "ungroup_folder": "Desfazer pasta",
+            "move_into_folder": "Mover um item para esta pasta",
+            "restore_default_description": "Substitui a sua organização atual pela padrão.",
+            "applies_immediately": "Isto vale imediatamente e cancelar não desfaz.",
             "header": "Personalizar Navegação",
             "dialog_title": "Personalizar Menu de Navegação",
             "new_folder": "Nova Pasta",
@@ -537,12 +546,12 @@
             "cancel": "Cancelar",
             "restore_default": "Restaurar Padrão",
             "dynamic": {
+                "rename_value": "Renomear {value}",
                 "drag_value": "Arrastar {value}",
                 "icon_for_value": "Ícone de {value}",
                 "edit_value": "Editar {value}",
                 "delete_value": "Excluir {value}",
                 "hide_value": "Ocultar {value}",
-                "remove_value": "Remover {value}",
                 "show_value": "Mostrar {value}"
             }
         }
@@ -716,7 +725,7 @@
             "favorites_section": "Favoritos",
             "group_by_instance": "Agrupar por Instância",
             "split_favorite_friends": "Mostrar Grupos de Favoritos",
-            "hide_friends_in_same_instance": "Ocultar Amigos Agrupados",
+            "show_grouped_friends": "Mostrar Amigos Agrupados",
             "show_current_user_in_same_instance": "Mostrar você na mesma instância",
             "same_instance_above_favorites": "Priorizar Mesma Instância",
             "sort_secondary": "Depois por",
@@ -830,6 +839,7 @@
         },
         "feed": {
             "filter": "Filtrar",
+            "feed_persistence_disabled_tooltip": "O histórico do Feed não está sendo salvo",
             "favorites_only_tooltip": "Filtrar apenas favoritos",
             "search_placeholder": "Pesquisar",
             "date_range": "Intervalo de datas",
@@ -982,7 +992,7 @@
                 "session_date_range": "Intervalo de datas das sessões",
                 "start": "Início",
                 "end": "Fim",
-                "game_log_is_disabled": "O registro do jogo está desativado",
+                "game_log_is_disabled": "A gravação do GameLog está desativada",
                 "showing": "Mostrando",
                 "of": "de",
                 "game_log_row": "entrada do registro do jogo",
@@ -996,7 +1006,7 @@
                 "open_link": "Abrir link",
                 "copy_detail": "Copiar detalhe",
                 "show_instance_history": "Mostrar histórico da instância",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Ative o registro do jogo nas Configurações para ver sua atividade local no VRChat"
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Novos registros do GameLog não serão salvos; o histórico existente e os recursos de log em tempo real continuam disponíveis."
             },
             "loading": {
                 "loading_the_game_log_snapshot": "Carregando o registro do jogo"
@@ -2445,8 +2455,10 @@
                         "description": "Ferramentas de registro e diagnóstico para investigar problemas.",
                         "show": "Mostrar ferramentas",
                         "hide": "Ocultar ferramentas",
-                        "gamelog": "Processamento do GameLog",
-                        "gamelog_description": "Necessário para recursos que dependem dos registros do VRChat.",
+                        "gamelog": "Salvar histórico do GameLog",
+                        "gamelog_description": "Quando desativado, nenhum novo histórico do GameLog é salvo. Player List, Now Playing, metadados de capturas, Instance Media e outros recursos em tempo real continuam disponíveis.",
+                        "feed_history": "Salvar histórico do Feed",
+                        "feed_history_description": "Quando desativado, o histórico do Feed não é salvo nem carregado. O Feed começa vazio e mostra apenas a atividade em tempo real desta sessão. Friends Sidebar e outros recursos em tempo real continuam disponíveis.",
                         "tools": "Diagnóstico",
                         "database_usage": "Uso do banco de dados",
                         "refresh_database_usage": "Atualizar uso do banco de dados",
@@ -4670,6 +4682,10 @@
             }
         },
         "previous_instances": {
+            "action": {
+                "copy_instance_id": "Copiar ID da instância",
+                "more_actions": "Mais ações"
+            },
             "header": "Histórico de Instâncias",
             "info": "Detalhes da Instância",
             "search_placeholder": "Pesquisar histórico de instâncias",
@@ -4692,10 +4708,13 @@
                 "loading_instance_details": "Carregando detalhes da instância..."
             },
             "error": {
+                "failed_to_copy_instance_id": "Não foi possível copiar o ID da instância",
                 "failed_to_load_instance_details": "Falha ao carregar os detalhes da instância.",
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "Não é possível excluir esta visita"
             },
             "label": {
+                "showing_recent_only": "Mostrando as {count} visitas mais recentes — abrir histórico completo",
+                "search_limited_to_recent": "Pesquisando nas {count} visitas mais recentes — pesquisar no histórico completo",
                 "players_count": "{count} jogadores",
                 "recorded_instance_visits": "visitas de instância registradas",
                 "recorded_instance_visits_count": "{count} visitas de instância registradas.",
@@ -4706,6 +4725,7 @@
                 "sort_descending": "Ordenar decrescente"
             },
             "success": {
+                "instance_id_copied": "ID da instância copiado",
                 "instance_record_deleted": "Visita removida do histórico de instâncias"
             }
         },
@@ -4997,7 +5017,8 @@
         "close_instance": "Continuar? Encerrar Instância, ninguém poderá entrar",
         "logout": "Continuar? Sair",
         "delete_log": "Continue? Excluir Registro",
-        "disable_gamelog": "Continuar? Desativar Registro do Jogo",
+        "disable_gamelog": "Parar de salvar o novo histórico do GameLog? Player List, Now Playing, metadados de capturas, Instance Media e outros recursos em tempo real continuarão disponíveis.",
+        "disable_feed_persistence": "Parar de salvar o histórico do Feed? O Feed começará com uma visualização em tempo real vazia e as análises baseadas no histórico terão uma lacuna permanente. Friends Sidebar e outros recursos em tempo real continuarão disponíveis.",
         "delete_vrc_registry": "Continuar? Excluir Configurações de Registro do VRC",
         "clear_cache": "Continuar? Limpar todo o cache do VRChat"
     },

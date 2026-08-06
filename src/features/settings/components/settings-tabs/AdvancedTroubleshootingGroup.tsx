@@ -33,7 +33,6 @@ type DiagnosticAction = 'config' | 'online' | 'tables';
 type AdvancedTroubleshootingGroupProps = {
     configTreeData: Record<string, unknown>;
     onClearConfigTreeData: () => void;
-    onGameLogDisabledChange: (disabled: boolean) => unknown;
     onLogResourceLoadChange: (checked: boolean) => unknown;
     onRefreshConfigTreeData: SettingsAdvancedAction;
     onRefreshOnlineVisits: SettingsAdvancedAction;
@@ -48,7 +47,6 @@ type AdvancedTroubleshootingGroupProps = {
 export function AdvancedTroubleshootingGroup({
     configTreeData,
     onClearConfigTreeData,
-    onGameLogDisabledChange,
     onLogResourceLoadChange,
     onRefreshConfigTreeData,
     onRefreshOnlineVisits,
@@ -179,22 +177,6 @@ export function AdvancedTroubleshootingGroup({
                                 onCheckedChange={onLogResourceLoadChange}
                             />
                         </Field>
-                        <Field
-                            label={t(
-                                'view.settings.advanced.advanced_ui.troubleshooting.gamelog'
-                            )}
-                            description={t(
-                                'view.settings.advanced.advanced_ui.troubleshooting.gamelog_description'
-                            )}
-                        >
-                            <Switch
-                                checked={!prefs.gameLogDisabled}
-                                onCheckedChange={(checked) =>
-                                    onGameLogDisabledChange(!checked)
-                                }
-                            />
-                        </Field>
-
                         <SettingsSectionHeading
                             title={t(
                                 'view.settings.advanced.advanced_ui.troubleshooting.tools'
