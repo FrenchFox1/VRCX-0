@@ -529,8 +529,8 @@
             "folder_item_count": "{count} éléments",
             "ungroup_folder": "Dissoudre le dossier",
             "move_into_folder": "Déplacer un élément dans ce dossier",
-            "restore_default_description": "Remplace votre disposition actuelle par celle par défaut.",
-            "applies_immediately": "Cette action est immédiate et annuler ne la défait pas.",
+            "restore_default_description": "Remplacer votre disposition actuelle par celle par défaut.",
+            "applies_immediately": "Cette action est immédiate et irréversible.",
             "header": "Personnaliser la navigation",
             "dialog_title": "Personnaliser le menu de navigation",
             "new_folder": "Nouveau dossier",
@@ -808,7 +808,7 @@
     },
     "view": {
         "login": {
-            "savedAccounts": "Comptes sauvegardés",
+            "savedAccounts": "Comptes enregistrés",
             "login": "Connexion",
             "signingIn": "Connexion en cours...",
             "register": "Inscription",
@@ -992,7 +992,7 @@
                 "session_date_range": "Plage de dates des sessions",
                 "start": "Début",
                 "end": "Fin",
-                "game_log_is_disabled": "L’écriture du GameLog est désactivée",
+                "game_log_is_disabled": "L’écriture du journal de jeu est désactivée",
                 "showing": "Affichage",
                 "of": "sur",
                 "game_log_row": "entrée du journal de jeu",
@@ -1006,7 +1006,7 @@
                 "open_link": "Ouvrir le lien",
                 "copy_detail": "Copier le détail",
                 "show_instance_history": "Afficher l'historique de l'instance",
-                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Les nouvelles entrées GameLog ne seront pas enregistrées ; l’historique existant et les fonctions de journal en temps réel restent disponibles."
+                "enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity": "Les nouvelles entrées du journal de jeu ne seront pas enregistrées ; l’historique existant et les fonctions de journal en temps réel restent disponibles."
             },
             "loading": {
                 "loading_the_game_log_snapshot": "Chargement du journal de jeu"
@@ -2455,8 +2455,8 @@
                         "description": "Outils de journalisation et de diagnostic pour rechercher les problèmes.",
                         "show": "Afficher les outils",
                         "hide": "Masquer les outils",
-                        "gamelog": "Enregistrer l’historique GameLog",
-                        "gamelog_description": "Lorsque cette option est désactivée, aucun nouvel historique GameLog n’est enregistré. Player List, Now Playing, les métadonnées des captures, Instance Media et les autres fonctions en temps réel restent disponibles.",
+                        "gamelog": "Enregistrer l’historique du journal de jeu",
+                        "gamelog_description": "Lorsque cette option est désactivée, aucun nouvel historique du journal de jeu n’est enregistré. la liste d'utilisateurs, En cours, les métadonnées des captures, médias d'instances et les autres fonctions en temps réel restent disponibles.",
                         "feed_history": "Enregistrer l’historique du Feed",
                         "feed_history_description": "Lorsque cette option est désactivée, l’historique du Feed n’est ni enregistré ni chargé. Le Feed démarre vide et n’affiche que l’activité en temps réel de cette session. Friends Sidebar et les autres fonctions en temps réel restent disponibles.",
                         "tools": "Diagnostic",
@@ -4683,7 +4683,7 @@
         },
         "previous_instances": {
             "action": {
-                "copy_instance_id": "Copier l'ID d'instance",
+                "copy_instance_id": "Copier l'ID de l'instance",
                 "more_actions": "Plus d'actions"
             },
             "header": "Historique des instances",
@@ -4708,15 +4708,15 @@
                 "loading_instance_details": "Chargement des détails de l'instance..."
             },
             "error": {
-                "failed_to_copy_instance_id": "Impossible de copier l'ID d'instance",
+                "failed_to_copy_instance_id": "Impossible de copier l'ID de l'instance",
                 "failed_to_load_instance_details": "Échec du chargement des détails de l'instance.",
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "Cette visite ne peut pas être supprimée"
             },
             "label": {
                 "showing_recent_only": "Affichage des {count} visites les plus récentes — ouvrir l’historique complet",
-                "search_limited_to_recent": "Recherche dans les {count} visites les plus récentes — rechercher dans l’historique complet",
+                "search_limited_to_recent": "Rechercher dans les {count} visites les plus récentes — rechercher dans l’historique complet",
                 "players_count": "{count} utilisateurs",
-                "recorded_instance_visits": "visites d'instance enregistrées",
+                "recorded_instance_visits": "visites de l'instance enregistrées",
                 "recorded_instance_visits_count": "{count} visites d'instance enregistrées.",
                 "rows": "Lignes",
                 "location": "Emplacement",
@@ -4725,7 +4725,7 @@
                 "sort_descending": "Tri décroissant"
             },
             "success": {
-                "instance_id_copied": "ID d'instance copié",
+                "instance_id_copied": "ID de l'instance copié",
                 "instance_record_deleted": "Visite supprimée de l'historique des instances"
             }
         },
@@ -5017,7 +5017,7 @@
         "close_instance": "Voulez-vous vraiment fermer cette instance ? Une fois fermée, personne ne pourra la rejoindre.",
         "logout": "Se déconnecter ?",
         "delete_log": "Supprimer le journal ?",
-        "disable_gamelog": "Arrêter d’enregistrer le nouvel historique GameLog ? Player List, Now Playing, les métadonnées des captures, Instance Media et les autres fonctions en temps réel restent disponibles.",
+        "disable_gamelog": "Arrêter d’enregistrer le nouvel historique du journal de jeu ? La liste d'utilisateurs, en cours, les métadonnées des captures, médias d'instances et les autres fonctions en temps réel restent disponibles.",
         "disable_feed_persistence": "Arrêter d’enregistrer l’historique du Feed ? Le Feed repartira d’une vue en temps réel vide et les analyses historiques comporteront une lacune définitive. Friends Sidebar et les autres fonctions en temps réel resteront disponibles.",
         "delete_vrc_registry": "Supprimer les paramètres de registre VRChat existants ?",
         "clear_cache": "Effacer tout le cache VRChat ?"
