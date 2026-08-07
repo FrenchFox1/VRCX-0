@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    appSetUserAgent: vi.fn(),
     appSystemLanguage: vi.fn(),
+    appStartupBootstrapSnapshotGet: vi.fn(),
+    storageGetAll: vi.fn(),
     configInit: vi.fn(),
     configGetRawValue: vi.fn(),
     configGetString: vi.fn(),
@@ -25,8 +26,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
-        appSetUserAgent: mocks.appSetUserAgent,
-        appSystemLanguage: mocks.appSystemLanguage
+        appSystemLanguage: mocks.appSystemLanguage,
+        appStartupBootstrapSnapshotGet: mocks.appStartupBootstrapSnapshotGet,
+        storageGetAll: mocks.storageGetAll
     }
 }));
 
@@ -120,8 +122,14 @@ describe('startupService', () => {
         useRuntimeStore.getState().resetRuntimeState();
         useShellStore.setState({ locale: 'en' });
 
-        mocks.appSetUserAgent.mockResolvedValue(undefined);
         mocks.appSystemLanguage.mockResolvedValue('en-US');
+        mocks.appStartupBootstrapSnapshotGet.mockResolvedValue({
+            hostCapabilities: undefined,
+            configEntries: undefined,
+            systemLanguage: 'en-US',
+            systemCulture: 'en-US'
+        });
+        mocks.storageGetAll.mockResolvedValue({});
         mocks.configInit.mockResolvedValue(undefined);
         mocks.configGetRawValue.mockResolvedValue('en');
         mocks.configGetString.mockImplementation(
@@ -151,7 +159,6 @@ describe('startupService', () => {
             mocks.configGetRawValue,
             mocks.initializeDatabaseUpgradeFlow,
             mocks.loadPreferenceSnapshot,
-            mocks.appSetUserAgent,
             mocks.refreshSavedAuthSnapshot,
             mocks.runStartupMaintenance
         ]);

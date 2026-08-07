@@ -840,6 +840,11 @@
         "feed": {
             "filter": "筛选",
             "feed_persistence_disabled_tooltip": "Feed 历史未保存",
+            "search_scope": {
+                "aria_label": "搜索动态，可按好友筛选",
+                "no_friends": "没有匹配的好友",
+                "search_all": "搜索全部记录中的「{query}」"
+            },
             "favorites_only_tooltip": "仅显示被分组的好友",
             "search_placeholder": "搜索",
             "date_range": "日期范围",
@@ -1196,7 +1201,7 @@
             "avatars": {
                 "search": "搜索",
                 "vrchat_favorites": "VRChat 收藏",
-                "local_favorites": "本地收藏夹（VRChat+）",
+                "local_favorites": "本地收藏夹（VRC+）",
                 "new_group": "创建新的收藏夹",
                 "local_history": "本地历史记录",
                 "styles": "样式",
@@ -2002,7 +2007,20 @@
                 "ai": "AI",
                 "vr": "VR",
                 "media": "媒体",
-                "integrations": "集成"
+                "integrations": "集成",
+                "feedback": "反馈"
+            },
+            "feedback": {
+                "title": "发送反馈",
+                "description": "反馈将匿名提交。我们会阅读每一条消息,但无法直接回复。",
+                "privacy_note": "不会附带任何账号信息,只带一个用于防刷的匿名安装标识。",
+                "placeholder": "告诉我们哪些好用、哪些不好用,或者你希望看到什么新功能……",
+                "submit": "发送",
+                "submitting": "发送中…",
+                "thanks": "感谢你的反馈！",
+                "cooldown": "{{seconds}} 秒后可再次发送",
+                "more_help": "需要回复,或者想附上日志?",
+                "error_generic": "发送失败,请稍后重试。"
             },
             "social": {
                 "interaction": {
@@ -2432,6 +2450,8 @@
                         "header": "VRChat 行为",
                         "quit_header": "关闭残留的 VRChat 进程",
                         "quit_description": "VRChat 退出后，关闭仍在运行的 VRChat 进程。",
+                        "focus_on_join_header": "加入房间后切换到 VRChat",
+                        "focus_on_join_description": "从 VRCX-0 加入房间后，把 VRChat 窗口切到最前。仅桌面模式生效。",
                         "deep_link_registration": "打开 VRCX-0 分享链接",
                         "deep_link_registered": "当前用户已设置为使用 VRCX-0 打开分享链接。",
                         "deep_link_not_registered": "当前系统缺少使用 VRCX-0 打开分享链接的设置，或该设置无效。",
@@ -4146,7 +4166,7 @@
         "favorite": {
             "vrchat_favorites": "在线收藏夹",
             "local_favorites": "本地收藏夹",
-            "local_avatar_favorites": "模型收藏夹（本地，VRChat+）"
+            "local_avatar_favorites": "模型收藏夹（本地，VRC+）"
         },
         "social_status": {
             "presets": "预设"
@@ -5154,8 +5174,6 @@
             "migration_restarting_title": "正在迁移数据",
             "migration_restarting": "VRCX-0 将重新启动以完成迁移工作",
             "upgrade_in_progress_title": "数据库升级进行中",
-            "upgrade_in_progress_description": "正在将数据库从版本 {from} 更新到 {to}，请不要关闭 VRCX-0。",
-            "upgrade_in_progress_initializing": "正在初始化数据库升级流程，请不要关闭 VRCX-0。",
             "upgrade_stage": {
                 "preflight": "正在检查数据库",
                 "prepare_legacy_snapshot": "正在创建 VRCX 数据库的一致性副本",
@@ -5167,6 +5185,7 @@
                 "legacy_performance_indexes": "正在添加历史记录索引",
                 "global_performance_indexes": "正在添加数据库索引",
                 "notification_performance_indexes": "正在添加通知索引",
+                "schema_migrations": "正在应用数据库结构更新",
                 "optimize": "正在优化数据库副本",
                 "write_version": "正在记录数据库版本",
                 "commit": "正在切换到升级后的数据库"
@@ -5182,7 +5201,10 @@
             "fresh_start_confirm_title": "要改用新的数据库吗？",
             "fresh_start_confirm_description": "VRCX-0 会将当前数据库和升级失败文件保留在恢复文件夹中，然后使用新的空数据库重启。新数据库中不会保留设置、本地历史和已保存的账号数据。",
             "fresh_start_restarting": "正在归档当前数据库并重启 VRCX-0...",
-            "fresh_start_failed": "无法创建新数据库。"
+            "fresh_start_failed": "无法创建新数据库。",
+            "upgrade_keep_open": "请保持 VRCX-0 打开，直到更新完成。",
+            "failure_reason": "原因",
+            "restart_app": "重启 VRCX-0"
         },
         "file": {
             "not_image": "文件不是有效的图片格式",
@@ -5220,7 +5242,7 @@
             "url_copied": "世界 URL 已复制到剪贴板"
         },
         "vrcplus": {
-            "required": "VRChat+"
+            "required": "VRC+"
         },
         "screenshot_metadata": {
             "deleted": "已删除图片元数据",
@@ -5710,12 +5732,10 @@
         },
         "database_upgrade_service": {
             "label": {
-                "unknown_path": "未知路径",
                 "database_schema_is_current": "数据库结构已是最新"
             },
             "error": {
-                "failed_upgrade_description": "上一次数据库升级失败，在手动修复前，此数据库将无法使用。\n\n当前工作数据库：{path}",
-                "failed_upgrade_description_with_reason": "上一次数据库升级失败。手动修复前，此数据库无法使用。\n\n当前工作数据库：{path}\n\n原因：{reason}",
+                "failed_upgrade_description": "上一次数据库升级失败，在手动修复前，此数据库将无法使用。",
                 "apply_upgrade_failed": "VRCX-0 应用本地数据库升级失败",
                 "legacy_migration_restart_failed": "VRCX-0 未能重启以迁移已有的 VRCX 数据。你可以重试，或跳过并继续使用当前数据库。",
                 "newer_schema_requires_newer_app": "此数据库使用结构版本 {value}，但当前 VRCX-0 最高仅支持 {value2}。请安装最新版 VRCX-0 后再打开。"
@@ -5727,9 +5747,6 @@
                 "refresh_config_failed_after_upgrade": "VRCX-0 已成功升级数据库，但刷新本地配置失败，请重启程序。",
                 "requesting_legacy_migration": "正在准备迁移已有的 VRCX 数据……",
                 "skipping_legacy_migration": "正在跳过迁移并初始化数据库……"
-            },
-            "dynamic": {
-                "updating_database_from_value_to_value": "正在将数据库从 {value} 更新到 {value2}"
             }
         },
         "favorite_import_service": {

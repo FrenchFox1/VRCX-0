@@ -840,6 +840,11 @@
         "feed": {
             "filter": "篩選",
             "feed_persistence_disabled_tooltip": "Feed 歷史未儲存",
+            "search_scope": {
+                "aria_label": "搜尋動態，可依好友篩選",
+                "no_friends": "沒有符合的好友",
+                "search_all": "搜尋全部紀錄中的「{query}」"
+            },
             "favorites_only_tooltip": "僅篩選收藏",
             "search_placeholder": "搜尋動態",
             "date_range": "日期範圍",
@@ -1196,7 +1201,7 @@
             "avatars": {
                 "search": "搜尋",
                 "vrchat_favorites": "VRChat 收藏",
-                "local_favorites": "本機收藏列表 (VRChat+)",
+                "local_favorites": "本機收藏列表 (VRC+)",
                 "new_group": "新群組",
                 "local_history": "本機歷史紀錄",
                 "styles": "樣式",
@@ -2002,7 +2007,20 @@
                 "ai": "AI",
                 "vr": "VR",
                 "media": "媒體",
-                "integrations": "整合"
+                "integrations": "整合",
+                "feedback": "意見回饋"
+            },
+            "feedback": {
+                "title": "傳送意見回饋",
+                "description": "意見回饋會匿名提交。我們會閱讀每一則訊息，但無法直接回覆。",
+                "privacy_note": "不會附帶任何帳號資訊，只帶一個用於防灌水的匿名安裝識別碼。",
+                "placeholder": "告訴我們哪裡好用、哪裡需要改進，或是你希望看到什麼新功能……",
+                "submit": "傳送",
+                "submitting": "傳送中…",
+                "thanks": "感謝你的回饋！",
+                "cooldown": "{{seconds}} 秒後可再次傳送",
+                "more_help": "需要回覆，或想附上日誌嗎？",
+                "error_generic": "傳送失敗，請稍後再試。"
             },
             "social": {
                 "interaction": {
@@ -2432,6 +2450,8 @@
                         "header": "VRChat 的行為",
                         "quit_header": "關閉殘留的 VRChat 處理程序",
                         "quit_description": "VRChat 結束後，關閉所有仍在執行的 VRChat 處理程序。",
+                        "focus_on_join_header": "加入房間後切換到 VRChat",
+                        "focus_on_join_description": "從 VRCX-0 加入房間後，將 VRChat 視窗切到最前面。僅桌面模式有效。",
                         "deep_link_registration": "開啟 VRCX-0 連結",
                         "deep_link_registered": "這位使用者的 VRCX-0 連結已設定為在 VRCX-0 中開啟。",
                         "deep_link_not_registered": "此系統尚未設定為開啟 VRCX-0 連結，或設定指向無效的安裝位置。",
@@ -4146,7 +4166,7 @@
         "favorite": {
             "vrchat_favorites": "VRChat 收藏",
             "local_favorites": "本機收藏",
-            "local_avatar_favorites": "本機收藏 (VRChat+)"
+            "local_avatar_favorites": "本機收藏 (VRC+)"
         },
         "social_status": {
             "presets": "預設檔"
@@ -5154,8 +5174,6 @@
             "migration_restarting_title": "正在移轉資料",
             "migration_restarting": "VRCX-0 將重新啟動以完成移轉...",
             "upgrade_in_progress_title": "資料庫升級中",
-            "upgrade_in_progress_description": "正在將資料庫從版本 {from} 更新至 {to}，請勿關閉 VRCX-0。",
-            "upgrade_in_progress_initializing": "初始化資料庫升級。請勿關閉 VRCX-0。",
             "upgrade_stage": {
                 "preflight": "正在檢查資料庫",
                 "prepare_legacy_snapshot": "正在建立 VRCX 資料庫的一致性副本",
@@ -5167,6 +5185,7 @@
                 "legacy_performance_indexes": "正在新增歷史記錄索引",
                 "global_performance_indexes": "正在新增資料庫索引",
                 "notification_performance_indexes": "正在新增通知索引",
+                "schema_migrations": "正在套用資料庫結構更新",
                 "optimize": "正在最佳化資料庫副本",
                 "write_version": "正在記錄資料庫版本",
                 "commit": "正在切換至升級後的資料庫"
@@ -5182,7 +5201,10 @@
             "fresh_start_confirm_title": "要改用新的資料庫嗎？",
             "fresh_start_confirm_description": "VRCX-0 會將目前的資料庫與升級失敗檔案保留在復原資料夾中，然後使用新的空白資料庫重新啟動。新的資料庫不會保留設定、本機歷史記錄與已儲存的帳號資料。",
             "fresh_start_restarting": "正在封存目前的資料庫並重新啟動 VRCX-0...",
-            "fresh_start_failed": "無法建立新資料庫。"
+            "fresh_start_failed": "無法建立新資料庫。",
+            "upgrade_keep_open": "請保持 VRCX-0 開啟，直到更新完成。",
+            "failure_reason": "原因",
+            "restart_app": "重新啟動 VRCX-0"
         },
         "file": {
             "not_image": "檔案不是圖片",
@@ -5710,12 +5732,10 @@
         },
         "database_upgrade_service": {
             "label": {
-                "unknown_path": "未知路徑",
                 "database_schema_is_current": "資料庫結構已是最新"
             },
             "error": {
-                "failed_upgrade_description": "上一次資料庫升級失敗。手動修復前，此資料庫無法使用。\n\n工作資料庫：{path}",
-                "failed_upgrade_description_with_reason": "上一次資料庫升級失敗。手動修復前，此資料庫無法使用。\n\n工作資料庫：{path}\n\n原因：{reason}",
+                "failed_upgrade_description": "上一次資料庫升級失敗。手動修復前，此資料庫無法使用。",
                 "apply_upgrade_failed": "VRCX-0 應用本機資料庫升級失敗",
                 "legacy_migration_restart_failed": "VRCX-0 無法重新啟動以移轉你現有的 VRCX 資料。你可以再試一次，或略過此步驟，繼續使用目前的資料庫。",
                 "newer_schema_requires_newer_app": "此資料庫使用架構版本 {value}，但此 VRCX-0 版本最高只支援到 {value2}。請安裝最新版本的 VRCX-0 才能開啟。"
@@ -5727,9 +5747,6 @@
                 "refresh_config_failed_after_upgrade": "VRCX-0 已升級資料庫，但重新整理本機設定失敗。請重新啟動應用程式",
                 "requesting_legacy_migration": "正在準備遷移你現有的 VRCX 資料...",
                 "skipping_legacy_migration": "正在略過資料移轉並設定你的資料庫…"
-            },
-            "dynamic": {
-                "updating_database_from_value_to_value": "正在將資料庫從 {value} 更新到 {value2}"
             }
         },
         "favorite_import_service": {

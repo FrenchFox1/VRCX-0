@@ -1,7 +1,7 @@
 import type {
     ColumnSizingState,
     SortingState,
-    VisibilityState
+    ColumnVisibilityState
 } from '@tanstack/react-table';
 
 import {
@@ -107,8 +107,8 @@ export function sanitizeModerationPageSizes(value: unknown): number[] {
 
 export function sanitizeModerationColumnVisibility(
     value: unknown
-): VisibilityState {
-    const visibility: VisibilityState = {};
+): ColumnVisibilityState {
+    const visibility: ColumnVisibilityState = {};
     if (!value || typeof value !== 'object') {
         return visibility;
     }
@@ -211,7 +211,7 @@ export function matchesModerationSearch(
 
 export function getModerationRowKey(row: ModerationRow) {
     if (row?.id) {
-        return String(row.id);
+        return `${row.id}:${row.type || ''}`;
     }
     return [
         row?.type || '',
@@ -222,13 +222,5 @@ export function getModerationRowKey(row: ModerationRow) {
 }
 
 export function isSameModerationRow(left: ModerationRow, right: ModerationRow) {
-    if (left?.id && right?.id) {
-        return left.id === right.id;
-    }
-    return (
-        left?.type === right?.type &&
-        left?.sourceUserId === right?.sourceUserId &&
-        left?.targetUserId === right?.targetUserId &&
-        left?.created === right?.created
-    );
+    return getModerationRowKey(left) === getModerationRowKey(right);
 }
