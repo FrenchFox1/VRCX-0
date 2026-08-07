@@ -58,6 +58,8 @@
         "example_2": "最近疎遠になっている人は？",
         "example_3": "フレンドがオンラインになりやすい時間は？",
         "not_configured": "LLM エンドポイントとモデルを選択して開始してください。",
+        "setup_title": "まずはモデルをつないでください",
+        "open_settings": "AI 設定を開く",
         "entities_title": "言及",
         "entities_empty": "回答で言及された人やワールドがここに表示されます。",
         "untitled": "新しい会話",
@@ -79,15 +81,16 @@
         },
         "runtime": {
             "title": "ランタイム",
-            "connection": "接続",
             "connection_unset": "エンドポイントなし",
             "model": "モデル",
-            "model_unset": "このエンドポイントに保存されたモデルはありません",
+            "model_unset": "利用できるモデルがありません",
             "playbook_mode": "分析モード",
             "allow_writes": "書き込み操作を許可",
             "manage_endpoints": "LLM エンドポイントを管理",
             "reasoning_effort": "推論の深さ",
-            "reasoning_effort_provider_default": "プロバイダーのデフォルト"
+            "reasoning_effort_provider_default": "プロバイダーのデフォルト",
+            "scope_session": "このチャットにだけ反映されます",
+            "scope_default": "新しいチャットに反映されます"
         }
     },
     "user_hover_card": {
@@ -518,6 +521,7 @@
         "qq_group": "QQグループ",
         "changelog": "新機能 (更新履歴)",
         "update": "更新",
+        "update_downloading": "ダウンロード中…",
         "update_downloaded": "再起動",
         "mark_all_read": "すべてを既読にする",
         "edit_dashboard": "ダッシュボードを編集",
@@ -1950,8 +1954,6 @@
                 "description": "Social AI と翻訳で共有する OpenAI 互換の接続です。",
                 "follow_custom_proxy": "VRCX-0 のカスタムプロキシを使用",
                 "follow_custom_proxy_description": "設定されている場合は LLM リクエストに使用し、それ以外はシステムのプロキシ設定に従います。",
-                "endpoint_count": "{count} 件のエンドポイント",
-                "model_count": "{count} 件のモデル",
                 "add": "エンドポイントを追加",
                 "empty_description": "Social AI と OpenAI 互換翻訳で使う OpenAI 互換エンドポイントを追加します。",
                 "preset": "プリセット",
@@ -1960,11 +1962,13 @@
                     "siliconflow": "SiliconFlow"
                 },
                 "name": "名前",
+                "name_description": "モデルを選ぶときのグループ名として表示されます。",
                 "base_url": "Base URL",
+                "base_url_invalid": "http:// または https:// から始まる完全なアドレスを入力してください。",
                 "models": "モデル",
-                "key": "キー",
-                "actions": "操作",
-                "no_models": "モデルなし",
+                "models_placeholder": "検出済みのモデルを検索、または入力して Enter で追加",
+                "models_empty": "まだ検出されていません。モデル名を入力して Enter で追加できます。",
+                "unusable": "モデルがないため、このエンドポイントはまだ使えません。",
                 "key_saved": "保存済み",
                 "key_empty": "未設定",
                 "detect_models": "モデルを検出",
@@ -1974,9 +1978,9 @@
                 "clear_key": "キーをクリア",
                 "key_preserve_placeholder": "空欄のままにすると保存済みのキーを保持します",
                 "saved": "エンドポイントを保存しました",
+                "saved_unusable": "保存しましたが、このエンドポイントのモデルは見つかりませんでした。",
                 "save_failed": "エンドポイントの保存に失敗しました",
                 "load_failed": "エンドポイントの読み込みに失敗しました",
-                "base_url_required": "Base URL は必須です。",
                 "models_detected": "{count} 件のモデルを検出しました",
                 "no_models_detected": "モデルが検出されませんでした",
                 "detect_failed": "モデルの検出に失敗しました",
@@ -2017,6 +2021,16 @@
                 "cooldown": "{{seconds}} 秒後にもう一度送信できます",
                 "more_help": "返信が必要な場合や、ログを添えたい場合は",
                 "error_generic": "フィードバックを送信できませんでした。あとでもう一度お試しください。"
+            },
+            "ai": {
+                "header": "ソーシャル AI",
+                "description": "新しいチャットの初期設定です。チャットごとの変更はソーシャル AI パネルから行えます。",
+                "default_model": "既定のモデル",
+                "default_model_description": "新しいチャットはこのモデルで始まります。",
+                "default_model_unset": "利用できるモデルがありません",
+                "setup_hint": "ソーシャル AI を使うには、OpenAI 互換の接続先が必要です。",
+                "playbook_mode_description": "分析するときにモデルへどこまで任せるかを決めます。",
+                "endpoints_description": "ソーシャル AI と翻訳で共通です。"
             },
             "social": {
                 "interaction": {
@@ -2244,6 +2258,8 @@
                     "table_page_sizes_description": "テーブルコントロールに表示するページサイズ候補を追加、削除、選択します。",
                     "table_page_sizes_error": "1〜1000の数字を入力してください",
                     "show_notification_icon_dot": "トレイ通知ドットを表示",
+                    "show_taskbar_icon_dot": "タスクバー通知ドットを表示",
+                    "show_taskbar_icon_dot_description": "未読の通知があるあいだ、タスクバーの VRCX-0 ボタンに赤いドットを表示します。",
                     "striped_data_table_mode": "テーブルの行に交互に色を付ける",
                     "reduced_motion_and_blur": "エフェクトを減らす",
                     "reduced_motion_and_blur_description": "アニメーション、トランジション、背景のぼかしを無効にして、低スペック環境での動作を軽くします。",
@@ -2422,11 +2438,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Discord でのゲームステータス表示",
-                    "description": "VRChat が起動しているときのみ動作します。",
                     "enable": "有効化する",
                     "enable_tooltip": "競合を防ぐため、VRChat 側の Discord Rich Presence を無効化します。",
                     "instance_type_player_count": "インスタンス詳細/プレイヤー数",
-                    "join_button": "Join ボタンを表示 (パブリックのみ)",
+                    "join_button": "Join ボタン",
+                    "join_button_description": "パブリックインスタンスでのみ表示されます。",
                     "show_details_in_private": "プライベートでもワールド詳細を表示",
                     "show_images": "ワールド画像を表示",
                     "show_current_platform": "現在のプラットフォームを表示",

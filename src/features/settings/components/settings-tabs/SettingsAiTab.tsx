@@ -1,10 +1,14 @@
 import { SettingsTabContent } from '../SettingsViewParts';
-import { McpServerSettingsGroup } from './McpServerSettingsGroup';
+import { AssistantSettingsGroup } from './AssistantSettingsGroup';
 
-export function SettingsAiTab() {
+type SettingsAiTabProps = {
+    active: boolean;
+};
+
+export function SettingsAiTab({ active }: SettingsAiTabProps) {
     return (
         <SettingsTabContent value="ai">
-            <McpServerSettingsGroup />
+            <AssistantSettingsGroup active={active} />
         </SettingsTabContent>
     );
 }
