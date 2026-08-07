@@ -90,7 +90,7 @@
             "reasoning_effort": "Effort de raisonnement",
             "reasoning_effort_provider_default": "Par défaut du fournisseur",
             "scope_session": "Appliquer à cette conversation uniquement",
-            "scope_default": "Appliquer aux nouvelles conversations",
+            "scope_default": "Appliquer aux nouvelles conversations"
         }
     },
     "user_hover_card": {
