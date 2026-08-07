@@ -2425,8 +2425,7 @@
             },
             "discord_presence": {
                 "discord_presence": {
-                    "header": "Présence sur Discord",
-                    "description": "* Actif uniquement lorsque vous êtes dans une instance.",
+                    "header": "Rich Presence Discord",
                     "enable": "Activer",
                     "enable_tooltip": "Il est recommandé de désactiver la Rich Presence de VRChat dans le fichier config.json de VRChat pour éviter les conflits.",
                     "instance_type_player_count": "Type d'instance / nombre d'utilisateurs",
@@ -2450,6 +2449,8 @@
                         "header": "Comportement de VRChat",
                         "quit_header": "Fermer les processus VRChat restants",
                         "quit_description": "Après la fermeture de VRChat, fermer les processus VRChat encore actifs.",
+                        "focus_on_join_header": "Mettre VRChat au premier plan",
+                        "focus_on_join_description": "Après avoir rejoint une instance depuis VRCX-0, basculer vers la fenêtre VRChat. Mode bureau uniquement.",
                         "deep_link_registration": "Ouvrir les liens VRCX-0",
                         "deep_link_registered": "Les liens VRCX-0 s’ouvrent avec VRCX-0 pour ce compte.",
                         "deep_link_not_registered": "Le réglage système permettant d’ouvrir les liens VRCX-0 est absent ou pointe vers une installation non valide.",
@@ -2526,22 +2527,22 @@
                     },
                     "save_instance_prints_to_file": {
                         "header": "Enregistrement des imprimés de l'instance dans un fichier",
-                        "header_tooltip": "Nécessite l'option de lancement du VRChat « --enable-sdk-log-levels ».",
+                        "header_tooltip": "Nécessite l'option de lancement VRChat « --enable-sdk-log-levels ».",
                         "description": "Enregistre les imprimés générées dans votre dossier Images -> VRChat",
                         "crop": "Retirer automatiquement la bordure blanche des imprimés"
                     },
                     "save_instance_stickers_to_file": {
                         "header": "Enregistrer les autocollants de l'instance dans un fichier",
-                        "description": "Enregistrer les autocollants placés dans votre dossier Images -> VRChat"
+                        "description": "Enregistre les autocollants placés dans votre dossier Images -> VRChat"
                     },
                     "save_instance_emoji_to_file": {
                         "header": "Enregistrer les émoji de l'instance dans un fichier",
-                        "description": "Enregistrer les émoji apparus dans votre dossier Images -> VRChat"
+                        "description": "Enregistre les émoji apparus dans votre dossier Images -> VRChat"
                     },
                     "delete_all_screenshot_metadata": {
                         "button": "Supprimer les métadonnées des captures d'écran",
                         "ask": "Voulez-vous vraiment supprimer toutes les métadonnées des captures d'écran VRChat et VRCX-0 de votre dossier Images -> VRChat ?",
-                        "confirm": "La suppression de toutes les métadonnées des captures d'écran est une action très destructrice et irréversible ! Cela inclut tous les imprimés, sous-dossiers et autres images sans rapport présents dans votre dossier Pictures de VRChat ; si ces photos vous sont précieuses, veuillez faire une sauvegarde avant de continuer.",
+                        "confirm": "La suppression de toutes les métadonnées des captures d'écran est une action très destructrice et irréversible ! Cela inclut tous les imprimés, sous-dossiers et autres images sans rapport présents dans votre dossier VRChat ; si ces photos vous sont précieuses, veuillez faire une sauvegarde avant de continuer.",
                         "confirm_yes": "Oui",
                         "confirm_no": "Non"
                     },
@@ -2555,13 +2556,13 @@
                         "header": "API YouTube",
                         "enable": "Activer",
                         "youtube_api_key": "Clé d'API de YouTube",
-                        "enable_tooltip": "Récupère les titres des vidéos à utiliser avec l'Historique de Jeu et la durée de la barre de progression superposée."
+                        "enable_tooltip": "Récupère les titres des vidéos à utiliser avec l'historique de jeu et la durée de la barre de progression superposée."
                     },
                     "translation_api": {
                         "header": "Activer la traduction du contenu",
                         "enable": "Activer",
                         "translation_api_key": "Clé d'API de traduction",
-                        "enable_tooltip": "Traduire les bios des utilisateurs et les descriptions des mondes à la demande."
+                        "enable_tooltip": "Traduire les biographies des utilisateurs et les descriptions des mondes sur demande."
                     },
                     "screenshot_helper": {
                         "header": "Aide pour les captures d'écran",
@@ -2617,7 +2618,7 @@
                         "notification": "Notifications :",
                         "location": "Lieu :",
                         "join_leave": "Rejoindre / Quitter :",
-                        "portal_spawn": "Portail d'accès :",
+                        "portal_spawn": "Portail :",
                         "video_play": "Lecture de vidéo :",
                         "event": "Évènement :"
                     },
@@ -2686,7 +2687,7 @@
                 "failed_to_save_setting": "Échec de l'enregistrement du paramètre",
                 "failed_to_load_settings": "Échec du chargement des paramètres",
                 "failed_to_save_trust_color": "Échec de l'enregistrement de la couleur de confiance",
-                "failed_to_refresh_sqlite_table_sizes": "Échec de l'actualisation des tailles des tables SQLite",
+                "failed_to_refresh_sqlite_table_sizes": "Échec de l'actualisation de la taille des tables SQLite",
                 "failed_to_refresh_config_json": "Échec de l'actualisation du config JSON",
                 "failed_to_refresh_online_user_count": "Échec de l'actualisation du nombre d'utilisateurs en ligne",
                 "failed_to_save_proxy_settings": "Échec de l'enregistrement des paramètres de proxy",
@@ -2810,9 +2811,9 @@
                 "instance_master": "Maître de l'instance",
                 "moderator": "Modérateur",
                 "favorite": "Favori",
-                "muted": "Mis en sourdine",
+                "muted": "Microphone désactivé",
                 "avatar_interaction_disabled": "Interaction d'avatar désactivée",
-                "chatbox_muted": "Bulle de chat en sourdine",
+                "chatbox_muted": "Bulle de dialogue en sourdine",
                 "timeout": "Exclu temporairement",
                 "age_verified": "Âge vérifié",
                 "all": "Tous",
@@ -2923,7 +2924,7 @@
             },
             "error": {
                 "world_details_unavailable": "Les détails du monde sont indisponibles.",
-                "world_deleted": "This world has been deleted.",
+                "world_deleted": "Ce monde a été supprimé.",
                 "avatar_details_unavailable": "Les détails de l'avatar sont indisponibles."
             },
             "loading": {
@@ -5172,8 +5173,6 @@
             "migration_restarting_title": "Migration des données",
             "migration_restarting": "VRCX-0 va redémarrer pour terminer la migration...",
             "upgrade_in_progress_title": "Mise à niveau de la base de données en cours",
-            "upgrade_in_progress_description": "Mise à jour de la base de données de la version {from} vers {to}. Veuillez ne pas fermer VRCX-0",
-            "upgrade_in_progress_initializing": "Initialisation de la mise à niveau de la base de données. Veuillez ne pas fermer VRCX-0",
             "upgrade_stage": {
                 "preflight": "Vérification de la base de données",
                 "prepare_legacy_snapshot": "Création d’une copie cohérente de la base de données VRCX",
@@ -5186,6 +5185,7 @@
                 "global_performance_indexes": "Ajout des index de la base de données",
                 "notification_performance_indexes": "Ajout des index de notifications",
                 "optimize": "Optimisation de la copie de la base de données",
+                "schema_migrations": "Applying schema updates",
                 "write_version": "Enregistrement de la version de la base de données",
                 "commit": "Passage à la base de données mise à niveau"
             },
@@ -5200,7 +5200,10 @@
             "fresh_start_confirm_title": "Utiliser une nouvelle base de données ?",
             "fresh_start_confirm_description": "VRCX-0 conservera la base actuelle et les fichiers de l’échec dans un dossier de récupération, puis redémarrera avec une nouvelle base vide. Les paramètres, l’historique local et les données de compte enregistrées ne seront pas transférés vers la nouvelle base.",
             "fresh_start_restarting": "Archivage de la base actuelle et redémarrage de VRCX-0...",
-            "fresh_start_failed": "Impossible de créer une nouvelle base de données."
+            "fresh_start_failed": "Impossible de créer une nouvelle base de données.",
+            "upgrade_keep_open": "Veuillez garder VRCX-0 ouvert.",
+            "failure_reason": "Raison",
+            "restart_app": "Redémarrer VRCX-0"
         },
         "file": {
             "not_image": "Le fichier n'est pas une image",
@@ -5319,6 +5322,9 @@
         "group_transfer_request_title": "Demande de transfert de groupe",
         "group_queue_ready_title": "File d'attente d'instance prête",
         "instance_closed_title": "Instance fermée",
+        "event_title": "Évènement",
+        "external_title": "External App",
+        "video_play_title": "Video Play",
         "portal_spawn_name": "a créé un portail vers {location}",
         "portal_spawn": "Un utilisateur a créé un portail",
         "avatar_change": "a changé pour l'avatar {avatar}",
@@ -5724,12 +5730,10 @@
         },
         "database_upgrade_service": {
             "label": {
-                "unknown_path": "Chemin inconnu",
                 "database_schema_is_current": "Le schéma de base de données est à jour"
             },
             "error": {
-                "failed_upgrade_description": "La précédente mise à niveau de la base de données a échoué. Cette base de données ne peut pas être utilisée tant qu'elle n'est pas réparée manuellement.\n\nBase de données de travail : {path}",
-                "failed_upgrade_description_with_reason": "La précédente mise à niveau de la base de données a échoué. Cette base de données ne peut pas être utilisée tant qu'elle n'est pas réparée manuellement.\n\nBase de données de travail : {path}\n\nRaison : {reason}",
+                "failed_upgrade_description": "La précédente mise à niveau de la base de données a échoué. Cette base de données ne peut pas être utilisée tant qu'elle n'est pas réparée manuellement.",
                 "apply_upgrade_failed": "VRCX-0 n'a pas pu appliquer une mise à niveau de la base de données locale",
                 "legacy_migration_restart_failed": "VRCX-0 n'a pas pu redémarrer pour migrer vos données VRCX existantes. Vous pouvez réessayer ou ignorer pour continuer avec la base de données actuelle.",
                 "newer_schema_requires_newer_app": "Cette base de données utilise le schéma {value}, mais cette version de VRCX-0 ne prend en charge que les schémas jusqu’à {value2}. Installez la dernière version de VRCX-0 pour l’ouvrir."
@@ -5741,9 +5745,6 @@
                 "refresh_config_failed_after_upgrade": "VRCX-0 a mis à niveau la base de données, mais n'a pas pu actualiser la configuration locale. Veuillez redémarrer l'application",
                 "requesting_legacy_migration": "Préparation de la migration de vos données VRCX existantes…",
                 "skipping_legacy_migration": "Migration ignorée, initialisation de votre base de données…"
-            },
-            "dynamic": {
-                "updating_database_from_value_to_value": "Mise à jour de la base de données de {value} vers {value2}"
             }
         },
         "favorite_import_service": {
@@ -5852,4 +5853,4 @@
             "themes_description": "Gestion des sources de thèmes et du CSS personnalisé."
         }
     }
-}
+} 
