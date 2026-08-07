@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { AppDataDirState, TtsVoice } from '@/platform/tauri/bindings';
@@ -41,6 +42,7 @@ import { useShellStore } from '@/state/shellStore';
 
 import { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
 import { buildFavoriteFriendGroupOptions } from './settingsFavoriteGroupOptions';
+import { settingsTabs } from './settingsOptions';
 import { buildSettingsPageStateSections } from './settingsPageStateSections';
 import {
     useAvatarProviderConfig,
@@ -120,7 +122,23 @@ export function useSettingsPageState() {
     const [customFontOptions, setCustomFontOptions] = useState<string[]>([]);
     const [customFontOptionsLoading, setCustomFontOptionsLoading] =
         useState(false);
-    const [activeSettingsTab, setActiveSettingsTab] = useState('system');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const requestedTab = searchParams.get('tab') ?? '';
+    const activeSettingsTab = settingsTabs.some(
+        ([value]) => value === requestedTab
+    )
+        ? requestedTab
+        : 'system';
+
+    function setActiveSettingsTab(tab: string) {
+        setSearchParams(
+            (current) => {
+                current.set('tab', tab);
+                return current;
+            },
+            { replace: true }
+        );
+    }
     const [
         wristFeedNotificationsDialogOpen,
         setWristFeedNotificationsDialogOpen

@@ -58,6 +58,8 @@
         "example_2": "Who am I drifting away from?",
         "example_3": "When is the best time to catch my friends online?",
         "not_configured": "Select an LLM Endpoint and model to start.",
+        "setup_title": "Connect a model to get started",
+        "open_settings": "Go to AI settings",
         "entities_title": "Mentioned",
         "entities_empty": "People and worlds mentioned in answers show up here.",
         "untitled": "New conversation",
@@ -79,15 +81,16 @@
         },
         "runtime": {
             "title": "Runtime",
-            "connection": "Connection",
             "connection_unset": "No endpoint",
             "model": "Model",
-            "model_unset": "No models saved for this endpoint",
+            "model_unset": "No model available",
             "playbook_mode": "Analysis mode",
             "allow_writes": "Allow write actions",
             "manage_endpoints": "Manage LLM Endpoints",
             "reasoning_effort": "Reasoning effort",
-            "reasoning_effort_provider_default": "Provider default"
+            "reasoning_effort_provider_default": "Provider default",
+            "scope_session": "Applies to this conversation only",
+            "scope_default": "Applies to new conversations"
         }
     },
     "user_hover_card": {
@@ -518,6 +521,7 @@
         "qq_group": "QQ Group",
         "changelog": "Changelog",
         "update": "Update",
+        "update_downloading": "Downloading…",
         "update_downloaded": "Restart",
         "mark_all_read": "Mark All as Read",
         "edit_dashboard": "Edit Dashboard",
@@ -1952,10 +1956,8 @@
             "llm_endpoints": {
                 "title": "LLM Endpoints",
                 "description": "Shared OpenAI-compatible connections for Social AI and translation.",
-                "follow_custom_proxy": "Use VRCX-0 custom proxy",
+                "follow_custom_proxy": "Use VRCX-0 Custom Proxy",
                 "follow_custom_proxy_description": "LLM requests use it when configured; otherwise, the system proxy applies.",
-                "endpoint_count": "{count} endpoints",
-                "model_count": "{count} models",
                 "add": "Add endpoint",
                 "empty_description": "Add an OpenAI-compatible endpoint for Social AI and OpenAI-compatible translation.",
                 "preset": "Preset",
@@ -1964,11 +1966,13 @@
                     "siliconflow": "SiliconFlow"
                 },
                 "name": "Name",
+                "name_description": "Shown as the group name when you pick a model.",
                 "base_url": "Base URL",
+                "base_url_invalid": "Enter a full http:// or https:// address.",
                 "models": "Models",
-                "key": "Key",
-                "actions": "Actions",
-                "no_models": "No models",
+                "models_placeholder": "Search detected models, or type one and press Enter",
+                "models_empty": "Nothing detected yet. Type a model name and press Enter to add it.",
+                "unusable": "No models yet, so this endpoint cannot be used.",
                 "key_saved": "Saved",
                 "key_empty": "Empty",
                 "detect_models": "Detect models",
@@ -1978,9 +1982,9 @@
                 "clear_key": "Clear key",
                 "key_preserve_placeholder": "Leave blank to keep the saved key",
                 "saved": "Endpoint saved",
+                "saved_unusable": "Saved, but no models were found for this endpoint.",
                 "save_failed": "Failed to save endpoint",
                 "load_failed": "Failed to load endpoints",
-                "base_url_required": "Base URL is required.",
                 "models_detected": "{count} models detected",
                 "no_models_detected": "No models detected",
                 "detect_failed": "Failed to detect models",
@@ -2021,6 +2025,16 @@
                 "cooldown": "You can send again in {{seconds}}s",
                 "more_help": "Need a reply, or want to attach logs?",
                 "error_generic": "Couldn't send feedback. Please try again later."
+            },
+            "ai": {
+                "header": "Social AI",
+                "description": "Defaults for new conversations. Each conversation can override them from the Social AI panel.",
+                "default_model": "Default model",
+                "default_model_description": "New conversations start with this model.",
+                "default_model_unset": "No model available",
+                "setup_hint": "Social AI needs an OpenAI-compatible connection before it can answer anything.",
+                "playbook_mode_description": "How much freedom the model gets when analyzing your data.",
+                "endpoints_description": "Shared by Social AI and translation."
             },
             "social": {
                 "interaction": {
@@ -2248,6 +2262,8 @@
                     "table_page_sizes_description": "Add, remove, and select the page-size options shown in table controls.",
                     "table_page_sizes_error": "Page size must be a number between 1 and 1000",
                     "show_notification_icon_dot": "Tray Notification Dot",
+                    "show_taskbar_icon_dot": "Taskbar Notification Dot",
+                    "show_taskbar_icon_dot_description": "Show a red dot on the VRCX-0 taskbar button while notifications are unread.",
                     "striped_data_table_mode": "Striped Tables",
                     "reduced_motion_and_blur": "Reduce Effects",
                     "reduced_motion_and_blur_description": "Turn off animations, transitions, and background blur for better performance on lower-end devices.",
@@ -2426,11 +2442,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Discord Presence",
-                    "description": "* Only active while in an instance.",
                     "enable": "Enable",
                     "enable_tooltip": "Disable VRChat's Rich Presence to avoid conflicts.",
                     "instance_type_player_count": "Instance Type & Player Count",
-                    "join_button": "Join Button (Public Only)",
+                    "join_button": "Join Button",
+                    "join_button_description": "Only shown in public instances.",
                     "show_details_in_private": "Show Details in Private Instances",
                     "show_images": "Show World Images",
                     "show_current_platform": "Show Current Platform",
@@ -2560,7 +2576,7 @@
                         "enable_tooltip": "Fetches video titles for the Game Log and video duration for the overlay progress bar"
                     },
                     "translation_api": {
-                        "header": "Enable Content Translation",
+                        "header": "Content Translation",
                         "enable": "Enable",
                         "translation_api_key": "Translate API Key",
                         "enable_tooltip": "Translate user bios and world descriptions on demand."
