@@ -74,7 +74,7 @@
         },
         "settings": {
             "playbook_mode": "Mode d'analyse",
-            "playbook_mode_description": "Contrôle la manière dont l'assistant utilise les outils pour répondre. Auto par défaut. Guidé : oriente un modèle local plus faible vers l'outil le plus pertinent pour une réponse plus fiable. Ouvert : ouvre tous les outils pour qu'un modèle plus puissant analyse librement et plus en profondeur.",
+            "playbook_mode_description": "Guidé : oriente un modèle local plus faible vers l'outil le plus pertinent pour une réponse plus fiable. Ouvert : ouvre tous les outils pour qu'un modèle plus puissant analyse librement et plus en profondeur.",
             "playbook_mode_auto": "Auto (selon l'endpoint)",
             "playbook_mode_guided": "Guidé (modèles locaux / faibles)",
             "playbook_mode_open": "Ouvert (modèles puissants)"
