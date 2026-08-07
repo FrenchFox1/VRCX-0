@@ -1,5 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
 import type { RegistryBackupMaintenanceResult } from '@/platform/tauri/bindings';
+import { focusWindow } from '@/platform/tauri/webview';
 import configRepository from '@/repositories/configRepository';
 import { isHostCapabilityAvailable } from '@/services/hostCapabilityService';
 import i18n from '@/services/i18nService';
@@ -8,11 +9,26 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { runRuntimeTelemetryJob } from './runtimeJobTelemetryService';
 
+let inFlightMaintenance: Promise<void> | null = null;
+
 export async function runRegistryBackupMaintenance(reason: string) {
     if (!isHostCapabilityAvailable('registryPrefs')) {
         return;
     }
 
+    if (inFlightMaintenance) {
+        return inFlightMaintenance;
+    }
+
+    inFlightMaintenance = performRegistryBackupMaintenance(reason).finally(
+        () => {
+            inFlightMaintenance = null;
+        }
+    );
+    return inFlightMaintenance;
+}
+
+async function performRegistryBackupMaintenance(reason: string) {
     let result: RegistryBackupMaintenanceResult;
     try {
         result = await commands.appRegistryBackupMaintenanceRun(reason);
@@ -30,7 +46,7 @@ export async function runRegistryBackupMaintenance(reason: string) {
 
     await commands
         .appEnsureMainWindow()
-        .catch(() => commands.appFocusWindow().catch(() => {}));
+        .catch(() => focusWindow().catch(() => {}));
     await useModalStore.getState().alert({
         title: i18n.t(
             'service.background_maintenance.label.vrchat_registry_backup'
@@ -40,7 +56,7 @@ export async function runRegistryBackupMaintenance(reason: string) {
         )
     });
     useRuntimeStore.getState().setSystemHostOpen('registryBackupOpen', true);
-    await commands.appFocusWindow().catch(() => {});
+    await focusWindow().catch(() => {});
     if (result.restorePromptBackupDate) {
         const acknowledgedDate =
             await commands.appRegistryBackupRestorePromptAcknowledge(

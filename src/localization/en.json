@@ -840,6 +840,11 @@
         "feed": {
             "filter": "Filter",
             "feed_persistence_disabled_tooltip": "Feed history is not being saved",
+            "search_scope": {
+                "aria_label": "Search feed, filter by friend",
+                "no_friends": "No matching friends",
+                "search_all": "Search all feed for \"{query}\""
+            },
             "favorites_only_tooltip": "Filter favorites only",
             "search_placeholder": "Search",
             "date_range": "Date range",
@@ -2002,7 +2007,20 @@
                 "ai": "AI",
                 "vr": "VR",
                 "media": "Media",
-                "integrations": "Integrations"
+                "integrations": "Integrations",
+                "feedback": "Feedback"
+            },
+            "feedback": {
+                "title": "Send feedback",
+                "description": "Feedback is submitted anonymously. We read every message, but can't reply directly.",
+                "privacy_note": "No account info is attached — only an anonymous install ID that keeps the endpoint from being spammed.",
+                "placeholder": "Tell us what's working, what's not, or what you'd like to see...",
+                "submit": "Send",
+                "submitting": "Sending…",
+                "thanks": "Thanks for your feedback!",
+                "cooldown": "You can send again in {{seconds}}s",
+                "more_help": "Need a reply, or want to attach logs?",
+                "error_generic": "Couldn't send feedback. Please try again later."
             },
             "social": {
                 "interaction": {
@@ -2432,6 +2450,8 @@
                         "header": "VRChat behavior",
                         "quit_header": "Close lingering VRChat processes",
                         "quit_description": "After VRChat exits, close any VRChat processes that are still running.",
+                        "focus_on_join_header": "Bring VRChat to the front",
+                        "focus_on_join_description": "After you join an instance from VRCX-0, switch to the VRChat window. Desktop mode only.",
                         "deep_link_registration": "Open VRCX-0 links",
                         "deep_link_registered": "VRCX-0 links are set to open in VRCX-0 for this user.",
                         "deep_link_not_registered": "This system is not set up to open VRCX-0 links, or the setup points to an invalid installation.",
@@ -5154,8 +5174,6 @@
             "migration_restarting_title": "Migrating data",
             "migration_restarting": "VRCX-0 will restart to complete the migration...",
             "upgrade_in_progress_title": "Database upgrade in progress",
-            "upgrade_in_progress_description": "Updating database from version {from} to {to}. Please do not close VRCX-0",
-            "upgrade_in_progress_initializing": "Initializing database upgrade. Please do not close VRCX-0",
             "upgrade_stage": {
                 "preflight": "Checking the database",
                 "prepare_legacy_snapshot": "Creating a consistent copy of the VRCX database",
@@ -5167,6 +5185,7 @@
                 "legacy_performance_indexes": "Adding history indexes",
                 "global_performance_indexes": "Adding database indexes",
                 "notification_performance_indexes": "Adding notification indexes",
+                "schema_migrations": "Applying schema updates",
                 "optimize": "Optimizing the database copy",
                 "write_version": "Recording the database version",
                 "commit": "Switching to the upgraded database"
@@ -5182,7 +5201,10 @@
             "fresh_start_confirm_title": "Start with a new database?",
             "fresh_start_confirm_description": "VRCX-0 will keep the current database and failed upgrade files in a recovery folder, then restart with a new empty database. Settings, local history, and saved account data will not appear in the new database.",
             "fresh_start_restarting": "Archiving the current database and restarting VRCX-0...",
-            "fresh_start_failed": "Could not create a new database."
+            "fresh_start_failed": "Could not create a new database.",
+            "upgrade_keep_open": "Please keep VRCX-0 open until this finishes.",
+            "failure_reason": "Reason",
+            "restart_app": "Restart VRCX-0"
         },
         "file": {
             "not_image": "File isn't an image",
@@ -5710,12 +5732,10 @@
         },
         "database_upgrade_service": {
             "label": {
-                "unknown_path": "Unknown path",
                 "database_schema_is_current": "Database schema is current"
             },
             "error": {
-                "failed_upgrade_description": "The previous database upgrade failed. This database cannot be used until it is repaired manually.\n\nWork database: {path}",
-                "failed_upgrade_description_with_reason": "The previous database upgrade failed. This database cannot be used until it is repaired manually.\n\nWork database: {path}\n\nReason: {reason}",
+                "failed_upgrade_description": "The previous database upgrade failed. This database cannot be used until it is repaired manually.",
                 "apply_upgrade_failed": "VRCX-0 failed to apply a local database upgrade",
                 "legacy_migration_restart_failed": "VRCX-0 couldn't restart to migrate your existing VRCX data. You can try again, or skip to continue with the current database.",
                 "newer_schema_requires_newer_app": "This database uses schema version {value}, but this VRCX-0 version only supports up to {value2}. Install the latest VRCX-0 version to open it."
@@ -5727,9 +5747,6 @@
                 "refresh_config_failed_after_upgrade": "VRCX-0 upgraded the database, but failed to refresh local configuration. Please restart the application",
                 "requesting_legacy_migration": "Preparing to migrate your existing VRCX data...",
                 "skipping_legacy_migration": "Skipping migration and setting up your database..."
-            },
-            "dynamic": {
-                "updating_database_from_value_to_value": "Updating database from {value} to {value2}"
             }
         },
         "favorite_import_service": {

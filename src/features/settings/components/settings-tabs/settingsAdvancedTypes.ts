@@ -6,6 +6,7 @@ export type SettingsAdvancedPrefs = {
     avatarAutoCleanup?: string;
     gameLogDisabled?: boolean;
     feedPersistenceDisabled?: boolean;
+    focusVrchatOnJoin?: boolean;
     logResourceLoad?: boolean;
     relaunchVRChatAfterCrash?: boolean;
     udonExceptionLogging?: boolean;
@@ -16,6 +17,7 @@ export type SettingsAdvancedAction = () => unknown | Promise<unknown>;
 
 export type SettingsAdvancedModel = {
     appDataDirState?: AppDataDirState | null;
+    hostPlatform?: string;
     avatarAutoCleanupOptions: string[];
     configTreeData: Record<string, unknown>;
     onAnonymousUsageTelemetryChange: (checked: boolean) => unknown;
@@ -26,6 +28,7 @@ export type SettingsAdvancedModel = {
     onDismissAppDataDirCleanup: SettingsAdvancedAction;
     onGameLogDisabledChange: (disabled: boolean) => unknown;
     onFeedPersistenceDisabledChange: (disabled: boolean) => unknown;
+    onFocusVrchatOnJoinChange: (checked: boolean) => unknown;
     onLogResourceLoadChange: (checked: boolean) => unknown;
     onMigrateLegacyVrcxData: SettingsAdvancedAction;
     onOpenAppDataDirSelector: SettingsAdvancedAction;

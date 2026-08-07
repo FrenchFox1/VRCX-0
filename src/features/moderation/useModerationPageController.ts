@@ -1,13 +1,12 @@
-import {
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table';
 import { useMemo } from 'react';
 
+import { useAppTable } from '@/components/data-table/appTable';
+
 import { useModerationColumns } from './components/ModerationColumns';
-import { matchesModerationSearch } from './moderationPageState';
+import {
+    getModerationRowKey,
+    matchesModerationSearch
+} from './moderationPageState';
 import type { ModerationRow } from './moderationPageTypes';
 import { useModerationFilters } from './useModerationFilters';
 import { useModerationRowActions } from './useModerationRowActions';
@@ -52,7 +51,7 @@ export function useModerationPageController({
         onOpenUser: actions.openModerationUser,
         shiftHeld
     });
-    const table = useReactTable<ModerationRow>({
+    const table = useAppTable<ModerationRow>({
         data: filteredRows,
         columns,
         state: {
@@ -67,9 +66,7 @@ export function useModerationPageController({
         onColumnVisibilityChange: tableState.setColumnVisibility,
         onColumnOrderChange: tableState.setColumnOrder,
         onColumnSizingChange: tableState.setColumnSizing,
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
+        getRowId: getModerationRowKey,
         enableColumnResizing: true,
         columnResizeMode: 'onChange',
         meta: {

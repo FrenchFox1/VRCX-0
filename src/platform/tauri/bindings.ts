@@ -3,9 +3,6 @@
 /** user-defined commands **/
 
 export const commands = {
-    async storageGet(key: string): Promise<string | null> {
-        return await TAURI_INVOKE('storage__get', { key });
-    },
     async storageSet(key: string, value: string): Promise<null> {
         return await TAURI_INVOKE('storage__set', { key, value });
     },
@@ -38,15 +35,6 @@ export const commands = {
     },
     async appAppendErrorLog(entry: string): Promise<null> {
         return await TAURI_INVOKE('app__append_error_log', { entry });
-    },
-    async appDrainClientErrorLog(
-        sinceIso: string | null,
-        limit: number | null
-    ): Promise<ClientErrorLogEntry[]> {
-        return await TAURI_INVOKE('app__drain_client_error_log', {
-            sinceIso,
-            limit
-        });
     },
     async assetBundleGetVrchatCacheFullLocation(
         fileId: string,
@@ -88,9 +76,6 @@ export const commands = {
     async assetBundleDeleteAllCache(): Promise<null> {
         return await TAURI_INVOKE('asset_bundle__delete_all_cache');
     },
-    async assetBundleSweepCache(): Promise<string[]> {
-        return await TAURI_INVOKE('asset_bundle__sweep_cache');
-    },
     async assetBundleSweepCacheToSize(maxSizeBytes: number): Promise<string[]> {
         return await TAURI_INVOKE('asset_bundle__sweep_cache_to_size', {
             maxSizeBytes
@@ -102,25 +87,13 @@ export const commands = {
     async logWatcherGetCurrentLocation(): Promise<LogLocationSnapshot | null> {
         return await TAURI_INVOKE('log_watcher__get_current_location');
     },
-    async logWatcherVrcClosedGracefully(): Promise<boolean> {
-        return await TAURI_INVOKE('log_watcher__vrc_closed_gracefully');
-    },
     async appIsGameRunning(): Promise<boolean> {
         return await TAURI_INVOKE('app__is_game_running');
-    },
-    async appGameProcessSnapshotGet(): Promise<HostSessionProjection> {
-        return await TAURI_INVOKE('app__game_process_snapshot_get');
-    },
-    async appIsSteamvrRunning(): Promise<boolean> {
-        return await TAURI_INVOKE('app__is_steamvr_running');
     },
     async appSetGameClientRuntimeState(currentLocation: string): Promise<void> {
         await TAURI_INVOKE('app__set_game_client_runtime_state', {
             currentLocation
         });
-    },
-    async appQuitGame(): Promise<number> {
-        return await TAURI_INVOKE('app__quit_game');
     },
     async appStartGame(launchArguments: string): Promise<boolean> {
         return await TAURI_INVOKE('app__start_game', { launchArguments });
@@ -140,34 +113,8 @@ export const commands = {
     async appHostTtsSpeak(text: string, voiceId: string | null): Promise<null> {
         return await TAURI_INVOKE('app__host_tts_speak', { text, voiceId });
     },
-    async appSyncRealtimeCurrentUserSnapshot(
-        userId: string,
-        endpoint: string,
-        websocket: string,
-        generation: number | null,
-        snapshot: JsonValue,
-        overlayPatch: JsonValue
-    ): Promise<boolean> {
-        return await TAURI_INVOKE('app__sync_realtime_current_user_snapshot', {
-            userId,
-            endpoint,
-            websocket,
-            generation,
-            snapshot,
-            overlayPatch
-        });
-    },
     async appCurrentUserRefresh(): Promise<CurrentUserRefreshOutcome> {
         return await TAURI_INVOKE('app__current_user_refresh');
-    },
-    async appExpireRealtimeNotification(
-        userId: string,
-        notificationId: string
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__expire_realtime_notification', {
-            userId,
-            notificationId
-        });
     },
     async appIngestUserFacts(entries: JsonValue[]): Promise<null> {
         return await TAURI_INVOKE('app__ingest_user_facts', { entries });
@@ -178,32 +125,19 @@ export const commands = {
     async appFriendProfileLoadCancel(): Promise<FriendProfileLoadStatusPayload> {
         return await TAURI_INVOKE('app__friend_profile_load_cancel');
     },
-    async appGameClientDebugLoggingStatus(): Promise<DebugLoggingOutcome | null> {
-        return await TAURI_INVOKE('app__game_client_debug_logging_status');
-    },
-    async appAuthenticatedSessionMaintenanceRun(): Promise<AuthenticatedSessionMaintenanceOutcome> {
-        return await TAURI_INVOKE('app__authenticated_session_maintenance_run');
-    },
-    async appAuthenticatedRuntimePhaseSnapshotGet(): Promise<AuthenticatedRuntimePhaseSnapshot> {
-        return await TAURI_INVOKE(
-            'app__authenticated_runtime_phase_snapshot_get'
-        );
+    async appAncillaryRuntimeSnapshotGet(): Promise<AncillaryRuntimeSnapshot> {
+        return await TAURI_INVOKE('app__ancillary_runtime_snapshot_get');
     },
     async appStartBackgroundMode(): Promise<BackendRuntimeSnapshot> {
         return await TAURI_INVOKE('app__start_background_mode');
-    },
-    async appStopBackgroundMode(
-        reason: string | null
-    ): Promise<BackendRuntimeSnapshot> {
-        return await TAURI_INVOKE('app__stop_background_mode', { reason });
-    },
-    async appGetBackendRuntimeSnapshot(): Promise<BackendRuntimeSnapshot> {
-        return await TAURI_INVOKE('app__get_backend_runtime_snapshot');
     },
     async appGetBackendRuntimeFrontendSessionSnapshot(): Promise<BackendRuntimeFrontendSessionSnapshot | null> {
         return await TAURI_INVOKE(
             'app__get_backend_runtime_frontend_session_snapshot'
         );
+    },
+    async appBackendRuntimeCombinedSnapshotGet(): Promise<BackendRuntimeCombinedSnapshot> {
+        return await TAURI_INVOKE('app__backend_runtime_combined_snapshot_get');
     },
     async appEnsureMainWindow(): Promise<null> {
         return await TAURI_INVOKE('app__ensure_main_window');
@@ -246,9 +180,6 @@ export const commands = {
     ): Promise<FavoriteImportStatus> {
         return await TAURI_INVOKE('app__favorite_import_start', { input });
     },
-    async appFavoriteImportStatus(): Promise<FavoriteImportStatus> {
-        return await TAURI_INVOKE('app__favorite_import_status');
-    },
     async appFavoriteImportCancel(): Promise<FavoriteImportStatus> {
         return await TAURI_INVOKE('app__favorite_import_cancel');
     },
@@ -277,16 +208,6 @@ export const commands = {
         input: AvatarContentTagsBatchInput
     ): Promise<BatchMutationResult> {
         return await TAURI_INVOKE('app__avatar_content_tags_batch', { input });
-    },
-    async appGroupVisibilityBatch(
-        input: GroupVisibilityBatchInput
-    ): Promise<BatchMutationResult> {
-        return await TAURI_INVOKE('app__group_visibility_batch', { input });
-    },
-    async appGroupLeaveBatch(
-        input: GroupLeaveBatchInput
-    ): Promise<BatchMutationResult> {
-        return await TAURI_INVOKE('app__group_leave_batch', { input });
     },
     async appGroupModerationBatch(
         input: GroupModerationBatchInput
@@ -393,6 +314,11 @@ export const commands = {
     },
     async appTelemetryRecordEvent(event: TelemetryClientEvent): Promise<null> {
         return await TAURI_INVOKE('app__telemetry_record_event', { event });
+    },
+    async appTelemetrySubmitFeedback(content: string): Promise<null> {
+        return await TAURI_INVOKE('app__telemetry_submit_feedback', {
+            content
+        });
     },
     async appProxySettingsTest(
         input: ProxySettingsTestInput
@@ -519,9 +445,6 @@ export const commands = {
     ): Promise<LlmEndpointDetectModelsResult> {
         return await TAURI_INVOKE('app__llm_endpoint_detect_models', { input });
     },
-    async appLlmTranslate(input: LlmTranslateInput): Promise<string> {
-        return await TAURI_INVOKE('app__llm_translate', { input });
-    },
     async appTranslationTranslate(
         input: TranslationTranslateInput
     ): Promise<TranslationResult> {
@@ -554,9 +477,6 @@ export const commands = {
             input
         });
     },
-    async appOverlayActivitySnapshotGet(): Promise<OverlayActivitySnapshot> {
-        return await TAURI_INVOKE('app__overlay_activity_snapshot_get');
-    },
     async appPresenceAutomationRulesGet(
         kind: PresenceAutomationRuleKind
     ): Promise<RawJson[]> {
@@ -573,11 +493,6 @@ export const commands = {
             rules
         });
     },
-    async appFavoritesTransfer(
-        input: FavoriteTransferInput
-    ): Promise<FavoriteTransferResult> {
-        return await TAURI_INVOKE('app__favorites_transfer', { input });
-    },
     async appFavoritesTransferSelection(
         input: FavoriteTransferSelectionInput
     ): Promise<FavoriteTransferSelectionResult> {
@@ -585,18 +500,10 @@ export const commands = {
             input
         });
     },
-    async appFavoritesBulkRemove(
-        input: FavoriteBulkRemoveInput
-    ): Promise<FavoriteBulkRemoveResult> {
-        return await TAURI_INVOKE('app__favorites_bulk_remove', { input });
-    },
     async appFavoritesRemoveSelection(
         input: FavoriteBulkRemoveInput
     ): Promise<FavoriteBulkRemoveResult> {
         return await TAURI_INVOKE('app__favorites_remove_selection', { input });
-    },
-    async appVrOverlayStatusGet(): Promise<VrOverlayRuntimeSnapshot> {
-        return await TAURI_INVOKE('app__vr_overlay_status_get');
     },
     async appVrOverlayEnabledSet(
         enabled: boolean
@@ -990,25 +897,6 @@ export const commands = {
     ): Promise<InstanceHistoryEntryOutput[]> {
         return await TAURI_INVOKE('app__instance_history_query', { input });
     },
-    async appPlayerListLocationGet(
-        location: string
-    ): Promise<PlayerLocationOutput | null> {
-        return await TAURI_INVOKE('app__player_list_location_get', {
-            location
-        });
-    },
-    async appPlayerListLatestLocationGet(): Promise<PlayerLocationOutput | null> {
-        return await TAURI_INVOKE('app__player_list_latest_location_get');
-    },
-    async appPlayerListJoinLeaveRows(
-        location: string,
-        startedAt: string
-    ): Promise<PlayerJoinLeaveOutput[]> {
-        return await TAURI_INVOKE('app__player_list_join_leave_rows', {
-            location,
-            startedAt
-        });
-    },
     async appPlayerListCurrentSnapshot(
         currentUserId: string,
         currentLocation: string,
@@ -1186,48 +1074,6 @@ export const commands = {
     async appFavoriteList(kind: FavoriteEntityKind): Promise<FavoriteRow[]> {
         return await TAURI_INVOKE('app__favorite_list', { kind });
     },
-    async appFavoriteAdd(
-        kind: FavoriteEntityKind,
-        entityId: string,
-        groupName: string
-    ): Promise<number> {
-        return await TAURI_INVOKE('app__favorite_add', {
-            kind,
-            entityId,
-            groupName
-        });
-    },
-    async appFavoriteRemove(
-        kind: FavoriteEntityKind,
-        entityId: string,
-        groupName: string
-    ): Promise<number> {
-        return await TAURI_INVOKE('app__favorite_remove', {
-            kind,
-            entityId,
-            groupName
-        });
-    },
-    async appFavoriteGroupRename(
-        kind: FavoriteEntityKind,
-        groupName: string,
-        newGroupName: string
-    ): Promise<number> {
-        return await TAURI_INVOKE('app__favorite_group_rename', {
-            kind,
-            groupName,
-            newGroupName
-        });
-    },
-    async appFavoriteGroupDelete(
-        kind: FavoriteEntityKind,
-        groupName: string
-    ): Promise<number> {
-        return await TAURI_INVOKE('app__favorite_group_delete', {
-            kind,
-            groupName
-        });
-    },
     async appMemoGetUser(userId: string): Promise<UserMemoOutput | null> {
         return await TAURI_INVOKE('app__memo_get_user', { userId });
     },
@@ -1288,11 +1134,6 @@ export const commands = {
             userId,
             entry
         });
-    },
-    async appNotificationRowsQuery(
-        query: NotificationRowsQueryInput
-    ): Promise<NotificationRowsOutput> {
-        return await TAURI_INVOKE('app__notification_rows_query', { query });
     },
     async appNotificationListQuery(
         query: NotificationListQueryInput
@@ -1374,6 +1215,9 @@ export const commands = {
     async appGetHostCapabilities(): Promise<HostCapabilities> {
         return await TAURI_INVOKE('app__get_host_capabilities');
     },
+    async appStartupBootstrapSnapshotGet(): Promise<StartupBootstrapSnapshot> {
+        return await TAURI_INVOKE('app__startup_bootstrap_snapshot_get');
+    },
     async appListSystemFonts(): Promise<string[]> {
         return await TAURI_INVOKE('app__list_system_fonts');
     },
@@ -1454,13 +1298,6 @@ export const commands = {
         input: ExternalApiImageInput
     ): Promise<ExternalApiExecuteResponse> {
         return await TAURI_INVOKE('app__external_api_image_data_url_get', {
-            input
-        });
-    },
-    async appExternalApiTranslationRequest(
-        input: ExternalApiTranslationInput
-    ): Promise<ExternalApiExecuteResponse> {
-        return await TAURI_INVOKE('app__external_api_translation_request', {
             input
         });
     },
@@ -1642,18 +1479,10 @@ export const commands = {
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_favorite_group_save', { input });
     },
-    async appVrchatFavoriteLimitsGet(): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_favorite_limits_get');
-    },
     async appVrchatFavoriteWorldsGet(
         input: VrchatFavoriteWorldsInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_favorite_worlds_get', { input });
-    },
-    async appVrchatFavoritesGet(
-        input: VrchatFavoritePagedInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_favorites_get', { input });
     },
     async appLocalFavoriteAdd(input: LocalFavoriteInput): Promise<number> {
         return await TAURI_INVOKE('app__local_favorite_add', { input });
@@ -1686,11 +1515,6 @@ export const commands = {
         input: VrchatFriendUserInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_friend_status_get', { input });
-    },
-    async appVrchatFriendsGet(
-        input: VrchatFriendsGetInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_friends_get', { input });
     },
     async appVrchatGroupAuditLogTypesGet(
         input: VrchatGroupIdInput
@@ -1911,13 +1735,6 @@ export const commands = {
             { input }
         );
     },
-    async appVrchatMediaAvatarImageSet(
-        input: VrchatMediaEntityImageInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_media_avatar_image_set', {
-            input
-        });
-    },
     async appVrchatMediaAvatarImageUploadLegacy(
         input: VrchatMediaLegacyImageUploadInput
     ): Promise<HttpApiExecuteResponse> {
@@ -1940,32 +1757,6 @@ export const commands = {
         input: VrchatMediaFileIdInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_media_file_delete', { input });
-    },
-    async appVrchatMediaFilePut(
-        input: VrchatMediaFilePutInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_media_file_put', { input });
-    },
-    async appVrchatMediaFileUploadFinish(
-        input: VrchatMediaFileUploadStageInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_media_file_upload_finish', {
-            input
-        });
-    },
-    async appVrchatMediaFileUploadStart(
-        input: VrchatMediaFileUploadStageInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_media_file_upload_start', {
-            input
-        });
-    },
-    async appVrchatMediaFileVersionCreate(
-        input: VrchatMediaFileVersionCreateInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_media_file_version_create', {
-            input
-        });
     },
     async appVrchatMediaFilesGet(
         input: VrchatMediaParamsInput
@@ -2082,13 +1873,6 @@ export const commands = {
         input: VrchatMediaImageUploadInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_media_vrc_plus_icon_upload', {
-            input
-        });
-    },
-    async appVrchatMediaWorldImageSet(
-        input: VrchatMediaEntityImageInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_media_world_image_set', {
             input
         });
     },
@@ -2275,27 +2059,10 @@ export const commands = {
     ): Promise<SocialFriendMutationOutcome> {
         return await TAURI_INVOKE('app__social_unfriend', { input });
     },
-    async appSocialUnfriendBatch(
-        input: SocialUnfriendBatchInput
-    ): Promise<SocialUnfriendBatchResult> {
-        return await TAURI_INVOKE('app__social_unfriend_batch', { input });
-    },
     async appSocialUnfriendSelection(
         input: SocialUnfriendBatchInput
     ): Promise<SocialUnfriendBatchResult> {
         return await TAURI_INVOKE('app__social_unfriend_selection', { input });
-    },
-    async appVrchatToolsCalendarsGet(
-        input: VrchatToolsCalendarListInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_tools_calendars_get', { input });
-    },
-    async appVrchatToolsFeaturedCalendarsGet(
-        input: VrchatToolsCalendarListInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_tools_featured_calendars_get', {
-            input
-        });
     },
     async appVrchatToolsFollowingCalendarsGet(
         input: VrchatToolsCalendarListInput
@@ -2466,9 +2233,6 @@ export const commands = {
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_world_unpublish', { input });
     },
-    async appSetUserAgent(): Promise<void> {
-        await TAURI_INVOKE('app__set_user_agent');
-    },
     async appOpenLink(url: string): Promise<null> {
         return await TAURI_INVOKE('app__open_link', { url });
     },
@@ -2477,9 +2241,6 @@ export const commands = {
     },
     async appGetFileBase64(path: string): Promise<string> {
         return await TAURI_INVOKE('app__get_file_base64', { path });
-    },
-    async appReadConfigFile(): Promise<string> {
-        return await TAURI_INVOKE('app__read_config_file');
     },
     async appReadConfigFileSafe(): Promise<string> {
         return await TAURI_INVOKE('app__read_config_file_safe');
@@ -2502,20 +2263,11 @@ export const commands = {
             json
         });
     },
-    async appGetVrchatAppDataLocation(): Promise<string> {
-        return await TAURI_INVOKE('app__get_vrchat_app_data_location');
-    },
     async appGetVrchatPhotosLocation(): Promise<string> {
         return await TAURI_INVOKE('app__get_vrchat_photos_location');
     },
     async appGetUgcPhotoLocation(path: string | null): Promise<string> {
         return await TAURI_INVOKE('app__get_ugc_photo_location', { path });
-    },
-    async appGetVrchatCacheLocation(): Promise<string> {
-        return await TAURI_INVOKE('app__get_vrchat_cache_location');
-    },
-    async appGetVrchatScreenshotsLocation(): Promise<string> {
-        return await TAURI_INVOKE('app__get_vrchat_screenshots_location');
     },
     async appVrchatLogFilesList(): Promise<VrchatLogFileOutput[]> {
         return await TAURI_INVOKE('app__vrchat_log_files_list');
@@ -2653,20 +2405,8 @@ export const commands = {
     async appDevkitPanic(message: string | null): Promise<null> {
         return await TAURI_INVOKE('app__devkit_panic', { message });
     },
-    async appFocusWindow(): Promise<null> {
-        return await TAURI_INVOKE('app__focus_window');
-    },
-    async appFlashWindow(): Promise<null> {
-        return await TAURI_INVOKE('app__flash_window');
-    },
-    async appChangeTheme(value: number): Promise<null> {
-        return await TAURI_INVOKE('app__change_theme', { value });
-    },
     async appLanguageChanged(language: string): Promise<null> {
         return await TAURI_INVOKE('app__language_changed', { language });
-    },
-    async appDoFunny(): Promise<void> {
-        await TAURI_INVOKE('app__do_funny');
     },
     async appSetTrayIconNotification(notify: boolean | null): Promise<void> {
         await TAURI_INVOKE('app__set_tray_icon_notification', { notify });
@@ -2682,9 +2422,6 @@ export const commands = {
     },
     async appExitApplication(): Promise<null> {
         return await TAURI_INVOKE('app__exit_application');
-    },
-    async appAppUpdateStatusGet(): Promise<AppUpdateStatusSnapshot> {
-        return await TAURI_INVOKE('app__app_update_status_get');
     },
     async appAppUpdateCheckRun(): Promise<AppUpdateStatusSnapshot> {
         return await TAURI_INVOKE('app__app_update_check_run');
@@ -2736,17 +2473,6 @@ export const commands = {
     async appSetStartup(enabled: boolean): Promise<boolean> {
         return await TAURI_INVOKE('app__set_startup', { enabled });
     },
-    async appGetVrchatRegistryKey(key: string): Promise<JsonValue> {
-        return await TAURI_INVOKE('app__get_vrchat_registry_key', { key });
-    },
-    async appGetVrchatRegistryKeyString(key: string): Promise<string> {
-        return await TAURI_INVOKE('app__get_vrchat_registry_key_string', {
-            key
-        });
-    },
-    async appHasVrchatRegistryFolder(): Promise<boolean> {
-        return await TAURI_INVOKE('app__has_vrchat_registry_folder');
-    },
     async appDeleteVrchatRegistryFolder(): Promise<null> {
         return await TAURI_INVOKE('app__delete_vrchat_registry_folder');
     },
@@ -2760,14 +2486,6 @@ export const commands = {
             value,
             typeInt
         });
-    },
-    async appGetVrchatRegistry(): Promise<
-        Partial<{ [key in string]: Partial<{ [key in string]: JsonValue }> }>
-    > {
-        return await TAURI_INVOKE('app__get_vrchat_registry');
-    },
-    async appSetVrchatRegistry(json: string): Promise<null> {
-        return await TAURI_INVOKE('app__set_vrchat_registry', { json });
     },
     async appReadVrcRegJsonFile(filepath: string): Promise<string> {
         return await TAURI_INVOKE('app__read_vrc_reg_json_file', { filepath });
@@ -2801,13 +2519,6 @@ export const commands = {
             reason
         });
     },
-    async appGetVrchatModerations(
-        currentUserId: string
-    ): Promise<Partial<{ [key in string]: number }>> {
-        return await TAURI_INVOKE('app__get_vrchat_moderations', {
-            currentUserId
-        });
-    },
     async appGetVrchatUserModeration(
         currentUserId: string,
         userId: string
@@ -2826,11 +2537,6 @@ export const commands = {
             currentUserId,
             userId,
             moderationType
-        });
-    },
-    async appTryOpenInstanceInVrc(launchUrl: string): Promise<boolean> {
-        return await TAURI_INVOKE('app__try_open_instance_in_vrc', {
-            launchUrl
         });
     },
     async appAppLauncherSnapshotGet(): Promise<AppLauncherSnapshot> {
@@ -2882,20 +2588,10 @@ export const commands = {
             base64Data
         });
     },
-    async appGetImage(
-        url: string,
-        fileId: string,
-        version: string
-    ): Promise<string> {
-        return await TAURI_INVOKE('app__get_image', { url, fileId, version });
-    },
     async appResizeImageToFitLimits(base64data: string): Promise<string> {
         return await TAURI_INVOKE('app__resize_image_to_fit_limits', {
             base64data
         });
-    },
-    async appSignFile(blob: string): Promise<string> {
-        return await TAURI_INVOKE('app__sign_file', { blob });
     },
     async appGetExtraScreenshotData(
         path: string,
@@ -3144,6 +2840,17 @@ export type ActivityViewOutput = {
     builtAt: string;
 };
 export type AddGameLogEventPayload = string | RuntimeGameLogEventPayload;
+export type AncillaryRuntimeSnapshot = {
+    communityThemeState: CommunityThemeProjection | null;
+    profileBackupCurrentStatus: ProfileBackupStatus;
+    dataDirMigrationCurrentStatus: DataDirMigrationStatus;
+    mutualGraphFetchStatus: MutualGraphFetchStatus;
+    appUpdateStatus: AppUpdateStatusSnapshot;
+    appUpdateDownloadStatus: AppUpdateDownloadStatusSnapshot;
+    gameClientDebugLoggingStatus: DebugLoggingOutcome | null;
+    gameProcessSnapshot: HostSessionProjection | null;
+    backgroundImageState: BackgroundImageProjection;
+};
 export type AppDataDirSource = 'cli' | 'persisted' | 'default';
 export type AppDataDirState = {
     currentDir: string;
@@ -3357,24 +3064,12 @@ export type AuthenticatedRuntimeStepStatus =
     | 'retryWaiting'
     | 'ready'
     | 'failed';
-export type AuthenticatedSessionMaintenanceOutcome = {
-    userId: string;
-    avatarCleanup: AvatarAutoCleanupOutcome;
-};
 export type AuthorDetail = { id?: string; displayName?: string | null };
 export type AutoLoginOutcome = LoginSessionState | AutoLoginTerminalOutcome;
 export type AutoLoginStartInput = { userId?: string };
 export type AutoLoginTerminalOutcome =
     | { status: 'throttled'; snapshot: SavedAuthSnapshot }
     | { status: 'expired'; snapshot: SavedAuthSnapshot };
-export type AvatarAutoCleanupOutcome = {
-    state: AvatarAutoCleanupState;
-    retentionDays: number | null;
-    removedCount: number;
-    cutoff: string | null;
-    completedAt: string | null;
-};
-export type AvatarAutoCleanupState = 'disabled' | 'notDue' | 'ran';
 export type AvatarCacheOutput = {
     id: string;
     authorId: string;
@@ -3421,6 +3116,10 @@ export type BackendRuntimeAuthStatus =
     | 'interactionRequired'
     | 'error'
     | 'signedOut';
+export type BackendRuntimeCombinedSnapshot = {
+    backendRuntime: BackendRuntimeSnapshot;
+    authenticatedRuntimePhase: AuthenticatedRuntimePhaseSnapshot;
+};
 export type BackendRuntimeEventPayloadMap = {
     addGameLogEvent: AddGameLogEventPayload;
     authenticatedRuntimePhase: AuthenticatedRuntimePhaseSnapshot;
@@ -3670,12 +3369,6 @@ export type ClientConfigSnippets = {
     mcpRemoteJson: string;
     genericJson: string;
 };
-export type ClientErrorLogEntry = {
-    tsIso: string;
-    appVersion: string | null;
-    source: string;
-    message: string;
-};
 export type CommunityThemeAuthor = {
     name: string;
     github: string;
@@ -3870,6 +3563,7 @@ export type DatabaseUpgradeStage =
     | 'legacyPerformanceIndexes'
     | 'globalPerformanceIndexes'
     | 'notificationPerformanceIndexes'
+    | 'schemaMigrations'
     | 'optimize'
     | 'writeVersion'
     | 'commit';
@@ -3878,6 +3572,7 @@ export type DatabaseUpgradeStatus = {
     toVersion: number;
     workDbPath: string;
     startedAt: string;
+    stage?: string | null;
     failedAt?: string | null;
     reason?: string | null;
 };
@@ -3904,12 +3599,6 @@ export type ExternalApiExecuteResponse = {
     raw: JsonValue;
 };
 export type ExternalApiImageInput = { url?: string };
-export type ExternalApiTranslationInput = {
-    url?: string;
-    method?: string;
-    headers?: Partial<{ [key in string]: string }>;
-    body?: JsonValue;
-};
 export type ExternalApiUrlInput = {
     url?: string;
     headers?: Partial<{ [key in string]: string }>;
@@ -4091,14 +3780,6 @@ export type FavoriteTransferItemStatus =
     | 'failed';
 export type FavoriteTransferLocation = 'remote' | 'local';
 export type FavoriteTransferMode = 'move' | 'copy';
-export type FavoriteTransferResult = {
-    total: number;
-    succeeded: number;
-    failed: number;
-    localChanged: boolean;
-    remoteChanged: boolean;
-    items: FavoriteTransferItemResult[];
-};
 export type FavoriteTransferSelectionInput = {
     batches?: FavoriteTransferInput[];
 };
@@ -4156,6 +3837,7 @@ export type FeedLiveRowsMergeInput = {
     dateTo?: string;
     favoritesOnly?: boolean;
     favoriteUserIds?: string[];
+    scopedUserIds?: string[];
     excludedUserIds?: string[];
     liveEntries?: FeedLiveEntryInput[];
     minLiveSequence?: number;
@@ -4172,6 +3854,7 @@ export type FeedReadModelQueryInput = {
     search?: string;
     filters?: FeedFilter[];
     vipList?: string[];
+    scopedUserIds?: string[];
     maxEntries?: number;
     dateFrom?: string;
     dateTo?: string;
@@ -4219,13 +3902,13 @@ export type FeedRowsQueryInput = {
     search?: string;
     filters?: FeedFilter[];
     vipList?: string[];
+    scopedUserIds?: string[];
     excludedUserIds?: string[];
     maxEntries: number;
     dateFrom?: string;
     dateTo?: string;
     cursor?: FeedCursorInput | null;
 };
-export type FileUploadStageKind = 'file' | 'signature';
 export type FriendLogCurrentOutput = {
     userId: string;
     displayName: string;
@@ -4457,7 +4140,6 @@ export type GroupCalendarSnapshot = {
     groupProfiles: Partial<{ [key in string]: JsonValue }>;
 };
 export type GroupJoinRequestAction = 'accept' | 'reject';
-export type GroupLeaveBatchInput = { groupIds?: string[] };
 export type GroupModerationBatchAction =
     | { type: 'kick' }
     | { type: 'ban' }
@@ -4540,11 +4222,6 @@ export type GroupQuickModerationOutput = {
     kickGroups: GroupQuickModerationGroup[];
     banGroups: GroupQuickModerationGroup[];
     membershipErrorCount: number;
-};
-export type GroupVisibility = 'visible' | 'friends' | 'hidden';
-export type GroupVisibilityBatchInput = {
-    groupIds?: string[];
-    visibility: GroupVisibility;
 };
 export type HostArchitecture = 'x86_64' | 'aarch64' | 'unknown';
 export type HostCapabilities = {
@@ -4681,14 +4358,6 @@ export type LlmModelReasoning = {
     modelId: string;
     supportedEfforts: string[];
     mandatory: boolean;
-};
-export type LlmTranslateInput = {
-    endpointId: string;
-    model: string;
-    text: string;
-    targetLang: string;
-    prompt: string | null;
-    reasoningEffort: string | null;
 };
 export type LocalFavoriteGroupInput = {
     kind: FavoriteEntityKind;
@@ -5044,17 +4713,6 @@ export type NotificationRespondInput = {
     responseType?: string;
     responseData?: JsonValue;
 };
-export type NotificationRowsOutput = {
-    v1Rows: NotificationV1RowOutput[];
-    v2Rows: NotificationV2RowOutput[];
-    unseenV2Rows: NotificationV2RowOutput[];
-};
-export type NotificationRowsQueryInput = {
-    userId: string;
-    filters?: string[];
-    perTableLimit: number;
-    includeUnseen?: boolean;
-};
 export type NotificationSyncOutcome = {
     v1Count: number;
     v2Count: number;
@@ -5066,40 +4724,6 @@ export type NotificationTarget = {
     version?: number;
     type?: string;
     senderUserId?: string;
-};
-export type NotificationV1RowOutput = {
-    id: string;
-    created_at: string;
-    type: string;
-    sender_user_id: string;
-    sender_username: string;
-    receiver_user_id: string;
-    message: string;
-    world_id: string;
-    world_name: string;
-    image_url: string;
-    invite_message: string;
-    request_message: string;
-    response_message: string;
-    expired: number;
-};
-export type NotificationV2RowOutput = {
-    id: string;
-    created_at: string;
-    updated_at: string;
-    expires_at: string;
-    type: string;
-    link: string;
-    link_text: string;
-    message: string;
-    title: string;
-    image_url: string;
-    seen: number;
-    sender_user_id: string;
-    sender_username: string;
-    data: string;
-    responses: string;
-    details: string;
 };
 export type NotificationWebhookFormat = 'generic' | 'discord';
 export type NowPlayingPayload = {
@@ -5303,14 +4927,6 @@ export type PlayerDetail = {
     displayName?: string;
     pos?: [number, number, number] | null;
 };
-export type PlayerJoinLeaveOutput = {
-    id: number;
-    createdAt: string;
-    type: string;
-    displayName: string;
-    userId: string;
-    time: number;
-};
 export type PlayerListSnapshotContext = {
     createdAt: string;
     location: string;
@@ -5335,14 +4951,6 @@ export type PlayerListSnapshotPlayer = {
     joinedAtMs: number;
 };
 export type PlayerListSnapshotSource = 'database' | 'none' | 'runtime';
-export type PlayerLocationOutput = {
-    createdAt: string;
-    location: string;
-    worldId: string;
-    worldName: string;
-    time: number;
-    groupName: string;
-};
 export type PlayerState = {
     userId: string;
     displayName: string;
@@ -5914,6 +5522,12 @@ export type SqliteErrorCategory =
     | 'disk_full'
     | 'locked'
     | 'io_error';
+export type StartupBootstrapSnapshot = {
+    hostCapabilities: HostCapabilities;
+    configEntries: ConfigReadEntry[];
+    systemLanguage: string;
+    systemCulture: string;
+};
 export type TelemetryClientEvent =
     | { type: 'pageVisit'; route: string }
     | {
@@ -6071,7 +5685,6 @@ export type VrchatFavoriteGroupsInput = {
     offset?: number;
     ownerId?: string;
 };
-export type VrchatFavoritePagedInput = { n?: number; offset?: number };
 export type VrchatFavoriteType = 'avatar' | 'world' | 'vrcPlusWorld' | 'friend';
 export type VrchatFavoriteWorldsInput = {
     n?: number;
@@ -6081,11 +5694,6 @@ export type VrchatFavoriteWorldsInput = {
     tag?: string;
 };
 export type VrchatFriendUserInput = { userId?: string };
-export type VrchatFriendsGetInput = {
-    offline?: boolean;
-    n?: number;
-    offset?: number;
-};
 export type VrchatGroupGalleryInput = {
     groupId?: string;
     galleryId?: string;
@@ -6240,29 +5848,7 @@ export type VrchatMediaAvatarGalleryImageUploadInput = {
     imageData?: string;
     avatarId: JsonValue;
 };
-export type VrchatMediaEntityImageInput = {
-    entityId?: string;
-    imageUrl?: string;
-};
 export type VrchatMediaFileIdInput = { fileId?: string };
-export type VrchatMediaFilePutInput = {
-    url?: string;
-    fileData?: string;
-    fileMIME?: string;
-    fileMD5?: string;
-};
-export type VrchatMediaFileUploadStageInput = {
-    fileId?: string;
-    version?: number;
-    kind: FileUploadStageKind;
-};
-export type VrchatMediaFileVersionCreateInput = {
-    fileId?: string;
-    fileMd5?: string;
-    fileSizeInBytes?: number;
-    signatureMd5?: string;
-    signatureSizeInBytes?: number;
-};
 export type VrchatMediaImageUploadInput = {
     imageData?: string;
     params?: Partial<{ [key in string]: JsonValue }>;

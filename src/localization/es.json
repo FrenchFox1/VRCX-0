@@ -840,6 +840,11 @@
         "feed": {
             "filter": "Filtrar",
             "feed_persistence_disabled_tooltip": "El historial del Feed no se está guardando",
+            "search_scope": {
+                "aria_label": "Buscar en el feed y filtrar por amigo",
+                "no_friends": "No hay amigos coincidentes",
+                "search_all": "Buscar «{query}» en todo el historial"
+            },
             "favorites_only_tooltip": "Filtrar solo favoritos",
             "search_placeholder": "Buscar",
             "date_range": "Rango de fechas",
@@ -1196,7 +1201,7 @@
             "avatars": {
                 "search": "Buscar",
                 "vrchat_favorites": "Favoritos de VRChat",
-                "local_favorites": "Favoritos locales (VRChat+)",
+                "local_favorites": "Favoritos locales (VRC+)",
                 "new_group": "Nuevo Grupo",
                 "local_history": "Historial local",
                 "styles": "Estilos",
@@ -1455,7 +1460,7 @@
                     "earned": "Insignia obtenida"
                 },
                 "vrcplus": {
-                    "gift": "Regalo de VRChat+"
+                    "gift": "Regalo de VRC+"
                 },
                 "economy": {
                     "received": {
@@ -2002,7 +2007,20 @@
                 "ai": "IA",
                 "vr": "VR",
                 "media": "Multimedia",
-                "integrations": "Integraciones"
+                "integrations": "Integraciones",
+                "feedback": "Comentarios"
+            },
+            "feedback": {
+                "title": "Enviar comentarios",
+                "description": "Los comentarios se envían de forma anónima. Leemos todos los mensajes, pero no podemos responder directamente.",
+                "privacy_note": "No se adjuntan datos de la cuenta, solo un ID de instalación anónimo que evita el spam.",
+                "placeholder": "Cuéntanos qué funciona, qué no, o qué te gustaría ver…",
+                "submit": "Enviar",
+                "submitting": "Enviando…",
+                "thanks": "¡Gracias por tu opinión!",
+                "cooldown": "Podrás enviar otro en {{seconds}} s",
+                "more_help": "¿Necesitas respuesta o quieres adjuntar registros?",
+                "error_generic": "No se pudieron enviar los comentarios. Inténtalo de nuevo más tarde."
             },
             "social": {
                 "interaction": {
@@ -2432,6 +2450,8 @@
                         "header": "Comportamiento de VRChat",
                         "quit_header": "Cerrar procesos restantes de VRChat",
                         "quit_description": "Después de cerrar VRChat, cierra cualquier proceso de VRChat que siga en ejecución.",
+                        "focus_on_join_header": "Traer VRChat al frente",
+                        "focus_on_join_description": "Después de unirte a una instancia desde VRCX-0, cambia a la ventana de VRChat. Solo en modo escritorio.",
                         "deep_link_registration": "Abrir enlaces de VRCX-0",
                         "deep_link_registered": "Los enlaces de VRCX-0 se abren con VRCX-0 para este usuario.",
                         "deep_link_not_registered": "Falta la configuración del sistema para abrir los enlaces de VRCX-0 o apunta a una instalación no válida.",
@@ -4146,7 +4166,7 @@
         "favorite": {
             "vrchat_favorites": "Favoritos de VRChat",
             "local_favorites": "Favoritos Locales",
-            "local_avatar_favorites": "Favoritos locales (VRChat+)"
+            "local_avatar_favorites": "Favoritos locales (VRC+)"
         },
         "social_status": {
             "presets": "Preajustes"
@@ -5154,8 +5174,6 @@
             "migration_restarting_title": "Migrando datos",
             "migration_restarting": "VRCX-0 se reiniciará para completar la migración...",
             "upgrade_in_progress_title": "Actualización de la base de datos en curso",
-            "upgrade_in_progress_description": "Actualizando la base de datos de la versión {from} a la {to}. No cierres VRCX-0",
-            "upgrade_in_progress_initializing": "Inicializando la actualización de la base de datos. No cierres VRCX-0",
             "upgrade_stage": {
                 "preflight": "Comprobando la base de datos",
                 "prepare_legacy_snapshot": "Creando una copia coherente de la base de datos de VRCX",
@@ -5167,6 +5185,7 @@
                 "legacy_performance_indexes": "Añadiendo índices del historial",
                 "global_performance_indexes": "Añadiendo índices de la base de datos",
                 "notification_performance_indexes": "Añadiendo índices de notificaciones",
+                "schema_migrations": "Aplicando actualizaciones de estructura",
                 "optimize": "Optimizando la copia de la base de datos",
                 "write_version": "Guardando la versión de la base de datos",
                 "commit": "Cambiando a la base de datos actualizada"
@@ -5182,7 +5201,10 @@
             "fresh_start_confirm_title": "¿Usar una nueva base de datos?",
             "fresh_start_confirm_description": "VRCX-0 conservará la base actual y los archivos del fallo en una carpeta de recuperación y después se reiniciará con una base nueva y vacía. La configuración, el historial local y los datos de cuentas guardados no se transferirán a la nueva base.",
             "fresh_start_restarting": "Archivando la base actual y reiniciando VRCX-0...",
-            "fresh_start_failed": "No se pudo crear una nueva base de datos."
+            "fresh_start_failed": "No se pudo crear una nueva base de datos.",
+            "upgrade_keep_open": "Mantén VRCX-0 abierto hasta que termine.",
+            "failure_reason": "Motivo",
+            "restart_app": "Reiniciar VRCX-0"
         },
         "file": {
             "not_image": "El archivo no es una imagen",
@@ -5220,7 +5242,7 @@
             "url_copied": "URL del mundo copiada al portapapeles"
         },
         "vrcplus": {
-            "required": "VRChat+"
+            "required": "VRC+"
         },
         "screenshot_metadata": {
             "deleted": "Metadatos de la captura eliminados",
@@ -5706,12 +5728,10 @@
         },
         "database_upgrade_service": {
             "label": {
-                "unknown_path": "Ruta desconocida",
                 "database_schema_is_current": "El esquema de la base de datos está actualizado"
             },
             "error": {
-                "failed_upgrade_description": "La actualización anterior de la base de datos falló. Esta base de datos no puede usarse hasta que se repare manualmente.\n\nBase de datos de trabajo: {path}",
-                "failed_upgrade_description_with_reason": "La actualización anterior de la base de datos falló. Esta base de datos no puede usarse hasta que se repare manualmente.\n\nBase de datos de trabajo: {path}\n\nMotivo: {reason}",
+                "failed_upgrade_description": "La actualización anterior de la base de datos falló. Esta base de datos no puede usarse hasta que se repare manualmente.",
                 "apply_upgrade_failed": "VRCX-0 no pudo aplicar una actualización de la base de datos local",
                 "legacy_migration_restart_failed": "VRCX-0 no pudo reiniciarse para migrar tus datos existentes de VRCX. Puedes volver a intentarlo u omitir para continuar con la base de datos actual.",
                 "newer_schema_requires_newer_app": "Esta base de datos usa la versión de esquema {value}, pero esta versión de VRCX-0 solo admite hasta la {value2}. Instala la última versión de VRCX-0 para abrirla."
@@ -5723,9 +5743,6 @@
                 "refresh_config_failed_after_upgrade": "VRCX-0 actualizó la base de datos, pero no pudo recargar la configuración local. Reinicia la aplicación",
                 "requesting_legacy_migration": "Preparando la migración de tus datos existentes de VRCX...",
                 "skipping_legacy_migration": "Omitiendo la migración y configurando tu base de datos..."
-            },
-            "dynamic": {
-                "updating_database_from_value_to_value": "Actualizando la base de datos de {value} a {value2}"
             }
         },
         "favorite_import_service": {

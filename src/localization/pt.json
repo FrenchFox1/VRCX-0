@@ -840,6 +840,11 @@
         "feed": {
             "filter": "Filtrar",
             "feed_persistence_disabled_tooltip": "O histórico do Feed não está sendo salvo",
+            "search_scope": {
+                "aria_label": "Pesquisar no feed e filtrar por amigo",
+                "no_friends": "Nenhum amigo correspondente",
+                "search_all": "Pesquisar «{query}» em todo o histórico"
+            },
             "favorites_only_tooltip": "Filtrar apenas favoritos",
             "search_placeholder": "Pesquisar",
             "date_range": "Intervalo de datas",
@@ -2002,7 +2007,20 @@
                 "ai": "IA",
                 "vr": "VR",
                 "media": "Mídia",
-                "integrations": "Integrações"
+                "integrations": "Integrações",
+                "feedback": "Feedback"
+            },
+            "feedback": {
+                "title": "Enviar feedback",
+                "description": "O feedback é enviado de forma anónima. Lemos todas as mensagens, mas não podemos responder diretamente.",
+                "privacy_note": "Não é incluída nenhuma informação da conta, apenas um ID de instalação anónimo que evita spam.",
+                "placeholder": "Diga-nos o que funciona, o que não funciona ou o que gostaria de ver…",
+                "submit": "Enviar",
+                "submitting": "A enviar…",
+                "thanks": "Obrigado pelo seu feedback!",
+                "cooldown": "Pode enviar novamente dentro de {{seconds}} s",
+                "more_help": "Precisa de resposta ou quer anexar registos?",
+                "error_generic": "Não foi possível enviar o feedback. Tente novamente mais tarde."
             },
             "social": {
                 "interaction": {
@@ -2432,6 +2450,8 @@
                         "header": "Comportamento do VRChat",
                         "quit_header": "Fechar processos restantes do VRChat",
                         "quit_description": "Após o VRChat encerrar, feche os processos do VRChat que ainda estiverem em execução.",
+                        "focus_on_join_header": "Trazer o VRChat para a frente",
+                        "focus_on_join_description": "Depois de entrar em uma instância pelo VRCX-0, alterna para a janela do VRChat. Apenas no modo desktop.",
                         "deep_link_registration": "Abrir links do VRCX-0",
                         "deep_link_registered": "Os links do VRCX-0 são abertos pelo VRCX-0 para este usuário.",
                         "deep_link_not_registered": "A configuração do sistema para abrir links do VRCX-0 está ausente ou aponta para uma instalação inválida.",
@@ -5154,8 +5174,6 @@
             "migration_restarting_title": "Migrando dados",
             "migration_restarting": "O VRCX-0 será reiniciado para concluir a migração...",
             "upgrade_in_progress_title": "Atualização do banco de dados em andamento",
-            "upgrade_in_progress_description": "Atualizando o banco de dados da versão {from} para {to}. Por favor, não feche o VRCX-0.",
-            "upgrade_in_progress_initializing": "Inicializando a atualização do banco de dados. Por favor, não feche o VRCX-0.",
             "upgrade_stage": {
                 "preflight": "Verificando o banco de dados",
                 "prepare_legacy_snapshot": "Criando uma cópia consistente do banco de dados do VRCX",
@@ -5167,6 +5185,7 @@
                 "legacy_performance_indexes": "Adicionando índices do histórico",
                 "global_performance_indexes": "Adicionando índices do banco de dados",
                 "notification_performance_indexes": "Adicionando índices de notificações",
+                "schema_migrations": "Aplicando atualizações de estrutura",
                 "optimize": "Otimizando a cópia do banco de dados",
                 "write_version": "Registrando a versão do banco de dados",
                 "commit": "Alternando para o banco de dados atualizado"
@@ -5182,7 +5201,10 @@
             "fresh_start_confirm_title": "Usar um novo banco de dados?",
             "fresh_start_confirm_description": "O VRCX-0 manterá o banco atual e os arquivos da falha em uma pasta de recuperação e reiniciará com um novo banco vazio. As configurações, o histórico local e os dados de contas salvas não serão transferidos para o novo banco.",
             "fresh_start_restarting": "Arquivando o banco atual e reiniciando o VRCX-0...",
-            "fresh_start_failed": "Não foi possível criar um novo banco de dados."
+            "fresh_start_failed": "Não foi possível criar um novo banco de dados.",
+            "upgrade_keep_open": "Mantenha o VRCX-0 aberto até terminar.",
+            "failure_reason": "Motivo",
+            "restart_app": "Reiniciar o VRCX-0"
         },
         "file": {
             "not_image": "Arquivo não é uma imagem",
@@ -5706,12 +5728,10 @@
         },
         "database_upgrade_service": {
             "label": {
-                "unknown_path": "Caminho desconhecido",
                 "database_schema_is_current": "O esquema do banco de dados está atualizado"
             },
             "error": {
-                "failed_upgrade_description": "A atualização anterior do banco de dados falhou. Este banco de dados não pode ser usado até ser reparado manualmente.\n\nBanco de dados de trabalho: {path}",
-                "failed_upgrade_description_with_reason": "A atualização anterior do banco de dados falhou. Este banco de dados não pode ser usado até ser reparado manualmente.\n\nBanco de dados de trabalho: {path}\n\nMotivo: {reason}",
+                "failed_upgrade_description": "A atualização anterior do banco de dados falhou. Este banco de dados não pode ser usado até ser reparado manualmente.",
                 "apply_upgrade_failed": "O VRCX-0 não conseguiu aplicar uma atualização do banco de dados local",
                 "legacy_migration_restart_failed": "O VRCX-0 não conseguiu reiniciar para migrar seus dados existentes do VRCX. Você pode tentar novamente ou pular para continuar com o banco de dados atual.",
                 "newer_schema_requires_newer_app": "Este banco de dados usa a versão de esquema {value}, mas esta versão do VRCX-0 só oferece suporte até {value2}. Instale a versão mais recente do VRCX-0 para abri-lo."
@@ -5723,9 +5743,6 @@
                 "refresh_config_failed_after_upgrade": "O VRCX-0 atualizou o banco de dados, mas não conseguiu recarregar a configuração local. Reinicie o aplicativo",
                 "requesting_legacy_migration": "Preparando para migrar seus dados existentes do VRCX...",
                 "skipping_legacy_migration": "Pulando a migração e configurando seu banco de dados..."
-            },
-            "dynamic": {
-                "updating_database_from_value_to_value": "Atualizando o banco de dados de {value} para {value2}"
             }
         },
         "favorite_import_service": {

@@ -14,7 +14,7 @@ pub mod telemetry;
 
 pub use authenticated_runtime::{
     favorite_group_membership_from_baseline, favorite_world_group_membership_from_baseline,
-    AuthenticatedRuntimeOrchestrator,
+    AuthenticatedRuntimeDeps, AuthenticatedRuntimeOrchestrator,
 };
 pub use composition::{
     RuntimeHostCallback, RuntimeHostComposition, RuntimeHostFavoritesCallback,
@@ -30,7 +30,7 @@ pub use profile::RuntimeHostProfile;
 pub use shared_collection_import::SharedCollectionImportRuntime;
 pub use state::{
     replace_backend_frontend_session_user_if_session_matches,
-    update_backend_frontend_session_user_if_session_matches, BackendRuntimeFrontendSessionSnapshot,
-    CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions, RuntimeHostState,
-    RuntimeHostStateBuilder, SocialBaselineRefreshOutput,
+    update_backend_frontend_session_user_if_session_matches, BackendRuntimeCombinedSnapshot,
+    BackendRuntimeFrontendSessionSnapshot, CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions,
+    RuntimeHostState, RuntimeHostStateBuilder, SocialBaselineRefreshOutput,
 };
