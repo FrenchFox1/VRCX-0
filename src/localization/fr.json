@@ -839,7 +839,12 @@
         },
         "feed": {
             "filter": "Filtrer",
-            "feed_persistence_disabled_tooltip": "L’historique du Feed n’est pas enregistré",
+            "feed_persistence_disabled_tooltip": "L’historique du flux n’est pas enregistré",
+            "search_scope": {
+                "aria_label": "Rechercher le flux, filtrer par ami",
+                "no_friends": "Aucun ami correspondant",
+                "search_all": "Rechercher dans tout le flux pour \"{query}\""
+            },
             "favorites_only_tooltip": "Filtrer uniquement les favoris",
             "search_placeholder": "Rechercher",
             "date_range": "Plage de dates",
@@ -934,8 +939,8 @@
                 "value_copied": "{value} copié"
             },
             "context": {
-                "hide_user": "Masquer du Feed",
-                "unhide_user": "Ne plus masquer du Feed"
+                "hide_user": "Masquer du flux",
+                "unhide_user": "Ne plus masquer du flux"
             }
         },
         "friends_locations": {
@@ -2002,7 +2007,20 @@
                 "ai": "IA",
                 "vr": "VR",
                 "media": "Média",
-                "integrations": "Intégrations"
+                "integrations": "Intégrations",
+                "feedback": "Retour d'expérience'"
+            },
+            "feedback": {
+                "title": "Envoyer le retour d'expérience",
+                "description": "le retour d'expérience est envoyé de manière anonyme. Nous lisons les messages, mais ne pouvons pas y répondre directement.",
+                "privacy_note": "Aucune information concernant votre compte n'est partagée — Seul une ID d'installation anonyme est envoyée pour éviter le spam.",
+                "placeholder": "Dites nous ce qui fonctionne, ne fonctionne pas, ou ce que vous aimeriez voir dans VRCX-0.",
+                "submit": "Envoyer",
+                "submitting": "Envoi en cours…",
+                "thanks": "Merci pour votre retour d'expérience !",
+                "cooldown": "Vous pouvez envoyer à nouveau dans {{seconds}}s",
+                "more_help": "Besoin d'une réponse, ou souhaitez-vous attacher les journaux ?",
+                "error_generic": "Impossible d'envoyer le retour d'expérience. Veuillez réessayer plus tard."
             },
             "social": {
                 "interaction": {
@@ -2012,11 +2030,11 @@
                     "header": "Favoris"
                 },
                 "hidden_feed": {
-                    "header": "Utilisateurs masqués du Feed",
-                    "description": "Masque les utilisateurs sélectionnés du Feed sans supprimer les données enregistrées.",
+                    "header": "Utilisateurs masqués dans le flux",
+                    "description": "Masque les utilisateurs sélectionnés dans le flux sans supprimer les données enregistrées.",
                     "add": "Ajouter un utilisateur",
                     "search_placeholder": "Rechercher des utilisateurs",
-                    "empty": "Aucun utilisateur masqué du Feed.",
+                    "empty": "Aucun utilisateur masqué du flux.",
                     "remove": "Retirer l'utilisateur masqué",
                     "unknown_user": "Utilisateur inconnu"
                 }
@@ -2457,8 +2475,8 @@
                         "hide": "Masquer les outils",
                         "gamelog": "Enregistrer l’historique du journal de jeu",
                         "gamelog_description": "Lorsque cette option est désactivée, aucun nouvel historique du journal de jeu n’est enregistré. la liste d'utilisateurs, En cours, les métadonnées des captures, médias d'instances et les autres fonctions en temps réel restent disponibles.",
-                        "feed_history": "Enregistrer l’historique du Feed",
-                        "feed_history_description": "Lorsque cette option est désactivée, l’historique du Feed n’est ni enregistré ni chargé. Le Feed démarre vide et n’affiche que l’activité en temps réel de cette session. Friends Sidebar et les autres fonctions en temps réel restent disponibles.",
+                        "feed_history": "Enregistrer l’historique du flux",
+                        "feed_history_description": "Lorsque cette option est désactivée, l’historique du flux n’est ni enregistré ni chargé. Le flux démarre vide et n’affiche que l’activité en temps réel de cette session. Friends Sidebar et les autres fonctions en temps réel restent disponibles.",
                         "tools": "Diagnostic",
                         "database_usage": "Utilisation de la base de données",
                         "refresh_database_usage": "Actualiser l’utilisation de la base de données",
@@ -5018,7 +5036,7 @@
         "logout": "Se déconnecter ?",
         "delete_log": "Supprimer le journal ?",
         "disable_gamelog": "Arrêter d’enregistrer le nouvel historique du journal de jeu ? La liste d'utilisateurs, en cours, les métadonnées des captures, médias d'instances et les autres fonctions en temps réel restent disponibles.",
-        "disable_feed_persistence": "Arrêter d’enregistrer l’historique du Feed ? Le Feed repartira d’une vue en temps réel vide et les analyses historiques comporteront une lacune définitive. Friends Sidebar et les autres fonctions en temps réel resteront disponibles.",
+        "disable_feed_persistence": "Arrêter d’enregistrer l’historique du flux ? Le flux repartira d’une vue en temps réel vide et les analyses historiques comporteront une lacune définitive. La barre latérale d'amis et les autres fonctions en temps réel resteront disponibles.",
         "delete_vrc_registry": "Supprimer les paramètres de registre VRChat existants ?",
         "clear_cache": "Effacer tout le cache VRChat ?"
     },
