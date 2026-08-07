@@ -74,7 +74,7 @@
         },
         "settings": {
             "playbook_mode": "Mode d'analyse",
-            "playbook_mode_description": "Guidé : oriente un modèle local plus faible vers l'outil le plus pertinent pour une réponse plus fiable. Ouvert : ouvre tous les outils pour qu'un modèle plus puissant analyse librement et plus en profondeur.",
+            "playbook_mode_description": "Guidé : Modèle local plus faible et plus pertinent. Ouvert : Modèle plus puissant qui analyse librement et en profondeur.",
             "playbook_mode_auto": "Auto (selon l'endpoint)",
             "playbook_mode_guided": "Guidé (modèles locaux / faibles)",
             "playbook_mode_open": "Ouvert (modèles puissants)"
@@ -136,8 +136,8 @@
         "create_backup_first": "Créer d’abord une sauvegarde",
         "space_summary": "Requis : {required} · Disponible : {available}",
         "insufficient_space": "L’espace disponible est insuffisant.",
-        "contents_notice": "La base de données, les réglages, l’index de la galerie et les miniatures seront copiés. Les caches d’images seront retéléchargés. Les anciennes données restent disponibles jusqu’à leur nettoyage.",
-        "unsupported_storage_warning": "N’utilisez pas de lecteur réseau, de dossier synchronisé dans le cloud (OneDrive, iCloud, etc.) ni de lecteur amovible. Les bases de données peuvent y être endommagées et ces configurations ne sont pas prises en charge.",
+        "contents_notice": "La base de données, les réglages, l’index de la galerie et les miniatures seront copiés. Les caches d’images seront retéléchargés.",
+        "unsupported_storage_warning": "L'utilisation de lecteur réseau, dossier synchronisé dans le cloud (OneDrive, iCloud, etc.) ou de lecteur amovible peut endommager les bases de données.",
         "mode": {
             "migrate": "Déplacer mes données actuelles (recommandé)",
             "adoptExisting": "Utiliser le profil VRCX-0 déjà présent",
@@ -244,7 +244,7 @@
         "preparing_restore": "Préparation de la restauration",
         "restore_prepare_description": "VRCX-0 vérifie les données préparées avant de redémarrer.",
         "restore_confirm_title": "Restaurer cette sauvegarde ?",
-        "restore_confirm_description": "Vos données actuelles seront remplacées par la sauvegarde et VRCX-0 redémarrera. Une copie de vos données actuelles sera conservée automatiquement afin de pouvoir les récupérer en cas de problème.",
+        "restore_confirm_description": "Vos données actuelles seront remplacées par la sauvegarde et VRCX-0 redémarrera. Une copie de vos données actuelles sera conservée automatiquement.",
         "restore_and_restart": "Restaurer et redémarrer",
         "restarting_to_restore": "VRCX-0 redémarre pour restaurer la sauvegarde",
         "created_at": "Créée le",
@@ -527,7 +527,7 @@
         "edit_dashboard": "Modifier le tableau de bord",
         "delete_dashboard": "Supprimer le tableau de bord",
         "custom_nav": {
-            "dialog_description": "Glissez pour réordonner, ou déposez un élément dans un dossier pour le regrouper. Les éléments masqués rejoignent la liste « Masqués » et peuvent être rétablis à tout moment. Les modifications de tableaux de bord sont immédiates.",
+            "dialog_description": "Glissez pour réordonner, ou déposez un élément dans un dossier pour le regrouper. Les éléments masqués rejoignent la liste « Masqués ».",
             "visible_items": "Dans le menu",
             "hidden_empty": "Rien de masqué",
             "folder_item_count": "{count} éléments",
