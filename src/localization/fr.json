@@ -5744,7 +5744,7 @@
                 "picker_description": "Choisissez un groupe pour gérer les membres, bannissements, invitations et demandes d'adhésion.",
                 "loading": "Chargement des groupes que vous modérez…",
                 "empty_title": "Aucun groupe à modérer",
-                "empty_description": "Vous n'avez pas encore de droits de modération dans vos groupes.",
+                "empty_description": "Vous n'avez pas encore de permission de modération dans vos groupes.",
                 "permissions_degraded": "Certaines autorisations de groupe n'ont pas pu être vérifiées. La liste ci-dessous peut être incomplète.",
                 "member_count": "{count} membres",
                 "rail_title": "Groupes que vous modérez",
