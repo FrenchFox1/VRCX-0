@@ -18,36 +18,27 @@ type FavoriteRemoteGroupsKey =
     | 'favoriteAvatarGroups'
     | 'favoriteWorldGroups'
     | 'favoriteFriendGroups';
-type FavoriteLocalGroupsKey =
-    | 'localAvatarFavoriteGroups'
-    | 'localWorldFavoriteGroups'
-    | 'localFriendFavoriteGroups';
-
 interface FavoriteTypeConfig {
     label: string;
     regex: RegExp;
     remoteGroupsKey: FavoriteRemoteGroupsKey;
-    localGroupsKey: FavoriteLocalGroupsKey;
 }
 
 const TYPE_CONFIG: Record<FavoriteImportKind, FavoriteTypeConfig> = {
     avatar: {
         label: 'Avatar',
         regex: /avtr_[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}/g,
-        remoteGroupsKey: 'favoriteAvatarGroups',
-        localGroupsKey: 'localAvatarFavoriteGroups'
+        remoteGroupsKey: 'favoriteAvatarGroups'
     },
     world: {
         label: 'World',
         regex: /wrld_[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}/g,
-        remoteGroupsKey: 'favoriteWorldGroups',
-        localGroupsKey: 'localWorldFavoriteGroups'
+        remoteGroupsKey: 'favoriteWorldGroups'
     },
     friend: {
         label: 'Friend',
         regex: /usr_[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}/g,
-        remoteGroupsKey: 'favoriteFriendGroups',
-        localGroupsKey: 'localFriendFavoriteGroups'
+        remoteGroupsKey: 'favoriteFriendGroups'
     }
 };
 
@@ -79,16 +70,12 @@ function extractIds(type: FavoriteImportKind, input: unknown): string[] {
     );
 }
 
-function getFavoriteGroups(type: FavoriteImportKind | null) {
+function getRemoteFavoriteGroups(type: FavoriteImportKind | null) {
     if (!type) {
-        return { remoteGroups: [], localGroups: [] };
+        return [];
     }
     const config = TYPE_CONFIG[type];
-    const favoriteState = useFavoriteStore.getState();
-    return {
-        remoteGroups: favoriteState[config.remoteGroupsKey],
-        localGroups: favoriteState[config.localGroupsKey]
-    };
+    return useFavoriteStore.getState()[config.remoteGroupsKey];
 }
 
 function refreshFavoritesSnapshot() {
@@ -152,18 +139,42 @@ interface FavoriteImportWatcher {
 
 let favoriteImportWatcher: FavoriteImportWatcher | null = null;
 
+function dismissFavoriteImportStatus(status: FavoriteImportStatus): void {
+    if (!status.runId || isBackendActive(status)) {
+        return;
+    }
+    void commands
+        .appFavoriteImportDismiss(status.runId)
+        .catch((error: unknown) => {
+            console.warn('Failed to dismiss favorite import result:', error);
+        });
+}
+
+function requestFavoriteImportCancel(): void {
+    void commands
+        .appFavoriteImportCancel()
+        .then(dismissFavoriteImportStatus)
+        .catch((error: unknown) => {
+            console.warn('Failed to cancel favorite import:', error);
+        });
+}
+
 export function handleFavoriteImportStatusEvent(
     status: FavoriteImportStatus
 ): void {
     const watcher = favoriteImportWatcher;
     if (!watcher || status.runId !== watcher.runId) {
+        dismissFavoriteImportStatus(status);
         return;
     }
     if (!isActiveDialogSession(watcher.sessionId, watcher.type)) {
         favoriteImportWatcher = null;
         commands
             .appFavoriteImportCancel()
-            .then(watcher.resolve)
+            .then((cancelledStatus) => {
+                dismissFavoriteImportStatus(cancelledStatus);
+                watcher.resolve(cancelledStatus);
+            })
             .catch(() => watcher.resolve(status));
         return;
     }
@@ -176,6 +187,7 @@ export function handleFavoriteImportStatusEvent(
     );
     if (!isBackendActive(status)) {
         favoriteImportWatcher = null;
+        dismissFavoriteImportStatus(status);
         watcher.resolve(status);
     }
 }
@@ -336,7 +348,7 @@ export async function importFavoriteImportRows(): Promise<void> {
     if (!type || state.rows.length === 0) {
         return;
     }
-    const { remoteGroups } = getFavoriteGroups(type);
+    const remoteGroups = getRemoteFavoriteGroups(type);
     const remoteGroup = state.remoteGroupName
         ? remoteGroups.find((group) => group.name === state.remoteGroupName) ||
           null
@@ -398,21 +410,15 @@ export function clearFavoriteImportRows(): void {
 
 export function cancelFavoriteImport(): void {
     useFavoriteImportStore.getState().cancelActiveWork();
-    void commands.appFavoriteImportCancel().catch((error: unknown) => {
-        console.warn('Failed to cancel favorite import:', error);
-    });
+    requestFavoriteImportCancel();
 }
 
 export function closeFavoriteImportDialog(): void {
-    cancelFavoriteImport();
     useFavoriteImportStore.getState().closeDialog();
+    requestFavoriteImportCancel();
 }
 
 export function getFavoriteImportTypeConfig(type: unknown) {
     const normalized = normalizeType(type);
     return normalized ? TYPE_CONFIG[normalized] : null;
-}
-
-export function getFavoriteImportGroups(type: unknown) {
-    return getFavoriteGroups(normalizeType(type));
 }

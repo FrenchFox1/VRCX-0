@@ -2,45 +2,77 @@ import { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { useKnownUserFacts } from '@/lib/useKnownUser';
-import avatarCacheRepository from '@/repositories/avatarCacheRepository';
+import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
-import { useWorldFactsStore, type WorldFact } from '@/state/worldFactsStore';
 
 import {
+    buildFavoriteAvatarDetailIds,
     buildFavoriteAvatarTags,
     buildFavoriteFriendFactIds,
+    buildFavoriteRemoteGroupEntityIds,
     selectFavoritesCollectionsState
 } from './favoritesCollectionsState';
-import type { FavoriteKind } from './favoritesTypes';
+import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import { useAvatarDetailFallbacks } from './useAvatarDetailFallbacks';
 import { useFavoriteRemoteDetails } from './useFavoriteRemoteDetails';
-import { useRemoteAvatarCacheFallbacks } from './useRemoteAvatarCacheFallbacks';
-import { useRemoteWorldCacheFallbacks } from './useRemoteWorldCacheFallbacks';
+import { useLocalWorldFavorites } from './useLocalWorldFavorites';
+import { useWorldDetailFallbacks } from './useWorldDetailFallbacks';
 
-const EMPTY_WORLD_FACTS: Record<string, WorldFact> = {};
+function selectRequestedRemoteEntityIds({
+    favoriteAvatarIds,
+    favoriteWorldIds,
+    kind,
+    loadAllRemoteDetails,
+    selectedRemoteEntityIds,
+    selectedSource
+}: {
+    favoriteAvatarIds: string[];
+    favoriteWorldIds: string[];
+    kind: FavoriteKind;
+    loadAllRemoteDetails: boolean;
+    selectedRemoteEntityIds: string[];
+    selectedSource: FavoriteSource;
+}): string[] {
+    if (kind === 'avatar') {
+        return favoriteAvatarIds;
+    }
+    if (kind !== 'world') {
+        return [];
+    }
+    if (loadAllRemoteDetails) {
+        return favoriteWorldIds;
+    }
+    if (selectedSource === 'remote') {
+        return selectedRemoteEntityIds;
+    }
+    return [];
+}
 
 export function useFavoritesCollectionsState({
     currentEndpoint,
     currentUserId,
-    kind
+    kind,
+    loadAllRemoteDetails,
+    selectedGroupKey,
+    selectedSource
 }: {
     currentEndpoint: string;
     currentUserId: string;
     kind: FavoriteKind;
+    loadAllRemoteDetails: boolean;
+    selectedGroupKey: string;
+    selectedSource: FavoriteSource;
 }) {
     const favoriteSelector = useMemo(
         () => selectFavoritesCollectionsState(kind),
         [kind]
     );
     const favoriteState = useFavoriteStore(useShallow(favoriteSelector));
+    const localWorldFavorites = useLocalWorldFavorites(kind === 'world');
     const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const worldFactsById = useWorldFactsStore((state) =>
-        kind === 'world' ? state.worldsById : EMPTY_WORLD_FACTS
-    );
     const [avatarHistoryLoading, setAvatarHistoryLoading] = useState(false);
     const [avatarHistory, setAvatarHistory] = useState<unknown[]>([]);
-    const [remoteDetailsRefreshToken, setRemoteDetailsRefreshToken] =
-        useState(0);
     const friendsMap = useMemo(
         () => new Map(Object.entries(friendsById || {})),
         [friendsById]
@@ -70,6 +102,23 @@ export function useFavoritesCollectionsState({
             }),
         [favoriteState.remoteFavoritesById, kind]
     );
+    const selectedRemoteEntityIds = useMemo(
+        () =>
+            buildFavoriteRemoteGroupEntityIds({
+                groupKey: selectedGroupKey,
+                kind,
+                remoteFavoritesById: favoriteState.remoteFavoritesById
+            }),
+        [favoriteState.remoteFavoritesById, kind, selectedGroupKey]
+    );
+    const requestedRemoteEntityIds = selectRequestedRemoteEntityIds({
+        favoriteAvatarIds: favoriteState.favoriteAvatarIds,
+        favoriteWorldIds: favoriteState.favoriteWorldIds,
+        kind,
+        loadAllRemoteDetails,
+        selectedRemoteEntityIds,
+        selectedSource
+    });
     const remoteEntityDetails = useFavoriteRemoteDetails({
         type: kind === 'avatar' ? 'avatar' : 'world',
         favoriteIds:
@@ -78,29 +127,72 @@ export function useFavoritesCollectionsState({
                 : kind === 'avatar'
                   ? favoriteState.favoriteAvatarIds
                   : [],
+        requestedIds: requestedRemoteEntityIds,
         avatarTags,
-        refreshToken: remoteDetailsRefreshToken,
+        cacheKey: favoriteState.favoriteLastLoadedAt || '',
         enabled:
             kind !== 'friend' &&
             favoriteState.favoriteLoadStatus === 'ready' &&
-            (kind === 'world'
-                ? favoriteState.favoriteWorldIds.length > 0
-                : favoriteState.favoriteAvatarIds.length > 0)
+            requestedRemoteEntityIds.length > 0
     });
-    const remoteWorldCacheFallbacksById = useRemoteWorldCacheFallbacks({
-        favoriteWorldIds: favoriteState.favoriteWorldIds,
+    const requestedWorldIds = useMemo(() => {
+        if (kind !== 'world') {
+            return [];
+        }
+        const worldIds = new Set(requestedRemoteEntityIds);
+        let localGroups: string[][] = [];
+        if (loadAllRemoteDetails) {
+            localGroups = Object.values(localWorldFavorites.favoritesByGroup);
+        } else if (selectedSource === 'local') {
+            localGroups = [
+                localWorldFavorites.favoritesByGroup[selectedGroupKey] || []
+            ];
+        }
+        for (const ids of localGroups) {
+            for (const worldId of ids) {
+                const normalizedWorldId = worldId.trim();
+                if (normalizedWorldId) {
+                    worldIds.add(normalizedWorldId);
+                }
+            }
+        }
+        return Array.from(worldIds);
+    }, [
         kind,
-        localWorldDetailsById: favoriteState.localWorldDetailsById,
+        loadAllRemoteDetails,
+        localWorldFavorites.favoritesByGroup,
+        requestedRemoteEntityIds,
+        selectedGroupKey,
+        selectedSource
+    ]);
+    const worldDetailFallbacksById = useWorldDetailFallbacks({
+        worldIds: requestedWorldIds,
+        kind,
         remoteEntityDetailsData: remoteEntityDetails.data,
-        remoteEntityDetailsStatus: remoteEntityDetails.status,
-        worldFactsById
+        remoteEntityDetailsStatus:
+            requestedRemoteEntityIds.length === 0
+                ? 'ready'
+                : remoteEntityDetails.status
     });
-    const remoteAvatarCacheFallbacksById = useRemoteAvatarCacheFallbacks({
-        favoriteAvatarIds: favoriteState.favoriteAvatarIds,
+    const requestedAvatarIds = useMemo(() => {
+        return buildFavoriteAvatarDetailIds({
+            favoriteAvatarIds: favoriteState.favoriteAvatarIds,
+            kind,
+            localAvatarFavorites: favoriteState.localAvatarFavorites
+        });
+    }, [
+        favoriteState.favoriteAvatarIds,
+        favoriteState.localAvatarFavorites,
+        kind
+    ]);
+    const avatarDetailFallbacksById = useAvatarDetailFallbacks({
+        avatarIds: requestedAvatarIds,
         kind,
-        localAvatarDetailsById: favoriteState.localAvatarDetailsById,
         remoteEntityDetailsData: remoteEntityDetails.data,
-        remoteEntityDetailsStatus: remoteEntityDetails.status
+        remoteEntityDetailsStatus:
+            favoriteState.favoriteAvatarIds.length === 0
+                ? 'ready'
+                : remoteEntityDetails.status
     });
     const worldAvailabilityById = remoteEntityDetails.availabilityById;
 
@@ -113,7 +205,7 @@ export function useFavoritesCollectionsState({
             };
         }
         setAvatarHistoryLoading(true);
-        avatarCacheRepository
+        avatarLocalRepository
             .getAvatarHistory(currentUserId, 100)
             .then((rows) => {
                 if (active) {
@@ -135,16 +227,11 @@ export function useFavoritesCollectionsState({
         };
     }, [currentUserId, kind]);
 
-    function refreshRemoteDetails() {
-        setRemoteDetailsRefreshToken((value) => value + 1);
-    }
-
     return {
         avatarHistory,
         avatarHistoryLoading,
         favoriteDetail: favoriteState.favoriteDetail,
         favoriteLoadStatus: favoriteState.favoriteLoadStatus,
-        refreshRemoteDetails,
         remoteEntityDetails,
         setAvatarHistory,
         setAvatarHistoryLoading,
@@ -152,7 +239,7 @@ export function useFavoritesCollectionsState({
             avatarHistoryLoading,
             friendsById,
             friendsMap,
-            refreshRemoteDetails,
+            reloadLocalWorldFavorites: localWorldFavorites.reload,
             setAvatarHistory,
             setAvatarHistoryLoading
         },
@@ -166,20 +253,17 @@ export function useFavoritesCollectionsState({
             groupedFavoriteFriendIdsByGroupKey:
                 favoriteState.groupedFavoriteFriendIdsByGroupKey,
             knownUsersById: knownFavoriteUsersById,
-            localAvatarDetailsById: favoriteState.localAvatarDetailsById,
             localAvatarFavoriteGroups: favoriteState.localAvatarFavoriteGroups,
             localAvatarFavorites: favoriteState.localAvatarFavorites,
             localFriendFavoriteGroups: favoriteState.localFriendFavoriteGroups,
             localFriendFavorites: favoriteState.localFriendFavorites,
-            localWorldDetailsById: favoriteState.localWorldDetailsById,
-            localWorldFavoriteGroups: favoriteState.localWorldFavoriteGroups,
-            localWorldFavorites: favoriteState.localWorldFavorites,
+            localWorldFavoriteGroups: localWorldFavorites.groupNames,
+            localWorldFavorites: localWorldFavorites.favoritesByGroup,
             remoteEntityDetails,
             remoteFavoritesById: favoriteState.remoteFavoritesById,
-            remoteWorldCacheFallbacksById,
-            remoteAvatarCacheFallbacksById,
-            worldAvailabilityById,
-            worldFactsById
+            worldDetailFallbacksById,
+            avatarDetailFallbacksById,
+            worldAvailabilityById
         }
     };
 }

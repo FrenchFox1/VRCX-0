@@ -17,29 +17,9 @@ use vrcx_0_runtime_host::notification::{
     decide_notification_plan, AuthWebhookEvent, AuthWebhookEventKind,
     NotificationDeliveryCondition, NotificationDeliveryGameState, NotificationDeliveryPreferences,
 };
-use vrcx_0_runtime_host_desktop::notification::{DesktopNotifier, DesktopNotifierSlot};
-
-#[test]
-fn webhook_delivery_ignores_game_state_conditions() {
-    let preferences = NotificationDeliveryPreferences {
-        desktop_toast: NotificationDeliveryCondition::GameRunning,
-        notification_tts: NotificationDeliveryCondition::GameRunning,
-        webhook_enabled: true,
-        webhook_url: "https://example.com/webhook".into(),
-        ..NotificationDeliveryPreferences::default()
-    };
-    let game = NotificationDeliveryGameState {
-        is_game_running: false,
-        is_steamvr_running: false,
-        is_game_no_vr: false,
-    };
-
-    let plan = decide_notification_plan(&delivery(true, true, true, true), &preferences, &game);
-
-    assert!(!plan.desktop);
-    assert!(!plan.tts);
-    assert!(plan.webhook);
-}
+use vrcx_0_runtime_host_desktop::notification::{
+    DesktopNotificationAction, DesktopNotifier, DesktopNotifierSlot,
+};
 
 #[test]
 fn vr_delivery_requires_steamvr_and_enabled_channels() {
@@ -81,12 +61,22 @@ fn vr_delivery_requires_steamvr_and_enabled_channels() {
 fn desktop_notifier_slot_noops_until_tauri_injects_notifier() {
     let slot = DesktopNotifierSlot::default();
 
-    slot.show("Title", Some("Body"), None, true).unwrap();
+    slot.show("Title", Some("Body"), None, true, None).unwrap();
 
     let recorder = Arc::new(RecordingDesktopNotifier::default());
     slot.set(recorder.clone());
-    slot.show("Title", Some("Body"), Some("image.png"), true)
-        .unwrap();
+    let action = DesktopNotificationAction {
+        owner_user_id: "usr_12345678-1234-1234-1234-1234567890ab".into(),
+        user_id: "usr_abcdefab-cdef-abcd-efab-cdefabcdefab".into(),
+    };
+    slot.show(
+        "Title",
+        Some("Body"),
+        Some("image.png"),
+        true,
+        Some(&action),
+    )
+    .unwrap();
 
     assert_eq!(
         recorder.entries.lock().unwrap().as_slice(),
@@ -95,6 +85,7 @@ fn desktop_notifier_slot_noops_until_tauri_injects_notifier() {
             body: Some("Body".into()),
             image: Some("image.png".into()),
             play_sound: true,
+            action: Some(action),
         }]
     );
 }
@@ -168,8 +159,6 @@ fn backend_snapshot(
         ws_status: vrcx_0_core::realtime::RealtimeWsStatus::AuthFailure,
         game_log_status: BackendRuntimeGameLogStatus::Idle,
         process_status: BackendRuntimeProcessStatus::Unknown,
-        ws_message_counts: Default::default(),
-        ws_persisted_count: 0,
         game_log_persisted_count: 0,
         last_error: None,
         updated_at: "2026-07-03T08:30:00.000Z".into(),
@@ -226,6 +215,7 @@ struct DesktopNotificationRecord {
     body: Option<String>,
     image: Option<String>,
     play_sound: bool,
+    action: Option<DesktopNotificationAction>,
 }
 
 #[derive(Default)]
@@ -240,6 +230,7 @@ impl DesktopNotifier for RecordingDesktopNotifier {
         body: Option<&str>,
         image: Option<&str>,
         play_sound: bool,
+        action: Option<&DesktopNotificationAction>,
     ) -> Result<(), String> {
         self.entries
             .lock()
@@ -249,6 +240,7 @@ impl DesktopNotifier for RecordingDesktopNotifier {
                 body: body.map(str::to_string),
                 image: image.map(str::to_string),
                 play_sound,
+                action: action.cloned(),
             });
         Ok(())
     }

@@ -7,6 +7,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import type { QuickSearchCatalog } from '../quickSearchCatalog';
 import { buildQuickSearchResults } from './quickSearchResultModel';
+import { useWorldSearchDetails } from './useWorldSearchDetails';
 
 export function useQuickSearchResults({
     catalog,
@@ -19,12 +20,7 @@ export function useQuickSearchResults({
     const remoteFavoritesByObjectId = useFavoriteStore(
         (state) => state.remoteFavoritesByObjectId
     );
-    const localWorldDetailsById = useFavoriteStore(
-        (state) => state.localWorldDetailsById
-    );
-    const localAvatarDetailsById = useFavoriteStore(
-        (state) => state.localAvatarDetailsById
-    );
+    const worldSearchDetailsById = useWorldSearchDetails(normalizedQuery);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -54,8 +50,7 @@ export function useQuickSearchResults({
                 friendsById,
                 knownFriendUsersById,
                 remoteFavoritesByObjectId,
-                localWorldDetailsById,
-                localAvatarDetailsById,
+                worldSearchDetailsById,
                 groupInstances
             }),
         [
@@ -64,8 +59,7 @@ export function useQuickSearchResults({
             friendsById,
             groupInstances,
             knownFriendUsersById,
-            localAvatarDetailsById,
-            localWorldDetailsById,
+            worldSearchDetailsById,
             normalizedQuery,
             remoteFavoritesByObjectId
         ]

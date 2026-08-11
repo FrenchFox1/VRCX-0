@@ -72,7 +72,6 @@ function phaseSnapshot(
                 currentUserId: 'usr_self',
                 favoriteLimits: {},
                 remoteFavoritesById: {},
-                remoteFavoritesByObjectId: {},
                 favoritesSortOrder: [],
                 favoriteFriendIds: ['usr_friend'],
                 groupedFavoriteFriendIdsByGroupKey: {},
@@ -83,19 +82,14 @@ function phaseSnapshot(
                 favoriteFriendGroups: [],
                 favoriteWorldGroups: [],
                 favoriteAvatarGroups: [],
-                localWorldFavorites: {},
                 localAvatarFavorites: {},
                 localFriendFavorites: {
                     Favorites: ['usr_friend']
                 },
-                localWorldFavoriteGroups: [],
                 localAvatarFavoriteGroups: [],
                 localFriendFavoriteGroups: ['Favorites'],
-                localWorldFavoritesList: [],
                 localAvatarFavoritesList: [],
                 localFriendFavoritesList: ['usr_friend'],
-                localWorldDetailsById: {},
-                localAvatarDetailsById: {},
                 detail: 'Favorites ready.'
             }
         },

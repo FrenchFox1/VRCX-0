@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import avatarCacheRepository from '@/repositories/avatarCacheRepository';
+import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import { selectAvatar as selectCurrentAvatar } from '@/services/avatarSelectionService';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -44,6 +44,7 @@ export function useFavoritesItemActions({
     kind,
     localGroups,
     newLocalGroupName,
+    reloadLocalWorldFavorites,
     refreshing,
     selectedContentItems,
     selectedSource,
@@ -63,6 +64,7 @@ export function useFavoritesItemActions({
     kind: FavoriteKind;
     localGroups: FavoriteGroup[];
     newLocalGroupName: string;
+    reloadLocalWorldFavorites(): Promise<unknown>;
     refreshing: boolean;
     selectedContentItems: FavoriteItem[];
     selectedSource: FavoriteSource;
@@ -98,7 +100,7 @@ export function useFavoritesItemActions({
         }
         setAvatarHistoryLoading(true);
         try {
-            const rows = await avatarCacheRepository.getAvatarHistory(
+            const rows = await avatarLocalRepository.getAvatarHistory(
                 currentUserId,
                 100
             );
@@ -126,7 +128,7 @@ export function useFavoritesItemActions({
             return;
         }
         try {
-            await avatarCacheRepository.clearAvatarHistory(currentUserId);
+            await avatarLocalRepository.clearAvatarHistory(currentUserId);
             setAvatarHistory([]);
             if (selectedSource === 'history') {
                 setSelectedGroupKey('');
@@ -409,10 +411,14 @@ export function useFavoritesItemActions({
                 kind,
                 groupName: nextName
             });
-            createLocalFavoriteGroup({
-                kind,
-                groupName: nextName
-            });
+            if (kind === 'world') {
+                await reloadLocalWorldFavorites();
+            } else {
+                createLocalFavoriteGroup({
+                    kind,
+                    groupName: nextName
+                });
+            }
             setSelectedSource('local');
             setSelectedGroupKey(nextName);
             setCreatingLocalGroup(false);

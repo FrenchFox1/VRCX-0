@@ -1,5 +1,27 @@
 use super::test_support::*;
 use super::*;
+use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+
+#[derive(Clone, Copy)]
+struct DiscardWorldCacheTaskExecutor;
+
+struct FinishedWorldCacheTaskHandle;
+
+impl RuntimeTaskExecutor for DiscardWorldCacheTaskExecutor {
+    fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
+        Box::new(FinishedWorldCacheTaskHandle)
+    }
+}
+
+impl RuntimeTaskHandle for FinishedWorldCacheTaskHandle {
+    fn abort(&self) {}
+
+    fn is_finished(&self) -> bool {
+        true
+    }
+
+    fn join_or_abort(&mut self, _timeout: Duration) {}
+}
 
 #[test]
 fn enrich_projection_world_names_returns_unresolved_world_ids() -> Result<()> {
@@ -99,50 +121,24 @@ fn world_cache_name_lookup_does_not_fallback_to_db_hot_path() -> Result<()> {
 }
 
 #[test]
-fn world_cache_init_pins_favorites_and_bounds_working_set() -> Result<()> {
-    let (dir, db) = {
-        let dir = TestDir::new("world-cache-init-bounds");
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-        (dir, db)
-    };
+fn realtime_start_does_not_preload_world_cache_rows() -> Result<()> {
+    let (_dir, runtime, active_session) = runtime_with_active_session("world-cache-starts-empty")?;
     world_cache_upsert(
-        db.as_ref(),
-        cached_world_entry(
-            "wrld_favorite",
-            "Favorite World",
-            "2026-01-01T00:00:00.000Z",
-        ),
+        runtime.database(),
+        cached_world_entry("wrld_db_only", "DB Only World", "2026-01-01T00:00:00.000Z"),
     )?;
-    world_cache_upsert(
-        db.as_ref(),
-        cached_world_entry("wrld_recent", "Recent World", "2026-03-01T00:00:00.000Z"),
-    )?;
-    world_cache_upsert(
-        db.as_ref(),
-        cached_world_entry("wrld_old", "Old World", "2026-02-01T00:00:00.000Z"),
-    )?;
-    favorite_add(
-        db.as_ref(),
-        None,
-        vrcx_0_core::FavoriteEntityKind::World,
-        "wrld_favorite".into(),
-        "Favorites".into(),
-    )?;
-    let cache =
-        vrcx_0_application_core::WorldCache::new(Arc::clone(&db), 1, Duration::from_secs(60));
+    runtime.set_task_executor_for_test(DiscardWorldCacheTaskExecutor);
 
-    cache.init_load();
+    runtime.runtime().start(
+        active_session.user_id,
+        active_session.endpoint,
+        active_session.websocket,
+        1,
+        json!({"id": "usr_self"}),
+        Default::default(),
+    )?;
 
-    assert_eq!(
-        cache.get_name("wrld_favorite").as_deref(),
-        Some("Favorite World")
-    );
-    assert_eq!(
-        cache.get_name("wrld_recent").as_deref(),
-        Some("Recent World")
-    );
-    assert_eq!(cache.get_name("wrld_old"), None);
-    drop(dir);
+    assert_eq!(runtime.runtime().world_cache.get_name("wrld_db_only"), None);
     Ok(())
 }
 
@@ -180,6 +176,59 @@ fn failed_world_name_warm_drains_pending_corrections_without_emit() -> Result<()
         .event_bus
         .take_events_for_test()
         .is_empty());
+    Ok(())
+}
+
+#[test]
+fn resolved_feed_world_name_patches_the_rust_cache_and_emits_feed_projection() -> Result<()> {
+    let (_dir, runtime, _active_session) =
+        runtime_with_active_session("world-warm-feed-correction")?;
+    runtime.runtime().emit_feed_entries(
+        7,
+        "usr_self",
+        vec![json!({
+            "type": "GPS",
+            "created_at": "2026-06-21T00:00:00.000Z",
+            "userId": "usr_location",
+            "location": "wrld_pending:123",
+            "worldName": "wrld_pending"
+        })],
+    );
+    runtime.runtime().deps.event_bus.take_events_for_test();
+    {
+        let mut state = runtime.runtime().state.lock().unwrap();
+        state
+            .world_enrichment
+            .inflight
+            .insert("wrld_pending".into());
+        state.world_enrichment.pending_corrections.insert(
+            "wrld_pending".into(),
+            vec![PendingEntryCorrection {
+                stream: RealtimeEntryCorrectionStream::Feed,
+                id: "GPS:2026-06-21T00:00:00.000Z:usr_location:wrld_pending:123:".into(),
+                location: "wrld_pending:123".into(),
+                group_name: String::new(),
+            }],
+        );
+    }
+
+    runtime
+        .runtime()
+        .resolve_pending_world_corrections("wrld_pending", Some("Resolved World"));
+
+    let events = runtime.runtime().deps.event_bus.take_events_for_test();
+    let projection = events
+        .iter()
+        .find(|event| event.name == "realtimeFeedProjection")
+        .expect("resolved Feed world should emit a Feed correction");
+    assert_eq!(projection.payload["patches"][0]["sequence"], 2);
+    assert_eq!(
+        projection.payload["patches"][0]["fields"]["worldName"],
+        "Resolved World"
+    );
+    assert!(events
+        .iter()
+        .all(|event| event.name != "realtimeEntryCorrection"));
     Ok(())
 }
 

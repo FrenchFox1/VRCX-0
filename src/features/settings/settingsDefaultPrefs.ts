@@ -6,6 +6,7 @@ import {
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT
 } from '@/shared/constants/settings';
+import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 import { TRUST_COLOR_DEFAULTS } from '@/shared/utils/trustColors';
 
 import {
@@ -80,8 +81,7 @@ export function createDefaultSettingsPrefs() {
         webhookAuthEventsEnabled: true,
         webhookUrl: '',
         webhookFormat: 'generic',
-        webhookFields:
-            '["version","event","category","title","message","user","location","locationId","worldId","worldName","timestamp","localTime"]',
+        webhookFields: DEFAULT_GENERIC_WEBHOOK_FIELDS,
         vrOverlayPanelEnabled: false,
         vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: false,

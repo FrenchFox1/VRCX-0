@@ -146,14 +146,18 @@ impl Default for FavoriteImportStatus {
 
 #[derive(Clone)]
 pub struct FavoriteImportRuntime {
-    inner: Arc<Mutex<FavoriteImportRuntimeInner>>,
-    generation: Arc<AtomicU64>,
+    shared: Arc<FavoriteImportRuntimeShared>,
     db: Arc<DatabaseService>,
     web: Arc<WebClient>,
     world_cache: Arc<WorldCache>,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     auth_scope: RuntimeAuthScope,
+}
+
+struct FavoriteImportRuntimeShared {
+    state: Mutex<FavoriteImportRuntimeInner>,
+    generation: AtomicU64,
 }
 
 #[derive(Default)]
@@ -179,8 +183,10 @@ impl FavoriteImportRuntime {
         auth_scope: RuntimeAuthScope,
     ) -> Self {
         Self {
-            inner: Arc::new(Mutex::new(FavoriteImportRuntimeInner::default())),
-            generation: Arc::new(AtomicU64::new(0)),
+            shared: Arc::new(FavoriteImportRuntimeShared {
+                state: Mutex::new(FavoriteImportRuntimeInner::default()),
+                generation: AtomicU64::new(0),
+            }),
             db,
             web,
             world_cache,
@@ -206,7 +212,7 @@ impl FavoriteImportRuntime {
                     "Another favorite import is already active.".into(),
                 ));
             }
-            let generation = self.generation.fetch_add(1, Ordering::AcqRel) + 1;
+            let generation = self.shared.generation.fetch_add(1, Ordering::AcqRel) + 1;
             let status = FavoriteImportStatus {
                 run_id: format!("favorite-{}-{generation}", Utc::now().timestamp_millis()),
                 status: FavoriteImportState::Running,
@@ -248,6 +254,15 @@ impl FavoriteImportRuntime {
         };
         self.emit_status(status.clone());
         status
+    }
+
+    pub fn dismiss(&self, run_id: &str) -> bool {
+        let mut inner = self.lock_inner();
+        if !dismiss_terminal_status(&mut inner.status, run_id) {
+            return false;
+        }
+        inner.cancel = None;
+        true
     }
 
     pub fn cancel_if_scope_mismatch(&self) -> FavoriteImportStatus {
@@ -603,11 +618,6 @@ impl FavoriteImportRuntime {
             inner.status.clone()
         };
         if status.operation == FavoriteImportOperation::Import && status.succeeded > 0 {
-            if status.kind == FavoriteImportKind::World
-                && location == Some(FavoriteImportLocation::Local)
-            {
-                self.world_cache.sync_favorites_from_db();
-            }
             self.event_bus
                 .emit_favorites_changed(FavoritesChangedPayload {
                     kind: status.kind.into(),
@@ -623,7 +633,8 @@ impl FavoriteImportRuntime {
     }
 
     fn lock_inner(&self) -> std::sync::MutexGuard<'_, FavoriteImportRuntimeInner> {
-        self.inner
+        self.shared
+            .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
@@ -717,6 +728,14 @@ fn is_active_state(state: FavoriteImportState) -> bool {
         state,
         FavoriteImportState::Running | FavoriteImportState::Cancelling
     )
+}
+
+fn dismiss_terminal_status(status: &mut FavoriteImportStatus, run_id: &str) -> bool {
+    if run_id.is_empty() || status.run_id != run_id || is_active_state(status.status) {
+        return false;
+    }
+    *status = FavoriteImportStatus::default();
+    true
 }
 
 async fn wait_for_interval(should_cancel: impl Fn() -> bool) -> bool {
@@ -911,5 +930,36 @@ mod tests {
             }),
         })
         .is_err());
+    }
+
+    #[test]
+    fn dismiss_clears_only_the_matching_terminal_import() {
+        let mut status = FavoriteImportStatus {
+            run_id: "favorite-test-1".into(),
+            status: FavoriteImportState::Completed,
+            total: 1,
+            processed: 1,
+            succeeded: 1,
+            items: vec![FavoriteImportItemResult {
+                id: AVATAR_ID.into(),
+                state: FavoriteImportItemState::Succeeded,
+                message: String::new(),
+                entity: None,
+            }],
+            ..Default::default()
+        };
+
+        assert!(!dismiss_terminal_status(&mut status, "favorite-test-2"));
+        assert_eq!(status.items.len(), 1);
+
+        status.status = FavoriteImportState::Running;
+        assert!(!dismiss_terminal_status(&mut status, "favorite-test-1"));
+        assert_eq!(status.items.len(), 1);
+
+        status.status = FavoriteImportState::Completed;
+        assert!(dismiss_terminal_status(&mut status, "favorite-test-1"));
+        assert_eq!(status.status, FavoriteImportState::Idle);
+        assert!(status.run_id.is_empty());
+        assert!(status.items.is_empty());
     }
 }

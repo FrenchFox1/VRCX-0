@@ -9,6 +9,7 @@ mod quick_search_catalog;
 #[cfg(test)]
 mod realtime;
 mod social_mutation;
+mod user_dialog_tab_counts;
 
 pub use friend_log_names::{
     resolve_friend_log_names, FriendLogNameResolutionCoordinator, FriendLogNameResolutionDeps,
@@ -56,8 +57,10 @@ pub use moderation_sync::{
     ModerationSyncRefreshOutput, RemoteModerationRow,
 };
 pub use mutual_graph_fetch::{
-    MutualGraphFetchCancelInput, MutualGraphFetchRuntime, MutualGraphFetchStartInput,
-    MutualGraphFetchState, MutualGraphFetchStatus,
+    get_user_mutual_friends_list, refresh_mutual_graph_friend, MutualGraphFetchCancelInput,
+    MutualGraphFetchRuntime, MutualGraphFetchStartInput, MutualGraphFetchState,
+    MutualGraphFetchStatus, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
+    MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
 };
 pub use note_export::{
     prepare_note_export, run_note_export, NoteExportActions, NoteExportItemInput,
@@ -75,10 +78,15 @@ pub use quick_search_catalog::{
     QuickSearchCatalogStatus,
 };
 pub use social_mutation::{
-    accept_friend_request, cancel_friend_request, send_friend_request, unfriend, unfriend_batch,
-    unfriend_selection, SocialFriendMutationInput, SocialFriendMutationOutcome,
-    SocialFriendMutationStatus, SocialFriendRequestAcceptInput, SocialFriendRequestCancelInput,
-    SocialMutationDeps, SocialUnfriendBatchInput, SocialUnfriendBatchItemResult,
-    SocialUnfriendBatchItemState, SocialUnfriendBatchResult, SocialUnfriendBatchTarget,
-    SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
+    accept_friend_request, accept_friend_request_notification, cancel_friend_request,
+    send_friend_request, unfriend, unfriend_batch, unfriend_selection, SocialFriendMutationInput,
+    SocialFriendMutationOutcome, SocialFriendMutationStatus, SocialFriendRequestAcceptInput,
+    SocialFriendRequestCancelInput, SocialFriendRequestNotificationAcceptOutput,
+    SocialFriendRequestNotificationAcceptStatus, SocialMutationDeps, SocialUnfriendBatchInput,
+    SocialUnfriendBatchItemResult, SocialUnfriendBatchItemState, SocialUnfriendBatchResult,
+    SocialUnfriendBatchTarget, SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
+};
+pub use user_dialog_tab_counts::{
+    get_user_dialog_tab_counts, UserDialogTabCountsDeps, UserDialogTabCountsInput,
+    UserDialogTabCountsOutput, UserDialogTabCountsRuntime,
 };

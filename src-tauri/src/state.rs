@@ -5,15 +5,16 @@ use std::time::{Duration, Instant};
 
 use crate::adapters::log_watcher::LogWatcherCompatBridge;
 use crate::deep_link::PendingDeepLinks;
+use crate::desktop_notification_activation::PendingDesktopNotificationActivations;
 use crate::error::AppError;
 use vrcx_0_application::{
-    DatabaseUpgradeRuntime, FriendLogNameResolutionCoordinator, GroupModerationBatchCoordinator,
-    RemoteMutationGate,
+    DatabaseUpgradeRuntime, FavoriteDetailsRuntime, FriendLogNameResolutionCoordinator,
+    GroupModerationBatchCoordinator, RemoteMutationGate, UserDialogTabCountsRuntime,
 };
 use vrcx_0_application_core::UpdaterPort;
 use vrcx_0_assistant::AssistantController;
 use vrcx_0_host::app_paths::AppDataDirResolution;
-use vrcx_0_mcp::{McpRuntime, McpServerController};
+use vrcx_0_mcp::{McpCaller, McpRuntime, McpServerController};
 use vrcx_0_runtime_host_desktop::{DesktopRuntimeHostOptions, DesktopRuntimeHostState};
 
 pub const BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY: &str = "VRCX_BackgroundModeResumeRoute";
@@ -23,10 +24,13 @@ pub struct AppState {
     pub mcp_controller: McpServerController,
     pub log_watcher_compat_bridge: LogWatcherCompatBridge,
     pub pending_deep_links: PendingDeepLinks,
+    pub pending_desktop_notification_activations: PendingDesktopNotificationActivations,
     pub database_upgrade: DatabaseUpgradeRuntime,
+    pub favorite_details: FavoriteDetailsRuntime,
     pub group_moderation_batches: GroupModerationBatchCoordinator,
     pub friend_log_name_resolutions: FriendLogNameResolutionCoordinator,
     pub remote_mutations: RemoteMutationGate,
+    pub user_dialog_tab_counts: UserDialogTabCountsRuntime,
     assistant: tokio::sync::OnceCell<AssistantController>,
     background_resume_route: Mutex<Option<String>>,
     pub(crate) background_delay_generation: AtomicU64,
@@ -71,7 +75,13 @@ impl AppState {
             runtime.runtime_context.diagnostics.clone(),
             runtime.runtime_context.background_jobs.clone(),
         );
-        let mcp_controller = McpServerController::new(McpRuntime::from_host(&runtime));
+        let favorite_details = FavoriteDetailsRuntime::new(
+            runtime.db.clone(),
+            runtime.web.clone(),
+            runtime.runtime_context.auth_scope.clone(),
+        );
+        let mcp_controller =
+            McpServerController::new(McpRuntime::from_host(&runtime, McpCaller::ExternalServer));
         let log_watcher_compat_bridge = LogWatcherCompatBridge::new();
 
         Ok(Self {
@@ -79,10 +89,14 @@ impl AppState {
             mcp_controller,
             log_watcher_compat_bridge,
             pending_deep_links: PendingDeepLinks::default(),
+            pending_desktop_notification_activations:
+                PendingDesktopNotificationActivations::default(),
             database_upgrade,
+            favorite_details,
             group_moderation_batches: GroupModerationBatchCoordinator::default(),
             friend_log_name_resolutions: FriendLogNameResolutionCoordinator::default(),
             remote_mutations: RemoteMutationGate::default(),
+            user_dialog_tab_counts: UserDialogTabCountsRuntime::new(),
             assistant: tokio::sync::OnceCell::new(),
             background_resume_route: Mutex::new(None),
             background_delay_generation: AtomicU64::new(0),

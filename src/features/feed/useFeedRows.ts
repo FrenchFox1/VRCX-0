@@ -5,7 +5,7 @@ import friendLogRepository from '@/repositories/friendLogRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
-import { useFriendRosterStore } from '@/state/friendRosterStore';
+import { useFriendLogStore } from '@/state/friendLogStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -67,9 +67,7 @@ export function useFeedRows({
     const feedPersistenceDisabled = usePreferencesStore(
         (state) => state.feedPersistenceDisabled
     );
-    const friendRosterLastLoadedAt = useFriendRosterStore(
-        (state) => state.lastLoadedAt
-    );
+    const friendLogRevision = useFriendLogStore((state) => state.revision);
     const [rows, setRows] = useState<FeedRow[]>([]);
     const [friendLogNamesById, setFriendLogNamesById] = useState<
         Record<string, string>
@@ -91,6 +89,9 @@ export function useFeedRows({
         [favoriteGroupFilterIds, localFriendFavorites, remoteFavoritesById]
     );
     const hiddenUserIds = feedHiddenUsers;
+    const searchMode = Boolean(
+        deferredSearchQuery.trim() || dateFrom || dateTo
+    );
 
     useEffect(() => {
         rowsRef.current = rows;
@@ -105,10 +106,10 @@ export function useFeedRows({
         excludedUserIds,
         favoriteUserIds
     }: {
-        excludedUserIds: unknown[];
-        favoriteUserIds: unknown[];
+        excludedUserIds: string[];
+        favoriteUserIds: string[];
     }): FeedLiveMergeOptionsBuilder {
-        return ({ liveEntries, minLiveSequence, rows }) => ({
+        return ({ rows }) => ({
             rows,
             userId: currentUserId,
             search: deferredSearchQuery,
@@ -118,8 +119,6 @@ export function useFeedRows({
             scopedUserIds,
             dateFrom: toIsoRangeStart(dateFrom),
             dateTo: toIsoRangeEnd(dateTo),
-            liveEntries,
-            minLiveSequence,
             favoritesOnly,
             maxRows: maxFeedRows
         });
@@ -127,7 +126,7 @@ export function useFeedRows({
 
     useEffect(() => {
         lastLiveFeedSequenceRef.current = useFeedLiveStore.getState().version;
-    }, [currentUserId]);
+    }, [currentUserId, feedPersistenceDisabled]);
 
     useEffect(() => {
         let active = true;
@@ -166,7 +165,7 @@ export function useFeedRows({
         return () => {
             active = false;
         };
-    }, [currentUserId, friendRosterLastLoadedAt]);
+    }, [currentUserId, friendLogRevision]);
 
     useEffect(() => {
         const missingUserIds: string[] = [];
@@ -262,59 +261,45 @@ export function useFeedRows({
         const liveFeedSequenceAtRequestStart =
             useFeedLiveStore.getState().version;
         setLoadStatus('running');
-        if (feedPersistenceDisabled) {
-            const buildMergeOptions = createMergeOptionsBuilder({
-                excludedUserIds: hiddenUserIds,
-                favoriteUserIds
-            });
-            mergeFeedRowsWithLiveEntries({
-                buildMergeOptions,
-                minLiveSequence: 0,
-                requestIsCurrent: () => requestIdRef.current === requestId,
-                rows: []
-            })
-                .then(async (result) => {
-                    if (!result || requestIdRef.current !== requestId) {
+        if (searchMode) {
+            feedRepository
+                .queryFeed({
+                    userId: currentUserId,
+                    search: deferredSearchQuery,
+                    filters: activeFilters,
+                    excludedFavoriteUserIds: hiddenUserIds,
+                    favoriteUserIds,
+                    scopedUserIds,
+                    dateFrom: toIsoRangeStart(dateFrom),
+                    dateTo: toIsoRangeEnd(dateTo),
+                    maxEntries: maxFeedRows,
+                    favoritesOnly
+                })
+                .then((searchRows) => {
+                    if (requestIdRef.current !== requestId) {
                         return;
                     }
-                    const commitResult = await prepareFeedRowsForCommit({
-                        buildMergeOptions,
-                        onMergeRound: () => {
-                            liveMergeRequestIdRef.current += 1;
-                        },
-                        requestIsCurrent: () =>
-                            requestIdRef.current === requestId,
-                        result
-                    });
-                    if (!commitResult || requestIdRef.current !== requestId) {
-                        return;
-                    }
-                    lastLiveFeedSequenceRef.current = commitResult.maxSequence;
-                    rowsRef.current = commitResult.rows;
-                    setRows(commitResult.rows);
+                    rowsRef.current = searchRows;
+                    setRows(searchRows);
                     setLoadStatus('ready');
                 })
                 .catch((error: unknown) => {
-                    if (requestIdRef.current === requestId) {
-                        setRows([]);
-                        setLoadStatus('error');
-                        console.error(error);
+                    if (requestIdRef.current !== requestId) {
+                        return;
                     }
+                    setRows([]);
+                    setLoadStatus('error');
+                    console.error(error);
                 });
             return;
         }
         feedRepository
-            .queryFeedReadModel({
+            .queryFeedLatest({
                 userId: currentUserId,
-                search: deferredSearchQuery,
                 filters: activeFilters,
                 excludedFavoriteUserIds: hiddenUserIds,
                 favoriteUserIds,
                 scopedUserIds,
-                dateFrom: toIsoRangeStart(dateFrom),
-                dateTo: toIsoRangeEnd(dateTo),
-                liveEntries: [],
-                minLiveSequence: liveFeedSequenceAtRequestStart,
                 favoritesOnly,
                 maxRows: maxFeedRows
             })
@@ -350,9 +335,7 @@ export function useFeedRows({
                     commitResult.maxSequence,
                     liveFeedSequenceAtRequestStart
                 );
-                if (maxSequence > lastLiveFeedSequenceRef.current) {
-                    lastLiveFeedSequenceRef.current = maxSequence;
-                }
+                lastLiveFeedSequenceRef.current = maxSequence;
                 rowsRef.current = commitResult.rows;
                 setRows(commitResult.rows);
                 setLoadStatus('ready');
@@ -378,12 +361,13 @@ export function useFeedRows({
         isFavoritesLoaded,
         maxFeedRows,
         preferencesReady,
+        searchMode,
         scopedUserIds
     ]);
 
     useEffect(() => {
         liveMergeRequestIdRef.current += 1;
-        if (!preferencesReady || !currentUserId) {
+        if (!preferencesReady || !currentUserId || searchMode) {
             return undefined;
         }
         return subscribeFeedLiveMerge(() => {
@@ -430,6 +414,7 @@ export function useFeedRows({
         hiddenUserIds,
         maxFeedRows,
         preferencesReady,
+        searchMode,
         scopedUserIds
     ]);
 

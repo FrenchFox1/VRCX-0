@@ -71,16 +71,9 @@ function textValue(value: unknown) {
 }
 
 function favoritePlayerCount(
-    kind: FavoriteKind,
-    entityId: string,
-    detail: FavoriteEntityDetail | null | undefined,
-    worldFactsById: FavoriteDetailMap
+    detail: FavoriteEntityDetail | null | undefined
 ): number {
-    const occupants =
-        kind === 'world'
-            ? (worldFactsById[entityId]?.occupants ?? detail?.occupants)
-            : detail?.occupants;
-    return Number(occupants) || 0;
+    return Number(detail?.occupants) || 0;
 }
 
 function favoriteSeedData(
@@ -407,11 +400,8 @@ export function buildFavoriteRemoteItemsByGroup({
     remoteFavoritesById,
     remoteEntityDetailsData,
     remoteEntityDetailsStatus,
-    worldFactsById = {},
-    remoteWorldCacheFallbacksById = {},
-    remoteAvatarCacheFallbacksById = {},
-    localWorldDetailsById = {},
-    localAvatarDetailsById = {},
+    worldDetailFallbacksById = {},
+    avatarDetailFallbacksById = {},
     remoteGroupLabelByKey,
     worldAvailabilityById = {},
     t
@@ -426,11 +416,8 @@ export function buildFavoriteRemoteItemsByGroup({
     remoteFavoritesById?: Record<string, FavoriteRecord | undefined>;
     remoteEntityDetailsData?: FavoriteDetailMap;
     remoteEntityDetailsStatus?: string;
-    worldFactsById?: FavoriteDetailMap;
-    remoteWorldCacheFallbacksById?: FavoriteDetailMap;
-    remoteAvatarCacheFallbacksById?: FavoriteDetailMap;
-    localWorldDetailsById?: FavoriteDetailMap;
-    localAvatarDetailsById?: FavoriteDetailMap;
+    worldDetailFallbacksById?: FavoriteDetailMap;
+    avatarDetailFallbacksById?: FavoriteDetailMap;
     remoteGroupLabelByKey?: Record<string, string | undefined>;
     worldAvailabilityById?: Record<string, string | undefined>;
     t: unknown;
@@ -487,11 +474,10 @@ export function buildFavoriteRemoteItemsByGroup({
 
         if (kind === 'world') {
             liveDetail = hasDisplayableEntityDetail(detail) ? detail : null;
-            fallbackDetail = firstDisplayableDetail([
-                worldFactsById[favoriteId],
-                remoteWorldCacheFallbacksById[favoriteId],
-                localWorldDetailsById[favoriteId]
-            ]);
+            const worldFallback = worldDetailFallbacksById[favoriteId];
+            fallbackDetail = hasDisplayableEntityDetail(worldFallback)
+                ? worldFallback
+                : null;
         } else {
             const isHiddenRemoteAvatar =
                 hasDisplayableEntityDetail(detail) &&
@@ -502,8 +488,7 @@ export function buildFavoriteRemoteItemsByGroup({
                     : null;
             fallbackDetail = firstDisplayableDetail([
                 isHiddenRemoteAvatar ? detail : null,
-                localAvatarDetailsById[favoriteId],
-                remoteAvatarCacheFallbacksById[favoriteId]
+                avatarDetailFallbacksById[favoriteId]
             ]);
         }
 
@@ -523,12 +508,7 @@ export function buildFavoriteRemoteItemsByGroup({
                       availabilityStatus === 'private' ||
                       (usedFallback && !availabilityStatus))
                 : releaseStatusPrivate || usedFallback;
-        const playerCount = favoritePlayerCount(
-            kind,
-            favoriteId,
-            displayDetail,
-            worldFactsById
-        );
+        const playerCount = favoritePlayerCount(displayDetail);
         const authorName = textValue(displayDetail?.authorName);
         const subtitle =
             authorName ||
@@ -584,9 +564,8 @@ export function buildFavoriteLocalItemsByGroup({
     localFriendFavorites,
     localAvatarFavorites,
     localWorldFavorites,
-    localAvatarDetailsById,
-    localWorldDetailsById,
-    worldFactsById = {},
+    avatarDetailFallbacksById = {},
+    worldDetailFallbacksById = {},
     friendsById,
     knownUsersById = {},
     sortValue,
@@ -597,9 +576,8 @@ export function buildFavoriteLocalItemsByGroup({
     localFriendFavorites?: FavoriteGroupSourceMap;
     localAvatarFavorites?: FavoriteGroupSourceMap;
     localWorldFavorites?: FavoriteGroupSourceMap;
-    localAvatarDetailsById?: FavoriteDetailMap;
-    localWorldDetailsById?: FavoriteDetailMap;
-    worldFactsById?: FavoriteDetailMap;
+    avatarDetailFallbacksById?: FavoriteDetailMap;
+    worldDetailFallbacksById?: FavoriteDetailMap;
     friendsById?: FavoriteProfileMap;
     knownUsersById?: FavoriteProfileMap;
     sortValue?: FavoriteSortValue;
@@ -635,7 +613,9 @@ export function buildFavoriteLocalItemsByGroup({
     const localFavorites =
         kind === 'avatar' ? localAvatarFavorites : localWorldFavorites;
     const localDetailsById =
-        kind === 'avatar' ? localAvatarDetailsById : localWorldDetailsById;
+        kind === 'avatar'
+            ? avatarDetailFallbacksById
+            : worldDetailFallbacksById;
 
     for (const group of localGroups) {
         const ids = Array.isArray(localFavorites?.[group.key])
@@ -646,12 +626,7 @@ export function buildFavoriteLocalItemsByGroup({
             const detail = localDetailsById?.[normalizedId] || {
                 id: normalizedId
             };
-            const playerCount = favoritePlayerCount(
-                kind,
-                normalizedId,
-                detail,
-                worldFactsById
-            );
+            const playerCount = favoritePlayerCount(detail);
             const imagePair = favoriteImagePair(detail);
             return {
                 key: `local:${group.key}:${normalizedId}`,

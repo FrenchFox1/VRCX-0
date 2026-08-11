@@ -53,8 +53,7 @@ fn clearing_one_accounts_history_preserves_other_accounts_history_and_global_cac
     let avatar_id = "avtr_shared";
 
     avatar_cache_upsert(&db, avatar_entry(avatar_id))?;
-    avatar_history_add(&db, "usr_a".into(), avatar_id.into())?;
-    avatar_history_add(&db, "usr_b".into(), avatar_id.into())?;
+    avatar_time_spent_add(&db, "usr_a".into(), avatar_id.into(), 0)?;
     avatar_time_spent_add(&db, "usr_b".into(), avatar_id.into(), 42)?;
 
     assert_eq!(avatar_history_list(&db, "usr_a".into(), 100)?.len(), 1);
@@ -82,5 +81,25 @@ fn cache_upsert_applies_the_shared_entity_id_invariant_to_avatars() -> Result<()
     let cached = avatar_cache_get(&db, "avtr_spaced".into())?
         .expect("normalized avatar cache id should be readable");
     assert_eq!(cached.id, "avtr_spaced");
+    Ok(())
+}
+
+#[test]
+fn cache_lookup_by_file_id_returns_only_the_matching_avatar() -> Result<(), Error> {
+    let dir = TestDir::new("cache-file-id-lookup");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let mut first = avatar_entry("avtr_first");
+    first.image_url = json!("https://api.vrchat.cloud/api/1/file/file_first/1/file");
+    let mut second = avatar_entry("avtr_second");
+    second.thumbnail_image_url = json!("https://api.vrchat.cloud/api/1/image/file_second/2/256");
+
+    avatar_cache_upsert(&db, first)?;
+    avatar_cache_upsert(&db, second)?;
+
+    let cached = avatar_cache_find_by_file_id(&db, "file_second")?
+        .expect("matching avatar should be returned");
+
+    assert_eq!(cached.id, "avtr_second");
+    assert!(avatar_cache_find_by_file_id(&db, "file_missing")?.is_none());
     Ok(())
 }

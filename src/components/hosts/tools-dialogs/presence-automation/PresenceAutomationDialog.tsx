@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { useLocalWorldFavorites } from '@/features/favorites/useLocalWorldFavorites';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 import {
     Dialog,
     DialogContent,
@@ -93,9 +95,7 @@ function usePresenceOptions() {
     const favoriteWorldGroups = useFavoriteStore(
         (state) => state.favoriteWorldGroups
     );
-    const localWorldFavoriteGroups = useFavoriteStore(
-        (state) => state.localWorldFavoriteGroups
-    );
+    const localWorldFavorites = useLocalWorldFavorites();
 
     const groupOptions = useMemo(
         () =>
@@ -109,9 +109,9 @@ function usePresenceOptions() {
         () =>
             createGroupOptions({
                 remoteGroups: favoriteWorldGroups,
-                localGroups: localWorldFavoriteGroups
+                localGroups: localWorldFavorites.groupNames
             }),
-        [favoriteWorldGroups, localWorldFavoriteGroups]
+        [favoriteWorldGroups, localWorldFavorites.groupNames]
     );
     const instanceOptions = useMemo(
         () => createInstanceOptions(instanceTypes, t),
@@ -224,6 +224,10 @@ export function PresenceRoomRulesDialog({
     const writeQueuesRef = useRef(new Map());
     const { groupOptions, worldGroupOptions, instanceOptions } =
         usePresenceOptions();
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const orderedFriendIds = useFriendRosterStore(
+        (state) => state.orderedFriendIds
+    );
     const [contextRules, setContextRules] = useState<ContextAutomationRule[]>(
         []
     );
@@ -304,6 +308,8 @@ export function PresenceRoomRulesDialog({
                     <div className="px-4 pb-4">
                         <ContextRulesTab
                             loading={loading}
+                            friendsById={friendsById}
+                            orderedFriendIds={orderedFriendIds}
                             groupOptions={groupOptions}
                             worldGroupOptions={worldGroupOptions}
                             instanceOptions={instanceOptions}

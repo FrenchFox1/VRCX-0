@@ -59,9 +59,9 @@ pub use collections::{
 pub use collections::{preview_shared_collection, ImportPreview};
 pub use favorites::{
     add_local_favorite, create_local_favorite_group, delete_local_favorite_entries,
-    delete_local_favorite_group, list_local_favorites, remove_local_favorite,
-    rename_local_favorite_entries, rename_local_favorite_group, FavoriteRow,
-    LocalFavoriteGroupWrite,
+    delete_local_favorite_group, get_local_favorite_snapshot, list_local_favorites,
+    remove_local_favorite, rename_local_favorite_entries, rename_local_favorite_group, FavoriteRow,
+    LocalFavoriteGroupWrite, LocalFavoriteSnapshot,
 };
 pub use favorites::{
     add_remote_favorite, clear_remote_favorite_group, delete_remote_favorite,
@@ -76,10 +76,6 @@ pub use favorites::{
     FavoriteTransferSource, FavoriteTransferStage, FavoriteTransferTarget,
 };
 pub use favorites::{
-    hydrate_favorite_details, FavoriteDetailsHydrateDeps, FavoriteDetailsHydrateInput,
-    FavoriteDetailsHydrateKind, FavoriteDetailsHydrateOutput,
-};
-pub use favorites::{
     persist_favorite_cache_snapshot, FavoriteCacheKind, FavoriteCacheSnapshotInput,
 };
 pub use favorites::{
@@ -87,6 +83,10 @@ pub use favorites::{
     FavoriteBulkRemoveInput, FavoriteBulkRemoveItem, FavoriteBulkRemoveItemResult,
     FavoriteBulkRemoveItemState, FavoriteBulkRemoveResult, FavoriteBulkRemoveSource,
     FAVORITE_BULK_REMOVE_MAX_ITEMS,
+};
+pub use favorites::{
+    FavoriteDetailsHydrateInput, FavoriteDetailsHydrateKind, FavoriteDetailsHydrateOutput,
+    FavoriteDetailsRuntime,
 };
 pub use favorites::{
     FavoriteImportItemResult, FavoriteImportItemState, FavoriteImportKind, FavoriteImportLocation,
@@ -101,12 +101,13 @@ pub use media::{
 };
 pub use remote_mutation_gate::RemoteMutationGate;
 pub use social::{
-    accept_friend_request, cancel_friend_request, send_friend_request, unfriend, unfriend_batch,
-    unfriend_selection, SocialFriendMutationInput, SocialFriendMutationOutcome,
-    SocialFriendMutationStatus, SocialFriendRequestAcceptInput, SocialFriendRequestCancelInput,
-    SocialMutationDeps, SocialUnfriendBatchInput, SocialUnfriendBatchItemResult,
-    SocialUnfriendBatchItemState, SocialUnfriendBatchResult, SocialUnfriendBatchTarget,
-    SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
+    accept_friend_request, accept_friend_request_notification, cancel_friend_request,
+    send_friend_request, unfriend, unfriend_batch, unfriend_selection, SocialFriendMutationInput,
+    SocialFriendMutationOutcome, SocialFriendMutationStatus, SocialFriendRequestAcceptInput,
+    SocialFriendRequestCancelInput, SocialFriendRequestNotificationAcceptOutput,
+    SocialFriendRequestNotificationAcceptStatus, SocialMutationDeps, SocialUnfriendBatchInput,
+    SocialUnfriendBatchItemResult, SocialUnfriendBatchItemState, SocialUnfriendBatchResult,
+    SocialUnfriendBatchTarget, SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
 };
 pub use social::{
     add_member_role, ban_member, block_group, cancel_request, create_post, delete_invite,
@@ -131,8 +132,18 @@ pub use social::{
     PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState,
 };
 pub use social::{
+    get_user_dialog_tab_counts, UserDialogTabCountsDeps, UserDialogTabCountsInput,
+    UserDialogTabCountsOutput, UserDialogTabCountsRuntime,
+};
+pub use social::{
     get_user_groups_overview, UserGroupsOverviewDeps, UserGroupsOverviewGroup,
     UserGroupsOverviewInput, UserGroupsOverviewOutput,
+};
+pub use social::{
+    get_user_mutual_friends_list, refresh_mutual_graph_friend, MutualGraphFetchCancelInput,
+    MutualGraphFetchRuntime, MutualGraphFetchStartInput, MutualGraphFetchState,
+    MutualGraphFetchStatus, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
+    MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
 };
 pub use social::{
     load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarSnapshot,
@@ -168,19 +179,16 @@ pub use social::{
     GroupBanImportRuntime, GroupBanImportStartInput, GroupBanImportState, GroupBanImportStatus,
     VrchatGroupBanImportActions,
 };
-pub use social::{
-    MutualGraphFetchCancelInput, MutualGraphFetchRuntime, MutualGraphFetchStartInput,
-    MutualGraphFetchState, MutualGraphFetchStatus,
-};
 pub use system::DatabaseUpgradeRuntime;
 pub use system::ProfileOperationGate;
 pub use system::VrcStatusService;
 pub use system::{
     accept_request_invite_notification, dismiss_boop_notifications, hide_and_expire_notification,
     respond_and_expire_notification, send_boop_reply_notification,
-    send_invite_response_notification, NotificationActionOutcome, NotificationActionStatus,
-    NotificationBoopDismissInput, NotificationBoopReplyInput, NotificationChainActions,
-    NotificationHideExpireInput, NotificationInviteResponseInput,
+    send_instance_invite_notification, send_invite_response_notification,
+    NotificationActionOutcome, NotificationActionStatus, NotificationBoopDismissInput,
+    NotificationBoopReplyInput, NotificationChainActions, NotificationHideExpireInput,
+    NotificationInstanceInviteInput, NotificationInviteResponseInput,
     NotificationRequestInviteAcceptInput, NotificationRespondInput, NotificationTarget,
     VrchatNotificationChainActions,
 };
@@ -204,9 +212,9 @@ pub use system::{
 };
 pub use system::{
     mark_notifications_seen_batch, NotificationMarkSeenActions, NotificationMarkSeenBatchInput,
-    NotificationMarkSeenBatchItem, NotificationMarkSeenBatchResult, NotificationMarkSeenItemResult,
-    NotificationMarkSeenItemState, NotificationMarkSeenLocation, VrchatNotificationMarkSeenActions,
-    NOTIFICATION_MARK_SEEN_MAX_ITEMS,
+    NotificationMarkSeenBatchItem, NotificationMarkSeenBatchResult, NotificationMarkSeenEffect,
+    NotificationMarkSeenItemResult, NotificationMarkSeenItemState, NotificationMarkSeenLocation,
+    VrchatNotificationMarkSeenActions, NOTIFICATION_MARK_SEEN_MAX_ITEMS,
 };
 pub use system::{
     resolved_openai_translation_endpoint_id, translate_text, OpenAiTranslationRequest,
@@ -302,13 +310,13 @@ pub use vrcx_0_application_realtime::{
     FriendProjection, FriendProjectionPatch, FriendStateBucketAuthority, PendingOfflineTimerAction,
     RealtimeCurrentUserAuthority, RealtimeCurrentUserOutput, RealtimeCurrentUserProjection,
     RealtimeEntryCorrection, RealtimeEntryCorrectionFields, RealtimeEntryCorrectionStream,
-    RealtimeFriendApplyResult, RealtimeFriendOutput, RealtimeFriendSnapshot,
-    RealtimeFriendsRuntime, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
-    RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
-    RealtimeInstanceQueueProjection, RealtimeNotificationOutput, RealtimeNotificationProjection,
-    RealtimeNotificationUpsert, RealtimeSessionContext, RealtimeStopRequest,
-    RealtimeTransportStartResult, RealtimeWsMessagePayload, RealtimeWsStatusPayload,
-    SyntheticFriendEventOutcome,
+    RealtimeFeedPatch, RealtimeFeedProjection, RealtimeFeedUpsert, RealtimeFriendApplyResult,
+    RealtimeFriendOutput, RealtimeFriendSnapshot, RealtimeFriendsRuntime, RealtimeHostRuntime,
+    RealtimeHostRuntimeDeps, RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection,
+    RealtimeInstanceQueueKind, RealtimeInstanceQueueProjection, RealtimeNotificationOutput,
+    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeSessionContext,
+    RealtimeStopRequest, RealtimeTransportStartResult, RealtimeWsMessagePayload,
+    RealtimeWsStatusPayload, SyntheticFriendEventOutcome,
 };
 
 pub use vrcx_0_application_core::Result;

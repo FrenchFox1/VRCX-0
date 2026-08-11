@@ -40,6 +40,11 @@ async function getConfig() {
     return unwrapVrchatAuthResponse<AuthRecord>(response, 'config');
 }
 
+async function refreshConfig() {
+    const response = await commands.appVrchatAuthConfigRefresh();
+    return unwrapVrchatAuthResponse<AuthRecord>(response, 'config');
+}
+
 async function getCurrentUser() {
     const response = await commands.appVrchatAuthCurrentUserGet();
     return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth/user');
@@ -143,6 +148,7 @@ async function getFileAnalysis({
 
 const vrchatAuthRepository = Object.freeze({
     getConfig,
+    refreshConfig,
     getCurrentUser,
     startLoginSession,
     respondLoginSession,
@@ -154,6 +160,7 @@ const vrchatAuthRepository = Object.freeze({
 
 export {
     getConfig,
+    refreshConfig,
     getCurrentUser,
     startLoginSession,
     respondLoginSession,

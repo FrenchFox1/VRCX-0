@@ -34,6 +34,7 @@ impl RuntimeHostState {
     }
 
     pub async fn start_login_session(&self, input: LoginSessionStartInput) -> LoginSessionState {
+        self.web.clear_vrchat_config_snapshot();
         self.runtime_context
             .login_session
             .start(
@@ -47,6 +48,7 @@ impl RuntimeHostState {
     }
 
     pub async fn start_auto_login(&self, input: AutoLoginStartInput) -> Result<AutoLoginOutcome> {
+        self.web.clear_vrchat_config_snapshot();
         self.runtime_context
             .login_session
             .auto_login_start(
@@ -175,6 +177,7 @@ impl RuntimeHostState {
         endpoint_override: Option<String>,
         snapshot: SavedAuthSnapshot,
     ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
+        self.web.clear_vrchat_config_snapshot();
         let saved_record = saved_credential_session_data(self.runtime_context.config(), &user_id)
             .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
         let (saved_endpoint, websocket, saved_cookies) = saved_record.map_or_else(
@@ -202,8 +205,8 @@ impl RuntimeHostState {
             Err(NonInteractiveAuthError::InteractionRequired(reason)) => {
                 return Err(NonInteractiveAuthError::InteractionRequired(reason));
             }
-            Err(NonInteractiveAuthError::SessionInvalidated { user_id, reason }) => {
-                return Err(NonInteractiveAuthError::SessionInvalidated { user_id, reason });
+            Err(error @ NonInteractiveAuthError::SessionInvalidated { .. }) => {
+                return Err(error);
             }
             Err(NonInteractiveAuthError::Failed(reason)) => {
                 tracing::warn!(reason, "global cookie auth restore failed");
@@ -231,11 +234,8 @@ impl RuntimeHostState {
                     Err(NonInteractiveAuthError::InteractionRequired(reason)) => {
                         return Err(NonInteractiveAuthError::InteractionRequired(reason));
                     }
-                    Err(NonInteractiveAuthError::SessionInvalidated { user_id, reason }) => {
-                        return Err(NonInteractiveAuthError::SessionInvalidated {
-                            user_id,
-                            reason,
-                        });
+                    Err(error @ NonInteractiveAuthError::SessionInvalidated { .. }) => {
+                        return Err(error);
                     }
                     Err(NonInteractiveAuthError::Failed(reason)) => {
                         tracing::warn!(reason, "saved cookie auth restore failed");
@@ -269,6 +269,7 @@ impl RuntimeHostState {
         if matches!(response.status, 401 | 403) {
             return Err(NonInteractiveAuthError::SessionInvalidated {
                 user_id: user_id.clone(),
+                status_code: Some(response.status),
                 reason: auth_response_error_message(
                     &response,
                     format!(

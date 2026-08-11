@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const commandMocks = vi.hoisted(() => ({
     appVrchatAuthConfigGet: vi.fn(),
+    appVrchatAuthConfigRefresh: vi.fn(),
     appVrchatAuthCurrentUserGet: vi.fn(),
     appVrchatAuthSessionStart: vi.fn(),
     appVrchatAuthSessionRespond: vi.fn(),
@@ -21,7 +22,8 @@ import {
     getCurrentUser,
     getFileAnalysis,
     respondLoginSession,
-    startLoginSession
+    startLoginSession,
+    refreshConfig
 } from './vrchatAuthRepository';
 
 function response(status = 200, data: unknown = { id: 'usr_1' }) {
@@ -62,6 +64,16 @@ describe('vrchatAuthRepository', () => {
         });
 
         expect(commandMocks.appVrchatAuthCurrentUserGet).toHaveBeenCalledWith();
+    });
+
+    it('uses distinct snapshot and force-refresh config commands', async () => {
+        await getConfig();
+        await refreshConfig();
+
+        expect(commandMocks.appVrchatAuthConfigGet).toHaveBeenCalledTimes(1);
+        expect(commandMocks.appVrchatAuthConfigRefresh).toHaveBeenCalledTimes(
+            1
+        );
     });
 
     it('passes normalized login-session payloads to the Tauri bridge', async () => {

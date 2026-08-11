@@ -36,6 +36,9 @@ pub enum TickOutcome {
 pub trait OverlayBackend: Send + 'static {
     fn set_input_event_sink(&mut self, _sink: OverlayInputEventSink) {}
     fn set_interaction_active(&mut self, _active: bool) {}
+    fn needs_high_frequency_tick(&self) -> bool {
+        false
+    }
     fn start(&mut self) -> Result<(), BackendStartError>;
     fn register_surface(&mut self, config: OverlaySurfaceConfig) -> Result<(), String>;
     fn unregister_surface(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
@@ -248,7 +251,8 @@ fn run_actor<B>(
     let mut last_tick_at = Instant::now();
     let mut interaction_active = false;
     loop {
-        let tick_interval = overlay_tick_interval(interaction_active);
+        let tick_interval =
+            overlay_tick_interval(interaction_active || backend.needs_high_frequency_tick());
         match receiver.recv_timeout(tick_interval) {
             Ok(message) => {
                 match message {
@@ -308,8 +312,8 @@ fn run_actor<B>(
 
 fn run_tick_if_due<B>(
     backend: &mut B,
-    status: &Arc<Mutex<OverlayServiceStatus>>,
-    runtime_quit_at: &Arc<Mutex<Option<Instant>>>,
+    status: &Mutex<OverlayServiceStatus>,
+    runtime_quit_at: &Mutex<Option<Instant>>,
     last_tick_at: &mut Instant,
     tick_interval: Duration,
 ) -> bool
@@ -325,8 +329,8 @@ where
 
 fn run_tick<B>(
     backend: &mut B,
-    status: &Arc<Mutex<OverlayServiceStatus>>,
-    runtime_quit_at: &Arc<Mutex<Option<Instant>>>,
+    status: &Mutex<OverlayServiceStatus>,
+    runtime_quit_at: &Mutex<Option<Instant>>,
 ) -> bool
 where
     B: OverlayBackend,
@@ -350,7 +354,7 @@ where
     }
 }
 
-fn actor_is_running(status: &Arc<Mutex<OverlayServiceStatus>>) -> bool {
+fn actor_is_running(status: &Mutex<OverlayServiceStatus>) -> bool {
     status
         .lock()
         .map(|status| status.phase == OverlayServicePhase::Running)
@@ -360,7 +364,7 @@ fn actor_is_running(status: &Arc<Mutex<OverlayServiceStatus>>) -> bool {
 fn handle_command<B>(
     backend: &mut B,
     command: OverlayServiceCommand,
-    status: &Arc<Mutex<OverlayServiceStatus>>,
+    status: &Mutex<OverlayServiceStatus>,
     interaction_active: &mut bool,
 ) -> Result<(), OverlayCommandError>
 where
@@ -449,7 +453,7 @@ fn validate_frame(frame: &RgbaFrame) -> Result<(), OverlayCommandError> {
 }
 
 fn record_backend_error(
-    status: &Arc<Mutex<OverlayServiceStatus>>,
+    status: &Mutex<OverlayServiceStatus>,
     error: String,
 ) -> OverlayCommandError {
     update_status(status, OverlayServicePhase::Error, Some(error.clone()));
@@ -457,7 +461,7 @@ fn record_backend_error(
 }
 
 fn update_status(
-    status: &Arc<Mutex<OverlayServiceStatus>>,
+    status: &Mutex<OverlayServiceStatus>,
     phase: OverlayServicePhase,
     last_error: Option<String>,
 ) {

@@ -2,19 +2,14 @@ import { useEffect, useState, type MutableRefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { EntityRecord } from '@/domain/entities/profileEntities';
-import {
-    entityQueryPolicies,
-    fetchCachedData,
-    queryKeys
-} from '@/lib/entityQueryCache';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import { readWorldCacheInfo } from '@/lib/worldAssetBundle';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
-import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { persistFavoriteWorldDetails } from '@/services/favoriteWorldCacheService';
+import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import {
     defaultWorldSideData,
@@ -56,6 +51,9 @@ export function useWorldDialogData({
     memoRevisionRef
 }: UseWorldDialogDataInput) {
     const { t } = useTranslation();
+    const sdkUnityVersion = useVrchatConfigStore((state) =>
+        String(state.snapshot?.sdkUnityVersion || '')
+    );
     const [world, setWorld] = useState(() =>
         seedData ? worldProfileRepository.normalize(seedData) : null
     );
@@ -132,26 +130,14 @@ export function useWorldDialogData({
 
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
-        fetchCachedData<
-            Awaited<ReturnType<typeof vrchatAuthRepository.getConfig>>
-        >({
-            queryKey: queryKeys.apiConfig(targetEndpoint),
-            policy: entityQueryPolicies.apiConfig,
-            queryFn: () => vrchatAuthRepository.getConfig()
-        })
-            .catch((): null => null)
-            .then((configResponse) =>
-                Promise.allSettled([
-                    readWorldCacheInfo(world),
-                    getFileAnalysisForUnityPackages({
-                        unityPackages: world.unityPackages,
-                        sdkUnityVersion: String(
-                            configResponse?.json?.sdkUnityVersion || ''
-                        ),
-                        endpoint: targetEndpoint
-                    })
-                ])
-            )
+        Promise.allSettled([
+            readWorldCacheInfo(world, sdkUnityVersion),
+            getFileAnalysisForUnityPackages({
+                unityPackages: world.unityPackages,
+                sdkUnityVersion,
+                endpoint: targetEndpoint
+            })
+        ])
             .then(([cacheResult, fileAnalysisResult]) => {
                 if (
                     active &&
@@ -181,7 +167,13 @@ export function useWorldDialogData({
         return () => {
             active = false;
         };
-    }, [currentEndpoint, world?.id, world?.updatedAt, world?.version]);
+    }, [
+        currentEndpoint,
+        sdkUnityVersion,
+        world?.id,
+        world?.updatedAt,
+        world?.version
+    ]);
 
     useEffect(() => {
         let active = true;

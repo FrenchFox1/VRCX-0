@@ -22,5 +22,8 @@ pub mod updater_policy;
 #[cfg(any(windows, target_os = "linux"))]
 pub mod vr_overlay;
 pub mod vrchat_ipc;
+pub mod vrchat_log;
 pub mod vrchat_paths;
 pub mod vrchat_registry;
+#[cfg(windows)]
+pub mod window_icon;

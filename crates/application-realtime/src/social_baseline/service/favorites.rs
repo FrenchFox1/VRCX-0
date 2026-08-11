@@ -44,18 +44,13 @@ impl FavoriteGroupSets {
     }
 }
 
-#[derive(Clone, Debug, Default)]
 struct RemoteFavoriteRef {
-    id: String,
-    favorite_id: String,
     group_key: String,
     raw: Value,
 }
 
-#[derive(Clone, Debug, Default)]
 struct RemoteFavoriteSnapshot {
     remote_favorites_by_id: BTreeMap<String, RemoteFavoriteRef>,
-    remote_favorites_by_object_id: BTreeMap<String, RemoteFavoriteRef>,
     favorites_sort_order: Vec<String>,
     favorite_friend_ids: Vec<String>,
     favorite_world_ids: Vec<String>,
@@ -293,6 +288,7 @@ fn count_favorite_groups(
 enum FriendRosterView<'a> {
     Raw(&'a Value),
     Typed(&'a HashMap<String, FriendRecord>),
+    Ids(&'a HashMap<String, String>),
 }
 
 impl<'a> FriendRosterView<'a> {
@@ -306,6 +302,10 @@ impl<'a> FriendRosterView<'a> {
             Self::Typed(friends_by_id) => friends_by_id
                 .get(favorite_id)
                 .map(|friend| friend.id.trim().to_string())
+                .unwrap_or_default(),
+            Self::Ids(friend_ids_by_roster_id) => friend_ids_by_roster_id
+                .get(favorite_id)
+                .map(|friend_id| friend_id.trim().to_string())
                 .unwrap_or_default(),
         };
         if object_id.is_empty() {
@@ -349,7 +349,6 @@ fn build_remote_favorite_snapshot(
     friend_roster: &FriendRosterView<'_>,
 ) -> RemoteFavoriteSnapshot {
     let mut remote_favorites_by_id = BTreeMap::new();
-    let mut remote_favorites_by_object_id = BTreeMap::new();
     let mut favorites_sort_order = Vec::new();
     let mut favorite_friend_ids = Vec::new();
     let mut favorite_world_ids = Vec::new();
@@ -368,13 +367,10 @@ fn build_remote_favorite_snapshot(
         let type_name = object_field_normalized(&favorite, &["type"]);
         let group_key = object_field_string(&favorite, &["$groupKey"]);
         let remote_ref = RemoteFavoriteRef {
-            id: id.clone(),
-            favorite_id: favorite_id.clone(),
             group_key: group_key.clone(),
             raw: favorite,
         };
-        remote_favorites_by_id.insert(id, remote_ref.clone());
-        remote_favorites_by_object_id.insert(favorite_id.clone(), remote_ref);
+        remote_favorites_by_id.insert(id, remote_ref);
         favorites_sort_order.push(favorite_id.clone());
 
         match type_name.as_str() {
@@ -400,36 +396,12 @@ fn build_remote_favorite_snapshot(
 
     RemoteFavoriteSnapshot {
         remote_favorites_by_id,
-        remote_favorites_by_object_id,
         favorites_sort_order,
         favorite_friend_ids,
         favorite_world_ids,
         favorite_avatar_ids,
         grouped_favorite_friend_ids_by_group_key: grouped_friend_ids,
         grouped_favorite_world_ids_by_group_key: grouped_world_ids,
-    }
-}
-
-fn build_details_by_id(rows: Vec<Value>) -> BTreeMap<String, RawJson> {
-    let mut details_by_id = BTreeMap::new();
-    for row in rows {
-        let object_id = object_field_normalized(&row, &["id"]);
-        if !object_id.is_empty() {
-            details_by_id.insert(object_id, RawJson::from(row));
-        }
-    }
-    details_by_id
-}
-
-fn ensure_local_detail_fallbacks(
-    details_by_id: &mut BTreeMap<String, RawJson>,
-    object_ids: &[String],
-) {
-    for object_id in object_ids {
-        if object_id.is_empty() || details_by_id.contains_key(object_id) {
-            continue;
-        }
-        details_by_id.insert(object_id.clone(), RawJson::from(json!({ "id": object_id })));
     }
 }
 
@@ -476,27 +448,12 @@ fn build_local_grouped_ids(
     (groups, groups_list, unique_values(list))
 }
 
-fn remote_favorite_refs_to_json(
-    favorites: &BTreeMap<String, RemoteFavoriteRef>,
+fn remote_favorite_refs_into_json(
+    favorites: BTreeMap<String, RemoteFavoriteRef>,
 ) -> BTreeMap<String, RawJson> {
     favorites
-        .iter()
-        .map(|(key, favorite)| {
-            debug_assert_eq!(favorite.id, *key);
-            (key.clone(), RawJson::from(favorite.raw.clone()))
-        })
-        .collect()
-}
-
-fn remote_favorite_refs_by_object_id_to_json(
-    favorites: &BTreeMap<String, RemoteFavoriteRef>,
-) -> BTreeMap<String, RawJson> {
-    favorites
-        .iter()
-        .map(|(key, favorite)| {
-            debug_assert_eq!(favorite.favorite_id, *key);
-            (key.clone(), RawJson::from(favorite.raw.clone()))
-        })
+        .into_iter()
+        .map(|(key, favorite)| (key, RawJson::from(favorite.raw)))
         .collect()
 }
 
@@ -540,6 +497,19 @@ pub async fn build_favorites_baseline_from_friend_records(
     friends_by_id: &HashMap<String, FriendRecord>,
 ) -> Result<SocialFavoritesBaselineOutput> {
     build_favorites_baseline_inner(deps, request, FriendRosterView::Typed(friends_by_id)).await
+}
+
+pub async fn build_favorites_baseline_from_friend_ids(
+    deps: SocialBaselineDeps,
+    request: SocialFavoritesBaselineRequest,
+    friend_ids_by_roster_id: &HashMap<String, String>,
+) -> Result<SocialFavoritesBaselineOutput> {
+    build_favorites_baseline_inner(
+        deps,
+        request,
+        FriendRosterView::Ids(friend_ids_by_roster_id),
+    )
+    .await
 }
 
 async fn build_favorites_baseline_inner(
@@ -597,18 +567,6 @@ async fn build_favorites_baseline_inner(
         Some(&user_id),
         vrcx_0_core::FavoriteEntityKind::Friend,
     )?;
-    let local_world_cache_rows = serde_json::to_value(
-        vrcx_0_persistence::worlds::world_cache_list(deps.db.as_ref())?,
-    )?
-    .as_array()
-    .cloned()
-    .unwrap_or_default();
-    let local_avatar_cache_rows = serde_json::to_value(
-        vrcx_0_persistence::avatars::avatar_cache_list(deps.db.as_ref())?,
-    )?
-    .as_array()
-    .cloned()
-    .unwrap_or_default();
     let explicit_local_world_groups = get_config_array(&deps, "localFavoriteWorldGroups")?;
     let explicit_local_avatar_groups = get_config_array(&deps, "localFavoriteAvatarGroups")?;
     let mut explicit_local_friend_groups = get_config_array(&deps, "localFavoriteFriendGroups")?;
@@ -640,25 +598,11 @@ async fn build_favorites_baseline_inner(
         &mut favorite_groups,
     );
 
-    let local_world_ids = local_world_favorite_rows
-        .iter()
-        .filter_map(|row| row.world_id.clone())
-        .collect::<Vec<_>>();
-    let local_avatar_ids = local_avatar_favorite_rows
-        .iter()
-        .filter_map(|row| row.avatar_id.clone())
-        .collect::<Vec<_>>();
-    let mut local_world_details_by_id = build_details_by_id(local_world_cache_rows);
-    let mut local_avatar_details_by_id = build_details_by_id(local_avatar_cache_rows);
-    ensure_local_detail_fallbacks(&mut local_world_details_by_id, &local_world_ids);
-    ensure_local_detail_fallbacks(&mut local_avatar_details_by_id, &local_avatar_ids);
-
-    let (local_world_favorites, local_world_favorite_groups, local_world_favorites_list) =
-        build_local_grouped_ids(
-            local_world_favorite_rows,
-            explicit_local_world_groups,
-            "Favorites",
-        );
+    let (local_world_favorites, _, local_world_favorites_list) = build_local_grouped_ids(
+        local_world_favorite_rows,
+        explicit_local_world_groups,
+        "Favorites",
+    );
     let (local_avatar_favorites, local_avatar_favorite_groups, local_avatar_favorites_list) =
         build_local_grouped_ids(
             local_avatar_favorite_rows,
@@ -699,11 +643,8 @@ async fn build_favorites_baseline_inner(
         current_user_id: user_id.clone(),
         favorite_limits: RawJson::from(favorite_limits),
         favorites_sort_order: remote_snapshot.favorites_sort_order,
-        remote_favorites_by_id: remote_favorite_refs_to_json(
-            &remote_snapshot.remote_favorites_by_id,
-        ),
-        remote_favorites_by_object_id: remote_favorite_refs_by_object_id_to_json(
-            &remote_snapshot.remote_favorites_by_object_id,
+        remote_favorites_by_id: remote_favorite_refs_into_json(
+            remote_snapshot.remote_favorites_by_id,
         ),
         favorite_friend_ids: remote_snapshot.favorite_friend_ids,
         grouped_favorite_friend_ids_by_group_key: remote_snapshot
@@ -719,14 +660,10 @@ async fn build_favorites_baseline_inner(
         local_world_favorites,
         local_avatar_favorites,
         local_friend_favorites,
-        local_world_favorite_groups,
         local_avatar_favorite_groups,
         local_friend_favorite_groups,
-        local_world_favorites_list,
         local_avatar_favorites_list,
         local_friend_favorites_list,
-        local_world_details_by_id,
-        local_avatar_details_by_id,
         detail,
     };
 

@@ -1,5 +1,4 @@
 import {
-    useEffect,
     useMemo,
     useState,
     type Dispatch,
@@ -15,10 +14,11 @@ import type {
 } from '@/domain/entities/profileEntities';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import userProfileRepository from '@/repositories/userProfileRepository';
-import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import currentUserProfileService from '@/services/currentUserProfileService';
 import { mergeCurrentUserPresenceFields } from '@/shared/utils/currentUserPresence';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import { useCurrentUserSocialStatusDialog } from './useCurrentUserSocialStatusDialog';
 import { preserveUserDialogProfileAppearance } from './userDialogProfileAppearance';
@@ -161,10 +161,12 @@ export function useUserDialogSelfActions({
     const [profileDetailsDraft, setProfileDetailsDraft] = useState(
         createProfileDetailsDraft
     );
-    const [languageOptions, setLanguageOptions] = useState<
-        Array<{ key: string; value: string }>
-    >([]);
-    const [languageOptionsStatus, setLanguageOptionsStatus] = useState('idle');
+    const vrchatConfig = useVrchatConfigStore((state) => state.snapshot);
+    const languageOptions = useMemo(() => {
+        const options = normalizeLanguageOptionsFromConfig(vrchatConfig);
+        return options.length ? options : fallbackLanguageOptions();
+    }, [vrchatConfig]);
+    const languageOptionsStatus = vrchatConfig ? 'ready' : 'error';
 
     const languageOptionsMap = useMemo(
         () => new Map(languageOptions.map((option) => [option.key, option])),
@@ -226,50 +228,6 @@ export function useUserDialogSelfActions({
                 })
         });
 
-    useEffect(() => {
-        setLanguageOptions([]);
-        setLanguageOptionsStatus('idle');
-    }, [currentEndpoint]);
-
-    useEffect(() => {
-        let active = true;
-
-        if (!profileDetailsDialogOpen || languageOptions.length) {
-            return () => {
-                active = false;
-            };
-        }
-
-        setLanguageOptionsStatus('running');
-        vrchatAuthRepository
-            .getConfig()
-            .then((response) => {
-                if (!active) {
-                    return;
-                }
-
-                const nextOptions = normalizeLanguageOptionsFromConfig(
-                    response.json
-                );
-                setLanguageOptions(
-                    nextOptions.length ? nextOptions : fallbackLanguageOptions()
-                );
-                setLanguageOptionsStatus('ready');
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-
-                setLanguageOptions(fallbackLanguageOptions());
-                setLanguageOptionsStatus('error');
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, languageOptions.length, profileDetailsDialogOpen]);
-
     function applyCurrentUserSnapshot(nextUser: UserDialogProfileRecord) {
         const displayBaseUser = preserveUserDialogProfileAppearance(
             mergeCurrentUserPresenceFields(nextUser, baseProfile),
@@ -305,7 +263,7 @@ export function useUserDialogSelfActions({
 
         setSelfActionStatus(actionStatusRef, setActionStatus, 'self-profile');
         try {
-            const nextUser = await userProfileRepository.updateCurrentUser({
+            const nextUser = await currentUserProfileService.updateCurrentUser({
                 userId: currentUserId,
                 params: patch
             });
@@ -423,7 +381,7 @@ export function useUserDialogSelfActions({
         try {
             if (Object.keys(patch).length) {
                 const nextProfile =
-                    await userProfileRepository.updateCurrentUser({
+                    await currentUserProfileService.updateCurrentUser({
                         userId: currentUserId,
                         params: patch
                     });
@@ -431,7 +389,7 @@ export function useUserDialogSelfActions({
             }
             if (removeLanguageKeys.length) {
                 const nextProfile =
-                    await userProfileRepository.removeCurrentUserTags({
+                    await currentUserProfileService.removeCurrentUserTags({
                         userId: currentUserId,
                         tags: removeLanguageKeys.map((key) => `language_${key}`)
                     });
@@ -439,7 +397,7 @@ export function useUserDialogSelfActions({
             }
             if (addLanguageKeys.length) {
                 const nextProfile =
-                    await userProfileRepository.addCurrentUserTags({
+                    await currentUserProfileService.addCurrentUserTags({
                         userId: currentUserId,
                         tags: addLanguageKeys.map((key) => `language_${key}`)
                     });

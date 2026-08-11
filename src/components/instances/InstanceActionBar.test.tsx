@@ -211,6 +211,29 @@ describe('InstanceActionBar', () => {
         expect(html).toContain('iOS:');
     });
 
+    it('preserves markers-first summary ordering', () => {
+        const html = renderActionBar({
+            target: { location: 'wrld_test:12345' },
+            instance: {
+                userCount: 12,
+                capacity: 40,
+                queueSize: 3,
+                ageGate: true
+            },
+            friendCount: 2,
+            instanceSummaryOrder: 'markers-first',
+            showLaunch: false,
+            showInvite: false,
+            showRefresh: false
+        });
+
+        expect(html.indexOf('Queue 3')).toBeLessThan(html.indexOf('12/40'));
+        expect(html.indexOf('Age Gate')).toBeLessThan(html.indexOf('12/40'));
+        expect(html.indexOf('lucide-users-round')).toBeLessThan(
+            html.indexOf('12/40')
+        );
+    });
+
     it('renders the close-instance marker as a neutral icon button', () => {
         const html = renderActionBar({
             target: { location: 'wrld_test:12345' },
@@ -453,6 +476,35 @@ describe('InstanceActionBar', () => {
             expect(onRefresh).toHaveBeenCalledWith(
                 'wrld_refresh:34567~region(eu)'
             );
+        });
+    });
+
+    it('forces a fresh instance request for an explicit refresh', async () => {
+        mocks.getInstance.mockResolvedValue({
+            json: {
+                id: 'wrld_refresh:34567~region(eu)',
+                userCount: 7,
+                capacity: 24
+            }
+        });
+
+        render(
+            <InstanceActionBar
+                target={{ location: 'wrld_refresh:34567~region(eu)' }}
+                disableTooltip
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Refresh instance info' })
+        );
+
+        await waitFor(() => {
+            expect(mocks.getInstance).toHaveBeenCalledWith({
+                worldId: 'wrld_refresh',
+                instanceId: '34567~region(eu)',
+                force: true
+            });
         });
     });
 

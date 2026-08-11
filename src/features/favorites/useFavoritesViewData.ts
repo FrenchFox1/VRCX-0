@@ -56,25 +56,22 @@ export function useFavoritesViewData({
     groupedFavoriteFriendIdsByGroupKey,
     knownUsersById = {},
     kind,
-    localAvatarDetailsById,
     localAvatarFavoriteGroups,
     localAvatarFavorites,
     localFriendFavoriteGroups,
     localFriendFavorites,
-    localWorldDetailsById,
     localWorldFavoriteGroups,
     localWorldFavorites,
     remoteEntityDetails,
     remoteFavoritesById,
-    remoteWorldCacheFallbacksById,
-    remoteAvatarCacheFallbacksById,
+    worldDetailFallbacksById,
+    avatarDetailFallbacksById,
     searchMode,
     searchQuery,
     selectedGroupKey,
     selectedSource,
     sortValue,
-    worldAvailabilityById,
-    worldFactsById
+    worldAvailabilityById
 }: FavoritesViewDataInputs) {
     const { t } = useTranslation();
 
@@ -136,21 +133,13 @@ export function useFavoritesViewData({
         () => normalizeFavoriteDetailMap(remoteEntityDetails.data),
         [remoteEntityDetails.data]
     );
-    const normalizedLocalWorldDetailsById = useMemo(
-        () => normalizeFavoriteDetailMap(localWorldDetailsById),
-        [localWorldDetailsById]
+    const normalizedWorldDetailFallbacksById = useMemo(
+        () => normalizeFavoriteDetailMap(worldDetailFallbacksById),
+        [worldDetailFallbacksById]
     );
-    const normalizedLocalAvatarDetailsById = useMemo(
-        () => normalizeFavoriteDetailMap(localAvatarDetailsById),
-        [localAvatarDetailsById]
-    );
-    const normalizedRemoteWorldCacheFallbacksById = useMemo(
-        () => normalizeFavoriteDetailMap(remoteWorldCacheFallbacksById),
-        [remoteWorldCacheFallbacksById]
-    );
-    const normalizedRemoteAvatarCacheFallbacksById = useMemo(
-        () => normalizeFavoriteDetailMap(remoteAvatarCacheFallbacksById),
-        [remoteAvatarCacheFallbacksById]
+    const normalizedAvatarDetailFallbacksById = useMemo(
+        () => normalizeFavoriteDetailMap(avatarDetailFallbacksById),
+        [avatarDetailFallbacksById]
     );
     const normalizedAvatarHistory = useMemo(
         () => avatarHistory.filter(isFavoriteEntityDetail),
@@ -169,13 +158,8 @@ export function useFavoritesViewData({
             remoteFavoritesById,
             remoteEntityDetailsData,
             remoteEntityDetailsStatus: remoteEntityDetails.status,
-            worldFactsById,
-            remoteWorldCacheFallbacksById:
-                normalizedRemoteWorldCacheFallbacksById,
-            remoteAvatarCacheFallbacksById:
-                normalizedRemoteAvatarCacheFallbacksById,
-            localWorldDetailsById: normalizedLocalWorldDetailsById,
-            localAvatarDetailsById: normalizedLocalAvatarDetailsById,
+            worldDetailFallbacksById: normalizedWorldDetailFallbacksById,
+            avatarDetailFallbacksById: normalizedAvatarDetailFallbacksById,
             remoteGroupLabelByKey,
             worldAvailabilityById,
             t
@@ -186,19 +170,16 @@ export function useFavoritesViewData({
         groupedFavoriteFriendIdsByGroupKey,
         knownUsersById,
         kind,
-        normalizedLocalAvatarDetailsById,
-        normalizedLocalWorldDetailsById,
         remoteEntityDetailsData,
         remoteEntityDetails.status,
         remoteFavoritesById,
-        normalizedRemoteAvatarCacheFallbacksById,
-        normalizedRemoteWorldCacheFallbacksById,
+        normalizedAvatarDetailFallbacksById,
+        normalizedWorldDetailFallbacksById,
         remoteGroupLabelByKey,
         remoteGroups,
         sortValue,
         t,
-        worldAvailabilityById,
-        worldFactsById
+        worldAvailabilityById
     ]);
 
     const localItemsByGroup = useMemo(() => {
@@ -208,9 +189,8 @@ export function useFavoritesViewData({
             localFriendFavorites,
             localAvatarFavorites,
             localWorldFavorites,
-            localAvatarDetailsById: normalizedLocalAvatarDetailsById,
-            localWorldDetailsById: normalizedLocalWorldDetailsById,
-            worldFactsById,
+            avatarDetailFallbacksById: normalizedAvatarDetailFallbacksById,
+            worldDetailFallbacksById: normalizedWorldDetailFallbacksById,
             friendsById,
             knownUsersById,
             sortValue,
@@ -220,15 +200,14 @@ export function useFavoritesViewData({
         friendsById,
         knownUsersById,
         kind,
-        normalizedLocalAvatarDetailsById,
         localAvatarFavorites,
         localFriendFavorites,
         localGroups,
-        normalizedLocalWorldDetailsById,
+        normalizedAvatarDetailFallbacksById,
+        normalizedWorldDetailFallbacksById,
         localWorldFavorites,
         sortValue,
-        t,
-        worldFactsById
+        t
     ]);
 
     const avatarHistoryItems = useMemo(() => {

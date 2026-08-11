@@ -28,16 +28,17 @@ pub use print_content_refresh::is_print_created_content_refresh;
 pub use projection::{
     FriendProjection, FriendProjectionPatch, FriendStateBucketAuthority,
     RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeEntryCorrectionFields,
-    RealtimeEntryCorrectionStream, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
-    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeNotificationUpsert,
-    RealtimeUserProjection,
+    RealtimeEntryCorrectionStream, RealtimeFeedPatch, RealtimeFeedProjection, RealtimeFeedUpsert,
+    RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind, RealtimeInstanceQueueProjection,
+    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeUserProjection,
 };
 pub use runtime_types::{
     FriendBaselineCausalWatermark, FriendBaselineResult, FriendBaselineSyncOutcome,
     PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserGameLogContext,
-    RealtimeFriendApplyResult, RealtimeFriendSnapshot, RealtimeSessionContext,
-    RealtimeTransportLifecycleEvent, RealtimeTransportStartResult, RealtimeTransportTermination,
-    RealtimeWsMessagePayload, RealtimeWsStatus, RealtimeWsStatusPayload,
+    RealtimeFriendApplyResult, RealtimeFriendRosterSnapshot, RealtimeFriendSnapshot,
+    RealtimeSessionContext, RealtimeTransportLifecycleEvent, RealtimeTransportStartResult,
+    RealtimeTransportTermination, RealtimeWsMessagePayload, RealtimeWsStatus,
+    RealtimeWsStatusPayload,
 };
 pub use service::{
     FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload,

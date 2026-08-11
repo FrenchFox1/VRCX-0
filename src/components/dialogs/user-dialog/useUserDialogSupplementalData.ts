@@ -23,7 +23,10 @@ import {
     isSameLocationTag,
     resolvePresenceLocation
 } from './userDialogContentHelpers';
-import { replacePreviousDisplayNameSource } from './userDialogRows';
+import {
+    mergePreviousDisplayNames,
+    replacePreviousDisplayNameSource
+} from './userDialogRows';
 import { normalizeUserId } from './userProfileFields';
 import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
@@ -36,18 +39,6 @@ function record(value: unknown): DialogRecord {
     return value && typeof value === 'object'
         ? Object.fromEntries(Object.entries(value))
         : {};
-}
-
-function normalizeMutualFriendCount(value: unknown) {
-    const source = record(value);
-    return (
-        Number(
-            source.friends ??
-                source.friendCount ??
-                source.mutualFriendCount ??
-                source.mutualFriends
-        ) || 0
-    );
 }
 
 function resolveFriendedAtFromHistoryRows(rows: unknown) {
@@ -147,6 +138,11 @@ export function useUserDialogSupplementalData({
         userStatsState.targetKey === targetKey
             ? userStatsState.stats
             : DEFAULT_USER_STATS;
+    const profileDisplayName = normalizeUserId(
+        profile?.displayName || profile?.username
+    );
+    const profileDisplayNameRef = useRef('');
+    profileDisplayNameRef.current = profileDisplayName;
     const representedGroupMatchesTarget =
         representedGroupState.userId === normalizedUserId &&
         representedGroupState.endpoint === currentEndpoint;
@@ -204,6 +200,25 @@ export function useUserDialogSupplementalData({
         },
         [targetKey]
     );
+
+    useEffect(() => {
+        setUserStatsForTarget((current) => {
+            const sources = current.previousDisplayNameSources;
+            return {
+                ...current,
+                previousDisplayNames: sources
+                    ? mergePreviousDisplayNames(
+                          profileDisplayName,
+                          sources.friendLog,
+                          sources.gameLog
+                      )
+                    : mergePreviousDisplayNames(
+                          profileDisplayName,
+                          current.previousDisplayNames
+                      )
+            };
+        });
+    }, [profileDisplayName, setUserStatsForTarget]);
 
     useEffect(() => {
         let active = true;
@@ -365,7 +380,7 @@ export function useUserDialogSupplementalData({
             .getUserStats(
                 {
                     id: profile.id,
-                    displayName: profile.displayName || profile.username || ''
+                    displayName: profileDisplayNameRef.current
                 },
                 inCurrentWorld
             )
@@ -381,7 +396,7 @@ export function useUserDialogSupplementalData({
                 setUserStatsForTarget((current) => {
                     const previousDisplayNames =
                         replacePreviousDisplayNameSource(
-                            profile.displayName || profile.username,
+                            profileDisplayNameRef.current,
                             current.previousDisplayNameSources,
                             'gameLog',
                             stats?.previousDisplayNames
@@ -403,57 +418,10 @@ export function useUserDialogSupplementalData({
         currentGameDestination,
         currentGameLocation,
         currentSnapshotLocation,
-        profile?.displayName,
         profile?.id,
         profile?.location,
         profile?.travelingToLocation,
-        profile?.username,
         openNonce,
-        reloadToken,
-        setUserStatsForTarget,
-        targetKey
-    ]);
-
-    useEffect(() => {
-        let active = true;
-
-        if (
-            !profile?.id ||
-            isTargetCurrentUser ||
-            currentUserSnapshot?.hasSharedConnectionsOptOut
-        ) {
-            return () => {
-                active = false;
-            };
-        }
-
-        userProfileRepository
-            .getMutualCounts({
-                userId: profile.id
-            })
-            .then((counts) => {
-                if (!active) {
-                    return;
-                }
-                const mutualFriendCount = normalizeMutualFriendCount(counts);
-                setUserStatsForTarget((current) => {
-                    const nextStats = {
-                        ...current,
-                        mutualFriendCount
-                    };
-                    return nextStats;
-                });
-            })
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
-    }, [
-        currentEndpoint,
-        currentUserSnapshot?.hasSharedConnectionsOptOut,
-        isTargetCurrentUser,
-        profile?.id,
         reloadToken,
         setUserStatsForTarget,
         targetKey
@@ -481,7 +449,7 @@ export function useUserDialogSupplementalData({
                     ...current,
                     friendedAt: '',
                     ...replacePreviousDisplayNameSource(
-                        profile?.displayName || profile?.username,
+                        profileDisplayNameRef.current,
                         current.previousDisplayNameSources,
                         'friendLog',
                         []
@@ -515,7 +483,7 @@ export function useUserDialogSupplementalData({
                     ...current,
                     friendedAt,
                     ...replacePreviousDisplayNameSource(
-                        profile?.displayName || profile?.username,
+                        profileDisplayNameRef.current,
                         current.previousDisplayNameSources,
                         'friendLog',
                         friendLogPreviousDisplayNames
@@ -533,9 +501,7 @@ export function useUserDialogSupplementalData({
         currentUserSnapshot?.userId,
         currentUserSnapshot?.user_id,
         isTargetCurrentUser,
-        profile?.displayName,
         profile?.id,
-        profile?.username,
         reloadToken,
         setUserStatsForTarget,
         targetKey

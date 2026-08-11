@@ -2,8 +2,8 @@ use std::any::Any;
 use std::sync::{Arc, Weak};
 
 use vrcx_0_application_core::{
-    BackendRuntime, BackendRuntimeSnapshot, BackendRuntimeTelemetry, RealtimeProjectionSync,
-    RuntimeEventPayload, RuntimeEventSink,
+    BackendRuntime, BackendRuntimeSnapshot, BackendRuntimeTelemetry, BackendRuntimeTelemetryKind,
+    RealtimeProjectionSync, RuntimeEventPayload, RuntimeEventSink,
 };
 
 use crate::RuntimeHostProfileExtension;
@@ -50,7 +50,9 @@ where
         let snapshot = telemetry.snapshot.clone();
         match serde_json::to_value(&telemetry) {
             Ok(payload) => {
-                self.emit_realtime_projection_sync(snapshot);
+                if telemetry.kind != BackendRuntimeTelemetryKind::GameLogPersisted {
+                    self.emit_realtime_projection_sync(snapshot);
+                }
                 self.inner
                     .emit(BackendRuntimeTelemetry::EVENT_NAME, payload, &telemetry);
             }
@@ -67,16 +69,14 @@ where
     S: RuntimeEventSink,
 {
     fn emit(&self, event: &str, payload: serde_json::Value, typed_payload: &dyn Any) {
-        if let Some(extension) = self
-            .profile_extension
-            .as_ref()
-            .and_then(Weak::upgrade)
-        {
+        if let Some(extension) = self.profile_extension.as_ref().and_then(Weak::upgrade) {
             extension.observe_runtime_event(typed_payload);
         }
 
         if let Some(telemetry) = typed_payload.downcast_ref::<BackendRuntimeTelemetry>() {
-            self.emit_realtime_projection_sync(telemetry.snapshot.clone());
+            if telemetry.kind != BackendRuntimeTelemetryKind::GameLogPersisted {
+                self.emit_realtime_projection_sync(telemetry.snapshot.clone());
+            }
             self.inner.emit(event, payload, typed_payload);
             return;
         }

@@ -2,9 +2,9 @@ use std::sync::{atomic::Ordering, Arc};
 use std::time::{Duration, Instant};
 
 use super::{
-    current_user_from_cookie, run_background_group_instance_refresh, AuthenticatedRuntimeSession,
-    BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot, BackendRuntimeTelemetryKind,
-    BackendStartGuard, BackgroundTickContext, CliLoginPrompt, NonInteractiveAuthError,
+    current_user_from_cookie, run_background_group_instance_refresh, AtomicFlagGuard,
+    AuthenticatedRuntimeSession, BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot,
+    BackendRuntimeTelemetryKind, BackgroundTickContext, CliLoginPrompt, NonInteractiveAuthError,
     PrintCleanupDeps, PrintCleanupTrigger, Result, RuntimeHostProfile, RuntimeHostState,
 };
 
@@ -142,7 +142,7 @@ impl RuntimeHostState {
                 ));
             }
         }
-        let Some(_start_guard) = BackendStartGuard::try_acquire(&self.backend_starting) else {
+        let Some(_start_guard) = AtomicFlagGuard::try_acquire(&self.backend_starting) else {
             return Ok(self.backend_runtime.snapshot());
         };
         let current = self.backend_runtime.snapshot();
@@ -190,11 +190,18 @@ impl RuntimeHostState {
             Err(NonInteractiveAuthError::InteractionRequired(reason)) => {
                 self.backend_runtime
                     .set_auth_interaction_required(reason.clone());
-                return Err(crate::Error::Custom(reason));
+                return Err(crate::Error::AuthInteractionRequired(reason));
             }
-            Err(NonInteractiveAuthError::SessionInvalidated { user_id, reason }) => {
+            Err(NonInteractiveAuthError::SessionInvalidated {
+                user_id,
+                reason,
+                status_code,
+            }) => {
                 self.clear_invalid_non_interactive_auth_session(&user_id, &reason);
-                return Err(crate::Error::Custom(reason));
+                return Err(crate::Error::AuthSessionInvalidated {
+                    reason,
+                    status_code,
+                });
             }
             Err(NonInteractiveAuthError::Failed(reason)) => {
                 self.backend_runtime.set_auth_error(reason.clone());

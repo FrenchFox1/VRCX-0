@@ -70,6 +70,50 @@ fn seed_online_friend(
 }
 
 #[test]
+fn baseline_friend_cache_seed_preserves_profile_and_friend_fields() -> Result<()> {
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("baseline-friend-cache-open-fields")?;
+    let active = active_transport(&runtime);
+    let mut extra = serde_json::Map::new();
+    extra.insert(
+        "currentAvatarImageUrl".into(),
+        json!("https://example.test/avatar.png"),
+    );
+    extra.insert("tags".into(), json!(["system_trust_known"]));
+    runtime.runtime().sync_friend_snapshot(
+        active_session.clone(),
+        Some(active.generation),
+        HashMap::from([(
+            "usr_future".to_string(),
+            FriendRecord {
+                id: "usr_future".into(),
+                display_name: "Future Friend".into(),
+                state: "online".into(),
+                state_bucket: "online".into(),
+                extra,
+                ..FriendRecord::default()
+            },
+        )]),
+    )?;
+    runtime.runtime().user_cache.clear();
+
+    runtime.runtime().record_baseline_friends_into_cache();
+
+    let cached = runtime
+        .runtime()
+        .user_cache
+        .get_user(&active_session.endpoint, "usr_future")
+        .expect("baseline friend should be cached");
+    assert_eq!(
+        cached.get("currentAvatarImageUrl"),
+        Some(&json!("https://example.test/avatar.png"))
+    );
+    assert_eq!(cached.get("tags"), Some(&json!(["system_trust_known"])));
+    assert_eq!(cached.get("isFriend"), Some(&json!(true)));
+    Ok(())
+}
+
+#[test]
 fn auth_expiry_keeps_snapshots_for_the_reconnect_attempt() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("transport-lifecycle")?;
     let expected = active_transport(&runtime);
@@ -248,13 +292,12 @@ fn unexpected_exit_keeps_old_roster_until_pending_baseline_replacement_starts() 
         .deps
         .tasks
         .set_executor(DiscardTaskExecutor);
-    let replacement = runtime.runtime().start(
+    let replacement = runtime.runtime().start_from_friend_baseline(
         active_session.user_id.clone(),
         active_session.endpoint.clone(),
         active_session.websocket.clone(),
         2,
         json!({"id": active_session.user_id.clone()}),
-        HashMap::new(),
     )?;
     assert_eq!(
         runtime.runtime().friend_snapshot().unwrap().friends_by_id["usr_friend"].location,
@@ -290,6 +333,121 @@ fn unexpected_exit_keeps_old_roster_until_pending_baseline_replacement_starts() 
     let snapshot = runtime.runtime().friend_snapshot().unwrap();
     assert!(!snapshot.friends_by_id.contains_key("usr_stale"));
     assert!(snapshot.friends_by_id.contains_key("usr_live"));
+    Ok(())
+}
+
+#[test]
+fn reconnect_without_a_fresh_baseline_preserves_the_latest_canonical_roster() -> Result<()> {
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("unexpected-exit-preserved-baseline")?;
+    let old_transport = active_transport(&runtime);
+    runtime.runtime().sync_friend_snapshot(
+        active_session.clone(),
+        Some(old_transport.generation),
+        HashMap::from([(
+            "usr_friend".to_string(),
+            FriendRecord {
+                id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                state: "online".into(),
+                state_bucket: "online".into(),
+                location: "wrld_latest:456".into(),
+                ..FriendRecord::default()
+            },
+        )]),
+    )?;
+    runtime.runtime().finish_realtime_transport(
+        old_transport,
+        RealtimeTransportTermination::UnexpectedExit {
+            reason: "websocket stream ended".into(),
+            connected_secs: None,
+        },
+    );
+    runtime
+        .runtime()
+        .deps
+        .tasks
+        .set_executor(DiscardTaskExecutor);
+
+    let replacement = runtime.runtime().start_from_friend_baseline(
+        active_session.user_id.clone(),
+        active_session.endpoint.clone(),
+        active_session.websocket.clone(),
+        2,
+        json!({"id": active_session.user_id}),
+    )?;
+
+    let snapshot = runtime.runtime().friend_snapshot().unwrap();
+    assert_eq!(snapshot.generation, replacement.generation);
+    assert_eq!(snapshot.baseline_revision, 0);
+    assert_eq!(
+        snapshot.friends_by_id["usr_friend"].location,
+        "wrld_latest:456"
+    );
+    Ok(())
+}
+
+#[test]
+fn reconnect_without_a_fresh_baseline_clears_pending_offline_runtime_state() -> Result<()> {
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("unexpected-exit-pending-offline")?;
+    let old_transport = active_transport(&runtime);
+    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    let RealtimeFriendApplyResult::Output(output) =
+        runtime
+            .runtime()
+            .friends
+            .apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-offline",
+                    "content": { "userId": "usr_friend" }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-07-20T00:00:00Z".into(),
+            })
+    else {
+        panic!("friend-offline should produce an output");
+    };
+    let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
+        panic!("friend-offline should schedule a pending timer");
+    };
+    assert_eq!(
+        runtime.runtime().friend_snapshot().unwrap().friends_by_id["usr_friend"]
+            .extra
+            .get("pendingOffline"),
+        Some(&json!(true))
+    );
+
+    runtime.runtime().finish_realtime_transport(
+        old_transport,
+        RealtimeTransportTermination::UnexpectedExit {
+            reason: "websocket stream ended".into(),
+            connected_secs: None,
+        },
+    );
+    runtime
+        .runtime()
+        .deps
+        .tasks
+        .set_executor(DiscardTaskExecutor);
+
+    runtime.runtime().start_from_friend_baseline(
+        active_session.user_id.clone(),
+        active_session.endpoint.clone(),
+        active_session.websocket.clone(),
+        2,
+        json!({"id": active_session.user_id}),
+    )?;
+
+    let snapshot = runtime.runtime().friend_snapshot().unwrap();
+    assert!(!snapshot.friends_by_id["usr_friend"]
+        .extra
+        .contains_key("pendingOffline"));
+    assert!(runtime
+        .runtime()
+        .friends
+        .fire_pending_offline("usr_friend", token, "2026-07-20T00:03:00Z".into())
+        .is_none());
     Ok(())
 }
 
@@ -380,18 +538,26 @@ fn friend_ws_dispatch_fans_out_one_canonical_output() -> Result<()> {
             .count(),
         1
     );
-    assert_eq!(
-        events
-            .iter()
-            .filter(|event| {
-                event.name == "backendRuntimeTelemetry" && event.payload["kind"] == "wsPersisted"
-            })
-            .count(),
-        1
-    );
+    assert!(events.iter().all(|event| {
+        event.name != "backendRuntimeTelemetry"
+            || !matches!(
+                event.payload["kind"].as_str(),
+                Some("wsMessage" | "wsPersisted" | "gameLogPersisted")
+            )
+    }));
+    let mut frontend_projection = activity_projections[0].clone();
+    frontend_projection.feed_entries.clear();
     assert_eq!(
         frontend_projections[0].payload,
-        serde_json::to_value(&activity_projections[0]).expect("serialize activity projection")
+        serde_json::to_value(frontend_projection).expect("serialize frontend projection")
+    );
+    let feed_projection = events
+        .iter()
+        .find(|event| event.name == "realtimeFeedProjection")
+        .expect("friend Feed entry should use the dedicated projection");
+    assert_eq!(
+        feed_projection.payload["upserts"][0]["entry"]["type"],
+        "Friend"
     );
 
     let cached = runtime
@@ -515,12 +681,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         .event_bus
         .take_events_for_test()
         .iter()
-        .all(|event| {
-            event.name != "realtimeFriendProjection"
-                || event.payload["feedEntries"]
-                    .as_array()
-                    .is_none_or(Vec::is_empty)
-        }));
+        .all(|event| { event.name != "realtimeFeedProjection" }));
     let history_count_before = vrcx_0_persistence::friends::friend_log_history_query(
         runtime.runtime().deps.db.as_ref(),
         vrcx_0_persistence::friends::FriendLogHistoryQueryInput {
@@ -548,14 +709,9 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
     let events = runtime.runtime().deps.event_bus.take_events_for_test();
     let trust_entries = events
         .iter()
-        .filter(|event| event.name == "realtimeFriendProjection")
-        .flat_map(|event| {
-            event.payload["feedEntries"]
-                .as_array()
-                .into_iter()
-                .flatten()
-        })
-        .filter(|entry| entry["type"] == "TrustLevel")
+        .filter(|event| event.name == "realtimeFeedProjection")
+        .flat_map(|event| event.payload["upserts"].as_array().into_iter().flatten())
+        .filter(|upsert| upsert["entry"]["type"] == "TrustLevel")
         .count();
     assert_eq!(trust_entries, 1);
     let history_count_after = vrcx_0_persistence::friends::friend_log_history_query(

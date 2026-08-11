@@ -7,8 +7,8 @@ use crate::{GroupOrderSource, RuntimeGroupInstancesProjection, RuntimeHostContex
 
 use super::super::{
     background_capability_session, background_capability_session_matches, emit_background_info,
-    emit_background_warning, gui_maintenance_runtime_mode, AtomicFlagGuard,
-    BackendRuntimeFrontendSessionSnapshot, BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+    emit_background_warning, gui_maintenance_runtime_mode, BackendRuntimeFrontendSessionSnapshot,
+    SharedAtomicFlagGuard, BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
     BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
 };
 use super::BackgroundTickContext;
@@ -18,7 +18,7 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
     refresh_running: &Arc<AtomicBool>,
     group_order_source: &dyn GroupOrderSource,
 ) {
-    let Some(_refresh_guard) = AtomicFlagGuard::try_acquire(refresh_running) else {
+    let Some(_refresh_guard) = SharedAtomicFlagGuard::try_acquire(refresh_running) else {
         context.background_jobs.mark_scheduled(
             BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
             "Background group instance refresh is already running.",

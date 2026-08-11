@@ -5,8 +5,7 @@ import { MINUTE_MS, SECOND_MS } from '@/shared/constants/time';
 import {
     hasAvatarIdPrefix,
     hasGroupIdPrefix,
-    hasUserIdPrefix,
-    hasWorldIdPrefix
+    hasUserIdPrefix
 } from '@/shared/constants/vrchatIds';
 import { normalizeVrchatEndpointKey } from '@/shared/vrchatEndpoint';
 
@@ -28,44 +27,8 @@ type FetchWithEntityPolicyOptions<TData = unknown> = {
 
 export const entityQueryPolicies = Object.freeze({
     instance: Object.freeze({
-        staleTime: 0,
+        staleTime: 20 * SECOND_MS,
         gcTime: 90 * SECOND_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
-    avatar: Object.freeze({
-        staleTime: 60 * SECOND_MS,
-        gcTime: 300 * SECOND_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
-    avatarDialog: Object.freeze({
-        staleTime: 120 * SECOND_MS,
-        gcTime: 300 * SECOND_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
-    world: Object.freeze({
-        staleTime: 0,
-        gcTime: 300 * SECOND_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
-    worldDialog: Object.freeze({
-        staleTime: 0,
-        gcTime: 300 * SECOND_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
-    worldLocation: Object.freeze({
-        staleTime: 0,
-        gcTime: 300 * SECOND_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
-    worldBasic: Object.freeze({
-        staleTime: 0,
-        gcTime: 10 * MINUTE_MS,
         retry: 1,
         refetchOnWindowFocus: false
     }),
@@ -123,12 +86,6 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
-    apiConfig: Object.freeze({
-        staleTime: 60 * MINUTE_MS,
-        gcTime: 240 * MINUTE_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
     fileObject: Object.freeze({
         staleTime: 60 * SECOND_MS,
         gcTime: 300 * SECOND_MS,
@@ -147,14 +104,8 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
-    mutualCounts: Object.freeze({
-        staleTime: 15 * MINUTE_MS,
-        gcTime: 60 * MINUTE_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
     userDialogTabCounts: Object.freeze({
-        staleTime: 10 * MINUTE_MS,
+        staleTime: 0,
         gcTime: 10 * MINUTE_MS,
         retry: 1,
         refetchOnWindowFocus: false
@@ -201,8 +152,6 @@ function stableParams(params: unknown = {}): Record<string, unknown> {
 export const queryKeys = Object.freeze({
     user: (userId: unknown, endpoint: unknown = '') =>
         withEndpoint(['user', userId], endpoint),
-    mutualCounts: (userId: unknown, endpoint: unknown = '') =>
-        withEndpoint(['user', userId, 'mutualCounts'], endpoint),
     userAppearanceProfile: (userId: unknown, endpoint: unknown = '') =>
         withEndpoint(['user', userId, 'appearanceProfile'], endpoint),
     userGroups: (userId: unknown, endpoint: unknown = '') =>
@@ -216,10 +165,6 @@ export const queryKeys = Object.freeze({
         instanceId: unknown,
         endpoint: unknown = ''
     ) => withEndpoint(['instance', worldId, instanceId, 'shortName'], endpoint),
-    avatar: (avatarId: unknown, endpoint: unknown = '') =>
-        withEndpoint(['avatar', avatarId], endpoint),
-    world: (worldId: unknown, endpoint: unknown = '') =>
-        withEndpoint(['world', worldId], endpoint),
     group: (
         groupId: unknown,
         includeRoles: unknown = false,
@@ -283,7 +228,6 @@ export const queryKeys = Object.freeze({
             ['analysis', fileId, Number(version), String(variant || '')],
             endpoint
         ),
-    apiConfig: (endpoint: unknown = '') => withEndpoint(['config'], endpoint),
     file: (fileId: unknown, endpoint: unknown = '') =>
         withEndpoint(['file', fileId], endpoint),
     avatarStyles: (endpoint: unknown = '') =>
@@ -385,7 +329,6 @@ export function getEntityQueryCacheSize() {
 
 export function getEntityQueryCacheStats() {
     const users = new Set<string>();
-    const worlds = new Set<string>();
     const avatars = new Set<string>();
     const groups = new Set<string>();
 
@@ -396,8 +339,6 @@ export function getEntityQueryCacheStats() {
         }
         if (kind === 'user' && hasUserIdPrefix(id)) {
             users.add(id);
-        } else if (kind === 'world' && hasWorldIdPrefix(id)) {
-            worlds.add(id);
         } else if (kind === 'avatar' && hasAvatarIdPrefix(id)) {
             avatars.add(id);
         } else if (kind === 'group' && hasGroupIdPrefix(id)) {
@@ -407,7 +348,6 @@ export function getEntityQueryCacheStats() {
 
     return {
         users: users.size,
-        worlds: worlds.size,
         avatars: avatars.size,
         groups: groups.size
     };

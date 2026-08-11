@@ -96,17 +96,12 @@ export const initialFavoriteStoreState: FavoriteStoreState = {
     favoriteFriendGroups: [],
     favoriteWorldGroups: [],
     favoriteAvatarGroups: [],
-    localWorldFavorites: {},
     localAvatarFavorites: {},
     localFriendFavorites: {},
-    localWorldFavoriteGroups: [],
     localAvatarFavoriteGroups: [],
     localFriendFavoriteGroups: [],
-    localWorldFavoritesList: [],
     localAvatarFavoritesList: [],
-    localFriendFavoritesList: [],
-    localWorldDetailsById: {},
-    localAvatarDetailsById: {}
+    localFriendFavoritesList: []
 };
 
 export function normalizeFavoriteStoreId(value: unknown): string {
@@ -576,10 +571,8 @@ export function hasFavoriteStoreData(state: FavoriteStoreState): boolean {
         state.favoriteWorldGroups.length > 0 ||
         state.favoriteAvatarGroups.length > 0 ||
         Object.keys(state.localFriendFavorites || {}).length > 0 ||
-        Object.keys(state.localWorldFavorites || {}).length > 0 ||
         Object.keys(state.localAvatarFavorites || {}).length > 0 ||
         state.localFriendFavoriteGroups.length > 0 ||
-        state.localWorldFavoriteGroups.length > 0 ||
         state.localAvatarFavoriteGroups.length > 0
     );
 }

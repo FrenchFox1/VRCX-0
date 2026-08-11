@@ -9,10 +9,10 @@ import configRepository from '@/repositories/configRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
-import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
+import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import { resolveTabValue } from './userDialogRows';
 import {
@@ -82,9 +82,8 @@ type UserDialogLoadContext = {
 
 type UserDialogCountContext = UserDialogLoadContext & {
     currentUserId: string;
-    currentAvatarId: string;
-    previousAvatarSwapTime: number;
     avatarReleaseStatus: string;
+    includeMutualFriends: boolean;
 };
 
 interface UseUserDialogTabDataInput {
@@ -149,6 +148,7 @@ export function useUserDialogTabData({
         emptyUserDialogStatus
     );
     const [remoteTabCounts, setRemoteTabCounts] = useState<{
+        mutual?: number;
         groups?: number;
         worlds?: number;
         'favorite-worlds'?: number;
@@ -163,8 +163,9 @@ export function useUserDialogTabData({
     const [groupSort, setGroupSort] = useState(
         isCurrentUser ? 'inGame' : 'alphabetical'
     );
-    const [vrchatConfigConstants, setVrchatConfigConstants] =
-        useState<unknown>(null);
+    const vrchatConfigConstants = useVrchatConfigStore(
+        (state) => state.snapshot?.constants ?? null
+    );
     const profileUserId = typeof profile.id === 'string' ? profile.id : '';
     const effectiveAvatarReleaseStatus =
         profileUserId === currentUserId ? avatarReleaseStatus : 'all';
@@ -177,9 +178,9 @@ export function useUserDialogTabData({
         endpoint: currentEndpoint,
         userId: profileUserId,
         currentUserId: currentUserId || '',
-        currentAvatarId,
-        previousAvatarSwapTime,
         avatarReleaseStatus: effectiveAvatarReleaseStatus,
+        includeMutualFriends:
+            !isCurrentUser && !currentUserHasSharedConnectionsOptOut,
         reloadToken
     });
     const avatarSortLoadVersionRef = useRef(0);
@@ -189,9 +190,9 @@ export function useUserDialogTabData({
         endpoint: currentEndpoint,
         userId: profileUserId,
         currentUserId: currentUserId || '',
-        currentAvatarId,
-        previousAvatarSwapTime,
         avatarReleaseStatus: effectiveAvatarReleaseStatus,
+        includeMutualFriends:
+            !isCurrentUser && !currentUserHasSharedConnectionsOptOut,
         reloadToken
     };
 
@@ -324,12 +325,10 @@ export function useUserDialogTabData({
             countContextRef.current.endpoint === context.endpoint &&
             countContextRef.current.userId === context.userId &&
             countContextRef.current.currentUserId === context.currentUserId &&
-            countContextRef.current.currentAvatarId ===
-                context.currentAvatarId &&
-            countContextRef.current.previousAvatarSwapTime ===
-                context.previousAvatarSwapTime &&
             countContextRef.current.avatarReleaseStatus ===
                 context.avatarReleaseStatus &&
+            countContextRef.current.includeMutualFriends ===
+                context.includeMutualFriends &&
             countContextRef.current.reloadToken === context.reloadToken
         );
     }
@@ -343,9 +342,9 @@ export function useUserDialogTabData({
             endpoint: currentEndpoint,
             userId: profileUserId,
             currentUserId: currentUserId || '',
-            currentAvatarId,
-            previousAvatarSwapTime,
             avatarReleaseStatus: effectiveAvatarReleaseStatus,
+            includeMutualFriends:
+                !isCurrentUser && !currentUserHasSharedConnectionsOptOut,
             reloadToken
         };
         try {
@@ -353,10 +352,8 @@ export function useUserDialogTabData({
                 userId: profileUserId,
                 endpoint: currentEndpoint,
                 currentUserId: currentUserId || '',
-                currentAvatarId,
-                previousAvatarSwapTime,
                 effectiveAvatarReleaseStatus,
-                repositories: userDialogTabServiceRepositories,
+                includeMutualFriends: countContext.includeMutualFriends,
                 force
             });
             if (!isCurrentCountContext(countContext)) {
@@ -533,32 +530,13 @@ export function useUserDialogTabData({
         loadTabCounts({ force: shouldForceReload });
     }, [
         currentEndpoint,
-        currentAvatarId,
         currentUserId,
+        currentUserHasSharedConnectionsOptOut,
         effectiveAvatarReleaseStatus,
-        previousAvatarSwapTime,
+        isCurrentUser,
         profileUserId,
         reloadToken
     ]);
-
-    useEffect(() => {
-        let active = true;
-        vrchatAuthRepository
-            .getConfig()
-            .then((response) => {
-                if (active) {
-                    setVrchatConfigConstants(response?.json?.constants || null);
-                }
-            })
-            .catch(() => {
-                if (active) {
-                    setVrchatConfigConstants(null);
-                }
-            });
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint]);
 
     useEffect(() => {
         if (activeTab === 'worlds') {

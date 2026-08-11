@@ -76,8 +76,6 @@ describe('quick search result model', () => {
             friendsById: {},
             knownFriendUsersById: {},
             remoteFavoritesByObjectId: {},
-            localWorldDetailsById: {},
-            localAvatarDetailsById: {},
             groupInstances: []
         };
 
@@ -89,6 +87,32 @@ describe('quick search result model', () => {
             buildQuickSearchResults({ ...input, normalizedQuery: 'al' })
                 .ownAvatars
         ).toHaveLength(1);
+    });
+
+    it('keeps separately hydrated world-cache rows searchable', () => {
+        const results = buildQuickSearchResults({
+            catalog: createEmptyCatalog(),
+            normalizedQuery: 'cached',
+            currentUserId: 'usr_owner',
+            friendsById: {},
+            knownFriendUsersById: {},
+            remoteFavoritesByObjectId: {},
+            worldSearchDetailsById: {
+                wrld_cached: {
+                    id: 'wrld_cached',
+                    name: 'Cached World'
+                }
+            },
+            groupInstances: []
+        });
+
+        expect(results.favoriteWorlds).toMatchObject([
+            {
+                id: 'wrld_cached',
+                name: 'Cached World',
+                source: 'local'
+            }
+        ]);
     });
 
     it('keeps the first duplicate and removes excluded or empty ids', () => {

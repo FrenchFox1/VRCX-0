@@ -25,7 +25,6 @@ pub struct FavoriteBaselineSnapshot {
     pub favorite_limits: RawJson,
     pub favorites_sort_order: Vec<String>,
     pub remote_favorites_by_id: BTreeMap<String, RawJson>,
-    pub remote_favorites_by_object_id: BTreeMap<String, RawJson>,
     pub favorite_friend_ids: Vec<String>,
     pub grouped_favorite_friend_ids_by_group_key: BTreeMap<String, Vec<String>>,
     pub favorite_world_ids: Vec<String>,
@@ -35,17 +34,14 @@ pub struct FavoriteBaselineSnapshot {
     pub favorite_friend_groups: Vec<FavoriteGroupOutput>,
     pub favorite_world_groups: Vec<FavoriteGroupOutput>,
     pub favorite_avatar_groups: Vec<FavoriteGroupOutput>,
+    #[serde(skip_serializing)]
     pub local_world_favorites: BTreeMap<String, Vec<String>>,
     pub local_avatar_favorites: BTreeMap<String, Vec<String>>,
     pub local_friend_favorites: BTreeMap<String, Vec<String>>,
-    pub local_world_favorite_groups: Vec<String>,
     pub local_avatar_favorite_groups: Vec<String>,
     pub local_friend_favorite_groups: Vec<String>,
-    pub local_world_favorites_list: Vec<String>,
     pub local_avatar_favorites_list: Vec<String>,
     pub local_friend_favorites_list: Vec<String>,
-    pub local_world_details_by_id: BTreeMap<String, RawJson>,
-    pub local_avatar_details_by_id: BTreeMap<String, RawJson>,
     pub detail: String,
 }
 
@@ -56,6 +52,37 @@ impl FavoriteBaselineSnapshot {
 
     pub fn into_value(self) -> Value {
         serde_json::to_value(self).expect("favorite baseline snapshot must serialize")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn favorite_baseline_serializes_only_frontend_owned_fields() {
+        let snapshot = FavoriteBaselineSnapshot {
+            remote_favorites_by_id: BTreeMap::from([(
+                "fav_record".into(),
+                RawJson::from(json!({
+                    "id": "fav_record",
+                    "favoriteId": "wrld_target",
+                })),
+            )]),
+            local_world_favorites: BTreeMap::from([("Worlds".into(), vec!["wrld_local".into()])]),
+            ..Default::default()
+        };
+
+        let serialized = snapshot.to_value();
+
+        assert_eq!(
+            serialized["remoteFavoritesById"]["fav_record"]["favoriteId"],
+            "wrld_target"
+        );
+        assert!(serialized.get("remoteFavoritesByObjectId").is_none());
+        assert!(serialized.get("localWorldFavorites").is_none());
     }
 }
 

@@ -18,7 +18,8 @@ pub use realtime::{
     FriendStateBucketAuthority, PendingOfflineTimerAction, RealtimeCurrentUserAuthority,
     RealtimeCurrentUserGameLogContext, RealtimeCurrentUserOutput, RealtimeCurrentUserProjection,
     RealtimeCurrentUserRefreshExpectation, RealtimeEntryCorrection, RealtimeEntryCorrectionFields,
-    RealtimeEntryCorrectionStream, RealtimeFriendApplyResult, RealtimeFriendOutput,
+    RealtimeEntryCorrectionStream, RealtimeFeedPatch, RealtimeFeedProjection, RealtimeFeedUpsert,
+    RealtimeFriendApplyResult, RealtimeFriendOutput, RealtimeFriendRosterSnapshot,
     RealtimeFriendSnapshot, RealtimeFriendsRuntime, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
     RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
     RealtimeInstanceQueueProjection, RealtimeNotificationOutput, RealtimeNotificationProjection,
@@ -34,10 +35,11 @@ pub use realtime::{
 };
 pub use social_baseline::{
     apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
-    build_favorites_baseline_from_friend_records, build_friend_roster_baseline,
-    build_friend_roster_baseline_deferred, build_synced_friend_roster_baseline,
-    FavoriteBaselineSnapshot, FavoriteGroupOutput, FriendStatusVerdicts, SocialBaselineDeps,
-    SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFavoritesBaselineRequest,
+    build_favorites_baseline_from_friend_ids, build_favorites_baseline_from_friend_records,
+    build_friend_roster_baseline, build_friend_roster_baseline_deferred,
+    build_synced_friend_roster_baseline, FavoriteBaselineSnapshot, FavoriteGroupOutput,
+    FriendStatusVerdicts, SocialBaselineDeps, SocialFavoritesBaselineInput,
+    SocialFavoritesBaselineOutput, SocialFavoritesBaselineRequest,
     SocialFriendRosterBaselineInput, SocialFriendRosterBaselineOutput, SyncedFriendRosterBaseline,
 };
 pub use world_enrich::world_id_from_location_or_id;

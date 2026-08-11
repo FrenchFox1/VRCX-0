@@ -7,7 +7,7 @@ use serde_json::Value;
 use vrcx_0_application_core::LocalGameContextSnapshot;
 use vrcx_0_core::user_facts::UserFactMergeOptions;
 use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::realtime::{write_realtime_batch, RealtimeWriteCounts};
+use vrcx_0_persistence::realtime::write_realtime_batch;
 
 use crate::realtime::{
     FriendProjection, PendingOfflineTimerAction, RealtimeCurrentUserOutput, RealtimeFriendOutput,
@@ -27,6 +27,7 @@ impl RealtimeHostRuntime {
         config_store::set_bool(self.deps.db.as_ref(), "feedPersistenceDisabled", disabled)?;
         self.feed_persistence_disabled
             .store(disabled, Ordering::Relaxed);
+        self.reset_feed_live_cache();
         Ok(())
     }
 
@@ -54,6 +55,7 @@ impl RealtimeHostRuntime {
     pub(super) fn apply_reconciled_friend_feed_entries_owned(
         self: &Arc<Self>,
         _owner: &FriendOwnerGuard<'_>,
+        owner_user_id: &str,
         generation: u64,
         baseline_revision: u64,
         feed_entries: Vec<Value>,
@@ -71,9 +73,11 @@ impl RealtimeHostRuntime {
         if let Some(activity_sink) = &self.deps.activity_sink {
             activity_sink.ingest_friend_projection(&projection);
         }
-        self.deps
-            .event_bus
-            .emit_realtime_friend_projection(projection);
+        self.emit_feed_entries(
+            generation,
+            owner_user_id,
+            std::mem::take(&mut projection.feed_entries),
+        );
     }
 
     pub(super) fn apply_friend_output_owned(
@@ -99,17 +103,15 @@ impl RealtimeHostRuntime {
         let mut world_name_fetch_ids =
             self.enrich_projection_world_names(&mut projection.feed_entries);
         world_name_fetch_ids.extend(self.enrich_persistence_world_names(&mut output.persistence));
-        let persistence_attempted = !output.persistence.is_empty();
         let persisted =
             match write_realtime_batch(&self.deps.db, &output.owner_user_id, &output.persistence) {
-                Ok(counts) => {
+                Ok(_) => {
                     self.deps.sync.record(
                         "realtimeFriends",
                         RuntimeOperationStatus::Persisted,
                         "Realtime friend projection persisted by Rust.",
                         0,
                     );
-                    self.emit_realtime_persisted(counts, persistence_attempted);
                     true
                 }
                 Err(error) => {
@@ -129,22 +131,15 @@ impl RealtimeHostRuntime {
         projection
             .feed_entries
             .retain(|entry| !is_player_joining_entry(entry));
+        let feed_entries = std::mem::take(&mut projection.feed_entries);
         if friend_note_changed {
             if let Some(sink) = &self.deps.friend_note_change_sink {
                 sink();
             }
         }
         if !projection.patches.is_empty() {
-            let values: Vec<Value> = projection
-                .patches
-                .iter()
-                .map(|patch| {
-                    serde_json::to_value(&patch.patch)
-                        .expect("FriendRecord contains only JSON-serializable fields")
-                })
-                .collect();
-            self.record_users_into_cache(
-                &values,
+            let changed = self.collect_friend_record_cache_changes(
+                projection.patches.iter().map(|patch| &patch.patch),
                 &UserFactMergeOptions {
                     endpoint: self.active_endpoint(),
                     source: "realtime".into(),
@@ -153,10 +148,12 @@ impl RealtimeHostRuntime {
                     ..Default::default()
                 },
             );
+            self.emit_user_cache_changes(changed);
         }
         self.deps
             .event_bus
             .emit_realtime_friend_projection(projection);
+        self.emit_feed_entries(projection_generation, &output.owner_user_id, feed_entries);
 
         if let PendingOfflineTimerAction::Schedule {
             user_id,
@@ -239,16 +236,14 @@ impl RealtimeHostRuntime {
         output.projection = projection;
         self.finalize_notification_output_for_delivery(&mut output);
         let projection = self.visible_notification_projection(output.projection.clone());
-        let persistence_attempted = !output.persistence.is_empty();
         match write_realtime_batch(&self.deps.db, &output.owner_user_id, &output.persistence) {
-            Ok(counts) => {
+            Ok(_) => {
                 self.deps.sync.record(
                     "realtimeNotifications",
                     RuntimeOperationStatus::Persisted,
                     "Realtime notification projection persisted by Rust.",
                     0,
                 );
-                self.emit_realtime_persisted(counts, persistence_attempted);
             }
             Err(error) => {
                 tracing::warn!("Realtime notification persistence failed: {error}");
@@ -300,16 +295,14 @@ impl RealtimeHostRuntime {
     pub(super) fn apply_current_user_output(&self, mut output: RealtimeCurrentUserOutput) {
         self.enrich_current_user_location_output(&mut output);
         let projection = output.projection;
-        let persistence_attempted = !output.persistence.is_empty();
         match write_realtime_batch(&self.deps.db, &output.owner_user_id, &output.persistence) {
-            Ok(counts) => {
+            Ok(_) => {
                 self.deps.sync.record(
                     "realtimeCurrentUser",
                     RuntimeOperationStatus::Persisted,
                     "Realtime current-user projection persisted by Rust.",
                     0,
                 );
-                self.emit_realtime_persisted(counts, persistence_attempted);
             }
             Err(error) => {
                 tracing::warn!("Realtime current user persistence failed: {error}");
@@ -329,7 +322,10 @@ impl RealtimeHostRuntime {
         output: RealtimeInstanceClosedOutput,
     ) {
         let mut projection = output.projection;
+        let mut feed_entry = output.feed_entry;
+        let generation = projection.generation;
         self.enrich_world_name(&mut projection.notification);
+        self.enrich_world_name(&mut feed_entry);
         if let Some(location) = projection
             .notification
             .get("location")
@@ -339,16 +335,14 @@ impl RealtimeHostRuntime {
                 state.automation.invite.record_closed_location(location);
             }
         }
-        let persistence_attempted = !output.persistence.is_empty();
         match write_realtime_batch(&self.deps.db, owner_user_id, &output.persistence) {
-            Ok(counts) => {
+            Ok(_) => {
                 self.deps.sync.record(
                     "realtimeInstanceClosed",
                     RuntimeOperationStatus::Persisted,
                     "Realtime instance-closed projection persisted by Rust.",
                     0,
                 );
-                self.emit_realtime_persisted(counts, persistence_attempted);
             }
             Err(error) => {
                 tracing::warn!("Realtime instance-closed persistence failed: {error}");
@@ -363,21 +357,7 @@ impl RealtimeHostRuntime {
         self.deps
             .event_bus
             .emit_realtime_instance_closed_projection(projection);
-    }
-
-    pub(super) fn emit_realtime_persisted(
-        &self,
-        counts: RealtimeWriteCounts,
-        persistence_attempted: bool,
-    ) {
-        if persistence_attempted {
-            self.deps.event_bus.emit_ws_persisted(counts.affected_count);
-        }
-        if counts.game_log_affected_count > 0 {
-            self.deps
-                .event_bus
-                .emit_game_log_persisted(counts.game_log_affected_count);
-        }
+        self.emit_feed_entries(generation, owner_user_id, vec![feed_entry]);
     }
 }
 

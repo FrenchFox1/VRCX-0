@@ -20,7 +20,7 @@ pub struct AvatarTagInput {
     pub color: Value,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AvatarCacheOutput {
     pub id: String,
@@ -84,6 +84,30 @@ pub fn avatar_cache_get(
         .map(|row| cache_entity_from_row(row)))
 }
 
+pub fn avatar_cache_find_by_file_id(
+    db: &DatabaseService,
+    file_id: &str,
+) -> Result<Option<AvatarCacheOutput>, Error> {
+    ensure_global_store_tables(db)?;
+    let file_id = normalize_text(file_id);
+    if !file_id.starts_with("file_")
+        || !file_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
+    {
+        return Ok(None);
+    }
+    Ok(db
+        .execute(
+            "SELECT id, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version FROM cache_avatar WHERE image_url LIKE @file_id OR thumbnail_image_url LIKE @file_id LIMIT 1",
+            &ParamsBuilder::new()
+                .set("file_id", format!("%{file_id}%"))
+                .build(),
+        )?
+        .first()
+        .map(|row| cache_entity_from_row(row)))
+}
+
 pub fn avatar_cache_existing_ids(
     db: &DatabaseService,
     avatar_ids: &[String],
@@ -122,18 +146,6 @@ pub fn avatar_cache_existing_ids(
         .collect())
 }
 
-pub fn avatar_cache_list(db: &DatabaseService) -> Result<Vec<AvatarCacheOutput>, Error> {
-    ensure_global_store_tables(db)?;
-    Ok(db
-        .execute(
-            "SELECT id, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version FROM cache_avatar",
-            &Default::default(),
-        )?
-        .into_iter()
-        .map(|row| cache_entity_from_row(&row))
-        .collect())
-}
-
 pub fn avatar_cache_remove(db: &DatabaseService, avatar_id: String) -> Result<(), Error> {
     ensure_global_store_tables(db)?;
     let avatar_id = normalize_text(avatar_id);
@@ -143,27 +155,6 @@ pub fn avatar_cache_remove(db: &DatabaseService, avatar_id: String) -> Result<()
     db.execute_non_query(
         "DELETE FROM cache_avatar WHERE id = @avatar_id",
         &ParamsBuilder::new().set("avatar_id", avatar_id).build(),
-    )?;
-    Ok(())
-}
-
-pub fn avatar_history_add(
-    db: &DatabaseService,
-    user_id: String,
-    avatar_id: String,
-) -> Result<(), Error> {
-    let user_prefix = normalize_user_table_prefix(&user_id)?;
-    ensure_user_store_tables(db, &user_prefix)?;
-    let avatar_id = normalize_text(avatar_id);
-    if avatar_id.is_empty() {
-        return Ok(());
-    }
-    db.execute_non_query(
-        &format!("INSERT INTO {user_prefix}_avatar_history (avatar_id, created_at, time) VALUES (@avatar_id, @created_at, 0) ON CONFLICT(avatar_id) DO UPDATE SET created_at = @created_at"),
-        &ParamsBuilder::new()
-            .set("avatar_id", avatar_id)
-            .set("created_at", now_iso())
-            .build(),
     )?;
     Ok(())
 }

@@ -10,8 +10,8 @@ import authRepository, {
     type SavedAuthSnapshot,
     type SavedCredentialRecord
 } from '@/repositories/authRepository';
-import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -40,6 +40,10 @@ import {
 } from './domainIngestionService';
 import i18n from './i18nService';
 import { bootstrapAuthenticatedSession } from './sessionBootstrapService';
+import {
+    loadVrchatConfigSnapshot,
+    resetVrchatConfigSnapshot
+} from './vrchatConfigService';
 
 type AuthExecutionError = Error & {
     code?: string;
@@ -168,7 +172,8 @@ export function setAuthenticatingSessionState() {
 
 function resetCurrentUserRuntimeCaches() {
     clearEntityQueryCache();
-    avatarProfileRepository.clearAvatarNameCache();
+    resetVrchatConfigSnapshot();
+    useAssistantChatStore.getState().resetAssistantChatState();
     useFriendRosterStore.getState().resetRoster();
     useFavoriteStore.getState().resetFavorites();
     useFavoriteRevisionStore.getState().reset();
@@ -359,6 +364,13 @@ export async function finalizeSuccessfulLogin(
         websocket: resolved.session.websocket
     });
     applySavedAuthSnapshot(resolved.snapshot);
+    try {
+        await loadVrchatConfigSnapshot();
+        ensureCurrentAuthAttempt(attempt);
+    } catch (error) {
+        ensureCurrentAuthAttempt(attempt);
+        console.warn('Failed to load VRChat config after login:', error);
+    }
     useRuntimeStore.getState().setStartupTask('auth', 'completed', detail);
     try {
         await bootstrapAuthenticatedSession(user, attempt);

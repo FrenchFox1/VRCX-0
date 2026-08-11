@@ -1,16 +1,17 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::{Duration, Instant};
 
 use moka::sync::Cache;
 use serde_json::Value;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
-use vrcx_0_persistence::favorites::favorite_list;
 use vrcx_0_persistence::worlds::{
-    world_cache_get_many, world_cache_list_recent, world_cache_upsert, WorldSummaryOutput,
+    world_cache_get, world_cache_search, world_cache_upsert, WorldSummaryOutput,
 };
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
+use vrcx_0_vrchat_client::http_api::{
+    execute_response, normalize_vrchat_api_endpoint, ApiScope, HttpApiExecuteResponse,
+};
 use vrcx_0_vrchat_client::worlds::world_get_input;
 
 use crate::web_client::WebClient;
@@ -20,16 +21,10 @@ const WORLD_RESOLVE_FETCH_TIMEOUT_MS: u64 = 5_000;
 const WORLD_RESOLVE_FAILURE_TTL_MS: u64 = 60_000;
 
 pub struct WorldCache {
-    favorites: Mutex<HashMap<String, Arc<CachedWorld>>>,
-    working: Cache<String, Arc<CachedWorld>>,
-    working_init_limit: usize,
+    working: Cache<String, Arc<WorldSummaryOutput>>,
     db: Arc<DatabaseService>,
     inflight: Mutex<HashMap<WorldResolveKey, Weak<tokio::sync::Mutex<()>>>>,
     failures: Mutex<HashMap<WorldResolveKey, Instant>>,
-}
-
-struct CachedWorld {
-    name: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -42,117 +37,13 @@ impl WorldCache {
     pub fn new(db: Arc<DatabaseService>, capacity: u64, working_ttl: Duration) -> Self {
         let capacity = capacity.max(1);
         Self {
-            favorites: Mutex::new(HashMap::new()),
             working: Cache::builder()
                 .max_capacity(capacity)
                 .time_to_live(working_ttl)
                 .build(),
-            working_init_limit: usize::try_from(capacity).unwrap_or(usize::MAX),
             db,
             inflight: Mutex::new(HashMap::new()),
             failures: Mutex::new(HashMap::new()),
-        }
-    }
-
-    pub fn init_load(&self) {
-        let favorite_ids = self.load_favorite_ids();
-        let favorite_rows = self.load_world_rows(&favorite_ids);
-        let recent_limit = i64::try_from(self.working_init_limit).unwrap_or(i64::MAX);
-        let recent_rows = match world_cache_list_recent(self.db.as_ref(), recent_limit) {
-            Ok(rows) => rows,
-            Err(error) => {
-                tracing::warn!("WorldCache init load failed: {error}");
-                Vec::new()
-            }
-        };
-
-        self.working.invalidate_all();
-        let mut favorites = self
-            .favorites
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        favorites.clear();
-        for world_id in &favorite_ids {
-            favorites.insert(world_id.clone(), cached_placeholder());
-        }
-        for row in favorite_rows {
-            let world_id = normalize_id(&row.id);
-            if world_id.is_empty() || !is_meaningful_world_name(&row.name) {
-                continue;
-            }
-            favorites.insert(world_id, cached_summary(&row));
-        }
-        drop(favorites);
-
-        for row in recent_rows {
-            let world_id = normalize_id(&row.id);
-            if world_id.is_empty() || !is_meaningful_world_name(&row.name) {
-                continue;
-            }
-            if !favorite_ids.contains(&world_id) {
-                self.working.insert(world_id, cached_summary(&row));
-            }
-        }
-    }
-
-    pub fn sync_favorites_from_db(&self) {
-        let favorite_ids = self.load_favorite_ids().into_iter().collect::<Vec<_>>();
-        self.set_favorites(&favorite_ids);
-    }
-
-    pub(crate) fn set_favorites(&self, world_ids: &[String]) {
-        let desired = world_ids
-            .iter()
-            .map(|id| normalize_id(id))
-            .filter(|id| !id.is_empty())
-            .collect::<HashSet<_>>();
-
-        let mut missing_ids = Vec::new();
-        let mut demoted = Vec::new();
-        {
-            let mut favorites = self
-                .favorites
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
-            favorites.retain(|world_id, cached| {
-                if desired.contains(world_id) {
-                    true
-                } else {
-                    demoted.push((world_id.clone(), Arc::clone(cached)));
-                    false
-                }
-            });
-            for world_id in &desired {
-                if favorites.contains_key(world_id) {
-                    continue;
-                }
-                if let Some(cached) = self.working.get(world_id) {
-                    favorites.insert(world_id.clone(), cached);
-                    self.working.invalidate(world_id);
-                } else {
-                    favorites.insert(world_id.clone(), cached_placeholder());
-                    missing_ids.push(world_id.clone());
-                }
-            }
-        }
-        for (world_id, cached) in demoted {
-            if cached.name.is_some() {
-                self.working.insert(world_id, cached);
-            }
-        }
-        let rows = self.load_world_rows(&missing_ids);
-        let mut favorites = self
-            .favorites
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        for row in rows {
-            let world_id = normalize_id(&row.id);
-            if world_id.is_empty() || !is_meaningful_world_name(&row.name) {
-                continue;
-            }
-            if favorites.contains_key(&world_id) {
-                favorites.insert(world_id, cached_summary(&row));
-            }
         }
     }
 
@@ -165,20 +56,50 @@ impl WorldCache {
         if world_id.is_empty() {
             return None;
         }
-        if let Some(name) = self
-            .favorite(&world_id)
-            .and_then(|world| world.name.clone())
-        {
-            return Some(name);
+        self.working
+            .get(&world_id)
+            .map(|summary| summary.name.clone())
+    }
+
+    pub fn get_summary(&self, world_id: &str) -> crate::Result<Option<WorldSummaryOutput>> {
+        let world_id = normalize_id(world_id);
+        if world_id.is_empty() {
+            return Ok(None);
         }
-        if let Some(name) = self
+        if let Some(summary) = self
             .working
             .get(&world_id)
-            .and_then(|world| world.name.clone())
+            .map(|summary| summary.as_ref().clone())
         {
-            return Some(name);
+            if is_meaningful_world_name(&summary.name) {
+                return Ok(Some(summary));
+            }
+            self.working.invalidate(&world_id);
         }
-        None
+        let Some(summary) = world_cache_get(self.db.as_ref(), world_id.clone())? else {
+            return Ok(None);
+        };
+        if !is_meaningful_world_name(&summary.name) {
+            return Ok(None);
+        }
+        self.working.insert(world_id, Arc::new(summary.clone()));
+        Ok(Some(summary))
+    }
+
+    pub fn search_summaries(
+        &self,
+        query: &str,
+        limit: i64,
+    ) -> crate::Result<Vec<WorldSummaryOutput>> {
+        let summaries = world_cache_search(self.db.as_ref(), query, limit)?
+            .into_iter()
+            .filter(|summary| is_meaningful_world_name(&summary.name))
+            .collect::<Vec<_>>();
+        for summary in &summaries {
+            self.working
+                .insert(summary.id.clone(), Arc::new(summary.clone()));
+        }
+        Ok(summaries)
     }
 
     pub fn hydrate_from_payload(&self, world_value: &Value) -> Option<String> {
@@ -187,19 +108,8 @@ impl WorldCache {
             return None;
         }
         let name = world_name(world_value)?;
-        let cached = Arc::new(CachedWorld {
-            name: Some(name.clone()),
-        });
-        let mut favorites = self
-            .favorites
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if favorites.contains_key(&world_id) {
-            favorites.insert(world_id.clone(), Arc::clone(&cached));
-        } else {
-            self.working.insert(world_id.clone(), Arc::clone(&cached));
-        }
-        drop(favorites);
+        let cached = Arc::new(world_summary(world_value, world_id.clone(), name.clone()));
+        self.working.insert(world_id.clone(), cached);
 
         if is_persistable_world(world_value, &name) {
             let entry = CacheEntityInput {
@@ -228,63 +138,114 @@ impl WorldCache {
         endpoint: &str,
         world_id: &str,
     ) -> Option<String> {
+        if let Some(name) = self.get_name(world_id) {
+            return Some(name);
+        }
+        self.resolve_summary(web, endpoint, world_id)
+            .await
+            .map(|summary| summary.name)
+    }
+
+    pub async fn resolve_summary(
+        &self,
+        web: &WebClient,
+        endpoint: &str,
+        world_id: &str,
+    ) -> Option<WorldSummaryOutput> {
         let world_id = normalize_id(world_id);
         if world_id.is_empty() {
             return None;
         }
-        if let Some(name) = self.get_name(&world_id) {
-            return Some(name);
+        if let Some(summary) = self.get_summary(&world_id).ok().flatten() {
+            return Some(summary);
         }
         let endpoint = endpoint.trim();
         if endpoint.is_empty() {
             return None;
         }
         let key = resolve_key(endpoint, &world_id);
-        if self.recently_failed(&key) {
-            return None;
-        }
-        let inflight = self.inflight_lock(&key);
-        let _guard = inflight.lock().await;
-        if let Some(name) = self.get_name(&world_id) {
-            return Some(name);
-        }
-        if self.recently_failed(&key) {
-            return None;
-        }
-        match self
-            .fetch_world_name(web, &key.endpoint, &key.world_id)
-            .await
+        match tokio::time::timeout(
+            Duration::from_millis(WORLD_RESOLVE_FETCH_TIMEOUT_MS),
+            self.get(web, endpoint, &world_id, false, false),
+        )
+        .await
         {
-            Some(name) => {
-                self.clear_failure(&key);
-                Some(name)
+            Ok(Ok(response)) if (200..=299).contains(&response.status) => {
+                self.get_summary(&world_id).ok().flatten()
             }
-            None => {
+            Err(_) => {
                 self.record_failure(&key);
                 None
             }
+            _ => None,
         }
     }
 
-    async fn fetch_world_name(
+    pub async fn get(
         &self,
         web: &WebClient,
         endpoint: &str,
         world_id: &str,
-    ) -> Option<String> {
-        let (_, request) = world_get_input(endpoint.to_string(), world_id.to_string()).ok()?;
-        let response = tokio::time::timeout(
-            Duration::from_millis(WORLD_RESOLVE_FETCH_TIMEOUT_MS),
-            web.execute_api(request, ApiScope::Vrchat, self.db.as_ref()),
-        )
-        .await
-        .ok()?
-        .ok()?;
-        if !(200..=299).contains(&response.status) {
-            return None;
+        force: bool,
+        full: bool,
+    ) -> crate::Result<HttpApiExecuteResponse> {
+        let world_id = normalize_id(world_id);
+        if world_id.is_empty() {
+            return Err(crate::Error::Custom("World id is required.".into()));
         }
-        let world = serde_json::from_str::<Value>(&response.data).ok()?;
-        self.hydrate_from_payload(&world)
+        if !force && !full {
+            if let Some(summary) = self.get_summary(&world_id)? {
+                return summary_response(&summary);
+            }
+        }
+
+        let key = resolve_key(endpoint, &world_id);
+        if !force && !full && self.recently_failed(&key) {
+            return Err(crate::Error::Custom(format!(
+                "World request recently failed: {world_id}"
+            )));
+        }
+        let inflight = self.inflight_lock(&key);
+        let _guard = inflight.lock().await;
+        if !force && !full {
+            if let Some(summary) = self.get_summary(&world_id)? {
+                return summary_response(&summary);
+            }
+            if self.recently_failed(&key) {
+                return Err(crate::Error::Custom(format!(
+                    "World request recently failed: {world_id}"
+                )));
+            }
+        }
+
+        let (_, request) = world_get_input(key.endpoint.clone(), world_id.clone())?;
+        let response = web
+            .execute_api(request, ApiScope::Vrchat, self.db.as_ref())
+            .await;
+        match response {
+            Ok(response) => {
+                if (200..=299).contains(&response.status) {
+                    self.hydrate_response(&response);
+                    self.clear_failure(&key);
+                } else {
+                    self.record_failure(&key);
+                }
+                Ok(response)
+            }
+            Err(error) => {
+                self.record_failure(&key);
+                Err(error)
+            }
+        }
+    }
+
+    pub fn hydrate_response(&self, response: &HttpApiExecuteResponse) {
+        if !(200..=299).contains(&response.status) {
+            return;
+        }
+        if let Ok(world) = serde_json::from_str::<Value>(&response.data) {
+            self.hydrate_from_payload(&world);
+        }
     }
 
     fn recently_failed(&self, key: &WorldResolveKey) -> bool {
@@ -324,59 +285,44 @@ impl WorldCache {
         map.insert(key.clone(), Arc::downgrade(&lock));
         lock
     }
+}
 
-    fn load_favorite_ids(&self) -> HashSet<String> {
-        match favorite_list(self.db.as_ref(), None, crate::FavoriteEntityKind::World) {
-            Ok(rows) => rows
-                .into_iter()
-                .filter_map(|row| row.world_id.map(|id| normalize_id(&id)))
-                .filter(|id| !id.is_empty())
-                .collect(),
-            Err(error) => {
-                tracing::warn!("WorldCache favorite load failed: {error}");
-                HashSet::new()
-            }
-        }
-    }
-
-    fn load_world_rows(
-        &self,
-        world_ids: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Vec<WorldSummaryOutput> {
-        let world_ids = world_ids
-            .into_iter()
-            .map(|id| normalize_id(id.as_ref()))
-            .filter(|id| !id.is_empty())
-            .collect::<Vec<_>>();
-        if world_ids.is_empty() {
-            return Vec::new();
-        }
-        match world_cache_get_many(self.db.as_ref(), &world_ids) {
-            Ok(rows) => rows,
-            Err(error) => {
-                tracing::warn!("WorldCache row batch load failed: {error}");
-                Vec::new()
-            }
-        }
-    }
-
-    fn favorite(&self, world_id: &str) -> Option<Arc<CachedWorld>> {
-        self.favorites
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .get(world_id)
-            .cloned()
+fn world_summary(value: &Value, id: String, name: String) -> WorldSummaryOutput {
+    WorldSummaryOutput {
+        id,
+        author_id: text_field(value, "authorId"),
+        author_name: text_field(value, "authorName"),
+        created_at: text_field_with_fallback(value, "created_at", "createdAt"),
+        description: text_field(value, "description"),
+        image_url: text_field(value, "imageUrl"),
+        name,
+        release_status: text_field(value, "releaseStatus"),
+        thumbnail_image_url: text_field(value, "thumbnailImageUrl"),
+        updated_at: text_field_with_fallback(value, "updated_at", "updatedAt"),
+        version: value
+            .get("version")
+            .and_then(Value::as_i64)
+            .unwrap_or_default(),
     }
 }
 
-fn cached_summary(row: &WorldSummaryOutput) -> Arc<CachedWorld> {
-    Arc::new(CachedWorld {
-        name: Some(row.name.clone()),
-    })
+fn text_field(value: &Value, key: &str) -> String {
+    value
+        .get(key)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .unwrap_or_default()
+        .to_string()
 }
 
-fn cached_placeholder() -> Arc<CachedWorld> {
-    Arc::new(CachedWorld { name: None })
+fn text_field_with_fallback(value: &Value, key: &str, fallback: &str) -> String {
+    value
+        .get(key)
+        .or_else(|| value.get(fallback))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .unwrap_or_default()
+        .to_string()
 }
 
 fn normalize_id(value: &str) -> String {
@@ -421,6 +367,10 @@ fn resolve_key(endpoint: &str, world_id: &str) -> WorldResolveKey {
     }
 }
 
+fn summary_response(summary: &WorldSummaryOutput) -> crate::Result<HttpApiExecuteResponse> {
+    Ok(execute_response(200, serde_json::to_string(summary)?))
+}
+
 fn is_persistable_world(value: &Value, name: &str) -> bool {
     let release_status = value
         .get("releaseStatus")
@@ -449,8 +399,7 @@ mod tests {
 
     use serde_json::json;
     use vrcx_0_persistence::cache_entities::CacheEntityInput;
-    use vrcx_0_persistence::favorites::favorite_add;
-    use vrcx_0_persistence::worlds::{world_cache_get, world_cache_upsert};
+    use vrcx_0_persistence::worlds::{world_cache_get, world_cache_remove, world_cache_upsert};
 
     struct TestDir {
         path: PathBuf,
@@ -478,6 +427,19 @@ mod tests {
         let dir = TestDir::new(name);
         let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
         (dir, db)
+    }
+
+    fn test_web(dir: &TestDir, db: &DatabaseService) -> WebClient {
+        let storage =
+            vrcx_0_persistence::storage::StorageService::new(&dir.path.join("storage.json"))
+                .unwrap();
+        WebClient::new(
+            &storage,
+            db,
+            "wss://pipeline.vrchat.cloud".to_string(),
+            env!("CARGO_PKG_VERSION"),
+        )
+        .unwrap()
     }
 
     fn world_entry(id: &str, name: &str, updated_at: &str) -> CacheEntityInput {
@@ -524,7 +486,7 @@ mod tests {
             cache
                 .working
                 .get("wrld_heavy")
-                .and_then(|world| world.name.clone())
+                .map(|summary| summary.name.clone())
                 .as_deref(),
             Some("Heavy World")
         );
@@ -559,6 +521,155 @@ mod tests {
     }
 
     #[test]
+    fn summary_lookup_starts_empty_then_loads_db_row_into_memory() {
+        let (_dir, db) = test_db("summary-db-fallback");
+        world_cache_upsert(
+            db.as_ref(),
+            world_entry("wrld_db_only", "DB Only World", "2026-01-02T00:00:00.000Z"),
+        )
+        .unwrap();
+        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+        assert_eq!(cache.get_name("wrld_db_only"), None);
+
+        let summary = cache
+            .get_summary("wrld_db_only")
+            .unwrap()
+            .expect("DB row should be loaded on demand");
+
+        assert_eq!(summary.name, "DB Only World");
+        world_cache_remove(db.as_ref(), "wrld_db_only".into()).unwrap();
+        let memory_summary = cache
+            .get_summary("wrld_db_only")
+            .unwrap()
+            .expect("memory hit should not query the removed DB row");
+        assert_eq!(memory_summary.name, "DB Only World");
+        assert_eq!(
+            cache.get_name("wrld_db_only").as_deref(),
+            Some("DB Only World")
+        );
+    }
+
+    #[test]
+    fn summary_lookup_ignores_invalid_db_shells() {
+        let (_dir, db) = test_db("summary-invalid-shell");
+        world_cache_upsert(
+            db.as_ref(),
+            world_entry("wrld_shell", "", "2026-01-02T00:00:00.000Z"),
+        )
+        .unwrap();
+        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+        assert!(cache.get_summary("wrld_shell").unwrap().is_none());
+        assert_eq!(cache.get_name("wrld_shell"), None);
+    }
+
+    #[tokio::test]
+    async fn summary_resolution_uses_db_before_remote_api() {
+        let (dir, db) = test_db("summary-db-before-api");
+        world_cache_upsert(
+            db.as_ref(),
+            world_entry(
+                "wrld_db_first",
+                "DB First World",
+                "2026-01-02T00:00:00.000Z",
+            ),
+        )
+        .unwrap();
+        let web = test_web(&dir, db.as_ref());
+        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+        let summary = cache
+            .resolve_summary(&web, "http://127.0.0.1:9/api/1", "wrld_db_first")
+            .await
+            .expect("DB row should resolve without remote API");
+
+        assert_eq!(summary.name, "DB First World");
+    }
+
+    #[tokio::test]
+    async fn ordinary_get_returns_db_summary_without_remote_api() {
+        let (dir, db) = test_db("get-db-before-api");
+        world_cache_upsert(
+            db.as_ref(),
+            world_entry("wrld_db_get", "DB Get World", "2026-01-02T00:00:00.000Z"),
+        )
+        .unwrap();
+        let web = test_web(&dir, db.as_ref());
+        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+        let response = cache
+            .get(
+                &web,
+                "http://127.0.0.1:9/api/1",
+                "wrld_db_get",
+                false,
+                false,
+            )
+            .await
+            .expect("ordinary get should use the DB summary");
+        let payload = serde_json::from_str::<Value>(&response.data).unwrap();
+
+        assert_eq!(response.status, 200);
+        assert_eq!(payload["name"], "DB Get World");
+    }
+
+    #[tokio::test]
+    async fn force_get_bypasses_cached_summary_and_preserves_it_on_failure() {
+        let (dir, db) = test_db("force-bypasses-cache");
+        world_cache_upsert(
+            db.as_ref(),
+            world_entry("wrld_force", "Cached World", "2026-01-02T00:00:00.000Z"),
+        )
+        .unwrap();
+        let web = test_web(&dir, db.as_ref());
+        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+        assert!(cache
+            .get(&web, "http://127.0.0.1:9/api/1", "wrld_force", true, false,)
+            .await
+            .is_err());
+        assert_eq!(
+            cache.get_summary("wrld_force").unwrap().unwrap().name,
+            "Cached World"
+        );
+    }
+
+    #[test]
+    fn successful_remote_response_refreshes_memory_and_database_summary() {
+        let (_dir, db) = test_db("hydrate-response");
+        world_cache_upsert(
+            db.as_ref(),
+            world_entry("wrld_refresh", "Old World", "2026-01-02T00:00:00.000Z"),
+        )
+        .unwrap();
+        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+        cache.hydrate_response(&execute_response(
+            200,
+            json!({
+                "id": "wrld_refresh",
+                "name": "Fresh World",
+                "releaseStatus": "public",
+                "imageUrl": "fresh.png"
+            })
+            .to_string(),
+        ));
+
+        assert_eq!(
+            cache.get_name("wrld_refresh").as_deref(),
+            Some("Fresh World")
+        );
+        assert_eq!(
+            world_cache_get(db.as_ref(), "wrld_refresh".into())
+                .unwrap()
+                .unwrap()
+                .name,
+            "Fresh World"
+        );
+    }
+
+    #[test]
     fn resolve_guards_are_scoped_by_normalized_endpoint() {
         let (_dir, db) = test_db("endpoint-scoped-guards");
         let cache = WorldCache::new(db, 8, Duration::from_secs(60));
@@ -580,73 +691,23 @@ mod tests {
     }
 
     #[test]
-    fn set_favorites_promotes_working_and_demotes_removed() {
-        let (_dir, db) = test_db("set-favorites");
-        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
-        cache.hydrate_from_payload(&json!({
-            "id": "wrld_promote",
-            "name": "Promoted World",
-            "releaseStatus": "public",
-            "imageUrl": "image.png"
-        }));
-
-        cache.set_favorites(&["wrld_promote".to_string()]);
-        cache.clear_working();
-
-        assert_eq!(
-            cache.get_name("wrld_promote").as_deref(),
-            Some("Promoted World")
-        );
-
-        cache.set_favorites(&[]);
-        cache.clear_working();
-
-        assert_eq!(cache.get_name("wrld_promote"), None);
-    }
-
-    #[test]
-    fn set_favorites_loads_missing_rows_from_db() {
-        let (_dir, db) = test_db("set-favorites-db");
-        world_cache_upsert(
-            db.as_ref(),
-            world_entry("wrld_cached", "Cached Favorite", "2026-01-02T00:00:00.000Z"),
-        )
-        .unwrap();
-        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
-
-        cache.set_favorites(&["wrld_cached".to_string()]);
-
-        assert_eq!(
-            cache.get_name("wrld_cached").as_deref(),
-            Some("Cached Favorite")
-        );
-    }
-
-    #[test]
-    fn init_load_preserves_unknown_favorite_pin_for_later_hydration() {
-        let (_dir, db) = test_db("init-placeholder-favorite");
-        favorite_add(
-            db.as_ref(),
-            None,
-            crate::FavoriteEntityKind::World,
-            "wrld_unknown".into(),
-            "Favorites".into(),
-        )
-        .unwrap();
+    fn capacity_bounds_every_hydrated_world() {
+        let (_dir, db) = test_db("bounded-summaries");
         let cache = WorldCache::new(Arc::clone(&db), 1, Duration::from_secs(60));
-
-        cache.init_load();
         cache.hydrate_from_payload(&json!({
-            "id": "wrld_unknown",
-            "name": "Hydrated Favorite",
+            "id": "wrld_first",
+            "name": "First World",
             "releaseStatus": "public",
             "imageUrl": "image.png"
         }));
-        cache.clear_working();
+        cache.hydrate_from_payload(&json!({
+            "id": "wrld_second",
+            "name": "Second World",
+            "releaseStatus": "public",
+            "imageUrl": "image.png"
+        }));
+        cache.working.run_pending_tasks();
 
-        assert_eq!(
-            cache.get_name("wrld_unknown").as_deref(),
-            Some("Hydrated Favorite")
-        );
+        assert!(cache.working.entry_count() <= 1);
     }
 }

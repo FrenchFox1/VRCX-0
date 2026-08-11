@@ -14,7 +14,6 @@ import {
     type VrchatWorldSaveInput
 } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
-import { useWorldFactsStore } from '@/state/worldFactsStore';
 
 import { collectPages } from './pagination';
 import { isVrchatRequestError, unwrapVrchatResponse } from './vrchatRequest';
@@ -39,7 +38,6 @@ interface WorldIdInput extends WorldRepositoryOptions {
 interface WorldProfileInput extends WorldIdInput {
     dialog?: boolean;
     full?: boolean;
-    location?: boolean;
 }
 
 interface WorldSaveInput extends WorldIdInput {
@@ -219,55 +217,11 @@ function normalize(world: unknown): WorldProfileRecord {
     return normalizeWorldProfile(world);
 }
 
-function recordWorldFact(world: unknown) {
-    if (isRecord(world)) {
-        useWorldFactsStore.getState().upsertWorldFacts(world);
-    }
-}
-
-function getMirroredWorldProfile(worldId: string): WorldProfileRecord | null {
-    const world = useWorldFactsStore.getState().getWorldFact(worldId);
-    return world ? normalize(world) : null;
-}
-
-async function getLocalCachedWorldProfile(
-    worldId: string
-): Promise<WorldProfileRecord | null> {
-    try {
-        const world = await commands.appWorldCacheGet(worldId);
-        return world ? normalize(world) : null;
-    } catch (error) {
-        console.warn('Failed to read local world cache:', error);
-        return null;
-    }
-}
-
-async function fetchWorldProfile({
-    worldId
-}: WorldIdInput): Promise<WorldProfileRecord> {
-    const normalizedWorldId = normalizeEntityId(worldId);
-    if (!normalizedWorldId) {
-        throw new Error(
-            'WorldProfileRepository.fetchWorldProfile requires a world id.'
-        );
-    }
-
-    const input = worldIdInput(normalizedWorldId);
-    const response = unwrapVrchatWorldResponse(
-        await commands.appVrchatWorldGet(input),
-        `worlds/${encodeURIComponent(normalizedWorldId)}`
-    );
-    const world = normalize(response.json);
-    recordWorldFact(world);
-    return world;
-}
-
 async function getWorldProfile({
     worldId,
     force = false,
     dialog = false,
-    full = false,
-    location = false
+    full = false
 }: WorldProfileInput): Promise<WorldProfileRecord> {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
@@ -276,32 +230,24 @@ async function getWorldProfile({
         );
     }
 
-    if (!force && !dialog && !full) {
-        const mirroredWorld = getMirroredWorldProfile(normalizedWorldId);
-        if (mirroredWorld) {
-            return mirroredWorld;
-        }
-        const localWorld = await getLocalCachedWorldProfile(normalizedWorldId);
-        if (localWorld) {
-            return localWorld;
-        }
+    const response = unwrapVrchatWorldResponse(
+        await commands.appWorldGet({
+            worldId: normalizedWorldId,
+            force,
+            full: dialog || full
+        }),
+        `worlds/${encodeURIComponent(normalizedWorldId)}`
+    );
+    return normalize(response.json);
+}
+
+async function searchWorlds(query: unknown): Promise<WorldProfileRecord[]> {
+    const normalizedQuery = String(query ?? '').trim();
+    if (!normalizedQuery) {
+        return [];
     }
-
-    const json = await fetchCachedData({
-        queryKey: queryKeys.world(
-            normalizedWorldId,
-            DEFAULT_VRCHAT_API_ENDPOINT
-        ),
-        policy: location
-            ? entityQueryPolicies.worldLocation
-            : dialog
-              ? entityQueryPolicies.worldDialog
-              : entityQueryPolicies.world,
-        force,
-        queryFn: () => fetchWorldProfile({ worldId: normalizedWorldId })
-    });
-
-    return normalize(json);
+    const worlds = await commands.appWorldSearch(normalizedQuery);
+    return worlds.map((world) => normalize(world));
 }
 
 async function getWorldsByUser({
@@ -348,9 +294,7 @@ async function getWorldsByUser({
             return Array.isArray(response.json) ? response.json : [];
         }
     });
-    const worlds = rows.map((world) => normalize(world));
-    useWorldFactsStore.getState().upsertWorldFacts(worlds);
-    return worlds;
+    return rows.map((world) => normalize(world));
 }
 
 async function saveWorld({ worldId, params = {} }: WorldSaveInput) {
@@ -369,13 +313,6 @@ async function saveWorld({ worldId, params = {} }: WorldSaveInput) {
         await commands.appVrchatWorldSave(input),
         `worlds/${encodeURIComponent(normalizedWorldId)}`
     );
-    if (response.json && typeof response.json === 'object') {
-        setCachedQueryData(
-            queryKeys.world(normalizedWorldId, DEFAULT_VRCHAT_API_ENDPOINT),
-            response.json
-        );
-        recordWorldFact(normalize(response.json));
-    }
     return response;
 }
 
@@ -406,13 +343,6 @@ async function publishWorld({ worldId }: WorldIdInput) {
         await commands.appVrchatWorldPublish(input),
         `worlds/${encodeURIComponent(normalizedWorldId)}/publish`
     );
-    if (response.json && typeof response.json === 'object') {
-        setCachedQueryData(
-            queryKeys.world(normalizedWorldId, DEFAULT_VRCHAT_API_ENDPOINT),
-            response.json
-        );
-        recordWorldFact(normalize(response.json));
-    }
     return response;
 }
 
@@ -429,13 +359,6 @@ async function unpublishWorld({ worldId }: WorldIdInput) {
         await commands.appVrchatWorldUnpublish(input),
         `worlds/${encodeURIComponent(normalizedWorldId)}/publish`
     );
-    if (response.json && typeof response.json === 'object') {
-        setCachedQueryData(
-            queryKeys.world(normalizedWorldId, DEFAULT_VRCHAT_API_ENDPOINT),
-            response.json
-        );
-        recordWorldFact(normalize(response.json));
-    }
     return response;
 }
 
@@ -548,8 +471,8 @@ async function getAllWorldsByUser({
 
 const worldProfileRepository = Object.freeze({
     normalize,
-    fetchWorldProfile,
     getWorldProfile,
+    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,
@@ -563,8 +486,8 @@ const worldProfileRepository = Object.freeze({
 
 export {
     normalize,
-    fetchWorldProfile,
     getWorldProfile,
+    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,

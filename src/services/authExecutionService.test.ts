@@ -8,11 +8,12 @@ const mocks = vi.hoisted(() => ({
     respondLoginSession: vi.fn(),
     cancelLoginSession: vi.fn(),
     clearEntityQueryCache: vi.fn(),
-    clearAvatarNameCache: vi.fn(),
     applySavedAuthSnapshot: vi.fn(),
     buildAvatarWearSnapshotUpdate: vi.fn(),
     recordCurrentUserSnapshot: vi.fn(),
     resetDomainFacts: vi.fn(),
+    loadVrchatConfigSnapshot: vi.fn(),
+    resetVrchatConfigSnapshot: vi.fn(),
     t: vi.fn(),
     bootstrapAuthenticatedSession: vi.fn(),
     confirm: vi.fn(),
@@ -33,12 +34,6 @@ vi.mock('@/lib/entityQueryCache', () => ({
 vi.mock('@/repositories/authRepository', () => ({
     default: {
         endSession: mocks.endSession
-    }
-}));
-
-vi.mock('@/repositories/avatarProfileRepository', () => ({
-    default: {
-        clearAvatarNameCache: mocks.clearAvatarNameCache
     }
 }));
 
@@ -69,6 +64,11 @@ vi.mock('./i18nService', () => ({
     }
 }));
 
+vi.mock('./vrchatConfigService', () => ({
+    loadVrchatConfigSnapshot: mocks.loadVrchatConfigSnapshot,
+    resetVrchatConfigSnapshot: mocks.resetVrchatConfigSnapshot
+}));
+
 vi.mock('./sessionBootstrapService', () => ({
     bootstrapAuthenticatedSession: mocks.bootstrapAuthenticatedSession
 }));
@@ -79,6 +79,7 @@ import type {
     SavedAuthSnapshot,
     SavedCredentialSnapshot
 } from '@/platform/tauri/bindings';
+import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -196,6 +197,7 @@ describe('authExecutionService characterization', () => {
         vi.clearAllMocks();
         useRuntimeStore.getState().resetRuntimeState();
         useSessionStore.getState().resetSessionState();
+        useAssistantChatStore.getState().resetAssistantChatState();
         useModalStore.getState().resetModalState();
         useModalStore.setState({
             confirm: mocks.confirm,
@@ -221,6 +223,7 @@ describe('authExecutionService characterization', () => {
                 Promise.resolve(values?.name ? `${key}:${values.name}` : key)
         );
         mocks.bootstrapAuthenticatedSession.mockResolvedValue(undefined);
+        mocks.loadVrchatConfigSnapshot.mockResolvedValue({});
         mocks.confirm.mockResolvedValue({ ok: true });
         mocks.otpPrompt.mockResolvedValue({ ok: true, value: '123456' });
     });
@@ -235,6 +238,12 @@ describe('authExecutionService characterization', () => {
     });
 
     it('records and bootstraps a successful manual login', async () => {
+        useAssistantChatStore.setState({
+            open: true,
+            activeSessionId: 'session-from-previous-account',
+            messagesBySession: { 'session-from-previous-account': [] }
+        });
+
         await expect(
             executeManualLogin({
                 username: ' self@example.test ',
@@ -256,6 +265,12 @@ describe('authExecutionService characterization', () => {
             currentUserWebsocket: 'wss://pipeline.vrchat.cloud'
         });
         expect(useSessionStore.getState().sessionPhase).toBe('authenticating');
+        expect(mocks.loadVrchatConfigSnapshot).toHaveBeenCalledTimes(1);
+        expect(useAssistantChatStore.getState()).toMatchObject({
+            open: false,
+            activeSessionId: null,
+            messagesBySession: {}
+        });
         expect(mocks.bootstrapAuthenticatedSession).toHaveBeenCalledWith(
             user(),
             expect.any(Number)
@@ -411,6 +426,7 @@ describe('authExecutionService characterization', () => {
         );
         expect(useRuntimeStore.getState().auth.currentUserId).toBe(null);
         expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
+        expect(mocks.resetVrchatConfigSnapshot).toHaveBeenCalled();
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             'message.auth.logout_greeting:Self'
         );

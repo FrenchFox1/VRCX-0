@@ -189,6 +189,7 @@ function FavoritesPage({
                 localGroups={viewData.localGroups}
                 remoteItemsByGroup={viewData.remoteItemsByGroup}
                 localItemsByGroup={viewData.localItemsByGroup}
+                remoteDetailsStatus={collections.remoteEntityDetails.status}
             />
             <FavoriteShareCollectionDialog
                 open={kind === 'world' && Boolean(shareCollectionGroup)}
@@ -199,6 +200,9 @@ function FavoritesPage({
                 }}
                 group={shareCollectionGroup}
                 items={shareCollectionItems}
+                remoteWorldDetailsStatus={
+                    collections.remoteEntityDetails.status
+                }
                 onOpenManage={handleOpenManageShares}
             />
 
