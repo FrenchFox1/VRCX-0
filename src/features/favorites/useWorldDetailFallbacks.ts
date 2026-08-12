@@ -42,17 +42,21 @@ export function loadWorldDetailFallbacksById(
     return loadRemoteEntityCacheFallbacksById(worldIds, fetchWorldById);
 }
 
-export function useWorldDetailFallbacks(
-    input: WorldDetailFallbackInput
-): DetailMap {
+export function useWorldDetailFallbacks({
+    worldIds,
+    kind,
+    remoteEntityDetailsData,
+    remoteEntityDetailsStatus
+}: WorldDetailFallbackInput): DetailMap {
     const fallbackWorldIds = useMemo(
-        () => getWorldDetailFallbackIds(input),
-        [
-            input.worldIds,
-            input.kind,
-            input.remoteEntityDetailsData,
-            input.remoteEntityDetailsStatus
-        ]
+        () =>
+            getWorldDetailFallbackIds({
+                worldIds,
+                kind,
+                remoteEntityDetailsData,
+                remoteEntityDetailsStatus
+            }),
+        [worldIds, kind, remoteEntityDetailsData, remoteEntityDetailsStatus]
     );
 
     return useRemoteEntityCacheFallbackLoader(fallbackWorldIds, fetchWorldById);

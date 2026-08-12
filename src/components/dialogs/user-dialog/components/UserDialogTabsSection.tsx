@@ -14,6 +14,7 @@ import {
     UserDialogMutualTab,
     UserDialogWorldsTab
 } from './UserDialogDataTabs';
+import { UserDialogFeedTab } from './UserDialogFeedTab';
 import { UserDialogGroupsTab } from './UserDialogGroupsTab';
 import {
     UserDialogInfoTab,
@@ -46,7 +47,10 @@ type UserDialogTabsSectionProps = {
             UserDialogBioSectionProps &
             Omit<
                 UserDialogActivitySummarySectionProps,
-                'onOpenInstanceHistory' | 'previousInstances'
+                | 'isFriend'
+                | 'onOpenFeed'
+                | 'onOpenInstanceHistory'
+                | 'previousInstances'
             >;
         presence: Omit<
             UserDialogPresenceSectionProps['presence'],
@@ -113,6 +117,7 @@ type UserDialogTabsSectionProps = {
         > & {
             changeTab: (value: string) => void;
             onEditMemo: UserDialogNotesSectionProps['onEditMemo'];
+            onOpenFeed: () => void;
             onOpenInstanceHistory: () => void;
             onPreviousInstancesChange: HistoryTabProps['onPreviousInstancesChange'];
             onRefreshLocation: UserDialogPresenceSectionProps['actions']['onRefreshLocation'];
@@ -195,6 +200,7 @@ export function UserDialogTabsSection({
         changeWorldOrder,
         changeWorldSort,
         onEditMemo,
+        onOpenFeed,
         onOpenInstanceHistory,
         onPreviousInstancesChange,
         onRefreshLocation,
@@ -286,7 +292,9 @@ export function UserDialogTabsSection({
     const activitySummarySection: UserDialogActivitySummarySectionProps = {
         friendedAt,
         isCurrentUser,
+        isFriend,
         lastSeen,
+        onOpenFeed,
         onOpenInstanceHistory,
         presenceActivityAt,
         profile,
@@ -379,6 +387,11 @@ export function UserDialogTabsSection({
                 previousInstancesStatus={previousInstancesStatus}
                 profile={profile}
                 onPreviousInstancesChange={onPreviousInstancesChange}
+            />
+            <UserDialogFeedTab
+                active={activeTab === 'feed'}
+                currentUserId={presence.currentUserId || null}
+                profile={profile}
             />
             <UserDialogActivityTab
                 profile={profile}

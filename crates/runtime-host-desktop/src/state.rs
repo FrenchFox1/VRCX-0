@@ -7,6 +7,18 @@ use std::sync::{
 use std::time::{Duration, Instant};
 use vrcx_0_application_core::RuntimeOperationStatus;
 
+use crate::ancillary_snapshot::{ancillary_runtime_snapshot, AncillaryRuntimeSnapshot};
+use crate::app_launcher::start_app_launcher_snapshot_events;
+use crate::companion_api::{
+    start_companion_api_input_task, DesktopCompanionApiConfigStore, DesktopCompanionApiRuntime,
+};
+use crate::group_order::HostGroupOrderSource;
+use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
+use crate::{
+    DesktopRuntimeServices, GameClientHostRuntime, GameLogEventSink, GameLogHostRuntime,
+    HostFileAccess, HostGameLogEventFanout, HostGameProcessMonitorActions,
+    HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher,
+};
 use serde_json::json;
 use vrcx_0_application::{
     AppUpdateBuildInfo, AppUpdateRuntime, AppUpdateRuntimeDeps, BackgroundImageService,
@@ -15,13 +27,16 @@ use vrcx_0_application::{
 use vrcx_0_application_activity::OverlayActivitySnapshot;
 use vrcx_0_application_core::{
     BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeTelemetryKind, GameProcessEvent,
-    GameProcessEventSink, SessionHostRuntime, TaskStopToken,
+    GameProcessEventSink, InstanceRosterObserver, SessionHostRuntime, TaskStopToken,
 };
 use vrcx_0_application_game::{
     GameLogLocalGameContextSource, ProcessMonitor, RegistryBackupMaintenanceMode,
     RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
 };
 use vrcx_0_application_realtime::FavoriteBaselineSnapshot;
+use vrcx_0_companion_api::{
+    companion_api_publisher_channel, CompanionApiConfigStore, CompanionApiController,
+};
 use vrcx_0_host::app_paths::AppDataDirResolution;
 use vrcx_0_host_desktop::auto_launch::{
     deserialize_app_launcher_entries, normalize_app_launcher_entries, AppLauncherEntry,
@@ -39,16 +54,6 @@ use vrcx_0_runtime_host::{
     Result, RuntimeHostCallback, RuntimeHostComposition, RuntimeHostFavoritesCallback,
     RuntimeHostOptions, RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState,
     RuntimeHostStateBuilder,
-};
-
-use crate::ancillary_snapshot::{ancillary_runtime_snapshot, AncillaryRuntimeSnapshot};
-use crate::app_launcher::start_app_launcher_snapshot_events;
-use crate::group_order::HostGroupOrderSource;
-use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
-use crate::{
-    DesktopRuntimeServices, GameClientHostRuntime, GameLogEventSink, GameLogHostRuntime,
-    HostFileAccess, HostGameLogEventFanout, HostGameProcessMonitorActions,
-    HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher,
 };
 
 mod background_ticks;
@@ -95,6 +100,8 @@ pub struct DesktopRuntimeBundle {
     pub telemetry: TelemetryRuntime,
     pub background_image: BackgroundImageService,
     pub community_theme: CommunityThemeService,
+    pub companion_api: Arc<DesktopCompanionApiRuntime>,
+    pub companion_api_observer: Arc<dyn InstanceRosterObserver>,
 }
 
 pub struct DesktopRuntimeHostState {
@@ -118,7 +125,6 @@ struct DesktopRuntimeProfileExtension {
 
 struct VrOverlayProcessSink {
     runtime: Arc<DesktopVrOverlayRuntime>,
-    log_watcher: LogWatcher,
 }
 
 impl GameProcessEventSink for VrOverlayProcessSink {
@@ -126,12 +132,7 @@ impl GameProcessEventSink for VrOverlayProcessSink {
         &self,
         event: GameProcessEvent,
     ) -> vrcx_0_application_core::Result<()> {
-        let current_vr_mode = if event.is_game_running {
-            self.log_watcher.current_vr_mode()
-        } else {
-            None
-        };
-        self.runtime.on_game_process_event(event, current_vr_mode)
+        self.runtime.on_game_process_event(event)
     }
 }
 
@@ -168,6 +169,22 @@ impl DesktopRuntimeHostState {
         let game_log_snapshot = desktop_services.game_log_snapshot_handle();
         let discord_rpc = Arc::new(DiscordRpc::new());
         let process_monitor = ProcessMonitor::new();
+        let companion_api_config: Arc<dyn CompanionApiConfigStore> = Arc::new(
+            DesktopCompanionApiConfigStore::new(builder.runtime_context.config.clone()),
+        );
+        let companion_api_controller = Arc::new(
+            CompanionApiController::new(companion_api_config, app_version.clone())
+                .map_err(|error| vrcx_0_runtime_host::Error::Custom(error.to_string()))?,
+        );
+        let (companion_api_runtime, companion_api_enrichment_receiver) =
+            DesktopCompanionApiRuntime::new(
+                Arc::clone(&companion_api_controller),
+                builder.runtime_context.auth_scope.clone(),
+            );
+        let companion_api_runtime = Arc::new(companion_api_runtime);
+        let (companion_api_publisher, companion_api_receiver) = companion_api_publisher_channel();
+        let instance_roster_observer: Arc<dyn InstanceRosterObserver> =
+            Arc::new(companion_api_publisher);
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             config: builder.runtime_context.config.clone(),
             tasks: builder.runtime_context.tasks.clone(),
@@ -204,6 +221,7 @@ impl DesktopRuntimeHostState {
             builder.paths.clone(),
             Arc::clone(&game_log_snapshot),
             overlay_activity.clone(),
+            Some(Arc::clone(&instance_roster_observer)),
         ));
         let vr_overlay_runtime =
             Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&desktop_services))?);
@@ -221,6 +239,7 @@ impl DesktopRuntimeHostState {
             host_file_access.clone(),
             builder.paths.clone(),
             desktop_services.host.clone(),
+            Some(Arc::clone(&instance_roster_observer)),
         ));
         let session_runtime = Arc::new(SessionHostRuntime::new(
             builder.runtime_context.session.clone(),
@@ -273,6 +292,8 @@ impl DesktopRuntimeHostState {
             telemetry,
             background_image,
             community_theme,
+            companion_api: Arc::clone(&companion_api_runtime),
+            companion_api_observer: Arc::clone(&instance_roster_observer),
         });
         let extension = Arc::new(DesktopRuntimeProfileExtension {
             game: Arc::clone(&game),
@@ -317,6 +338,13 @@ impl DesktopRuntimeHostState {
         desktop
             .services
             .set_realtime_user_image_resolver(&runtime.realtime_runtime);
+        start_companion_api_input_task(
+            Arc::clone(&runtime.runtime_context),
+            Arc::clone(&runtime.realtime_runtime),
+            companion_api_runtime,
+            companion_api_receiver,
+            companion_api_enrichment_receiver,
+        );
 
         Ok(Self {
             runtime,
@@ -336,6 +364,10 @@ impl DesktopRuntimeHostState {
 
     pub fn start_desktop_services(&self) {
         self.extension.start_desktop_services(&self.runtime);
+    }
+
+    pub fn companion_api(&self) -> &DesktopCompanionApiRuntime {
+        &self.desktop.companion_api
     }
 
     pub fn request_discord_reconcile(&self) -> u64 {
@@ -516,6 +548,7 @@ impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
         self.game.log_watcher.stop();
         self.game.game_log_runtime.stop();
         self.game.game_client_runtime.stop();
+        self.desktop.companion_api_observer.on_game_running(false);
     }
 
     fn start_profile_maintenance(&self, state: &RuntimeHostState) {
@@ -587,7 +620,6 @@ impl DesktopRuntimeProfileExtension {
             let vr_overlay_process_sink: Arc<dyn GameProcessEventSink> =
                 Arc::new(VrOverlayProcessSink {
                     runtime: Arc::clone(&self.desktop.vr_overlay_runtime),
-                    log_watcher: self.game.log_watcher.clone(),
                 });
             let game_process_sinks: Vec<Arc<dyn GameProcessEventSink>> = vec![
                 self.game.session_runtime.clone(),
@@ -855,10 +887,8 @@ impl DesktopRuntimeProfileExtension {
     }
 
     fn start_desktop_maintenance_loops(&self, state: &RuntimeHostState) {
-        let session_slot = state.backend_frontend_session_handle();
-        if !is_authenticated_maintenance_active(state, &session_slot)
-            || !desktop_session_scope_matches_auth(state, &session_slot)
-        {
+        let session_slot = state.authenticated_session_projection_handle();
+        if !is_authenticated_maintenance_active(state, &session_slot) {
             return;
         }
         if self
@@ -1092,23 +1122,12 @@ fn is_background_registry_maintenance_active(
 
 fn is_authenticated_maintenance_active(
     state: &RuntimeHostState,
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
 ) -> bool {
     is_authenticated_maintenance_active_parts(
         &state.backend_runtime,
         &state.runtime_context,
         session_slot,
-    )
-}
-
-fn desktop_session_scope_matches_auth(
-    state: &RuntimeHostState,
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
-) -> bool {
-    let auth_scope = state.runtime_context.auth_scope.snapshot();
-    session_matches_auth_scope(
-        background_ticks::background_capability_session(session_slot).as_ref(),
-        &auth_scope,
     )
 }
 
@@ -1119,6 +1138,7 @@ fn session_matches_auth_scope(
     session
         .map(|session| {
             auth_scope.active
+                && session.auth_scope_generation == auth_scope.generation
                 && session.current_user_id == auth_scope.current_user_id
                 && vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(
                     &session.endpoint,
@@ -1130,34 +1150,28 @@ fn session_matches_auth_scope(
 fn is_authenticated_maintenance_active_parts(
     runtime: &vrcx_0_application_core::BackendRuntime,
     runtime_context: &Arc<vrcx_0_runtime_host::RuntimeHostContext>,
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
 ) -> bool {
     let snapshot = runtime.snapshot();
     let auth_scope = runtime_context.auth_scope.snapshot();
     if snapshot.phase != BackendRuntimePhase::Running
         || snapshot.auth_status != vrcx_0_application_core::BackendRuntimeAuthStatus::Authenticated
-        || snapshot.auth_user_id.trim().is_empty()
-        || !auth_scope.active
-        || auth_scope.current_user_id != snapshot.auth_user_id
     {
         return false;
     }
-    background_ticks::background_capability_session(session_slot)
-        .map(|session| {
-            session.current_user_id == auth_scope.current_user_id
-                && vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(
-                    &session.endpoint,
-                )) == auth_scope.endpoint
-        })
-        .unwrap_or(auth_scope.active)
+    session_matches_auth_scope(
+        background_ticks::background_capability_session(session_slot).as_ref(),
+        &auth_scope,
+    )
 }
 
 fn background_capability_session_scope_key(
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
 ) -> Option<String> {
     background_ticks::background_capability_session(session_slot).map(|session| {
         format!(
-            "{}:{}",
+            "{}:{}:{}",
+            session.auth_scope_generation,
             session.current_user_id,
             vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(&session.endpoint))
         )

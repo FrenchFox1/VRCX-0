@@ -11,7 +11,7 @@ use vrcx_0_application_core::vrchat_api::groups::{
     user_groups_get_input,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
-use vrcx_0_application_core::{HostSessionRuntime, RuntimeAuthScope};
+use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_core::json::scalar_text as value_as_string;
 
 use super::super::permissions::{has_permission, parse_permission_map, permissions_for_group};
@@ -29,7 +29,6 @@ const MEMBERSHIP_PROBE_CONCURRENCY: usize = 5;
 pub struct GroupQuickModerationDeps {
     pub groups: GroupApiDeps,
     pub auth_scope: RuntimeAuthScope,
-    pub session: HostSessionRuntime,
 }
 
 struct MembershipProbe {
@@ -257,10 +256,8 @@ async fn execute_group_quick_moderation_action(
 
     let request = quick_action_request(&endpoint, &group_id, &target_user_id, action)?;
     let response = execute_vrchat_api(&deps, request).await?;
-    if response.is_failure() {
-        return Err(Error::Custom(
-            response.error_message_or("VRChat group quick moderation action failed"),
-        ));
+    if let Some(failure) = response.failure_or("VRChat group quick moderation action failed") {
+        return Err(failure.into());
     }
 
     Ok(GroupQuickModerationActionOutput {
@@ -379,8 +376,8 @@ async fn execute_vrchat_json_request(
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
-    if response.is_failure() {
-        return Err(Error::Custom(response.error_message_or(fallback)));
+    if let Some(failure) = response.failure_or(fallback) {
+        return Err(failure.into());
     }
     Ok(response.json)
 }
@@ -424,7 +421,7 @@ fn ensure_user_ids(current_user_id: &str, target_user_id: &str) -> Result<()> {
 }
 
 fn auth_scope_matches(deps: &GroupQuickModerationDeps, user_id: &str, endpoint: &str) -> bool {
-    vrcx_0_application_core::auth_scope_matches(&deps.auth_scope, &deps.session, user_id, endpoint)
+    deps.auth_scope.matches(user_id, endpoint)
 }
 
 fn ensure_current_scope(

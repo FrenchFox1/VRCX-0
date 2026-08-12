@@ -2,6 +2,7 @@ mod ancillary_snapshot;
 mod app_launcher;
 mod autostart;
 mod background_image;
+mod companion_api;
 mod context;
 mod game_client;
 mod game_log;
@@ -21,6 +22,7 @@ pub use autostart::{set_autostart_preference, AutostartPlatform};
 pub use background_image::{
     background_image_files_from_paths, HostBackgroundImageFileResolver, BACKGROUND_IMAGE_EXTENSIONS,
 };
+pub use companion_api::DesktopCompanionApiRuntime;
 pub use context::DesktopRuntimeServices;
 pub use game_client::GameClientHostRuntime;
 pub use game_log::GameLogHostRuntime;

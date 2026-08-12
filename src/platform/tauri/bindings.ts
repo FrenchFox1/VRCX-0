@@ -131,14 +131,6 @@ export const commands = {
     async appStartBackgroundMode(): Promise<BackendRuntimeSnapshot> {
         return await TAURI_INVOKE('app__start_background_mode');
     },
-    async appGetBackendRuntimeFrontendSessionSnapshot(
-        includeCurrentUserSnapshot: boolean
-    ): Promise<BackendRuntimeFrontendSessionSnapshot | null> {
-        return await TAURI_INVOKE(
-            'app__get_backend_runtime_frontend_session_snapshot',
-            { includeCurrentUserSnapshot }
-        );
-    },
     async appBackendRuntimeCombinedSnapshotGet(): Promise<BackendRuntimeCombinedSnapshot> {
         return await TAURI_INVOKE('app__backend_runtime_combined_snapshot_get');
     },
@@ -368,6 +360,30 @@ export const commands = {
     },
     async appMcpServerRotateToken(): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_rotate_token');
+    },
+    async appCompanionApiStatus(): Promise<CompanionApiStatus> {
+        return await TAURI_INVOKE('app__companion_api_status');
+    },
+    async appCompanionApiSetEnabled(
+        enabled: boolean
+    ): Promise<CompanionApiStatus> {
+        return await TAURI_INVOKE('app__companion_api_set_enabled', {
+            enabled
+        });
+    },
+    async appCompanionApiSetPort(port: number): Promise<CompanionApiStatus> {
+        return await TAURI_INVOKE('app__companion_api_set_port', { port });
+    },
+    async appCompanionApiSetAllowLanConnections(
+        enabled: boolean
+    ): Promise<CompanionApiStatus> {
+        return await TAURI_INVOKE(
+            'app__companion_api_set_allow_lan_connections',
+            { enabled }
+        );
+    },
+    async appCompanionApiRotateToken(): Promise<CompanionApiStatus> {
+        return await TAURI_INVOKE('app__companion_api_rotate_token');
     },
     async appAssistantSendMessage(
         sessionId: string | null,
@@ -1274,9 +1290,6 @@ export const commands = {
             { input }
         );
     },
-    async appRuntimeAuthScopeGet(): Promise<RuntimeAuthScopeSnapshot> {
-        return await TAURI_INVOKE('app__runtime_auth_scope_get');
-    },
     async appVrchatAuthConfigGet(): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_auth_config_get');
     },
@@ -1395,12 +1408,12 @@ export const commands = {
     },
     async appVrchatAvatarSelect(
         input: VrchatAvatarIdInput
-    ): Promise<VrchatAvatarSelectionOutcome> {
+    ): Promise<AvatarSelectionMutationOutcome> {
         return await TAURI_INVOKE('app__vrchat_avatar_select', { input });
     },
     async appVrchatAvatarSelectFallback(
         input: VrchatAvatarIdInput
-    ): Promise<VrchatAvatarSelectionOutcome> {
+    ): Promise<AvatarSelectionMutationOutcome> {
         return await TAURI_INVOKE('app__vrchat_avatar_select_fallback', {
             input
         });
@@ -2753,11 +2766,20 @@ export type AppDataDirState = {
     cleanupPending: DataDirCleanupPending | null;
     migrationStatus: DataDirMigrationStatus;
 };
-export type AppErrorCode = 'database' | 'io' | 'json' | 'custom';
+export type AppErrorCode =
+    | 'database'
+    | 'io'
+    | 'json'
+    | 'vrchat_api'
+    | 'companion_api_port_in_use'
+    | 'companion_api_bind'
+    | 'custom';
 export type AppErrorPayload = {
     code: AppErrorCode;
     message: string;
     sqliteCategory?: SqliteErrorCategory | null;
+    statusCode?: number | null;
+    port?: number | null;
 };
 export type AppLauncherEntry = {
     id: string;
@@ -2963,6 +2985,18 @@ export type AuthenticatedRuntimeStepStatus =
     | 'retryWaiting'
     | 'ready'
     | 'failed';
+export type AuthenticatedSessionProjection = {
+    revision: number;
+    session: AuthenticatedSessionSnapshot | null;
+};
+export type AuthenticatedSessionSnapshot = {
+    authScopeGeneration: number;
+    userId: string;
+    displayName: string;
+    endpoint: string;
+    websocket: string;
+    currentUserSnapshot: JsonValue;
+};
 export type AuthorDetail = { id?: string; displayName?: string | null };
 export type AutoLoginOutcome = LoginSessionState | AutoLoginTerminalOutcome;
 export type AutoLoginStartInput = { userId?: string };
@@ -3002,6 +3036,10 @@ export type AvatarMemoOutput = {
     editedAt: string;
     memo: string;
 };
+export type AvatarSelectionMutationOutcome = {
+    applied: boolean;
+    response: HttpApiExecuteResponse;
+};
 export type AvatarTagInput = { tag?: string; color?: JsonValue };
 export type AvatarTagOutput = {
     avatarId: string;
@@ -3023,9 +3061,11 @@ export type BackendRuntimeAuthStatus =
 export type BackendRuntimeCombinedSnapshot = {
     backendRuntime: BackendRuntimeSnapshot;
     authenticatedRuntimePhase: AuthenticatedRuntimePhaseSnapshot;
+    authenticatedSession: AuthenticatedSessionProjection;
 };
 export type BackendRuntimeEventPayloadMap = {
     addGameLogEvent: AddGameLogEventPayload;
+    authenticatedSessionProjection: AuthenticatedSessionProjection;
     authenticatedRuntimePhase: AuthenticatedRuntimePhaseSnapshot;
     appUpdateStatus: AppUpdateStatusSnapshot;
     appUpdateDownloadProgress: AppUpdateDownloadProgressPayload;
@@ -3066,14 +3106,7 @@ export type BackendRuntimeEventPayloadMap = {
     realtimeInstanceQueueProjection: RealtimeInstanceQueueProjection;
     realtimeProjectionSync: RealtimeProjectionSync;
     updateIsGameRunning: HostSessionProjection;
-};
-export type BackendRuntimeFrontendSessionSnapshot = {
-    authenticated: boolean;
-    userId: string;
-    displayName: string;
-    endpoint: string;
-    websocket: string;
-    currentUserSnapshot: JsonValue;
+    companionApiStartFailed: CompanionApiStartFailedPayload;
 };
 export type BackendRuntimeGameLogStatus =
     | 'idle'
@@ -3319,6 +3352,37 @@ export type CommunityThemeProjection = {
     overrideCssEnabled: boolean;
 };
 export type CommunityThemeStatsEntry = { downloads: number };
+export type CompanionApiFailure = {
+    code: CompanionApiFailureCode;
+    message: string;
+    port: number | null;
+};
+export type CompanionApiFailureCode =
+    | 'invalidPort'
+    | 'portInUse'
+    | 'bind'
+    | 'config'
+    | 'io'
+    | 'tokenGeneration';
+export type CompanionApiServerState =
+    | 'disabled'
+    | 'waitingForGame'
+    | 'running'
+    | 'error';
+export type CompanionApiStartFailedPayload = {
+    port: number;
+    reason: CompanionApiStartFailureReason;
+};
+export type CompanionApiStartFailureReason = 'portInUse' | 'bind';
+export type CompanionApiStatus = {
+    enabled: boolean;
+    allowLanConnections: boolean;
+    state: CompanionApiServerState;
+    port: number;
+    token: string;
+    activeConnections: number;
+    lastError: CompanionApiFailure | null;
+};
 export type ConfigReadEntry = { key: string; value: string };
 export type ConfigWriteEntry = { key: string; value: string };
 export type CrashRelaunchDecisionPayload =
@@ -3518,8 +3582,6 @@ export type FavoriteBaselineSnapshot = {
     detail: string;
 };
 export type FavoriteBulkRemoveInput = {
-    expectedOwnerUserId: string;
-    expectedEndpoint: string;
     kind: FavoriteEntityKind;
     items?: FavoriteBulkRemoveItem[];
 };
@@ -3556,6 +3618,29 @@ export type FavoriteCacheSnapshotInput = {
     entity: RawJson;
     fallbackEntityId?: string;
 };
+export type FavoriteChange =
+    | {
+          type: 'localAdded';
+          kind: FavoriteEntityKind;
+          entityId: string;
+          groupName: string;
+      }
+    | {
+          type: 'localRemoved';
+          kind: FavoriteEntityKind;
+          entityId: string;
+          groupName: string;
+      }
+    | { type: 'localGroupCreated'; kind: FavoriteEntityKind; groupName: string }
+    | {
+          type: 'localGroupRenamed';
+          kind: FavoriteEntityKind;
+          groupName: string;
+          newGroupName: string;
+      }
+    | { type: 'localGroupDeleted'; kind: FavoriteEntityKind; groupName: string }
+    | { type: 'remoteAdded'; favorite: RawJson }
+    | { type: 'remoteRemoved'; objectId: string };
 export type FavoriteChangeScope = 'avatar' | 'world' | 'friend' | 'unknown';
 export type FavoriteDetailsHydrateInput = {
     kind: FavoriteDetailsHydrateKind;
@@ -3633,7 +3718,6 @@ export type FavoriteRow = {
     worldId?: string | null;
 };
 export type FavoriteTransferInput = {
-    endpoint?: string;
     kind: FavoriteEntityKind;
     mode: FavoriteTransferMode;
     source: FavoriteTransferSource;
@@ -3695,9 +3779,13 @@ export type FavoriteTransferTarget = {
     favoriteType?: string;
 };
 export type FavoritesChangedPayload = {
+    ownerUserId: string;
+    endpoint: string;
     kind: FavoriteChangeScope;
     local: boolean;
     remote: boolean;
+    changes: FavoriteChange[];
+    requiresRefresh: boolean;
 };
 export type FeedCursorInput = {
     createdAt: string;
@@ -4363,14 +4451,13 @@ export type Message = {
     createdAt: string;
 };
 export type ModerationSyncMutationInput = {
-    ownerUserId?: string;
-    endpoint?: string;
     targetUserId: string;
     targetDisplayName?: string;
     type: string;
     enabled: boolean;
 };
 export type ModerationSyncMutationOutput = {
+    ownerUserId: string;
     targetUserId: string;
     type: string;
     enabled: boolean;
@@ -4995,12 +5082,6 @@ export type RemoteModerationRow = {
 };
 export type ResolvedFriendLogName = { userId: string; displayName: string };
 export type Role = 'user' | 'assistant';
-export type RuntimeAuthScopeSnapshot = {
-    currentUserId: string;
-    endpoint: string;
-    generation: number;
-    active: boolean;
-};
 export type RuntimeGameLogEventPayload = {
     runtimePersisted: boolean;
     raw: string[];
@@ -5231,8 +5312,6 @@ export type SocialFavoritesBaselineOutput = {
     snapshot: FavoriteBaselineSnapshot | null;
 };
 export type SocialFriendMutationInput = {
-    ownerUserId: string;
-    endpoint?: string;
     targetUserId: string;
     targetDisplayName?: string;
 };
@@ -5243,15 +5322,11 @@ export type SocialFriendMutationOutcome = {
 };
 export type SocialFriendMutationStatus = 'applied' | 'remoteOkLocalFailed';
 export type SocialFriendRequestAcceptInput = {
-    ownerUserId: string;
-    endpoint?: string;
     notificationId: string;
     targetUserId: string;
     targetDisplayName?: string;
 };
 export type SocialFriendRequestCancelInput = {
-    ownerUserId: string;
-    endpoint?: string;
     targetUserId: string;
     targetDisplayName?: string;
     notificationId?: string;
@@ -5279,8 +5354,6 @@ export type SocialFriendRosterBaselineOutput = {
     friendLogChanged: boolean;
 };
 export type SocialUnfriendBatchInput = {
-    expectedOwnerUserId: string;
-    expectedEndpoint: string;
     targets?: SocialUnfriendBatchTarget[];
 };
 export type SocialUnfriendBatchItemResult = {
@@ -5320,6 +5393,7 @@ export type StartupBootstrapSnapshot = {
 };
 export type TelemetryClientEvent =
     | { type: 'pageVisit'; route: string }
+    | { type: 'toolOpen'; tool: string }
     | {
           type: 'routeError';
           error_class: string;
@@ -5403,7 +5477,6 @@ export type VrOverlayRuntimeSnapshot = {
     enabled: boolean;
     backendAvailable: boolean;
     running: boolean;
-    vrMode: boolean;
     steamvrRunning: boolean;
     activeBackend: string | null;
 };
@@ -5439,40 +5512,24 @@ export type VrchatAvatarSaveInput = {
     avatarId?: string;
     params: JsonValue | null;
 };
-export type VrchatAvatarSelectionOutcome = {
-    applied: boolean;
-    response: HttpApiExecuteResponse;
-};
 export type VrchatBoopInput = { userId?: string; emojiId?: string };
 export type VrchatConfigWriteResult = { oldCacheCleanupError: string | null };
 export type VrchatCurrentUserBadgeInput = {
-    userId?: string;
     badgeId?: string;
     hidden?: boolean;
     showcased?: boolean;
 };
-export type VrchatCurrentUserProfileUpdateInput = {
-    expectedUserId?: string;
-    params: JsonValue | null;
-};
-export type VrchatCurrentUserTagsInput = { userId?: string; tags?: string[] };
-export type VrchatCurrentUserUpdateInput = {
-    userId?: string;
-    params: JsonValue | null;
-};
+export type VrchatCurrentUserProfileUpdateInput = { params: JsonValue | null };
+export type VrchatCurrentUserTagsInput = { tags?: string[] };
+export type VrchatCurrentUserUpdateInput = { params: JsonValue | null };
 export type VrchatFavoriteAddInput = {
     type: VrchatFavoriteType;
     favoriteId?: string;
     tags?: string;
 };
 export type VrchatFavoriteDeleteInput = { objectId?: string };
-export type VrchatFavoriteGroupClearInput = {
-    ownerId?: string;
-    type?: string;
-    group?: string;
-};
+export type VrchatFavoriteGroupClearInput = { type?: string; group?: string };
 export type VrchatFavoriteGroupSaveInput = {
-    ownerId?: string;
     type?: string;
     group?: string;
     displayName: string | null;
@@ -5669,14 +5726,10 @@ export type VrchatMediaPrintUploadInput = {
 };
 export type VrchatMediaPrintsInput = { userId?: string; n?: number };
 export type VrchatMediaProfileDecorationEquipInput = {
-    expectedUserId?: string;
     inventoryId?: string;
     equipSlot?: string;
 };
-export type VrchatMediaProfileDecorationUnequipInput = {
-    expectedUserId?: string;
-    equipSlot?: string;
-};
+export type VrchatMediaProfileDecorationUnequipInput = { equipSlot?: string };
 export type VrchatMediaRewardRedeemInput = { code?: string };
 export type VrchatMediaUserInventoryItemInput = {
     userId?: string;

@@ -13,37 +13,38 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 describe('moderationSyncService', () => {
     it('preserves a typed missing-credentials refresh error', async () => {
+        const error = Object.assign(new Error('Missing Credentials'), {
+            code: 'vrchat_api',
+            statusCode: 401
+        });
         runtimeState.commands.appModerationSyncRefresh.mockRejectedValueOnce(
-            new Error('Missing Credentials')
+            error
         );
         const { refreshModerationSync } =
             await import('./moderationSyncService');
 
         await expect(
             refreshModerationSync({ userId: 'usr_current', endpoint: '' })
-        ).rejects.toMatchObject({
-            status: 401,
-            endpoint: 'auth/user/playermoderations'
-        });
+        ).rejects.toBe(error);
     });
 
     it('preserves a typed missing-credentials mutation error', async () => {
+        const error = Object.assign(new Error('Missing Credentials'), {
+            code: 'vrchat_api',
+            statusCode: 401
+        });
         runtimeState.commands.appModerationSyncUpdate.mockRejectedValueOnce(
-            new Error('Missing Credentials')
+            error
         );
         const { updateModerationSync } =
             await import('./moderationSyncService');
 
         await expect(
             updateModerationSync({
-                ownerUserId: 'usr_current',
                 targetUserId: 'usr_target',
                 type: 'block',
                 enabled: false
             })
-        ).rejects.toMatchObject({
-            status: 401,
-            endpoint: 'auth/user/unplayermoderate'
-        });
+        ).rejects.toBe(error);
     });
 });

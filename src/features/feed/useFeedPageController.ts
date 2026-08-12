@@ -12,8 +12,12 @@ import { useFeedRows } from './useFeedRows';
 import { useFeedTableMeta } from './useFeedTableMeta';
 import { useFeedTableState } from './useFeedTableState';
 
-export function useFeedPageController() {
-    const filters = useFeedFilters();
+export function useFeedPageController({
+    routeScopedUserIds
+}: {
+    routeScopedUserIds: readonly string[];
+}) {
+    const filters = useFeedFilters({ routeScopedUserIds });
     const tableModel = useFeedTableState({
         activeFilters: filters.activeFilters,
         dateFrom: filters.dateFrom,
@@ -44,23 +48,24 @@ export function useFeedPageController() {
         rows: feedRows.rows
     });
     const columns = useFeedColumns(feedTableMeta);
+    const { pagination, setPagination } = tableModel;
 
     useEffect(() => {
         const maxPageIndex = Math.max(
             0,
-            Math.ceil(feedRows.rows.length / tableModel.pagination.pageSize) - 1
+            Math.ceil(feedRows.rows.length / pagination.pageSize) - 1
         );
-        if (tableModel.pagination.pageIndex > maxPageIndex) {
-            tableModel.setPagination((current) => ({
+        if (pagination.pageIndex > maxPageIndex) {
+            setPagination((current) => ({
                 ...current,
                 pageIndex: maxPageIndex
             }));
         }
     }, [
         feedRows.rows.length,
-        tableModel.pagination.pageIndex,
-        tableModel.pagination.pageSize,
-        tableModel.setPagination
+        pagination.pageIndex,
+        pagination.pageSize,
+        setPagination
     ]);
 
     const table = useAppTable({

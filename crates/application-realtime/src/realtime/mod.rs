@@ -34,15 +34,15 @@ pub use projection::{
 };
 pub use runtime_types::{
     FriendBaselineCausalWatermark, FriendBaselineResult, FriendBaselineSyncOutcome,
-    PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserGameLogContext,
-    RealtimeFriendApplyResult, RealtimeFriendRosterSnapshot, RealtimeFriendSnapshot,
-    RealtimeSessionContext, RealtimeTransportLifecycleEvent, RealtimeTransportStartResult,
-    RealtimeTransportTermination, RealtimeWsMessagePayload, RealtimeWsStatus,
-    RealtimeWsStatusPayload,
+    PendingOfflineTimerAction, RealtimeCachedUserProfile, RealtimeCurrentUserAuthority,
+    RealtimeCurrentUserGameLogContext, RealtimeFriendApplyResult, RealtimeFriendRosterSnapshot,
+    RealtimeFriendSnapshot, RealtimeSessionContext, RealtimeTransportLifecycleEvent,
+    RealtimeTransportStartResult, RealtimeTransportTermination, RealtimeWsMessagePayload,
+    RealtimeWsStatus, RealtimeWsStatusPayload,
 };
 pub use service::{
     FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload,
-    RealtimeCurrentUserRefreshExpectation, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
-    RealtimeStopRequest, SyntheticFriendEventOutcome,
+    RealtimeCurrentUserRefreshExpectation, RealtimeCurrentUserSnapshotSink, RealtimeHostRuntime,
+    RealtimeHostRuntimeDeps, RealtimeStopRequest, SyntheticFriendEventOutcome,
 };
 pub use user_query_cache::{UserQueryCachePolicy, UserQueryKind, UserQueryOptions};

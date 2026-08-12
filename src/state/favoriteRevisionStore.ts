@@ -11,10 +11,16 @@ interface FavoritePendingRevision {
 interface FavoriteRevisionStoreState {
     revision: number;
     localWorldRevision: number;
+    remoteDetailsRevisionByKind: Record<'avatar' | 'world', number>;
     lastAttemptedRevision: number;
     pendingRemote: boolean;
     pendingUnknown: boolean;
-    bumpRevision(change: { kind: FavoriteRevisionKind; remote: boolean }): void;
+    bumpRevision(change: {
+        kind: FavoriteRevisionKind;
+        local: boolean;
+        remote: boolean;
+        requiresRefresh: boolean;
+    }): void;
     getPending(): FavoritePendingRevision;
     markAttempted(revision: number): void;
     acknowledge(revision: number): void;
@@ -24,6 +30,10 @@ interface FavoriteRevisionStoreState {
 const initialState = {
     revision: 0,
     localWorldRevision: 0,
+    remoteDetailsRevisionByKind: {
+        avatar: 0,
+        world: 0
+    },
     lastAttemptedRevision: 0,
     pendingRemote: false,
     pendingUnknown: false
@@ -32,15 +42,30 @@ const initialState = {
 export const useFavoriteRevisionStore = create<FavoriteRevisionStoreState>(
     (set, get) => ({
         ...initialState,
-        bumpRevision({ kind, remote }) {
+        bumpRevision({ kind, local, remote, requiresRefresh }) {
             set((state) => ({
                 revision: state.revision + 1,
                 localWorldRevision:
-                    !remote && (kind === 'world' || kind === 'unknown')
+                    requiresRefresh &&
+                    local &&
+                    (kind === 'world' || kind === 'unknown')
                         ? state.localWorldRevision + 1
                         : state.localWorldRevision,
-                pendingRemote: state.pendingRemote || remote,
-                pendingUnknown: state.pendingUnknown || kind === 'unknown'
+                remoteDetailsRevisionByKind: {
+                    avatar:
+                        remote && (kind === 'avatar' || kind === 'unknown')
+                            ? state.remoteDetailsRevisionByKind.avatar + 1
+                            : state.remoteDetailsRevisionByKind.avatar,
+                    world:
+                        remote && (kind === 'world' || kind === 'unknown')
+                            ? state.remoteDetailsRevisionByKind.world + 1
+                            : state.remoteDetailsRevisionByKind.world
+                },
+                pendingRemote:
+                    state.pendingRemote || (requiresRefresh && remote),
+                pendingUnknown:
+                    state.pendingUnknown ||
+                    (requiresRefresh && kind === 'unknown')
             }));
         },
         getPending() {
@@ -75,6 +100,10 @@ export const useFavoriteRevisionStore = create<FavoriteRevisionStoreState>(
                 return {
                     revision,
                     localWorldRevision: state.localWorldRevision + 1,
+                    remoteDetailsRevisionByKind: {
+                        avatar: state.remoteDetailsRevisionByKind.avatar + 1,
+                        world: state.remoteDetailsRevisionByKind.world + 1
+                    },
                     lastAttemptedRevision: revision,
                     pendingRemote: false,
                     pendingUnknown: false

@@ -9,7 +9,7 @@ use vrcx_0_application_core::vrchat_api::groups::{
     user_group_permissions_get_input, user_groups_get_input,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
-use vrcx_0_application_core::{HostSessionRuntime, RuntimeAuthScope};
+use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_core::json::scalar_text as value_as_string;
 
 use super::super::permissions::{parse_permission_map, permissions_for_group};
@@ -20,7 +20,6 @@ use super::types::{UserGroupsOverviewGroup, UserGroupsOverviewInput, UserGroupsO
 pub struct UserGroupsOverviewDeps {
     pub groups: GroupApiDeps,
     pub auth_scope: RuntimeAuthScope,
-    pub session: HostSessionRuntime,
 }
 
 pub async fn get_user_groups_overview(
@@ -166,8 +165,8 @@ async fn execute_vrchat_json_request(
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
-    if response.is_failure() {
-        return Err(Error::Custom(response.error_message_or(fallback)));
+    if let Some(failure) = response.failure_or(fallback) {
+        return Err(failure.into());
     }
     Ok(response.json)
 }
@@ -202,7 +201,7 @@ fn normalize_endpoint(value: &str) -> String {
 }
 
 fn auth_scope_matches(deps: &UserGroupsOverviewDeps, user_id: &str, endpoint: &str) -> bool {
-    vrcx_0_application_core::auth_scope_matches(&deps.auth_scope, &deps.session, user_id, endpoint)
+    deps.auth_scope.matches(user_id, endpoint)
 }
 
 fn array_rows(value: &Value) -> Vec<Value> {

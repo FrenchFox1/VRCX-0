@@ -110,7 +110,9 @@ export type UserDialogProfileLinksSectionProps = {
 export type UserDialogActivitySummarySectionProps = {
     friendedAt: string | null | undefined;
     isCurrentUser: boolean;
+    isFriend: boolean;
     lastSeen: string | null | undefined;
+    onOpenFeed?: () => void;
     onOpenInstanceHistory?: () => void;
     presenceActivityAt: string | null | undefined;
     profile: UserDialogInfoProfile;
@@ -644,7 +646,9 @@ function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
 export function UserDialogActivitySummaryPanel({
     friendedAt,
     isCurrentUser,
+    isFriend,
     lastSeen,
+    onOpenFeed,
     onOpenInstanceHistory,
     presenceActivityAt,
     profile,
@@ -676,20 +680,7 @@ export function UserDialogActivitySummaryPanel({
                         presenceActivityAt,
                         dateLocale
                     )}
-                    subtle
-                />
-                <InfoStat
-                    label={t('dialog.user.info.friended')}
-                    value={formatLocalizedActivityDate(friendedAt, dateLocale)}
-                    subtle
-                />
-                <InfoStat
-                    label={t('dialog.user.info.date_joined')}
-                    value={formatLocalizedActivityDate(
-                        profile.date_joined,
-                        dateLocale,
-                        true
-                    )}
+                    onClick={isFriend ? onOpenFeed : undefined}
                     subtle
                 />
                 {isCurrentUser ? (
@@ -712,11 +703,27 @@ export function UserDialogActivitySummaryPanel({
                         <InfoStat
                             label={t('dialog.user.info.time_together')}
                             value={formatStatsDuration(userTimeSpent)}
-                            onClick={onOpenInstanceHistory}
+                            subtle
+                        />
+                        <InfoStat
+                            label={t('dialog.user.info.friended')}
+                            value={formatLocalizedActivityDate(
+                                friendedAt,
+                                dateLocale
+                            )}
                             subtle
                         />
                     </>
                 )}
+                <InfoStat
+                    label={t('dialog.user.info.date_joined')}
+                    value={formatLocalizedActivityDate(
+                        profile.date_joined,
+                        dateLocale,
+                        true
+                    )}
+                    subtle
+                />
             </InfoStatGrid>
         </InfoPanel>
     );
@@ -768,7 +775,9 @@ export function UserDialogInfoTab({
                     <UserDialogActivitySummaryPanel
                         friendedAt={activitySummarySection.friendedAt}
                         isCurrentUser={activitySummarySection.isCurrentUser}
+                        isFriend={activitySummarySection.isFriend}
                         lastSeen={activitySummarySection.lastSeen}
+                        onOpenFeed={activitySummarySection.onOpenFeed}
                         onOpenInstanceHistory={
                             activitySummarySection.onOpenInstanceHistory
                         }

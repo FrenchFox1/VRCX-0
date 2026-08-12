@@ -111,11 +111,13 @@ fn start_requires_active_realtime_session() -> Result<()> {
         tasks: TaskSupervisor::new(),
         session: HostSessionRuntime::new(),
         auth_scope: RuntimeAuthScope::new(),
+        remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
         local_game_context: Arc::new(UnavailableLocalGameContextSource),
         activity_sink: None,
         world_cache,
         print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
         friend_note_change_sink: None,
+        current_user_snapshot_sink: None,
     }));
 
     assert!(runtime.start_friend_profile_bulk_load().is_err());

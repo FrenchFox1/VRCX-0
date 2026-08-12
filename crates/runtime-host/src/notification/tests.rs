@@ -190,6 +190,7 @@ fn test_realtime_runtime(
             tasks: vrcx_0_application_core::TaskSupervisor::new(),
             session: vrcx_0_application_core::HostSessionRuntime::new(),
             auth_scope: vrcx_0_application_core::RuntimeAuthScope::new(),
+            remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
             local_game_context: Arc::new(
                 vrcx_0_application_core::UnavailableLocalGameContextSource,
             ),
@@ -197,6 +198,7 @@ fn test_realtime_runtime(
             world_cache,
             print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
             friend_note_change_sink: None,
+            current_user_snapshot_sink: None,
         },
     ));
     (dir, runtime, db, web)

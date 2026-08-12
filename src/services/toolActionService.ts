@@ -7,6 +7,7 @@ import {
     isHostCapabilitySupported
 } from '@/services/hostCapabilityService';
 import i18n from '@/services/i18nService';
+import { recordToolOpen } from '@/services/telemetry/telemetryToolUsage';
 import {
     toolDefinitionMap,
     type ToolAppApiMethod,
@@ -20,6 +21,7 @@ type TriggerToolOptions = {
     navigate: Navigate;
     t: Translate;
 };
+type HostCapabilitySnapshot = Record<string, unknown>;
 type ToolDialogHostKey =
     | 'appLauncherOpen'
     | 'presenceScheduleOpen'
@@ -70,7 +72,8 @@ const legacyToolAliases: Record<string, string> = {
 };
 
 export function isToolCapabilityAvailable(
-    tool?: ToolDefinition | null
+    tool?: ToolDefinition | null,
+    hostCapabilities?: HostCapabilitySnapshot
 ): boolean {
     const capabilities = [
         ...(tool?.requiredCapabilities ?? []),
@@ -78,6 +81,24 @@ export function isToolCapabilityAvailable(
     ];
     if (capabilities.length === 0) {
         return true;
+    }
+    if (hostCapabilities) {
+        return capabilities.every((capability) => {
+            const status = hostCapabilities[capability];
+            if (!status || typeof status !== 'object') {
+                return false;
+            }
+            const capabilityStatus = status as {
+                available?: unknown;
+                enabled?: unknown;
+                supported?: unknown;
+            };
+            return tool?.requiredCapabilityMode === 'supported'
+                ? Boolean(
+                      capabilityStatus.supported && capabilityStatus.enabled
+                  )
+                : Boolean(capabilityStatus.available);
+        });
     }
     if (tool?.requiredCapabilityMode === 'supported') {
         return capabilities.every(isHostCapabilitySupported);
@@ -119,6 +140,8 @@ export async function triggerToolByKey(
         toast.error(getToolCapabilityUnavailableReason(tool));
         return;
     }
+
+    recordToolOpen(resolvedToolKey);
 
     if (action.type === 'route') {
         navigate(toolRouteMap[action.routeName] ?? '/tools');

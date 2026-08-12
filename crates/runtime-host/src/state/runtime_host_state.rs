@@ -7,7 +7,7 @@ use std::sync::{
 use serde::Serialize;
 use serde_json::Value;
 
-use super::profile_lock::ProfileLock;
+use super::{profile_lock::ProfileLock, replace_authenticated_session_user_if_session_matches};
 use crate::{
     AuthenticatedRuntimeDeps, AuthenticatedRuntimeOrchestrator, GroupOrderSource,
     NoteExportRuntime, Result, RuntimeHostComposition, RuntimeHostContext, RuntimeHostProfile,
@@ -19,9 +19,13 @@ use vrcx_0_application::{
     ProfileBackupRuntime, ProfileBackupRuntimeDeps, VrchatGroupBanImportActions,
 };
 use vrcx_0_application_core::{
-    BackendRuntime, ImageCache, UnavailableLocalGameContextSource, WebClient,
+    BackendRuntime, BackgroundCapabilitySession, ImageCache, UnavailableLocalGameContextSource,
+    WebClient,
 };
-use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
+use vrcx_0_application_realtime::{
+    RealtimeCurrentUserSnapshotSink, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
+    RealtimeSessionContext,
+};
 use vrcx_0_host::app_paths::{
     app_data_paths_match, commit_app_data_dir_pointer, AppDataDirResolution, AppDataDirSource,
     AppPaths,
@@ -64,13 +68,20 @@ pub(super) fn web_ua_app_version(app_version: &str, profile: RuntimeHostProfile)
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct BackendRuntimeFrontendSessionSnapshot {
-    pub authenticated: bool,
+pub struct AuthenticatedSessionSnapshot {
+    pub auth_scope_generation: u64,
     pub user_id: String,
     pub display_name: String,
     pub endpoint: String,
     pub websocket: String,
     pub current_user_snapshot: Value,
+}
+
+#[derive(Clone, Debug, Default, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthenticatedSessionProjection {
+    pub revision: u64,
+    pub session: Option<AuthenticatedSessionSnapshot>,
 }
 
 pub struct RuntimeHostStateBuilder {
@@ -122,7 +133,7 @@ pub struct RuntimeHostState {
     pub(super) social_maintenance_running: Arc<AtomicBool>,
     pub(super) activity_warmup_generation: Arc<AtomicU64>,
     pub(super) background_group_instances_refresh_running: Arc<AtomicBool>,
-    pub(super) backend_frontend_session: Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
+    pub(super) authenticated_session_projection: Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(super) authenticated_session_maintenance:
         Mutex<Option<AuthenticatedSessionMaintenanceOutcome>>,
     pub(super) _profile_lock: ProfileLock,
@@ -471,6 +482,29 @@ impl RuntimeHostStateBuilder {
             favorites_sink,
             profile_extension,
         } = composition;
+        let authenticated_session_projection =
+            Arc::new(Mutex::new(AuthenticatedSessionProjection::default()));
+        let current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink> = {
+            let session_slot = Arc::clone(&authenticated_session_projection);
+            Some(Arc::new(
+                move |session: &RealtimeSessionContext,
+                      auth_scope_generation: u64,
+                      snapshot: Value| {
+                    let expected = BackgroundCapabilitySession {
+                        auth_scope_generation,
+                        current_user_id: session.user_id.clone(),
+                        endpoint: session.endpoint.clone(),
+                        websocket: session.websocket.clone(),
+                        current_user_snapshot: Value::Null,
+                    };
+                    replace_authenticated_session_user_if_session_matches(
+                        &session_slot,
+                        &expected,
+                        snapshot,
+                    );
+                },
+            ))
+        };
         let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
             db: Arc::clone(&self.runtime_context.db),
             web: Arc::clone(&self.runtime_context.web),
@@ -479,6 +513,7 @@ impl RuntimeHostStateBuilder {
             tasks: self.runtime_context.tasks.clone(),
             session: self.runtime_context.session.clone(),
             auth_scope: self.runtime_context.auth_scope.clone(),
+            remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
             local_game_context,
             activity_sink: Some(Arc::new(self.runtime_context.overlay_activity())),
             world_cache: Arc::clone(&self.runtime_context.world_cache),
@@ -489,9 +524,12 @@ impl RuntimeHostStateBuilder {
                     db: Arc::clone(&self.runtime_context.db),
                     web: Arc::clone(&self.runtime_context.web),
                     event_bus: self.runtime_context.event_bus.clone(),
+                    auth_scope: self.runtime_context.auth_scope.clone(),
+                    remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
                 },
             )),
             friend_note_change_sink,
+            current_user_snapshot_sink,
         }));
         let favorites_sink = {
             let overlay_activity = self.runtime_context.overlay_activity();
@@ -516,7 +554,6 @@ impl RuntimeHostStateBuilder {
                 event_bus: self.runtime_context.event_bus.clone(),
                 tasks: self.runtime_context.tasks.clone(),
                 auth_scope: self.runtime_context.auth_scope.clone(),
-                session: self.runtime_context.session.clone(),
                 realtime_runtime: Arc::clone(&realtime_runtime),
                 favorites_sink,
             });
@@ -527,6 +564,7 @@ impl RuntimeHostStateBuilder {
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),
             self.runtime_context.auth_scope.clone(),
+            Arc::clone(&self.runtime_context.remote_mutations),
         );
         let group_ban_import = GroupBanImportRuntime::new(
             Arc::new(VrchatGroupBanImportActions {
@@ -535,6 +573,8 @@ impl RuntimeHostStateBuilder {
                     web: Arc::clone(&self.web),
                     diagnostics: self.runtime_context.diagnostics.clone(),
                     sync: self.runtime_context.sync.clone(),
+                    auth_scope: self.runtime_context.auth_scope.clone(),
+                    remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
                 },
             }),
             self.runtime_context.event_bus.clone(),
@@ -585,7 +625,7 @@ impl RuntimeHostStateBuilder {
             social_maintenance_running: Arc::new(AtomicBool::new(false)),
             activity_warmup_generation: Arc::new(AtomicU64::new(0)),
             background_group_instances_refresh_running: Arc::new(AtomicBool::new(false)),
-            backend_frontend_session: Arc::new(Mutex::new(None)),
+            authenticated_session_projection,
             authenticated_session_maintenance: Mutex::new(None),
             _profile_lock: self.profile_lock,
         })
@@ -611,10 +651,10 @@ impl RuntimeHostState {
         })
     }
 
-    pub fn backend_frontend_session_handle(
+    pub fn authenticated_session_projection_handle(
         &self,
-    ) -> Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>> {
-        Arc::clone(&self.backend_frontend_session)
+    ) -> Arc<Mutex<AuthenticatedSessionProjection>> {
+        Arc::clone(&self.authenticated_session_projection)
     }
 }
 

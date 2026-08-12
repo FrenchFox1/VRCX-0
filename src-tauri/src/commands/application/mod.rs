@@ -1,8 +1,8 @@
 pub mod assistant;
-pub mod auth_scope;
 pub mod background_image;
 pub mod background_mode;
 pub mod community_theme;
+pub mod companion_api;
 pub mod deep_link;
 pub mod desktop_notification;
 pub mod favorite_transfer;

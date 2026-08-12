@@ -2142,6 +2142,40 @@
                         "running": "Běží",
                         "stopping": "Zastavuje se"
                     }
+                },
+                "companion_api": {
+                    "header": "API pro doprovodné aplikace",
+                    "description": "Sdílí vybrané informace z VRCX-0 s důvěryhodnými doprovodnými aplikacemi. Server naslouchá pouze při spuštěném VRChatu.",
+                    "enable": "Povolit API pro doprovodné aplikace",
+                    "enable_description": "Při spuštěném VRChatu spustí WebSocket stream chráněný tokenem.",
+                    "information_types": "Sdílené informace",
+                    "information_types_description": "Vyberte, co mohou doprovodné aplikace číst. Dostupný výběr je nyní pevně daný.",
+                    "information_type_fixed": "Nyní pevně dané",
+                    "room_information": "Informace o místnosti",
+                    "room_information_description": "Aktuální místnost, seznam hráčů, jazykové značky a poznámky. Jednotlivá pole zatím nelze měnit.",
+                    "allow_lan_connections": "Povolit připojení z LAN",
+                    "allow_lan_connections_description": "Umožní zařízením v místní síti číst tento stream. V nedůvěryhodných sítích ponechte vypnuto.",
+                    "port_label": "Port serveru",
+                    "port_description": "Výchozí: 8799. Po změně portu aktualizujte nastavení všech připojených klientů.",
+                    "port_apply": "Použít",
+                    "port_invalid": "Port musí být v rozsahu 1024 až 65535",
+                    "port_in_use": "Port {port} již používá jiný program. Zvolte jiný port.",
+                    "bind_failed": "API pro doprovodné aplikace nemůže naslouchat na portu {port}.",
+                    "start_failed": "API pro doprovodné aplikace se nepodařilo automaticky spustit: {reason}",
+                    "status_label": "Stav",
+                    "port_active_connections": "Port {port} · aktivní připojení: {count}",
+                    "token": "Přístupový token",
+                    "token_description": "Token zpřístupňuje aktuální místnost, jména hráčů, jazykové značky a poznámky. Sdílejte jej pouze s důvěryhodným softwarem.",
+                    "token_copied": "Token API pro doprovodné aplikace byl zkopírován",
+                    "rotate_token": "Obnovit token",
+                    "token_rotated": "Token API pro doprovodné aplikace byl obnoven",
+                    "status": {
+                        "loading": "Načítání",
+                        "disabled": "Zastaveno",
+                        "waitingForGame": "Čeká se na VRChat",
+                        "running": "Běží",
+                        "error": "Chyba"
+                    }
                 }
             },
             "advanced_groups": {

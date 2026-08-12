@@ -3,8 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { bumpFavoriteRemoteDetailsRefresh } from '@/features/favorites/useFavoriteRemoteDetails';
-import { useLocalWorldFavorites } from '@/features/favorites/useLocalWorldFavorites';
+import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { persistAvatarDetails } from '@/services/favoriteAvatarCacheService';
@@ -220,18 +219,6 @@ export function FavoriteActionMenu({
         () => resolveRemoteFavoriteGroupLabel(remoteFavorite, groups),
         [groups, remoteFavorite]
     );
-    const addRemoteFavorite = useFavoriteStore(
-        (state) => state.addRemoteFavorite
-    );
-    const removeRemoteFavorite = useFavoriteStore(
-        (state) => state.removeRemoteFavorite
-    );
-    const addLocalFavorite = useFavoriteStore(
-        (state) => state.addLocalFavorite
-    );
-    const removeLocalFavorite = useFavoriteStore(
-        (state) => state.removeLocalFavorite
-    );
     const [actionStatus, setActionStatus] = useState('idle');
     const actionStatusRef = useRef('idle');
 
@@ -243,21 +230,15 @@ export function FavoriteActionMenu({
         actionStatusRef.current = 'favorite';
         setActionStatus('favorite');
         try {
-            const response = await vrchatFavoriteRepository.addFavorite({
+            await vrchatFavoriteRepository.addFavorite({
                 type: resolveFavoriteAddType(group, kind),
                 favoriteId: normalizedEntityId,
                 tags: group.name
             });
-            if (isRecord(response.json)) {
-                addRemoteFavorite(response.json);
-            }
             if (kind === 'world' && isRecord(entity)) {
                 persistWorldDetails(entity, normalizedEntityId);
             } else if (kind === 'avatar' && isRecord(entity)) {
                 persistAvatarDetails(entity, normalizedEntityId);
-            }
-            if (kind === 'world' || kind === 'avatar') {
-                bumpFavoriteRemoteDetailsRefresh();
             }
             toast.success(t('view.favorite.label.favorite_added'));
         } catch (error) {
@@ -304,7 +285,6 @@ export function FavoriteActionMenu({
             await vrchatFavoriteRepository.deleteFavorite({
                 objectId: normalizedEntityId
             });
-            removeRemoteFavorite(normalizedEntityId);
             toast.success(t('view.favorite.success.favorite_removed'));
         } catch (error) {
             toast.error(
@@ -338,15 +318,6 @@ export function FavoriteActionMenu({
                 entityId: normalizedEntityId,
                 groupName
             });
-            if (kind === 'world') {
-                await localWorldFavorites.reload();
-            } else {
-                addLocalFavorite({
-                    kind,
-                    entityId: normalizedEntityId,
-                    groupName
-                });
-            }
             toast.success(t('view.favorite.label.local_favorite_added'));
         } catch (error) {
             toast.error(
@@ -375,15 +346,6 @@ export function FavoriteActionMenu({
                 entityId: normalizedEntityId,
                 groupName
             });
-            if (kind === 'world') {
-                await localWorldFavorites.reload();
-            } else {
-                removeLocalFavorite({
-                    kind,
-                    entityId: normalizedEntityId,
-                    groupName
-                });
-            }
             toast.success(t('view.favorite.success.local_favorite_removed'));
         } catch (error) {
             toast.error(

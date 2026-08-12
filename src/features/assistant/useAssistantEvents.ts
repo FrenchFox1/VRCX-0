@@ -1,13 +1,5 @@
 import { useEffect } from 'react';
 
-import { tauriClient } from '@/platform/tauri/client';
-import {
-    recordAssistantToolError,
-    recordAssistantTurnError
-} from '@/services/telemetry/telemetryAssistantHealth';
-import { useAssistantChatStore } from '@/state/assistantChatStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
-
 import type {
     AssistantDeltaEvent,
     AssistantDoneEvent,
@@ -15,7 +7,14 @@ import type {
     AssistantToolCallEvent,
     AssistantToolResultEvent,
     AssistantTurnEntitiesEvent
-} from './assistantTypes';
+} from '@/domain/assistant/assistantTypes';
+import { tauriClient } from '@/platform/tauri/client';
+import {
+    recordAssistantToolError,
+    recordAssistantTurnError
+} from '@/services/telemetry/telemetryAssistantHealth';
+import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 
 const EVENT_NAMES = [
     'assistantDelta',

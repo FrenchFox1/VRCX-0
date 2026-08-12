@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use serde_json::Value;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_persistence::local_moderation::{
@@ -14,7 +16,9 @@ use super::types::{
     ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
     ModerationSyncRefreshInput, ModerationSyncRefreshOutput, RemoteModerationRow,
 };
-use crate::{Error, Result};
+use crate::{AuthenticatedMutationContext, Error, Result};
+
+const MODERATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum LocalPlayerModerationKind {
@@ -48,7 +52,7 @@ pub async fn refresh_player_moderations(
     }
 
     let (remote_count, rows) = fetch_remote_moderations(&deps, &input.endpoint).await?;
-    let accepted = should_write_refresh_snapshot(&deps, &user_id, &input.endpoint, &rows);
+    let accepted = should_write_refresh_snapshot(&deps, &user_id, &input.endpoint);
     let local_count = if accepted {
         let local_inputs: Vec<RemoteModerationInput> = rows
             .iter()
@@ -73,21 +77,26 @@ pub async fn update_player_moderation(
     deps: ModerationSyncDeps<'_>,
     input: ModerationSyncMutationInput,
 ) -> Result<ModerationSyncMutationOutput> {
-    let owner_user_id = normalize_text(input.owner_user_id);
     let target_user_id = normalize_text(input.target_user_id);
     let target_display_name = input.target_display_name.clone();
     let r#type = normalize_text(input.r#type);
-    if owner_user_id.is_empty() || target_user_id.is_empty() || r#type.is_empty() {
+    if target_user_id.is_empty() || r#type.is_empty() {
         return Err(Error::Custom(
-            "ModerationSyncUpdate requires ownerUserId, targetUserId and type.".into(),
+            "ModerationSyncUpdate requires targetUserId and type.".into(),
         ));
     }
-    ensure_current_auth_scope(&deps, &owner_user_id, &input.endpoint)?;
+    let mutation = AuthenticatedMutationContext::capture(
+        deps.auth_scope,
+        deps.remote_mutations,
+        "Moderation mutation",
+    )?;
+    let owner_user_id = mutation.scope().current_user_id.clone();
 
-    execute_vrchat_json_request(
+    execute_vrchat_mutation(
         &deps,
+        &mutation,
         player_moderation_update_input(
-            normalize_endpoint(&input.endpoint),
+            mutation.scope().endpoint.clone(),
             input.enabled,
             target_user_id.clone(),
             r#type.clone(),
@@ -106,7 +115,7 @@ pub async fn update_player_moderation(
         if block || mute {
             local_moderation::local_moderation_set(
                 deps.db,
-                owner_user_id,
+                owner_user_id.clone(),
                 LocalModerationInput {
                     user_id: target_user_id.clone(),
                     updated_at: updated_at.clone(),
@@ -125,7 +134,7 @@ pub async fn update_player_moderation(
         } else {
             local_moderation::local_moderation_delete(
                 deps.db,
-                owner_user_id,
+                owner_user_id.clone(),
                 target_user_id.clone(),
             )?;
             Some(LocalModerationOutput {
@@ -141,6 +150,7 @@ pub async fn update_player_moderation(
     };
 
     Ok(ModerationSyncMutationOutput {
+        owner_user_id,
         target_user_id,
         r#type,
         enabled: input.enabled,
@@ -150,10 +160,6 @@ pub async fn update_player_moderation(
 
 fn normalize_text(value: impl AsRef<str>) -> String {
     value.as_ref().trim().to_string()
-}
-
-fn normalize_scope_endpoint(value: &str) -> String {
-    normalize_endpoint(value)
 }
 
 fn value_as_normalized_text(value: Option<&Value>) -> String {
@@ -185,10 +191,30 @@ async fn execute_vrchat_json_request(
         .await?;
 
     let response = ApiJsonResponse::from(&response);
-    if response.is_failure() {
-        return Err(Error::Custom(response.error_message_with_http_status(
-            "VRChat moderation request failed",
-        )));
+    if let Some(failure) = response.failure_or("VRChat moderation request failed") {
+        return Err(failure.into());
+    }
+
+    Ok(response.json)
+}
+
+async fn execute_vrchat_mutation(
+    deps: &ModerationSyncDeps<'_>,
+    mutation: &AuthenticatedMutationContext<'_>,
+    mut request: HttpApiRequestInput,
+) -> Result<Value> {
+    mutation.apply_scope_to_request(&mut request);
+    let response = mutation
+        .run_after_wait(MODERATION_REMOTE_MUTATION_INTERVAL, || async {
+            deps.web
+                .execute_api(request, ApiScope::Vrchat, deps.db)
+                .await
+        })
+        .await?;
+
+    let response = ApiJsonResponse::from(&response);
+    if let Some(failure) = response.failure_or("VRChat moderation request failed") {
+        return Err(failure.into());
     }
 
     Ok(response.json)
@@ -239,54 +265,12 @@ async fn fetch_remote_moderations(
     Ok((remote_count, normalize_remote_moderation_rows(&json)))
 }
 
-fn rows_have_verified_owner(rows: &[RemoteModerationRow], user_id: &str) -> bool {
-    !rows.is_empty()
-        && rows
-            .iter()
-            .all(|row| !row.source_user_id.is_empty() && row.source_user_id == user_id)
-}
-
-fn runtime_auth_scope_scope_matches(
-    deps: &ModerationSyncDeps<'_>,
-    user_id: &str,
-    endpoint: &str,
-) -> bool {
-    let snapshot = deps.session.snapshot();
-    let Some(context) = snapshot.realtime_context else {
-        return false;
-    };
-
-    context.current_user_id == user_id
-        && normalize_scope_endpoint(&context.endpoint) == normalize_scope_endpoint(endpoint)
-}
-
 fn should_write_refresh_snapshot(
     deps: &ModerationSyncDeps<'_>,
     user_id: &str,
     endpoint: &str,
-    rows: &[RemoteModerationRow],
 ) -> bool {
-    let auth_scope = deps.auth_scope.snapshot();
-    if auth_scope.active {
-        return deps.auth_scope.matches(user_id, endpoint);
-    }
-
-    runtime_auth_scope_scope_matches(deps, user_id, endpoint)
-        || rows_have_verified_owner(rows, user_id)
-}
-
-fn ensure_current_auth_scope(
-    deps: &ModerationSyncDeps<'_>,
-    user_id: &str,
-    endpoint: &str,
-) -> Result<()> {
-    if deps.auth_scope.matches(user_id, endpoint) {
-        return Ok(());
-    }
-
-    Err(Error::Custom(
-        "Backend moderation request is stale for the current auth scope.".into(),
-    ))
+    deps.auth_scope.matches(user_id, endpoint)
 }
 
 fn resolve_local_moderation_state(
@@ -306,11 +290,19 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn moderation_error_message_keeps_http_status() {
-        let message = ApiJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#)
-            .error_message_with_http_status("VRChat moderation request failed");
+    fn moderation_error_preserves_typed_status() {
+        let failure = ApiJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#)
+            .failure_or("VRChat moderation request failed")
+            .unwrap();
+        let error = Error::from(failure);
 
-        assert_eq!(message, "Application error. (HTTP 500)");
+        assert!(matches!(
+            error,
+            Error::VrchatApi {
+                status_code: 500,
+                message
+            } if message == "Application error."
+        ));
     }
 
     #[test]
@@ -339,23 +331,6 @@ mod tests {
         assert_eq!(rows[0].target_user_id, "usr_target");
         assert_eq!(rows[0].target_display_name, "Target");
         assert_eq!(rows[0].created, "2026-05-16T00:00:00.000Z");
-    }
-
-    #[test]
-    fn verifies_refresh_owner_from_remote_rows() {
-        let rows = vec![RemoteModerationRow {
-            id: "mod_1".into(),
-            r#type: "block".into(),
-            source_user_id: "usr_current".into(),
-            source_display_name: String::new(),
-            target_user_id: "usr_target".into(),
-            target_display_name: String::new(),
-            created: String::new(),
-        }];
-
-        assert!(rows_have_verified_owner(&rows, "usr_current"));
-        assert!(!rows_have_verified_owner(&rows, "usr_other"));
-        assert!(!rows_have_verified_owner(&[], "usr_current"));
     }
 
     #[test]

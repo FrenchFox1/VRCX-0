@@ -80,26 +80,25 @@ export function useGameLogPageController() {
             setColumnOrderLocked: tableState.setColumnOrderLocked
         }
     });
+    const { pagination, setPagination } = tableState;
 
     useEffect(() => {
         const maxPageIndex = Math.max(
             0,
-            Math.ceil(
-                annotations.annotatedRows.length /
-                    tableState.pagination.pageSize
-            ) - 1
+            Math.ceil(annotations.annotatedRows.length / pagination.pageSize) -
+                1
         );
-        if (tableState.pagination.pageIndex > maxPageIndex) {
-            tableState.setPagination((current) => ({
+        if (pagination.pageIndex > maxPageIndex) {
+            setPagination((current) => ({
                 ...current,
                 pageIndex: maxPageIndex
             }));
         }
     }, [
         annotations.annotatedRows.length,
-        tableState.pagination.pageIndex,
-        tableState.pagination.pageSize,
-        tableState.setPagination
+        pagination.pageIndex,
+        pagination.pageSize,
+        setPagination
     ]);
 
     const pageCount = Math.max(1, table.getPageCount());

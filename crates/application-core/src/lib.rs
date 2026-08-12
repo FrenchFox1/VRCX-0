@@ -13,6 +13,7 @@ mod image_cache;
 mod interruptible_sleep;
 pub mod ports;
 mod proxy;
+mod remote_mutation_gate;
 mod runtime_lifecycle;
 mod runtime_output;
 mod runtime_status;
@@ -28,7 +29,7 @@ pub use async_runtime_policy::{
     recommended_tokio_max_blocking_threads, recommended_tokio_max_blocking_threads_for,
     recommended_tokio_worker_threads, recommended_tokio_worker_threads_for,
 };
-pub use auth_scope::{auth_scope_matches, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+pub use auth_scope::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 pub use avatar_cache::AvatarCache;
 pub use backend_runtime::{
     BackendRuntime, BackendRuntimeAuthStatus, BackendRuntimeGameLogStatus, BackendRuntimeMode,
@@ -44,8 +45,9 @@ pub use error::Error;
 #[cfg(any(test, feature = "test-utils"))]
 pub use event_bus::RuntimeEventForTest;
 pub use event_bus::{
-    FavoritesChangedPayload, RuntimeEventBus, RuntimeEventPayload, RuntimeEventSink,
-    RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
+    FavoriteChange, FavoritesChangedPayload, RuntimeEventBus, RuntimeEventPayload,
+    RuntimeEventSink, RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload,
+    VrcStatusSnapshot,
 };
 pub use events::{
     FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, FriendProjection,
@@ -61,13 +63,17 @@ pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
     BackgroundCapabilitySession, GameProcessEvent, GameProcessEventSink,
     HostRealtimeSessionContext, HostSessionGameProcessStatus, HostSessionProjection,
-    HostSessionRuntime, LocalGameContextSnapshot, LocalGameContextSource,
-    NoopPrintCleanupInputSink, NoopUpdaterPort, OverlayActivityInputSink, PrintCleanupInputSink,
-    PrintCleanupTrigger, SessionHostRuntime, UnavailableLocalGameContextSource,
-    UpdaterCheckRequest, UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle,
-    UpdaterMetadata, UpdaterPort, UpdaterProgressCallback,
+    HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver, InstanceRosterSnapshot,
+    LocalGameContextSnapshot, LocalGameContextSource, NoopPrintCleanupInputSink, NoopUpdaterPort,
+    OverlayActivityInputSink, PrintCleanupInputSink, PrintCleanupTrigger, SessionHostRuntime,
+    UnavailableLocalGameContextSource, UpdaterCheckRequest, UpdaterDownloadOutcome,
+    UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata, UpdaterPort,
+    UpdaterProgressCallback,
 };
 pub use proxy::{load_proxy_url, test_proxy_connectivity, ProxySettingsTestResult};
+pub use remote_mutation_gate::{
+    is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate,
+};
 pub use runtime_lifecycle::{RuntimeLifecycle, RuntimeLifecycleSnapshot};
 pub use runtime_output::{
     format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputLine, RuntimeOutputMode,

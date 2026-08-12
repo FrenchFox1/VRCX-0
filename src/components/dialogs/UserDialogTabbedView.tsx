@@ -485,19 +485,15 @@ export function UserDialogTabbedView({
             )
         }),
         [
-            favoriteWorlds.length,
+            favoriteWorlds,
             isCurrentUser,
             mutualFriendCount,
-            mutualFriends.length,
+            mutualFriends,
             previousInstances.length,
-            profileAvatars.length,
-            profileGroups.length,
-            profileWorlds.length,
-            remoteStatus.mutual,
-            remoteStatus.avatars,
-            remoteStatus['favorite-worlds'],
-            remoteStatus.groups,
-            remoteStatus.worlds,
+            profileAvatars,
+            profileGroups,
+            profileWorlds,
+            remoteStatus,
             remoteTabCounts
         ]
     );
@@ -529,6 +525,10 @@ export function UserDialogTabbedView({
 
     function openInstanceHistory() {
         changeTab('instance-history', { allowHidden: true });
+    }
+
+    function openFeed() {
+        changeTab('feed', { allowHidden: true });
     }
 
     const headerModel = {
@@ -722,6 +722,7 @@ export function UserDialogTabbedView({
         changeWorldOrder,
         changeWorldSort,
         onEditMemo,
+        onOpenFeed: openFeed,
         onOpenInstanceHistory: openInstanceHistory,
         onPreviousInstancesChange,
         onRefreshLocation,

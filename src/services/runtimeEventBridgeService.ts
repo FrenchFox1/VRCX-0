@@ -25,6 +25,10 @@ import {
     applyCommunityThemeProjectionEvent,
     initializeCommunityThemes
 } from './community-theme/installedThemes';
+import {
+    handleCompanionApiStartFailed,
+    hydrateCompanionApiStatus
+} from './companionApiService';
 import { bindDeepLinkEvents, drainPendingDeepLinks } from './deepLinkService';
 import {
     bindDesktopNotificationActivationEvents,
@@ -50,6 +54,7 @@ import {
     resetBackendRealtimeProjectionState
 } from './runtime-event-bridge/backendRealtimeProjection';
 import {
+    handleAuthenticatedSessionProjection,
     handleBackendRuntimeSyncSnapshot,
     hydrateBackendRuntimeSnapshot
 } from './runtime-event-bridge/backendRuntimeHydration';
@@ -74,6 +79,11 @@ import {
     handleAppUpdateInstalledEvent
 } from './updateInstallService';
 import { applyVrcStatusSnapshot } from './vrcStatusService';
+
+function reconcilePendingBackendRealtimeProjectionEvents(): void {
+    prunePendingBackendRealtimeProjectionEvents();
+    flushPendingBackendRealtimeProjectionEvents();
+}
 
 type RuntimeEventUnsubscribe = () => void;
 
@@ -189,6 +199,15 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'authenticatedSessionProjection') {
+        runtimeStore.recordRuntimeEvent(event.name, event.payload);
+        handleAuthenticatedSessionProjection(
+            event.payload,
+            reconcilePendingBackendRealtimeProjectionEvents
+        );
+        return;
+    }
+
     if (event.name === 'realtimeWsStatus') {
         handleAuthenticatedRuntimeRealtimeStatus(event.payload);
         return;
@@ -196,10 +215,9 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
 
     if (event.name === 'realtimeProjectionSync') {
         const snapshot = event.payload.snapshot;
-        prunePendingBackendRealtimeProjectionEvents(snapshot);
         handleBackendRuntimeSyncSnapshot(
             snapshot,
-            flushPendingBackendRealtimeProjectionEvents
+            reconcilePendingBackendRealtimeProjectionEvents
         );
         return;
     }
@@ -247,6 +265,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
 
     if (event.name === 'updateIsGameRunning') {
         handleUpdateIsGameRunning(event.payload);
+        return;
+    }
+
+    if (event.name === 'companionApiStartFailed') {
+        handleCompanionApiStartFailed(event.payload);
         return;
     }
 
@@ -379,6 +402,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
     const unsubscribers: RuntimeEventUnsubscribe[] = [];
     const events: RuntimeEventName[] = [
         'addGameLogEvent',
+        'authenticatedSessionProjection',
         'authenticatedRuntimePhase',
         'appUpdateStatus',
         'appUpdateDownloadProgress',
@@ -417,6 +441,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'realtimeInstanceQueueProjection',
         'realtimeProjectionSync',
         'updateIsGameRunning',
+        'companionApiStartFailed',
         'browserFocus'
     ];
 
@@ -450,6 +475,12 @@ export async function bindRuntimeEvents(): Promise<() => void> {
     }
 
     useSessionStore.getState().setTransportStatus('runtime-subscribed');
+    await hydrateRuntimeState(
+        'Failed to hydrate Companion API status:',
+        async () => {
+            hydrateCompanionApiStatus(await commands.appCompanionApiStatus());
+        }
+    );
     let combinedSnapshot: BackendRuntimeCombinedSnapshot | null = null;
     try {
         combinedSnapshot =
@@ -468,7 +499,8 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         }
         await hydrateBackendRuntimeSnapshot(
             combinedSnapshot.backendRuntime,
-            flushPendingBackendRealtimeProjectionEvents
+            combinedSnapshot.authenticatedSession,
+            reconcilePendingBackendRealtimeProjectionEvents
         );
     } catch (error) {
         useRuntimeStore.getState().setShellState({

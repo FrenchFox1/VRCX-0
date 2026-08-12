@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useLocalWorldFavorites } from '@/features/favorites/useLocalWorldFavorites';
+import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
@@ -162,7 +162,7 @@ export function PresenceScheduleDialog({
         return () => {
             active = false;
         };
-    }, [open]);
+    }, [open, t]);
 
     async function saveTimeRules(nextRules: TimeAutomationRule[]) {
         setTimeRules(nextRules);
@@ -265,7 +265,7 @@ export function PresenceRoomRulesDialog({
         return () => {
             active = false;
         };
-    }, [open]);
+    }, [open, t]);
 
     async function saveContextRules(nextRules: ContextAutomationRule[]) {
         const normalizedRules = nextRules.map(normalizeContextRule);
@@ -376,7 +376,7 @@ export function PresenceInviteRequestsDialog({
         return () => {
             active = false;
         };
-    }, [open]);
+    }, [open, t]);
 
     async function saveValue(
         key: keyof InviteRulesTabValues,

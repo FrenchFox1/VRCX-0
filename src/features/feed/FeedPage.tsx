@@ -1,6 +1,7 @@
 import { Columns3Icon, TableIcon } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
@@ -16,6 +17,7 @@ import { FeedColumnsMode } from './columns/FeedColumnsMode';
 import { FeedTableShell } from './components/FeedTableShell';
 import { FeedToolbar } from './components/FeedToolbar';
 import type { FeedViewMode } from './feedColumnsState';
+import { readFeedRouteUserIds, withFeedRouteUserIds } from './feedRouteScope';
 import { useFeedPageController } from './useFeedPageController';
 import { useFeedRowArrivals } from './useFeedRowArrivals';
 import { useFeedViewModeState } from './useFeedViewModeState';
@@ -56,6 +58,11 @@ function FeedViewModeToggle({
 }
 
 export function FeedPage({ embedded = false }: FeedPageProps = {}) {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const routeScopedUserIds = useMemo(
+        () => (embedded ? [] : readFeedRouteUserIds(searchParams)),
+        [embedded, searchParams]
+    );
     const {
         columns,
         density,
@@ -65,11 +72,40 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
         setViewMode,
         viewMode
     } = useFeedViewModeState();
+    const effectiveViewMode =
+        !embedded && searchParams.get('feedView') === 'table'
+            ? 'table'
+            : viewMode;
+    const setEffectiveViewMode = useCallback(
+        (value: FeedViewMode) => {
+            if (!embedded && searchParams.has('feedView')) {
+                const nextSearchParams = new URLSearchParams(searchParams);
+                nextSearchParams.delete('feedView');
+                setSearchParams(nextSearchParams, { replace: true });
+            }
+            setViewMode(value);
+        },
+        [embedded, searchParams, setSearchParams, setViewMode]
+    );
     const modeToggle = (
-        <FeedViewModeToggle value={viewMode} onValueChange={setViewMode} />
+        <FeedViewModeToggle
+            value={effectiveViewMode}
+            onValueChange={setEffectiveViewMode}
+        />
     );
     const feedPersistenceDisabled = usePreferencesStore(
         (state) => state.feedPersistenceDisabled
+    );
+    const setRouteScopedUserIds = useCallback(
+        (userIds: readonly string[]) => {
+            if (embedded) {
+                return;
+            }
+            setSearchParams(withFeedRouteUserIds(searchParams, userIds), {
+                replace: true
+            });
+        },
+        [embedded, searchParams, setSearchParams]
     );
 
     if (!ready) {
@@ -87,7 +123,7 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
 
     return (
         <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
-            {viewMode === 'columns' ? (
+            {effectiveViewMode === 'columns' ? (
                 <PageBody className="gap-2">
                     <FeedColumnsMode
                         columns={columns}
@@ -102,6 +138,8 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
                 <FeedTableMode
                     modeToggle={modeToggle}
                     feedPersistenceDisabled={feedPersistenceDisabled}
+                    routeScopedUserIds={routeScopedUserIds}
+                    setRouteScopedUserIds={setRouteScopedUserIds}
                 />
             )}
         </PageScaffold>
@@ -110,10 +148,14 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
 
 function FeedTableMode({
     modeToggle,
-    feedPersistenceDisabled
+    feedPersistenceDisabled,
+    routeScopedUserIds,
+    setRouteScopedUserIds
 }: {
     modeToggle: ReactNode;
     feedPersistenceDisabled: boolean;
+    routeScopedUserIds: readonly string[];
+    setRouteScopedUserIds(userIds: readonly string[]): void;
 }) {
     const {
         columns,
@@ -126,69 +168,101 @@ function FeedTableMode({
         rows,
         table,
         tableModel
-    } = useFeedPageController();
+    } = useFeedPageController({ routeScopedUserIds });
     const arrivals = useFeedRowArrivals(rows, loadStatus);
-    const columnsMenu = useMemo(
-        () => <TableColumnVisibilityMenu table={table} />,
-        [table, tableModel.columnOrderLocked, tableModel.columnVisibility]
-    );
+    const {
+        activeFilters,
+        applyDateFilter,
+        clearDateFilter,
+        clearSearch,
+        commitSearch,
+        dateDraftFrom,
+        dateDraftRange,
+        dateDraftTo,
+        dateFilterOpen,
+        dateFrom,
+        dateTo,
+        favoritesOnly,
+        feedFilterTypes,
+        onDateRangeSelect,
+        scopedUserIds,
+        searchDraft,
+        setDateFilterOpen,
+        setFavoritesOnly,
+        setFeedFilters,
+        setSearchDraft,
+        setUserScope,
+        todayDate,
+        toggleFeedFilter
+    } = filters;
+    const isSearching =
+        loadStatus === 'running' &&
+        Boolean(
+            filters.deferredSearchQuery.trim() ||
+            filters.deferredScopedUserIds.length
+        );
+    const columnsMenu = <TableColumnVisibilityMenu table={table} />;
     const filterModel = useMemo(
         () => ({
-            activeFilters: filters.activeFilters,
-            dateDraftFrom: filters.dateDraftFrom,
-            dateDraftRange: filters.dateDraftRange,
-            dateDraftTo: filters.dateDraftTo,
-            dateFilterOpen: filters.dateFilterOpen,
-            dateFrom: filters.dateFrom,
-            dateTo: filters.dateTo,
-            favoritesOnly: filters.favoritesOnly,
-            feedFilterTypes: filters.feedFilterTypes,
-            scopedUserIds: filters.scopedUserIds,
-            searchDraft: filters.searchDraft,
-            todayDate: filters.todayDate
+            activeFilters,
+            dateDraftFrom,
+            dateDraftRange,
+            dateDraftTo,
+            dateFilterOpen,
+            dateFrom,
+            dateTo,
+            favoritesOnly,
+            feedFilterTypes,
+            scopedUserIds,
+            searchDraft,
+            todayDate
         }),
         [
-            filters.activeFilters,
-            filters.dateDraftFrom,
-            filters.dateDraftRange,
-            filters.dateDraftTo,
-            filters.dateFilterOpen,
-            filters.dateFrom,
-            filters.dateTo,
-            filters.favoritesOnly,
-            filters.feedFilterTypes,
-            filters.scopedUserIds,
-            filters.searchDraft,
-            filters.todayDate
+            activeFilters,
+            dateDraftFrom,
+            dateDraftRange,
+            dateDraftTo,
+            dateFilterOpen,
+            dateFrom,
+            dateTo,
+            favoritesOnly,
+            feedFilterTypes,
+            scopedUserIds,
+            searchDraft,
+            todayDate
         ]
     );
     const filterCommands = useMemo(
         () => ({
-            onApplyDateFilter: filters.applyDateFilter,
-            onClearDateFilter: filters.clearDateFilter,
-            onClearFeedFilters: () => filters.setFeedFilters([]),
-            onClearSearch: filters.clearSearch,
-            onCommitSearch: () => filters.commitSearch(),
-            onDateFilterOpenChange: filters.setDateFilterOpen,
-            onDateRangeSelect: filters.onDateRangeSelect,
-            onScopeChange: filters.setUserScope,
-            onSearchDraftChange: filters.setSearchDraft,
+            onApplyDateFilter: applyDateFilter,
+            onClearDateFilter: clearDateFilter,
+            onClearFeedFilters: () => setFeedFilters([]),
+            onClearSearch: clearSearch,
+            onCommitSearch: () => commitSearch(),
+            onDateFilterOpenChange: setDateFilterOpen,
+            onDateRangeSelect,
+            onScopeChange: (userIds: readonly string[]) => {
+                setUserScope(userIds);
+                setRouteScopedUserIds(userIds);
+            },
+            onSearchDraftChange: setSearchDraft,
             onToggleFavoritesOnly: () =>
-                filters.setFavoritesOnly((current) => !current),
-            onToggleFeedFilter: filters.toggleFeedFilter
+                setFavoritesOnly((current) => !current),
+            onToggleFeedFilter: toggleFeedFilter
         }),
         [
-            filters.applyDateFilter,
-            filters.clearDateFilter,
-            filters.clearSearch,
-            filters.commitSearch,
-            filters.onDateRangeSelect,
-            filters.setDateFilterOpen,
-            filters.setFavoritesOnly,
-            filters.setFeedFilters,
-            filters.setSearchDraft,
-            filters.setUserScope,
-            filters.toggleFeedFilter
+            applyDateFilter,
+            clearDateFilter,
+            clearSearch,
+            commitSearch,
+            onDateRangeSelect,
+            setDateFilterOpen,
+            setFavoritesOnly,
+            setFeedFilters,
+            setRouteScopedUserIds,
+            setSearchDraft,
+            setUserScope,
+            toggleFeedFilter
         ]
     );
 
@@ -200,6 +274,7 @@ function FeedTableMode({
                 filterCommands={filterCommands}
                 modeToggle={modeToggle}
                 feedPersistenceDisabled={feedPersistenceDisabled}
+                isSearching={isSearching}
             />
             <PageBody>
                 <FeedTableShell
