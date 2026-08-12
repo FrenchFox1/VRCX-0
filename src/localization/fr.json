@@ -2150,7 +2150,7 @@
                     "information_types_description": "Choisissez ce que les applications complémentaires peuvent lire. La sélection disponible est actuellement fixe.",
                     "information_type_fixed": "Actuellement fixe",
                     "room_information": "Informations de l'instance",
-                    "room_information_description": "instance actuelle, liste des joueurs, étiquettes de langue et notes. Les champs individuels ne peuvent pas encore être modifiés.",
+                    "room_information_description": "instance actuelle, liste des utilisateurs, étiquettes de langue et notes. Les champs individuels ne peuvent pas encore être modifiés.",
                     "allow_lan_connections": "Permettre les connexions LAN",
                     "allow_lan_connections_description": "Permettre à d'autres appareils sur votre réseau local de lire ce flux. Désactivez cette option sur les réseaux non fiables.",
                     "port_label": "Port du serveur",
