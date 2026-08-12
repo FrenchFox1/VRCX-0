@@ -2140,6 +2140,40 @@
                         "running": "En cours d'exécution",
                         "stopping": "Arrêt en cours"
                     }
+                },
+                "companion_api": {
+                    "header": "Companion API",
+                    "description": "Partages les informations sélectionnées de VRCX-0 avec des applications complémentaires de confiance. Le serveur ne fonctionne que lorsque VRChat est en cours d'exécution.",
+                    "enable": "Activer l'API Compagnon",
+                    "enable_description": "Démarre un flux WebSocket protégé par token lorsque VRChat est en cours d'exécution.",
+                    "information_types": "Informations partagées",
+                    "information_types_description": "Choisissez ce que les applications complémentaires peuvent lire. La sélection disponible est actuellement fixe.",
+                    "information_type_fixed": "Actuellement fixe",
+                    "room_information": "Informations de l'instance",
+                    "room_information_description": "instance actuelle, liste des joueurs, étiquettes de langue et notes. Les champs individuels ne peuvent pas encore être modifiés.",
+                    "allow_lan_connections": "Permettre les connexions LAN",
+                    "allow_lan_connections_description": "Permettre à d'autres appareils sur votre réseau local de lire ce flux. Désactivez cette option sur les réseaux non fiables.",
+                    "port_label": "Port du serveur",
+                    "port_description": "Par défaut: 8799. Après avoir modifié le port, mettez à jour chaque client connecté.",
+                    "port_apply": "Appliquer",
+                    "port_invalid": "Le port doit être compris entre 1024 et 65535",
+                    "port_in_use": "Le port {port} est déjà utilisé par un autre programme. Choisissez un autre port.",
+                    "bind_failed": "L'API Compagnon n'a pas pu accéder au port {port}.",
+                    "start_failed": "l'API compagnon n'a pas pu démarrer: {reason}",
+                    "status_label": "Status",
+                    "port_active_connections": "Port {port} · {count} connexion(s) active(s)",
+                    "token": "Token d'accès",
+                    "token_description": "Le token accorde l'accès à votre instance actuelle, aux noms des utilisateurs, aux balises de langue et aux notes. Ne le partagez qu'avec des logiciels dont vous avez confiance.",
+                    "token_copied": "Token API Compagnon copié",
+                    "rotate_token": "Modifier le token",
+                    "token_rotated": "Token API Compagnon modifié",
+                    "status": {
+                        "loading": "Chargement",
+                        "disabled": "Arrêté",
+                        "waitingForGame": "En attente de VRChat",
+                        "running": "En cours",
+                        "error": "Erreur"
+                    }
                 }
             },
             "advanced_groups": {

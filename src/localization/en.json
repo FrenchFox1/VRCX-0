@@ -387,7 +387,7 @@
     },
     "overlay": {
         "footer": {
-            "players": "{count} players",
+            "players": "{count} users",
             "instance_duration": "Instance {duration}"
         },
         "generic_instance_location": "an instance",
@@ -497,7 +497,7 @@
         "feed": "Feed",
         "game_log": "Game Log",
         "instance_history": "Instance History",
-        "player_list": "Current Players",
+        "player_list": "Current Users",
         "search": "Search",
         "favorites": "Favorites",
         "favorite_friends": "Favorite Friends",
@@ -581,7 +581,7 @@
             "unknown_world": "Unknown World",
             "feed_online": "online",
             "feed_bio": "updated bio",
-            "instance_players": "players"
+            "instance_players": "users"
         },
         "confirmations": {
             "delete_title": "Delete Dashboard",
@@ -607,8 +607,8 @@
             "live_friend_location_board": "Live friend location board.",
             "game_log": "Game Log",
             "game_log_table_page": "Game-log table page.",
-            "current_players": "Current Players",
-            "current_instance_player_page": "Current instance player page.",
+            "current_players": "Current Users",
+            "current_instance_player_page": "Current instance user page.",
             "search": "Search",
             "search_worlds_and_groups": "Search worlds and groups.",
             "favorite_friends": "Favorite Friends",
@@ -973,8 +973,8 @@
         "game_log": {
             "filters": {
                 "Location": "Location",
-                "OnPlayerJoined": "Player joined",
-                "OnPlayerLeft": "Player left",
+                "OnPlayerJoined": "User joined",
+                "OnPlayerLeft": "User left",
                 "PortalSpawn": "Portal spawn",
                 "VideoPlay": "Video play",
                 "Event": "Event",
@@ -1239,7 +1239,7 @@
                 "item_s": "item(s)",
                 "sort_favorites": "Sort favorites",
                 "sort_by_date": "Sort by date",
-                "sort_by_players": "Sort by players",
+                "sort_by_players": "Sort by users",
                 "visibility": "Visibility",
                 "group": "Group",
                 "favorite_group_renamed": "Favorite group renamed",
@@ -1845,7 +1845,7 @@
                 "world_groups": "World favorite groups",
                 "world_groups_hint": "Leave empty to match any favorite group.",
                 "minimum_friends": "Minimum friends",
-                "minimum_players": "Minimum players",
+                "minimum_players": "Minimum users",
                 "room_types": "Instance types",
                 "room_types_hint": "Leave empty for any instance type. Rules that set a joinable status should target specific types.",
                 "no_custom_room_rules": "No custom instance rules configured.",
@@ -1853,7 +1853,7 @@
                 "preset_with_anyone": "With anyone",
                 "preset_with_any_friend": "With any friend",
                 "preset_friend_count_at_least": "Friend count at least",
-                "preset_player_count_at_least": "Player count at least",
+                "preset_player_count_at_least": "User count at least",
                 "preset_with_selected_groups": "With selected groups",
                 "preset_with_selected_friend": "With selected friend",
                 "preset_in_selected_room_types": "In selected instance types",
@@ -1900,7 +1900,7 @@
                 "preview": "Preview",
                 "refresh_this_tab_to_load_your_vrchat_prints": "Refresh this tab to load your VRChat prints",
                 "refresh_this_tab_to_load_inventory_items": "Refresh this tab to load inventory items",
-                "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Load a screenshot to inspect embedded world, player and file metadata"
+                "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Load a screenshot to inspect embedded world, user and file metadata"
             },
             "error": {
                 "dropped_screenshot_path_is_not_available": "Dropped screenshot path is not available"
@@ -2149,8 +2149,8 @@
                     "information_types": "Shared information",
                     "information_types_description": "Choose what companion apps can read. The available selection is currently fixed.",
                     "information_type_fixed": "Currently fixed",
-                    "room_information": "Room information",
-                    "room_information_description": "Current room, player roster, language tags, and notes. Individual fields cannot be changed yet.",
+                    "room_information": "Instance information",
+                    "room_information_description": "Current instance, user roster, language tags, and notes. Individual fields cannot be changed yet.",
                     "allow_lan_connections": "Allow LAN connections",
                     "allow_lan_connections_description": "Allow other devices on your local network to read this stream. Keep this off on untrusted networks.",
                     "port_label": "Server port",
@@ -2163,7 +2163,7 @@
                     "status_label": "Status",
                     "port_active_connections": "Port {port} · {count} active connections",
                     "token": "Access token",
-                    "token_description": "The token grants access to your current room, player names, language tags, and notes. Share it only with software you trust.",
+                    "token_description": "The token grants access to your current instance, user names, language tags, and notes. Share it only with software you trust.",
                     "token_copied": "Companion API token copied",
                     "rotate_token": "Rotate token",
                     "token_rotated": "Companion API token rotated",
@@ -2491,7 +2491,7 @@
                     "header": "Discord Presence",
                     "enable": "Enable",
                     "enable_tooltip": "Disable VRChat's Rich Presence to avoid conflicts.",
-                    "instance_type_player_count": "Instance Type & Player Count",
+                    "instance_type_player_count": "Instance Type & User Count",
                     "join_button": "Join Button",
                     "join_button_description": "Only shown in public instances.",
                     "show_details_in_private": "Show Details in Private Instances",
@@ -2539,7 +2539,7 @@
                         "show": "Show tools",
                         "hide": "Hide tools",
                         "gamelog": "Save GameLog history",
-                        "gamelog_description": "When off, new history is not saved. Live features like Player List and Now Playing still work.",
+                        "gamelog_description": "When off, new history is not saved. Live features like User List and Now Playing still work.",
                         "feed_history": "Save Feed history",
                         "feed_history_description": "When off, Feed starts empty each session. Realtime features like Friends Sidebar still work.",
                         "tools": "Diagnostics",
@@ -2812,7 +2812,7 @@
                 "game_log_unavailable": "Game log unavailable",
                 "game_log_widget_failed": "Game log widget failed",
                 "instance_widget_failed": "Instance widget failed",
-                "current_players_are_not_available_yet": "Current players are not available yet"
+                "current_players_are_not_available_yet": "Current users are not available yet"
             },
             "empty": {
                 "no_feed_rows": "No feed rows",
@@ -2828,7 +2828,7 @@
                 "back_to_feed": "Back to Feed",
                 "add_a_row_to_start_building_this_dashboard": "Add a row to start building this dashboard",
                 "add_row": "Add Row:",
-                "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "Start VRChat to see current instance players on this dashboard"
+                "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "Start VRChat to see current instance users on this dashboard"
             },
             "description": {
                 "matches_the_stored_feed_widget_config": "Uses the saved Feed widget settings",
@@ -2861,15 +2861,15 @@
                 "created": "Created"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "Couldn't find this player's profile",
+                "no_user_id_was_found_for_this_player_row": "Couldn't find this user's profile",
                 "currently_traveling_between_instances": "Currently traveling between instances",
                 "no_current_instance_detected": "No current instance detected",
-                "no_players_reconstructed_for_this_instance_yet": "No current players found yet",
-                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Enable game log in Settings to see current players.",
-                "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Start VRChat to see current players. VRCX-0 will populate this list from game-log events.",
-                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Stay in the instance until VRCX-0 detects player activity. This list will update automatically.",
-                "current_players_follow_live_instance_locations": "Current players will appear after VRCX-0 detects your next location.",
-                "local_join_leave_history_has_no_current_players": "The local join/leave history does not have any current players for the active location yet."
+                "no_players_reconstructed_for_this_instance_yet": "No current users found yet",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Enable game log in Settings to see current users.",
+                "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Start VRChat to see current users. VRCX-0 will populate this list from game-log events.",
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Stay in the instance until VRCX-0 detects user activity. This list will update automatically.",
+                "current_players_follow_live_instance_locations": "Current users will appear after VRCX-0 detects your next location.",
+                "local_join_leave_history_has_no_current_players": "The local join/leave history does not have any current users for the active location yet."
             },
             "label": {
                 "instance_master": "Instance Master",
@@ -2884,15 +2884,15 @@
                 "friends": "Friends",
                 "favorites": "Favorites",
                 "restricted": "Restricted",
-                "search_placeholder": "Search players, notes, or user IDs",
+                "search_placeholder": "Search users, notes, or user IDs",
                 "rebuilding_the_current_instance_roster_from_game_log_history": "Rebuilding the current instance roster from game-log history"
             },
             "error": {
                 "blocked": "Blocked",
-                "current_players_failed_to_load": "Current players failed to load"
+                "current_players_failed_to_load": "Current users failed to load"
             },
             "toast": {
-                "failed_to_look_up_this_player": "Failed to look up this player"
+                "failed_to_look_up_this_player": "Failed to look up this user"
             }
         },
         "auth": {
@@ -3741,7 +3741,7 @@
                 "copy_vrcx_url": "Copy Share Link",
                 "youtube_preview": "Youtube Preview",
                 "author_tags": "Author Tags",
-                "players": "Players",
+                "players": "Users",
                 "favorites": "Favorites",
                 "visits": "Visits",
                 "capacity": "Capacity",
@@ -4535,21 +4535,21 @@
             "search_placeholder": "Search",
             "search_type_placeholder": "Search Type",
             "search_types": {
-                "player_name": "Player Name",
-                "player_id": "Player ID",
+                "player_name": "User Name",
+                "player_id": "User ID",
                 "world_name": "World Name",
                 "world_id": "World ID"
             },
             "no_results": "No results found",
             "invalid_file": "Invalid file selected. Please select a valid VRChat screenshot",
             "section_location": "Location",
-            "section_players": "Players",
+            "section_players": "Users",
             "section_file_info": "File Info",
-            "unknown_player": "Unknown player",
+            "unknown_player": "Unknown user",
             "section_note": "Note",
             "col_date": "Date",
             "col_world": "World",
-            "col_players": "Players",
+            "col_players": "Users",
             "col_resolution": "Resolution",
             "col_match": "Match",
             "col_author": "Author",
@@ -4728,9 +4728,9 @@
                 "boop": "Boop",
                 "group_queueReady": "Instance Queue Ready",
                 "instance_closed": "Instance Closed",
-                "OnPlayerJoining": "Player Joining",
-                "OnPlayerJoined": "Player Joined",
-                "OnPlayerLeft": "Player Left",
+                "OnPlayerJoining": "User Joining",
+                "OnPlayerJoined": "User Joined",
+                "OnPlayerLeft": "User Left",
                 "AvatarChange": "Avatar Change",
                 "Online": "Online",
                 "Offline": "Offline",
@@ -4753,10 +4753,10 @@
                 "Unblocked": "Unblocked",
                 "Muted": "Muted",
                 "Unmuted": "Unmuted",
-                "BlockedOnPlayerJoined": "Blocked Player Joined",
-                "BlockedOnPlayerLeft": "Blocked Player Left",
-                "MutedOnPlayerJoined": "Muted Player Joined",
-                "MutedOnPlayerLeft": "Muted Player Left",
+                "BlockedOnPlayerJoined": "Blocked User Joined",
+                "BlockedOnPlayerLeft": "Blocked User Left",
+                "MutedOnPlayerJoined": "Muted User Joined",
+                "MutedOnPlayerLeft": "Muted User Left",
                 "VideoPlay": "Video Play"
             },
             "favorite_groups": {
@@ -4774,13 +4774,13 @@
             "header": "Instance History",
             "info": "Instance Details",
             "search_placeholder": "Search instance history",
-            "table_view": "Players",
+            "table_view": "Users",
             "chart_view": "Timeline",
             "empty": {
-                "no_player_detail_rows": "No player detail rows",
+                "no_player_detail_rows": "No user detail rows",
                 "there_are_no_timeline_rows_for_this_instance": "There are no timeline rows for this instance",
                 "no_instance_selected": "No instance selected",
-                "no_player_detail_rows_for_this_instance": "No player detail rows for this instance",
+                "no_player_detail_rows_for_this_instance": "No user detail rows for this instance",
                 "no_instance_records": "No instance records"
             },
             "description": {
@@ -4800,7 +4800,7 @@
             "label": {
                 "showing_recent_only": "Showing the {count} most recent visits — open full history",
                 "search_limited_to_recent": "Searching the {count} most recent visits — search full history",
-                "players_count": "{count} players",
+                "players_count": "{count} users",
                 "recorded_instance_visits": "recorded instance visits",
                 "recorded_instance_visits_count": "{count} recorded instance visits.",
                 "rows": "Rows",
@@ -5102,7 +5102,7 @@
         "close_instance": "Continue? Close Instance, nobody will be able to join",
         "logout": "Log out?",
         "delete_log": "Delete log?",
-        "disable_gamelog": "Stop saving new GameLog history? Player List, Now Playing, screenshot metadata, Instance Media, and other live log features will remain available.",
+        "disable_gamelog": "Stop saving new GameLog history? User List, Now Playing, screenshot metadata, Instance Media, and other live log features will remain available.",
         "disable_feed_persistence": "Stop saving Feed history? Feed will start from an empty live view, and history-based analysis will have a permanent gap. Friends Sidebar and other realtime features will remain available.",
         "delete_vrc_registry": "Delete existing VRChat registry settings?",
         "clear_cache": "Clear all VRChat cache?"
@@ -5542,8 +5542,8 @@
         "avatar": "avatar",
         "copy_value": "Copy {value}",
         "open_link": "Open link: {link}",
-        "open_player": "Open player profile: {player}",
-        "player": "player",
+        "open_player": "Open user profile: {player}",
+        "player": "user",
         "remove_value": "Remove {value}",
         "add_table_page_size": "Add table page size"
     },
@@ -5716,7 +5716,7 @@
             "modal": {
                 "launch_vrchat": "Launch VRChat",
                 "launch": "Launch",
-                "vrchat_is_already_running_continue_launching_this_instance": "VRChat is already running. VRCX-0 will send another launch request to the running client. If multiple clients are open, GameLog, current location, player list, and some background services may be unreliable. Continue?"
+                "vrchat_is_already_running_continue_launching_this_instance": "VRChat is already running. VRCX-0 will send another launch request to the running client. If multiple clients are open, GameLog, current location, user list, and some background services may be unreliable. Continue?"
             },
             "dynamic": {
                 "value_copied": "{value} copied"
@@ -5878,7 +5878,7 @@
             "table_heavy_game_event_log": "Table-heavy game event log.",
             "instance_history": "Instance History",
             "local_instance_history_for_a_selected_user": "Instance history for a selected user.",
-            "current_players": "Current Players",
+            "current_players": "Current Users",
             "search": "Search",
             "world_and_group_search_route": "World and group search route.",
             "dashboard": "Dashboard",
@@ -5915,7 +5915,7 @@
             "vrchat_log_viewer_for_local_output_logs": "Local VRChat output log viewer.",
             "settings": "Settings",
             "settings_and_diagnostics": "Settings and diagnostics.",
-            "current_instance_player_roster_rebuilt_from_local_activity_data": "Current-instance player roster rebuilt from local activity data.",
+            "current_instance_player_roster_rebuilt_from_local_activity_data": "Current-instance user roster rebuilt from local activity data.",
             "themes": "Themes",
             "themes_description": "Theme source and custom CSS management."
         }
