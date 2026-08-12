@@ -108,7 +108,8 @@ matters.
 \"today\", \"yesterday\", \"this week\", \"last week\", \"this month\", \"last month\", \
 \"7d\", \"2w\", \"3mo\", \"24h\", \"1y\". Use {from, to} in RFC3339 only for a custom \
 range. Windows resolve in UTC; weeks start Monday. Omit `timeWindow` only when the \
-user means all history (\"ever\", \"so far\").
+user means all history (\"ever\", \"so far\"), and follow the selected tool's \
+all-history guard.
 - If a tool returns `needsDisambiguation`, ask the user to choose. Never invent a \
 usr_ id.
 
@@ -335,8 +336,21 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
     ctx.emitter.answer(&final_answer);
 
-    ctx.sessions
-        .push_message(&ctx.session_id, Role::Assistant, final_answer.clone());
+    match ctx
+        .sessions
+        .push_message(&ctx.session_id, Role::Assistant, final_answer.clone())
+    {
+        Ok(true) => {}
+        Ok(false) => return,
+        Err(error) => {
+            tracing::warn!(%error, "assistant: failed to load session history before reply write");
+            return finish_error(
+                &ctx,
+                "persistence",
+                "Assistant history could not be loaded. Try again.",
+            );
+        }
+    }
 
     let surfaced = surfaced_entities(dedup_entities(collected), &final_answer);
     ctx.sessions

@@ -12,6 +12,7 @@ import {
     parseOverlayActivityFilters
 } from '@/shared/constants/overlayActivityFilters';
 import {
+    normalizeAvatarAutoCleanupPreference,
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT,
     SEARCH_LIMIT_MAX,
@@ -374,6 +375,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     autoSweepVRChatCache: false,
     gameLogDisabled: false,
     feedPersistenceDisabled: false,
+    avatarFeedPersistenceDisabled: false,
     avatarAutoCleanup: 'Off',
     anonymousUsageTelemetry: true,
     udonExceptionLogging: false,
@@ -584,7 +586,12 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         autoSweepVRChatCache: normalizeBool(next.autoSweepVRChatCache),
         gameLogDisabled: normalizeBool(next.gameLogDisabled),
         feedPersistenceDisabled: normalizeBool(next.feedPersistenceDisabled),
-        avatarAutoCleanup: String(next.avatarAutoCleanup || 'Off'),
+        avatarFeedPersistenceDisabled: normalizeBool(
+            next.avatarFeedPersistenceDisabled
+        ),
+        avatarAutoCleanup: normalizeAvatarAutoCleanupPreference(
+            next.avatarAutoCleanup
+        ),
         anonymousUsageTelemetry: normalizeBool(next.anonymousUsageTelemetry),
         udonExceptionLogging: normalizeBool(next.udonExceptionLogging),
         logResourceLoad: normalizeBool(next.logResourceLoad),

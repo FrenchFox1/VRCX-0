@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
+import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
@@ -149,6 +150,7 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
         onLogResourceLoadChange,
         onGameLogDisabledChange,
         onFeedPersistenceDisabledChange,
+        onAvatarFeedPersistenceDisabledChange,
         onAvatarAutoCleanupChange,
         onOpenPurgeDialog,
         onMigrateLegacyVrcxData,
@@ -400,7 +402,9 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                                       )
                         }))}
                         onValueChange={(value) =>
-                            onAvatarAutoCleanupChange(value ?? '')
+                            onAvatarAutoCleanupChange(
+                                normalizeAvatarAutoCleanupPreference(value)
+                            )
                         }
                     >
                         <SelectTrigger
@@ -456,6 +460,23 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                         checked={!prefs.feedPersistenceDisabled}
                         onCheckedChange={(checked) =>
                             onFeedPersistenceDisabledChange(!checked)
+                        }
+                    />
+                </Field>
+                <Field
+                    label={t(
+                        'view.settings.advanced.advanced_ui.troubleshooting.avatar_feed_history'
+                    )}
+                    description={t(
+                        'view.settings.advanced.advanced_ui.troubleshooting.avatar_feed_history_description'
+                    )}
+                    disabled={prefs.feedPersistenceDisabled}
+                >
+                    <Switch
+                        checked={!prefs.avatarFeedPersistenceDisabled}
+                        disabled={prefs.feedPersistenceDisabled}
+                        onCheckedChange={(checked) =>
+                            onAvatarFeedPersistenceDisabledChange(!checked)
                         }
                     />
                 </Field>

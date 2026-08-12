@@ -19,7 +19,6 @@ use vrcx_0_application_activity::{
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
 use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
-#[cfg(feature = "friends-panel")]
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::game_log_parser::GameLogEventKind;
 use vrcx_0_host_desktop::vr_overlay::{
@@ -27,6 +26,7 @@ use vrcx_0_host_desktop::vr_overlay::{
 };
 #[cfg(feature = "friends-panel")]
 use vrcx_0_host_desktop::vr_overlay::{OverlayInputEvent, OverlayInputKind};
+#[cfg(feature = "friends-panel")]
 use vrcx_0_runtime_host::notification::UserImageCache;
 #[cfg(feature = "friends-panel")]
 use vrcx_0_vr_overlay::{
@@ -81,6 +81,8 @@ trait VrOverlayFrameProducer: Send {
 
 type VrOverlayFrameProducerFactory = Box<dyn Fn() -> Box<dyn VrOverlayFrameProducer> + Send + Sync>;
 type FriendsPanelSnapshotProvider = Arc<dyn Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync>;
+type HmdFriendMembershipProvider = Arc<dyn Fn(&str) -> bool + Send + Sync>;
+type HmdFriendContextProvider = Arc<dyn Fn(&str) -> Option<(FriendRecord, String)> + Send + Sync>;
 
 thread_local! {
     static SLINT_WRIST_RENDERER: RefCell<Option<SlintWristRenderer>> = const { RefCell::new(None) };
@@ -108,6 +110,8 @@ const HMD_TOAST_ANIMATION_REFRESH_INTERVAL: Duration = Duration::from_millis(16)
 const MAX_FRIENDS_PANEL_INPUT_EVENTS: usize = 512;
 #[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_AVATAR_FETCH_BATCH: usize = 8;
+#[cfg(feature = "friends-panel")]
+const FRIENDS_PANEL_AVATAR_CACHE_CAPACITY: usize = 128;
 #[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_SCROLL_ROW_PIXELS: f32 = 106.0;
 #[cfg(feature = "friends-panel")]
@@ -401,8 +405,64 @@ impl FriendsPanelAvatarCacheEntry {
 }
 
 #[cfg(feature = "friends-panel")]
+#[derive(Default)]
+struct FriendsPanelAvatarCache {
+    entries: HashMap<String, FriendsPanelAvatarCacheEntry>,
+    lru: VecDeque<String>,
+}
+
+#[cfg(feature = "friends-panel")]
+impl FriendsPanelAvatarCache {
+    fn insert(&mut self, user_id: String, entry: FriendsPanelAvatarCacheEntry) {
+        self.lru.retain(|cached_user_id| cached_user_id != &user_id);
+        self.lru.push_back(user_id.clone());
+        self.entries.insert(user_id, entry);
+        while self.entries.len() > FRIENDS_PANEL_AVATAR_CACHE_CAPACITY {
+            let Some(oldest_user_id) = self.lru.pop_front() else {
+                break;
+            };
+            self.entries.remove(&oldest_user_id);
+        }
+    }
+
+    fn contains_matching(
+        &mut self,
+        user_id: &str,
+        initial_image_url: &str,
+        allow_user_icon: bool,
+    ) -> bool {
+        let matches = self
+            .entries
+            .get(user_id)
+            .is_some_and(|entry| entry.matches(initial_image_url, allow_user_icon));
+        if matches {
+            self.lru.retain(|cached_user_id| cached_user_id != user_id);
+            self.lru.push_back(user_id.to_string());
+        }
+        matches
+    }
+
+    fn bitmaps(&self) -> HashMap<String, AvatarBitmap> {
+        self.entries
+            .iter()
+            .map(|(user_id, entry)| (user_id.clone(), entry.bitmap.clone()))
+            .collect()
+    }
+
+    fn clear(&mut self) {
+        self.entries.clear();
+        self.lru.clear();
+    }
+
+    #[cfg(test)]
+    fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[cfg(feature = "friends-panel")]
 fn insert_friends_panel_avatar_if_session_current(
-    avatars: &Arc<Mutex<HashMap<String, FriendsPanelAvatarCacheEntry>>>,
+    avatars: &Arc<Mutex<FriendsPanelAvatarCache>>,
     session_generation: &AtomicU64,
     expected_generation: u64,
     user_id: &str,
@@ -456,10 +516,12 @@ pub struct VrOverlayRuntime {
     pub(crate) services: Option<Arc<dyn VrOverlayRuntimeServices>>,
     config: Mutex<VrOverlayRuntimeConfig>,
     friends_panel_snapshot_provider: Mutex<Option<FriendsPanelSnapshotProvider>>,
+    hmd_friend_membership_provider: Mutex<Option<HmdFriendMembershipProvider>>,
+    hmd_friend_context_provider: Mutex<Option<HmdFriendContextProvider>>,
     #[cfg(feature = "friends-panel")]
     friends_panel_favorite_groups: Mutex<FavoriteFriendGroupsSnapshot>,
     #[cfg(feature = "friends-panel")]
-    friends_panel_avatars: Arc<Mutex<HashMap<String, FriendsPanelAvatarCacheEntry>>>,
+    friends_panel_avatars: Arc<Mutex<FriendsPanelAvatarCache>>,
     #[cfg(feature = "friends-panel")]
     friends_panel_avatar_session_generation: Arc<AtomicU64>,
     #[cfg(feature = "friends-panel")]
@@ -480,6 +542,7 @@ pub struct VrOverlayRuntime {
     #[cfg(feature = "friends-panel")]
     pub(crate) interactive_panel: Arc<Mutex<InteractivePanelRuntimeState>>,
     pub(crate) avatar_bitmap_cache: Arc<AvatarBitmapCache>,
+    #[cfg(feature = "friends-panel")]
     pub(crate) user_image_cache: Arc<UserImageCache>,
     pub(crate) manager: Mutex<VrOverlayManager<HostVrOverlayService>>,
     running_mirror: AtomicBool,
@@ -600,10 +663,12 @@ impl VrOverlayRuntime {
             refresh_thread_id: Mutex::new(None),
             config: Mutex::new(config),
             friends_panel_snapshot_provider: Mutex::new(None),
+            hmd_friend_membership_provider: Mutex::new(None),
+            hmd_friend_context_provider: Mutex::new(None),
             #[cfg(feature = "friends-panel")]
             friends_panel_favorite_groups: Mutex::new(FavoriteFriendGroupsSnapshot::default()),
             #[cfg(feature = "friends-panel")]
-            friends_panel_avatars: Arc::new(Mutex::new(HashMap::new())),
+            friends_panel_avatars: Arc::new(Mutex::new(FriendsPanelAvatarCache::default())),
             #[cfg(feature = "friends-panel")]
             friends_panel_avatar_session_generation: Arc::new(AtomicU64::new(0)),
             #[cfg(feature = "friends-panel")]
@@ -624,6 +689,7 @@ impl VrOverlayRuntime {
             #[cfg(feature = "friends-panel")]
             interactive_panel: Arc::new(Mutex::new(InteractivePanelRuntimeState::default())),
             avatar_bitmap_cache: Arc::new(AvatarBitmapCache::new()),
+            #[cfg(feature = "friends-panel")]
             user_image_cache: Arc::new(UserImageCache::new()),
             frame_producer_factory,
             frame_producer: Mutex::new(None),
@@ -796,6 +862,50 @@ impl VrOverlayRuntime {
         }
     }
 
+    pub fn set_hmd_friend_membership_provider<F>(&self, provider: F)
+    where
+        F: Fn(&str) -> bool + Send + Sync + 'static,
+    {
+        if let Ok(mut current) = self.hmd_friend_membership_provider.lock() {
+            *current = Some(Arc::new(provider));
+        }
+    }
+
+    pub fn set_hmd_friend_context_provider<F>(&self, provider: F)
+    where
+        F: Fn(&str) -> Option<(FriendRecord, String)> + Send + Sync + 'static,
+    {
+        if let Ok(mut current) = self.hmd_friend_context_provider.lock() {
+            *current = Some(Arc::new(provider));
+        }
+    }
+
+    pub(crate) fn is_current_hmd_friend(&self, user_id: &str) -> bool {
+        let user_id = user_id.trim();
+        if !user_id.starts_with("usr_") {
+            return false;
+        }
+        let provider = self
+            .hmd_friend_membership_provider
+            .lock()
+            .ok()
+            .and_then(|provider| provider.clone());
+        provider.is_some_and(|provider| provider(user_id))
+    }
+
+    pub(crate) fn current_hmd_friend_context(
+        &self,
+        user_id: &str,
+    ) -> Option<(FriendRecord, String)> {
+        let provider = self
+            .hmd_friend_context_provider
+            .lock()
+            .ok()
+            .and_then(|provider| provider.clone());
+        provider.and_then(|provider| provider(user_id))
+    }
+
+    #[cfg(feature = "friends-panel")]
     pub(crate) fn current_friends_panel_snapshot(&self) -> Option<RealtimeFriendSnapshot> {
         let provider = self
             .friends_panel_snapshot_provider
@@ -842,12 +952,7 @@ impl VrOverlayRuntime {
         let avatars_by_user_id = self
             .friends_panel_avatars
             .lock()
-            .map(|avatars| {
-                avatars
-                    .iter()
-                    .map(|(user_id, entry)| (user_id.clone(), entry.bitmap.clone()))
-                    .collect()
-            })
+            .map(|avatars| avatars.bitmaps())
             .unwrap_or_default();
         build_friends_panel_model(FriendsPanelModelInput {
             selected_category_key,
@@ -1020,10 +1125,8 @@ impl VrOverlayRuntime {
         if self
             .friends_panel_avatars
             .lock()
-            .map(|avatars| {
-                avatars
-                    .get(user_id)
-                    .is_some_and(|entry| entry.matches(&initial_image_url, allow_user_icon))
+            .map(|mut avatars| {
+                avatars.contains_matching(user_id, &initial_image_url, allow_user_icon)
             })
             .unwrap_or(false)
         {

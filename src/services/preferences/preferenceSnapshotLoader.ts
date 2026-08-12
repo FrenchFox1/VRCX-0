@@ -8,6 +8,7 @@ import {
     parseHmdOverlayActivityFilterProfile,
     parseOverlayActivityFilterProfile
 } from '@/shared/constants/overlayActivityFilters';
+import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 import { normalizeTrustColors } from '@/shared/utils/trustColors';
@@ -154,6 +155,7 @@ export async function loadPreferenceSnapshot() {
         autoSweepVRChatCache,
         gameLogDisabled,
         feedPersistenceDisabled,
+        avatarFeedPersistenceDisabled,
         avatarAutoCleanup,
         anonymousUsageTelemetry,
         udonExceptionLogging,
@@ -290,6 +292,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('autoSweepVRChatCache', false),
         configRepository.getBool('gameLogDisabled', false),
         configRepository.getBool('feedPersistenceDisabled', false),
+        configRepository.getBool('avatarFeedPersistenceDisabled', false),
         configRepository.getString('avatarAutoCleanup', 'Off'),
         configRepository.getBool('anonymousUsageTelemetry', true),
         configRepository.getBool('udonExceptionLogging', false),
@@ -509,7 +512,9 @@ export async function loadPreferenceSnapshot() {
         autoSweepVRChatCache: Boolean(autoSweepVRChatCache),
         gameLogDisabled: Boolean(gameLogDisabled),
         feedPersistenceDisabled: Boolean(feedPersistenceDisabled),
-        avatarAutoCleanup: avatarAutoCleanup || 'Off',
+        avatarFeedPersistenceDisabled: Boolean(avatarFeedPersistenceDisabled),
+        avatarAutoCleanup:
+            normalizeAvatarAutoCleanupPreference(avatarAutoCleanup),
         anonymousUsageTelemetry: Boolean(anonymousUsageTelemetry),
         udonExceptionLogging: Boolean(udonExceptionLogging),
         logResourceLoad: Boolean(logResourceLoad),
