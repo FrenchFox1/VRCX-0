@@ -33,9 +33,10 @@ pub use game_client::{
 };
 pub use game_event_bus::{
     AddGameLogEventPayload, CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent,
-    GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, GameNoVrPayload, NowPlayingPayload,
-    RuntimeGameEventBusExt, RuntimeGameLogEventPayload, RuntimeNotificationLevel,
-    RuntimeNotificationPayload, RuntimeWorkerErrorPayload, ScreenshotProcessedPayload,
+    GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, GameLogSideEffectObserver,
+    GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload, RuntimeGameEventBusExt,
+    RuntimeGameLogEventPayload, RuntimeNotificationLevel, RuntimeNotificationPayload,
+    RuntimeWorkerErrorPayload, ScreenshotProcessedPayload,
 };
 pub use game_log::{
     duration_ms, game_log_sessions_query, instance_history_query, parse_event_time_ms, player_key,
@@ -64,10 +65,11 @@ pub use screenshots::{
     add_screenshot_metadata, can_decode_image, delete_all_screenshot_metadata,
     delete_text_metadata, ensure_screenshot_thumbnail, extra_screenshot_data,
     find_screenshot_search_results, find_screenshots, get_screenshot_metadata, has_vrcx_metadata,
-    is_path_inside_directory, is_png_file, is_vrchat_screenshot_file_path, last_screenshot,
-    list_screenshot_folder_images, list_world_screenshots, read_png_dimensions,
-    screenshot_folder_tree, screenshot_metadata_json, start_screenshot_library_scan,
-    write_vrcx_metadata, MetadataCacheDb, ScreenshotFolderTree, ScreenshotLibraryImage,
-    ScreenshotLibraryScanStatus, ScreenshotMetadata, ScreenshotSearchResult, ScreenshotSearchType,
+    is_path_inside_directory, is_png_file, is_screenshot_library_file_path,
+    is_vrchat_screenshot_file_path, last_screenshot, list_screenshot_folder_images,
+    list_world_screenshots, read_png_dimensions, screenshot_folder_tree, screenshot_metadata_json,
+    start_screenshot_library_scan, write_vrcx_metadata, MetadataCacheDb, ScreenshotFolderTree,
+    ScreenshotLibraryImage, ScreenshotLibraryScanStatus, ScreenshotMetadata,
+    ScreenshotSearchResult, ScreenshotSearchType,
 };
 pub use worker::{OverflowPolicy, RuntimeJobHandler, RuntimePushReport};
