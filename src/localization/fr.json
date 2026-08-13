@@ -755,6 +755,8 @@
         "search_input_placeholder": "Rechercher ou accéder à une page…",
         "search_pages": "Pages",
         "search_scope_pages": "Accéder à une page",
+        "search_pages_and_tools": "Pages et outils",
+        "search_scope_pages_and_tools": "Aller à une page ou ouvrir un outil",
         "search_no_results": "Aucun résultat trouvé",
         "search_categories": "Rechercher...",
         "search_recent": "Récemment ouverts",
@@ -1765,6 +1767,19 @@
         },
         "tools": {
             "header": "Outils",
+            "recent": "Récemment utilisés",
+            "status": {
+                "rules_enabled": "Règle activée : {count}",
+                "rules_enabled_of_total": "{enabled} sur {total} règles activées",
+                "rules_configured_off": "Règles configurées : {count} · Désactivées",
+                "auto_reply_enabled": "Réponse automatique activée",
+                "apps_enabled": "Applications configurées : {count} · Activées",
+                "apps_configured_off": "Applications configurées : {count} · Désactivées",
+                "last_backup": "Dernière sauvegarde : {date}",
+                "automatic_backup_enabled": "Sauvegarde automatique activée",
+                "automatic_backup_configured_off": "Sauvegarde automatique configurée · Désactivée",
+                "connections_configured": "Connexions IA configurées : {count}"
+            },
             "quick_access": {
                 "header": "Accès rapide",
                 "edit": "Modifier l'accès rapide",
@@ -1773,9 +1788,13 @@
                 "remove": "Retirer de l'accès rapide",
                 "already_added": "Déjà ajouté à l'accès rapide",
                 "empty": "Glissez des outils ici, ou ajoutez-les depuis un menu d'outils.",
-                "actions": "Actions de l'outil"
+                "actions": "Actions de l'outil",
+                "shortcut_menu": "Ajouter un raccourci…",
+                "tools_page_shortcut": "Accès rapide à la page des outils",
+                "sidebar_shortcut": "Navigation dans la barre latérale"
             },
             "category": {
+                "automation": "Automatisation",
                 "social": "Social",
                 "vrchat": "Configuration et lancement de VRChat",
                 "data": "Données et sauvegardes",
@@ -2215,7 +2234,7 @@
                     "enable": "Activer l'API d'intégration",
                     "enable_description": "Démarre un flux WebSocket protégé par jeton lorsque VRChat est en cours d'exécution.",
                     "information_types": "Informations partagées",
-                    "information_types_description": "Choisissez ce que les applications connectées peuvent lire. La sélection disponible est actuellement fixe.",
+                    "information_types_description": "Choisissez ce que les applications connectées peuvent lire.",
                     "information_type_fixed": "Actuellement fixe",
                     "room_information": "Informations de l'instance",
                     "room_information_description": "instance actuelle, liste des utilisateurs, étiquettes de langue et notes. Les champs individuels ne peuvent pas encore être modifiés.",
@@ -2231,7 +2250,7 @@
                     "status_label": "Status",
                     "port_active_connections": "Port {port} · {count} connexion(s) active(s)",
                     "token": "Jeton d'accès",
-                    "token_description": "Le jeton accorde l'accès à votre instance actuelle, aux noms des utilisateurs, aux balises de langue et aux notes. Ne le partagez qu'avec des logiciels dont vous avez confiance.",
+                    "token_description": "Le jeton accorde l'accès aux informations partagées.",
                     "token_copied": "Jeton API d'intégration copié",
                     "rotate_token": "Modifier le jeton",
                     "token_rotated": "Jeton API d'intégration modifié",
