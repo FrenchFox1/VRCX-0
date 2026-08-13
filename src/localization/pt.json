@@ -735,10 +735,12 @@
             "instance_duration": "Duração da instância",
             "last_game_event": "Último evento do jogo",
             "last_event_type": "Último tipo de evento",
-            "minimize_window": "Minimizar janela"
+            "minimize_window": "Minimizar",
+            "maximize_window": "Maximizar",
+            "restore_window": "Restaurar"
         },
         "action": {
-            "close_window": "Fechar janela"
+            "close_window": "Fechar"
         }
     },
     "shortcuts": {
@@ -753,6 +755,8 @@
         "search_input_placeholder": "Buscar ou ir para uma página…",
         "search_pages": "Páginas",
         "search_scope_pages": "Ir para uma página",
+        "search_pages_and_tools": "Páginas e ferramentas",
+        "search_scope_pages_and_tools": "Ir para uma página ou abrir uma ferramenta",
         "search_no_results": "Nenhum resultado encontrado",
         "search_categories": "Pesquisar por...",
         "search_recent": "Abertos recentemente",
@@ -1763,6 +1767,19 @@
         },
         "tools": {
             "header": "Ferramentas",
+            "recent": "Usadas recentemente",
+            "status": {
+                "rules_enabled": "Regras ativadas: {count}",
+                "rules_enabled_of_total": "{enabled} de {total} regras ativadas",
+                "rules_configured_off": "Regras configuradas: {count} · Desativadas",
+                "auto_reply_enabled": "Resposta automática ativada",
+                "apps_enabled": "Aplicativos configurados: {count} · Ativados",
+                "apps_configured_off": "Aplicativos configurados: {count} · Desativados",
+                "last_backup": "Último backup: {date}",
+                "automatic_backup_enabled": "Backup automático ativado",
+                "automatic_backup_configured_off": "Backup automático configurado · Desativado",
+                "connections_configured": "Conexões de IA configuradas: {count}"
+            },
             "quick_access": {
                 "header": "Acesso rápido",
                 "edit": "Editar acesso rápido",
@@ -1771,9 +1788,13 @@
                 "remove": "Remover do acesso rápido",
                 "already_added": "Já adicionado ao acesso rápido",
                 "empty": "Arraste ferramentas para cá ou adicione-as a partir de um menu de ferramenta.",
-                "actions": "Ações da ferramenta"
+                "actions": "Ações da ferramenta",
+                "shortcut_menu": "Adicionar atalho…",
+                "tools_page_shortcut": "Acesso rápido da página Ferramentas",
+                "sidebar_shortcut": "Navegação lateral"
             },
             "category": {
+                "automation": "Automação",
                 "social": "Social",
                 "vrchat": "Configuração e inicialização do VRChat",
                 "data": "Dados e backups",
@@ -1874,7 +1895,7 @@
                 "status_schedule": "Agenda de Status",
                 "status_schedule_description": "Agende alterações de status, opcionalmente apenas enquanto o VRChat estiver aberto.",
                 "room_status_rules": "Regras de Status por Instância e Mundo",
-                "room_status_rules_description": "Altera o status automaticamente com base na sala, mundo ou amigos.",
+                "room_status_rules_description": "Altera o estado automaticamente com base na instância, mundo ou amigos.",
                 "invite_request_auto_reply": "Resposta Automática a Solicitações de Convite",
                 "invite_request_auto_reply_description": "Convide automaticamente amigos da lista de permissões que pedirem para entrar enquanto o VRChat estiver em execução.",
                 "schedule_rules": "Regras de agenda",
@@ -1904,7 +1925,7 @@
                 "remove_schedule_rule": "Remover regra de agenda",
                 "remove_room_rule": "Remover regra de instância",
                 "no_schedule_rules": "Nenhuma regra de agenda configurada.",
-                "room_social_rules": "Regras personalizadas de sala e amigos",
+                "room_social_rules": "Regras personalizadas de instância e amigos",
                 "room_social_rules_description": "Regras adicionais podem alterar o status ou a mensagem de status por prioridade.",
                 "when": "Quando",
                 "friend_groups": "Grupos de amigos",
@@ -1912,9 +1933,9 @@
                 "world_groups_hint": "Deixe vazio para incluir qualquer grupo de favoritos.",
                 "minimum_friends": "Mínimo de amigos",
                 "minimum_players": "Mínimo de jogadores",
-                "room_types": "Tipos de sala",
-                "room_types_hint": "Deixe vazio para qualquer tipo de sala. Regras com status acessível devem limitar-se a tipos específicos.",
-                "no_custom_room_rules": "Nenhuma regra de sala personalizada configurada.",
+                "room_types": "Tipos de instância",
+                "room_types_hint": "Deixe vazio para qualquer tipo de instância. Regras com estado acessível devem limitar-se a tipos específicos.",
+                "no_custom_room_rules": "Nenhuma regra de instância personalizada configurada.",
                 "preset_alone": "Sozinho",
                 "preset_with_anyone": "Com qualquer pessoa",
                 "preset_with_any_friend": "Com qualquer amigo",
@@ -1922,21 +1943,21 @@
                 "preset_player_count_at_least": "Número de jogadores de no mínimo",
                 "preset_with_selected_groups": "Com grupos selecionados",
                 "preset_with_selected_friend": "Com amigo selecionado",
-                "preset_in_selected_room_types": "Em tipos de sala selecionados",
+                "preset_in_selected_room_types": "Em tipos de instância selecionados",
                 "preset_in_favorite_worlds": "Em um mundo favoritado",
                 "preset_custom": "Personalizado",
                 "auto_send_invites_for_request_invite": "Responder automaticamente a pedidos de entrada",
                 "auto_send_invites_description": "Apenas amigos favoritos na lista de permissões são tratados automaticamente.",
                 "allowlist_mode": "Modo de lista de permissões",
-                "allowlist_mode_description": "Respostas automáticas ainda exigem que sua sala atual permita convites.",
+                "allowlist_mode_description": "As respostas automáticas exigem que a instância atual permita convites.",
                 "all_favorite_friends": "Todos os amigos favoritos",
                 "selected_favorite_groups": "Grupos favoritos selecionados",
                 "selected_favorite_groups_label": "Grupos favoritos selecionados",
                 "automatic_replies_note": "Só funciona enquanto o VRChat estiver aberto e a sua localização permitir convites. Cada remetente tem um tempo de espera.",
                 "failed_to_load_schedule_rules": "Falha ao carregar as regras de agendamento.",
                 "failed_to_save_schedule_rules": "Falha ao salvar as regras de agendamento.",
-                "failed_to_load_room_rules": "Falha ao carregar as regras de sala.",
-                "failed_to_save_room_rules": "Falha ao salvar as regras de sala.",
+                "failed_to_load_room_rules": "Não foi possível carregar as regras de instância.",
+                "failed_to_save_room_rules": "Não foi possível guardar as regras de instância.",
                 "failed_to_load_invite_settings": "Falha ao carregar as configurações de resposta automática a pedidos de convite.",
                 "failed_to_save_invite_settings": "Falha ao salvar as configurações de resposta automática a pedidos de convite."
             },
@@ -2176,7 +2197,7 @@
             },
             "integrations": {
                 "mcp_server": {
-                    "header": "Servidor MCP do VRCX-0",
+                    "header": "Servidor MCP",
                     "description": "Permite que clientes MCP de confiança acedam aos dados do VRCX-0. Apenas localhost por predefinição.",
                     "enable": "Ativar servidor MCP",
                     "enable_description": "Inicia um servidor MCP protegido por token em localhost.",
@@ -2213,7 +2234,7 @@
                     "enable": "Ativar API de integração",
                     "enable_description": "Inicia um fluxo WebSocket protegido por token enquanto o VRChat estiver em execução.",
                     "information_types": "Informações compartilhadas",
-                    "information_types_description": "Escolha o que os aplicativos conectados podem ler. Por enquanto, a seleção disponível é fixa.",
+                    "information_types_description": "Escolha o que os aplicativos conectados podem ler.",
                     "information_type_fixed": "Fixo por enquanto",
                     "room_information": "Informações da sala",
                     "room_information_description": "Sala atual, lista de jogadores, idiomas e notas. Ainda não é possível alterar campos individuais.",
@@ -2229,7 +2250,7 @@
                     "status_label": "Status",
                     "port_active_connections": "Porta {port} · {count} conexões ativas",
                     "token": "Token de acesso",
-                    "token_description": "O token permite ler a instância atual, nomes de jogadores, idiomas e notas. Compartilhe apenas com programas confiáveis.",
+                    "token_description": "O token permite ler as informações ativadas acima. Compartilhe apenas com programas confiáveis.",
                     "token_copied": "Token da API de integração copiado",
                     "rotate_token": "Gerar novo token",
                     "token_rotated": "Token da API de integração renovado",

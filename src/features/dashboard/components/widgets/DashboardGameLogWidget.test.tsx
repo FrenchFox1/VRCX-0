@@ -140,10 +140,54 @@ describe('DashboardGameLogWidget', () => {
                 eventType.classList.contains('text-right')
             )
         ).toBe(true);
+        const affinitySlot = view.container.querySelector(
+            '[data-dashboard-widget-affinity-slot]'
+        );
+        expect(affinitySlot?.nextElementSibling?.textContent).toBe('One');
+    });
+
+    it('shows miscellaneous event content instead of repeating its type', async () => {
+        mocks.queryGameLog.mockResolvedValue([
+            {
+                type: 'Event',
+                created_at: '2026-08-12T01:02:00.000Z',
+                data: 'Audio device changed'
+            },
+            {
+                type: 'External',
+                created_at: '2026-08-12T01:01:00.000Z',
+                message: 'External message'
+            },
+            {
+                type: 'StringLoad',
+                created_at: '2026-08-12T01:00:00.000Z',
+                resourceUrl: 'https://example.com/message.txt'
+            },
+            {
+                type: 'ImageLoad',
+                created_at: '2026-08-12T00:59:00.000Z',
+                resourceUrl: 'https://example.com/image.png'
+            }
+        ]);
+
+        render(
+            <MemoryRouter>
+                <DashboardGameLogWidget />
+            </MemoryRouter>
+        );
+
+        await waitFor(() =>
+            expect(screen.getByText('Audio device changed')).toBeTruthy()
+        );
+
+        expect(screen.getByText('External message')).toBeTruthy();
         expect(
-            eventTypes[0]?.previousElementSibling?.hasAttribute(
-                'data-dashboard-widget-affinity-slot'
-            )
-        ).toBe(true);
+            screen.getByText('https://example.com/message.txt')
+        ).toBeTruthy();
+        expect(screen.getByText('https://example.com/image.png')).toBeTruthy();
+        expect(screen.queryByText('Event')).toBeNull();
+        expect(screen.queryByText('External')).toBeNull();
+        expect(screen.queryByText('StringLoad')).toBeNull();
+        expect(screen.queryByText('ImageLoad')).toBeNull();
     });
 });

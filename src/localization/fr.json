@@ -735,10 +735,12 @@
             "instance_duration": "Durée dans l'instance",
             "last_game_event": "Dernier évènement de jeu",
             "last_event_type": "Type du dernier évènement",
-            "minimize_window": "Réduire la fenêtre"
+            "minimize_window": "Réduire",
+            "maximize_window": "Agrandir",
+            "restore_window": "Restaurer"
         },
         "action": {
-            "close_window": "Fermer la fenêtre"
+            "close_window": "Fermer"
         }
     },
     "shortcuts": {
@@ -2176,7 +2178,7 @@
             },
             "integrations": {
                 "mcp_server": {
-                    "header": "Serveur MCP VRCX-0",
+                    "header": "Serveur MCP",
                     "description": "Laissez les clients MCP de confiance accéder à vos données VRCX-0. Hôte local par défaut seulement.",
                     "enable": "Activer le serveur MCP",
                     "enable_description": "Démarre un serveur MCP protégé par un jeton sur l'hôte local.",

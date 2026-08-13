@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { Location } from '@/components/Location';
+import { describeGameLogDetail } from '@/features/game-log/gameLogRows';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { GAME_LOG_FILTER_TYPES } from '@/repositories/gameLogRepository';
@@ -19,6 +20,7 @@ import { openUserDialog } from '@/services/dialogService';
 import { openExternalLink } from '@/services/entityMediaService';
 import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -116,6 +118,21 @@ function GameLogWidgetUserName({
     );
 }
 
+function GameLogWidgetAffinity({ row }: { row: DashboardGameLogRow }) {
+    return (
+        <span
+            className="mr-1 flex w-4 shrink-0 justify-center"
+            data-dashboard-widget-affinity-slot
+        >
+            <AffinityBadge
+                isFriend={Boolean(row.isFriend)}
+                isFavorite={Boolean(row.isFavorite)}
+                iconOnly
+            />
+        </span>
+    );
+}
+
 function GameLogWidgetLocation({ row }: { row: DashboardGameLogRow }) {
     if (!row?.location) {
         return (
@@ -157,6 +174,7 @@ function GameLogEntryContent({
             return (
                 <div className="flex min-w-0 items-center">
                     <LogInIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
+                    <GameLogWidgetAffinity row={row} />
                     <GameLogWidgetUserName row={row} />
                 </div>
             );
@@ -164,6 +182,7 @@ function GameLogEntryContent({
             return (
                 <div className="flex min-w-0 items-center">
                     <LogOutIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
+                    <GameLogWidgetAffinity row={row} />
                     <GameLogWidgetUserName
                         row={row}
                         className="text-muted-foreground/70"
@@ -174,6 +193,7 @@ function GameLogEntryContent({
             return (
                 <div className="flex min-w-0 items-center">
                     <WaypointsIcon className="text-muted-foreground mr-1 size-3.5 shrink-0" />
+                    <GameLogWidgetAffinity row={row} />
                     <GameLogWidgetUserName row={row} />
                     <span className="text-muted-foreground mx-1 shrink-0">
                         →
@@ -228,20 +248,25 @@ function GameLogEntryContent({
                 </Tooltip>
             );
         }
-        default:
+        default: {
+            const detail = describeGameLogDetail(row).primary || '';
+            const label = row?.displayName || detail;
+            const expandedDetail =
+                showDetail && row?.displayName && detail !== row.displayName
+                    ? detail
+                    : '';
+
             return (
                 <div className="flex min-w-0 items-center">
-                    <span className="truncate">{row?.displayName || ''}</span>
-                    <span className="text-muted-foreground ml-1 shrink-0">
-                        {row?.type || ''}
-                    </span>
-                    {showDetail && (row?.data || row?.message) ? (
+                    <span className="truncate">{label}</span>
+                    {expandedDetail ? (
                         <span className="text-muted-foreground ml-1 min-w-0 truncate">
-                            — {row.data || row.message}
+                            — {expandedDetail}
                         </span>
                     ) : null}
                 </div>
             );
+        }
     }
 }
 
@@ -260,6 +285,7 @@ export function DashboardGameLogWidget({
     const localFriendFavorites = useFavoriteStore(
         (state) => state.localFriendFavorites
     );
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
 
     const [rows, setRows] = useState<DashboardGameLogRow[]>([]);
     const [loadStatus, setLoadStatus] =
@@ -335,10 +361,13 @@ export function DashboardGameLogWidget({
                     ...row,
                     isFavorite: normalizedUserId
                         ? favoriteIdSet.has(normalizedUserId)
+                        : false,
+                    isFriend: normalizedUserId
+                        ? Boolean(friendsById[normalizedUserId])
                         : false
                 };
             }),
-        [favoriteIdSet, rows]
+        [favoriteIdSet, friendsById, rows]
     );
 
     const showDetail = Boolean(config.showDetail);
@@ -472,18 +501,6 @@ export function DashboardGameLogWidget({
                                     showDetail={showDetail}
                                 />
                             </div>
-                            <span
-                                className="flex w-4 shrink-0 justify-center"
-                                data-dashboard-widget-affinity-slot
-                            >
-                                <AffinityBadge
-                                    isFriend={Boolean(
-                                        row.isFriend || row.isFavorite
-                                    )}
-                                    isFavorite={row.isFavorite}
-                                    iconOnly
-                                />
-                            </span>
                             <span
                                 className="text-muted-foreground w-20 shrink-0 truncate text-right text-xs"
                                 data-dashboard-widget-event-type
