@@ -54,7 +54,7 @@
         "licenseFile": "DISCLAIMER.txt",
         "resources": {
             "../LICENSE": "LICENSE",
-            "../LICENSE-MIT": "LICENSE-MIT",
+            "../LICENSES/MIT.txt": "LICENSES/MIT.txt",
             "resources/licenses/THIRD_PARTY_NOTICES.txt": "licenses/THIRD_PARTY_NOTICES.txt"
         },
         "targets": ["nsis"],
