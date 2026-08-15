@@ -61,6 +61,7 @@ base64 = "0.23"
 bytes = "1"
 chacha20poly1305 = "0.11"
 chrono = "0.4"
+compact_str = { version = "0.10", features = ["serde"] }
 dirs = "6"
 image = "0.25"
 iana-time-zone = "0.1"
@@ -102,7 +103,7 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
-opt-level = 1
+opt-level = 2
 
 [profile.test]
 debug = false

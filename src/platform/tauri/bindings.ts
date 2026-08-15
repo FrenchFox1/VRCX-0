@@ -2864,6 +2864,7 @@ export type AppUpdateDownloadPhase =
 export type AppUpdateDownloadProgressPayload = {
     version: string;
     phase: AppUpdateDownloadPhase;
+    startedAt: string | null;
     downloadedBytes: number;
     totalBytes: number;
     percent: number;
@@ -2871,6 +2872,7 @@ export type AppUpdateDownloadProgressPayload = {
 export type AppUpdateDownloadStatusSnapshot = {
     phase: AppUpdateDownloadPhase;
     version: string | null;
+    startedAt: string | null;
     downloadedBytes: number;
     totalBytes: number;
     percent: number;
@@ -3943,6 +3945,10 @@ export type FriendRecord = Partial<{
     currentAvatarThumbnailImageUrl?: string;
     currentAvatarAuthorId?: string;
     currentAvatarName?: string;
+    date_joined?: string | null;
+    last_activity?: string | null;
+    last_login?: string | null;
+    last_mobile?: string | null;
 };
 export type FriendStateBucketAuthority = 'explicit' | 'preserve';
 export type GameClientEvent =
@@ -5072,7 +5078,6 @@ export type RealtimeWsStatusPayload = {
     statusCode?: number | null;
 };
 export type RegistryBackupMaintenanceResult = {
-    backups: RegistryBackupSnapshot[];
     autoBackupCreated: boolean;
     restorePromptNeeded: boolean;
     restorePromptBackupDate: string | null;

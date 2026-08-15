@@ -2,11 +2,13 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, MutexGuard};
 
 use chrono::Utc;
+use compact_str::CompactString;
 use serde_json::{json, Value};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline, StateBucket};
 use vrcx_0_core::realtime::{RealtimeSessionContext, RealtimeWsMessagePayload};
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
+use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
     FriendBaselineCausalWatermark, FriendBaselineResult, FriendStateBucketAuthority,
     RealtimeFriendApplyResult, RealtimeFriendOutput, RealtimeFriendRecordSnapshot,
@@ -31,7 +33,7 @@ pub(super) struct RecentGps {
 pub(super) struct PendingOffline {
     pub(super) token: u64,
     pub(super) patch: FriendRecordPatch,
-    pub(super) state_bucket: String,
+    pub(super) state_bucket: CompactString,
     pub(super) previous: OfflineFeedPrevious,
 }
 
@@ -507,7 +509,18 @@ impl RealtimeFriendsRuntime {
         &self,
         payload: &RealtimeWsMessagePayload,
     ) -> RealtimeFriendApplyResult {
-        self.apply_friend_message(payload)
+        let Some(event_kind) = RealtimeWsEventKind::from_payload(payload) else {
+            return RealtimeFriendApplyResult::Ignored;
+        };
+        self.apply_ws_event(&event_kind, payload)
+    }
+
+    pub(crate) fn apply_ws_event(
+        &self,
+        event_kind: &RealtimeWsEventKind,
+        payload: &RealtimeWsMessagePayload,
+    ) -> RealtimeFriendApplyResult {
+        self.apply_friend_message(event_kind, payload)
     }
 
     pub(crate) fn apply_scoped_synthetic_event(
@@ -543,12 +556,10 @@ impl RealtimeFriendsRuntime {
 
     fn apply_friend_message(
         &self,
+        ws_event_kind: &RealtimeWsEventKind,
         payload: &RealtimeWsMessagePayload,
     ) -> RealtimeFriendApplyResult {
-        let Some(message_type) = payload.json.get("type").and_then(Value::as_str) else {
-            return RealtimeFriendApplyResult::Ignored;
-        };
-        let Some(event_kind) = FriendEventKind::from_message_type(message_type) else {
+        let Some(event_kind) = FriendEventKind::from_ws_event_kind(ws_event_kind) else {
             return RealtimeFriendApplyResult::Ignored;
         };
         let content = payload.json.get("content").unwrap_or(&Value::Null);

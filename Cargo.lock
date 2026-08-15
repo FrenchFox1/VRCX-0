@@ -883,6 +883,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "castaway"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dec551ab6e7578819132c713a93c022a05d60159dc86e7a7050223577484c55a"
+dependencies = [
+ "rustversion",
+]
+
+[[package]]
 name = "cc"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1064,6 +1073,20 @@ checksum = "ba5a308b75df32fe02788e748662718f03fde005016435c444eea572398219fd"
 dependencies = [
  "bytes",
  "memchr",
+]
+
+[[package]]
+name = "compact_str"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79fcda08c33bb58b97008b2cdada6622500e949e060f5913361763121abd2416"
+dependencies = [
+ "castaway",
+ "cfg-if",
+ "itoa",
+ "serde",
+ "static_assertions",
+ "zmij",
 ]
 
 [[package]]
@@ -7295,6 +7318,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
 name = "strict-num"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9014,6 +9043,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "compact_str",
  "moka",
  "serde",
  "serde_json",
@@ -9060,6 +9090,7 @@ name = "vrcx-0-application-realtime"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "compact_str",
  "futures-util",
  "moka",
  "serde",
@@ -9099,6 +9130,7 @@ name = "vrcx-0-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "compact_str",
  "proptest",
  "quick-xml",
  "serde",
@@ -9225,6 +9257,7 @@ dependencies = [
  "axum",
  "base64 0.23.1",
  "chrono",
+ "compact_str",
  "constant_time_eq",
  "getrandom 0.4.3",
  "http",
@@ -9281,6 +9314,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "image",
+ "moka",
  "serde",
  "serde_json",
  "specta",
@@ -9306,6 +9340,7 @@ dependencies = [
  "base64 0.23.1",
  "chacha20poly1305",
  "chrono",
+ "compact_str",
  "dirs 6.0.0",
  "fs4",
  "rusqlite",
@@ -9327,6 +9362,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "iana-time-zone",
+ "moka",
  "serde",
  "serde_json",
  "specta",

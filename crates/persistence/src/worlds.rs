@@ -1,5 +1,7 @@
+use compact_str::CompactString;
 use serde::Serialize;
 use serde_json::Value;
+use vrcx_0_core::ReleaseStatus;
 
 use crate::cache_entities::{upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
@@ -14,14 +16,17 @@ pub struct WorldSummaryOutput {
     pub author_id: String,
     pub author_name: String,
     #[serde(rename = "created_at")]
-    pub created_at: String,
+    #[specta(type = String)]
+    pub created_at: CompactString,
     pub description: String,
     pub image_url: String,
     pub name: String,
-    pub release_status: String,
+    #[specta(type = String)]
+    pub release_status: ReleaseStatus,
     pub thumbnail_image_url: String,
     #[serde(rename = "updated_at")]
-    pub updated_at: String,
+    #[specta(type = String)]
+    pub updated_at: CompactString,
     pub version: i64,
 }
 
@@ -126,13 +131,13 @@ pub(crate) fn world_summary_from_row(row: &[Value]) -> WorldSummaryOutput {
         id: row_string(row, 0),
         author_id: row_string(row, 1),
         author_name: row_string(row, 2),
-        created_at: row_string(row, 3),
+        created_at: row_string(row, 3).into(),
         description: row_string(row, 4),
         image_url: row_string(row, 5),
         name: row_string(row, 6),
-        release_status: row_string(row, 7),
+        release_status: row_string(row, 7).into(),
         thumbnail_image_url: row_string(row, 8),
-        updated_at: row_string(row, 9),
+        updated_at: row_string(row, 9).into(),
         version: row_i64(row, 10),
     }
 }
@@ -229,6 +234,27 @@ mod tests {
 
         assert_eq!(rows.len(), 1);
         assert!(rows[0].name.starts_with("Cached"));
+    }
+
+    #[test]
+    fn world_summary_preserves_unknown_release_status_as_a_string() {
+        let (_dir, db) = test_db("unknown-release-status");
+        let mut entry = world_entry("wrld_a", "World A");
+        entry.release_status = json!("future");
+        world_cache_upsert(db.as_ref(), entry).unwrap();
+
+        let summary = world_cache_get(db.as_ref(), "wrld_a".into())
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(
+            summary.release_status,
+            ReleaseStatus::Unknown("future".into())
+        );
+        assert_eq!(
+            serde_json::to_value(summary).unwrap()["releaseStatus"],
+            json!("future")
+        );
     }
 
     #[test]

@@ -79,7 +79,7 @@ fn public_instance_parses_world_instance_region() {
     assert_eq!(parsed.instance_id, "12345~region(use)");
     assert_eq!(parsed.instance_name, "12345");
     assert_eq!(parsed.access_type, "public");
-    assert_eq!(parsed.region, "use");
+    assert_eq!(parsed.region, InstanceRegion::Use);
 }
 
 #[test]
@@ -105,17 +105,106 @@ fn access_types_are_derived_from_segments() {
 fn group_access_type_drives_name_and_normalization() {
     let plus = parse_location("wrld_a:1~group(grp_a)~groupAccessType(plus)");
     assert_eq!(plus.group_id.as_deref(), Some("grp_a"));
+    assert_eq!(plus.group_access_type, Some(GroupAccessType::Plus));
     assert_eq!(plus.access_type, "group");
     assert_eq!(plus.access_type_name, "groupPlus");
     assert_eq!(normalize_instance_type(&plus), "groupPlus");
 
     let public = parse_location("wrld_a:1~group(grp_a)~groupAccessType(public)");
+    assert_eq!(public.group_access_type, Some(GroupAccessType::Public));
     assert_eq!(public.access_type_name, "groupPublic");
     assert_eq!(normalize_instance_type(&public), "groupPublic");
 
     let members = parse_location("wrld_a:1~group(grp_a)~groupAccessType(members)");
+    assert_eq!(members.group_access_type, Some(GroupAccessType::Members));
     assert_eq!(members.access_type_name, "group");
     assert_eq!(normalize_instance_type(&members), "groupOnly");
+}
+
+#[test]
+fn unknown_group_access_type_round_trips_without_changing_behavior() {
+    let parsed = parse_location("wrld_a:1~group(grp_a)~groupAccessType(future)");
+
+    assert_eq!(
+        parsed.group_access_type,
+        Some(GroupAccessType::Unknown("future".into()))
+    );
+    assert_eq!(parsed.access_type_name, "group");
+    assert_eq!(normalize_instance_type(&parsed), "groupPublic");
+    assert_eq!(
+        serde_json::to_value(parsed.group_access_type).unwrap(),
+        json!("future")
+    );
+}
+
+#[test]
+fn serde_maps_known_group_access_types() {
+    for (value, expected) in [
+        ("members", GroupAccessType::Members),
+        ("plus", GroupAccessType::Plus),
+        ("public", GroupAccessType::Public),
+    ] {
+        let access_type: GroupAccessType = serde_json::from_value(json!(value)).unwrap();
+
+        assert_eq!(access_type, expected, "{value}");
+        assert_eq!(serde_json::to_value(access_type).unwrap(), json!(value));
+    }
+}
+
+#[test]
+fn serde_maps_known_instance_types_and_preserves_unknown_values() {
+    for (value, expected) in [
+        ("friends", InstanceType::Friends),
+        ("group", InstanceType::Group),
+        ("hidden", InstanceType::Hidden),
+        ("private", InstanceType::Private),
+        ("public", InstanceType::Public),
+    ] {
+        let instance_type: InstanceType = serde_json::from_value(json!(value)).unwrap();
+
+        assert_eq!(instance_type, expected, "{value}");
+        assert_eq!(serde_json::to_value(instance_type).unwrap(), json!(value));
+    }
+
+    let instance_type: InstanceType = serde_json::from_value(json!("future")).unwrap();
+    assert_eq!(instance_type, InstanceType::Unknown("future".into()));
+    assert_eq!(
+        serde_json::to_value(instance_type).unwrap(),
+        json!("future")
+    );
+}
+
+#[test]
+fn serde_maps_known_instance_regions_and_preserves_unknown_values() {
+    for (value, expected) in [
+        ("eu", InstanceRegion::Eu),
+        ("jp", InstanceRegion::Jp),
+        ("unknown", InstanceRegion::ApiUnknown),
+        ("us", InstanceRegion::Us),
+        ("use", InstanceRegion::Use),
+        ("usw", InstanceRegion::Usw),
+        ("usx", InstanceRegion::Usx),
+    ] {
+        let region: InstanceRegion = serde_json::from_value(json!(value)).unwrap();
+
+        assert_eq!(region, expected, "{value}");
+        assert_eq!(serde_json::to_value(region).unwrap(), json!(value));
+    }
+
+    let region: InstanceRegion = serde_json::from_value(json!("future")).unwrap();
+    assert_eq!(region, InstanceRegion::Unknown("future".into()));
+    assert_eq!(serde_json::to_value(region).unwrap(), json!("future"));
+}
+
+#[test]
+fn location_region_preserves_unknown_wire_values() {
+    let parsed = parse_location("wrld_a:1~region(future)");
+
+    assert_eq!(parsed.region, InstanceRegion::Unknown("future".into()));
+    assert_eq!(
+        parsed.to_frontend_value("wrld_a:1~region(future)")["region"],
+        json!("future")
+    );
 }
 
 #[test]

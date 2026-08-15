@@ -1,13 +1,16 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::sync::{Arc, Mutex, Weak};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
+use moka::policy::EvictionPolicy;
 use moka::sync::Cache;
 use serde_json::Value;
+use vrcx_0_core::ReleaseStatus;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::worlds::{
-    world_cache_get, world_cache_search, world_cache_upsert, WorldSummaryOutput,
+    world_cache_get, world_cache_get_many, world_cache_search, world_cache_upsert,
+    WorldSummaryOutput,
 };
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{
@@ -19,13 +22,26 @@ use crate::web_client::WebClient;
 use vrcx_0_core::location::is_meaningful_world_name;
 
 const WORLD_RESOLVE_FETCH_TIMEOUT_MS: u64 = 5_000;
-const WORLD_RESOLVE_FAILURE_TTL_MS: u64 = 60_000;
+const WORLD_RESOLVE_FAILURE_TTL: Duration = Duration::from_secs(60);
+const WORLD_RESOLVE_FAILURE_CAPACITY: u64 = 32;
 
 pub struct WorldCache {
-    working: Cache<String, Arc<WorldSummaryOutput>>,
+    working: Cache<String, Arc<CachedWorld>>,
     db: Arc<DatabaseService>,
     inflight: Mutex<HashMap<WorldResolveKey, Weak<tokio::sync::Mutex<()>>>>,
-    failures: Mutex<HashMap<WorldResolveKey, Instant>>,
+    failures: Cache<WorldResolveKey, ()>,
+}
+
+#[derive(Clone, Debug)]
+struct CachedWorld {
+    summary: WorldSummaryOutput,
+    card_fields: Option<WorldCardFields>,
+}
+
+#[derive(Clone, Debug)]
+struct WorldCardFields {
+    tags: Option<Vec<String>>,
+    occupants: Option<i64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -44,7 +60,11 @@ impl WorldCache {
                 .build(),
             db,
             inflight: Mutex::new(HashMap::new()),
-            failures: Mutex::new(HashMap::new()),
+            failures: Cache::builder()
+                .max_capacity(WORLD_RESOLVE_FAILURE_CAPACITY)
+                .time_to_live(WORLD_RESOLVE_FAILURE_TTL)
+                .eviction_policy(EvictionPolicy::lru())
+                .build(),
         }
     }
 
@@ -59,7 +79,7 @@ impl WorldCache {
         }
         self.working
             .get(&world_id)
-            .map(|summary| summary.name.clone())
+            .map(|world| world.summary.name.clone())
     }
 
     pub fn get_summary(&self, world_id: &str) -> crate::Result<Option<WorldSummaryOutput>> {
@@ -70,7 +90,7 @@ impl WorldCache {
         if let Some(summary) = self
             .working
             .get(&world_id)
-            .map(|summary| summary.as_ref().clone())
+            .map(|world| world.summary.clone())
         {
             if is_meaningful_world_name(&summary.name) {
                 return Ok(Some(summary));
@@ -83,8 +103,24 @@ impl WorldCache {
         if !is_meaningful_world_name(&summary.name) {
             return Ok(None);
         }
-        self.working.insert(world_id, Arc::new(summary.clone()));
+        self.working.insert(
+            world_id,
+            Arc::new(CachedWorld {
+                summary: summary.clone(),
+                card_fields: None,
+            }),
+        );
         Ok(Some(summary))
+    }
+
+    pub fn get_cached_card_payload(&self, world_id: &str) -> Option<Value> {
+        let world_id = normalize_id(world_id);
+        if world_id.is_empty() {
+            return None;
+        }
+        self.working
+            .get(&world_id)
+            .and_then(|world| world_card_payload(world.as_ref()))
     }
 
     pub fn search_summaries(
@@ -97,22 +133,51 @@ impl WorldCache {
             .filter(|summary| is_meaningful_world_name(&summary.name))
             .collect::<Vec<_>>();
         for summary in &summaries {
-            self.working
-                .insert(summary.id.clone(), Arc::new(summary.clone()));
+            if self.working.get(&summary.id).is_some() {
+                continue;
+            }
+            self.working.insert(
+                summary.id.clone(),
+                Arc::new(CachedWorld {
+                    summary: summary.clone(),
+                    card_fields: None,
+                }),
+            );
         }
         Ok(summaries)
     }
 
     pub fn hydrate_from_payload(&self, world_value: &Value) -> Option<String> {
+        self.hydrate_summary_from_payload(world_value)
+            .map(|summary| summary.name)
+    }
+
+    pub fn hydrate_summary_from_payload(&self, world_value: &Value) -> Option<WorldSummaryOutput> {
+        self.hydrate_summary_from_payload_with_policy(world_value, false)
+    }
+
+    fn hydrate_summary_from_payload_with_policy(
+        &self,
+        world_value: &Value,
+        insert_private: bool,
+    ) -> Option<WorldSummaryOutput> {
         let world_id = world_id(world_value);
         if world_id.is_empty() {
             return None;
         }
         let name = world_name(world_value)?;
-        let cached = Arc::new(world_summary(world_value, world_id.clone(), name.clone()));
-        self.working.insert(world_id.clone(), cached);
+        let summary = world_summary(world_value, world_id.clone(), name.clone());
+        self.working.insert(
+            world_id.clone(),
+            Arc::new(CachedWorld {
+                summary: summary.clone(),
+                card_fields: Some(world_card_fields(world_value)),
+            }),
+        );
 
-        if is_persistable_world(world_value, &name) {
+        let persist = is_persistable_world(world_value, &name)
+            || (insert_private && is_cacheable_private_world(world_value, &name));
+        if persist {
             let entry = CacheEntityInput {
                 id: Value::String(world_id.clone()),
                 author_id: value_or_null(world_value, "authorId"),
@@ -130,7 +195,54 @@ impl WorldCache {
                 tracing::warn!(world_id = %world_id, "WorldCache upsert failed: {error}");
             }
         }
-        Some(name)
+        Some(summary)
+    }
+
+    pub fn hydrate_favorite_payloads<'a>(
+        &self,
+        world_values: impl IntoIterator<Item = &'a Value>,
+    ) -> Vec<Option<Value>> {
+        let world_values = world_values.into_iter().collect::<Vec<_>>();
+        let private_ids = world_values
+            .iter()
+            .filter_map(|world_value| {
+                let name = world_name(world_value)?;
+                is_cacheable_private_world(world_value, &name)
+                    .then(|| world_id(world_value))
+                    .filter(|id| !id.is_empty())
+            })
+            .collect::<HashSet<_>>();
+        let private_ids_to_insert = if private_ids.is_empty() {
+            HashSet::new()
+        } else {
+            match world_cache_get_many(
+                self.db.as_ref(),
+                &private_ids.iter().cloned().collect::<Vec<_>>(),
+            ) {
+                Ok(existing) => {
+                    let existing = existing
+                        .into_iter()
+                        .map(|summary| summary.id)
+                        .collect::<HashSet<_>>();
+                    private_ids.difference(&existing).cloned().collect()
+                }
+                Err(error) => {
+                    tracing::warn!("WorldCache private batch lookup failed: {error}");
+                    HashSet::new()
+                }
+            }
+        };
+        world_values
+            .into_iter()
+            .map(|world_value| {
+                let id = world_id(world_value);
+                let summary = self.hydrate_summary_from_payload_with_policy(
+                    world_value,
+                    private_ids_to_insert.contains(&id),
+                )?;
+                self.get_cached_card_payload(&summary.id)
+            })
+            .collect()
     }
 
     pub async fn resolve_name(
@@ -319,18 +431,14 @@ impl WorldCache {
     }
 
     fn recently_failed(&self, key: &WorldResolveKey) -> bool {
-        self.failures
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .get(key)
-            .is_some_and(|at| at.elapsed() < Duration::from_millis(WORLD_RESOLVE_FAILURE_TTL_MS))
+        self.failures.get(key).is_some()
     }
 
     fn cached_image_url(&self, world_id: &str) -> Option<String> {
         if let Some(image_url) = self
             .working
             .get(world_id)
-            .and_then(|summary| summary_image_url(summary.as_ref()))
+            .and_then(|world| summary_image_url(&world.summary))
         {
             return Some(image_url);
         }
@@ -338,7 +446,13 @@ impl WorldCache {
             Ok(Some(summary)) => {
                 let image_url = summary_image_url(&summary);
                 if is_meaningful_world_name(&summary.name) {
-                    self.working.insert(world_id.to_string(), Arc::new(summary));
+                    self.working.insert(
+                        world_id.to_string(),
+                        Arc::new(CachedWorld {
+                            summary,
+                            card_fields: None,
+                        }),
+                    );
                 }
                 image_url
             }
@@ -351,19 +465,11 @@ impl WorldCache {
     }
 
     fn record_failure(&self, key: &WorldResolveKey) {
-        let mut map = self
-            .failures
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        map.retain(|_, at| at.elapsed() < Duration::from_millis(WORLD_RESOLVE_FAILURE_TTL_MS));
-        map.insert(key.clone(), Instant::now());
+        self.failures.insert(key.clone(), ());
     }
 
     fn clear_failure(&self, key: &WorldResolveKey) {
-        self.failures
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .remove(key);
+        self.failures.invalidate(key);
     }
 
     fn inflight_lock(&self, key: &WorldResolveKey) -> Arc<tokio::sync::Mutex<()>> {
@@ -386,18 +492,43 @@ fn world_summary(value: &Value, id: String, name: String) -> WorldSummaryOutput 
         id,
         author_id: text_field(value, "authorId"),
         author_name: text_field(value, "authorName"),
-        created_at: text_field_with_fallback(value, "created_at", "createdAt"),
+        created_at: text_field_with_fallback(value, "created_at", "createdAt").into(),
         description: text_field(value, "description"),
         image_url: text_field(value, "imageUrl"),
         name,
-        release_status: text_field(value, "releaseStatus"),
+        release_status: text_field(value, "releaseStatus").into(),
         thumbnail_image_url: text_field(value, "thumbnailImageUrl"),
-        updated_at: text_field_with_fallback(value, "updated_at", "updatedAt"),
+        updated_at: text_field_with_fallback(value, "updated_at", "updatedAt").into(),
         version: value
             .get("version")
             .and_then(Value::as_i64)
             .unwrap_or_default(),
     }
+}
+
+fn world_card_fields(value: &Value) -> WorldCardFields {
+    WorldCardFields {
+        tags: value.get("tags").and_then(Value::as_array).map(|tags| {
+            tags.iter()
+                .filter_map(Value::as_str)
+                .map(ToString::to_string)
+                .collect()
+        }),
+        occupants: value.get("occupants").and_then(Value::as_i64),
+    }
+}
+
+fn world_card_payload(world: &CachedWorld) -> Option<Value> {
+    let card_fields = world.card_fields.as_ref()?;
+    let mut payload = serde_json::to_value(&world.summary).ok()?;
+    let fields = payload.as_object_mut()?;
+    if let Some(tags) = &card_fields.tags {
+        fields.insert("tags".to_string(), serde_json::to_value(tags).ok()?);
+    }
+    if let Some(occupants) = card_fields.occupants {
+        fields.insert("occupants".to_string(), Value::from(occupants));
+    }
+    Some(payload)
 }
 
 fn summary_image_url(summary: &WorldSummaryOutput) -> Option<String> {
@@ -475,11 +606,26 @@ fn summary_response(summary: &WorldSummaryOutput) -> crate::Result<HttpApiExecut
 }
 
 fn is_persistable_world(value: &Value, name: &str) -> bool {
-    let release_status = value
-        .get("releaseStatus")
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .unwrap_or_default();
+    matches!(world_release_status(value), ReleaseStatus::Public)
+        && is_persistable_world_fields(value, name)
+}
+
+fn is_cacheable_private_world(value: &Value, name: &str) -> bool {
+    matches!(world_release_status(value), ReleaseStatus::Private)
+        && is_persistable_world_fields(value, name)
+}
+
+fn world_release_status(value: &Value) -> ReleaseStatus {
+    ReleaseStatus::from(
+        value
+            .get("releaseStatus")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or_default(),
+    )
+}
+
+fn is_persistable_world_fields(value: &Value, name: &str) -> bool {
     let image_url = value
         .get("imageUrl")
         .and_then(Value::as_str)
@@ -490,9 +636,7 @@ fn is_persistable_world(value: &Value, name: &str) -> bool {
         .and_then(Value::as_str)
         .map(str::trim)
         .unwrap_or_default();
-    release_status == "public"
-        && is_meaningful_world_name(name)
-        && (!image_url.is_empty() || !thumbnail_image_url.is_empty())
+    is_meaningful_world_name(name) && (!image_url.is_empty() || !thumbnail_image_url.is_empty())
 }
 
 #[cfg(test)]
@@ -563,7 +707,7 @@ mod tests {
     }
 
     #[test]
-    fn hydrate_from_payload_caches_name_only_and_persists_summary() {
+    fn hydrate_from_payload_caches_bounded_card_fields_and_persists_summary() {
         let (_dir, db) = test_db("hydrate-name-only");
         let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
 
@@ -590,9 +734,18 @@ mod tests {
             cache
                 .working
                 .get("wrld_heavy")
-                .map(|summary| summary.name.clone())
+                .map(|world| world.summary.name.clone())
                 .as_deref(),
             Some("Heavy World")
+        );
+        let card = cache.get_cached_card_payload("wrld_heavy").unwrap();
+        assert_eq!(card["tags"], json!(["author_tag_large"]));
+        assert!(card.get("unityPackages").is_none());
+        assert!(card.get("instances").is_none());
+        cache.search_summaries("Heavy", 10).unwrap();
+        assert_eq!(
+            cache.get_cached_card_payload("wrld_heavy").unwrap()["tags"],
+            json!(["author_tag_large"])
         );
 
         let row = world_cache_get(db.as_ref(), "wrld_heavy".into())
@@ -601,6 +754,42 @@ mod tests {
         assert_eq!(row.name, "Heavy World");
         assert_eq!(row.description, "Summary detail");
         assert_eq!(row.version, 7);
+    }
+
+    #[test]
+    fn favorite_hydrate_inserts_private_summary_without_overwriting_existing_cache() {
+        let (_dir, db) = test_db("favorite-private-summary");
+        let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+        let private_world = json!({
+            "id": "wrld_private",
+            "name": "Private World",
+            "imageUrl": "private.png",
+            "releaseStatus": "private"
+        });
+
+        cache.hydrate_favorite_payloads([&private_world]);
+        assert_eq!(
+            world_cache_get(db.as_ref(), "wrld_private".into())
+                .unwrap()
+                .unwrap()
+                .name,
+            "Private World"
+        );
+
+        world_cache_upsert(
+            db.as_ref(),
+            world_entry("wrld_private", "Existing World", "2026-01-02T00:00:00.000Z"),
+        )
+        .unwrap();
+        cache.hydrate_favorite_payloads([&private_world]);
+
+        assert_eq!(
+            world_cache_get(db.as_ref(), "wrld_private".into())
+                .unwrap()
+                .unwrap()
+                .name,
+            "Existing World"
+        );
     }
 
     #[test]
@@ -898,7 +1087,7 @@ mod tests {
             cache
                 .working
                 .get("wrld_refresh")
-                .and_then(|summary| summary_image_url(summary.as_ref()))
+                .and_then(|world| summary_image_url(&world.summary))
                 .as_deref(),
             Some("fresh.png")
         );
@@ -930,6 +1119,30 @@ mod tests {
         let other_lock = cache.inflight_lock(&other);
         assert!(Arc::ptr_eq(&first_lock, &same_lock));
         assert!(!Arc::ptr_eq(&first_lock, &other_lock));
+    }
+
+    #[test]
+    fn failure_cache_is_bounded() {
+        let (_dir, db) = test_db("bounded-failures");
+        let cache = WorldCache::new(db, 8, Duration::from_secs(60));
+        assert_eq!(
+            cache.failures.policy().max_capacity(),
+            Some(WORLD_RESOLVE_FAILURE_CAPACITY)
+        );
+        assert_eq!(
+            cache.failures.policy().time_to_live(),
+            Some(WORLD_RESOLVE_FAILURE_TTL)
+        );
+
+        for index in 0..WORLD_RESOLVE_FAILURE_CAPACITY * 2 {
+            cache.record_failure(&resolve_key(
+                "https://api.example/api/1",
+                &format!("wrld_{index}"),
+            ));
+        }
+        cache.failures.run_pending_tasks();
+
+        assert!(cache.failures.entry_count() <= WORLD_RESOLVE_FAILURE_CAPACITY);
     }
 
     #[test]

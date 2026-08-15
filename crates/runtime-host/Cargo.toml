@@ -16,7 +16,8 @@ test-utils = [
 [dependencies]
 chrono = { workspace = true }
 iana-time-zone.workspace = true
-serde = { workspace = true, features = ["derive"] }
+moka = { version = "0.12", features = ["sync"] }
+serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 specta.workspace = true
 sys-locale.workspace = true
