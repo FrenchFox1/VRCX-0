@@ -1,5 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
+
+type Deferred<T> = {
+    promise: Promise<T>;
+    resolve(value: T): void;
+    reject(reason?: unknown): void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+    let resolve!: (value: T) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+        resolve = resolvePromise;
+        reject = rejectPromise;
+    });
+    return { promise, resolve, reject };
+}
+
 const notificationRepositoryMock = vi.hoisted(() => ({
     queryNotifications: vi.fn()
 }));
@@ -135,6 +153,93 @@ describe('vrcNotificationStore', () => {
         const { rows } = useVrcNotificationStore.getState();
         expect(rows).toHaveLength(2400);
         expect(rows[0].id).toBe('notif_live');
+    });
+
+    it('ignores a previous account load that finishes after the new account', async () => {
+        const previousLoad = createDeferred<NotificationRow[]>();
+        notificationRepositoryMock.queryNotifications
+            .mockReturnValueOnce(previousLoad.promise)
+            .mockResolvedValueOnce([
+                {
+                    id: 'notif_current_account',
+                    type: 'inviteResponse',
+                    version: 2,
+                    seen: false,
+                    created_at: '2026-08-16T01:00:00.000Z'
+                }
+            ]);
+
+        const previousLoadPromise = useVrcNotificationStore
+            .getState()
+            .loadForCurrentUser();
+        useVrcNotificationStore.getState().resetVrcNotificationState();
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_other',
+            currentUserEndpoint: 'https://api.example.test/api/1'
+        });
+        await useVrcNotificationStore.getState().loadForCurrentUser();
+
+        previousLoad.resolve([
+            {
+                id: 'notif_previous_account',
+                type: 'inviteResponse',
+                version: 2,
+                seen: true,
+                created_at: '2026-08-16T02:00:00.000Z'
+            }
+        ]);
+        await previousLoadPromise;
+
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            rows: [expect.objectContaining({ id: 'notif_current_account' })],
+            unseenCount: 1,
+            loadStatus: 'ready'
+        });
+        expect(
+            notificationRepositoryMock.queryNotifications
+        ).toHaveBeenCalledWith({ userId: 'usr_me' });
+        expect(
+            notificationRepositoryMock.queryNotifications
+        ).toHaveBeenCalledWith({ userId: 'usr_other' });
+    });
+
+    it('ignores a refresh error from a previous account', async () => {
+        const previousSync = createDeferred<{
+            v1Count: number;
+            v2Count: number;
+            hiddenFriendRequestCount: number;
+            truncated: boolean;
+        }>();
+        commandMocks.sync.mockReturnValueOnce(previousSync.promise);
+
+        const previousRefreshPromise = useVrcNotificationStore
+            .getState()
+            .refreshForCurrentUser();
+        useVrcNotificationStore.getState().resetVrcNotificationState();
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_other',
+            currentUserEndpoint: 'https://api.example.test/api/1'
+        });
+        useVrcNotificationStore.getState().upsertNotification({
+            id: 'notif_current_account',
+            type: 'inviteResponse',
+            version: 2,
+            seen: false,
+            created_at: '2026-08-16T02:00:00.000Z'
+        });
+
+        previousSync.reject(new Error('Previous account sync failed'));
+        await expect(previousRefreshPromise).resolves.toEqual([]);
+
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            rows: [expect.objectContaining({ id: 'notif_current_account' })],
+            unseenCount: 1,
+            loadStatus: 'idle',
+            detail: ''
+        });
+        expect(
+            notificationRepositoryMock.queryNotifications
+        ).not.toHaveBeenCalled();
     });
 
     it('expires old v1 friend requests after mark-all-seen', async () => {
