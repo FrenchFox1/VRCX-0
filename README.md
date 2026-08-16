@@ -13,7 +13,7 @@ English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | 
 <br>
 [![CI](https://img.shields.io/github/actions/workflow/status/Map1en/VRCX-0/ci.yml?branch=master&label=CI&style=flat&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/coverage.json&style=flat&color=brightgreen&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-GPL--3.0%20%2B%20MIT-4c566a?style=flat&labelColor=1f2328)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0-4c566a?style=flat&labelColor=1f2328)](LICENSE)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_shield)
 
 [![Download](https://img.shields.io/badge/Download%20VRCX--0-4340a2?style=for-the-badge)](https://github.com/Map1en/VRCX-0/releases/latest)
@@ -48,8 +48,9 @@ You only need to do this once — VRCX-0 updates itself from then on.
 - **Years of history won't slow it down** — data that makes VRCX visibly
   sluggish stays smooth in VRCX-0; it runs fine even on a potato PC or a home
   server
-- **About 50%–70% less memory than VRCX** — **Background mode** drops it to
-  just tens of MB while all core features keep running normally
+- **About 50%–70% less memory than VRCX** in normal use
+- **Background mode** brings it down to just tens of MB while all core
+  features keep running
 - **Smaller than a single avatar bundle** — just over 10 MB to download, just
   over 30 MB on disk; over 10× smaller than VRCX
 - **Zero-friction migration** — your VRCX database and settings import
@@ -85,15 +86,13 @@ Beyond that:
 
 ## License
 
-The initial commit of this repository corresponds to the upstream VRCX snapshot at the time of the fork and is licensed under the MIT License.
-
-All modifications, additions, rewrites, and new code introduced after the fork are licensed under the GNU General Public License v3.0 (GPLv3).
+VRCX-0 is licensed under the GNU General Public License v3.0 (GPLv3).
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_large)
 
 ## Building from source
 
-Only needed if you want to contribute — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Use these steps to contribute or build VRCX-0 locally. Before contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Requirements: Node.js ≥ 24.10, npm ≥ 11.5, and a stable Rust toolchain via rustup.
 On Windows, also install **Visual Studio Build Tools** with the **Desktop development with C++** workload.
@@ -103,5 +102,16 @@ git clone https://github.com/Map1en/VRCX-0
 cd VRCX-0
 
 npm install
+```
+
+Start the dev server:
+
+```bash
 npm run tauri:dev
+```
+
+Build for release (skip code signing and installer):
+
+```bash
+npm run tauri:build -- --no-sign --no-bundle
 ```

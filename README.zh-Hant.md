@@ -13,7 +13,7 @@
 <br>
 [![CI](https://img.shields.io/github/actions/workflow/status/Map1en/VRCX-0/ci.yml?branch=master&label=CI&style=flat&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/coverage.json&style=flat&color=brightgreen&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-GPL--3.0%20%2B%20MIT-4c566a?style=flat&labelColor=1f2328)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0-4c566a?style=flat&labelColor=1f2328)](LICENSE)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_shield)
 
 [![Download](https://img.shields.io/badge/Download%20VRCX--0-4340a2?style=for-the-badge)](https://github.com/Map1en/VRCX-0/releases/latest)
@@ -46,7 +46,8 @@ VRCX-0 是 VRCX 的完全重寫版本，由 VRCX 前任維護者之一開發，�
 ## 主要特點
 
 - **多年紀錄也不拖慢** — 在 VRCX 裡明顯變卡的資料量，放到 VRCX-0 依然流暢；老電腦、家用 NAS 也跑得動
-- **記憶體用量比 VRCX 低約 50%–70%** — **背景模式**開啟後可降至僅數十 MB，所有核心功能照常運作
+- **日常使用記憶體比 VRCX 低約 50%–70%**
+- **背景模式**下進一步降至僅數十 MB，所有核心功能照常運作
 - **比一個模型還小** — 安裝程式 10 多 MB，安裝後 30 多 MB，比 VRCX 小 10 倍以上
 - **遷移零負擔** — 自動匯入 VRCX 的資料庫與設定，原始資料不會被更動
 
@@ -66,15 +67,13 @@ VRCX-0 是 VRCX 的完全重寫版本，由 VRCX 前任維護者之一開發，�
 
 ## 授權條款
 
-本儲存庫的初始提交對應分叉時的上游 VRCX 快照，依 MIT License 發布。
-
-fork 後新增、修改、重寫及新建的所有程式碼，均依 GNU General Public License v3.0（GPLv3）發布。
+VRCX-0 採用 GNU General Public License v3.0（GPLv3）授權。
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_large)
 
 ## 從原始碼建置
 
-僅在你想參與開發時才需要 — 詳見 [CONTRIBUTING.md](CONTRIBUTING.md)。
+以下步驟適用於參與開發，或在本機自行建置 VRCX-0。參與貢獻前，請先閱讀 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 依賴：Node.js ≥ 24.10、npm ≥ 11.5，以及透過 rustup 安裝的穩定版 Rust 工具鏈。
 Windows 使用者還需安裝 **Visual Studio Build Tools**，並勾選 **「使用 C++ 的桌面開發」** 工作負載。
@@ -84,5 +83,16 @@ git clone https://github.com/Map1en/VRCX-0
 cd VRCX-0
 
 npm install
+```
+
+啟動開發伺服器：
+
+```bash
 npm run tauri:dev
+```
+
+建置發佈版（略過簽署和安裝程式）：
+
+```bash
+npm run tauri:build -- --no-sign --no-bundle
 ```
