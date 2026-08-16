@@ -18,8 +18,6 @@ use vrcx_0_vr_overlay::{
     RgbaFrame, UvPoint, FRIENDS_PANEL_ID, MAIN_SURFACE_ID,
 };
 
-#[cfg(windows)]
-use super::gpu_presenter::GpuPresenter;
 use super::openvr_helpers::{
     click_up_event_for_release, frame_fingerprint, grip_pressed_for_state, nearest_interactive_hit,
     overlay_button_mask, overlay_quad_size, overlay_transform_to_matrix, panel_id_for_surface,
@@ -67,12 +65,6 @@ pub struct OpenVrOverlayBackend {
     controller_states: HashMap<OverlayHand, ControllerInputState>,
     hmd_battery_readings: HashMap<String, BatteryReadingState>,
     grab_state: Option<GrabState>,
-    #[cfg(windows)]
-    gpu: Option<GpuPresenter>,
-    #[cfg(windows)]
-    gpu_init_attempted: bool,
-    #[cfg(windows)]
-    gpu_retry_after_present_failure: bool,
 }
 
 #[derive(Debug)]
@@ -202,12 +194,6 @@ impl OpenVrOverlayBackend {
             controller_states: HashMap::new(),
             hmd_battery_readings: HashMap::new(),
             grab_state: None,
-            #[cfg(windows)]
-            gpu: None,
-            #[cfg(windows)]
-            gpu_init_attempted: false,
-            #[cfg(windows)]
-            gpu_retry_after_present_failure: true,
         }
     }
 }
@@ -320,7 +306,7 @@ impl OverlayBackend for OpenVrOverlayBackend {
             return Ok(());
         };
 
-        if let Err(error) = self.upload_frame(surface_id, handle, &pending_frame.frame) {
+        if let Err(error) = self.upload_frame(handle, &pending_frame.frame) {
             if let Some(surface) = self.surfaces.get_mut(surface_id) {
                 surface.pending_frame = Some(pending_frame);
                 surface.last_visible_frame_upload_at = None;
@@ -377,10 +363,6 @@ impl OverlayBackend for OpenVrOverlayBackend {
             return Ok(());
         }
         self.set_visibility(surface_id, false)?;
-        #[cfg(windows)]
-        if let Some(gpu) = self.gpu.as_mut() {
-            gpu.unregister_surface(surface_id);
-        }
         if let Some(surface) = self.surfaces.get_mut(surface_id) {
             surface.active = false;
             surface.policy.close();
@@ -472,12 +454,6 @@ impl OpenVrOverlayBackend {
     }
 
     fn clear_runtime_handles(&mut self) {
-        #[cfg(windows)]
-        {
-            self.gpu = None;
-            self.gpu_init_attempted = false;
-            self.gpu_retry_after_present_failure = true;
-        }
         self.surfaces.clear();
         self.hmd_battery_readings.clear();
         self.overlay = None;
@@ -1000,7 +976,7 @@ impl OpenVrOverlayBackend {
             return Ok(());
         }
         if let Some(pending_frame) = pending_before_show {
-            if let Err(error) = self.upload_frame(surface_id, handle, &pending_frame.frame) {
+            if let Err(error) = self.upload_frame(handle, &pending_frame.frame) {
                 if let Some(surface) = self.surfaces.get_mut(surface_id) {
                     surface.pending_frame = Some(pending_frame);
                 }
@@ -1124,42 +1100,21 @@ impl OpenVrOverlayBackend {
         Ok(())
     }
 
-    fn upload_frame(
-        &mut self,
-        surface_id: &OverlaySurfaceId,
-        handle: OverlayHandle,
-        frame: &RgbaFrame,
-    ) -> Result<(), String> {
-        #[cfg(not(windows))]
-        let _ = surface_id;
-
-        #[cfg(windows)]
-        {
-            self.ensure_gpu_presenter();
-            if let Some(gpu) = self.gpu.as_mut() {
-                match gpu.present(surface_id, handle, frame) {
-                    Ok(()) => return Ok(()),
-                    Err(error) => {
-                        tracing::warn!(
-                            error = %error,
-                            "VR overlay GPU presenter failed; falling back to SetOverlayRaw"
-                        );
-                        self.gpu = None;
-                        if self.gpu_retry_after_present_failure {
-                            self.gpu_retry_after_present_failure = false;
-                            self.gpu_init_attempted = false;
-                        } else {
-                            self.gpu_init_attempted = true;
-                        }
-                    }
-                }
-            }
-        }
+    fn upload_frame(&mut self, handle: OverlayHandle, frame: &RgbaFrame) -> Result<(), String> {
+        validate_frame(frame)?;
         let overlay = self
             .overlay
             .as_mut()
             .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
-        upload_raw_frame(overlay, handle, frame)
+        overlay
+            .set_raw_data(
+                handle,
+                &frame.data,
+                frame.size.width as usize,
+                frame.size.height as usize,
+                4,
+            )
+            .map_err(|error| format!("set raw overlay data failed: {error:?}"))
     }
 
     fn flush_pending_frames(&mut self, now: Instant) -> Result<(), String> {
@@ -1172,7 +1127,7 @@ impl OpenVrOverlayBackend {
             let Some((handle, pending_frame)) = pending else {
                 continue;
             };
-            if let Err(error) = self.upload_frame(&surface_id, handle, &pending_frame.frame) {
+            if let Err(error) = self.upload_frame(handle, &pending_frame.frame) {
                 if let Some(surface) = self.surfaces.get_mut(&surface_id) {
                     surface.pending_frame = Some(pending_frame);
                     surface.last_visible_frame_upload_at = None;
@@ -1184,25 +1139,6 @@ impl OpenVrOverlayBackend {
             }
         }
         Ok(())
-    }
-
-    #[cfg(windows)]
-    fn ensure_gpu_presenter(&mut self) {
-        if self.gpu.is_some() || self.gpu_init_attempted {
-            return;
-        }
-        self.gpu_init_attempted = true;
-        match GpuPresenter::new() {
-            Ok(gpu) => {
-                self.gpu = Some(gpu);
-            }
-            Err(error) => {
-                tracing::warn!(
-                    error = %error,
-                    "VR overlay GPU presenter unavailable; using SetOverlayRaw fallback"
-                );
-            }
-        }
     }
 
     fn surface_handle(&self, surface_id: &OverlaySurfaceId) -> Result<OverlayHandle, String> {
@@ -1240,20 +1176,17 @@ fn init_start_error(context: &str, error: openvr::InitError) -> BackendStartErro
     }
 }
 
-fn upload_raw_frame(
-    overlay: &mut Overlay,
-    handle: OverlayHandle,
-    frame: &RgbaFrame,
-) -> Result<(), String> {
-    overlay
-        .set_raw_data(
-            handle,
-            &frame.data,
-            frame.size.width as usize,
-            frame.size.height as usize,
-            4,
-        )
-        .map_err(|error| format!("set raw overlay data failed: {error:?}"))
+fn validate_frame(frame: &RgbaFrame) -> Result<(), String> {
+    let expected_len = RgbaFrame::expected_byte_len(frame.size)
+        .ok_or_else(|| "overlay frame byte length overflow".to_string())?;
+    if frame.data.len() == expected_len {
+        Ok(())
+    } else {
+        Err(format!(
+            "overlay frame byte length mismatch: got {}, expected {expected_len}",
+            frame.data.len()
+        ))
+    }
 }
 
 fn device_button_pressed(
@@ -1607,6 +1540,13 @@ mod tests {
     #[test]
     fn friends_panel_input_path_is_disabled_by_default() {
         const { assert!(!FRIENDS_PANEL_INPUT_ENABLED) };
+    }
+
+    #[test]
+    fn validate_frame_rejects_mismatched_rgba_length() {
+        let frame = RgbaFrame::new(OverlaySize::new(2, 2), vec![0; 15]);
+
+        assert!(validate_frame(&frame).is_err());
     }
 
     #[test]
