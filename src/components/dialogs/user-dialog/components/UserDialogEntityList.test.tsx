@@ -10,10 +10,15 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) =>
-            key === 'dialog.user.mutual_friends.undisclosed_friend'
-                ? 'Localized Undisclosed Mutual Friend'
-                : key
+        t: (key: string) => {
+            if (key === 'dialog.user.mutual_friends.undisclosed_friend') {
+                return 'Localized Undisclosed Mutual Friend';
+            }
+            if (key === 'common.error.failed_to_load_data') {
+                return "Couldn't load the data";
+            }
+            return key;
+        }
     })
 }));
 
@@ -75,6 +80,19 @@ describe('UserDialog EntityList', () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+    });
+
+    it('replaces internal Tauri command errors with a friendly message', () => {
+        render(
+            <EntityList
+                kind="user"
+                rows={[]}
+                error="Tauri command failed: app__user_mutual_friends_list_get: network request failed"
+            />
+        );
+
+        expect(screen.getByText("Couldn't load the data")).toBeTruthy();
+        expect(screen.queryByText(/Tauri command failed/)).toBeNull();
     });
 
     it('localizes undisclosed mutual friends and prevents opening them', () => {
