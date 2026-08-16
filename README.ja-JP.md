@@ -73,7 +73,7 @@ VRCX-0 は GNU General Public License v3.0（GPLv3）の下で公開されてい
 
 ## ソースからビルド
 
-開発に参加する場合のみ必要です。詳しくは [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
+以下の手順は、VRCX-0 の開発に参加する場合や、ローカルでビルドする場合に使用します。コントリビュートする前に [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 
 必要なもの：Node.js ≥ 24.10、npm ≥ 11.5、rustup 経由でインストールした安定版 Rust ツールチェーン。
 Windows の場合は、**Visual Studio Build Tools** をインストールし、**「C++ によるデスクトップ開発」** ワークロードを選択してください。
@@ -83,5 +83,16 @@ git clone https://github.com/Map1en/VRCX-0
 cd VRCX-0
 
 npm install
+```
+
+開発サーバーを起動：
+
+```bash
 npm run tauri:dev
+```
+
+リリースビルド（署名とインストーラー生成をスキップ）：
+
+```bash
+npm run tauri:build -- --no-sign --no-bundle
 ```

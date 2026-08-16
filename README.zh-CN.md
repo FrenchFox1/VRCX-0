@@ -73,7 +73,7 @@ VRCX-0 采用 GNU General Public License v3.0（GPLv3）授权。
 
 ## 从源码构建
 
-仅在你想参与开发时才需要 — 详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+以下步骤适用于参与开发或在本地自行构建 VRCX-0。参与贡献前，请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 依赖：Node.js ≥ 24.10、npm ≥ 11.5，以及通过 rustup 安装的稳定版 Rust 工具链。
 Windows 用户还需安装 **Visual Studio Build Tools**，并勾选 **"使用 C++ 的桌面开发"** 工作负载。
@@ -83,5 +83,16 @@ git clone https://github.com/Map1en/VRCX-0
 cd VRCX-0
 
 npm install
+```
+
+启动开发服务器：
+
+```bash
 npm run tauri:dev
+```
+
+构建发布版（跳过签名和安装包）：
+
+```bash
+npm run tauri:build -- --no-sign --no-bundle
 ```
