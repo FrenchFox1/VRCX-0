@@ -19,13 +19,13 @@ use vrcx_0_vr_overlay::{
 };
 
 use super::openvr_helpers::{
-    click_up_event_for_release, frame_fingerprint, grip_pressed_for_state, nearest_interactive_hit,
-    load_overlay_fn_table, overlay_button_mask, overlay_quad_size, overlay_transform_to_matrix,
+    click_up_event_for_release, frame_fingerprint, grip_pressed_for_state, load_overlay_fn_table,
+    nearest_interactive_hit, overlay_button_mask, overlay_quad_size, overlay_transform_to_matrix,
     panel_id_for_surface, pointer_laser_surface_id_for_hand, pointer_laser_transform,
     pointer_laser_width, pointer_miss_uv, pose_transform, scroll_delta_for_state,
-    set_overlay_premultiplied_alpha, should_emit_hover, surface_id_for_panel_id,
-    surface_transform, trigger_drag_scroll_delta, trigger_pressed, FrameFingerprint,
-    InteractiveHit, InteractiveSurfaceCandidate, InteractiveTarget,
+    set_overlay_premultiplied_alpha, should_emit_hover, surface_id_for_panel_id, surface_transform,
+    trigger_drag_scroll_delta, trigger_pressed, FrameFingerprint, InteractiveHit,
+    InteractiveSurfaceCandidate, InteractiveTarget,
 };
 use super::{
     actor::{OverlayBackend, TickOutcome},
@@ -52,11 +52,8 @@ const OPENVR_CONTEXT_IN_USE_MESSAGE: &str =
     "OpenVR context is still owned by another overlay actor";
 static OPENVR_CONTEXT_OWNED: AtomicBool = AtomicBool::new(false);
 
-type PollNextOverlayEvent = unsafe extern "C" fn(
-    openvr_sys::VROverlayHandle_t,
-    *mut openvr_sys::VREvent_t,
-    u32,
-) -> bool;
+type PollNextOverlayEvent =
+    unsafe extern "C" fn(openvr_sys::VROverlayHandle_t, *mut openvr_sys::VREvent_t, u32) -> bool;
 
 mod openvr_devices;
 

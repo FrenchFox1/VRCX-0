@@ -82,6 +82,7 @@ Beyond that:
   channels independently configured per event type; webhooks use a
   Discord-compatible format
 - Full keyboard navigation
+- Integration API for third-party apps — currently room data, expanding over time
 - Headless mode for advanced setups — see `crates/headless`
 
 ## License
