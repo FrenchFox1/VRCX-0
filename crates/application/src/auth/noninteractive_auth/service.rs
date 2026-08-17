@@ -121,7 +121,7 @@ fn map_fallback_probe(
         CookieProbeResult::Authenticated { user, .. } => Ok(CookieSessionProbe::Authenticated(
             AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
         )),
-        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch => {
+        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch { .. } => {
             Ok(CookieSessionProbe::Fallback)
         }
         CookieProbeResult::RequiresTwoFactor(_) => unreachable!(),
@@ -174,11 +174,13 @@ pub(crate) async fn current_user_from_cookie_with_api(
                 ),
             })
         }
-        CookieProbeResult::UserMismatch => Err(NonInteractiveAuthError::SessionInvalidated {
-            user_id,
-            reason: "The stored browser session belongs to a different account.".into(),
-            status_code: None,
-        }),
+        CookieProbeResult::UserMismatch { .. } => {
+            Err(NonInteractiveAuthError::SessionInvalidated {
+                user_id,
+                reason: "The stored browser session belongs to a different account.".into(),
+                status_code: None,
+            })
+        }
         CookieProbeResult::Rejected { stage, response } => {
             rejected_probe_error(user_id, stage, response)
         }

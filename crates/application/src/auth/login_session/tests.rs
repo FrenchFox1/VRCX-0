@@ -565,6 +565,60 @@ async fn saved_credential_falls_through_both_cookie_probes_to_a_successful_passw
 }
 
 #[tokio::test]
+async fn switching_saved_accounts_preserves_the_current_accounts_live_cookies() {
+    let (_dir, config, web, db) = test_env("saved-credential-switch-cookie-sync");
+    seed_saved_credential(&config, &web, "usr_current");
+    seed_saved_credential(&config, &web, "usr_target");
+    let cookie_payload = B64.encode(
+        serde_json::to_vec(&json!([
+            {"Name": "auth", "Value": "current-latest", "Domain": ".vrchat.cloud", "Path": "/"},
+            {"Name": "twoFactorAuth", "Value": "current-2fa", "Domain": ".vrchat.cloud", "Path": "/"}
+        ]))
+        .unwrap(),
+    );
+    web.set_cookies(&cookie_payload).unwrap();
+    let current_live_cookies = web.get_cookies();
+    let api = Arc::new(FakeLoginApi::new(vec![
+        (200, json!({})),
+        (
+            200,
+            json!({ "id": "usr_current", "displayName": "Current User" }),
+        ),
+        (200, json!({})),
+        (
+            200,
+            json!({ "id": "usr_target", "displayName": "Target User" }),
+        ),
+    ]));
+
+    let state = LoginSessionRuntime::new()
+        .start_with(
+            api,
+            &web,
+            db.as_ref(),
+            &config,
+            LoginSessionStartInput::SavedCredential {
+                user_id: "usr_target".into(),
+            },
+        )
+        .await;
+
+    assert!(matches!(
+        state,
+        LoginSessionState::Authenticated { ref session, .. }
+            if session.user_id == "usr_target"
+    ));
+    assert_eq!(
+        crate::saved_credential_session_data(&config, "usr_current")
+            .unwrap()
+            .unwrap()
+            .cookies
+            .as_deref(),
+        Some(current_live_cookies.as_str())
+    );
+}
+
+#[tokio::test]
 async fn saved_credential_short_circuits_on_a_403_cookie_probe() {
     let (_dir, config, web, _db) = test_env("saved-cred-403-short-circuit");
     seed_saved_credential(&config, &web, "usr_saved");

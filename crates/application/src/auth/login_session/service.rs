@@ -227,7 +227,7 @@ pub(super) async fn start_cookie_restore(
             ),
             LoginFailureKind::MissingCredentials,
         ),
-        Ok(CookieProbeResult::UserMismatch) => LoginSessionState::failed(
+        Ok(CookieProbeResult::UserMismatch { .. }) => LoginSessionState::failed(
             "The stored browser session belongs to a different account.",
             LoginFailureKind::MissingCredentials,
         ),
