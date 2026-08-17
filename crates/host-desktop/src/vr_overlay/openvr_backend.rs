@@ -8,7 +8,7 @@ use openvr::{
         ControllerRoleHint_Int32, ModelNumber_String, SerialNumber_String,
         TrackingSystemName_String,
     },
-    system::event::Event,
+    system::event::{Event, EventInfo},
     tracked_device_index, ApplicationType, Context, ControllerState, Overlay, System,
     TrackedControllerRole, TrackedDeviceClass, TrackedDeviceIndex, TrackingUniverseOrigin,
     MAX_TRACKED_DEVICE_COUNT,
@@ -20,12 +20,12 @@ use vrcx_0_vr_overlay::{
 
 use super::openvr_helpers::{
     click_up_event_for_release, frame_fingerprint, grip_pressed_for_state, nearest_interactive_hit,
-    overlay_button_mask, overlay_quad_size, overlay_transform_to_matrix, panel_id_for_surface,
-    pointer_laser_surface_id_for_hand, pointer_laser_transform, pointer_laser_width,
-    pointer_miss_uv, pose_transform, scroll_delta_for_state, set_overlay_premultiplied_alpha,
-    should_emit_hover, surface_id_for_panel_id, surface_transform, trigger_drag_scroll_delta,
-    trigger_pressed, FrameFingerprint, InteractiveHit, InteractiveSurfaceCandidate,
-    InteractiveTarget,
+    load_overlay_fn_table, overlay_button_mask, overlay_quad_size, overlay_transform_to_matrix,
+    panel_id_for_surface, pointer_laser_surface_id_for_hand, pointer_laser_transform,
+    pointer_laser_width, pointer_miss_uv, pose_transform, scroll_delta_for_state,
+    set_overlay_premultiplied_alpha, should_emit_hover, surface_id_for_panel_id,
+    surface_transform, trigger_drag_scroll_delta, trigger_pressed, FrameFingerprint,
+    InteractiveHit, InteractiveSurfaceCandidate, InteractiveTarget,
 };
 use super::{
     actor::{OverlayBackend, TickOutcome},
@@ -52,12 +52,19 @@ const OPENVR_CONTEXT_IN_USE_MESSAGE: &str =
     "OpenVR context is still owned by another overlay actor";
 static OPENVR_CONTEXT_OWNED: AtomicBool = AtomicBool::new(false);
 
+type PollNextOverlayEvent = unsafe extern "C" fn(
+    openvr_sys::VROverlayHandle_t,
+    *mut openvr_sys::VREvent_t,
+    u32,
+) -> bool;
+
 mod openvr_devices;
 
 pub struct OpenVrOverlayBackend {
     context: Option<Context>,
     context_lease: Option<OpenVrContextLease>,
     overlay: Option<Overlay>,
+    poll_next_overlay_event: Option<PollNextOverlayEvent>,
     system: Option<System>,
     surfaces: HashMap<OverlaySurfaceId, OpenVrSurface>,
     input_events: OverlayInputEventSink,
@@ -65,6 +72,7 @@ pub struct OpenVrOverlayBackend {
     controller_states: HashMap<OverlayHand, ControllerInputState>,
     hmd_battery_readings: HashMap<String, BatteryReadingState>,
     grab_state: Option<GrabState>,
+    outstanding_raw_frames: u64,
 }
 
 #[derive(Debug)]
@@ -187,6 +195,7 @@ impl OpenVrOverlayBackend {
             context: None,
             context_lease: None,
             overlay: None,
+            poll_next_overlay_event: None,
             system: None,
             surfaces: HashMap::new(),
             input_events: OverlayInputEventSink::default(),
@@ -194,6 +203,7 @@ impl OpenVrOverlayBackend {
             controller_states: HashMap::new(),
             hmd_battery_readings: HashMap::new(),
             grab_state: None,
+            outstanding_raw_frames: 0,
         }
     }
 }
@@ -210,15 +220,20 @@ impl OverlayBackend for OpenVrOverlayBackend {
     }
 
     fn needs_high_frequency_tick(&self) -> bool {
-        self.surfaces.values().any(|surface| {
-            surface.visible
-                && surface.pending_frame.is_some()
-                && visible_frame_upload_interval(surface) <= MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL
-        })
+        self.outstanding_raw_frames > 0
+            || self.surfaces.values().any(|surface| {
+                surface.visible
+                    && surface.pending_frame.is_some()
+                    && visible_frame_upload_interval(surface) <= MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL
+            })
     }
 
     fn start(&mut self) -> Result<(), BackendStartError> {
-        if self.context.is_some() && self.overlay.is_some() && self.system.is_some() {
+        if self.context.is_some()
+            && self.overlay.is_some()
+            && self.poll_next_overlay_event.is_some()
+            && self.system.is_some()
+        {
             return Ok(());
         }
 
@@ -231,9 +246,16 @@ impl OverlayBackend for OpenVrOverlayBackend {
         let system = context
             .system()
             .map_err(|error| init_start_error("OpenVR system interface failed", error))?;
+        let poll_next_overlay_event = load_overlay_fn_table()
+            .map_err(BackendStartError::permanent)?
+            .PollNextOverlayEvent
+            .ok_or_else(|| {
+                BackendStartError::permanent("OpenVR PollNextOverlayEvent is unavailable")
+            })?;
         self.context = Some(context);
         self.context_lease = Some(context_lease);
         self.overlay = Some(overlay);
+        self.poll_next_overlay_event = Some(poll_next_overlay_event);
         self.system = Some(system);
         Ok(())
     }
@@ -383,7 +405,7 @@ impl OverlayBackend for OpenVrOverlayBackend {
     }
 
     fn tick(&mut self) -> TickOutcome {
-        if self.poll_runtime_quit() {
+        if self.poll_runtime_quit() || self.poll_overlay_events() {
             self.clear_runtime_handles();
             return TickOutcome::RuntimeQuit;
         }
@@ -453,13 +475,70 @@ impl OpenVrOverlayBackend {
         false
     }
 
+    fn poll_overlay_events(&mut self) -> bool {
+        let Some(poll_next_overlay_event) = self.poll_next_overlay_event else {
+            return false;
+        };
+        let surfaces = self
+            .surfaces
+            .iter()
+            .map(|(surface_id, surface)| (surface_id.clone(), surface.handle))
+            .collect::<Vec<_>>();
+        for (surface_id, handle) in surfaces {
+            loop {
+                let mut event = std::mem::MaybeUninit::<openvr_sys::VREvent_t>::uninit();
+                let has_event = unsafe {
+                    poll_next_overlay_event(
+                        handle.0,
+                        event.as_mut_ptr(),
+                        std::mem::size_of::<openvr_sys::VREvent_t>() as u32,
+                    )
+                };
+                if !has_event {
+                    break;
+                }
+                let event = EventInfo::from(unsafe { event.assume_init() });
+                if self.handle_overlay_event(&surface_id, event) {
+                    if let Some(system) = &self.system {
+                        system.acknowledge_quit_exiting();
+                    }
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn handle_overlay_event(&mut self, surface_id: &OverlaySurfaceId, event: EventInfo) -> bool {
+        match event.event {
+            Event::ImageLoaded => {
+                self.outstanding_raw_frames = self.outstanding_raw_frames.saturating_sub(1);
+                false
+            }
+            Event::ImageFailed => {
+                self.outstanding_raw_frames = self.outstanding_raw_frames.saturating_sub(1);
+                tracing::warn!(
+                    surface_id = surface_id.as_str(),
+                    event_age_seconds = event.age,
+                    outstanding_raw_frames = self.outstanding_raw_frames,
+                    "SteamVR failed to load raw overlay frame"
+                );
+                false
+            }
+            Event::Quit(_) => true,
+            _ => false,
+        }
+    }
+
     fn clear_runtime_handles(&mut self) {
         self.surfaces.clear();
         self.hmd_battery_readings.clear();
         self.overlay = None;
+        self.poll_next_overlay_event = None;
         self.system = None;
         self.context = None;
         self.context_lease = None;
+        self.outstanding_raw_frames = 0;
     }
 
     fn update_button_visibility(&mut self) -> Result<(), String> {
@@ -1114,7 +1193,9 @@ impl OpenVrOverlayBackend {
                 frame.size.height as usize,
                 4,
             )
-            .map_err(|error| format!("set raw overlay data failed: {error:?}"))
+            .map_err(|error| format!("set raw overlay data failed: {error:?}"))?;
+        self.outstanding_raw_frames = self.outstanding_raw_frames.saturating_add(1);
+        Ok(())
     }
 
     fn flush_pending_frames(&mut self, now: Instant) -> Result<(), String> {
@@ -1480,6 +1561,54 @@ mod tests {
             .take_pending_frame_if_due(started_at + MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL)
             .expect("release pending frame");
         assert!(!backend.needs_high_frequency_tick());
+    }
+
+    #[test]
+    fn raw_completions_keep_high_frequency_tick_until_all_submissions_finish() {
+        let surface_id = OverlaySurfaceId::new(MAIN_SURFACE_ID);
+        let mut backend = OpenVrOverlayBackend::new();
+        backend.outstanding_raw_frames = 2;
+
+        assert!(backend.needs_high_frequency_tick());
+        assert!(!backend.handle_overlay_event(
+            &surface_id,
+            EventInfo {
+                tracked_device_index: tracked_device_index::INVALID,
+                age: 0.01,
+                event: Event::ImageLoaded,
+            },
+        ));
+        assert_eq!(backend.outstanding_raw_frames, 1);
+        assert!(backend.needs_high_frequency_tick());
+
+        assert!(!backend.handle_overlay_event(
+            &surface_id,
+            EventInfo {
+                tracked_device_index: tracked_device_index::INVALID,
+                age: 0.02,
+                event: Event::ImageFailed,
+            },
+        ));
+        assert_eq!(backend.outstanding_raw_frames, 0);
+        assert!(!backend.needs_high_frequency_tick());
+    }
+
+    #[test]
+    fn overlay_quit_event_requests_runtime_shutdown() {
+        let mut backend = OpenVrOverlayBackend::new();
+
+        assert!(backend.handle_overlay_event(
+            &OverlaySurfaceId::new(MAIN_SURFACE_ID),
+            EventInfo {
+                tracked_device_index: tracked_device_index::INVALID,
+                age: 0.0,
+                event: Event::Quit(openvr::system::event::Process {
+                    pid: 0,
+                    old_pid: 0,
+                    forced: false,
+                }),
+            },
+        ));
     }
 
     fn test_main_surface(frame: RgbaFrame, last_uploaded_at: Instant) -> OpenVrSurface {
