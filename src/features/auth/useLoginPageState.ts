@@ -327,7 +327,8 @@ export function useLoginPageState() {
                 getErrorMessage(
                     error,
                     t('view.auth.toast.failed_to_authenticate')
-                )
+                ),
+                { duration: Infinity, closeButton: true }
             );
         } finally {
             setIsSubmitting(false);
@@ -367,7 +368,8 @@ export function useLoginPageState() {
                 getErrorMessage(
                     error,
                     t('view.auth.toast.failed_to_restore_the_saved_account')
-                )
+                ),
+                { duration: Infinity, closeButton: true }
             );
         } finally {
             setActiveSavedUserId('');

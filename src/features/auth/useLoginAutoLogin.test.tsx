@@ -121,4 +121,26 @@ describe('useLoginAutoLogin', () => {
             signal: { aborted: true }
         });
     });
+
+    it('keeps an unexpected automatic-login failure visible until dismissed', async () => {
+        mocks.executeAutoLogin.mockRejectedValue(new Error('Login failed'));
+
+        renderHook(() =>
+            useLoginAutoLogin({
+                activeSavedUserId: '',
+                applySnapshot: vi.fn(),
+                databaseReady: true,
+                isLoading: false,
+                isSubmitting: false,
+                snapshot
+            })
+        );
+
+        await waitFor(() => {
+            expect(mocks.toastError).toHaveBeenCalledWith('Login failed', {
+                duration: Infinity,
+                closeButton: true
+            });
+        });
+    });
 });

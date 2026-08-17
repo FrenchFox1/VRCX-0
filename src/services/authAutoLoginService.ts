@@ -293,7 +293,10 @@ export async function executeReactAutoLogin(
             await showAuthFailureNotificationSafely(
                 'frontend-auto-login-throttled'
             );
-            toast.error(await i18n.t('message.auth.auto_login_failed'));
+            toast.error(await i18n.t('message.auth.auto_login_failed'), {
+                duration: Infinity,
+                closeButton: true
+            });
             return {
                 status: 'throttled',
                 snapshot: outcome.snapshot
@@ -386,7 +389,8 @@ export async function executeReactAutoLogin(
             getErrorMessage(
                 error,
                 await i18n.t('message.auth.auto_login_failed')
-            )
+            ),
+            { duration: Infinity, closeButton: true }
         );
         if (shouldShowManualAuthFailureNotification(authError)) {
             await showAuthFailureNotificationSafely(
@@ -395,7 +399,10 @@ export async function executeReactAutoLogin(
         }
 
         if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-            toast.error(await i18n.t('message.auth.offline'));
+            toast.error(await i18n.t('message.auth.offline'), {
+                duration: Infinity,
+                closeButton: true
+            });
         }
 
         return {

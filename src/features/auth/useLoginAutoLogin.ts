@@ -138,7 +138,8 @@ export function useLoginAutoLogin({
                     getErrorMessage(
                         error,
                         t('view.auth.toast.automatic_login_failed_unexpectedly')
-                    )
+                    ),
+                    { duration: Infinity, closeButton: true }
                 );
             });
 
