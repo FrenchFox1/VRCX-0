@@ -148,7 +148,6 @@ export interface UserHeaderModel {
     platform: ReturnType<typeof resolvePlatformMeta>;
     PlatformIcon: ComponentType | null;
     previousDisplayNames: ReturnType<typeof normalizePreviousDisplayNames>;
-    previousInstances: unknown[];
     profile: UserDialogProfileRecord;
     profileAppearance: UserDialogProfileAppearance;
     profileIconUrl: string;
@@ -473,7 +472,6 @@ export function UserDialogHeaderSection({
         platform,
         PlatformIcon,
         previousDisplayNames,
-        previousInstances = [],
         profile,
         profileAppearance,
         profileIconUrl,
@@ -538,7 +536,6 @@ export function UserDialogHeaderSection({
         isFriend,
         loadStatus,
         moderationState,
-        previousInstances,
         profile,
         recentDialogShortcut
     };

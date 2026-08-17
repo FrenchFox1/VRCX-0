@@ -568,7 +568,6 @@ export function UserDialogTabbedView({
         platform,
         PlatformIcon,
         previousDisplayNames,
-        previousInstances,
         profile,
         profileAppearance,
         profileIconUrl,
