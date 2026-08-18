@@ -1,3 +1,4 @@
+import type { FriendRosterInputById } from '@/domain/friends/friendRosterTypes';
 import type { FriendLogCurrentRow } from '@/repositories/friendLogRepository';
 
 export type FriendBootstrapSnapshot = Record<string, unknown> & {
@@ -9,25 +10,6 @@ export type FriendBootstrapSnapshot = Record<string, unknown> & {
     detail?: unknown;
 };
 export type FriendStateBucket = 'online' | 'active' | 'offline';
-export type FriendRecord = Record<string, unknown> & {
-    id?: unknown;
-    userId?: unknown;
-    user_id?: unknown;
-    displayName?: unknown;
-    username?: unknown;
-    tags?: unknown;
-    developerType?: unknown;
-    platform?: unknown;
-    last_platform?: unknown;
-    location?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    trustLevel?: unknown;
-    $trustLevel?: unknown;
-    friendNumber?: unknown;
-    $friendNumber?: unknown;
-    $profileSource?: unknown;
-};
 export type FriendLogRow = FriendLogCurrentRow & {
     user_id?: unknown;
     $friendNumber?: unknown;
@@ -162,7 +144,7 @@ export function buildSeedRosterFriendsById(
     friendLogRows: FriendLogSeedRow[] = []
 ) {
     const rowsById = buildFriendLogRowsById(friendLogRows);
-    const friendsById: Record<string, FriendRecord> = {};
+    const friendsById: FriendRosterInputById = {};
 
     for (const [userId, stateBucket] of stateById.entries()) {
         const row: FriendLogSeedRow = rowsById.get(userId) ?? {};

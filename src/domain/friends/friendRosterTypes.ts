@@ -42,27 +42,27 @@ export type FriendProfileFields = {
 };
 
 export type FriendRecordInput = Record<string, unknown> & {
-    id?: unknown;
-    userId?: unknown;
-    user_id?: unknown;
-    displayName?: unknown;
-    username?: unknown;
-    tags?: unknown;
-    developerType?: unknown;
-    platform?: unknown;
-    last_platform?: unknown;
-    lastPlatform?: unknown;
-    location?: unknown;
-    state?: unknown;
-    $trustLevel?: unknown;
-    $friendNumber?: unknown;
-    $trustClass?: unknown;
-    $trustSortNum?: unknown;
-    $isModerator?: unknown;
-    $isTroll?: unknown;
-    $isProbableTroll?: unknown;
-    $platform?: unknown;
-    $profileSource?: unknown;
+    id?: string;
+    userId?: string;
+    user_id?: string;
+    displayName?: string;
+    username?: string;
+    tags?: string[];
+    developerType?: string;
+    platform?: string;
+    last_platform?: string;
+    lastPlatform?: string;
+    location?: string;
+    state?: string;
+    $trustLevel?: string;
+    $friendNumber?: number;
+    $trustClass?: string;
+    $trustSortNum?: number;
+    $isModerator?: boolean;
+    $isTroll?: boolean;
+    $isProbableTroll?: boolean;
+    $platform?: string;
+    $profileSource?: string;
 };
 
 export type FriendRecord = FriendRecordInput &
