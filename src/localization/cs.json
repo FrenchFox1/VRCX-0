@@ -4661,7 +4661,9 @@
             "loading_gallery_description": "Čte se indexovaný seznam snímků obrazovky.",
             "gallery_load_failed": "Nepodařilo se načíst galerii snímků obrazovky",
             "scan_failed": "Nepodařilo se prohledat knihovnu snímků obrazovky",
-            "thumbnail_failed": "Náhled není k dispozici"
+            "thumbnail_failed": "Náhled není k dispozici",
+            "hide_details": "Skrýt informace",
+            "show_details": "Zobrazit informace"
         },
         "set_avatar_styles": {
             "header": "Nastavit styly avatara",

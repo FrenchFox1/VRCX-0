@@ -4657,7 +4657,9 @@
             "loading_gallery_description": "Leyendo la lista de capturas indexadas.",
             "gallery_load_failed": "No se pudo cargar la galería de capturas",
             "scan_failed": "No se pudo escanear la biblioteca de capturas",
-            "thumbnail_failed": "Miniatura no disponible"
+            "thumbnail_failed": "Miniatura no disponible",
+            "hide_details": "Ocultar información",
+            "show_details": "Mostrar información"
         },
         "set_avatar_styles": {
             "header": "Establecer estilos del avatar",

@@ -4657,7 +4657,9 @@
             "loading_gallery_description": "Die indizierte Screenshot-Liste wird gelesen.",
             "gallery_load_failed": "Screenshot-Galerie konnte nicht geladen werden",
             "scan_failed": "Screenshot-Bibliothek konnte nicht gescannt werden",
-            "thumbnail_failed": "Vorschaubild nicht verfügbar"
+            "thumbnail_failed": "Vorschaubild nicht verfügbar",
+            "hide_details": "Bildinformationen ausblenden",
+            "show_details": "Bildinformationen einblenden"
         },
         "set_avatar_styles": {
             "header": "Avatar-Stile festlegen",

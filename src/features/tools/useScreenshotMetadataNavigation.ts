@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { NormalizedScreenshotMetadata } from './screenshotMetadataValues';
 
 export function useScreenshotMetadataNavigation({
+    enabled = true,
     loadScreenshot,
     metadata,
     onPathChange,
@@ -10,6 +11,7 @@ export function useScreenshotMetadataNavigation({
     selectedPath,
     setSelectedPath
 }: {
+    enabled?: boolean;
     loadScreenshot: (path: string, withCarousel: boolean) => Promise<void>;
     metadata: Pick<
         NormalizedScreenshotMetadata,
@@ -118,16 +120,28 @@ export function useScreenshotMetadataNavigation({
 
     useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
-            if (!event.altKey) {
+            const target = event.target;
+            if (
+                !enabled ||
+                event.altKey ||
+                event.ctrlKey ||
+                event.metaKey ||
+                event.shiftKey ||
+                (target instanceof HTMLElement &&
+                    (target.isContentEditable ||
+                        target.tagName === 'INPUT' ||
+                        target.tagName === 'TEXTAREA' ||
+                        target.tagName === 'SELECT'))
+            ) {
                 return;
             }
 
-            if (event.key === 'ArrowLeft') {
+            if (event.key === 'ArrowLeft' && canNavigatePrev) {
                 event.preventDefault();
                 navigatePrev();
             }
 
-            if (event.key === 'ArrowRight') {
+            if (event.key === 'ArrowRight' && canNavigateNext) {
                 event.preventDefault();
                 navigateNext();
             }
@@ -137,7 +151,7 @@ export function useScreenshotMetadataNavigation({
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [navigateNext, navigatePrev]);
+    }, [canNavigateNext, canNavigatePrev, enabled, navigateNext, navigatePrev]);
 
     return {
         canNavigateNext,

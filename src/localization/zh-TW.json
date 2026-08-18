@@ -4657,7 +4657,9 @@
             "loading_gallery_description": "正在讀取已索引的螢幕截圖列表。",
             "gallery_load_failed": "載入螢幕截圖圖庫失敗",
             "scan_failed": "掃描螢幕截圖圖庫失敗",
-            "thumbnail_failed": "縮略圖無法使用"
+            "thumbnail_failed": "縮略圖無法使用",
+            "hide_details": "隱藏圖片資訊",
+            "show_details": "顯示圖片資訊"
         },
         "set_avatar_styles": {
             "header": "設定角色風格",

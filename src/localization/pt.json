@@ -4657,7 +4657,9 @@
             "loading_gallery_description": "Lendo a lista indexada de capturas de tela.",
             "gallery_load_failed": "Falha ao carregar a galeria de capturas de tela",
             "scan_failed": "Falha ao verificar a biblioteca de capturas de tela",
-            "thumbnail_failed": "Miniatura indisponível"
+            "thumbnail_failed": "Miniatura indisponível",
+            "hide_details": "Ocultar informações",
+            "show_details": "Mostrar informações"
         },
         "set_avatar_styles": {
             "header": "Definir Estilos do Avatar",

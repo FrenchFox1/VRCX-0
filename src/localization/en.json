@@ -4657,7 +4657,9 @@
             "loading_gallery_description": "Reading the indexed screenshot list.",
             "gallery_load_failed": "Failed to load screenshot gallery",
             "scan_failed": "Failed to scan screenshot library",
-            "thumbnail_failed": "Thumbnail unavailable"
+            "thumbnail_failed": "Thumbnail unavailable",
+            "hide_details": "Hide info",
+            "show_details": "Show info"
         },
         "set_avatar_styles": {
             "header": "Set Avatar Styles",

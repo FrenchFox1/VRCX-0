@@ -7,6 +7,7 @@ import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigati
 
 function createProps() {
     return {
+        enabled: true,
         loadScreenshot: vi.fn<
             (path: string, withCarousel: boolean) => Promise<void>
         >(async () => {}),
@@ -159,19 +160,17 @@ describe('useScreenshotMetadataNavigation', () => {
         expect(nextLoad).toHaveBeenCalledWith('metadata-next.png', true);
     });
 
-    it('handles Alt+Arrow shortcuts and removes listeners on unmount', () => {
+    it('handles unmodified Arrow shortcuts and removes listeners on unmount', () => {
         const props = createProps();
         props.onPathChange = vi.fn();
         const { unmount } = renderHook(() =>
             useScreenshotMetadataNavigation(props)
         );
         const left = new KeyboardEvent('keydown', {
-            altKey: true,
             cancelable: true,
             key: 'ArrowLeft'
         });
         const right = new KeyboardEvent('keydown', {
-            altKey: true,
             cancelable: true,
             key: 'ArrowRight'
         });
@@ -196,10 +195,45 @@ describe('useScreenshotMetadataNavigation', () => {
         unmount();
         window.dispatchEvent(
             new KeyboardEvent('keydown', {
-                altKey: true,
                 key: 'ArrowRight'
             })
         );
         expect(props.onPathChange).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores shortcuts while disabled, modified, or editing text', () => {
+        const props = createProps();
+        props.onPathChange = vi.fn();
+        const { rerender } = renderHook(
+            (currentProps) => useScreenshotMetadataNavigation(currentProps),
+            { initialProps: props }
+        );
+
+        act(() => {
+            window.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    altKey: true,
+                    key: 'ArrowRight'
+                })
+            );
+            const input = document.createElement('input');
+            document.body.append(input);
+            input.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    bubbles: true,
+                    key: 'ArrowRight'
+                })
+            );
+            input.remove();
+        });
+
+        rerender({ ...props, enabled: false });
+        act(() => {
+            window.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'ArrowRight' })
+            );
+        });
+
+        expect(props.onPathChange).not.toHaveBeenCalled();
     });
 });

@@ -4657,7 +4657,9 @@
             "loading_gallery_description": "正在读取已索引的截图列表。",
             "gallery_load_failed": "加载图库失败",
             "scan_failed": "扫描截图图库失败",
-            "thumbnail_failed": "缩略图不可用"
+            "thumbnail_failed": "缩略图不可用",
+            "hide_details": "隐藏图片信息",
+            "show_details": "显示图片信息"
         },
         "set_avatar_styles": {
             "header": "设置模型风格",

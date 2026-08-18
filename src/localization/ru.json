@@ -4661,7 +4661,9 @@
             "loading_gallery_description": "Чтение списка скриншотов.",
             "gallery_load_failed": "Не удалось загрузить галерею скриншотов",
             "scan_failed": "Не удалось сканировать библиотеку скриншотов",
-            "thumbnail_failed": "Недоступный пальцем"
+            "thumbnail_failed": "Недоступный пальцем",
+            "hide_details": "Скрыть информацию",
+            "show_details": "Показать информацию"
         },
         "set_avatar_styles": {
             "header": "Установить стили аватара",

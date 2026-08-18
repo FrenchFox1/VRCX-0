@@ -4652,7 +4652,9 @@
             "loading_gallery_description": "インデックス済みのスクリーンショット一覧を読み込んでいます。",
             "gallery_load_failed": "スクリーンショットギャラリーの読み込みに失敗しました",
             "scan_failed": "スクリーンショットライブラリのスキャンに失敗しました",
-            "thumbnail_failed": "サムネイルを表示できません"
+            "thumbnail_failed": "サムネイルを表示できません",
+            "hide_details": "画像情報を隠す",
+            "show_details": "画像情報を表示"
         },
         "set_avatar_styles": {
             "header": "アバタースタイルを設定",
