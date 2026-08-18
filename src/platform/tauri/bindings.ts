@@ -3907,7 +3907,6 @@ export type FriendProjection = {
 export type FriendProjectionPatch = {
     userId: string;
     patch: FriendRecord;
-    stateBucket: string;
     stateBucketAuthority: FriendStateBucketAuthority;
 };
 export type FriendRecord = Partial<{

@@ -113,7 +113,6 @@ export type FriendRosterSeedSnapshot = {
 export type FriendPatchEntry = {
     userId?: unknown;
     patch?: FriendRecordInput | null;
-    stateBucket?: unknown;
     stateBucketAuthority?: unknown;
 };
 

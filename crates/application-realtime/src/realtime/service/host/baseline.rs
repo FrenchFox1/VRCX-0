@@ -450,7 +450,6 @@ fn friend_snapshot_diff_projection(
             continue;
         };
         let previous_record = previous.and_then(|snapshot| snapshot.friends_by_id.get(&user_id));
-        let state_bucket = friend_record_state_bucket(record);
         let changed = !previous_record.is_some_and(|previous_record| previous_record == record);
         if !changed {
             continue;
@@ -464,7 +463,6 @@ fn friend_snapshot_diff_projection(
             .push(crate::realtime::FriendProjectionPatch {
                 user_id,
                 patch: record.clone(),
-                state_bucket: state_bucket.into(),
                 state_bucket_authority: FriendStateBucketAuthority::Explicit,
             });
         if let Some(entry) = joining_entry {
@@ -473,12 +471,6 @@ fn friend_snapshot_diff_projection(
     }
 
     (!projection.patches.is_empty() || !projection.removals.is_empty()).then_some(projection)
-}
-
-fn friend_record_state_bucket(record: &FriendRecord) -> String {
-    vrcx_0_core::friends::normalize_state_bucket(&record.state)
-        .or_else(|| vrcx_0_core::friends::normalize_state_bucket(&record.state))
-        .unwrap_or_else(|| "offline".to_string())
 }
 
 fn roster_order_from_friend_records(

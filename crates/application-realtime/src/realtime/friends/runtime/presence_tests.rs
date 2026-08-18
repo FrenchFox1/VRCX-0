@@ -117,7 +117,7 @@ mod tests {
             panic!("friend-online should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.persistence.feed_entries[0]["type"], "Online");
     }
 
@@ -756,7 +756,7 @@ mod tests {
             panic!("friend-update should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.state, "online");
     }
@@ -806,14 +806,14 @@ mod tests {
             panic!("friend-active should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
             panic!("online->active should schedule pending timer");
         };
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "active");
+        assert_eq!(fired.projection.patches[0].patch.state, "active");
     }
 
     #[test]
@@ -861,7 +861,7 @@ mod tests {
             panic!("offline should schedule pending timer");
         };
         assert_eq!(delay_ms, 170_000);
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.location, "wrld_1:123");
         assert_eq!(
             output.projection.patches[0].patch.extra["pendingOffline"],
@@ -872,7 +872,7 @@ mod tests {
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
 
-        assert_eq!(fired.projection.patches[0].state_bucket, "offline");
+        assert_eq!(fired.projection.patches[0].patch.state, "offline");
         assert_eq!(fired.persistence.feed_entries[0]["type"], "Offline");
     }
 
@@ -914,14 +914,14 @@ mod tests {
         else {
             panic!("friend-active should produce an output");
         };
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
             panic!("online->active should schedule pending timer");
         };
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "active");
+        assert_eq!(fired.projection.patches[0].patch.state, "active");
     }
 
     #[test]
@@ -977,7 +977,7 @@ mod tests {
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "offline");
+        assert_eq!(fired.projection.patches[0].patch.state, "offline");
     }
 
     #[test]
@@ -1033,7 +1033,7 @@ mod tests {
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "active");
+        assert_eq!(fired.projection.patches[0].patch.state, "active");
         assert_eq!(fired.projection.patches[0].patch.state, "active");
     }
 
@@ -1130,7 +1130,7 @@ mod tests {
 
         assert_eq!(online.timer_action, PendingOfflineTimerAction::None);
         assert!(online.persistence.feed_entries.is_empty());
-        assert_eq!(online.projection.patches[0].state_bucket, "online");
+        assert_eq!(online.projection.patches[0].patch.state, "online");
         assert_eq!(
             online.projection.patches[0].patch.extra["pendingOffline"],
             false

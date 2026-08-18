@@ -168,7 +168,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(
             runtime
                 .snapshot()
@@ -229,7 +229,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "offline");
+        assert_eq!(output.projection.patches[0].patch.state, "offline");
         assert!(output.persistence.feed_entries.is_empty());
         assert!(output.projection.feed_entries.is_empty());
         assert_eq!(
@@ -316,7 +316,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "offline");
+        assert_eq!(output.projection.patches[0].patch.state, "offline");
         assert!(output.persistence.feed_entries.is_empty());
         assert_eq!(
             output.projection.patches[0].patch.extra["pendingOffline"],
@@ -395,7 +395,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(
             output.projection.patches[0].patch.extra["pendingOffline"],
             false

@@ -12,7 +12,6 @@ pub(super) fn resolve_state_bucket(
     for value in [
         content.text_field("state"),
         content.text_field("stateBucket"),
-        patch.text_field("state"),
         patch.text_field("stateBucket"),
         previous
             .map(|previous| previous.text_field("stateBucket"))

@@ -61,8 +61,10 @@ fn friend_projection(state_bucket: &str, count: usize) -> FriendProjection {
     projection.patches = (0..count)
         .map(|index| FriendProjectionPatch {
             user_id: format!("usr_friend_{index}"),
-            patch: FriendRecord::default(),
-            state_bucket: state_bucket.into(),
+            patch: FriendRecord {
+                state: state_bucket.into(),
+                ..FriendRecord::default()
+            },
             state_bucket_authority: FriendStateBucketAuthority::Explicit,
         })
         .collect();

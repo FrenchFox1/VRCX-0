@@ -156,7 +156,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                     usr_online: {
                         id: 'usr_online',
                         displayName: 'Online Final',
-                        stateBucket: 'online',
+                        state: 'online',
                         location: 'wrld_live:123'
                     }
                 }
@@ -177,17 +177,17 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_online: {
                     displayName: 'Online Cache',
-                    stateBucket: 'online',
+                    state: 'online',
                     $trustLevel: 'Trusted User'
                 },
                 usr_active: {
                     displayName: 'Active Cache',
-                    stateBucket: 'active',
+                    state: 'active',
                     $trustLevel: 'Known User'
                 },
                 usr_offline: {
                     displayName: 'usr_offline',
-                    stateBucket: 'offline'
+                    state: 'offline'
                 }
             }
         });
@@ -223,14 +223,14 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                     usr_online: {
                         id: 'usr_online',
                         displayName: 'Online Fast',
-                        stateBucket: 'online',
+                        state: 'online',
                         platform: 'standalonewindows',
                         location: 'wrld_live:123'
                     },
                     usr_traveling: {
                         id: 'usr_traveling',
                         displayName: 'Traveling Fast',
-                        stateBucket: 'online',
+                        state: 'online',
                         platform: 'standalonewindows',
                         location: 'traveling'
                     }
@@ -278,7 +278,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                 usr_live: {
                     id: 'usr_live',
                     displayName: 'Live Friend',
-                    stateBucket: 'online',
+                    state: 'online',
                     location: 'wrld_new:456'
                 }
             }
@@ -292,7 +292,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                     usr_stale: {
                         id: 'usr_stale',
                         displayName: 'Stale Friend',
-                        stateBucket: 'offline'
+                        state: 'offline'
                     }
                 }
             }
@@ -312,7 +312,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_live: {
                     displayName: 'Live Friend',
-                    stateBucket: 'online',
+                    state: 'online',
                     location: 'wrld_new:456'
                 }
             }
@@ -333,7 +333,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                 usr_live: {
                     id: 'usr_live',
                     displayName: 'Live Friend',
-                    stateBucket: 'online'
+                    state: 'online'
                 }
             }
         });
@@ -402,7 +402,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_online: {
                     displayName: 'Online Cache',
-                    stateBucket: 'online'
+                    state: 'online'
                 }
             }
         });
@@ -451,7 +451,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_active: {
                     displayName: 'Active Cache',
-                    stateBucket: 'active'
+                    state: 'active'
                 }
             }
         });

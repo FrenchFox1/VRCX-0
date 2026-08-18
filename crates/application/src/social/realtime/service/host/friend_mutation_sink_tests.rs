@@ -224,7 +224,7 @@ fn pending_accept_preserves_trusted_profile_state_on_start() -> Result<()> {
         })
         .expect("pending accept projection");
     assert_eq!(projection.payload["generation"], started.generation);
-    assert_eq!(projection.payload["patches"][0]["stateBucket"], "online");
+    assert_eq!(projection.payload["patches"][0]["patch"]["state"], "online");
     assert_eq!(projection.payload["friendLogChanged"], true);
     Ok(())
 }

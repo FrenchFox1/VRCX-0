@@ -47,7 +47,7 @@ mod tests {
             panic!("friend-location should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(
             output.projection.patches[0].state_bucket_authority,
             FriendStateBucketAuthority::Preserve
@@ -108,7 +108,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0].patch;
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.persistence.feed_entries[0]["type"], "GPS");
         assert_eq!(patch.state, "online");
         assert_eq!(patch.location, "wrld_2:456");
@@ -198,7 +198,7 @@ mod tests {
         };
 
         let patch = &location_output.projection.patches[0].patch;
-        assert_eq!(location_output.projection.patches[0].state_bucket, "online");
+        assert_eq!(location_output.projection.patches[0].patch.state, "online");
         assert_eq!(
             location_output.projection.patches[0].state_bucket_authority,
             FriendStateBucketAuthority::Preserve

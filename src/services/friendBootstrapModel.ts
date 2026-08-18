@@ -165,7 +165,6 @@ export function buildSeedRosterFriendsById(
             last_platform: '',
             location: 'offline',
             state: stateBucket,
-            stateBucket,
             trustLevel,
             $trustLevel: trustLevel,
             friendNumber,

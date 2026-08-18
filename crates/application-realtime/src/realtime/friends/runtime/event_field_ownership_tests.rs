@@ -86,7 +86,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "wrld_home:42~region(jp)");
         assert_eq!(patch.patch.world_id, "wrld_home");
@@ -130,7 +130,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "traveling");
         assert_eq!(patch.patch.traveling_to_location, "wrld_dest:7~region(us)");
         assert!(output
@@ -171,7 +171,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(
             patch.state_bucket_authority,
             FriendStateBucketAuthority::Explicit
@@ -274,7 +274,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(
             patch.state_bucket_authority,
             FriendStateBucketAuthority::Preserve
@@ -310,7 +310,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "active");
+        assert_eq!(patch.patch.state, "active");
         assert_eq!(patch.patch.location, "offline");
         assert_eq!(patch.patch.status, "busy");
         assert_eq!(patch.patch.display_name, "Friend");
@@ -339,7 +339,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.extra["pendingOffline"], true);
         assert!(output.persistence.feed_entries.is_empty());
         let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
@@ -354,7 +354,7 @@ mod tests {
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "offline");
+        assert_eq!(fired.projection.patches[0].patch.state, "offline");
         assert_eq!(snapshot_friend(&runtime).status, "join me");
     }
 
@@ -382,7 +382,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "wrld_1:123~region(jp)");
@@ -413,7 +413,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "offline");
+        assert_eq!(patch.patch.state, "offline");
         assert_eq!(output.persistence.friend_log_upserts.len(), 1);
         assert!(output
             .persistence

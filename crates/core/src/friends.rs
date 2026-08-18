@@ -390,7 +390,6 @@ mod tests {
             "id": "usr_friend",
             "displayName": "Friend",
             "state": "online",
-            "stateBucket": "online",
             "platform": "standalonewindows",
             "last_platform": "android",
             "status": "join me",
@@ -409,7 +408,6 @@ mod tests {
         let serialized = serde_json::to_value(record).unwrap();
         assert_eq!(serialized["displayName"], "Friend");
         assert_eq!(serialized["state"], "online");
-        assert_eq!(serialized["stateBucket"], "online");
         assert_eq!(serialized["platform"], "standalonewindows");
         assert_eq!(serialized["lastPlatform"], "android");
         assert_eq!(serialized["status"], "join me");

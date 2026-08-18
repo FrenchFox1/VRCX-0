@@ -230,12 +230,10 @@ function normalizeFriendRecordMap(
 
 function resolveFriendStateBucket({
     patch,
-    stateBucket,
     stateBucketAuthority,
     existingEntry
 }: {
     patch?: FriendRecordInput | null;
-    stateBucket?: unknown;
     stateBucketAuthority?: unknown;
     existingEntry?: FriendRecord | null;
 }): FriendRosterBucket {
@@ -243,11 +241,8 @@ function resolveFriendStateBucket({
         return normalizeStateBucket(existingEntry?.state) || 'offline';
     }
 
-    const explicitStateBucket =
-        normalizeStateBucket(stateBucket) || normalizeStateBucket(patch?.state);
-
     return (
-        explicitStateBucket ||
+        normalizeStateBucket(patch?.state) ||
         normalizeStateBucket(existingEntry?.state) ||
         'offline'
     );
@@ -613,7 +608,6 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
     applyFriendPatch({
         userId,
         patch = {},
-        stateBucket,
         stateBucketAuthority,
         detail = ''
     }: FriendPatchEntry & { detail?: string }) {
@@ -626,7 +620,6 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
             const existingEntry = state.friendsById[normalizedUserId] ?? null;
             const nextStateBucket = resolveFriendStateBucket({
                 patch,
-                stateBucket,
                 stateBucketAuthority,
                 existingEntry
             });
@@ -696,7 +689,6 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
                 const existingEntry = friendsById[normalizedUserId] ?? null;
                 const nextStateBucket = resolveFriendStateBucket({
                     patch,
-                    stateBucket: entry?.stateBucket,
                     stateBucketAuthority: entry?.stateBucketAuthority,
                     existingEntry
                 });

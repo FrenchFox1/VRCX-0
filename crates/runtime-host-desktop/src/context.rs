@@ -167,7 +167,7 @@ impl DesktopRuntimeServices {
             .get_bool("displayVRCPlusIconsAsAvatar", true)
             .unwrap_or(true);
         for patch in &projection.patches {
-            if !StateBucket::Online.matches(&patch.state_bucket) {
+            if !StateBucket::Online.matches(&patch.patch.state) {
                 continue;
             }
             let user_id = patch.user_id.as_str();

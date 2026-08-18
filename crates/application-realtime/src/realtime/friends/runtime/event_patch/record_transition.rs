@@ -87,7 +87,6 @@ pub(super) fn apply_friend_patch(
         projection: FriendProjectionPatch {
             user_id: user_id.to_string(),
             patch: next.clone(),
-            state_bucket: state_bucket.into(),
             state_bucket_authority,
         },
         next,

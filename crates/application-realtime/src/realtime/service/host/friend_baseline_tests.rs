@@ -54,7 +54,7 @@ fn sync_friend_snapshot_debounces_online_to_offline() -> Result<()> {
     assert_eq!(projection.payload["baselineRevision"], 1);
     assert_eq!(projection.payload["patches"].as_array().unwrap().len(), 1);
     assert_eq!(projection.payload["patches"][0]["userId"], "usr_friend");
-    assert_eq!(projection.payload["patches"][0]["stateBucket"], "online");
+    assert_eq!(projection.payload["patches"][0]["patch"]["state"], "online");
     assert_eq!(projection.payload["patches"][0]["patch"]["state"], "online");
     assert_eq!(
         projection.payload["patches"][0]["patch"]["location"],
@@ -127,7 +127,10 @@ fn sync_friend_snapshot_persists_feed_when_refresh_confirms_pending_offline() ->
         .iter()
         .find(|event| event.name == "realtimeFriendProjection")
         .expect("confirmed offline refresh should emit a friend projection");
-    assert_eq!(projection.payload["patches"][0]["stateBucket"], "offline");
+    assert_eq!(
+        projection.payload["patches"][0]["patch"]["state"],
+        "offline"
+    );
     assert_eq!(
         projection.payload["patches"][0]["patch"]["displayName"],
         "Friend Fresh Name"
