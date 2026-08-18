@@ -1,5 +1,7 @@
 import { toast } from 'sonner';
 
+import { clearUserDialogCaches } from '@/components/dialogs/user-dialog/userDialogCache';
+import { resetFriendDwellTracking } from '@/components/user-hover-card/friendDwellTracker';
 import { clearEntityQueryCache } from '@/lib/entityQueryCache';
 import {
     type AuthenticatedRuntimeSession,
@@ -172,6 +174,8 @@ export function setAuthenticatingSessionState() {
 
 function resetCurrentUserRuntimeCaches() {
     clearEntityQueryCache();
+    clearUserDialogCaches();
+    resetFriendDwellTracking();
     resetVrchatConfigSnapshot();
     useAssistantChatStore.getState().resetAssistantChatState();
     useFriendRosterStore.getState().resetRoster();

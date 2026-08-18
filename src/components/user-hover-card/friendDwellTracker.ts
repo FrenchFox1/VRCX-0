@@ -98,6 +98,11 @@ function ensureStarted() {
     useFriendRosterStore.subscribe(ingestRosterState);
 }
 
+export function resetFriendDwellTracking() {
+    firstSeenByUser.clear();
+    previousFriendsById = null;
+}
+
 export function getEstimatedDwellSince(userId: unknown, location: unknown) {
     ensureStarted();
     const tracked = firstSeenByUser.get(normalizeId(userId));
