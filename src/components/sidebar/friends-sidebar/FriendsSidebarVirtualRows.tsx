@@ -1,3 +1,4 @@
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { normalizeLocationStatus } from '@/shared/utils/location';
@@ -127,7 +128,7 @@ function FriendVirtualRow({
     statusCommands: StatusCommandsView;
 }) {
     const source = readFriendStatusSource(friend);
-    const state = normalizeLocationStatus(source?.state);
+    const state = normalizeStateBucket(source?.state);
     const friendId = friend.id || '';
     const isOnlineFriend =
         runtime.onlineIdSet.has(friendId) || state === 'online';

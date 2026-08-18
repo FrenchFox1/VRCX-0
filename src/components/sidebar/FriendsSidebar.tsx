@@ -8,6 +8,7 @@ import {
     resolveObservedPlayerDwellEpochs,
     resolveObservedPlayerUserIds
 } from '@/domain/friends/sameInstanceFriends';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import {
     buildLocalInstanceActionGateMap,
@@ -101,7 +102,7 @@ function buildInstanceActionGateTarget(
         key: friendId,
         userId: friendId,
         location: String(readFriendRefLocation(friend) ?? ''),
-        stateBucket: normalizeLocationStatus(source?.state),
+        stateBucket: normalizeStateBucket(source?.state),
         isCurrentUser: friendId === normalizeId(currentUserId)
     };
 }
@@ -460,7 +461,7 @@ export function FriendsSidebar({
         return sortRows(
             rows.filter((friend) => {
                 const source = readFriendStatusSource(friend);
-                const state = normalizeLocationStatus(source?.state);
+                const state = normalizeStateBucket(source?.state);
                 return (
                     selectedFavoriteIds.has(normalizeId(friend?.id)) &&
                     state === 'online' &&

@@ -4,6 +4,7 @@ import type {
     FriendRosterById,
     FriendRosterStore
 } from '@/domain/friends/friendRosterTypes';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     normalizeLocationStatus,
     parseLocation
@@ -49,7 +50,7 @@ function readEntryUpstreamEpoch(friend: FriendRecord) {
 }
 
 function applyFriendChange(userId: string, friend: FriendRecord) {
-    const stateBucket = normalizeLocationStatus(friend?.state);
+    const stateBucket = normalizeStateBucket(friend?.state);
     const locationTag = readEntryLocationTag(friend);
     const inRealInstance =
         stateBucket === 'online' && parseLocation(locationTag).isRealInstance;

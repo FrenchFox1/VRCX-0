@@ -1,3 +1,4 @@
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     getFriendsSortFunction,
     sortStatus,
@@ -171,7 +172,7 @@ export function timestampMsFromValue(value: unknown) {
 }
 
 export function clearStaleOfflineLocation(location: unknown, state: unknown) {
-    const normalizedState = normalizeLocationStatus(state);
+    const normalizedState = normalizeStateBucket(state);
     if (
         (normalizedState === 'online' || normalizedState === 'active') &&
         normalizeLocationStatus(location) === 'offline'
@@ -322,8 +323,8 @@ export function resolveSidebarStatusDotClassName(
           : isOfflineByCurrentSnapshot
             ? 'offline'
             : '';
-    const state = normalizeLocationStatus(source?.state || snapshotState);
-    const stateBucket = normalizeLocationStatus(source?.state || snapshotState);
+    const state = normalizeStateBucket(source?.state || snapshotState);
+    const stateBucket = state;
 
     if (isCurrentUser || userId === currentUser?.id) {
         const currentSource = readFriendStatusSource(currentUser) || source;

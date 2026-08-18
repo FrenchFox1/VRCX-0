@@ -12,6 +12,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
@@ -163,8 +164,8 @@ export function resolveFriendRowLocationState({
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeLocationStatus(statusSource?.state);
-    const friendStateBucket = normalizeLocationStatus(statusSource?.state);
+    const friendState = normalizeStateBucket(statusSource?.state);
+    const friendStateBucket = friendState;
     const rawFriendLocation = isCurrentUser
         ? resolvePresenceLocation(friend)
         : readFriendRefLocation(friend);

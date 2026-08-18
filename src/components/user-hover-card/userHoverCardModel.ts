@@ -6,6 +6,7 @@ import {
     timestampMsFromValue,
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { userImage } from '@/services/entityMediaService';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
@@ -85,7 +86,7 @@ function statusKeyFromStatus(status: unknown) {
 }
 
 function statusKeyFromPresence(status: unknown, state: unknown) {
-    if (normalizeLocationStatus(state) === 'active') {
+    if (normalizeStateBucket(state) === 'active') {
         return 'active';
     }
     const statusKey = statusKeyFromStatus(status);
@@ -113,7 +114,7 @@ function resolveTrust(identity: HoverCardRecord) {
 }
 
 function estimatedOnlineMs(state: unknown, lastLogin: unknown, nowMs: number) {
-    if (normalizeLocationStatus(state) !== 'online') {
+    if (normalizeStateBucket(state) !== 'online') {
         return 0;
     }
     const lastLoginMs = timestampMsFromValue(lastLogin);
