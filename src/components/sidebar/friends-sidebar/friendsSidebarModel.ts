@@ -15,6 +15,7 @@ import {
     resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import {
     normalizeLocationStatus,
     resolveFriendPresenceLocation
@@ -225,14 +226,14 @@ export function resolveTrustNameColour(
 }
 
 export function legacyStatusDotClassName(status: unknown) {
-    const normalizedStatus = normalizeLocationStatus(status);
+    const normalizedStatus = normalizeUserStatus(status);
     if (normalizedStatus === 'active') {
         return 'bg-[var(--status-online)]';
     }
-    if (normalizedStatus === 'join me' || normalizedStatus === 'joinme') {
+    if (normalizedStatus === 'join me') {
         return 'bg-[var(--status-joinme)]';
     }
-    if (normalizedStatus === 'ask me' || normalizedStatus === 'askme') {
+    if (normalizedStatus === 'ask me') {
         return 'bg-[var(--status-askme)]';
     }
     if (normalizedStatus === 'busy') {
@@ -263,11 +264,11 @@ export function resolveCurrentUserStateBucket(
 }
 
 function activeStatusDotClassName(status: unknown) {
-    const normalizedStatus = normalizeLocationStatus(status);
-    if (normalizedStatus === 'join me' || normalizedStatus === 'joinme') {
+    const normalizedStatus = normalizeUserStatus(status);
+    if (normalizedStatus === 'join me') {
         return 'border-[var(--status-joinme)] bg-background';
     }
-    if (normalizedStatus === 'ask me' || normalizedStatus === 'askme') {
+    if (normalizedStatus === 'ask me') {
         return 'border-[var(--status-askme)] bg-background';
     }
     if (normalizedStatus === 'busy') {
@@ -399,10 +400,10 @@ export function resolveSidebarStatusDotClassName(
     if (status === 'active') {
         return 'bg-[var(--status-online)]';
     }
-    if (status === 'join me' || status === 'joinme') {
+    if (status === 'join me') {
         return 'bg-[var(--status-joinme)]';
     }
-    if (status === 'ask me' || status === 'askme') {
+    if (status === 'ask me') {
         return 'bg-[var(--status-askme)]';
     }
     if (status === 'busy') {

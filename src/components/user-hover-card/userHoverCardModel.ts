@@ -7,6 +7,7 @@ import {
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { userImage } from '@/services/entityMediaService';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import {
     normalizeLocationStatus,
     parseLocation
@@ -67,11 +68,11 @@ function sidebarSeed(value: unknown): SidebarFriendRecord | null {
 }
 
 function statusKeyFromStatus(status: unknown) {
-    const normalized = normalizeLocationStatus(status);
-    if (normalized === 'join me' || normalized === 'joinme') {
+    const normalized = normalizeUserStatus(status);
+    if (normalized === 'join me') {
         return 'join_me';
     }
-    if (normalized === 'ask me' || normalized === 'askme') {
+    if (normalized === 'ask me') {
         return 'ask_me';
     }
     if (normalized === 'busy') {

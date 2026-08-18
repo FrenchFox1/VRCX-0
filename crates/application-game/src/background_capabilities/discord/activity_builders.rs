@@ -1,4 +1,5 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_core::friends::normalize_user_status;
 use vrcx_0_core::location::{launch_url, GroupAccessType, ParsedLocation};
 
 use super::super::presence_facts::BackgroundPresenceFacts;
@@ -262,7 +263,7 @@ fn status_info<'a>(
     hide_invite: bool,
     labels: &'a DiscordPresenceLabels,
 ) -> StatusInfo<'a> {
-    match status.unwrap_or_default() {
+    match normalize_user_status(status.unwrap_or_default()).as_str() {
         "active" => StatusInfo {
             status_name: &labels.status_active,
             status_image: "active",

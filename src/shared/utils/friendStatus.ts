@@ -1,4 +1,20 @@
+import { normalizeString } from './string';
+
 type FriendStatus = 'join me' | 'active' | 'ask me' | 'busy' | 'offline';
+
+function normalizeUserStatus(value: unknown): string {
+    const status = normalizeString(value).toLowerCase();
+    if (status === 'joinme') {
+        return 'join me';
+    }
+    if (status === 'askme') {
+        return 'ask me';
+    }
+    if (status === 'offline:offline' || status.startsWith('offline ')) {
+        return 'offline';
+    }
+    return status;
+}
 
 function sortStatus(
     a: FriendStatus | string,
@@ -57,5 +73,5 @@ function sortStatus(
     return 0;
 }
 
-export { sortStatus };
+export { normalizeUserStatus, sortStatus };
 export type { FriendStatus };

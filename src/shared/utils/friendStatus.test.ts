@@ -1,6 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
-import { sortStatus } from './friendStatus';
+import { normalizeUserStatus, sortStatus } from './friendStatus';
+
+describe('normalizeUserStatus', () => {
+    it('accepts both spaced and spaceless status aliases', () => {
+        expect(normalizeUserStatus('joinme')).toBe('join me');
+        expect(normalizeUserStatus('JoinMe')).toBe('join me');
+        expect(normalizeUserStatus('  join me  ')).toBe('join me');
+        expect(normalizeUserStatus('askme')).toBe('ask me');
+        expect(normalizeUserStatus('Ask Me')).toBe('ask me');
+    });
+
+    it('collapses offline sentinels', () => {
+        expect(normalizeUserStatus('offline:offline')).toBe('offline');
+        expect(normalizeUserStatus('offline 2 hours ago')).toBe('offline');
+    });
+
+    it('passes through other values lowercased', () => {
+        expect(normalizeUserStatus('Active')).toBe('active');
+        expect(normalizeUserStatus('busy')).toBe('busy');
+        expect(normalizeUserStatus(null)).toBe('');
+    });
+});
 
 describe('sortStatus', () => {
     it('returns 0 for identical statuses', () => {

@@ -252,6 +252,17 @@ pub fn normalize_state_bucket(value: &str) -> Option<String> {
     StateBucket::normalize(value).map(|bucket| bucket.as_str().to_string())
 }
 
+pub fn normalize_user_status(value: &str) -> String {
+    let status = value.trim().to_ascii_lowercase();
+    match status.as_str() {
+        "joinme" => "join me".to_string(),
+        "askme" => "ask me".to_string(),
+        "offline:offline" => "offline".to_string(),
+        _ if status.starts_with("offline ") => "offline".to_string(),
+        _ => status,
+    }
+}
+
 pub fn meaningful_display_name(
     display_name: &str,
     username: &str,

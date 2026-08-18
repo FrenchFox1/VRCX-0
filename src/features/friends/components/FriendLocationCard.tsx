@@ -14,6 +14,7 @@ import { UserStatusDot } from '@/components/UserStatusDot';
 import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
@@ -83,21 +84,7 @@ export type FriendLocationCardDensity = Pick<
 >;
 
 function normalizeStatusText(value: unknown) {
-    const status =
-        typeof value === 'string'
-            ? value.trim().toLowerCase()
-            : String(value ?? '')
-                  .trim()
-                  .toLowerCase();
-    if (status === 'joinme') {
-        return 'join me';
-    }
-    if (status === 'askme') {
-        return 'ask me';
-    }
-    if (status === 'offline:offline' || status.startsWith('offline ')) {
-        return 'offline';
-    }
+    const status = normalizeUserStatus(value);
     if (status === 'private:private') {
         return 'private';
     }

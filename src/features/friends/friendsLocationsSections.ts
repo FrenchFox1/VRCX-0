@@ -1,5 +1,6 @@
 import { getFriendsSortFunction, sortStatus } from '@/shared/utils/friend';
 import type { FriendSortMethod } from '@/shared/utils/friend';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 
 import {
     type FriendLocationFriend,
@@ -235,25 +236,9 @@ function readFriendStatusSource(
     };
 }
 
-function normalizeStatusText(value: unknown) {
-    const status =
-        typeof value === 'string'
-            ? value.trim().toLowerCase()
-            : String(value ?? '')
-                  .trim()
-                  .toLowerCase();
-    if (status === 'joinme') {
-        return 'join me';
-    }
-    if (status === 'askme') {
-        return 'ask me';
-    }
-    return status;
-}
-
 function activeStatusSortValue(friend: FriendLocationFriend) {
     const source = readFriendStatusSource(friend);
-    const status = normalizeStatusText(source?.status);
+    const status = normalizeUserStatus(source?.status);
     if (status === 'join me' || status === 'ask me' || status === 'busy') {
         return status;
     }

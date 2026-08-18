@@ -265,6 +265,44 @@ fn discord_unknown_status_preserves_private_fallback() {
 }
 
 #[test]
+fn discord_status_image_accepts_spaceless_status_aliases() {
+    let parsed = parse_location("wrld_266523e8-9161-40da-acd0-6bd82e075833:12345");
+    let details = DiscordLocationDetails {
+        world_name: "Popcorn Palace".into(),
+        parsed: Some(parsed.clone()),
+        ..Default::default()
+    };
+    let labels = DiscordPresenceLabels::default();
+
+    for (status, expected_image) in [
+        ("join me", "joinme"),
+        ("joinme", "joinme"),
+        ("ask me", "askme"),
+        ("askme", "askme"),
+        ("JoinMe", "joinme"),
+    ] {
+        let config = DiscordConfig {
+            discord_world_integration: true,
+            ..Default::default()
+        };
+        let facts = BackgroundPresenceFacts {
+            is_game_running: true,
+            current_user: json!({ "status": status }).into(),
+            ..Default::default()
+        };
+        let payload = build_discord_activity(&config, &facts, &labels, &details, &parsed);
+        assert_eq!(
+            payload
+                .activity
+                .get("assets")
+                .and_then(|value| value.get("small_image")),
+            Some(&Value::String(expected_image.into())),
+            "status {status} should map to {expected_image}"
+        );
+    }
+}
+
+#[test]
 fn discord_unchanged_payload_is_not_published_twice() {
     let payload = BackgroundDiscordActivityPayload {
         app_id: DEFAULT_APP_ID.into(),
