@@ -2,7 +2,7 @@ import { BadgeCheckIcon, DownloadIcon, ExternalLinkIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { CommunityThemeManifest } from '@/domain/themes/communityThemeTypes';
+import type { CommunityThemeManifest } from '@/domain/themes/types';
 import { openExternalLink } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';

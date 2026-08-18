@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import type { FavoriteDetailsById } from '@/domain/favorites/types';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
-import type { FavoriteDetailsById } from '@/state/favoriteStoreTypes';
 
 import { DETAIL_QUERY_MIN_LENGTH } from './quickSearchResultModel';
 

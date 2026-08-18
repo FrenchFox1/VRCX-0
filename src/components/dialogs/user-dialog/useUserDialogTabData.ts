@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { EntityRecord } from '@/domain/entities/profileEntities';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import configRepository from '@/repositories/configRepository';

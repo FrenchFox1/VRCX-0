@@ -1,4 +1,4 @@
-import type { LoadStatus } from '@/domain/shared/types';
+import type { LoadStatus } from '../shared/types';
 
 export type FavoriteKind = 'friend' | 'avatar' | 'world';
 export type StoredLocalFavoriteKind = Exclude<FavoriteKind, 'world'>;

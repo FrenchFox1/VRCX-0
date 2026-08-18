@@ -1,4 +1,4 @@
-import type { CommunityThemeLocalPreview } from '@/domain/themes/communityThemeTypes';
+import type { CommunityThemeLocalPreview } from '@/domain/themes/types';
 import { commands } from '@/platform/tauri/bindings';
 import { disableBackgroundImageForCommunityTheme } from '@/services/appearanceConflictCoordinator';
 import { isDevToolsBuild } from '@/shared/buildLabel';

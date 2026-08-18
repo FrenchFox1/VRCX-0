@@ -4,7 +4,7 @@ import type {
     GroupProfileRecord,
     UserProfileRecord
 } from '@/domain/entities/profileEntities';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterById } from '@/domain/friends/types';
 import userProfileRepository from '@/repositories/userProfileRepository';
 
 import { normalizeEntityId } from './groupInstances';

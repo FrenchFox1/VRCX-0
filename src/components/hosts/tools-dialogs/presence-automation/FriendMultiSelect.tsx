@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { UserPickerRow } from '@/components/search/UserPickerRow';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldLabel } from '@/ui/shadcn/field';

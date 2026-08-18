@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { getFriendsLocationsDensityConfig } from '@/features/friends/friendsLocationsDensity';
 
 vi.mock('react-i18next', () => ({

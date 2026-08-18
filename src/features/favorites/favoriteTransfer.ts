@@ -1,3 +1,4 @@
+import type { FavoriteRecord } from '@/domain/favorites/types';
 import type {
     FavoriteTransferInput,
     FavoriteTransferItemResult,
@@ -5,7 +6,6 @@ import type {
     FavoriteTransferLocation,
     FavoriteTransferMode
 } from '@/platform/tauri/bindings';
-import type { FavoriteRecord } from '@/state/favoriteStoreTypes';
 
 import { favoriteGroupType, normalizeFavoriteEntityId } from './favoritesItems';
 import type {

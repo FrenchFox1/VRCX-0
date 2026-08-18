@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 
 import {
     buildMutualFriendExcludePickerOptions,

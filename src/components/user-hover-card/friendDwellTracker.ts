@@ -3,7 +3,7 @@ import type {
     FriendRecord,
     FriendRosterById,
     FriendRosterStore
-} from '@/domain/friends/friendRosterTypes';
+} from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     normalizeLocationStatus,

@@ -1,5 +1,5 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { commands } from '@/platform/tauri/bindings';
-import type { FavoriteGroupMap } from '@/state/favoriteStoreTypes';
 
 export interface LocalWorldFavoritesSnapshot {
     favoritesByGroup: FavoriteGroupMap;

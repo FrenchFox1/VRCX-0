@@ -1,4 +1,4 @@
-import type { FeedCursor } from '@/domain/feed/feedReadModelTypes';
+import type { FeedCursor } from '@/domain/feed/readModel';
 import {
     commands,
     type FeedFilter,
@@ -16,7 +16,7 @@ import { normalizeString } from '@/shared/utils/string';
 
 import { normalizeUserTablePrefix } from './userSessionRepository';
 
-export type { FeedCursor } from '@/domain/feed/feedReadModelTypes';
+export type { FeedCursor } from '@/domain/feed/readModel';
 
 interface FeedRowsQueryOptions {
     userId: unknown;

@@ -6,7 +6,7 @@ import type {
     CommunityThemeInstallMetadata,
     CommunityThemeManifest,
     CommunityThemeStatsById
-} from '@/domain/themes/communityThemeTypes';
+} from '@/domain/themes/types';
 import { commands } from '@/platform/tauri/bindings';
 import type { BackgroundImageMode } from '@/platform/tauri/bindings';
 import {

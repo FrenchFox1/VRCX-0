@@ -1,4 +1,4 @@
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
+import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import type { FeedFilter, FeedRowOutput } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';

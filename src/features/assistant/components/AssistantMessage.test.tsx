@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import type { UIMessage } from '@/domain/assistant/assistantTypes';
+import type { UIMessage } from '@/domain/assistant/types';
 
 import { AssistantMessage } from './AssistantMessage';
 

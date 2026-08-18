@@ -1,4 +1,4 @@
-import type { CommunityThemeManifest } from '@/domain/themes/communityThemeTypes';
+import type { CommunityThemeManifest } from '@/domain/themes/types';
 import { links } from '@/shared/constants/link';
 import type { THEME_COLORS } from '@/shared/constants/themes';
 

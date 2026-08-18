@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/layout/PageScaffold';
-import type { CommunityThemeInstallMetadata } from '@/domain/themes/communityThemeTypes';
+import type { CommunityThemeInstallMetadata } from '@/domain/themes/types';
 import { openExternalLink } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';

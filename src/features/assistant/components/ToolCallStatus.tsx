@@ -3,7 +3,7 @@ import { CheckIcon, XIcon } from 'lucide-react';
 import type {
     ToolCallStatus as Status,
     UIToolCall
-} from '@/domain/assistant/assistantTypes';
+} from '@/domain/assistant/types';
 import { cn } from '@/lib/utils';
 import { Marker, MarkerContent, MarkerIcon } from '@/ui/shadcn/marker';
 import { Spinner } from '@/ui/shadcn/spinner';

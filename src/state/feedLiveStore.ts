@@ -6,7 +6,7 @@ import type {
     FeedLiveEntry,
     FeedLivePatch,
     FeedLiveEntryPayload
-} from '@/domain/feed/feedLiveTypes';
+} from '@/domain/feed/live';
 import { normalizeString } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 

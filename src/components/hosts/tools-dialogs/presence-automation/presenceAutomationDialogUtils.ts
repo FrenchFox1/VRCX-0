@@ -1,8 +1,8 @@
 import type { TFunction } from 'i18next';
 
+import type { FavoriteGroup } from '@/domain/favorites/types';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { userStatusLabel } from '@/shared/utils/userStatus';
-import type { FavoriteGroup } from '@/state/favoriteStoreTypes';
 
 const I18N_ROOT = 'view.tools.social_automation';
 

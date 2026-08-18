@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
+import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import { FeedPersistenceDisabledIndicator } from '@/features/feed/components/FeedPersistenceDisabledIndicator';
 import { mergeFeedRowsWithSnapshot } from '@/features/feed/feedLiveMerge';
 import type { FeedRow } from '@/features/feed/feedTypes';

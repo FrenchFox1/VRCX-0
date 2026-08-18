@@ -1,11 +1,11 @@
-import type { FriendRecordInput } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecordInput } from '@/domain/friends/types';
 import { isUserId } from '@/shared/constants/vrchatIds';
 export { resolveCurrentInviteLocation as resolveFeedCurrentInviteLocation } from '@/shared/utils/invite';
-import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import type {
     FavoriteGroupMap,
     FavoriteRecord
-} from '@/state/favoriteStoreTypes';
+} from '@/domain/favorites/types';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
 
 import type { FeedRow } from './feedTypes';
 

@@ -6,7 +6,7 @@ import type {
     FavoriteRecord,
     FavoriteStoreState,
     RemoteFavoriteCollections
-} from './favoriteStoreTypes';
+} from '@/domain/favorites/types';
 
 export const DEFAULT_FAVORITE_LIMITS = Object.freeze({
     maxFavoriteGroups: Object.freeze({

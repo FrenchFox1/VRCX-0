@@ -1,5 +1,5 @@
+import type { FavoriteLoadStatus } from '@/domain/favorites/types';
 import type { FriendSortMethod } from '@/shared/utils/friend';
-import type { FavoriteLoadStatus } from '@/state/favoriteStoreTypes';
 
 import type { SidebarPreferences } from '../friends-sidebar/friendsSidebarModel';
 import type {

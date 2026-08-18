@@ -1,14 +1,12 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type {
-    FriendRecord,
-    FriendRosterById
-} from '@/domain/friends/friendRosterTypes';
+import type { FavoriteGroup, FavoriteGroupMap } from '@/domain/favorites/types';
 import {
     resolveObservedPlayerDwellEpochs,
     resolveObservedPlayerUserIds
 } from '@/domain/friends/sameInstanceFriends';
+import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
 import { applyInstanceDwellEpochs } from '@/domain/instances/instanceRoster';
 import {
     getVisibleKnownSizeRows,
@@ -19,10 +17,6 @@ import {
     type InviteLocationCurrentUserSnapshot,
     type InviteLocationGameState
 } from '@/shared/utils/invite';
-import type {
-    FavoriteGroup,
-    FavoriteGroupMap
-} from '@/state/favoriteStoreTypes';
 
 import { buildFriendsLocationsSegmentOptions } from './friendsLocationsConfig';
 import {

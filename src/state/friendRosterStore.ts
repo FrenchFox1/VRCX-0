@@ -14,7 +14,7 @@ import type {
     FriendRosterSnapshotInput,
     FriendRosterState,
     FriendRosterStore
-} from '@/domain/friends/friendRosterTypes';
+} from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     computeTrustLevel,

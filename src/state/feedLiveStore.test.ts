@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { FeedLiveEntry, FeedLivePatch } from '@/domain/feed/feedLiveTypes';
+import type { FeedLiveEntry, FeedLivePatch } from '@/domain/feed/live';
 
 import { feedEntryCorrectionId, useFeedLiveStore } from './feedLiveStore';
 import { usePreferencesStore } from './preferencesStore';

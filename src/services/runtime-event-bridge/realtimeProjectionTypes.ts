@@ -1,8 +1,5 @@
 import type { UserProfileEntity } from '@/domain/entities/profileEntities';
-import type {
-    FeedLiveEntryPayload,
-    FeedLivePatch
-} from '@/domain/feed/feedLiveTypes';
+import type { FeedLiveEntryPayload, FeedLivePatch } from '@/domain/feed/live';
 import type {
     FriendProjection,
     RealtimeCurrentUserProjection,

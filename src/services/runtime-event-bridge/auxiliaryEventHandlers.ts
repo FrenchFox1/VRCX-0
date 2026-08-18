@@ -1,5 +1,9 @@
 import { toast } from 'sonner';
 
+import type {
+    FavoriteKind,
+    StoredLocalFavoriteKind
+} from '@/domain/favorites/types';
 import { invalidateEntityQueries } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
 import type {
@@ -15,10 +19,6 @@ import {
     useFavoriteRevisionStore
 } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
-import type {
-    FavoriteKind,
-    StoredLocalFavoriteKind
-} from '@/state/favoriteStoreTypes';
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 import {
     createGroupInstancesState,

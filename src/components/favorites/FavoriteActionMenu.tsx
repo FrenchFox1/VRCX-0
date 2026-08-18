@@ -4,11 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
-import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
-import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
-import { persistAvatarDetails } from '@/services/favoriteAvatarCacheService';
-import { persistWorldDetails } from '@/services/favoriteWorldCacheService';
-import { useFavoriteStore } from '@/state/favoriteStore';
 import type {
     FavoriteGroup as FavoriteStoreGroup,
     FavoriteGroupMap,
@@ -16,7 +11,12 @@ import type {
     FavoriteRecord,
     FavoriteStore,
     RemoteFavoriteKind
-} from '@/state/favoriteStoreTypes';
+} from '@/domain/favorites/types';
+import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
+import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
+import { persistAvatarDetails } from '@/services/favoriteAvatarCacheService';
+import { persistWorldDetails } from '@/services/favoriteWorldCacheService';
+import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import {

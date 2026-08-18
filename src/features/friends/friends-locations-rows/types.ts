@@ -1,5 +1,5 @@
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
 import type { SameInstanceLastLocation } from '@/domain/friends/sameInstanceFriends';
+import type { FriendRecord } from '@/domain/friends/types';
 import type { parseLocation } from '@/shared/utils/location';
 
 export type TranslationFn = (

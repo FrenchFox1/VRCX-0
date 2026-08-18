@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { FeedLiveEntry } from '@/domain/feed/feedLiveTypes';
+import type { FeedLiveEntry } from '@/domain/feed/live';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';

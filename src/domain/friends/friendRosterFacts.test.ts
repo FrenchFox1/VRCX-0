@@ -4,7 +4,7 @@ import {
     applyFactDerivedFields,
     mergeRosterFriendFacts
 } from './friendRosterFacts';
-import type { FriendRecord } from './friendRosterTypes';
+import type { FriendRecord } from './types';
 
 type UserFact = NonNullable<Parameters<typeof applyFactDerivedFields>[1]>;
 

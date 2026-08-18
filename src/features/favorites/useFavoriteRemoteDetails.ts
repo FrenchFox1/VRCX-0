@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import type { FavoriteEntityDetail } from '@/domain/favorites/types';
 import { commands } from '@/platform/tauri/bindings';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
-import type { FavoriteEntityDetail } from '@/state/favoriteStoreTypes';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type FavoriteRemoteDetailKind = 'avatar' | 'world';

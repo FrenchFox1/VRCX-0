@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
+import type { FavoriteGroup } from '@/domain/favorites/types';
 import {
     resolveObservedPlayerDwellEpochs,
     resolveObservedPlayerUserIds
@@ -18,7 +19,6 @@ import {
 } from '@/shared/utils/invite';
 import { normalizeLocationStatus } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
-import type { FavoriteGroup } from '@/state/favoriteStoreTypes';
 import { useModalStore } from '@/state/modalStore';
 
 import {

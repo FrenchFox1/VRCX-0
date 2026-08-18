@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 
 import { buildMutualFriendsBaseGraph } from './mutualFriendsGraphData';
 import { MUTUAL_GRAPH_EMPTY_USER_ID } from './mutualFriendsSettings';

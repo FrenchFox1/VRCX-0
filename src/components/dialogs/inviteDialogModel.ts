@@ -1,7 +1,7 @@
 import type {
     FriendRecordInput,
     FriendRosterInputById
-} from '@/domain/friends/friendRosterTypes';
+} from '@/domain/friends/types';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 
 type InviteCurrentUser = FriendRecordInput | null | undefined;

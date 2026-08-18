@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { FavoriteRecord } from '@/domain/favorites/types';
 import type {
     FavoriteBulkRemoveResult,
     FavoriteTransferItemResult,
@@ -10,7 +11,6 @@ import type {
 } from '@/platform/tauri/bindings';
 import { commands } from '@/platform/tauri/bindings';
 import favoriteTransferRepository from '@/repositories/favoriteTransferRepository';
-import type { FavoriteRecord } from '@/state/favoriteStoreTypes';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 

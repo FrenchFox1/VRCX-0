@@ -11,7 +11,7 @@ import { Location } from '@/components/Location';
 import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
 import { normalizeUserStatus } from '@/shared/utils/friendStatus';

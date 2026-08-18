@@ -6,16 +6,16 @@ import {
     type FriendSortMethod
 } from '@/shared/utils/friend';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
-import type {
-    FriendLocationProjection,
-    FriendRecordInput
-} from '@/domain/friends/friendRosterTypes';
 import {
     buildSameInstanceFriendGroups,
     isOnlineSameInstanceFriend,
     resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
+import type {
+    FriendLocationProjection,
+    FriendRecordInput
+} from '@/domain/friends/types';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
     locationSentinel,

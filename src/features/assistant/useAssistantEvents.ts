@@ -7,7 +7,7 @@ import type {
     AssistantToolCallEvent,
     AssistantToolResultEvent,
     AssistantTurnEntitiesEvent
-} from '@/domain/assistant/assistantTypes';
+} from '@/domain/assistant/types';
 import { tauriClient } from '@/platform/tauri/client';
 import {
     recordAssistantToolError,

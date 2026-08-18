@@ -3,7 +3,7 @@ import type {
     GroupDialogInstanceRow,
     GroupInstanceRecord
 } from '@/domain/entities/profileEntities';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { parseLocation } from '@/shared/utils/location';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 

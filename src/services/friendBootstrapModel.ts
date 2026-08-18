@@ -1,4 +1,4 @@
-import type { FriendRosterInputById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterInputById } from '@/domain/friends/types';
 import type { FriendLogCurrentRow } from '@/repositories/friendLogRepository';
 
 export type FriendBootstrapSnapshot = Record<string, unknown> & {
