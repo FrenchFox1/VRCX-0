@@ -476,7 +476,7 @@ fn friend_snapshot_diff_projection(
 }
 
 fn friend_record_state_bucket(record: &FriendRecord) -> String {
-    vrcx_0_core::friends::normalize_state_bucket(&record.state_bucket)
+    vrcx_0_core::friends::normalize_state_bucket(&record.state)
         .or_else(|| vrcx_0_core::friends::normalize_state_bucket(&record.state))
         .unwrap_or_else(|| "offline".to_string())
 }

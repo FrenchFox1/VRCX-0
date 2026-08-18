@@ -14,7 +14,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },
@@ -64,7 +63,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },
@@ -101,7 +99,7 @@ mod tests {
 
         let patch = &output.projection.patches[0].patch;
         assert_eq!(output.projection.patches[0].state_bucket, "offline");
-        assert_eq!(patch.state_bucket, "offline");
+        assert_eq!(patch.state, "offline");
         assert_eq!(output.profile_refetch_user_ids, vec!["usr_friend"]);
         assert_eq!(
             runtime
@@ -110,7 +108,7 @@ mod tests {
                 .friends_by_id
                 .get("usr_friend")
                 .unwrap()
-                .state_bucket,
+                .state,
             "offline"
         );
     }
@@ -127,7 +125,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -188,7 +185,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },

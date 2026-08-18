@@ -7,7 +7,6 @@ mod tests {
             id: "usr_friend".into(),
             display_name: "Friend".into(),
             state: "offline".into(),
-            state_bucket: "offline".into(),
             location: "offline".into(),
             extra: [
                 ("$trustLevel".into(), json!("User")),
@@ -31,7 +30,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: location.into(),
                         ..FriendRecord::default()
                     },
@@ -87,7 +85,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },
@@ -210,7 +207,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Old Name".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -408,7 +404,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Old Name".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },
@@ -461,7 +456,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Old Name".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },
@@ -504,7 +498,7 @@ mod tests {
         let snapshot = runtime.snapshot().unwrap();
         let friend = &snapshot.friends_by_id["usr_friend"];
         assert_eq!(friend.display_name, "New Name");
-        assert_eq!(friend.state_bucket, "active");
+        assert_eq!(friend.state, "active");
     }
 
     #[test]
@@ -519,7 +513,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Old Name".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -566,7 +559,7 @@ mod tests {
         let snapshot = runtime.snapshot().unwrap();
         let friend = &snapshot.friends_by_id["usr_friend"];
         assert_eq!(friend.display_name, "Old Name");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(
             friend.extra.get("pendingOffline").and_then(Value::as_bool),
             Some(true)
@@ -629,7 +622,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Old Name".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -682,7 +674,6 @@ mod tests {
                         id: "usr_removed".into(),
                         display_name: "Removed Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         ..FriendRecord::default()
                     },
                 )]
@@ -729,7 +720,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         status_description: "Old status".into(),
@@ -767,7 +757,7 @@ mod tests {
         };
 
         assert_eq!(output.projection.patches[0].state_bucket, "online");
-        assert_eq!(output.projection.patches[0].patch.state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.state, "online");
     }
 
@@ -783,7 +773,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -839,7 +828,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         extra: [("$location_at".into(), json!(1_700_000_000_000i64))]
                             .into_iter()
@@ -900,7 +888,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -949,7 +936,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -1006,7 +992,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },

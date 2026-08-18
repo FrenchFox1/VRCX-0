@@ -334,7 +334,7 @@ impl VrcxMcpServer {
                 FriendProfileCurrent {
                     user_id: friend.id,
                     display_name,
-                    state: friend.state_bucket,
+                    state: friend.state,
                     location: friend.location,
                     world_id: parsed.world_id,
                     status: friend.status,

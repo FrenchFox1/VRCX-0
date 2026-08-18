@@ -40,7 +40,6 @@ mod tests {
             id: uid.clone(),
             display_name: field_str(entry.get("dn")).into(),
             state: field_str(entry.get("state")).into(),
-            state_bucket: field_str(entry.get("state")).into(),
             location: field_str(entry.get("loc")),
             status: field_str(entry.get("status")).into(),
             ..FriendRecord::default()
@@ -594,7 +593,7 @@ mod tests {
         if after_state != record.state {
             fields.push("state");
         }
-        if after_bucket != record.state_bucket {
+        if after_bucket != record.state {
             fields.push("stateBucket");
         }
         if field_str(after.get("status")) != record.status {

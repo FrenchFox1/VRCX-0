@@ -340,7 +340,6 @@ fn fallback_accept(
                 id: target_user_id.to_string(),
                 display_name: display_name.clone().into(),
                 state: "offline".into(),
-                state_bucket: "offline".into(),
                 ..vrcx_0_core::friends::FriendRecord::default()
             });
     let history_entry = history_entry("Friend", target_user_id, target_display_name);

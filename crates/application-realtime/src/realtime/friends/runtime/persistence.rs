@@ -677,7 +677,7 @@ pub(super) fn duration_ms(previous: &FriendRecord, now_ms: i64) -> i64 {
 }
 
 pub(super) fn is_online_state(record: &FriendRecord) -> bool {
-    StateBucket::Online.matches(&record.state_bucket) || StateBucket::Online.matches(&record.state)
+    StateBucket::Online.matches(&record.state)
 }
 
 pub(super) fn is_private_location(location: &str) -> bool {

@@ -42,7 +42,6 @@ mod tests {
             id: "usr_friend".into(),
             display_name: "Friend".into(),
             state: state.into(),
-            state_bucket: state.into(),
             location: location.into(),
             ..FriendRecord::default()
         }
@@ -104,7 +103,7 @@ mod tests {
             .any(|entry| entry["type"] == "Online"));
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "wrld_home:42~region(jp)");
     }
 
@@ -317,7 +316,7 @@ mod tests {
         assert_eq!(patch.patch.display_name, "Friend");
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "active");
+        assert_eq!(friend.state, "active");
         assert_eq!(friend.state, "active");
         assert_eq!(friend.location, "offline");
         assert_eq!(friend.status, "busy");
@@ -348,7 +347,7 @@ mod tests {
         };
 
         let debounced = snapshot_friend(&runtime);
-        assert_eq!(debounced.state_bucket, "online");
+        assert_eq!(debounced.state, "online");
         assert_eq!(debounced.status, "join me");
         assert_eq!(debounced.location, "wrld_1:123~region(jp)");
 
@@ -384,14 +383,14 @@ mod tests {
 
         let patch = &output.projection.patches[0];
         assert_eq!(patch.state_bucket, "online");
-        assert_eq!(patch.patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "wrld_1:123~region(jp)");
         assert_eq!(patch.patch.status, "active");
         assert_eq!(patch.patch.status_description, "fresh");
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "wrld_1:123~region(jp)");
     }
 
@@ -422,7 +421,7 @@ mod tests {
             .iter()
             .any(|entry| entry["type"] == "Friend" && entry["displayName"] == "Added"));
 
-        assert_eq!(snapshot_friend(&runtime).state_bucket, "offline");
+        assert_eq!(snapshot_friend(&runtime).state, "offline");
     }
 
     #[test]

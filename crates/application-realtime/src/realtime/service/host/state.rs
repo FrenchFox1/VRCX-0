@@ -80,7 +80,7 @@ impl ScopedFriendLogMutation {
             FriendLogMutation::Upsert { record } => {
                 let record = *record;
                 let user_id = record.id.clone();
-                let state_bucket = record.state_bucket.clone();
+                let state_bucket = record.state.clone();
                 pending
                     .friends_by_id
                     .insert(user_id.clone(), record.clone());

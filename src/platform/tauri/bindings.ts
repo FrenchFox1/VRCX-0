@@ -3923,7 +3923,6 @@ export type FriendRecord = Partial<{
     displayName?: string;
     username?: string;
     state?: string;
-    stateBucket?: string;
     location?: string;
     travelingToLocation?: string;
     worldId?: string;

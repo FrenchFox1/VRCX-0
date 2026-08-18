@@ -103,9 +103,6 @@ pub struct FriendRecord {
     #[specta(type = String)]
     pub state: CompactString,
     #[serde(default)]
-    #[specta(type = String)]
-    pub state_bucket: CompactString,
-    #[serde(default)]
     pub location: String,
     #[serde(default)]
     pub traveling_to_location: String,
@@ -172,21 +169,15 @@ impl FriendRecord {
             return None;
         }
 
-        self.state_bucket = StateBucket::normalize(first_non_empty([
-            self.state_bucket.as_str(),
-            self.state.as_str(),
-        ]))
-        .unwrap_or(StateBucket::Offline)
-        .as_str()
-        .into();
-        self.state = self.state_bucket.clone();
+        self.state = StateBucket::normalize(self.state.as_str())
+            .unwrap_or(StateBucket::Offline)
+            .as_str()
+            .into();
         Some(self)
     }
 
     pub fn resolved_state_bucket(&self) -> Option<StateBucket> {
-        [self.state_bucket.as_str(), self.state.as_str()]
-            .into_iter()
-            .find_map(StateBucket::normalize)
+        StateBucket::normalize(self.state.as_str())
     }
 
     pub fn is_placeholder(&self) -> bool {
@@ -356,7 +347,7 @@ mod tests {
         assert_eq!(baseline.websocket, "wss://ws.example.test");
         let friend = baseline.friends_by_id.get("usr_friend").unwrap();
         assert_eq!(friend.id, "usr_friend");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.display_name_or_id(), "Friend");
     }
 
@@ -378,7 +369,6 @@ mod tests {
 
         assert!(!record.display_name.is_heap_allocated());
         assert!(!record.state.is_heap_allocated());
-        assert!(!record.state_bucket.is_heap_allocated());
         assert!(!record.platform.is_heap_allocated());
         assert!(!record.last_platform.is_heap_allocated());
         assert!(!record.status.is_heap_allocated());

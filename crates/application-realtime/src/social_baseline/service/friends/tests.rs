@@ -396,7 +396,6 @@ fn canonical_records_replace_raw_roster_snapshot_and_ordering() -> Result<()> {
                 id: "usr_online".into(),
                 display_name: "Online".into(),
                 state: "online".into(),
-                state_bucket: "online".into(),
                 ..FriendRecord::default()
             },
         ),
@@ -406,7 +405,6 @@ fn canonical_records_replace_raw_roster_snapshot_and_ordering() -> Result<()> {
                 id: "usr_offline".into(),
                 display_name: "Offline".into(),
                 state: "offline".into(),
-                state_bucket: "offline".into(),
                 ..FriendRecord::default()
             },
         ),
@@ -467,7 +465,6 @@ fn canonical_records_can_be_moved_out_after_raw_snapshot_rebuild() -> Result<()>
             id: "usr_future".into(),
             display_name: "Future Friend".into(),
             state: "online".into(),
-            state_bucket: "online".into(),
             extra,
             ..FriendRecord::default()
         },

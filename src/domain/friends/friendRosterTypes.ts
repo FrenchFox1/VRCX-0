@@ -54,7 +54,6 @@ export type FriendRecordInput = Record<string, unknown> & {
     lastPlatform?: unknown;
     location?: unknown;
     state?: unknown;
-    stateBucket?: unknown;
     $trustLevel?: unknown;
     $friendNumber?: unknown;
     $trustClass?: unknown;
@@ -72,7 +71,6 @@ export type FriendRecord = FriendRecordInput &
         displayName: string;
         tags: string[];
         state: FriendRosterBucket;
-        stateBucket: FriendRosterBucket;
         $trustLevel: string;
         $friendNumber: number;
         $trustClass: string;

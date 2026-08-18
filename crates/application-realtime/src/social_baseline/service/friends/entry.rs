@@ -231,7 +231,7 @@ fn build_bucket_ids(
         .filter(|user_id| {
             friends_by_id
                 .get(*user_id)
-                .map(|friend| object_field_string(friend, &["stateBucket"]) == state_bucket)
+                .map(|friend| object_field_string(friend, &["state"]) == state_bucket)
                 .unwrap_or(false)
         })
         .cloned()

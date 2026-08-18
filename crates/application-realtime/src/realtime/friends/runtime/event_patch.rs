@@ -261,7 +261,7 @@ fn apply_update(
     } else {
         previous
             .as_ref()
-            .map(|previous| previous.state_bucket.trim())
+            .map(|previous| previous.state.trim())
             .filter(|state_bucket| !state_bucket.is_empty())
             .map(ToString::to_string)
             .unwrap_or_else(|| StateBucket::Offline.as_str().to_string())
@@ -882,7 +882,6 @@ mod tests {
         let previous = FriendRecord {
             id: "usr_friend".into(),
             state: "active".into(),
-            state_bucket: "active".into(),
             ..FriendRecord::default()
         };
         assert_eq!(

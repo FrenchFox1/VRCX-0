@@ -50,7 +50,7 @@ fn build_online_friends_output(
 
     let mut rows = friends
         .into_iter()
-        .filter(|friend| normalized_states.contains(friend.state_bucket.as_str()))
+        .filter(|friend| normalized_states.contains(friend.state.as_str()))
         .map(|friend| {
             let parsed = parse_location(&friend.location);
             let display_name = friend.display_name_or_id();
@@ -64,7 +64,7 @@ fn build_online_friends_output(
             OnlineFriendRow {
                 user_id: friend.id,
                 display_name,
-                state: friend.state_bucket,
+                state: friend.state,
                 location: include_location.then_some(friend.location),
                 world_id: include_location.then_some(parsed.world_id),
                 world_name: include_location.then_some(world_name),

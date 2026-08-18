@@ -48,11 +48,7 @@ mod tests {
         assert_eq!(snapshot.generation, 7);
         assert_eq!(snapshot.baseline_revision, 3);
         assert_eq!(
-            snapshot
-                .friends_by_id
-                .get("usr_friend")
-                .unwrap()
-                .state_bucket,
+            snapshot.friends_by_id.get("usr_friend").unwrap().state,
             "active"
         );
     }
@@ -66,6 +62,7 @@ mod tests {
                 friends_by_id: [(
                     "usr_friend".to_string(),
                     FriendRecord {
+                        state: "active".into(),
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         ..FriendRecord::default()
@@ -100,16 +97,16 @@ mod tests {
                     (
                         "usr_existing".to_string(),
                         FriendRecord {
+                            state: "active".into(),
                             id: "usr_existing".into(),
-                            state_bucket: "active".into(),
                             ..Default::default()
                         },
                     ),
                     (
                         "usr_new".to_string(),
                         FriendRecord {
+                            state: "online".into(),
                             id: "usr_new".into(),
-                            state_bucket: "online".into(),
                             ..Default::default()
                         },
                     ),
@@ -162,7 +159,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "active".into(),
-                        state_bucket: "active".into(),
                         ..FriendRecord::default()
                     },
                 )]
@@ -182,7 +178,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         extra: [("$profileSource".to_string(), json!("placeholder"))]
                             .into_iter()
                             .collect(),
@@ -202,7 +197,7 @@ mod tests {
             .friends_by_id
             .get("usr_friend")
             .expect("friend present");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.state, "online");
     }
 
@@ -218,7 +213,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         extra: [
                             ("$trustLevel".to_string(), json!("Trusted User")),
                             ("tags".to_string(), json!(["system_trust_veteran"])),
@@ -244,7 +238,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         extra: [
                             ("$trustLevel".to_string(), json!("Visitor")),
                             ("tags".to_string(), json!([])),
@@ -290,7 +283,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         ..FriendRecord::default()
                     },
                 )]
@@ -310,7 +302,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         extra: [("$profileSource".to_string(), json!("placeholder"))]
                             .into_iter()
                             .collect(),
@@ -330,7 +321,7 @@ mod tests {
             .friends_by_id
             .get("usr_friend")
             .expect("friend present");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
     }
 
     #[test]
@@ -345,7 +336,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         ..FriendRecord::default()
                     },
                 )]
@@ -381,7 +371,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         ..FriendRecord::default()
                     },
                 )]
@@ -399,7 +388,7 @@ mod tests {
             .friends_by_id
             .get("usr_friend")
             .expect("friend present");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.extra.get("pendingOffline"), Some(&json!(false)));
         assert!(effects.schedules.is_empty());
     }
@@ -416,7 +405,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "active".into(),
-                        state_bucket: "active".into(),
                         ..FriendRecord::default()
                     },
                 )]
@@ -436,7 +424,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_929c02a8:1".into(),
                         ..FriendRecord::default()
                     },
@@ -454,7 +441,7 @@ mod tests {
             .friends_by_id
             .get("usr_friend")
             .expect("friend present");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
     }
 
     #[test]
@@ -469,7 +456,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_x:1".into(),
                         ..FriendRecord::default()
                     },
@@ -490,7 +476,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "usr_friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         extra: [("$profileSource".to_string(), json!("placeholder"))]
                             .into_iter()
                             .collect(),
@@ -525,7 +510,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -564,7 +548,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_2:456".into(),
                         ..FriendRecord::default()
                     },
@@ -580,7 +563,7 @@ mod tests {
 
         let snapshot = runtime.snapshot().unwrap();
         let friend = snapshot.friends_by_id.get("usr_friend").unwrap();
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "wrld_2:456");
         assert_eq!(friend.extra.get("pendingOffline"), Some(&json!(false)));
         assert!(effects.schedules.is_empty());
