@@ -530,22 +530,26 @@ function normalizeLocationStatus(value: unknown): string {
     return normalized;
 }
 
-type LocationSentinel = 'offline' | 'private' | 'traveling';
+const LOCATION_SENTINELS = ['offline', 'private', 'traveling'] as const;
 
-function locationSentinel(value: unknown): LocationSentinel | '' {
-    switch (normalizeLocationStatus(value)) {
-        case 'offline':
-            return 'offline';
-        case 'private':
-            return 'private';
-        case 'traveling':
-            return 'traveling';
-        default:
-            return '';
-    }
+type LocationSentinel = (typeof LOCATION_SENTINELS)[number];
+
+function isLocationSentinel(value: string): value is LocationSentinel {
+    return (LOCATION_SENTINELS as readonly string[]).includes(value);
 }
 
-export { locationSentinel, normalizeLocationStatus, normalizeLocationValue };
+function locationSentinel(value: unknown): LocationSentinel | '' {
+    const status = normalizeLocationStatus(value);
+    return isLocationSentinel(status) ? status : '';
+}
+
+export {
+    isLocationSentinel,
+    LOCATION_SENTINELS,
+    locationSentinel,
+    normalizeLocationStatus,
+    normalizeLocationValue
+};
 export type { LocationSentinel };
 
 function getObject(value: unknown): LocationRecord | null {

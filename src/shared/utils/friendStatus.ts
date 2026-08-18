@@ -1,6 +1,18 @@
 import { normalizeString } from './string';
 
-type FriendStatus = 'join me' | 'active' | 'ask me' | 'busy' | 'offline';
+const FRIEND_STATUSES = [
+    'join me',
+    'active',
+    'ask me',
+    'busy',
+    'offline'
+] as const;
+
+type FriendStatus = (typeof FRIEND_STATUSES)[number];
+
+function isFriendStatus(value: string): value is FriendStatus {
+    return (FRIEND_STATUSES as readonly string[]).includes(value);
+}
 
 function normalizeUserStatus(value: unknown): string {
     const status = normalizeString(value).toLowerCase();
@@ -17,20 +29,8 @@ function normalizeUserStatus(value: unknown): string {
 }
 
 function userStatusFromValue(value: unknown): FriendStatus | '' {
-    switch (normalizeUserStatus(value)) {
-        case 'active':
-            return 'active';
-        case 'join me':
-            return 'join me';
-        case 'ask me':
-            return 'ask me';
-        case 'busy':
-            return 'busy';
-        case 'offline':
-            return 'offline';
-        default:
-            return '';
-    }
+    const status = normalizeUserStatus(value);
+    return isFriendStatus(status) ? status : '';
 }
 
 function sortStatus(
@@ -90,5 +90,11 @@ function sortStatus(
     return 0;
 }
 
-export { normalizeUserStatus, sortStatus, userStatusFromValue };
+export {
+    FRIEND_STATUSES,
+    isFriendStatus,
+    normalizeUserStatus,
+    sortStatus,
+    userStatusFromValue
+};
 export type { FriendStatus };
