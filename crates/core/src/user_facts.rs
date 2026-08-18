@@ -111,7 +111,6 @@ pub struct UserFactMergeOptions {
     pub received_at: String,
     pub is_current_user: bool,
     pub is_friend: bool,
-    pub state_bucket: String,
 }
 
 impl Default for UserFactMergeOptions {
@@ -122,7 +121,6 @@ impl Default for UserFactMergeOptions {
             received_at: String::new(),
             is_current_user: false,
             is_friend: false,
-            state_bucket: String::new(),
         }
     }
 }
@@ -180,7 +178,6 @@ fn is_presence_field(field: &str) -> bool {
         "status"
             | "statusDescription"
             | "state"
-            | "stateBucket"
             | "location"
             | "travelingToLocation"
             | "locationAt"
@@ -246,7 +243,6 @@ fn user_fact_field_name(field: &str) -> Option<&'static str> {
         "status" => "status",
         "statusDescription" => "statusDescription",
         "state" => "state",
-        "stateBucket" => "stateBucket",
         "location" => "location",
         "travelingToLocation" => "travelingToLocation",
         "locationAt" => "locationAt",
@@ -344,12 +340,6 @@ fn normalize_fact_patch(input: &Value) -> Map<String, Value> {
                     patch.insert("id".into(), Value::String(id));
                 }
             }
-            "stateBucket" => {
-                let state_bucket = normalize_state_bucket(value);
-                if !state_bucket.is_empty() {
-                    patch.insert("stateBucket".into(), Value::String(state_bucket));
-                }
-            }
             "friendNumber" => {
                 let parsed = value.as_i64().or_else(|| {
                     value
@@ -415,17 +405,6 @@ pub fn merge_user_fact_owned(
         };
         normalize_endpoint(&Value::String(candidate))
     };
-    let normalized_state_bucket = {
-        let from_options = normalize_state_bucket(&Value::String(options.state_bucket.clone()));
-        if from_options.is_empty() {
-            patch
-                .get("stateBucket")
-                .map(normalize_state_bucket)
-                .unwrap_or_default()
-        } else {
-            from_options
-        }
-    };
     let updated_at = {
         let received = normalize_fact_text(&Value::String(options.received_at.clone()));
         if received.is_empty() {
@@ -469,11 +448,6 @@ pub fn merge_user_fact_owned(
     if options.is_friend && fact.fields.get("isFriend").and_then(Value::as_bool) != Some(true) {
         fact.fields.insert("isFriend".into(), Value::Bool(true));
         changed = true;
-    }
-
-    let mut patch = patch;
-    if !normalized_state_bucket.is_empty() {
-        patch.insert("stateBucket".into(), Value::String(normalized_state_bucket));
     }
 
     for (field, value) in &patch {

@@ -7,14 +7,10 @@ import {
 } from '@/domain/users/userFacts';
 import { evictOverflow } from '@/state/storeEviction';
 
-type UserFactInput = Omit<
-    Partial<UserFact>,
-    'endpoint' | 'id' | 'stateBucket' | 'updatedAt'
-> &
+type UserFactInput = Omit<Partial<UserFact>, 'endpoint' | 'id' | 'updatedAt'> &
     Record<string, unknown> & {
         endpoint?: unknown;
         id?: unknown;
-        stateBucket?: unknown;
         updatedAt?: unknown;
         userId?: unknown;
     };
@@ -86,7 +82,6 @@ function toUserFact(user: UserFactInput, key: string): UserFact | null {
     const {
         endpoint: _endpoint,
         id: _id,
-        stateBucket,
         updatedAt,
         userId: _userId,
         ...rest
@@ -95,9 +90,6 @@ function toUserFact(user: UserFactInput, key: string): UserFact | null {
         ...rest,
         id: userId,
         endpoint: endpointFromKey(key),
-        ...(stateBucket !== undefined
-            ? { stateBucket: normalizeStateBucket(stateBucket) }
-            : {}),
         updatedAt: text(updatedAt) || new Date().toISOString()
     };
 }

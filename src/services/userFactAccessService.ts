@@ -13,7 +13,6 @@ type UserFactIngestEntry = {
     source?: string;
     isFriend?: boolean;
     isCurrentUser?: boolean;
-    stateBucket?: string;
 };
 
 const pendingUserFactEntries = new Map<string, UserFactIngestEntry>();
@@ -57,8 +56,7 @@ function ingestUserFactEntries(entries: UserFactIngestEntry[]): void {
             userId,
             entry.source || '',
             entry.isFriend === true ? 'friend' : '',
-            entry.isCurrentUser === true ? 'current' : '',
-            entry.stateBucket || ''
+            entry.isCurrentUser === true ? 'current' : ''
         ].join('\u0000');
         const existing = pendingUserFactEntries.get(key);
         pendingUserFactEntries.set(key, {
@@ -136,11 +134,7 @@ function recordUserProfile(
             source:
                 typeof options.source === 'string' ? options.source : 'profile',
             isFriend: Boolean(options.isFriend),
-            isCurrentUser: Boolean(options.isCurrentUser),
-            stateBucket:
-                typeof options.stateBucket === 'string'
-                    ? options.stateBucket
-                    : ''
+            isCurrentUser: Boolean(options.isCurrentUser)
         }
     ]);
 

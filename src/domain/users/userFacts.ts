@@ -23,7 +23,6 @@ interface UserFactMergeOptions {
     receivedAt?: unknown;
     isCurrentUser?: boolean;
     isFriend?: boolean;
-    stateBucket?: unknown;
 }
 
 interface UserFact {
@@ -43,7 +42,6 @@ interface UserFact {
     status?: string;
     statusDescription?: string;
     state?: string;
-    stateBucket?: UserStateBucket;
     location?: string;
     travelingToLocation?: string;
     locationAt?: unknown;
