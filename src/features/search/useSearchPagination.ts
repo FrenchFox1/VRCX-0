@@ -8,7 +8,6 @@ type PagedSearchRequest = {
     params: {
         n: number;
         offset: number;
-        [key: string]: unknown;
     };
 };
 

@@ -1,6 +1,7 @@
 use std::{future::Future, pin::Pin, time::Duration};
 
 use vrcx_0_core::text::normalize_text;
+use vrcx_0_core::NotificationKind;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -440,7 +441,11 @@ pub fn boop_rows_matching(
 ) -> Vec<BoopNotificationRow> {
     let link = format!("user:{sender_user_id}");
     rows.into_iter()
-        .filter(|row| row.notification_type == "boop" && !row.expired && row.link == link)
+        .filter(|row| {
+            NotificationKind::from(row.notification_type.as_str()) == NotificationKind::Boop
+                && !row.expired
+                && row.link == link
+        })
         .collect()
 }
 

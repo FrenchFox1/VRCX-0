@@ -3,6 +3,11 @@ import type {
     GroupInstanceRecord,
     GroupMemberRow
 } from '@/domain/entities/group';
+import type {
+    GroupMemberPatch,
+    GroupMemberSort,
+    GroupPostMutation
+} from '@/platform/tauri/bindings';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {
@@ -95,7 +100,10 @@ export interface GroupUserRoleInput extends GroupUserInput {
 
 export interface GroupPostInput extends GroupIdInput {
     postId?: unknown;
-    params?: Record<string, unknown>;
+}
+
+export interface GroupPostMutationInput extends GroupPostInput {
+    params: GroupPostMutation;
 }
 
 export interface GroupPageInput extends GroupIdInput {
@@ -104,7 +112,7 @@ export interface GroupPageInput extends GroupIdInput {
 }
 
 export interface GroupMembersInput extends GroupPageInput {
-    sort?: string;
+    sort?: GroupMemberSort;
     roleId?: string;
     force?: boolean;
 }
@@ -136,7 +144,7 @@ export interface GroupRepresentationInput extends GroupIdInput {
 }
 
 export interface GroupMemberPropsInput extends GroupUserInput {
-    params?: Record<string, unknown>;
+    params: GroupMemberPatch;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

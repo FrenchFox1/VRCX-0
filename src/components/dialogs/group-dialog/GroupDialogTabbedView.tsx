@@ -9,6 +9,7 @@ import {
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import type { UserProfileEntity } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import vrchatToolsRepository, {
     type GroupCalendarEventRecord
@@ -137,7 +138,8 @@ export function GroupDialogTabbedView({
         posts: '',
         members: ''
     });
-    const [memberSort, setMemberSort] = useState('joinedAt:desc');
+    const [memberSort, setMemberSort] =
+        useState<GroupMemberSort>('joinedAt:desc');
     const [memberRoleId, setMemberRoleId] = useState('');
     const gallerySignature = Array.isArray(group.galleries)
         ? group.galleries
@@ -757,7 +759,11 @@ export function GroupDialogTabbedView({
             loadAllMembers();
         },
         onMemberRoleChange: handleMemberRoleChange,
-        onMemberSortChange: setMemberSort,
+        onMemberSortChange: (value) => {
+            if (value === 'joinedAt:asc' || value === 'joinedAt:desc') {
+                setMemberSort(value);
+            }
+        },
         onOpenLink: openExternalLink,
         onOpenOwner: openGroupOwner,
         onOpenUser: handleOpenUser,

@@ -9,6 +9,7 @@ use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     avatars::{avatar_list_by_user_get_input, AvatarListByUserGetInput},
     http_api::{ApiScope, HttpApiRequestInput},
+    query::{AvatarListSort, QueryOrder, ReleaseStatusFilter},
 };
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
@@ -98,9 +99,9 @@ async fn fetch_my_avatar_pages(
             user: "me".into(),
             n: MY_AVATARS_PAGE_SIZE,
             offset,
-            sort: "updated".into(),
-            order: "descending".into(),
-            release_status: "all".into(),
+            sort: AvatarListSort::Updated,
+            order: QueryOrder::Descending,
+            release_status: ReleaseStatusFilter::All,
         })?;
         let page = execute_json_array(deps, request).await?;
         let page_len = page.len() as i64;

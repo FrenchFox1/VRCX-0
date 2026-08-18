@@ -204,7 +204,10 @@ export function GroupPostEditorDialog({
                             value={form.visibility ? [form.visibility] : []}
                             onValueChange={(value) => {
                                 const visibility = value[0];
-                                if (visibility) {
+                                if (
+                                    visibility === 'group' ||
+                                    visibility === 'public'
+                                ) {
                                     updateForm({ visibility });
                                 }
                             }}

@@ -4,7 +4,13 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type InstanceCreateGroupAccessType,
+    type InstanceCreateRegion,
+    type InstanceCreateRequest,
+    type InstanceCreateType
+} from '@/platform/tauri/bindings';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
@@ -67,7 +73,7 @@ type VrchatInstanceShortNameResponse = {
     params?: { shortName?: string };
 };
 
-function toApiAccessType(accessType: InstanceAccessType): string {
+function toApiAccessType(accessType: InstanceAccessType): InstanceCreateType {
     if (accessType === 'friends') {
         return 'friends';
     }
@@ -83,7 +89,7 @@ function toApiAccessType(accessType: InstanceAccessType): string {
     return 'public';
 }
 
-function toRegionCode(region: string): string {
+function toRegionCode(region: string): InstanceCreateRegion {
     if (region === 'US East') {
         return 'use';
     }
@@ -94,6 +100,15 @@ function toRegionCode(region: string): string {
         return 'jp';
     }
     return 'us';
+}
+
+function requireGroupAccessType(value: string): InstanceCreateGroupAccessType {
+    if (value === 'members' || value === 'plus' || value === 'public') {
+        return value;
+    }
+    throw new Error(
+        'InstanceRepository.createInstance requires a valid group access type.'
+    );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -134,23 +149,28 @@ async function createInstance({
     }
 
     const type = toApiAccessType(accessType);
-    const params: QueryParams = {
+    const instanceOwnerId =
+        type === 'group' ? normalizeString(groupId) : normalizedOwnerId;
+    const params: InstanceCreateRequest = {
         type,
         canRequestInvite: accessType === 'invite+',
         worldId: normalizedWorldId,
-        ownerId:
-            type === 'group' ? normalizeString(groupId) : normalizedOwnerId,
         region: toRegionCode(region)
     };
 
-    if (!params.ownerId && type !== 'public') {
+    if (!instanceOwnerId && type !== 'public') {
         throw new Error(
             'InstanceRepository.createInstance requires an owner id for private instances.'
         );
     }
+    if (instanceOwnerId) {
+        params.ownerId = instanceOwnerId;
+    }
 
     if (type === 'group') {
-        params.groupAccessType = groupAccessType || 'plus';
+        params.groupAccessType = requireGroupAccessType(
+            groupAccessType || 'plus'
+        );
         params.queueEnabled = Boolean(queueEnabled);
         if (params.groupAccessType === 'members' && Array.isArray(roleIds)) {
             params.roleIds = roleIds;
@@ -169,7 +189,7 @@ async function createInstance({
             params
         }),
         'instances',
-        params
+        { ...params }
     );
 }
 

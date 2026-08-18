@@ -410,7 +410,13 @@ impl RuntimeHostState {
                     attempt_id,
                     methods,
                     ..
-                } => (attempt_id.clone(), methods.clone()),
+                } => (
+                    attempt_id.clone(),
+                    methods
+                        .iter()
+                        .map(|method| method.as_str().to_string())
+                        .collect::<Vec<_>>(),
+                ),
             };
 
             let prompt_2fa = Arc::clone(&prompt);
@@ -419,7 +425,7 @@ impl RuntimeHostState {
             state = self
                 .respond_login_session(LoginSessionRespondInput {
                     attempt_id,
-                    method: choice.method,
+                    method: choice.method.into(),
                     code: choice.code,
                 })
                 .await;

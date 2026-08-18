@@ -11,14 +11,15 @@ use serde_json::Value;
 use url::Url;
 use uuid::Uuid;
 use vrcx_0_application_core::vrchat_api::avatars::{
-    avatar_list_by_user_get_input, AvatarListByUserGetInput,
+    avatar_list_by_user_get_input, AvatarListByUserGetInput, AvatarListSort, QueryOrder,
+    ReleaseStatusFilter,
 };
 use vrcx_0_application_core::vrchat_api::favorites::{
     favorite_groups_get_input, favorite_worlds_get_input,
 };
 use vrcx_0_application_core::vrchat_api::groups::user_groups_get_input;
 use vrcx_0_application_core::vrchat_api::users::user_mutual_counts_get_input;
-use vrcx_0_application_core::vrchat_api::worlds::world_list_by_user_get_input;
+use vrcx_0_application_core::vrchat_api::worlds::{world_list_by_user_get_input, WorldSearchSort};
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
 use vrcx_0_integrations::external_api::{self, ExternalApiScope, ExternalHttpRequestInput};
 use vrcx_0_persistence::{config, DatabaseService};
@@ -226,9 +227,9 @@ async fn count_worlds(
     target_user_id: &str,
 ) -> Result<usize> {
     let release_status = if target_user_id == scope.current_user_id {
-        "all"
+        ReleaseStatusFilter::All
     } else {
-        "public"
+        ReleaseStatusFilter::Public
     };
     count_payload_pages_bounded(
         WORLD_PAGE_SIZE,
@@ -239,9 +240,9 @@ async fn count_worlds(
                 target_user_id.into(),
                 WORLD_PAGE_SIZE as i64,
                 offset,
-                "updated".into(),
-                "descending".into(),
-                release_status.into(),
+                WorldSearchSort::Updated,
+                QueryOrder::Descending,
+                release_status,
             )?;
             execute_vrchat_payload(deps, scope, request, "worlds").await
         },
@@ -327,9 +328,9 @@ async fn count_avatars(
                     user: "me".into(),
                     n: MY_AVATAR_PAGE_SIZE as i64,
                     offset,
-                    sort: "updated".into(),
-                    order: "descending".into(),
-                    release_status: "all".into(),
+                    sort: AvatarListSort::Updated,
+                    order: QueryOrder::Descending,
+                    release_status: ReleaseStatusFilter::All,
                 })?;
                 execute_vrchat_payload(deps, scope, request, "my avatars").await
             },

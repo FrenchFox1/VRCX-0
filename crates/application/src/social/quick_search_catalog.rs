@@ -7,7 +7,9 @@ use vrcx_0_application_core::vrchat_api::favorites::{
     favorite_avatars_get_input, favorite_worlds_get_input,
 };
 use vrcx_0_application_core::vrchat_api::groups::user_groups_get_input;
-use vrcx_0_application_core::vrchat_api::worlds::world_list_by_user_get_input;
+use vrcx_0_application_core::vrchat_api::worlds::{
+    world_list_by_user_get_input, QueryOrder, ReleaseStatusFilter, WorldSearchSort,
+};
 use vrcx_0_application_core::{
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
@@ -207,9 +209,9 @@ async fn collect_pages(
                     scope.current_user_id.clone(),
                     page_size,
                     offset,
-                    "updated".into(),
-                    "descending".into(),
-                    "all".into(),
+                    WorldSearchSort::Updated,
+                    QueryOrder::Descending,
+                    ReleaseStatusFilter::All,
                 )?;
                 request
             }

@@ -6,6 +6,7 @@ use crate::http_api::{
     api_input, encode_path_segment, get_input, object_body, require_text, HttpApiError,
     HttpApiRequestInput,
 };
+use crate::query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort};
 
 pub fn world_get_input(
     endpoint: String,
@@ -27,9 +28,9 @@ pub fn world_list_by_user_get_input(
     user_id: String,
     n: i64,
     offset: i64,
-    sort: String,
-    order: String,
-    release_status: String,
+    sort: WorldSearchSort,
+    order: QueryOrder,
+    release_status: ReleaseStatusFilter,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatWorldListByUserGet requires userId.")?;
     Ok((
@@ -40,10 +41,13 @@ pub fn world_list_by_user_get_input(
             HashMap::from([
                 ("n".to_string(), json!(n)),
                 ("offset".to_string(), json!(offset)),
-                ("sort".to_string(), Value::String(sort)),
-                ("order".to_string(), Value::String(order)),
+                ("sort".to_string(), Value::String(sort.as_str().into())),
+                ("order".to_string(), Value::String(order.as_str().into())),
                 ("userId".to_string(), Value::String(user_id)),
-                ("releaseStatus".to_string(), Value::String(release_status)),
+                (
+                    "releaseStatus".to_string(),
+                    Value::String(release_status.as_str().into()),
+                ),
             ]),
         ),
     ))
@@ -186,9 +190,9 @@ mod tests {
             " usr/1 ".into(),
             50,
             100,
-            "updated".into(),
-            "descending".into(),
-            "all".into(),
+            WorldSearchSort::Updated,
+            QueryOrder::Descending,
+            ReleaseStatusFilter::All,
         )
         .unwrap();
         assert_eq!(user_id, "usr/1");
@@ -273,9 +277,9 @@ mod tests {
             " ".into(),
             1,
             0,
-            "updated".into(),
-            "descending".into(),
-            "all".into(),
+            WorldSearchSort::Updated,
+            QueryOrder::Descending,
+            ReleaseStatusFilter::All,
         )
         .is_err());
         assert!(world_persistent_data_exists_input("".into(), "user".into(), " ".into()).is_err());

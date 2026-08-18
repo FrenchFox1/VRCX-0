@@ -12,6 +12,7 @@ use vrcx_0_application_core::vrchat_api::groups::{
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_core::json::{object_scalar_text, result_rows};
+use vrcx_0_core::GroupPermission;
 
 use super::super::permissions::{parse_permission_map, permissions_for_group};
 use super::super::service::{execute_group_api_raw, GroupApiDeps};
@@ -116,7 +117,7 @@ async fn load_user_groups_overview(
 
 fn build_overview_groups(
     group_rows: &[Value],
-    permission_map: &HashMap<String, Vec<String>>,
+    permission_map: &HashMap<String, Vec<GroupPermission>>,
 ) -> Vec<UserGroupsOverviewGroup> {
     let mut groups = group_rows
         .iter()
@@ -128,7 +129,7 @@ fn build_overview_groups(
 
 fn group_overview_from_value(
     group: &Value,
-    permission_map: &HashMap<String, Vec<String>>,
+    permission_map: &HashMap<String, Vec<GroupPermission>>,
 ) -> Option<UserGroupsOverviewGroup> {
     let group_id = object_scalar_text(group, &["groupId", "id"]);
     if group_id.is_empty() {
@@ -144,7 +145,10 @@ fn group_overview_from_value(
         .as_object()
         .and_then(|object| object.get("memberCount"))
         .and_then(Value::as_i64);
-    let permissions = permissions_for_group(group, permission_map, &group_id);
+    let permissions = permissions_for_group(group, permission_map, &group_id)
+        .into_iter()
+        .map(|permission| permission.as_str().to_string())
+        .collect();
 
     Some(UserGroupsOverviewGroup {
         name: if name.is_empty() {

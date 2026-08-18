@@ -25,6 +25,7 @@ pub mod avatars {
         avatar_save_input, avatar_select_fallback_input, avatar_select_input,
         avatar_styles_get_input, AvatarListByUserGetInput,
     };
+    pub use vrcx_0_vrchat_client::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
 }
 
 pub mod favorites {
@@ -52,14 +53,16 @@ pub mod groups {
         member_unban_input, members_get_input, members_search_input, post_create_input,
         post_delete_input, post_edit_input, profile_get_input, representation_set_input,
         request_cancel_input, unblock_input, user_group_instances_get_input,
-        user_group_permissions_get_input, user_groups_get_input,
+        user_group_permissions_get_input, user_groups_get_input, GroupMemberPatch, GroupMemberSort,
+        GroupMemberVisibility, GroupPostMutation, GroupPostVisibility,
     };
 }
 
 pub mod instances {
     pub use vrcx_0_vrchat_client::instances::{
         instance_close_input, instance_create_input, instance_get_input,
-        instance_self_invite_input, instance_short_name_get_input,
+        instance_self_invite_input, instance_short_name_get_input, InstanceCreateGroupAccessType,
+        InstanceCreateRegion, InstanceCreateRequest, InstanceCreateType,
     };
 }
 
@@ -89,6 +92,7 @@ pub mod search {
     pub use vrcx_0_vrchat_client::search::{
         search_groups_get_input, search_groups_strict_get_input,
         search_instance_short_name_get_input, search_users_get_input, search_worlds_get_input,
+        GroupSearchParams, UserSearchParams, WorldSearchParams,
     };
 }
 
@@ -111,6 +115,7 @@ pub mod users {
 }
 
 pub mod worlds {
+    pub use vrcx_0_vrchat_client::query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort};
     pub use vrcx_0_vrchat_client::worlds::{
         world_delete_input, world_get_input, world_list_by_user_get_input,
         world_persistent_data_delete_input, world_persistent_data_exists_input,

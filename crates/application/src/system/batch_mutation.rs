@@ -7,7 +7,7 @@ use vrcx_0_core::vrchat_json::response_error_message;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     avatars::{avatar_get_input, avatar_save_input},
-    groups::{leave_input, member_props_set_input},
+    groups::{leave_input, member_props_set_input, GroupMemberPatch, GroupMemberVisibility},
     http_api::{ApiScope, HttpApiRequestInput},
     users::user_groups_get_input,
 };
@@ -199,7 +199,10 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
                 self.expected_scope.endpoint.clone(),
                 group_id.to_string(),
                 self.expected_scope.current_user_id.clone(),
-                Some(json!({ "visibility": visibility_name(visibility) })),
+                GroupMemberPatch {
+                    visibility: Some(group_member_visibility(visibility)),
+                    ..GroupMemberPatch::default()
+                },
             )?;
             self.execute_json(request, "group visibility update")
                 .await?;
@@ -591,6 +594,15 @@ fn group_visibility_from_value(value: &Value) -> GroupVisibility {
     }
 }
 
+fn group_member_visibility(visibility: GroupVisibility) -> GroupMemberVisibility {
+    match visibility {
+        GroupVisibility::Visible => GroupMemberVisibility::Visible,
+        GroupVisibility::Friends => GroupMemberVisibility::Friends,
+        GroupVisibility::Hidden => GroupMemberVisibility::Hidden,
+    }
+}
+
+#[cfg(test)]
 fn visibility_name(visibility: GroupVisibility) -> &'static str {
     match visibility {
         GroupVisibility::Visible => "visible",

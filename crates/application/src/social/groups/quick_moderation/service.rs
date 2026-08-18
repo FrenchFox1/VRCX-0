@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::text::normalize_text;
+use vrcx_0_core::GroupPermission;
 
 use futures_util::stream::{FuturesUnordered, StreamExt};
 use serde_json::Value;
@@ -22,8 +23,8 @@ use super::types::{
     GroupQuickModerationGroup, GroupQuickModerationInput, GroupQuickModerationOutput,
 };
 
-const KICK_PERMISSION: &str = "group-members-remove";
-const BAN_PERMISSION: &str = "group-bans-manage";
+const KICK_PERMISSION: GroupPermission = GroupPermission::MembersRemove;
+const BAN_PERMISSION: GroupPermission = GroupPermission::BansManage;
 const MEMBERSHIP_PROBE_CONCURRENCY: usize = 5;
 
 #[derive(Clone)]
@@ -486,8 +487,8 @@ fn group_from_value(group: &Value) -> Option<GroupQuickModerationGroup> {
 
 fn groups_for_permission(
     group_rows: &[Value],
-    permission_map: &HashMap<String, Vec<String>>,
-    permission: &str,
+    permission_map: &HashMap<String, Vec<GroupPermission>>,
+    permission: GroupPermission,
     target_user_id: &str,
 ) -> Vec<GroupQuickModerationGroup> {
     let mut groups = group_rows
@@ -498,7 +499,7 @@ fn groups_for_permission(
                 return None;
             }
             let permissions = permissions_for_group(group, permission_map, &parsed.group_id);
-            has_permission(&permissions, permission).then_some(parsed)
+            has_permission(&permissions, &permission).then_some(parsed)
         })
         .collect::<Vec<_>>();
     groups.sort_by_key(|group| group.name.to_lowercase());

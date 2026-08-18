@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
+import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
 import { Empty, EmptyHeader, EmptyTitle } from '@/ui/shadcn/empty';
@@ -54,7 +55,8 @@ export function GroupModerationWorkspace({
     const [banImportOpen, setBanImportOpen] = useState(false);
     const [memberSearchInput, setMemberSearchInput] = useState('');
     const [memberQuery, setMemberQuery] = useState('');
-    const [memberSort, setMemberSort] = useState('joinedAt:desc');
+    const [memberSort, setMemberSort] =
+        useState<GroupMemberSort>('joinedAt:desc');
     const [memberRoleId, setMemberRoleId] = useState('');
     const resetKeyRef = useRef('');
     const moderationTabs = useMemo(
@@ -147,7 +149,11 @@ export function GroupModerationWorkspace({
         query: memberSearchInput,
         onQueryChange: setMemberSearchInput,
         sort: memberSort,
-        onSortChange: setMemberSort,
+        onSortChange: (value) => {
+            if (value === 'joinedAt:asc' || value === 'joinedAt:desc') {
+                setMemberSort(value);
+            }
+        },
         sortOptions: memberSortOptions,
         roleId: memberRoleId,
         onRoleChange: setMemberRoleId,

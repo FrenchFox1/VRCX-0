@@ -28,6 +28,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -90,7 +91,7 @@ interface GroupHeaderCommands {
     onRepresentToggle: () => void;
     onSubscribeToggle: () => void;
     onInviteUserToGroup: () => void;
-    onVisibilityChange: (visibility: string) => void;
+    onVisibilityChange: (visibility: GroupMemberVisibility) => void;
 }
 
 function GroupRailMetric({

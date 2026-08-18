@@ -1,9 +1,9 @@
 export type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = Record<string, QueryValue | QueryValue[]>;
 
-export interface VrchatRequestResponse<TJson = unknown> {
+export interface VrchatRequestResponse<TJson = unknown, TParams = QueryParams> {
     json: TJson;
-    params?: QueryParams;
+    params?: TParams;
     status?: number;
     endpointDomain?: string;
     [key: string]: unknown;

@@ -228,6 +228,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::super::test_support::{seed_saved_credential, test_env, user_json, FakeLoginApi};
+    use super::super::types::TwoFactorMethod;
 
     async fn drive_test_auto_login(
         api: Arc<dyn LoginApi>,
@@ -527,8 +528,8 @@ mod tests {
 
         match &drive {
             AutoLoginDrive::Install(LoginSessionState::Challenge { methods, mode, .. }) => {
-                assert_eq!(methods, &vec!["totp".to_string(), "otp".to_string()]);
-                assert_eq!(mode, "totp");
+                assert_eq!(methods, &vec![TwoFactorMethod::Totp, TwoFactorMethod::Otp]);
+                assert_eq!(mode, &TwoFactorMethod::Totp);
             }
             _ => panic!("expected an installable Challenge"),
         }

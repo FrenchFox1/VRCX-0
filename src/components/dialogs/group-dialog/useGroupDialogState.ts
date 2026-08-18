@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import type { EntityRecord } from '@/domain/entities/shared';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { GroupMemberPatch } from '@/platform/tauri/bindings';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
@@ -518,7 +519,7 @@ export function useGroupDialogState({
     }
 
     async function updateGroupMemberProps(
-        params: Record<string, unknown>,
+        params: GroupMemberPatch,
         label: string
     ) {
         if (

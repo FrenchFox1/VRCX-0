@@ -1,3 +1,9 @@
+import type {
+    AvatarListSort,
+    QueryOrder,
+    ReleaseStatusFilter
+} from '@/platform/tauri/bindings';
+
 export type AvatarRecord = Record<string, unknown>;
 
 export type AvatarStyleRecord = AvatarRecord & {
@@ -58,9 +64,9 @@ export interface AvatarListOptions {
     user?: string;
     n?: number;
     offset?: number;
-    sort?: string;
-    order?: string;
-    releaseStatus?: string;
+    sort?: AvatarListSort;
+    order?: QueryOrder;
+    releaseStatus?: ReleaseStatusFilter;
 }
 
 export interface AvatarIdInput {

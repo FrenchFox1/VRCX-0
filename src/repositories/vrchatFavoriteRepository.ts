@@ -1,4 +1,8 @@
-import { commands, type VrchatFavoriteType } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type FavoriteGroupVisibility,
+    type VrchatFavoriteType
+} from '@/platform/tauri/bindings';
 
 import { collectPages } from './pagination';
 import { unwrapVrchatResponse } from './vrchatRequest';
@@ -54,6 +58,20 @@ function requireVrchatFavoriteType(value: unknown): VrchatFavoriteType {
     }
     throw new Error(
         'VrchatFavoriteRepository.addFavorite requires a valid favorite type.'
+    );
+}
+
+function requireFavoriteGroupVisibility(
+    value: unknown
+): FavoriteGroupVisibility | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (value === 'friends' || value === 'private' || value === 'public') {
+        return value;
+    }
+    throw new Error(
+        'VrchatFavoriteRepository.saveFavoriteGroup requires a valid visibility.'
     );
 }
 
@@ -194,10 +212,10 @@ async function saveFavoriteGroup({
     }
 
     const response = await commands.appVrchatFavoriteGroupSave({
-        type: normalizedType,
+        type: requireVrchatFavoriteType(normalizedType),
         group: normalizedGroup,
         displayName: typeof displayName === 'string' ? displayName : null,
-        visibility: typeof visibility === 'string' ? visibility : null
+        visibility: requireFavoriteGroupVisibility(visibility)
     });
     return unwrapVrchatFavoriteResponse(
         response,
@@ -222,7 +240,7 @@ async function clearFavoriteGroup({
     }
 
     const response = await commands.appVrchatFavoriteGroupClear({
-        type: normalizedType,
+        type: requireVrchatFavoriteType(normalizedType),
         group: normalizedGroup
     });
     return unwrapVrchatFavoriteResponse(

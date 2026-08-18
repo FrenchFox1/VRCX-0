@@ -7,7 +7,8 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::groups::GroupMemberPatch;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     groups::{
@@ -283,7 +284,10 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                        Some(json!({ "managerNotes": note })),
+                        GroupMemberPatch {
+                            manager_notes: Some(note.to_string()),
+                            ..GroupMemberPatch::default()
+                        },
                     )?;
                     (request, "group member note update")
                 }

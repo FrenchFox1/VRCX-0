@@ -8,10 +8,13 @@ import {
 import {
     commands,
     type HttpApiExecuteResponse,
+    type QueryOrder,
+    type ReleaseStatusFilter,
     type VrchatWorldIdInput as IpcVrchatWorldIdInput,
     type VrchatWorldListByUserInput,
     type VrchatWorldPersistentDataDeleteInput,
-    type VrchatWorldSaveInput
+    type VrchatWorldSaveInput,
+    type WorldSearchSort
 } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
@@ -26,9 +29,9 @@ interface WorldsByUserOptions extends WorldRepositoryOptions {
     userId?: unknown;
     n?: number;
     offset?: number;
-    sort?: string;
-    order?: string;
-    releaseStatus?: string;
+    sort?: WorldSearchSort;
+    order?: QueryOrder;
+    releaseStatus?: ReleaseStatusFilter;
 }
 
 interface WorldIdInput extends WorldRepositoryOptions {

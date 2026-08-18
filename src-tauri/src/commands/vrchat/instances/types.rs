@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::instances::InstanceCreateRequest;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -22,9 +22,9 @@ pub struct VrchatInstanceShortNameInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatInstanceCreateInput {
-    pub(crate) params: Option<Value>,
+    pub(crate) params: InstanceCreateRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

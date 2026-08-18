@@ -1,7 +1,11 @@
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type GroupSearchParams,
+    type UserSearchParams,
+    type WorldSearchParams
+} from '@/platform/tauri/bindings';
 
 import {
-    type QueryParams,
     type VrchatRequestResponse,
     unwrapVrchatResponse
 } from './vrchatRequest';
@@ -41,10 +45,7 @@ export type SearchInstanceJson = Record<string, unknown> & {
     worldName?: unknown;
 };
 
-function normalizeParams(params: QueryParams = {}): QueryParams {
-    if (!params || typeof params !== 'object') {
-        return {};
-    }
+function normalizeParams<TParams extends object>(params: TParams): TParams {
     return { ...params };
 }
 
@@ -53,13 +54,16 @@ type VrchatApiResult = {
     data: unknown;
 };
 
-function unwrapVrchatSearchResponse<TJson = unknown>(
+function unwrapVrchatSearchResponse<
+    TJson = unknown,
+    TParams extends object = object
+>(
     response: VrchatApiResult,
     path: string,
-    params: QueryParams,
+    params: TParams,
     extra: Record<string, unknown> = {},
     fallbackMessage: string = 'VRChat request failed'
-): VrchatRequestResponse<TJson> {
+): VrchatRequestResponse<TJson, TParams> {
     return {
         ...unwrapVrchatResponse<TJson>(response, path, { fallbackMessage }),
         params,
@@ -67,7 +71,7 @@ function unwrapVrchatSearchResponse<TJson = unknown>(
     };
 }
 
-async function getWorlds(params: QueryParams = {}, option?: unknown) {
+async function getWorlds(params: WorldSearchParams = {}, option?: unknown) {
     const normalizedParams = normalizeParams(params);
     const normalizedOption =
         typeof option === 'undefined' || option === null ? '' : String(option);
@@ -102,7 +106,7 @@ async function getWorldById(worldId: unknown) {
     );
 }
 
-async function getUsers(params: QueryParams = {}) {
+async function getUsers(params: UserSearchParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchUsersGet({
         params: normalizedParams
@@ -114,7 +118,7 @@ async function getUsers(params: QueryParams = {}) {
     );
 }
 
-async function getGroups(params: QueryParams = {}) {
+async function getGroups(params: GroupSearchParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchGroupsGet({
         params: normalizedParams
@@ -126,7 +130,7 @@ async function getGroups(params: QueryParams = {}) {
     );
 }
 
-async function getGroupsStrictSearch(params: QueryParams = {}) {
+async function getGroupsStrictSearch(params: GroupSearchParams = {}) {
     const normalizedParams = normalizeParams(params);
     const response = await commands.appVrchatSearchGroupsStrictGet({
         params: normalizedParams

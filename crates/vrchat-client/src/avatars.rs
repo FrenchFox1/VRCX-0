@@ -6,6 +6,7 @@ use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, object_body, query_input,
     require_text, HttpApiError, HttpApiRequestInput,
 };
+use crate::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
 
 pub fn avatar_get_input(
     endpoint: String,
@@ -48,9 +49,9 @@ pub struct AvatarListByUserGetInput {
     pub user: String,
     pub n: i64,
     pub offset: i64,
-    pub sort: String,
-    pub order: String,
-    pub release_status: String,
+    pub sort: AvatarListSort,
+    pub order: QueryOrder,
+    pub release_status: ReleaseStatusFilter,
 }
 
 pub fn avatar_list_by_user_get_input(
@@ -66,11 +67,17 @@ pub fn avatar_list_by_user_get_input(
     let mut params = HashMap::from([
         ("n".to_string(), json!(input.n)),
         ("offset".to_string(), json!(input.offset)),
-        ("sort".to_string(), Value::String(input.sort)),
-        ("order".to_string(), Value::String(input.order)),
+        (
+            "sort".to_string(),
+            Value::String(input.sort.as_str().into()),
+        ),
+        (
+            "order".to_string(),
+            Value::String(input.order.as_str().into()),
+        ),
         (
             "releaseStatus".to_string(),
-            Value::String(input.release_status),
+            Value::String(input.release_status.as_str().into()),
         ),
     ]);
     let display = if user.is_empty() {
@@ -282,9 +289,9 @@ mod tests {
             user: user.into(),
             n: 60,
             offset: 0,
-            sort: "updated".into(),
-            order: "descending".into(),
-            release_status: "all".into(),
+            sort: AvatarListSort::Updated,
+            order: QueryOrder::Descending,
+            release_status: ReleaseStatusFilter::All,
         }
     }
 
