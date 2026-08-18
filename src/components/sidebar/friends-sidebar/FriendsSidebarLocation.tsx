@@ -18,6 +18,7 @@ import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import {
     getLocationText,
+    normalizeLocationStatus,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
@@ -28,7 +29,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     clearStaleOfflineLocation,
-    normalizeLocationStatus,
     readFriendInstanceEpoch,
     readFriendRef,
     readFriendRefLocation,

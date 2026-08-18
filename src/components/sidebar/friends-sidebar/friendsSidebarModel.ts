@@ -15,7 +15,10 @@ import {
     resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
-import { resolveFriendPresenceLocation } from '@/shared/utils/location';
+import {
+    normalizeLocationStatus,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { getTrustColor } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
@@ -109,20 +112,6 @@ function isFriendSortMethod(
     value: FriendSortMethod | '' | undefined
 ): value is FriendSortMethod {
     return Boolean(value);
-}
-
-export function normalizeLocationStatus(value: unknown) {
-    const normalized = normalizeId(value).toLowerCase();
-    if (normalized === 'offline:offline') {
-        return 'offline';
-    }
-    if (normalized === 'private:private') {
-        return 'private';
-    }
-    if (normalized === 'traveling:traveling') {
-        return 'traveling';
-    }
-    return normalized;
 }
 
 export function resolvePresenceLocation(profile: unknown) {

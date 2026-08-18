@@ -40,19 +40,9 @@ async function getFriendLogCurrent(
         .filter((row) => typeof row.userId === 'string' && row.userId.trim());
 }
 
-async function deleteFriendLogCurrent(userId: unknown, targetUserId: string) {
-    await commands.appFriendLogDeleteCurrent(
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim(),
-        targetUserId
-    );
-}
-
 const friendLogRepository = {
-    getFriendLogCurrent,
-    deleteFriendLogCurrent
+    getFriendLogCurrent
 };
 
-export { deleteFriendLogCurrent, getFriendLogCurrent };
+export { getFriendLogCurrent };
 export default friendLogRepository;

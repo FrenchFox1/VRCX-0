@@ -1,13 +1,13 @@
-import {
-    normalizeLocationStatus,
-    timestampMsFromValue
-} from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { timestampMsFromValue } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import type {
     FriendRecord,
     FriendRosterById,
     FriendRosterStore
 } from '@/domain/friends/friendRosterTypes';
-import { parseLocation } from '@/shared/utils/location';
+import {
+    normalizeLocationStatus,
+    parseLocation
+} from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 

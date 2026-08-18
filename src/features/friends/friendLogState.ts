@@ -4,7 +4,6 @@ import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
-    sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 
@@ -102,10 +101,6 @@ export function sanitizeColumnOrder(value: unknown): string[] {
         (columnId) => !orderedColumns.includes(columnId)
     );
     return [...orderedColumns, ...missingColumns];
-}
-
-export function sanitizeColumnSizing(value: unknown) {
-    return sanitizeTableColumnSizing(value, COLUMN_IDS);
 }
 
 export function resolvePageSize(

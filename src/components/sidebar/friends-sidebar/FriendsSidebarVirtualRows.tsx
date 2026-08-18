@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
+import { normalizeLocationStatus } from '@/shared/utils/location';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
@@ -9,7 +10,6 @@ import {
     InstanceHeaderRow
 } from './FriendsSidebarHeaders';
 import {
-    normalizeLocationStatus,
     readFriendStatusSource,
     type SidebarFriendRecord
 } from './friendsSidebarModel';

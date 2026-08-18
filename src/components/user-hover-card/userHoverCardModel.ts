@@ -1,5 +1,4 @@
 import {
-    normalizeLocationStatus,
     readFriendInstanceEpoch,
     readFriendRef,
     readFriendStatusSource,
@@ -8,7 +7,10 @@ import {
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { userImage } from '@/services/entityMediaService';
-import { parseLocation } from '@/shared/utils/location';
+import {
+    normalizeLocationStatus,
+    parseLocation
+} from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { resolveTrustColorKey } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';

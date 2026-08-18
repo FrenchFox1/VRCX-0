@@ -1116,15 +1116,6 @@ export const commands = {
     ): Promise<FriendLogHistoryOutput[]> {
         return await TAURI_INVOKE('app__friend_log_history_query', { query });
     },
-    async appFriendLogDeleteCurrent(
-        userId: string,
-        targetUserId: string
-    ): Promise<number> {
-        return await TAURI_INVOKE('app__friend_log_delete_current', {
-            userId,
-            targetUserId
-        });
-    },
     async appFriendLogHistoryDelete(
         userId: string,
         entry: FriendLogHistoryEntryInput

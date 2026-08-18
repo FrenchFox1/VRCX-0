@@ -15,6 +15,7 @@ import type {
     FriendRosterState,
     FriendRosterStore
 } from '@/domain/friends/friendRosterTypes';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     computeTrustLevel,
     computeUserPlatform
@@ -24,18 +25,6 @@ function normalizeUserId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function normalizeStateBucket(value: unknown): FriendRosterBucket | '' {
-    const normalized = normalizeUserId(value).toLowerCase();
-    if (
-        normalized === 'online' ||
-        normalized === 'active' ||
-        normalized === 'offline'
-    ) {
-        return normalized;
-    }
-    return '';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

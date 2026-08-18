@@ -1,4 +1,5 @@
 import { isRealInstance } from './instance';
+import { normalizeString } from './string';
 
 export interface ParsedLocation extends Record<string, unknown> {
     tag: string;
@@ -515,7 +516,21 @@ function normalizeLocationValue(value: unknown): string {
     return '';
 }
 
-export { normalizeLocationValue };
+function normalizeLocationStatus(value: unknown): string {
+    const normalized = normalizeString(value).toLowerCase();
+    if (normalized === 'offline:offline') {
+        return 'offline';
+    }
+    if (normalized === 'private:private') {
+        return 'private';
+    }
+    if (normalized === 'traveling:traveling') {
+        return 'traveling';
+    }
+    return normalized;
+}
+
+export { normalizeLocationStatus, normalizeLocationValue };
 
 function getObject(value: unknown): LocationRecord | null {
     return value && typeof value === 'object'

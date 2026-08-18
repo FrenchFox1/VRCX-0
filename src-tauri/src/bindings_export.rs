@@ -328,7 +328,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::memos::app__memo_save_avatar,
             commands::local::friends::app__friend_log_current_list,
             commands::local::friends::app__friend_log_history_query,
-            commands::local::friends::app__friend_log_delete_current,
             commands::local::friends::app__friend_log_history_delete,
             commands::local::notifications::app__notification_list_query,
             commands::local::notifications::app__notification_add_v1,

@@ -1,5 +1,6 @@
 import { isRealInstance } from './instance';
 import {
+    normalizeLocationStatus,
     normalizeLocationValue,
     parseLocation,
     resolveFriendPresenceLocation
@@ -51,20 +52,6 @@ const CURRENT_USER_PRESENCE_FIELDS = [
     'statusDescription',
     'pendingOffline'
 ];
-
-function normalizeLocationStatus(value: unknown): string {
-    const normalized = normalizeString(value).toLowerCase();
-    if (normalized === 'offline:offline') {
-        return 'offline';
-    }
-    if (normalized === 'private:private') {
-        return 'private';
-    }
-    if (normalized === 'traveling:traveling') {
-        return 'traveling';
-    }
-    return normalized;
-}
 
 export function isVisibleCurrentUserLocation(value: unknown): boolean {
     const location = normalizeLocationStatus(value);
