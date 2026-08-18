@@ -7,6 +7,7 @@ use serde_json::{json, Map, Value};
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_persistence::realtime::FriendLogUpsert;
 
+use crate::realtime::location_predicates::is_real_instance;
 use crate::realtime::RealtimeFriendOutput;
 
 use super::event_patch::{record_string, record_value};
@@ -336,7 +337,7 @@ pub(super) fn gps_feed_entry(
     {
         return None;
     }
-    let location_names = if is_real_location(&location) {
+    let location_names = if is_real_instance(&location) {
         resolve_location_name(&location, patch, Some(previous))
     } else {
         ResolvedLocationNames {
@@ -387,7 +388,7 @@ pub(super) fn online_feed_entry(
     time: i64,
     created_at: &str,
 ) -> Value {
-    let location_names = if is_real_location(location) {
+    let location_names = if is_real_instance(location) {
         resolve_location_name(location, patch, previous)
     } else {
         ResolvedLocationNames {
@@ -415,7 +416,7 @@ pub(super) fn offline_feed_entry(
     timestamp_ms: i64,
 ) -> Value {
     let location = previous.location.clone();
-    let location_names = if is_real_location(&location) {
+    let location_names = if is_real_instance(&location) {
         resolve_record_location_name(&location, current, Some(previous))
     } else {
         ResolvedLocationNames {
@@ -470,7 +471,7 @@ pub(super) fn add_location_metadata(
         patch.insert("$location_at".into(), Value::from(timestamp_ms));
         patch.insert("$travelingToTime".into(), Value::from(timestamp_ms));
         patch.insert("travelingToTime".into(), Value::from(timestamp_ms));
-        if is_real_location(&previous_location) {
+        if is_real_instance(&previous_location) {
             patch.insert("$previousLocation".into(), Value::String(previous_location));
             patch.insert(
                 "$previousLocation_at".into(),
@@ -657,22 +658,6 @@ pub(super) fn is_online_state(record: &FriendRecord) -> bool {
     StateBucket::Online.matches(&record.state_bucket) || StateBucket::Online.matches(&record.state)
 }
 
-pub(super) fn is_real_location(location: &str) -> bool {
-    let location = location.trim().to_ascii_lowercase();
-    if location.is_empty() || location.starts_with("local") {
-        return false;
-    }
-    !matches!(
-        location.as_str(),
-        ":" | "offline"
-            | "offline:offline"
-            | "traveling"
-            | "traveling:traveling"
-            | "private"
-            | "private:private"
-    )
-}
-
 pub(super) fn is_private_location(location: &str) -> bool {
     matches!(
         location.trim().to_ascii_lowercase().as_str(),
@@ -681,5 +666,5 @@ pub(super) fn is_private_location(location: &str) -> bool {
 }
 
 fn is_gps_feed_location(location: &str) -> bool {
-    is_real_location(location) || is_private_location(location)
+    is_real_instance(location) || is_private_location(location)
 }

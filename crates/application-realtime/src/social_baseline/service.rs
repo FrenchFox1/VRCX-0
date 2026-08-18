@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use vrcx_0_core::text::normalize_text;
+
 use serde_json::{json, Map, Number, Value};
 use std::sync::Arc;
 use vrcx_0_core::friends::FriendRecord;
@@ -30,10 +32,6 @@ pub struct SocialBaselineDeps {
     pub db: Arc<DatabaseService>,
     pub web: Arc<WebClient>,
     pub auth_scope: RuntimeAuthScope,
-}
-
-fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
 }
 
 fn normalize_endpoint(endpoint: &str) -> String {

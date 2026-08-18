@@ -13,6 +13,7 @@ use serde_json::Value;
 use vrcx_0_application_core::{read_config_string_array, FavoriteEntityKind, TaskStopToken};
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_ids::{is_avatar_id, is_user_id, is_world_id};
+use vrcx_0_core::vrchat_json::response_error_message;
 use vrcx_0_persistence::{
     avatars::avatar_cache_upsert, cache_entities::CacheEntityInput, favorites::favorite_add,
     DatabaseService,
@@ -829,17 +830,6 @@ fn cache_entity_from_payload(payload: &Value) -> CacheEntityInput {
             .unwrap_or_default(),
         version: payload.get("version").cloned().unwrap_or_default(),
     }
-}
-
-fn response_error_message(payload: &Value, status: i32, action: &str) -> String {
-    payload
-        .get("error")
-        .and_then(Value::as_object)
-        .and_then(|error| error.get("message"))
-        .and_then(Value::as_str)
-        .or_else(|| payload.get("message").and_then(Value::as_str))
-        .map(str::to_string)
-        .unwrap_or_else(|| format!("VRChat {action} failed with HTTP {status}."))
 }
 
 #[cfg(test)]

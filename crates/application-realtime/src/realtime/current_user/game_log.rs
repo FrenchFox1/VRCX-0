@@ -10,7 +10,8 @@ use super::location::location_game_log_entry;
 use super::state::{
     RealtimeCurrentUserState, RealtimeCurrentUserStateSnapshot, RemoteGameLogInterval,
 };
-use super::utils::{is_real_instance, EventTime};
+use super::utils::EventTime;
+use crate::realtime::location_predicates::is_real_instance;
 
 pub(super) fn reconcile_remote_game_log_interval(
     state: &mut RealtimeCurrentUserState,

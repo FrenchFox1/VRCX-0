@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use vrcx_0_core::text::normalize_text;
+
 use serde::Serialize;
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
@@ -120,10 +122,6 @@ impl RuntimeAuthScope {
     fn lock_state(&self) -> std::sync::MutexGuard<'_, RuntimeAuthScopeState> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
-}
-
-fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
 }
 
 fn normalize_endpoint(value: impl AsRef<str>) -> String {

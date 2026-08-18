@@ -43,22 +43,6 @@ pub(super) fn first_positive(values: impl IntoIterator<Item = i64>) -> i64 {
     values.into_iter().find(|value| *value > 0).unwrap_or(0)
 }
 
-pub(super) fn is_real_instance(location: &str) -> bool {
-    let location = location.trim().to_ascii_lowercase();
-    if location.is_empty() || location.starts_with("local") {
-        return false;
-    }
-    !matches!(
-        location.as_str(),
-        ":" | "offline"
-            | "offline:offline"
-            | "traveling"
-            | "traveling:traveling"
-            | "private"
-            | "private:private"
-    )
-}
-
 pub(super) fn is_offline_location(location: &str) -> bool {
     matches!(
         location.trim().to_ascii_lowercase().as_str(),

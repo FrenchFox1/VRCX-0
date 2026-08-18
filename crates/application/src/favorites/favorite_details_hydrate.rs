@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Mutex as AsyncMutex;
 use vrcx_0_core::json::RawJson;
+use vrcx_0_core::vrchat_json::response_error_message;
 use vrcx_0_persistence::{
     avatars::{avatar_cache_existing_ids, avatar_cache_upsert_many},
     DatabaseService,
@@ -610,17 +611,6 @@ fn ensure_scope_matches(
             "Favorite detail hydrate authentication scope changed.".into(),
         ))
     }
-}
-
-fn response_error_message(payload: &Value, status: i32, action: &str) -> String {
-    payload
-        .get("error")
-        .and_then(Value::as_object)
-        .and_then(|error| error.get("message"))
-        .and_then(Value::as_str)
-        .or_else(|| payload.get("message").and_then(Value::as_str))
-        .map(str::to_string)
-        .unwrap_or_else(|| format!("VRChat {action} failed with HTTP {status}."))
 }
 
 #[cfg(test)]

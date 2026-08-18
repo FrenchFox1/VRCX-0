@@ -5,7 +5,8 @@ use vrcx_0_core::text::first_owned;
 use vrcx_0_persistence::game_log::GameLogLocationEntry;
 
 use super::state::RealtimeCurrentUserStateSnapshot;
-use super::utils::{is_real_instance, map_from_json, EventTime};
+use super::utils::{map_from_json, EventTime};
+use crate::realtime::location_predicates::is_real_instance;
 
 pub(super) fn build_location_patch(
     location: Option<&Value>,

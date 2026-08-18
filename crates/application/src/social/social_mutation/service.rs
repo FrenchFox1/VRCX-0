@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use vrcx_0_core::text::normalize_text;
+
 use serde_json::{json, Value};
 use vrcx_0_core::time::now_iso;
 
@@ -483,10 +485,6 @@ fn ensure_expected_auth_scope(
             "Backend social mutation authentication scope changed.".into(),
         ))
     }
-}
-
-fn normalize_text(value: &str) -> String {
-    value.trim().to_string()
 }
 
 async fn execute_vrchat_json_request(

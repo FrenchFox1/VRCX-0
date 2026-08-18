@@ -39,7 +39,7 @@ fn is_single_path_component(value: &str) -> bool {
     }
 }
 
-fn is_windows_reserved_name(value: &str) -> bool {
+pub(crate) fn is_windows_reserved_name(value: &str) -> bool {
     let upper = value
         .split('.')
         .next()

@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use vrcx_0_core::text::normalize_text;
+
 use serde_json::Value;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_persistence::local_moderation::{
@@ -156,10 +158,6 @@ pub async fn update_player_moderation(
         enabled: input.enabled,
         local,
     })
-}
-
-fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
 }
 
 fn value_as_normalized_text(value: Option<&Value>) -> String {

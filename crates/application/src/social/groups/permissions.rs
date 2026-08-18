@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use serde_json::Value;
-use vrcx_0_core::json::scalar_text as value_as_string;
+use vrcx_0_core::json::scalar_text_array;
 
 pub(super) fn parse_permission_map(value: &Value) -> HashMap<String, Vec<String>> {
     value
@@ -9,7 +9,9 @@ pub(super) fn parse_permission_map(value: &Value) -> HashMap<String, Vec<String>
         .map(|object| {
             object
                 .iter()
-                .map(|(group_id, permissions)| (group_id.clone(), string_array(Some(permissions))))
+                .map(|(group_id, permissions)| {
+                    (group_id.clone(), scalar_text_array(Some(permissions)))
+                })
                 .collect()
         })
         .unwrap_or_default()
@@ -27,7 +29,7 @@ pub(super) fn permissions_for_group(
         .as_object()
         .and_then(|object| object.get("myMember"))
         .and_then(Value::as_object)
-        .map(|member| string_array(member.get("permissions")))
+        .map(|member| scalar_text_array(member.get("permissions")))
         .unwrap_or_default()
 }
 
@@ -35,27 +37,6 @@ pub(super) fn has_permission(permissions: &[String], permission: &str) -> bool {
     permissions
         .iter()
         .any(|value| value == "*" || value == permission)
-}
-
-fn string_array(value: Option<&Value>) -> Vec<String> {
-    match value {
-        Some(Value::Array(values)) => values
-            .iter()
-            .filter_map(|value| {
-                let text = value_as_string(Some(value));
-                (!text.is_empty()).then_some(text)
-            })
-            .collect(),
-        Some(value) => {
-            let text = value_as_string(Some(value));
-            if text.is_empty() {
-                Vec::new()
-            } else {
-                vec![text]
-            }
-        }
-        None => Vec::new(),
-    }
 }
 
 #[cfg(test)]

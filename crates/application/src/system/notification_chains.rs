@@ -1,5 +1,7 @@
 use std::{future::Future, pin::Pin, time::Duration};
 
+use vrcx_0_core::text::normalize_text;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use vrcx_0_application_core::{RealtimeNotificationProjection, RuntimeEventBus, WorldCache};
@@ -430,10 +432,6 @@ fn normalize_target(mut target: NotificationTarget) -> NotificationTarget {
     target.notification_type = target.notification_type.trim().to_string();
     target.sender_user_id = target.sender_user_id.trim().to_string();
     target
-}
-
-fn normalize_text(value: &str) -> String {
-    value.trim().to_string()
 }
 
 pub fn boop_rows_matching(

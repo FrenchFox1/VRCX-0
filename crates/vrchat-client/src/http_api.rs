@@ -4,6 +4,7 @@ use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::Serialize;
 use serde_json::{json, Value};
 use url::Url;
+pub use vrcx_0_core::text::normalize_text;
 use vrcx_0_core::vrchat_endpoints::{
     VRCHAT_API_DEFAULT_ENDPOINT, VRCHAT_API_HOST, VRCHAT_FILES_HOST, VRCHAT_FILES_S3_HOST,
     VRCHAT_FILES_S3_HOST_PREFIX,
@@ -286,10 +287,6 @@ pub fn classify_api_response(status: i32) -> ApiResponsePolicy {
 
 pub fn execute_response(status: i32, data: String) -> HttpApiExecuteResponse {
     HttpApiExecuteResponse { status, data }
-}
-
-pub fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
 }
 
 pub fn require_text(value: impl AsRef<str>, message: &str) -> Result<String, HttpApiError> {

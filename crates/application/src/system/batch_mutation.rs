@@ -3,6 +3,7 @@ use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use vrcx_0_core::json::RawJson;
+use vrcx_0_core::vrchat_json::response_error_message;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     avatars::{avatar_get_input, avatar_save_input},
@@ -650,17 +651,6 @@ fn ensure_scope_matches(
             "Batch mutation authentication scope changed.".into(),
         ))
     }
-}
-
-fn response_error_message(payload: &Value, status: i32, action: &str) -> String {
-    payload
-        .get("error")
-        .and_then(Value::as_object)
-        .and_then(|error| error.get("message"))
-        .and_then(Value::as_str)
-        .or_else(|| payload.get("message").and_then(Value::as_str))
-        .map(str::to_string)
-        .unwrap_or_else(|| format!("VRChat {action} failed with HTTP {status}."))
 }
 
 #[cfg(test)]
