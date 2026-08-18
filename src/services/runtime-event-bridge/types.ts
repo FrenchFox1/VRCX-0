@@ -58,7 +58,4 @@ export type FavoritesChangedEventPayload =
 export type RuntimeGroupInstancesProjection =
     RuntimeEventPayloadMap['runtimeGroupInstancesProjection'];
 
-export type RuntimeSnapshotPayload =
-    | BackendRuntimeSnapshot
-    | Record<string, unknown>
-    | null;
+export type RuntimeSnapshotPayload = BackendRuntimeSnapshot | null;

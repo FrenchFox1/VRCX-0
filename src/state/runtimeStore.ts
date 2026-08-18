@@ -4,6 +4,7 @@ import type { GroupInstanceRecord } from '@/domain/entities/profileEntities';
 import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
 import type {
     AuthenticatedSessionProjection,
+    BackendRuntimeSnapshot,
     DatabaseUpgradeStage
 } from '@/platform/tauri/bindings';
 import { MINUTE_MS } from '@/shared/constants/time';
@@ -246,7 +247,7 @@ type RuntimeStore = {
         failedWorkDbPath: string;
     };
     runtimeEvents: Record<string, RuntimeEventState>;
-    backendRuntime: Record<string, unknown>;
+    backendRuntime: BackendRuntimeSnapshot | null;
     authenticatedSession: AuthenticatedSessionProjection;
     shell: Record<string, unknown> & {
         backendRuntimeSnapshotHydrated: boolean;
@@ -262,7 +263,7 @@ type RuntimeStore = {
     resetFriendProfileLoadState(): void;
     setTransportState(patch: Partial<TransportState>): void;
     recordRuntimeEvent(name: string, payload: unknown): void;
-    setBackendRuntimeSnapshot(snapshot: Record<string, unknown> | null): void;
+    setBackendRuntimeSnapshot(snapshot: BackendRuntimeSnapshot | null): void;
     setAuthenticatedSessionProjection(
         projection: AuthenticatedSessionProjection
     ): boolean;
@@ -640,7 +641,7 @@ const initialState: RuntimeStoreState = {
         failureLogPath: '',
         failedWorkDbPath: ''
     },
-    backendRuntime: {},
+    backendRuntime: null,
     authenticatedSession: {
         revision: 0,
         session: null
@@ -779,11 +780,8 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
             }
         }));
     },
-    setBackendRuntimeSnapshot(snapshot: Record<string, unknown> | null) {
-        set({
-            backendRuntime:
-                snapshot && typeof snapshot === 'object' ? snapshot : {}
-        });
+    setBackendRuntimeSnapshot(snapshot: BackendRuntimeSnapshot | null) {
+        set({ backendRuntime: snapshot });
     },
     setAuthenticatedSessionProjection(projection) {
         if (projection.revision < get().authenticatedSession.revision) {

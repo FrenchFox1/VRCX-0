@@ -41,12 +41,10 @@ let pendingBackendRealtimeProjectionEvents: Array<{
 function isBackendRuntimeRealtimeOwner(): boolean {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
-    const snapshot = isRecord(runtimeState.backendRuntime)
-        ? runtimeState.backendRuntime
-        : {};
+    const snapshot = runtimeState.backendRuntime;
     const authenticatedSession = runtimeState.authenticatedSession.session;
     return Boolean(
-        snapshot.phase === 'running' &&
+        snapshot?.phase === 'running' &&
         snapshot.wsStatus !== 'authFailure' &&
         snapshot.mode !== 'headless' &&
         authenticatedSession &&
@@ -59,8 +57,7 @@ function isBackendRuntimeRealtimeCandidate(): boolean {
     const runtimeState = useRuntimeStore.getState();
     const snapshot = runtimeState.backendRuntime;
     return Boolean(
-        isRecord(snapshot) &&
-        snapshot.phase === 'running' &&
+        snapshot?.phase === 'running' &&
         snapshot.wsStatus !== 'authFailure' &&
         snapshot.mode !== 'headless' &&
         runtimeState.authenticatedSession.session
