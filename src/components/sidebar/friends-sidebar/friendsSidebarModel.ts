@@ -242,15 +242,6 @@ export function legacyStatusDotClassName(status: unknown) {
     return '';
 }
 
-export function normalizeStateBucket(value: unknown) {
-    const normalized = normalizeLocationStatus(value);
-    return normalized === 'online' ||
-        normalized === 'active' ||
-        normalized === 'offline'
-        ? normalized
-        : '';
-}
-
 export function resolveCurrentUserStateBucket(
     currentUser: SidebarFriendRecord | null | undefined
 ) {
