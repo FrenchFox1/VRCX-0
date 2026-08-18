@@ -154,21 +154,15 @@ pub(super) fn friend_log_upsert(
         display_name: display_name(user_id, patch, previous),
         trust_level: first_owned([
             patch.text_field(derived_keys::TRUST_LEVEL),
-            patch.text_field("trustLevel"),
             previous
                 .map(|previous| record_string(previous, derived_keys::TRUST_LEVEL))
-                .unwrap_or_default(),
-            previous
-                .map(|previous| record_string(previous, "trustLevel"))
                 .unwrap_or_default(),
         ]),
         friend_number: patch
             .i64_field(derived_keys::FRIEND_NUMBER)
-            .or_else(|| patch.i64_field("friendNumber"))
             .or_else(|| {
                 previous.and_then(|previous| previous.extra.i64_field(derived_keys::FRIEND_NUMBER))
             })
-            .or_else(|| previous.and_then(|previous| previous.extra.i64_field("friendNumber")))
             .unwrap_or(0),
         created_at: created_at.to_string(),
         force_history: false,

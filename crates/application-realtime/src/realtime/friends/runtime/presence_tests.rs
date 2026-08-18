@@ -326,7 +326,6 @@ mod tests {
                 .cloned()
                 .unwrap();
             assert_eq!(friend.extra["$trustLevel"], "Trusted User");
-            assert_eq!(friend.extra["trustLevel"], "Trusted User");
 
             if let RealtimeFriendApplyResult::Output(second) = runtime.apply_ws_message(&payload) {
                 assert!(second.persistence.friend_log_upserts.is_empty());

@@ -667,13 +667,9 @@ fn record_profile_identity_change(
     let next_name = meaningful_name(patch, user_id);
     let name_changed =
         !next_name.is_empty() && next_name != meaningful_record_name(previous, user_id);
-    let previous_trust_level = first_owned([
-        record_string(previous, derived_keys::TRUST_LEVEL),
-        record_string(previous, "trustLevel"),
-    ]);
+    let previous_trust_level = record_string(previous, derived_keys::TRUST_LEVEL);
     let trust_level = first_owned([
         patch.text_field(derived_keys::TRUST_LEVEL),
-        patch.text_field("trustLevel"),
         previous_trust_level.clone(),
     ]);
     let trust_differs = trust_level_differs(&previous_trust_level, &trust_level);

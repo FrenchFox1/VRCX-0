@@ -102,8 +102,6 @@ fn normalize_friend_entry(
         "stateBucket".into(),
         Value::String(state_bucket.to_string()),
     );
-    object.insert("friendNumber".into(), number_value(friend_number));
-    object.insert("trustLevel".into(), Value::String(trust_level.clone()));
     object.insert(
         derived_keys::FRIEND_NUMBER.into(),
         number_value(friend_number),

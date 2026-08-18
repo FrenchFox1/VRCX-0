@@ -489,8 +489,7 @@ fn roster_order_from_friend_records(
         .filter_map(|(user_id, record)| {
             let number = record
                 .extra
-                .get("friendNumber")
-                .or_else(|| record.extra.get(derived_keys::FRIEND_NUMBER))
+                .get(derived_keys::FRIEND_NUMBER)
                 .and_then(Value::as_i64)?;
             (number > 0).then(|| (number, user_id.clone()))
         })
