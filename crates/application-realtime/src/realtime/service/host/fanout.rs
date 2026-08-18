@@ -27,6 +27,18 @@ impl RealtimeHostRuntime {
         self.deps.friend_projection_sink.emit(projection);
     }
 
+    pub fn emit_friend_log_changed(&self) {
+        let (generation, baseline_revision) = self
+            .friends
+            .snapshot()
+            .map(|snapshot| (snapshot.generation, snapshot.baseline_revision))
+            .unwrap_or((0, 0));
+        self.emit_friend_projection(FriendProjection {
+            friend_log_changed: true,
+            ..FriendProjection::new(generation, baseline_revision)
+        });
+    }
+
     pub fn set_feed_persistence_disabled(&self, disabled: bool) -> Result<()> {
         let _owner = self.lock_friend_owner();
         config_store::set_bool(self.deps.db.as_ref(), "feedPersistenceDisabled", disabled)?;

@@ -2053,3 +2053,53 @@ fn friend_note_change_notifies_note_cache_sink() -> Result<()> {
     assert_eq!(invalidations.load(std::sync::atomic::Ordering::SeqCst), 1);
     Ok(())
 }
+
+#[test]
+fn emit_friend_log_changed_carries_the_active_baseline_scope() -> Result<()> {
+    let (_dir, runtime, active_session) = runtime_with_active_session("friend-log-changed-scope")?;
+    let mut friends = HashMap::new();
+    friends.insert(
+        "usr_friend".to_string(),
+        FriendRecord {
+            id: "usr_friend".to_string(),
+            display_name: "Friend".into(),
+            state: "online".into(),
+            state_bucket: "online".into(),
+            location: "wrld_home:1".to_string(),
+            ..FriendRecord::default()
+        },
+    );
+    runtime
+        .runtime()
+        .sync_friend_snapshot(active_session.clone(), Some(7), friends)?;
+    let mut refreshed = HashMap::new();
+    refreshed.insert(
+        "usr_friend".to_string(),
+        FriendRecord {
+            id: "usr_friend".to_string(),
+            display_name: "Friend".into(),
+            state: "offline".into(),
+            state_bucket: "offline".into(),
+            location: "offline".to_string(),
+            ..FriendRecord::default()
+        },
+    );
+    let refreshed_result =
+        runtime
+            .runtime()
+            .sync_friend_snapshot(active_session.clone(), Some(7), refreshed)?;
+    assert_eq!(refreshed_result.baseline_revision, 1);
+    runtime.runtime().deps.event_bus.take_events_for_test();
+
+    runtime.runtime().emit_friend_log_changed();
+
+    let events = runtime.runtime().deps.event_bus.take_events_for_test();
+    let projection = events
+        .iter()
+        .find(|event| event.name == "realtimeFriendProjection")
+        .expect("friend log change should emit a friend projection");
+    assert_eq!(projection.payload["friendLogChanged"], true);
+    assert_eq!(projection.payload["generation"], 7);
+    assert_eq!(projection.payload["baselineRevision"], 1);
+    Ok(())
+}
