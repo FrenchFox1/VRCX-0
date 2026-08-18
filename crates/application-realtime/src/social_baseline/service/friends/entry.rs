@@ -99,10 +99,6 @@ fn normalize_friend_entry(
     // location never participates in bucketing; the /auth/user list bucket is the only authority.
     object.insert("state".into(), Value::String(state_bucket.to_string()));
     object.insert(
-        "stateBucket".into(),
-        Value::String(state_bucket.to_string()),
-    );
-    object.insert(
         derived_keys::FRIEND_NUMBER.into(),
         number_value(friend_number),
     );

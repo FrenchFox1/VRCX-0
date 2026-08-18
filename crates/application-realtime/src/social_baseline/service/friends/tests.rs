@@ -220,7 +220,7 @@ fn placeholder_friend_uses_realtime_list_bucket() {
         .expect("friendsById object");
     let stale = friends_by_id.get("usr_stale").expect("usr_stale present");
     assert_eq!(
-        object_field(stale, "stateBucket").and_then(Value::as_str),
+        object_field(stale, "state").and_then(Value::as_str),
         Some("online")
     );
     assert_eq!(
@@ -248,7 +248,7 @@ fn placeholder_active_friend_is_kept_active() {
         .expect("friendsById object");
     let active = friends_by_id.get("usr_active").expect("usr_active present");
     assert_eq!(
-        object_field(active, "stateBucket").and_then(Value::as_str),
+        object_field(active, "state").and_then(Value::as_str),
         Some("active")
     );
     assert_eq!(
@@ -292,7 +292,7 @@ fn online_friend_in_private_world_stays_online() {
         .expect("friendsById object");
     let priv_friend = friends_by_id.get("usr_priv").expect("usr_priv present");
     assert_eq!(
-        object_field(priv_friend, "stateBucket").and_then(Value::as_str),
+        object_field(priv_friend, "state").and_then(Value::as_str),
         Some("online")
     );
 }
@@ -330,7 +330,7 @@ fn list_bucket_decides_state_not_location() {
         .get("usr_inworld")
         .expect("usr_inworld present");
     assert_eq!(
-        object_field(friend, "stateBucket").and_then(Value::as_str),
+        object_field(friend, "state").and_then(Value::as_str),
         Some("offline")
     );
 }
@@ -368,7 +368,7 @@ fn active_list_bucket_ignores_location() {
         .get("usr_active_inworld")
         .expect("usr_active_inworld present");
     assert_eq!(
-        object_field(friend, "stateBucket").and_then(Value::as_str),
+        object_field(friend, "state").and_then(Value::as_str),
         Some("active")
     );
 }
