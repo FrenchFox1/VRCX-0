@@ -42,7 +42,7 @@ function normalizePresenceText(value: unknown) {
     return normalized;
 }
 
-function normalizeUserStatus(value: unknown) {
+function resolveUserPresenceStatus(value: unknown) {
     if (typeof value === 'string') {
         return normalizePresenceText(value);
     }
@@ -116,7 +116,7 @@ function userStatusIndicatorClassName(
     value: unknown,
     { showOffline = false, className = '' }: UserStatusIndicatorOptions = {}
 ) {
-    const status = normalizeUserStatus(value);
+    const status = resolveUserPresenceStatus(value);
     const classes = ['x-user-status'];
 
     if (status === 'state-active') {
@@ -143,7 +143,7 @@ function userStatusIndicatorClassName(
 }
 
 function userStatusSortRank(value: unknown) {
-    const status = normalizeUserStatus(value);
+    const status = resolveUserPresenceStatus(value);
     if (status === 'join me') {
         return 0;
     }
@@ -191,7 +191,7 @@ const statusLabelFallbacks: Readonly<Record<string, string>> = Object.freeze({
 });
 
 function userStatusLabel(value: unknown, t?: TranslateFn) {
-    const status = normalizeUserStatus(value);
+    const status = resolveUserPresenceStatus(value);
     if (!status) {
         return '';
     }
@@ -204,7 +204,7 @@ function userStatusLabel(value: unknown, t?: TranslateFn) {
 }
 
 export {
-    normalizeUserStatus,
+    resolveUserPresenceStatus,
     userStatusIndicatorClassName,
     userStatusLabel,
     userStatusSortRank
