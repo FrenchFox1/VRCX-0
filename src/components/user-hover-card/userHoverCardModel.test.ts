@@ -14,7 +14,7 @@ describe('buildUserHoverCardModel', () => {
             seed: {
                 id: 'usr_1',
                 displayName: 'Alice',
-                stateBucket: 'online',
+                state: 'online',
                 status: 'join me',
                 location: REAL_INSTANCE,
                 $location_at: 1_700_000_000_000
@@ -38,7 +38,7 @@ describe('buildUserHoverCardModel', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_2',
-                stateBucket: 'online',
+                state: 'online',
                 status: 'active',
                 location: 'private'
             },
@@ -54,7 +54,7 @@ describe('buildUserHoverCardModel', () => {
     it('uses the active variant when online with no resolvable instance', () => {
         const seed = {
             id: 'usr_3',
-            stateBucket: 'active',
+            state: 'active',
             status: 'active',
             location: ''
         };
@@ -76,7 +76,7 @@ describe('buildUserHoverCardModel', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_4',
-                stateBucket: 'offline',
+                state: 'offline',
                 location: 'offline',
                 last_login: 1_699_999_000_000
             },
@@ -108,7 +108,7 @@ describe('buildUserHoverCardModel', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_6',
-                stateBucket: 'online',
+                state: 'online',
                 status: 'active',
                 location: REAL_INSTANCE,
                 last_login: 1_700_000_000_000

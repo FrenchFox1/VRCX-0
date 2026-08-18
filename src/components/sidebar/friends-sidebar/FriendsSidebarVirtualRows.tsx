@@ -127,7 +127,7 @@ function FriendVirtualRow({
     statusCommands: StatusCommandsView;
 }) {
     const source = readFriendStatusSource(friend);
-    const state = normalizeLocationStatus(source?.stateBucket || source?.state);
+    const state = normalizeLocationStatus(source?.state);
     const friendId = friend.id || '';
     const isOnlineFriend =
         runtime.onlineIdSet.has(friendId) || state === 'online';

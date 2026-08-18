@@ -163,12 +163,8 @@ export function resolveFriendRowLocationState({
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeLocationStatus(
-        statusSource?.stateBucket || statusSource?.state
-    );
-    const friendStateBucket = normalizeLocationStatus(
-        statusSource?.stateBucket
-    );
+    const friendState = normalizeLocationStatus(statusSource?.state);
+    const friendStateBucket = normalizeLocationStatus(statusSource?.state);
     const rawFriendLocation = isCurrentUser
         ? resolvePresenceLocation(friend)
         : readFriendRefLocation(friend);

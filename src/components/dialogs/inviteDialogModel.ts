@@ -28,7 +28,7 @@ export function onlineFriendIdsFromGroup(
             return (
                 userId &&
                 source.indexOf(userId) === index &&
-                (friend?.stateBucket === 'online' || friend?.state === 'online')
+                friend?.state === 'online'
             );
         });
 }

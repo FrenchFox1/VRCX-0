@@ -49,9 +49,7 @@ function readEntryUpstreamEpoch(friend: FriendRecord) {
 }
 
 function applyFriendChange(userId: string, friend: FriendRecord) {
-    const stateBucket = normalizeLocationStatus(
-        friend?.stateBucket || friend?.state
-    );
+    const stateBucket = normalizeLocationStatus(friend?.state);
     const locationTag = readEntryLocationTag(friend);
     const inRealInstance =
         stateBucket === 'online' && parseLocation(locationTag).isRealInstance;

@@ -80,9 +80,7 @@ function validTimestampMs(value: unknown) {
 }
 
 function isCurrentlyOnline(profile: DialogRecord) {
-    const state = normalizedText(
-        profile?.stateBucket || profile?.state
-    ).toLowerCase();
+    const state = normalizedText(profile?.state).toLowerCase();
     return state === 'online';
 }
 

@@ -322,12 +322,8 @@ export function resolveSidebarStatusDotClassName(
           : isOfflineByCurrentSnapshot
             ? 'offline'
             : '';
-    const state = normalizeLocationStatus(
-        source?.stateBucket || source?.state || snapshotState
-    );
-    const stateBucket = normalizeLocationStatus(
-        source?.stateBucket || snapshotState
-    );
+    const state = normalizeLocationStatus(source?.state || snapshotState);
+    const stateBucket = normalizeLocationStatus(source?.state || snapshotState);
 
     if (isCurrentUser || userId === currentUser?.id) {
         const currentSource = readFriendStatusSource(currentUser) || source;

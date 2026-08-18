@@ -101,9 +101,7 @@ function buildInstanceActionGateTarget(
         key: friendId,
         userId: friendId,
         location: String(readFriendRefLocation(friend) ?? ''),
-        stateBucket: normalizeLocationStatus(
-            source?.stateBucket || source?.state
-        ),
+        stateBucket: normalizeLocationStatus(source?.state),
         isCurrentUser: friendId === normalizeId(currentUserId)
     };
 }
@@ -462,9 +460,7 @@ export function FriendsSidebar({
         return sortRows(
             rows.filter((friend) => {
                 const source = readFriendStatusSource(friend);
-                const state = normalizeLocationStatus(
-                    source?.stateBucket || source?.state
-                );
+                const state = normalizeLocationStatus(source?.state);
                 return (
                     selectedFavoriteIds.has(normalizeId(friend?.id)) &&
                     state === 'online' &&

@@ -64,12 +64,7 @@ function normalizeUserStatus(value: unknown) {
     const sourceLocation = asUserStatusSource(source.$location);
     const lastLocationRecord = asUserStatusSource(lastLocation);
     const status = normalizePresenceText(record.status || source?.status);
-    const state = normalizePresenceText(
-        record.stateBucket ||
-            record.state ||
-            source?.stateBucket ||
-            source?.state
-    );
+    const state = normalizePresenceText(record.state || source?.state);
     const location = normalizePresenceText(
         record.location ||
             recordLocation.tag ||
