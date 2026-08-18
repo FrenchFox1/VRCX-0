@@ -10,13 +10,6 @@ export interface FriendLogCurrentRow {
     friendNumber: number;
 }
 
-export interface FriendLogCurrentEntry {
-    userId?: string | null;
-    displayName?: string | null;
-    trustLevel?: string | null;
-    friendNumber?: number | string | null;
-}
-
 type FriendLogSourceRow = FriendLogCurrentOutput;
 
 function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {

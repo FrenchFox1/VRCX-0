@@ -1,19 +1,13 @@
 import {
+    FRIEND_LOG_TYPES,
+    isFriendLogType,
+    type FriendLogType
+} from '@/domain/friends/friendLog';
+import {
     commands,
     type FriendLogHistoryEntryInput,
     type FriendLogHistoryOutput
 } from '@/platform/tauri/bindings';
-
-const FRIEND_LOG_TYPES = Object.freeze([
-    'Friend',
-    'Unfriend',
-    'FriendRequest',
-    'CancelFriendRequest',
-    'DisplayName',
-    'TrustLevel'
-] as const);
-
-export type FriendLogType = (typeof FRIEND_LOG_TYPES)[number];
 
 export interface FriendLogHistoryRow {
     rowId: number;
@@ -52,10 +46,6 @@ function valueAsString(value: unknown): string {
 
 function valueAsInt(value: unknown): number {
     return Number.parseInt(String(value ?? 0), 10) || 0;
-}
-
-function isFriendLogType(value: string): value is FriendLogType {
-    return FRIEND_LOG_TYPES.some((type) => type === value);
 }
 
 function normalizeFriendLogHistoryRow(

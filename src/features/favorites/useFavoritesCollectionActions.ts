@@ -2,6 +2,7 @@ import type { MutableRefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
@@ -13,7 +14,6 @@ import { favoriteGroupType } from './favoritesItems';
 import type {
     FavoriteGroup,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 

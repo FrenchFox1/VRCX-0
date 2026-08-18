@@ -5,9 +5,9 @@ import {
 } from '@/components/dialogs/previous-instances-table/previousInstancesRows';
 
 import type { PreviousInstanceRow } from './instance-activity/instanceActivityTypes';
+import type { InstanceHistoryMode } from './instanceHistoryDayMode';
 
 export type PreviousInstanceSortKey = 'date' | 'location' | 'duration';
-export type InstanceHistoryMode = 'search' | 'day';
 
 export function buildInstanceHistorySearchParams({
     currentUserId,

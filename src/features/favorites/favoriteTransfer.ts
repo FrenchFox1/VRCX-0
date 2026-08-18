@@ -1,4 +1,5 @@
 import type { FavoriteRecord } from '@/domain/favorites/types';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import type {
     FavoriteTransferInput,
     FavoriteTransferItemResult,
@@ -11,7 +12,6 @@ import { favoriteGroupType, normalizeFavoriteEntityId } from './favoritesItems';
 import type {
     FavoriteGroup,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 

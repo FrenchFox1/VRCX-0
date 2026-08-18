@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
+
 import { normalizeFavoriteSearchValue as normalizeSearchValue } from './favoritesItems';
 import {
     buildFavoriteAvatarHistoryGroups,
@@ -14,7 +16,7 @@ import {
     type FavoriteEntityDetail
 } from './favoritesPageData';
 import type { FavoriteItem } from './favoritesTypes';
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type { FavoriteSource } from './favoritesTypes';
 import type { useFavoritesCollectionsState } from './useFavoritesCollectionsState';
 
 const EMPTY_ITEMS: FavoriteItem[] = [];

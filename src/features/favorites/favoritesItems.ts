@@ -1,7 +1,7 @@
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 
-import type { FavoriteKind } from './favoritesTypes';
+import type { FavoriteKind } from '@/domain/favorites/types';
 
 type SortableFavoriteItem = {
     id?: unknown;

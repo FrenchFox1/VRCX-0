@@ -6,11 +6,10 @@ import {
     safeJsonParse,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
-
 import {
     FRIEND_LOG_TYPES,
     type FriendLogType
-} from './components/FriendLogViewParts';
+} from '@/domain/friends/friendLog';
 
 export const DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const COLUMN_IDS = [

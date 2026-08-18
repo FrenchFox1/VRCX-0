@@ -1,6 +1,7 @@
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { formatCsvRow } from '@/shared/utils/csv';
 
-import type { FavoriteItem, FavoriteKind } from './favoritesTypes';
+import type { FavoriteItem } from './favoritesTypes';
 
 export const FAVORITES_EXPORT_ALL_VALUE = '__all__';
 export const FAVORITES_EXPORT_NONE_VALUE = '__none__';

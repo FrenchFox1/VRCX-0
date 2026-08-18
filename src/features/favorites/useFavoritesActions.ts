@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import type {
     FavoriteGroup,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 import { useFavoritesBulkActions } from './useFavoritesBulkActions';

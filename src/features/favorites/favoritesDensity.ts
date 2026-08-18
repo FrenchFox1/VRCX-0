@@ -1,4 +1,4 @@
-import type { FavoriteKind } from './favoritesTypes';
+import type { FavoriteKind } from '@/domain/favorites/types';
 
 export type FavoritesDensity = 'standard' | 'compact';
 

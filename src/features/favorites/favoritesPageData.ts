@@ -1,3 +1,4 @@
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { userImage } from '@/services/entityMediaService';
 import { resolveFriendPresenceLocation } from '@/shared/utils/location';
 
@@ -12,7 +13,6 @@ import {
 import type {
     FavoriteGroup,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSeedData
 } from './favoritesTypes';
 

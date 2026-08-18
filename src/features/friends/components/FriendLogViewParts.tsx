@@ -16,6 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { ToolbarFilterMenu } from '@/components/layout/ToolbarControls';
+import {
+    isFriendLogType,
+    type FriendLogType
+} from '@/domain/friends/friendLog';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
@@ -28,17 +32,6 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 
 import type { FriendLogRow } from '../friendLogRows';
-
-export const FRIEND_LOG_TYPES = [
-    'Friend',
-    'Unfriend',
-    'FriendRequest',
-    'CancelFriendRequest',
-    'DisplayName',
-    'TrustLevel'
-] as const;
-
-export type FriendLogType = (typeof FRIEND_LOG_TYPES)[number];
 
 const FRIEND_LOG_TYPE_GROUPS = [
     {
@@ -84,13 +77,6 @@ export function FriendLogEmptyState({
     ...props
 }: ComponentProps<typeof EmptyState>) {
     return <EmptyState {...props} title={title} description={description} />;
-}
-
-function isFriendLogType(type: unknown): type is FriendLogType {
-    return (
-        typeof type === 'string' &&
-        (FRIEND_LOG_TYPES as readonly string[]).includes(type)
-    );
 }
 
 export function friendLogTypeLabel(type: unknown, t: TFunction) {

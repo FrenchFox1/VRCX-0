@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 
-import type {
-    FavoriteGroup,
-    FavoriteKind,
-    FavoriteSource
-} from './favoritesTypes';
+import type { FavoriteKind } from '@/domain/favorites/types';
+
+import type { FavoriteGroup, FavoriteSource } from './favoritesTypes';
 
 export function useFavoritesFilters({ kind }: { kind: FavoriteKind }) {
     const [searchQuery, setSearchQuery] = useState('');

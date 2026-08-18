@@ -15,6 +15,7 @@ import {
     ToolbarViewMenu,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -36,7 +37,6 @@ import {
     FAVORITES_DENSITY_OPTIONS,
     type FavoritesDensity
 } from '../favoritesDensity';
-import type { FavoriteKind } from '../favoritesTypes';
 
 type FavoritesToolbarProps = {
     kind: FavoriteKind;

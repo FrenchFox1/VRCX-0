@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { FavoriteRecord } from '@/domain/favorites/types';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import type {
     FavoriteBulkRemoveResult,
     FavoriteTransferItemResult,
@@ -21,7 +22,6 @@ import {
 import type {
     FavoriteGroup,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 import {

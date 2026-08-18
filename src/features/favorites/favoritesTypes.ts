@@ -1,5 +1,4 @@
-export type FavoriteKind = 'friend' | 'world' | 'avatar';
-
+import type { FavoriteKind } from '@/domain/favorites/types';
 export type FavoriteSource = 'remote' | 'local' | 'history';
 
 export type FavoriteSeedData = Record<string, unknown> & {
