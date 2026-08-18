@@ -1,9 +1,9 @@
-import type { FriendStateBucketAuthority } from '@/platform/tauri/bindings';
 import type { ParsedLocation } from '@/shared/utils/location';
 
 import type { LoadStatus } from '../shared/types';
 
 export type FriendRosterBucket = 'online' | 'active' | 'offline';
+export type FriendStateBucketAuthority = 'explicit' | 'preserve';
 export type FriendRosterLoadStatus = LoadStatus;
 
 export type FriendLocationProjection = Record<string, unknown> &

@@ -13,10 +13,10 @@ import type {
     FriendRosterSeedSnapshot,
     FriendRosterSnapshotInput,
     FriendRosterState,
-    FriendRosterStore
+    FriendRosterStore,
+    FriendStateBucketAuthority
 } from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
-import type { FriendStateBucketAuthority } from '@/platform/tauri/bindings';
 import {
     computeTrustLevel,
     computeUserPlatform
