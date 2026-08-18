@@ -17,6 +17,7 @@ import {
 } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
@@ -26,7 +27,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 
-type ProfileStatus = 'idle' | 'loading' | 'ready' | 'error';
+type ProfileStatus = LoadStatus;
 
 function GroupModerationRail({
     activeGroupId,
@@ -61,7 +62,7 @@ function GroupModerationRail({
                     )}
                 </p>
             ) : null}
-            {status === 'loading' ? (
+            {status === 'running' ? (
                 <LoadingState
                     variant="panel"
                     className="flex-1"
@@ -160,7 +161,7 @@ function GroupModerationMain({
         );
     }
 
-    if (status === 'loading') {
+    if (status === 'running') {
         return (
             <LoadingState
                 className="flex-1"
@@ -269,7 +270,7 @@ export function GroupModerationPage() {
         }
 
         let active = true;
-        setProfileStatus('loading');
+        setProfileStatus('running');
         setProfileError('');
         groupProfileRepository
             .getGroupProfile({ groupId })

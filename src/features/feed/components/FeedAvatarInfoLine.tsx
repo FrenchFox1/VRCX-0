@@ -4,6 +4,7 @@ import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import { cn } from '@/lib/utils';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
@@ -19,7 +20,7 @@ type ResolvedAvatarRecord = Record<string, unknown> & {
     name?: string;
 };
 
-type AvatarInfoLineStatus = 'idle' | 'loading' | 'ready' | 'error';
+type AvatarInfoLineStatus = LoadStatus;
 
 type AvatarInfoLineState = {
     avatarName: string;
@@ -180,7 +181,7 @@ function resolveInitialAvatarInfoLineState({
     }
 
     return normalizeAvatarInfoLineState({
-        status: 'loading',
+        status: 'running',
         cacheKey
     });
 }
@@ -262,7 +263,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
                 return current;
             }
             const nextInfo = normalizeAvatarInfoLineState({
-                status: 'loading',
+                status: 'running',
                 cacheKey
             });
             return isSameAvatarInfoLineState(current, nextInfo)
@@ -314,7 +315,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
                 : 'public'
             : '';
     const label =
-        info.status === 'loading'
+        info.status === 'running'
             ? 'Resolving avatar info...'
             : info.avatarName || t('dialog.user.info.unknown_avatar');
 

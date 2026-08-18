@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type {
     GroupQuickModerationGroup,
@@ -19,7 +20,7 @@ import {
 } from './groupQuickModerationLoading';
 import { normalizeUserId } from './userProfileFields';
 
-type GroupsStatus = 'idle' | 'loading' | 'ready' | 'error';
+type GroupsStatus = LoadStatus;
 
 interface UseUserDialogGroupModerationInput {
     open: boolean;
@@ -94,7 +95,7 @@ export function useUserDialogGroupModeration({
     const [pendingBanGroupId, setPendingBanGroupId] = useState('');
 
     const groupsLoadingVisible = useDelayedGroupQuickModerationLoading(
-        groupsStatus === 'loading',
+        groupsStatus === 'running',
         `${identity}:${reloadToken}:groups`
     );
     const banGroupsById = useMemo(() => {
@@ -144,7 +145,7 @@ export function useUserDialogGroupModeration({
 
         const requestId = loadRequestRef.current + 1;
         loadRequestRef.current = requestId;
-        setGroupsStatus('loading');
+        setGroupsStatus('running');
         setGroupsError('');
         getGroupQuickModeration({
             endpoint,
