@@ -16,9 +16,9 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
+import { isOnlineFriend } from '../friends-locations-rows/presence';
 import type { getFriendsLocationsDensityConfig } from '../friendsLocationsDensity';
 import {
-    isOnlineFriend,
     normalizeFriendsLocationId as normalizeId,
     resolveFriendGroupName,
     resolveLocationSummary,

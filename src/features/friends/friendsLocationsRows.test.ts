@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { isOnlineFriend } from './friends-locations-rows/presence';
 import * as friendsLocationsRows from './friendsLocationsRows';
 import {
     buildFavoriteGroupLabelsByFriendId,
     buildSameInstanceGroups,
     compareFavoriteGroups,
     isFriendInPrivateLocation,
-    isOnlineFriend,
     normalizeDisplayText,
     normalizeFriendsLocationId,
     partitionFriendsByPrivateLocation,
@@ -32,7 +32,6 @@ describe('friends locations row helpers', () => {
             'buildSameInstanceSections',
             'compareFavoriteGroups',
             'isFriendInPrivateLocation',
-            'isOnlineFriend',
             'isRawWorldReference',
             'isSentinelLocationValue',
             'isShareableInstanceLocation',
