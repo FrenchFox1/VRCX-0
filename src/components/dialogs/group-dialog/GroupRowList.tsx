@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
     EyeIcon,
     ImageIcon,
@@ -14,8 +15,12 @@ import type {
     EntityRecord,
     GroupProfileRecord
 } from '@/domain/entities/profileEntities';
+import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
+import { useKnownUserFact } from '@/lib/useKnownUser';
+import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
@@ -42,6 +47,55 @@ function isRecord(value: unknown): value is EntityRecord {
 
 function text(value: unknown): string {
     return typeof value === 'string' ? value : '';
+}
+
+function PostAuthorButton({ userId }: { userId: string }) {
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const knownUser = useKnownUserFact(userId, {
+        endpoint: currentEndpoint
+    });
+    const knownDisplayName = text(
+        knownUser?.displayName || knownUser?.username || knownUser?.name
+    );
+    const userProfileQuery = useQuery({
+        queryKey: queryKeys.user(userId, currentEndpoint),
+        queryFn: () => userProfileRepository.getUserProfile({ userId }),
+        enabled: Boolean(
+            userId && (!knownDisplayName || knownDisplayName === userId)
+        ),
+        staleTime: entityQueryPolicies.userAvatarLookup.staleTime,
+        gcTime: entityQueryPolicies.userAvatarLookup.gcTime,
+        retry: entityQueryPolicies.userAvatarLookup.retry,
+        refetchOnWindowFocus:
+            entityQueryPolicies.userAvatarLookup.refetchOnWindowFocus
+    });
+    const queriedUser = userProfileQuery.data;
+    const displayName = text(
+        queriedUser?.displayName ||
+            queriedUser?.username ||
+            queriedUser?.name ||
+            knownDisplayName ||
+            userId
+    );
+
+    return (
+        <Button
+            type="button"
+            variant="ghost"
+            className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs"
+            onClick={() =>
+                openUserDialog({
+                    userId,
+                    title: displayName,
+                    seedData: queriedUser || knownUser || null
+                })
+            }
+        >
+            <span className="truncate">{displayName}</span>
+        </Button>
+    );
 }
 
 function PostList({
@@ -118,7 +172,9 @@ function PostList({
                                     <span>{text(post.createdAt)}</span>
                                 ) : null}
                                 {text(post.authorId) ? (
-                                    <span>{text(post.authorId)}</span>
+                                    <PostAuthorButton
+                                        userId={text(post.authorId)}
+                                    />
                                 ) : null}
                             </div>
                         </div>
