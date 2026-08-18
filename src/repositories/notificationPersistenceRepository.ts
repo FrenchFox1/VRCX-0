@@ -3,13 +3,14 @@ import {
     type HttpApiExecuteResponse,
     type NotificationListItemOutput,
     type NotificationListQueryInput,
+    type RequestInviteRequest,
     type VrchatBoopInput,
-    type VrchatNotificationPhotoSendInput,
-    type VrchatNotificationSendInput
+    type VrchatRequestInvitePhotoSendInput,
+    type VrchatRequestInviteSendInput
 } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';
-import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
+import { unwrapVrchatResponse } from './vrchatRequest';
 
 export type NotificationDetails = Record<string, unknown> & {
     displayLocation?: string;
@@ -73,7 +74,7 @@ interface NotificationActionOptions {
     receiverUserId?: unknown;
     userId?: unknown;
     emojiId?: unknown;
-    params?: QueryParams;
+    params?: RequestInviteRequest;
 }
 
 export const NOTIFICATION_TYPES = Object.freeze([
@@ -321,7 +322,7 @@ async function expireNotification({
 
 async function sendRequestInvite({
     receiverUserId,
-    params = {}
+    params = { platform: 'standalonewindows' }
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId =
         typeof receiverUserId === 'string'
@@ -334,7 +335,7 @@ async function sendRequestInvite({
     const input = {
         receiverUserId: normalizedReceiverUserId,
         params
-    } satisfies VrchatNotificationSendInput;
+    } satisfies VrchatRequestInviteSendInput;
     const response = await commands.appVrchatRequestInviteSend(input);
     return unwrapVrchatNotificationResponse(
         response,
@@ -344,7 +345,7 @@ async function sendRequestInvite({
 
 async function sendRequestInvitePhoto({
     receiverUserId,
-    params = {},
+    params = { platform: 'standalonewindows' },
     imageData
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId =
@@ -363,7 +364,7 @@ async function sendRequestInvitePhoto({
         receiverUserId: normalizedReceiverUserId,
         params,
         imageData: normalizedImageData
-    } satisfies VrchatNotificationPhotoSendInput;
+    } satisfies VrchatRequestInvitePhotoSendInput;
     const response = await commands.appVrchatRequestInvitePhotoSend(input);
     return unwrapVrchatNotificationResponse(
         response,

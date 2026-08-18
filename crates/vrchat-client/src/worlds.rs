@@ -3,10 +3,13 @@ use std::collections::HashMap;
 use serde_json::{json, Value};
 
 use crate::http_api::{
-    api_input, encode_path_segment, get_input, object_body, require_text, HttpApiError,
-    HttpApiRequestInput,
+    api_input, encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
 };
 use crate::query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort};
+
+mod request;
+
+pub use request::WorldUpdateRequest;
 
 pub fn world_get_input(
     endpoint: String,
@@ -81,16 +84,21 @@ pub fn world_persistent_data_exists_input(
 pub fn world_save_input(
     endpoint: String,
     world_id: String,
-    params: Option<Value>,
+    params: WorldUpdateRequest,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let world_id = require_text(world_id, "VrchatWorldSave requires worldId.")?;
+    if params.id != world_id {
+        return Err(HttpApiError::Custom(
+            "VrchatWorldSave params.id must match worldId.".into(),
+        ));
+    }
     Ok((
         world_id.clone(),
         api_input(
             endpoint,
             "PUT",
             format!("worlds/{}", encode_path_segment(&world_id)),
-            Some(object_body(params)),
+            Some(json!(params)),
         ),
     ))
 }
@@ -225,19 +233,27 @@ mod tests {
 
     #[test]
     fn world_mutations_match_the_vrcx_0_repository_contract() {
-        let (_, save_default) =
-            world_save_input("endpoint".into(), " wrld/1 ".into(), None).unwrap();
-        assert_eq!(save_default.method.as_deref(), Some("PUT"));
-        assert_eq!(save_default.path.as_deref(), Some("worlds/wrld%2F1"));
-        assert_eq!(json_body(&save_default), &json!({}));
-
         let (_, save) = world_save_input(
             "endpoint".into(),
             " wrld/1 ".into(),
-            Some(json!({ "name": "World" })),
+            WorldUpdateRequest {
+                id: "wrld/1".into(),
+                name: Some("World".into()),
+                description: None,
+                capacity: None,
+                recommended_capacity: None,
+                preview_youtube_id: None,
+                tags: None,
+                url_list: None,
+            },
         )
         .unwrap();
-        assert_eq!(json_body(&save), &json!({ "name": "World" }));
+        assert_eq!(save.method.as_deref(), Some("PUT"));
+        assert_eq!(save.path.as_deref(), Some("worlds/wrld%2F1"));
+        assert_eq!(
+            json_body(&save),
+            &json!({ "id": "wrld/1", "name": "World" })
+        );
 
         let (_, delete) = world_delete_input("endpoint".into(), " wrld/1 ".into()).unwrap();
         assert_eq!(delete.method.as_deref(), Some("DELETE"));
@@ -283,10 +299,33 @@ mod tests {
         )
         .is_err());
         assert!(world_persistent_data_exists_input("".into(), "user".into(), " ".into()).is_err());
-        assert!(world_save_input("".into(), " ".into(), None).is_err());
+        assert!(world_save_input(
+            "".into(),
+            " ".into(),
+            WorldUpdateRequest {
+                id: String::new(),
+                name: None,
+                description: None,
+                capacity: None,
+                recommended_capacity: None,
+                preview_youtube_id: None,
+                tags: None,
+                url_list: None,
+            },
+        )
+        .is_err());
         assert!(world_delete_input("".into(), " ".into()).is_err());
         assert!(world_publish_input("".into(), " ".into()).is_err());
         assert!(world_unpublish_input("".into(), " ".into()).is_err());
         assert!(world_persistent_data_delete_input("".into(), " ".into(), "world".into()).is_err());
+    }
+
+    #[test]
+    fn world_update_request_rejects_unknown_fields() {
+        assert!(serde_json::from_value::<WorldUpdateRequest>(json!({
+            "id": "wrld_test",
+            "releaseStatus": "public",
+        }))
+        .is_err());
     }
 }

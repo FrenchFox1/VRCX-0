@@ -1,12 +1,12 @@
 use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::response_error_message;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
-    avatars::{avatar_get_input, avatar_save_input},
+    avatars::{avatar_get_input, avatar_save_input, AvatarUpdateRequest},
     groups::{leave_input, member_props_set_input, GroupMemberPatch, GroupMemberVisibility},
     http_api::{ApiScope, HttpApiRequestInput},
     users::user_groups_get_input,
@@ -167,7 +167,15 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
             let (_, request) = avatar_save_input(
                 self.expected_scope.endpoint.clone(),
                 avatar_id.to_string(),
-                Some(json!({ "id": avatar_id, "tags": tags })),
+                AvatarUpdateRequest {
+                    id: avatar_id.to_string(),
+                    tags: Some(tags.to_vec()),
+                    name: None,
+                    description: None,
+                    primary_style: None,
+                    secondary_style: None,
+                    release_status: None,
+                },
             )?;
             self.execute_json(request, "avatar content tag update")
                 .await

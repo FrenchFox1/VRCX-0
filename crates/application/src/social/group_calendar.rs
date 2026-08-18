@@ -12,6 +12,7 @@ use tokio::sync::Semaphore;
 use vrcx_0_application_core::vrchat_api::groups::profile_get_input;
 use vrcx_0_application_core::vrchat_api::tools::{
     calendars_get_input, featured_calendars_get_input, following_calendars_get_input,
+    CalendarListParams,
 };
 use vrcx_0_application_core::{
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
@@ -182,11 +183,11 @@ async fn collect_calendar_pages(
     for page_index in 0..=CALENDAR_MAX_PAGES {
         ensure_scope_matches(&deps.auth_scope, scope)?;
         let offset = (page_index as i64) * CALENDAR_PAGE_SIZE;
-        let params = HashMap::from([
-            ("n".into(), Value::from(CALENDAR_PAGE_SIZE)),
-            ("offset".into(), Value::from(offset)),
-            ("date".into(), Value::from(date)),
-        ]);
+        let params = CalendarListParams {
+            n: Some(CALENDAR_PAGE_SIZE),
+            offset: Some(offset),
+            date: Some(date.to_string()),
+        };
         let request = match kind {
             CalendarKind::All => calendars_get_input(scope.endpoint.clone(), params),
             CalendarKind::Following => {

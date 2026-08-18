@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
@@ -9,90 +8,13 @@ use crate::http_api::{
     HttpApiError, HttpApiRequestInput,
 };
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-pub enum GroupMemberSort {
-    #[serde(rename = "joinedAt:asc")]
-    JoinedAtAsc,
-    #[default]
-    #[serde(rename = "joinedAt:desc")]
-    JoinedAtDesc,
-}
+mod params;
+mod request;
 
-impl GroupMemberSort {
-    const fn as_str(self) -> &'static str {
-        match self {
-            Self::JoinedAtAsc => "joinedAt:asc",
-            Self::JoinedAtDesc => "joinedAt:desc",
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-pub enum GroupPostVisibility {
-    #[serde(rename = "group")]
-    Group,
-    #[serde(rename = "public")]
-    Public,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct GroupPostMutation {
-    pub title: String,
-    pub text: String,
-    pub send_notification: bool,
-    pub visibility: GroupPostVisibility,
-    #[serde(default)]
-    pub role_ids: Vec<String>,
-    pub image_id: Option<String>,
-}
-
-impl GroupPostMutation {
-    fn validated(mut self) -> Result<Self, HttpApiError> {
-        self.title = require_text(self.title, "VrchatGroupPost requires title.")?;
-        self.text = require_text(self.text, "VrchatGroupPost requires text.")?;
-        if self.visibility == GroupPostVisibility::Public && !self.role_ids.is_empty() {
-            return Err(HttpApiError::Custom(
-                "VrchatGroupPost roleIds require group visibility.".into(),
-            ));
-        }
-        for role_id in &mut self.role_ids {
-            *role_id = require_text(
-                role_id.as_str(),
-                "VrchatGroupPost roleIds cannot contain blank values.",
-            )?;
-            if !role_id.starts_with("grol_") {
-                return Err(HttpApiError::Custom(
-                    "VrchatGroupPost roleIds must begin with grol_.".into(),
-                ));
-            }
-        }
-        Ok(self)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-pub enum GroupMemberVisibility {
-    #[serde(rename = "friends")]
-    Friends,
-    #[serde(rename = "hidden")]
-    Hidden,
-    #[serde(rename = "visible")]
-    Visible,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct GroupMemberPatch {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub is_subscribed_to_announcements: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub is_subscribed_to_event_announcements: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub manager_notes: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub visibility: Option<GroupMemberVisibility>,
-}
+pub use params::GroupMemberSort;
+pub use request::{
+    GroupMemberPatch, GroupMemberVisibility, GroupPostMutation, GroupPostVisibility,
+};
 
 fn group_path(group_id: &str, suffix: &str) -> String {
     if suffix.is_empty() {

@@ -3,7 +3,7 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import { commands, type AvatarUpdateRequest } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import avatarLocalRepository from './avatarLocalRepository';
@@ -59,7 +59,7 @@ interface UpdateAvatarTagsInput {
 
 interface SaveAvatarInput {
     avatarId?: unknown;
-    params?: Record<string, unknown>;
+    params?: Omit<AvatarUpdateRequest, 'id'>;
 }
 
 interface AvatarIdInput {

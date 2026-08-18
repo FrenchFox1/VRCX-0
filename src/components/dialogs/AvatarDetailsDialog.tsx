@@ -8,6 +8,7 @@ import {
     styleName,
     tagsKey
 } from '@/components/dialogs/avatarDetailsModel';
+import type { AvatarUpdateRequest } from '@/platform/tauri/bindings';
 import avatarProfileRepository, {
     type AvatarProfileRecord,
     type AvatarStyleRecord
@@ -45,15 +46,6 @@ const noneValue = '__none__';
 function hasOwn(object: unknown, key: PropertyKey) {
     return Object.prototype.hasOwnProperty.call(object, key);
 }
-
-type AvatarDetailsSaveParams = Record<string, unknown> & {
-    id: string;
-    name?: string;
-    description?: string;
-    primaryStyle?: string;
-    secondaryStyle?: string;
-    tags?: string[];
-};
 
 type AvatarDetailsDialogProps = {
     open: boolean;
@@ -189,7 +181,7 @@ export function AvatarDetailsDialog({
             return;
         }
 
-        const params: AvatarDetailsSaveParams = { id: avatarId };
+        const params: AvatarUpdateRequest = { id: avatarId };
         const nextAuthorTags = authorTagsFromCsv(authorTags);
         const authorTagsChanged =
             tagsKey(initialAuthorTags) !== tagsKey(nextAuthorTags);

@@ -10,7 +10,9 @@ use std::{
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::{read_config_string_array, FavoriteEntityKind, TaskStopToken};
+use vrcx_0_application_core::{
+    read_config_string_array, FavoriteEntityKind, TaskStopToken, VrchatFavoriteType,
+};
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_ids::{is_avatar_id, is_user_id, is_world_id};
 use vrcx_0_core::vrchat_json::response_error_message;
@@ -62,8 +64,7 @@ pub struct FavoriteImportTarget {
     pub location: FavoriteImportLocation,
     #[serde(default)]
     pub group: String,
-    #[serde(default)]
-    pub favorite_type: String,
+    pub favorite_type: Option<VrchatFavoriteType>,
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -465,9 +466,12 @@ impl FavoriteImportRuntime {
                         kind_label(kind)
                     )));
                 }
+                let favorite_type = target.favorite_type.ok_or_else(|| {
+                    Error::Custom("Remote favorite import requires a favorite type.".into())
+                })?;
                 let (_, _, request) = favorite_add_input(
                     scope.endpoint.clone(),
-                    target.favorite_type.clone(),
+                    favorite_type,
                     id.to_string(),
                     target.group.clone(),
                 )?;
@@ -678,20 +682,20 @@ fn prepare_favorite_import(input: FavoriteImportStartInput) -> Result<PreparedFa
                 .target
                 .ok_or_else(|| Error::Custom("Favorite import requires a target group.".into()))?;
             target.group = target.group.trim().to_string();
-            target.favorite_type = target.favorite_type.trim().to_string();
             if target.group.is_empty() {
                 return Err(Error::Custom(
                     "Favorite import requires a target group.".into(),
                 ));
             }
-            if target.location == FavoriteImportLocation::Remote && target.favorite_type.is_empty()
-            {
+            if target.location == FavoriteImportLocation::Remote && target.favorite_type.is_none() {
                 return Err(Error::Custom(
                     "Remote favorite import requires a favorite type.".into(),
                 ));
             }
             if target.location == FavoriteImportLocation::Remote
-                && !favorite_type_matches_kind(input.kind, &target.favorite_type)
+                && !target.favorite_type.is_some_and(|favorite_type| {
+                    favorite_type_matches_kind(input.kind, favorite_type)
+                })
             {
                 return Err(Error::Custom(
                     "Remote favorite type does not match the imported entity kind.".into(),
@@ -793,8 +797,8 @@ fn kind_label(kind: FavoriteImportKind) -> &'static str {
     }
 }
 
-fn favorite_type_matches_kind(kind: FavoriteImportKind, favorite_type: &str) -> bool {
-    kind.matches_remote_type(favorite_type)
+fn favorite_type_matches_kind(kind: FavoriteImportKind, favorite_type: VrchatFavoriteType) -> bool {
+    FavoriteEntityKind::from(favorite_type) == kind
 }
 
 fn is_entity_id(kind: FavoriteImportKind, value: &str) -> bool {
@@ -847,19 +851,22 @@ mod tests {
                 FavoriteImportKind::Avatar,
                 FavoriteImportHydrationCache::Avatar,
                 "avatar",
+                VrchatFavoriteType::Avatar,
             ),
             (
                 FavoriteImportKind::World,
                 FavoriteImportHydrationCache::World,
                 "world",
+                VrchatFavoriteType::World,
             ),
             (
                 FavoriteImportKind::Friend,
                 FavoriteImportHydrationCache::None,
                 "friend",
+                VrchatFavoriteType::Friend,
             ),
         ];
-        for (kind, expected_cache, expected_kind) in rows {
+        for (kind, expected_cache, expected_kind, favorite_type) in rows {
             assert_eq!(hydration_cache(kind), expected_cache);
             assert_eq!(kind_name(kind), expected_kind);
             for location in [
@@ -878,7 +885,7 @@ mod tests {
                     target: Some(FavoriteImportTarget {
                         location,
                         group: "target".into(),
-                        favorite_type: expected_kind.into(),
+                        favorite_type: Some(favorite_type),
                     }),
                 })
                 .unwrap();
@@ -910,7 +917,7 @@ mod tests {
             target: Some(FavoriteImportTarget {
                 location,
                 group: "target".into(),
-                favorite_type: String::new(),
+                favorite_type: None,
             }),
         };
 
@@ -927,7 +934,7 @@ mod tests {
             target: Some(FavoriteImportTarget {
                 location: FavoriteImportLocation::Remote,
                 group: "avatars1".into(),
-                favorite_type: "friend".into(),
+                favorite_type: Some(VrchatFavoriteType::Friend),
             }),
         })
         .is_err());

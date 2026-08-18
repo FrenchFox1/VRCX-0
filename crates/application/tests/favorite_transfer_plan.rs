@@ -3,7 +3,7 @@ use vrcx_0_application::{
     FavoriteTransferLocation, FavoriteTransferMode, FavoriteTransferSource, FavoriteTransferStage,
     FavoriteTransferTarget,
 };
-use vrcx_0_application_core::FavoriteEntityKind;
+use vrcx_0_application_core::{FavoriteEntityKind, VrchatFavoriteType};
 
 fn transfer_input(
     source: FavoriteTransferLocation,
@@ -20,7 +20,7 @@ fn transfer_input(
         target: FavoriteTransferTarget {
             location: target,
             group: "target".to_string(),
-            favorite_type: "world".to_string(),
+            favorite_type: Some(VrchatFavoriteType::World),
         },
         items: vec![],
     }

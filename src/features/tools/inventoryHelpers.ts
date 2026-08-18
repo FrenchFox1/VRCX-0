@@ -1,10 +1,14 @@
 import { toast } from 'sonner';
 
+import type { MediaFileTag } from '@/platform/tauri/bindings';
 import type {
     InventoryItemRecord,
     MediaFileRecord
 } from '@/repositories/mediaRepository';
-import { emojiAnimationStyleList } from '@/shared/constants/emoji';
+import {
+    emojiAnimationStyleNames,
+    type EmojiAnimationStyleName
+} from '@/shared/constants/emoji';
 import {
     MAX_IMAGE_UPLOAD_BYTES,
     validateImageUploadFile
@@ -32,7 +36,7 @@ export type InventoryTabDefinition = {
     key: string;
     labelKey: string;
     source: InventorySource;
-    fileTags?: string[];
+    fileTags?: MediaFileTag[];
     uploadTarget?: InventoryUploadTarget;
     params: Record<string, string | boolean>;
 };
@@ -421,9 +425,11 @@ export function isArchivedInventoryItem(item: InventoryDisplayRecord) {
     return Boolean(item?.isArchived || item?.archived);
 }
 
-export function resolveEmojiStyleName(rawValue: unknown) {
+export function resolveEmojiStyleName(
+    rawValue: unknown
+): EmojiAnimationStyleName {
     const normalizedValue = String(rawValue || '').toLowerCase();
-    const match = Object.keys(emojiAnimationStyleList).find(
+    const match = emojiAnimationStyleNames.find(
         (styleName) => styleName.toLowerCase() === normalizedValue
     );
     return match || 'Stop';

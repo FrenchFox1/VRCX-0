@@ -56,7 +56,7 @@ describe('vrchatMediaRepository', () => {
         commandMocks.appVrchatMediaFilesGet.mockResolvedValueOnce(
             success([{ id: 'file_1' }])
         );
-        const params = { tag: 'gallery', n: 25 };
+        const params = { tag: 'gallery', n: 25 } as const;
 
         await expect(
             vrchatMediaRepository.getFiles(params)
@@ -100,16 +100,25 @@ describe('vrchatMediaRepository', () => {
         await expect(
             vrchatMediaRepository.uploadPrint('data:image/png;base64,abc', {
                 cropWhiteBorder: false,
-                params: { note: 'hello' }
+                params: {
+                    note: 'hello',
+                    timestamp: '2026-08-19T00:00:00Z'
+                }
             })
         ).resolves.toMatchObject({
             json: { id: 'print_1' },
-            params: { note: 'hello' }
+            params: {
+                note: 'hello',
+                timestamp: '2026-08-19T00:00:00Z'
+            }
         });
         expect(commandMocks.appVrchatMediaPrintUpload).toHaveBeenCalledWith({
             imageData: 'data:image/png;base64,abc',
             cropWhiteBorder: false,
-            params: { note: 'hello' }
+            params: {
+                note: 'hello',
+                timestamp: '2026-08-19T00:00:00Z'
+            }
         });
     });
 

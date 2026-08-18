@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use serde::Deserialize;
-use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::tools::{CalendarListParams, InviteMessageType};
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsCalendarListInput {
     #[serde(default)]
-    pub(crate) params: HashMap<String, Value>,
+    pub(crate) params: CalendarListParams,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -60,21 +58,19 @@ pub struct VrchatToolsUserReportInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsInviteMessagesInput {
     #[serde(default)]
     pub(crate) current_user_id: String,
-    #[serde(default)]
-    pub(crate) message_type: String,
+    pub(crate) message_type: InviteMessageType,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsInviteMessageEditInput {
     #[serde(default)]
     pub(crate) current_user_id: String,
-    #[serde(default)]
-    pub(crate) message_type: String,
+    pub(crate) message_type: InviteMessageType,
     #[serde(default)]
     pub(crate) slot: String,
     #[serde(default)]

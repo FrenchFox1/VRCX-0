@@ -3,9 +3,12 @@ use std::collections::HashMap;
 use serde_json::{json, Value};
 
 use crate::http_api::{
-    api_input, encode_path_segment, get_input, object_body, require_text, HttpApiError,
-    HttpApiRequestInput,
+    api_input, encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
 };
+
+mod request;
+
+pub use request::{CurrentUserProfileUpdateRequest, CurrentUserUpdateRequest};
 
 pub fn user_get_input(
     endpoint: String,
@@ -45,7 +48,7 @@ pub fn profile_get_input(
 pub fn profile_update_input(
     endpoint: String,
     user_id: String,
-    params: Option<Value>,
+    params: CurrentUserProfileUpdateRequest,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatProfileUpdate requires userId.")?;
     Ok((
@@ -54,7 +57,7 @@ pub fn profile_update_input(
             endpoint,
             "PUT",
             format!("profile/{}", encode_path_segment(&user_id)),
-            Some(object_body(params)),
+            Some(json!(params)),
         ),
     ))
 }
@@ -132,7 +135,7 @@ pub fn user_mutual_friends_get_input(
 pub fn current_user_update_input(
     endpoint: String,
     user_id: String,
-    params: Option<Value>,
+    params: CurrentUserUpdateRequest,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatCurrentUserUpdate requires userId.")?;
     Ok((
@@ -141,7 +144,7 @@ pub fn current_user_update_input(
             endpoint,
             "PUT",
             format!("users/{}", encode_path_segment(&user_id)),
-            Some(object_body(params)),
+            Some(json!(params)),
         ),
     ))
 }
@@ -308,11 +311,10 @@ mod tests {
         let (_, profile) = profile_update_input(
             "endpoint".into(),
             " usr/1 ".into(),
-            Some(json!({
-                "backgroundType": "gradient",
-                "backgroundGradientTop": "5d3f86",
-                "backgroundGradientBottom": "21385B",
-            })),
+            CurrentUserProfileUpdateRequest::Gradient {
+                background_gradient_top: "5d3f86".into(),
+                background_gradient_bottom: "21385B".into(),
+            },
         )
         .unwrap();
         assert_eq!(profile.method.as_deref(), Some("PUT"));
@@ -326,8 +328,12 @@ mod tests {
             })
         );
 
-        let (_, update_default) =
-            current_user_update_input("endpoint".into(), " usr/1 ".into(), None).unwrap();
+        let (_, update_default) = current_user_update_input(
+            "endpoint".into(),
+            " usr/1 ".into(),
+            CurrentUserUpdateRequest::default(),
+        )
+        .unwrap();
         assert_eq!(update_default.method.as_deref(), Some("PUT"));
         assert_eq!(update_default.path.as_deref(), Some("users/usr%2F1"));
         assert_eq!(json_body(&update_default), &json!({}));
@@ -335,7 +341,10 @@ mod tests {
         let (_, update) = current_user_update_input(
             "endpoint".into(),
             " usr/1 ".into(),
-            Some(json!({ "status": "ask me" })),
+            CurrentUserUpdateRequest {
+                status: Some(vrcx_0_core::friends::UserStatus::AskMe),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(json_body(&update), &json!({ "status": "ask me" }));
@@ -406,12 +415,22 @@ mod tests {
     fn user_requests_reject_blank_required_ids() {
         assert!(user_get_input("".into(), " ".into()).is_err());
         assert!(profile_get_input("".into(), " ".into(), false).is_err());
-        assert!(profile_update_input("".into(), " ".into(), None).is_err());
+        assert!(profile_update_input(
+            "".into(),
+            " ".into(),
+            CurrentUserProfileUpdateRequest::Default,
+        )
+        .is_err());
         assert!(user_mutual_counts_get_input("".into(), " ".into()).is_err());
         assert!(user_groups_get_input("".into(), " ".into()).is_err());
         assert!(user_represented_group_get_input("".into(), " ".into()).is_err());
         assert!(user_mutual_friends_get_input("".into(), " ".into(), 1, 0, false).is_err());
-        assert!(current_user_update_input("".into(), " ".into(), None).is_err());
+        assert!(current_user_update_input(
+            "".into(),
+            " ".into(),
+            CurrentUserUpdateRequest::default(),
+        )
+        .is_err());
         assert!(current_user_badge_update_input(
             "".into(),
             "user".into(),
@@ -422,5 +441,25 @@ mod tests {
         .is_err());
         assert!(current_user_tags_add_input("".into(), " ".into(), vec![]).is_err());
         assert!(current_user_tags_remove_input("".into(), " ".into(), vec![]).is_err());
+    }
+
+    #[test]
+    fn current_user_requests_reject_unknown_fields_and_statuses() {
+        assert!(serde_json::from_value::<CurrentUserUpdateRequest>(json!({
+            "displayName": "unsupported here",
+        }))
+        .is_err());
+        assert!(serde_json::from_value::<CurrentUserUpdateRequest>(json!({
+            "status": "future",
+        }))
+        .is_err());
+        assert!(
+            serde_json::from_value::<CurrentUserProfileUpdateRequest>(json!({
+                "backgroundType": "texture",
+                "backgroundTextureId": "file_test",
+                "futureField": true,
+            }))
+            .is_err()
+        );
     }
 }

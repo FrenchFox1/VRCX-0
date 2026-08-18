@@ -1,6 +1,5 @@
-import { commands } from '@/platform/tauri/bindings';
+import { commands, type RequestInviteRequest } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
-import type { QueryParams } from '@/repositories/vrchatRequest';
 
 interface SendInviteToLocationInput {
     receiverUserId?: unknown;
@@ -105,7 +104,7 @@ export async function sendRequestInviteToUser({
         return null;
     }
 
-    const params: QueryParams = { platform };
+    const params: RequestInviteRequest = { platform };
     const normalizedRequestSlot = Number.parseInt(
         String(requestSlot ?? ''),
         10

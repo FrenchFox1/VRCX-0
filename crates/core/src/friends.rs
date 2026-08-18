@@ -247,12 +247,17 @@ pub fn normalize_state_bucket(value: &str) -> Option<String> {
     StateBucket::normalize(value).map(|bucket| bucket.as_str().to_string())
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 pub enum UserStatus {
+    #[serde(rename = "active")]
     Active,
+    #[serde(rename = "join me")]
     JoinMe,
+    #[serde(rename = "ask me")]
     AskMe,
+    #[serde(rename = "busy")]
     Busy,
+    #[serde(rename = "offline")]
     Offline,
 }
 
@@ -490,5 +495,14 @@ mod user_status_tests {
         ] {
             assert_eq!(UserStatus::normalize(status.as_str()), Some(status));
         }
+    }
+
+    #[test]
+    fn serde_accepts_only_supported_wire_values() {
+        assert_eq!(
+            serde_json::from_value::<UserStatus>(serde_json::json!("join me")).unwrap(),
+            UserStatus::JoinMe
+        );
+        assert!(serde_json::from_value::<UserStatus>(serde_json::json!("future")).is_err());
     }
 }

@@ -4,13 +4,14 @@ import { toast } from 'sonner';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { WorldUpdateRequest } from '@/platform/tauri/bindings';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import type { WorldDetailsDraft } from '../WorldOwnerEditDialogs';
 import type { useWorldDialogRuntimeState } from './useWorldDialogRuntimeState';
 
 type RuntimeState = ReturnType<typeof useWorldDialogRuntimeState>;
-type WorldPatch = Record<string, unknown>;
+type WorldPatch = Omit<WorldUpdateRequest, 'id'>;
 type CapacityField = 'capacity' | 'recommendedCapacity';
 
 interface SaveWorldPatchMessages {
@@ -223,7 +224,7 @@ export function useWorldDialogOwnerActions({
         });
         if (result.ok) {
             await saveWorldPatch(
-                { name: result.value },
+                { name: String(result.value ?? '') },
                 {
                     successMessage: t('prompt.rename_world.message.success'),
                     errorMessage: t('dialog.world.toast.failed_to_rename_world')
@@ -243,7 +244,7 @@ export function useWorldDialogOwnerActions({
         });
         if (result.ok) {
             await saveWorldPatch(
-                { description: result.value },
+                { description: String(result.value ?? '') },
                 {
                     successMessage: t(
                         'dialog.world.success.world_description_updated'

@@ -9,7 +9,7 @@ use vrcx_0_application_core::{AuthenticatedMutationContext, RemoteMutationGate, 
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
-use vrcx_0_vrchat_client::users::current_user_update_input;
+use vrcx_0_vrchat_client::users::{current_user_update_input, CurrentUserUpdateRequest};
 
 use crate::{Result, WebClient};
 
@@ -231,7 +231,7 @@ pub async fn run_background_presence_automation(
     let (_, mut request) = current_user_update_input(
         mutation.scope().endpoint.clone(),
         mutation.scope().current_user_id.clone(),
-        Some(Value::Object(changed_patch.clone())),
+        serde_json::from_value::<CurrentUserUpdateRequest>(Value::Object(changed_patch.clone()))?,
     )?;
     mutation.apply_scope_to_request(&mut request);
     let response = match mutation

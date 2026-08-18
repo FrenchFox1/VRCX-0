@@ -941,7 +941,7 @@ mod tests {
             store.set_surfaced_entities(
                 &session.id,
                 &[Entity {
-                    kind: "user".into(),
+                    kind: crate::entities::EntityKind::User,
                     id: "usr_1".into(),
                     display_name: "Alice".into(),
                 }],
@@ -1023,7 +1023,7 @@ mod tests {
             store.set_surfaced_entities(
                 &session.id,
                 &[Entity {
-                    kind: "user".into(),
+                    kind: crate::entities::EntityKind::User,
                     id: "usr_1".into(),
                     display_name: "Alice".into(),
                 }],

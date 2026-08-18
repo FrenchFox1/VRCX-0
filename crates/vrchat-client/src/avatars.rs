@@ -3,10 +3,14 @@ use std::collections::HashMap;
 use serde_json::{json, Value};
 
 use crate::http_api::{
-    api_input, encode_path_segment, get_input, normalize_text, object_body, query_input,
-    require_text, HttpApiError, HttpApiRequestInput,
+    api_input, encode_path_segment, get_input, normalize_text, query_input, require_text,
+    HttpApiError, HttpApiRequestInput,
 };
 use crate::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
+
+mod request;
+
+pub use request::{AvatarReleaseStatus, AvatarUpdateRequest};
 
 pub fn avatar_get_input(
     endpoint: String,
@@ -148,16 +152,21 @@ pub fn avatar_select_fallback_input(
 pub fn avatar_save_input(
     endpoint: String,
     avatar_id: String,
-    params: Option<Value>,
+    params: AvatarUpdateRequest,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarSave requires avatarId.")?;
+    if params.id != avatar_id {
+        return Err(HttpApiError::Custom(
+            "VrchatAvatarSave params.id must match avatarId.".into(),
+        ));
+    }
     Ok((
         avatar_id.clone(),
         api_input(
             endpoint,
             "PUT",
             format!("avatars/{}", encode_path_segment(&avatar_id)),
-            Some(object_body(params)),
+            Some(json!(params)),
         ),
     ))
 }
@@ -389,31 +398,60 @@ mod tests {
     }
 
     #[test]
-    fn avatar_save_defaults_body_to_empty_object_for_non_object_params() {
+    fn avatar_save_uses_typed_params_as_body() {
         let input = avatar_save_input(
             ENDPOINT.into(),
             "avtr_test".into(),
-            Some(json!("not an object")),
+            AvatarUpdateRequest {
+                id: "avtr_test".into(),
+                name: Some("New Name".into()),
+                description: None,
+                primary_style: None,
+                secondary_style: None,
+                tags: None,
+                release_status: None,
+            },
         )
         .unwrap()
         .1;
 
         let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
-        assert_eq!(request.body.as_deref(), Some("{}"));
+        assert_eq!(
+            request.body.as_deref(),
+            Some(r#"{"id":"avtr_test","name":"New Name"}"#)
+        );
     }
 
     #[test]
-    fn avatar_save_uses_provided_object_params_as_body() {
-        let input = avatar_save_input(
+    fn avatar_save_rejects_a_body_id_that_does_not_match_the_path() {
+        assert!(avatar_save_input(
             ENDPOINT.into(),
             "avtr_test".into(),
-            Some(json!({ "name": "New Name" })),
+            AvatarUpdateRequest {
+                id: "avtr_other".into(),
+                name: None,
+                description: None,
+                primary_style: None,
+                secondary_style: None,
+                tags: None,
+                release_status: None,
+            },
         )
-        .unwrap()
-        .1;
+        .is_err());
+    }
 
-        let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
-        assert_eq!(request.body.as_deref(), Some(r#"{"name":"New Name"}"#));
+    #[test]
+    fn avatar_update_request_rejects_unknown_fields_and_release_statuses() {
+        assert!(serde_json::from_value::<AvatarUpdateRequest>(json!({
+            "id": "avtr_test",
+            "futureField": true,
+        }))
+        .is_err());
+        assert!(serde_json::from_value::<AvatarUpdateRequest>(json!({
+            "id": "avtr_test",
+            "releaseStatus": "hidden",
+        }))
+        .is_err());
     }
 
     #[test]

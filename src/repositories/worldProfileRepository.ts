@@ -14,6 +14,7 @@ import {
     type VrchatWorldListByUserInput,
     type VrchatWorldPersistentDataDeleteInput,
     type VrchatWorldSaveInput,
+    type WorldUpdateRequest,
     type WorldSearchSort
 } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
@@ -44,7 +45,7 @@ interface WorldProfileInput extends WorldIdInput {
 }
 
 interface WorldSaveInput extends WorldIdInput {
-    params?: Record<string, unknown>;
+    params: WorldUpdateRequest;
 }
 
 interface WorldPersistentDataInput extends WorldIdInput {
@@ -300,7 +301,7 @@ async function getWorldsByUser({
     return rows.map((world) => normalize(world));
 }
 
-async function saveWorld({ worldId, params = {} }: WorldSaveInput) {
+async function saveWorld({ worldId, params }: WorldSaveInput) {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
         throw new Error(

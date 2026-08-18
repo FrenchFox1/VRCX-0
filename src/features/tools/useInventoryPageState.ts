@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { EmojiUploadParams } from '@/platform/tauri/bindings';
 import mediaRepository, {
     type InventoryItemRecord,
     type MediaFileRecord
@@ -17,6 +18,7 @@ import {
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import {
     CATEGORY_DEFINITIONS,
     INITIAL_INVENTORY_SUB_TABS,
@@ -24,6 +26,7 @@ import {
     parseEmojiUploadSettings,
     readGridDensityPreference,
     resolveProfileDecorationMutation,
+    resolveEmojiStyleName,
     sanitizeInventoryGridDensity,
     scopeKey,
     validateImageFile,
@@ -287,11 +290,12 @@ export function useInventoryPageState() {
     }
 
     function getEmojiUploadParams(settings: InventoryUploadSettings) {
-        const params: Record<string, string | number> = {
+        const params: EmojiUploadParams = {
             tag: settings.isAnimated ? 'emojianimated' : 'emoji',
-            animationStyle: String(
-                settings.animationStyle || 'Stop'
-            ).toLowerCase(),
+            animationStyle:
+                emojiAnimationStyleValues[
+                    resolveEmojiStyleName(settings.animationStyle)
+                ],
             maskTag: 'square'
         };
         if (settings.isAnimated) {

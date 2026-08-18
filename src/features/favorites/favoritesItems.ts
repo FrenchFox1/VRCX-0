@@ -2,6 +2,7 @@ import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
+import type { VrchatFavoriteType } from '@/platform/tauri/bindings';
 
 type SortableFavoriteItem = {
     id?: unknown;
@@ -78,8 +79,13 @@ export function shrinkFavoriteImage(url: unknown): string {
 export function favoriteGroupType(
     kind: FavoriteKind,
     group: { type?: unknown }
-): string {
-    if (typeof group.type === 'string' && group.type) {
+): VrchatFavoriteType {
+    if (
+        group.type === 'avatar' ||
+        group.type === 'world' ||
+        group.type === 'vrcPlusWorld' ||
+        group.type === 'friend'
+    ) {
         return group.type;
     }
     if (kind === 'world') {

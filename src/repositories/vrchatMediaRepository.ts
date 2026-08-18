@@ -5,8 +5,14 @@ import {
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
 import type {
-    MediaAssetKind,
-    PrintFavoriteState
+    EmojiUploadParams,
+    InventoryItemUpdateRequest,
+    InventoryListParams,
+    MediaAssetUploadRequest,
+    MediaFileListParams,
+    PrintUploadParams,
+    PrintFavoriteState,
+    ProfileDecorationEquipSlot
 } from '@/platform/tauri/bindings';
 import { normalizeString } from '@/shared/utils/string';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
@@ -15,13 +21,12 @@ import { normalizePlatformError } from '../platform/tauri/errors';
 import {
     isVrchatRequestError,
     type QueryParams,
-    type QueryValue,
     type VrchatRequestResponse,
     unwrapVrchatResponse
 } from './vrchatRequest';
 
 type MediaApiRecord = Record<string, unknown>;
-type MediaApiParams = QueryParams;
+type MediaAssetKind = MediaAssetUploadRequest['assetKind'];
 
 export type MediaFileVersion = Record<string, unknown> & {
     created_at?: string;
@@ -139,10 +144,7 @@ const PROFILE_DECORATION_EQUIP_SLOTS = [
     'iconFrame',
     'profileEffect',
     'nameplateEffect'
-] as const;
-
-type ProfileDecorationEquipSlot =
-    (typeof PROFILE_DECORATION_EQUIP_SLOTS)[number];
+] as const satisfies readonly ProfileDecorationEquipSlot[];
 
 type ProfileDecorationEquipInput = {
     expectedUserId: unknown;
@@ -161,7 +163,7 @@ interface MediaApiOptions {
 
 interface MediaUploadResponse {
     json: MediaApiRecord;
-    params: MediaApiParams;
+    params: QueryParams;
     status?: number;
 }
 
@@ -172,24 +174,20 @@ interface LegacyImageUploadOptions {
     base64File: string;
 }
 
-interface MediaAssetUploadOptions {
-    assetKind: MediaAssetKind;
-    cropWhiteBorder?: boolean;
-    params?: MediaApiParams;
-}
+type MediaAssetUploadOptions =
+    | { assetKind: Extract<MediaAssetKind, 'gallery' | 'icons' | 'stickers'> }
+    | { assetKind: 'emojis'; params: EmojiUploadParams }
+    | {
+          assetKind: 'prints';
+          cropWhiteBorder?: boolean;
+          params: PrintUploadParams;
+      };
 
 interface MediaCommandOptions {
-    params?: MediaApiParams;
+    params?: QueryParams;
     extra?: MediaApiRecord;
     fallbackMessage?: string;
     path?: string;
-}
-
-function normalizeParams(params: unknown = {}): MediaApiParams {
-    if (!params || typeof params !== 'object') {
-        return {};
-    }
-    return { ...(params as Record<string, QueryValue | QueryValue[]>) };
 }
 
 function unwrapMediaResponse(
@@ -243,9 +241,9 @@ async function executeMediaCommand<TJson = MediaApiRecord>(
 }
 
 async function getFiles(
-    params: MediaApiParams = {}
+    params: MediaFileListParams = {}
 ): Promise<VrchatRequestResponse<MediaFileRecord[]>> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     return executeMediaCommand<MediaFileRecord[]>(
         () =>
             commands.appVrchatMediaFilesGet({
@@ -257,7 +255,7 @@ async function getFiles(
     );
 }
 
-async function getFileList(params: MediaApiParams = {}) {
+async function getFileList(params: MediaFileListParams = {}) {
     return getFiles(params);
 }
 
@@ -284,7 +282,7 @@ async function deleteFile(fileId: unknown) {
 }
 
 async function uploadGalleryImage(imageData: string) {
-    const params: MediaApiParams = {
+    const params: QueryParams = {
         tag: 'gallery'
     };
     return executeMediaCommand(
@@ -298,19 +296,22 @@ async function uploadGalleryImage(imageData: string) {
     );
 }
 
-async function uploadAvatarGalleryImage(
-    imageData: string,
-    avatarId: QueryValue
-) {
-    const params: MediaApiParams = {
+async function uploadAvatarGalleryImage(imageData: string, avatarId: unknown) {
+    const normalizedAvatarId = normalizeString(avatarId);
+    if (!normalizedAvatarId) {
+        throw new Error(
+            'MediaRepository.uploadAvatarGalleryImage requires an avatar id.'
+        );
+    }
+    const params: QueryParams = {
         tag: 'avatargallery',
-        galleryId: avatarId
+        galleryId: normalizedAvatarId
     };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaAvatarGalleryImageUpload({
                 imageData,
-                avatarId
+                avatarId: normalizedAvatarId
             }),
         {
             params
@@ -319,7 +320,7 @@ async function uploadAvatarGalleryImage(
 }
 
 async function uploadVrcPlusIcon(imageData: string) {
-    const params: MediaApiParams = {
+    const params: QueryParams = {
         tag: 'icon'
     };
     return executeMediaCommand(
@@ -333,8 +334,8 @@ async function uploadVrcPlusIcon(imageData: string) {
     );
 }
 
-async function uploadEmoji(imageData: string, params: MediaApiParams = {}) {
-    const normalizedParams = normalizeParams(params);
+async function uploadEmoji(imageData: string, params: EmojiUploadParams) {
+    const normalizedParams = { ...params };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaEmojiUpload({
@@ -348,7 +349,7 @@ async function uploadEmoji(imageData: string, params: MediaApiParams = {}) {
 }
 
 async function uploadSticker(imageData: string) {
-    const params: MediaApiParams = {
+    const params: QueryParams = {
         tag: 'sticker',
         maskTag: 'square'
     };
@@ -367,13 +368,13 @@ async function uploadPrint(
     imageData: string,
     {
         cropWhiteBorder = true,
-        params = {}
+        params
     }: {
         cropWhiteBorder?: boolean;
-        params?: MediaApiParams;
-    } = {}
+        params: PrintUploadParams;
+    }
 ): Promise<MediaUploadResponse> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     const response = await executeMediaCommand(
         () =>
             commands.appVrchatMediaPrintUpload({
@@ -394,17 +395,40 @@ async function uploadPrint(
 
 async function uploadAssetImage(
     imageData: string,
-    { assetKind, cropWhiteBorder = false, params = {} }: MediaAssetUploadOptions
+    options: MediaAssetUploadOptions
 ): Promise<MediaUploadResponse> {
-    const normalizedParams = normalizeParams(params);
-    const response = await executeMediaCommand(
-        () =>
-            commands.appVrchatMediaAssetUpload({
-                assetKind,
+    let input: MediaAssetUploadRequest;
+    let normalizedParams: QueryParams = {};
+    switch (options.assetKind) {
+        case 'gallery':
+            input = { assetKind: 'gallery', imageData };
+            break;
+        case 'icons':
+            input = { assetKind: 'icons', imageData };
+            break;
+        case 'emojis':
+            normalizedParams = { ...options.params };
+            input = {
+                assetKind: 'emojis',
                 imageData,
-                cropWhiteBorder: Boolean(cropWhiteBorder),
-                params: normalizedParams
-            }),
+                params: options.params
+            };
+            break;
+        case 'stickers':
+            input = { assetKind: 'stickers', imageData };
+            break;
+        case 'prints':
+            normalizedParams = { ...options.params };
+            input = {
+                assetKind: 'prints',
+                imageData,
+                cropWhiteBorder: Boolean(options.cropWhiteBorder),
+                params: options.params
+            };
+            break;
+    }
+    const response = await executeMediaCommand(
+        () => commands.appVrchatMediaAssetUpload(input),
         {
             params: normalizedParams,
             fallbackMessage: 'Media asset upload failed'
@@ -516,9 +540,9 @@ async function setPrintFavorite(
 }
 
 async function getInventoryItems(
-    params: MediaApiParams = {}
+    params: InventoryListParams = {}
 ): Promise<VrchatRequestResponse<InventoryItemsResponse>> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     return executeMediaCommand<InventoryItemsResponse>(
         () =>
             commands.appVrchatMediaInventoryItemsGet({
@@ -531,9 +555,9 @@ async function getInventoryItems(
 }
 
 async function collectInventoryItems(
-    params: MediaApiParams = {}
+    params: InventoryListParams = {}
 ): Promise<InventoryItemsCollectResult> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     try {
         const result = await commands.appVrchatMediaInventoryItemsCollect({
             params: normalizedParams
@@ -719,7 +743,7 @@ async function getUserInventoryItem(
 
 async function updateInventoryItem(
     inventoryId: unknown,
-    params: MediaApiParams = {}
+    params: InventoryItemUpdateRequest
 ) {
     const normalizedInventoryId =
         typeof inventoryId === 'string'
@@ -731,7 +755,7 @@ async function updateInventoryItem(
         );
     }
 
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaInventoryItemUpdate({

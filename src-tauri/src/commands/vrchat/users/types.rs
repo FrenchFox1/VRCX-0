@@ -1,5 +1,7 @@
 use serde::Deserialize;
-use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::users::{
+    CurrentUserProfileUpdateRequest, CurrentUserUpdateRequest,
+};
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -24,15 +26,15 @@ pub struct VrchatUserProfileInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatCurrentUserProfileUpdateInput {
-    pub(crate) params: Option<Value>,
+    pub(crate) params: CurrentUserProfileUpdateRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatCurrentUserUpdateInput {
-    pub(crate) params: Option<Value>,
+    pub(crate) params: CurrentUserUpdateRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

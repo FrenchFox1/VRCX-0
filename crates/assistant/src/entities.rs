@@ -6,8 +6,24 @@ use specta::Type;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
 #[serde(rename_all = "camelCase")]
+pub enum EntityKind {
+    User,
+    World,
+}
+
+impl EntityKind {
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::User => "user",
+            Self::World => "world",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct Entity {
-    pub kind: String,
+    pub kind: EntityKind,
     pub id: String,
     pub display_name: String,
 }
@@ -45,15 +61,15 @@ fn walk(value: &Value, found: &mut BTreeMap<String, Entity>) {
 fn entity_from_object(map: &serde_json::Map<String, Value>) -> Option<Entity> {
     let id = object_entity_id(map)?;
     let kind = if id.starts_with("usr_") {
-        "user"
+        EntityKind::User
     } else if id.starts_with("wrld_") {
-        "world"
+        EntityKind::World
     } else {
         return None;
     };
     let display_name = name_field(map).unwrap_or_default();
     Some(Entity {
-        kind: kind.into(),
+        kind,
         id,
         display_name,
     })
@@ -112,7 +128,7 @@ mod tests {
 
     fn user(id: &str, name: &str) -> Entity {
         Entity {
-            kind: "user".into(),
+            kind: EntityKind::User,
             id: id.into(),
             display_name: name.into(),
         }

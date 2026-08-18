@@ -1,7 +1,6 @@
 use serde::Deserialize;
-use serde_json::Value;
 use vrcx_0_application_core::vrchat_api::avatars::{
-    AvatarListSort, QueryOrder, ReleaseStatusFilter,
+    AvatarListSort, AvatarUpdateRequest, QueryOrder, ReleaseStatusFilter,
 };
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -34,11 +33,11 @@ pub struct VrchatAvatarFileInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarSaveInput {
     #[serde(default)]
     pub(crate) avatar_id: String,
-    pub(crate) params: Option<Value>,
+    pub(crate) params: AvatarUpdateRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

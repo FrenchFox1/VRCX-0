@@ -1,7 +1,8 @@
 import type { ChangeEvent } from 'react';
 
-import type { QueryParams } from '@/repositories/vrchatRequest';
+import type { EmojiUploadParams } from '@/platform/tauri/bindings';
 
+import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import type {
     GalleryAssets,
     GalleryAssetTab,
@@ -16,6 +17,7 @@ import {
     resolvePrintCropWhiteBorder
 } from './galleryUploadParams';
 import type { EmojiUploadSettings } from './inventoryHelpers';
+import { resolveEmojiStyleName } from './inventoryHelpers';
 
 export function createGalleryAssetActions({
     FILE_TABS,
@@ -194,11 +196,12 @@ export function createGalleryAssetActions({
         uploadInputRef.current?.click();
     }
     function getEmojiUploadParams(settings: EmojiUploadSettings) {
-        const params: QueryParams = {
+        const params: EmojiUploadParams = {
             tag: settings.isAnimated ? 'emojianimated' : 'emoji',
-            animationStyle: String(
-                settings.animationStyle || 'Stop'
-            ).toLowerCase(),
+            animationStyle:
+                emojiAnimationStyleValues[
+                    resolveEmojiStyleName(settings.animationStyle)
+                ],
             maskTag: 'square'
         };
         if (settings.isAnimated) {

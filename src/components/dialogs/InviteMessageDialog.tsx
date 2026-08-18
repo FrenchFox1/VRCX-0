@@ -18,6 +18,7 @@ import {
     getInviteCooldownLabel,
     isInviteMessageMode,
     normalizeInviteMessageRows,
+    resolveInviteMessageType,
     type InviteMessageMode,
     type InviteMessageSavePayload,
     type InviteMessageUsePayload
@@ -69,7 +70,7 @@ function InviteMessageDialog({
 }: InviteMessageDialogProps) {
     const { t } = useTranslation();
     const resolvedMode = isInviteMessageMode(mode) ? mode : 'select';
-    const resolvedMessageType = messageType || 'message';
+    const resolvedMessageType = resolveInviteMessageType(messageType);
 
     function close() {
         onClose?.();

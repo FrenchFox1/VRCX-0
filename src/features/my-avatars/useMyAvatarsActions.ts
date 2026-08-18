@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { AvatarUpdateRequest } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { selectAvatar as selectCurrentAvatar } from '@/services/avatarSelectionService';
@@ -164,7 +165,7 @@ export function useMyAvatarsActions({
 
     async function saveAvatarPatch(
         avatar: MyAvatarRow,
-        params: Record<string, unknown>,
+        params: Omit<AvatarUpdateRequest, 'id'>,
         successMessage: string
     ) {
         const avatarId = avatarIdFromValue(avatar);

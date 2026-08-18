@@ -620,7 +620,7 @@ mod tests {
                     target: FavoriteTransferTarget {
                         location: FavoriteTransferLocation::Local,
                         group: "Target".into(),
-                        favorite_type: String::new(),
+                        favorite_type: None,
                     },
                     items: vec![FavoriteTransferItem {
                         key: "local:Source:usr_friend".into(),

@@ -194,7 +194,7 @@ export function buildFavoriteTransferInput({
             favoriteType:
                 targetGroup.source === 'remote'
                     ? favoriteGroupType(kind, targetGroup)
-                    : ''
+                    : null
         },
         items: selectedItems.map((item) => buildTransferItem(item))
     };

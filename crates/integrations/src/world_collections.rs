@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+use vrcx_0_core::ReleaseStatus;
 
 pub const WORLD_COLLECTIONS_SITE_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 pub const WORLD_COLLECTIONS_API_ENDPOINT: &str = "https://worlds.vrcx-0.dev/api/collections";
@@ -32,7 +33,7 @@ pub struct WorldCollectionPayloadWorld {
     pub created_at: String,
     pub image_url: String,
     pub description: String,
-    pub release_status: String,
+    pub release_status: ReleaseStatus,
     pub thumbnail_image_url: String,
     pub comment: String,
     pub updated_at: String,
@@ -76,7 +77,7 @@ pub struct WorldOpenRegisterWorld {
     pub image_url: String,
     pub thumbnail_image_url: String,
     pub description: String,
-    pub release_status: String,
+    pub release_status: ReleaseStatus,
     pub updated_at: String,
     pub version: i64,
 }
@@ -287,6 +288,7 @@ mod tests {
         WorldCollectionSnapshotResponse, WorldCollectionTokenMintRequest, WorldOpenRegisterPayload,
         WorldOpenRegisterWorld,
     };
+    use vrcx_0_core::ReleaseStatus;
 
     #[test]
     fn token_and_create_payloads_match_the_bearer_contract() {
@@ -328,7 +330,7 @@ mod tests {
                 image_url: "https://api.vrchat.cloud/api/1/file/file_1/1/file".into(),
                 thumbnail_image_url: "https://api.vrchat.cloud/api/1/file/file_1/1/file".into(),
                 description: "A world".into(),
-                release_status: "private".into(),
+                release_status: ReleaseStatus::Private,
                 updated_at: "2026-01-01T00:00:00.000Z".into(),
                 version: 1,
             },

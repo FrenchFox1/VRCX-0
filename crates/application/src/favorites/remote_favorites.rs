@@ -35,7 +35,7 @@ fn prepare_remote_favorite_add(
     let notification_scope = input.kind.into();
     let (kind, entity_id, request) = vrchat_api::favorites::favorite_add_input(
         endpoint,
-        input.kind.as_str().to_string(),
+        input.kind,
         input.entity_id,
         input.tags,
     )?;
@@ -169,12 +169,10 @@ pub(super) async fn save_remote_favorite_group(
     let (group, request) = vrchat_api::favorites::favorite_group_save_input(
         deps.mutation.scope().endpoint.clone(),
         deps.mutation.scope().current_user_id.clone(),
-        input.kind.as_str().to_string(),
+        input.kind,
         input.group,
         input.display_name,
-        input
-            .visibility
-            .map(|visibility| visibility.as_str().to_string()),
+        input.visibility,
     )?;
     let response = execute_remote_favorite_mutation(
         deps,
@@ -197,7 +195,7 @@ pub(super) async fn clear_remote_favorite_group(
     let (group, request) = vrchat_api::favorites::favorite_group_clear_input(
         deps.mutation.scope().endpoint.clone(),
         deps.mutation.scope().current_user_id.clone(),
-        input.kind.as_str().to_string(),
+        input.kind,
         input.group,
     )?;
     let response = execute_remote_favorite_mutation(

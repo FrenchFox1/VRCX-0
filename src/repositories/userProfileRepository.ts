@@ -9,7 +9,11 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type CurrentUserProfileUpdateRequest,
+    type CurrentUserUpdateRequest
+} from '@/platform/tauri/bindings';
 import { stripDefaultAvatarImage } from '@/shared/utils/avatar';
 import {
     computeTrustLevel,
@@ -86,21 +90,14 @@ interface UserGroupsInput extends UserEndpointInput {
 }
 
 interface CurrentUserUpdateInput extends UserEndpointInput {
-    params?: UserRecord;
+    params?: CurrentUserUpdateRequest;
 }
 
-type ProfileBackgroundUpdate =
-    | { backgroundType: 'default' }
-    | {
-          backgroundType: 'gradient';
-          backgroundGradientBottom: string;
-          backgroundGradientTop: string;
-      }
-    | { backgroundType: 'texture'; backgroundTextureId: string };
+export type ProfileBackgroundUpdate = CurrentUserProfileUpdateRequest;
 
 interface CurrentUserProfileUpdateInput {
     expectedUserId?: unknown;
-    params: ProfileBackgroundUpdate;
+    params: CurrentUserProfileUpdateRequest;
 }
 
 interface CurrentUserBadgeInput extends UserEndpointInput {
@@ -188,7 +185,7 @@ function unwrapVrchatUserResponse<TJson = unknown>(
 function mergeCurrentUserUpdateResponse(
     responseJson: unknown,
     cachedUser: unknown,
-    params: UserRecord = {}
+    params: CurrentUserUpdateRequest = {}
 ): UserRecord {
     const responseUser: UserRecord = isRecord(responseJson) ? responseJson : {};
     const cachedUserRecord = isRecord(cachedUser) ? cachedUser : {};
@@ -558,5 +555,4 @@ export {
     removeCurrentUserTags
 };
 export type { UserProfileRecord } from '@/domain/entities/user';
-export type { ProfileBackgroundUpdate };
 export default userProfileRepository;

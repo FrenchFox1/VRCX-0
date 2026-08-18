@@ -2,11 +2,22 @@ use std::collections::HashMap;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_vrchat_api_endpoint, require_text,
     HttpApiError, HttpApiRequestBody, HttpApiRequestInput, HttpApiUpload,
+};
+use crate::query::serialize_query;
+
+mod params;
+mod request;
+
+pub use params::{
+    EmojiFileTag, EmojiLoopStyle, EmojiUploadParams, ImageAnimationStyle, ImageMaskTag,
+    InventoryListParams, InventoryOrder, MediaFileListParams, MediaFileTag, PrintUploadParams,
+};
+pub use request::{
+    InventoryItemUpdateRequest, MediaAssetUploadRequest, ProfileDecorationEquipSlot,
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
@@ -67,7 +78,17 @@ pub fn image_upload_input(
     endpoint: String,
     path: impl Into<String>,
     image_data: String,
-    params: HashMap<String, Value>,
+    params: EmojiUploadParams,
+    matching_dimensions: bool,
+) -> Result<HttpApiRequestInput, HttpApiError> {
+    image_upload_with_params(endpoint, path, image_data, &params, matching_dimensions)
+}
+
+fn image_upload_with_params(
+    endpoint: String,
+    path: impl Into<String>,
+    image_data: String,
+    params: &impl Serialize,
     matching_dimensions: bool,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
     let post_data = serde_json::to_string(&params)
@@ -97,8 +118,8 @@ pub fn file_delete_input(
     ))
 }
 
-pub fn files_get_input(endpoint: String, params: HashMap<String, Value>) -> HttpApiRequestInput {
-    get_input(endpoint, "files", params)
+pub fn files_get_input(endpoint: String, params: MediaFileListParams) -> HttpApiRequestInput {
+    get_input(endpoint, "files", serialize_query(&params))
 }
 
 pub fn tagged_image_upload_input(
@@ -107,11 +128,11 @@ pub fn tagged_image_upload_input(
     tag: &str,
     matching_dimensions: bool,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
-    image_upload_input(
+    image_upload_with_params(
         endpoint,
         "file/image",
         image_data,
-        HashMap::from([("tag".to_string(), Value::String(tag.to_string()))]),
+        &HashMap::from([("tag", tag)]),
         matching_dimensions,
     )
 }
@@ -119,16 +140,17 @@ pub fn tagged_image_upload_input(
 pub fn avatar_gallery_image_upload_input(
     endpoint: String,
     image_data: String,
-    avatar_id: Value,
+    avatar_id: String,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
-    image_upload_input(
+    let avatar_id = require_text(
+        avatar_id,
+        "VrchatMediaAvatarGalleryImageUpload requires avatarId.",
+    )?;
+    image_upload_with_params(
         endpoint,
         "file/image",
         image_data,
-        HashMap::from([
-            ("tag".to_string(), Value::String("avatargallery".into())),
-            ("galleryId".to_string(), avatar_id),
-        ]),
+        &HashMap::from([("tag", "avatargallery"), ("galleryId", avatar_id.as_str())]),
         false,
     )
 }
@@ -137,14 +159,11 @@ pub fn sticker_upload_input(
     endpoint: String,
     image_data: String,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
-    image_upload_input(
+    image_upload_with_params(
         endpoint,
         "file/image",
         image_data,
-        HashMap::from([
-            ("tag".to_string(), Value::String("sticker".into())),
-            ("maskTag".to_string(), Value::String("square".into())),
-        ]),
+        &HashMap::from([("tag", "sticker"), ("maskTag", "square")]),
         true,
     )
 }
@@ -153,7 +172,7 @@ pub fn print_upload_input(
     endpoint: String,
     image_data: String,
     crop_white_border: bool,
-    params: HashMap<String, Value>,
+    params: PrintUploadParams,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
     let post_data = serde_json::to_string(&params)
         .map_err(|error| HttpApiError::Custom(format!("serialize print upload params: {error}")))?;
@@ -171,23 +190,33 @@ pub fn print_upload_input(
 
 pub fn asset_upload_input(
     endpoint: String,
-    asset_kind: MediaAssetKind,
-    image_data: String,
-    crop_white_border: bool,
-    params: HashMap<String, Value>,
+    input: MediaAssetUploadRequest,
 ) -> Result<(MediaAssetKind, HttpApiRequestInput), HttpApiError> {
-    let request = match asset_kind {
-        MediaAssetKind::Gallery => {
-            tagged_image_upload_input(endpoint, image_data, "gallery", false)?
-        }
-        MediaAssetKind::Icons => tagged_image_upload_input(endpoint, image_data, "icon", true)?,
-        MediaAssetKind::Emojis => {
-            image_upload_input(endpoint, "file/image", image_data, params, true)?
-        }
-        MediaAssetKind::Stickers => sticker_upload_input(endpoint, image_data)?,
-        MediaAssetKind::Prints => {
-            print_upload_input(endpoint, image_data, crop_white_border, params)?
-        }
+    let (asset_kind, request) = match input {
+        MediaAssetUploadRequest::Gallery { image_data } => (
+            MediaAssetKind::Gallery,
+            tagged_image_upload_input(endpoint, image_data, "gallery", false)?,
+        ),
+        MediaAssetUploadRequest::Icons { image_data } => (
+            MediaAssetKind::Icons,
+            tagged_image_upload_input(endpoint, image_data, "icon", true)?,
+        ),
+        MediaAssetUploadRequest::Emojis { image_data, params } => (
+            MediaAssetKind::Emojis,
+            image_upload_input(endpoint, "file/image", image_data, params, true)?,
+        ),
+        MediaAssetUploadRequest::Stickers { image_data } => (
+            MediaAssetKind::Stickers,
+            sticker_upload_input(endpoint, image_data)?,
+        ),
+        MediaAssetUploadRequest::Prints {
+            image_data,
+            crop_white_border,
+            params,
+        } => (
+            MediaAssetKind::Prints,
+            print_upload_input(endpoint, image_data, crop_white_border, params)?,
+        ),
     };
     Ok((asset_kind, request))
 }
@@ -253,9 +282,9 @@ pub fn user_inventory_item_get_input(
 
 pub fn inventory_items_get_input(
     endpoint: String,
-    params: HashMap<String, Value>,
+    params: InventoryListParams,
 ) -> HttpApiRequestInput {
-    get_input(endpoint, "inventory", params)
+    get_input(endpoint, "inventory", serialize_query(&params))
 }
 
 pub fn inventory_template_get_input(
@@ -279,36 +308,31 @@ pub fn inventory_template_get_input(
 pub fn inventory_item_equip_input(
     endpoint: String,
     inventory_id: String,
-    equip_slot: String,
+    equip_slot: ProfileDecorationEquipSlot,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
     let inventory_id = require_text(
         inventory_id,
         "VrchatMediaProfileDecorationEquip requires inventoryId.",
     )?;
-    let equip_slot = require_text(
-        equip_slot,
-        "VrchatMediaProfileDecorationEquip requires equipSlot.",
-    )?;
     Ok(api_input(
         endpoint,
         "PUT",
         format!("inventory/{}/equip", encode_path_segment(&inventory_id)),
-        Some(serde_json::json!({ "equipSlot": equip_slot })),
+        Some(serde_json::json!({ "equipSlot": equip_slot.as_str() })),
     ))
 }
 
 pub fn inventory_slot_unequip_input(
     endpoint: String,
-    equip_slot: String,
+    equip_slot: ProfileDecorationEquipSlot,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
-    let equip_slot = require_text(
-        equip_slot,
-        "VrchatMediaProfileDecorationUnequip requires equipSlot.",
-    )?;
     Ok(api_input(
         endpoint,
         "DELETE",
-        format!("inventory/{}/equip", encode_path_segment(&equip_slot)),
+        format!(
+            "inventory/{}/equip",
+            encode_path_segment(equip_slot.as_str())
+        ),
         None,
     ))
 }
@@ -316,7 +340,7 @@ pub fn inventory_slot_unequip_input(
 pub fn inventory_item_update_input(
     endpoint: String,
     inventory_id: String,
-    params: HashMap<String, Value>,
+    params: InventoryItemUpdateRequest,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
     let inventory_id = require_text(
         inventory_id,
@@ -326,7 +350,7 @@ pub fn inventory_item_update_input(
         endpoint,
         "PUT",
         format!("inventory/{}", encode_path_segment(&inventory_id)),
-        Some(Value::Object(params.into_iter().collect())),
+        Some(serde_json::json!(params)),
     ))
 }
 

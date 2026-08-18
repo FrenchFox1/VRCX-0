@@ -1,7 +1,6 @@
 use serde::Deserialize;
-use serde_json::Value;
 use vrcx_0_application_core::vrchat_api::worlds::{
-    QueryOrder, ReleaseStatusFilter, WorldSearchSort,
+    QueryOrder, ReleaseStatusFilter, WorldSearchSort, WorldUpdateRequest,
 };
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -26,11 +25,11 @@ pub struct VrchatWorldListByUserInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatWorldSaveInput {
     #[serde(default)]
     pub(crate) world_id: String,
-    pub(crate) params: Option<Value>,
+    pub(crate) params: WorldUpdateRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

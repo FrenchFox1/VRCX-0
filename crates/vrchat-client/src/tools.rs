@@ -1,16 +1,21 @@
 use std::collections::HashMap;
 
-use serde_json::{json, Value};
+use serde_json::json;
+#[cfg(test)]
+use serde_json::Value;
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
 };
 
-pub fn calendars_get_input(
-    endpoint: String,
-    params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    get_input(endpoint, "calendar", params)
+mod params;
+mod request;
+
+pub use params::CalendarListParams;
+pub use request::InviteMessageType;
+
+pub fn calendars_get_input(endpoint: String, params: CalendarListParams) -> HttpApiRequestInput {
+    get_input(endpoint, "calendar", params.into_query_params())
 }
 
 pub fn group_calendar_get_input(
@@ -30,16 +35,16 @@ pub fn group_calendar_get_input(
 
 pub fn following_calendars_get_input(
     endpoint: String,
-    params: HashMap<String, Value>,
+    params: CalendarListParams,
 ) -> HttpApiRequestInput {
-    get_input(endpoint, "calendar/following", params)
+    get_input(endpoint, "calendar/following", params.into_query_params())
 }
 
 pub fn featured_calendars_get_input(
     endpoint: String,
-    params: HashMap<String, Value>,
+    params: CalendarListParams,
 ) -> HttpApiRequestInput {
-    get_input(endpoint, "calendar/featured", params)
+    get_input(endpoint, "calendar/featured", params.into_query_params())
 }
 
 pub fn group_event_follow_input(
@@ -142,16 +147,13 @@ pub fn user_report_input(
 pub fn invite_messages_get_input(
     endpoint: String,
     current_user_id: String,
-    message_type: String,
+    message_type: InviteMessageType,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let current_user_id = require_text(
         current_user_id,
         "VrchatToolsInviteMessagesGet requires currentUserId.",
     )?;
-    let message_type = require_text(
-        message_type,
-        "VrchatToolsInviteMessagesGet requires messageType.",
-    )?;
+    let message_type = message_type.as_str();
     Ok((
         current_user_id.clone(),
         get_input(
@@ -159,7 +161,7 @@ pub fn invite_messages_get_input(
             format!(
                 "message/{}/{}",
                 encode_path_segment(&current_user_id),
-                encode_path_segment(&message_type)
+                encode_path_segment(message_type)
             ),
             HashMap::new(),
         ),
@@ -169,7 +171,7 @@ pub fn invite_messages_get_input(
 pub fn invite_message_edit_input(
     endpoint: String,
     current_user_id: String,
-    message_type: String,
+    message_type: InviteMessageType,
     slot: String,
     message: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
@@ -177,10 +179,7 @@ pub fn invite_message_edit_input(
         current_user_id,
         "VrchatToolsInviteMessageEdit requires currentUserId.",
     )?;
-    let message_type = require_text(
-        message_type,
-        "VrchatToolsInviteMessageEdit requires messageType.",
-    )?;
+    let message_type = message_type.as_str();
     let slot = require_text(slot, "VrchatToolsInviteMessageEdit requires slot.")?;
     Ok((
         slot.clone(),
@@ -190,7 +189,7 @@ pub fn invite_message_edit_input(
             format!(
                 "message/{}/{}/{}",
                 encode_path_segment(&current_user_id),
-                encode_path_segment(&message_type),
+                encode_path_segment(message_type),
                 encode_path_segment(&slot)
             ),
             Some(json!({ "message": message })),
@@ -208,7 +207,13 @@ mod tests {
 
     #[test]
     fn calendar_reads_keep_query_params_and_encode_identity_segments() {
-        let params = HashMap::from([("n".into(), json!(100)), ("offset".into(), json!(200))]);
+        let params = CalendarListParams {
+            n: Some(100),
+            offset: Some(200),
+            date: None,
+        };
+        let expected_params =
+            HashMap::from([("n".into(), json!(100)), ("offset".into(), json!(200))]);
         for (name, request, path) in [
             (
                 "all",
@@ -228,7 +233,11 @@ mod tests {
         ] {
             assert_eq!(request.method.as_deref(), Some("GET"), "{name}");
             assert_eq!(request.path.as_deref(), Some(path), "{name}");
-            assert_eq!(request.query_params, Some(params.clone()), "{name}");
+            assert_eq!(
+                request.query_params,
+                Some(expected_params.clone()),
+                "{name}"
+            );
         }
 
         let (group_id, group) =
@@ -291,7 +300,7 @@ mod tests {
         let (slot, edit) = invite_message_edit_input(
             "endpoint".into(),
             " usr/1 ".into(),
-            " invite/request ".into(),
+            InviteMessageType::Request,
             " slot 雪 ".into(),
             "Message".into(),
         )
@@ -300,7 +309,7 @@ mod tests {
         assert_eq!(edit.method.as_deref(), Some("PUT"));
         assert_eq!(
             edit.path.as_deref(),
-            Some("message/usr%2F1/invite%2Frequest/slot%20%E9%9B%AA")
+            Some("message/usr%2F1/request/slot%20%E9%9B%AA")
         );
         assert_eq!(json_body(&edit), &json!({ "message": "Message" }));
     }
@@ -310,7 +319,7 @@ mod tests {
         let (user_id, request) = invite_messages_get_input(
             "endpoint".into(),
             " usr/1 ".into(),
-            " invite/request ".into(),
+            InviteMessageType::RequestResponse,
         )
         .unwrap();
 
@@ -318,7 +327,7 @@ mod tests {
         assert_eq!(request.method.as_deref(), Some("GET"));
         assert_eq!(
             request.path.as_deref(),
-            Some("message/usr%2F1/invite%2Frequest")
+            Some("message/usr%2F1/requestResponse")
         );
     }
 
@@ -336,11 +345,11 @@ mod tests {
             "report".into(),
         )
         .is_err());
-        assert!(invite_messages_get_input("".into(), "user".into(), " ".into()).is_err());
+        assert!(serde_json::from_str::<InviteMessageType>(r#""invite""#).is_err());
         assert!(invite_message_edit_input(
             "".into(),
             "user".into(),
-            "message".into(),
+            InviteMessageType::Message,
             " ".into(),
             "text".into(),
         )

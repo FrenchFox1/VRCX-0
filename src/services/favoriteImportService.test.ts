@@ -236,7 +236,7 @@ describe('favoriteImportService typed worker adapter', () => {
             target: {
                 location: 'local',
                 group: 'Avatars',
-                favoriteType: ''
+                favoriteType: null
             }
         });
         expect(useFavoriteImportStore.getState().rows).toHaveLength(1);

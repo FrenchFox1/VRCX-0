@@ -7,6 +7,7 @@ use vrcx_0_application_core::vrchat_api::media::{
     inventory_items_get_input, inventory_slot_unequip_input, inventory_template_get_input,
     print_delete_input, print_get_input, print_upload_input, prints_get_input, reward_redeem_input,
     sticker_upload_input, tagged_image_upload_input, user_inventory_item_get_input,
+    MediaAssetUploadRequest,
 };
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
@@ -21,23 +22,14 @@ use vrcx_0_application::{
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
-    VrchatMediaAssetUploadInput, VrchatMediaAvatarGalleryImageUploadInput, VrchatMediaFileIdInput,
-    VrchatMediaImageUploadInput, VrchatMediaInventoryItemInput, VrchatMediaInventoryTemplateInput,
-    VrchatMediaLegacyImageUploadInput, VrchatMediaParamsInput, VrchatMediaPrintIdInput,
+    VrchatMediaAvatarGalleryImageUploadInput, VrchatMediaEmojiUploadInput, VrchatMediaFileIdInput,
+    VrchatMediaFilesInput, VrchatMediaImageUploadInput, VrchatMediaInventoryItemInput,
+    VrchatMediaInventoryItemUpdateInput, VrchatMediaInventoryItemsInput,
+    VrchatMediaInventoryTemplateInput, VrchatMediaLegacyImageUploadInput, VrchatMediaPrintIdInput,
     VrchatMediaPrintUploadInput, VrchatMediaPrintsInput, VrchatMediaProfileDecorationEquipInput,
     VrchatMediaProfileDecorationUnequipInput, VrchatMediaRewardRedeemInput,
     VrchatMediaUserInventoryItemInput, VrchatPrintFavoriteSetInput,
 };
-
-fn require_profile_decoration_slot(equip_slot: String) -> Result<String, AppError> {
-    let equip_slot = equip_slot.trim();
-    match equip_slot {
-        "iconFrame" | "profileEffect" | "nameplateEffect" => Ok(equip_slot.to_string()),
-        _ => Err(AppError::Custom(
-            "Unsupported profile decoration equip slot.".into(),
-        )),
-    }
-}
 
 async fn execute_media_api(
     state: State<'_, AppState>,
@@ -110,7 +102,7 @@ async fn run_legacy_entity_image_upload(
 #[specta::specta]
 pub async fn app__vrchat_media_files_get(
     state: State<'_, AppState>,
-    input: VrchatMediaParamsInput,
+    input: VrchatMediaFilesInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
         state,
@@ -200,7 +192,7 @@ pub async fn app__vrchat_media_vrc_plus_icon_upload(
 #[specta::specta]
 pub async fn app__vrchat_media_emoji_upload(
     state: State<'_, AppState>,
-    input: VrchatMediaImageUploadInput,
+    input: VrchatMediaEmojiUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
         state,
@@ -261,15 +253,9 @@ pub async fn app__vrchat_media_print_upload(
 #[specta::specta]
 pub async fn app__vrchat_media_asset_upload(
     state: State<'_, AppState>,
-    input: VrchatMediaAssetUploadInput,
+    input: MediaAssetUploadRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (asset_kind, request) = asset_upload_input(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        input.asset_kind,
-        input.image_data,
-        input.crop_white_border,
-        input.params,
-    )?;
+    let (asset_kind, request) = asset_upload_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input)?;
     let request = prepare_media_upload_request(request)?;
 
     execute_media_api(
@@ -354,7 +340,7 @@ pub async fn app__vrchat_prints_favorite_set(
 #[specta::specta]
 pub async fn app__vrchat_media_inventory_items_get(
     state: State<'_, AppState>,
-    input: VrchatMediaParamsInput,
+    input: VrchatMediaInventoryItemsInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
         state,
@@ -407,12 +393,11 @@ pub async fn app__vrchat_media_profile_decoration_equip(
     state: State<'_, AppState>,
     input: VrchatMediaProfileDecorationEquipInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let equip_slot = require_profile_decoration_slot(input.equip_slot)?;
     let inventory_id = input.inventory_id.clone();
     let request = inventory_item_equip_input(
         VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.inventory_id,
-        equip_slot,
+        input.equip_slot,
     )?;
     execute_media_api(
         state,
@@ -429,13 +414,15 @@ pub async fn app__vrchat_media_profile_decoration_unequip(
     state: State<'_, AppState>,
     input: VrchatMediaProfileDecorationUnequipInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let equip_slot = require_profile_decoration_slot(input.equip_slot)?;
-    let request =
-        inventory_slot_unequip_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), equip_slot.clone())?;
+    let equip_slot = input.equip_slot;
+    let request = inventory_slot_unequip_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), equip_slot)?;
     execute_media_api(
         state,
         "app__vrchat_media_profile_decoration_unequip",
-        format!("Unequipping profile decoration slot {equip_slot}."),
+        format!(
+            "Unequipping profile decoration slot {}.",
+            equip_slot.as_str()
+        ),
         request,
     )
     .await
@@ -465,7 +452,7 @@ pub async fn app__vrchat_media_user_inventory_item_get(
 #[specta::specta]
 pub async fn app__vrchat_media_inventory_item_update(
     state: State<'_, AppState>,
-    input: VrchatMediaInventoryItemInput,
+    input: VrchatMediaInventoryItemUpdateInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let inventory_id = input.inventory_id.clone();
     execute_media_api(
@@ -540,21 +527,4 @@ pub async fn app__vrchat_media_world_image_upload_legacy(
         "app__vrchat_media_world_image_upload_legacy",
     )
     .await
-}
-
-#[cfg(test)]
-mod tests {
-    use super::require_profile_decoration_slot;
-
-    #[test]
-    fn profile_decoration_mutation_accepts_only_supported_slots() {
-        for slot in ["iconFrame", "profileEffect", "nameplateEffect"] {
-            assert_eq!(
-                require_profile_decoration_slot(format!(" {slot} ")).unwrap(),
-                slot
-            );
-        }
-        assert!(require_profile_decoration_slot("drone".into()).is_err());
-        assert!(require_profile_decoration_slot(" ".into()).is_err());
-    }
 }

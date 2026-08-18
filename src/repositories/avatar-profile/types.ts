@@ -1,4 +1,5 @@
 import type {
+    AvatarUpdateRequest,
     AvatarListSort,
     QueryOrder,
     ReleaseStatusFilter
@@ -74,7 +75,7 @@ export interface AvatarIdInput {
 }
 
 export interface SaveAvatarInput extends AvatarIdInput {
-    params?: Record<string, unknown>;
+    params: AvatarUpdateRequest;
 }
 
 export interface AvatarStylesInput {
