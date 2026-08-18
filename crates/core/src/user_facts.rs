@@ -1,3 +1,4 @@
+use crate::derived_keys;
 use std::collections::HashMap;
 
 use serde_json::{Map, Number, Value};
@@ -53,27 +54,42 @@ fn insert_derived_trust_fields(object: &mut Map<String, Value>) {
         .unwrap_or("");
     let effective_platform = crate::trust::compute_user_platform(platform, last_platform);
 
-    object.insert("$trustLevel".into(), Value::String(trust.trust_level));
-    object.insert("$trustClass".into(), Value::String(trust.trust_class));
     object.insert(
-        "$trustSortNum".into(),
+        derived_keys::TRUST_LEVEL.into(),
+        Value::String(trust.trust_level),
+    );
+    object.insert(
+        derived_keys::TRUST_CLASS.into(),
+        Value::String(trust.trust_class),
+    );
+    object.insert(
+        derived_keys::TRUST_SORT_NUM.into(),
         Number::from_f64(trust.trust_sort_num)
             .map(Value::Number)
             .unwrap_or(Value::Null),
     );
-    object.insert("$isModerator".into(), Value::Bool(trust.is_moderator));
-    object.insert("$isTroll".into(), Value::Bool(trust.is_troll));
     object.insert(
-        "$isProbableTroll".into(),
+        derived_keys::IS_MODERATOR.into(),
+        Value::Bool(trust.is_moderator),
+    );
+    object.insert(derived_keys::IS_TROLL.into(), Value::Bool(trust.is_troll));
+    object.insert(
+        derived_keys::IS_PROBABLE_TROLL.into(),
         Value::Bool(trust.is_probable_troll),
     );
-    object.insert("$platform".into(), Value::String(effective_platform));
+    object.insert(
+        derived_keys::PLATFORM.into(),
+        Value::String(effective_platform),
+    );
 }
 
 fn insert_derived_location_fields(object: &mut Map<String, Value>) {
     for (source, derived) in [
-        ("location", "$location"),
-        ("travelingToLocation", "$travelingToLocation"),
+        ("location", derived_keys::LOCATION_PROJECTION),
+        (
+            "travelingToLocation",
+            derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+        ),
     ] {
         let Some(tag) = object.get(source).and_then(Value::as_str) else {
             continue;
@@ -251,12 +267,14 @@ fn resolve_field(raw: &str) -> Option<&'static str> {
     match raw {
         "display_name" | "name" => Some("displayName"),
         "user_id" | "userId" => Some("id"),
-        "$travelingToLocation" => Some("travelingToLocation"),
-        "location_at" | "$location_at" | "joinedAt" | "joined_at" | "$online_for" => {
-            Some("locationAt")
-        }
-        "$travelingToTime" => Some("travelingToTime"),
-        "$friendNumber" => Some("friendNumber"),
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION => Some("travelingToLocation"),
+        "location_at"
+        | derived_keys::LOCATION_UPDATED_AT
+        | "joinedAt"
+        | "joined_at"
+        | derived_keys::ONLINE_FOR => Some("locationAt"),
+        derived_keys::TRAVELING_TO_TIME => Some("travelingToTime"),
+        derived_keys::FRIEND_NUMBER => Some("friendNumber"),
         other => user_fact_field_name(other),
     }
 }

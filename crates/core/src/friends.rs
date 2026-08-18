@@ -1,3 +1,4 @@
+use crate::derived_keys;
 use std::collections::HashMap;
 
 use compact_str::CompactString;
@@ -189,7 +190,10 @@ impl FriendRecord {
     }
 
     pub fn is_placeholder(&self) -> bool {
-        self.extra.get("$profileSource").and_then(Value::as_str) == Some("placeholder")
+        self.extra
+            .get(derived_keys::PROFILE_SOURCE)
+            .and_then(Value::as_str)
+            == Some("placeholder")
     }
 
     pub fn display_name_or_id(&self) -> String {

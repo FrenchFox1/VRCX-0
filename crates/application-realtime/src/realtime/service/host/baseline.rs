@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use vrcx_0_application_core::RuntimeOperationStatus;
+use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
@@ -489,7 +490,7 @@ fn roster_order_from_friend_records(
             let number = record
                 .extra
                 .get("friendNumber")
-                .or_else(|| record.extra.get("$friendNumber"))
+                .or_else(|| record.extra.get(derived_keys::FRIEND_NUMBER))
                 .and_then(Value::as_i64)?;
             (number > 0).then(|| (number, user_id.clone()))
         })

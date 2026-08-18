@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use vrcx_0_core::derived_keys;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -59,10 +60,10 @@ pub async fn get_my_avatars(deps: &MyAvatarsDeps<'_>, input: MyAvatarsInput) -> 
             }
             if let Some(object) = avatar.as_object_mut() {
                 object.insert(
-                    "$tags".into(),
+                    derived_keys::TAGS.into(),
                     Value::Array(tags_by_avatar.get(&avatar_id).cloned().unwrap_or_default()),
                 );
-                object.insert("$timeSpent".into(), json!(time_spent));
+                object.insert(derived_keys::TIME_SPENT.into(), json!(time_spent));
             }
             avatar
         })

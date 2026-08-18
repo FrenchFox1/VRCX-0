@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
@@ -453,7 +454,7 @@ fn init_friend_roster_records(
             } else {
                 entry
                     .extra
-                    .get("$trustLevel")
+                    .get(derived_keys::TRUST_LEVEL)
                     .or_else(|| entry.extra.get("trustLevel"))
                     .map(value_as_string)
                     .unwrap_or_default()
@@ -529,7 +530,7 @@ pub(crate) fn reconcile_friend_roster_records(
         }
         let trust_level = entry
             .extra
-            .get("$trustLevel")
+            .get(derived_keys::TRUST_LEVEL)
             .or_else(|| entry.extra.get("trustLevel"))
             .map(value_as_string)
             .unwrap_or_default();

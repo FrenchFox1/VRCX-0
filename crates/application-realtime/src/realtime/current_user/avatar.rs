@@ -1,3 +1,4 @@
+use vrcx_0_core::derived_keys;
 use vrcx_0_persistence::realtime::{
     AvatarHistoryUpsert, AvatarTimeSpentUpsert, RealtimePersistenceBatch,
 };
@@ -21,12 +22,17 @@ pub(super) fn apply_avatar_wear_transition(
 
     if !authority.is_available() {
         next.previous_avatar_swap_time = previous_swap_time;
-        match previous.raw.get("$previousAvatarSwapTime").cloned() {
+        match previous
+            .raw
+            .get(derived_keys::PREVIOUS_AVATAR_SWAP_TIME)
+            .cloned()
+        {
             Some(value) => {
-                next.raw.insert("$previousAvatarSwapTime".into(), value);
+                next.raw
+                    .insert(derived_keys::PREVIOUS_AVATAR_SWAP_TIME.into(), value);
             }
             None => {
-                next.raw.remove("$previousAvatarSwapTime");
+                next.raw.remove(derived_keys::PREVIOUS_AVATAR_SWAP_TIME);
             }
         }
         return (next, persistence);

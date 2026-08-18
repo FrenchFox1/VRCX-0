@@ -1,4 +1,5 @@
 use serde_json::{json, Value};
+use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
 use vrcx_0_persistence::realtime::FriendLogDelete;
@@ -667,11 +668,11 @@ fn record_profile_identity_change(
     let name_changed =
         !next_name.is_empty() && next_name != meaningful_record_name(previous, user_id);
     let previous_trust_level = first_owned([
-        record_string(previous, "$trustLevel"),
+        record_string(previous, derived_keys::TRUST_LEVEL),
         record_string(previous, "trustLevel"),
     ]);
     let trust_level = first_owned([
-        patch.text_field("$trustLevel"),
+        patch.text_field(derived_keys::TRUST_LEVEL),
         patch.text_field("trustLevel"),
         previous_trust_level.clone(),
     ]);

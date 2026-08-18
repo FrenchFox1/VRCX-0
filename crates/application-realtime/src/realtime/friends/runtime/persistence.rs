@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::iter::once_with;
+use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
 use compact_str::CompactString;
@@ -47,7 +48,7 @@ impl OfflineFeedPrevious {
             location_updated_at: record
                 .extra
                 .i64_field("locationUpdatedAt")
-                .or_else(|| record.extra.i64_field("$location_at"))
+                .or_else(|| record.extra.i64_field(derived_keys::LOCATION_UPDATED_AT))
                 .unwrap_or(0),
         }
     }
@@ -152,19 +153,21 @@ pub(super) fn friend_log_upsert(
         target_user_id: user_id.to_string(),
         display_name: display_name(user_id, patch, previous),
         trust_level: first_owned([
-            patch.text_field("$trustLevel"),
+            patch.text_field(derived_keys::TRUST_LEVEL),
             patch.text_field("trustLevel"),
             previous
-                .map(|previous| record_string(previous, "$trustLevel"))
+                .map(|previous| record_string(previous, derived_keys::TRUST_LEVEL))
                 .unwrap_or_default(),
             previous
                 .map(|previous| record_string(previous, "trustLevel"))
                 .unwrap_or_default(),
         ]),
         friend_number: patch
-            .i64_field("$friendNumber")
+            .i64_field(derived_keys::FRIEND_NUMBER)
             .or_else(|| patch.i64_field("friendNumber"))
-            .or_else(|| previous.and_then(|previous| previous.extra.i64_field("$friendNumber")))
+            .or_else(|| {
+                previous.and_then(|previous| previous.extra.i64_field(derived_keys::FRIEND_NUMBER))
+            })
             .or_else(|| previous.and_then(|previous| previous.extra.i64_field("friendNumber")))
             .unwrap_or(0),
         created_at: created_at.to_string(),
@@ -464,17 +467,26 @@ pub(super) fn add_location_metadata(
                 previous
                     .extra
                     .i64_field("locationUpdatedAt")
-                    .or_else(|| previous.extra.i64_field("$location_at"))
+                    .or_else(|| previous.extra.i64_field(derived_keys::LOCATION_UPDATED_AT))
             })
             .unwrap_or(0);
         patch.insert("locationUpdatedAt".into(), Value::from(timestamp_ms));
-        patch.insert("$location_at".into(), Value::from(timestamp_ms));
-        patch.insert("$travelingToTime".into(), Value::from(timestamp_ms));
+        patch.insert(
+            derived_keys::LOCATION_UPDATED_AT.into(),
+            Value::from(timestamp_ms),
+        );
+        patch.insert(
+            derived_keys::TRAVELING_TO_TIME.into(),
+            Value::from(timestamp_ms),
+        );
         patch.insert("travelingToTime".into(), Value::from(timestamp_ms));
         if is_real_instance(&previous_location) {
-            patch.insert("$previousLocation".into(), Value::String(previous_location));
             patch.insert(
-                "$previousLocation_at".into(),
+                derived_keys::PREVIOUS_LOCATION.into(),
+                Value::String(previous_location),
+            );
+            patch.insert(
+                derived_keys::PREVIOUS_LOCATION_UPDATED_AT.into(),
                 Value::from(previous_timestamp),
             );
         }
@@ -482,10 +494,14 @@ pub(super) fn add_location_metadata(
     }
 
     let previous_travel_location = previous
-        .map(|previous| record_string(previous, "$previousLocation"))
+        .map(|previous| record_string(previous, derived_keys::PREVIOUS_LOCATION))
         .unwrap_or_default();
     let previous_location_timestamp = previous
-        .and_then(|previous| previous.extra.i64_field("$previousLocation_at"))
+        .and_then(|previous| {
+            previous
+                .extra
+                .i64_field(derived_keys::PREVIOUS_LOCATION_UPDATED_AT)
+        })
         .unwrap_or(0);
     let returned_to_previous_location =
         !previous_travel_location.is_empty() && previous_travel_location == location;
@@ -495,10 +511,22 @@ pub(super) fn add_location_metadata(
         timestamp_ms
     };
     patch.insert("locationUpdatedAt".into(), Value::from(location_timestamp));
-    patch.insert("$location_at".into(), Value::from(location_timestamp));
-    patch.insert("$previousLocation".into(), Value::String(String::new()));
-    patch.insert("$previousLocation_at".into(), Value::String(String::new()));
-    patch.insert("$travelingToTime".into(), Value::String(String::new()));
+    patch.insert(
+        derived_keys::LOCATION_UPDATED_AT.into(),
+        Value::from(location_timestamp),
+    );
+    patch.insert(
+        derived_keys::PREVIOUS_LOCATION.into(),
+        Value::String(String::new()),
+    );
+    patch.insert(
+        derived_keys::PREVIOUS_LOCATION_UPDATED_AT.into(),
+        Value::String(String::new()),
+    );
+    patch.insert(
+        derived_keys::TRAVELING_TO_TIME.into(),
+        Value::String(String::new()),
+    );
     patch.insert("travelingToTime".into(), Value::String(String::new()));
 }
 
@@ -610,7 +638,7 @@ pub(super) fn resolve_previous_location(previous: &FriendRecord) -> String {
         previous.location.as_str(),
         previous
             .extra
-            .get("$location")
+            .get(derived_keys::LOCATION_PROJECTION)
             .and_then(|location| location.get("tag"))
             .and_then(Value::as_str)
             .unwrap_or(""),
@@ -621,7 +649,7 @@ pub(super) fn resolve_previous_location(previous: &FriendRecord) -> String {
 pub(super) fn resolve_gps_previous_location(previous: &FriendRecord) -> String {
     let previous_location = previous.location.clone();
     if previous_location.eq_ignore_ascii_case("traveling") {
-        return record_string(previous, "$previousLocation");
+        return record_string(previous, derived_keys::PREVIOUS_LOCATION);
     }
     previous_location
 }
@@ -630,7 +658,7 @@ pub(super) fn resolve_gps_duration(previous: &FriendRecord) -> i64 {
     if previous.location.eq_ignore_ascii_case("traveling") {
         let previous_timestamp = previous
             .extra
-            .i64_field("$previousLocation_at")
+            .i64_field(derived_keys::PREVIOUS_LOCATION_UPDATED_AT)
             .unwrap_or(0);
         return if previous_timestamp > 0 {
             Utc::now().timestamp_millis() - previous_timestamp
@@ -645,7 +673,7 @@ pub(super) fn duration_ms(previous: &FriendRecord, now_ms: i64) -> i64 {
     let timestamp = previous
         .extra
         .i64_field("locationUpdatedAt")
-        .or_else(|| previous.extra.i64_field("$location_at"))
+        .or_else(|| previous.extra.i64_field(derived_keys::LOCATION_UPDATED_AT))
         .unwrap_or(0);
     if timestamp > 0 {
         now_ms.saturating_sub(timestamp)

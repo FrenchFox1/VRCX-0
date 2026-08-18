@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, MutexGuard};
+use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
 use compact_str::CompactString;
@@ -843,24 +844,24 @@ fn preserve_fields_over_placeholder(incoming: &mut FriendRecord, existing: &Frie
 
     for key in [
         "pendingOffline",
-        "$location",
-        "$location_at",
+        derived_keys::LOCATION_PROJECTION,
+        derived_keys::LOCATION_UPDATED_AT,
         "locationUpdatedAt",
         "instanceId",
         "travelingToWorld",
         "travelingToInstance",
-        "$travelingToLocation",
-        "$travelingToTime",
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+        derived_keys::TRAVELING_TO_TIME,
         "travelingToLocation",
         "tags",
         "developerType",
         "trustLevel",
-        "$trustLevel",
-        "$trustClass",
-        "$trustSortNum",
-        "$isModerator",
-        "$isTroll",
-        "$isProbableTroll",
+        derived_keys::TRUST_LEVEL,
+        derived_keys::TRUST_CLASS,
+        derived_keys::TRUST_SORT_NUM,
+        derived_keys::IS_MODERATOR,
+        derived_keys::IS_TROLL,
+        derived_keys::IS_PROBABLE_TROLL,
     ] {
         match existing.extra.get(key) {
             Some(value) => {
