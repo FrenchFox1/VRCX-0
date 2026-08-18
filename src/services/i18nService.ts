@@ -7,8 +7,6 @@ import { normalizeLanguageCode } from '@/localization/locales';
 type LocalizedMessages = Record<string, unknown>;
 type LocalizedStringMap = Record<string, LocalizedMessages>;
 type TimeUnitLabels = Record<string, string>;
-type TranslationParams = Record<string, unknown>;
-
 const allLocalizedStrings = getAllLocalizedStrings() as LocalizedStringMap;
 const i18nResources = Object.fromEntries(
     Object.entries(allLocalizedStrings).map(([locale, messages]) => [
@@ -86,20 +84,4 @@ export function getTimeUnitLabels(
     }
 
     return labels;
-}
-
-export async function translateForLocale(
-    locale: unknown,
-    key: string,
-    params: TranslationParams = {}
-): Promise<string> {
-    const normalizedLocale = normalizeLocale(locale);
-    await i18nReady;
-    const translated = i18n.getFixedT(normalizedLocale)(key, params);
-
-    if (typeof translated === 'string' && translated !== key) {
-        return translated;
-    }
-
-    return key;
 }

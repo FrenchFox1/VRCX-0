@@ -41,8 +41,6 @@ const DEFAULT_TRANSLATION_ENDPOINT =
     'https://api.openai.com/v1/chat/completions';
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 
-export type NotificationLayoutPreference = 'notification-center' | 'table';
-export type TableDensityPreference = 'standard' | 'compact';
 export type FeedTimeDisplayModePreference = 'exact' | 'relative';
 export type TranslationApiType = 'google' | 'openai' | 'deepl';
 export type WeekStartsOnPreference = 0 | 1 | 6;
@@ -57,7 +55,6 @@ export type HmdNotificationPositionPreference =
     | 'left'
     | 'right';
 export type TrustColorKey = keyof typeof TRUST_COLOR_DEFAULTS;
-export type TrustColorsPreference = Record<TrustColorKey, string>;
 export type DiscordPreferenceKey =
     | 'discordActive'
     | 'discordInstance'

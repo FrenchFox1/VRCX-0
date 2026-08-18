@@ -1,9 +1,4 @@
-import type {
-    ChangeEvent,
-    Dispatch,
-    MutableRefObject,
-    SetStateAction
-} from 'react';
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
@@ -210,7 +205,3 @@ export type GalleryFileTabState = Pick<
         | 'onRefresh'
         | 'onSetProfileField'
     >;
-
-export type GalleryUploadChangeHandler = (
-    event: ChangeEvent<HTMLInputElement>
-) => void;

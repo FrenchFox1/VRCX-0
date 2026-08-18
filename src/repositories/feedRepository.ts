@@ -16,7 +16,6 @@ export const FEED_FILTER_TYPES: readonly FeedFilter[] = Object.freeze([
 ]);
 
 export type FeedFilterType = FeedFilter;
-export type FeedEntry = Record<string, unknown>;
 const FEED_FILTER_TYPE_SET: ReadonlySet<string> = new Set(FEED_FILTER_TYPES);
 
 export interface FeedQueryOptions {

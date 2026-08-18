@@ -70,10 +70,6 @@ export function setVrcxCssLayers(
     renderCssLayers();
 }
 
-export function clearVrcxCssLayer(layer: VrcxCssLayer): void {
-    setVrcxCssLayer(layer, '');
-}
-
 export function setVrcxCssLayersSuppressed(
     layers: VrcxCssLayer[],
     suppressed: boolean

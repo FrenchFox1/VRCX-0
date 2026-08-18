@@ -56,37 +56,6 @@ export type FeedLiveEntryPayload = Record<string, unknown> & {
     previous_bio?: string;
 };
 
-export type FeedLiveAvatarEntryPayload = FeedLiveEntryPayload & {
-    type?: 'Avatar' | string;
-    avatarName?: string;
-    created_at?: string;
-    currentAvatarImageUrl?: string;
-    currentAvatarTags?: string[];
-    currentAvatarThumbnailImageUrl?: string;
-    displayName?: string;
-    ownerId?: string;
-    previousAvatarName?: string;
-    previousCurrentAvatarImageUrl?: string;
-    previousCurrentAvatarTags?: string[];
-    previousCurrentAvatarThumbnailImageUrl?: string;
-    previousOwnerId?: string;
-    userId?: string;
-};
-
-export type FeedLiveLocationEntryPayload = FeedLiveEntryPayload & {
-    type?: 'GPS' | string;
-    created_at?: string;
-    displayLocation?: string;
-    displayName?: string;
-    groupName?: string;
-    location?: string;
-    previousLocation?: string;
-    time?: string;
-    userId?: string;
-    worldId?: string;
-    worldName?: string;
-};
-
 export type FeedLiveEntry = {
     sequence: number;
     ownerUserId?: string;

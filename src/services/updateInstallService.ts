@@ -206,12 +206,6 @@ export function installUpdateRelease(
     return directInstallInFlight;
 }
 
-export function installLatestAvailableUpdate(
-    options: DirectUpdateInstallOptions = {}
-) {
-    return installUpdateRelease(readLatestUpdateRelease(), options);
-}
-
 export async function openOrInstallLatestAvailableUpdate(
     options: DirectUpdateInstallOptions = {}
 ) {

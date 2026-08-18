@@ -38,15 +38,6 @@ export async function setTaskbarOverlayNotification(
     await commands.appSetTaskbarOverlayNotification(notify);
 }
 
-export async function showDesktopNotification(
-    boldText: string,
-    text: string,
-    image: string = '',
-    playSound: boolean = false
-): Promise<void> {
-    await commands.appDesktopNotification(boldText, text, image, playSound);
-}
-
 export async function openUGCPhotosFolder(ugcPath: string): Promise<void> {
     await commands.appOpenUgcPhotosFolder(ugcPath);
 }
@@ -131,14 +122,6 @@ export async function writeVrchatConfigFileWithCacheCleanup(
 ): Promise<string | null> {
     const result = await commands.appWriteConfigFileWithCacheCleanup(json);
     return result.oldCacheCleanupError;
-}
-
-export async function setVrchatRegistryKey(
-    key: string,
-    value: unknown,
-    typeInt: number
-): Promise<void> {
-    await commands.appSetVrchatRegistryKey(key, value, typeInt);
 }
 
 export async function getVrchatUserModeration(

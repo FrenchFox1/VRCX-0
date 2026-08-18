@@ -313,25 +313,11 @@ export const ConfigKeys = defineConfigKeys({
 
 export type ConfigKeyName = keyof typeof ConfigKeys;
 
-export const DB_KEY_PREFIX = 'config:vrcx_';
-
 export const APP_THEME_CONFIG_KEYS = Object.freeze({
     themeMode: 'ThemeMode',
     themeColor: 'VRCX_themeColor',
     zoomLevel: 'VRCX_ZoomLevel',
     fontFamily: 'VRCX_fontFamily'
-});
-
-export const COMMUNITY_THEME_CONFIG_KEYS = Object.freeze({
-    enabled: 'VRCX_communityThemeEnabled',
-    id: 'VRCX_communityThemeId',
-    version: 'VRCX_communityThemeVersion',
-    cssSnapshot: 'VRCX_communityThemeCssSnapshot',
-    overrideCss: 'VRCX_communityThemeOverrideCss',
-    overrideCssEnabled: 'VRCX_communityThemeOverrideEnabled',
-    installMetadata: 'VRCX_communityThemeInstallMetadata',
-    installedThemes: 'VRCX_communityThemeInstalledThemes',
-    legacyMarketplaceCatalogUrl: 'VRCX_themeMarketplaceCatalogUrl'
 });
 
 export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
@@ -372,7 +358,3 @@ export const STATUS_BAR_CONFIG_KEYS = Object.freeze({
     clocks: 'VRCX_statusBarClocks',
     clockCount: 'VRCX_statusBarClockCount'
 });
-
-export function toDbKey(name: string): string {
-    return `${DB_KEY_PREFIX}${name.toLowerCase()}`;
-}

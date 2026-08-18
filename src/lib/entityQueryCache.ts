@@ -323,10 +323,6 @@ export async function clearEntityQueryCache() {
     queryClient.clear();
 }
 
-export function getEntityQueryCacheSize() {
-    return queryClient.getQueryCache().getAll().length;
-}
-
 export function getEntityQueryCacheStats() {
     const users = new Set<string>();
     const avatars = new Set<string>();

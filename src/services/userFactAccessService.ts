@@ -147,15 +147,6 @@ function recordUserProfile(
     return getKnownUserFact(endpoint, id);
 }
 
-function recordUserProfiles(
-    profiles: Array<Record<string, unknown> | null | undefined>,
-    options: UserFactMergeOptions = {}
-): void {
-    for (const profile of Array.isArray(profiles) ? profiles : []) {
-        recordUserProfile(profile, options);
-    }
-}
-
 export {
     getKnownUserFact,
     flushPendingUserFactEntries,
@@ -163,7 +154,6 @@ export {
     normalizeEndpoint,
     normalizeUserId,
     recordUserProfile,
-    recordUserProfiles,
     resetPendingUserFactEntries,
     userFactKey
 };

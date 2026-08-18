@@ -32,10 +32,6 @@ function getAllLocalizedStrings() {
     return { ...localizedStrings };
 }
 
-async function getLocalizedStrings(code: string) {
-    return localizedStrings[code] || localizedStrings.en || {};
-}
-
 function getLanguageName(code: string) {
     return String(localizedStrings[code]?.language ?? code).replace(
         /\s+\([^)]+\)$/,
@@ -77,9 +73,4 @@ function resolveSystemLanguage(
 }
 
 export * from './locales';
-export {
-    getAllLocalizedStrings,
-    getLanguageName,
-    getLocalizedStrings,
-    resolveSystemLanguage
-};
+export { getAllLocalizedStrings, getLanguageName, resolveSystemLanguage };

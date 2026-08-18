@@ -15,7 +15,6 @@ import type { MyAvatarsGridDensity } from './myAvatarsTypes';
 
 export const MY_AVATARS_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const MY_AVATARS_DEFAULT_SORTING = [{ id: 'updated_at', desc: true }];
-export const MY_AVATARS_VIEW_MODES = ['grid', 'table'];
 export const MY_AVATARS_RELEASE_STATUS_OPTIONS = ['all', 'public', 'private'];
 export const MY_AVATARS_PLATFORM_OPTIONS = ['all', 'pc', 'android', 'ios'];
 export const MY_AVATARS_DEFAULT_CARD_SCALE = 0.6;

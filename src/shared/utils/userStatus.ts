@@ -117,29 +117,6 @@ function normalizeUserStatus(value: unknown) {
     return status || state;
 }
 
-function userStatusDotClassName(value: unknown) {
-    const status = normalizeUserStatus(value);
-    if (status === 'state-active') {
-        return 'bg-[var(--status-active)]';
-    }
-    if (status === 'active') {
-        return 'bg-[var(--status-online)]';
-    }
-    if (status === 'join me') {
-        return 'bg-[var(--status-joinme)]';
-    }
-    if (status === 'ask me') {
-        return 'bg-[var(--status-askme)]';
-    }
-    if (status === 'busy') {
-        return 'bg-[var(--status-busy)]';
-    }
-    if (status === 'offline') {
-        return 'bg-[var(--status-offline)]';
-    }
-    return '';
-}
-
 function userStatusIndicatorClassName(
     value: unknown,
     { showOffline = false, className = '' }: UserStatusIndicatorOptions = {}
@@ -233,7 +210,6 @@ function userStatusLabel(value: unknown, t?: TranslateFn) {
 
 export {
     normalizeUserStatus,
-    userStatusDotClassName,
     userStatusIndicatorClassName,
     userStatusLabel,
     userStatusSortRank

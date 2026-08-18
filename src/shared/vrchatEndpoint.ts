@@ -22,7 +22,3 @@ export function normalizeVrchatEndpointKey(endpoint: unknown = ''): string {
 export function normalizeVrchatEndpointDomain(endpoint: unknown = ''): string {
     return normalizeVrchatEndpoint(endpoint).replace(/\/+$/, '');
 }
-
-export function getVrchatEndpointBase(endpoint: unknown = ''): string {
-    return `${normalizeVrchatEndpointDomain(endpoint)}/`;
-}

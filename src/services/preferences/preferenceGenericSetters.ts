@@ -475,14 +475,6 @@ export async function setTablePageSizesPreference(value: unknown) {
     return tablePageSizes;
 }
 
-export async function setTablePageSizePreference(value: string | number) {
-    const tablePageSize = normalizeTablePageSize(value);
-    await configRepository.setInt('VRCX_tablePageSize', tablePageSize);
-    patchPreferences({ tablePageSize });
-    publishPreferenceChanged('VRCX_tablePageSize', tablePageSize);
-    return tablePageSize;
-}
-
 export async function getTablePageSizePreference(
     fallback: number = DEFAULT_TABLE_PAGE_SIZE
 ) {

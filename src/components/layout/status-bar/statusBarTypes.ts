@@ -159,5 +159,3 @@ export type DurationValueProps = StatusFormatterProps & {
     active: unknown;
     startAtMs: unknown;
 };
-
-export type StatusPopoverContent = ReactNode;

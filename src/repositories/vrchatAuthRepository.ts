@@ -11,8 +11,6 @@ import {
 } from './vrchatRequest';
 
 export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
-export const DEFAULT_WEBSOCKET_DOMAIN = 'wss://pipeline.vrchat.cloud';
-
 type VrchatApiResult = {
     status: number;
     data: unknown;

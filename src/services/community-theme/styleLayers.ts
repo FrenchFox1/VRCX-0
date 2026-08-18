@@ -20,10 +20,6 @@ export function syncCommunityStyleLayers(): void {
     });
 }
 
-export function getInstalledThemeCssSnapshot(): string {
-    return installedThemeCssSnapshot;
-}
-
 export function setInstalledThemeCssSnapshot(cssText: string): void {
     installedThemeCssSnapshot = cssText;
 }

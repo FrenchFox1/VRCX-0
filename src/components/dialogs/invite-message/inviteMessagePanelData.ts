@@ -47,12 +47,6 @@ export const INVITE_MESSAGE_TYPES = [
     }
 ] as const;
 
-export const validModes = new Set<InviteMessageMode>([
-    'select',
-    'manage',
-    'respond'
-]);
-
 export function isInviteMessageMode(
     value: unknown
 ): value is InviteMessageMode {
