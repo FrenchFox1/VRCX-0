@@ -247,6 +247,38 @@ pub fn normalize_state_bucket(value: &str) -> Option<String> {
     StateBucket::normalize(value).map(|bucket| bucket.as_str().to_string())
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UserStatus {
+    Active,
+    JoinMe,
+    AskMe,
+    Busy,
+    Offline,
+}
+
+impl UserStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::JoinMe => "join me",
+            Self::AskMe => "ask me",
+            Self::Busy => "busy",
+            Self::Offline => "offline",
+        }
+    }
+
+    pub fn normalize(value: &str) -> Option<Self> {
+        match normalize_user_status(value).as_str() {
+            "active" => Some(Self::Active),
+            "join me" => Some(Self::JoinMe),
+            "ask me" => Some(Self::AskMe),
+            "busy" => Some(Self::Busy),
+            "offline" => Some(Self::Offline),
+            _ => None,
+        }
+    }
+}
+
 pub fn normalize_user_status(value: &str) -> String {
     let status = value.trim().to_ascii_lowercase();
     match status.as_str() {
@@ -429,5 +461,36 @@ mod tests {
         assert_eq!(meaningful_display_name("usr_1", "", "usr_1"), None);
         assert_eq!(meaningful_display_name("usr_other", "", "usr_1"), None);
         assert_eq!(meaningful_display_name("", "", "usr_1"), None);
+    }
+}
+
+#[cfg(test)]
+mod user_status_tests {
+    use super::*;
+
+    #[test]
+    fn normalize_resolves_the_five_known_statuses() {
+        assert_eq!(UserStatus::normalize("active"), Some(UserStatus::Active));
+        assert_eq!(UserStatus::normalize("joinme"), Some(UserStatus::JoinMe));
+        assert_eq!(UserStatus::normalize("Ask Me"), Some(UserStatus::AskMe));
+        assert_eq!(UserStatus::normalize("busy"), Some(UserStatus::Busy));
+        assert_eq!(
+            UserStatus::normalize("offline:offline"),
+            Some(UserStatus::Offline)
+        );
+        assert_eq!(UserStatus::normalize("sleeping"), None);
+    }
+
+    #[test]
+    fn as_str_round_trips_through_normalize() {
+        for status in [
+            UserStatus::Active,
+            UserStatus::JoinMe,
+            UserStatus::AskMe,
+            UserStatus::Busy,
+            UserStatus::Offline,
+        ] {
+            assert_eq!(UserStatus::normalize(status.as_str()), Some(status));
+        }
     }
 }

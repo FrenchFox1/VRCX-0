@@ -1,6 +1,6 @@
 import { getFriendsSortFunction, sortStatus } from '@/shared/utils/friend';
 import type { FriendSortMethod } from '@/shared/utils/friend';
-import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
 
 import {
     type FriendLocationFriend,
@@ -238,7 +238,7 @@ function readFriendStatusSource(
 
 function activeStatusSortValue(friend: FriendLocationFriend) {
     const source = readFriendStatusSource(friend);
-    const status = normalizeUserStatus(source?.status);
+    const status = userStatusFromValue(source?.status);
     if (status === 'join me' || status === 'ask me' || status === 'busy') {
         return status;
     }

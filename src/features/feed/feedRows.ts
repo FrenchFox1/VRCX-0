@@ -1,7 +1,7 @@
 import type { FriendRecordInput } from '@/domain/friends/friendRosterTypes';
 import { isUserId } from '@/shared/constants/vrchatIds';
 export { resolveCurrentInviteLocation as resolveFeedCurrentInviteLocation } from '@/shared/utils/invite';
-import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import type {
     FavoriteGroupMap,
     FavoriteRecord
@@ -316,7 +316,7 @@ export function toDateInputValue(date: unknown) {
 }
 
 export function resolveFeedStatusMeta(status: unknown) {
-    const normalizedStatus = normalizeUserStatus(status);
+    const normalizedStatus = userStatusFromValue(status);
     switch (normalizedStatus) {
         case 'active':
             return { label: 'Online', className: 'bg-[var(--status-online)]' };

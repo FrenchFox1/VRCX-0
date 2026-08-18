@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeUserStatus, sortStatus } from './friendStatus';
+import {
+    normalizeUserStatus,
+    sortStatus,
+    userStatusFromValue
+} from './friendStatus';
 
 describe('normalizeUserStatus', () => {
     it('accepts both spaced and spaceless status aliases', () => {
@@ -83,5 +87,21 @@ describe('sortStatus', () => {
 
     it('returns 0 for unknown statuses', () => {
         expect(sortStatus('unknown', 'other')).toBe(0);
+    });
+});
+
+describe('userStatusFromValue', () => {
+    it('resolves the five known statuses, including spaceless aliases', () => {
+        expect(userStatusFromValue('active')).toBe('active');
+        expect(userStatusFromValue('joinme')).toBe('join me');
+        expect(userStatusFromValue('Ask Me')).toBe('ask me');
+        expect(userStatusFromValue('busy')).toBe('busy');
+        expect(userStatusFromValue('offline:offline')).toBe('offline');
+    });
+
+    it('returns an empty string for anything outside the known set', () => {
+        expect(userStatusFromValue('sleeping')).toBe('');
+        expect(userStatusFromValue(null)).toBe('');
+        expect(userStatusFromValue(undefined)).toBe('');
     });
 });

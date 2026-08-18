@@ -15,7 +15,7 @@ import {
     resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
-import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
     normalizeLocationStatus,
     resolveFriendPresenceLocation
@@ -226,7 +226,7 @@ export function resolveTrustNameColour(
 }
 
 export function legacyStatusDotClassName(status: unknown) {
-    const normalizedStatus = normalizeUserStatus(status);
+    const normalizedStatus = userStatusFromValue(status);
     if (normalizedStatus === 'active') {
         return 'bg-[var(--status-online)]';
     }
@@ -255,7 +255,7 @@ export function resolveCurrentUserStateBucket(
 }
 
 function activeStatusDotClassName(status: unknown) {
-    const normalizedStatus = normalizeUserStatus(status);
+    const normalizedStatus = userStatusFromValue(status);
     if (normalizedStatus === 'join me') {
         return 'border-[var(--status-joinme)] bg-background';
     }

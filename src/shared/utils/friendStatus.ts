@@ -16,6 +16,23 @@ function normalizeUserStatus(value: unknown): string {
     return status;
 }
 
+function userStatusFromValue(value: unknown): FriendStatus | '' {
+    switch (normalizeUserStatus(value)) {
+        case 'active':
+            return 'active';
+        case 'join me':
+            return 'join me';
+        case 'ask me':
+            return 'ask me';
+        case 'busy':
+            return 'busy';
+        case 'offline':
+            return 'offline';
+        default:
+            return '';
+    }
+}
+
 function sortStatus(
     a: FriendStatus | string,
     b: FriendStatus | string
@@ -73,5 +90,5 @@ function sortStatus(
     return 0;
 }
 
-export { normalizeUserStatus, sortStatus };
+export { normalizeUserStatus, sortStatus, userStatusFromValue };
 export type { FriendStatus };
