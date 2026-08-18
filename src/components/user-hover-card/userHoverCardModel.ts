@@ -10,6 +10,7 @@ import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { userImage } from '@/services/entityMediaService';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
+    locationSentinel,
     normalizeLocationStatus,
     parseLocation
 } from '@/shared/utils/location';
@@ -148,11 +149,8 @@ export function buildUserHoverCardModel({
     const profileRecord = recordOrEmpty(profile);
     const identity = profile ? profileRecord : ref;
 
-    const state = normalizeLocationStatus(
-        statusSource?.stateBucket ||
-            statusSource?.state ||
-            profileRecord?.stateBucket ||
-            profileRecord?.state
+    const state = normalizeStateBucket(
+        statusSource?.state || profileRecord?.state
     );
     const hasPresence = Boolean(statusSource) && Boolean(state);
 
@@ -161,7 +159,7 @@ export function buildUserHoverCardModel({
             locationTag(statusSource?.$location) ||
             profileRecord?.location
     );
-    const isTraveling = normalizeLocationStatus(rawLocation) === 'traveling';
+    const isTraveling = locationSentinel(rawLocation) === 'traveling';
     const travelingTo = normalizeId(
         statusSource?.travelingToLocation || statusSource?.$travelingToLocation
     );

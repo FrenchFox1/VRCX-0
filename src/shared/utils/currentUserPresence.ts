@@ -1,5 +1,6 @@
 import { isRealInstance } from './instance';
 import {
+    locationSentinel,
     normalizeLocationStatus,
     normalizeLocationValue,
     parseLocation,
@@ -126,7 +127,7 @@ function buildPresencePatch({
     const normalizedLocation = normalizeLocationValue(location);
     const normalizedTraveling = normalizeLocationValue(travelingToLocation);
     const targetLocation =
-        normalizeLocationStatus(normalizedLocation) === 'traveling'
+        locationSentinel(normalizedLocation) === 'traveling'
             ? normalizedTraveling
             : normalizedLocation;
     if (!isVisibleCurrentUserLocation(targetLocation)) {
@@ -134,7 +135,7 @@ function buildPresencePatch({
     }
 
     const displayTraveling =
-        normalizeLocationStatus(normalizedLocation) === 'traveling'
+        locationSentinel(normalizedLocation) === 'traveling'
             ? normalizedTraveling
             : '';
     const parsedLocation = parseLocation(normalizedLocation);

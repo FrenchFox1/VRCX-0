@@ -530,7 +530,23 @@ function normalizeLocationStatus(value: unknown): string {
     return normalized;
 }
 
-export { normalizeLocationStatus, normalizeLocationValue };
+type LocationSentinel = 'offline' | 'private' | 'traveling';
+
+function locationSentinel(value: unknown): LocationSentinel | '' {
+    switch (normalizeLocationStatus(value)) {
+        case 'offline':
+            return 'offline';
+        case 'private':
+            return 'private';
+        case 'traveling':
+            return 'traveling';
+        default:
+            return '';
+    }
+}
+
+export { locationSentinel, normalizeLocationStatus, normalizeLocationValue };
+export type { LocationSentinel };
 
 function getObject(value: unknown): LocationRecord | null {
     return value && typeof value === 'object'

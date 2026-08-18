@@ -19,7 +19,7 @@ import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import {
     getLocationText,
-    normalizeLocationStatus,
+    locationSentinel,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
@@ -174,7 +174,7 @@ export function resolveFriendRowLocationState({
         friendState
     );
     const parsedFriendLocation = parseLocation(friendLocation);
-    const isTraveling = normalizeLocationStatus(friendLocation) === 'traveling';
+    const isTraveling = locationSentinel(friendLocation) === 'traveling';
     const displayLocation = isTraveling ? 'traveling' : friendLocation;
     const displayTraveling = isTraveling
         ? readFriendRefTravelingLocation(friend) || undefined
@@ -400,7 +400,7 @@ export function StaticSidebarLocation({
                             : 'cursor-default'
                     )}
                 >
-                    {normalizeLocationStatus(location) === 'traveling' ? (
+                    {locationSentinel(location) === 'traveling' ? (
                         <Spinner
                             aria-hidden="true"
                             aria-label={undefined}

@@ -18,6 +18,7 @@ import {
 } from '@/domain/friends/sameInstanceFriends';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
+    locationSentinel,
     normalizeLocationStatus,
     resolveFriendPresenceLocation
 } from '@/shared/utils/location';
@@ -175,7 +176,7 @@ export function clearStaleOfflineLocation(location: unknown, state: unknown) {
     const normalizedState = normalizeStateBucket(state);
     if (
         (normalizedState === 'online' || normalizedState === 'active') &&
-        normalizeLocationStatus(location) === 'offline'
+        locationSentinel(location) === 'offline'
     ) {
         return '';
     }
@@ -249,7 +250,7 @@ export function resolveCurrentUserStateBucket(
     const location = normalizeLocationStatus(
         currentUser?.location || locationProjection(currentUser?.$location)?.tag
     );
-    if (location && location !== 'offline') {
+    if (location && locationSentinel(location) !== 'offline') {
         return 'online';
     }
     return 'active';
@@ -271,7 +272,7 @@ function activeStatusDotClassName(status: unknown) {
 
 function activeStatusSortValue(friend: SidebarFriendRecord) {
     const source = readFriendStatusSource(friend);
-    const normalizedStatus = normalizeLocationStatus(source?.status);
+    const normalizedStatus = userStatusFromValue(source?.status);
     if (
         normalizedStatus === 'join me' ||
         normalizedStatus === 'ask me' ||
@@ -303,7 +304,7 @@ export function resolveSidebarStatusDotClassName(
         return '';
     }
     const userId = normalizeId(source?.id || source?.userId);
-    const status = normalizeLocationStatus(source?.status);
+    const status = userStatusFromValue(source?.status);
     const location = normalizeLocationStatus(
         source?.location || locationProjection(source?.$location)?.tag
     );
