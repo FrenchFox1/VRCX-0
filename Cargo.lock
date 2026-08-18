@@ -9078,7 +9078,6 @@ dependencies = [
  "vrcx-0-application-activity",
  "vrcx-0-application-core",
  "vrcx-0-core",
- "vrcx-0-i18n",
  "vrcx-0-integrations",
  "vrcx-0-media",
  "vrcx-0-persistence",
@@ -9439,7 +9438,6 @@ dependencies = [
  "tokio",
  "tokio-tungstenite 0.30.0",
  "tower-service",
- "tracing",
  "url",
  "vrcx-0-core",
 ]
