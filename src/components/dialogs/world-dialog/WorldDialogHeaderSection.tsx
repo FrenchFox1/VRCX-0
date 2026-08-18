@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 
 import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';

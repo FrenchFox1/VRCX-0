@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 
 type WorldDialogTab = { value: string };
 

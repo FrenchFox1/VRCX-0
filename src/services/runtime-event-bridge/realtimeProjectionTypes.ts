@@ -1,4 +1,4 @@
-import type { UserProfileEntity } from '@/domain/entities/profileEntities';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import type { FeedLiveEntryPayload, FeedLivePatch } from '@/domain/feed/live';
 import type {
     FriendProjection,

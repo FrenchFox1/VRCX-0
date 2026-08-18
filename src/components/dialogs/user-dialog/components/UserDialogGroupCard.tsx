@@ -3,7 +3,7 @@ import { EyeIcon, TagIcon, UsersIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';

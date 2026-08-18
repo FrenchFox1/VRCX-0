@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
 
 import { normalizeEntityId } from './worldInstances';

@@ -6,7 +6,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import { readWorldCacheInfo } from '@/lib/worldAssetBundle';
 import gameLogRepository from '@/repositories/gameLogRepository';

@@ -1,4 +1,4 @@
-import type { GroupInstanceRecord } from '@/domain/entities/profileEntities';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type {
     BackendRuntimeEventPayloadMap,
     BackendRuntimeSnapshot

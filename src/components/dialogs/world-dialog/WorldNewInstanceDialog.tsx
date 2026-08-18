@@ -2,7 +2,7 @@ import { ChevronDownIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {

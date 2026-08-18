@@ -1,4 +1,4 @@
-import type { GroupAuditLogRow } from '@/domain/entities/profileEntities';
+import type { GroupAuditLogRow } from '@/domain/entities/group';
 import { commands } from '@/platform/tauri/bindings';
 
 import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '../paginationConstants';

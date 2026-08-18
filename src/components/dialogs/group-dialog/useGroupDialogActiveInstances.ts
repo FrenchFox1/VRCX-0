@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import type { GroupInstanceRecord } from '@/domain/entities/profileEntities';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type { FriendRosterById } from '@/domain/friends/types';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 

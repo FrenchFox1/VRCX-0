@@ -17,7 +17,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { UserStatusDot } from '@/components/UserStatusDot';
-import type { UserBadgeRecord } from '@/domain/entities/profileEntities';
+import type { UserBadgeRecord } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';

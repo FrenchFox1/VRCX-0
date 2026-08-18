@@ -5,10 +5,7 @@ import type {
     FriendRosterStore
 } from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
-import {
-    normalizeLocationStatus,
-    parseLocation
-} from '@/shared/utils/location';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 

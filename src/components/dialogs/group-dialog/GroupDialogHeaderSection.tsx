@@ -26,7 +26,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Badge } from '@/ui/shadcn/badge';

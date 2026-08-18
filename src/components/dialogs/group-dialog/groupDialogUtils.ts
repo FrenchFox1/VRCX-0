@@ -2,7 +2,7 @@ import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import type {
     GroupAnnouncementRecord,
     GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/group';
 import { formatDateFilter } from '@/lib/dateTime';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import {

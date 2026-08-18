@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import {

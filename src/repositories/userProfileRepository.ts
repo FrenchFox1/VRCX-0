@@ -1,7 +1,7 @@
 import type {
     UserProfileEntity,
     UserProfileRecord
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/user';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -557,6 +557,6 @@ export {
     addCurrentUserTags,
     removeCurrentUserTags
 };
-export type { UserProfileRecord } from '@/domain/entities/profileEntities';
+export type { UserProfileRecord } from '@/domain/entities/user';
 export type { ProfileBackgroundUpdate };
 export default userProfileRepository;

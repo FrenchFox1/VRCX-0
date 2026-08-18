@@ -7,7 +7,7 @@ import {
     getEventGroupId,
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
-import type { UserProfileEntity } from '@/domain/entities/profileEntities';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import vrchatToolsRepository, {

@@ -8,10 +8,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type {
-    EntityRecord,
-    UserBadgeRecord
-} from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { UserBadgeRecord } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import currentUserProfileService from '@/services/currentUserProfileService';

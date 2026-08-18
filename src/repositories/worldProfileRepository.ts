@@ -1,4 +1,4 @@
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -498,5 +498,5 @@ export {
     getAllWorldsByUser,
     registerWorldOpenShare
 };
-export type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+export type { WorldProfileRecord } from '@/domain/entities/world';
 export default worldProfileRepository;

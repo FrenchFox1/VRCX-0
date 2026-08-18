@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { recordLocationHintsFromInstances } from '@/services/domainIngestionService';
 import { parseLocation } from '@/shared/utils/location';

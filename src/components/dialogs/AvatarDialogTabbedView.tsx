@@ -3,7 +3,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { AvatarDialogJson } from '@/domain/entities/profileEntities';
+import type { AvatarDialogJson } from '@/domain/entities/avatar';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
 import {

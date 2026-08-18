@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { GroupInstanceRecord } from '@/domain/entities/profileEntities';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
 import type {
     AuthenticatedSessionProjection,

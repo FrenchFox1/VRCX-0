@@ -16,14 +16,6 @@ interface RecordKnownUserOptions extends UserFactMergeOptions {
     source?: UserFactSource;
 }
 
-interface FriendPatchInput {
-    endpoint?: unknown;
-    userId?: unknown;
-    patch?: Record<string, unknown>;
-    stateBucket?: unknown;
-    stateBucketAuthority?: unknown;
-}
-
 interface GameRuntimePresenceInput {
     endpoint?: unknown;
     currentUserId?: unknown;

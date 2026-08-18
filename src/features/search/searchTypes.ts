@@ -1,8 +1,6 @@
-import type {
-    AvatarProfileRecord,
-    UserProfileRecord,
-    WorldProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
+import type { UserProfileRecord } from '@/domain/entities/user';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import type { SearchGroupJson } from '@/repositories/vrchatSearchRepository';
 
 import type {

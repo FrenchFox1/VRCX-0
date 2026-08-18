@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import {
     resolveRuntimeCurrentInstanceRoster,
     type CurrentInstanceRosterSnapshot

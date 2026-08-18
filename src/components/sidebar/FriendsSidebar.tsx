@@ -17,7 +17,6 @@ import {
     evaluateLocalInstanceActionGates,
     type LocalInstanceActionGateTarget
 } from '@/shared/utils/invite';
-import { normalizeLocationStatus } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 

@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { LocationWorld } from '@/components/LocationWorld';
-import type {
-    EntityRecord,
-    GroupDialogInstanceRow
-} from '@/domain/entities/profileEntities';
+import type { GroupDialogInstanceRow } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
 import {

@@ -3,10 +3,10 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
 import type {
     AvatarLocalTag,
-    AvatarProfileRecord,
-    EntityRecord,
-    PlatformFileAnalysis
-} from '@/domain/entities/profileEntities';
+    AvatarProfileRecord
+} from '@/domain/entities/avatar';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { PlatformFileAnalysis } from '@/domain/entities/world';
 import type { LoadStatus } from '@/domain/shared/types';
 import type { AvatarGalleryFile } from '@/repositories/avatarProfileRepository';
 import { getPlatformInfo } from '@/shared/utils/avatarPlatform';

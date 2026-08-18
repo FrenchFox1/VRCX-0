@@ -14,7 +14,6 @@ import {
     handleRealtimeUserCacheProjection
 } from '../realtimePresenceService';
 import { showSQLiteErrorDialog } from '../sqliteErrorDialogService';
-import { isRecord } from './guards';
 import type { RuntimeEvent } from './types';
 
 type BackendRealtimeProjectionScope = {

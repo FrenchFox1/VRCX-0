@@ -1,4 +1,4 @@
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import {
     entityQueryPolicies,
     fetchCachedData,

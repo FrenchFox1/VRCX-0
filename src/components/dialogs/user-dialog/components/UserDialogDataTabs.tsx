@@ -7,7 +7,7 @@ import type {
     UserDialogJson,
     UserModerationState,
     UserProfileEntity
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/user';
 import {
     userDialogMutualFriendSortingOptions,
     userDialogWorldOrderOptions,

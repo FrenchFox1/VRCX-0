@@ -2,7 +2,7 @@ import type {
     GroupAuditLogRow,
     GroupInstanceRecord,
     GroupMemberRow
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/group';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {

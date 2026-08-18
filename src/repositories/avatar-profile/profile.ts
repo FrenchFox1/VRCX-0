@@ -1,4 +1,4 @@
-import type { AvatarProfileRecord } from '@/domain/entities/profileEntities';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
 import {
     entityQueryPolicies,
     fetchCachedData,

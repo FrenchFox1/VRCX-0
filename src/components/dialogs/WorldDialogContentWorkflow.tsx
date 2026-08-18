@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';

@@ -1,4 +1,4 @@
-import type { GroupMemberRow } from '@/domain/entities/profileEntities';
+import type { GroupMemberRow } from '@/domain/entities/group';
 import {
     entityQueryPolicies,
     fetchCachedData,

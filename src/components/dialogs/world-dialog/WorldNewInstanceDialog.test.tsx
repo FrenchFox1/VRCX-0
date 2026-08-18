@@ -16,7 +16,7 @@ import type {
 } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })

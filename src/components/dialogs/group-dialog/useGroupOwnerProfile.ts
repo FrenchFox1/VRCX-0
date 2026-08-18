@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import type {
-    GroupProfileRecord,
-    UserProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { UserProfileRecord } from '@/domain/entities/user';
 import type { FriendRosterById } from '@/domain/friends/types';
 import userProfileRepository from '@/repositories/userProfileRepository';
 

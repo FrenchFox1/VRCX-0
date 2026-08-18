@@ -8,7 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';

@@ -16,7 +16,7 @@ import {
     PageTitle
 } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';

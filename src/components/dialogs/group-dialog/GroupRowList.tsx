@@ -11,10 +11,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type {
-    EntityRecord,
-    GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';

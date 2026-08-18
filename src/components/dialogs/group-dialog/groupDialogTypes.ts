@@ -1,12 +1,12 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 
 import type {
-    EntityRecord,
     GroupDialogInstanceRow,
     GroupMemberRow,
-    GroupProfileRecord,
-    UserProfileEntity
-} from '@/domain/entities/profileEntities';
+    GroupProfileRecord
+} from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 
 import type { GroupPreviousInstanceRow } from './useGroupDialogState';

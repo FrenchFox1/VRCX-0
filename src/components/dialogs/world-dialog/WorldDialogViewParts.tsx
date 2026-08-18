@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next';
 
+import type { EntityRecord } from '@/domain/entities/shared';
 import type {
-    EntityRecord,
     PlatformFileAnalysis,
     WorldProfileRecord
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/world';
 import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { parseLocation } from '@/shared/utils/location';
 import {

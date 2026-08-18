@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AvatarProfileRecord } from '@/domain/entities/profileEntities';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import { getCurrentAvatarLiveWearTime } from '@/services/avatarWearTimeService';

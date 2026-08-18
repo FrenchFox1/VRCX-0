@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { LocationWorld } from '@/components/LocationWorld';
-import type { WorldDialogJson } from '@/domain/entities/profileEntities';
+import type { WorldDialogJson } from '@/domain/entities/world';
 import { ScreenshotThumbnailCard } from '@/features/tools/components/ScreenshotThumbnailGrid';
 import { useScreenshotGalleryGrid } from '@/features/tools/useScreenshotGalleryGrid';
 import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';

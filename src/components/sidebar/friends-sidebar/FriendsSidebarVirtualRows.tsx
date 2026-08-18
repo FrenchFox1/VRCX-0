@@ -1,7 +1,6 @@
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
-import { normalizeLocationStatus } from '@/shared/utils/location';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';

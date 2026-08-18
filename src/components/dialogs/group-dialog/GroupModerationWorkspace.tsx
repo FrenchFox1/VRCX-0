@@ -2,10 +2,8 @@ import { UploadIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type {
-    EntityRecord,
-    GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { openUserDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
 import { Empty, EmptyHeader, EmptyTitle } from '@/ui/shadcn/empty';

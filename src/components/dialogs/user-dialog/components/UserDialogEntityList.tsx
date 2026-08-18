@@ -11,7 +11,7 @@ import { FadeInImage } from '@/components/media/FadeInImage';
 import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserDetailTile } from '@/components/UserDetailTile';
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { resolveInstanceDwellEpoch } from '@/domain/instances/instanceRoster';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';

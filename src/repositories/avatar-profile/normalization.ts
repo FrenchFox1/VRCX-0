@@ -1,9 +1,9 @@
 import type {
     AvatarLocalTag,
-    AvatarProfileRecord,
-    EntityRecord,
-    UnityPackageRecord
-} from '@/domain/entities/profileEntities';
+    AvatarProfileRecord
+} from '@/domain/entities/avatar';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { UnityPackageRecord } from '@/domain/entities/world';
 
 import {
     isRecord,
