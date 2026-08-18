@@ -1,3 +1,4 @@
+import type { FriendStateBucketAuthority } from '@/platform/tauri/bindings';
 import type { ParsedLocation } from '@/shared/utils/location';
 
 import type { LoadStatus } from '../shared/types';
@@ -111,9 +112,9 @@ export type FriendRosterSeedSnapshot = {
 };
 
 export type FriendPatchEntry = {
-    userId?: unknown;
+    userId?: string;
     patch?: FriendRecordInput | null;
-    stateBucketAuthority?: unknown;
+    stateBucketAuthority?: FriendStateBucketAuthority;
 };
 
 export type FriendRosterState = FriendRosterSnapshot & {

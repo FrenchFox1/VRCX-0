@@ -278,6 +278,8 @@ describe('realtimePresenceService projection boundary', () => {
                     stateBucketAuthority: 'preserve'
                 }
             ],
+            removals: [],
+            feedEntries: [],
             friendLogChanged: false
         });
 

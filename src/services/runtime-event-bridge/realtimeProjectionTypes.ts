@@ -2,6 +2,7 @@ import type { UserProfileEntity } from '@/domain/entities/user';
 import type { FeedLiveEntryPayload, FeedLivePatch } from '@/domain/feed/live';
 import type {
     FriendProjection,
+    FriendProjectionPatch,
     RealtimeCurrentUserProjection,
     RealtimeEntryCorrection,
     RealtimeFeedProjection,
@@ -14,9 +15,11 @@ import type { NotificationRow } from '@/repositories/notificationPersistenceRepo
 
 export type RealtimeFriendProjectionPayload = Omit<
     FriendProjection,
-    'feedEntries'
+    'feedEntries' | 'patches' | 'removals'
 > & {
-    feedEntries?: FeedLiveEntryPayload[];
+    feedEntries: FeedLiveEntryPayload[];
+    patches: FriendProjectionPatch[];
+    removals: string[];
 };
 
 export type RealtimeEntryCorrectionPayload = Omit<
@@ -34,11 +37,11 @@ export type RealtimeFeedProjectionPayload = Omit<
     RealtimeFeedProjection,
     'upserts' | 'patches'
 > & {
-    upserts?: Array<{
+    upserts: Array<{
         sequence: number;
         entry: FeedLiveEntryPayload;
     }>;
-    patches?: FeedLivePatch[];
+    patches: FeedLivePatch[];
 };
 
 export type RealtimeUserRecord = UserProfileEntity & {
@@ -86,9 +89,11 @@ export type RealtimeNotificationUpsertPayload = Omit<
 
 export type RealtimeNotificationProjectionPayload = Omit<
     RealtimeNotificationProjection,
-    'upserts'
+    'upserts' | 'expiredIds' | 'seenIds'
 > & {
-    upserts?: RealtimeNotificationUpsertPayload[];
+    upserts: RealtimeNotificationUpsertPayload[];
+    expiredIds: string[];
+    seenIds: string[];
 };
 
 export type RealtimeInstanceClosedProjectionPayload = Omit<

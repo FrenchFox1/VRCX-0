@@ -538,7 +538,7 @@ async function collectInventoryItems(
         const result = await commands.appVrchatMediaInventoryItemsCollect({
             params: normalizedParams
         });
-        const items = (result.items ?? []).flatMap((value) => {
+        const items = result.items.flatMap((value) => {
             if (!value || typeof value !== 'object' || Array.isArray(value)) {
                 return [];
             }
@@ -551,7 +551,7 @@ async function collectInventoryItems(
         });
         return {
             items,
-            truncated: Boolean(result.truncated)
+            truncated: result.truncated
         };
     } catch (error) {
         throw normalizePlatformError(error, 'Media request failed');

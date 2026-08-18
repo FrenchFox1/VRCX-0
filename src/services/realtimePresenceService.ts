@@ -133,13 +133,13 @@ function handleRealtimeFeedProjection(payload: RealtimeFeedProjectionPayload) {
     if (payload.ownerUserId !== currentUserId) {
         return;
     }
-    const upserts = (payload.upserts ?? []).filter(
+    const upserts = payload.upserts.filter(
         (upsert) => Object.keys(upsert.entry).length > 0
     );
     useFeedLiveStore.getState().pushEntries(upserts, {
         ownerUserId: payload.ownerUserId
     });
-    useFeedLiveStore.getState().pushPatches(payload.patches ?? []);
+    useFeedLiveStore.getState().pushPatches(payload.patches);
     for (const upsert of upserts) {
         pushSharedFeedNotification(upsert.entry).catch((error: unknown) => {
             console.warn(
@@ -197,7 +197,7 @@ async function shouldNotifyInstanceClosed(): Promise<boolean> {
 function handleRealtimeFriendProjection(
     payload: RealtimeFriendProjectionPayload
 ) {
-    for (const userId of payload.removals ?? []) {
+    for (const userId of payload.removals) {
         const normalizedUserId = normalizeUserId(userId);
         if (!normalizedUserId) {
             continue;
@@ -205,16 +205,14 @@ function handleRealtimeFriendProjection(
         useFriendRosterStore.getState().removeFriend(normalizedUserId);
     }
 
-    const patchEntries = (payload.patches ?? []).map((patchEntry) => {
+    const patchEntries = payload.patches.map((patchEntry) => {
         const patch = patchEntry.patch;
         return {
             userId: normalizeUserId(
                 patchEntry.userId || patch.id || patch.userId
             ),
             patch,
-            stateBucketAuthority: normalizeUserId(
-                patchEntry.stateBucketAuthority || 'explicit'
-            )
+            stateBucketAuthority: patchEntry.stateBucketAuthority
         };
     });
     if (patchEntries.length) {
@@ -238,14 +236,14 @@ async function handleRealtimeNotificationProjection(
 ) {
     const store = useVrcNotificationStore.getState();
 
-    if (payload.expiredIds?.length) {
+    if (payload.expiredIds.length) {
         store.expireNotifications(payload.expiredIds);
     }
-    if (payload.seenIds?.length) {
+    if (payload.seenIds.length) {
         store.markNotificationsSeen(payload.seenIds);
     }
 
-    for (const upsert of payload.upserts ?? []) {
+    for (const upsert of payload.upserts) {
         let notification = upsert.notification;
         if (!notification.id) {
             continue;

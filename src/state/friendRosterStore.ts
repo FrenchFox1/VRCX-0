@@ -16,6 +16,7 @@ import type {
     FriendRosterStore
 } from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
+import type { FriendStateBucketAuthority } from '@/platform/tauri/bindings';
 import {
     computeTrustLevel,
     computeUserPlatform
@@ -234,10 +235,10 @@ function resolveFriendStateBucket({
     existingEntry
 }: {
     patch?: FriendRecordInput | null;
-    stateBucketAuthority?: unknown;
+    stateBucketAuthority?: FriendStateBucketAuthority;
     existingEntry?: FriendRecord | null;
 }): FriendRosterBucket {
-    if (normalizeUserId(stateBucketAuthority).toLowerCase() === 'preserve') {
+    if (stateBucketAuthority === 'preserve') {
         return normalizeStateBucket(existingEntry?.state) || 'offline';
     }
 
