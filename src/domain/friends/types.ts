@@ -1,7 +1,9 @@
 import type { ParsedLocation } from '@/shared/utils/location';
 
+import type { LoadStatus } from '../shared/types';
+
 export type FriendRosterBucket = 'online' | 'active' | 'offline';
-export type FriendRosterLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+export type FriendRosterLoadStatus = LoadStatus;
 
 export type FriendLocationProjection = Record<string, unknown> &
     Partial<ParsedLocation> & {

@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import dashboardRepository, {
     sanitizeDashboard,
     type Dashboard
 } from '@/repositories/dashboardRepository';
 import { DEFAULT_DASHBOARD_ICON } from '@/shared/constants/dashboard';
 
-type DashboardLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+type DashboardLoadStatus = LoadStatus;
 
 interface DashboardStateSnapshot {
     dashboards: Dashboard[];

@@ -1,6 +1,7 @@
+import type { LoadStatus } from '@/domain/shared/types';
 import type { AvatarProfileRecord } from '@/repositories/avatarProfileRepository';
 
-export type MyAvatarsLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+export type MyAvatarsLoadStatus = LoadStatus;
 
 export type MyAvatarsViewMode = 'grid' | 'table';
 

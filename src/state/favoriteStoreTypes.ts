@@ -1,3 +1,5 @@
+import type { LoadStatus } from '@/domain/shared/types';
+
 export type FavoriteKind = 'friend' | 'avatar' | 'world';
 export type StoredLocalFavoriteKind = Exclude<FavoriteKind, 'world'>;
 export type RemoteFavoriteKind = FavoriteKind | 'vrcPlusWorld' | (string & {});
@@ -6,7 +8,7 @@ export type FavoriteVisibility =
     | 'private'
     | 'friends'
     | (string & {});
-export type FavoriteLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+export type FavoriteLoadStatus = LoadStatus;
 export type FavoriteLimits = {
     maxFavoriteGroups: Record<string, number>;
     maxFavoritesPerGroup: Record<string, number>;

@@ -1,4 +1,6 @@
-export type ModerationLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+import type { LoadStatus } from '@/domain/shared/types';
+
+export type ModerationLoadStatus = LoadStatus;
 
 export type ModerationRow = {
     id?: string;

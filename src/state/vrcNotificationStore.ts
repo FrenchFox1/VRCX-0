@@ -23,7 +23,9 @@ import { useShellStore } from '@/state/shellStore';
 const pendingSeenIds = new Set<string>();
 let notificationScopeGeneration = 0;
 
-export type LoadStatus = 'idle' | 'running' | 'ready' | 'error';
+import type { LoadStatus } from '@/domain/shared/types';
+
+export type { LoadStatus };
 export type NotificationCategoryKey = 'friend' | 'group' | 'other';
 type NotificationPatch = Partial<{
     displayName: string;

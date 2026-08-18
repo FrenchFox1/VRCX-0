@@ -14,6 +14,7 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import type { LoadStatus } from '@/domain/shared/types';
 import {
     formatClock,
     formatDateFilterOrFallback,
@@ -291,7 +292,7 @@ export function PreviousInstanceDetailsPanel({
     );
     const [detailsViewMode, setDetailsViewMode] = useState('players');
     const [infoData, setInfoData] = useState<{
-        status: 'idle' | 'running' | 'ready' | 'error';
+        status: LoadStatus;
         error: string;
         players: PreviousInstancePlayerRow[];
         details: PreviousInstancePlayerRow[];

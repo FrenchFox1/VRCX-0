@@ -6,6 +6,7 @@ import type {
 import type { Dispatch, SetStateAction } from 'react';
 
 import type { AppColumnDef, AppTable } from '@/components/data-table/appTable';
+import type { LoadStatus } from '@/domain/shared/types';
 import type { UserFact } from '@/domain/users/userFacts';
 import type { FeedRowOutput } from '@/platform/tauri/bindings';
 import type { FeedFilterType } from '@/repositories/feedRepository';
@@ -13,7 +14,7 @@ import type { GameLogPreviousInstanceWorldRow } from '@/repositories/gameLogRepo
 
 export type FeedRow = FeedRowOutput;
 
-export type FeedLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+export type FeedLoadStatus = LoadStatus;
 
 export type FeedDateRange = {
     from: Date | undefined;

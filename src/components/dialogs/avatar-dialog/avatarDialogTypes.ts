@@ -7,6 +7,7 @@ import type {
     EntityRecord,
     PlatformFileAnalysis
 } from '@/domain/entities/profileEntities';
+import type { LoadStatus } from '@/domain/shared/types';
 import type { AvatarGalleryFile } from '@/repositories/avatarProfileRepository';
 import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
 import { useDialogStore } from '@/state/dialogStore';
@@ -26,7 +27,7 @@ export type AvatarActionStatus =
     | 'imposter'
     | 'avatar-block';
 
-export type AvatarLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+export type AvatarLoadStatus = LoadStatus;
 export type AvatarOwnerEditor = 'content-tags' | 'details' | null;
 export type AvatarImposterAction = 'create' | 'delete' | 'regenerate';
 export type AvatarReleaseStatus = 'public' | 'private';
