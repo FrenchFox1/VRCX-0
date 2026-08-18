@@ -124,7 +124,7 @@ describe('realtimePresenceService projection boundary', () => {
         });
 
         expect(
-            useFriendRosterStore.getState().friendsById.usr_friend.stateBucket
+            useFriendRosterStore.getState().friendsById.usr_friend.state
         ).toBe('online');
         expect(serviceMocks.recordFriendPatch).not.toHaveBeenCalled();
         expect(
@@ -443,7 +443,7 @@ describe('realtimePresenceService projection boundary', () => {
             offlineIds: ['usr_friend'],
             friendsById: {
                 usr_friend: {
-                    stateBucket: 'offline'
+                    state: 'offline'
                 }
             }
         });
@@ -515,7 +515,7 @@ describe('realtimePresenceService projection boundary', () => {
             offlineIds: ['usr_friend'],
             friendsById: {
                 usr_friend: {
-                    stateBucket: 'offline'
+                    state: 'offline'
                 }
             }
         });

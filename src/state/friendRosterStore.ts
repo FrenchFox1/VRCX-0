@@ -240,21 +240,14 @@ function resolveFriendStateBucket({
     existingEntry?: FriendRecord | null;
 }): FriendRosterBucket {
     if (normalizeUserId(stateBucketAuthority).toLowerCase() === 'preserve') {
-        return (
-            normalizeStateBucket(existingEntry?.stateBucket) ||
-            normalizeStateBucket(existingEntry?.state) ||
-            'offline'
-        );
+        return normalizeStateBucket(existingEntry?.state) || 'offline';
     }
 
     const explicitStateBucket =
-        normalizeStateBucket(stateBucket) ||
-        normalizeStateBucket(patch?.stateBucket) ||
-        normalizeStateBucket(patch?.state);
+        normalizeStateBucket(stateBucket) || normalizeStateBucket(patch?.state);
 
     return (
         explicitStateBucket ||
-        normalizeStateBucket(existingEntry?.stateBucket) ||
         normalizeStateBucket(existingEntry?.state) ||
         'offline'
     );
@@ -345,7 +338,6 @@ function normalizeFriendEntry(
         displayName,
         tags,
         state: stateBucket,
-        stateBucket,
         friendNumber,
         trustLevel,
         $friendNumber: friendNumber,
@@ -405,9 +397,7 @@ function buildBucketIds(
     stateBucket: FriendRosterBucket
 ): string[] {
     return friendIds
-        .filter(
-            (friendId) => friendsById[friendId]?.stateBucket === stateBucket
-        )
+        .filter((friendId) => friendsById[friendId]?.state === stateBucket)
         .sort((leftId, rightId) =>
             compareFriendEntries(friendsById[leftId], friendsById[rightId])
         );
@@ -464,13 +454,8 @@ function friendEntryNeedsOrderingUpdate(
         return true;
     }
     const existingBucket =
-        normalizeStateBucket(existingEntry?.stateBucket) ||
-        normalizeStateBucket(existingEntry?.state) ||
-        'offline';
-    const nextBucket =
-        normalizeStateBucket(nextEntry?.stateBucket) ||
-        normalizeStateBucket(nextEntry?.state) ||
-        'offline';
+        normalizeStateBucket(existingEntry?.state) || 'offline';
+    const nextBucket = normalizeStateBucket(nextEntry?.state) || 'offline';
 
     if (existingBucket !== nextBucket) {
         return true;

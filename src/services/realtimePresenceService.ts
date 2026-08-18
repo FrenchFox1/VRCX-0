@@ -212,9 +212,7 @@ function handleRealtimeFriendProjection(
                 patchEntry.userId || patch.id || patch.userId
             ),
             patch,
-            stateBucket: normalizeUserId(
-                patchEntry.stateBucket || patch.stateBucket || patch.state
-            ),
+            stateBucket: normalizeUserId(patchEntry.stateBucket || patch.state),
             stateBucketAuthority: normalizeUserId(
                 patchEntry.stateBucketAuthority || 'explicit'
             )

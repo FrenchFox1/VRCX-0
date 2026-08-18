@@ -102,7 +102,7 @@ describe('friendRosterStore', () => {
                 usr_new: {
                     id: 'usr_new',
                     displayName: 'New Friend',
-                    stateBucket: 'online'
+                    state: 'online'
                 }
             }
         });
@@ -179,19 +179,19 @@ describe('friendRosterStore', () => {
                     displayName: 'Offline Cache',
                     trustLevel: 'Known User',
                     friendNumber: 2,
-                    stateBucket: 'offline'
+                    state: 'offline'
                 },
                 usr_online: {
                     id: 'usr_online',
                     displayName: 'Online Cache',
                     trustLevel: 'Trusted User',
                     friendNumber: 1,
-                    stateBucket: 'online'
+                    state: 'online'
                 },
                 usr_active: {
                     id: 'usr_active',
                     displayName: 'usr_active',
-                    stateBucket: 'active'
+                    state: 'active'
                 }
             },
             detail: 'seeded friends'
@@ -212,7 +212,7 @@ describe('friendRosterStore', () => {
         expect(state.friendsById.usr_online).toMatchObject({
             id: 'usr_online',
             displayName: 'Online Cache',
-            stateBucket: 'online',
+            state: 'online',
             friendNumber: 1,
             $trustLevel: 'Trusted User'
         });
@@ -247,7 +247,6 @@ describe('friendRosterStore', () => {
             friendsById: {
                 usr_friend: {
                     state: 'online',
-                    stateBucket: 'online',
                     location: 'wrld_new:2'
                 }
             }
