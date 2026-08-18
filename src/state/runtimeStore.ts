@@ -5,7 +5,9 @@ import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInst
 import type {
     AuthenticatedSessionProjection,
     BackendRuntimeSnapshot,
-    DatabaseUpgradeStage
+    DatabaseUpgradeStage,
+    FriendProfileBulkLoadStatus,
+    RuntimeGroupInstancesStatus
 } from '@/platform/tauri/bindings';
 import { MINUTE_MS } from '@/shared/constants/time';
 
@@ -46,12 +48,7 @@ type MutualGraphState = Record<string, unknown> & {
     lastError: string | null;
 };
 
-export type FriendProfileLoadStatus =
-    | 'idle'
-    | 'running'
-    | 'cancelling'
-    | 'completed'
-    | 'cancelled';
+export type FriendProfileLoadStatus = FriendProfileBulkLoadStatus;
 
 export type FriendProfileLoadState = Record<string, unknown> & {
     runId: number;
@@ -156,7 +153,7 @@ type UpdateLoopRelease = Record<string, unknown> & {
 };
 
 type GroupInstancesState = Record<string, unknown> & {
-    status: string;
+    status: RuntimeGroupInstancesStatus;
     userId: string;
     endpoint: string;
     instances: GroupInstanceRecord[];

@@ -278,7 +278,7 @@ export function handleRuntimeGroupInstancesProjection(
     record: RuntimeGroupInstancesProjection
 ): void {
     const runtimeStore = useRuntimeStore.getState();
-    const status = normalizeString(record.status) || 'ready';
+    const status = record.status;
     const userId = normalizeString(record.userId);
     const endpoint = normalizeString(record.endpoint);
     const auth = runtimeStore.auth;
