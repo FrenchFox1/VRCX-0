@@ -6,9 +6,9 @@ import type {
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type HostCapabilityKey = {
-    [K in keyof HostCapabilities]: HostCapabilities[K] extends HostCapabilityStatus
-        ? K
-        : never;
+    [
+        K in keyof HostCapabilities
+    ]: HostCapabilities[K] extends HostCapabilityStatus ? K : never;
 }[keyof HostCapabilities];
 
 const HOST_CAPABILITY_KEYS: readonly HostCapabilityKey[] = Object.freeze([
