@@ -37,7 +37,7 @@ import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 
-import type { FavoriteGroup, FavoriteItem } from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteItem } from '../favoritesTypes';
 import {
     buildShareCollectionWorldIds,
     SHARE_COLLECTION_CLIENT_WORLD_CAP
@@ -47,7 +47,7 @@ type FavoriteShareCollectionDialogProps = {
     open: boolean;
     onOpenChange(open: boolean): void;
     onOpenManage(): void;
-    group: FavoriteGroup | null;
+    group: FavoriteGroupView | null;
     items: FavoriteItem[];
     remoteWorldDetailsStatus: string;
 };

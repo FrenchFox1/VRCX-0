@@ -20,7 +20,7 @@ import {
     favoriteBulkRemoveSuccessfulKeys
 } from './favoriteBulkRemove';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
     FavoriteSource
 } from './favoritesTypes';
@@ -49,9 +49,9 @@ export function useFavoritesBulkActions({
 }: {
     currentEndpoint: string;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     remoteFavoritesByObjectId: Record<string, FavoriteRecord | undefined>;
-    remoteGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroupView[];
     selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
@@ -211,7 +211,7 @@ export function useFavoritesBulkActions({
     }
 
     async function bulkTransferSelection(
-        targetGroup: FavoriteGroup,
+        targetGroup: FavoriteGroupView,
         mode: FavoriteTransferMode
     ) {
         if (!selectedContentItems.length) {
@@ -312,11 +312,11 @@ export function useFavoritesBulkActions({
         );
     }
 
-    function bulkMoveSelection(targetGroup: FavoriteGroup) {
+    function bulkMoveSelection(targetGroup: FavoriteGroupView) {
         return bulkTransferSelection(targetGroup, 'move');
     }
 
-    function bulkCopySelection(targetGroup: FavoriteGroup) {
+    function bulkCopySelection(targetGroup: FavoriteGroupView) {
         return bulkTransferSelection(targetGroup, 'copy');
     }
 

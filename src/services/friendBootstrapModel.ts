@@ -10,12 +10,12 @@ export type FriendBootstrapSnapshot = Record<string, unknown> & {
     detail?: unknown;
 };
 export type FriendStateBucket = 'online' | 'active' | 'offline';
-export type FriendLogRow = FriendLogCurrentRow & {
+export type FriendLogBootstrapRow = FriendLogCurrentRow & {
     user_id?: unknown;
     $friendNumber?: unknown;
     $trustLevel?: unknown;
 };
-export type FriendLogSeedRow = Partial<FriendLogRow>;
+export type FriendLogSeedRow = Partial<FriendLogBootstrapRow>;
 export type CurrentUserFriendSnapshot = Record<string, unknown> & {
     id?: unknown;
     friends?: unknown;

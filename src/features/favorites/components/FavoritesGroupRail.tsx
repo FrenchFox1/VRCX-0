@@ -31,7 +31,7 @@ import { Input } from '@/ui/shadcn/input';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-import type { FavoriteGroup, FavoriteSource } from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteSource } from '../favoritesTypes';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'] as const;
 type FavoriteVisibility = (typeof VISIBILITY_OPTIONS)[number];
@@ -112,13 +112,13 @@ function GroupCapacityMeter({
     );
 }
 
-type FavoriteGroupHandler = (group: FavoriteGroup) => void | Promise<void>;
+type FavoriteGroupHandler = (group: FavoriteGroupView) => void | Promise<void>;
 
 type GroupMenuProps = {
-    group: FavoriteGroup;
+    group: FavoriteGroupView;
     onRemoteRename: FavoriteGroupHandler;
     onRemoteVisibility(
-        group: FavoriteGroup,
+        group: FavoriteGroupView,
         visibility: FavoriteVisibility
     ): void | Promise<void>;
     onRemoteClear: FavoriteGroupHandler;
@@ -297,7 +297,7 @@ type GroupRailSectionProps = {
     icon: LucideIcon;
     emptyTitle: string;
     emptyDescription: string;
-    groups: FavoriteGroup[];
+    groups: FavoriteGroupView[];
     selectedSource: FavoriteSource | '';
     selectedGroupKey: string;
     loading?: boolean;
@@ -313,7 +313,7 @@ type GroupRailSectionProps = {
     onCancelCreate?(): void;
     onRemoteRename: FavoriteGroupHandler;
     onRemoteVisibility(
-        group: FavoriteGroup,
+        group: FavoriteGroupView,
         visibility: FavoriteVisibility
     ): void | Promise<void>;
     onRemoteClear: FavoriteGroupHandler;

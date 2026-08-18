@@ -6,7 +6,7 @@ import { useFavoriteStore } from '@/state/favoriteStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
     FavoriteSource
 } from './favoritesTypes';
@@ -51,10 +51,10 @@ export function useFavoritesActions({
     friendsById: Record<string, unknown>;
     friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     newLocalGroupName: string;
     reloadLocalWorldFavorites(): Promise<unknown>;
-    remoteGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroupView[];
     selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;

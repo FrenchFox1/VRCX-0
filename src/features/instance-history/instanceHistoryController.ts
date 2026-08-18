@@ -4,10 +4,10 @@ import {
     sortPreviousInstanceRows
 } from '@/components/dialogs/previous-instances-table/previousInstancesRows';
 
-import type { PreviousInstanceRow } from './instance-activity/instanceActivityTypes';
+import type { InstanceHistoryEntryRow } from './instance-activity/instanceActivityTypes';
 import type { InstanceHistoryMode } from './instanceHistoryDayMode';
 
-export type PreviousInstanceSortKey = 'date' | 'location' | 'duration';
+export type InstanceHistorySortKey = 'date' | 'location' | 'duration';
 
 export function buildInstanceHistorySearchParams({
     currentUserId,
@@ -30,7 +30,7 @@ export function buildInstanceHistorySearchParams({
 }
 
 function dateRangeContains(
-    row: PreviousInstanceRow,
+    row: InstanceHistoryEntryRow,
     from: Date | null,
     to: Date | null
 ) {
@@ -58,11 +58,11 @@ export function filterAndSortInstanceHistoryRows({
     sortKey,
     sortDesc
 }: {
-    rows: PreviousInstanceRow[];
+    rows: InstanceHistoryEntryRow[];
     query: string;
     from: Date | null;
     to: Date | null;
-    sortKey: PreviousInstanceSortKey;
+    sortKey: InstanceHistorySortKey;
     sortDesc: boolean;
 }) {
     const normalizedQuery = query.trim();

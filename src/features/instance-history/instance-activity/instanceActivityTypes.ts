@@ -11,7 +11,7 @@ export type WorldDetailsById = Record<
     }
 >;
 
-export type PreviousInstanceRow = Partial<InstanceHistoryEntryOutput> & {
+export type InstanceHistoryEntryRow = Partial<InstanceHistoryEntryOutput> & {
     id?: string | number;
     created_at?: string | number | Date;
     last_ts?: string | number | Date;

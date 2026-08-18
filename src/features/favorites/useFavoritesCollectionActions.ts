@@ -12,7 +12,7 @@ import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import { favoriteGroupType } from './favoritesItems';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
     FavoriteSource
 } from './favoritesTypes';
@@ -40,7 +40,7 @@ export function useFavoritesCollectionActions({
     currentUserId: string;
     currentUserSnapshot: CurrentUserSnapshotState | null;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     reloadLocalWorldFavorites(): Promise<unknown>;
     refreshing: boolean;
     removingFavoriteKeyRef: MutableRefObject<string>;
@@ -251,7 +251,7 @@ export function useFavoritesCollectionActions({
         setExportDialogOpen(true);
     }
 
-    async function handleRemoteGroupRename(group: FavoriteGroup) {
+    async function handleRemoteGroupRename(group: FavoriteGroupView) {
         const result = await prompt({
             title: t('view.favorites.modal.change_favorite_group_name'),
             description: t('view.favorites.modal.enter_the_new_display_name'),
@@ -284,7 +284,7 @@ export function useFavoritesCollectionActions({
     }
 
     async function handleRemoteGroupVisibility(
-        group: FavoriteGroup,
+        group: FavoriteGroupView,
         visibility: string
     ) {
         if (group.visibility === visibility) {
@@ -308,7 +308,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleRemoteGroupClear(group: FavoriteGroup) {
+    async function handleRemoteGroupClear(group: FavoriteGroupView) {
         const result = await confirm({
             title: t('view.favorites.modal.clear_favorite_group'),
             description: t(
@@ -336,7 +336,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleLocalGroupRename(group: FavoriteGroup) {
+    async function handleLocalGroupRename(group: FavoriteGroupView) {
         const result = await prompt({
             title: t('view.favorites.modal.rename_local_favorite_group'),
             description: t(
@@ -385,7 +385,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleLocalGroupDelete(group: FavoriteGroup) {
+    async function handleLocalGroupDelete(group: FavoriteGroupView) {
         const result = await confirm({
             title: t('view.favorites.modal.delete_local_favorite_group'),
             description: t('view.favorites.modal.delete_value', {

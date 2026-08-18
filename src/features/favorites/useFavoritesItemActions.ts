@@ -21,7 +21,7 @@ import { useModalStore } from '@/state/modalStore';
 import { normalizeFavoriteEntityId as normalizeEntityId } from './favoritesItems';
 import { resolveFavoritePresenceLocation } from './favoritesPageData';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
     FavoriteSource
 } from './favoritesTypes';
@@ -60,7 +60,7 @@ export function useFavoritesItemActions({
     friendsById: Record<string, unknown>;
     friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     newLocalGroupName: string;
     refreshing: boolean;
     selectedContentItems: FavoriteItem[];

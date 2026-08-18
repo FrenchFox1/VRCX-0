@@ -85,7 +85,7 @@ import { Switch } from '@/ui/shadcn/switch';
 import {
     buildInstanceHistorySearchParams,
     filterAndSortInstanceHistoryRows,
-    type PreviousInstanceSortKey
+    type InstanceHistorySortKey
 } from './instanceHistoryController';
 import { useInstanceHistoryRowsController } from './useInstanceHistoryRowsController';
 
@@ -130,7 +130,7 @@ export function InstanceHistoryPage({
             range: emptyInstanceHistoryDateRange(),
             source: 'none'
         }));
-    const [sortKey, setSortKey] = useState<PreviousInstanceSortKey>('date');
+    const [sortKey, setSortKey] = useState<InstanceHistorySortKey>('date');
     const [sortDesc, setSortDesc] = useState(true);
     const [reloadToken, setReloadToken] = useState(0);
     const [selectedDay, setSelectedDay] = useState('');
@@ -397,7 +397,7 @@ export function InstanceHistoryPage({
         [dateRange.from, dateRange.to, search, sortDesc, sortKey, visibleRows]
     );
 
-    function selectSort(nextKey: PreviousInstanceSortKey, nextDesc: boolean) {
+    function selectSort(nextKey: InstanceHistorySortKey, nextDesc: boolean) {
         setSortKey(nextKey);
         setSortDesc(Boolean(nextDesc));
     }
@@ -498,7 +498,7 @@ export function InstanceHistoryPage({
           ].join(' - ')
         : t('view.instance_history.label.date_range');
 
-    const sortItems: { value: PreviousInstanceSortKey; label: string }[] = [
+    const sortItems: { value: InstanceHistorySortKey; label: string }[] = [
         { value: 'date', label: t('table.previous_instances.date') },
         {
             value: 'location',
@@ -698,7 +698,7 @@ export function InstanceHistoryPage({
                                             onValueChange={(value) =>
                                                 selectSort(
                                                     (value ??
-                                                        'date') as PreviousInstanceSortKey,
+                                                        'date') as InstanceHistorySortKey,
                                                     sortDesc
                                                 )
                                             }

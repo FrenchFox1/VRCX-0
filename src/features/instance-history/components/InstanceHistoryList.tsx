@@ -11,7 +11,7 @@ import { DialogEmptyState } from '@/components/dialogs/previous-instances-table/
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
-import type { PreviousInstanceRow } from '@/features/instance-history/instance-activity/instanceActivityTypes';
+import type { InstanceHistoryEntryRow } from '@/features/instance-history/instance-activity/instanceActivityTypes';
 import type { InstanceHistoryMode } from '@/features/instance-history/instanceHistoryDayMode';
 import { formatClock, formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -24,29 +24,29 @@ const HEADER_ENTRY_HEIGHT = 28;
 const RECORD_ENTRY_HEIGHT = 36;
 
 export function rowKey(
-    row: PreviousInstanceRow,
+    row: InstanceHistoryEntryRow,
     fallback: string | number = ''
 ): string {
     return `${rowLocation(row)}:${row?.id || row?.created_at || row?.createdAt || fallback}`;
 }
 
-function dayLabel(row: PreviousInstanceRow): string {
+function dayLabel(row: InstanceHistoryEntryRow): string {
     return formatDateFilter(row?.created_at || row?.createdAt, 'date');
 }
 
 type InstanceHistoryEntry =
     | { key: string; kind: 'header'; label: string }
-    | { key: string; kind: 'row'; row: PreviousInstanceRow; label: string };
+    | { key: string; kind: 'row'; row: InstanceHistoryEntryRow; label: string };
 
 function estimateInstanceHistoryEntrySize(entry: InstanceHistoryEntry): number {
     return entry.kind === 'header' ? HEADER_ENTRY_HEIGHT : RECORD_ENTRY_HEIGHT;
 }
 
 type InstanceHistoryRowProps = {
-    row: PreviousInstanceRow;
+    row: InstanceHistoryEntryRow;
     selected: boolean;
-    onOpenDetails: (row: PreviousInstanceRow) => void;
-    onDeleteRow: (row: PreviousInstanceRow) => void;
+    onOpenDetails: (row: InstanceHistoryEntryRow) => void;
+    onDeleteRow: (row: InstanceHistoryEntryRow) => void;
 };
 
 export function InstanceHistoryRow({
@@ -123,13 +123,13 @@ type InstanceHistoryListProps = {
     mode?: InstanceHistoryMode;
     totalCount?: number;
     filteredCount?: number;
-    visibleRows: PreviousInstanceRow[];
-    selectedRow: PreviousInstanceRow | null;
+    visibleRows: InstanceHistoryEntryRow[];
+    selectedRow: InstanceHistoryEntryRow | null;
     search: string;
     onSearchChange: (value: string) => void;
     sortKey: string;
-    onOpenDetails: (row: PreviousInstanceRow) => void;
-    onDeleteRow: (row: PreviousInstanceRow) => void;
+    onOpenDetails: (row: InstanceHistoryEntryRow) => void;
+    onDeleteRow: (row: InstanceHistoryEntryRow) => void;
     dateActive?: boolean;
     dateRangeLabel?: string;
     onClearDate?: () => void;
@@ -200,7 +200,7 @@ export function InstanceHistoryList({
             : '';
     const selectionScrollRequestRef = useRef<{
         entries: InstanceHistoryEntry[];
-        selectedRow: PreviousInstanceRow | null;
+        selectedRow: InstanceHistoryEntryRow | null;
     } | null>(null);
 
     useEffect(() => {

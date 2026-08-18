@@ -38,7 +38,7 @@ import { useGroupModerationTable } from './useGroupModerationTable';
 
 const LOGS_COLUMN_IDS = ['created', 'type', 'actor', 'description', 'data'];
 
-export interface GroupAuditLogRow {
+export interface GroupModerationLogRow {
     actorDisplayName?: string;
     actorId?: string;
     created_at?: string;
@@ -69,7 +69,7 @@ interface GroupModerationLogsTableProps {
     onEventTypesChange: (eventTypes: string[]) => void;
     onExport: () => void;
     onReload: () => void;
-    rows: GroupAuditLogRow[];
+    rows: GroupModerationLogRow[];
     selectedEventTypes: string[];
 }
 
@@ -103,7 +103,10 @@ export function toggleGroupAuditLogType(
     return [...selectedEventTypes, eventType];
 }
 
-export function filterGroupAuditLogs(rows: GroupAuditLogRow[], search: string) {
+export function filterGroupAuditLogs(
+    rows: GroupModerationLogRow[],
+    search: string
+) {
     const query = search.trim().toLowerCase();
     if (!query) {
         return rows;
@@ -115,7 +118,7 @@ export function filterGroupAuditLogs(rows: GroupAuditLogRow[], search: string) {
     );
 }
 
-export function groupAuditLogActorDialogArgs(row: GroupAuditLogRow) {
+export function groupAuditLogActorDialogArgs(row: GroupModerationLogRow) {
     const userId = String(row.actorId || '').trim();
     if (!userId) {
         return null;
@@ -210,7 +213,7 @@ export function describeGroupAuditLogDataDiff(data: unknown): string[] | null {
     );
 }
 
-export function openGroupAuditLogActor(row: GroupAuditLogRow) {
+export function openGroupAuditLogActor(row: GroupModerationLogRow) {
     const args = groupAuditLogActorDialogArgs(row);
     if (!args) {
         return;
@@ -228,7 +231,7 @@ function auditLogHeaderLabel(label: string) {
 
 export function createGroupAuditLogColumns(
     t: (key: string) => string
-): AppColumnDef<GroupAuditLogRow>[] {
+): AppColumnDef<GroupModerationLogRow>[] {
     const createdLabel = t('dialog.group_member_moderation.created_at');
     const typeLabel = t('dialog.group_member_moderation.type');
     const actorLabel = t('dialog.group_member_moderation.display_name');
@@ -385,7 +388,7 @@ export function GroupModerationLogsTable({
     );
     const columns = useMemo(() => createGroupAuditLogColumns(t), [t]);
     const { pageSizes, pagination, setPagination, table } =
-        useGroupModerationTable<GroupAuditLogRow>({
+        useGroupModerationTable<GroupModerationLogRow>({
             columnIds: LOGS_COLUMN_IDS,
             columns,
             paged: true,
@@ -590,7 +593,7 @@ export function GroupModerationLogsPanel({
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [reloadToken, setReloadToken] = useState(0);
-    const [rows, setRows] = useState<GroupAuditLogRow[]>([]);
+    const [rows, setRows] = useState<GroupModerationLogRow[]>([]);
     const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
     const [exportOpen, setExportOpen] = useState(false);
 

@@ -13,7 +13,7 @@ import {
     buildFavoriteRemoteGroups,
     buildFavoriteRemoteItemsByGroup,
     getFavoritesPageConfig,
-    type FavoriteEntityDetail
+    type FavoritePageEntityDetail
 } from './favoritesPageData';
 import type { FavoriteItem } from './favoritesTypes';
 import type { FavoriteSource } from './favoritesTypes';
@@ -21,14 +21,16 @@ import type { useFavoritesCollectionsState } from './useFavoritesCollectionsStat
 
 const EMPTY_ITEMS: FavoriteItem[] = [];
 
-function isFavoriteEntityDetail(value: unknown): value is FavoriteEntityDetail {
+function isFavoriteEntityDetail(
+    value: unknown
+): value is FavoritePageEntityDetail {
     return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function normalizeFavoriteDetailMap(
     value: Record<string, unknown> | undefined
-): Record<string, FavoriteEntityDetail | undefined> {
-    const details: Record<string, FavoriteEntityDetail | undefined> = {};
+): Record<string, FavoritePageEntityDetail | undefined> {
+    const details: Record<string, FavoritePageEntityDetail | undefined> = {};
     for (const [id, detail] of Object.entries(value || {})) {
         if (isFavoriteEntityDetail(detail)) {
             details[id] = detail;

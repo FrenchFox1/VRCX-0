@@ -13,7 +13,7 @@ export type FavoriteSeedData = Record<string, unknown> & {
     worldName?: string;
 };
 
-export type FavoriteGroup = {
+export type FavoriteGroupView = {
     key: string;
     source: FavoriteSource;
     label: string;

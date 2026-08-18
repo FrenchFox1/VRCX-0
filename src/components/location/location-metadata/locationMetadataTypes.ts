@@ -53,13 +53,13 @@ export type LocationCacheRecord = Record<string, unknown> & {
     world_name?: unknown;
 };
 
-export type GroupProfileRecord = Record<string, unknown> & {
+export type LocationGroupProfile = Record<string, unknown> & {
     displayName?: unknown;
     name?: unknown;
     shortCode?: unknown;
 };
 
-export type WorldProfileRecord = Record<string, unknown> & {
+export type LocationWorldProfile = Record<string, unknown> & {
     name?: unknown;
 };
 
@@ -74,8 +74,8 @@ export type LocationHintRecord = {
 export type MetadataContext = {
     cachedInstances: Map<string, LocationCacheRecord>;
     currentEndpoint: string;
-    groupProfilesById: Map<string, GroupProfileRecord>;
+    groupProfilesById: Map<string, LocationGroupProfile>;
     locationHintsByKey: Record<string, LocationHintRecord | undefined>;
     localWorldNamesById: Map<string, string>;
-    worldProfilesById: Map<string, WorldProfileRecord>;
+    worldProfilesById: Map<string, LocationWorldProfile>;
 };

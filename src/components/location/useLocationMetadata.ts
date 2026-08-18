@@ -20,10 +20,10 @@ import {
     uniqueIds
 } from './location-metadata/locationMetadataResolution';
 import type {
-    GroupProfileRecord,
+    LocationGroupProfile,
     LocationMetadata,
     LocationMetadataEntry,
-    WorldProfileRecord
+    LocationWorldProfile
 } from './location-metadata/locationMetadataTypes';
 
 export type { LocationMetadata, LocationMetadataEntry };
@@ -105,12 +105,12 @@ export function useLocationMetadataBatch(
         [normalizedEntries]
     );
     const [worldProfilesById, setWorldProfilesById] = useState(
-        () => new Map<string, WorldProfileRecord>()
+        () => new Map<string, LocationWorldProfile>()
     );
     const worldProfilesByIdRef = useRef(worldProfilesById);
     const worldProfilesEndpointRef = useRef(currentEndpoint);
     const worldProfileRequestsRef = useRef(
-        new Map<string, Promise<WorldProfileRecord | null>>()
+        new Map<string, Promise<LocationWorldProfile | null>>()
     );
     const worldIdsKey = [...worldIds]
         .sort()
@@ -127,7 +127,7 @@ export function useLocationMetadataBatch(
             worldProfilesByIdRef.current = new Map();
         }
 
-        const retainedProfiles = new Map<string, WorldProfileRecord>();
+        const retainedProfiles = new Map<string, LocationWorldProfile>();
         for (const worldId of requestedWorldIds) {
             const profile = worldProfilesByIdRef.current.get(worldId);
             if (profile) {
@@ -172,13 +172,13 @@ export function useLocationMetadataBatch(
             if (!active) {
                 return;
             }
-            const resolvedProfiles = new Map<string, WorldProfileRecord>();
+            const resolvedProfiles = new Map<string, LocationWorldProfile>();
             profiles.forEach((profile, index) => {
                 if (profile) {
                     resolvedProfiles.set(missingWorldIds[index], profile);
                 }
             });
-            const nextProfiles = new Map<string, WorldProfileRecord>();
+            const nextProfiles = new Map<string, LocationWorldProfile>();
             for (const worldId of requestedWorldIds) {
                 const profile =
                     resolvedProfiles.get(worldId) ||
@@ -209,7 +209,7 @@ export function useLocationMetadataBatch(
             refetchOnWindowFocus: entityQueryPolicies.group.refetchOnWindowFocus
         })),
         combine: (results) =>
-            mapQueryResults<GroupProfileRecord>(groupIds, results)
+            mapQueryResults<LocationGroupProfile>(groupIds, results)
     });
     const localWorldNameRequestIdsRef = useRef(new Set<string>());
     const mountedRef = useRef(true);

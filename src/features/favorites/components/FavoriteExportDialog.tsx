@@ -30,14 +30,14 @@ import {
     getFavoriteExportFieldOptions,
     type FavoriteExportField
 } from '../favoritesExport';
-import type { FavoriteGroup, FavoriteItem } from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteItem } from '../favoritesTypes';
 
 type FavoriteExportDialogProps = {
     open: boolean;
     onOpenChange(open: boolean): void;
     kind: FavoriteKind;
-    remoteGroups: FavoriteGroup[];
-    localGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroupView[];
+    localGroups: FavoriteGroupView[];
     remoteItemsByGroup: Record<string, FavoriteItem[]>;
     localItemsByGroup: Record<string, FavoriteItem[]>;
     remoteDetailsStatus: string;

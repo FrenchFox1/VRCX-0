@@ -6,7 +6,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { PreviousInstanceRow } from './instance-activity/instanceActivityTypes';
+import type { InstanceHistoryEntryRow } from './instance-activity/instanceActivityTypes';
 
 const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
@@ -157,8 +157,8 @@ vi.mock('./components/InstanceHistoryList', () => ({
         onDeleteRow,
         dateRangeControl
     }: {
-        visibleRows: PreviousInstanceRow[];
-        onDeleteRow: (row: PreviousInstanceRow) => void;
+        visibleRows: InstanceHistoryEntryRow[];
+        onDeleteRow: (row: InstanceHistoryEntryRow) => void;
         dateRangeControl?: ReactNode;
     }) => (
         <div data-testid="history-list">
@@ -290,7 +290,7 @@ function row(
     location: string,
     events: number[] = [1],
     createdAt = new Date(Date.now() - 60_000).toISOString()
-): PreviousInstanceRow {
+): InstanceHistoryEntryRow {
     return {
         id: location,
         createdAt,
@@ -325,10 +325,10 @@ describe('InstanceHistoryPage', () => {
 
     it('ignores stale failures after a user switch and stale successes after a range switch', async () => {
         const user = userEvent.setup();
-        const selfRequest = deferred<PreviousInstanceRow[]>();
-        const otherRequest = deferred<PreviousInstanceRow[]>();
-        const firstRangeRequest = deferred<PreviousInstanceRow[]>();
-        const secondRangeRequest = deferred<PreviousInstanceRow[]>();
+        const selfRequest = deferred<InstanceHistoryEntryRow[]>();
+        const otherRequest = deferred<InstanceHistoryEntryRow[]>();
+        const firstRangeRequest = deferred<InstanceHistoryEntryRow[]>();
+        const secondRangeRequest = deferred<InstanceHistoryEntryRow[]>();
         mocks.getPreviousInstancesByUserId
             .mockImplementationOnce(() => selfRequest.promise)
             .mockImplementationOnce(() => otherRequest.promise)

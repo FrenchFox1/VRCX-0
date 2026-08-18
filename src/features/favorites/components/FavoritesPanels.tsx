@@ -24,7 +24,7 @@ import {
 } from '@/ui/shadcn/popover';
 
 import { getFavoritesDensityConfig } from '../favoritesDensity';
-import type { FavoriteGroup, FavoriteItem } from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteItem } from '../favoritesTypes';
 import type { useFavoritesPageController } from '../useFavoritesPageController';
 import { useFavoritesVirtualGrid } from '../useFavoritesVirtualGrid';
 import { useStableEvent } from '../useStableEvent';
@@ -55,7 +55,7 @@ type FavoritesGroupRailPanelProps = {
     kind: FavoriteKind;
     newLocalGroupName: string;
     onNewGroupNameChange(value: string): void;
-    onShareCollectionGroup?(group: FavoriteGroup): void;
+    onShareCollectionGroup?(group: FavoriteGroupView): void;
     setCreatingLocalGroup: FavoritesController['setCreatingLocalGroup'];
     viewData: FavoritesController['viewData'];
 };
@@ -68,16 +68,16 @@ type FavoritesContentPanelProps = {
     layout: FavoritesController['layout'];
     selection: FavoritesController['selection'];
     viewData: FavoritesController['viewData'];
-    onShareCollectionGroup?(group: FavoriteGroup): void;
+    onShareCollectionGroup?(group: FavoriteGroupView): void;
     shareCoachmarkOpen?: boolean;
     onDismissShareCoachmark?(): void;
     instanceActionGatesByItemKey: FavoritesController['instanceActionGatesByItemKey'];
 };
 
 type ShareCollectionButtonProps = {
-    group: FavoriteGroup;
+    group: FavoriteGroupView;
     coachmarkOpen: boolean;
-    onShare(group: FavoriteGroup): void;
+    onShare(group: FavoriteGroupView): void;
     onDismissCoachmark?(): void;
 };
 
@@ -158,7 +158,7 @@ export function FavoritesGroupRailPanel({
         collections.favoriteLoadStatus === 'running' ||
         favoriteCommands.refreshing;
 
-    const selectGroup = useStableEvent((group: FavoriteGroup) => {
+    const selectGroup = useStableEvent((group: FavoriteGroupView) => {
         filters.setSearchQuery('');
         filters.setSelectedSource(group.source);
         filters.setSelectedGroupKey(group.key);
