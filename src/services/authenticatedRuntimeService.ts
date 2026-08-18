@@ -347,6 +347,14 @@ export function handleAuthenticatedRuntimeRealtimeStatus(
     applyRealtimeStatus(payload, snapshot);
 }
 
+export function currentRealtimeTransportGeneration(): number | null {
+    const snapshot = latestSnapshot;
+    if (!snapshot || !matchesCurrentSession(snapshot)) {
+        return null;
+    }
+    return positiveNumber(snapshot.realtimeTransport?.generation);
+}
+
 export function resetAuthenticatedRuntimeMirror(): void {
     latestSnapshot = null;
     appliedFriendBaselineKey = '';

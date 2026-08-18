@@ -3,6 +3,7 @@ import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
+import { currentRealtimeTransportGeneration } from '../authenticatedRuntimeService';
 import { handleRealtimeInstanceQueueProjection } from '../realtimeInstanceQueueService';
 import {
     handleRealtimeCurrentUserProjection,
@@ -234,6 +235,15 @@ export function handleBackendRealtimeProjectionEvent(
 ): boolean {
     if (!isRealtimeProjectionEvent(event)) {
         return false;
+    }
+    const realtimeGeneration = projectionGeneration(event.payload);
+    const authoritativeGeneration = currentRealtimeTransportGeneration();
+    if (
+        realtimeGeneration &&
+        authoritativeGeneration !== null &&
+        realtimeGeneration !== authoritativeGeneration
+    ) {
+        return true;
     }
     if (!isBackendRuntimeRealtimeOwner()) {
         if (isBackendRuntimeRealtimeCandidate()) {

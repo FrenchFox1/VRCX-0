@@ -1430,4 +1430,60 @@ describe('runtimeEventBridgeService', () => {
             cleanup();
         }
     );
+
+    it('drops realtime projections from a superseded realtime generation', async () => {
+        const { handlers, cleanup } = await bindCapturedRuntimeEvents();
+        setBackendRealtimeOwner();
+        handlers.get('authenticatedRuntimePhase')?.(
+            createAuthenticatedRuntimePhaseSnapshot()
+        );
+
+        handlers.get('realtimeFriendProjection')?.({
+            generation: 11,
+            baselineRevision: 1,
+            patches: [
+                {
+                    userId: 'usr_stale',
+                    patch: {
+                        id: 'usr_stale',
+                        displayName: 'usr_stale',
+                        state: 'online'
+                    },
+                    stateBucket: 'online',
+                    stateBucketAuthority: 'explicit'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+
+        expect(useFriendRosterStore.getState().friendsById).toEqual({});
+
+        handlers.get('realtimeFriendProjection')?.({
+            generation: 12,
+            baselineRevision: 1,
+            patches: [
+                {
+                    userId: 'usr_live',
+                    patch: {
+                        id: 'usr_live',
+                        displayName: 'usr_live',
+                        state: 'online'
+                    },
+                    stateBucket: 'online',
+                    stateBucketAuthority: 'explicit'
+                }
+            ],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+
+        expect(
+            Object.keys(useFriendRosterStore.getState().friendsById)
+        ).toEqual(['usr_live']);
+
+        cleanup();
+    });
 });
