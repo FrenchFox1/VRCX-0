@@ -538,10 +538,11 @@ fn causal_watermark_rejects_baseline_after_local_friend_log_mutation() -> Result
     )?;
     let stale_watermark = runtime.runtime().capture_friend_baseline_watermark()?;
     runtime.runtime().run_friend_log_current_mutation(|| {
-        vrcx_0_persistence::friends::friend_log_delete_current(
+        vrcx_0_persistence::friends::friend_log_delete_current_array(
             runtime.runtime().deps.db.as_ref(),
             active_session.user_id.clone(),
-            "usr_friend".into(),
+            vec!["usr_friend".into()],
+            Default::default(),
         )
     })?;
 

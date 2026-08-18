@@ -389,7 +389,7 @@ fn friend_log_upsert_current_skips_history_on_update_unless_forced() {
 }
 
 #[test]
-fn friend_log_delete_current_deletes_the_target_row() {
+fn friend_log_delete_current_array_deletes_the_only_target_row() {
     let (_dir, db) = test_db("delete-current-single");
     friend_log_replace_current(
         &db,
@@ -399,9 +399,15 @@ fn friend_log_delete_current_deletes_the_target_row() {
     )
     .unwrap();
 
-    let affected = friend_log_delete_current(&db, "usr_self".into(), "usr_alice".into()).unwrap();
+    let result = friend_log_delete_current_array(
+        &db,
+        "usr_self".into(),
+        vec!["usr_alice".into()],
+        FriendLogDeleteOptionsInput::default(),
+    )
+    .unwrap();
 
-    assert_eq!(affected, 1);
+    assert_eq!(result.count, 1);
     assert!(friend_log_current_list(&db, "usr_self".into())
         .unwrap()
         .is_empty());
