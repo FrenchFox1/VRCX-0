@@ -68,6 +68,7 @@ function FeedDetailCell({
                     avatarTags={row?.currentAvatarTags}
                     imageUrl={row?.currentAvatarImageUrl}
                     ownerId={row?.ownerId}
+                    resolveFromImage={false}
                     userId={row?.userId}
                 />
             </div>

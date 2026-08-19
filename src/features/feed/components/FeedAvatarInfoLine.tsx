@@ -42,6 +42,7 @@ type AvatarInfoLineProps = {
     compact?: boolean;
     imageUrl?: unknown;
     ownerId?: unknown;
+    resolveFromImage?: boolean;
     showTags?: boolean;
     userId?: unknown;
 };
@@ -151,22 +152,25 @@ function resolveInitialAvatarInfoLineState({
     avatarName,
     imageUrl,
     ownerId,
-    endpoint
+    endpoint,
+    resolveFromImage
 }: {
     avatarName?: unknown;
     imageUrl?: unknown;
     ownerId?: unknown;
     endpoint?: unknown;
+    resolveFromImage: boolean;
 }): AvatarInfoLineState {
     const hintedName = typeof avatarName === 'string' ? avatarName.trim() : '';
     const hintedOwnerId = normalizeId(ownerId);
     const cacheKey = getAvatarInfoLineCacheKey(imageUrl, endpoint);
 
-    if (!cacheKey) {
+    if (!cacheKey || !resolveFromImage) {
         return normalizeAvatarInfoLineState({
             avatarName: hintedName,
             ownerId: hintedOwnerId,
-            status: 'idle'
+            status: 'idle',
+            cacheKey
         });
     }
 
@@ -211,6 +215,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     compact = false,
     imageUrl,
     ownerId,
+    resolveFromImage = true,
     showTags = true,
     userId
 }: AvatarInfoLineProps) {
@@ -226,7 +231,8 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             avatarName,
             imageUrl,
             ownerId,
-            endpoint: currentEndpoint
+            endpoint: currentEndpoint,
+            resolveFromImage
         })
     );
 
@@ -236,12 +242,12 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         const hintedOwnerId = normalizeId(ownerId);
         const cacheKey = getAvatarInfoLineCacheKey(imageUrl, currentEndpoint);
 
-        if (!cacheKey) {
+        if (!cacheKey || !resolveFromImage) {
             setAvatarInfoLineState(setInfo, {
                 avatarName: hintedName,
                 ownerId: hintedOwnerId,
                 status: 'idle',
-                cacheKey: ''
+                cacheKey
             });
             return undefined;
         }
@@ -304,7 +310,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         return () => {
             active = false;
         };
-    }, [avatarName, currentEndpoint, imageUrl, ownerId]);
+    }, [avatarName, currentEndpoint, imageUrl, ownerId, resolveFromImage]);
 
     const normalizedOwnerId = normalizeId(info.ownerId);
     const normalizedUserId = normalizeId(userId);
@@ -438,6 +444,7 @@ function areAvatarInfoLinePropsEqual(
         previousProps.showTags === nextProps.showTags &&
         previousProps.imageUrl === nextProps.imageUrl &&
         previousProps.ownerId === nextProps.ownerId &&
+        previousProps.resolveFromImage === nextProps.resolveFromImage &&
         previousProps.userId === nextProps.userId &&
         avatarTagsEqual(previousProps.avatarTags, nextProps.avatarTags)
     );
