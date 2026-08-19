@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const commandMocks = vi.hoisted(() => ({
-    appDatabaseMaintenanceRun: vi.fn(),
     appDatabaseMaintenanceMaxFriendLogNumberGet: vi.fn(),
     appDatabaseMaintenanceTableSizesGet: vi.fn(),
     appDatabaseMaintenanceBrokenLeaveEntriesGet: vi.fn(),
@@ -17,8 +16,7 @@ import databaseMaintenanceRepository, {
     getBrokenLeaveEntries,
     getGlobalTableSizes,
     getMaxFriendLogNumber,
-    getUserTableSizes,
-    vacuum
+    getUserTableSizes
 } from './databaseMaintenanceRepository';
 
 const runtimeSizes = {
@@ -41,7 +39,6 @@ const runtimeSizes = {
 describe('databaseMaintenanceRepository', () => {
     beforeEach(() => {
         vi.resetAllMocks();
-        commandMocks.appDatabaseMaintenanceRun.mockResolvedValue(undefined);
         commandMocks.appDatabaseMaintenanceMaxFriendLogNumberGet.mockResolvedValue(
             '42'
         );
@@ -59,14 +56,6 @@ describe('databaseMaintenanceRepository', () => {
                     ignored: true
                 }
             ]
-        );
-    });
-
-    it('exposes only the user-triggered vacuum maintenance task', async () => {
-        await vacuum();
-
-        expect(commandMocks.appDatabaseMaintenanceRun).toHaveBeenCalledWith(
-            'vacuum'
         );
     });
 

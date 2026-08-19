@@ -256,7 +256,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::browse_history::app__browse_history_retention_days_get,
             commands::local::browse_history::app__browse_history_retention_days_set,
             commands::local::database_maintenance::app__user_tables_ensure,
-            commands::local::database_maintenance::app__database_maintenance_run,
             commands::local::database_maintenance::app__database_maintenance_table_sizes_get,
             commands::local::database_maintenance::app__database_maintenance_max_friend_log_number_get,
             commands::local::database_maintenance::app__database_maintenance_broken_leave_entries_get,

@@ -30,10 +30,6 @@ function normalizeUserId(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-async function vacuum(): Promise<void> {
-    await commands.appDatabaseMaintenanceRun('vacuum');
-}
-
 async function getMaxFriendLogNumber(userId: unknown): Promise<number> {
     return Number(
         (await commands.appDatabaseMaintenanceMaxFriendLogNumberGet(
@@ -131,8 +127,7 @@ const databaseMaintenanceRepository = Object.freeze({
     getGlobalTableSizes,
     getMaxFriendLogNumber,
     getTableSizes,
-    getUserTableSizes,
-    vacuum
+    getUserTableSizes
 });
 
 export {
@@ -141,7 +136,6 @@ export {
     getGlobalTableSizes,
     getMaxFriendLogNumber,
     getTableSizes,
-    getUserTableSizes,
-    vacuum
+    getUserTableSizes
 };
 export default databaseMaintenanceRepository;

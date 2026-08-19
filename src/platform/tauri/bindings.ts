@@ -695,9 +695,6 @@ export const commands = {
     async appUserTablesEnsure(userId: string): Promise<UserTableContextOutput> {
         return await TAURI_INVOKE('app__user_tables_ensure', { userId });
     },
-    async appDatabaseMaintenanceRun(task: string): Promise<null> {
-        return await TAURI_INVOKE('app__database_maintenance_run', { task });
-    },
     async appDatabaseMaintenanceTableSizesGet(
         userId: string
     ): Promise<MaintenanceTableSizesOutput> {
