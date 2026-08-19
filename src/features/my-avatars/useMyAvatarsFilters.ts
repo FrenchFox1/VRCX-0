@@ -18,8 +18,8 @@ export function useMyAvatarsFilters() {
     const [releaseStatusFilter, setReleaseStatusFilter] = useState('all');
     const [platformFilter, setPlatformFilter] = useState('all');
     const [tagFilters, setTagFilters] = useState<Set<string>>(() => new Set());
-    const [gridDensity, setGridDensity] = useState<MyAvatarsGridDensity>(
-        () => resolveMyAvatarsGridDensity() as MyAvatarsGridDensity
+    const [gridDensity, setGridDensity] = useState<MyAvatarsGridDensity>(() =>
+        resolveMyAvatarsGridDensity()
     );
 
     useEffect(() => {
@@ -56,7 +56,7 @@ export function useMyAvatarsFilters() {
                             persistedDensity: nextGridDensity,
                             legacyGridDensity: nextLegacyGridDensity,
                             legacyCardScale: nextLegacyCardScale
-                        }) as MyAvatarsGridDensity
+                        })
                     );
                 }
             )
@@ -72,9 +72,7 @@ export function useMyAvatarsFilters() {
     }
 
     function handleGridDensityChange(value: string) {
-        const nextDensity = sanitizeMyAvatarsGridDensity(
-            value
-        ) as MyAvatarsGridDensity;
+        const nextDensity = sanitizeMyAvatarsGridDensity(value);
         setGridDensity(nextDensity);
         configRepository.setString(
             MY_AVATARS_GRID_DENSITY_CONFIG_KEY,

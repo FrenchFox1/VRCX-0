@@ -130,7 +130,7 @@ const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, index) => {
     return { value, label: formatUtcHour(value) };
 });
 
-function formatClock(nowMs: number, offset: unknown) {
+function formatClock(nowMs: number, offset: number) {
     const shifted = new Date(nowMs + normalizeUtcHour(offset) * HOUR_MS);
     const hours = String(shifted.getUTCHours()).padStart(2, '0');
     const minutes = String(shifted.getUTCMinutes()).padStart(2, '0');
@@ -150,7 +150,7 @@ function createDefaultClocks(): StatusBarClock[] {
     ];
 }
 
-function formatDuration(ms: unknown) {
+function formatDuration(ms: number) {
     const { hours, minutes, seconds } = durationParts(ms);
     if (hours > 0) {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -158,8 +158,8 @@ function formatDuration(ms: unknown) {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-function durationParts(ms: unknown) {
-    const safeSeconds = Math.max(0, Math.floor((Number(ms) || 0) / SECOND_MS));
+function durationParts(ms: number) {
+    const safeSeconds = Math.max(0, Math.floor(ms / SECOND_MS));
     const hours = Math.floor(safeSeconds / SECONDS_PER_HOUR);
     const minutes = Math.floor(
         (safeSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
@@ -173,7 +173,7 @@ function formatAppUptime(ms: number) {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-function formatStatusDate(value: unknown) {
+function formatStatusDate(value: string | null | undefined) {
     return formatDateTime(value, {
         month: '2-digit',
         day: '2-digit',
@@ -442,7 +442,7 @@ export function AppStatusBar() {
     }, [proxyEditorOpen, proxyEnabled, proxyServer]);
 
     useEffect(() => {
-        const runId = Number(mutualGraphRunId) || 0;
+        const runId = mutualGraphRunId;
         if (!runId) {
             return;
         }
@@ -604,7 +604,7 @@ export function AppStatusBar() {
         });
     }
 
-    function updateClockTimezone(index: number, offsetValue: unknown) {
+    function updateClockTimezone(index: number, offsetValue: string | null) {
         setClocks((current) => {
             const defaults = createDefaultClocks();
             const nextClocks = defaults.map(

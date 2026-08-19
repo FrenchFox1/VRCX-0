@@ -453,13 +453,13 @@ export function normalizeScreenshotSearchResult(
         metadata: ScreenshotMetadata | null;
     }
 ) {
-    const width = Number(result?.width) || 0;
-    const height = Number(result?.height) || 0;
-    return normalizeScreenshotMetadata(result?.metadata ?? {}, {
-        filePath: result?.filePath || '',
-        fileName: result?.fileName || '',
-        fileSizeBytes: result?.fileSizeBytes ?? 0,
-        creationDate: result?.creationDate || '',
+    const width = result.width ?? 0;
+    const height = result.height ?? 0;
+    return normalizeScreenshotMetadata(result.metadata ?? {}, {
+        filePath: result.filePath,
+        fileName: result.fileName,
+        fileSizeBytes: result.fileSizeBytes,
+        creationDate: result.creationDate || '',
         resolution: width > 0 && height > 0 ? `${width}x${height}` : ''
     });
 }

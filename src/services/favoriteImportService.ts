@@ -317,11 +317,12 @@ export function openFavoriteImportDialog({
     if (!normalizedType) {
         throw new Error(`Unsupported favorite import type: ${type}`);
     }
+    const normalizedInput = normalizeString(input);
     useFavoriteImportStore.getState().openDialog({
         type: normalizedType,
-        input
+        input: normalizedInput
     });
-    if (normalizeString(input)) {
+    if (normalizedInput) {
         void processFavoriteImportList();
     }
 }

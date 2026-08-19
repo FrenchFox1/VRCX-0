@@ -10,10 +10,7 @@ import {
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import {
-    getModerationRowKey,
-    isSameModerationRow
-} from './moderationPageState';
+import { getModerationRowKey } from './moderationPageState';
 import type {
     DeleteModerationOptions,
     ModerationRow,
@@ -21,13 +18,11 @@ import type {
 } from './moderationPageTypes';
 
 type ModerationRowActionsOptions = {
-    rows: ModerationRow[];
     setDetail: Dispatch<SetStateAction<string>>;
     setRows: Dispatch<SetStateAction<ModerationRow[]>>;
 };
 
 export function useModerationRowActions({
-    rows,
     setDetail,
     setRows
 }: ModerationRowActionsOptions) {
@@ -90,10 +85,7 @@ export function useModerationRowActions({
                 userId: ownerUserId,
                 endpoint: currentEndpoint
             });
-            const nextRows = Array.isArray(response?.rows)
-                ? response.rows
-                : rows.filter((entry) => !isSameModerationRow(entry, row));
-            setRows(nextRows);
+            setRows(response.rows);
             setDetail(
                 t('view.moderation.dynamic.deleted_value_for_value', {
                     value: row.type || 'moderation',

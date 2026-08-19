@@ -21,6 +21,7 @@ import type { UserBadgeRecord } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
+import type { RecentActionType } from '@/services/recentActionService';
 import { useResolvedThemeMode } from '@/services/themeService';
 import { OWNER_USER_ID } from '@/shared/constants/user';
 import { Button } from '@/ui/shadcn/button';
@@ -154,7 +155,7 @@ export interface UserHeaderModel {
     profileLanguages: { key: string; value: string }[];
     profileTitle: string;
     pronounsText?: string;
-    recentDialogShortcut: (actionType: unknown) => ReactNode;
+    recentDialogShortcut: (actionType: RecentActionType) => ReactNode;
     statusDotClassName: string;
     statusStateText: string;
     username: string;

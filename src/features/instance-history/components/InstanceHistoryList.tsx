@@ -12,13 +12,11 @@ import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import type { InstanceHistoryEntryRow } from '@/features/instance-history/instance-activity/instanceActivityTypes';
+import type { InstanceHistorySortKey } from '@/features/instance-history/instanceHistoryController';
 import type { InstanceHistoryMode } from '@/features/instance-history/instanceHistoryDayMode';
 import { formatClock, formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
-
-const SORT_FIELDS = ['date', 'location', 'duration'] as const;
-type SortField = (typeof SORT_FIELDS)[number];
 
 const HEADER_ENTRY_HEIGHT = 28;
 const RECORD_ENTRY_HEIGHT = 36;
@@ -127,7 +125,7 @@ type InstanceHistoryListProps = {
     selectedRow: InstanceHistoryEntryRow | null;
     search: string;
     onSearchChange: (value: string) => void;
-    sortKey: string;
+    sortKey: InstanceHistorySortKey;
     onOpenDetails: (row: InstanceHistoryEntryRow) => void;
     onDeleteRow: (row: InstanceHistoryEntryRow) => void;
     dateActive?: boolean;
@@ -152,10 +150,7 @@ export function InstanceHistoryList({
 }: InstanceHistoryListProps) {
     const { t } = useTranslation();
     const isDayMode = mode === 'day';
-    const activeSortKey = SORT_FIELDS.includes(sortKey as SortField)
-        ? (sortKey as SortField)
-        : 'date';
-    const grouped = !isDayMode && activeSortKey === 'date';
+    const grouped = !isDayMode && sortKey === 'date';
     const searchActive = !isDayMode && Boolean(search && search.trim());
     const dayRangeActive = !isDayMode && dateActive;
     const anyFilterActive = searchActive || dayRangeActive;

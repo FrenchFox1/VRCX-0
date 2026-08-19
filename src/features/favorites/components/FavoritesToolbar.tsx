@@ -179,10 +179,14 @@ function FavoritesToolbar({
                                     spacing={1}
                                     value={density ? [density] : []}
                                     onValueChange={(nextValue) => {
-                                        if (nextValue[0]) {
-                                            onDensityChange(
-                                                nextValue[0] as FavoritesDensity
+                                        const option =
+                                            FAVORITES_DENSITY_OPTIONS.find(
+                                                (candidate) =>
+                                                    candidate.value ===
+                                                    nextValue[0]
                                             );
+                                        if (option) {
+                                            onDensityChange(option.value);
                                         }
                                     }}
                                     className="grid w-full grid-cols-2"

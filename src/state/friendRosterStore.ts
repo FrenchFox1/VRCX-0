@@ -484,7 +484,7 @@ const initialState: FriendRosterState = {
 
 export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
     ...initialState,
-    setRosterLoading(currentUserId: unknown, detail = '') {
+    setRosterLoading(currentUserId: string, detail = '') {
         set((state) => {
             const normalizedCurrentUserId =
                 normalizeUserId(currentUserId) || null;
@@ -748,7 +748,7 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
             return nextState;
         });
     },
-    removeFriend(userId: unknown, detail = '') {
+    removeFriend(userId: string, detail = '') {
         set((state) => {
             const normalizedUserId = normalizeUserId(userId);
             if (!normalizedUserId || !state.friendsById[normalizedUserId]) {

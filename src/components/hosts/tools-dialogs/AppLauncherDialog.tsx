@@ -63,6 +63,19 @@ import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 const MAX_LAUNCH_DELAY_SECONDS = 4_294_967_295;
 const EMPTY_APP_LAUNCHER_ENTRIES: AppLauncherEntry[] = [];
+const APP_LAUNCHER_SCOPES: AppLauncherEntry['scope'][] = [
+    'all',
+    'desktop',
+    'vr'
+];
+const APP_LAUNCHER_RUN_POLICIES: AppLauncherEntry['runPolicy'][] = [
+    'always',
+    'skipIfRunning'
+];
+const APP_LAUNCHER_STOP_POLICIES: AppLauncherEntry['stopPolicy'][] = [
+    'keepRunning',
+    'closeByVrcx'
+];
 
 type AppLauncherDialogProps = {
     open: boolean;
@@ -100,7 +113,7 @@ function createDefaultEntry(
 
 function normalizeEntry(entry: AppLauncherEntry): AppLauncherEntry {
     const runAsAdministrator =
-        entry.kind === 'localApp' && Boolean(entry.runAsAdministrator);
+        entry.kind === 'localApp' && entry.runAsAdministrator;
     return {
         ...entry,
         name: entry.name.trim(),
@@ -122,7 +135,7 @@ function normalizeEntry(entry: AppLauncherEntry): AppLauncherEntry {
     };
 }
 
-function normalizeLaunchDelaySeconds(value: unknown): number {
+function normalizeLaunchDelaySeconds(value: string | number): number {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) {
         return 0;
@@ -155,7 +168,7 @@ function applyPickedTarget(
         runAsAdministrator:
             picked.kind === 'localApp' &&
             entry.kind === 'localApp' &&
-            Boolean(entry.runAsAdministrator),
+            entry.runAsAdministrator,
         processName: picked.processName ?? '',
         workingDirectory:
             picked.kind === 'localApp' ? picked.workingDirectory : null
@@ -390,7 +403,7 @@ export function AppLauncherDialog({
                 <div className="flex shrink-0 flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
                         <Switch
-                            checked={Boolean(snapshot?.enabled)}
+                            checked={snapshot?.enabled ?? false}
                             disabled={loading || saving}
                             onCheckedChange={updateEnabled}
                         />
@@ -757,21 +770,21 @@ function EntryDetailsPanel({
                     <ToggleField
                         label={t('dialog.app_launcher.scope')}
                         value={entry.scope}
-                        options={['all', 'desktop', 'vr'].map((value) => ({
+                        options={APP_LAUNCHER_SCOPES.map((value) => ({
                             value,
                             label: t(`dialog.app_launcher.scope_${value}`)
                         }))}
                         onValueChange={(scope) =>
                             onChange({
                                 ...entry,
-                                scope: scope as AppLauncherEntry['scope']
+                                scope
                             })
                         }
                     />
                     <ToggleField
                         label={t('dialog.app_launcher.run')}
                         value={entry.runPolicy}
-                        options={['always', 'skipIfRunning'].map((value) => ({
+                        options={APP_LAUNCHER_RUN_POLICIES.map((value) => ({
                             value,
                             label: t(
                                 `dialog.app_launcher.run_policy_short_${value}`
@@ -780,8 +793,7 @@ function EntryDetailsPanel({
                         onValueChange={(runPolicy) =>
                             onChange({
                                 ...entry,
-                                runPolicy:
-                                    runPolicy as AppLauncherEntry['runPolicy']
+                                runPolicy
                             })
                         }
                     />
@@ -791,19 +803,16 @@ function EntryDetailsPanel({
                             stopPolicyLocked ? 'keepRunning' : entry.stopPolicy
                         }
                         disabled={stopPolicyLocked}
-                        options={['keepRunning', 'closeByVrcx'].map(
-                            (value) => ({
-                                value,
-                                label: t(
-                                    `dialog.app_launcher.stop_policy_short_${value}`
-                                )
-                            })
-                        )}
+                        options={APP_LAUNCHER_STOP_POLICIES.map((value) => ({
+                            value,
+                            label: t(
+                                `dialog.app_launcher.stop_policy_short_${value}`
+                            )
+                        }))}
                         onValueChange={(stopPolicy) =>
                             onChange({
                                 ...entry,
-                                stopPolicy:
-                                    stopPolicy as AppLauncherEntry['stopPolicy']
+                                stopPolicy
                             })
                         }
                     />
@@ -869,7 +878,7 @@ function EntryDetailsPanel({
     );
 }
 
-function ToggleField({
+function ToggleField<Value extends string>({
     label,
     value,
     options,
@@ -877,10 +886,10 @@ function ToggleField({
     onValueChange
 }: {
     label: string;
-    value: string;
-    options: Array<{ value: string; label: string }>;
+    value: Value;
+    options: ReadonlyArray<{ value: Value; label: string }>;
     disabled?: boolean;
-    onValueChange: (value: string) => void;
+    onValueChange: (value: Value) => void;
 }) {
     return (
         <Field data-disabled={disabled || undefined}>
@@ -892,8 +901,11 @@ function ToggleField({
                 disabled={disabled}
                 className="w-full"
                 onValueChange={(next) => {
-                    if (next[0]) {
-                        onValueChange(next[0]);
+                    const selected = options.find(
+                        (option) => option.value === next[0]
+                    );
+                    if (selected) {
+                        onValueChange(selected.value);
                     }
                 }}
             >

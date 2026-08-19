@@ -1,8 +1,14 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
 
 import type { DataDirMigrationStatus } from '@/services/dataDirMigrationService';
 import type { ProfileBackupStatus } from '@/services/profileBackupService';
-import type { VrcStatusState } from '@/state/runtimeStore';
+import type {
+    FriendProfileLoadState,
+    InstanceQueueState,
+    MutualGraphState,
+    NowPlayingState,
+    VrcStatusState
+} from '@/state/runtimeStore';
 
 export type StatusBarVisibilityKey =
     | 'vrchat'
@@ -28,30 +34,23 @@ export type StatusBarTimezoneOption = {
     label: string;
 };
 
-export type StatusBarInstanceQueue = {
-    active?: unknown;
-    instanceLocation?: unknown;
-    label?: ReactNode;
-    position?: unknown;
-    queueSize?: unknown;
-    updatedAt?: unknown;
-};
+export type StatusBarInstanceQueue = InstanceQueueState;
 
-export type StatusBarMutualGraph = {
-    cancelRequested?: unknown;
-    failedFriends?: unknown;
-    lastError?: unknown;
-    processedFriends?: unknown;
-    runId?: unknown;
-    status?: unknown;
-    totalFriends?: unknown;
-};
+export type StatusBarMutualGraph = Pick<
+    MutualGraphState,
+    | 'cancelRequested'
+    | 'failedFriends'
+    | 'lastError'
+    | 'processedFriends'
+    | 'runId'
+    | 'status'
+    | 'totalFriends'
+>;
 
-export type StatusBarFriendProfileLoad = {
-    processedFriends?: unknown;
-    status?: unknown;
-    totalFriends?: unknown;
-};
+export type StatusBarFriendProfileLoad = Pick<
+    FriendProfileLoadState,
+    'processedFriends' | 'status' | 'totalFriends'
+>;
 
 export type StatusBarWorldCollectionImport = {
     active: boolean;
@@ -68,13 +67,10 @@ export type StatusBarDataDirMigration = {
     status: DataDirMigrationStatus;
 };
 
-export type StatusBarNowPlaying = {
-    length?: unknown;
-    name?: string | null;
-    position?: unknown;
-    startedAt?: string | null;
-    url?: string | null;
-};
+export type StatusBarNowPlaying = Pick<
+    NowPlayingState,
+    'length' | 'name' | 'position' | 'startedAt' | 'url'
+>;
 
 export type StatusBarRuntimeGameState = {
     currentLocationStartedAt?: string | null;
@@ -104,9 +100,9 @@ export type StatusBarFooterModel = {
     currentWorld: string;
     dataDirMigration: StatusBarDataDirMigration;
     formatAppUptime: (ms: number) => string;
-    formatClock: (nowMs: number, offset: unknown) => string;
-    formatDuration: (ms: unknown) => string;
-    formatStatusDate: (value: unknown) => string;
+    formatClock: (nowMs: number, offset: number) => string;
+    formatDuration: (ms: number) => string;
+    formatStatusDate: (value: string | null | undefined) => string;
     gameStartedAt: number;
     instanceQueue: StatusBarInstanceQueue;
     isGameRunning: boolean | null;
@@ -114,19 +110,19 @@ export type StatusBarFooterModel = {
     friendProfileLoad: StatusBarFriendProfileLoad;
     mutualGraph: StatusBarMutualGraph;
     nowPlaying: StatusBarNowPlaying;
-    onOpenMediaLink: () => unknown;
-    onOpenStatusPage: () => unknown;
-    onProxyDraftEnabledChange: (enabled: boolean) => unknown;
-    onProxyDraftServerChange: (server: string) => unknown;
-    onProxyEditorOpenChange: (open: boolean) => unknown;
-    onProxySave: () => unknown;
-    onProxySaveAndRestart: () => unknown;
-    onProxyTest: () => unknown;
-    onSetClockPopoverValue: (index: number, open: boolean) => unknown;
-    onSetZoomLevel: (nextZoom: number) => unknown;
-    onStartBackgroundMode: () => unknown;
-    onStepZoomLevel: (delta: number) => unknown;
-    onUpdateClockTimezone: (index: number, offsetValue: unknown) => unknown;
+    onOpenMediaLink: () => void;
+    onOpenStatusPage: () => Promise<void>;
+    onProxyDraftEnabledChange: (enabled: boolean) => void;
+    onProxyDraftServerChange: (server: string) => void;
+    onProxyEditorOpenChange: (open: boolean) => void;
+    onProxySave: () => void;
+    onProxySaveAndRestart: () => void;
+    onProxyTest: () => Promise<void>;
+    onSetClockPopoverValue: (index: number, open: boolean) => void;
+    onSetZoomLevel: (nextZoom: number) => void;
+    onStartBackgroundMode: () => void;
+    onStepZoomLevel: (delta: number) => void;
+    onUpdateClockTimezone: (index: number, offsetValue: string | null) => void;
     proxyEditor: StatusBarProxyEditorState;
     profileBackup: StatusBarProfileBackup;
     proxyEnabled: boolean;
@@ -141,7 +137,7 @@ export type StatusBarFooterModel = {
         VrcStatusState,
         'summary' | 'status' | 'refreshing' | 'error' | 'lastFetchedAt'
     > & {
-        indicator?: unknown;
+        indicator: string;
     };
     zoomLabel: string;
     zoomLevel: number;
@@ -156,6 +152,6 @@ export type StatusFormatterProps = {
 };
 
 export type DurationValueProps = StatusFormatterProps & {
-    active: unknown;
-    startAtMs: unknown;
+    active: boolean | null;
+    startAtMs: number;
 };

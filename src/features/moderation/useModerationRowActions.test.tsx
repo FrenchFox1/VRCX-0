@@ -67,7 +67,6 @@ describe('useModerationRowActions', () => {
         );
         const { result } = renderHook(() =>
             useModerationRowActions({
-                rows: [],
                 setDetail: vi.fn(),
                 setRows: vi.fn()
             })

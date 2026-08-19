@@ -1,7 +1,14 @@
 import { MINUTE_MS, MINUTES_PER_DAY } from '@/shared/constants/time';
 
 const STORAGE_KEY = 'VRCX_recentActions';
-const TRACKED_ACTIONS = new Set([
+export type RecentActionType =
+    | 'Send Friend Request'
+    | 'Request Invite'
+    | 'Invite'
+    | 'Request Invite Message'
+    | 'Invite Message';
+
+const TRACKED_ACTIONS: ReadonlySet<string> = new Set<RecentActionType>([
     'Send Friend Request',
     'Request Invite',
     'Invite',
@@ -67,12 +74,10 @@ function writeActions(actions: Record<string, number>): void {
     }
 }
 
-function actionKey(userId: unknown, actionType: unknown): string {
+function actionKey(userId: unknown, actionType: string): string {
     const normalizedUserId = normalizeUserId(userId);
-    const normalizedActionType =
-        typeof actionType === 'string' ? actionType : '';
-    return normalizedUserId && TRACKED_ACTIONS.has(normalizedActionType)
-        ? `${normalizedUserId}:${normalizedActionType}`
+    return normalizedUserId && TRACKED_ACTIONS.has(actionType)
+        ? `${normalizedUserId}:${actionType}`
         : '';
 }
 
@@ -89,7 +94,7 @@ export function configureRecentActionCooldown({
     enabled: boolean;
     minutes: number;
 } {
-    cooldownEnabled = Boolean(enabled);
+    cooldownEnabled = enabled ?? false;
     if (minutes !== undefined) {
         cooldownMinutes = normalizeMinutes(minutes);
     }
@@ -104,7 +109,7 @@ export function readRecentActionCooldown(): {
     return { enabled: cooldownEnabled, minutes: cooldownMinutes };
 }
 
-export function recordRecentAction(userId: unknown, actionType: unknown): void {
+export function recordRecentAction(userId: unknown, actionType: string): void {
     const key = actionKey(userId, actionType);
     if (!key) {
         return;
@@ -117,7 +122,7 @@ export function recordRecentAction(userId: unknown, actionType: unknown): void {
     notifyRecentActionListeners();
 }
 
-export function isActionRecent(userId: unknown, actionType: unknown): boolean {
+export function isActionRecent(userId: unknown, actionType: string): boolean {
     if (!cooldownEnabled) {
         return false;
     }
@@ -145,13 +150,9 @@ export function clearRecentActions(): void {
     notifyRecentActionListeners();
 }
 
-export function subscribeRecentActions(listener: unknown): () => void {
-    if (typeof listener !== 'function') {
-        return () => {};
-    }
-    const callback = listener as () => void;
-    listeners.add(callback);
+export function subscribeRecentActions(listener: () => void): () => void {
+    listeners.add(listener);
     return () => {
-        listeners.delete(callback);
+        listeners.delete(listener);
     };
 }

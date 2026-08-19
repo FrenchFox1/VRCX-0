@@ -175,15 +175,16 @@ describe('SettingsNotificationsTab', () => {
     });
 
     it('enables automatic TTS details when delivery is active', () => {
+        const props = createProps();
         render(
             <SettingsNotificationsTab
-                {...createProps({
-                    prefs: {
-                        notificationTTS: 'Always',
-                        notificationTTSNameMode: 'username',
-                        notificationTTSVoiceNative: ''
-                    }
-                })}
+                {...props}
+                prefs={{
+                    ...props.prefs,
+                    notificationTTS: 'Always',
+                    notificationTTSNameMode: 'username',
+                    notificationTTSVoiceNative: ''
+                }}
             />
         );
 

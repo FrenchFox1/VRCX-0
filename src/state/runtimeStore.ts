@@ -36,7 +36,7 @@ type TransportState = {
     lastDisconnectedAt: string | null;
 };
 
-type MutualGraphState = Omit<
+export type MutualGraphState = Omit<
     MutualGraphFetchStatus,
     'startedAt' | 'updatedAt'
 > & {
@@ -62,12 +62,24 @@ export type FriendProfileLoadState = {
     finishedAt: string | null;
 };
 
-type InstanceQueueState = {
+export type InstanceQueueState = {
     active: boolean;
     instanceLocation: string;
     position: number;
     queueSize: number;
     label: string;
+    updatedAt: string | null;
+};
+
+export type NowPlayingState = {
+    url: string | null;
+    name: string | null;
+    source: string | null;
+    displayName: string | null;
+    thumbnailUrl: string | null;
+    length: number | null;
+    position: number;
+    startedAt: string | null;
     updatedAt: string | null;
 };
 
@@ -179,17 +191,7 @@ type RuntimeStore = {
         lastScreenshotPath: string;
         lastBrowserFocusAt: string | null;
     };
-    nowPlaying: {
-        url: string | null;
-        name: string | null;
-        source: string | null;
-        displayName: string | null;
-        thumbnailUrl: string | null;
-        length: number | null;
-        position: number;
-        startedAt: string | null;
-        updatedAt: string | null;
-    };
+    nowPlaying: NowPlayingState;
     instanceQueue: InstanceQueueState;
     vrcStatus: VrcStatusState;
     groupInstances: GroupInstancesState;

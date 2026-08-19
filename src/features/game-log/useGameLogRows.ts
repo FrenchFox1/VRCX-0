@@ -106,9 +106,7 @@ export function useGameLogRows({
         const favoriteUserIds = favoritesOnly ? Array.from(favoriteIdSet) : [];
         setLoadStatus('running');
         setDetail('');
-        gameLogRepository[
-            viewMode === 'sessions' ? 'queryLatestSessions' : 'queryGameLog'
-        ]({
+        const query = {
             currentUserId,
             search: deferredSearchQuery,
             filters,
@@ -116,43 +114,43 @@ export function useGameLogRows({
             dateFrom: viewMode === 'sessions' ? sessionDateFrom : '',
             dateTo: viewMode === 'sessions' ? sessionDateTo : '',
             limit: viewMode === 'sessions' ? sessionLimit : undefined
-        })
-            .then((nextResult: unknown) => {
+        };
+        const loadRows = async () => {
+            if (viewMode === 'sessions') {
+                const nextSessions =
+                    await gameLogRepository.queryLatestSessions(query);
                 if (requestIdRef.current !== requestId) {
                     return;
                 }
-                if (viewMode === 'sessions') {
-                    setSessions(
-                        Array.isArray(nextResult)
-                            ? (nextResult as GameLogSession[])
-                            : []
-                    );
-                    setRows([]);
-                } else {
-                    setRows(
-                        Array.isArray(nextResult)
-                            ? (nextResult as GameLogRow[])
-                            : []
-                    );
-                    setSessions([]);
-                }
-                setLoadStatus('ready');
-                setDetail('');
-            })
-            .catch((error: unknown) => {
-                if (requestIdRef.current !== requestId) {
-                    return;
-                }
+                setSessions(nextSessions);
                 setRows([]);
-                setSessions([]);
-                setLoadStatus('error');
-                setDetail(
-                    userFacingErrorMessage(
-                        error,
-                        t('view.game_log.error.game_log_failed_to_load')
-                    )
+            } else {
+                const nextRows = await gameLogRepository.queryGameLog(query);
+                if (requestIdRef.current !== requestId) {
+                    return;
+                }
+                setRows(
+                    Array.isArray(nextRows) ? (nextRows as GameLogRow[]) : []
                 );
-            });
+                setSessions([]);
+            }
+            setLoadStatus('ready');
+            setDetail('');
+        };
+        void loadRows().catch((error: unknown) => {
+            if (requestIdRef.current !== requestId) {
+                return;
+            }
+            setRows([]);
+            setSessions([]);
+            setLoadStatus('error');
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    t('view.game_log.error.game_log_failed_to_load')
+                )
+            );
+        });
     }, [
         throttledGameLogEventCount,
         currentUserId,

@@ -49,7 +49,7 @@ export function SettingsDialogs() {
     const tablePageSizes = {
         open: dialogs.tablePageSizesDialogOpen,
         setOpen: dialogs.setTablePageSizesDialogOpen,
-        onSaved: (tablePageSizes: unknown) =>
+        onSaved: (tablePageSizes: number[]) =>
             dialogs.setPrefs((current) => ({ ...current, tablePageSizes }))
     };
     const tableLimits = {

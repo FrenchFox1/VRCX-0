@@ -182,7 +182,7 @@ export function McpServerSettingsGroup() {
                 )}
             >
                 <Switch
-                    checked={Boolean(mcpStatus?.enabled)}
+                    checked={mcpStatus?.enabled ?? false}
                     disabled={mcpBusy}
                     onCheckedChange={setMcpEnabled}
                 />
@@ -197,7 +197,7 @@ export function McpServerSettingsGroup() {
                 )}
             >
                 <Switch
-                    checked={Boolean(mcpStatus?.allowLanConnections)}
+                    checked={mcpStatus?.allowLanConnections ?? false}
                     disabled={mcpBusy}
                     onCheckedChange={setMcpAllowLanConnections}
                 />
@@ -212,7 +212,7 @@ export function McpServerSettingsGroup() {
                 )}
             >
                 <Switch
-                    checked={Boolean(mcpStatus?.allowVrchatWrites)}
+                    checked={mcpStatus?.allowVrchatWrites ?? false}
                     disabled={mcpBusy || !mcpStatus?.enabled}
                     onCheckedChange={setMcpAllowVrchatWrites}
                 />

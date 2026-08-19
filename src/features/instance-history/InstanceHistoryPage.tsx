@@ -692,16 +692,14 @@ export function InstanceHistoryPage({
                                                 )}
                                             </FieldLabel>
                                         </FieldContent>
-                                        <Select
+                                        <Select<InstanceHistorySortKey>
                                             value={sortKey}
                                             items={sortItems}
-                                            onValueChange={(value) =>
-                                                selectSort(
-                                                    (value ??
-                                                        'date') as InstanceHistorySortKey,
-                                                    sortDesc
-                                                )
-                                            }
+                                            onValueChange={(value) => {
+                                                if (value) {
+                                                    selectSort(value, sortDesc);
+                                                }
+                                            }}
                                         >
                                             <SelectTrigger className="w-full">
                                                 <SelectValue />

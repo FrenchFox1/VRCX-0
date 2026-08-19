@@ -124,13 +124,13 @@ export type FriendRosterState = FriendRosterSnapshot & {
 };
 
 export type FriendRosterStore = FriendRosterState & {
-    setRosterLoading(currentUserId: unknown, detail?: string): void;
+    setRosterLoading(currentUserId: string, detail?: string): void;
     setRosterReady(detail?: string): void;
     setRosterSeedSnapshot(snapshot: FriendRosterSeedSnapshot): void;
     setRosterSnapshot(snapshot: FriendRosterSnapshotInput): void;
     setRosterError(detail: string): void;
     applyFriendPatch(entry: FriendPatchEntry & { detail?: string }): void;
     applyFriendPatches(patches?: FriendPatchEntry[], detail?: string): void;
-    removeFriend(userId: unknown, detail?: string): void;
+    removeFriend(userId: string, detail?: string): void;
     resetRoster(): void;
 };

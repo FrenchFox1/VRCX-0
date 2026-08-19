@@ -1,9 +1,11 @@
 import { useShallow } from 'zustand/react/shallow';
 
-import { usePreferencesStore } from '@/state/preferencesStore';
+import {
+    type PreferencesSnapshot,
+    usePreferencesStore
+} from '@/state/preferencesStore';
 
 import { useSettingsPageSection } from '../SettingsPageStateContext';
-import { normalizeCheckedState } from '../settingsValues';
 
 function secondsInputToMilliseconds(
     value: unknown,
@@ -65,7 +67,7 @@ export function useSettingsVrTabState() {
         saveWristOverlayEnabled
     } = vr;
 
-    const saveNotificationTimeoutSeconds = (value: unknown) => {
+    const saveNotificationTimeoutSeconds = (value: string) => {
         const milliseconds = secondsInputToMilliseconds(value, 0, 600000, 3000);
         savePreferenceValue('notificationTimeout', milliseconds, () =>
             setIntConfigPreference('notificationTimeout', milliseconds, {
@@ -76,7 +78,7 @@ export function useSettingsVrTabState() {
         );
     };
 
-    const saveNotificationOpacity = (value: unknown) => {
+    const saveNotificationOpacity = (value: number) => {
         const opacity = roundedBoundedNumber(value, 0, 100, 100);
         savePreferenceValue('notificationOpacity', opacity, () =>
             setIntConfigPreference('notificationOpacity', opacity, {
@@ -87,7 +89,7 @@ export function useSettingsVrTabState() {
         );
     };
 
-    const saveHmdNotificationTimeoutSeconds = (value: unknown) => {
+    const saveHmdNotificationTimeoutSeconds = (value: string) => {
         const milliseconds = secondsInputToMilliseconds(
             value,
             1000,
@@ -103,7 +105,7 @@ export function useSettingsVrTabState() {
         );
     };
 
-    const saveHmdNotificationOpacity = (value: unknown) => {
+    const saveHmdNotificationOpacity = (value: number) => {
         const opacity = roundedBoundedNumber(value, 0, 100, 100);
         savePreferenceValue('hmdNotificationOpacity', opacity, () =>
             setIntConfigPreference('hmdNotificationOpacity', opacity, {
@@ -116,28 +118,24 @@ export function useSettingsVrTabState() {
 
     return {
         prefs,
-        onXsNotificationsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onXsNotificationsChange: (enabled: boolean) => {
             saveBoolPreference('xsNotifications', 'xsNotifications', enabled);
         },
-        onOvrtHudNotificationsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onOvrtHudNotificationsChange: (enabled: boolean) => {
             saveBoolPreference(
                 'ovrtHudNotifications',
                 'ovrtHudNotifications',
                 enabled
             );
         },
-        onOvrtWristNotificationsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onOvrtWristNotificationsChange: (enabled: boolean) => {
             saveBoolPreference(
                 'ovrtWristNotifications',
                 'ovrtWristNotifications',
                 enabled
             );
         },
-        onImageNotificationsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onImageNotificationsChange: (enabled: boolean) => {
             saveBoolPreference(
                 'imageNotifications',
                 'imageNotifications',
@@ -148,8 +146,7 @@ export function useSettingsVrTabState() {
         onNotificationOpacityChange: saveNotificationOpacity,
         onOpenVrNotificationFiltersDialog: () =>
             setVrNotificationsDialogOpen(true),
-        onHmdNotificationsEnabledChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onHmdNotificationsEnabledChange: (enabled: boolean) => {
             saveBoolPreference(
                 'hmdNotificationsEnabled',
                 'hmdNotificationsEnabled',
@@ -159,14 +156,18 @@ export function useSettingsVrTabState() {
         onHmdNotificationTimeoutSecondsChange:
             saveHmdNotificationTimeoutSeconds,
         onHmdNotificationOpacityChange: saveHmdNotificationOpacity,
-        onHmdNotificationStartModeChange: (value: string) => {
+        onHmdNotificationStartModeChange: (
+            value: PreferencesSnapshot['hmdNotificationStartMode']
+        ) => {
             saveStringPreference(
                 'hmdNotificationStartMode',
                 'hmdNotificationStartMode',
                 value
             );
         },
-        onHmdNotificationPositionChange: (value: string) => {
+        onHmdNotificationPositionChange: (
+            value: PreferencesSnapshot['hmdNotificationPosition']
+        ) => {
             saveStringPreference(
                 'hmdNotificationPosition',
                 'hmdNotificationPosition',
@@ -175,54 +176,57 @@ export function useSettingsVrTabState() {
         },
         onOpenHmdNotificationFiltersDialog: () =>
             setHmdNotificationsDialogOpen(true),
-        onWristOverlayEnabledChange: (checked: unknown) =>
-            saveWristOverlayEnabled(normalizeCheckedState(checked)),
-        onWristOverlayStartModeChange: (value: string) => {
+        onWristOverlayEnabledChange: saveWristOverlayEnabled,
+        onWristOverlayStartModeChange: (
+            value: PreferencesSnapshot['wristOverlayStartMode']
+        ) => {
             saveStringPreference(
                 'wristOverlayStartMode',
                 'wristOverlayStartMode',
                 value
             );
         },
-        onWristOverlayButtonChange: (value: string) => {
+        onWristOverlayButtonChange: (
+            value: PreferencesSnapshot['wristOverlayButton']
+        ) => {
             saveStringPreference(
                 'wristOverlayButton',
                 'wristOverlayButton',
                 value
             );
         },
-        onWristOverlayHandChange: (value: string) => {
+        onWristOverlayHandChange: (
+            value: PreferencesSnapshot['wristOverlayHand']
+        ) => {
             saveStringPreference('wristOverlayHand', 'wristOverlayHand', value);
         },
-        onWristOverlaySizeChange: (value: string) => {
+        onWristOverlaySizeChange: (
+            value: PreferencesSnapshot['wristOverlaySize']
+        ) => {
             saveStringPreference('wristOverlaySize', 'wristOverlaySize', value);
         },
-        onWristOverlayDarkBackgroundChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onWristOverlayDarkBackgroundChange: (enabled: boolean) => {
             saveBoolPreference(
                 'wristOverlayDarkBackground',
                 'wristOverlayDarkBackground',
                 enabled
             );
         },
-        onWristOverlayHidePrivateWorldsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onWristOverlayHidePrivateWorldsChange: (enabled: boolean) => {
             saveBoolPreference(
                 'wristOverlayHidePrivateWorlds',
                 'wristOverlayHidePrivateWorlds',
                 enabled
             );
         },
-        onWristOverlayShowDevicesChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onWristOverlayShowDevicesChange: (enabled: boolean) => {
             saveBoolPreference(
                 'wristOverlayShowDevices',
                 'wristOverlayShowDevices',
                 enabled
             );
         },
-        onWristOverlayShowBatteryPercentChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onWristOverlayShowBatteryPercentChange: (enabled: boolean) => {
             saveBoolPreference(
                 'wristOverlayShowBatteryPercent',
                 'wristOverlayShowBatteryPercent',

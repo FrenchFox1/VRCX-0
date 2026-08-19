@@ -46,10 +46,7 @@ export function useModerationRows({
                 if (!active) {
                     return;
                 }
-                const nextRows = Array.isArray(response?.rows)
-                    ? response.rows
-                    : [];
-                setRows(nextRows);
+                setRows(response.rows);
                 setLoadStatus('ready');
                 setDetail('');
             })

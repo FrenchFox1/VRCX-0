@@ -4,7 +4,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 import { useSettingsPageSection } from '../SettingsPageStateContext';
-import { normalizeCheckedState } from '../settingsValues';
 
 export function useSettingsNotificationsTabState() {
     const { t } = useTranslation();
@@ -53,12 +52,10 @@ export function useSettingsNotificationsTabState() {
         onDesktopToastChange: (value: string) => {
             saveStringPreference('desktopToast', 'desktopToast', value);
         },
-        onAfkDesktopToastChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAfkDesktopToastChange: (enabled: boolean) => {
             saveBoolPreference('afkDesktopToast', 'afkDesktopToast', enabled);
         },
-        onDesktopNotificationSoundChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onDesktopNotificationSoundChange: (enabled: boolean) => {
             saveBoolPreference(
                 'desktopNotificationSound',
                 'desktopNotificationSound',
@@ -80,14 +77,12 @@ export function useSettingsNotificationsTabState() {
         },
         onNotificationTtsTestVisibleChange: setNotificationTtsTestVisible,
         onNotificationTtsTestChange: setNotificationTtsTest,
-        onSpeakNotificationTts: (message: unknown) =>
+        onSpeakNotificationTts: (message: string) =>
             speakNotificationTts(
-                String(
-                    message ||
-                        t(
-                            'view.settings.notifications.notifications.text_to_speech.tts_test_placeholder'
-                        )
-                )
+                message ||
+                    t(
+                        'view.settings.notifications.notifications.text_to_speech.tts_test_placeholder'
+                    )
             )
     };
 }
