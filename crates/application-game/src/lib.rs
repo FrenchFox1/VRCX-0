@@ -43,10 +43,11 @@ pub use game_log::{
     player_list_current_snapshot, world_id_from_location, GameLogHostActions, GameLogIngestEngine,
     GameLogIngestOptions, GameLogIngestOutput, GameLogLocalGameContextSource, GameLogProcessEvent,
     GameLogProjection, GameLogRuntime, GameLogRuntimeDeps, GameLogRuntimeState, GameLogSessionDto,
-    GameLogSessionEventDto, GameLogSessionMemberDto, GameLogSessionsQueryInput, GameLogSideEffect,
-    InstanceHistoryEntryOutput, InstanceHistoryQueryInput, NoopGameLogHostActions,
-    PlayerListSnapshotContext, PlayerListSnapshotOutput, PlayerListSnapshotPlayer,
-    PlayerListSnapshotSource, PlayerState, RuntimeSnapshot, ScreenshotInput,
+    GameLogSessionEventDto, GameLogSessionMemberDto, GameLogSessionPlayerDurationRowDto,
+    GameLogSessionsQueryInput, GameLogSideEffect, InstanceHistoryEntryOutput,
+    InstanceHistoryQueryInput, NoopGameLogHostActions, PlayerListSnapshotContext,
+    PlayerListSnapshotOutput, PlayerListSnapshotPlayer, PlayerListSnapshotSource, PlayerState,
+    RuntimeSnapshot, ScreenshotInput,
 };
 pub use game_log_parser::GameLogEvent;
 pub use game_log_watcher::{

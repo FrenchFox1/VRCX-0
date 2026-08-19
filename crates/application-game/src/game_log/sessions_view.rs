@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,8 @@ use vrcx_0_core::game_log_sessions::{
 use vrcx_0_core::text::contains_lowercase_query_case_insensitive;
 use vrcx_0_persistence::game_log::{
     get_session_events_for_range, get_session_location_segments,
-    get_session_location_segments_by_date_range, SessionLocationSegmentRow,
+    get_session_location_segments_by_date_range, get_session_player_duration_rows,
+    SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 use vrcx_0_persistence::DatabaseService;
 
@@ -100,6 +101,14 @@ pub struct GameLogSessionEventDto {
 
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+pub struct GameLogSessionPlayerDurationRowDto {
+    pub display_name: String,
+    pub user_id: String,
+    pub time: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct GameLogSessionDto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
@@ -110,7 +119,18 @@ pub struct GameLogSessionDto {
     pub world_name: String,
     pub group_name: String,
     pub duration: Option<i64>,
+    pub player_duration_rows: Vec<GameLogSessionPlayerDurationRowDto>,
     pub events: Vec<GameLogSessionEventDto>,
+}
+
+impl From<SessionPlayerDurationRow> for GameLogSessionPlayerDurationRowDto {
+    fn from(row: SessionPlayerDurationRow) -> Self {
+        Self {
+            display_name: row.display_name,
+            user_id: row.user_id,
+            time: row.time,
+        }
+    }
 }
 
 impl From<SessionMemberOut> for GameLogSessionMemberDto {
@@ -146,8 +166,11 @@ impl From<SessionEventOut> for GameLogSessionEventDto {
     }
 }
 
-impl From<SessionSegmentOut> for GameLogSessionDto {
-    fn from(segment: SessionSegmentOut) -> Self {
+impl GameLogSessionDto {
+    fn from_segment(
+        segment: SessionSegmentOut,
+        player_duration_rows: Vec<GameLogSessionPlayerDurationRowDto>,
+    ) -> Self {
         Self {
             id: segment.id,
             created_at: segment.created_at,
@@ -156,6 +179,7 @@ impl From<SessionSegmentOut> for GameLogSessionDto {
             world_name: segment.world_name,
             group_name: segment.group_name,
             duration: segment.duration,
+            player_duration_rows,
             events: segment.events.into_iter().map(Into::into).collect(),
         }
     }
@@ -552,7 +576,29 @@ pub fn game_log_sessions_query(
         filtered
     };
 
-    Ok(segments.into_iter().map(GameLogSessionDto::from).collect())
+    let locations = segments
+        .iter()
+        .map(|segment| segment.location.clone())
+        .collect::<Vec<_>>();
+    let mut duration_rows_by_location: HashMap<String, Vec<GameLogSessionPlayerDurationRowDto>> =
+        HashMap::new();
+    for row in get_session_player_duration_rows(db, owner_user_id, &locations).unwrap_or_default() {
+        duration_rows_by_location
+            .entry(row.location.clone())
+            .or_default()
+            .push(row.into());
+    }
+
+    Ok(segments
+        .into_iter()
+        .map(|segment| {
+            let player_duration_rows = duration_rows_by_location
+                .get(&segment.location)
+                .cloned()
+                .unwrap_or_default();
+            GameLogSessionDto::from_segment(segment, player_duration_rows)
+        })
+        .collect())
 }
 
 #[cfg(test)]

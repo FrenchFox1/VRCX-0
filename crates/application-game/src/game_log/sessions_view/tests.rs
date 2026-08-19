@@ -70,6 +70,24 @@ fn join(
     }
 }
 
+fn leave(
+    created_at: &str,
+    display_name: &str,
+    location: &str,
+    user_id: &str,
+    time: i64,
+) -> GameLogJoinLeaveEntry {
+    GameLogJoinLeaveEntry {
+        created_at: created_at.to_string(),
+        event_type: "OnPlayerLeft".to_string(),
+        display_name: display_name.to_string(),
+        location: location.to_string(),
+        user_id: user_id.to_string(),
+        world_name: String::new(),
+        time,
+    }
+}
+
 fn video(created_at: &str, url: &str, location: &str) -> GameLogVideoPlayEntry {
     GameLogVideoPlayEntry {
         created_at: created_at.to_string(),
@@ -130,6 +148,55 @@ fn returns_sessions_newest_first_with_video_merge() {
     assert_eq!(sessions[0].events[0].type_, "VideoPlay");
     assert_eq!(sessions[0].events[0].play_count, Some(2));
     assert_eq!(sessions[1].events[0].user_id.as_deref(), Some("usr_a"));
+}
+
+#[test]
+fn returns_every_duration_row_for_the_selected_session_location() {
+    let (_dir, db) = test_db("session-player-duration-rows");
+    let session_location = "wrld_test:1";
+    write_rows(
+        &db,
+        vec![location(
+            "2026-01-01T10:00:00.000Z",
+            session_location,
+            "wrld_test",
+            "Test",
+        )],
+        vec![
+            leave(
+                "2025-01-01T10:01:00.000Z",
+                "Alice",
+                session_location,
+                "usr_alice",
+                60_000,
+            ),
+            leave(
+                "2026-01-01T10:01:00.000Z",
+                "Renamed Alice",
+                session_location,
+                "usr_alice",
+                90_000,
+            ),
+            leave(
+                "2026-01-01T10:02:00.000Z",
+                "Ignored by duration calculation",
+                session_location,
+                "",
+                0,
+            ),
+        ],
+        Vec::new(),
+    );
+
+    let sessions = query(&db, GameLogSessionsQueryInput::default());
+
+    assert_eq!(sessions.len(), 1);
+    assert_eq!(sessions[0].player_duration_rows.len(), 3);
+    assert_eq!(sessions[0].player_duration_rows[0].display_name, "Alice");
+    assert_eq!(sessions[0].player_duration_rows[0].user_id, "usr_alice");
+    assert_eq!(sessions[0].player_duration_rows[0].time, 60_000);
+    assert_eq!(sessions[0].player_duration_rows[1].time, 90_000);
+    assert_eq!(sessions[0].player_duration_rows[2].time, 0);
 }
 
 #[test]

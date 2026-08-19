@@ -4042,6 +4042,7 @@ export type GameLogSessionDto = {
     worldName: string;
     groupName: string;
     duration: number | null;
+    playerDurationRows: GameLogSessionPlayerDurationRowDto[];
     events: GameLogSessionEventDto[];
 };
 export type GameLogSessionEventDto = {
@@ -4064,6 +4065,11 @@ export type GameLogSessionMemberDto = {
     userId: string;
     created_at: string;
     isFavorite: boolean;
+};
+export type GameLogSessionPlayerDurationRowDto = {
+    displayName: string;
+    userId: string;
+    time: number;
 };
 export type GameLogSessionsQueryInput = {
     search?: string;
