@@ -4,6 +4,10 @@ struct TokioThreadCounts {
     max_blocking_threads: usize,
 }
 
+const MIN_WORKER_THREADS: usize = 2;
+const MAX_WORKER_THREADS: usize = 8;
+const MAX_BLOCKING_THREADS: usize = 64;
+
 pub fn recommended_tokio_worker_threads_for(logical_cpus: usize) -> usize {
     recommended_tokio_thread_counts_for(logical_cpus).worker_threads
 }
@@ -21,19 +25,9 @@ pub fn recommended_tokio_max_blocking_threads() -> usize {
 }
 
 fn recommended_tokio_thread_counts_for(logical_cpus: usize) -> TokioThreadCounts {
-    match logical_cpus {
-        0..=2 => TokioThreadCounts {
-            worker_threads: 1,
-            max_blocking_threads: 4,
-        },
-        3..=4 => TokioThreadCounts {
-            worker_threads: 2,
-            max_blocking_threads: 8,
-        },
-        _ => TokioThreadCounts {
-            worker_threads: 4,
-            max_blocking_threads: 16,
-        },
+    TokioThreadCounts {
+        worker_threads: logical_cpus.clamp(MIN_WORKER_THREADS, MAX_WORKER_THREADS),
+        max_blocking_threads: MAX_BLOCKING_THREADS,
     }
 }
 
@@ -48,67 +42,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn thread_counts_follow_logical_cpu_tiers() {
+    fn worker_threads_track_logical_cpus_between_the_floor_and_the_cap() {
         let cases = [
-            (
-                0,
-                TokioThreadCounts {
-                    worker_threads: 1,
-                    max_blocking_threads: 4,
-                },
-            ),
-            (
-                1,
-                TokioThreadCounts {
-                    worker_threads: 1,
-                    max_blocking_threads: 4,
-                },
-            ),
-            (
-                2,
-                TokioThreadCounts {
-                    worker_threads: 1,
-                    max_blocking_threads: 4,
-                },
-            ),
-            (
-                3,
-                TokioThreadCounts {
-                    worker_threads: 2,
-                    max_blocking_threads: 8,
-                },
-            ),
-            (
-                4,
-                TokioThreadCounts {
-                    worker_threads: 2,
-                    max_blocking_threads: 8,
-                },
-            ),
-            (
-                5,
-                TokioThreadCounts {
-                    worker_threads: 4,
-                    max_blocking_threads: 16,
-                },
-            ),
-            (
-                8,
-                TokioThreadCounts {
-                    worker_threads: 4,
-                    max_blocking_threads: 16,
-                },
-            ),
+            (0, MIN_WORKER_THREADS),
+            (1, MIN_WORKER_THREADS),
+            (2, MIN_WORKER_THREADS),
+            (3, 3),
+            (4, 4),
+            (5, 5),
+            (8, MAX_WORKER_THREADS),
+            (16, MAX_WORKER_THREADS),
+            (64, MAX_WORKER_THREADS),
         ];
 
-        for (logical_cpus, expected) in cases {
+        for (logical_cpus, expected_worker_threads) in cases {
             assert_eq!(
                 recommended_tokio_worker_threads_for(logical_cpus),
-                expected.worker_threads
+                expected_worker_threads
             );
+        }
+    }
+
+    #[test]
+    fn blocking_thread_cap_does_not_depend_on_logical_cpus() {
+        for logical_cpus in [0, 1, 2, 4, 8, 64] {
             assert_eq!(
                 recommended_tokio_max_blocking_threads_for(logical_cpus),
-                expected.max_blocking_threads
+                MAX_BLOCKING_THREADS
             );
         }
     }
