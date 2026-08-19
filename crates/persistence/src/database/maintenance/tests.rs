@@ -583,6 +583,52 @@ fn vacuum_runs_once_a_large_delete_leaves_the_file_fragmented() -> Result<(), Er
 }
 
 #[test]
+fn concurrent_reads_survive_a_vacuum_instead_of_failing_busy() -> Result<(), Error> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+
+    let dir = TestDir::new("vacuum-concurrent-read");
+    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+
+    db.execute_non_query(
+        "CREATE TABLE bulk (id INTEGER PRIMARY KEY, blob TEXT)",
+        &Default::default(),
+    )?;
+    db.write_transaction(|tx| {
+        for index in 0..6000 {
+            tx.execute_non_query(
+                "INSERT INTO bulk (blob) VALUES (@blob)",
+                &ParamsBuilder::new()
+                    .set("blob", format!("{index}{}", "x".repeat(2048)))
+                    .build(),
+            )?;
+        }
+        Ok(())
+    })?;
+    db.execute_non_query("DELETE FROM bulk", &Default::default())?;
+
+    let stop_reader = Arc::new(AtomicBool::new(false));
+    let reader_db = Arc::clone(&db);
+    let reader_stop = Arc::clone(&stop_reader);
+    let reader = std::thread::spawn(move || -> Result<usize, Error> {
+        let mut completed_reads = 0;
+        while !reader_stop.load(Ordering::Acquire) {
+            reader_db.execute("SELECT COUNT(*) FROM bulk", &Default::default())?;
+            completed_reads += 1;
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        Ok(completed_reads)
+    });
+
+    assert!(database_vacuum_if_fragmented(&db)?);
+    stop_reader.store(true, Ordering::Release);
+
+    let completed_reads = reader.join().expect("reader thread panicked")?;
+    assert!(completed_reads > 0, "the reader never completed a read");
+    Ok(())
+}
+
+#[test]
 fn page_stats_come_from_a_single_snapshot() -> Result<(), Error> {
     let dir = TestDir::new("vacuum-stats");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;

@@ -2795,7 +2795,6 @@
                         "purge_confirm_description_3": "VRCX-0 将在操作完成后重启。",
                         "purge_confirm_alert": "强烈建议在继续之前备份你的数据库文件！",
                         "purge_confirm_button": "清理 & 重启",
-                        "purge_in_progress": "正在清理模型变动的相关数据",
                         "purge_complete": "模型变动相关数据清理成功。准备重启",
                         "purge_failed": "清理失败: {error}",
                         "purge_optimization_failed": "模型变动相关数据已清理，但数据库压缩失败：{error}",
@@ -5330,6 +5329,8 @@
             "migration_restarting_title": "正在迁移数据",
             "migration_restarting": "VRCX-0 将重新启动以完成迁移工作",
             "upgrade_in_progress_title": "数据库升级进行中",
+            "maintenance_in_progress_title": "数据库维护中",
+            "maintenance_in_progress_description": "正在回收磁盘空间，期间数据库访问会暂停。",
             "upgrade_stage": {
                 "preflight": "正在检查数据库",
                 "prepare_legacy_snapshot": "正在创建 VRCX 数据库的一致性副本",

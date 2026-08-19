@@ -291,6 +291,30 @@ impl DatabaseService {
         }
     }
 
+    pub(crate) fn execute_non_query_exclusive(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, Error> {
+        let inner = self
+            .inner
+            .write()
+            .map_err(|e| Error::Database(e.to_string()))?;
+        match &*inner {
+            DatabaseMode::Main(main) => main.execute_non_query(sql, args),
+            DatabaseMode::Upgrade(upgrade) => {
+                let conn = upgrade
+                    .conn
+                    .lock()
+                    .map_err(|e| Error::Database(e.to_string()))?;
+                execute_non_query_on_connection(&conn, sql, args)
+            }
+            DatabaseMode::Closed => Err(Error::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
+    }
+
     pub(crate) fn execute_non_query(
         &self,
         sql: &str,

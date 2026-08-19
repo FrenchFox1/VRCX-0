@@ -214,7 +214,7 @@ fn run_database_maintenance_task(
             }
         }
         DatabaseMaintenanceTask::Vacuum => {
-            db.execute_non_query("VACUUM", &Default::default())?;
+            db.execute_non_query_exclusive("VACUUM", &Default::default())?;
         }
         DatabaseMaintenanceTask::Optimize => {
             db.execute_non_query("PRAGMA optimize", &Default::default())?;

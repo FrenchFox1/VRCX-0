@@ -243,6 +243,7 @@ type RuntimeStore = {
         failureLogPath: string;
         failedWorkDbPath: string;
     };
+    databaseMaintenanceActive: boolean;
     runtimeEvents: Record<string, RuntimeEventState>;
     backendRuntime: BackendRuntimeSnapshot | null;
     authenticatedSession: AuthenticatedSessionProjection;
@@ -279,6 +280,7 @@ type RuntimeStore = {
     setDatabaseUpgradeState(
         patch: Partial<RuntimeStore['databaseUpgrade']>
     ): void;
+    setDatabaseMaintenanceActive(active: boolean): void;
     resetRuntimeState(): void;
 };
 
@@ -523,6 +525,7 @@ type RuntimeStoreState = Omit<
     | 'setChangelogTargetVersion'
     | 'setSystemHostOpen'
     | 'setDatabaseUpgradeState'
+    | 'setDatabaseMaintenanceActive'
     | 'resetRuntimeState'
 >;
 
@@ -638,6 +641,7 @@ const initialState: RuntimeStoreState = {
         failureLogPath: '',
         failedWorkDbPath: ''
     },
+    databaseMaintenanceActive: false,
     backendRuntime: null,
     authenticatedSession: {
         revision: 0,
@@ -867,6 +871,9 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
                         : state.systemHosts.databaseUpgradeOpen
             }
         }));
+    },
+    setDatabaseMaintenanceActive(active: boolean) {
+        set({ databaseMaintenanceActive: active });
     },
     resetRuntimeState() {
         set(initialState);

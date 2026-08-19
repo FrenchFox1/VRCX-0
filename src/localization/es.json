@@ -2795,7 +2795,6 @@
                         "purge_confirm_description_3": "VRCX-0 se reiniciará cuando finalice la operación.",
                         "purge_confirm_alert": "¡Se recomienda encarecidamente hacer una copia de seguridad del archivo de tu base de datos antes de continuar!",
                         "purge_confirm_button": "Purgar y reiniciar",
-                        "purge_in_progress": "Purgando datos de avatar",
                         "purge_complete": "Datos de avatar purgados correctamente. Reiniciando",
                         "purge_failed": "Error al purgar: {error}",
                         "purge_optimization_failed": "Los datos de avatar se purgaron, pero no se pudo optimizar la base de datos: {error}",
@@ -5330,6 +5329,8 @@
             "migration_restarting_title": "Migrando datos",
             "migration_restarting": "VRCX-0 se reiniciará para completar la migración...",
             "upgrade_in_progress_title": "Actualización de la base de datos en curso",
+            "maintenance_in_progress_title": "Mantenimiento de la base de datos en curso",
+            "maintenance_in_progress_description": "Se está liberando espacio en disco. El acceso a la base de datos se pausa hasta que termine.",
             "upgrade_stage": {
                 "preflight": "Comprobando la base de datos",
                 "prepare_legacy_snapshot": "Creando una copia coherente de la base de datos de VRCX",

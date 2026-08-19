@@ -2797,7 +2797,6 @@
                         "purge_confirm_description_3": "VRCX-0 будет возобновлено после завершения операции.",
                         "purge_confirm_alert": "Прежде чем продолжать работу, настоятельно рекомендуется дополнить файл вашей базы данных!",
                         "purge_confirm_button": "Очистить и возобновить",
-                        "purge_in_progress": "Очистка данных аватара",
                         "purge_complete": "Данные Аватара были успешно очищены.",
                         "purge_failed": "Потерпело неудачу: {error}",
                         "purge_optimization_failed": "Данные аватара удалены, но не удалось оптимизировать базу данных: {error}",
@@ -5334,6 +5333,8 @@
             "migration_restarting_title": "Миграция данных",
             "migration_restarting": "VRCX-0 перезапустится для завершения миграции...",
             "upgrade_in_progress_title": "Идёт обновление базы данных",
+            "maintenance_in_progress_title": "Идёт обслуживание базы данных",
+            "maintenance_in_progress_description": "Освобождается место на диске. Доступ к базе данных приостановлен до завершения.",
             "upgrade_stage": {
                 "preflight": "Проверка базы данных",
                 "prepare_legacy_snapshot": "Создание согласованной копии базы данных VRCX",
