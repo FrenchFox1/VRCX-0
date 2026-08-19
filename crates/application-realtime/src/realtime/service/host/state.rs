@@ -6,7 +6,8 @@ use serde_json::Value;
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{
     HostSessionRuntime, LocalGameContextSource, OverlayActivityInputSink, PrintCleanupInputSink,
-    RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
+    RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor,
+    WebClient, WorldCache,
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_persistence::DatabaseService;
@@ -79,7 +80,6 @@ impl ScopedFriendLogMutation {
             FriendLogMutation::Upsert { record } => {
                 let record = *record;
                 let user_id = record.id.clone();
-                let state_bucket = record.state_bucket.clone();
                 pending
                     .friends_by_id
                     .insert(user_id.clone(), record.clone());
@@ -97,7 +97,6 @@ impl ScopedFriendLogMutation {
                     .push(crate::realtime::FriendProjectionPatch {
                         user_id,
                         patch: record,
-                        state_bucket,
                         state_bucket_authority: FriendStateBucketAuthority::Explicit,
                     });
             }
@@ -109,6 +108,7 @@ impl ScopedFriendLogMutation {
 #[derive(Clone, Debug)]
 pub(super) struct ActiveRealtimeContext {
     pub(super) session: RealtimeSessionContext,
+    pub(super) auth_scope_generation: u64,
     pub(super) generation: u64,
     pub(super) client_run_id: u64,
     pub(super) session_generation: u64,
@@ -205,16 +205,23 @@ pub struct RealtimeHostRuntimeDeps {
     pub db: Arc<DatabaseService>,
     pub web: Arc<WebClient>,
     pub event_bus: RuntimeEventBus,
+    pub backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher,
+    pub friend_projection_sink: crate::FriendProjectionSink,
     pub sync: RuntimeSyncEngine,
     pub tasks: TaskSupervisor,
     pub session: HostSessionRuntime,
     pub auth_scope: RuntimeAuthScope,
+    pub remote_mutations: Arc<RemoteMutationGate>,
     pub local_game_context: Arc<dyn LocalGameContextSource>,
     pub activity_sink: Option<Arc<dyn OverlayActivityInputSink>>,
     pub world_cache: Arc<WorldCache>,
     pub print_cleanup: Arc<dyn PrintCleanupInputSink>,
     pub friend_note_change_sink: Option<Arc<dyn Fn() + Send + Sync>>,
+    pub current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
 }
+
+pub type RealtimeCurrentUserSnapshotSink =
+    Arc<dyn Fn(&RealtimeSessionContext, u64, Value) + Send + Sync>;
 
 pub struct RealtimeHostRuntime {
     pub(super) deps: RealtimeHostRuntimeDeps,
@@ -230,6 +237,7 @@ pub struct RealtimeHostRuntime {
     pub(super) feed_owner_lock: Mutex<()>,
     pub(super) feed_live_cache: Mutex<FeedLiveCache>,
     pub(super) feed_persistence_disabled: AtomicBool,
+    pub(super) avatar_feed_persistence_disabled: AtomicBool,
     pub(super) notification_apply_lock: tokio::sync::Mutex<()>,
     pub(super) friend_profile_bulk_load:
         Mutex<super::friend_profile_bulk_load::FriendProfileBulkLoadState>,

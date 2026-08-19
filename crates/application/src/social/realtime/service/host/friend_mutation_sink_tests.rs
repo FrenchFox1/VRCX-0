@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::Duration;
+use std::{sync::OnceLock, time::Duration};
 
 use serde_json::json;
 use vrcx_0_application_core::{Result, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
@@ -18,7 +18,7 @@ use vrcx_0_persistence::realtime::{
 };
 
 use crate::social::social_mutation::{apply_friend_request_accept_locally, apply_unfriend_locally};
-use crate::{SocialFriendMutationStatus, SocialMutationDeps};
+use crate::{RemoteMutationGate, SocialFriendMutationStatus, SocialMutationDeps};
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -42,10 +42,12 @@ impl RuntimeTaskHandle for FinishedTaskHandle {
 }
 
 fn deps(runtime: &TestRealtimeHostRuntime) -> SocialMutationDeps<'_> {
+    static REMOTE_MUTATIONS: OnceLock<RemoteMutationGate> = OnceLock::new();
     SocialMutationDeps {
         db: runtime.database(),
         web: runtime.web_client(),
         auth_scope: runtime.auth_scope(),
+        remote_mutations: REMOTE_MUTATIONS.get_or_init(RemoteMutationGate::default),
         realtime: runtime.runtime(),
     }
 }
@@ -125,9 +127,8 @@ fn pending_unfriend_updates_start_baseline_and_emits_projection() -> Result<()> 
     let (_dir, runtime, session) = runtime_with_active_session("mutation-sink-pending-unfriend")?;
     let friend = FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state: "online".to_string(),
-        state_bucket: "online".to_string(),
+        display_name: "Friend".into(),
+        state: "online".into(),
         ..FriendRecord::default()
     };
     let stale_friends: HashMap<String, FriendRecord> =
@@ -213,7 +214,7 @@ fn pending_accept_preserves_trusted_profile_state_on_start() -> Result<()> {
         .friends_by_id
         .get("usr_target")
         .expect("accepted pending friend");
-    assert_eq!(friend.state_bucket, "online");
+    assert_eq!(friend.state, "online");
     let events = runtime.take_events_for_test();
     let projection = events
         .iter()
@@ -223,7 +224,7 @@ fn pending_accept_preserves_trusted_profile_state_on_start() -> Result<()> {
         })
         .expect("pending accept projection");
     assert_eq!(projection.payload["generation"], started.generation);
-    assert_eq!(projection.payload["patches"][0]["stateBucket"], "online");
+    assert_eq!(projection.payload["patches"][0]["patch"]["state"], "online");
     assert_eq!(projection.payload["friendLogChanged"], true);
     Ok(())
 }
@@ -234,9 +235,8 @@ fn unfriend_locally_applies_via_synthetic_event_when_baseline_present() -> Resul
         runtime_with_active_session("mutation-sink-unfriend-baseline")?;
     let friend = FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state: "online".to_string(),
-        state_bucket: "online".to_string(),
+        display_name: "Friend".into(),
+        state: "online".into(),
         ..FriendRecord::default()
     };
     runtime.runtime().sync_friend_snapshot(
@@ -277,9 +277,8 @@ fn unfriend_locally_with_stale_owner_falls_back_without_touching_active_roster()
         runtime_with_active_session("mutation-sink-unfriend-stale-owner")?;
     let friend = FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state: "online".to_string(),
-        state_bucket: "online".to_string(),
+        display_name: "Friend".into(),
+        state: "online".into(),
         ..FriendRecord::default()
     };
     runtime.runtime().sync_friend_snapshot(
@@ -328,9 +327,8 @@ fn synthetic_event_with_stale_endpoint_reports_missing_baseline() -> Result<()> 
         runtime_with_active_session("mutation-sink-unfriend-stale-endpoint")?;
     let friend = FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state: "online".to_string(),
-        state_bucket: "online".to_string(),
+        display_name: "Friend".into(),
+        state: "online".into(),
         ..FriendRecord::default()
     };
     runtime.runtime().sync_friend_snapshot(
@@ -394,7 +392,7 @@ fn accept_locally_applies_via_synthetic_event_when_baseline_present() -> Result<
         .get("usr_target")
         .expect("accepted friend");
     assert_eq!(friend.state, "online");
-    assert_eq!(friend.state_bucket, "online");
+    assert_eq!(friend.state, "online");
     Ok(())
 }
 
@@ -404,9 +402,8 @@ fn unfriend_then_later_ws_friend_delete_records_exactly_one_unfriend_history() -
         runtime_with_active_session("mutation-sink-unfriend-race-local-first")?;
     let friend = FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state: "online".to_string(),
-        state_bucket: "online".to_string(),
+        display_name: "Friend".into(),
+        state: "online".into(),
         ..FriendRecord::default()
     };
     runtime.runtime().sync_friend_snapshot(
@@ -440,9 +437,8 @@ fn ws_friend_delete_then_later_unfriend_records_exactly_one_unfriend_history() -
         runtime_with_active_session("mutation-sink-unfriend-race-ws-first")?;
     let friend = FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state: "online".to_string(),
-        state_bucket: "online".to_string(),
+        display_name: "Friend".into(),
+        state: "online".into(),
         ..FriendRecord::default()
     };
     runtime.runtime().sync_friend_snapshot(

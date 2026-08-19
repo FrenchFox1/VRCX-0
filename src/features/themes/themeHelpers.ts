@@ -1,7 +1,6 @@
+import type { CommunityThemeManifest } from '@/domain/themes/types';
 import { links } from '@/shared/constants/link';
 import type { THEME_COLORS } from '@/shared/constants/themes';
-
-import type { CommunityThemeManifest } from './communityThemeTypes';
 
 export type ThemeSource = 'built-in' | 'background' | 'community';
 

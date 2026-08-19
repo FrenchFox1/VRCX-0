@@ -1,23 +1,26 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, MutexGuard};
+use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
+use compact_str::CompactString;
 use serde_json::{json, Value};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline, StateBucket};
 use vrcx_0_core::realtime::{RealtimeSessionContext, RealtimeWsMessagePayload};
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
+use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
     FriendBaselineCausalWatermark, FriendBaselineResult, FriendStateBucketAuthority,
-    RealtimeFriendApplyResult, RealtimeFriendOutput, RealtimeFriendRosterSnapshot,
-    RealtimeFriendSnapshot,
+    RealtimeFriendApplyResult, RealtimeFriendOutput, RealtimeFriendRecordSnapshot,
+    RealtimeFriendRosterSnapshot, RealtimeFriendSnapshot,
 };
 
 use super::event_patch::{
     apply_friend_event, apply_record_patch_to_state, apply_refetched_friend_profile_event,
     apply_trusted_friend_add_event, FriendEventKind, FriendRecordPatch,
 };
-use super::persistence::{is_online_state, offline_feed_entry};
+use super::persistence::{is_online_state, offline_feed_entry, OfflineFeedPrevious};
 use super::utils::EventTime;
 
 pub(super) use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY_MS;
@@ -31,8 +34,8 @@ pub(super) struct RecentGps {
 pub(super) struct PendingOffline {
     pub(super) token: u64,
     pub(super) patch: FriendRecordPatch,
-    pub(super) state_bucket: String,
-    pub(super) previous: FriendRecord,
+    pub(super) state_bucket: CompactString,
+    pub(super) previous: OfflineFeedPrevious,
 }
 
 pub(crate) struct PendingOfflineSchedule {
@@ -66,7 +69,7 @@ struct ExpectedFriendScope<'a> {
 struct OfflineBaselineTransition {
     user_id: String,
     next: FriendRecord,
-    previous: FriendRecord,
+    previous: OfflineFeedPrevious,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -199,20 +202,20 @@ impl RealtimeFriendsRuntime {
                     record
                         .extra
                         .insert("pendingOffline".into(), Value::Bool(false));
-                    if leaves_online(&record.state_bucket) {
+                    if leaves_online(&record.state) {
                         confirmed_pending.push(OfflineBaselineTransition {
                             user_id: user_id.clone(),
                             next: record.clone(),
                             previous: pending.previous.clone(),
                         });
                     }
-                } else if StateBucket::Online.matches(&existing_record.state_bucket)
-                    && leaves_online(&record.state_bucket)
+                } else if StateBucket::Online.matches(&existing_record.state)
+                    && leaves_online(&record.state)
                 {
                     pending_to_create.push(OfflineBaselineTransition {
                         user_id: user_id.clone(),
                         next: record.clone(),
-                        previous: existing_record.clone(),
+                        previous: OfflineFeedPrevious::from_record(existing_record),
                     });
                     *record = existing_record.clone();
                     record
@@ -250,7 +253,7 @@ impl RealtimeFriendsRuntime {
                 PendingOffline {
                     token,
                     patch: FriendRecordPatch::from_record(&transition.next),
-                    state_bucket: transition.next.state_bucket.clone(),
+                    state_bucket: transition.next.state.clone(),
                     previous: transition.previous,
                 },
             );
@@ -397,6 +400,39 @@ impl RealtimeFriendsRuntime {
         self.lock_state().baseline.clone()
     }
 
+    pub fn is_current_friend(&self, user_id: &str) -> bool {
+        let user_id = user_id.trim();
+        if user_id.is_empty() {
+            return false;
+        }
+        self.lock_state()
+            .baseline
+            .as_ref()
+            .is_some_and(|baseline| baseline.friends_by_id.contains_key(user_id))
+    }
+
+    pub fn current_friend_record(&self, user_id: &str) -> Option<RealtimeFriendRecordSnapshot> {
+        let user_id = user_id.trim();
+        if user_id.is_empty() {
+            return None;
+        }
+        let state = self.lock_state();
+        let baseline = state.baseline.as_ref()?;
+        let record = baseline.friends_by_id.get(user_id)?.clone();
+        Some(RealtimeFriendRecordSnapshot {
+            endpoint: baseline.endpoint.clone(),
+            record,
+        })
+    }
+
+    pub fn friend_user_ids(&self) -> HashSet<String> {
+        self.lock_state()
+            .baseline
+            .as_ref()
+            .map(|baseline| baseline.friends_by_id.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
     pub(crate) fn with_user_cache_records<R>(
         &self,
         visit: impl FnOnce(&str, &HashMap<String, FriendRecord>) -> R,
@@ -474,7 +510,18 @@ impl RealtimeFriendsRuntime {
         &self,
         payload: &RealtimeWsMessagePayload,
     ) -> RealtimeFriendApplyResult {
-        self.apply_friend_message(payload)
+        let Some(event_kind) = RealtimeWsEventKind::from_payload(payload) else {
+            return RealtimeFriendApplyResult::Ignored;
+        };
+        self.apply_ws_event(&event_kind, payload)
+    }
+
+    pub(crate) fn apply_ws_event(
+        &self,
+        event_kind: &RealtimeWsEventKind,
+        payload: &RealtimeWsMessagePayload,
+    ) -> RealtimeFriendApplyResult {
+        self.apply_friend_message(event_kind, payload)
     }
 
     pub(crate) fn apply_scoped_synthetic_event(
@@ -510,12 +557,10 @@ impl RealtimeFriendsRuntime {
 
     fn apply_friend_message(
         &self,
+        ws_event_kind: &RealtimeWsEventKind,
         payload: &RealtimeWsMessagePayload,
     ) -> RealtimeFriendApplyResult {
-        let Some(message_type) = payload.json.get("type").and_then(Value::as_str) else {
-            return RealtimeFriendApplyResult::Ignored;
-        };
-        let Some(event_kind) = FriendEventKind::from_message_type(message_type) else {
+        let Some(event_kind) = FriendEventKind::from_ws_event_kind(ws_event_kind) else {
             return RealtimeFriendApplyResult::Ignored;
         };
         let content = payload.json.get("content").unwrap_or(&Value::Null);
@@ -745,12 +790,7 @@ fn current_friend_roster_snapshot(
 }
 
 fn friend_snapshot_state_bucket(friend: &FriendRecord) -> &str {
-    let state = if friend.state_bucket.is_empty() {
-        friend.state.as_str()
-    } else {
-        friend.state_bucket.as_str()
-    };
-    match state {
+    match friend.state.as_str() {
         "online" => "online",
         "active" => "active",
         _ => "offline",
@@ -799,24 +839,24 @@ fn preserve_fields_over_placeholder(incoming: &mut FriendRecord, existing: &Frie
 
     for key in [
         "pendingOffline",
-        "$location",
-        "$location_at",
+        derived_keys::LOCATION_PROJECTION,
+        derived_keys::LOCATION_UPDATED_AT,
         "locationUpdatedAt",
         "instanceId",
         "travelingToWorld",
         "travelingToInstance",
-        "$travelingToLocation",
-        "$travelingToTime",
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+        derived_keys::TRAVELING_TO_TIME,
         "travelingToLocation",
         "tags",
         "developerType",
         "trustLevel",
-        "$trustLevel",
-        "$trustClass",
-        "$trustSortNum",
-        "$isModerator",
-        "$isTroll",
-        "$isProbableTroll",
+        derived_keys::TRUST_LEVEL,
+        derived_keys::TRUST_CLASS,
+        derived_keys::TRUST_SORT_NUM,
+        derived_keys::IS_MODERATOR,
+        derived_keys::IS_TROLL,
+        derived_keys::IS_PROBABLE_TROLL,
     ] {
         match existing.extra.get(key) {
             Some(value) => {

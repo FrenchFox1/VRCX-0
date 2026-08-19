@@ -1,4 +1,4 @@
-import type { GroupInstanceRecord } from '@/domain/entities/profileEntities';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type {
     BackendRuntimeEventPayloadMap,
     BackendRuntimeSnapshot
@@ -58,7 +58,4 @@ export type FavoritesChangedEventPayload =
 export type RuntimeGroupInstancesProjection =
     RuntimeEventPayloadMap['runtimeGroupInstancesProjection'];
 
-export type RuntimeSnapshotPayload =
-    | BackendRuntimeSnapshot
-    | Record<string, unknown>
-    | null;
+export type RuntimeSnapshotPayload = BackendRuntimeSnapshot | null;

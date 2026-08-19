@@ -8,6 +8,7 @@ import {
     TRUST_COLOR_DEFAULTS,
     TRUST_COLOR_ENTRIES
 } from '@/shared/utils/trustColors';
+import type { PreferencesSnapshot } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Collapsible,
@@ -21,15 +22,19 @@ import type { SettingsPageStateSections } from '../../settingsPageStateSections'
 import { Field, SettingsGroup } from '../SettingsField';
 
 type InterfaceState = SettingsPageStateSections['interface'];
-type SettingsInterfaceUserColorsCardProps = Pick<
+type SettingsPrefs = Pick<
+    PreferencesSnapshot,
+    'randomUserColours' | 'trustColor'
+>;
+type SettingsInterfaceUserColorsCardProps = {
+    prefs: SettingsPrefs;
+} & Pick<
     InterfaceState,
-    | 'prefs'
     | 'onRandomUserColoursChange'
     | 'onResetTrustColors'
     | 'onSaveTrustColor'
     | 'onTrustColorDraftChange'
 >;
-type SettingsPrefs = InterfaceState['prefs'];
 
 function getTrustColorInputValue(
     prefs: SettingsPrefs,

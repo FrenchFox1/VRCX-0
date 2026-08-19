@@ -55,6 +55,7 @@ const emptyDetails: LaunchDialogDetails = {
     worldName: '',
     parsed: parseLocation('')
 };
+const EMPTY_GROUP_INSTANCES: unknown[] = [];
 type LaunchActionKey =
     | 'attach'
     | 'launch-vr'
@@ -289,7 +290,7 @@ export function LaunchDialogHost() {
         groupInstancesState.userId === currentUserId &&
         groupInstancesState.endpoint === currentEndpoint
             ? groupInstancesState.instances
-            : [];
+            : EMPTY_GROUP_INSTANCES;
     const confirm = useModalStore((state) => state.confirm);
     const [details, setDetails] = useState(emptyDetails);
     const [loading, setLoading] = useState(false);
@@ -351,7 +352,8 @@ export function LaunchDialogHost() {
         launchDialog.launchToken,
         launchDialog.open,
         launchDialog.shortName,
-        launchDialog.tag
+        launchDialog.tag,
+        t
     ]);
 
     async function copyField(value: string, label: string) {
@@ -456,16 +458,16 @@ export function LaunchDialogHost() {
                 onOpenChange={setLaunchDialogOpen}
             >
                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
+                    <DialogHeader className="min-w-0">
                         <DialogTitle>{t('dialog.launch.header')}</DialogTitle>
-                        <DialogDescription className="truncate">
+                        <DialogDescription className="min-w-0 break-words whitespace-normal">
                             {subtitle}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div
                         className={cn(
-                            'grid grid-cols-3 gap-2',
+                            'grid min-w-0 grid-cols-3 gap-2',
                             loading && 'opacity-60'
                         )}
                     >

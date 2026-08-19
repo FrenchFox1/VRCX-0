@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
+import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { useKnownUserFacts } from '@/lib/useKnownUser';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -13,10 +15,9 @@ import {
     buildFavoriteRemoteGroupEntityIds,
     selectFavoritesCollectionsState
 } from './favoritesCollectionsState';
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type { FavoriteSource } from './favoritesTypes';
 import { useAvatarDetailFallbacks } from './useAvatarDetailFallbacks';
 import { useFavoriteRemoteDetails } from './useFavoriteRemoteDetails';
-import { useLocalWorldFavorites } from './useLocalWorldFavorites';
 import { useWorldDetailFallbacks } from './useWorldDetailFallbacks';
 
 function selectRequestedRemoteEntityIds({

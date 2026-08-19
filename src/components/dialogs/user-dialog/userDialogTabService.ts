@@ -1,10 +1,20 @@
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type QueryOrder,
+    type ReleaseStatusFilter,
+    type WorldSearchSort
+} from '@/platform/tauri/bindings';
+
+import type {
+    UserDialogWorldOrder,
+    UserDialogWorldSort
+} from './userDialogListOptions';
 
 export type UserDialogDataTab =
     | 'mutual'
@@ -22,24 +32,45 @@ export type UserDialogRepositories = {
         }): Promise<{ avatars: unknown[] }>;
     };
     myAvatarRepository: {
-        getMyAvatars(input: Record<string, unknown>): Promise<unknown[]>;
+        getMyAvatars(input: {
+            endpoint?: string;
+            currentUserId?: string;
+            currentAvatarId?: string;
+            previousAvatarSwapTime?: number;
+        }): Promise<unknown[]>;
     };
     groupProfileRepository: {
-        getUserGroups(input: Record<string, unknown>): Promise<unknown[]>;
+        getUserGroups(input: {
+            userId?: string;
+            endpoint?: string;
+        }): Promise<unknown[]>;
     };
     userProfileRepository: {
-        getAllMutualFriends(input: Record<string, unknown>): Promise<unknown[]>;
+        getAllMutualFriends(input: {
+            userId?: string;
+            endpoint?: string;
+        }): Promise<unknown[]>;
     };
     vrchatFavoriteRepository: {
-        getAllFavoriteGroups(
-            input: Record<string, unknown>
-        ): Promise<unknown[]>;
-        getAllFavoriteWorlds(
-            input: Record<string, unknown>
-        ): Promise<unknown[]>;
+        getAllFavoriteGroups(input: {
+            endpoint?: string;
+            ownerId?: string;
+        }): Promise<unknown[]>;
+        getAllFavoriteWorlds(input: {
+            endpoint?: string;
+            ownerId?: string;
+            userId?: string;
+            tag?: string;
+        }): Promise<unknown[]>;
     };
     worldProfileRepository: {
-        getAllWorldsByUser(input: Record<string, unknown>): Promise<unknown[]>;
+        getAllWorldsByUser(input: {
+            userId?: string;
+            endpoint?: string;
+            sort?: WorldSearchSort;
+            order?: QueryOrder;
+            releaseStatus?: ReleaseStatusFilter;
+        }): Promise<unknown[]>;
     };
 };
 
@@ -59,16 +90,16 @@ function recordRows(value: unknown): EntityRecord[] {
     return Array.isArray(value) ? value.filter(isRecord) : [];
 }
 
-const userDialogDataTabs: ReadonlySet<unknown> = new Set<UserDialogDataTab>([
+const userDialogDataTabs = [
     'mutual',
     'groups',
     'worlds',
     'favorite-worlds',
     'avatars'
-]);
+] as const satisfies readonly UserDialogDataTab[];
 
 export function isUserDialogDataTab(tab: unknown): tab is UserDialogDataTab {
-    return userDialogDataTabs.has(tab);
+    return userDialogDataTabs.some((candidate) => candidate === tab);
 }
 
 export function userDialogDataKeyForTab(tab: UserDialogDataTab) {
@@ -86,7 +117,7 @@ export async function loadUserDialogTabCounts({
     userId: string;
     endpoint: string;
     currentUserId: string;
-    effectiveAvatarReleaseStatus: string;
+    effectiveAvatarReleaseStatus: ReleaseStatusFilter;
     includeMutualFriends: boolean;
     force?: boolean;
 }): Promise<UserDialogTabCounts> {
@@ -141,10 +172,8 @@ export async function loadUserDialogTabData({
     currentUserId?: string;
     currentAvatarId?: string;
     previousAvatarSwapTime?: number;
-    avatarSort?: string;
-    effectiveAvatarReleaseStatus?: string;
-    worldSort?: string;
-    worldOrder?: string;
+    worldSort?: UserDialogWorldSort;
+    worldOrder?: UserDialogWorldOrder;
     repositories: UserDialogRepositories;
 }): Promise<{ rows: EntityRecord[]; favoriteWorldGroups: EntityRecord[] }> {
     if (!isUserDialogDataTab(tab)) {
@@ -216,9 +245,12 @@ export async function loadUserDialogTabData({
             endpoint,
             ownerId: userId
         });
-    const worldGroups = favoriteGroups
-        .filter(isRecord)
-        .filter((group) => group.type === 'world');
+    const worldGroups = favoriteGroups.filter(
+        (group): group is EntityRecord & { name: string } =>
+            isRecord(group) &&
+            group.type === 'world' &&
+            typeof group.name === 'string'
+    );
     const worldListResults = await Promise.allSettled(
         worldGroups.map(async (group) => {
             const worlds =

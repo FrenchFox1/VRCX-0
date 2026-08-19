@@ -7,18 +7,6 @@ import type {
     GameLogSessionMember
 } from './gameLogTypes';
 
-export const GAME_LOG_TYPE_LABELS: Record<string, string> = {
-    Location: 'Location',
-    OnPlayerJoined: 'Player Joined',
-    OnPlayerLeft: 'Player Left',
-    PortalSpawn: 'Portal Spawn',
-    VideoPlay: 'Video Play',
-    Event: 'Event',
-    External: 'External',
-    StringLoad: 'String Load',
-    ImageLoad: 'Image Load'
-};
-
 export const GAME_LOG_DETAILLESS_TYPES = new Set([
     'OnPlayerJoined',
     'OnPlayerLeft',
@@ -39,9 +27,18 @@ export function normalizeGameLogId(value: unknown) {
 }
 
 export function buildGameLogFavoriteIdSet(
+    remoteFavoriteIds: readonly unknown[] | null | undefined,
     localFriendFavorites: Record<string, unknown> | null | undefined
 ) {
     const ids = new Set<string>();
+
+    for (const id of remoteFavoriteIds ?? []) {
+        const normalized = normalizeGameLogId(id);
+        if (normalized) {
+            ids.add(normalized);
+        }
+    }
+
     for (const groupIds of Object.values(localFriendFavorites ?? {})) {
         if (!Array.isArray(groupIds)) {
             continue;

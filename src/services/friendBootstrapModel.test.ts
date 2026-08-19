@@ -98,19 +98,19 @@ describe('friendBootstrapModel pure normalizers', () => {
             usr_a: {
                 id: 'usr_a',
                 displayName: 'A',
-                stateBucket: 'online',
+                state: 'online',
                 $friendNumber: 1
             },
             usr_b: {
                 id: 'usr_b',
                 displayName: 'B',
-                stateBucket: 'active',
+                state: 'active',
                 $friendNumber: 2
             },
             usr_missing: {
                 id: 'usr_missing',
                 displayName: 'usr_missing',
-                stateBucket: 'offline',
+                state: 'offline',
                 $trustLevel: 'Visitor'
             }
         });

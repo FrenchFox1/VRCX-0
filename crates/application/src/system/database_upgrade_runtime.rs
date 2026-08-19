@@ -1,5 +1,3 @@
-#[cfg(panic = "unwind")]
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use vrcx_0_application_core::RuntimeOperationStatus;
@@ -38,7 +36,7 @@ struct DatabaseUpgradeRuntimeShared {
 enum DatabaseUpgradeRuntimeState {
     Idle,
     Running { from_version: i64, to_version: i64 },
-    Finished(DatabaseUpgradeRunResult),
+    Finished(Box<DatabaseUpgradeRunResult>),
 }
 
 impl DatabaseUpgradeRuntime {
@@ -82,7 +80,7 @@ impl DatabaseUpgradeRuntime {
                 from_version: result.from_version,
                 to_version: result.to_version,
                 stage: result.failed_stage,
-                result: Some(result.clone()),
+                result: Some(result.as_ref().clone()),
                 failed_upgrade: result.failed_upgrade.clone(),
             }),
         }
@@ -151,7 +149,7 @@ impl DatabaseUpgradeRuntime {
                             | DatabaseUpgradeRunStatus::NewerSchema
                     ) =>
                 {
-                    return Ok(result.clone());
+                    return Ok(result.as_ref().clone());
                 }
                 DatabaseUpgradeRuntimeState::Idle | DatabaseUpgradeRuntimeState::Finished(_) => {}
             }
@@ -201,7 +199,7 @@ impl DatabaseUpgradeRuntime {
             &mut dyn FnMut(DatabaseUpgradeProgress),
         ) -> DatabaseUpgradeRunResult,
     ) -> DatabaseUpgradeRunResult {
-        let (from_version, to_version) = loop {
+        loop {
             let mut state = self.lock_state();
             match &*state {
                 DatabaseUpgradeRuntimeState::Idle => {
@@ -215,7 +213,7 @@ impl DatabaseUpgradeRuntime {
                     self.set_progress(DatabaseUpgradeProgress::indeterminate(
                         DatabaseUpgradeStage::Preflight,
                     ));
-                    break (from_version, to_version);
+                    break;
                 }
                 DatabaseUpgradeRuntimeState::Running { .. } => {
                     state = self
@@ -225,32 +223,20 @@ impl DatabaseUpgradeRuntime {
                         .unwrap_or_else(|poisoned| poisoned.into_inner());
                     drop(state);
                 }
-                DatabaseUpgradeRuntimeState::Finished(result) => return result.clone(),
+                DatabaseUpgradeRuntimeState::Finished(result) => {
+                    return result.as_ref().clone();
+                }
             }
-        };
+        }
 
         self.record_running();
-        #[cfg(panic = "abort")]
-        let _ = (from_version, to_version);
-        #[cfg(panic = "unwind")]
-        let mut current_stage = DatabaseUpgradeStage::Preflight;
         let mut on_progress = |progress: DatabaseUpgradeProgress| {
-            #[cfg(panic = "unwind")]
-            {
-                current_stage = progress.stage;
-            }
             self.set_progress(progress);
         };
-        #[cfg(panic = "unwind")]
-        let result = match catch_unwind(AssertUnwindSafe(|| execute(&self.db, &mut on_progress))) {
-            Ok(result) => result,
-            Err(_) => self.recover_unwind(from_version, to_version, current_stage),
-        };
-        #[cfg(panic = "abort")]
         let result = execute(&self.db, &mut on_progress);
 
         let mut state = self.lock_state();
-        *state = DatabaseUpgradeRuntimeState::Finished(result.clone());
+        *state = DatabaseUpgradeRuntimeState::Finished(Box::new(result.clone()));
         self.shared.changed.notify_all();
         drop(state);
         self.record_result(&result);
@@ -263,35 +249,6 @@ impl DatabaseUpgradeRuntime {
             .progress
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner()) = progress;
-    }
-
-    #[cfg(panic = "unwind")]
-    fn recover_unwind(
-        &self,
-        from_version: i64,
-        to_version: i64,
-        stage: DatabaseUpgradeStage,
-    ) -> DatabaseUpgradeRunResult {
-        let mut error = "Database upgrade runtime panicked.".to_string();
-        if let Err(recovery_error) = self.db.fail_upgrade(error.clone()) {
-            error = format!("{error} Failed to preserve the work database: {recovery_error}");
-        }
-        let failed_upgrade = match self.db.get_failed_upgrade() {
-            Ok(status) => status,
-            Err(status_error) => {
-                error = format!("{error} Failed to read database upgrade status: {status_error}");
-                None
-            }
-        };
-        DatabaseUpgradeRunResult {
-            status: DatabaseUpgradeRunStatus::Failed,
-            from_version,
-            to_version,
-            failed_stage: Some(stage),
-            error: Some(error),
-            failed_upgrade,
-            repair_warning: None,
-        }
     }
 
     fn record_running(&self) {
@@ -310,15 +267,6 @@ impl DatabaseUpgradeRuntime {
     }
 
     fn record_result(&self, result: &DatabaseUpgradeRunResult) {
-        if result.status == DatabaseUpgradeRunStatus::Failed {
-            tracing::error!(
-                from_version = result.from_version,
-                to_version = result.to_version,
-                failed_stage = ?result.failed_stage,
-                error = %result.error.as_deref().unwrap_or("unknown database upgrade failure"),
-                "database upgrade failed"
-            );
-        }
         match result.status {
             DatabaseUpgradeRunStatus::Current | DatabaseUpgradeRunStatus::Upgraded => {
                 self.diagnostics.record_command(
@@ -475,7 +423,7 @@ mod tests {
             failed_upgrade: None,
             repair_warning: None,
         };
-        *runtime.lock_state() = DatabaseUpgradeRuntimeState::Finished(failed);
+        *runtime.lock_state() = DatabaseUpgradeRuntimeState::Finished(Box::new(failed));
 
         let retried = runtime.retry().unwrap();
 
@@ -495,15 +443,16 @@ mod tests {
             RuntimeDiagnostics::new(),
             RuntimeBackgroundJobs::new(),
         );
-        *runtime.lock_state() = DatabaseUpgradeRuntimeState::Finished(DatabaseUpgradeRunResult {
-            status: DatabaseUpgradeRunStatus::Failed,
-            from_version: 17,
-            to_version: VRCX0_SCHEMA_VERSION,
-            failed_stage: Some(DatabaseUpgradeStage::Optimize),
-            error: Some("injected failure".into()),
-            failed_upgrade: None,
-            repair_warning: None,
-        });
+        *runtime.lock_state() =
+            DatabaseUpgradeRuntimeState::Finished(Box::new(DatabaseUpgradeRunResult {
+                status: DatabaseUpgradeRunStatus::Failed,
+                from_version: 17,
+                to_version: VRCX0_SCHEMA_VERSION,
+                failed_stage: Some(DatabaseUpgradeStage::Optimize),
+                error: Some("injected failure".into()),
+                failed_upgrade: None,
+                repair_warning: None,
+            }));
 
         let recovery_dir = runtime.start_fresh_database().unwrap();
 

@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use vrcx_0_core::derived_keys;
 pub(crate) use vrcx_0_core::text::first_non_empty;
 
 use super::friend_record::extra_str;
@@ -104,7 +105,7 @@ pub(crate) fn favorite_friend_groups_snapshot_from_baseline(
             continue;
         }
         let label = remote_labels
-            .get(&key)
+            .get(key)
             .cloned()
             .unwrap_or_else(|| fallback_group_label(&key));
         groups.push(FavoriteFriendGroupSnapshot {
@@ -576,10 +577,10 @@ fn friend_location_candidates(record: &FriendRecord) -> Vec<String> {
     [
         record
             .extra
-            .get("$location")
+            .get(derived_keys::LOCATION_PROJECTION)
             .map(normalized_location_value)
             .unwrap_or_default(),
-        extra_string(record, "$locationTag"),
+        extra_string(record, derived_keys::LOCATION_TAG),
         record.location.trim().to_string(),
     ]
     .into_iter()
@@ -591,7 +592,7 @@ fn normalized_location_value(value: &serde_json::Value) -> String {
     match value {
         serde_json::Value::String(value) => value.trim().to_string(),
         serde_json::Value::Object(object) => {
-            for key in ["tag", "location", "$location"] {
+            for key in ["tag", "location", derived_keys::LOCATION_PROJECTION] {
                 if let Some(value) = object.get(key) {
                     let normalized = normalized_location_value(value);
                     if !normalized.is_empty() {
@@ -689,7 +690,10 @@ pub(crate) fn friend_record_world_ids(record: &FriendRecord) -> Vec<String> {
         world_id_from_location(&record.location),
         world_id_from_location(&record.traveling_to_location),
         world_id_from_location(&extra_string(record, "travelingToLocation")),
-        world_id_from_location(&extra_string(record, "$travelingToLocation")),
+        world_id_from_location(&extra_string(
+            record,
+            derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+        )),
     ]
     .into_iter()
     .filter(|value| !value.is_empty())
@@ -817,7 +821,8 @@ fn display_friend_location(
 
 fn traveling_location(record: &FriendRecord) -> String {
     let traveling_to_location = extra_string(record, "travelingToLocation");
-    let legacy_traveling_to_location = extra_string(record, "$travelingToLocation");
+    let legacy_traveling_to_location =
+        extra_string(record, derived_keys::TRAVELING_TO_LOCATION_PROJECTION);
     first_non_empty([
         record.traveling_to_location.as_str(),
         traveling_to_location.as_str(),

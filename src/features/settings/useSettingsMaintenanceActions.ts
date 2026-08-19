@@ -18,6 +18,7 @@ import {
 } from '@/services/shellIntegrationService';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { normalizeBackgroundModeDelayMinutes } from '@/state/preferencesStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { normalizeCheckedState } from './settingsValues';
 import type {
@@ -92,6 +93,9 @@ type SettingsMaintenanceActionsDeps = {
     setFeedPersistenceDisabledPreference: (
         disabled: boolean
     ) => Promise<unknown>;
+    setAvatarFeedPersistenceDisabledPreference: (
+        disabled: boolean
+    ) => Promise<unknown>;
     setIntConfigPreference: (
         key: IntConfigPreferenceKey,
         value: string | number,
@@ -123,6 +127,7 @@ export function createSettingsMaintenanceActions({
     setCropInstancePrintsPreference,
     setGameLogPersistenceDisabledPreference,
     setFeedPersistenceDisabledPreference,
+    setAvatarFeedPersistenceDisabledPreference,
     setIntConfigPreference,
     setPrefs,
     setPurgeDialogOpen,
@@ -350,20 +355,12 @@ export function createSettingsMaintenanceActions({
                       return cutoff.toJSON();
                   })();
         setPurgeInProgress(true);
-        const toastId = toast.warning(
-            t(
-                'view.settings.advanced.advanced.database_cleanup.purge_in_progress'
-            ),
-            {
-                duration: Infinity
-            }
-        );
+        useRuntimeStore.getState().setDatabaseMaintenanceActive(true);
         try {
             const outcome =
                 await avatarFeedHistoryRepository.cleanupAvatarFeedHistory(
                     cutoffDate
                 );
-            toast.dismiss(toastId);
             setPurgeDialogOpen(false);
             if (outcome.status === 'optimizationFailed') {
                 toast.warning(
@@ -384,7 +381,6 @@ export function createSettingsMaintenanceActions({
             );
             await restartApplication();
         } catch (error) {
-            toast.dismiss(toastId);
             toast.error(
                 t(
                     'view.settings.advanced.advanced.database_cleanup.purge_failed',
@@ -397,6 +393,7 @@ export function createSettingsMaintenanceActions({
                 )
             );
         } finally {
+            useRuntimeStore.getState().setDatabaseMaintenanceActive(false);
             setPurgeInProgress(false);
         }
     }
@@ -499,6 +496,14 @@ export function createSettingsMaintenanceActions({
             setFeedPersistenceDisabledPreference(disabled)
         );
     }
+    async function handleAvatarFeedPersistenceDisabledChange(checked: unknown) {
+        const disabled = normalizeCheckedState(checked);
+        await savePreferenceValue(
+            'avatarFeedPersistenceDisabled',
+            disabled,
+            () => setAvatarFeedPersistenceDisabledPreference(disabled)
+        );
+    }
     return {
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
@@ -515,6 +520,7 @@ export function createSettingsMaintenanceActions({
         handleCropInstancePrintsChange,
         handleGameLogDisabledChange,
         handleFeedPersistenceDisabledChange,
+        handleAvatarFeedPersistenceDisabledChange,
         migrateLegacyVrcxData
     };
 }

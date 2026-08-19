@@ -42,17 +42,21 @@ export function loadAvatarDetailFallbacksById(
     return loadRemoteEntityCacheFallbacksById(avatarIds, fetchAvatarById);
 }
 
-export function useAvatarDetailFallbacks(
-    input: AvatarDetailFallbackInput
-): DetailMap {
+export function useAvatarDetailFallbacks({
+    avatarIds,
+    kind,
+    remoteEntityDetailsData,
+    remoteEntityDetailsStatus
+}: AvatarDetailFallbackInput): DetailMap {
     const fallbackAvatarIds = useMemo(
-        () => getAvatarDetailFallbackIds(input),
-        [
-            input.avatarIds,
-            input.kind,
-            input.remoteEntityDetailsData,
-            input.remoteEntityDetailsStatus
-        ]
+        () =>
+            getAvatarDetailFallbackIds({
+                avatarIds,
+                kind,
+                remoteEntityDetailsData,
+                remoteEntityDetailsStatus
+            }),
+        [avatarIds, kind, remoteEntityDetailsData, remoteEntityDetailsStatus]
     );
 
     return useRemoteEntityCacheFallbackLoader(

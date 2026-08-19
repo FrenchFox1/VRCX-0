@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterById } from '@/domain/friends/types';
 import {
     commands,
     type SocialFriendMutationOutcome
@@ -135,8 +135,6 @@ export function useUserDialogActions({
         actionStatusRef,
         avatarOverrideState,
         confirm,
-        currentEndpoint,
-        currentUserId: currentUserId || undefined,
         isCurrentUser,
         moderationRevisionRef,
         moderationState,
@@ -295,7 +293,7 @@ export function useUserDialogActions({
                 incomingNotification =
                     action === 'accept'
                         ? await findIncomingFriendRequestNotification({
-                              currentUserId,
+                              currentUserId: currentUserId || '',
                               targetUserId: rosterUserId
                           })
                         : null;
@@ -319,8 +317,6 @@ export function useUserDialogActions({
                 let mutationOutcome: SocialFriendMutationOutcome | null = null;
                 if (action === 'accept') {
                     const acceptResult = await acceptFriendRequestNotification({
-                        currentUserId,
-                        endpoint: requestEndpoint,
                         notification: incomingNotification,
                         targetUser: requestProfile
                     });
@@ -345,8 +341,6 @@ export function useUserDialogActions({
                 } else {
                     mutationOutcome = await commands.appSocialFriendRequestSend(
                         {
-                            ownerUserId: normalizedCurrentUserId,
-                            endpoint: requestEndpoint,
                             targetUserId: rosterUserId,
                             targetDisplayName: requestProfile?.displayName || ''
                         }
@@ -385,7 +379,7 @@ export function useUserDialogActions({
                 incomingNotification =
                     action === 'decline'
                         ? await findIncomingFriendRequestNotification({
-                              currentUserId,
+                              currentUserId: currentUserId || '',
                               targetUserId: rosterUserId
                           })
                         : null;
@@ -409,14 +403,12 @@ export function useUserDialogActions({
                 let cancelOutcome: SocialFriendMutationOutcome | null = null;
                 if (incomingNotification) {
                     await hideRemoteAndExpireNotification({
-                        currentUserId,
+                        currentUserId: currentUserId || '',
                         notification: incomingNotification
                     });
                 } else {
                     cancelOutcome = await commands.appSocialFriendRequestCancel(
                         {
-                            ownerUserId: normalizedCurrentUserId,
-                            endpoint: requestEndpoint,
                             targetUserId: rosterUserId,
                             targetDisplayName: requestProfile?.displayName || ''
                         }
@@ -457,7 +449,7 @@ export function useUserDialogActions({
                 errorRecord.status === 404
             ) {
                 await expireNotificationLocally({
-                    currentUserId,
+                    currentUserId: currentUserId || '',
                     notification: incomingNotification
                 }).catch(() => {});
                 if (
@@ -564,7 +556,7 @@ export function useUserDialogActions({
         setActionStatus('boop');
         try {
             await dismissBoopNotifications({
-                currentUserId,
+                currentUserId: currentUserId || '',
                 senderUserId: context.userId
             });
             await sendBoopToUser({

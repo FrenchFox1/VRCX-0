@@ -3,6 +3,7 @@ import {
     useEffect,
     useMemo,
     useState,
+    type HTMLAttributes,
     type KeyboardEvent,
     type ReactElement,
     type ReactNode,
@@ -11,12 +12,14 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import {
     getLocationText,
+    locationSentinel,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
@@ -27,7 +30,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     clearStaleOfflineLocation,
-    normalizeLocationStatus,
     readFriendInstanceEpoch,
     readFriendRef,
     readFriendRefLocation,
@@ -100,7 +102,7 @@ export function FriendInstanceTimer({
             Math.max(1, nextStepMs - elapsedMs)
         );
         return () => window.clearTimeout(timeoutId);
-    }, [elapsedMs, normalizedEpoch]);
+    }, [elapsedMs, nextStepMs, normalizedEpoch]);
 
     return (
         <span className="inline-flex min-w-0 items-center">
@@ -162,12 +164,8 @@ export function resolveFriendRowLocationState({
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeLocationStatus(
-        statusSource?.stateBucket || statusSource?.state
-    );
-    const friendStateBucket = normalizeLocationStatus(
-        statusSource?.stateBucket
-    );
+    const friendState = normalizeStateBucket(statusSource?.state);
+    const friendStateBucket = friendState;
     const rawFriendLocation = isCurrentUser
         ? resolvePresenceLocation(friend)
         : readFriendRefLocation(friend);
@@ -176,7 +174,7 @@ export function resolveFriendRowLocationState({
         friendState
     );
     const parsedFriendLocation = parseLocation(friendLocation);
-    const isTraveling = normalizeLocationStatus(friendLocation) === 'traveling';
+    const isTraveling = locationSentinel(friendLocation) === 'traveling';
     const displayLocation = isTraveling ? 'traveling' : friendLocation;
     const displayTraveling = isTraveling
         ? readFriendRefTravelingLocation(friend) || undefined
@@ -325,6 +323,16 @@ export function StaticSidebarLocation({
         openWorld(event);
     }
 
+    const locationInteractionProps: HTMLAttributes<HTMLSpanElement> =
+        isLocationLink
+            ? {
+                  role: 'button',
+                  tabIndex: 0,
+                  onClick: openWorld,
+                  onKeyDown: openWorldFromKeyboard
+              }
+            : {};
+
     function openGroup(event: Pick<SyntheticEvent, 'stopPropagation'>) {
         event?.stopPropagation?.();
         const groupId = normalizeId(parsedLocation.groupId);
@@ -384,20 +392,15 @@ export function StaticSidebarLocation({
                 content={tooltipContent}
             >
                 <span
-                    role={isLocationLink ? 'button' : undefined}
-                    tabIndex={isLocationLink ? 0 : undefined}
+                    {...locationInteractionProps}
                     className={cn(
                         'x-location inline-flex max-w-full min-w-0 flex-nowrap items-center truncate overflow-hidden text-left',
                         isLocationLink
                             ? 'hover:text-primary cursor-pointer text-inherit underline-offset-4'
                             : 'cursor-default'
                     )}
-                    onClick={isLocationLink ? openWorld : undefined}
-                    onKeyDown={
-                        isLocationLink ? openWorldFromKeyboard : undefined
-                    }
                 >
-                    {normalizeLocationStatus(location) === 'traveling' ? (
+                    {locationSentinel(location) === 'traveling' ? (
                         <Spinner
                             aria-hidden="true"
                             aria-label={undefined}

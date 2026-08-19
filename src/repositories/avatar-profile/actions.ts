@@ -52,7 +52,7 @@ export async function selectFallbackAvatar({ avatarId }: AvatarIdInput) {
     };
 }
 
-export async function saveAvatar({ avatarId, params = {} }: SaveAvatarInput) {
+export async function saveAvatar({ avatarId, params }: SaveAvatarInput) {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         throw new Error(

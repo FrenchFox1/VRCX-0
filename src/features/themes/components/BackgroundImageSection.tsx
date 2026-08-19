@@ -1,4 +1,3 @@
-import type { TFunction } from 'i18next';
 import {
     FolderOpenIcon,
     ImageIcon,
@@ -73,8 +72,7 @@ function CurrentBackgroundImageSummary({
     providerId,
     customSource,
     snapshot,
-    onRefresh,
-    t
+    onRefresh
 }: {
     enabled: boolean;
     loading: boolean;
@@ -83,8 +81,8 @@ function CurrentBackgroundImageSummary({
     customSource: BackgroundImageCustomSource | null;
     snapshot: BackgroundImageSnapshot | null;
     onRefresh: () => void;
-    t: TFunction;
 }) {
+    const { t } = useTranslation();
     const [imageFailed, setImageFailed] = useState(false);
 
     useEffect(() => {
@@ -350,7 +348,7 @@ export function BackgroundImageSection() {
                         </p>
                     </div>
                     <div className="flex min-w-0 flex-wrap gap-2">
-                        <Select
+                        <Select<BackgroundImageMode>
                             value={mode === 'custom' ? 'custom' : 'daily'}
                             items={[
                                 {
@@ -365,9 +363,11 @@ export function BackgroundImageSection() {
                                 }
                             ]}
                             disabled={loading}
-                            onValueChange={(value) =>
-                                updateMode(value as BackgroundImageMode)
-                            }
+                            onValueChange={(value) => {
+                                if (value) {
+                                    updateMode(value);
+                                }
+                            }}
                         >
                             <SelectTrigger size="sm" className="min-w-40">
                                 <SelectValue />
@@ -384,7 +384,7 @@ export function BackgroundImageSection() {
                             </SelectContent>
                         </Select>
                         {mode === 'daily' ? (
-                            <Select
+                            <Select<BackgroundImageProviderId>
                                 value={providerId}
                                 items={backgroundImageRemoteProviders.map(
                                     (provider) => ({
@@ -393,11 +393,11 @@ export function BackgroundImageSection() {
                                     })
                                 )}
                                 disabled={loading}
-                                onValueChange={(value) =>
-                                    updateProvider(
-                                        value as BackgroundImageProviderId
-                                    )
-                                }
+                                onValueChange={(value) => {
+                                    if (value) {
+                                        updateProvider(value);
+                                    }
+                                }}
                             >
                                 <SelectTrigger size="sm" className="min-w-52">
                                     <SelectValue />
@@ -484,7 +484,7 @@ export function BackgroundImageSection() {
                                         'view.background_image.settings.rotation'
                                     )}
                                 </span>
-                                <Select
+                                <Select<BackgroundImageRotationInterval>
                                     value={
                                         customSource?.rotationInterval ||
                                         'daily'
@@ -504,11 +504,11 @@ export function BackgroundImageSection() {
                                         }
                                     ]}
                                     disabled={loading}
-                                    onValueChange={(value) =>
-                                        updateRotationInterval(
-                                            value as BackgroundImageRotationInterval
-                                        )
-                                    }
+                                    onValueChange={(value) => {
+                                        if (value) {
+                                            updateRotationInterval(value);
+                                        }
+                                    }}
                                 >
                                     <SelectTrigger
                                         size="sm"
@@ -543,7 +543,6 @@ export function BackgroundImageSection() {
                     customSource={customSource}
                     snapshot={enabled ? snapshot : null}
                     onRefresh={refreshBackground}
-                    t={t}
                 />
             </CardContent>
         </Card>

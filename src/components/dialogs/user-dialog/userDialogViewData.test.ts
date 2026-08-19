@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useShellStore } from '@/state/shellStore';
 
+import type { UserDialogAvatarReleaseStatus } from './userDialogListOptions';
 import {
     buildUserDialogListViewData,
     buildUserDialogProfileSummary,
@@ -30,6 +31,7 @@ describe('userDialogViewData', () => {
         expect(otherUserTabs.map((tab) => tab.value)).toEqual([
             'info',
             'instance-history',
+            'feed',
             'mutual',
             'groups',
             'worlds',
@@ -136,7 +138,9 @@ describe('userDialogViewData', () => {
     });
 
     it('keeps current-user avatar release filters predictable for all and private views', () => {
-        const buildAvatarView = (effectiveAvatarReleaseStatus: string) =>
+        const buildAvatarView = (
+            effectiveAvatarReleaseStatus: UserDialogAvatarReleaseStatus
+        ) =>
             buildUserDialogListViewData({
                 profile: {},
                 remoteData: {

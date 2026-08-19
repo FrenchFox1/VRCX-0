@@ -13,6 +13,9 @@ use vrcx_0_persistence::DatabaseService;
 const DATABASE_OPTIMIZE_JOB: &str = "databaseOptimize";
 const DATABASE_OPTIMIZE_INITIAL_DELAY_SECONDS: u64 = 3_600;
 const DATABASE_OPTIMIZE_INTERVAL_SECONDS: u64 = 86_400;
+const DATABASE_CHECKPOINT_JOB: &str = "databaseCheckpoint";
+const DATABASE_CHECKPOINT_INITIAL_DELAY_SECONDS: u64 = 600;
+const DATABASE_CHECKPOINT_INTERVAL_SECONDS: u64 = 7_200;
 const CANCELLABLE_SLEEP_CHUNK_SECONDS: u64 = 5;
 
 pub async fn sleep_until_due_or_stopped(total: Duration, stop_token: &TaskStopToken) -> bool {
@@ -51,6 +54,7 @@ pub struct RuntimeBackgroundJobSnapshot {
 struct RuntimeBackgroundJobsInner {
     jobs: Mutex<BTreeMap<String, RuntimeBackgroundJobSnapshot>>,
     database_optimize_started: AtomicBool,
+    database_checkpoint_started: AtomicBool,
 }
 
 #[derive(Clone, Default)]
@@ -280,6 +284,107 @@ impl RuntimeBackgroundJobs {
                         DATABASE_OPTIMIZE_JOB,
                         "Scheduled PRAGMA optimize loop stopped.",
                         DATABASE_OPTIMIZE_INTERVAL_SECONDS,
+                    );
+                    return;
+                }
+            }
+        });
+    }
+
+    pub fn start_database_checkpoint_loop(&self, db: Arc<DatabaseService>, tasks: TaskSupervisor) {
+        if !tasks.has_executor() {
+            self.register_job(
+                DATABASE_CHECKPOINT_JOB,
+                "rust",
+                Some(DATABASE_CHECKPOINT_INTERVAL_SECONDS),
+                RuntimeOperationStatus::Unavailable,
+                "Scheduled WAL checkpoint needs a host task executor.",
+            );
+            return;
+        }
+
+        if self
+            .inner
+            .database_checkpoint_started
+            .swap(true, Ordering::AcqRel)
+        {
+            self.register_job(
+                DATABASE_CHECKPOINT_JOB,
+                "rust",
+                Some(DATABASE_CHECKPOINT_INTERVAL_SECONDS),
+                RuntimeOperationStatus::Scheduled,
+                "Scheduled WAL checkpoint loop is already active.",
+            );
+            return;
+        }
+
+        self.register_job(
+            DATABASE_CHECKPOINT_JOB,
+            "rust",
+            Some(DATABASE_CHECKPOINT_INTERVAL_SECONDS),
+            RuntimeOperationStatus::Scheduled,
+            "Scheduled WAL checkpoint is owned by the Rust runtime.",
+        );
+
+        let jobs = self.clone();
+        tasks.spawn_cancellable(move |stop_token| async move {
+            jobs.mark_scheduled(
+                DATABASE_CHECKPOINT_JOB,
+                "Initial WAL checkpoint is waiting for startup idle time.",
+                DATABASE_CHECKPOINT_INITIAL_DELAY_SECONDS,
+            );
+            if !sleep_until_due_or_stopped(
+                Duration::from_secs(DATABASE_CHECKPOINT_INITIAL_DELAY_SECONDS),
+                &stop_token,
+            )
+            .await
+            {
+                jobs.mark_scheduled(
+                    DATABASE_CHECKPOINT_JOB,
+                    "Scheduled WAL checkpoint loop stopped.",
+                    DATABASE_CHECKPOINT_INTERVAL_SECONDS,
+                );
+                return;
+            }
+            loop {
+                if stop_token.is_stop_requested() {
+                    jobs.mark_scheduled(
+                        DATABASE_CHECKPOINT_JOB,
+                        "Scheduled WAL checkpoint loop stopped.",
+                        DATABASE_CHECKPOINT_INTERVAL_SECONDS,
+                    );
+                    return;
+                }
+                jobs.mark_running(DATABASE_CHECKPOINT_JOB, "Running WAL checkpoint.");
+                let db_for_task = Arc::clone(&db);
+                match tokio::task::spawn_blocking(move || db_for_task.checkpoint_wal()).await {
+                    Ok(Ok(_)) => {
+                        jobs.mark_completed(DATABASE_CHECKPOINT_JOB, "WAL checkpoint finished.")
+                    }
+                    Ok(Err(error)) => {
+                        tracing::warn!("runtime database checkpoint failed: {error}");
+                        jobs.mark_failed(DATABASE_CHECKPOINT_JOB, error.to_string());
+                    }
+                    Err(error) => {
+                        tracing::warn!("runtime database checkpoint task failed: {error}");
+                        jobs.mark_failed(DATABASE_CHECKPOINT_JOB, error.to_string());
+                    }
+                }
+                jobs.mark_scheduled(
+                    DATABASE_CHECKPOINT_JOB,
+                    "Next WAL checkpoint is scheduled.",
+                    DATABASE_CHECKPOINT_INTERVAL_SECONDS,
+                );
+                if !sleep_until_due_or_stopped(
+                    Duration::from_secs(DATABASE_CHECKPOINT_INTERVAL_SECONDS),
+                    &stop_token,
+                )
+                .await
+                {
+                    jobs.mark_scheduled(
+                        DATABASE_CHECKPOINT_JOB,
+                        "Scheduled WAL checkpoint loop stopped.",
+                        DATABASE_CHECKPOINT_INTERVAL_SECONDS,
                     );
                     return;
                 }

@@ -3,13 +3,16 @@ import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { useThrottledValue } from '@/lib/useThrottledValue';
-import gameLogRepository from '@/repositories/gameLogRepository';
+import gameLogRepository, {
+    type GameLogFilterType
+} from '@/repositories/gameLogRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import { buildGameLogFavoriteIdSet, getGameLogRowKey } from './gameLogRows';
+import { GAME_LOG_LIVE_REFRESH_THROTTLE_MS } from './gameLogTypes';
 import type {
     GameLogLoadStatus,
     GameLogRow,
@@ -17,13 +20,10 @@ import type {
     GameLogViewMode
 } from './gameLogTypes';
 
-const GAME_LOG_LIVE_REFRESH_THROTTLE_MS = 1000;
-
 type UseGameLogRowsOptions = {
     deferredSearchQuery: string;
     favoritesOnly: boolean;
-    filters: readonly string[];
-    paginationPageSize: number;
+    filters: readonly GameLogFilterType[];
     preferencesReady: boolean;
     refreshToken: number;
     sessionDateFrom: string;
@@ -36,7 +36,6 @@ export function useGameLogRows({
     deferredSearchQuery,
     favoritesOnly,
     filters,
-    paginationPageSize,
     preferencesReady,
     refreshToken,
     sessionDateFrom,
@@ -62,9 +61,16 @@ export function useGameLogRows({
     const localFriendFavorites = useFavoriteStore(
         (state) => state.localFriendFavorites
     );
+    const remoteFavoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
     const favoriteIdSet = useMemo(
-        () => buildGameLogFavoriteIdSet(localFriendFavorites),
-        [localFriendFavorites]
+        () =>
+            buildGameLogFavoriteIdSet(
+                remoteFavoriteFriendIds,
+                localFriendFavorites
+            ),
+        [localFriendFavorites, remoteFavoriteFriendIds]
     );
     const requestIdRef = useRef(0);
     const [rows, setRows] = useState<GameLogRow[]>([]);
@@ -100,53 +106,51 @@ export function useGameLogRows({
         const favoriteUserIds = favoritesOnly ? Array.from(favoriteIdSet) : [];
         setLoadStatus('running');
         setDetail('');
-        gameLogRepository[
-            viewMode === 'sessions' ? 'queryLatestSessions' : 'queryGameLog'
-        ]({
+        const query = {
             currentUserId,
             search: deferredSearchQuery,
             filters,
             favoriteUserIds,
             dateFrom: viewMode === 'sessions' ? sessionDateFrom : '',
             dateTo: viewMode === 'sessions' ? sessionDateTo : '',
-            limit: viewMode === 'sessions' ? sessionLimit : paginationPageSize
-        })
-            .then((nextResult: unknown) => {
+            limit: viewMode === 'sessions' ? sessionLimit : undefined
+        };
+        const loadRows = async () => {
+            if (viewMode === 'sessions') {
+                const nextSessions =
+                    await gameLogRepository.queryLatestSessions(query);
                 if (requestIdRef.current !== requestId) {
                     return;
                 }
-                if (viewMode === 'sessions') {
-                    setSessions(
-                        Array.isArray(nextResult)
-                            ? (nextResult as GameLogSession[])
-                            : []
-                    );
-                    setRows([]);
-                } else {
-                    setRows(
-                        Array.isArray(nextResult)
-                            ? (nextResult as GameLogRow[])
-                            : []
-                    );
-                    setSessions([]);
-                }
-                setLoadStatus('ready');
-                setDetail('');
-            })
-            .catch((error: unknown) => {
-                if (requestIdRef.current !== requestId) {
-                    return;
-                }
+                setSessions(nextSessions);
                 setRows([]);
-                setSessions([]);
-                setLoadStatus('error');
-                setDetail(
-                    userFacingErrorMessage(
-                        error,
-                        t('view.game_log.error.game_log_failed_to_load')
-                    )
+            } else {
+                const nextRows = await gameLogRepository.queryGameLog(query);
+                if (requestIdRef.current !== requestId) {
+                    return;
+                }
+                setRows(
+                    Array.isArray(nextRows) ? (nextRows as GameLogRow[]) : []
                 );
-            });
+                setSessions([]);
+            }
+            setLoadStatus('ready');
+            setDetail('');
+        };
+        void loadRows().catch((error: unknown) => {
+            if (requestIdRef.current !== requestId) {
+                return;
+            }
+            setRows([]);
+            setSessions([]);
+            setLoadStatus('error');
+            setDetail(
+                userFacingErrorMessage(
+                    error,
+                    t('view.game_log.error.game_log_failed_to_load')
+                )
+            );
+        });
     }, [
         throttledGameLogEventCount,
         currentUserId,
@@ -155,12 +159,12 @@ export function useGameLogRows({
         favoritesOnly,
         filters,
         isFavoritesLoaded,
-        paginationPageSize,
         preferencesReady,
         refreshToken,
         sessionDateFrom,
         sessionDateTo,
         sessionLimit,
+        t,
         viewMode
     ]);
 

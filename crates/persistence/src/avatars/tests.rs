@@ -103,3 +103,76 @@ fn cache_lookup_by_file_id_returns_only_the_matching_avatar() -> Result<(), Erro
     assert!(avatar_cache_find_by_file_id(&db, "file_missing")?.is_none());
     Ok(())
 }
+
+#[test]
+fn avatar_cache_preserves_unknown_release_status() -> Result<(), Error> {
+    let dir = TestDir::new("unknown-release-status");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let mut entry = avatar_entry("avtr_future");
+    entry.release_status = json!("future");
+
+    avatar_cache_upsert(&db, entry)?;
+
+    let cached =
+        avatar_cache_get(&db, "avtr_future".into())?.expect("cached avatar should be readable");
+    assert_eq!(
+        cached.release_status,
+        ReleaseStatus::Unknown("future".into())
+    );
+    assert_eq!(
+        serde_json::to_value(cached)?.get("releaseStatus"),
+        Some(&json!("future"))
+    );
+    Ok(())
+}
+
+#[test]
+fn cache_upsert_many_writes_the_whole_batch() -> Result<(), Error> {
+    let dir = TestDir::new("avatar-upsert-many");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+
+    let entries = (0..300)
+        .map(|index| avatar_entry(&format!("avtr_{index}")))
+        .collect::<Vec<_>>();
+    let written = avatar_cache_upsert_many(&db, entries)?;
+
+    assert_eq!(written, 300);
+    for index in [0, 150, 299] {
+        assert!(avatar_cache_get(&db, format!("avtr_{index}"))?.is_some());
+    }
+    Ok(())
+}
+
+#[test]
+fn cache_upsert_many_skips_malformed_entries_without_losing_the_batch() -> Result<(), Error> {
+    let dir = TestDir::new("avatar-upsert-many-invalid");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+
+    let mut invalid = avatar_entry("avtr_placeholder");
+    invalid.id = json!("   ");
+    let entries = vec![avatar_entry("avtr_a"), invalid, avatar_entry("avtr_b")];
+
+    let written = avatar_cache_upsert_many(&db, entries)?;
+
+    assert_eq!(written, 2);
+    assert!(avatar_cache_get(&db, "avtr_a".into())?.is_some());
+    assert!(avatar_cache_get(&db, "avtr_b".into())?.is_some());
+    Ok(())
+}
+
+#[test]
+fn cache_upsert_many_overwrites_an_existing_snapshot() -> Result<(), Error> {
+    let dir = TestDir::new("avatar-upsert-many-overwrite");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+
+    avatar_cache_upsert(&db, avatar_entry("avtr_a"))?;
+    let mut updated = avatar_entry("avtr_a");
+    updated.name = json!("Renamed Avatar");
+    avatar_cache_upsert_many(&db, vec![updated])?;
+
+    assert_eq!(
+        avatar_cache_get(&db, "avtr_a".into())?.unwrap().name,
+        "Renamed Avatar"
+    );
+    Ok(())
+}

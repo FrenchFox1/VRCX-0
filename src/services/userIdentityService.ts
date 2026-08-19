@@ -18,7 +18,6 @@ type UserIdentityRecord = Record<string, unknown> & {
     name?: unknown;
     isFriend?: unknown;
     state?: unknown;
-    stateBucket?: unknown;
 };
 type ResolvedUserSource =
     | 'currentUser'
@@ -175,8 +174,7 @@ async function resolveUserByDisplayName(
         recordUserProfile(friend, {
             endpoint: normalizedEndpoint,
             source: 'friend',
-            isFriend: true,
-            stateBucket: friend.stateBucket || friend.state
+            isFriend: true
         });
         return resolvedUser(friend, 'friend', normalizedDisplayName);
     }

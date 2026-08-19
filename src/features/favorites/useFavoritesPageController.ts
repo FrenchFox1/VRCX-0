@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { reconcilePendingFavoriteRevision } from '@/services/favoriteRevisionReconciliationService';
 import {
     buildLocalInstanceActionGateMap,
@@ -10,7 +11,6 @@ import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 
 import { normalizeFavoriteSearchValue } from './favoritesItems';
 import { resolveFavoritePresenceLocation } from './favoritesPageData';
-import type { FavoriteKind } from './favoritesTypes';
 import { useFavoritesActions } from './useFavoritesActions';
 import { useFavoritesCollectionsState } from './useFavoritesCollectionsState';
 import {

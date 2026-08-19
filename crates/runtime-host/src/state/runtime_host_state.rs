@@ -7,21 +7,25 @@ use std::sync::{
 use serde::Serialize;
 use serde_json::Value;
 
-use super::profile_lock::ProfileLock;
+use super::{profile_lock::ProfileLock, replace_authenticated_session_user_if_session_matches};
 use crate::{
     AuthenticatedRuntimeDeps, AuthenticatedRuntimeOrchestrator, GroupOrderSource,
     NoteExportRuntime, Result, RuntimeHostComposition, RuntimeHostContext, RuntimeHostProfile,
     RuntimeHostProfileExtension, SharedCollectionImportRuntime, UnavailableGroupOrderSource,
 };
 use vrcx_0_application::{
-    AuthenticatedSessionMaintenanceOutcome, DataDirMigrationRuntime, FavoriteImportRuntime,
-    GroupApiDeps, GroupBanImportRuntime, PrintCleanupDeps, PrintCleanupQueueSink,
-    ProfileBackupRuntime, ProfileBackupRuntimeDeps, VrchatGroupBanImportActions,
+    DataDirMigrationRuntime, FavoriteImportRuntime, FavoriteImportRuntimeDeps, GroupApiDeps,
+    GroupBanImportRuntime, PrintCleanupDeps, PrintCleanupQueueSink, ProfileBackupRuntime,
+    ProfileBackupRuntimeDeps, VrchatGroupBanImportActions,
 };
 use vrcx_0_application_core::{
-    BackendRuntime, ImageCache, UnavailableLocalGameContextSource, WebClient,
+    BackendRuntime, BackendRuntimeStatusPublisher, BackgroundCapabilitySession, ImageCache,
+    UnavailableLocalGameContextSource, WebClient,
 };
-use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
+use vrcx_0_application_realtime::{
+    FriendProjectionSink, RealtimeCurrentUserSnapshotSink, RealtimeHostRuntime,
+    RealtimeHostRuntimeDeps, RealtimeSessionContext,
+};
 use vrcx_0_host::app_paths::{
     app_data_paths_match, commit_app_data_dir_pointer, AppDataDirResolution, AppDataDirSource,
     AppPaths,
@@ -45,7 +49,7 @@ use vrcx_0_persistence::DatabaseService;
 #[cfg(test)]
 use std::sync::atomic::Ordering;
 #[cfg(test)]
-use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase};
+use vrcx_0_application_core::BackendRuntimePhase;
 
 pub struct RuntimeHostOptions {
     pub realtime_origin: String,
@@ -64,13 +68,20 @@ pub(super) fn web_ua_app_version(app_version: &str, profile: RuntimeHostProfile)
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct BackendRuntimeFrontendSessionSnapshot {
-    pub authenticated: bool,
+pub struct AuthenticatedSessionSnapshot {
+    pub auth_scope_generation: u64,
     pub user_id: String,
     pub display_name: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user_snapshot: Value,
+    pub current_user_snapshot: Arc<Value>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthenticatedSessionProjection {
+    pub revision: u64,
+    pub session: Option<AuthenticatedSessionSnapshot>,
 }
 
 pub struct RuntimeHostStateBuilder {
@@ -122,9 +133,7 @@ pub struct RuntimeHostState {
     pub(super) social_maintenance_running: Arc<AtomicBool>,
     pub(super) activity_warmup_generation: Arc<AtomicU64>,
     pub(super) background_group_instances_refresh_running: Arc<AtomicBool>,
-    pub(super) backend_frontend_session: Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
-    pub(super) authenticated_session_maintenance:
-        Mutex<Option<AuthenticatedSessionMaintenanceOutcome>>,
+    pub(super) authenticated_session_projection: Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(super) _profile_lock: ProfileLock,
 }
 
@@ -133,6 +142,7 @@ trait SecretStartupActions {
     fn is_encrypting_writes(&mut self) -> bool;
     fn migrate_cookies(&mut self) -> Result<()>;
     fn migrate_saved_credentials(&mut self) -> Result<()>;
+    fn migrate_sensitive_config_values(&mut self) -> Result<()>;
     fn read_cleanup_completed(&mut self) -> Result<bool>;
     fn cleanup(&mut self) -> Result<()>;
     fn record_cleanup_completed(&mut self) -> Result<()>;
@@ -148,6 +158,10 @@ fn run_secret_startup(actions: &mut dyn SecretStartupActions) {
     if let Err(error) = actions.migrate_saved_credentials() {
         migrations_succeeded = false;
         tracing::warn!(error = %error, "failed to migrate saved credentials to encrypted form");
+    }
+    if let Err(error) = actions.migrate_sensitive_config_values() {
+        migrations_succeeded = false;
+        tracing::warn!(error = %error, "failed to migrate sensitive config values to obfuscated form");
     }
     let cleanup_completed = match actions.read_cleanup_completed() {
         Ok(completed) => completed,
@@ -193,6 +207,11 @@ impl SecretStartupActions for SecretStartup<'_> {
 
     fn migrate_saved_credentials(&mut self) -> Result<()> {
         vrcx_0_application::migrate_saved_credential_secrets(&self.config)?;
+        Ok(())
+    }
+
+    fn migrate_sensitive_config_values(&mut self) -> Result<()> {
+        vrcx_0_persistence::config::migrate_sensitive_config_obfuscation(self.db)?;
         Ok(())
     }
 
@@ -436,7 +455,7 @@ impl RuntimeHostStateBuilder {
             profile_backup,
             data_dir_migration,
             runtime_context,
-            backend_runtime: BackendRuntime::new(),
+            backend_runtime: BackendRuntime::new(profile),
             web,
             image_cache,
             legacy_vrcx_available,
@@ -469,16 +488,49 @@ impl RuntimeHostStateBuilder {
             group_order_source,
             friend_note_change_sink,
             favorites_sink,
+            friend_projection_observer,
             profile_extension,
         } = composition;
+        let authenticated_session_projection =
+            Arc::new(Mutex::new(AuthenticatedSessionProjection::default()));
+        let current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink> = {
+            let session_slot = Arc::clone(&authenticated_session_projection);
+            Some(Arc::new(
+                move |session: &RealtimeSessionContext,
+                      auth_scope_generation: u64,
+                      snapshot: Value| {
+                    let expected = BackgroundCapabilitySession {
+                        auth_scope_generation,
+                        current_user_id: session.user_id.clone(),
+                        endpoint: session.endpoint.clone(),
+                        websocket: session.websocket.clone(),
+                        current_user_snapshot: Arc::new(Value::Null),
+                    };
+                    replace_authenticated_session_user_if_session_matches(
+                        &session_slot,
+                        &expected,
+                        snapshot,
+                    );
+                },
+            ))
+        };
         let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
             db: Arc::clone(&self.runtime_context.db),
             web: Arc::clone(&self.runtime_context.web),
             event_bus: self.runtime_context.event_bus.clone(),
+            backend_status: BackendRuntimeStatusPublisher::new(
+                self.backend_runtime.clone(),
+                self.runtime_context.event_bus.clone(),
+            ),
+            friend_projection_sink: FriendProjectionSink::new(
+                self.runtime_context.event_bus.clone(),
+                friend_projection_observer,
+            ),
             sync: self.runtime_context.sync.clone(),
             tasks: self.runtime_context.tasks.clone(),
             session: self.runtime_context.session.clone(),
             auth_scope: self.runtime_context.auth_scope.clone(),
+            remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
             local_game_context,
             activity_sink: Some(Arc::new(self.runtime_context.overlay_activity())),
             world_cache: Arc::clone(&self.runtime_context.world_cache),
@@ -489,9 +541,12 @@ impl RuntimeHostStateBuilder {
                     db: Arc::clone(&self.runtime_context.db),
                     web: Arc::clone(&self.runtime_context.web),
                     event_bus: self.runtime_context.event_bus.clone(),
+                    auth_scope: self.runtime_context.auth_scope.clone(),
+                    remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
                 },
             )),
             friend_note_change_sink,
+            current_user_snapshot_sink,
         }));
         let favorites_sink = {
             let overlay_activity = self.runtime_context.overlay_activity();
@@ -516,18 +571,19 @@ impl RuntimeHostStateBuilder {
                 event_bus: self.runtime_context.event_bus.clone(),
                 tasks: self.runtime_context.tasks.clone(),
                 auth_scope: self.runtime_context.auth_scope.clone(),
-                session: self.runtime_context.session.clone(),
                 realtime_runtime: Arc::clone(&realtime_runtime),
                 favorites_sink,
             });
-        let favorite_import = FavoriteImportRuntime::new(
-            Arc::clone(&self.db),
-            Arc::clone(&self.web),
-            Arc::clone(&self.runtime_context.world_cache),
-            self.runtime_context.event_bus.clone(),
-            self.runtime_context.tasks.clone(),
-            self.runtime_context.auth_scope.clone(),
-        );
+        let favorite_import = FavoriteImportRuntime::new(FavoriteImportRuntimeDeps {
+            db: Arc::clone(&self.db),
+            web: Arc::clone(&self.web),
+            world_cache: Arc::clone(&self.runtime_context.world_cache),
+            event_bus: self.runtime_context.event_bus.clone(),
+            tasks: self.runtime_context.tasks.clone(),
+            auth_scope: self.runtime_context.auth_scope.clone(),
+            remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
+            favorite_mutations: self.runtime_context.favorite_mutations.clone(),
+        });
         let group_ban_import = GroupBanImportRuntime::new(
             Arc::new(VrchatGroupBanImportActions {
                 deps: GroupApiDeps {
@@ -535,6 +591,8 @@ impl RuntimeHostStateBuilder {
                     web: Arc::clone(&self.web),
                     diagnostics: self.runtime_context.diagnostics.clone(),
                     sync: self.runtime_context.sync.clone(),
+                    auth_scope: self.runtime_context.auth_scope.clone(),
+                    remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
                 },
             }),
             self.runtime_context.event_bus.clone(),
@@ -548,6 +606,7 @@ impl RuntimeHostStateBuilder {
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),
             self.runtime_context.auth_scope.clone(),
+            self.runtime_context.favorite_mutations.clone(),
         );
         let note_export = NoteExportRuntime::new(
             Arc::clone(&self.db),
@@ -585,8 +644,7 @@ impl RuntimeHostStateBuilder {
             social_maintenance_running: Arc::new(AtomicBool::new(false)),
             activity_warmup_generation: Arc::new(AtomicU64::new(0)),
             background_group_instances_refresh_running: Arc::new(AtomicBool::new(false)),
-            backend_frontend_session: Arc::new(Mutex::new(None)),
-            authenticated_session_maintenance: Mutex::new(None),
+            authenticated_session_projection,
             _profile_lock: self.profile_lock,
         })
     }
@@ -607,426 +665,19 @@ impl RuntimeHostState {
             group_order_source: Arc::new(UnavailableGroupOrderSource),
             friend_note_change_sink: None,
             favorites_sink: None,
+            friend_projection_observer: None,
             profile_extension: None,
         })
     }
 
-    pub fn backend_frontend_session_handle(
+    pub fn authenticated_session_projection_handle(
         &self,
-    ) -> Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>> {
-        Arc::clone(&self.backend_frontend_session)
+    ) -> Arc<Mutex<AuthenticatedSessionProjection>> {
+        Arc::clone(&self.authenticated_session_projection)
     }
 }
 
 #[cfg(test)]
-mod secret_startup_tests {
-    use super::{run_secret_startup, SecretStartupActions};
-    use crate::{Error, Result};
-
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    enum Step {
-        Initialize,
-        MigrateCookies,
-        MigrateSavedCredentials,
-        ReadCleanupCompleted,
-        IsEncryptingWrites,
-        Cleanup,
-        RecordCleanupCompleted,
-    }
-
-    struct TestSecretStartup {
-        events: Vec<Step>,
-        fail_at: Option<Step>,
-        encrypting_writes: bool,
-        cleanup_completed: bool,
-        cleanup_recorded: bool,
-    }
-
-    impl TestSecretStartup {
-        fn step(&mut self, current: Step) -> Result<()> {
-            self.events.push(current);
-            if self.fail_at == Some(current) {
-                return Err(Error::Custom(format!("{current:?} failed")));
-            }
-            Ok(())
-        }
-    }
-
-    impl SecretStartupActions for TestSecretStartup {
-        fn initialize(&mut self) {
-            self.events.push(Step::Initialize);
-        }
-
-        fn is_encrypting_writes(&mut self) -> bool {
-            self.events.push(Step::IsEncryptingWrites);
-            self.encrypting_writes
-        }
-
-        fn migrate_cookies(&mut self) -> Result<()> {
-            self.step(Step::MigrateCookies)
-        }
-
-        fn migrate_saved_credentials(&mut self) -> Result<()> {
-            self.step(Step::MigrateSavedCredentials)
-        }
-
-        fn read_cleanup_completed(&mut self) -> Result<bool> {
-            self.step(Step::ReadCleanupCompleted)?;
-            Ok(self.cleanup_completed)
-        }
-
-        fn cleanup(&mut self) -> Result<()> {
-            self.step(Step::Cleanup)
-        }
-
-        fn record_cleanup_completed(&mut self) -> Result<()> {
-            self.step(Step::RecordCleanupCompleted)?;
-            self.cleanup_recorded = true;
-            Ok(())
-        }
-    }
-
-    fn run(
-        fail_at: Option<Step>,
-        encrypting_writes: bool,
-        cleanup_completed: bool,
-    ) -> (Vec<Step>, bool) {
-        let mut startup = TestSecretStartup {
-            events: Vec::new(),
-            fail_at,
-            encrypting_writes,
-            cleanup_completed,
-            cleanup_recorded: false,
-        };
-        run_secret_startup(&mut startup);
-        (startup.events, startup.cleanup_recorded)
-    }
-
-    #[test]
-    fn secret_startup_runs_all_steps_in_order() {
-        let (events, cleanup_recorded) = run(None, true, false);
-        assert_eq!(
-            events,
-            vec![
-                Step::Initialize,
-                Step::MigrateCookies,
-                Step::MigrateSavedCredentials,
-                Step::ReadCleanupCompleted,
-                Step::IsEncryptingWrites,
-                Step::Cleanup,
-                Step::RecordCleanupCompleted,
-            ]
-        );
-        assert!(cleanup_recorded);
-    }
-
-    #[test]
-    fn secret_startup_requires_both_migrations_before_cleanup() {
-        for failed_step in [Step::MigrateCookies, Step::MigrateSavedCredentials] {
-            let (events, cleanup_recorded) = run(Some(failed_step), true, false);
-            assert_eq!(
-                events,
-                vec![
-                    Step::Initialize,
-                    Step::MigrateCookies,
-                    Step::MigrateSavedCredentials,
-                    Step::ReadCleanupCompleted,
-                    Step::IsEncryptingWrites,
-                ]
-            );
-            assert!(!cleanup_recorded);
-        }
-    }
-
-    #[test]
-    fn secret_startup_skips_cleanup_when_disabled_or_already_completed() {
-        for (encrypting_writes, cleanup_completed) in [(false, false), (true, true)] {
-            let (events, cleanup_recorded) = run(None, encrypting_writes, cleanup_completed);
-            assert!(!events.contains(&Step::Cleanup));
-            assert!(!cleanup_recorded);
-        }
-    }
-
-    #[test]
-    fn secret_startup_does_not_record_failed_cleanup() {
-        let (events, cleanup_recorded) = run(Some(Step::Cleanup), true, false);
-        assert!(events.contains(&Step::Cleanup));
-        assert!(!events.contains(&Step::RecordCleanupCompleted));
-        assert!(!cleanup_recorded);
-    }
-
-    #[test]
-    fn secret_startup_retries_when_cleanup_state_cannot_be_read() {
-        let (events, cleanup_recorded) = run(Some(Step::ReadCleanupCompleted), true, false);
-        assert!(events.contains(&Step::Cleanup));
-        assert!(cleanup_recorded);
-    }
-
-    #[test]
-    fn secret_startup_keeps_cleanup_retryable_when_recording_fails() {
-        let (events, cleanup_recorded) = run(Some(Step::RecordCleanupCompleted), true, false);
-        assert!(events.contains(&Step::Cleanup));
-        assert!(events.contains(&Step::RecordCleanupCompleted));
-        assert!(!cleanup_recorded);
-    }
-}
-
+mod profile_bundle_tests;
 #[cfg(test)]
-mod profile_bundle_tests {
-    use super::*;
-    use std::path::PathBuf;
-    use std::sync::atomic::AtomicUsize;
-    use vrcx_0_host::app_paths::AppDataDirSource;
-    use vrcx_0_persistence::data_dir_migration::{
-        read_pending_data_dir_migration, take_data_dir_migration_result,
-        write_pending_data_dir_migration, DataDirMigrationResultStatus, PendingDataDirMigration,
-        StagedDataDirMigration,
-    };
-
-    #[derive(Default)]
-    struct TestProfileExtension {
-        stop_count: AtomicUsize,
-    }
-
-    impl RuntimeHostProfileExtension for TestProfileExtension {
-        fn stop_profile_services(&self) {
-            self.stop_count.fetch_add(1, Ordering::AcqRel);
-        }
-    }
-
-    struct TestDir {
-        path: PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!(
-                "vrcx-0-runtime-host-{name}-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    fn switched_journal(source: &Path, target: &Path) -> PendingDataDirMigration {
-        let mut journal = PendingDataDirMigration::copying(
-            source.to_string_lossy().into_owned(),
-            target.to_string_lossy().into_owned(),
-            "2026-07-18T00:00:00Z".into(),
-            false,
-        );
-        journal.mark_switched(
-            &StagedDataDirMigration {
-                db_sha256: "test".into(),
-                db_bytes: 1,
-                wal_bytes: None,
-            },
-            None,
-        );
-        journal
-    }
-
-    fn persisted_resolution(source: &Path) -> AppDataDirResolution {
-        AppDataDirResolution {
-            current_dir: source.to_path_buf(),
-            default_dir: source.to_path_buf(),
-            persisted_dir: None,
-            cli_dir: None,
-            source: AppDataDirSource::Default,
-        }
-    }
-
-    #[test]
-    fn switched_data_dir_migration_finishes_before_profile_startup() -> Result<()> {
-        let dir = TestDir::new("data-dir-migration-success");
-        let source = dir.path.join("source");
-        let target = dir.path.join("target");
-        std::fs::create_dir_all(&source)?;
-        std::fs::create_dir_all(&target)?;
-        drop(DatabaseService::new(&source.join("VRCX-0.sqlite3"))?);
-        drop(DatabaseService::new(&target.join("VRCX-0.sqlite3"))?);
-        write_pending_data_dir_migration(&source, &switched_journal(&source, &target))?;
-
-        let builder = RuntimeHostStateBuilder::new(RuntimeHostOptions {
-            realtime_origin: "http://localhost:9000".into(),
-            launched_from_autostart: false,
-            app_data_dir: persisted_resolution(&source),
-            app_version: "0.0.0-test".into(),
-            profile: RuntimeHostProfile::HeadlessData,
-        })?;
-
-        assert!(app_data_paths_match(&builder.paths.app_data, &target));
-        assert_eq!(
-            take_data_dir_migration_result(&source)?
-                .expect("migration result")
-                .status,
-            DataDirMigrationResultStatus::Succeeded
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn migrated_database_open_failure_rolls_back_to_source() -> Result<()> {
-        let dir = TestDir::new("data-dir-migration-rollback");
-        let source = dir.path.join("source");
-        let target = dir.path.join("target");
-        std::fs::create_dir_all(&source)?;
-        std::fs::create_dir_all(target.join("VRCX-0.sqlite3"))?;
-        drop(DatabaseService::new(&source.join("VRCX-0.sqlite3"))?);
-        write_pending_data_dir_migration(&source, &switched_journal(&source, &target))?;
-
-        let builder = RuntimeHostStateBuilder::new(RuntimeHostOptions {
-            realtime_origin: "http://localhost:9000".into(),
-            launched_from_autostart: false,
-            app_data_dir: persisted_resolution(&source),
-            app_version: "0.0.0-test".into(),
-            profile: RuntimeHostProfile::HeadlessData,
-        })?;
-
-        assert!(app_data_paths_match(&builder.paths.app_data, &source));
-        assert_eq!(
-            take_data_dir_migration_result(&source)?
-                .expect("migration result")
-                .status,
-            DataDirMigrationResultStatus::DatabaseOpenFailed
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn interrupted_copy_is_cleaned_before_profile_startup() -> Result<()> {
-        let dir = TestDir::new("data-dir-migration-interrupted");
-        let source = dir.path.join("source");
-        let target = dir.path.join("target");
-        let staging = target.join(".migrate-staging");
-        std::fs::create_dir_all(&source)?;
-        std::fs::create_dir_all(&staging)?;
-        std::fs::write(staging.join("VRCX-0.sqlite3"), b"partial")?;
-        write_pending_data_dir_migration(
-            &source,
-            &PendingDataDirMigration::copying(
-                source.to_string_lossy().into_owned(),
-                target.to_string_lossy().into_owned(),
-                "2026-07-18T00:00:00Z".into(),
-                false,
-            ),
-        )?;
-
-        let mut resolution = persisted_resolution(&source);
-        assert!(prepare_data_dir_migration_startup(&mut resolution)?.is_none());
-        assert!(app_data_paths_match(&resolution.current_dir, &source));
-        assert!(!staging.exists());
-        assert!(read_pending_data_dir_migration(&source)?.is_none());
-        assert_eq!(
-            take_data_dir_migration_result(&source)?
-                .expect("migration result")
-                .status,
-            DataDirMigrationResultStatus::Interrupted
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn cli_override_leaves_switched_migration_pending() -> Result<()> {
-        let dir = TestDir::new("data-dir-migration-cli-override");
-        let control = dir.path.join("control");
-        let source = dir.path.join("source");
-        let target = dir.path.join("target");
-        let cli = dir.path.join("cli");
-        for path in [&control, &source, &target, &cli] {
-            std::fs::create_dir_all(path)?;
-        }
-        write_pending_data_dir_migration(&control, &switched_journal(&source, &target))?;
-        let mut resolution = AppDataDirResolution {
-            current_dir: cli.clone(),
-            default_dir: control.clone(),
-            persisted_dir: Some(source),
-            cli_dir: Some(cli.clone()),
-            source: AppDataDirSource::Cli,
-        };
-
-        assert!(prepare_data_dir_migration_startup(&mut resolution)?.is_none());
-        assert!(app_data_paths_match(&resolution.current_dir, &cli));
-        assert!(read_pending_data_dir_migration(&control)?.is_some());
-        assert!(take_data_dir_migration_result(&control)?.is_none());
-        Ok(())
-    }
-
-    #[test]
-    fn headless_data_constructs_no_game_or_desktop_bundle_and_stops_idempotently() -> Result<()> {
-        let dir = TestDir::new("headless-profile");
-        let app_data = dir.path.join("app-data");
-        std::fs::create_dir_all(&app_data)?;
-        let state = RuntimeHostState::new(RuntimeHostOptions {
-            realtime_origin: "http://localhost:9000".into(),
-            launched_from_autostart: false,
-            app_data_dir: AppDataDirResolution {
-                current_dir: app_data.clone(),
-                default_dir: app_data.clone(),
-                persisted_dir: None,
-                cli_dir: Some(app_data),
-                source: AppDataDirSource::Cli,
-            },
-            app_version: "0.0.0-test".into(),
-            profile: RuntimeHostProfile::HeadlessData,
-        })?;
-        assert!(state.profile_extension.is_none());
-        assert!(!state.paths.app_data.join("metadataCache.db").exists());
-        state.backend_runtime.set_mode(BackendRuntimeMode::Headless);
-        state
-            .backend_runtime
-            .set_phase(BackendRuntimePhase::Running);
-        let first = state.stop_backend_runtime("test");
-        assert_eq!(first.phase, BackendRuntimePhase::Idle);
-        let second = state.stop_backend_runtime("test-again");
-        assert_eq!(second.phase, BackendRuntimePhase::Idle);
-        assert_eq!(second.updated_at, first.updated_at);
-        Ok(())
-    }
-
-    #[test]
-    fn desktop_idle_stop_still_cleans_up_profile_services() -> Result<()> {
-        let dir = TestDir::new("desktop-idle-stop");
-        let app_data = dir.path.join("app-data");
-        std::fs::create_dir_all(&app_data)?;
-        let extension = Arc::new(TestProfileExtension::default());
-        let state = RuntimeHostStateBuilder::new(RuntimeHostOptions {
-            realtime_origin: "http://localhost:9000".into(),
-            launched_from_autostart: false,
-            app_data_dir: AppDataDirResolution {
-                current_dir: app_data.clone(),
-                default_dir: app_data.clone(),
-                persisted_dir: None,
-                cli_dir: Some(app_data),
-                source: AppDataDirSource::Cli,
-            },
-            app_version: "0.0.0-test".into(),
-            profile: RuntimeHostProfile::Desktop,
-        })?
-        .finish(RuntimeHostComposition {
-            local_game_context: Arc::new(UnavailableLocalGameContextSource),
-            group_order_source: Arc::new(UnavailableGroupOrderSource),
-            friend_note_change_sink: None,
-            favorites_sink: None,
-            profile_extension: Some(extension.clone()),
-        })?;
-
-        let before = state.backend_runtime.snapshot();
-        assert_eq!(before.phase, BackendRuntimePhase::Idle);
-        let stopped = state.stop_backend_runtime("application-exit");
-        assert_eq!(stopped.updated_at, before.updated_at);
-        assert_eq!(extension.stop_count.load(Ordering::Acquire), 1);
-        Ok(())
-    }
-}
+mod secret_startup_tests;

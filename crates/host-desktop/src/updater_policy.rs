@@ -5,17 +5,32 @@ use crate::host_capabilities::{
 use vrcx_0_host::Error;
 
 pub fn expected_updater_target() -> Result<String, Error> {
-    let platform = current_host_platform();
-    let arch = current_host_architecture();
+    updater_target(
+        current_host_platform(),
+        current_host_architecture(),
+        current_host_capabilities().linux_package_kind,
+    )
+}
+
+fn updater_target(
+    platform: HostPlatform,
+    arch: HostArchitecture,
+    linux_package_kind: LinuxPackageKind,
+) -> Result<String, Error> {
     let target = match (platform, arch) {
         (HostPlatform::Windows, HostArchitecture::X86_64) => "windows-x86_64-stable".to_string(),
         (HostPlatform::Macos, HostArchitecture::Aarch64) => "macos-aarch64-stable".to_string(),
         (HostPlatform::Macos, HostArchitecture::X86_64) => "macos-x86_64-stable".to_string(),
         (HostPlatform::Linux, HostArchitecture::X86_64) => {
-            let kind = match current_host_capabilities().linux_package_kind {
+            let kind = match linux_package_kind {
                 LinuxPackageKind::Deb => "deb",
                 LinuxPackageKind::Rpm => "rpm",
-                LinuxPackageKind::Unknown | LinuxPackageKind::Appimage => "appimage",
+                LinuxPackageKind::Appimage => "appimage",
+                LinuxPackageKind::Unknown => {
+                    return Err(Error::Custom(
+                        "Updates are not installable for an unknown Linux package type.".into(),
+                    ))
+                }
             };
             format!("linux-x86_64-{kind}-stable")
         }
@@ -40,6 +55,14 @@ pub fn validate_update_request(
     }
 
     let expected_target = expected_updater_target()?;
+    validate_update_request_with_expected_target(manifest_url, target, &expected_target)
+}
+
+fn validate_update_request_with_expected_target(
+    manifest_url: &str,
+    target: &str,
+    expected_target: &str,
+) -> Result<url::Url, Error> {
     if target != expected_target {
         return Err(Error::Custom(format!(
             "Updater target mismatch: expected {expected_target}, got {target}."
@@ -72,15 +95,45 @@ pub fn validate_update_request(
 mod tests {
     use super::*;
 
-    fn current_target() -> String {
-        expected_updater_target().expect("current platform supports updater tests")
+    const TEST_TARGET: &str = "windows-x86_64-stable";
+
+    #[test]
+    fn linux_unknown_packages_use_the_manual_update_path() {
+        assert!(updater_target(
+            HostPlatform::Linux,
+            HostArchitecture::X86_64,
+            LinuxPackageKind::Unknown,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn supported_desktop_packages_keep_their_updater_targets() {
+        assert_eq!(
+            updater_target(
+                HostPlatform::Linux,
+                HostArchitecture::X86_64,
+                LinuxPackageKind::Appimage,
+            )
+            .unwrap(),
+            "linux-x86_64-appimage-stable"
+        );
+        assert_eq!(
+            updater_target(
+                HostPlatform::Macos,
+                HostArchitecture::Aarch64,
+                LinuxPackageKind::Unknown,
+            )
+            .unwrap(),
+            "macos-aarch64-stable"
+        );
     }
 
     #[test]
     fn rejects_update_downgrades() {
         let result = validate_update_request(
             "https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json",
-            &current_target(),
+            TEST_TARGET,
             true,
         );
 
@@ -89,10 +142,10 @@ mod tests {
 
     #[test]
     fn rejects_unexpected_target() {
-        let result = validate_update_request(
+        let result = validate_update_request_with_expected_target(
             "https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json",
             "other-target",
-            false,
+            TEST_TARGET,
         );
 
         assert!(result.is_err());
@@ -100,48 +153,44 @@ mod tests {
 
     #[test]
     fn accepts_github_release_manifest_assets() {
-        let target = current_target();
-
-        assert!(validate_update_request(
+        assert!(validate_update_request_with_expected_target(
             "https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json",
-            &target,
-            false,
+            TEST_TARGET,
+            TEST_TARGET,
         )
         .is_ok());
-        assert!(validate_update_request(
+        assert!(validate_update_request_with_expected_target(
             "https://github.com/Map1en/VRCX-0/releases/download/v1.0.0/latest_linux_and_macos.json",
-            &target,
-            false,
+            TEST_TARGET,
+            TEST_TARGET,
         )
         .is_ok());
     }
 
     #[test]
     fn rejects_non_github_or_unexpected_manifest_urls() {
-        let target = current_target();
-
-        assert!(validate_update_request(
+        assert!(validate_update_request_with_expected_target(
             "http://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json",
-            &target,
-            false,
+            TEST_TARGET,
+            TEST_TARGET,
         )
         .is_err());
-        assert!(validate_update_request(
+        assert!(validate_update_request_with_expected_target(
             "https://example.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json",
-            &target,
-            false,
+            TEST_TARGET,
+            TEST_TARGET,
         )
         .is_err());
-        assert!(validate_update_request(
+        assert!(validate_update_request_with_expected_target(
             "https://github.com/Map1en/VRCX-0/releases/latest/download/other.json",
-            &target,
-            false,
+            TEST_TARGET,
+            TEST_TARGET,
         )
         .is_err());
-        assert!(validate_update_request(
+        assert!(validate_update_request_with_expected_target(
             "https://github.com/Map1en/VRCX-0/archive/latest_windows.json",
-            &target,
-            false,
+            TEST_TARGET,
+            TEST_TARGET,
         )
         .is_err());
     }

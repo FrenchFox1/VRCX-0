@@ -81,10 +81,7 @@ struct ProcessHandleCache<H> {
 impl<H> ProcessHandleCache<H> {
     fn retain_running(&mut self, mut is_running: impl FnMut(&H) -> bool) -> VrcProcessStatus {
         self.game = self.game.take().filter(|handle| is_running(handle));
-        self.steamvr = self
-            .steamvr
-            .take()
-            .filter(|handle| is_running(handle));
+        self.steamvr = self.steamvr.take().filter(|handle| is_running(handle));
         VrcProcessStatus {
             is_game_running: self.game.is_some(),
             is_steamvr_running: self.steamvr.is_some(),
@@ -192,6 +189,33 @@ pub fn vrchat_process_ids() -> Vec<u32> {
         .collect()
 }
 
+#[cfg(target_os = "linux")]
+pub fn linux_vrchat_process_id() -> Option<u32> {
+    select_linux_vrchat_process_id(vrchat_process_ids(), |process_id| {
+        std::fs::read(format!("/proc/{process_id}/environ")).ok()
+    })
+}
+
+#[cfg(any(target_os = "linux", test))]
+fn select_linux_vrchat_process_id(
+    process_ids: Vec<u32>,
+    mut read_environment: impl FnMut(u32) -> Option<Vec<u8>>,
+) -> Option<u32> {
+    const VRCHAT_COMPATDATA_MARKER: &[u8] = b"compatdata/438100";
+
+    process_ids
+        .iter()
+        .copied()
+        .find(|process_id| {
+            read_environment(*process_id).is_some_and(|environment| {
+                environment
+                    .windows(VRCHAT_COMPATDATA_MARKER.len())
+                    .any(|window| window == VRCHAT_COMPATDATA_MARKER)
+            })
+        })
+        .or_else(|| process_ids.first().copied())
+}
+
 pub fn detect_legacy_vrcx_running() -> bool {
     let mut sys = System::new();
     sys.refresh_processes(ProcessesToUpdate::All, true);
@@ -253,14 +277,16 @@ fn is_steamvr_process_name(name: &str) -> bool {
 
 #[cfg(not(target_os = "linux"))]
 fn is_steamvr_process_name(name: &str) -> bool {
-    name.to_ascii_lowercase().starts_with("vrserver")
+    name.as_bytes()
+        .get(.."vrserver".len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"vrserver"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
         detect_process_status_from_names, is_legacy_vrcx_process_name, is_steamvr_process_name,
-        is_vrchat_process_name, ProcessHandleCache,
+        is_vrchat_process_name, select_linux_vrchat_process_id, ProcessHandleCache,
     };
     use sysinfo::Pid;
 
@@ -337,9 +363,8 @@ mod tests {
         let steamvr_pid = Pid::from_u32(20);
         let mut cache = ProcessHandleCache::default();
 
-        let initial = cache.update_from_processes([(game_pid, "VRChat.exe")], |pid| {
-            Some(pid.as_u32())
-        });
+        let initial =
+            cache.update_from_processes([(game_pid, "VRChat.exe")], |pid| Some(pid.as_u32()));
         assert!(initial.is_game_running);
         assert!(!initial.is_steamvr_running);
 
@@ -347,10 +372,9 @@ mod tests {
         assert!(cached_status.is_game_running);
         assert!(!cached_status.is_steamvr_running);
 
-        let status = cache.update_from_processes(
-            [(steamvr_pid, STEAMVR_PROCESS_FIXTURE)],
-            |pid| Some(pid.as_u32()),
-        );
+        let status = cache.update_from_processes([(steamvr_pid, STEAMVR_PROCESS_FIXTURE)], |pid| {
+            Some(pid.as_u32())
+        });
 
         assert!(status.is_game_running);
         assert!(status.is_steamvr_running);
@@ -372,9 +396,8 @@ mod tests {
         assert!(!cached_status.is_game_running);
         assert!(cached_status.is_steamvr_running);
 
-        let status = cache.update_from_processes([(new_game_pid, "VRChat.exe")], |pid| {
-            Some(pid.as_u32())
-        });
+        let status =
+            cache.update_from_processes([(new_game_pid, "VRChat.exe")], |pid| Some(pid.as_u32()));
 
         assert!(status.is_game_running);
         assert!(status.is_steamvr_running);
@@ -432,5 +455,24 @@ mod tests {
         assert!(is_legacy_vrcx_process_name("VRCX.exe"));
         assert!(is_legacy_vrcx_process_name("vrcx"));
         assert!(!is_legacy_vrcx_process_name("VRCX-0.exe"));
+    }
+
+    #[test]
+    fn linux_launch_prefers_the_vrchat_proton_process() {
+        let selected =
+            select_linux_vrchat_process_id(vec![10, 20], |process_id| match process_id {
+                10 => Some(b"WINEPREFIX=/games/compatdata/123/pfx\0".to_vec()),
+                20 => Some(b"WINEPREFIX=/games/compatdata/438100/pfx\0".to_vec()),
+                _ => None,
+            });
+
+        assert_eq!(selected, Some(20));
+    }
+
+    #[test]
+    fn linux_launch_falls_back_to_the_first_vrchat_process() {
+        let selected = select_linux_vrchat_process_id(vec![10, 20], |_| None);
+
+        assert_eq!(selected, Some(10));
     }
 }

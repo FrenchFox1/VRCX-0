@@ -5,10 +5,7 @@ import {
     writeTextFile
 } from '@tauri-apps/plugin-fs';
 
-import type {
-    QuickSearchEntityType,
-    QuickSearchResult
-} from '../quickSearchCatalog';
+import type { QuickSearchEntityType, QuickSearchResult } from '../quickSearch';
 
 const HISTORY_FILE_NAME = 'quick-search-history.json';
 const HISTORY_LIMIT = 5;

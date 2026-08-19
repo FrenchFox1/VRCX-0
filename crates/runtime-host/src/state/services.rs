@@ -37,6 +37,12 @@ impl RuntimeHostState {
             .background_jobs
             .start_database_optimize_loop(Arc::clone(&self.db), self.runtime_context.tasks.clone());
         self.runtime_context
+            .background_jobs
+            .start_database_checkpoint_loop(
+                Arc::clone(&self.db),
+                self.runtime_context.tasks.clone(),
+            );
+        self.runtime_context
             .vrc_status
             .start_loop(self.runtime_context.tasks.clone());
         self.profile_backup.start_scheduler();

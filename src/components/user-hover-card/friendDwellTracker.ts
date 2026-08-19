@@ -1,12 +1,10 @@
-import {
-    normalizeLocationStatus,
-    timestampMsFromValue
-} from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { timestampMsFromValue } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import type {
     FriendRecord,
     FriendRosterById,
     FriendRosterStore
-} from '@/domain/friends/friendRosterTypes';
+} from '@/domain/friends/types';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -49,9 +47,7 @@ function readEntryUpstreamEpoch(friend: FriendRecord) {
 }
 
 function applyFriendChange(userId: string, friend: FriendRecord) {
-    const stateBucket = normalizeLocationStatus(
-        friend?.stateBucket || friend?.state
-    );
+    const stateBucket = normalizeStateBucket(friend?.state);
     const locationTag = readEntryLocationTag(friend);
     const inRealInstance =
         stateBucket === 'online' && parseLocation(locationTag).isRealInstance;
@@ -96,6 +92,11 @@ function ensureStarted() {
     started = true;
     ingestRosterState(useFriendRosterStore.getState());
     useFriendRosterStore.subscribe(ingestRosterState);
+}
+
+export function resetFriendDwellTracking() {
+    firstSeenByUser.clear();
+    previousFriendsById = null;
 }
 
 export function getEstimatedDwellSince(userId: unknown, location: unknown) {

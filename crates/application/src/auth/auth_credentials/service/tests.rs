@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde_json::json;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::storage::StorageService;
@@ -104,6 +105,44 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> crate::Result<()> {
 fn test_web_client(dir: &TestDir, db: &Arc<DatabaseService>) -> crate::Result<WebClient> {
     let storage = StorageService::new(&dir.path.join("VRCX-0.json"))?;
     WebClient::new(&storage, db.as_ref(), "https://app.example".into(), "2.9.2")
+}
+
+#[test]
+fn record_login_success_with_save_credentials_captures_live_cookies() -> crate::Result<()> {
+    let dir = TestDir::new("login-success-save-live-cookies");
+    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+    let config = ConfigRepository::new(Arc::clone(&db));
+    let web = test_web_client(&dir, &db)?;
+    let cookie_payload = B64.encode(
+        serde_json::to_vec(&json!([
+            {"Name": "auth", "Value": "new-account", "Domain": ".vrchat.cloud", "Path": "/"},
+            {"Name": "twoFactorAuth", "Value": "new-account-2fa", "Domain": ".vrchat.cloud", "Path": "/"}
+        ]))?,
+    );
+    web.set_cookies(&cookie_payload)?;
+    let live_cookies = web.get_cookies();
+
+    record_login_success(
+        &config,
+        &web,
+        LoginSuccessRecordInput {
+            user: json!({ "id": "usr_new", "displayName": "New User" }),
+            login_params: json!({
+                "username": "new@example.test",
+                "password": "secret"
+            }),
+            stored_login_params: None,
+            save_credentials: true,
+        },
+    )?;
+
+    assert_eq!(
+        read_saved_credentials(&config)?["usr_new"]
+            .cookies
+            .as_deref(),
+        Some(live_cookies.as_str())
+    );
+    Ok(())
 }
 
 #[test]

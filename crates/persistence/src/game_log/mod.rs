@@ -20,7 +20,7 @@ pub use query::{
     get_last_game_log_location, get_location_before_or_at, get_previous_instances_by_group_id,
     get_previous_instances_by_world_id, get_session_events_for_range,
     get_session_location_segments, get_session_location_segments_by_date_range,
-    get_user_id_from_display_name,
+    get_session_player_duration_rows, get_user_id_from_display_name,
 };
 pub use tables::ensure_game_log_tables;
 pub use types::{
@@ -29,6 +29,6 @@ pub use types::{
     GameLogPortalSpawnEntry, GameLogPreviousInstanceGroupOutput,
     GameLogPreviousInstanceWorldOutput, GameLogQueryInput, GameLogResourceLoadEntry,
     GameLogVideoPlayEntry, GameLogWriteBatch, GameLogWriteKind, PreviousInstanceEventRow,
-    SessionEventRow, SessionLocationSegmentRow,
+    SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 pub use write::write_batch;

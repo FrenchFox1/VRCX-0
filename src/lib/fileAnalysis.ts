@@ -1,7 +1,7 @@
 import type {
     FileAnalysisRecord,
     PlatformFileAnalysis
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/world';
 import {
     entityQueryPolicies,
     fetchCachedData,

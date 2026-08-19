@@ -13,7 +13,6 @@ type UserFactIngestEntry = {
     source?: string;
     isFriend?: boolean;
     isCurrentUser?: boolean;
-    stateBucket?: string;
 };
 
 const pendingUserFactEntries = new Map<string, UserFactIngestEntry>();
@@ -57,8 +56,7 @@ function ingestUserFactEntries(entries: UserFactIngestEntry[]): void {
             userId,
             entry.source || '',
             entry.isFriend === true ? 'friend' : '',
-            entry.isCurrentUser === true ? 'current' : '',
-            entry.stateBucket || ''
+            entry.isCurrentUser === true ? 'current' : ''
         ].join('\u0000');
         const existing = pendingUserFactEntries.get(key);
         pendingUserFactEntries.set(key, {
@@ -80,7 +78,7 @@ function mergeUserFactInput(
     incoming: Record<string, unknown>,
     userId: string
 ): Record<string, unknown> {
-    const merged = { ...(existing || {}) };
+    const merged = { ...existing };
     for (const [field, value] of Object.entries(incoming)) {
         if (
             value === null ||
@@ -136,24 +134,11 @@ function recordUserProfile(
             source:
                 typeof options.source === 'string' ? options.source : 'profile',
             isFriend: Boolean(options.isFriend),
-            isCurrentUser: Boolean(options.isCurrentUser),
-            stateBucket:
-                typeof options.stateBucket === 'string'
-                    ? options.stateBucket
-                    : ''
+            isCurrentUser: Boolean(options.isCurrentUser)
         }
     ]);
 
     return getKnownUserFact(endpoint, id);
-}
-
-function recordUserProfiles(
-    profiles: Array<Record<string, unknown> | null | undefined>,
-    options: UserFactMergeOptions = {}
-): void {
-    for (const profile of Array.isArray(profiles) ? profiles : []) {
-        recordUserProfile(profile, options);
-    }
 }
 
 export {
@@ -163,7 +148,6 @@ export {
     normalizeEndpoint,
     normalizeUserId,
     recordUserProfile,
-    recordUserProfiles,
     resetPendingUserFactEntries,
     userFactKey
 };

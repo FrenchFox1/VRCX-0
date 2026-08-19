@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { cn } from '@/lib/utils';
+import { triggerToolByKey } from '@/services/toolActionService';
 import { setRgb } from '@/services/vrcx0CssLayerService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
@@ -32,7 +33,6 @@ import {
     normalizeSearchQuery,
     USER_QUERY_MIN_LENGTH
 } from './quick-search/quickSearchResultModel';
-import { useQuickSearchCatalogState } from './quick-search/useQuickSearchCatalogState';
 import { useQuickSearchHistory } from './quick-search/useQuickSearchHistory';
 import { useQuickSearchResults } from './quick-search/useQuickSearchResults';
 import { useQuickSearchSelectResult } from './quick-search/useQuickSearchSelectResult';
@@ -60,14 +60,11 @@ export function QuickSearchDialog({
     const normalizedQuery = normalizeSearchQuery(query);
     const showSearchOverview = normalizedQuery.length < USER_QUERY_MIN_LENGTH;
     const navCommands = useNavCommands(normalizedQuery);
-    const catalog = useQuickSearchCatalogState({
+    const results = useQuickSearchResults({
         currentEndpoint,
         currentUserId,
+        normalizedQuery,
         open
-    });
-    const results = useQuickSearchResults({
-        catalog,
-        normalizedQuery
     });
     const history = useQuickSearchHistory({
         currentEndpoint,
@@ -104,6 +101,16 @@ export function QuickSearchDialog({
         setRgb(value === '/rgb-mode:on');
         setQuery('');
         onOpenChange(false);
+    }
+
+    async function selectNavCommand(item: QuickSearchNavCommand) {
+        onOpenChange(false);
+        setQuery('');
+        if (item.target.type === 'path') {
+            navigate(item.target.path);
+            return;
+        }
+        await triggerToolByKey(item.target.toolKey, { navigate, t });
     }
 
     return (
@@ -161,10 +168,12 @@ export function QuickSearchDialog({
                                 >
                                     <CompassIcon />
                                     <span className="min-w-0 flex-1 truncate">
-                                        {t('side_panel.search_pages')}
+                                        {t('side_panel.search_pages_and_tools')}
                                     </span>
                                     <CommandShortcut className="max-w-[45%] truncate tracking-normal">
-                                        {t('side_panel.search_scope_pages')}
+                                        {t(
+                                            'side_panel.search_scope_pages_and_tools'
+                                        )}
                                     </CommandShortcut>
                                 </CommandItem>
                                 <CommandItem
@@ -223,12 +232,12 @@ export function QuickSearchDialog({
                         ) : hasResults ? (
                             <>
                                 <NavResultGroup
-                                    title={t('side_panel.search_pages')}
+                                    title={t(
+                                        'side_panel.search_pages_and_tools'
+                                    )}
                                     items={navCommands}
                                     onSelect={(item: QuickSearchNavCommand) => {
-                                        onOpenChange(false);
-                                        setQuery('');
-                                        navigate(item.path);
+                                        void selectNavCommand(item);
                                     }}
                                 />
                                 <ResultGroup
@@ -267,14 +276,14 @@ export function QuickSearchDialog({
                                     onSelect={selectResult}
                                 />
                             </>
-                        ) : (
+                        ) : results.status === 'running' ? null : (
                             <CommandEmpty>
                                 {t('side_panel.search_no_results')}
                             </CommandEmpty>
                         )}
-                        {catalog.status === 'error' && catalog.detail ? (
+                        {results.status === 'error' && results.detail ? (
                             <div className="text-destructive px-2 pb-2 text-xs">
-                                {catalog.detail}
+                                {results.detail}
                             </div>
                         ) : null}
                     </CommandList>

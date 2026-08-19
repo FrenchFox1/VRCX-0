@@ -3,6 +3,7 @@ use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::stream::{self, StreamExt};
 use moka::future::Cache;
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
@@ -11,14 +12,15 @@ use serde_json::Value;
 use url::Url;
 use uuid::Uuid;
 use vrcx_0_application_core::vrchat_api::avatars::{
-    avatar_list_by_user_get_input, AvatarListByUserGetInput,
+    avatar_list_by_user_get_input, AvatarListByUserGetInput, AvatarListSort, QueryOrder,
+    ReleaseStatusFilter,
 };
 use vrcx_0_application_core::vrchat_api::favorites::{
     favorite_groups_get_input, favorite_worlds_get_input,
 };
 use vrcx_0_application_core::vrchat_api::groups::user_groups_get_input;
 use vrcx_0_application_core::vrchat_api::users::user_mutual_counts_get_input;
-use vrcx_0_application_core::vrchat_api::worlds::world_list_by_user_get_input;
+use vrcx_0_application_core::vrchat_api::worlds::{world_list_by_user_get_input, WorldSearchSort};
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
 use vrcx_0_integrations::external_api::{self, ExternalApiScope, ExternalHttpRequestInput};
 use vrcx_0_persistence::{config, DatabaseService};
@@ -27,11 +29,12 @@ use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestIn
 use crate::{Error, Result};
 
 const MAX_PROFILE_PAGES: usize = 50;
-const TAB_COUNTS_CACHE_CAPACITY: u64 = 256;
+const TAB_COUNTS_CACHE_CAPACITY: u64 = 32;
 const TAB_COUNTS_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const WORLD_PAGE_SIZE: usize = 100;
 const WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * WORLD_PAGE_SIZE) as i64;
 const FAVORITE_GROUP_PAGE_SIZE: usize = 50;
+const FAVORITE_GROUP_FETCH_CONCURRENCY: usize = 8;
 const FAVORITE_WORLD_PAGE_SIZE: usize = 300;
 const FAVORITE_WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i64;
 const MY_AVATAR_PAGE_SIZE: usize = 50;
@@ -119,10 +122,7 @@ pub async fn get_user_dialog_tab_counts(
             "User dialog tab counts require a user id.".into(),
         ));
     }
-    let avatar_release_status = match input.avatar_release_status.trim() {
-        "" => "all".to_string(),
-        value => value.to_string(),
-    };
+    let avatar_release_status = input.avatar_release_status;
     let avatar_provider = if target_user_id == scope.current_user_id {
         Ok(None)
     } else {
@@ -138,7 +138,7 @@ pub async fn get_user_dialog_tab_counts(
         current_user_id: scope.current_user_id.clone(),
         endpoint: scope.endpoint.clone(),
         target_user_id: target_user_id.clone(),
-        avatar_release_status: avatar_release_status.clone(),
+        avatar_release_status: avatar_release_status.as_str().to_string(),
         avatar_provider: avatar_provider_key,
         include_mutual_friends: input.include_mutual_friends,
     };
@@ -166,26 +166,31 @@ async fn load_user_dialog_tab_counts(
     deps: UserDialogTabCountsDeps,
     scope: RuntimeAuthScopeSnapshot,
     target_user_id: String,
-    avatar_release_status: String,
+    avatar_release_status: ReleaseStatusFilter,
     avatar_provider: Result<Option<String>>,
     include_mutual_friends: bool,
 ) -> Result<UserDialogTabCountsOutput> {
-    let mutual_friends = if include_mutual_friends {
-        Some(count_mutual_friends(&deps, &scope, &target_user_id).await)
-    } else {
-        None
+    let mutual_friends = async {
+        if include_mutual_friends {
+            Some(count_mutual_friends(&deps, &scope, &target_user_id).await)
+        } else {
+            None
+        }
     };
-    let groups = count_groups(&deps, &scope, &target_user_id).await;
-    let worlds = count_worlds(&deps, &scope, &target_user_id).await;
-    let favorite_worlds = count_favorite_worlds(&deps, &scope, &target_user_id).await;
     let avatars = count_avatars(
         &deps,
         &scope,
         &target_user_id,
-        &avatar_release_status,
+        avatar_release_status,
         avatar_provider,
-    )
-    .await;
+    );
+    let (mutual_friends, groups, worlds, favorite_worlds, avatars) = tokio::join!(
+        mutual_friends,
+        count_groups(&deps, &scope, &target_user_id),
+        count_worlds(&deps, &scope, &target_user_id),
+        count_favorite_worlds(&deps, &scope, &target_user_id),
+        avatars,
+    );
     Ok(counts_from_results(
         mutual_friends,
         groups,
@@ -226,9 +231,9 @@ async fn count_worlds(
     target_user_id: &str,
 ) -> Result<usize> {
     let release_status = if target_user_id == scope.current_user_id {
-        "all"
+        ReleaseStatusFilter::All
     } else {
-        "public"
+        ReleaseStatusFilter::Public
     };
     count_payload_pages_bounded(
         WORLD_PAGE_SIZE,
@@ -239,9 +244,9 @@ async fn count_worlds(
                 target_user_id.into(),
                 WORLD_PAGE_SIZE as i64,
                 offset,
-                "updated".into(),
-                "descending".into(),
-                release_status.into(),
+                WorldSearchSort::Updated,
+                QueryOrder::Descending,
+                release_status,
             )?;
             execute_vrchat_payload(deps, scope, request, "worlds").await
         },
@@ -256,28 +261,34 @@ async fn count_favorite_worlds(
     target_user_id: &str,
 ) -> Result<usize> {
     let group_names = collect_world_favorite_group_names(deps, scope, target_user_id).await?;
-    let mut count = 0;
-    for group_name in group_names {
-        let result = count_payload_pages_bounded(
-            FAVORITE_WORLD_PAGE_SIZE,
-            FAVORITE_WORLD_MAX_OFFSET,
-            |offset| {
-                let group_name = group_name.clone();
-                async move {
-                    let request = favorite_worlds_get_input(
-                        scope.endpoint.clone(),
-                        FAVORITE_WORLD_PAGE_SIZE as i64,
-                        offset,
-                        target_user_id.into(),
-                        target_user_id.into(),
-                        group_name,
-                    );
-                    execute_vrchat_payload(deps, scope, request, "favorite worlds").await
-                }
-            },
-            count_all_rows,
-        )
+    let results = stream::iter(group_names)
+        .map(|group_name| async move {
+            count_payload_pages_bounded(
+                FAVORITE_WORLD_PAGE_SIZE,
+                FAVORITE_WORLD_MAX_OFFSET,
+                |offset| {
+                    let group_name = group_name.clone();
+                    async move {
+                        let request = favorite_worlds_get_input(
+                            scope.endpoint.clone(),
+                            FAVORITE_WORLD_PAGE_SIZE as i64,
+                            offset,
+                            target_user_id.into(),
+                            target_user_id.into(),
+                            group_name,
+                        );
+                        execute_vrchat_payload(deps, scope, request, "favorite worlds").await
+                    }
+                },
+                count_all_rows,
+            )
+            .await
+        })
+        .buffer_unordered(FAVORITE_GROUP_FETCH_CONCURRENCY)
+        .collect::<Vec<_>>()
         .await;
+    let mut count = 0;
+    for result in results {
         match result {
             Ok(group_count) => count += group_count,
             Err(error) => tracing::debug!(%error, "favorite world count source failed"),
@@ -313,7 +324,7 @@ async fn count_avatars(
     deps: &UserDialogTabCountsDeps,
     scope: &RuntimeAuthScopeSnapshot,
     target_user_id: &str,
-    release_status: &str,
+    release_status: ReleaseStatusFilter,
     avatar_provider: Result<Option<String>>,
 ) -> Result<usize> {
     if target_user_id == scope.current_user_id {
@@ -327,9 +338,9 @@ async fn count_avatars(
                     user: "me".into(),
                     n: MY_AVATAR_PAGE_SIZE as i64,
                     offset,
-                    sort: "updated".into(),
-                    order: "descending".into(),
-                    release_status: "all".into(),
+                    sort: AvatarListSort::Updated,
+                    order: QueryOrder::Descending,
+                    release_status: ReleaseStatusFilter::All,
                 })?;
                 execute_vrchat_payload(deps, scope, request, "my avatars").await
             },
@@ -498,16 +509,20 @@ fn count_all_rows(payload: &str) -> Result<(usize, usize)> {
     Ok((page_len, page_len))
 }
 
-#[derive(Clone, Debug, Default, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDialogTabCountsInput {
     pub user_id: String,
-    #[serde(default)]
-    pub avatar_release_status: String,
+    #[serde(default = "default_avatar_release_status")]
+    pub avatar_release_status: ReleaseStatusFilter,
     #[serde(default)]
     pub include_mutual_friends: bool,
     #[serde(default)]
     pub force: bool,
+}
+
+fn default_avatar_release_status() -> ReleaseStatusFilter {
+    ReleaseStatusFilter::All
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
@@ -639,14 +654,14 @@ struct MyAvatarCountRow {
     release_status: Value,
 }
 
-fn count_my_avatars(payload: &str, release_status: &str) -> Result<usize> {
+fn count_my_avatars(payload: &str, release_status: ReleaseStatusFilter) -> Result<usize> {
     let rows = serde_json::from_str::<Vec<MyAvatarCountRow>>(payload)?;
-    if release_status == "all" {
+    if release_status == ReleaseStatusFilter::All {
         return Ok(rows.len());
     }
     Ok(rows
         .iter()
-        .filter(|row| row.release_status.as_str() == Some(release_status))
+        .filter(|row| row.release_status.as_str() == Some(release_status.as_str()))
         .count())
 }
 
@@ -743,9 +758,48 @@ mod tests {
         ])
         .to_string();
 
-        assert_eq!(count_my_avatars(&payload, "all").unwrap(), 3);
-        assert_eq!(count_my_avatars(&payload, "public").unwrap(), 2);
-        assert_eq!(count_my_avatars(&payload, "private").unwrap(), 1);
+        assert_eq!(
+            count_my_avatars(&payload, ReleaseStatusFilter::All).unwrap(),
+            3
+        );
+        assert_eq!(
+            count_my_avatars(&payload, ReleaseStatusFilter::Public).unwrap(),
+            2
+        );
+        assert_eq!(
+            count_my_avatars(&payload, ReleaseStatusFilter::Private).unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn tab_counts_input_uses_the_release_status_enum() {
+        let default_input = serde_json::from_value::<UserDialogTabCountsInput>(
+            serde_json::json!({ "userId": "usr_target" }),
+        )
+        .unwrap();
+        assert_eq!(
+            default_input.avatar_release_status,
+            ReleaseStatusFilter::All
+        );
+
+        let public_input = serde_json::from_value::<UserDialogTabCountsInput>(serde_json::json!({
+            "userId": "usr_target",
+            "avatarReleaseStatus": "public"
+        }))
+        .unwrap();
+        assert_eq!(
+            public_input.avatar_release_status,
+            ReleaseStatusFilter::Public
+        );
+
+        assert!(
+            serde_json::from_value::<UserDialogTabCountsInput>(serde_json::json!({
+                "userId": "usr_target",
+                "avatarReleaseStatus": "invalid"
+            }))
+            .is_err()
+        );
     }
 
     #[tokio::test]

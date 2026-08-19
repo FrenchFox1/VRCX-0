@@ -1,4 +1,4 @@
-import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -145,7 +145,7 @@ export async function fetchGroupProfile({
     const response = unwrapVrchatGroupResponse<GroupRecord>(
         await commands.appVrchatGroupGet({
             groupId: normalizedGroupId,
-            includeRoles: Boolean(includeRoles)
+            includeRoles
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}`
     );

@@ -11,7 +11,7 @@ import { FadeInImage } from '@/components/media/FadeInImage';
 import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserDetailTile } from '@/components/UserDetailTile';
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { resolveInstanceDwellEpoch } from '@/domain/instances/instanceRoster';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -47,9 +47,6 @@ export function EntityList({
     showInstanceDuration?: boolean;
 }) {
     const { t } = useTranslation();
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
@@ -77,7 +74,6 @@ export function EntityList({
                         <UserGroupCard
                             key={`${row?.id || row?.groupId || row?.name || 'group'}:${index}`}
                             group={row}
-                            currentEndpoint={currentEndpoint}
                         />
                     );
                 }

@@ -349,7 +349,7 @@ export function DataTablePagination<TData extends RowData>({
     pageIndex?: number;
     pageCount?: number;
     pageSize?: number;
-    pageSizes?: unknown[];
+    pageSizes?: readonly number[];
     pageSizeLabel?: string;
     onPageSizeChange?: (value: string) => void;
     previousLabel?: string;
@@ -377,11 +377,9 @@ export function DataTablePagination<TData extends RowData>({
         typeof pageSize === 'number' && Number.isFinite(pageSize)
             ? pageSize
             : table.state.pagination?.pageSize;
-    const pageSizeOptions = Array.isArray(pageSizes)
-        ? pageSizes
-              .map((value) => Number.parseInt(String(value), 10))
-              .filter((value) => Number.isFinite(value) && value > 0)
-        : [];
+    const pageSizeOptions = pageSizes.filter(
+        (value) => Number.isFinite(value) && value > 0
+    );
     const pageSizeSelectVisible = Boolean(
         pageSizeOptions.length &&
         Number.isFinite(resolvedPageSize) &&
@@ -395,11 +393,13 @@ export function DataTablePagination<TData extends RowData>({
                     <span className="text-muted-foreground text-sm">
                         {resolvedPageSizeLabel}
                     </span>
-                    <Select
+                    <Select<string>
                         value={String(resolvedPageSize)}
-                        onValueChange={(value) =>
-                            onPageSizeChange?.(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onPageSizeChange?.(value);
+                            }
+                        }}
                     >
                         <SelectTrigger size="sm" className="w-20">
                             <SelectValue placeholder={resolvedPageSizeLabel} />
@@ -476,7 +476,13 @@ export function DataTableView<TData extends RowData>({
                 .filter((columnId): columnId is string => Boolean(columnId)),
         [columns]
     );
-    const tableLayout = usePersistedDataTableLayout({
+    const {
+        columnOrder,
+        columnSizing,
+        setColumnOrder,
+        setColumnSizing,
+        writePersistedState
+    } = usePersistedDataTableLayout({
         tableId: persistKey,
         columnIds
     });
@@ -492,34 +498,22 @@ export function DataTableView<TData extends RowData>({
             return;
         }
 
-        tableLayout.writePersistedState({
-            columnOrder: sanitizeTableColumnOrder(
-                tableLayout.columnOrder,
-                columnIds
-            )
+        writePersistedState({
+            columnOrder: sanitizeTableColumnOrder(columnOrder, columnIds)
         });
-    }, [
-        columnIds,
-        persistTableLayout,
-        tableLayout.columnOrder,
-        tableLayout.writePersistedState
-    ]);
+    }, [columnIds, columnOrder, persistTableLayout, writePersistedState]);
 
     const table = useAppTable<TData>({
         columns,
         data,
         state: persistTableLayout
             ? {
-                  columnOrder: tableLayout.columnOrder,
-                  columnSizing: tableLayout.columnSizing
+                  columnOrder,
+                  columnSizing
               }
             : undefined,
-        onColumnOrderChange: persistTableLayout
-            ? tableLayout.setColumnOrder
-            : undefined,
-        onColumnSizingChange: persistTableLayout
-            ? tableLayout.setColumnSizing
-            : undefined,
+        onColumnOrderChange: persistTableLayout ? setColumnOrder : undefined,
+        onColumnSizingChange: persistTableLayout ? setColumnSizing : undefined,
         enableColumnResizing: persistTableLayout,
         columnResizeMode: 'onChange'
     });

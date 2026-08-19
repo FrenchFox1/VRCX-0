@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
-import type { GroupInstanceRecord } from '@/domain/entities/profileEntities';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { cn } from '@/lib/utils';
 import { openGroupDialog } from '@/services/dialogService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
@@ -34,6 +34,7 @@ const GROUP_INSTANCE_ROW_SIZE = 49;
 const GROUP_MESSAGE_ROW_SIZE = 64;
 const GROUP_FOOTER_ROW_SIZE = 16;
 const EMPTY_GROUP_ORDER: string[] = [];
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
 
 type GroupHeaderSidebarRow = {
     type: 'group-header';
@@ -454,7 +455,7 @@ export function GroupsSidebar() {
         groupInstancesState.userId === currentUserId &&
         groupInstancesState.endpoint === currentEndpoint
             ? groupInstancesState.instances
-            : [];
+            : EMPTY_GROUP_INSTANCES;
     const [collapsedGroups, setCollapsedGroups] = useState(
         () => new Set<string>()
     );

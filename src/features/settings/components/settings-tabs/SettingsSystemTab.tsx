@@ -1,21 +1,22 @@
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { HostPlatform } from '@/platform/tauri/bindings';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
+import { useSettingsSystemTabState } from '../useSettingsSystemTabState';
 
-type SettingsSystemTabProps = {
+type SettingsSystemTabContentProps = {
     autoInstallUpdatesOnStartup?: boolean;
     autoLoginDelayEnabled?: boolean;
-    autoLoginDelaySeconds?: ReactNode;
+    autoLoginDelaySeconds?: number;
     backgroundModeEnabled?: boolean;
     backgroundModeDelayEnabled?: boolean;
-    backgroundModeDelayMinutes?: ReactNode;
-    hostPlatform?: string;
+    backgroundModeDelayMinutes?: number;
+    hostPlatform?: HostPlatform;
     isCloseToTray?: boolean;
     isStartAsMinimizedState?: boolean;
     isStartAtWindowsStartup?: boolean;
@@ -24,22 +25,27 @@ type SettingsSystemTabProps = {
     proxyServer?: string;
     showPostUpdateChangelogToast?: boolean;
     updateCheckDisabled?: boolean;
-    onAutoInstallUpdatesOnStartupChange: (checked: boolean) => unknown;
-    onAutoLoginDelayEnabledChange: (checked: boolean) => unknown;
-    onBackgroundModeEnabledChange: (checked: boolean) => unknown;
-    onBackgroundModeDelayEnabledChange: (checked: boolean) => unknown;
-    onCloseToTrayChange: (checked: boolean) => unknown;
-    onPromptAutoLoginDelaySeconds: () => unknown;
-    onPromptBackgroundModeDelayMinutes: () => unknown;
-    onProxyEnabledChange: (checked: boolean) => unknown;
-    onProxySettings: () => unknown;
-    onPostUpdateChangelogToastChange: (checked: boolean) => unknown;
-    onStartAsMinimizedChange: (checked: boolean) => unknown;
-    onStartAtWindowsStartupChange: (checked: boolean) => unknown;
-    onSystemWindowFrameChange: (checked: boolean) => unknown;
+    onAutoInstallUpdatesOnStartupChange: (checked: boolean) => void;
+    onAutoLoginDelayEnabledChange: (checked: boolean) => void;
+    onBackgroundModeEnabledChange: (checked: boolean) => void;
+    onBackgroundModeDelayEnabledChange: (checked: boolean) => void;
+    onCloseToTrayChange: (checked: boolean) => void;
+    onPromptAutoLoginDelaySeconds: () => void;
+    onPromptBackgroundModeDelayMinutes: () => void;
+    onProxyEnabledChange: (checked: boolean) => void | Promise<void>;
+    onProxySettings: () => void;
+    onPostUpdateChangelogToastChange: (checked: boolean) => void;
+    onStartAsMinimizedChange: (checked: boolean) => void;
+    onStartAtWindowsStartupChange: (checked: boolean) => void;
+    onSystemWindowFrameChange: (checked: boolean) => void | Promise<void>;
 };
 
-export function SettingsSystemTab({
+export function SettingsSystemTab() {
+    const state = useSettingsSystemTabState();
+    return <SettingsSystemTabContent {...state} />;
+}
+
+export function SettingsSystemTabContent({
     hostPlatform = 'unknown',
     isStartAtWindowsStartup,
     isStartAsMinimizedState,
@@ -68,7 +74,7 @@ export function SettingsSystemTab({
     onPostUpdateChangelogToastChange,
     onProxyEnabledChange,
     onProxySettings
-}: SettingsSystemTabProps) {
+}: SettingsSystemTabContentProps) {
     const { t } = useTranslation();
     const isWindows = hostPlatform === 'windows';
     const startupLabel = isWindows
@@ -151,21 +157,6 @@ export function SettingsSystemTab({
                         onCheckedChange={onBackgroundModeDelayEnabledChange}
                     />
                 </Field>
-                {isWindows ? (
-                    <Field
-                        label={t(
-                            'view.settings.general.application.system_window_frame'
-                        )}
-                        description={t(
-                            'view.settings.general.application.system_window_frame_description'
-                        )}
-                    >
-                        <Switch
-                            checked={systemWindowFrame}
-                            onCheckedChange={onSystemWindowFrameChange}
-                        />
-                    </Field>
-                ) : null}
                 {backgroundModeDelayEnabled ? (
                     <Field
                         label={t(
@@ -190,6 +181,21 @@ export function SettingsSystemTab({
                                 )}
                             </Button>
                         </div>
+                    </Field>
+                ) : null}
+                {isWindows ? (
+                    <Field
+                        label={t(
+                            'view.settings.general.application.system_window_frame'
+                        )}
+                        description={t(
+                            'view.settings.general.application.system_window_frame_description'
+                        )}
+                    >
+                        <Switch
+                            checked={systemWindowFrame}
+                            onCheckedChange={onSystemWindowFrameChange}
+                        />
                     </Field>
                 ) : null}
                 {updateCheckDisabled ? (

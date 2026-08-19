@@ -1,3 +1,4 @@
+import { useSettingsPageSection } from '../SettingsPageStateContext';
 import { AvatarProviderDialog } from './settings-dialogs/AvatarProviderDialog';
 import { CustomFontDialog } from './settings-dialogs/CustomFontDialog';
 import { PurgeConfirmDialog } from './settings-dialogs/PurgeConfirmDialog';
@@ -14,11 +15,8 @@ import {
 import { YoutubeApiDialog } from './settings-dialogs/YoutubeApiDialog';
 import { TablePageSizesDialog } from './SettingsViewParts';
 
-export function SettingsDialogs({
-    dialogs
-}: {
-    dialogs: SettingsPageStateSections['dialogs'];
-}) {
+export function SettingsDialogs() {
+    const dialogs = useSettingsPageSection('dialogs');
     const customFont = {
         open: dialogs.customFontDialogOpen,
         setOpen: dialogs.setCustomFontDialogOpen,
@@ -51,7 +49,7 @@ export function SettingsDialogs({
     const tablePageSizes = {
         open: dialogs.tablePageSizesDialogOpen,
         setOpen: dialogs.setTablePageSizesDialogOpen,
-        onSaved: (tablePageSizes: unknown) =>
+        onSaved: (tablePageSizes: number[]) =>
             dialogs.setPrefs((current) => ({ ...current, tablePageSizes }))
     };
     const tableLimits = {
@@ -219,4 +217,3 @@ export function SettingsDialogs({
         </>
     );
 }
-import type { SettingsPageStateSections } from '../settingsPageStateSections';

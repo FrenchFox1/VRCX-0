@@ -8,6 +8,14 @@ use crate::http_api::{
     HttpApiError, HttpApiRequestInput,
 };
 
+mod params;
+mod request;
+
+pub use params::GroupMemberSort;
+pub use request::{
+    GroupMemberPatch, GroupMemberVisibility, GroupPostMutation, GroupPostVisibility,
+};
+
 fn group_path(group_id: &str, suffix: &str) -> String {
     if suffix.is_empty() {
         format!("groups/{}", encode_path_segment(group_id))
@@ -127,7 +135,7 @@ pub fn members_get_input(
     group_id: String,
     n: i64,
     offset: i64,
-    sort: String,
+    sort: GroupMemberSort,
     role_id: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupMembersGet requires groupId.")?;
@@ -135,7 +143,7 @@ pub fn members_get_input(
     let mut params = HashMap::from([
         ("n".to_string(), serde_json::json!(n)),
         ("offset".to_string(), serde_json::json!(offset)),
-        ("sort".to_string(), Value::String(sort)),
+        ("sort".to_string(), Value::String(sort.as_str().to_string())),
     ]);
     if !role_id.is_empty() {
         params.insert("roleId".to_string(), Value::String(role_id));
@@ -280,16 +288,17 @@ pub fn current_user_group_instances_get_input(
 
 pub fn post_create_input(
     group_id: String,
-    params: Option<Value>,
+    params: GroupPostMutation,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupPostCreate requires groupId.")?;
+    let params = params.validated()?;
     Ok((
         group_id.clone(),
         api_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             "POST",
             group_path(&group_id, "posts"),
-            Some(object_body(params)),
+            Some(serde_json::json!(params)),
         ),
     ))
 }
@@ -297,10 +306,11 @@ pub fn post_create_input(
 pub fn post_edit_input(
     group_id: String,
     post_id: String,
-    params: Option<Value>,
+    params: GroupPostMutation,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupPostEdit requires groupId.")?;
     let post_id = require_text(post_id, "VrchatGroupPostEdit requires postId.")?;
+    let params = params.validated()?;
     Ok((
         group_id.clone(),
         post_id.clone(),
@@ -311,7 +321,7 @@ pub fn post_edit_input(
                 &group_id,
                 &format!("posts/{}", encode_path_segment(&post_id)),
             ),
-            Some(object_body(params)),
+            Some(serde_json::json!(params)),
         ),
     ))
 }
@@ -585,7 +595,7 @@ pub fn member_props_set_input(
     endpoint: String,
     group_id: String,
     user_id: String,
-    params: Option<Value>,
+    params: GroupMemberPatch,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupMemberPropsSet requires groupId.")?;
     let user_id = require_text(user_id, "VrchatGroupMemberPropsSet requires userId.")?;
@@ -599,7 +609,7 @@ pub fn member_props_set_input(
                 &group_id,
                 &format!("members/{}", encode_path_segment(&user_id)),
             ),
-            Some(object_body(params)),
+            Some(serde_json::json!(params)),
         ),
     ))
 }
@@ -681,6 +691,79 @@ mod tests {
 
     fn endpoint() -> String {
         "https://api.vrchat.cloud/api/1".to_string()
+    }
+
+    #[test]
+    fn members_get_serializes_the_closed_sort_value() {
+        let (_, request) = members_get_input(
+            "grp_1".into(),
+            50,
+            0,
+            GroupMemberSort::JoinedAtDesc,
+            String::new(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            request
+                .query_params
+                .as_ref()
+                .and_then(|params| params.get("sort")),
+            Some(&Value::String("joinedAt:desc".into()))
+        );
+    }
+
+    #[test]
+    fn group_post_serializes_null_image_and_rejects_public_roles() {
+        let post = GroupPostMutation {
+            title: "Title".into(),
+            text: "Text".into(),
+            send_notification: true,
+            visibility: GroupPostVisibility::Group,
+            role_ids: vec!["grol_1".into()],
+            image_id: None,
+        };
+        let (_, request) = post_create_input("grp_1".into(), post).unwrap();
+        assert_eq!(
+            request.body.as_json(),
+            Some(&serde_json::json!({
+                "title": "Title",
+                "text": "Text",
+                "sendNotification": true,
+                "visibility": "group",
+                "roleIds": ["grol_1"],
+                "imageId": null,
+            }))
+        );
+
+        let public_post = GroupPostMutation {
+            title: "Title".into(),
+            text: "Text".into(),
+            send_notification: false,
+            visibility: GroupPostVisibility::Public,
+            role_ids: vec!["grol_1".into()],
+            image_id: None,
+        };
+        assert!(post_create_input("grp_1".into(), public_post).is_err());
+    }
+
+    #[test]
+    fn group_member_patch_serializes_only_selected_properties() {
+        let (_, _, request) = member_props_set_input(
+            endpoint(),
+            "grp_1".into(),
+            "usr_1".into(),
+            GroupMemberPatch {
+                visibility: Some(GroupMemberVisibility::Friends),
+                ..GroupMemberPatch::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            request.body.as_json(),
+            Some(&serde_json::json!({ "visibility": "friends" }))
+        );
     }
 
     #[test]

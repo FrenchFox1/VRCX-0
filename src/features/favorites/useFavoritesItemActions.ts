@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import { selectAvatar as selectCurrentAvatar } from '@/services/avatarSelectionService';
@@ -15,15 +16,13 @@ import {
 import { selfInviteToInstance } from '@/services/launchService';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
-import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
 
 import { normalizeFavoriteEntityId as normalizeEntityId } from './favoritesItems';
 import { resolveFavoritePresenceLocation } from './favoritesPageData';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 
@@ -44,7 +43,6 @@ export function useFavoritesItemActions({
     kind,
     localGroups,
     newLocalGroupName,
-    reloadLocalWorldFavorites,
     refreshing,
     selectedContentItems,
     selectedSource,
@@ -62,9 +60,8 @@ export function useFavoritesItemActions({
     friendsById: Record<string, unknown>;
     friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     newLocalGroupName: string;
-    reloadLocalWorldFavorites(): Promise<unknown>;
     refreshing: boolean;
     selectedContentItems: FavoriteItem[];
     selectedSource: FavoriteSource;
@@ -80,10 +77,6 @@ export function useFavoritesItemActions({
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const boopPrompt = useModalStore((state) => state.boopPrompt);
-    const createLocalFavoriteGroup = useFavoriteStore(
-        (state) => state.createLocalFavoriteGroup
-    );
-
     function isFavoriteFriendRecord(
         value: unknown
     ): value is FavoriteFriendRecord {
@@ -411,14 +404,6 @@ export function useFavoritesItemActions({
                 kind,
                 groupName: nextName
             });
-            if (kind === 'world') {
-                await reloadLocalWorldFavorites();
-            } else {
-                createLocalFavoriteGroup({
-                    kind,
-                    groupName: nextName
-                });
-            }
             setSelectedSource('local');
             setSelectedGroupKey(nextName);
             setCreatingLocalGroup(false);

@@ -3,6 +3,12 @@ import {
     sortUserGroupRows,
     splitUserGroups
 } from './userDialogGroupRows';
+import type {
+    UserDialogAvatarReleaseStatus,
+    UserDialogAvatarSort,
+    UserDialogGroupSort,
+    UserDialogMutualFriendSort
+} from './userDialogListOptions';
 import {
     filterRows,
     firstArray,
@@ -80,9 +86,7 @@ function validTimestampMs(value: unknown) {
 }
 
 function isCurrentlyOnline(profile: DialogRecord) {
-    const state = normalizedText(
-        profile?.stateBucket || profile?.state
-    ).toLowerCase();
+    const state = normalizedText(profile?.state).toLowerCase();
     return state === 'online';
 }
 
@@ -173,6 +177,15 @@ export function buildUserDialogTabs({
             label: translate('dialog.previous_instances.header'),
             hidden: !isCurrentUser
         },
+        ...(!isCurrentUser
+            ? [
+                  {
+                      value: 'feed',
+                      label: translate('nav_tooltip.feed'),
+                      hidden: true
+                  }
+              ]
+            : []),
         ...(!isCurrentUser && !currentUserHasSharedConnectionsOptOut
             ? [
                   {
@@ -217,12 +230,12 @@ export function buildUserDialogListViewData({
     remoteStatus: Record<string, string>;
     friendsById?: Record<string, DialogRecord> | null;
     search: Record<string, string>;
-    mutualSort: unknown;
-    groupSort: string;
+    mutualSort: UserDialogMutualFriendSort;
+    groupSort: UserDialogGroupSort;
     isCurrentUser: boolean;
     inGameGroupOrder: readonly unknown[];
-    effectiveAvatarReleaseStatus: string;
-    avatarSort: unknown;
+    effectiveAvatarReleaseStatus: UserDialogAvatarReleaseStatus;
+    avatarSort: UserDialogAvatarSort;
     currentUserHasSharedConnectionsOptOut: boolean;
     t?: Translate;
 }) {

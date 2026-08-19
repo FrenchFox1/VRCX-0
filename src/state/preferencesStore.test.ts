@@ -99,6 +99,21 @@ describe('preferencesStore normalizers', () => {
         });
     });
 
+    it('accepts only supported avatar cleanup retention values', () => {
+        for (const value of ['Off', '30', '90', '180', '365']) {
+            expect(
+                normalizePreferenceSnapshot({ avatarAutoCleanup: value })
+                    .avatarAutoCleanup
+            ).toBe(value);
+        }
+        for (const value of ['', '0', '31', ' 30 ', 'invalid', 30]) {
+            expect(
+                normalizePreferenceSnapshot({ avatarAutoCleanup: value })
+                    .avatarAutoCleanup
+            ).toBe('Off');
+        }
+    });
+
     it('keeps custom font selector fields round-trippable', () => {
         expect(DEFAULT_PREFERENCES.customFontPrimary).toBe('');
         expect(DEFAULT_PREFERENCES.customFontSecondary).toBe('');
@@ -280,8 +295,6 @@ describe('preferencesStore normalizers', () => {
             navPanelWidth: 9999,
             tablePageSizes: ['25', '10', '25'],
             wristOverlayStartMode: 'steamvr',
-            vrOverlayPanelEnabled: 'true',
-            vrOverlayPanelAllFriendsIncludesFavorites: 'true',
             wristOverlayButton: 'menu',
             wristOverlayHand: 'both',
             wristOverlaySize: 'large',
@@ -345,8 +358,6 @@ describe('preferencesStore normalizers', () => {
                 searchLimit: 100000
             },
             localFavoriteFriendsGroups: ['VIP'],
-            vrOverlayPanelEnabled: false,
-            vrOverlayPanelAllFriendsIncludesFavorites: false,
             wristOverlayStartMode: 'steamvr',
             wristOverlayButton: 'menu',
             wristOverlayHand: 'both',

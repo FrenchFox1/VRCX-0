@@ -1,9 +1,11 @@
+import type { HttpApiExecuteResponse } from '@/platform/tauri/bindings';
+
 export type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = Record<string, QueryValue | QueryValue[]>;
 
-export interface VrchatRequestResponse<TJson = unknown> {
+export interface VrchatRequestResponse<TJson = unknown, TParams = QueryParams> {
     json: TJson;
-    params?: QueryParams;
+    params?: TParams;
     status?: number;
     endpointDomain?: string;
     [key: string]: unknown;
@@ -15,10 +17,7 @@ export interface VrchatRequestError extends Error {
     payload: unknown;
 }
 
-interface VrchatResponseEnvelope {
-    status: number;
-    data: unknown;
-}
+export type VrchatResponseEnvelope = HttpApiExecuteResponse;
 
 interface UnwrapResponseOptions {
     fallbackMessage?: string;
@@ -45,25 +44,16 @@ export function isVrchatMissingCredentialsError(error: unknown): boolean {
         isRecord(error) && typeof error.status === 'number'
             ? error.status
             : undefined;
-    const message = error instanceof Error ? error.message : undefined;
-    return Boolean(
-        error &&
-        typeof error === 'object' &&
-        (status === 401 ||
-            (typeof message === 'string' &&
-                message.includes('Missing Credentials')))
-    );
+    const statusCode =
+        isRecord(error) &&
+        error.code === 'vrchat_api' &&
+        typeof error.statusCode === 'number'
+            ? error.statusCode
+            : undefined;
+    return status === 401 || statusCode === 401;
 }
 
-function parseResponseData(data: unknown, allowPlainText: boolean): unknown {
-    if (data === null || data === undefined || data === '') {
-        return data === '' ? '' : null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
+function parseResponseData(data: string, allowPlainText: boolean): unknown {
     if (!data.trim()) {
         return '';
     }

@@ -2,7 +2,7 @@ import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import type {
     GroupAnnouncementRecord,
     GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/group';
 import { formatDateFilter } from '@/lib/dateTime';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import {
@@ -296,7 +296,7 @@ export function normalizeGroupEvent(
         groupId: event?.groupId || fallbackGroupId,
         ownerId: event?.ownerId || event?.groupId || fallbackGroupId,
         userInterest: {
-            ...(event?.userInterest || {}),
+            ...event?.userInterest,
             isFollowing: Boolean(resolvedFollowing)
         },
         title: replaceBioSymbols(event?.title || ''),

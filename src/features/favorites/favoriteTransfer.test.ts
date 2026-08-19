@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import type { FavoriteRecord } from '@/domain/favorites/types';
 import type { FavoriteTransferItemResult } from '@/platform/tauri/bindings';
-import type { FavoriteRecord } from '@/state/favoriteStoreTypes';
 
-import type { FavoriteGroup, FavoriteItem } from './favoritesTypes';
+import type { FavoriteGroupView, FavoriteItem } from './favoritesTypes';
 import {
     buildFavoriteCopyTargets,
     buildFavoriteMoveTargets,
@@ -19,7 +19,7 @@ import {
     summarizeFavoriteTransferStatuses
 } from './favoriteTransfer';
 
-const remoteGroups: FavoriteGroup[] = [
+const remoteGroups: FavoriteGroupView[] = [
     {
         key: 'world:group_0',
         source: 'remote',
@@ -35,7 +35,7 @@ const remoteGroups: FavoriteGroup[] = [
         label: 'Remote B'
     }
 ];
-const localGroups: FavoriteGroup[] = [
+const localGroups: FavoriteGroupView[] = [
     { key: 'Local A', source: 'local', label: 'Local A' },
     { key: 'Local B', source: 'local', label: 'Local B' }
 ];
@@ -92,7 +92,6 @@ describe('favorite transfer helpers', () => {
 
     it('builds remote to local payload with the entity id used as the remote delete object id', () => {
         const input = buildFavoriteTransferInput({
-            endpoint: 'https://api.vrchat.cloud/api/1',
             kind: 'world',
             sourceGroup: remoteGroups[0],
             targetGroup: localGroups[0],
@@ -122,7 +121,6 @@ describe('favorite transfer helpers', () => {
 
     it('builds local to remote payload as copy-only', () => {
         const input = buildFavoriteTransferInput({
-            endpoint: '',
             kind: 'world',
             sourceGroup: localGroups[0],
             targetGroup: remoteGroups[1],
@@ -170,7 +168,7 @@ describe('favorite transfer helpers', () => {
     });
 
     it('flags a move target as over capacity once selected items would exceed it', () => {
-        const target: FavoriteGroup = {
+        const target: FavoriteGroupView = {
             key: 'world:group_0',
             source: 'remote',
             label: 'Remote A',

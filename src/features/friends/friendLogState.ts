@@ -4,14 +4,12 @@ import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
-    sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
-
 import {
     FRIEND_LOG_TYPES,
     type FriendLogType
-} from './components/FriendLogViewParts';
+} from '@/domain/friends/friendLog';
 
 export const DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const COLUMN_IDS = [
@@ -102,10 +100,6 @@ export function sanitizeColumnOrder(value: unknown): string[] {
         (columnId) => !orderedColumns.includes(columnId)
     );
     return [...orderedColumns, ...missingColumns];
-}
-
-export function sanitizeColumnSizing(value: unknown) {
-    return sanitizeTableColumnSizing(value, COLUMN_IDS);
 }
 
 export function resolvePageSize(

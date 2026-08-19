@@ -42,6 +42,7 @@ function createInput(
         handleCropInstancePrintsChange: callback,
         handleGameLogDisabledChange: callback,
         handleFeedPersistenceDisabledChange: callback,
+        handleAvatarFeedPersistenceDisabledChange: callback,
         hmdNotificationsDialogOpen: false,
         integrationStatus: {
             youtube: 'idle',
@@ -238,14 +239,11 @@ describe('settingsPageStateSections', () => {
         expect(sections.shell).toMatchObject({
             activeSettingsTab: 'interface'
         });
-        expect(sections.system.prefs).toBe(prefs);
         expect(sections.interface).toMatchObject({
             locale: 'ja',
-            prefs,
             zoomInput: '125',
             zoomLevel: 1.25
         });
-        expect(sections.media.prefs).toBe(prefs);
         expect(sections.integrations.avatarProviderConfig).toEqual({
             enabled: true,
             providerList: [],
@@ -253,7 +251,6 @@ describe('settingsPageStateSections', () => {
         });
         expect(sections.social.feedHiddenUsers).toBe(prefs.feedHiddenUsers);
         expect(sections.notifications.ttsVoices).toEqual([]);
-        expect(sections.vr.prefs).toBe(prefs);
         expect(sections.advanced.configTreeData).toEqual({});
         expect(sections.dialogs).toMatchObject({
             customFontDialogOpen: true,

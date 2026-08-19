@@ -1,7 +1,9 @@
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_core::vrchat_ids::is_user_id;
-use vrcx_0_runtime_host::notification::{NotificationDeliveryPreferences, RenderedNotification};
+use vrcx_0_runtime_host::notification::RenderedNotification;
+
+use super::NotificationDeliveryPreferences;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DesktopNotificationAction {
@@ -89,6 +91,11 @@ pub(super) fn send_desktop_notification(
     }
 }
 
+fn non_empty(value: &str) -> Option<&str> {
+    let value = value.trim();
+    (!value.is_empty()).then_some(value)
+}
+
 #[cfg(test)]
 mod tests {
     use super::DesktopNotificationAction;
@@ -113,9 +120,4 @@ mod tests {
         )
         .is_none());
     }
-}
-
-fn non_empty(value: &str) -> Option<&str> {
-    let value = value.trim();
-    (!value.is_empty()).then_some(value)
 }

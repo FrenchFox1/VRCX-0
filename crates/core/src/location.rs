@@ -9,7 +9,38 @@
 use serde::Serialize;
 use serde_json::{json, Value};
 
+use crate::open_string_enum::open_string_enum;
 use crate::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
+
+open_string_enum! {
+    pub enum GroupAccessType {
+        Members => "members",
+        Plus => "plus",
+        Public => "public",
+    }
+}
+
+open_string_enum! {
+    pub enum InstanceType {
+        Friends => "friends",
+        Group => "group",
+        Hidden => "hidden",
+        Private => "private",
+        Public => "public",
+    }
+}
+
+open_string_enum! {
+    pub enum InstanceRegion {
+        Eu => "eu",
+        Jp => "jp",
+        ApiUnknown => "unknown",
+        Us => "us",
+        Use => "use",
+        Usw => "usw",
+        Usx => "usx",
+    }
+}
 
 #[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -24,14 +55,16 @@ pub struct ParsedLocation {
     pub instance_name: String,
     pub access_type: String,
     pub access_type_name: String,
-    pub region: String,
+    #[specta(type = String)]
+    pub region: InstanceRegion,
     pub short_name: String,
     pub user_id: Option<String>,
     pub hidden_id: Option<String>,
     pub private_id: Option<String>,
     pub friends_id: Option<String>,
     pub group_id: Option<String>,
-    pub group_access_type: Option<String>,
+    #[specta(type = Option<String>)]
+    pub group_access_type: Option<GroupAccessType>,
     pub can_request_invite: bool,
     pub strict: bool,
     pub age_gate: bool,
@@ -112,9 +145,9 @@ pub fn parse_location(tag: &str) -> ParsedLocation {
                 "private" => parsed.private_id = Some(qualifier_value),
                 "friends" => parsed.friends_id = Some(qualifier_value),
                 "canRequestInvite" => parsed.can_request_invite = true,
-                "region" => parsed.region = qualifier_value,
+                "region" => parsed.region = qualifier_value.into(),
                 "group" => parsed.group_id = Some(qualifier_value),
-                "groupAccessType" => parsed.group_access_type = Some(qualifier_value),
+                "groupAccessType" => parsed.group_access_type = Some(qualifier_value.into()),
                 "strict" => parsed.strict = true,
                 "ageGate" => parsed.age_gate = true,
                 _ => {}
@@ -138,12 +171,10 @@ pub fn parse_location(tag: &str) -> ParsedLocation {
             parsed.access_type = "group".into();
         }
         parsed.access_type_name = parsed.access_type.clone();
-        if let Some(group_access_type) = parsed.group_access_type.as_deref() {
-            if group_access_type == "public" {
-                parsed.access_type_name = "groupPublic".into();
-            } else if group_access_type == "plus" {
-                parsed.access_type_name = "groupPlus".into();
-            }
+        match parsed.group_access_type.as_ref() {
+            Some(GroupAccessType::Public) => parsed.access_type_name = "groupPublic".into(),
+            Some(GroupAccessType::Plus) => parsed.access_type_name = "groupPlus".into(),
+            _ => {}
         }
     } else {
         parsed.world_id = raw;
@@ -197,9 +228,9 @@ pub fn normalize_instance_type(parsed: &ParsedLocation) -> String {
     if parsed.access_type != "group" {
         return parsed.access_type.clone();
     }
-    match parsed.group_access_type.as_deref() {
-        Some("members") => "groupOnly".into(),
-        Some("plus") => "groupPlus".into(),
+    match parsed.group_access_type.as_ref() {
+        Some(GroupAccessType::Members) => "groupOnly".into(),
+        Some(GroupAccessType::Plus) => "groupPlus".into(),
         _ => "groupPublic".into(),
     }
 }

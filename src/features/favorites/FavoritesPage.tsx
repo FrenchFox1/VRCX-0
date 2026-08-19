@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { PageScaffold } from '@/components/layout/PageScaffold';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import configRepository from '@/repositories/configRepository';
 import shareCollectionRepository from '@/repositories/shareCollectionRepository';
 import {
@@ -18,11 +19,7 @@ import {
     FavoritesGroupRailPanel
 } from './components/FavoritesPanels';
 import { FavoritesToolbar } from './components/FavoritesToolbar';
-import type {
-    FavoriteGroup,
-    FavoriteItem,
-    FavoriteKind
-} from './favoritesTypes';
+import type { FavoriteGroupView, FavoriteItem } from './favoritesTypes';
 import {
     buildShareCollectionWorldIds,
     SHARE_COLLECTION_CLIENT_WORLD_CAP
@@ -43,7 +40,7 @@ function FavoritesPage({
     const { t } = useTranslation();
     const state = useFavoritesPageController({ kind });
     const [shareCollectionGroup, setShareCollectionGroup] =
-        useState<FavoriteGroup | null>(null);
+        useState<FavoriteGroupView | null>(null);
     const [shareCoachmarkOpen, setShareCoachmarkOpen] = useState(false);
     const shareCoachmarkDismissedRef = useRef(false);
     const {
@@ -108,7 +105,7 @@ function FavoritesPage({
         viewData.remoteItemsByGroup
     ]);
     const handleShareCollectionGroup = useStableEvent(
-        (group: FavoriteGroup) => {
+        (group: FavoriteGroupView) => {
             dismissShareCoachmark();
             const itemsByGroup =
                 group.source === 'remote'

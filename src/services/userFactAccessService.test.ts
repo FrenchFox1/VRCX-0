@@ -45,8 +45,7 @@ describe('userFactAccessService', () => {
             {
                 user: { id: 'usr_target', location: 'wrld_live:123' },
                 source: 'realtime',
-                isFriend: true,
-                stateBucket: 'online'
+                isFriend: true
             }
         ]);
 
@@ -66,8 +65,7 @@ describe('userFactAccessService', () => {
             {
                 user: { id: 'usr_target', location: 'wrld_live:123' },
                 source: 'realtime',
-                isFriend: true,
-                stateBucket: 'online'
+                isFriend: true
             }
         ]);
     });

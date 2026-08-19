@@ -85,7 +85,7 @@ describe('search request helpers', () => {
                 n: SEARCH_PAGE_SIZE,
                 offset: 20,
                 sort: 'popularity',
-                featured: 'false',
+                featured: false,
                 order: 'ascending',
                 user: 'me',
                 releaseStatus: 'all',

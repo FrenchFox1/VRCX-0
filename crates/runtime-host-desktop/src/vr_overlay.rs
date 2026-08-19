@@ -3,6 +3,7 @@ use std::sync::Arc;
 use vrcx_0_application_core::GameProcessEvent;
 use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
 use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, RealtimeFriendSnapshot};
+use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_runtime_host::Result;
 
 use crate::DesktopRuntimeServices;
@@ -22,7 +23,6 @@ pub struct VrOverlayRuntimeSnapshot {
     pub enabled: bool,
     pub backend_available: bool,
     pub running: bool,
-    pub vr_mode: bool,
     pub steamvr_running: bool,
     pub active_backend: Option<String>,
 }
@@ -34,7 +34,6 @@ impl From<vrcx_0_overlay_runtime::VrOverlayRuntimeSnapshot> for VrOverlayRuntime
             enabled,
             backend_available,
             running,
-            vr_mode,
             steamvr_running,
             active_backend,
         } = snapshot;
@@ -42,7 +41,6 @@ impl From<vrcx_0_overlay_runtime::VrOverlayRuntimeSnapshot> for VrOverlayRuntime
             enabled,
             backend_available,
             running,
-            vr_mode,
             steamvr_running,
             active_backend,
         }
@@ -167,23 +165,37 @@ impl DesktopVrOverlayRuntime {
         let _ = provider;
     }
 
+    pub fn set_hmd_friend_membership_provider<F>(&self, provider: F)
+    where
+        F: Fn(&str) -> bool + Send + Sync + 'static,
+    {
+        #[cfg(any(windows, target_os = "linux"))]
+        self.runtime.set_hmd_friend_membership_provider(provider);
+
+        #[cfg(not(any(windows, target_os = "linux")))]
+        let _ = provider;
+    }
+
+    pub fn set_hmd_friend_context_provider<F>(&self, provider: F)
+    where
+        F: Fn(&str) -> Option<(FriendRecord, String)> + Send + Sync + 'static,
+    {
+        #[cfg(any(windows, target_os = "linux"))]
+        self.runtime.set_hmd_friend_context_provider(provider);
+
+        #[cfg(not(any(windows, target_os = "linux")))]
+        let _ = provider;
+    }
+
     pub fn on_game_process_event(
         &self,
         event: GameProcessEvent,
-        current_vr_mode: Option<bool>,
     ) -> vrcx_0_application_core::Result<()> {
         #[cfg(any(windows, target_os = "linux"))]
-        {
-            self.runtime.on_game_process_event(event)?;
-            if event.is_game_running {
-                if let Some(vr_mode) = current_vr_mode {
-                    self.runtime.set_vr_mode(vr_mode);
-                }
-            }
-        }
+        self.runtime.on_game_process_event(event)?;
 
         #[cfg(not(any(windows, target_os = "linux")))]
-        let _ = (event, current_vr_mode);
+        let _ = event;
 
         Ok(())
     }

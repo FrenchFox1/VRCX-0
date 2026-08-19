@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { LoadingState } from '@/components/layout/PageScaffold';
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { Separator } from '@/ui/shadcn/separator';
 
 import type { useFriendsLocationsPageController } from '../useFriendsLocationsPageController';

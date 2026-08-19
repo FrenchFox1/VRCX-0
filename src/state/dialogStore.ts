@@ -12,11 +12,19 @@ interface DialogBreadcrumb {
     [key: string]: unknown;
 }
 
+interface WorldNewInstanceDefaults {
+    accessType?: string | null;
+    region?: string | null;
+    groupId?: string | null;
+    groupName?: string | null;
+    groupAccessType?: string | null;
+}
+
 interface DialogPayload {
     seedData?: unknown;
     initialAction?: string;
     initialActionNonce?: number;
-    initialNewInstanceDefaults?: unknown;
+    initialNewInstanceDefaults?: WorldNewInstanceDefaults | null;
 }
 
 interface ActiveDialog {
@@ -24,6 +32,7 @@ interface ActiveDialog {
     entityId: string;
     title: string;
     description?: string;
+    openNonce?: number;
     payload?: DialogPayload | null;
     body?: string;
     crumb?: DialogBreadcrumb;
@@ -191,5 +200,6 @@ export type {
     DialogBreadcrumb,
     DialogKind,
     DialogMetadataPatch,
-    DialogStoreState
+    DialogStoreState,
+    WorldNewInstanceDefaults
 };

@@ -15,7 +15,7 @@ describe('inviteDialogModel', () => {
     const friendsById = {
         usr_bucket_online: {
             id: 'usr_bucket_online',
-            stateBucket: 'online',
+            state: 'online',
             ref: {
                 displayName: 'Bucket Online'
             }
@@ -29,13 +29,12 @@ describe('inviteDialogModel', () => {
         },
         usr_offline: {
             id: 'usr_offline',
-            stateBucket: 'offline',
             state: 'offline',
             name: 'Offline Friend'
         },
         usr_name_only: {
             id: 'usr_name_only',
-            stateBucket: 'online',
+            state: 'online',
             name: 'Name Only'
         }
     };

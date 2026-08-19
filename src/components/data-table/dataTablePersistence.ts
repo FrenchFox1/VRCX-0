@@ -162,17 +162,6 @@ export function sanitizeTableColumnOrder(
     );
 }
 
-export function createPersistedTableStateHelpers(tableId: unknown) {
-    const storageKey = getDataTableStorageKey(tableId);
-
-    return {
-        storageKey,
-        read: () => readPersistedTableState(storageKey),
-        write: (patch: PersistedTableState) =>
-            writePersistedTableState(storageKey, patch)
-    };
-}
-
 export function usePersistedDataTableLayout({
     tableId,
     columnIds = [],

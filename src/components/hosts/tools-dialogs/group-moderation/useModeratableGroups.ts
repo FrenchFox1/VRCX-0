@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { hasAnyGroupModerationPermission } from '@/components/dialogs/group-dialog/groupDialogUtils';
+import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 
-export type ModeratableGroupsStatus = 'idle' | 'loading' | 'ready' | 'error';
+export type ModeratableGroupsStatus = LoadStatus;
 
 export type UseModeratableGroupsOptions = {
     enabled?: boolean;
@@ -47,7 +48,7 @@ export function useModeratableGroups({
         }
 
         let active = true;
-        setStatus('loading');
+        setStatus('running');
         setError('');
         groupProfileRepository
             .getUserGroupsOverview({ userId: currentUserId, endpoint })

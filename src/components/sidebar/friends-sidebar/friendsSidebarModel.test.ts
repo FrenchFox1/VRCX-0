@@ -17,14 +17,14 @@ describe('friendsSidebarModel same-instance groups', () => {
         const friendWithCurrentUser = {
             id: 'usr_1',
             displayName: 'With current user',
-            stateBucket: 'online',
+            state: 'online',
             location: currentLocation,
             $location_at: 1
         };
         const soloElsewhere = {
             id: 'usr_2',
             displayName: 'Solo elsewhere',
-            stateBucket: 'online',
+            state: 'online',
             location: otherLocation,
             $location_at: 1
         };
@@ -50,7 +50,7 @@ describe('friendsSidebarModel same-instance groups', () => {
         const friend = {
             id: 'usr_friend',
             displayName: 'Friend',
-            stateBucket: 'online',
+            state: 'online',
             location: currentLocation,
             $location_at: 1
         };
@@ -264,14 +264,12 @@ describe('friendsSidebarModel friend status source', () => {
             id: 'usr_friend',
             displayName: 'Friend',
             state: 'online',
-            stateBucket: 'online',
             location: 'wrld_live:123',
             status: 'join me',
             ref: {
                 id: 'usr_friend',
                 displayName: 'Friend',
                 state: 'offline',
-                stateBucket: 'offline',
                 location: 'offline',
                 status: 'active'
             }
@@ -282,14 +280,12 @@ describe('friendsSidebarModel friend status source', () => {
 
         expect(source).toMatchObject({
             state: 'online',
-            stateBucket: 'online',
             location: 'wrld_live:123',
             status: 'join me'
         });
         expect(readFriendRefLocation(friend)).toBe('wrld_live:123');
         expect(sortRow.ref).toMatchObject({
             state: 'online',
-            stateBucket: 'online',
             location: 'wrld_live:123',
             status: 'join me'
         });
@@ -300,8 +296,7 @@ describe('friendsSidebarModel current user status dot', () => {
     const currentUser = {
         id: 'usr_self',
         status: 'active',
-        state: 'online',
-        stateBucket: 'online'
+        state: 'online'
     };
 
     it('defaults to the active outline when local game state is unavailable', () => {
@@ -323,7 +318,6 @@ describe('friendsSidebarModel current user status dot', () => {
             id: 'usr_self',
             status: 'busy',
             state: 'offline',
-            stateBucket: 'offline',
             location: 'offline'
         };
 
@@ -342,7 +336,6 @@ describe('friendsSidebarModel current user status dot', () => {
             id: 'usr_self',
             status: 'busy',
             state: 'offline',
-            stateBucket: 'offline',
             location: 'offline'
         };
 
@@ -361,14 +354,12 @@ describe('friendsSidebarModel current user status dot', () => {
             id: 'usr_self',
             status: 'active',
             state: 'offline',
-            stateBucket: 'offline',
             location: 'offline'
         };
         const currentUserSnapshot = {
             id: 'usr_self',
             status: 'busy',
             state: 'online',
-            stateBucket: 'online',
             location: 'wrld_remote:456'
         };
 
@@ -382,12 +373,11 @@ describe('friendsSidebarModel current user status dot', () => {
         ).toBe('bg-[var(--status-busy)]');
     });
 
-    it('does not expose a separate visual mode for remote play', () => {
+    it('uses the account status color for remote play', () => {
         const remoteCurrentUser = {
             id: 'usr_self',
             status: 'join me',
             state: 'online',
-            stateBucket: 'online',
             location: 'wrld_remote:456'
         };
 
@@ -408,7 +398,6 @@ describe('friendsSidebarModel current user state bucket', () => {
             resolveCurrentUserStateBucket({
                 id: 'usr_self',
                 state: 'online',
-                stateBucket: 'online',
                 location: ''
             })
         ).toBe('active');
@@ -419,7 +408,6 @@ describe('friendsSidebarModel current user state bucket', () => {
             resolveCurrentUserStateBucket({
                 id: 'usr_self',
                 state: 'offline',
-                stateBucket: 'offline',
                 location: 'offline'
             })
         ).toBe('active');
@@ -430,7 +418,6 @@ describe('friendsSidebarModel current user state bucket', () => {
             resolveCurrentUserStateBucket({
                 id: 'usr_self',
                 state: 'offline',
-                stateBucket: 'offline',
                 location: 'wrld_remote:456'
             })
         ).toBe('online');
@@ -445,7 +432,6 @@ describe('friendsSidebarModel ordinary friend status dot', () => {
             id: 'usr_friend',
             status: 'busy',
             state: 'online',
-            stateBucket: 'online',
             location: 'wrld_friend:123'
         };
 
@@ -466,7 +452,6 @@ describe('friendsSidebarModel ordinary friend status dot', () => {
             id: 'usr_friend',
             status: 'join me',
             state: 'online',
-            stateBucket: 'online',
             location: 'wrld_friend:123',
             pendingOffline: true
         };

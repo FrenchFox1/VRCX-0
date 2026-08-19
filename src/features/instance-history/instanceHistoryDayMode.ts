@@ -7,7 +7,7 @@ import {
 import { toLocalDayKey } from './instance-activity/instanceActivityDate';
 import type {
     InstanceActivityChartRow,
-    PreviousInstanceRow
+    InstanceHistoryEntryRow
 } from './instance-activity/instanceActivityTypes';
 
 export type InstanceHistoryMode = 'search' | 'day';
@@ -18,7 +18,7 @@ export function sanitizeInstanceHistoryMode(
     return value === 'day' ? 'day' : 'search';
 }
 
-export function previousInstanceLeaveMs(row: PreviousInstanceRow): number {
+export function previousInstanceLeaveMs(row: InstanceHistoryEntryRow): number {
     const groupedLeaveValue = row.last_ts ?? row.lastTs ?? 0;
     const groupedLeaveMs =
         typeof groupedLeaveValue === 'string'
@@ -30,13 +30,13 @@ export function previousInstanceLeaveMs(row: PreviousInstanceRow): number {
     return createdTime(row);
 }
 
-export function previousInstanceJoinMs(row: PreviousInstanceRow): number {
+export function previousInstanceJoinMs(row: InstanceHistoryEntryRow): number {
     const leaveMs = previousInstanceLeaveMs(row);
     return leaveMs - rowDurationValue(row);
 }
 
 export function buildAvailableInstanceHistoryDays(
-    rows: PreviousInstanceRow[] = []
+    rows: InstanceHistoryEntryRow[] = []
 ): string[] {
     return Array.from(
         new Set(
@@ -62,9 +62,9 @@ export function selectDefaultInstanceHistoryDay(
 }
 
 export function filterPreviousInstanceRowsForDay(
-    rows: PreviousInstanceRow[] = [],
+    rows: InstanceHistoryEntryRow[] = [],
     selectedDay: unknown
-): PreviousInstanceRow[] {
+): InstanceHistoryEntryRow[] {
     const dayKey = String(selectedDay || '');
     if (!dayKey) {
         return [];
@@ -116,8 +116,8 @@ function matchByLocationAndJoin<T>(
 
 export function findPreviousInstanceRowForActivityRow(
     activityRow: InstanceActivityChartRow,
-    rows: PreviousInstanceRow[] = []
-): PreviousInstanceRow | null {
+    rows: InstanceHistoryEntryRow[] = []
+): InstanceHistoryEntryRow | null {
     return matchByLocationAndJoin(
         rows,
         String(activityRow?.location || ''),
@@ -128,7 +128,7 @@ export function findPreviousInstanceRowForActivityRow(
 }
 
 export function findActivityRowForPreviousInstanceRow(
-    previousRow: PreviousInstanceRow,
+    previousRow: InstanceHistoryEntryRow,
     activityRows: InstanceActivityChartRow[] = []
 ): InstanceActivityChartRow | null {
     return matchByLocationAndJoin(

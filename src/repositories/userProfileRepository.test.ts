@@ -28,11 +28,11 @@ describe('UserProfileRepository', () => {
             tauriMock.commands.appVrchatFriendStatusGet
         ).mockResolvedValue({
             status: 200,
-            data: {
+            data: JSON.stringify({
                 incomingRequest: false,
                 isFriend: false,
                 outgoingRequest: true
-            }
+            })
         });
 
         await expect(
@@ -189,24 +189,24 @@ describe('UserProfileRepository', () => {
         vi.mocked(tauriMock.commands.appVrchatUserProfileGet)
             .mockResolvedValueOnce({
                 status: 200,
-                data: publicProfile
+                data: JSON.stringify(publicProfile)
             })
             .mockResolvedValueOnce({
                 status: 200,
-                data: selfProfile
+                data: JSON.stringify(selfProfile)
             });
 
         await expect(
             userProfileRepository.getUserAppearanceProfile({
                 userId: ' usr_target '
             })
-        ).resolves.toBe(publicProfile);
+        ).resolves.toEqual(publicProfile);
         await expect(
             userProfileRepository.getUserAppearanceProfile({
                 userId: 'usr_target',
                 asSelf: true
             })
-        ).resolves.toBe(selfProfile);
+        ).resolves.toEqual(selfProfile);
 
         expect(
             tauriMock.commands.appVrchatUserProfileGet
@@ -244,7 +244,10 @@ describe('UserProfileRepository', () => {
         };
         vi.mocked(
             tauriMock.commands.appVrchatCurrentUserProfileUpdate
-        ).mockResolvedValueOnce({ status: 200, data: responseProfile });
+        ).mockResolvedValueOnce({
+            status: 200,
+            data: JSON.stringify(responseProfile)
+        });
 
         await expect(
             userProfileRepository.updateCurrentUserProfile({
@@ -254,11 +257,10 @@ describe('UserProfileRepository', () => {
                     backgroundTextureId: 'grid'
                 }
             })
-        ).resolves.toBe(responseProfile);
+        ).resolves.toEqual(responseProfile);
         expect(
             tauriMock.commands.appVrchatCurrentUserProfileUpdate
         ).toHaveBeenCalledWith({
-            expectedUserId: 'usr_target',
             params: {
                 backgroundType: 'texture',
                 backgroundTextureId: 'grid'
@@ -339,7 +341,11 @@ describe('UserProfileRepository', () => {
     it('loads the backend-collected mutual friend list', async () => {
         vi.mocked(
             tauriMock.commands.appUserMutualFriendsListGet
-        ).mockResolvedValue([{ id: 'usr_mutual' }]);
+        ).mockResolvedValue([
+            { id: 'usr_mutual', futureField: 'keep' },
+            null,
+            { displayName: 'Missing id' }
+        ]);
 
         const rows = await userProfileRepository.getAllMutualFriends({
             userId: 'usr_target'
@@ -350,6 +356,6 @@ describe('UserProfileRepository', () => {
         ).toHaveBeenCalledWith({
             userId: 'usr_target'
         });
-        expect(rows).toEqual([{ id: 'usr_mutual' }]);
+        expect(rows).toEqual([{ id: 'usr_mutual', futureField: 'keep' }]);
     });
 });

@@ -1,12 +1,17 @@
 use std::sync::{atomic::Ordering, Arc};
 use std::time::{Duration, Instant};
 
+use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+
 use super::{
     current_user_from_cookie, run_background_group_instance_refresh, AtomicFlagGuard,
-    AuthenticatedRuntimeSession, BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot,
-    BackendRuntimeTelemetryKind, BackgroundTickContext, CliLoginPrompt, NonInteractiveAuthError,
-    PrintCleanupDeps, PrintCleanupTrigger, Result, RuntimeHostProfile, RuntimeHostState,
+    AuthenticatedRuntimeSession, BackendRuntimePhase, BackendRuntimeSnapshot,
+    BackendRuntimeTelemetryKind, BackgroundTickContext, CliLoginPrompt, GuiRuntimeMode,
+    NonInteractiveAuthError, PrintCleanupDeps, PrintCleanupTrigger, Result, RuntimeHostProfile,
+    RuntimeHostState,
 };
+
+const AUTHENTICATED_SESSION_MAINTENANCE_DELAY: Duration = Duration::from_secs(30);
 
 impl RuntimeHostState {
     pub fn stop_backend_runtime(&self, reason: impl Into<String>) -> BackendRuntimeSnapshot {
@@ -39,25 +44,18 @@ impl RuntimeHostState {
         self.backend_runtime.snapshot()
     }
 
-    pub fn set_gui_backend_runtime_mode(&self, mode: BackendRuntimeMode) -> BackendRuntimeSnapshot {
+    pub fn set_gui_backend_runtime_mode(&self, mode: GuiRuntimeMode) -> BackendRuntimeSnapshot {
         let current = self.backend_runtime.snapshot();
         match self.profile {
             RuntimeHostProfile::Desktop => {}
             RuntimeHostProfile::HeadlessData => return current,
         }
-        if current.mode == BackendRuntimeMode::Headless || mode == BackendRuntimeMode::Headless {
-            return current;
-        }
-        let snapshot = self.backend_runtime.set_mode(mode);
+        let snapshot = self.backend_runtime.set_gui_mode(mode);
         if snapshot.phase == BackendRuntimePhase::Running {
             self.start_social_maintenance_loops();
             self.start_profile_maintenance_loops();
         }
-        let detail = match mode {
-            BackendRuntimeMode::Foreground => "foreground",
-            BackendRuntimeMode::Background => "background",
-            BackendRuntimeMode::Headless => "headless",
-        };
+        let detail = mode.as_str();
         self.emit_backend_runtime_telemetry_snapshot(
             BackendRuntimeTelemetryKind::ModeChanged,
             detail,
@@ -85,13 +83,13 @@ impl RuntimeHostState {
         &self,
         reason: impl Into<String>,
     ) -> BackendRuntimeSnapshot {
-        self.runtime_context.auth_scope.set("", "");
+        self.runtime_context.auth_scope.set_identity("", "", "");
         self.favorite_import.cancel();
         self.group_ban_import.cancel();
         self.shared_collection_import.cancel();
         self.note_export.cancel();
         let _ = self.runtime_context.mutual_graph_fetch.cancel_active();
-        self.clear_backend_frontend_session();
+        self.clear_authenticated_session_projection();
         let snapshot = self.backend_runtime.clear_authentication();
         self.emit_backend_runtime_telemetry_snapshot(
             BackendRuntimeTelemetryKind::AuthCleared,
@@ -110,7 +108,7 @@ impl RuntimeHostState {
         let context = BackgroundTickContext {
             db: &self.db,
             web: &self.web,
-            session_slot: &self.backend_frontend_session,
+            session_slot: &self.authenticated_session_projection,
             realtime_runtime: &self.realtime_runtime,
             runtime_context: &self.runtime_context,
             backend_runtime: &self.backend_runtime,
@@ -127,21 +125,36 @@ impl RuntimeHostState {
 
     pub async fn start_backend_runtime(
         &self,
-        mode: BackendRuntimeMode,
+        mode: GuiRuntimeMode,
         cli_login_prompt: Option<Arc<dyn CliLoginPrompt>>,
     ) -> Result<BackendRuntimeSnapshot> {
-        match (self.profile, mode) {
-            (RuntimeHostProfile::Desktop, BackendRuntimeMode::Foreground)
-            | (RuntimeHostProfile::Desktop, BackendRuntimeMode::Background)
-            | (RuntimeHostProfile::HeadlessData, BackendRuntimeMode::Headless) => {}
-            (RuntimeHostProfile::Desktop, BackendRuntimeMode::Headless)
-            | (RuntimeHostProfile::HeadlessData, BackendRuntimeMode::Foreground)
-            | (RuntimeHostProfile::HeadlessData, BackendRuntimeMode::Background) => {
-                return Err(crate::Error::Custom(
-                    "Backend runtime mode does not match the configured host profile.".into(),
-                ));
-            }
+        if self.profile != RuntimeHostProfile::Desktop {
+            return Err(crate::Error::Custom(
+                "GUI backend runtime requires the Desktop host profile.".into(),
+            ));
         }
+        self.start_backend_runtime_inner(Some(mode), cli_login_prompt)
+            .await
+    }
+
+    pub async fn start_headless_backend_runtime(
+        &self,
+        cli_login_prompt: Option<Arc<dyn CliLoginPrompt>>,
+    ) -> Result<BackendRuntimeSnapshot> {
+        if self.profile != RuntimeHostProfile::HeadlessData {
+            return Err(crate::Error::Custom(
+                "Headless backend runtime requires the HeadlessData host profile.".into(),
+            ));
+        }
+        self.start_backend_runtime_inner(None, cli_login_prompt)
+            .await
+    }
+
+    async fn start_backend_runtime_inner(
+        &self,
+        gui_mode: Option<GuiRuntimeMode>,
+        cli_login_prompt: Option<Arc<dyn CliLoginPrompt>>,
+    ) -> Result<BackendRuntimeSnapshot> {
         let Some(_start_guard) = AtomicFlagGuard::try_acquire(&self.backend_starting) else {
             return Ok(self.backend_runtime.snapshot());
         };
@@ -152,7 +165,9 @@ impl RuntimeHostState {
                 | BackendRuntimePhase::Authenticating
                 | BackendRuntimePhase::Running
         ) {
-            self.backend_runtime.set_mode(mode);
+            if let Some(mode) = gui_mode {
+                self.backend_runtime.set_gui_mode(mode);
+            }
             if current.phase == BackendRuntimePhase::Running {
                 self.start_social_maintenance_loops();
                 self.start_profile_maintenance_loops();
@@ -160,7 +175,9 @@ impl RuntimeHostState {
             return Ok(self.backend_runtime.snapshot());
         }
 
-        self.backend_runtime.set_mode(mode);
+        if let Some(mode) = gui_mode {
+            self.backend_runtime.set_gui_mode(mode);
+        }
         self.backend_runtime
             .set_phase(BackendRuntimePhase::Starting);
         self.start_data_services();
@@ -169,17 +186,17 @@ impl RuntimeHostState {
         }
 
         self.backend_runtime.set_authenticating();
-        let auth_scope = self.runtime_context.auth_scope.snapshot();
+        let authenticated_session = self.authenticated_session_projection().session;
         let interactive_login = cli_login_prompt.is_some();
         let auth_result = if let Some(prompt) = cli_login_prompt {
             self.authenticate_cli_interactive(prompt).await
-        } else if auth_scope.active {
+        } else if let Some(session) = authenticated_session {
             current_user_from_cookie(
                 Arc::clone(&self.web),
                 Arc::clone(&self.db),
-                auth_scope.current_user_id.clone(),
-                auth_scope.endpoint.clone(),
-                String::new(),
+                session.user_id,
+                session.endpoint,
+                session.websocket,
             )
             .await
         } else {
@@ -231,16 +248,21 @@ impl RuntimeHostState {
         &self,
         session: AuthenticatedRuntimeSession,
     ) -> Result<BackendRuntimeSnapshot> {
-        let auth_scope = self
-            .runtime_context
-            .auth_scope
-            .set(&session.user_id, &session.endpoint);
+        if session.user_id.trim().is_empty() {
+            return Err(crate::Error::Custom(
+                "Authenticated runtime requires an authenticated user id.".into(),
+            ));
+        }
+        let auth_scope = self.runtime_context.auth_scope.set_identity(
+            &session.user_id,
+            &session.display_name,
+            &session.endpoint,
+        );
         let activity_warmup_user_id = session.user_id.clone();
         vrcx_0_persistence::maintenance::user_tables_ensure(
             self.db.as_ref(),
             session.user_id.clone(),
         )?;
-        self.run_authenticated_session_maintenance_for_user(&session.user_id)?;
         let snapshot = self
             .backend_runtime
             .set_auth_success(session.user_id.clone(), session.display_name.clone());
@@ -250,7 +272,6 @@ impl RuntimeHostState {
             snapshot,
         );
 
-        self.set_backend_frontend_session(&session);
         let print_cleanup_trigger = PrintCleanupTrigger {
             user_id: session.user_id.clone(),
             endpoint: session.endpoint.clone(),
@@ -262,14 +283,87 @@ impl RuntimeHostState {
                 db: Arc::clone(&self.db),
                 web: Arc::clone(&self.web),
                 event_bus: self.runtime_context.event_bus.clone(),
+                auth_scope: self.runtime_context.auth_scope.clone(),
+                remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
             },
             print_cleanup_trigger,
         );
         self.backend_runtime.set_phase(BackendRuntimePhase::Running);
+        self.establish_authenticated_session_projection(&session, auth_scope.generation);
         self.authenticated_runtime.start(session)?;
         self.schedule_activity_warmup(activity_warmup_user_id, auth_scope.generation);
         self.start_social_maintenance_loops();
         self.start_profile_maintenance_loops();
+        self.schedule_authenticated_session_maintenance(auth_scope);
         Ok(self.backend_runtime.snapshot())
+    }
+
+    fn schedule_authenticated_session_maintenance(&self, expected_scope: RuntimeAuthScopeSnapshot) {
+        let db = Arc::clone(&self.db);
+        let auth_scope = self.runtime_context.auth_scope.clone();
+        self.runtime_context
+            .tasks
+            .spawn_cancellable(move |stop_token| async move {
+                tokio::time::sleep(AUTHENTICATED_SESSION_MAINTENANCE_DELAY).await;
+                if stop_token.is_stop_requested()
+                    || !authenticated_session_maintenance_scope_matches(
+                        &auth_scope,
+                        &expected_scope,
+                    )
+                {
+                    return;
+                }
+                let blocking_auth_scope = auth_scope.clone();
+                if let Err(error) = tokio::task::spawn_blocking(move || {
+                    if authenticated_session_maintenance_scope_matches(
+                        &blocking_auth_scope,
+                        &expected_scope,
+                    ) {
+                        vrcx_0_application::run_authenticated_session_maintenance(
+                            &db,
+                            &expected_scope.current_user_id,
+                        );
+                    }
+                })
+                .await
+                {
+                    tracing::warn!(error = %error, "authenticated session maintenance task failed");
+                }
+            });
+    }
+}
+
+fn authenticated_session_maintenance_scope_matches(
+    auth_scope: &RuntimeAuthScope,
+    expected: &RuntimeAuthScopeSnapshot,
+) -> bool {
+    auth_scope.snapshot().generation_matches(expected)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn authenticated_session_maintenance_scope_rejects_account_switches_and_logout() {
+        let auth_scope = RuntimeAuthScope::new();
+        let first = auth_scope.set("usr_first", "");
+        assert!(authenticated_session_maintenance_scope_matches(
+            &auth_scope,
+            &first
+        ));
+
+        auth_scope.set("usr_second", "");
+        assert!(!authenticated_session_maintenance_scope_matches(
+            &auth_scope,
+            &first
+        ));
+
+        let second = auth_scope.snapshot();
+        auth_scope.set("", "");
+        assert!(!authenticated_session_maintenance_scope_matches(
+            &auth_scope,
+            &second
+        ));
     }
 }

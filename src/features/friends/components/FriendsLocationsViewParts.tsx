@@ -10,15 +10,15 @@ import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadg
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import { readFriendInstanceEpoch } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
+import { isOnlineFriend } from '../friends-locations-rows/presence';
 import type { getFriendsLocationsDensityConfig } from '../friendsLocationsDensity';
 import {
-    isOnlineFriend,
     normalizeFriendsLocationId as normalizeId,
     resolveFriendGroupName,
     resolveLocationSummary,

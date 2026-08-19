@@ -256,7 +256,8 @@ describe('authAutoLoginService', () => {
             'frontend-auto-login-throttled'
         );
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'message.auth.auto_login_failed'
+            'message.auth.auto_login_failed',
+            { duration: Infinity, closeButton: true }
         );
         expect(useSessionStore.getState()).toMatchObject({
             sessionPhase: 'signed_out',
@@ -350,7 +351,16 @@ describe('authAutoLoginService', () => {
             status: 'failed'
         });
 
-        expect(mocks.toastError).toHaveBeenCalledWith('message.auth.offline');
+        expect(mocks.toastError).toHaveBeenNthCalledWith(
+            1,
+            'Network unavailable',
+            { duration: Infinity, closeButton: true }
+        );
+        expect(mocks.toastError).toHaveBeenNthCalledWith(
+            2,
+            'message.auth.offline',
+            { duration: Infinity, closeButton: true }
+        );
         expect(mocks.appAuthFailureNotificationShow).not.toHaveBeenCalled();
     });
 
@@ -374,6 +384,10 @@ describe('authAutoLoginService', () => {
         );
         expect(mocks.applySavedAuthSnapshot).toHaveBeenCalledWith(
             expect.objectContaining({ lastUserLoggedIn: null })
+        );
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'Saved credentials are no longer valid.',
+            { duration: Infinity, closeButton: true }
         );
     });
 });

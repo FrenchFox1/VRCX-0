@@ -3,6 +3,7 @@ import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
+import { currentRealtimeTransportGeneration } from '../authenticatedRuntimeService';
 import { handleRealtimeInstanceQueueProjection } from '../realtimeInstanceQueueService';
 import {
     handleRealtimeCurrentUserProjection,
@@ -13,12 +14,12 @@ import {
     handleRealtimeUserCacheProjection
 } from '../realtimePresenceService';
 import { showSQLiteErrorDialog } from '../sqliteErrorDialogService';
-import { isRecord } from './guards';
-import type { RuntimeEvent, RuntimeSnapshotPayload } from './types';
+import type { RuntimeEvent } from './types';
 
 type BackendRealtimeProjectionScope = {
+    authScopeGeneration: number;
     userId: string;
-    generation: number;
+    realtimeGeneration: number;
 };
 
 type BackendRealtimeProjectionEvent = RuntimeEvent<
@@ -39,36 +40,44 @@ let pendingBackendRealtimeProjectionEvents: Array<{
 function isBackendRuntimeRealtimeOwner(): boolean {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
-    const snapshot = isRecord(runtimeState.backendRuntime)
-        ? runtimeState.backendRuntime
-        : {};
-    const authUserId = normalizeString(snapshot.authUserId);
+    const snapshot = runtimeState.backendRuntime;
+    const authenticatedSession = runtimeState.authenticatedSession.session;
     return Boolean(
-        snapshot.phase === 'running' &&
-        snapshot.authStatus === 'authenticated' &&
+        snapshot?.phase === 'running' &&
         snapshot.wsStatus !== 'authFailure' &&
         snapshot.mode !== 'headless' &&
-        authUserId &&
-        runtimeState.auth.currentUserId === authUserId &&
+        authenticatedSession &&
+        runtimeState.auth.currentUserId === authenticatedSession.userId &&
         sessionState.sessionPhase === 'ready'
     );
 }
 
 function isBackendRuntimeRealtimeCandidate(): boolean {
-    const snapshot = useRuntimeStore.getState().backendRuntime;
+    const runtimeState = useRuntimeStore.getState();
+    const snapshot = runtimeState.backendRuntime;
     return Boolean(
-        isRecord(snapshot) &&
-        snapshot.phase === 'running' &&
-        snapshot.authStatus === 'authenticated' &&
+        snapshot?.phase === 'running' &&
         snapshot.wsStatus !== 'authFailure' &&
         snapshot.mode !== 'headless' &&
-        normalizeString(snapshot.authUserId)
+        runtimeState.authenticatedSession.session
     );
 }
 
-function currentBackendRealtimeUserId(): string {
-    const snapshot = useRuntimeStore.getState().backendRuntime;
-    return isRecord(snapshot) ? normalizeString(snapshot.authUserId) : '';
+function currentAuthenticatedSessionScope(): {
+    authScopeGeneration: number;
+    userId: string;
+} | null {
+    const session = useRuntimeStore.getState().authenticatedSession.session;
+    const userId = normalizeString(session?.userId);
+    const authScopeGeneration = Number(session?.authScopeGeneration);
+    if (
+        !userId ||
+        !Number.isFinite(authScopeGeneration) ||
+        authScopeGeneration <= 0
+    ) {
+        return null;
+    }
+    return { authScopeGeneration, userId };
 }
 
 function projectionGeneration(
@@ -83,12 +92,12 @@ function projectionGeneration(
 function currentBackendRealtimeProjectionScope(
     payload: BackendRealtimeProjectionEvent['payload']
 ): BackendRealtimeProjectionScope | null {
-    const userId = currentBackendRealtimeUserId();
-    const generation = projectionGeneration(payload);
-    if (!userId || !generation) {
+    const authenticatedSession = currentAuthenticatedSessionScope();
+    const realtimeGeneration = projectionGeneration(payload);
+    if (!authenticatedSession || !realtimeGeneration) {
         return null;
     }
-    return { userId, generation };
+    return { ...authenticatedSession, realtimeGeneration };
 }
 
 function sameBackendRealtimeProjectionScope(
@@ -98,8 +107,9 @@ function sameBackendRealtimeProjectionScope(
     return Boolean(
         left &&
         right &&
+        left.authScopeGeneration === right.authScopeGeneration &&
         left.userId === right.userId &&
-        left.generation === right.generation
+        left.realtimeGeneration === right.realtimeGeneration
     );
 }
 
@@ -180,10 +190,13 @@ function queuePendingBackendRealtimeProjectionEvent(
 export function flushPendingBackendRealtimeProjectionEvents(): void {
     const currentScope =
         pendingBackendRealtimeProjectionEvents[0]?.scope ?? null;
+    const authenticatedSession = currentAuthenticatedSessionScope();
     if (
         !pendingBackendRealtimeProjectionEvents.length ||
         !isBackendRuntimeRealtimeOwner() ||
-        currentScope?.userId !== currentBackendRealtimeUserId()
+        currentScope?.userId !== authenticatedSession?.userId ||
+        currentScope?.authScopeGeneration !==
+            authenticatedSession?.authScopeGeneration
     ) {
         return;
     }
@@ -196,24 +209,19 @@ export function flushPendingBackendRealtimeProjectionEvents(): void {
     }
 }
 
-export function prunePendingBackendRealtimeProjectionEvents(
-    snapshot: RuntimeSnapshotPayload
-): void {
+export function prunePendingBackendRealtimeProjectionEvents(): void {
     if (!pendingBackendRealtimeProjectionEvents.length) {
         return;
     }
-    const userId = isRecord(snapshot)
-        ? normalizeString(snapshot.authUserId)
-        : '';
-    const active = Boolean(
-        isRecord(snapshot) &&
-        snapshot.phase === 'running' &&
-        snapshot.authStatus === 'authenticated' &&
-        snapshot.mode !== 'headless' &&
-        userId
-    );
+    const authenticatedSession = currentAuthenticatedSessionScope();
     const currentScope = pendingBackendRealtimeProjectionEvents[0]?.scope;
-    if (!active || currentScope?.userId !== userId) {
+    if (
+        !isBackendRuntimeRealtimeCandidate() ||
+        !authenticatedSession ||
+        currentScope?.userId !== authenticatedSession.userId ||
+        currentScope?.authScopeGeneration !==
+            authenticatedSession.authScopeGeneration
+    ) {
         pendingBackendRealtimeProjectionEvents = [];
     }
 }
@@ -223,6 +231,15 @@ export function handleBackendRealtimeProjectionEvent(
 ): boolean {
     if (!isRealtimeProjectionEvent(event)) {
         return false;
+    }
+    const realtimeGeneration = projectionGeneration(event.payload);
+    const authoritativeGeneration = currentRealtimeTransportGeneration();
+    if (
+        realtimeGeneration &&
+        authoritativeGeneration !== null &&
+        realtimeGeneration !== authoritativeGeneration
+    ) {
+        return true;
     }
     if (!isBackendRuntimeRealtimeOwner()) {
         if (isBackendRuntimeRealtimeCandidate()) {

@@ -7,15 +7,15 @@ import { FeedLocationLink } from './FeedLocationLink';
 import { FeedStatusBadge } from './FeedStatusBadge';
 
 type FeedDetailCellProps = {
-    loadingHistoryKey: string;
+    loadingHistoryKey?: string;
     locationClassName?: string;
-    onNewInstance(payload?: FeedLocationActionPayload): void;
-    onOpenPreviousInstances(payload?: FeedLocationActionPayload): void;
+    onNewInstance?(payload?: FeedLocationActionPayload): void;
+    onOpenPreviousInstances?(payload?: FeedLocationActionPayload): void;
     row: FeedRow;
 };
 
 function FeedDetailCell({
-    loadingHistoryKey,
+    loadingHistoryKey = '',
     locationClassName = '',
     onNewInstance,
     onOpenPreviousInstances,
@@ -68,6 +68,7 @@ function FeedDetailCell({
                     avatarTags={row?.currentAvatarTags}
                     imageUrl={row?.currentAvatarImageUrl}
                     ownerId={row?.ownerId}
+                    resolveFromImage={false}
                     userId={row?.userId}
                 />
             </div>

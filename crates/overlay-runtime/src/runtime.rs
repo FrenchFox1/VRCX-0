@@ -19,7 +19,6 @@ use vrcx_0_application_activity::{
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
 use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
-#[cfg(feature = "friends-panel")]
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::game_log_parser::GameLogEventKind;
 use vrcx_0_host_desktop::vr_overlay::{
@@ -27,6 +26,7 @@ use vrcx_0_host_desktop::vr_overlay::{
 };
 #[cfg(feature = "friends-panel")]
 use vrcx_0_host_desktop::vr_overlay::{OverlayInputEvent, OverlayInputKind};
+#[cfg(feature = "friends-panel")]
 use vrcx_0_runtime_host::notification::UserImageCache;
 #[cfg(feature = "friends-panel")]
 use vrcx_0_vr_overlay::{
@@ -81,6 +81,8 @@ trait VrOverlayFrameProducer: Send {
 
 type VrOverlayFrameProducerFactory = Box<dyn Fn() -> Box<dyn VrOverlayFrameProducer> + Send + Sync>;
 type FriendsPanelSnapshotProvider = Arc<dyn Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync>;
+type HmdFriendMembershipProvider = Arc<dyn Fn(&str) -> bool + Send + Sync>;
+type HmdFriendContextProvider = Arc<dyn Fn(&str) -> Option<(FriendRecord, String)> + Send + Sync>;
 
 thread_local! {
     static SLINT_WRIST_RENDERER: RefCell<Option<SlintWristRenderer>> = const { RefCell::new(None) };
@@ -108,6 +110,8 @@ const HMD_TOAST_ANIMATION_REFRESH_INTERVAL: Duration = Duration::from_millis(16)
 const MAX_FRIENDS_PANEL_INPUT_EVENTS: usize = 512;
 #[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_AVATAR_FETCH_BATCH: usize = 8;
+#[cfg(feature = "friends-panel")]
+const FRIENDS_PANEL_AVATAR_CACHE_CAPACITY: usize = 128;
 #[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_SCROLL_ROW_PIXELS: f32 = 106.0;
 #[cfg(feature = "friends-panel")]
@@ -178,7 +182,7 @@ impl Default for HmdNotificationConfig {
     fn default() -> Self {
         Self {
             enabled: false,
-            start_mode: WristOverlayStartMode::VrchatVrMode,
+            start_mode: WristOverlayStartMode::Vrchat,
             timeout_ms: 5_000,
             opacity_percent: 100,
             position: HmdNotificationPosition::Bottom,
@@ -204,7 +208,7 @@ pub(super) struct VrOverlayRuntimeConfig {
 impl Default for VrOverlayRuntimeConfig {
     fn default() -> Self {
         Self {
-            start_mode: WristOverlayStartMode::VrchatVrMode,
+            start_mode: WristOverlayStartMode::Vrchat,
             backend: OverlayBackendPreference::Auto,
             button: OverlayActivationButton::Grip,
             hand: WristOverlayHand::Left,
@@ -401,8 +405,64 @@ impl FriendsPanelAvatarCacheEntry {
 }
 
 #[cfg(feature = "friends-panel")]
+#[derive(Default)]
+struct FriendsPanelAvatarCache {
+    entries: HashMap<String, FriendsPanelAvatarCacheEntry>,
+    lru: VecDeque<String>,
+}
+
+#[cfg(feature = "friends-panel")]
+impl FriendsPanelAvatarCache {
+    fn insert(&mut self, user_id: String, entry: FriendsPanelAvatarCacheEntry) {
+        self.lru.retain(|cached_user_id| cached_user_id != &user_id);
+        self.lru.push_back(user_id.clone());
+        self.entries.insert(user_id, entry);
+        while self.entries.len() > FRIENDS_PANEL_AVATAR_CACHE_CAPACITY {
+            let Some(oldest_user_id) = self.lru.pop_front() else {
+                break;
+            };
+            self.entries.remove(&oldest_user_id);
+        }
+    }
+
+    fn contains_matching(
+        &mut self,
+        user_id: &str,
+        initial_image_url: &str,
+        allow_user_icon: bool,
+    ) -> bool {
+        let matches = self
+            .entries
+            .get(user_id)
+            .is_some_and(|entry| entry.matches(initial_image_url, allow_user_icon));
+        if matches {
+            self.lru.retain(|cached_user_id| cached_user_id != user_id);
+            self.lru.push_back(user_id.to_string());
+        }
+        matches
+    }
+
+    fn bitmaps(&self) -> HashMap<String, AvatarBitmap> {
+        self.entries
+            .iter()
+            .map(|(user_id, entry)| (user_id.clone(), entry.bitmap.clone()))
+            .collect()
+    }
+
+    fn clear(&mut self) {
+        self.entries.clear();
+        self.lru.clear();
+    }
+
+    #[cfg(test)]
+    fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[cfg(feature = "friends-panel")]
 fn insert_friends_panel_avatar_if_session_current(
-    avatars: &Arc<Mutex<HashMap<String, FriendsPanelAvatarCacheEntry>>>,
+    avatars: &Arc<Mutex<FriendsPanelAvatarCache>>,
     session_generation: &AtomicU64,
     expected_generation: u64,
     user_id: &str,
@@ -436,7 +496,6 @@ pub struct VrOverlayRuntimeSnapshot {
     pub enabled: bool,
     pub backend_available: bool,
     pub running: bool,
-    pub vr_mode: bool,
     pub steamvr_running: bool,
     pub active_backend: Option<String>,
 }
@@ -444,7 +503,6 @@ pub struct VrOverlayRuntimeSnapshot {
 pub struct VrOverlayRuntime {
     enabled: AtomicBool,
     game_running: AtomicBool,
-    vr_mode: AtomicBool,
     steamvr_running: AtomicBool,
     refresh_loop_started: AtomicBool,
     wrist_frame_release_requested: AtomicBool,
@@ -458,10 +516,12 @@ pub struct VrOverlayRuntime {
     pub(crate) services: Option<Arc<dyn VrOverlayRuntimeServices>>,
     config: Mutex<VrOverlayRuntimeConfig>,
     friends_panel_snapshot_provider: Mutex<Option<FriendsPanelSnapshotProvider>>,
+    hmd_friend_membership_provider: Mutex<Option<HmdFriendMembershipProvider>>,
+    hmd_friend_context_provider: Mutex<Option<HmdFriendContextProvider>>,
     #[cfg(feature = "friends-panel")]
     friends_panel_favorite_groups: Mutex<FavoriteFriendGroupsSnapshot>,
     #[cfg(feature = "friends-panel")]
-    friends_panel_avatars: Arc<Mutex<HashMap<String, FriendsPanelAvatarCacheEntry>>>,
+    friends_panel_avatars: Arc<Mutex<FriendsPanelAvatarCache>>,
     #[cfg(feature = "friends-panel")]
     friends_panel_avatar_session_generation: Arc<AtomicU64>,
     #[cfg(feature = "friends-panel")]
@@ -482,6 +542,7 @@ pub struct VrOverlayRuntime {
     #[cfg(feature = "friends-panel")]
     pub(crate) interactive_panel: Arc<Mutex<InteractivePanelRuntimeState>>,
     pub(crate) avatar_bitmap_cache: Arc<AvatarBitmapCache>,
+    #[cfg(feature = "friends-panel")]
     pub(crate) user_image_cache: Arc<UserImageCache>,
     pub(crate) manager: Mutex<VrOverlayManager<HostVrOverlayService>>,
     running_mirror: AtomicBool,
@@ -585,7 +646,6 @@ impl VrOverlayRuntime {
         Self {
             enabled: AtomicBool::new(false),
             game_running: AtomicBool::new(false),
-            vr_mode: AtomicBool::new(false),
             steamvr_running: AtomicBool::new(false),
             refresh_loop_started: AtomicBool::new(false),
             wrist_frame_release_requested: AtomicBool::new(false),
@@ -603,10 +663,12 @@ impl VrOverlayRuntime {
             refresh_thread_id: Mutex::new(None),
             config: Mutex::new(config),
             friends_panel_snapshot_provider: Mutex::new(None),
+            hmd_friend_membership_provider: Mutex::new(None),
+            hmd_friend_context_provider: Mutex::new(None),
             #[cfg(feature = "friends-panel")]
             friends_panel_favorite_groups: Mutex::new(FavoriteFriendGroupsSnapshot::default()),
             #[cfg(feature = "friends-panel")]
-            friends_panel_avatars: Arc::new(Mutex::new(HashMap::new())),
+            friends_panel_avatars: Arc::new(Mutex::new(FriendsPanelAvatarCache::default())),
             #[cfg(feature = "friends-panel")]
             friends_panel_avatar_session_generation: Arc::new(AtomicU64::new(0)),
             #[cfg(feature = "friends-panel")]
@@ -627,6 +689,7 @@ impl VrOverlayRuntime {
             #[cfg(feature = "friends-panel")]
             interactive_panel: Arc::new(Mutex::new(InteractivePanelRuntimeState::default())),
             avatar_bitmap_cache: Arc::new(AvatarBitmapCache::new()),
+            #[cfg(feature = "friends-panel")]
             user_image_cache: Arc::new(UserImageCache::new()),
             frame_producer_factory,
             frame_producer: Mutex::new(None),
@@ -774,11 +837,6 @@ impl VrOverlayRuntime {
         self.backend_available
     }
 
-    pub fn set_vr_mode(&self, vr_mode: bool) {
-        self.vr_mode.store(vr_mode, Ordering::Release);
-        self.reconcile_current_with_device_refresh(true);
-    }
-
     pub fn stop_detached(&self) {
         if let Ok(mut manager) = self.manager.lock() {
             manager.stop_detached();
@@ -804,6 +862,50 @@ impl VrOverlayRuntime {
         }
     }
 
+    pub fn set_hmd_friend_membership_provider<F>(&self, provider: F)
+    where
+        F: Fn(&str) -> bool + Send + Sync + 'static,
+    {
+        if let Ok(mut current) = self.hmd_friend_membership_provider.lock() {
+            *current = Some(Arc::new(provider));
+        }
+    }
+
+    pub fn set_hmd_friend_context_provider<F>(&self, provider: F)
+    where
+        F: Fn(&str) -> Option<(FriendRecord, String)> + Send + Sync + 'static,
+    {
+        if let Ok(mut current) = self.hmd_friend_context_provider.lock() {
+            *current = Some(Arc::new(provider));
+        }
+    }
+
+    pub(crate) fn is_current_hmd_friend(&self, user_id: &str) -> bool {
+        let user_id = user_id.trim();
+        if !user_id.starts_with("usr_") {
+            return false;
+        }
+        let provider = self
+            .hmd_friend_membership_provider
+            .lock()
+            .ok()
+            .and_then(|provider| provider.clone());
+        provider.is_some_and(|provider| provider(user_id))
+    }
+
+    pub(crate) fn current_hmd_friend_context(
+        &self,
+        user_id: &str,
+    ) -> Option<(FriendRecord, String)> {
+        let provider = self
+            .hmd_friend_context_provider
+            .lock()
+            .ok()
+            .and_then(|provider| provider.clone());
+        provider.and_then(|provider| provider(user_id))
+    }
+
+    #[cfg(feature = "friends-panel")]
     pub(crate) fn current_friends_panel_snapshot(&self) -> Option<RealtimeFriendSnapshot> {
         let provider = self
             .friends_panel_snapshot_provider
@@ -850,12 +952,7 @@ impl VrOverlayRuntime {
         let avatars_by_user_id = self
             .friends_panel_avatars
             .lock()
-            .map(|avatars| {
-                avatars
-                    .iter()
-                    .map(|(user_id, entry)| (user_id.clone(), entry.bitmap.clone()))
-                    .collect()
-            })
+            .map(|avatars| avatars.bitmaps())
             .unwrap_or_default();
         build_friends_panel_model(FriendsPanelModelInput {
             selected_category_key,
@@ -1028,10 +1125,8 @@ impl VrOverlayRuntime {
         if self
             .friends_panel_avatars
             .lock()
-            .map(|avatars| {
-                avatars
-                    .get(user_id)
-                    .is_some_and(|entry| entry.matches(&initial_image_url, allow_user_icon))
+            .map(|mut avatars| {
+                avatars.contains_matching(user_id, &initial_image_url, allow_user_icon)
             })
             .unwrap_or(false)
         {
@@ -1294,7 +1389,6 @@ impl VrOverlayRuntime {
             enabled: self.enabled.load(Ordering::Acquire),
             backend_available: self.backend_available,
             running,
-            vr_mode: self.vr_mode.load(Ordering::Acquire),
             steamvr_running: self.steamvr_running.load(Ordering::Acquire),
             active_backend,
         }
@@ -1326,9 +1420,6 @@ impl VrOverlayRuntime {
     }
 
     fn update_process_status(&self, game_running: bool, steamvr_running: bool) {
-        if !game_running {
-            self.vr_mode.store(false, Ordering::Release);
-        }
         let previous_game_running = self.game_running.swap(game_running, Ordering::AcqRel);
         if previous_game_running && !game_running {
             self.avatar_bitmap_cache.clear();
@@ -1361,10 +1452,9 @@ impl VrOverlayRuntime {
                 config = next_config;
             }
             let game_running = self.game_running.load(Ordering::Acquire);
-            let vr_mode = self.vr_mode.load(Ordering::Acquire);
             let steamvr_running = self.steamvr_running.load(Ordering::Acquire);
             let active_surfaces =
-                self.active_surfaces_for_state(config, game_running, vr_mode, steamvr_running);
+                self.active_surfaces_for_state(config, game_running, steamvr_running);
             if active_surfaces.any() {
                 let configs = overlay_surface_configs(active_surfaces, config, self);
                 if let Err(error) = manager.set_surface_configs(configs) {
@@ -1380,7 +1470,6 @@ impl VrOverlayRuntime {
                 enabled: active_surfaces.any(),
                 backend_available: self.backend_available,
                 game_running,
-                vr_mode,
                 steamvr_running,
                 start_mode: WristOverlayStartMode::SteamVr,
             };
@@ -1389,12 +1478,8 @@ impl VrOverlayRuntime {
             if eligibility.can_run() && manager.is_running() {
                 let input_outcome = self.process_overlay_input_events(&mut manager);
                 if input_outcome.surface_config_changed {
-                    let refreshed_surfaces = self.active_surfaces_for_state(
-                        config,
-                        game_running,
-                        vr_mode,
-                        steamvr_running,
-                    );
+                    let refreshed_surfaces =
+                        self.active_surfaces_for_state(config, game_running, steamvr_running);
                     let configs = overlay_surface_configs(refreshed_surfaces, config, self);
                     if let Err(error) = manager.set_surface_configs(configs) {
                         tracing::warn!(
@@ -1476,7 +1561,6 @@ impl VrOverlayRuntime {
         self.active_surfaces_for_state(
             config,
             self.game_running.load(Ordering::Acquire),
-            self.vr_mode.load(Ordering::Acquire),
             self.steamvr_running.load(Ordering::Acquire),
         )
     }
@@ -1485,7 +1569,6 @@ impl VrOverlayRuntime {
         &self,
         config: VrOverlayRuntimeConfig,
         game_running: bool,
-        vr_mode: bool,
         steamvr_running: bool,
     ) -> ActiveOverlaySurfaces {
         let panel_listener = self.backend_available && steamvr_running && config.panel_enabled;
@@ -1497,7 +1580,6 @@ impl VrOverlayRuntime {
                 self.backend_available,
                 steamvr_running,
                 game_running,
-                vr_mode,
             ),
             hmd: surface_active_for_start_mode(
                 config.hmd.enabled,
@@ -1505,7 +1587,6 @@ impl VrOverlayRuntime {
                 self.backend_available,
                 steamvr_running,
                 game_running,
-                vr_mode,
             ),
             panel_listener,
             friends_panel,
@@ -2124,13 +2205,8 @@ impl GameProcessEventSink for VrOverlayRuntime {
 impl GameLogEventSink for VrOverlayRuntime {
     fn ingest_game_log_event(&self, event: &GameLogEvent) -> vrcx_0_application_core::Result<()> {
         match event.kind {
-            GameLogEventKind::OpenVrInit => self.set_vr_mode(true),
-            GameLogEventKind::DesktopMode => self.set_vr_mode(false),
-            GameLogEventKind::VrcQuit => {
-                self.set_vr_mode(false);
-                self.mark_friends_panel_model_dirty();
-            }
-            GameLogEventKind::Location { .. }
+            GameLogEventKind::VrcQuit
+            | GameLogEventKind::Location { .. }
             | GameLogEventKind::LocationDestination { .. }
             | GameLogEventKind::PlayerJoined { .. }
             | GameLogEventKind::PlayerLeft { .. } => {
@@ -2207,10 +2283,10 @@ impl VrOverlayFrameProducer for StaticWristFrameProducer {
     }
 }
 
-fn start_mode_allows(start_mode: WristOverlayStartMode, game_running: bool, vr_mode: bool) -> bool {
+fn start_mode_allows(start_mode: WristOverlayStartMode, game_running: bool) -> bool {
     match start_mode {
         WristOverlayStartMode::SteamVr => true,
-        WristOverlayStartMode::VrchatVrMode => game_running && vr_mode,
+        WristOverlayStartMode::Vrchat => game_running,
     }
 }
 
@@ -2310,12 +2386,8 @@ fn surface_active_for_start_mode(
     backend_available: bool,
     steamvr_running: bool,
     game_running: bool,
-    vr_mode: bool,
 ) -> bool {
-    enabled
-        && backend_available
-        && steamvr_running
-        && start_mode_allows(start_mode, game_running, vr_mode)
+    enabled && backend_available && steamvr_running && start_mode_allows(start_mode, game_running)
 }
 
 fn overlay_surface_configs(

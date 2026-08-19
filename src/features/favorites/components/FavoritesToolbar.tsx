@@ -15,6 +15,7 @@ import {
     ToolbarViewMenu,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -36,7 +37,6 @@ import {
     FAVORITES_DENSITY_OPTIONS,
     type FavoritesDensity
 } from '../favoritesDensity';
-import type { FavoriteKind } from '../favoritesTypes';
 
 type FavoritesToolbarProps = {
     kind: FavoriteKind;
@@ -179,10 +179,14 @@ function FavoritesToolbar({
                                     spacing={1}
                                     value={density ? [density] : []}
                                     onValueChange={(nextValue) => {
-                                        if (nextValue[0]) {
-                                            onDensityChange(
-                                                nextValue[0] as FavoritesDensity
+                                        const option =
+                                            FAVORITES_DENSITY_OPTIONS.find(
+                                                (candidate) =>
+                                                    candidate.value ===
+                                                    nextValue[0]
                                             );
+                                        if (option) {
+                                            onDensityChange(option.value);
                                         }
                                     }}
                                     className="grid w-full grid-cols-2"

@@ -7,12 +7,7 @@ import type {
     UserDialogJson,
     UserModerationState,
     UserProfileEntity
-} from '@/domain/entities/profileEntities';
-import {
-    userDialogMutualFriendSortingOptions,
-    userDialogWorldOrderOptions,
-    userDialogWorldSortingOptions
-} from '@/shared/constants/user';
+} from '@/domain/entities/user';
 import { useDialogStore } from '@/state/dialogStore';
 import {
     Select,
@@ -28,6 +23,18 @@ import {
     EntityDialogTabContent,
     EntityRawJson
 } from '../../EntityDialogScaffold';
+import {
+    userDialogAvatarReleaseStatusOptions,
+    userDialogAvatarSortingOptions,
+    userDialogMutualFriendSortingOptions,
+    userDialogWorldOrderOptions,
+    userDialogWorldSortingOptions,
+    type UserDialogAvatarReleaseStatus,
+    type UserDialogAvatarSort,
+    type UserDialogMutualFriendSort,
+    type UserDialogWorldOrder,
+    type UserDialogWorldSort
+} from '../userDialogListOptions';
 import { EntityList, FavoriteWorldGroups } from '../UserDialogViewParts';
 import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
 import type { useUserDialogSupplementalData } from '../useUserDialogSupplementalData';
@@ -80,29 +87,36 @@ export function UserDialogMutualTab({
                 <span className="text-muted-foreground text-sm">
                     {t('dialog.user.groups.sort_by')}
                 </span>
-                <Select
+                <Select<UserDialogMutualFriendSort>
                     value={mutualSort}
-                    onValueChange={(value) => setMutualSort(value ?? '')}
+                    onValueChange={(value) => {
+                        if (value) {
+                            setMutualSort(value);
+                        }
+                    }}
                     disabled={remoteStatus.mutual === 'running'}
-                    items={Object.values(
-                        userDialogMutualFriendSortingOptions
-                    ).map((option) => ({
-                        value: option.value,
-                        label: t(option.name)
-                    }))}
+                    items={userDialogMutualFriendSortingOptions.map(
+                        (option) => ({
+                            value: option.value,
+                            label: t(option.name)
+                        })
+                    )}
                 >
                     <SelectTrigger size="sm" className="w-36">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
-                            {Object.entries(
-                                userDialogMutualFriendSortingOptions
-                            ).map(([key, option]) => (
-                                <SelectItem key={key} value={option.value}>
-                                    {t(option.name)}
-                                </SelectItem>
-                            ))}
+                            {userDialogMutualFriendSortingOptions.map(
+                                (option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {t(option.name)}
+                                    </SelectItem>
+                                )
+                            )}
                         </SelectGroup>
                     </SelectContent>
                 </Select>
@@ -157,65 +171,64 @@ export function UserDialogWorldsTab({
                 <span className="text-muted-foreground text-sm">
                     {t('dialog.user.worlds.sort_by')}
                 </span>
-                <Select
+                <Select<UserDialogWorldSort>
                     value={worldSort}
-                    onValueChange={(value) => changeWorldSort(value ?? '')}
+                    onValueChange={(value) => {
+                        if (value) {
+                            changeWorldSort(value);
+                        }
+                    }}
                     disabled={remoteStatus.worlds === 'running'}
-                    items={Object.values(userDialogWorldSortingOptions).map(
-                        (option) => ({
-                            value: option.value,
-                            label: t(option.name)
-                        })
-                    )}
+                    items={userDialogWorldSortingOptions.map((option) => ({
+                        value: option.value,
+                        label: t(option.name)
+                    }))}
                 >
                     <SelectTrigger size="sm" className="w-32">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
-                            <SelectItem value="name">
-                                {t('dialog.user.worlds.sorting.name')}
-                            </SelectItem>
-                            <SelectItem value="updated">
-                                {t('dialog.user.worlds.sorting.updated')}
-                            </SelectItem>
-                            <SelectItem value="created">
-                                {t('dialog.user.worlds.sorting.created')}
-                            </SelectItem>
-                            <SelectItem value="favorites">
-                                {t('dialog.user.worlds.sorting.favorites')}
-                            </SelectItem>
-                            <SelectItem value="popularity">
-                                {t('dialog.user.worlds.sorting.popularity')}
-                            </SelectItem>
+                            {userDialogWorldSortingOptions.map((option) => (
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                >
+                                    {t(option.name)}
+                                </SelectItem>
+                            ))}
                         </SelectGroup>
                     </SelectContent>
                 </Select>
                 <span className="text-muted-foreground text-sm">
                     {t('dialog.user.label.order_by')}
                 </span>
-                <Select
+                <Select<UserDialogWorldOrder>
                     value={worldOrder}
-                    onValueChange={(value) => changeWorldOrder(value ?? '')}
+                    onValueChange={(value) => {
+                        if (value) {
+                            changeWorldOrder(value);
+                        }
+                    }}
                     disabled={remoteStatus.worlds === 'running'}
-                    items={Object.values(userDialogWorldOrderOptions).map(
-                        (option) => ({
-                            value: option.value,
-                            label: t(option.name)
-                        })
-                    )}
+                    items={userDialogWorldOrderOptions.map((option) => ({
+                        value: option.value,
+                        label: t(option.name)
+                    }))}
                 >
                     <SelectTrigger size="sm" className="w-36">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
-                            <SelectItem value="descending">
-                                {t('dialog.user.worlds.order.descending')}
-                            </SelectItem>
-                            <SelectItem value="ascending">
-                                {t('dialog.user.worlds.order.ascending')}
-                            </SelectItem>
+                            {userDialogWorldOrderOptions.map((option) => (
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                >
+                                    {t(option.name)}
+                                </SelectItem>
+                            ))}
                         </SelectGroup>
                     </SelectContent>
                 </Select>
@@ -321,90 +334,72 @@ export function UserDialogAvatarsTab({
                         <span className="text-muted-foreground text-sm">
                             {t('dialog.user.avatars.sort_by')}
                         </span>
-                        <Select
+                        <Select<UserDialogAvatarSort>
                             value={avatarSort}
-                            onValueChange={(value) =>
-                                changeAvatarSort(value ?? '')
-                            }
-                            disabled={remoteStatus.avatars === 'running'}
-                            items={[
-                                {
-                                    value: 'name',
-                                    label: t('dialog.user.avatars.sort_by_name')
-                                },
-                                {
-                                    value: 'update',
-                                    label: t(
-                                        'dialog.user.avatars.sort_by_update'
-                                    )
-                                },
-                                {
-                                    value: 'createdAt',
-                                    label: t(
-                                        'dialog.user.avatars.sort_by_uploaded'
-                                    )
+                            onValueChange={(value) => {
+                                if (value) {
+                                    changeAvatarSort(value);
                                 }
-                            ]}
+                            }}
+                            disabled={remoteStatus.avatars === 'running'}
+                            items={userDialogAvatarSortingOptions.map(
+                                (option) => ({
+                                    value: option.value,
+                                    label: t(option.name)
+                                })
+                            )}
                         >
                             <SelectTrigger size="sm" className="w-36">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="name">
-                                        {t('dialog.user.avatars.sort_by_name')}
-                                    </SelectItem>
-                                    <SelectItem value="update">
-                                        {t(
-                                            'dialog.user.avatars.sort_by_update'
-                                        )}
-                                    </SelectItem>
-                                    <SelectItem value="createdAt">
-                                        {t(
-                                            'dialog.user.avatars.sort_by_uploaded'
-                                        )}
-                                    </SelectItem>
+                                    {userDialogAvatarSortingOptions.map(
+                                        (option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {t(option.name)}
+                                            </SelectItem>
+                                        )
+                                    )}
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                         <span className="text-muted-foreground text-sm">
                             {t('dialog.user.label.group_by')}
                         </span>
-                        <Select
+                        <Select<UserDialogAvatarReleaseStatus>
                             value={avatarReleaseStatus}
-                            onValueChange={(value) =>
-                                changeAvatarReleaseStatus(value ?? '')
-                            }
-                            disabled={remoteStatus.avatars === 'running'}
-                            items={[
-                                {
-                                    value: 'all',
-                                    label: t('dialog.user.avatars.all')
-                                },
-                                {
-                                    value: 'public',
-                                    label: t('dialog.user.avatars.public')
-                                },
-                                {
-                                    value: 'private',
-                                    label: t('dialog.user.avatars.private')
+                            onValueChange={(value) => {
+                                if (value) {
+                                    changeAvatarReleaseStatus(value);
                                 }
-                            ]}
+                            }}
+                            disabled={remoteStatus.avatars === 'running'}
+                            items={userDialogAvatarReleaseStatusOptions.map(
+                                (option) => ({
+                                    value: option.value,
+                                    label: t(option.name)
+                                })
+                            )}
                         >
                             <SelectTrigger size="sm" className="w-32">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="all">
-                                        {t('dialog.user.avatars.all')}
-                                    </SelectItem>
-                                    <SelectItem value="public">
-                                        {t('dialog.user.avatars.public')}
-                                    </SelectItem>
-                                    <SelectItem value="private">
-                                        {t('dialog.user.avatars.private')}
-                                    </SelectItem>
+                                    {userDialogAvatarReleaseStatusOptions.map(
+                                        (option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {t(option.name)}
+                                            </SelectItem>
+                                        )
+                                    )}
                                 </SelectGroup>
                             </SelectContent>
                         </Select>

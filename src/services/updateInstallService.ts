@@ -8,10 +8,12 @@ import {
     confirmInstall,
     formatReleaseDisplayVersion,
     type AppUpdateDownloadProgressPayload,
+    type AppUpdateDownloadStatusSnapshot,
     type AppUpdateInstalledPayload,
     type NormalizedRelease
 } from '@/services/updateService';
 import { links } from '@/shared/constants/link';
+import { MINUTE_MS } from '@/shared/constants/time';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { UPDATE_READY_TOAST_DURATION_MS } from './backgroundMaintenanceTiming';
@@ -22,34 +24,48 @@ type DirectUpdateInstallOptions = {
     toastId?: string | number;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
+type RuntimeUpdateLoopState = ReturnType<
+    typeof useRuntimeStore.getState
+>['updateLoop'];
 
-function getString(value: unknown) {
-    return typeof value === 'string' ? value : String(value || '');
+type UpdateUiState = {
+    hasAvailableUpdate: boolean;
+    latestUpdaterRelease: RuntimeUpdateLoopState['latestUpdaterRelease'];
+    autoDownloadUiVisible: boolean;
+};
+
+export function shouldShowUpdateUi({
+    hasAvailableUpdate,
+    latestUpdaterRelease,
+    autoDownloadUiVisible
+}: UpdateUiState): boolean {
+    if (!hasAvailableUpdate || !latestUpdaterRelease) {
+        return false;
+    }
+    return (
+        latestUpdaterRelease.updaterType !== 'tauri' || autoDownloadUiVisible
+    );
 }
 
 function readLatestUpdateRelease(): NormalizedRelease | null {
     const release = useRuntimeStore.getState().updateLoop.latestUpdaterRelease;
-    if (!isRecord(release)) {
+    if (!release) {
         return null;
     }
 
     return {
-        manifestUrl: getString(release.manifestUrl).trim() || undefined,
-        target: getString(release.target).trim() || undefined,
-        canonicalVersion: getString(release.canonicalVersion),
+        manifestUrl: release.manifestUrl.trim() || undefined,
+        target: release.target.trim() || undefined,
+        canonicalVersion: release.canonicalVersion,
         channel: 'Stable',
-        displayVersion: getString(release.displayVersion),
-        htmlUrl: getString(release.htmlUrl),
-        tagName: getString(release.tagName),
-        displayName: getString(release.displayName || release.title),
+        displayVersion: release.displayVersion,
+        htmlUrl: release.htmlUrl,
+        tagName: release.tagName,
+        displayName: release.displayName || release.title,
         prerelease: false,
-        publishedAt: getString(release.publishedAt),
+        publishedAt: release.publishedAt,
         body: '',
-        updaterType:
-            getString(release.updaterType) === 'tauri' ? 'tauri' : 'manual'
+        updaterType: release.updaterType
     };
 }
 
@@ -67,16 +83,69 @@ function canInstallUpdateRelease(
     );
 }
 
-const IDLE_DOWNLOAD_STATE = {
+const IDLE_DOWNLOAD_STATE: Pick<
+    RuntimeUpdateLoopState,
+    | 'autoDownloadState'
+    | 'downloadedVersion'
+    | 'downloadProgress'
+    | 'downloadedBytes'
+> = {
     autoDownloadState: 'idle',
     downloadedVersion: null,
     downloadProgress: 0,
     downloadedBytes: 0
 };
+const AUTO_DOWNLOAD_UI_DELAY_MS = 30 * MINUTE_MS;
+
+let autoDownloadUiTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearAutoDownloadUiTimer(): void {
+    if (autoDownloadUiTimer === null) {
+        return;
+    }
+    globalThis.clearTimeout(autoDownloadUiTimer);
+    autoDownloadUiTimer = null;
+}
+
+function scheduleAutoDownloadUi(version: string, startedAt: string): void {
+    clearAutoDownloadUiTimer();
+    const startedAtMs = Date.parse(startedAt);
+    const remainingDelay = Math.max(
+        0,
+        (Number.isFinite(startedAtMs) ? startedAtMs : Date.now()) +
+            AUTO_DOWNLOAD_UI_DELAY_MS -
+            Date.now()
+    );
+    autoDownloadUiTimer = globalThis.setTimeout(() => {
+        autoDownloadUiTimer = null;
+        const updateLoop = useRuntimeStore.getState().updateLoop;
+        if (
+            updateLoop.autoDownloadState !== 'downloading' ||
+            updateLoop.downloadedVersion !== version ||
+            updateLoop.autoDownloadStartedAt !== startedAt
+        ) {
+            return;
+        }
+        useRuntimeStore.getState().setUpdateLoopState({
+            autoDownloadUiVisible: true
+        });
+    }, remainingDelay);
+}
+
+export function resetAutoDownloadUiDelay(): void {
+    clearAutoDownloadUiTimer();
+    useRuntimeStore.getState().setUpdateLoopState({
+        autoDownloadStartedAt: null,
+        autoDownloadUiVisible: false
+    });
+}
 
 function resetUpdateLoopState() {
+    clearAutoDownloadUiTimer();
     useRuntimeStore.getState().setUpdateLoopState({
         ...IDLE_DOWNLOAD_STATE,
+        autoDownloadStartedAt: null,
+        autoDownloadUiVisible: false,
         hasAvailableUpdate: false,
         latestUpdaterRelease: null
     });
@@ -137,12 +206,6 @@ export function installUpdateRelease(
     return directInstallInFlight;
 }
 
-export function installLatestAvailableUpdate(
-    options: DirectUpdateInstallOptions = {}
-) {
-    return installUpdateRelease(readLatestUpdateRelease(), options);
-}
-
 export async function openOrInstallLatestAvailableUpdate(
     options: DirectUpdateInstallOptions = {}
 ) {
@@ -158,12 +221,7 @@ export async function openOrInstallLatestAvailableUpdate(
 export function handleAppUpdateDownloadProgressEvent(
     payload: AppUpdateDownloadProgressPayload
 ) {
-    useRuntimeStore.getState().setUpdateLoopState({
-        autoDownloadState: payload.phase,
-        downloadedVersion: payload.version,
-        downloadProgress: payload.percent,
-        downloadedBytes: payload.downloadedBytes
-    });
+    applyAppUpdateDownloadState(payload);
 
     if (!directInstallInFlight || payload.phase !== 'downloaded') {
         return;
@@ -175,6 +233,61 @@ export function handleAppUpdateDownloadProgressEvent(
         position: 'bottom-right',
         dismissible: false
     });
+}
+
+export function handleAppUpdateDownloadStatusSnapshot(
+    snapshot: AppUpdateDownloadStatusSnapshot
+): void {
+    applyAppUpdateDownloadState(snapshot);
+}
+
+function applyAppUpdateDownloadState(
+    payload: Pick<
+        AppUpdateDownloadStatusSnapshot,
+        'phase' | 'version' | 'startedAt' | 'downloadedBytes' | 'percent'
+    >
+): void {
+    const updateLoop = useRuntimeStore.getState().updateLoop;
+    const startsNewDownload =
+        payload.phase === 'downloading' &&
+        (updateLoop.autoDownloadState !== 'downloading' ||
+            updateLoop.downloadedVersion !== payload.version ||
+            updateLoop.autoDownloadStartedAt !== payload.startedAt);
+    let autoDownloadStartedAt: string | null = null;
+    if (payload.phase === 'downloading') {
+        autoDownloadStartedAt = startsNewDownload
+            ? payload.startedAt || new Date().toISOString()
+            : updateLoop.autoDownloadStartedAt;
+    }
+    const autoDownloadUiVisible =
+        payload.phase === 'downloaded' ||
+        payload.phase === 'installing' ||
+        payload.phase === 'error'
+            ? true
+            : updateLoop.autoDownloadUiVisible;
+
+    useRuntimeStore.getState().setUpdateLoopState({
+        autoDownloadState: payload.phase,
+        downloadedVersion: payload.version,
+        downloadProgress: payload.percent,
+        downloadedBytes: payload.downloadedBytes,
+        autoDownloadStartedAt,
+        autoDownloadUiVisible
+    });
+
+    if (
+        payload.phase === 'downloading' &&
+        autoDownloadStartedAt !== null &&
+        !autoDownloadUiVisible
+    ) {
+        if (startsNewDownload || autoDownloadUiTimer === null) {
+            if (payload.version) {
+                scheduleAutoDownloadUi(payload.version, autoDownloadStartedAt);
+            }
+        }
+    } else {
+        clearAutoDownloadUiTimer();
+    }
 }
 
 export function handleAppUpdateInstalledEvent(

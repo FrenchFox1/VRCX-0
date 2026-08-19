@@ -1,4 +1,4 @@
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
+import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import type { FeedFilter, FeedRowOutput } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';
@@ -16,7 +16,6 @@ export const FEED_FILTER_TYPES: readonly FeedFilter[] = Object.freeze([
 ]);
 
 export type FeedFilterType = FeedFilter;
-export type FeedEntry = Record<string, unknown>;
 const FEED_FILTER_TYPE_SET: ReadonlySet<string> = new Set(FEED_FILTER_TYPES);
 
 export interface FeedQueryOptions {
@@ -151,7 +150,8 @@ class FeedRepository {
             normalizedUserId,
             normalizedFilters,
             normalizedFavorites,
-            maxEntries ?? maxTableSize,
+            maxEntries ??
+                (normalizedScoped.length > 0 ? searchLimit : maxTableSize),
             cursor,
             normalizedExcludedFavorites,
             normalizedScoped

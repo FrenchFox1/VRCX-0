@@ -2,7 +2,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use serde_json::json;
 use vrcx_0_application::{
@@ -12,9 +12,10 @@ use vrcx_0_application::{
 use vrcx_0_application_core::vrchat_api::{
     execute_api_command,
     instances::{instance_self_invite_input, instance_short_name_get_input},
-    notifications::{invite_send_input, request_invite_send_input},
+    notifications::{invite_send_input, request_invite_send_input, RequestInviteRequest},
     VrchatApiRequest, VrchatApiResponse, VrchatScope,
 };
+use vrcx_0_application_core::{is_remote_mutation_request, AuthenticatedMutationContext};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_vr_overlay::SlintPanelEvent;
@@ -26,6 +27,8 @@ use super::super::runtime::{
     VrOverlayRuntime, FRIENDS_PANEL_ACTION_ARM_TIMEOUT,
 };
 use super::friends::{first_non_empty, friend_action_location};
+
+const FRIENDS_PANEL_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 impl VrOverlayRuntime {
     fn spawn_friends_panel_action(&self, action: FriendsPanelActionRequest) {
@@ -313,18 +316,41 @@ async fn execute_friends_panel_api_command(
     services: &dyn VrOverlayRuntimeServices,
     command: &'static str,
     detail: &'static str,
-    request: VrchatApiRequest,
+    mut request: VrchatApiRequest,
 ) -> vrcx_0_application_core::Result<VrchatApiResponse> {
-    execute_api_command(
-        services.data().web.as_ref(),
-        services.data().db.as_ref(),
-        &services.data().diagnostics,
-        &services.data().sync,
-        (command, detail),
-        request,
-        VrchatScope::Vrchat,
-    )
-    .await
+    if !is_remote_mutation_request(&request) {
+        return execute_api_command(
+            services.data().web.as_ref(),
+            services.data().db.as_ref(),
+            &services.data().diagnostics,
+            &services.data().sync,
+            (command, detail),
+            request,
+            VrchatScope::Vrchat,
+        )
+        .await;
+    }
+
+    let mutation = AuthenticatedMutationContext::capture(
+        &services.data().auth_scope,
+        services.data().remote_mutations.as_ref(),
+        "VR overlay mutation",
+    )?;
+    mutation.apply_scope_to_request(&mut request);
+    mutation
+        .run_after_wait(FRIENDS_PANEL_REMOTE_MUTATION_INTERVAL, || async {
+            execute_api_command(
+                services.data().web.as_ref(),
+                services.data().db.as_ref(),
+                &services.data().diagnostics,
+                &services.data().sync,
+                (command, detail),
+                request,
+                VrchatScope::Vrchat,
+            )
+            .await
+        })
+        .await
 }
 
 fn friends_panel_invite_params(
@@ -348,8 +374,11 @@ fn friends_panel_invite_params(
     }))
 }
 
-pub(crate) fn friends_panel_request_invite_params() -> serde_json::Value {
-    json!({ "platform": "standalonewindows" })
+pub(crate) fn friends_panel_request_invite_params() -> RequestInviteRequest {
+    RequestInviteRequest {
+        platform: "standalonewindows".into(),
+        request_slot: None,
+    }
 }
 
 fn set_friends_panel_status_message(
@@ -407,7 +436,10 @@ mod tests {
     fn friends_panel_request_invite_params_match_frontend_default_platform() {
         assert_eq!(
             friends_panel_request_invite_params(),
-            serde_json::json!({ "platform": "standalonewindows" })
+            RequestInviteRequest {
+                platform: "standalonewindows".into(),
+                request_slot: None,
+            }
         );
     }
 }

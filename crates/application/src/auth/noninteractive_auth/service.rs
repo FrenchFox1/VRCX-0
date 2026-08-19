@@ -5,7 +5,9 @@ use serde_json::Value;
 use vrcx_0_application_core::WebClient;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, HttpApiExecuteResponse};
+use vrcx_0_vrchat_client::http_api::{
+    normalize_vrchat_api_endpoint, vrchat_auth_error_message, HttpApiExecuteResponse,
+};
 use vrcx_0_vrchat_client::realtime::normalize_websocket_domain;
 
 use crate::auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage};
@@ -119,7 +121,7 @@ fn map_fallback_probe(
         CookieProbeResult::Authenticated { user, .. } => Ok(CookieSessionProbe::Authenticated(
             AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
         )),
-        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch => {
+        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch { .. } => {
             Ok(CookieSessionProbe::Fallback)
         }
         CookieProbeResult::RequiresTwoFactor(_) => unreachable!(),
@@ -172,11 +174,13 @@ pub(crate) async fn current_user_from_cookie_with_api(
                 ),
             })
         }
-        CookieProbeResult::UserMismatch => Err(NonInteractiveAuthError::SessionInvalidated {
-            user_id,
-            reason: "The stored browser session belongs to a different account.".into(),
-            status_code: None,
-        }),
+        CookieProbeResult::UserMismatch { .. } => {
+            Err(NonInteractiveAuthError::SessionInvalidated {
+                user_id,
+                reason: "The stored browser session belongs to a different account.".into(),
+                status_code: None,
+            })
+        }
         CookieProbeResult::Rejected { stage, response } => {
             rejected_probe_error(user_id, stage, response)
         }
@@ -211,22 +215,7 @@ fn rejected_probe_error<T>(
 }
 
 pub fn auth_response_error_message(response: &HttpApiExecuteResponse, fallback: String) -> String {
-    let Ok(json) = serde_json::from_str::<Value>(&response.data) else {
-        return fallback;
-    };
-    json.as_str()
-        .map(ToOwned::to_owned)
-        .or_else(|| json.scalar_field("message"))
-        .or_else(|| {
-            json.get("error").and_then(|error| {
-                if let Some(message) = error.scalar_field("message") {
-                    Some(message)
-                } else {
-                    error.as_str().map(ToOwned::to_owned)
-                }
-            })
-        })
-        .unwrap_or(fallback)
+    vrchat_auth_error_message(response).unwrap_or(fallback)
 }
 
 pub fn parse_current_user_response(

@@ -4,6 +4,7 @@ use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::Serialize;
 use serde_json::{json, Value};
 use url::Url;
+pub use vrcx_0_core::text::normalize_text;
 use vrcx_0_core::vrchat_endpoints::{
     VRCHAT_API_DEFAULT_ENDPOINT, VRCHAT_API_HOST, VRCHAT_FILES_HOST, VRCHAT_FILES_S3_HOST,
     VRCHAT_FILES_S3_HOST_PREFIX,
@@ -70,7 +71,7 @@ pub enum HttpApiRequestBody {
 #[derive(Clone, Debug, PartialEq)]
 pub enum HttpApiUpload {
     FilePut {
-        file_data: String,
+        file_data: Vec<u8>,
         file_mime: String,
         file_md5: Option<String>,
     },
@@ -137,6 +138,21 @@ pub struct ApiJsonResponse {
     pub json: Value,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+#[error("{message}")]
+pub struct VrchatApiFailure {
+    pub status_code: i32,
+    pub message: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VrchatAuthFailureKind {
+    InvalidCredentials,
+    MissingCredentials,
+    SessionInvalidated,
+    Other,
+}
+
 impl ApiJsonResponse {
     pub fn parse(status: i32, data: &str) -> Self {
         Self {
@@ -179,12 +195,70 @@ impl ApiJsonResponse {
         let message = self.error_message().unwrap_or_else(|| fallback.to_string());
         format!("{message} (HTTP {})", self.status)
     }
+
+    pub fn failure_or(&self, fallback: &str) -> Option<VrchatApiFailure> {
+        if !self.is_failure() {
+            return None;
+        }
+        Some(self.to_failure(fallback))
+    }
+
+    pub fn to_failure(&self, fallback: &str) -> VrchatApiFailure {
+        VrchatApiFailure {
+            status_code: self.status,
+            message: self.error_message().unwrap_or_else(|| fallback.to_string()),
+        }
+    }
 }
 
 impl From<&HttpApiExecuteResponse> for ApiJsonResponse {
     fn from(response: &HttpApiExecuteResponse) -> Self {
         Self::parse(response.status, &response.data)
     }
+}
+
+pub fn vrchat_auth_error_message(response: &HttpApiExecuteResponse) -> Option<String> {
+    let json = serde_json::from_str::<Value>(&response.data).ok()?;
+    let object = json.as_object();
+    let error = object.and_then(|record| record.get("error"));
+    json.as_str()
+        .map(ToOwned::to_owned)
+        .or_else(|| auth_scalar_text(object.and_then(|record| record.get("message"))))
+        .or_else(|| {
+            auth_scalar_text(
+                error
+                    .and_then(Value::as_object)
+                    .and_then(|record| record.get("message")),
+            )
+        })
+        .or_else(|| error.and_then(Value::as_str).map(ToOwned::to_owned))
+}
+
+fn auth_scalar_text(value: Option<&Value>) -> Option<String> {
+    match value {
+        Some(Value::String(text)) => Some(text.trim().to_string()),
+        Some(Value::Number(number)) => Some(number.to_string()),
+        Some(Value::Bool(flag)) => Some(flag.to_string()),
+        _ => None,
+    }
+    .filter(|text| !text.is_empty())
+}
+
+pub fn classify_vrchat_auth_failure(response: &HttpApiExecuteResponse) -> VrchatAuthFailureKind {
+    if response.status == 401 {
+        let message = vrchat_auth_error_message(response).unwrap_or_default();
+        if message.contains("Invalid Username/Email or Password") {
+            return VrchatAuthFailureKind::InvalidCredentials;
+        }
+        if message.contains("Missing Credentials") {
+            return VrchatAuthFailureKind::MissingCredentials;
+        }
+        return VrchatAuthFailureKind::SessionInvalidated;
+    }
+    if response.status == 403 {
+        return VrchatAuthFailureKind::SessionInvalidated;
+    }
+    VrchatAuthFailureKind::Other
 }
 
 pub fn parse_api_json(data: &str) -> Value {
@@ -213,10 +287,6 @@ pub fn classify_api_response(status: i32) -> ApiResponsePolicy {
 
 pub fn execute_response(status: i32, data: String) -> HttpApiExecuteResponse {
     HttpApiExecuteResponse { status, data }
-}
-
-pub fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
 }
 
 pub fn require_text(value: impl AsRef<str>, message: &str) -> Result<String, HttpApiError> {
@@ -591,195 +661,4 @@ fn request_body_text(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn input(path: &str) -> HttpApiRequestInput {
-        HttpApiRequestInput {
-            path: Some(path.to_string()),
-            ..Default::default()
-        }
-    }
-
-    #[test]
-    fn api_json_response_keeps_unparsable_bodies_as_text() {
-        let response = ApiJsonResponse::parse(200, "not json");
-
-        assert_eq!(response.json, Value::String("not json".into()));
-        assert!(!response.is_failure());
-        assert_eq!(response.error_message(), Some("not json".to_string()));
-    }
-
-    #[test]
-    fn api_json_response_detects_error_envelopes() {
-        let nested = ApiJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#);
-        assert!(nested.is_failure());
-        assert_eq!(nested.error_message(), Some("Application error.".into()));
-
-        let string_error = ApiJsonResponse::parse(
-            400,
-            r#"{"error":"You cannot moderate this user","status_code":400}"#,
-        );
-        assert!(string_error.is_failure());
-        assert_eq!(
-            string_error.error_message(),
-            Some("You cannot moderate this user".into())
-        );
-
-        let flat = ApiJsonResponse::parse(400, r#"{"message":"\"Bad request\""}"#);
-        assert!(flat.is_failure());
-        assert_eq!(flat.error_message(), Some("Bad request".into()));
-
-        let ok = ApiJsonResponse::parse(200, r#"{"id":"usr_1"}"#);
-        assert!(!ok.is_failure());
-        assert_eq!(ok.error_message(), None);
-    }
-
-    #[test]
-    fn api_json_response_flags_error_field_even_on_success_status() {
-        let response = ApiJsonResponse::parse(200, r#"{"error":{"message":"nope"}}"#);
-
-        assert!(response.has_error_field());
-        assert!(response.is_failure());
-    }
-
-    #[test]
-    fn builds_vrchat_url_with_query_arrays_and_skipped_values() {
-        let mut request = input("worlds");
-        request.endpoint = Some("https://api.vrchat.cloud/api/1/".to_string());
-        request.query_params = Some(HashMap::from([
-            ("tag".to_string(), json!(["featured", null, "labs", ""])),
-            ("n".to_string(), json!(50)),
-            ("ignored".to_string(), Value::Null),
-        ]));
-        request.skip_empty_query_string = Some(true);
-
-        let url = Url::parse(&build_request_url(&request, ApiScope::Vrchat).unwrap()).unwrap();
-        assert_eq!(
-            format!("{}{}", url.origin().unicode_serialization(), url.path()),
-            "https://api.vrchat.cloud/api/1/worlds"
-        );
-        assert_eq!(
-            url.query_pairs()
-                .filter(|(key, _)| key == "tag")
-                .map(|(_, value)| value.to_string())
-                .collect::<Vec<_>>(),
-            vec!["featured".to_string(), "labs".to_string()]
-        );
-        assert_eq!(
-            url.query_pairs()
-                .find(|(key, _)| key == "n")
-                .map(|(_, value)| value.to_string())
-                .as_deref(),
-            Some("50")
-        );
-        assert!(url.query_pairs().all(|(key, _)| key != "ignored"));
-    }
-
-    #[test]
-    fn rejects_non_vrchat_api_endpoint() {
-        let mut request = input("worlds");
-        request.endpoint = Some("https://api.example.test/api/1/".to_string());
-        assert!(build_request_url(&request, ApiScope::Vrchat).is_err());
-    }
-
-    #[test]
-    fn rejects_absolute_urls_for_vrchat_scopes() {
-        let request = HttpApiRequestInput {
-            url: Some("https://example.com/".to_string()),
-            ..Default::default()
-        };
-        assert!(build_request_url(&request, ApiScope::Vrchat).is_err());
-
-        let request = input("https://example.com/");
-        assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
-    }
-
-    #[test]
-    fn rejects_upload_options_outside_media_scope() {
-        let mut request = input("auth/user");
-        request.body = HttpApiRequestBody::Upload(HttpApiUpload::Image {
-            image_data: String::new(),
-            post_data: None,
-            matching_dimensions: false,
-        });
-        assert!(build_request_url(&request, ApiScope::Vrchat).is_err());
-
-        request.path = Some("file/image".to_string());
-        assert!(build_request_url(&request, ApiScope::VrchatMedia).is_ok());
-    }
-
-    #[test]
-    fn allows_signed_absolute_upload_urls_for_media_scope() {
-        let mut request = HttpApiRequestInput {
-            url: Some("https://signed-upload.example.test/file".to_string()),
-            ..Default::default()
-        };
-        assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
-
-        request.body = HttpApiRequestBody::Upload(HttpApiUpload::FilePut {
-            file_data: String::new(),
-            file_mime: "application/octet-stream".into(),
-            file_md5: None,
-        });
-        assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
-
-        request.url = Some("https://files.vrchat.cloud/file".to_string());
-        let url = build_request_url(&request, ApiScope::VrchatMedia).unwrap();
-        assert_eq!(url, "https://files.vrchat.cloud/file");
-
-        request.url = Some("https://api.vrchat.cloud/api/1/auth/user".to_string());
-        assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
-
-        request.url = Some("https://api.vrchat.cloud/api/1/file/file_1/1/file".to_string());
-        assert!(build_request_url(&request, ApiScope::VrchatMedia).is_ok());
-    }
-
-    #[test]
-    fn classifies_success_redirect_auth_and_rate_limit_statuses_for_http_policy() {
-        for status in [200, 204, 299] {
-            assert_eq!(classify_api_response(status).class, ApiResponseClass::Ok);
-        }
-        for status in [300, 302, 399] {
-            assert_eq!(
-                classify_api_response(status).class,
-                ApiResponseClass::Unknown
-            );
-        }
-
-        let auth = classify_api_response(401);
-        assert_eq!(auth.class, ApiResponseClass::Auth);
-
-        let forbidden = classify_api_response(403);
-        assert_eq!(forbidden.class, ApiResponseClass::ClientError);
-
-        let classified = classify_api_response(429);
-        assert_eq!(classified.class, ApiResponseClass::RateLimited);
-        assert_eq!(
-            serde_json::to_value(classified).unwrap(),
-            json!({ "class": "rateLimited" })
-        );
-    }
-
-    #[test]
-    fn query_request_without_body_does_not_emit_body_option() {
-        let mut request = input("favorites/fav_1");
-        request.method = Some("DELETE".to_string());
-        request.query_params = Some(HashMap::from([("objectId".to_string(), json!("fav_1"))]));
-
-        let request = build_web_execute_request(request, ApiScope::Vrchat).unwrap();
-        assert!(request.body.is_none());
-        assert_eq!(request.method, "DELETE");
-    }
-
-    #[test]
-    fn execute_response_serializes_body_once() {
-        let response = execute_response(429, r#"{"error":"slow down"}"#.into());
-        let value = serde_json::to_value(response).unwrap();
-
-        assert_eq!(value["status"], 429);
-        assert_eq!(value["data"], r#"{"error":"slow down"}"#);
-        assert!(value.get("policy").is_none());
-        assert!(value.get("raw").is_none());
-    }
-}
+mod tests;

@@ -41,32 +41,24 @@ pub fn write_image_file(mut path: PathBuf, file_name: &str, bytes: &[u8]) -> Res
     Ok(path.to_string_lossy().to_string())
 }
 
-pub fn sign_file_base64(blob: &str) -> Result<String, Error> {
-    let data = B64
-        .decode(blob)
-        .map_err(|e| Error::Custom(format!("base64 decode: {e}")))?;
-    let sig = Signature::calculate(
-        &data,
+pub fn decode_file_base64(blob: &str) -> Result<Vec<u8>, Error> {
+    B64.decode(blob)
+        .map_err(|e| Error::Custom(format!("base64 decode: {e}")))
+}
+
+pub fn sign_file(data: &[u8]) -> Vec<u8> {
+    Signature::calculate(
+        data,
         SignatureOptions {
             block_size: 2048,
             crypto_hash_size: 8,
         },
-    );
-    Ok(B64.encode(sig.serialized()))
+    )
+    .into_serialized()
 }
 
-pub fn base64_byte_len(blob: &str) -> Result<usize, Error> {
-    Ok(B64
-        .decode(blob)
-        .map_err(|e| Error::Custom(format!("base64 decode: {e}")))?
-        .len())
-}
-
-pub fn md5_base64(blob: &str) -> Result<String, Error> {
-    let data = B64
-        .decode(blob)
-        .map_err(|e| Error::Custom(format!("base64 decode: {e}")))?;
-    Ok(B64.encode(md5_digest(&data)))
+pub fn md5_base64(data: &[u8]) -> String {
+    B64.encode(md5_digest(data))
 }
 
 fn md5_digest(input: &[u8]) -> [u8; 16] {
@@ -88,63 +80,73 @@ fn md5_digest(input: &[u8]) -> [u8; 16] {
         0xeb86d391,
     ];
 
-    let mut message = input.to_vec();
-    let bit_len = (message.len() as u64).wrapping_mul(8);
-    message.push(0x80);
-    while message.len() % 64 != 56 {
-        message.push(0);
-    }
-    message.extend_from_slice(&bit_len.to_le_bytes());
-
     let mut a0 = 0x67452301u32;
     let mut b0 = 0xefcdab89u32;
     let mut c0 = 0x98badcfeu32;
     let mut d0 = 0x10325476u32;
 
-    for chunk in message.chunks_exact(64) {
-        let mut words = [0u32; 16];
-        for (index, word) in words.iter_mut().enumerate() {
-            let offset = index * 4;
-            *word = u32::from_le_bytes([
-                chunk[offset],
-                chunk[offset + 1],
-                chunk[offset + 2],
-                chunk[offset + 3],
-            ]);
+    {
+        let mut process_chunk = |chunk: &[u8]| {
+            let mut words = [0u32; 16];
+            for (index, word) in words.iter_mut().enumerate() {
+                let offset = index * 4;
+                *word = u32::from_le_bytes([
+                    chunk[offset],
+                    chunk[offset + 1],
+                    chunk[offset + 2],
+                    chunk[offset + 3],
+                ]);
+            }
+
+            let mut a = a0;
+            let mut b = b0;
+            let mut c = c0;
+            let mut d = d0;
+
+            for i in 0..64 {
+                let (f, g) = if i < 16 {
+                    ((b & c) | ((!b) & d), i)
+                } else if i < 32 {
+                    ((d & b) | ((!d) & c), (5 * i + 1) % 16)
+                } else if i < 48 {
+                    (b ^ c ^ d, (3 * i + 5) % 16)
+                } else {
+                    (c ^ (b | (!d)), (7 * i) % 16)
+                };
+
+                let next = a
+                    .wrapping_add(f)
+                    .wrapping_add(K[i])
+                    .wrapping_add(words[g])
+                    .rotate_left(S[i])
+                    .wrapping_add(b);
+                a = d;
+                d = c;
+                c = b;
+                b = next;
+            }
+
+            a0 = a0.wrapping_add(a);
+            b0 = b0.wrapping_add(b);
+            c0 = c0.wrapping_add(c);
+            d0 = d0.wrapping_add(d);
+        };
+
+        let complete_len = input.len() / 64 * 64;
+        for chunk in input[..complete_len].chunks_exact(64) {
+            process_chunk(chunk);
         }
 
-        let mut a = a0;
-        let mut b = b0;
-        let mut c = c0;
-        let mut d = d0;
-
-        for i in 0..64 {
-            let (f, g) = if i < 16 {
-                ((b & c) | ((!b) & d), i)
-            } else if i < 32 {
-                ((d & b) | ((!d) & c), (5 * i + 1) % 16)
-            } else if i < 48 {
-                (b ^ c ^ d, (3 * i + 5) % 16)
-            } else {
-                (c ^ (b | (!d)), (7 * i) % 16)
-            };
-
-            let next = a
-                .wrapping_add(f)
-                .wrapping_add(K[i])
-                .wrapping_add(words[g])
-                .rotate_left(S[i])
-                .wrapping_add(b);
-            a = d;
-            d = c;
-            c = b;
-            b = next;
+        let remaining = &input[complete_len..];
+        let mut tail = [0u8; 128];
+        tail[..remaining.len()].copy_from_slice(remaining);
+        tail[remaining.len()] = 0x80;
+        let length_offset = if remaining.len() < 56 { 56 } else { 120 };
+        let bit_len = (input.len() as u64).wrapping_mul(8);
+        tail[length_offset..length_offset + 8].copy_from_slice(&bit_len.to_le_bytes());
+        for chunk in tail[..length_offset + 8].chunks_exact(64) {
+            process_chunk(chunk);
         }
-
-        a0 = a0.wrapping_add(a);
-        b0 = b0.wrapping_add(b);
-        c0 = c0.wrapping_add(c);
-        d0 = d0.wrapping_add(d);
     }
 
     let mut output = [0u8; 16];

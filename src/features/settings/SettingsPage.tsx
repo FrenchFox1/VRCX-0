@@ -21,18 +21,21 @@ import {
 } from '@/components/layout/PageScaffold';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
+import { SettingsAdvancedTab } from './components/settings-tabs/SettingsAdvancedTab';
 import { SettingsAiTab } from './components/settings-tabs/SettingsAiTab';
 import { SettingsFeedbackTab } from './components/settings-tabs/SettingsFeedbackTab';
 import { SettingsIntegrationsTab } from './components/settings-tabs/SettingsIntegrationsTab';
 import { SettingsInterfaceTab } from './components/settings-tabs/SettingsInterfaceTab';
 import { SettingsMediaTab } from './components/settings-tabs/SettingsMediaTab';
+import { SettingsNotificationsTab } from './components/settings-tabs/SettingsNotificationsTab';
 import { SettingsSocialTab } from './components/settings-tabs/SettingsSocialTab';
-import { SettingsAdvancedSection } from './components/SettingsAdvancedSection';
-import { SettingsDialogsSection } from './components/SettingsDialogsSection';
-import { SettingsNotificationsSection } from './components/SettingsNotificationsSection';
-import { SettingsSystemSection } from './components/SettingsSystemSection';
-import { SettingsVrSection } from './components/SettingsVrSection';
-import { useSettingsPageController } from './useSettingsPageController';
+import { SettingsSystemTab } from './components/settings-tabs/SettingsSystemTab';
+import { SettingsVrTab } from './components/settings-tabs/SettingsVrTab';
+import { SettingsDialogs } from './components/SettingsDialogs';
+import {
+    SettingsPageStateProvider,
+    useSettingsPageSection
+} from './SettingsPageStateContext';
 
 const SETTINGS_TAB_ICONS: Record<string, LucideIcon> = {
     system: MonitorIcon,
@@ -48,20 +51,16 @@ const SETTINGS_TAB_ICONS: Record<string, LucideIcon> = {
 };
 
 export function SettingsPage() {
-    const pageState = useSettingsPageController();
+    return (
+        <SettingsPageStateProvider>
+            <SettingsPageContent />
+        </SettingsPageStateProvider>
+    );
+}
+
+function SettingsPageContent() {
     const { t } = useTranslation();
-    const {
-        shell,
-        system,
-        interface: settingsInterface,
-        media,
-        integrations,
-        social,
-        notifications,
-        vr,
-        advanced,
-        dialogs
-    } = pageState;
+    const shell = useSettingsPageSection('shell');
 
     return (
         <PageScaffold className="flex-1">
@@ -91,23 +90,19 @@ export function SettingsPage() {
                     })}
                 </TabsList>
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                    <SettingsSystemSection system={system} />
-                    <SettingsInterfaceTab
-                        settingsInterface={settingsInterface}
-                    />
-                    <SettingsSocialTab social={social} />
-                    <SettingsNotificationsSection
-                        notifications={notifications}
-                    />
-                    <SettingsVrSection vr={vr} />
-                    <SettingsMediaTab media={media} />
+                    <SettingsSystemTab />
+                    <SettingsInterfaceTab />
+                    <SettingsSocialTab />
+                    <SettingsNotificationsTab />
+                    <SettingsVrTab />
+                    <SettingsMediaTab />
                     <SettingsAiTab active={shell.activeSettingsTab === 'ai'} />
-                    <SettingsIntegrationsTab integrations={integrations} />
-                    <SettingsAdvancedSection advanced={advanced} />
+                    <SettingsIntegrationsTab />
+                    <SettingsAdvancedTab />
                     <SettingsFeedbackTab />
                 </div>
             </Tabs>
-            <SettingsDialogsSection dialogs={dialogs} />
+            <SettingsDialogs />
         </PageScaffold>
     );
 }

@@ -40,7 +40,6 @@ fn player_joining_only_reaches_overlay_for_current_instance_absent_player() -> R
                 id: "usr_friend".into(),
                 display_name: "Friend".into(),
                 state: "online".into(),
-                state_bucket: "online".into(),
                 location: "wrld_old:123".into(),
                 ..FriendRecord::default()
             },
@@ -130,7 +129,6 @@ fn initial_traveling_baseline_emits_player_joining() -> Result<()> {
                 id: "usr_friend".into(),
                 display_name: "Friend".into(),
                 state: "online".into(),
-                state_bucket: "online".into(),
                 location: "traveling".into(),
                 traveling_to_location: "wrld_current:456".into(),
                 ..FriendRecord::default()

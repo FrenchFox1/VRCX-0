@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::future::Future;
 
 use serde::{Deserialize, Serialize};
@@ -7,7 +6,7 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     http_api::{ApiJsonResponse, ApiScope},
-    media::inventory_items_get_input,
+    media::{inventory_items_get_input, InventoryListParams},
 };
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
@@ -19,7 +18,7 @@ const INVENTORY_COLLECT_MAX_PAGES: usize = 100;
 #[serde(rename_all = "camelCase")]
 pub struct InventoryItemsCollectInput {
     #[serde(default)]
-    pub params: HashMap<String, Value>,
+    pub params: InventoryListParams,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -67,7 +66,7 @@ where
 
 async fn fetch_inventory_page(
     deps: &InventoryItemsCollectDeps<'_>,
-    base_params: &HashMap<String, Value>,
+    base_params: &InventoryListParams,
     page_index: usize,
 ) -> Result<Vec<Value>> {
     ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
@@ -84,18 +83,12 @@ async fn fetch_inventory_page(
 }
 
 fn page_request_params(
-    base_params: &HashMap<String, Value>,
+    base_params: &InventoryListParams,
     page_index: usize,
-) -> HashMap<String, Value> {
+) -> InventoryListParams {
     let mut params = base_params.clone();
-    params.insert(
-        "n".to_string(),
-        Value::from(INVENTORY_COLLECT_PAGE_SIZE as u64),
-    );
-    params.insert(
-        "offset".to_string(),
-        Value::from((page_index * INVENTORY_COLLECT_PAGE_SIZE) as u64),
-    );
+    params.n = Some(INVENTORY_COLLECT_PAGE_SIZE as i64);
+    params.offset = Some((page_index * INVENTORY_COLLECT_PAGE_SIZE) as i64);
     params
 }
 
@@ -181,17 +174,21 @@ mod tests {
 
     #[test]
     fn page_request_params_override_caller_pagination() {
-        let base = HashMap::from([
-            ("order".to_string(), json!("newest")),
-            ("n".to_string(), json!(5)),
-            ("offset".to_string(), json!(7)),
-        ]);
+        let base = InventoryListParams {
+            order: Some(vrcx_0_vrchat_client::media::InventoryOrder::Newest),
+            n: Some(5),
+            offset: Some(7),
+            ..Default::default()
+        };
 
         let params = page_request_params(&base, 3);
 
-        assert_eq!(params.get("order"), Some(&json!("newest")));
-        assert_eq!(params.get("n"), Some(&json!(100)));
-        assert_eq!(params.get("offset"), Some(&json!(300)));
+        assert_eq!(
+            params.order,
+            Some(vrcx_0_vrchat_client::media::InventoryOrder::Newest)
+        );
+        assert_eq!(params.n, Some(100));
+        assert_eq!(params.offset, Some(300));
     }
 
     fn page_response(status: i32, json: Value) -> ApiJsonResponse {

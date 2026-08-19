@@ -76,22 +76,18 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
     return fallbackMessage;
 }
 
-function normalizeAutoLoginDelaySeconds(seconds: unknown) {
-    const parsed =
-        typeof seconds === 'number'
-            ? seconds
-            : Number.parseInt(String(seconds ?? ''), 10);
-    if (!Number.isFinite(parsed)) {
+function normalizeAutoLoginDelaySeconds(seconds: number) {
+    if (!Number.isFinite(seconds)) {
         return 0;
     }
     return Math.min(
         MAX_AUTO_LOGIN_DELAY_SECONDS,
-        Math.max(0, Math.trunc(parsed))
+        Math.max(0, Math.trunc(seconds))
     );
 }
 
 function waitForAutoLoginDelay(
-    seconds: unknown,
+    seconds: number,
     { signal, onCountdown }: AutoLoginDelayOptions = {}
 ) {
     const delaySeconds = normalizeAutoLoginDelaySeconds(seconds);
@@ -173,7 +169,7 @@ function waitForAutoLoginDelay(
 }
 
 async function applyAutoLoginDelay(
-    seconds: unknown,
+    seconds: number,
     { signal, onCountdown }: AutoLoginDelayOptions = {}
 ) {
     const delaySeconds = normalizeAutoLoginDelaySeconds(seconds);
@@ -221,13 +217,13 @@ export async function executeReactAutoLogin(
     { signal, onCountdown }: AutoLoginDelayOptions = {}
 ) {
     const runtimeStore = useRuntimeStore.getState();
-    const lastUserLoggedIn = String(snapshot.lastUserLoggedIn || '').trim();
+    const lastUserLoggedIn = snapshot.lastUserLoggedIn?.trim() ?? '';
     const savedCredential = snapshot.savedCredentialsList.find(
         (credential) => credential.user.id === lastUserLoggedIn
     );
     const displayName =
-        String(savedCredential?.user.displayName || '').trim() ||
-        String(savedCredential?.user.username || '').trim() ||
+        savedCredential?.user.displayName?.trim() ||
+        savedCredential?.user.username?.trim() ||
         savedCredential?.user.id ||
         lastUserLoggedIn ||
         'saved account';
@@ -293,7 +289,10 @@ export async function executeReactAutoLogin(
             await showAuthFailureNotificationSafely(
                 'frontend-auto-login-throttled'
             );
-            toast.error(await i18n.t('message.auth.auto_login_failed'));
+            toast.error(await i18n.t('message.auth.auto_login_failed'), {
+                duration: Infinity,
+                closeButton: true
+            });
             return {
                 status: 'throttled',
                 snapshot: outcome.snapshot
@@ -386,7 +385,8 @@ export async function executeReactAutoLogin(
             getErrorMessage(
                 error,
                 await i18n.t('message.auth.auto_login_failed')
-            )
+            ),
+            { duration: Infinity, closeButton: true }
         );
         if (shouldShowManualAuthFailureNotification(authError)) {
             await showAuthFailureNotificationSafely(
@@ -395,7 +395,10 @@ export async function executeReactAutoLogin(
         }
 
         if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-            toast.error(await i18n.t('message.auth.offline'));
+            toast.error(await i18n.t('message.auth.offline'), {
+                duration: Infinity,
+                closeButton: true
+            });
         }
 
         return {

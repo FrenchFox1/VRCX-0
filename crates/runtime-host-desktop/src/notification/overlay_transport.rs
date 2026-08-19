@@ -1,6 +1,6 @@
-use vrcx_0_runtime_host::notification::{
-    NotificationDeliveryPlan, NotificationDeliveryPreferences, RenderedNotification,
-};
+use vrcx_0_runtime_host::notification::RenderedNotification;
+
+use super::{NotificationDeliveryPlan, NotificationDeliveryPreferences};
 
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_host_desktop::overlay_notifications::OvrToolkit;
@@ -36,7 +36,7 @@ impl OverlayNotificationTransport {
                 send_xs_overlay_notification(render, preferences, local_image);
             }
             if plan.ovrt {
-                send_ovrt_notification(&self.ovrt, plan, render, preferences, local_image);
+                send_ovrt_notification(&self.ovrt, plan, render, local_image);
             }
         }
 

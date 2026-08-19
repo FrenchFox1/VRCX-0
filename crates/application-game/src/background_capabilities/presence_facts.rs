@@ -1,8 +1,9 @@
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use vrcx_0_core::derived_keys;
 
 use serde::Serialize;
 use serde_json::Value;
-use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::location::{normalize_instance_type, parse_location, ParsedLocation};
 use vrcx_0_persistence::DatabaseService;
 
@@ -12,7 +13,7 @@ use super::shared::{non_empty, string_field, BackgroundCapabilitySession};
 use vrcx_0_core::text::first_non_empty;
 
 #[derive(Clone, Debug)]
-pub struct BackgroundPresenceFactsInput {
+pub struct BackgroundPresenceFactsInput<'a> {
     pub session: BackgroundCapabilitySession,
     pub is_game_running: bool,
     pub is_steamvr_running: bool,
@@ -20,9 +21,9 @@ pub struct BackgroundPresenceFactsInput {
     pub last_game_started_at: Option<String>,
     pub game_log_snapshot: RuntimeSnapshot,
     pub now_playing: Value,
-    pub friends_by_id: HashMap<String, FriendRecord>,
-    pub favorite_friend_groups_by_key: HashMap<String, Vec<String>>,
-    pub favorite_world_groups_by_key: HashMap<String, Vec<String>>,
+    pub friend_user_ids: &'a HashSet<String>,
+    pub favorite_friend_groups_by_key: &'a HashMap<String, Vec<String>>,
+    pub favorite_world_groups_by_key: &'a HashMap<String, Vec<String>>,
 }
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -30,7 +31,7 @@ pub struct BackgroundPresenceFacts {
     pub current_user_id: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user: Value,
+    pub current_user: Arc<Value>,
     pub is_game_running: bool,
     pub is_steamvr_running: bool,
     pub is_game_no_vr: bool,
@@ -63,7 +64,7 @@ pub struct PresencePlayer {
 
 pub fn build_background_presence_facts(
     db: &DatabaseService,
-    input: BackgroundPresenceFactsInput,
+    input: BackgroundPresenceFactsInput<'_>,
 ) -> Result<BackgroundPresenceFacts> {
     let current_user = ensure_current_user_id(
         input.session.current_user_snapshot,
@@ -94,7 +95,7 @@ pub fn build_background_presence_facts(
     let friend_ids: Vec<String> = players
         .iter()
         .filter_map(|player| {
-            if !player.user_id.is_empty() && input.friends_by_id.contains_key(&player.user_id) {
+            if !player.user_id.is_empty() && input.friend_user_ids.contains(&player.user_id) {
                 Some(player.user_id.clone())
             } else {
                 None
@@ -105,11 +106,11 @@ pub fn build_background_presence_facts(
         db,
         &input.session.current_user_id,
         &players,
-        &input.favorite_friend_groups_by_key,
+        input.favorite_friend_groups_by_key,
     )?;
     let current_world_favorite_group_keys = collect_world_favorite_group_keys(
         &parsed_location.world_id,
-        &input.favorite_world_groups_by_key,
+        input.favorite_world_groups_by_key,
     );
     let can_invite_from_current_location = check_can_invite(
         &current_location,
@@ -144,22 +145,24 @@ pub fn build_background_presence_facts(
         now_playing: input.now_playing,
     })
 }
-fn ensure_current_user_id(mut current_user: Value, current_user_id: &str) -> Value {
-    if let Some(object) = current_user.as_object_mut() {
-        if !current_user_id.trim().is_empty() {
-            object
-                .entry("id")
-                .or_insert_with(|| Value::String(current_user_id.trim().to_string()));
-        }
+fn ensure_current_user_id(current_user: Arc<Value>, current_user_id: &str) -> Arc<Value> {
+    let current_user_id = current_user_id.trim();
+    if current_user_id.is_empty() || !current_user.is_object() || current_user.get("id").is_some() {
+        return current_user;
     }
+    let mut current_user = Arc::unwrap_or_clone(current_user);
     current_user
+        .as_object_mut()
+        .expect("current user object was checked")
+        .insert("id".into(), Value::String(current_user_id.to_string()));
+    Arc::new(current_user)
 }
 
 fn resolve_current_location(snapshot: &RuntimeSnapshot, current_user: &Value) -> String {
     first_non_empty([
         snapshot.location.as_str(),
         snapshot.destination.as_str(),
-        string_field(current_user, "$locationTag")
+        string_field(current_user, derived_keys::LOCATION_TAG)
             .as_deref()
             .unwrap_or(""),
         string_field(current_user, "location")
@@ -318,6 +321,26 @@ fn is_live_current_location(location: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn current_user_id_keeps_an_existing_shared_snapshot() {
+        let snapshot = Arc::new(serde_json::json!({"id": "usr_owner"}));
+
+        let current_user = ensure_current_user_id(Arc::clone(&snapshot), "usr_owner");
+
+        assert!(Arc::ptr_eq(&current_user, &snapshot));
+    }
+
+    #[test]
+    fn current_user_id_is_added_without_mutating_the_session_snapshot() {
+        let snapshot = Arc::new(serde_json::json!({"displayName": "Owner"}));
+
+        let current_user = ensure_current_user_id(Arc::clone(&snapshot), "usr_owner");
+
+        assert_eq!(current_user["id"], "usr_owner");
+        assert!(snapshot.get("id").is_none());
+        assert!(!Arc::ptr_eq(&current_user, &snapshot));
+    }
 
     #[test]
     fn parse_location_matches_group_plus_instance_type() {

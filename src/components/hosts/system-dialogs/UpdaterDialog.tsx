@@ -6,7 +6,6 @@ import { commands } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
 import { restartApplication } from '@/services/shellIntegrationService';
 import {
-    canInstallUpdatesOnPlatform,
     confirmInstall,
     formatReleaseDisplayVersion,
     getPreviewStableReleaseUpdateMode,
@@ -35,10 +34,6 @@ type UpdaterDialogProps = {
 
 export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     const { t } = useTranslation();
-    const hostPlatform = useRuntimeStore(
-        (state) => state.hostCapabilities.platform
-    );
-    const canInstallUpdates = canInstallUpdatesOnPlatform(hostPlatform);
     const isPreviewUpdateCheck = getPreviewStableReleaseUpdateMode().enabled;
     const updateCheckDisabled = isUpdateCheckDisabledBuild();
 
@@ -48,6 +43,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [detail, setDetail] = useState('');
+    const canInstallUpdate = latestRelease?.updaterType === 'tauri';
     const autoDownloadState = useRuntimeStore(
         (state) => state.updateLoop.autoDownloadState
     );
@@ -61,11 +57,10 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         latestRelease?.canonicalVersion === downloadedVersion;
     const progress = hasMatchingDownload ? downloadProgress : 0;
     const showDownloadProgress =
-        canInstallUpdates &&
+        canInstallUpdate &&
         (downloading ||
             (autoDownloadState === 'downloading' && hasMatchingDownload));
     const currentVersionText =
-        // oxlint-disable-next-line no-undef
         formatReleaseDisplayVersion(VERSION || '') || '-';
     const latestVersionText =
         latestRelease?.displayVersion ||
@@ -117,7 +112,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                 setDetail(
                     nextRelease
                         ? ''
-                        : canInstallUpdates && !isPreviewUpdateCheck
+                        : !isPreviewUpdateCheck
                           ? t(
                                 'message.vrcx_updater.no_downloadable_releases_found'
                             )
@@ -145,11 +140,11 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         return () => {
             active = false;
         };
-    }, [canInstallUpdates, isPreviewUpdateCheck, open, t, updateCheckDisabled]);
+    }, [isPreviewUpdateCheck, open, t, updateCheckDisabled]);
 
     async function handleInstallUpdate() {
         if (
-            !canInstallUpdates ||
+            !canInstallUpdate ||
             !latestRelease ||
             !hasNewerRelease ||
             downloading
@@ -266,7 +261,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                     ) : null}
                 </FieldGroup>
                 <DialogFooter>
-                    {canInstallUpdates && !isPreviewUpdateCheck ? (
+                    {canInstallUpdate && !isPreviewUpdateCheck ? (
                         <Button
                             type="button"
                             disabled={
@@ -284,10 +279,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                     ) : (
                         <Button
                             type="button"
-                            disabled={
-                                loading ||
-                                (isPreviewUpdateCheck && !latestRelease)
-                            }
+                            disabled={loading || !latestRelease}
                             onClick={() => {
                                 handleOpenReleasePage();
                             }}

@@ -20,10 +20,9 @@ fn post_data(request: &HttpApiRequestInput) -> Value {
 fn gallery_and_icon_assets_use_expected_tags_and_matching_modes() {
     let (kind, gallery) = asset_upload_input(
         ENDPOINT.into(),
-        MediaAssetKind::Gallery,
-        "gallery-image".into(),
-        true,
-        HashMap::new(),
+        MediaAssetUploadRequest::Gallery {
+            image_data: "gallery-image".into(),
+        },
     )
     .unwrap();
     assert_eq!(kind, MediaAssetKind::Gallery);
@@ -39,10 +38,9 @@ fn gallery_and_icon_assets_use_expected_tags_and_matching_modes() {
 
     let (_, icons) = asset_upload_input(
         ENDPOINT.into(),
-        MediaAssetKind::Icons,
-        "icon-image".into(),
-        false,
-        HashMap::new(),
+        MediaAssetUploadRequest::Icons {
+            image_data: "icon-image".into(),
+        },
     )
     .unwrap();
     assert_eq!(icons.path.as_deref(), Some("file/image"));
@@ -60,13 +58,17 @@ fn gallery_and_icon_assets_use_expected_tags_and_matching_modes() {
 fn emoji_and_sticker_assets_use_expected_params_and_mask() {
     let (_, emojis) = asset_upload_input(
         ENDPOINT.into(),
-        MediaAssetKind::Emojis,
-        "emoji-image".into(),
-        false,
-        HashMap::from([
-            ("tag".into(), json!("emoji")),
-            ("animated".into(), json!(true)),
-        ]),
+        MediaAssetUploadRequest::Emojis {
+            image_data: "emoji-image".into(),
+            params: EmojiUploadParams {
+                tag: EmojiFileTag::EmojiAnimated,
+                animation_style: ImageAnimationStyle::Bounce,
+                mask_tag: ImageMaskTag::Square,
+                frames: Some(4),
+                frames_over_time: Some(15),
+                loop_style: Some(EmojiLoopStyle::PingPong),
+            },
+        },
     )
     .unwrap();
     assert_eq!(emojis.path.as_deref(), Some("file/image"));
@@ -79,15 +81,21 @@ fn emoji_and_sticker_assets_use_expected_params_and_mask() {
     ));
     assert_eq!(
         post_data(&emojis),
-        json!({ "tag": "emoji", "animated": true })
+        json!({
+            "tag": "emojianimated",
+            "animationStyle": "bounce",
+            "maskTag": "square",
+            "frames": 4,
+            "framesOverTime": 15,
+            "loopStyle": "pingpong",
+        })
     );
 
     let (_, stickers) = asset_upload_input(
         ENDPOINT.into(),
-        MediaAssetKind::Stickers,
-        "sticker-image".into(),
-        false,
-        HashMap::new(),
+        MediaAssetUploadRequest::Stickers {
+            image_data: "sticker-image".into(),
+        },
     )
     .unwrap();
     assert_eq!(stickers.path.as_deref(), Some("file/image"));
@@ -108,10 +116,14 @@ fn emoji_and_sticker_assets_use_expected_params_and_mask() {
 fn print_assets_use_print_route_and_crop_flag() {
     let (_, request) = asset_upload_input(
         ENDPOINT.into(),
-        MediaAssetKind::Prints,
-        "print-image".into(),
-        true,
-        HashMap::from([("note".into(), json!("caption"))]),
+        MediaAssetUploadRequest::Prints {
+            image_data: "print-image".into(),
+            crop_white_border: true,
+            params: PrintUploadParams {
+                note: "caption".into(),
+                timestamp: "2026-08-19T00:00:00Z".into(),
+            },
+        },
     )
     .unwrap();
 
@@ -124,12 +136,33 @@ fn print_assets_use_print_route_and_crop_flag() {
             ..
         }) if image_data == "print-image"
     ));
-    assert_eq!(post_data(&request), json!({ "note": "caption" }));
+    assert_eq!(
+        post_data(&request),
+        json!({ "note": "caption", "timestamp": "2026-08-19T00:00:00Z" })
+    );
 }
 
 #[test]
 fn asset_upload_kind_rejects_unknown_wire_value() {
     assert!(serde_json::from_str::<MediaAssetKind>(r#""videos""#).is_err());
+}
+
+#[test]
+fn media_params_reject_unknown_fields_and_enum_values() {
+    assert!(serde_json::from_value::<MediaFileListParams>(json!({
+        "tag": "video",
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<EmojiUploadParams>(json!({
+        "tag": "emoji",
+        "animationStyle": "wave",
+        "maskTag": "square",
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<InventoryListParams>(json!({
+        "order": "oldest",
+    }))
+    .is_err());
 }
 
 #[test]
@@ -146,9 +179,12 @@ fn inventory_template_get_trims_and_encodes_the_template_id() {
 
 #[test]
 fn inventory_item_equip_uses_owned_item_path_and_only_the_slot_body() {
-    let request =
-        inventory_item_equip_input(ENDPOINT.into(), " inv_1/雪 ".into(), " iconFrame ".into())
-            .unwrap();
+    let request = inventory_item_equip_input(
+        ENDPOINT.into(),
+        " inv_1/雪 ".into(),
+        ProfileDecorationEquipSlot::IconFrame,
+    )
+    .unwrap();
 
     assert_eq!(request.method.as_deref(), Some("PUT"));
     assert_eq!(
@@ -164,12 +200,13 @@ fn inventory_item_equip_uses_owned_item_path_and_only_the_slot_body() {
 #[test]
 fn inventory_slot_unequip_uses_the_encoded_slot_path_without_a_body() {
     let request =
-        inventory_slot_unequip_input(ENDPOINT.into(), " profileEffect/雪 ".into()).unwrap();
+        inventory_slot_unequip_input(ENDPOINT.into(), ProfileDecorationEquipSlot::ProfileEffect)
+            .unwrap();
 
     assert_eq!(request.method.as_deref(), Some("DELETE"));
     assert_eq!(
         request.path.as_deref(),
-        Some("inventory/profileEffect%2F%E9%9B%AA/equip")
+        Some("inventory/profileEffect/equip")
     );
     assert_eq!(request.body, HttpApiRequestBody::Empty);
     assert_eq!(request.headers, None);
@@ -209,7 +246,7 @@ fn file_upload_start_and_finish_use_put_paths_and_bodies() {
 fn file_put_sets_all_upload_fields() {
     let request = file_put_input(
         "https://files.vrchat.cloud/upload".into(),
-        "file-data".into(),
+        b"file-data".to_vec(),
         "application/octet-stream".into(),
         "base64-md5".into(),
     );
@@ -224,7 +261,7 @@ fn file_put_sets_all_upload_fields() {
             file_data,
             file_mime,
             file_md5: Some(file_md5),
-        }) if file_data == "file-data"
+        }) if file_data == b"file-data"
             && file_mime == "application/octet-stream"
             && file_md5 == "base64-md5"
     ));
@@ -238,11 +275,20 @@ fn media_id_requests_reject_empty_text() {
     assert!(print_delete_input(ENDPOINT.into(), " ".into()).is_err());
     assert!(user_inventory_item_get_input(ENDPOINT.into(), " ".into(), "inv_1".into(),).is_err());
     assert!(user_inventory_item_get_input(ENDPOINT.into(), "usr_1".into(), " ".into(),).is_err());
-    assert!(inventory_item_update_input(ENDPOINT.into(), " ".into(), HashMap::new()).is_err());
+    assert!(inventory_item_update_input(
+        ENDPOINT.into(),
+        " ".into(),
+        InventoryItemUpdateRequest { is_archived: true },
+    )
+    .is_err());
     assert!(inventory_template_get_input(ENDPOINT.into(), " ".into()).is_err());
-    assert!(inventory_item_equip_input(ENDPOINT.into(), " ".into(), "iconFrame".into()).is_err());
-    assert!(inventory_item_equip_input(ENDPOINT.into(), "inv_1".into(), " ".into()).is_err());
-    assert!(inventory_slot_unequip_input(ENDPOINT.into(), " ".into()).is_err());
+    assert!(inventory_item_equip_input(
+        ENDPOINT.into(),
+        " ".into(),
+        ProfileDecorationEquipSlot::IconFrame,
+    )
+    .is_err());
+    assert!(serde_json::from_str::<ProfileDecorationEquipSlot>(r#""banner""#).is_err());
     assert!(inventory_bundle_consume_input(ENDPOINT.into(), " ".into()).is_err());
     assert!(file_version_create_input(
         ENDPOINT.into(),

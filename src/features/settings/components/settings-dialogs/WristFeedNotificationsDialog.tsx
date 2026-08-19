@@ -516,7 +516,7 @@ function OverlayActivityFilterDialog({
                                             </FieldContent>
 
                                             <div className="grid w-full gap-2 sm:w-56">
-                                                <Select
+                                                <Select<OverlayActivityScope>
                                                     value={rule.scope}
                                                     items={definition.allowedScopes.map(
                                                         (scope) => ({
@@ -526,12 +526,14 @@ function OverlayActivityFilterDialog({
                                                             )
                                                         })
                                                     )}
-                                                    onValueChange={(scope) =>
-                                                        updateTypeRule(type, {
-                                                            scope: (scope ??
-                                                                '') as OverlayActivityScope
-                                                        })
-                                                    }
+                                                    onValueChange={(scope) => {
+                                                        if (scope) {
+                                                            updateTypeRule(
+                                                                type,
+                                                                { scope }
+                                                            );
+                                                        }
+                                                    }}
                                                 >
                                                     <SelectTrigger>
                                                         <SelectValue />

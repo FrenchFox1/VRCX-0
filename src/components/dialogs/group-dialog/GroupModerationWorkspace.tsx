@@ -2,10 +2,9 @@ import { UploadIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type {
-    EntityRecord,
-    GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
 import { Empty, EmptyHeader, EmptyTitle } from '@/ui/shadcn/empty';
@@ -39,7 +38,6 @@ import {
 } from './useGroupModerationTabData';
 
 const MEMBER_SEARCH_DEBOUNCE_MS = 300;
-const BULK_SELECTABLE_TABS = new Set(['bans', 'members']);
 
 export function GroupModerationWorkspace({
     group,
@@ -56,12 +54,13 @@ export function GroupModerationWorkspace({
     const [banImportOpen, setBanImportOpen] = useState(false);
     const [memberSearchInput, setMemberSearchInput] = useState('');
     const [memberQuery, setMemberQuery] = useState('');
-    const [memberSort, setMemberSort] = useState('joinedAt:desc');
+    const [memberSort, setMemberSort] =
+        useState<GroupMemberSort>('joinedAt:desc');
     const [memberRoleId, setMemberRoleId] = useState('');
     const resetKeyRef = useRef('');
     const moderationTabs = useMemo(
         () => getGroupModerationTabs(t, group),
-        [group.id, group.myMember, group.roles, t]
+        [group, t]
     );
     const resetKey = `${endpoint}\u0000${group.id || ''}`;
     const members = useGroupMembersPagination({
@@ -104,7 +103,8 @@ export function GroupModerationWorkspace({
         removeMemberRow: members.removeRow,
         removeTabRow: tabData.removeRow
     });
-    const bulkSelectable = BULK_SELECTABLE_TABS.has(activeTab);
+    const bulkTab =
+        activeTab === 'bans' || activeTab === 'members' ? activeTab : null;
 
     const openModerationUserDialog = useCallback((row: EntityRecord) => {
         const userId = moderationRowUserId(row);
@@ -149,7 +149,11 @@ export function GroupModerationWorkspace({
         query: memberSearchInput,
         onQueryChange: setMemberSearchInput,
         sort: memberSort,
-        onSortChange: setMemberSort,
+        onSortChange: (value) => {
+            if (value === 'joinedAt:asc' || value === 'joinedAt:desc') {
+                setMemberSort(value);
+            }
+        },
         sortOptions: memberSortOptions,
         roleId: memberRoleId,
         onRoleChange: setMemberRoleId,
@@ -205,9 +209,14 @@ export function GroupModerationWorkspace({
         <div className="flex min-h-0 flex-1 flex-col">
             <Tabs
                 value={activeTab}
-                onValueChange={(value) =>
-                    setActiveTab(value as GroupModerationTabValue)
-                }
+                onValueChange={(value) => {
+                    const tab = moderationTabs.find(
+                        (candidate) => candidate.value === value
+                    );
+                    if (tab) {
+                        setActiveTab(tab.value);
+                    }
+                }}
                 className="min-h-0 flex-1 gap-0"
             >
                 <TabsList
@@ -225,10 +234,10 @@ export function GroupModerationWorkspace({
                         </TabsTrigger>
                     ))}
                 </TabsList>
-                {bulkSelectable && batch.selectedRows.length ? (
+                {bulkTab && batch.selectedRows.length ? (
                     <div className="shrink-0">
                         <GroupModerationBulkPanel
-                            tabValue={activeTab as 'bans' | 'members'}
+                            tabValue={bulkTab}
                             group={group}
                             selectedRows={batch.selectedRows}
                             busy={batch.bulkBusy}
@@ -268,7 +277,9 @@ export function GroupModerationWorkspace({
                             onToggleAllVisible={batch.toggleSelectedVisible}
                             onToggleRow={batch.toggleSelectedRow}
                             rows={rows}
-                            selectable={BULK_SELECTABLE_TABS.has(tab.value)}
+                            selectable={
+                                tab.value === 'bans' || tab.value === 'members'
+                            }
                             selectedIds={batch.selectedIds || undefined}
                             server={
                                 tab.value === 'members'

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -7,8 +7,9 @@ import {
     getEventGroupId,
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
-import type { UserProfileEntity } from '@/domain/entities/profileEntities';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import vrchatToolsRepository, {
     type GroupCalendarEventRecord
@@ -137,7 +138,8 @@ export function GroupDialogTabbedView({
         posts: '',
         members: ''
     });
-    const [memberSort, setMemberSort] = useState('joinedAt:desc');
+    const [memberSort, setMemberSort] =
+        useState<GroupMemberSort>('joinedAt:desc');
     const [memberRoleId, setMemberRoleId] = useState('');
     const gallerySignature = Array.isArray(group.galleries)
         ? group.galleries
@@ -153,6 +155,8 @@ export function GroupDialogTabbedView({
         memberRoleId: ''
     });
     const groupEventsRequestRef = useRef(0);
+    const groupFollowingRequestRef = useRef(0);
+    const followingEventIdsRef = useRef<Set<string>>(new Set());
     const tabs = getGroupDialogTabs(t);
     const posts =
         remoteStatus.posts === 'ready'
@@ -183,7 +187,7 @@ export function GroupDialogTabbedView({
     const filteredPosts = filterGroupPosts(posts, search.posts);
     const filteredMembers = filterGroupMembers(members, search.members);
 
-    useEffect(() => {
+    const resetForTarget = useEffectEvent(() => {
         loadContextRef.current = {
             endpoint: currentEndpoint,
             groupId: group.id,
@@ -195,6 +199,8 @@ export function GroupDialogTabbedView({
         setRemoteStatus({});
         setRemoteErrors({});
         groupEventsRequestRef.current += 1;
+        groupFollowingRequestRef.current += 1;
+        followingEventIdsRef.current = new Set();
         setGroupEvents([]);
         setGroupEventsStatus('idle');
         setGroupEventsError('');
@@ -204,9 +210,13 @@ export function GroupDialogTabbedView({
         const nextTab = resolveGroupDialogTab(tabs, lastGroupDialogTab);
         lastGroupDialogTab = nextTab;
         setActiveTab(nextTab);
-    }, [currentEndpoint, group.id]);
+    });
 
     useEffect(() => {
+        resetForTarget();
+    }, [currentEndpoint, group.id]);
+
+    const syncGalleryContext = useEffectEvent(() => {
         loadContextRef.current = {
             endpoint: currentEndpoint,
             groupId: group.id,
@@ -225,6 +235,10 @@ export function GroupDialogTabbedView({
         if (activeTab === 'photos' && gallerySignature) {
             loadTab('photos', { force: true });
         }
+    });
+
+    useEffect(() => {
+        syncGalleryContext();
     }, [currentEndpoint, gallerySignature, group.id]);
 
     function isCurrentLoadContext(context: GroupLoadContext) {
@@ -352,25 +366,18 @@ export function GroupDialogTabbedView({
         setGroupEventsStatus('running');
         setGroupEventsError('');
         try {
-            const [response, followingResponse] = await Promise.all([
-                vrchatToolsRepository.getGroupCalendar(
-                    { groupId: group.id },
-                    { force }
-                ),
-                vrchatToolsRepository
-                    .getFollowingGroupCalendars(
-                        { n: 100, offset: 0 },
-                        { force }
-                    )
-                    .catch((): never[] => [])
-            ]);
+            const response = await vrchatToolsRepository.getGroupCalendar(
+                { groupId: group.id },
+                { force }
+            );
             if (requestId !== groupEventsRequestRef.current) {
                 return;
             }
-            const followingIds = followingEventIds(followingResponse);
             setGroupEvents(
                 extractGroupEventRows(response).map((event) =>
-                    normalizeGroupEvent(event, group.id, { followingIds })
+                    normalizeGroupEvent(event, group.id, {
+                        followingIds: followingEventIdsRef.current
+                    })
                 )
             );
             setGroupEventsStatus('ready');
@@ -388,6 +395,38 @@ export function GroupDialogTabbedView({
         }
     }
 
+    async function loadFollowingGroupEvents({
+        force = false
+    }: { force?: boolean } = {}) {
+        if (!group.id) {
+            return;
+        }
+
+        const requestId = groupFollowingRequestRef.current + 1;
+        groupFollowingRequestRef.current = requestId;
+        try {
+            const response =
+                await vrchatToolsRepository.getFollowingGroupCalendars(
+                    { n: 100, offset: 0 },
+                    { force }
+                );
+            if (requestId !== groupFollowingRequestRef.current) {
+                return;
+            }
+            const nextFollowingEventIds = followingEventIds(response);
+            followingEventIdsRef.current = nextFollowingEventIds;
+            setGroupEvents((current) =>
+                current.map((event) =>
+                    normalizeGroupEvent(event, group.id, {
+                        followingIds: nextFollowingEventIds
+                    })
+                )
+            );
+        } catch {
+            return;
+        }
+    }
+
     async function toggleGroupEventFollow(event: GroupCalendarEventRecord) {
         const eventId = getEventId(event);
         const eventGroupId = getEventGroupId(event) || group.id;
@@ -401,6 +440,11 @@ export function GroupDialogTabbedView({
                 eventId,
                 isFollowing: nextFollowing
             });
+            if (nextFollowing) {
+                followingEventIdsRef.current.add(eventId);
+            } else {
+                followingEventIdsRef.current.delete(eventId);
+            }
             setGroupEvents((current) =>
                 current.map((row) =>
                     getEventId(row) === eventId
@@ -409,8 +453,8 @@ export function GroupDialogTabbedView({
                                   ...row,
                                   ...nextEvent,
                                   userInterest: {
-                                      ...(row?.userInterest || {}),
-                                      ...(nextEvent?.userInterest || {}),
+                                      ...row?.userInterest,
+                                      ...nextEvent?.userInterest,
                                       isFollowing: nextFollowing
                                   }
                               },
@@ -437,8 +481,12 @@ export function GroupDialogTabbedView({
         setActiveTab(lastGroupDialogTab);
     }
 
-    useEffect(() => {
+    const loadActiveTab = useEffectEvent(() => {
         loadTab(activeTab);
+    });
+
+    useEffect(() => {
+        loadActiveTab();
     }, [
         activeTab,
         currentEndpoint,
@@ -448,17 +496,35 @@ export function GroupDialogTabbedView({
         memberSort
     ]);
 
-    useEffect(() => {
+    const loadEventsForTarget = useEffectEvent(() => {
         if (!group.id) {
             return;
         }
         loadGroupEvents();
-    }, [currentEndpoint, group.id]);
+    });
 
     useEffect(() => {
+        loadEventsForTarget();
+    }, [currentEndpoint, group.id]);
+
+    const loadFollowingEventsForActiveTab = useEffectEvent(() => {
+        if (activeTab === 'events') {
+            loadFollowingGroupEvents();
+        }
+    });
+
+    useEffect(() => {
+        loadFollowingEventsForActiveTab();
+    }, [activeTab, currentEndpoint, group.id]);
+
+    const reloadMembersForFilter = useEffectEvent(() => {
         if (activeTab === 'members') {
             loadTab('members', { force: true });
         }
+    });
+
+    useEffect(() => {
+        reloadMembersForFilter();
     }, [memberRoleId, memberSort]);
 
     async function loadAllMembers() {
@@ -638,8 +704,7 @@ export function GroupDialogTabbedView({
             setActiveTab('posts');
         },
         setRemoteData,
-        setRemoteStatus,
-        t
+        setRemoteStatus
     });
 
     const headerModel = {
@@ -738,7 +803,11 @@ export function GroupDialogTabbedView({
             loadAllMembers();
         },
         onMemberRoleChange: handleMemberRoleChange,
-        onMemberSortChange: setMemberSort,
+        onMemberSortChange: (value) => {
+            if (value === 'joinedAt:asc' || value === 'joinedAt:desc') {
+                setMemberSort(value);
+            }
+        },
         onOpenLink: openExternalLink,
         onOpenOwner: openGroupOwner,
         onOpenUser: handleOpenUser,
@@ -747,6 +816,7 @@ export function GroupDialogTabbedView({
         onPreviewRowImage: previewRowImage,
         onRefreshEvents: () => {
             loadGroupEvents({ force: true });
+            loadFollowingGroupEvents({ force: true });
         },
         onRefreshMembers: () => {
             loadTab('members', { force: true });

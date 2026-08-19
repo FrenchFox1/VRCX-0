@@ -3,10 +3,7 @@ import {
     positionKnownSizeRows
 } from '@/lib/knownSizeVirtualRows';
 
-import {
-    MY_AVATARS_DEFAULT_GRID_DENSITY,
-    sanitizeMyAvatarsGridDensity
-} from './myAvatarsState';
+import { sanitizeMyAvatarsGridDensity } from './myAvatarsState';
 import type {
     MyAvatarRow,
     MyAvatarsGridDensity,
@@ -65,18 +62,11 @@ const MY_AVATARS_GRID_DENSITY_CONFIGS = Object.freeze({
     })
 });
 
-type MyAvatarsGridDensityKey = keyof typeof MY_AVATARS_GRID_DENSITY_CONFIGS;
-
 export function getMyAvatarsGridDensityConfig(
     value: unknown
 ): MyAvatarsGridDensityConfig {
-    const densityKey = sanitizeMyAvatarsGridDensity(
-        value
-    ) as MyAvatarsGridDensityKey;
-    return (
-        MY_AVATARS_GRID_DENSITY_CONFIGS[densityKey] ||
-        MY_AVATARS_GRID_DENSITY_CONFIGS[MY_AVATARS_DEFAULT_GRID_DENSITY]
-    );
+    const density = sanitizeMyAvatarsGridDensity(value);
+    return MY_AVATARS_GRID_DENSITY_CONFIGS[density];
 }
 
 type MyAvatarsGridMetricsInput = {

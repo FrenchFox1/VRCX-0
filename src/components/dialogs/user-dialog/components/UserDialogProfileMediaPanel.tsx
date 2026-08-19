@@ -1,5 +1,5 @@
 import { ImageIcon, XIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -15,6 +15,7 @@ import {
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
+import type { MediaFileTag } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Badge } from '@/ui/shadcn/badge';
@@ -30,7 +31,7 @@ type MediaFile = Awaited<
 interface MediaSection {
     key: string;
     fieldName: ProfileMediaFieldName;
-    fileTag: string;
+    fileTag: MediaFileTag;
     assetKey: string;
     titleKey: string;
     clearKey: string;
@@ -255,43 +256,46 @@ export function UserDialogProfileMediaPanel({
     const [mutatingKey, setMutatingKey] = useState('');
     const busy = actionStatus !== 'idle';
 
-    async function refreshSection(section: MediaSection) {
-        setLoadingBySection((current) => ({
-            ...current,
-            [section.assetKey]: true
-        }));
-        try {
-            const { json } = await mediaRepository.getFileList({
-                n: 100,
-                tag: section.fileTag
-            });
-            setFilesBySection((current) => ({
-                ...current,
-                [section.assetKey]: Array.isArray(json)
-                    ? [...json].reverse()
-                    : []
-            }));
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.toast.failed_to_load_value', {
-                          value: section.fileTag
-                      })
-            );
-        } finally {
+    const refreshSection = useCallback(
+        async (section: MediaSection) => {
             setLoadingBySection((current) => ({
                 ...current,
-                [section.assetKey]: false
+                [section.assetKey]: true
             }));
-        }
-    }
+            try {
+                const { json } = await mediaRepository.getFileList({
+                    n: 100,
+                    tag: section.fileTag
+                });
+                setFilesBySection((current) => ({
+                    ...current,
+                    [section.assetKey]: Array.isArray(json)
+                        ? [...json].reverse()
+                        : []
+                }));
+            } catch (error) {
+                toast.error(
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.toast.failed_to_load_value', {
+                              value: section.fileTag
+                          })
+                );
+            } finally {
+                setLoadingBySection((current) => ({
+                    ...current,
+                    [section.assetKey]: false
+                }));
+            }
+        },
+        [t]
+    );
 
     useEffect(() => {
         for (const section of MEDIA_SECTIONS) {
             refreshSection(section);
         }
-    }, [profile?.id]);
+    }, [profile?.id, refreshSection]);
 
     async function applyProfileMedia(
         fieldName: ProfileMediaFieldName,

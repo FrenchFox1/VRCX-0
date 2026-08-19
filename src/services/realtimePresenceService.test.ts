@@ -106,7 +106,6 @@ describe('realtimePresenceService projection boundary', () => {
                         state: 'online',
                         location: 'wrld_1:123'
                     },
-                    stateBucket: 'online',
                     stateBucketAuthority: 'explicit'
                 }
             ],
@@ -124,7 +123,7 @@ describe('realtimePresenceService projection boundary', () => {
         });
 
         expect(
-            useFriendRosterStore.getState().friendsById.usr_friend.stateBucket
+            useFriendRosterStore.getState().friendsById.usr_friend.state
         ).toBe('online');
         expect(serviceMocks.recordFriendPatch).not.toHaveBeenCalled();
         expect(
@@ -217,8 +216,7 @@ describe('realtimePresenceService projection boundary', () => {
                 usr_friend: {
                     id: 'usr_friend',
                     displayName: 'Friend',
-                    state: 'online',
-                    stateBucket: 'online'
+                    state: 'online'
                 }
             },
             orderedFriendIds: ['usr_friend'],
@@ -257,7 +255,6 @@ describe('realtimePresenceService projection boundary', () => {
                     id: 'usr_friend',
                     displayName: 'Friend',
                     state: 'online',
-                    stateBucket: 'online',
                     location: 'wrld_old:1'
                 }
             },
@@ -275,12 +272,14 @@ describe('realtimePresenceService projection boundary', () => {
                     userId: 'usr_friend',
                     patch: {
                         id: 'usr_friend',
+                        state: 'offline',
                         location: 'wrld_new:2'
                     },
-                    stateBucket: 'offline',
                     stateBucketAuthority: 'preserve'
                 }
             ],
+            removals: [],
+            feedEntries: [],
             friendLogChanged: false
         });
 
@@ -290,7 +289,6 @@ describe('realtimePresenceService projection boundary', () => {
             friendsById: {
                 usr_friend: {
                     state: 'online',
-                    stateBucket: 'online',
                     location: 'wrld_new:2'
                 }
             }
@@ -403,8 +401,7 @@ describe('realtimePresenceService projection boundary', () => {
                 id: 'usr_friend',
                 displayName: 'Friend',
                 state: 'offline'
-            },
-            stateBucket: 'offline'
+            }
         });
         handleRealtimeCurrentUserProjection({
             generation: 7,
@@ -443,7 +440,7 @@ describe('realtimePresenceService projection boundary', () => {
             offlineIds: ['usr_friend'],
             friendsById: {
                 usr_friend: {
-                    stateBucket: 'offline'
+                    state: 'offline'
                 }
             }
         });
@@ -488,8 +485,7 @@ describe('realtimePresenceService projection boundary', () => {
                 id: 'usr_friend',
                 displayName: 'Friend',
                 state: 'offline'
-            },
-            stateBucket: 'offline'
+            }
         });
 
         handleRealtimeCurrentUserProjection({
@@ -515,7 +511,7 @@ describe('realtimePresenceService projection boundary', () => {
             offlineIds: ['usr_friend'],
             friendsById: {
                 usr_friend: {
-                    stateBucket: 'offline'
+                    state: 'offline'
                 }
             }
         });

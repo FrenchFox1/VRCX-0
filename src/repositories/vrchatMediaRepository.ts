@@ -5,23 +5,28 @@ import {
 } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
 import type {
-    MediaAssetKind,
-    PrintFavoriteState
+    EmojiUploadParams,
+    HttpApiExecuteResponse,
+    InventoryItemUpdateRequest,
+    InventoryListParams,
+    MediaAssetUploadRequest,
+    MediaFileListParams,
+    PrintUploadParams,
+    PrintFavoriteState,
+    ProfileDecorationEquipSlot
 } from '@/platform/tauri/bindings';
-import { normalizeString } from '@/shared/utils/string';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { normalizePlatformError } from '../platform/tauri/errors';
 import {
     isVrchatRequestError,
     type QueryParams,
-    type QueryValue,
     type VrchatRequestResponse,
     unwrapVrchatResponse
 } from './vrchatRequest';
 
 type MediaApiRecord = Record<string, unknown>;
-type MediaApiParams = QueryParams;
+type MediaAssetKind = MediaAssetUploadRequest['assetKind'];
 
 export type MediaFileVersion = Record<string, unknown> & {
     created_at?: string;
@@ -135,24 +140,15 @@ export type InventoryItemsCollectResult = {
     truncated: boolean;
 };
 
-const PROFILE_DECORATION_EQUIP_SLOTS = [
-    'iconFrame',
-    'profileEffect',
-    'nameplateEffect'
-] as const;
-
-type ProfileDecorationEquipSlot =
-    (typeof PROFILE_DECORATION_EQUIP_SLOTS)[number];
-
 type ProfileDecorationEquipInput = {
-    expectedUserId: unknown;
-    inventoryId: unknown;
-    equipSlot: unknown;
+    expectedUserId: string;
+    inventoryId: string;
+    equipSlot: ProfileDecorationEquipSlot;
 };
 
 type ProfileDecorationUnequipInput = {
-    expectedUserId: unknown;
-    equipSlot: unknown;
+    expectedUserId: string;
+    equipSlot: ProfileDecorationEquipSlot;
 };
 
 interface MediaApiOptions {
@@ -161,47 +157,43 @@ interface MediaApiOptions {
 
 interface MediaUploadResponse {
     json: MediaApiRecord;
-    params: MediaApiParams;
+    params: QueryParams;
     status?: number;
 }
 
 interface LegacyImageUploadOptions {
-    avatarId?: unknown;
-    worldId?: unknown;
+    avatarId?: string;
+    worldId?: string;
     imageUrl?: string;
     base64File: string;
 }
 
-interface MediaAssetUploadOptions {
-    assetKind: MediaAssetKind;
-    cropWhiteBorder?: boolean;
-    params?: MediaApiParams;
-}
+type MediaAssetUploadOptions =
+    | { assetKind: Extract<MediaAssetKind, 'gallery' | 'icons' | 'stickers'> }
+    | { assetKind: 'emojis'; params: EmojiUploadParams }
+    | {
+          assetKind: 'prints';
+          cropWhiteBorder?: boolean;
+          params: PrintUploadParams;
+      };
 
 interface MediaCommandOptions {
-    params?: MediaApiParams;
+    params?: QueryParams;
     extra?: MediaApiRecord;
     fallbackMessage?: string;
     path?: string;
 }
 
-function normalizeParams(params: unknown = {}): MediaApiParams {
-    if (!params || typeof params !== 'object') {
-        return {};
-    }
-    return { ...(params as Record<string, QueryValue | QueryValue[]>) };
-}
-
 function unwrapMediaResponse(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     options?: MediaCommandOptions
 ): VrchatRequestResponse<MediaApiRecord>;
 function unwrapMediaResponse<TJson>(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     options?: MediaCommandOptions
 ): VrchatRequestResponse<TJson>;
 function unwrapMediaResponse<TJson = MediaApiRecord>(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     {
         params = {},
         extra = {},
@@ -218,15 +210,15 @@ function unwrapMediaResponse<TJson = MediaApiRecord>(
 }
 
 async function executeMediaCommand(
-    command: () => Promise<{ status: number; data: unknown }>,
+    command: () => Promise<HttpApiExecuteResponse>,
     options?: MediaCommandOptions
 ): Promise<VrchatRequestResponse<MediaApiRecord>>;
 async function executeMediaCommand<TJson>(
-    command: () => Promise<{ status: number; data: unknown }>,
+    command: () => Promise<HttpApiExecuteResponse>,
     options?: MediaCommandOptions
 ): Promise<VrchatRequestResponse<TJson>>;
 async function executeMediaCommand<TJson = MediaApiRecord>(
-    command: () => Promise<{ status: number; data: unknown }>,
+    command: () => Promise<HttpApiExecuteResponse>,
     options: MediaCommandOptions = {}
 ): Promise<VrchatRequestResponse<TJson>> {
     try {
@@ -243,9 +235,9 @@ async function executeMediaCommand<TJson = MediaApiRecord>(
 }
 
 async function getFiles(
-    params: MediaApiParams = {}
+    params: MediaFileListParams = {}
 ): Promise<VrchatRequestResponse<MediaFileRecord[]>> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     return executeMediaCommand<MediaFileRecord[]>(
         () =>
             commands.appVrchatMediaFilesGet({
@@ -257,15 +249,12 @@ async function getFiles(
     );
 }
 
-async function getFileList(params: MediaApiParams = {}) {
+async function getFileList(params: MediaFileListParams = {}) {
     return getFiles(params);
 }
 
-async function deleteFile(fileId: unknown) {
-    const normalizedFileId =
-        typeof fileId === 'string'
-            ? fileId.trim()
-            : String(fileId ?? '').trim();
+async function deleteFile(fileId: string) {
+    const normalizedFileId = fileId.trim();
     if (!normalizedFileId) {
         throw new Error('MediaRepository.deleteFile requires a file id.');
     }
@@ -284,7 +273,7 @@ async function deleteFile(fileId: unknown) {
 }
 
 async function uploadGalleryImage(imageData: string) {
-    const params: MediaApiParams = {
+    const params: QueryParams = {
         tag: 'gallery'
     };
     return executeMediaCommand(
@@ -298,19 +287,22 @@ async function uploadGalleryImage(imageData: string) {
     );
 }
 
-async function uploadAvatarGalleryImage(
-    imageData: string,
-    avatarId: QueryValue
-) {
-    const params: MediaApiParams = {
+async function uploadAvatarGalleryImage(imageData: string, avatarId: string) {
+    const normalizedAvatarId = avatarId.trim();
+    if (!normalizedAvatarId) {
+        throw new Error(
+            'MediaRepository.uploadAvatarGalleryImage requires an avatar id.'
+        );
+    }
+    const params: QueryParams = {
         tag: 'avatargallery',
-        galleryId: avatarId
+        galleryId: normalizedAvatarId
     };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaAvatarGalleryImageUpload({
                 imageData,
-                avatarId
+                avatarId: normalizedAvatarId
             }),
         {
             params
@@ -319,7 +311,7 @@ async function uploadAvatarGalleryImage(
 }
 
 async function uploadVrcPlusIcon(imageData: string) {
-    const params: MediaApiParams = {
+    const params: QueryParams = {
         tag: 'icon'
     };
     return executeMediaCommand(
@@ -333,8 +325,8 @@ async function uploadVrcPlusIcon(imageData: string) {
     );
 }
 
-async function uploadEmoji(imageData: string, params: MediaApiParams = {}) {
-    const normalizedParams = normalizeParams(params);
+async function uploadEmoji(imageData: string, params: EmojiUploadParams) {
+    const normalizedParams = { ...params };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaEmojiUpload({
@@ -348,7 +340,7 @@ async function uploadEmoji(imageData: string, params: MediaApiParams = {}) {
 }
 
 async function uploadSticker(imageData: string) {
-    const params: MediaApiParams = {
+    const params: QueryParams = {
         tag: 'sticker',
         maskTag: 'square'
     };
@@ -367,18 +359,18 @@ async function uploadPrint(
     imageData: string,
     {
         cropWhiteBorder = true,
-        params = {}
+        params
     }: {
         cropWhiteBorder?: boolean;
-        params?: MediaApiParams;
-    } = {}
+        params: PrintUploadParams;
+    }
 ): Promise<MediaUploadResponse> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     const response = await executeMediaCommand(
         () =>
             commands.appVrchatMediaPrintUpload({
                 imageData,
-                cropWhiteBorder: Boolean(cropWhiteBorder),
+                cropWhiteBorder,
                 params: normalizedParams
             }),
         {
@@ -394,17 +386,40 @@ async function uploadPrint(
 
 async function uploadAssetImage(
     imageData: string,
-    { assetKind, cropWhiteBorder = false, params = {} }: MediaAssetUploadOptions
+    options: MediaAssetUploadOptions
 ): Promise<MediaUploadResponse> {
-    const normalizedParams = normalizeParams(params);
-    const response = await executeMediaCommand(
-        () =>
-            commands.appVrchatMediaAssetUpload({
-                assetKind,
+    let input: MediaAssetUploadRequest;
+    let normalizedParams: QueryParams = {};
+    switch (options.assetKind) {
+        case 'gallery':
+            input = { assetKind: 'gallery', imageData };
+            break;
+        case 'icons':
+            input = { assetKind: 'icons', imageData };
+            break;
+        case 'emojis':
+            normalizedParams = { ...options.params };
+            input = {
+                assetKind: 'emojis',
                 imageData,
-                cropWhiteBorder: Boolean(cropWhiteBorder),
-                params: normalizedParams
-            }),
+                params: options.params
+            };
+            break;
+        case 'stickers':
+            input = { assetKind: 'stickers', imageData };
+            break;
+        case 'prints':
+            normalizedParams = { ...options.params };
+            input = {
+                assetKind: 'prints',
+                imageData,
+                cropWhiteBorder: options.cropWhiteBorder ?? false,
+                params: options.params
+            };
+            break;
+    }
+    const response = await executeMediaCommand(
+        () => commands.appVrchatMediaAssetUpload(input),
         {
             params: normalizedParams,
             fallbackMessage: 'Media asset upload failed'
@@ -419,13 +434,10 @@ async function uploadAssetImage(
 async function getPrints({
     userId,
     n = 100
-}: { userId?: unknown; n?: number } = {}): Promise<
+}: { userId?: string; n?: number } = {}): Promise<
     VrchatRequestResponse<MediaPrintRecord[]>
 > {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error('MediaRepository.getPrints requires a user id.');
     }
@@ -447,11 +459,8 @@ async function getPrints({
     );
 }
 
-async function getPrint(printId: unknown) {
-    const normalizedPrintId =
-        typeof printId === 'string'
-            ? printId.trim()
-            : String(printId ?? '').trim();
+async function getPrint(printId: string) {
+    const normalizedPrintId = printId.trim();
     if (!normalizedPrintId) {
         throw new Error('MediaRepository.getPrint requires a print id.');
     }
@@ -469,11 +478,8 @@ async function getPrint(printId: unknown) {
     );
 }
 
-async function deletePrint(printId: unknown) {
-    const normalizedPrintId =
-        typeof printId === 'string'
-            ? printId.trim()
-            : String(printId ?? '').trim();
+async function deletePrint(printId: string) {
+    const normalizedPrintId = printId.trim();
     if (!normalizedPrintId) {
         throw new Error('MediaRepository.deletePrint requires a print id.');
     }
@@ -496,13 +502,10 @@ async function getPrintFavorites(): Promise<PrintFavoriteState> {
 }
 
 async function setPrintFavorite(
-    printId: unknown,
-    favoriteValue: unknown
+    printId: string,
+    favoriteValue: boolean
 ): Promise<PrintFavoriteState> {
-    const normalizedPrintId =
-        typeof printId === 'string'
-            ? printId.trim()
-            : String(printId ?? '').trim();
+    const normalizedPrintId = printId.trim();
     if (!normalizedPrintId) {
         throw new Error(
             'MediaRepository.setPrintFavorite requires a print id.'
@@ -511,14 +514,14 @@ async function setPrintFavorite(
 
     return commands.appVrchatPrintsFavoriteSet({
         printId: normalizedPrintId,
-        favorite: favoriteValue === true
+        favorite: favoriteValue
     });
 }
 
 async function getInventoryItems(
-    params: MediaApiParams = {}
+    params: InventoryListParams = {}
 ): Promise<VrchatRequestResponse<InventoryItemsResponse>> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     return executeMediaCommand<InventoryItemsResponse>(
         () =>
             commands.appVrchatMediaInventoryItemsGet({
@@ -531,14 +534,14 @@ async function getInventoryItems(
 }
 
 async function collectInventoryItems(
-    params: MediaApiParams = {}
+    params: InventoryListParams = {}
 ): Promise<InventoryItemsCollectResult> {
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     try {
         const result = await commands.appVrchatMediaInventoryItemsCollect({
             params: normalizedParams
         });
-        const items = (result.items ?? []).flatMap((value) => {
+        const items = result.items.flatMap((value) => {
             if (!value || typeof value !== 'object' || Array.isArray(value)) {
                 return [];
             }
@@ -551,7 +554,7 @@ async function collectInventoryItems(
         });
         return {
             items,
-            truncated: Boolean(result.truncated)
+            truncated: result.truncated
         };
     } catch (error) {
         throw normalizePlatformError(error, 'Media request failed');
@@ -559,12 +562,9 @@ async function collectInventoryItems(
 }
 
 async function getInventoryTemplate(
-    inventoryTemplateId: unknown
+    inventoryTemplateId: string
 ): Promise<VrchatRequestResponse<InventoryItemRecord>> {
-    const normalizedInventoryTemplateId =
-        typeof inventoryTemplateId === 'string'
-            ? inventoryTemplateId.trim()
-            : String(inventoryTemplateId ?? '').trim();
+    const normalizedInventoryTemplateId = inventoryTemplateId.trim();
     if (!normalizedInventoryTemplateId) {
         throw new Error(
             'MediaRepository.getInventoryTemplate requires an inventory template id.'
@@ -592,25 +592,13 @@ async function getInventoryTemplate(
     });
 }
 
-function normalizeProfileDecorationEquipSlot(
-    value: unknown
-): ProfileDecorationEquipSlot | null {
-    const normalizedValue = normalizeString(value);
-    return (
-        PROFILE_DECORATION_EQUIP_SLOTS.find(
-            (slot) => slot === normalizedValue
-        ) ?? null
-    );
-}
-
 async function equipProfileDecoration({
     expectedUserId,
     inventoryId,
     equipSlot
 }: ProfileDecorationEquipInput) {
-    const normalizedExpectedUserId = normalizeString(expectedUserId);
-    const normalizedInventoryId = normalizeString(inventoryId);
-    const normalizedEquipSlot = normalizeProfileDecorationEquipSlot(equipSlot);
+    const normalizedExpectedUserId = expectedUserId.trim();
+    const normalizedInventoryId = inventoryId.trim();
     if (!normalizedExpectedUserId) {
         throw new Error(
             'MediaRepository.equipProfileDecoration requires a user id.'
@@ -621,23 +609,16 @@ async function equipProfileDecoration({
             'MediaRepository.equipProfileDecoration requires an inventory id.'
         );
     }
-    if (!normalizedEquipSlot) {
-        throw new Error(
-            'MediaRepository.equipProfileDecoration requires a profile decoration slot.'
-        );
-    }
-
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaProfileDecorationEquip({
-                expectedUserId: normalizedExpectedUserId,
                 inventoryId: normalizedInventoryId,
-                equipSlot: normalizedEquipSlot
+                equipSlot
             }),
         {
             extra: {
                 inventoryId: normalizedInventoryId,
-                equipSlot: normalizedEquipSlot
+                equipSlot
             }
         }
     );
@@ -647,45 +628,31 @@ async function unequipProfileDecoration({
     expectedUserId,
     equipSlot
 }: ProfileDecorationUnequipInput) {
-    const normalizedExpectedUserId = normalizeString(expectedUserId);
-    const normalizedEquipSlot = normalizeProfileDecorationEquipSlot(equipSlot);
+    const normalizedExpectedUserId = expectedUserId.trim();
     if (!normalizedExpectedUserId) {
         throw new Error(
             'MediaRepository.unequipProfileDecoration requires a user id.'
         );
     }
-    if (!normalizedEquipSlot) {
-        throw new Error(
-            'MediaRepository.unequipProfileDecoration requires a profile decoration slot.'
-        );
-    }
-
     return executeMediaCommand<string>(
         () =>
             commands.appVrchatMediaProfileDecorationUnequip({
-                expectedUserId: normalizedExpectedUserId,
-                equipSlot: normalizedEquipSlot
+                equipSlot
             }),
         {
             extra: {
-                equipSlot: normalizedEquipSlot
+                equipSlot
             }
         }
     );
 }
 
 async function getUserInventoryItem(
-    { inventoryId, userId }: { inventoryId?: unknown; userId?: unknown } = {},
+    { inventoryId, userId }: { inventoryId?: string; userId?: string } = {},
     options: MediaApiOptions = {}
 ) {
-    const normalizedInventoryId =
-        typeof inventoryId === 'string'
-            ? inventoryId.trim()
-            : String(inventoryId ?? '').trim();
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedInventoryId = inventoryId?.trim() ?? '';
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedInventoryId || !normalizedUserId) {
         throw new Error(
             'MediaRepository.getUserInventoryItem requires inventory and user ids.'
@@ -701,7 +668,7 @@ async function getUserInventoryItem(
             DEFAULT_VRCHAT_API_ENDPOINT
         ),
         policy: entityQueryPolicies.inventoryCollection,
-        force: Boolean(options.force),
+        force: options.force,
         queryFn: () =>
             executeMediaCommand(
                 () =>
@@ -720,20 +687,17 @@ async function getUserInventoryItem(
 }
 
 async function updateInventoryItem(
-    inventoryId: unknown,
-    params: MediaApiParams = {}
+    inventoryId: string,
+    params: InventoryItemUpdateRequest
 ) {
-    const normalizedInventoryId =
-        typeof inventoryId === 'string'
-            ? inventoryId.trim()
-            : String(inventoryId ?? '').trim();
+    const normalizedInventoryId = inventoryId.trim();
     if (!normalizedInventoryId) {
         throw new Error(
             'MediaRepository.updateInventoryItem requires an inventory id.'
         );
     }
 
-    const normalizedParams = normalizeParams(params);
+    const normalizedParams = { ...params };
     return executeMediaCommand(
         () =>
             commands.appVrchatMediaInventoryItemUpdate({
@@ -746,11 +710,8 @@ async function updateInventoryItem(
     );
 }
 
-async function consumeInventoryBundle(inventoryId: unknown) {
-    const normalizedInventoryId =
-        typeof inventoryId === 'string'
-            ? inventoryId.trim()
-            : String(inventoryId ?? '').trim();
+async function consumeInventoryBundle(inventoryId: string) {
+    const normalizedInventoryId = inventoryId.trim();
     if (!normalizedInventoryId) {
         throw new Error(
             'MediaRepository.consumeInventoryBundle requires an inventory id.'
@@ -770,9 +731,8 @@ async function consumeInventoryBundle(inventoryId: unknown) {
     );
 }
 
-async function redeemReward(code: unknown) {
-    const normalizedCode =
-        typeof code === 'string' ? code.trim() : String(code ?? '').trim();
+async function redeemReward(code: string) {
+    const normalizedCode = code.trim();
     if (!normalizedCode) {
         throw new Error('MediaRepository.redeemReward requires a reward code.');
     }
@@ -795,10 +755,7 @@ async function uploadAvatarImageLegacy({
     imageUrl = '',
     base64File
 }: LegacyImageUploadOptions) {
-    const normalizedAvatarId =
-        typeof avatarId === 'string'
-            ? avatarId.trim()
-            : String(avatarId ?? '').trim();
+    const normalizedAvatarId = avatarId?.trim() ?? '';
     if (!normalizedAvatarId) {
         throw new Error(
             'MediaRepository.uploadAvatarImageLegacy requires an avatar id.'
@@ -831,10 +788,7 @@ async function uploadWorldImageLegacy({
     imageUrl = '',
     base64File
 }: LegacyImageUploadOptions) {
-    const normalizedWorldId =
-        typeof worldId === 'string'
-            ? worldId.trim()
-            : String(worldId ?? '').trim();
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'MediaRepository.uploadWorldImageLegacy requires a world id.'

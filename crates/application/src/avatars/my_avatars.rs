@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use vrcx_0_core::derived_keys;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -8,6 +9,7 @@ use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     avatars::{avatar_list_by_user_get_input, AvatarListByUserGetInput},
     http_api::{ApiScope, HttpApiRequestInput},
+    query::{AvatarListSort, QueryOrder, ReleaseStatusFilter},
 };
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
@@ -59,10 +61,10 @@ pub async fn get_my_avatars(deps: &MyAvatarsDeps<'_>, input: MyAvatarsInput) -> 
             }
             if let Some(object) = avatar.as_object_mut() {
                 object.insert(
-                    "$tags".into(),
+                    derived_keys::TAGS.into(),
                     Value::Array(tags_by_avatar.get(&avatar_id).cloned().unwrap_or_default()),
                 );
-                object.insert("$timeSpent".into(), json!(time_spent));
+                object.insert(derived_keys::TIME_SPENT.into(), json!(time_spent));
             }
             avatar
         })
@@ -97,16 +99,16 @@ async fn fetch_my_avatar_pages(
             user: "me".into(),
             n: MY_AVATARS_PAGE_SIZE,
             offset,
-            sort: "updated".into(),
-            order: "descending".into(),
-            release_status: "all".into(),
+            sort: AvatarListSort::Updated,
+            order: QueryOrder::Descending,
+            release_status: ReleaseStatusFilter::All,
         })?;
         let page = execute_json_array(deps, request).await?;
         let page_len = page.len() as i64;
 
         if let Some(target) = target_avatar_id {
-            if let Some(found) = page.iter().find(|avatar| record_id(avatar) == target) {
-                return Ok(vec![found.clone()]);
+            if let Some(found) = page.into_iter().find(|avatar| record_id(avatar) == target) {
+                return Ok(vec![found]);
             }
         } else {
             avatars.extend(page);
@@ -139,7 +141,10 @@ async fn execute_json_array(
             response.status,
         )));
     }
-    Ok(payload.as_array().cloned().unwrap_or_default())
+    match payload {
+        Value::Array(rows) => Ok(rows),
+        _ => Ok(Vec::new()),
+    }
 }
 
 fn response_error_message(payload: &Value, status: i32) -> String {
@@ -234,7 +239,7 @@ mod tests {
             .as_millis() as f64
             - 60_000.0;
         let delta = live_swap_delta_ms(one_minute_ago);
-        assert!(delta >= 60_000 && delta < 120_000);
+        assert!((60_000..120_000).contains(&delta));
     }
 
     #[test]

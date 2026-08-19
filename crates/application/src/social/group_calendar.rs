@@ -1,25 +1,23 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Arc, Mutex, OnceLock,
-};
-use std::time::{Duration, Instant};
+use std::future::Future;
+use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 use vrcx_0_application_core::RuntimeOperationStatus;
 
-use futures_util::{
-    future::{BoxFuture, FutureExt, Shared},
-    stream, StreamExt,
-};
+use futures_util::{stream, StreamExt};
+use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Semaphore;
 use vrcx_0_application_core::vrchat_api::groups::profile_get_input;
 use vrcx_0_application_core::vrchat_api::tools::{
     calendars_get_input, featured_calendars_get_input, following_calendars_get_input,
+    CalendarListParams,
 };
 use vrcx_0_application_core::{
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
+use vrcx_0_core::vrchat_json::GroupJson;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
 
@@ -28,6 +26,7 @@ use crate::{Error, Result};
 const CALENDAR_PAGE_SIZE: i64 = 100;
 const CALENDAR_MAX_PAGES: usize = 50;
 const GROUP_PROFILE_CONCURRENCY: usize = 4;
+const GROUP_PROFILE_CACHE_CAPACITY: u64 = 32;
 const GROUP_PROFILE_CACHE_TTL: Duration = Duration::from_secs(5 * 60);
 
 #[derive(Clone)]
@@ -62,21 +61,8 @@ struct GroupProfileCacheKey {
     group_id: String,
 }
 
-#[derive(Clone)]
-struct GroupProfileCacheEntry {
-    stored_at: Instant,
-    profile: Value,
-}
-
-type SharedGroupProfile = Shared<BoxFuture<'static, Option<Value>>>;
-
-static GROUP_PROFILE_CACHE: OnceLock<Mutex<HashMap<GroupProfileCacheKey, GroupProfileCacheEntry>>> =
-    OnceLock::new();
-static GROUP_PROFILE_IN_FLIGHT: OnceLock<
-    Mutex<HashMap<GroupProfileCacheKey, (u64, SharedGroupProfile)>>,
-> = OnceLock::new();
+static GROUP_PROFILE_CACHE: OnceLock<Cache<GroupProfileCacheKey, Value>> = OnceLock::new();
 static GROUP_PROFILE_SEMAPHORE: OnceLock<Semaphore> = OnceLock::new();
-static NEXT_GROUP_PROFILE_REQUEST_ID: AtomicU64 = AtomicU64::new(1);
 
 pub async fn load_group_calendar(
     deps: GroupCalendarDeps,
@@ -160,10 +146,7 @@ async fn load_group_calendar_inner(
         .map(|group_id| {
             let name = group_profiles
                 .get(&group_id)
-                .and_then(|group| group.get("name"))
-                .and_then(Value::as_str)
-                .map(str::trim)
-                .filter(|name| !name.is_empty())
+                .and_then(|group| GroupJson::new(group).name())
                 .unwrap_or(&group_id)
                 .to_string();
             (group_id, name)
@@ -200,11 +183,11 @@ async fn collect_calendar_pages(
     for page_index in 0..=CALENDAR_MAX_PAGES {
         ensure_scope_matches(&deps.auth_scope, scope)?;
         let offset = (page_index as i64) * CALENDAR_PAGE_SIZE;
-        let params = HashMap::from([
-            ("n".into(), Value::from(CALENDAR_PAGE_SIZE)),
-            ("offset".into(), Value::from(offset)),
-            ("date".into(), Value::from(date)),
-        ]);
+        let params = CalendarListParams {
+            n: Some(CALENDAR_PAGE_SIZE),
+            offset: Some(offset),
+            date: Some(date.to_string()),
+        };
         let request = match kind {
             CalendarKind::All => calendars_get_input(scope.endpoint.clone(), params),
             CalendarKind::Following => {
@@ -259,17 +242,14 @@ async fn fetch_group_profiles(
     group_ids: &[String],
 ) -> HashMap<String, Value> {
     let mut profiles = HashMap::new();
-    let missing = group_ids
-        .iter()
-        .filter_map(|group_id| {
-            if let Some(profile) = cached_group_profile(scope.generation, group_id) {
-                profiles.insert(group_id.clone(), profile);
-                None
-            } else {
-                Some(group_id.clone())
-            }
-        })
-        .collect::<Vec<_>>();
+    let mut missing = Vec::new();
+    for group_id in group_ids {
+        if let Some(profile) = cached_group_profile(scope.generation, group_id).await {
+            profiles.insert(group_id.clone(), profile);
+        } else {
+            missing.push(group_id.clone());
+        }
+    }
     let fetched = stream::iter(missing)
         .map(|group_id| fetch_group_profile(deps, scope, group_id))
         .buffer_unordered(GROUP_PROFILE_CONCURRENCY)
@@ -285,130 +265,77 @@ async fn fetch_group_profile(
     scope: &RuntimeAuthScopeSnapshot,
     group_id: String,
 ) -> Option<(String, Value)> {
-    if let Some(profile) = cached_group_profile(scope.generation, &group_id) {
-        return Some((group_id, profile));
-    }
     let key = GroupProfileCacheKey {
         auth_scope_generation: scope.generation,
         group_id: group_id.clone(),
     };
-    let (request_id, request) = shared_group_profile_request(key.clone(), {
+    let profile = cached_or_fetch_group_profile(group_profile_cache(), key, {
         let deps = deps.clone();
         let scope = scope.clone();
-        let group_id = group_id.clone();
-        move || {
-            async move {
-                if !deps.auth_scope.snapshot().generation_matches(&scope) {
-                    return None;
-                }
-                let _permit = GROUP_PROFILE_SEMAPHORE
-                    .get_or_init(|| Semaphore::new(GROUP_PROFILE_CONCURRENCY))
-                    .acquire()
-                    .await
-                    .ok()?;
-                if !deps.auth_scope.snapshot().generation_matches(&scope) {
-                    return None;
-                }
-                let (_, request) =
-                    profile_get_input(scope.endpoint.clone(), group_id, false).ok()?;
-                let response = deps
-                    .web
-                    .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
-                    .await
-                    .ok()?;
-                if !deps.auth_scope.snapshot().generation_matches(&scope) {
-                    return None;
-                }
-                let response = ApiJsonResponse {
-                    status: response.status,
-                    json: serde_json::from_str::<Value>(&response.data).ok()?,
-                };
-                if !(200..300).contains(&response.status)
-                    || response.has_error_field()
-                    || !response.json.is_object()
-                {
-                    return None;
-                }
-                Some(response.json)
+        let request_group_id = group_id.clone();
+        async move {
+            if !deps.auth_scope.snapshot().generation_matches(&scope) {
+                return None;
             }
-            .boxed()
-            .shared()
+            let _permit = GROUP_PROFILE_SEMAPHORE
+                .get_or_init(|| Semaphore::new(GROUP_PROFILE_CONCURRENCY))
+                .acquire()
+                .await
+                .ok()?;
+            if !deps.auth_scope.snapshot().generation_matches(&scope) {
+                return None;
+            }
+            let (_, request) =
+                profile_get_input(scope.endpoint.clone(), request_group_id, false).ok()?;
+            let response = deps
+                .web
+                .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
+                .await
+                .ok()?;
+            if !deps.auth_scope.snapshot().generation_matches(&scope) {
+                return None;
+            }
+            let response = ApiJsonResponse {
+                status: response.status,
+                json: serde_json::from_str::<Value>(&response.data).ok()?,
+            };
+            if !(200..300).contains(&response.status)
+                || response.has_error_field()
+                || !response.json.is_object()
+            {
+                return None;
+            }
+            Some(response.json)
         }
-    });
-    let profile = request.await;
-    let result = if let Some(profile) = profile {
-        store_group_profile(scope.generation, group_id.clone(), profile.clone());
-        Some((group_id, profile))
-    } else {
-        None
-    };
-    finish_group_profile_request(&key, request_id);
-    result
+    })
+    .await?;
+    Some((group_id, profile))
 }
 
-fn shared_group_profile_request(
+async fn cached_or_fetch_group_profile(
+    cache: &Cache<GroupProfileCacheKey, Value>,
     key: GroupProfileCacheKey,
-    create: impl FnOnce() -> SharedGroupProfile,
-) -> (u64, SharedGroupProfile) {
-    let mut requests = GROUP_PROFILE_IN_FLIGHT
-        .get_or_init(|| Mutex::new(HashMap::new()))
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    if let Some((request_id, request)) = requests.get(&key) {
-        return (*request_id, request.clone());
-    }
-    let request_id = NEXT_GROUP_PROFILE_REQUEST_ID.fetch_add(1, Ordering::Relaxed);
-    let request = create();
-    requests.insert(key, (request_id, request.clone()));
-    (request_id, request)
+    request: impl Future<Output = Option<Value>>,
+) -> Option<Value> {
+    cache.optionally_get_with(key, request).await
 }
 
-fn finish_group_profile_request(key: &GroupProfileCacheKey, request_id: u64) {
-    let Ok(mut requests) = GROUP_PROFILE_IN_FLIGHT
-        .get_or_init(|| Mutex::new(HashMap::new()))
-        .lock()
-    else {
-        return;
-    };
-    if requests
-        .get(key)
-        .is_some_and(|(current_id, _)| *current_id == request_id)
-    {
-        requests.remove(key);
-    }
+fn group_profile_cache() -> &'static Cache<GroupProfileCacheKey, Value> {
+    GROUP_PROFILE_CACHE.get_or_init(|| {
+        Cache::builder()
+            .max_capacity(GROUP_PROFILE_CACHE_CAPACITY)
+            .time_to_live(GROUP_PROFILE_CACHE_TTL)
+            .build()
+    })
 }
 
-fn cached_group_profile(auth_scope_generation: u64, group_id: &str) -> Option<Value> {
-    let now = Instant::now();
-    let mut cache = GROUP_PROFILE_CACHE
-        .get_or_init(|| Mutex::new(HashMap::new()))
-        .lock()
-        .ok()?;
-    cache.retain(|_, entry| now.duration_since(entry.stored_at) < GROUP_PROFILE_CACHE_TTL);
-    cache
+async fn cached_group_profile(auth_scope_generation: u64, group_id: &str) -> Option<Value> {
+    group_profile_cache()
         .get(&GroupProfileCacheKey {
             auth_scope_generation,
             group_id: group_id.to_string(),
         })
-        .map(|entry| entry.profile.clone())
-}
-
-fn store_group_profile(auth_scope_generation: u64, group_id: String, profile: Value) {
-    if let Ok(mut cache) = GROUP_PROFILE_CACHE
-        .get_or_init(|| Mutex::new(HashMap::new()))
-        .lock()
-    {
-        cache.insert(
-            GroupProfileCacheKey {
-                auth_scope_generation,
-                group_id,
-            },
-            GroupProfileCacheEntry {
-                stored_at: Instant::now(),
-                profile,
-            },
-        );
-    }
+        .await
 }
 
 #[cfg(test)]
@@ -449,13 +376,9 @@ fn collect_group_ids(rows: &[&Value]) -> Vec<String> {
 fn embedded_group_profiles(rows: &[&Value]) -> HashMap<String, Value> {
     rows.iter()
         .filter_map(|row| {
-            let group = row.get("group")?.as_object()?;
-            let group_id = group
-                .get("id")
-                .and_then(Value::as_str)
-                .map(str::trim)
-                .filter(|group_id| !group_id.is_empty())?;
-            Some((group_id.to_string(), Value::Object(group.clone())))
+            let group = row.get("group")?;
+            let group_id = GroupJson::new(group).id()?;
+            Some((group_id.to_string(), group.clone()))
         })
         .collect()
 }
@@ -466,8 +389,7 @@ fn group_id(row: &Value) -> Option<String> {
         .or_else(|| row.get("groupId").and_then(Value::as_str))
         .or_else(|| {
             row.get("group")
-                .and_then(|group| group.get("id"))
-                .and_then(Value::as_str)
+                .and_then(|group| GroupJson::new(group).id())
         })
         .map(str::trim)
         .filter(|group_id| !group_id.is_empty())
@@ -503,29 +425,31 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn group_profile_requests_share_the_same_in_flight_future() {
+    async fn group_profile_cache_coalesces_the_same_in_flight_request() {
+        let cache = Cache::builder()
+            .max_capacity(GROUP_PROFILE_CACHE_CAPACITY)
+            .time_to_live(GROUP_PROFILE_CACHE_TTL)
+            .build();
         let key = GroupProfileCacheKey {
             auth_scope_generation: u64::MAX,
             group_id: "grp_in_flight_test".into(),
         };
         let factory_calls = Arc::new(AtomicUsize::new(0));
         let first_calls = Arc::clone(&factory_calls);
-        let (first_id, first) = shared_group_profile_request(key.clone(), move || {
+        let first = cached_or_fetch_group_profile(&cache, key.clone(), async move {
             first_calls.fetch_add(1, Ordering::Relaxed);
-            async { Some(json!({ "id": "grp_in_flight_test" })) }
-                .boxed()
-                .shared()
+            tokio::task::yield_now().await;
+            Some(json!({ "id": "grp_in_flight_test" }))
         });
         let second_calls = Arc::clone(&factory_calls);
-        let (second_id, second) = shared_group_profile_request(key.clone(), move || {
+        let second = cached_or_fetch_group_profile(&cache, key, async move {
             second_calls.fetch_add(1, Ordering::Relaxed);
-            async { None }.boxed().shared()
+            Some(json!({ "id": "unexpected" }))
         });
+        let (first, second) = tokio::join!(first, second);
 
-        assert_eq!(first_id, second_id);
         assert_eq!(factory_calls.load(Ordering::Relaxed), 1);
-        assert_eq!(first.await, second.await);
-        finish_group_profile_request(&key, first_id);
+        assert_eq!(first, second);
     }
 
     #[test]

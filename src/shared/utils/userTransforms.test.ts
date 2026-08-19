@@ -4,7 +4,9 @@ import {
     computeTrustLevel,
     computeUserPlatform,
     diffObjectProps,
-    sanitizeUserJson
+    sanitizeUserJson,
+    trustRankDetails,
+    trustRankFromTags
 } from './userTransforms';
 
 describe('computeTrustLevel', () => {
@@ -148,5 +150,37 @@ describe('sanitizeUserJson', () => {
         expect(result.currentAvatarImageUrl).toBe(
             'https://files.vrchat.cloud/real.png'
         );
+    });
+});
+
+describe('trust rank table', () => {
+    it('keeps each rank paired with its label, class, colour and sort order', () => {
+        const cases = [
+            ['visitor', 'Visitor', 'x-tag-untrusted', 'untrusted', 1],
+            ['newUser', 'New User', 'x-tag-basic', 'basic', 2],
+            ['user', 'User', 'x-tag-known', 'known', 3],
+            ['knownUser', 'Known User', 'x-tag-trusted', 'trusted', 4],
+            ['trustedUser', 'Trusted User', 'x-tag-veteran', 'veteran', 5]
+        ] as const;
+
+        for (const [rank, level, className, colorKey, sortNum] of cases) {
+            expect(trustRankDetails(rank)).toEqual({
+                level,
+                className,
+                colorKey,
+                sortNum
+            });
+        }
+    });
+
+    it('maps tags to ranks and prefers the highest present tag', () => {
+        expect(trustRankFromTags([])).toBe('visitor');
+        expect(trustRankFromTags(['system_trust_basic'])).toBe('newUser');
+        expect(trustRankFromTags(['system_trust_known'])).toBe('user');
+        expect(trustRankFromTags(['system_trust_trusted'])).toBe('knownUser');
+        expect(trustRankFromTags(['system_trust_veteran'])).toBe('trustedUser');
+        expect(
+            trustRankFromTags(['system_trust_basic', 'system_trust_veteran'])
+        ).toBe('trustedUser');
     });
 });

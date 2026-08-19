@@ -13,8 +13,10 @@ import type {
     FriendRosterSeedSnapshot,
     FriendRosterSnapshotInput,
     FriendRosterState,
-    FriendRosterStore
-} from '@/domain/friends/friendRosterTypes';
+    FriendRosterStore,
+    FriendStateBucketAuthority
+} from '@/domain/friends/types';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     computeTrustLevel,
     computeUserPlatform
@@ -24,18 +26,6 @@ function normalizeUserId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function normalizeStateBucket(value: unknown): FriendRosterBucket | '' {
-    const normalized = normalizeUserId(value).toLowerCase();
-    if (
-        normalized === 'online' ||
-        normalized === 'active' ||
-        normalized === 'offline'
-    ) {
-        return normalized;
-    }
-    return '';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -241,31 +231,19 @@ function normalizeFriendRecordMap(
 
 function resolveFriendStateBucket({
     patch,
-    stateBucket,
     stateBucketAuthority,
     existingEntry
 }: {
     patch?: FriendRecordInput | null;
-    stateBucket?: unknown;
-    stateBucketAuthority?: unknown;
+    stateBucketAuthority?: FriendStateBucketAuthority;
     existingEntry?: FriendRecord | null;
 }): FriendRosterBucket {
-    if (normalizeUserId(stateBucketAuthority).toLowerCase() === 'preserve') {
-        return (
-            normalizeStateBucket(existingEntry?.stateBucket) ||
-            normalizeStateBucket(existingEntry?.state) ||
-            'offline'
-        );
+    if (stateBucketAuthority === 'preserve') {
+        return normalizeStateBucket(existingEntry?.state) || 'offline';
     }
 
-    const explicitStateBucket =
-        normalizeStateBucket(stateBucket) ||
-        normalizeStateBucket(patch?.stateBucket) ||
-        normalizeStateBucket(patch?.state);
-
     return (
-        explicitStateBucket ||
-        normalizeStateBucket(existingEntry?.stateBucket) ||
+        normalizeStateBucket(patch?.state) ||
         normalizeStateBucket(existingEntry?.state) ||
         'offline'
     );
@@ -356,7 +334,6 @@ function normalizeFriendEntry(
         displayName,
         tags,
         state: stateBucket,
-        stateBucket,
         friendNumber,
         trustLevel,
         $friendNumber: friendNumber,
@@ -416,9 +393,7 @@ function buildBucketIds(
     stateBucket: FriendRosterBucket
 ): string[] {
     return friendIds
-        .filter(
-            (friendId) => friendsById[friendId]?.stateBucket === stateBucket
-        )
+        .filter((friendId) => friendsById[friendId]?.state === stateBucket)
         .sort((leftId, rightId) =>
             compareFriendEntries(friendsById[leftId], friendsById[rightId])
         );
@@ -475,13 +450,8 @@ function friendEntryNeedsOrderingUpdate(
         return true;
     }
     const existingBucket =
-        normalizeStateBucket(existingEntry?.stateBucket) ||
-        normalizeStateBucket(existingEntry?.state) ||
-        'offline';
-    const nextBucket =
-        normalizeStateBucket(nextEntry?.stateBucket) ||
-        normalizeStateBucket(nextEntry?.state) ||
-        'offline';
+        normalizeStateBucket(existingEntry?.state) || 'offline';
+    const nextBucket = normalizeStateBucket(nextEntry?.state) || 'offline';
 
     if (existingBucket !== nextBucket) {
         return true;
@@ -514,7 +484,7 @@ const initialState: FriendRosterState = {
 
 export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
     ...initialState,
-    setRosterLoading(currentUserId: unknown, detail = '') {
+    setRosterLoading(currentUserId: string, detail = '') {
         set((state) => {
             const normalizedCurrentUserId =
                 normalizeUserId(currentUserId) || null;
@@ -639,7 +609,6 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
     applyFriendPatch({
         userId,
         patch = {},
-        stateBucket,
         stateBucketAuthority,
         detail = ''
     }: FriendPatchEntry & { detail?: string }) {
@@ -652,7 +621,6 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
             const existingEntry = state.friendsById[normalizedUserId] ?? null;
             const nextStateBucket = resolveFriendStateBucket({
                 patch,
-                stateBucket,
                 stateBucketAuthority,
                 existingEntry
             });
@@ -722,7 +690,6 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
                 const existingEntry = friendsById[normalizedUserId] ?? null;
                 const nextStateBucket = resolveFriendStateBucket({
                     patch,
-                    stateBucket: entry?.stateBucket,
                     stateBucketAuthority: entry?.stateBucketAuthority,
                     existingEntry
                 });
@@ -781,7 +748,7 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
             return nextState;
         });
     },
-    removeFriend(userId: unknown, detail = '') {
+    removeFriend(userId: string, detail = '') {
         set((state) => {
             const normalizedUserId = normalizeUserId(userId);
             if (!normalizedUserId || !state.friendsById[normalizedUserId]) {

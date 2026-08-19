@@ -13,7 +13,7 @@ describe('vrchatFavoriteRepository', () => {
         vi.clearAllMocks();
         commandMocks.appVrchatFavoriteAdd.mockResolvedValue({
             status: 200,
-            data: { id: 'fvrt_1' }
+            data: JSON.stringify({ id: 'fvrt_1' })
         });
     });
 

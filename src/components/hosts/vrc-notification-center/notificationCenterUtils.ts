@@ -21,8 +21,6 @@ export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
 
-export const categoryOrder = ['friend', 'group', 'other'];
-
 type CachedInstanceLike = Record<string, unknown> & {
     closedAt?: unknown;
 };

@@ -25,8 +25,9 @@ use vrcx_0_assistant::{
 use vrcx_0_core::realtime::RealtimeWsStatusPayload;
 use vrcx_0_core::screenshots::ScreenshotLibraryScanStatus;
 use vrcx_0_host_desktop::tts::TtsVoice;
+use vrcx_0_integration_api::{IntegrationApiStartFailedPayload, IntegrationApiStatus};
 use vrcx_0_mcp::McpServerStatus;
-use vrcx_0_runtime_host::RuntimeGroupInstancesProjection;
+use vrcx_0_runtime_host::{AuthenticatedSessionProjection, RuntimeGroupInstancesProjection};
 use vrcx_0_runtime_host_desktop::AppLauncherSnapshotEvent;
 
 use crate::commands;
@@ -36,6 +37,7 @@ use crate::commands;
 #[allow(dead_code)]
 struct BackendRuntimeEventPayloadMap {
     add_game_log_event: AddGameLogEventPayload,
+    authenticated_session_projection: AuthenticatedSessionProjection,
     authenticated_runtime_phase: AuthenticatedRuntimePhaseSnapshot,
     app_update_status: AppUpdateStatusSnapshot,
     app_update_download_progress: AppUpdateDownloadProgressPayload,
@@ -76,6 +78,7 @@ struct BackendRuntimeEventPayloadMap {
     realtime_instance_queue_projection: RealtimeInstanceQueueProjection,
     realtime_projection_sync: RealtimeProjectionSync,
     update_is_game_running: HostSessionProjection,
+    integration_api_start_failed: IntegrationApiStartFailedPayload,
 }
 
 pub fn builder() -> Builder<tauri::Wry> {
@@ -94,6 +97,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<GameLogProjection>()
         .typ::<HostSessionProjection>()
         .typ::<McpServerStatus>()
+        .typ::<IntegrationApiStatus>()
         .typ::<ParsedLocation>()
         .typ::<PrintAutoCleanupEvent>()
         .typ::<ProfileRestoreProgress>()
@@ -136,7 +140,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::realtime::app__friend_profile_load_cancel,
             commands::application::lifecycle::app__ancillary_runtime_snapshot_get,
             commands::application::background_mode::app__start_background_mode,
-            commands::application::background_mode::app__get_backend_runtime_frontend_session_snapshot,
             commands::application::background_mode::app__backend_runtime_combined_snapshot_get,
             commands::application::background_mode::app__ensure_main_window,
             commands::application::deep_link::app__drain_pending_deep_links,
@@ -167,7 +170,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::friend_log::app__friend_log_names_resolve,
             commands::application::friend_log::app__friend_log_names_cancel,
             commands::application::group_calendar::app__group_calendar_snapshot_get,
-            commands::application::quick_search::app__quick_search_catalog_get,
+            commands::application::quick_search::app__quick_search_query,
+            commands::application::quick_search::app__quick_search_working_set_invalidate,
             commands::application::vrc_status::app__vrc_status_get,
             commands::application::vrc_status::app__vrc_status_refresh,
             commands::application::notification_chains::app__notification_hide_and_expire,
@@ -189,6 +193,11 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::mcp_server::app__mcp_server_set_allow_lan_connections,
             commands::application::mcp_server::app__mcp_server_set_port,
             commands::application::mcp_server::app__mcp_server_rotate_token,
+            commands::application::integration_api::app__integration_api_status,
+            commands::application::integration_api::app__integration_api_set_enabled,
+            commands::application::integration_api::app__integration_api_set_port,
+            commands::application::integration_api::app__integration_api_set_allow_lan_connections,
+            commands::application::integration_api::app__integration_api_rotate_token,
             commands::application::assistant::app__assistant_send_message,
             commands::application::assistant::app__assistant_cancel,
             commands::application::assistant::app__assistant_list_sessions,
@@ -248,7 +257,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::browse_history::app__browse_history_retention_days_get,
             commands::local::browse_history::app__browse_history_retention_days_set,
             commands::local::database_maintenance::app__user_tables_ensure,
-            commands::local::database_maintenance::app__database_maintenance_run,
             commands::local::database_maintenance::app__database_maintenance_table_sizes_get,
             commands::local::database_maintenance::app__database_maintenance_max_friend_log_number_get,
             commands::local::database_maintenance::app__database_maintenance_broken_leave_entries_get,
@@ -270,6 +278,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::avatars::app__avatar_tags_replace,
             commands::local::avatars::app__avatar_tags_patch,
             commands::local::feed::app__feed_persistence_set_disabled,
+            commands::local::feed::app__avatar_feed_persistence_set_disabled,
             commands::local::feed::app__avatar_feed_history_cleanup,
             commands::local::feed::app__feed_latest_query,
             commands::local::feed::app__feed_search_query,
@@ -319,7 +328,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::memos::app__memo_save_avatar,
             commands::local::friends::app__friend_log_current_list,
             commands::local::friends::app__friend_log_history_query,
-            commands::local::friends::app__friend_log_delete_current,
             commands::local::friends::app__friend_log_history_delete,
             commands::local::notifications::app__notification_list_query,
             commands::local::notifications::app__notification_add_v1,
@@ -353,7 +361,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::integrations::external_api::service::app__external_api_github_releases_get,
             commands::integrations::external_api::service::app__external_api_image_data_url_get,
             commands::integrations::external_api::service::app__external_api_youtube_video_metadata_get,
-            commands::application::auth_scope::app__runtime_auth_scope_get,
             commands::vrchat::auth::service::app__vrchat_auth_config_get,
             commands::vrchat::auth::service::app__vrchat_auth_config_refresh,
             commands::vrchat::auth::service::app__vrchat_auth_auto_login_start,

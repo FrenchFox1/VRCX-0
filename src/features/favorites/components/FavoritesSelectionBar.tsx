@@ -13,25 +13,25 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 
-import type { FavoriteGroup } from '../favoritesTypes';
+import type { FavoriteGroupView } from '../favoritesTypes';
 import { isFavoriteMoveTargetOverCapacity } from '../favoriteTransfer';
 
 type FavoritesSelectionBarProps = {
     selectedCount: number;
     isAllSelected: boolean;
-    moveTargets: FavoriteGroup[];
-    copyTargets: FavoriteGroup[];
+    moveTargets: FavoriteGroupView[];
+    copyTargets: FavoriteGroupView[];
     showCopyIdsButton: boolean;
     actionsDisabled: boolean;
     onSelectAll(): void;
     onClearSelection(): void;
     onCopyIds(): void;
-    onCopySelection(target: FavoriteGroup): void;
-    onMoveSelection(target: FavoriteGroup): void;
+    onCopySelection(target: FavoriteGroupView): void;
+    onMoveSelection(target: FavoriteGroupView): void;
     onBulkRemove(): void;
 };
 
-function favoriteMoveTargetLabel(target: FavoriteGroup): string {
+function favoriteMoveTargetLabel(target: FavoriteGroupView): string {
     if (typeof target.capacity === 'number' && target.capacity > 0) {
         return `${target.label} (${target.count ?? 0}/${target.capacity})`;
     }
@@ -55,10 +55,10 @@ function FavoriteTransferTargetsMenu({
     triggerLabel: string;
     triggerTitle?: string;
     listLabel: string;
-    targets: FavoriteGroup[];
+    targets: FavoriteGroupView[];
     selectedCount: number;
     actionsDisabled: boolean;
-    onSelect(target: FavoriteGroup): void;
+    onSelect(target: FavoriteGroupView): void;
 }) {
     const remoteTargets = targets.filter(
         (target) => target.source === 'remote'
@@ -66,7 +66,7 @@ function FavoriteTransferTargetsMenu({
     const localTargets = targets.filter((target) => target.source === 'local');
     const showSeparator = remoteTargets.length > 0 && localTargets.length > 0;
 
-    function renderTargetItems(items: FavoriteGroup[], prefix: string) {
+    function renderTargetItems(items: FavoriteGroupView[], prefix: string) {
         return items.map((target) => (
             <DropdownMenuItem
                 key={`${prefix}:${target.key}`}

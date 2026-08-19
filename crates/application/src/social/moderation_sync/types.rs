@@ -1,14 +1,16 @@
 use serde::{Deserialize, Serialize};
+use vrcx_0_core::text::normalize_text;
 use vrcx_0_persistence::local_moderation::{LocalModerationOutput, RemoteModerationInput};
 use vrcx_0_persistence::DatabaseService;
 
-use vrcx_0_application_core::{HostSessionRuntime, RuntimeAuthScope, WebClient};
+use crate::RemoteMutationGate;
+use vrcx_0_application_core::{RuntimeAuthScope, WebClient};
 
 pub struct ModerationSyncDeps<'a> {
     pub db: &'a DatabaseService,
     pub web: &'a WebClient,
-    pub session: &'a HostSessionRuntime,
     pub auth_scope: &'a RuntimeAuthScope,
+    pub remote_mutations: &'a RemoteMutationGate,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -19,21 +21,57 @@ pub struct ModerationSyncRefreshInput {
     pub endpoint: String,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(from = "String")]
+pub(super) enum ModerationMutationType {
+    Block,
+    Mute,
+    InteractOff,
+    MuteChat,
+    Unknown(String),
+}
+
+impl ModerationMutationType {
+    pub(super) fn as_str(&self) -> &str {
+        match self {
+            Self::Block => "block",
+            Self::Mute => "mute",
+            Self::InteractOff => "interactOff",
+            Self::MuteChat => "muteChat",
+            Self::Unknown(value) => value,
+        }
+    }
+
+    pub(super) fn is_supported_enable(&self) -> bool {
+        !matches!(self, Self::Unknown(_))
+    }
+}
+
+impl From<String> for ModerationMutationType {
+    fn from(value: String) -> Self {
+        let value = normalize_text(value);
+        match value.as_str() {
+            "block" => Self::Block,
+            "mute" => Self::Mute,
+            "interactOff" => Self::InteractOff,
+            "muteChat" => Self::MuteChat,
+            _ => Self::Unknown(value),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ModerationSyncMutationInput {
-    #[serde(default)]
-    pub(super) owner_user_id: String,
-    #[serde(default)]
-    pub(super) endpoint: String,
     pub(super) target_user_id: String,
     #[serde(default)]
     pub(super) target_display_name: String,
-    pub(super) r#type: String,
+    #[specta(type = String)]
+    pub(super) r#type: ModerationMutationType,
     pub(super) enabled: bool,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ModerationSyncRefreshOutput {
     pub accepted: bool,
@@ -69,6 +107,7 @@ impl RemoteModerationRow {
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ModerationSyncMutationOutput {
+    pub owner_user_id: String,
     pub target_user_id: String,
     pub r#type: String,
     pub enabled: bool,

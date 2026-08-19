@@ -369,6 +369,14 @@ export async function setFeedPersistenceDisabledPreference(disabled: boolean) {
     publishPreferenceChanged('feedPersistenceDisabled', disabled);
 }
 
+export async function setAvatarFeedPersistenceDisabledPreference(
+    disabled: boolean
+) {
+    await commands.appAvatarFeedPersistenceSetDisabled(disabled);
+    patchPreferenceValue('avatarFeedPersistenceDisabled', disabled);
+    publishPreferenceChanged('avatarFeedPersistenceDisabled', disabled);
+}
+
 function isHiddenVrPanelBoolConfigKey(
     key: BoolConfigPreferenceInputKey
 ): key is HiddenVrPanelBoolConfigKey {
@@ -449,11 +457,11 @@ export async function setTablePageSizesPreference(value: unknown) {
         currentTablePageSize,
         tablePageSizes
     );
-    const entries: Array<[string, unknown]> = [
+    const entries: Array<[string, string]> = [
         ['VRCX_tablePageSizes', JSON.stringify(tablePageSizes)]
     ];
     if (nextTablePageSize !== currentTablePageSize) {
-        entries.push(['VRCX_tablePageSize', nextTablePageSize]);
+        entries.push(['VRCX_tablePageSize', String(nextTablePageSize)]);
     }
     await configRepository.setMany(entries);
     patchPreferences({
@@ -465,14 +473,6 @@ export async function setTablePageSizesPreference(value: unknown) {
         publishPreferenceChanged('VRCX_tablePageSize', nextTablePageSize);
     }
     return tablePageSizes;
-}
-
-export async function setTablePageSizePreference(value: string | number) {
-    const tablePageSize = normalizeTablePageSize(value);
-    await configRepository.setInt('VRCX_tablePageSize', tablePageSize);
-    patchPreferences({ tablePageSize });
-    publishPreferenceChanged('VRCX_tablePageSize', tablePageSize);
-    return tablePageSize;
 }
 
 export async function getTablePageSizePreference(
@@ -498,8 +498,8 @@ export async function getTablePageSizesPreference(
 export async function setTableLimitsPreference(value: unknown) {
     const tableLimits = normalizeTableLimits(value);
     await configRepository.setMany([
-        ['maxTableSize_v2', tableLimits.maxTableSize],
-        ['searchLimit', tableLimits.searchLimit]
+        ['maxTableSize_v2', String(tableLimits.maxTableSize)],
+        ['searchLimit', String(tableLimits.searchLimit)]
     ]);
     patchPreferences({ tableLimits });
     publishPreferenceChanged('maxTableSize_v2', tableLimits.maxTableSize);

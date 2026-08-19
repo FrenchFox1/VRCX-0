@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import {
     openGroupDialog,
     openUserDialog,

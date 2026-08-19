@@ -10,13 +10,6 @@ export interface FriendLogCurrentRow {
     friendNumber: number;
 }
 
-export interface FriendLogCurrentEntry {
-    userId?: string | null;
-    displayName?: string | null;
-    trustLevel?: string | null;
-    friendNumber?: number | string | null;
-}
-
 type FriendLogSourceRow = FriendLogCurrentOutput;
 
 function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {
@@ -29,30 +22,16 @@ function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {
 }
 
 async function getFriendLogCurrent(
-    userId: unknown
+    userId: string
 ): Promise<FriendLogCurrentRow[]> {
-    const rows = await commands.appFriendLogCurrentList(
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim()
-    );
+    const rows = await commands.appFriendLogCurrentList(userId.trim());
 
-    return rows
-        .map(normalizeFriendLogRow)
-        .filter((row) => typeof row.userId === 'string' && row.userId.trim());
-}
-
-async function deleteFriendLogCurrent(userId: unknown, targetUserId: string) {
-    await commands.appFriendLogDeleteCurrent(
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim(),
-        targetUserId
-    );
+    return rows.map(normalizeFriendLogRow).filter((row) => row.userId.trim());
 }
 
 const friendLogRepository = {
-    getFriendLogCurrent,
-    deleteFriendLogCurrent
+    getFriendLogCurrent
 };
 
-export { deleteFriendLogCurrent, getFriendLogCurrent };
+export { getFriendLogCurrent };
 export default friendLogRepository;

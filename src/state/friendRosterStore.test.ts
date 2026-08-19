@@ -22,8 +22,8 @@ describe('friendRosterStore', () => {
             [
                 {
                     userId: ' usr_b ',
-                    stateBucket: 'online',
                     patch: {
+                        state: 'online',
                         id: 'usr_b',
                         displayName: 'Bravo',
                         friendNumber: 2,
@@ -33,8 +33,8 @@ describe('friendRosterStore', () => {
                 },
                 {
                     userId: 'usr_a',
-                    stateBucket: 'online',
                     patch: {
+                        state: 'online',
                         id: 'usr_a',
                         displayName: 'Alpha',
                         friendNumber: 1,
@@ -43,8 +43,8 @@ describe('friendRosterStore', () => {
                 },
                 {
                     userId: 'usr_c',
-                    stateBucket: 'active',
                     patch: {
+                        state: 'active',
                         id: 'usr_c',
                         displayName: 'Charlie',
                         tags: ['system_trust_known']
@@ -52,8 +52,8 @@ describe('friendRosterStore', () => {
                 },
                 {
                     userId: 'usr_d',
-                    stateBucket: 'offline',
                     patch: {
+                        state: 'offline',
                         id: 'usr_d',
                         displayName: 'Delta',
                         tags: []
@@ -89,9 +89,9 @@ describe('friendRosterStore', () => {
         useFriendRosterStore.getState().applyFriendPatch({
             userId: 'usr_new',
             patch: {
+                state: 'online',
                 displayName: 'New Friend'
-            },
-            stateBucket: 'online'
+            }
         });
 
         expect(useFriendRosterStore.getState()).toMatchObject({
@@ -102,7 +102,7 @@ describe('friendRosterStore', () => {
                 usr_new: {
                     id: 'usr_new',
                     displayName: 'New Friend',
-                    stateBucket: 'online'
+                    state: 'online'
                 }
             }
         });
@@ -113,20 +113,20 @@ describe('friendRosterStore', () => {
         store.applyFriendPatch({
             userId: 'usr_stable',
             patch: {
+                state: 'online',
                 id: 'usr_stable',
                 displayName: 'Stable Friend'
-            },
-            stateBucket: 'online'
+            }
         });
 
         const stateBefore = useFriendRosterStore.getState();
         store.applyFriendPatch({
             userId: 'usr_stable',
             patch: {
+                state: 'online',
                 id: 'usr_stable',
                 displayName: 'Stable Friend'
-            },
-            stateBucket: 'online'
+            }
         });
         const stateAfter = useFriendRosterStore.getState();
 
@@ -142,10 +142,10 @@ describe('friendRosterStore', () => {
             {
                 userId: 'usr_stable',
                 patch: {
+                    state: 'online',
                     id: 'usr_stable',
                     displayName: 'Stable Friend'
-                },
-                stateBucket: 'online'
+                }
             }
         ]);
 
@@ -154,10 +154,10 @@ describe('friendRosterStore', () => {
             {
                 userId: 'usr_stable',
                 patch: {
+                    state: 'online',
                     id: 'usr_stable',
                     displayName: 'Stable Friend'
-                },
-                stateBucket: 'online'
+                }
             }
         ]);
         const stateAfter = useFriendRosterStore.getState();
@@ -179,19 +179,19 @@ describe('friendRosterStore', () => {
                     displayName: 'Offline Cache',
                     trustLevel: 'Known User',
                     friendNumber: 2,
-                    stateBucket: 'offline'
+                    state: 'offline'
                 },
                 usr_online: {
                     id: 'usr_online',
                     displayName: 'Online Cache',
                     trustLevel: 'Trusted User',
                     friendNumber: 1,
-                    stateBucket: 'online'
+                    state: 'online'
                 },
                 usr_active: {
                     id: 'usr_active',
                     displayName: 'usr_active',
-                    stateBucket: 'active'
+                    state: 'active'
                 }
             },
             detail: 'seeded friends'
@@ -212,7 +212,7 @@ describe('friendRosterStore', () => {
         expect(state.friendsById.usr_online).toMatchObject({
             id: 'usr_online',
             displayName: 'Online Cache',
-            stateBucket: 'online',
+            state: 'online',
             friendNumber: 1,
             $trustLevel: 'Trusted User'
         });
@@ -227,17 +227,16 @@ describe('friendRosterStore', () => {
                 displayName: 'Friend',
                 state: 'online',
                 location: 'wrld_old:1'
-            },
-            stateBucket: 'online'
+            }
         });
 
         store.applyFriendPatch({
             userId: 'usr_friend',
             patch: {
+                state: 'offline',
                 id: 'usr_friend',
                 location: 'wrld_new:2'
             },
-            stateBucket: 'offline',
             stateBucketAuthority: 'preserve'
         });
 
@@ -247,7 +246,6 @@ describe('friendRosterStore', () => {
             friendsById: {
                 usr_friend: {
                     state: 'online',
-                    stateBucket: 'online',
                     location: 'wrld_new:2'
                 }
             }
@@ -260,13 +258,11 @@ describe('friendRosterStore', () => {
         store.applyFriendPatches([
             {
                 userId: 'usr_a',
-                stateBucket: 'online',
-                patch: { id: 'usr_a', displayName: 'Alpha' }
+                patch: { state: 'online', id: 'usr_a', displayName: 'Alpha' }
             },
             {
                 userId: 'usr_b',
-                stateBucket: 'active',
-                patch: { id: 'usr_b', displayName: 'Bravo' }
+                patch: { state: 'active', id: 'usr_b', displayName: 'Bravo' }
             }
         ]);
         store.removeFriend(' usr_a ', 'removed');

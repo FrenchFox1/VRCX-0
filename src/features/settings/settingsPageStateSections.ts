@@ -32,6 +32,7 @@ export type SettingsPagePrefs = ReturnType<typeof createDefaultSettingsPrefs> &
     Record<string, unknown>;
 type SettingsPrefs = SettingsPagePrefs;
 type SettingsAction = () => unknown | Promise<unknown>;
+type SettingsVoidAction = () => void | Promise<void>;
 type SettingsCallback<Args extends unknown[] = unknown[]> = {
     bivarianceHack(...args: Args): unknown;
 }['bivarianceHack'];
@@ -114,23 +115,24 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> &
         commit: SettingsCallback<
             [action: SettingsAction, optimistic?: () => unknown]
         >;
-        cleanupAppDataDir: SettingsCallback;
+        cleanupAppDataDir: SettingsVoidAction;
         deleteAllScreenshotMetadata: SettingsCallback;
         desktopNotificationsDialogOpen: boolean;
-        dismissAppDataDirCleanup: SettingsCallback;
+        dismissAppDataDirCleanup: SettingsVoidAction;
         discordPrefs: SettingsDiscordPrefs;
         handleCropInstancePrintsChange: SettingsCallback<[boolean]>;
         handleGameLogDisabledChange: SettingsCallback<[boolean]>;
         handleFeedPersistenceDisabledChange: SettingsCallback<[boolean]>;
+        handleAvatarFeedPersistenceDisabledChange: SettingsCallback<[boolean]>;
         hmdNotificationsDialogOpen: boolean;
         integrationPrefs: SettingsIntegrationPrefs;
         locale: string;
-        migrateLegacyVrcxData: SettingsCallback;
+        migrateLegacyVrcxData: SettingsVoidAction;
         normalizeRecentActionCooldownMinutes: (value: unknown) => number;
         notificationTtsTest: string;
         notificationTtsTestVisible: boolean;
         onlineVisitCount: number | null;
-        openAppDataDirSelector: SettingsCallback;
+        openAppDataDirSelector: SettingsVoidAction;
         openCustomFontDialog: SettingsCallback;
         openTableLimitsDialog: SettingsCallback;
         openTablePageSizesDialog: SettingsCallback;
@@ -140,10 +142,10 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> &
         promptAutoLoginDelaySeconds: SettingsCallback;
         promptBackgroundModeDelayMinutes: SettingsCallback;
         prefs: SettingsPrefs;
-        refreshConfigTreeData: SettingsCallback;
-        refreshOnlineVisits: SettingsCallback;
-        refreshSqliteTableSizes: SettingsCallback;
-        resetAppDataDir: SettingsCallback;
+        refreshConfigTreeData: SettingsVoidAction;
+        refreshOnlineVisits: SettingsVoidAction;
+        refreshSqliteTableSizes: SettingsVoidAction;
+        resetAppDataDir: SettingsVoidAction;
         resetTrustColors: SettingsCallback;
         resetUgcFolder: SettingsCallback;
         saveAvatarProviderEnabled: SettingsCallback<[boolean]>;

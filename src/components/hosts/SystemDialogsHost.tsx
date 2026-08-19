@@ -6,13 +6,15 @@ import { ProxySettingsDialog } from '@/components/proxy/ProxySettingsDialog';
 import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
-    isHostCapabilitySupported
+    isHostCapabilitySupported,
+    type HostCapabilityKey
 } from '@/services/hostCapabilityService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { DataDirCleanupHost } from './DataDirCleanupHost';
 import { ProfileRestoreResultHost } from './ProfileRestoreResultHost';
 import { ChangelogDialog } from './system-dialogs/ChangelogDialog';
+import { DatabaseMaintenanceDialog } from './system-dialogs/DatabaseMaintenanceDialog';
 import { DatabaseUpgradeDialog } from './system-dialogs/DatabaseUpgradeDialog';
 import { DataDirMigrationDialog } from './system-dialogs/DataDirMigrationDialog';
 import { LaunchOptionsDialog } from './system-dialogs/LaunchOptionsDialog';
@@ -65,7 +67,7 @@ export function SystemDialogsHost() {
         type CapabilityGuard = [
             hostKey: string,
             open: boolean,
-            capability: keyof typeof hostCapabilities,
+            capability: HostCapabilityKey,
             mode?: 'available' | 'supported'
         ];
         const guards: CapabilityGuard[] = [
@@ -137,6 +139,7 @@ export function SystemDialogsHost() {
                     databaseUpgradeOpen || systemHostDatabaseUpgradeOpen
                 )}
             />
+            <DatabaseMaintenanceDialog />
             <ProfileBackupDialogs />
             <KeyboardShortcutsDialog
                 open={Boolean(keyboardShortcutsOpen)}

@@ -418,21 +418,6 @@ pub fn friend_log_upsert_current(
     })
 }
 
-pub fn friend_log_delete_current(
-    db: &DatabaseService,
-    user_id: String,
-    target_user_id: String,
-) -> Result<i64, Error> {
-    let user_prefix = normalize_user_table_prefix(&user_id)?;
-    ensure_realtime_tables(db, &user_prefix)?;
-    db.execute_non_query(
-        &format!("DELETE FROM {user_prefix}_friend_log_current WHERE user_id = @user_id"),
-        &ParamsBuilder::new()
-            .set("user_id", normalize_text(target_user_id))
-            .build(),
-    )
-}
-
 pub fn friend_log_history_add(
     db: &DatabaseService,
     user_id: String,

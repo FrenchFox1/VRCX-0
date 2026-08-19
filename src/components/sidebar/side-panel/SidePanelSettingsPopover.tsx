@@ -60,10 +60,8 @@ const sortOptions = [
     ['Sort by Location', 'view.settings.appearance.side_panel.sorting.location']
 ] as const satisfies ReadonlyArray<readonly [SortOption, string]>;
 
-const sortOptionValues = new Set<string>(sortOptions.map(([option]) => option));
-
 function normalizeSortSelectValue(value: string): SidePanelSortMethod {
-    return sortOptionValues.has(value) ? (value as SidePanelSortMethod) : '';
+    return sortOptions.find(([option]) => option === value)?.[0] ?? '';
 }
 
 type SettingRowControlProps = {

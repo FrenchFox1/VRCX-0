@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -29,18 +30,14 @@ import {
     getFavoriteExportFieldOptions,
     type FavoriteExportField
 } from '../favoritesExport';
-import type {
-    FavoriteGroup,
-    FavoriteItem,
-    FavoriteKind
-} from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteItem } from '../favoritesTypes';
 
 type FavoriteExportDialogProps = {
     open: boolean;
     onOpenChange(open: boolean): void;
     kind: FavoriteKind;
-    remoteGroups: FavoriteGroup[];
-    localGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroupView[];
+    localGroups: FavoriteGroupView[];
     remoteItemsByGroup: Record<string, FavoriteItem[]>;
     localItemsByGroup: Record<string, FavoriteItem[]>;
     remoteDetailsStatus: string;

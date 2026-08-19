@@ -15,11 +15,35 @@ export const TELEMETRY_ROUTE_KEYS = [
     'friend_list',
     'charts_mutual',
     'tools',
+    'settings'
+] as const;
+
+export const TELEMETRY_TOOL_KEYS = [
+    'screenshot-metadata',
     'gallery',
     'inventory',
-    'screenshot_metadata',
-    'vrchat_log',
-    'settings'
+    'vrc-photos',
+    'steam-screenshots',
+    'vrcx-data',
+    'vrchat-data',
+    'vrchat-log',
+    'profile-backup',
+    'llm-endpoints',
+    'crash-dumps',
+    'vrchat-config',
+    'launch-options',
+    'app-launcher',
+    'registry-backup',
+    'presence-schedule',
+    'presence-room-rules',
+    'presence-invite-requests',
+    'group-calendar',
+    'group-moderation',
+    'discord-names',
+    'export-notes',
+    'export-friend-list',
+    'export-own-avatars',
+    'edit-invite-message'
 ] as const;
 
 export type TelemetryPageRouteKey = (typeof TELEMETRY_ROUTE_KEYS)[number];

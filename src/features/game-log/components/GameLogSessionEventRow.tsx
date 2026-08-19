@@ -16,6 +16,7 @@ import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { openExternalLink } from '@/services/entityMediaService';
+import { openGameLogUser } from '@/services/gameLogUserDialogService';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -38,11 +39,10 @@ import type {
     GameLogSessionEvent,
     GameLogSessionMember
 } from '../gameLogTypes';
-import { openGameLogUser } from '../gameLogUserLookup';
 
 const VIDEO_SOURCE_WITHOUT_LINK = new Set(['LSMedia', 'PopcornPalace']);
 const PLAYER_EVENT_GRID_CLASS =
-    'grid-cols-[4.75rem_1rem_minmax(0,1fr)_5.5rem_5rem]';
+    'grid-cols-[4.75rem_1rem_1rem_minmax(0,1fr)_5.5rem_5rem]';
 
 function getEventLabel(event: GameLogSessionEvent, t: TFunction) {
     if (event?.type === 'JoinGroup') {
@@ -170,31 +170,33 @@ function PlayerNameButton({ item }: { item: GameLogSessionMember }) {
 }
 
 function PlayerCell({ item }: { item: GameLogSessionMember }) {
-    return (
-        <div className="flex min-w-0 items-center gap-1.5">
-            <PlayerNameButton item={item} />
-            <AffinityBadge
-                isFriend={item?.isFriend}
-                isFavorite={item?.isFavorite}
-                className="h-auto rounded-none bg-transparent px-0 font-normal"
-            />
-        </div>
-    );
+    return <PlayerNameButton item={item} />;
 }
 
 function PlayerActivityRow({
     durationByKey,
-    item
+    item,
+    showDuration
 }: {
     durationByKey: Map<string, number>;
     item: GameLogSessionMember;
+    showDuration: boolean;
 }) {
     return (
-        <div className="hover:bg-muted/35 grid min-h-7 grid-cols-[4.75rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm">
+        <div className="hover:bg-muted/35 grid min-h-7 grid-cols-[4.75rem_1rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm">
             <EventTime value={item?.created_at} />
+            <AffinityBadge
+                isFriend={item?.isFriend}
+                isFavorite={item?.isFavorite}
+                iconOnly
+            />
             <PlayerCell item={item} />
             <DurationText
-                value={getGameLogSessionPlayerDuration(durationByKey, item)}
+                value={
+                    showDuration
+                        ? getGameLogSessionPlayerDuration(durationByKey, item)
+                        : 0
+                }
             />
         </div>
     );
@@ -202,10 +204,12 @@ function PlayerActivityRow({
 
 function SinglePlayerActivityRow({
     durationByKey,
-    event
+    event,
+    showDuration
 }: {
     durationByKey: Map<string, number>;
     event: GameLogSessionEvent;
+    showDuration: boolean;
 }) {
     const item = normalizeSessionMember(event, event?.created_at);
 
@@ -218,10 +222,19 @@ function SinglePlayerActivityRow({
         >
             <EventTime value={event?.created_at} />
             <EventIcon event={event} />
+            <AffinityBadge
+                isFriend={item?.isFriend}
+                isFavorite={item?.isFavorite}
+                iconOnly
+            />
             <PlayerCell item={item} />
             <EventLabel event={event} />
             <DurationText
-                value={getGameLogSessionPlayerDuration(durationByKey, item)}
+                value={
+                    showDuration
+                        ? getGameLogSessionPlayerDuration(durationByKey, item)
+                        : 0
+                }
             />
         </div>
     );
@@ -255,6 +268,7 @@ function GroupActivityRow({
                     >
                         <EventTime value={event?.created_at} />
                         <EventIcon event={event} />
+                        <span aria-hidden="true" />
                         <span className="flex min-w-0 items-center gap-2 font-normal">
                             <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 tabular-nums">
                                 <UsersIcon className="size-3.5 shrink-0" />
@@ -285,6 +299,7 @@ function GroupActivityRow({
                                 key={`${member.userId}:${member.created_at}:${member.displayName}:${index}`}
                                 durationByKey={durationByKey}
                                 item={member}
+                                showDuration={event?.type === 'LeftGroup'}
                             />
                         ))}
                     </div>
@@ -417,6 +432,7 @@ function SessionEventRow({
             <SinglePlayerActivityRow
                 durationByKey={durationByKey}
                 event={event}
+                showDuration={isLeave}
             />
         );
     }

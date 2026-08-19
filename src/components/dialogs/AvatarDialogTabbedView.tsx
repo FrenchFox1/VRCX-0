@@ -1,9 +1,9 @@
 import { CopyIcon, ExternalLinkIcon, PersonStandingIcon } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { AvatarDialogJson } from '@/domain/entities/profileEntities';
+import type { AvatarDialogJson } from '@/domain/entities/avatar';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
 import {
@@ -306,15 +306,19 @@ function AvatarDialogOverviewSection({
 }
 
 export function AvatarDialogTabbedView({
+    activeTab,
     avatarControls,
     avatar,
     avatarView,
-    imageUrl
+    imageUrl,
+    onActiveTabChange
 }: {
+    activeTab: AvatarDialogTab;
     avatarControls: AvatarControls;
     avatar: AvatarViewRecord;
     avatarView: AvatarViewState;
     imageUrl: string;
+    onActiveTabChange(tab: AvatarDialogTab): void;
 }) {
     const { t } = useTranslation();
     const {
@@ -326,7 +330,8 @@ export function AvatarDialogTabbedView({
         canManageAvatar,
         canSelectAvatar,
         canSelectFallbackAvatar,
-        fileAnalysis = {}
+        fileAnalysis = {},
+        galleryStatus
     } = avatarView;
     const {
         onRefresh,
@@ -347,7 +352,6 @@ export function AvatarDialogTabbedView({
         onDelete
     } = avatarControls;
 
-    const [activeTab, setActiveTab] = useState<AvatarDialogTab>('info');
     const [galleryIndex, setGalleryIndex] = useState(0);
     const copyAvatarText = useAvatarDialogClipboard();
     const openImagePreview = useAvatarDialogPreview();
@@ -397,21 +401,20 @@ export function AvatarDialogTabbedView({
     const imposterVersion = normalizeEntityId(
         imposterPackage?.impostorizerVersion
     );
-    const hasGalleryTab =
-        galleryImages.length > 0 || listings.length > 0 || canManageAvatar;
-    const tabs: Array<{ value: AvatarDialogTab; label: string }> = [
-        { value: 'info', label: t('dialog.avatar.info.header') }
-    ];
-    if (hasGalleryTab) {
-        tabs.push({
-            value: 'gallery',
-            label: t('dialog.avatar.info.gallery')
-        });
-    }
-    tabs.push({ value: 'json', label: t('dialog.avatar.json.header') });
+    const tabs = useMemo(
+        (): Array<{ value: AvatarDialogTab; label: string }> => [
+            { value: 'info', label: t('dialog.avatar.info.header') },
+            {
+                value: 'gallery',
+                label: t('dialog.avatar.info.gallery')
+            },
+            { value: 'json', label: t('dialog.avatar.json.header') }
+        ],
+        [t]
+    );
 
     function changeTab(tab: string) {
-        setActiveTab(resolveAvatarDialogTab(tabs, tab));
+        onActiveTabChange(resolveAvatarDialogTab(tabs, tab));
     }
 
     useEffect(() => {
@@ -422,12 +425,7 @@ export function AvatarDialogTabbedView({
 
     useEffect(() => {
         setGalleryIndex(0);
-        setActiveTab('info');
     }, [avatar.id]);
-
-    useEffect(() => {
-        setActiveTab((tab) => resolveAvatarDialogTab(tabs, tab));
-    }, [hasGalleryTab]);
 
     function openAvatarAuthor() {
         if (!avatar.authorId) {
@@ -578,21 +576,20 @@ export function AvatarDialogTabbedView({
                         onOpenAuthor={openAvatarAuthor}
                         onSaveMemo={onSaveMemo}
                     />
-                    {hasGalleryTab ? (
-                        <AvatarDialogGalleryTab
-                            canManageAvatar={canManageAvatar}
-                            actionStatus={actionStatus}
-                            media={{
-                                galleryImages,
-                                currentGalleryImage,
-                                galleryIndex,
-                                listings
-                            }}
-                            onOpenGalleryPreview={openGalleryPreview}
-                            onGalleryIndexChange={setGalleryIndex}
-                            onUploadGallery={onUploadGallery}
-                        />
-                    ) : null}
+                    <AvatarDialogGalleryTab
+                        canManageAvatar={canManageAvatar}
+                        actionStatus={actionStatus}
+                        galleryStatus={galleryStatus}
+                        media={{
+                            galleryImages,
+                            currentGalleryImage,
+                            galleryIndex,
+                            listings
+                        }}
+                        onOpenGalleryPreview={openGalleryPreview}
+                        onGalleryIndexChange={setGalleryIndex}
+                        onUploadGallery={onUploadGallery}
+                    />
                     <EntityDialogTabContent value="json">
                         <EntityRawJson
                             value={

@@ -3,7 +3,8 @@ import {
     type FavoriteEntityKind as FavoriteImportKind,
     type FavoriteImportOperation,
     type FavoriteImportStatus,
-    type FavoriteImportTarget
+    type FavoriteImportTarget,
+    type VrchatFavoriteType
 } from '@/platform/tauri/bindings';
 import i18n from '@/services/i18nService';
 import { normalizeString } from '@/shared/utils/string';
@@ -53,6 +54,18 @@ function normalizeType(type: unknown): FavoriteImportKind | null {
         normalized === 'friend'
         ? normalized
         : null;
+}
+
+function normalizeFavoriteType(
+    type: unknown,
+    fallback: FavoriteImportKind
+): VrchatFavoriteType {
+    return type === 'avatar' ||
+        type === 'world' ||
+        type === 'vrcPlusWorld' ||
+        type === 'friend'
+        ? type
+        : fallback;
 }
 
 function getRuntimeAuth() {
@@ -304,11 +317,12 @@ export function openFavoriteImportDialog({
     if (!normalizedType) {
         throw new Error(`Unsupported favorite import type: ${type}`);
     }
+    const normalizedInput = normalizeString(input);
     useFavoriteImportStore.getState().openDialog({
         type: normalizedType,
-        input
+        input: normalizedInput
     });
-    if (normalizeString(input)) {
+    if (normalizedInput) {
         void processFavoriteImportList();
     }
 }
@@ -357,13 +371,13 @@ export async function importFavoriteImportRows(): Promise<void> {
         ? {
               location: 'remote',
               group: remoteGroup.name,
-              favoriteType: remoteGroup.type || type
+              favoriteType: normalizeFavoriteType(remoteGroup.type, type)
           }
         : state.localGroupName
           ? {
                 location: 'local',
                 group: state.localGroupName,
-                favoriteType: ''
+                favoriteType: null
             }
           : null;
     if (!target) {

@@ -7,6 +7,10 @@ use crate::http_api::{
     HttpApiRequestBody, HttpApiRequestInput, HttpApiUpload,
 };
 
+mod request;
+
+pub use request::RequestInviteRequest;
+
 pub fn notifications_v1_get_input(endpoint: String, n: i64, offset: i64) -> HttpApiRequestInput {
     get_input(
         endpoint,
@@ -255,7 +259,7 @@ pub fn invite_photo_input(
 pub fn request_invite_send_input(
     endpoint: String,
     receiver_user_id: String,
-    params: Value,
+    params: RequestInviteRequest,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let receiver_user_id = require_text(
         receiver_user_id,
@@ -267,7 +271,7 @@ pub fn request_invite_send_input(
             endpoint,
             "POST",
             format!("requestInvite/{}", encode_path_segment(&receiver_user_id)),
-            Some(params),
+            Some(json!(params)),
         ),
     ))
 }
@@ -275,7 +279,7 @@ pub fn request_invite_send_input(
 pub fn request_invite_photo_input(
     endpoint: String,
     receiver_user_id: String,
-    params: Value,
+    params: RequestInviteRequest,
     image_data: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let receiver_user_id = require_text(
@@ -286,11 +290,6 @@ pub fn request_invite_photo_input(
         image_data,
         "VrchatRequestInvitePhotoSend requires imageData.",
     )?;
-    let params = if params.is_object() {
-        params
-    } else {
-        json!({})
-    };
     Ok((
         receiver_user_id.clone(),
         HttpApiRequestInput {
@@ -301,7 +300,7 @@ pub fn request_invite_photo_input(
                 encode_path_segment(&receiver_user_id)
             )),
             body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
-                post_data: Some(params.to_string()),
+                post_data: Some(json!(params).to_string()),
                 image_data,
             }),
             ..Default::default()

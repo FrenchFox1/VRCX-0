@@ -1,5 +1,7 @@
 import { isRealInstance } from './instance';
 import {
+    locationSentinel,
+    normalizeLocationStatus,
     normalizeLocationValue,
     parseLocation,
     resolveFriendPresenceLocation
@@ -9,7 +11,7 @@ import { normalizeString } from './string';
 export type CurrentUserPresenceRecord = Record<string, unknown>;
 
 export interface CurrentUserPresenceGameState {
-    isGameRunning?: boolean;
+    isGameRunning?: boolean | null;
     currentLocation?: unknown;
     currentDestination?: unknown;
     currentWorldId?: unknown;
@@ -51,20 +53,6 @@ const CURRENT_USER_PRESENCE_FIELDS = [
     'statusDescription',
     'pendingOffline'
 ];
-
-function normalizeLocationStatus(value: unknown): string {
-    const normalized = normalizeString(value).toLowerCase();
-    if (normalized === 'offline:offline') {
-        return 'offline';
-    }
-    if (normalized === 'private:private') {
-        return 'private';
-    }
-    if (normalized === 'traveling:traveling') {
-        return 'traveling';
-    }
-    return normalized;
-}
 
 export function isVisibleCurrentUserLocation(value: unknown): boolean {
     const location = normalizeLocationStatus(value);
@@ -139,7 +127,7 @@ function buildPresencePatch({
     const normalizedLocation = normalizeLocationValue(location);
     const normalizedTraveling = normalizeLocationValue(travelingToLocation);
     const targetLocation =
-        normalizeLocationStatus(normalizedLocation) === 'traveling'
+        locationSentinel(normalizedLocation) === 'traveling'
             ? normalizedTraveling
             : normalizedLocation;
     if (!isVisibleCurrentUserLocation(targetLocation)) {
@@ -147,7 +135,7 @@ function buildPresencePatch({
     }
 
     const displayTraveling =
-        normalizeLocationStatus(normalizedLocation) === 'traveling'
+        locationSentinel(normalizedLocation) === 'traveling'
             ? normalizedTraveling
             : '';
     const parsedLocation = parseLocation(normalizedLocation);

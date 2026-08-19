@@ -1,14 +1,12 @@
 import type {
     FavoriteCachedGroup,
-    FavoriteDetailsById,
-    FavoriteEntityDetail,
     FavoriteGroup,
     FavoriteGroupMap,
     FavoriteLimits,
     FavoriteRecord,
     FavoriteStoreState,
     RemoteFavoriteCollections
-} from './favoriteStoreTypes';
+} from '@/domain/favorites/types';
 
 export const DEFAULT_FAVORITE_LIMITS = Object.freeze({
     maxFavoriteGroups: Object.freeze({
@@ -143,7 +141,7 @@ export function createLocalFavoriteGroupState(
     }
 
     return {
-        ...(source || {}),
+        ...source,
         [normalizedGroupName]: Array.isArray(source?.[normalizedGroupName])
             ? source[normalizedGroupName]
             : []
@@ -165,7 +163,7 @@ export function renameLocalFavoriteGroupState(
         return source || {};
     }
 
-    const next: FavoriteGroupMap = { ...(source || {}) };
+    const next: FavoriteGroupMap = { ...source };
     if (next[normalizedNewGroupName]) {
         return next;
     }
@@ -185,7 +183,7 @@ export function deleteLocalFavoriteGroupState(
         return source || {};
     }
 
-    const next: FavoriteGroupMap = { ...(source || {}) };
+    const next: FavoriteGroupMap = { ...source };
     delete next[normalizedGroupName];
     return next;
 }
@@ -250,18 +248,6 @@ const FAVORITE_GROUP_FIELDS = new Set([
     'tags',
     'type',
     'visibility'
-]);
-
-const FAVORITE_ENTITY_DETAIL_FIELDS = new Set([
-    'authorId',
-    'authorName',
-    'description',
-    'id',
-    'imageUrl',
-    'name',
-    'releaseStatus',
-    'tags',
-    'thumbnailImageUrl'
 ]);
 
 export function normalizeFavoriteGroupMap(source: unknown): FavoriteGroupMap {
@@ -403,56 +389,6 @@ export function normalizeFavoriteGroups(source: unknown): FavoriteGroup[] {
               return groupRecord;
           })
         : [];
-}
-
-export function normalizeFavoriteDetailsById(
-    source: unknown
-): FavoriteDetailsById {
-    if (!isObjectRecord(source)) {
-        return {};
-    }
-
-    const next: FavoriteDetailsById = {};
-    for (const [key, value] of Object.entries(source)) {
-        const normalizedKey = normalizeFavoriteStoreId(key);
-        if (!normalizedKey || !isObjectRecord(value)) {
-            continue;
-        }
-        const detail: FavoriteEntityDetail = copyUnknownFields(
-            value,
-            FAVORITE_ENTITY_DETAIL_FIELDS
-        );
-        if (typeof value.id === 'string') {
-            detail.id = value.id;
-        }
-        if (typeof value.name === 'string') {
-            detail.name = value.name;
-        }
-        if (typeof value.authorId === 'string') {
-            detail.authorId = value.authorId;
-        }
-        if (typeof value.authorName === 'string') {
-            detail.authorName = value.authorName;
-        }
-        if (typeof value.description === 'string') {
-            detail.description = value.description;
-        }
-        if (typeof value.imageUrl === 'string') {
-            detail.imageUrl = value.imageUrl;
-        }
-        if (typeof value.releaseStatus === 'string') {
-            detail.releaseStatus = value.releaseStatus;
-        }
-        if (typeof value.thumbnailImageUrl === 'string') {
-            detail.thumbnailImageUrl = value.thumbnailImageUrl;
-        }
-        const tags = normalizeStringArrayField(value.tags);
-        if (tags) {
-            detail.tags = tags;
-        }
-        next[normalizedKey] = detail;
-    }
-    return next;
 }
 
 export function recomputeGroupCounts(

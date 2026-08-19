@@ -47,11 +47,11 @@ describe('AvatarSearchProviderRepository', () => {
             (_key: string, fallback: ConfigFallback = '') =>
                 Promise.resolve(String(fallback ?? ''))
         );
-        vi.mocked(configRepository.setString).mockResolvedValue(undefined);
-        vi.mocked(configRepository.setBool).mockResolvedValue(undefined);
+        vi.mocked(configRepository.setString).mockResolvedValue(null);
+        vi.mocked(configRepository.setBool).mockResolvedValue(null);
         vi.mocked(configRepository.setMany).mockResolvedValue(undefined);
         vi.mocked(configRepository.has).mockResolvedValue(true);
-        vi.mocked(configRepository.remove).mockResolvedValue(undefined);
+        vi.mocked(configRepository.remove).mockResolvedValue(0);
         vi.mocked(externalApiRepository.searchAvatarProvider).mockResolvedValue(
             {
                 status: 200,

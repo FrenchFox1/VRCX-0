@@ -13,7 +13,7 @@
 <br>
 [![CI](https://img.shields.io/github/actions/workflow/status/Map1en/VRCX-0/ci.yml?branch=master&label=CI&style=flat&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/coverage.json&style=flat&color=brightgreen&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-GPL--3.0%20%2B%20MIT-4c566a?style=flat&labelColor=1f2328)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0-4c566a?style=flat&labelColor=1f2328)](LICENSE)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_shield)
 
 [![Download](https://img.shields.io/badge/Download%20VRCX--0-4340a2?style=for-the-badge)](https://github.com/Map1en/VRCX-0/releases/latest)
@@ -46,7 +46,8 @@ VRCX-0 是 VRCX 的完全重寫版本，由 VRCX 前任維護者之一開發，�
 ## 主要特點
 
 - **多年紀錄也不拖慢** — 在 VRCX 裡明顯變卡的資料量，放到 VRCX-0 依然流暢；老電腦、家用 NAS 也跑得動
-- **記憶體用量比 VRCX 低約 50%–70%** — **背景模式**開啟後可降至僅數十 MB，所有核心功能照常運作
+- **日常使用記憶體比 VRCX 低約 50%–70%**
+- **背景模式**下進一步降至僅數十 MB，所有核心功能照常運作
 - **比一個模型還小** — 安裝程式 10 多 MB，安裝後 30 多 MB，比 VRCX 小 10 倍以上
 - **遷移零負擔** — 自動匯入 VRCX 的資料庫與設定，原始資料不會被更動
 
@@ -58,23 +59,22 @@ VRCX-0 是 VRCX 的完全重寫版本，由 VRCX 前任維護者之一開發，�
 - **備份與還原** — 一鍵壓縮備份，支援定期自動備份和多版本保留，隨時還原
 - **分享世界收藏集** — 把收藏的世界做成可分享的頁面，對方可以瀏覽、開啟或匯入；也支援單獨分享世界和角色連結
 - **社交自動化** — 依時間、實例類型或在場人員自動切換狀態與簽名；自動接受邀請請求；規則失效後自動還原原有狀態
-- **輕量 VR 腕部 Overlay**，效能影響極低；同時支援 OpenVR（SteamVR）和 **OpenXR（Linux / WiVRn / Monado）**
+- **輕量 VR 腕部 Overlay** — 支援 OpenVR（SteamVR）和 **Linux OpenXR（WiVRn 實測通過）**
 - **社群主題** — 瀏覽並安裝主題商城中的主題，設定自訂背景圖片，還可疊加自己的 CSS
 - **通知系統** — 桌面通知、語音播報、VR 彈窗、Webhook 四個通道，按事件類型獨立設定；Webhook 支援 Discord 格式
 - 全介面支援完整鍵盤導航
+- 面向第三方應用的整合 API — 目前提供房間資料，後續逐步擴充
 - 無介面模式（Headless），適合進階用途 — 詳見 `crates/headless`
 
 ## 授權條款
 
-本儲存庫的初始提交對應分叉時的上游 VRCX 快照，依 MIT License 發布。
-
-fork 後新增、修改、重寫及新建的所有程式碼，均依 GNU General Public License v3.0（GPLv3）發布。
+VRCX-0 採用 GNU General Public License v3.0（GPLv3）授權。
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_large)
 
 ## 從原始碼建置
 
-僅在你想參與開發時才需要 — 詳見 [CONTRIBUTING.md](CONTRIBUTING.md)。
+以下步驟適用於參與開發，或在本機自行建置 VRCX-0。參與貢獻前，請先閱讀 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 依賴：Node.js ≥ 24.10、npm ≥ 11.5，以及透過 rustup 安裝的穩定版 Rust 工具鏈。
 Windows 使用者還需安裝 **Visual Studio Build Tools**，並勾選 **「使用 C++ 的桌面開發」** 工作負載。
@@ -84,5 +84,16 @@ git clone https://github.com/Map1en/VRCX-0
 cd VRCX-0
 
 npm install
+```
+
+啟動開發伺服器：
+
+```bash
 npm run tauri:dev
+```
+
+建置發佈版（略過簽署和安裝程式）：
+
+```bash
+npm run tauri:build -- --no-sign --no-bundle
 ```

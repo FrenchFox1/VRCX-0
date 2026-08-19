@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application::{
-    refresh_player_moderations, ModerationSyncDeps, ModerationSyncRefreshInput,
+    force_refresh_player_moderations, ModerationSyncDeps, ModerationSyncRefreshInput,
 };
 use vrcx_0_application_core::{BackendRuntime, RuntimeBackgroundJobs, WebClient};
 use vrcx_0_persistence::DatabaseService;
@@ -9,15 +9,15 @@ use vrcx_0_persistence::DatabaseService;
 use crate::RuntimeHostContext;
 
 use super::super::{
-    background_capability_session, emit_background_info, emit_background_warning,
-    gui_maintenance_runtime_mode, BackendRuntimeFrontendSessionSnapshot,
+    background_capability_session_identity, emit_background_info, emit_background_warning,
+    gui_maintenance_runtime_mode, AuthenticatedSessionProjection,
     BACKGROUND_MODERATION_CADENCE_SECONDS, BACKGROUND_MODERATION_REFRESH_JOB,
 };
 
 pub(in crate::state) async fn run_background_moderation_refresh(
     db: &Arc<DatabaseService>,
     web: &Arc<WebClient>,
-    session_slot: &Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
     runtime_context: &Arc<RuntimeHostContext>,
     backend_runtime: &BackendRuntime,
     background_jobs: &RuntimeBackgroundJobs,
@@ -26,7 +26,7 @@ pub(in crate::state) async fn run_background_moderation_refresh(
         BACKGROUND_MODERATION_REFRESH_JOB,
         "Refreshing background moderation facts.",
     );
-    let Some(session) = background_capability_session(session_slot) else {
+    let Some(session) = background_capability_session_identity(session_slot) else {
         background_jobs.mark_scheduled(
             BACKGROUND_MODERATION_REFRESH_JOB,
             "Background moderation refresh is waiting for an authenticated session.",
@@ -37,10 +37,11 @@ pub(in crate::state) async fn run_background_moderation_refresh(
     let deps = ModerationSyncDeps {
         db: db.as_ref(),
         web: web.as_ref(),
-        session: &runtime_context.session,
         auth_scope: &runtime_context.auth_scope,
+        remote_mutations: runtime_context.remote_mutations.as_ref(),
     };
-    match refresh_player_moderations(
+    match force_refresh_player_moderations(
+        &runtime_context.moderation_sync,
         deps,
         ModerationSyncRefreshInput {
             user_id: session.current_user_id,

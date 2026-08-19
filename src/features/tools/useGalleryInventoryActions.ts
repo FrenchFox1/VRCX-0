@@ -227,7 +227,8 @@ export function useGalleryInventoryActions({
             confirmText: t('prompt.redeem.redeem'),
             cancelText: t('prompt.redeem.cancel')
         });
-        if (!result.ok || !String(result.value || '').trim()) {
+        const code = result.value?.trim();
+        if (!result.ok || !code) {
             return;
         }
         if (!isRuntimeAuthTarget(authTarget)) {
@@ -235,7 +236,7 @@ export function useGalleryInventoryActions({
         }
         setMutatingKey('inventory:redeem');
         try {
-            await mediaRepository.redeemReward(result.value);
+            await mediaRepository.redeemReward(code);
             if (isRuntimeAuthTarget(authTarget)) {
                 toast.success(t('prompt.redeem.success'));
                 await refreshInventory();

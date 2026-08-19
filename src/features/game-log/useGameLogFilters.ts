@@ -9,7 +9,10 @@ import {
 
 import { useTodayDate } from '@/lib/useTodayDate';
 import configRepository from '@/repositories/configRepository';
-import { GAME_LOG_FILTER_TYPES } from '@/repositories/gameLogRepository';
+import {
+    GAME_LOG_FILTER_TYPES,
+    isGameLogFilterType
+} from '@/repositories/gameLogRepository';
 
 import {
     GAME_LOG_SESSION_FILTER_TYPES,
@@ -180,18 +183,18 @@ export function useGameLogFilters() {
     );
 
     const tableQueryFilterTypes = useMemo(
-        () =>
-            tableSelectedTypes.filter((type) =>
-                (GAME_LOG_FILTER_TYPES as readonly string[]).includes(type)
-            ),
+        () => tableSelectedTypes.filter(isGameLogFilterType),
         [tableSelectedTypes]
     );
     const sessionQueryFilterTypes = useMemo(
         () =>
-            sessionSelectedTypes.filter((type) =>
-                (GAME_LOG_SESSION_FILTER_TYPES as readonly string[]).includes(
+            sessionSelectedTypes.filter(
+                (
                     type
-                )
+                ): type is (typeof GAME_LOG_SESSION_FILTER_TYPES)[number] =>
+                    type === 'OnPlayerJoined' ||
+                    type === 'OnPlayerLeft' ||
+                    type === 'VideoPlay'
             ),
         [sessionSelectedTypes]
     );

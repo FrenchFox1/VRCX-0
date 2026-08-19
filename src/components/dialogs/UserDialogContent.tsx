@@ -91,7 +91,6 @@ export function UserDialogContent({
 
     const normalizedUserId = normalizeUserId(userId);
     const {
-        applyFriendPatch,
         confirm,
         currentEndpoint,
         currentUserId,
@@ -321,13 +320,10 @@ export function UserDialogContent({
         : '';
     const { memo, editMemo, memoDialog } = useUserDialogMemoState({
         activeUserTargetRef,
-        applyFriendPatch,
         currentEndpoint,
-        friendsById,
         normalizedUserId,
         profile,
-        setBaseProfile,
-        t
+        setBaseProfile
     });
 
     const {

@@ -7,6 +7,19 @@ use std::sync::{
 use std::time::{Duration, Instant};
 use vrcx_0_application_core::RuntimeOperationStatus;
 
+use crate::ancillary_snapshot::{ancillary_runtime_snapshot, AncillaryRuntimeSnapshot};
+use crate::app_launcher::start_app_launcher_snapshot_events;
+use crate::group_order::HostGroupOrderSource;
+use crate::integration_api::{
+    start_integration_api_input_task, DesktopIntegrationApiConfigStore,
+    DesktopIntegrationApiRuntime,
+};
+use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
+use crate::{
+    DesktopRuntimeServices, GameClientHostRuntime, GameLogEventSink, GameLogHostRuntime,
+    GameLogHostRuntimeDeps, HostFileAccess, HostGameLogEventFanout, HostGameProcessMonitorActions,
+    HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher,
+};
 use serde_json::json;
 use vrcx_0_application::{
     AppUpdateBuildInfo, AppUpdateRuntime, AppUpdateRuntimeDeps, BackgroundImageService,
@@ -14,14 +27,16 @@ use vrcx_0_application::{
 };
 use vrcx_0_application_activity::OverlayActivitySnapshot;
 use vrcx_0_application_core::{
-    BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeTelemetryKind, GameProcessEvent,
-    GameProcessEventSink, SessionHostRuntime, TaskStopToken,
+    BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeStatusPublisher,
+    BackendRuntimeTelemetryKind, GameProcessEvent, GameProcessEventSink, InstanceRosterObserver,
+    SessionHostRuntime, TaskStopToken,
 };
 use vrcx_0_application_game::{
-    GameLogLocalGameContextSource, ProcessMonitor, RegistryBackupMaintenanceMode,
-    RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
+    GameLogLocalGameContextSource, GameLogSideEffectObserver, GameLogSideEffectSink,
+    ProcessMonitor, RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult,
+    RegistryBackupSnapshot,
 };
-use vrcx_0_application_realtime::FavoriteBaselineSnapshot;
+use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, FriendProjectionObserver};
 use vrcx_0_host::app_paths::AppDataDirResolution;
 use vrcx_0_host_desktop::auto_launch::{
     deserialize_app_launcher_entries, normalize_app_launcher_entries, AppLauncherEntry,
@@ -32,6 +47,9 @@ use vrcx_0_host_desktop::discord_rpc::DiscordRpc;
 use vrcx_0_host_desktop::host_capabilities::{
     current_host_capabilities, is_host_capability_available, HostCapability,
 };
+use vrcx_0_integration_api::{
+    integration_api_publisher_channel, IntegrationApiConfigStore, IntegrationApiController,
+};
 use vrcx_0_persistence::legacy_migration::cleanup_legacy_updater_files;
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
 use vrcx_0_runtime_host::telemetry::{TelemetryRuntime, TelemetryRuntimeDeps};
@@ -39,16 +57,6 @@ use vrcx_0_runtime_host::{
     Result, RuntimeHostCallback, RuntimeHostComposition, RuntimeHostFavoritesCallback,
     RuntimeHostOptions, RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState,
     RuntimeHostStateBuilder,
-};
-
-use crate::ancillary_snapshot::{ancillary_runtime_snapshot, AncillaryRuntimeSnapshot};
-use crate::app_launcher::start_app_launcher_snapshot_events;
-use crate::group_order::HostGroupOrderSource;
-use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
-use crate::{
-    DesktopRuntimeServices, GameClientHostRuntime, GameLogEventSink, GameLogHostRuntime,
-    HostFileAccess, HostGameLogEventFanout, HostGameProcessMonitorActions,
-    HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher,
 };
 
 mod background_ticks;
@@ -62,6 +70,7 @@ use background_ticks::{
 const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";
 const REGISTRY_BACKUP_MAINTENANCE_JOB: &str = "registryBackupMaintenance";
 const REGISTRY_BACKUP_MAINTENANCE_CADENCE_SECONDS: u64 = 3 * 60 * 60;
+const REGISTRY_BACKUP_FOREGROUND_REUSE_WINDOW: Duration = Duration::from_secs(60);
 const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS: u64 = 5;
 const DESKTOP_MAINTENANCE_STOP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
@@ -95,6 +104,8 @@ pub struct DesktopRuntimeBundle {
     pub telemetry: TelemetryRuntime,
     pub background_image: BackgroundImageService,
     pub community_theme: CommunityThemeService,
+    pub integration_api: Arc<DesktopIntegrationApiRuntime>,
+    pub integration_api_observer: Arc<dyn InstanceRosterObserver>,
 }
 
 pub struct DesktopRuntimeHostState {
@@ -112,13 +123,23 @@ struct DesktopRuntimeProfileExtension {
     background_image_started: AtomicBool,
     app_launcher_events_started: AtomicBool,
     discord_reconcile_generation: Arc<AtomicU64>,
-    registry_backup_lock: Arc<Mutex<()>>,
+    registry_backup_state: Arc<Mutex<RegistryBackupMaintenanceState>>,
     presence_state_path: PathBuf,
+}
+
+#[derive(Default)]
+struct RegistryBackupMaintenanceState {
+    last_completed: Option<CompletedRegistryBackupMaintenance>,
+}
+
+struct CompletedRegistryBackupMaintenance {
+    completed_at: Instant,
+    mode: RegistryBackupMaintenanceMode,
+    result: RegistryBackupMaintenanceResult,
 }
 
 struct VrOverlayProcessSink {
     runtime: Arc<DesktopVrOverlayRuntime>,
-    log_watcher: LogWatcher,
 }
 
 impl GameProcessEventSink for VrOverlayProcessSink {
@@ -126,12 +147,7 @@ impl GameProcessEventSink for VrOverlayProcessSink {
         &self,
         event: GameProcessEvent,
     ) -> vrcx_0_application_core::Result<()> {
-        let current_vr_mode = if event.is_game_running {
-            self.log_watcher.current_vr_mode()
-        } else {
-            None
-        };
-        self.runtime.on_game_process_event(event, current_vr_mode)
+        self.runtime.on_game_process_event(event)
     }
 }
 
@@ -164,10 +180,36 @@ impl DesktopRuntimeHostState {
         let desktop_services = Arc::new(DesktopRuntimeServices::new(Arc::clone(
             &builder.runtime_context,
         )));
+        let backend_status = BackendRuntimeStatusPublisher::new(
+            builder.backend_runtime.clone(),
+            builder.runtime_context.event_bus.clone(),
+        );
+        let game_log_observer: Arc<dyn GameLogSideEffectObserver> = desktop_services.clone();
+        let game_log_side_effect_sink = GameLogSideEffectSink::new(
+            builder.runtime_context.event_bus.clone(),
+            Some(game_log_observer),
+        );
         let overlay_activity = desktop_services.overlay_activity();
         let game_log_snapshot = desktop_services.game_log_snapshot_handle();
         let discord_rpc = Arc::new(DiscordRpc::new());
         let process_monitor = ProcessMonitor::new();
+        let integration_api_config: Arc<dyn IntegrationApiConfigStore> = Arc::new(
+            DesktopIntegrationApiConfigStore::new(builder.runtime_context.config.clone()),
+        );
+        let integration_api_controller = Arc::new(
+            IntegrationApiController::new(integration_api_config, app_version.clone())
+                .map_err(|error| vrcx_0_runtime_host::Error::Custom(error.to_string()))?,
+        );
+        let (integration_api_runtime, integration_api_enrichment_receiver) =
+            DesktopIntegrationApiRuntime::new(
+                Arc::clone(&integration_api_controller),
+                builder.runtime_context.auth_scope.clone(),
+            );
+        let integration_api_runtime = Arc::new(integration_api_runtime);
+        let (integration_api_publisher, integration_api_receiver) =
+            integration_api_publisher_channel();
+        let instance_roster_observer: Arc<dyn InstanceRosterObserver> =
+            Arc::new(integration_api_publisher);
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             config: builder.runtime_context.config.clone(),
             tasks: builder.runtime_context.tasks.clone(),
@@ -198,13 +240,16 @@ impl DesktopRuntimeHostState {
             port: updater_port,
             tasks: builder.runtime_context.tasks.clone(),
         });
-        let game_log_runtime = Arc::new(GameLogHostRuntime::new(
-            Arc::clone(&builder.runtime_context),
-            host_file_access.clone(),
-            builder.paths.clone(),
-            Arc::clone(&game_log_snapshot),
-            overlay_activity.clone(),
-        ));
+        let game_log_runtime = Arc::new(GameLogHostRuntime::new(GameLogHostRuntimeDeps {
+            context: Arc::clone(&builder.runtime_context),
+            file_access: host_file_access.clone(),
+            app_paths: builder.paths.clone(),
+            snapshot: Arc::clone(&game_log_snapshot),
+            overlay_activity: overlay_activity.clone(),
+            instance_roster_observer: Some(Arc::clone(&instance_roster_observer)),
+            backend_status: backend_status.clone(),
+            side_effect_sink: game_log_side_effect_sink,
+        }));
         let vr_overlay_runtime =
             Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&desktop_services))?);
         let game_log_sink: Arc<dyn GameLogEventSink> = Arc::new(HostGameLogEventFanout::new(vec![
@@ -221,10 +266,12 @@ impl DesktopRuntimeHostState {
             host_file_access.clone(),
             builder.paths.clone(),
             desktop_services.host.clone(),
+            Some(Arc::clone(&instance_roster_observer)),
+            backend_status.clone(),
         ));
         let session_runtime = Arc::new(SessionHostRuntime::new(
             builder.runtime_context.session.clone(),
-            builder.runtime_context.event_bus.clone(),
+            backend_status,
         ));
         let screenshot_cache =
             MetadataCacheDb::new(&builder.paths.app_data.join("metadataCache.db"))?;
@@ -273,6 +320,8 @@ impl DesktopRuntimeHostState {
             telemetry,
             background_image,
             community_theme,
+            integration_api: Arc::clone(&integration_api_runtime),
+            integration_api_observer: Arc::clone(&instance_roster_observer),
         });
         let extension = Arc::new(DesktopRuntimeProfileExtension {
             game: Arc::clone(&game),
@@ -282,7 +331,7 @@ impl DesktopRuntimeHostState {
             background_image_started: AtomicBool::new(false),
             app_launcher_events_started: AtomicBool::new(false),
             discord_reconcile_generation: Arc::new(AtomicU64::new(0)),
-            registry_backup_lock: Arc::new(Mutex::new(())),
+            registry_backup_state: Arc::new(Mutex::new(RegistryBackupMaintenanceState::default())),
             presence_state_path: builder.paths.app_data.join("presenceAutomationState.json"),
         });
         let local_game_context = Arc::new(GameLogLocalGameContextSource::new(
@@ -301,14 +350,34 @@ impl DesktopRuntimeHostState {
                 vr_overlay_runtime.update_friends_panel_favorite_groups_from_baseline(snapshot);
             })
         };
+        let friend_projection_observer: Arc<dyn FriendProjectionObserver> =
+            desktop_services.clone();
         let runtime = builder.finish(RuntimeHostComposition {
             local_game_context,
             group_order_source: Arc::new(HostGroupOrderSource),
             friend_note_change_sink: Some(friend_note_change_sink),
             favorites_sink: Some(favorites_sink),
+            friend_projection_observer: Some(friend_projection_observer),
             profile_extension: Some(extension.clone()),
         })?;
         let realtime_runtime = Arc::downgrade(&runtime.realtime_runtime);
+        let hmd_membership_runtime = realtime_runtime.clone();
+        desktop
+            .vr_overlay_runtime
+            .set_hmd_friend_membership_provider(move |user_id| {
+                hmd_membership_runtime
+                    .upgrade()
+                    .is_some_and(|runtime| runtime.is_current_friend(user_id))
+            });
+        let hmd_context_runtime = realtime_runtime.clone();
+        desktop
+            .vr_overlay_runtime
+            .set_hmd_friend_context_provider(move |user_id| {
+                let snapshot = hmd_context_runtime
+                    .upgrade()?
+                    .current_friend_record(user_id)?;
+                Some((snapshot.record, snapshot.endpoint))
+            });
         desktop
             .vr_overlay_runtime
             .set_friends_panel_snapshot_provider(move || {
@@ -317,6 +386,13 @@ impl DesktopRuntimeHostState {
         desktop
             .services
             .set_realtime_user_image_resolver(&runtime.realtime_runtime);
+        start_integration_api_input_task(
+            Arc::clone(&runtime.runtime_context),
+            Arc::clone(&runtime.realtime_runtime),
+            integration_api_runtime,
+            integration_api_receiver,
+            integration_api_enrichment_receiver,
+        );
 
         Ok(Self {
             runtime,
@@ -336,6 +412,10 @@ impl DesktopRuntimeHostState {
 
     pub fn start_desktop_services(&self) {
         self.extension.start_desktop_services(&self.runtime);
+    }
+
+    pub fn integration_api(&self) -> &DesktopIntegrationApiRuntime {
+        &self.desktop.integration_api
     }
 
     pub fn request_discord_reconcile(&self) -> u64 {
@@ -464,14 +544,26 @@ impl DesktopRuntimeHostState {
         reason: &str,
         mode: RegistryBackupMaintenanceMode,
     ) -> Result<RegistryBackupMaintenanceResult> {
-        self.with_registry_backup_lock(|| {
-            vrcx_0_application_game::registry_backup_maintenance_run(
-                self.db.as_ref(),
-                &HostRegistryBackupActions,
-                mode,
-                reason,
-            )
-        })
+        let mut state = self.acquire_registry_backup_lock()?;
+        Ok(run_coordinated_registry_backup_maintenance(
+            &mut state,
+            Instant::now(),
+            mode,
+            || {
+                vrcx_0_application_game::registry_backup_maintenance_run(
+                    self.db.as_ref(),
+                    &HostRegistryBackupActions,
+                    mode,
+                    reason,
+                )
+            },
+            || {
+                vrcx_0_application_game::registry_backup_foreground_followup(
+                    self.db.as_ref(),
+                    &HostRegistryBackupActions,
+                )
+            },
+        )?)
     }
 
     fn with_registry_backup_lock<T>(
@@ -482,10 +574,17 @@ impl DesktopRuntimeHostState {
         Ok(operation()?)
     }
 
-    fn acquire_registry_backup_lock(&self) -> Result<MutexGuard<'_, ()>> {
-        self.extension.registry_backup_lock.lock().map_err(|error| {
-            vrcx_0_runtime_host::Error::Custom(format!("registry backup lock poisoned: {error}"))
-        })
+    fn acquire_registry_backup_lock(
+        &self,
+    ) -> Result<MutexGuard<'_, RegistryBackupMaintenanceState>> {
+        self.extension
+            .registry_backup_state
+            .lock()
+            .map_err(|error| {
+                vrcx_0_runtime_host::Error::Custom(format!(
+                    "registry backup lock poisoned: {error}"
+                ))
+            })
     }
 }
 
@@ -498,10 +597,6 @@ impl Deref for DesktopRuntimeHostState {
 }
 
 impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
-    fn observe_runtime_event(&self, payload: &dyn std::any::Any) {
-        self.desktop.services.observe_runtime_event(payload);
-    }
-
     fn start_profile_services(&self, state: &RuntimeHostState) {
         self.start_desktop_services(state);
         self.start_game_services(state);
@@ -516,6 +611,7 @@ impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
         self.game.log_watcher.stop();
         self.game.game_log_runtime.stop();
         self.game.game_client_runtime.stop();
+        self.desktop.integration_api_observer.on_game_running(false);
     }
 
     fn start_profile_maintenance(&self, state: &RuntimeHostState) {
@@ -587,7 +683,6 @@ impl DesktopRuntimeProfileExtension {
             let vr_overlay_process_sink: Arc<dyn GameProcessEventSink> =
                 Arc::new(VrOverlayProcessSink {
                     runtime: Arc::clone(&self.desktop.vr_overlay_runtime),
-                    log_watcher: self.game.log_watcher.clone(),
                 });
             let game_process_sinks: Vec<Arc<dyn GameProcessEventSink>> = vec![
                 self.game.session_runtime.clone(),
@@ -765,7 +860,7 @@ impl DesktopRuntimeProfileExtension {
         let runtime_context = Arc::clone(&state.runtime_context);
         let background_jobs = state.runtime_context.background_jobs.clone();
         let running = Arc::clone(&self.registry_backup_maintenance_running);
-        let registry_backup_lock = Arc::clone(&self.registry_backup_lock);
+        let registry_backup_state = Arc::clone(&self.registry_backup_state);
         state.runtime_context.tasks.spawn_cancellable_thread(
             "registry-backup-maintenance",
             move |stop_token| {
@@ -781,12 +876,25 @@ impl DesktopRuntimeProfileExtension {
                         REGISTRY_BACKUP_MAINTENANCE_JOB,
                         "Running background registry backup maintenance.",
                     );
-                    let result = match registry_backup_lock.lock() {
-                        Ok(_guard) => vrcx_0_application_game::registry_backup_maintenance_run(
-                            db.as_ref(),
-                            &HostRegistryBackupActions,
+                    let result = match registry_backup_state.lock() {
+                        Ok(mut state) => run_coordinated_registry_backup_maintenance(
+                            &mut state,
+                            Instant::now(),
                             RegistryBackupMaintenanceMode::Silent,
-                            "background-mode",
+                            || {
+                                vrcx_0_application_game::registry_backup_maintenance_run(
+                                    db.as_ref(),
+                                    &HostRegistryBackupActions,
+                                    RegistryBackupMaintenanceMode::Silent,
+                                    "background-mode",
+                                )
+                            },
+                            || {
+                                vrcx_0_application_game::registry_backup_foreground_followup(
+                                    db.as_ref(),
+                                    &HostRegistryBackupActions,
+                                )
+                            },
                         ),
                         Err(error) => Err(vrcx_0_application_core::Error::Custom(format!(
                             "registry backup lock poisoned: {error}"
@@ -855,10 +963,8 @@ impl DesktopRuntimeProfileExtension {
     }
 
     fn start_desktop_maintenance_loops(&self, state: &RuntimeHostState) {
-        let session_slot = state.backend_frontend_session_handle();
-        if !is_authenticated_maintenance_active(state, &session_slot)
-            || !desktop_session_scope_matches_auth(state, &session_slot)
-        {
+        let session_slot = state.authenticated_session_projection_handle();
+        if !is_authenticated_maintenance_active(state, &session_slot) {
             return;
         }
         if self
@@ -956,9 +1062,6 @@ impl DesktopRuntimeProfileExtension {
                                 BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS,
                             );
                     }
-                    let favorite_group_memberships = authenticated_runtime
-                        .favorite_group_memberships()
-                        .unwrap_or_default();
                     let tick_context = BackgroundTickContext {
                         db: &db,
                         web: &web,
@@ -969,32 +1072,42 @@ impl DesktopRuntimeProfileExtension {
                         backend_runtime: &backend_runtime,
                         background_jobs: &background_jobs,
                     };
-                    if now >= next_presence {
-                        run_background_presence_tick(
-                            &tick_context,
-                            &mut presence_state,
-                            &favorite_group_memberships.friend_groups_by_key,
-                            &favorite_group_memberships.world_groups_by_key,
-                        )
-                        .await;
-                        presence_state.persist_cached(
-                            &presence_state_path,
-                            &mut presence_state_serialized,
-                        );
-                        next_presence =
-                            now + Duration::from_secs(BACKGROUND_PRESENCE_CADENCE_SECONDS);
-                    }
-                    if now >= next_discord {
-                        run_background_discord_tick(
-                            &tick_context,
-                            &discord_rpc,
-                            &mut discord_state,
-                            &mut last_discord_output,
-                            &favorite_group_memberships.friend_groups_by_key,
-                        )
-                        .await;
-                        next_discord =
-                            now + Duration::from_secs(BACKGROUND_DISCORD_CADENCE_SECONDS);
+                    let run_presence = now >= next_presence;
+                    let run_discord = now >= next_discord;
+                    if run_presence || run_discord {
+                        let favorite_group_memberships = authenticated_runtime
+                            .favorite_group_memberships()
+                            .unwrap_or_default();
+                        let friend_user_ids = realtime_runtime.friend_user_ids();
+                        if run_presence {
+                            run_background_presence_tick(
+                                &tick_context,
+                                &mut presence_state,
+                                &friend_user_ids,
+                                &favorite_group_memberships.friend_groups_by_key,
+                                &favorite_group_memberships.world_groups_by_key,
+                            )
+                            .await;
+                            presence_state.persist_cached(
+                                &presence_state_path,
+                                &mut presence_state_serialized,
+                            );
+                            next_presence =
+                                now + Duration::from_secs(BACKGROUND_PRESENCE_CADENCE_SECONDS);
+                        }
+                        if run_discord {
+                            run_background_discord_tick(
+                                &tick_context,
+                                &discord_rpc,
+                                &mut discord_state,
+                                &mut last_discord_output,
+                                &friend_user_ids,
+                                &favorite_group_memberships.friend_groups_by_key,
+                            )
+                            .await;
+                            next_discord =
+                                now + Duration::from_secs(BACKGROUND_DISCORD_CADENCE_SECONDS);
+                        }
                     }
                     if wait_for_desktop_maintenance_tick(&stop_token).await {
                         break;
@@ -1048,14 +1161,15 @@ fn emit_game_log_watcher_status(
     status: vrcx_0_application_core::BackendRuntimeGameLogStatus,
 ) {
     let snapshot = state.backend_runtime.set_game_log_status(status);
-    state
-        .runtime_context
-        .event_bus
-        .emit(vrcx_0_application_core::BackendRuntimeTelemetry {
-            kind: BackendRuntimeTelemetryKind::GameLogWatcher,
-            detail: status.as_str().into(),
-            snapshot,
-        });
+    BackendRuntimeStatusPublisher::new(
+        state.backend_runtime.clone(),
+        state.runtime_context.event_bus.clone(),
+    )
+    .publish_telemetry(
+        BackendRuntimeTelemetryKind::GameLogWatcher,
+        status.as_str(),
+        snapshot,
+    );
 }
 
 fn register_desktop_file_access_grants(
@@ -1090,9 +1204,47 @@ fn is_background_registry_maintenance_active(
         && snapshot.phase == BackendRuntimePhase::Running
 }
 
+fn run_coordinated_registry_backup_maintenance(
+    state: &mut RegistryBackupMaintenanceState,
+    now: Instant,
+    mode: RegistryBackupMaintenanceMode,
+    run_full: impl FnOnce() -> vrcx_0_application_core::Result<RegistryBackupMaintenanceResult>,
+    run_foreground_followup: impl FnOnce() -> vrcx_0_application_core::Result<
+        RegistryBackupMaintenanceResult,
+    >,
+) -> vrcx_0_application_core::Result<RegistryBackupMaintenanceResult> {
+    if mode == RegistryBackupMaintenanceMode::Foreground {
+        if let Some(completed) = state.last_completed.as_ref().filter(|completed| {
+            completed.mode == RegistryBackupMaintenanceMode::Silent
+                && now
+                    .checked_duration_since(completed.completed_at)
+                    .is_some_and(|elapsed| elapsed <= REGISTRY_BACKUP_FOREGROUND_REUSE_WINDOW)
+        }) {
+            if !completed.result.restore_prompt_check_deferred {
+                return Ok(completed.result.clone());
+            }
+            let result = run_foreground_followup()?;
+            state.last_completed = Some(CompletedRegistryBackupMaintenance {
+                completed_at: now,
+                mode,
+                result: result.clone(),
+            });
+            return Ok(result);
+        }
+    }
+
+    let result = run_full()?;
+    state.last_completed = Some(CompletedRegistryBackupMaintenance {
+        completed_at: now,
+        mode,
+        result: result.clone(),
+    });
+    Ok(result)
+}
+
 fn is_authenticated_maintenance_active(
     state: &RuntimeHostState,
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
 ) -> bool {
     is_authenticated_maintenance_active_parts(
         &state.backend_runtime,
@@ -1101,24 +1253,14 @@ fn is_authenticated_maintenance_active(
     )
 }
 
-fn desktop_session_scope_matches_auth(
-    state: &RuntimeHostState,
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
-) -> bool {
-    let auth_scope = state.runtime_context.auth_scope.snapshot();
-    session_matches_auth_scope(
-        background_ticks::background_capability_session(session_slot).as_ref(),
-        &auth_scope,
-    )
-}
-
 fn session_matches_auth_scope(
-    session: Option<&vrcx_0_application_core::BackgroundCapabilitySession>,
+    session: Option<&vrcx_0_application_core::BackgroundCapabilitySessionIdentity>,
     auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
 ) -> bool {
     session
         .map(|session| {
             auth_scope.active
+                && session.auth_scope_generation == auth_scope.generation
                 && session.current_user_id == auth_scope.current_user_id
                 && vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(
                     &session.endpoint,
@@ -1130,34 +1272,28 @@ fn session_matches_auth_scope(
 fn is_authenticated_maintenance_active_parts(
     runtime: &vrcx_0_application_core::BackendRuntime,
     runtime_context: &Arc<vrcx_0_runtime_host::RuntimeHostContext>,
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
 ) -> bool {
     let snapshot = runtime.snapshot();
     let auth_scope = runtime_context.auth_scope.snapshot();
     if snapshot.phase != BackendRuntimePhase::Running
         || snapshot.auth_status != vrcx_0_application_core::BackendRuntimeAuthStatus::Authenticated
-        || snapshot.auth_user_id.trim().is_empty()
-        || !auth_scope.active
-        || auth_scope.current_user_id != snapshot.auth_user_id
     {
         return false;
     }
-    background_ticks::background_capability_session(session_slot)
-        .map(|session| {
-            session.current_user_id == auth_scope.current_user_id
-                && vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(
-                    &session.endpoint,
-                )) == auth_scope.endpoint
-        })
-        .unwrap_or(auth_scope.active)
+    session_matches_auth_scope(
+        background_ticks::background_capability_session_identity(session_slot).as_ref(),
+        &auth_scope,
+    )
 }
 
 fn background_capability_session_scope_key(
-    session_slot: &Arc<Mutex<Option<vrcx_0_runtime_host::BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
 ) -> Option<String> {
-    background_ticks::background_capability_session(session_slot).map(|session| {
+    background_ticks::background_capability_session_identity(session_slot).map(|session| {
         format!(
-            "{}:{}",
+            "{}:{}:{}",
+            session.auth_scope_generation,
             session.current_user_id,
             vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(&session.endpoint))
         )
@@ -1206,22 +1342,115 @@ fn emit_profile_background_output(
     detail: impl Into<String>,
 ) {
     let snapshot = backend_runtime.snapshot();
-    if snapshot.mode == BackendRuntimeMode::Headless
-        || snapshot.phase != BackendRuntimePhase::Running
-    {
+    if snapshot.phase != BackendRuntimePhase::Running {
         return;
     }
-    runtime_context
-        .event_bus
-        .emit(vrcx_0_application_core::BackendRuntimeTelemetry {
-            kind,
-            detail: detail.into(),
-            snapshot,
-        });
+    BackendRuntimeStatusPublisher::new(backend_runtime.clone(), runtime_context.event_bus.clone())
+        .publish_telemetry(kind, detail, snapshot);
 }
 
 #[cfg(test)]
 mod background {
+    mod registry_backup_maintenance_tests {
+        use super::super::*;
+        use std::cell::Cell;
+
+        fn result(
+            restore_prompt_check_deferred: bool,
+            detail: &str,
+        ) -> RegistryBackupMaintenanceResult {
+            RegistryBackupMaintenanceResult {
+                auto_backup_created: false,
+                restore_prompt_needed: false,
+                restore_prompt_backup_date: None,
+                restore_prompt_check_deferred,
+                detail: detail.into(),
+            }
+        }
+
+        #[test]
+        fn foreground_reuses_a_just_completed_background_maintenance_result() {
+            let started_at = Instant::now();
+            let mut state = RegistryBackupMaintenanceState::default();
+            let full_runs = Cell::new(0);
+            let followup_runs = Cell::new(0);
+
+            run_coordinated_registry_backup_maintenance(
+                &mut state,
+                started_at,
+                RegistryBackupMaintenanceMode::Silent,
+                || {
+                    full_runs.set(full_runs.get() + 1);
+                    Ok(result(false, "background"))
+                },
+                || {
+                    followup_runs.set(followup_runs.get() + 1);
+                    Ok(result(false, "followup"))
+                },
+            )
+            .unwrap();
+            let foreground = run_coordinated_registry_backup_maintenance(
+                &mut state,
+                started_at + Duration::from_secs(1),
+                RegistryBackupMaintenanceMode::Foreground,
+                || {
+                    full_runs.set(full_runs.get() + 1);
+                    Ok(result(false, "foreground"))
+                },
+                || {
+                    followup_runs.set(followup_runs.get() + 1);
+                    Ok(result(false, "followup"))
+                },
+            )
+            .unwrap();
+
+            assert_eq!(full_runs.get(), 1);
+            assert_eq!(followup_runs.get(), 0);
+            assert_eq!(foreground.detail, "background");
+        }
+
+        #[test]
+        fn foreground_runs_only_the_deferred_restore_prompt_check() {
+            let started_at = Instant::now();
+            let mut state = RegistryBackupMaintenanceState::default();
+            let full_runs = Cell::new(0);
+            let followup_runs = Cell::new(0);
+
+            run_coordinated_registry_backup_maintenance(
+                &mut state,
+                started_at,
+                RegistryBackupMaintenanceMode::Silent,
+                || {
+                    full_runs.set(full_runs.get() + 1);
+                    Ok(result(true, "background-deferred"))
+                },
+                || {
+                    followup_runs.set(followup_runs.get() + 1);
+                    Ok(result(false, "unexpected"))
+                },
+            )
+            .unwrap();
+            let foreground = run_coordinated_registry_backup_maintenance(
+                &mut state,
+                started_at + Duration::from_secs(1),
+                RegistryBackupMaintenanceMode::Foreground,
+                || {
+                    full_runs.set(full_runs.get() + 1);
+                    Ok(result(false, "foreground-full"))
+                },
+                || {
+                    followup_runs.set(followup_runs.get() + 1);
+                    Ok(result(false, "foreground-followup"))
+                },
+            )
+            .unwrap();
+
+            assert_eq!(full_runs.get(), 1);
+            assert_eq!(followup_runs.get(), 1);
+            assert_eq!(foreground.detail, "foreground-followup");
+        }
+    }
+
     mod discord_reconcile_tests {
         use super::super::*;
 

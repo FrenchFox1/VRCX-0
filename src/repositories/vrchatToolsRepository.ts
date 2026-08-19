@@ -4,10 +4,15 @@ import {
     invalidateEntityQueries,
     queryKeys
 } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type CalendarListParams,
+    type HttpApiExecuteResponse,
+    type InviteMessageType
+} from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
-import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
+import { unwrapVrchatResponse } from './vrchatRequest';
 
 type PageResponse<TRow = unknown> = {
     results?: TRow[];
@@ -15,9 +20,6 @@ type PageResponse<TRow = unknown> = {
     hasNext?: boolean;
     nextCursor?: string;
     totalCount?: number;
-};
-type CalendarListParams = QueryParams & {
-    n?: number;
 };
 type RepositoryOptions = {
     force?: boolean;
@@ -76,10 +78,7 @@ export type InviteMessageRecord = Record<string, unknown> & {
     updatedAt?: string;
 };
 type InviteMessagesRecord = InviteMessageRecord[];
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 function unwrapVrchatToolsResponse<TJson = Record<string, unknown>>(
     response: VrchatApiResult,
@@ -195,7 +194,6 @@ async function saveUserNote({
         targetUserId,
         note
     });
-    void invalidateEntityQueries(['quickSearch']);
     return unwrapVrchatToolsResponse(response, 'userNotes').json;
 }
 
@@ -227,7 +225,7 @@ async function getInviteMessages({
     messageType
 }: {
     currentUserId: string;
-    messageType: string;
+    messageType: InviteMessageType;
 }) {
     const response = await commands.appVrchatToolsInviteMessagesGet({
         currentUserId,
@@ -246,7 +244,7 @@ async function editInviteMessage({
     message
 }: {
     currentUserId: string;
-    messageType: string;
+    messageType: InviteMessageType;
     slot: number | string;
     message: string;
 }) {

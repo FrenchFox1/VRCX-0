@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { isOnlineFriend } from './friends-locations-rows/presence';
 import * as friendsLocationsRows from './friendsLocationsRows';
 import {
     buildFavoriteGroupLabelsByFriendId,
     buildSameInstanceGroups,
     compareFavoriteGroups,
     isFriendInPrivateLocation,
-    isOnlineFriend,
     normalizeDisplayText,
     normalizeFriendsLocationId,
     partitionFriendsByPrivateLocation,
@@ -32,7 +32,6 @@ describe('friends locations row helpers', () => {
             'buildSameInstanceSections',
             'compareFavoriteGroups',
             'isFriendInPrivateLocation',
-            'isOnlineFriend',
             'isRawWorldReference',
             'isSentinelLocationValue',
             'isShareableInstanceLocation',
@@ -113,11 +112,11 @@ describe('friends locations row helpers', () => {
                 { $locationTag: 'wrld_profile:456' }
             )
         ).toBe('wrld_profile:456');
-        expect(isOnlineFriend({ stateBucket: 'online' })).toBe(true);
-        expect(isOnlineFriend({ stateBucket: 'active' })).toBe(false);
+        expect(isOnlineFriend({ state: 'online' })).toBe(true);
+        expect(isOnlineFriend({ state: 'active' })).toBe(false);
         expect(
             isOnlineFriend({
-                stateBucket: 'offline',
+                state: 'offline',
                 status: 'active',
                 location: 'wrld_stale:123'
             })
@@ -258,9 +257,7 @@ describe('friends locations row helpers', () => {
 
     it('separates private locations from visible or unknown locations', () => {
         expect(isFriendInPrivateLocation({ location: 'private' })).toBe(true);
-        expect(isFriendInPrivateLocation({ stateBucket: 'online' })).toBe(
-            false
-        );
+        expect(isFriendInPrivateLocation({ state: 'online' })).toBe(false);
         expect(isFriendInPrivateLocation({ location: 'wrld_123:456' })).toBe(
             false
         );

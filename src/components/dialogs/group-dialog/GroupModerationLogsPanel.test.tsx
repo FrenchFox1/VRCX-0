@@ -147,7 +147,7 @@ import {
     createGroupAuditLogColumns,
     filterGroupAuditLogs,
     formatGroupAuditLogTypeName,
-    type GroupAuditLogRow,
+    type GroupModerationLogRow,
     groupAuditLogActorDialogArgs,
     openGroupAuditLogActor,
     toggleGroupAuditLogType
@@ -228,7 +228,7 @@ describe('GroupModerationLogsPanel', () => {
                         null,
                         cell({
                             row: { original: row }
-                        } as unknown as AppCellContext<GroupAuditLogRow>)
+                        } as unknown as AppCellContext<GroupModerationLogRow>)
                     )
                 );
             })

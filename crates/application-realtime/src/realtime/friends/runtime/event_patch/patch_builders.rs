@@ -1,9 +1,10 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::compute_trust_level;
 
 use super::super::persistence::add_location_metadata;
-use super::super::utils::{first_owned, first_string, parse_location, EventTime};
+use super::super::utils::{first_string, parse_location, EventTime};
 use vrcx_0_core::json::{text_of, JsonExt};
 
 pub(super) fn resolve_state_bucket(
@@ -31,10 +32,7 @@ pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&FriendR
     let Some(object) = patch.as_object_mut() else {
         return;
     };
-    let explicit_trust_level = first_owned([
-        object.text_field("$trustLevel"),
-        object.text_field("trustLevel"),
-    ]);
+    let explicit_trust_level = object.text_field(derived_keys::TRUST_LEVEL);
     let has_trust_metadata = object.contains_key("tags") || object.contains_key("developerType");
     if explicit_trust_level.is_empty() && !has_trust_metadata {
         return;
@@ -62,15 +60,23 @@ pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&FriendR
     } else {
         explicit_trust_level
     };
-    object.insert("trustLevel".into(), Value::String(trust_level.clone()));
-    object.insert("$trustLevel".into(), Value::String(trust_level));
+    object.insert(derived_keys::TRUST_LEVEL.into(), Value::String(trust_level));
     if has_trust_metadata {
-        object.insert("$trustClass".into(), Value::String(trust.trust_class));
-        object.insert("$trustSortNum".into(), json!(trust.trust_sort_num));
-        object.insert("$isModerator".into(), Value::Bool(trust.is_moderator));
-        object.insert("$isTroll".into(), Value::Bool(trust.is_troll));
         object.insert(
-            "$isProbableTroll".into(),
+            derived_keys::TRUST_CLASS.into(),
+            Value::String(trust.trust_class),
+        );
+        object.insert(
+            derived_keys::TRUST_SORT_NUM.into(),
+            json!(trust.trust_sort_num),
+        );
+        object.insert(
+            derived_keys::IS_MODERATOR.into(),
+            Value::Bool(trust.is_moderator),
+        );
+        object.insert(derived_keys::IS_TROLL.into(), Value::Bool(trust.is_troll));
+        object.insert(
+            derived_keys::IS_PROBABLE_TROLL.into(),
             Value::Bool(trust.is_probable_troll),
         );
     }
@@ -136,18 +142,27 @@ pub(super) fn online_patch(
     patch.insert("state".into(), Value::String(state_bucket.to_string()));
     patch.insert("pendingOffline".into(), Value::Bool(false));
 
-    let event_location = first_string([
-        patch.get("location").and_then(Value::as_str),
-        content.get("location").and_then(Value::as_str),
-    ]);
-    let event_traveling = first_string([
-        patch.get("travelingToLocation").and_then(Value::as_str),
-        content.get("travelingToLocation").and_then(Value::as_str),
-    ]);
-    let event_world = first_string([
-        patch.get("worldId").and_then(Value::as_str),
-        content.get("worldId").and_then(Value::as_str),
-    ]);
+    let content_location = content.get("location").and_then(Value::as_str);
+    let content_traveling = content.get("travelingToLocation").and_then(Value::as_str);
+    let has_content_presence = [content_location, content_traveling]
+        .iter()
+        .flatten()
+        .any(|value| !value.trim().is_empty());
+    let event_location = if has_content_presence {
+        content_location.unwrap_or("").trim().to_string()
+    } else {
+        first_string([patch.get("location").and_then(Value::as_str), None])
+    };
+    let event_world = if has_content_presence {
+        content
+            .get("worldId")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim()
+            .to_string()
+    } else {
+        first_string([patch.get("worldId").and_then(Value::as_str), None])
+    };
     let fallback = previous.filter(|previous| {
         let location = previous.location.to_ascii_lowercase();
         !location.is_empty() && location != "offline" && location != "offline:offline"
@@ -156,12 +171,22 @@ pub(super) fn online_patch(
         Some(event_location.as_str()),
         fallback.map(|record| record.location.as_str()),
     ]);
-    let traveling = first_string([
-        Some(event_traveling.as_str()),
-        fallback.map(|record| record.traveling_to_location.as_str()),
-    ]);
+    let traveling = if has_content_presence {
+        content_traveling.unwrap_or("").trim().to_string()
+    } else {
+        first_string([
+            patch.get("travelingToLocation").and_then(Value::as_str),
+            fallback.map(|record| record.traveling_to_location.as_str()),
+        ])
+    };
     patch.insert("location".into(), Value::String(location.clone()));
-    insert_location_projection(&mut patch, &location, "worldId", "instanceId", "$location");
+    insert_location_projection(
+        &mut patch,
+        &location,
+        "worldId",
+        "instanceId",
+        derived_keys::LOCATION_PROJECTION,
+    );
     if !event_world.is_empty() {
         patch.insert("worldId".into(), Value::String(event_world));
     }
@@ -174,7 +199,7 @@ pub(super) fn online_patch(
         &traveling,
         "travelingToWorld",
         "travelingToInstance",
-        "$travelingToLocation",
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
     );
     add_location_metadata(&mut patch, previous, now.timestamp_ms);
     Value::Object(patch)
@@ -211,7 +236,13 @@ pub(super) fn normalize_friend_update_location_patch(
     else {
         return;
     };
-    insert_location_projection(patch, &location, "worldId", "instanceId", "$location");
+    insert_location_projection(
+        patch,
+        &location,
+        "worldId",
+        "instanceId",
+        derived_keys::LOCATION_PROJECTION,
+    );
     if let Some(traveling_to_location) = patch
         .get("travelingToLocation")
         .and_then(Value::as_str)
@@ -222,7 +253,7 @@ pub(super) fn normalize_friend_update_location_patch(
             &traveling_to_location,
             "travelingToWorld",
             "travelingToInstance",
-            "$travelingToLocation",
+            derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
         );
     }
     add_location_metadata(patch, previous, now.timestamp_ms);
@@ -252,11 +283,11 @@ pub(super) fn offline_like_patch(content: &Value, user_id: &str, state_bucket: &
     patch.insert("travelingToInstance".into(), Value::String("".into()));
     let parsed_offline = parse_location("offline");
     patch.insert(
-        "$location".into(),
+        derived_keys::LOCATION_PROJECTION.into(),
         parsed_offline.to_frontend_value("offline"),
     );
     patch.insert(
-        "$travelingToLocation".into(),
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION.into(),
         parsed_offline.to_frontend_value("offline"),
     );
     Value::Object(patch)

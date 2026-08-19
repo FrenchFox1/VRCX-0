@@ -42,7 +42,7 @@ function normalizePresenceText(value: unknown) {
     return normalized;
 }
 
-function normalizeUserStatus(value: unknown) {
+function resolveUserPresenceStatus(value: unknown) {
     if (typeof value === 'string') {
         return normalizePresenceText(value);
     }
@@ -64,12 +64,7 @@ function normalizeUserStatus(value: unknown) {
     const sourceLocation = asUserStatusSource(source.$location);
     const lastLocationRecord = asUserStatusSource(lastLocation);
     const status = normalizePresenceText(record.status || source?.status);
-    const state = normalizePresenceText(
-        record.stateBucket ||
-            record.state ||
-            source?.stateBucket ||
-            source?.state
-    );
+    const state = normalizePresenceText(record.state || source?.state);
     const location = normalizePresenceText(
         record.location ||
             recordLocation.tag ||
@@ -117,34 +112,11 @@ function normalizeUserStatus(value: unknown) {
     return status || state;
 }
 
-function userStatusDotClassName(value: unknown) {
-    const status = normalizeUserStatus(value);
-    if (status === 'state-active') {
-        return 'bg-[var(--status-active)]';
-    }
-    if (status === 'active') {
-        return 'bg-[var(--status-online)]';
-    }
-    if (status === 'join me') {
-        return 'bg-[var(--status-joinme)]';
-    }
-    if (status === 'ask me') {
-        return 'bg-[var(--status-askme)]';
-    }
-    if (status === 'busy') {
-        return 'bg-[var(--status-busy)]';
-    }
-    if (status === 'offline') {
-        return 'bg-[var(--status-offline)]';
-    }
-    return '';
-}
-
 function userStatusIndicatorClassName(
     value: unknown,
     { showOffline = false, className = '' }: UserStatusIndicatorOptions = {}
 ) {
-    const status = normalizeUserStatus(value);
+    const status = resolveUserPresenceStatus(value);
     const classes = ['x-user-status'];
 
     if (status === 'state-active') {
@@ -171,7 +143,7 @@ function userStatusIndicatorClassName(
 }
 
 function userStatusSortRank(value: unknown) {
-    const status = normalizeUserStatus(value);
+    const status = resolveUserPresenceStatus(value);
     if (status === 'join me') {
         return 0;
     }
@@ -219,7 +191,7 @@ const statusLabelFallbacks: Readonly<Record<string, string>> = Object.freeze({
 });
 
 function userStatusLabel(value: unknown, t?: TranslateFn) {
-    const status = normalizeUserStatus(value);
+    const status = resolveUserPresenceStatus(value);
     if (!status) {
         return '';
     }
@@ -232,8 +204,7 @@ function userStatusLabel(value: unknown, t?: TranslateFn) {
 }
 
 export {
-    normalizeUserStatus,
-    userStatusDotClassName,
+    resolveUserPresenceStatus,
     userStatusIndicatorClassName,
     userStatusLabel,
     userStatusSortRank

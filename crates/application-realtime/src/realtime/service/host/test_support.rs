@@ -370,14 +370,23 @@ fn runtime_with_active_session_game_context(
     let activity_sink = Arc::new(TestActivitySink::default());
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
+    let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
         db,
         web,
-        event_bus: RuntimeEventBus::new(),
+        event_bus: event_bus.clone(),
+        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
+            vrcx_0_application_core::BackendRuntime::new(
+                vrcx_0_application_core::RuntimeHostProfile::Desktop,
+            ),
+            event_bus.clone(),
+        ),
+        friend_projection_sink: crate::FriendProjectionSink::new(event_bus.clone(), None),
         sync: RuntimeSyncEngine::new(),
         tasks: TaskSupervisor::new(),
         session: session.clone(),
         auth_scope,
+        remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
         local_game_context,
         #[cfg(test)]
         activity_sink: Some(activity_sink.clone()),
@@ -386,6 +395,7 @@ fn runtime_with_active_session_game_context(
         world_cache,
         print_cleanup: Arc::new(NoopPrintCleanupInputSink),
         friend_note_change_sink: None,
+        current_user_snapshot_sink: None,
     }));
     let active_session = RealtimeSessionContext::new(
         "usr_self".into(),
@@ -398,6 +408,7 @@ fn runtime_with_active_session_game_context(
         state.connection.generation = 7;
         state.connection.active_context = Some(ActiveRealtimeContext {
             session: active_session.clone(),
+            auth_scope_generation: 1,
             generation: 7,
             client_run_id: 1,
             session_generation: host_session_generation,

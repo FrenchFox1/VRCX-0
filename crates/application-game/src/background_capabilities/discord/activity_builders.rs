@@ -1,5 +1,6 @@
 use serde_json::{json, Map, Value};
-use vrcx_0_core::location::{launch_url, ParsedLocation};
+use vrcx_0_core::friends::UserStatus;
+use vrcx_0_core::location::{launch_url, GroupAccessType, ParsedLocation};
 
 use super::super::presence_facts::BackgroundPresenceFacts;
 use super::super::shared::{non_empty, string_field};
@@ -89,7 +90,10 @@ pub(super) fn build_discord_activity(
     let mut hide_private = config.discord_hide_invite
         && (parsed.access_type == "invite"
             || parsed.access_type == "invite+"
-            || parsed.group_access_type.as_deref() == Some("members"));
+            || matches!(
+                parsed.group_access_type.as_ref(),
+                Some(GroupAccessType::Members)
+            ));
     if status_info.hide_private {
         hide_private = true;
     }
@@ -259,28 +263,28 @@ fn status_info<'a>(
     hide_invite: bool,
     labels: &'a DiscordPresenceLabels,
 ) -> StatusInfo<'a> {
-    match status.unwrap_or_default() {
-        "active" => StatusInfo {
+    match UserStatus::normalize(status.unwrap_or_default()) {
+        Some(UserStatus::Active) => StatusInfo {
             status_name: &labels.status_active,
             status_image: "active",
             hide_private: false,
         },
-        "join me" => StatusInfo {
+        Some(UserStatus::JoinMe) => StatusInfo {
             status_name: &labels.status_join_me,
             status_image: "joinme",
             hide_private: false,
         },
-        "ask me" => StatusInfo {
+        Some(UserStatus::AskMe) => StatusInfo {
             status_name: &labels.status_ask_me,
             status_image: "askme",
             hide_private: hide_invite,
         },
-        "busy" => StatusInfo {
+        Some(UserStatus::Busy) => StatusInfo {
             status_name: &labels.status_busy,
             status_image: "busy",
             hide_private: true,
         },
-        _ => StatusInfo {
+        Some(UserStatus::Offline) | None => StatusInfo {
             status_name: &labels.status_offline,
             status_image: "offline",
             hide_private: true,
@@ -302,10 +306,10 @@ pub(super) fn build_access_name(
         "friends" => format!("{} {suffix}", labels.access_friends),
         "friends+" => format!("{} {suffix}", labels.access_friends_plus),
         "group" => {
-            let group_access = match parsed.group_access_type.as_deref() {
-                Some("public") => labels.group_access_public.as_str(),
-                Some("plus") => labels.group_access_plus.as_str(),
-                Some("members") => labels.group_access_members.as_str(),
+            let group_access = match parsed.group_access_type.as_ref() {
+                Some(GroupAccessType::Public) => labels.group_access_public.as_str(),
+                Some(GroupAccessType::Plus) => labels.group_access_plus.as_str(),
+                Some(GroupAccessType::Members) => labels.group_access_members.as_str(),
                 _ => "",
             };
             let group_suffix = if !group_name.is_empty() && !group_access.is_empty() {

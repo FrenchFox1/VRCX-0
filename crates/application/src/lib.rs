@@ -6,13 +6,13 @@ mod collections;
 mod event_payloads;
 mod favorites;
 mod media;
-mod remote_mutation_gate;
 mod scope_gate;
 mod social;
 mod system;
 
 pub use vrcx_0_application_core::{ports, vrchat_api};
 
+pub use auth::run_authenticated_session_maintenance;
 pub use auth::{
     auth_response_error_message, current_user_from_cookie, parse_current_user_response,
     probe_current_user_from_cookie, probe_saved_current_user_from_cookie,
@@ -25,7 +25,6 @@ pub use auth::{
     SavedCredentialLoginStartInput, SavedCredentialSessionData, SavedCredentialSnapshot,
     SavedCredentialUser, SavedLoginParamsSnapshot,
 };
-pub use auth::{run_authenticated_session_maintenance, AuthenticatedSessionMaintenanceOutcome};
 pub use auth::{
     AutoLoginOutcome, AutoLoginStartInput, AutoLoginTerminalOutcome, LoginFailureKind,
     LoginRuntimeTransition, LoginSessionCancelInput, LoginSessionEnd, LoginSessionEndRequest,
@@ -35,6 +34,11 @@ pub use auth::{
 pub use authenticated_runtime::{
     AuthenticatedRuntimePhase, AuthenticatedRuntimePhaseSnapshot, AuthenticatedRuntimeStepSnapshot,
     AuthenticatedRuntimeStepStatus,
+};
+pub use avatars::{
+    delete_avatar, execute_avatar_moderation_mutation, execute_avatar_remote_mutation,
+    get_avatar_moderations, save_avatar, select_avatar, AvatarModerationDeps,
+    AvatarModerationRuntime, AvatarRemoteMutationDeps, AvatarSelectionMutationOutcome,
 };
 pub use avatars::{
     get_my_avatar_by_id, get_my_avatars, MyAvatarByIdInput, MyAvatarsDeps, MyAvatarsInput,
@@ -57,29 +61,22 @@ pub use collections::{
     VrchatSharedCollectionImportActions, SHARED_COLLECTION_IMPORT_MAX_WORLDS,
 };
 pub use collections::{preview_shared_collection, ImportPreview};
+pub(crate) use favorites::create_local_favorite_group;
 pub use favorites::{
-    add_local_favorite, create_local_favorite_group, delete_local_favorite_entries,
-    delete_local_favorite_group, get_local_favorite_snapshot, list_local_favorites,
-    remove_local_favorite, rename_local_favorite_entries, rename_local_favorite_group, FavoriteRow,
-    LocalFavoriteGroupWrite, LocalFavoriteSnapshot,
+    favorite_transfer_plan_for_item, FavoriteTransferInput, FavoriteTransferItem,
+    FavoriteTransferItemResult, FavoriteTransferItemStatus, FavoriteTransferLocation,
+    FavoriteTransferMode, FavoriteTransferResult, FavoriteTransferSelectionInput,
+    FavoriteTransferSelectionResult, FavoriteTransferSource, FavoriteTransferStage,
+    FavoriteTransferTarget,
 };
 pub use favorites::{
-    add_remote_favorite, clear_remote_favorite_group, delete_remote_favorite,
-    save_remote_favorite_group, FavoriteRemoteAddInput, FavoriteRemoteDeleteInput,
-    FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput, FavoriteRemoteMutationDeps,
-};
-pub use favorites::{
-    favorite_transfer_plan_for_item, transfer_favorite_selection, transfer_favorites,
-    FavoriteTransferDeps, FavoriteTransferInput, FavoriteTransferItem, FavoriteTransferItemResult,
-    FavoriteTransferItemStatus, FavoriteTransferLocation, FavoriteTransferMode,
-    FavoriteTransferResult, FavoriteTransferSelectionInput, FavoriteTransferSelectionResult,
-    FavoriteTransferSource, FavoriteTransferStage, FavoriteTransferTarget,
+    get_local_favorite_snapshot, list_local_favorites, FavoriteRow, LocalFavoriteGroupWrite,
+    LocalFavoriteSnapshot,
 };
 pub use favorites::{
     persist_favorite_cache_snapshot, FavoriteCacheKind, FavoriteCacheSnapshotInput,
 };
 pub use favorites::{
-    remove_favorites_bulk, remove_favorites_selection, FavoriteBulkRemoveDeps,
     FavoriteBulkRemoveInput, FavoriteBulkRemoveItem, FavoriteBulkRemoveItemResult,
     FavoriteBulkRemoveItemState, FavoriteBulkRemoveResult, FavoriteBulkRemoveSource,
     FAVORITE_BULK_REMOVE_MAX_ITEMS,
@@ -90,8 +87,14 @@ pub use favorites::{
 };
 pub use favorites::{
     FavoriteImportItemResult, FavoriteImportItemState, FavoriteImportKind, FavoriteImportLocation,
-    FavoriteImportOperation, FavoriteImportRuntime, FavoriteImportStartInput, FavoriteImportState,
-    FavoriteImportStatus, FavoriteImportTarget, FAVORITE_IMPORT_MAX_ITEMS,
+    FavoriteImportOperation, FavoriteImportRuntime, FavoriteImportRuntimeDeps,
+    FavoriteImportStartInput, FavoriteImportState, FavoriteImportStatus, FavoriteImportTarget,
+    FAVORITE_IMPORT_MAX_ITEMS,
+};
+pub use favorites::{FavoriteLocalMutationError, FavoriteMutationCoordinator};
+pub use favorites::{
+    FavoriteRemoteAddInput, FavoriteRemoteDeleteInput, FavoriteRemoteGroupClearInput,
+    FavoriteRemoteGroupSaveInput,
 };
 pub use media::{
     collect_inventory_items, prepare_media_upload_request, require_prepared_image_data,
@@ -99,7 +102,6 @@ pub use media::{
     InventoryItemsCollectOutput, LegacyEntityImageKind, LegacyEntityImageUploadInput,
     LegacyMediaUploadDeps,
 };
-pub use remote_mutation_gate::RemoteMutationGate;
 pub use social::{
     accept_friend_request, accept_friend_request_notification, cancel_friend_request,
     send_friend_request, unfriend, unfriend_batch, unfriend_selection, SocialFriendMutationInput,
@@ -132,6 +134,12 @@ pub use social::{
     PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState,
 };
 pub use social::{
+    force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
+    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
+    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, ModerationSyncRuntime,
+    RemoteModerationRow,
+};
+pub use social::{
     get_user_dialog_tab_counts, UserDialogTabCountsDeps, UserDialogTabCountsInput,
     UserDialogTabCountsOutput, UserDialogTabCountsRuntime,
 };
@@ -149,19 +157,10 @@ pub use social::{
     load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarSnapshot,
 };
 pub use social::{
-    load_quick_search_catalog, QuickSearchCatalogDeps, QuickSearchCatalogSnapshot,
-    QuickSearchCatalogStatus,
-};
-pub use social::{
     prepare_note_export, run_note_export, NoteExportActions, NoteExportItemInput,
     NoteExportItemState, NoteExportItemStatus, NoteExportProgress, NoteExportResult,
     NoteExportStartInput, NoteExportState, NoteExportStatus, VrchatNoteExportActions,
     NOTE_EXPORT_MAX_ITEMS,
-};
-pub use social::{
-    refresh_player_moderations, update_player_moderation, ModerationSyncDeps,
-    ModerationSyncMutationInput, ModerationSyncMutationOutput, ModerationSyncRefreshInput,
-    ModerationSyncRefreshOutput, RemoteModerationRow,
 };
 pub use social::{
     resolve_friend_log_names, FriendLogNameResolutionCoordinator, FriendLogNameResolutionDeps,
@@ -178,6 +177,10 @@ pub use social::{
     GroupBanImportActions, GroupBanImportFuture, GroupBanImportItemResult, GroupBanImportItemState,
     GroupBanImportRuntime, GroupBanImportStartInput, GroupBanImportState, GroupBanImportStatus,
     VrchatGroupBanImportActions,
+};
+pub use social::{
+    QuickSearchEntityType, QuickSearchMatchedField, QuickSearchQueryInput, QuickSearchQueryOutput,
+    QuickSearchQueryStatus, QuickSearchResult, QuickSearchRuntime,
 };
 pub use system::DatabaseUpgradeRuntime;
 pub use system::ProfileOperationGate;
@@ -210,6 +213,7 @@ pub use system::{
     InstanceLaunchApiFuture, InstanceLaunchDeps, InstanceLaunchHttpClient, InstanceLaunchInput,
     InstanceLaunchMode, InstanceLaunchOutcome, InstanceLaunchPipe,
 };
+pub use system::{list_config_values, remove_config_value, set_config_values};
 pub use system::{
     mark_notifications_seen_batch, NotificationMarkSeenActions, NotificationMarkSeenBatchInput,
     NotificationMarkSeenBatchItem, NotificationMarkSeenBatchResult, NotificationMarkSeenEffect,
@@ -257,10 +261,12 @@ pub use system::{
     ProfileRestoreResultStatus, ProfileRestoreRollbackCleanupOutcome, ProfileRestoreRollbackState,
     ProfileRestoreValidation, ProfileRestoreValidationOutcome,
 };
-pub use vrcx_0_application_core::validate_config_writes;
 pub use vrcx_0_application_core::OverlayActivityInputSink;
 pub use vrcx_0_application_core::{
     format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputLine, RuntimeOutputMode,
+};
+pub use vrcx_0_application_core::{
+    is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate,
 };
 pub use vrcx_0_application_core::{
     recommended_tokio_max_blocking_threads, recommended_tokio_max_blocking_threads_for,

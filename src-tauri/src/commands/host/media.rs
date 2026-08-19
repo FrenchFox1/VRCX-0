@@ -20,12 +20,14 @@ pub async fn app__save_image_file(
 
     let (file_name, bytes) = media_files::decode_image_file(&default_name, &base64_data)?;
 
-    let result = app_handle
-        .dialog()
-        .file()
-        .set_file_name(&file_name)
-        .add_filter("Image Files", &["png", "jpg", "jpeg", "gif", "webp", "bmp"])
-        .blocking_save_file();
+    let result = super::dialog::save_file(
+        app_handle
+            .dialog()
+            .file()
+            .set_file_name(&file_name)
+            .add_filter("Image Files", &["png", "jpg", "jpeg", "gif", "webp", "bmp"]),
+    )
+    .await;
 
     match result {
         Some(file_path) => {
@@ -42,15 +44,18 @@ pub async fn app__save_image_file(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__resize_image_to_fit_limits(base64data: String) -> Result<String, AppError> {
-    Ok(image_processing::resize_image_to_fit_limits_base64(
-        &base64data,
-    )?)
+pub async fn app__resize_image_to_fit_limits(base64data: String) -> Result<String, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        image_processing::resize_image_to_fit_limits_base64(&base64data)
+    })
+    .await
+    .map_err(|error| AppError::Custom(format!("image resize task failed: {error}")))?
+    .map_err(AppError::from)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__crop_all_prints(
+pub async fn app__crop_all_prints(
     state: State<'_, AppState>,
     ugc_folder_path: String,
 ) -> Result<(), AppError> {
@@ -58,18 +63,30 @@ pub fn app__crop_all_prints(
         .desktop
         .host_file_access
         .ensure_write_allowed(&ugc_folder_path, &state.paths)?;
-    Ok(image_processing::crop_all_prints(&ugc_folder_path)?)
+    tauri::async_runtime::spawn_blocking(move || {
+        image_processing::crop_all_prints(&ugc_folder_path)
+    })
+    .await
+    .map_err(|error| AppError::Custom(format!("crop all prints task failed: {error}")))?
+    .map_err(AppError::from)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__crop_print_image(state: State<'_, AppState>, path: String) -> Result<bool, AppError> {
+pub async fn app__crop_print_image(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<bool, AppError> {
     state
         .desktop
         .host_file_access
         .ensure_write_allowed(&path, &state.paths)?;
-    image_processing::crop_print_file(std::path::Path::new(&path))
-        .map_err(|e| AppError::Custom(format!("{path}: {e}")))
+    tauri::async_runtime::spawn_blocking(move || {
+        image_processing::crop_print_file(std::path::Path::new(&path))
+            .map_err(|e| AppError::Custom(format!("{path}: {e}")))
+    })
+    .await
+    .map_err(|error| AppError::Custom(format!("crop print task failed: {error}")))?
 }
 
 async fn save_ugc_category_to_file(

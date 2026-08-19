@@ -1,8 +1,10 @@
 use serde_json::{json, Value};
+use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
 use vrcx_0_persistence::realtime::FriendLogDelete;
 
+use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
     FriendStateBucketAuthority, PendingOfflineTimerAction, RealtimeFriendOutput,
 };
@@ -11,7 +13,7 @@ use super::persistence::{
     add_profile_diff_feed_entries, friend_log_upsert, friend_relationship_feed_entry,
     gps_feed_entry, is_online_state, is_private_location, meaningful_name, meaningful_record_name,
     online_feed_entry, player_joining_feed_entry, trust_level_feed_entry, value_equal_for_diff,
-    FriendChangedProps, FriendRelationshipFeedKind,
+    FriendChangedProps, FriendRelationshipFeedKind, OfflineFeedPrevious,
 };
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY_MS};
 use super::utils::{first_owned, parse_location, EventTime, JsonExt};
@@ -45,22 +47,22 @@ pub(super) enum FriendEventKind {
 }
 
 impl FriendEventKind {
-    pub(super) fn from_message_type(message_type: &str) -> Option<Self> {
-        match message_type {
-            "friend-add" => Some(Self::Add),
-            "friend-delete" => Some(Self::Delete),
-            "friend-update" => Some(Self::Update),
-            "friend-online" => Some(Self::Online),
-            "friend-active" => Some(Self::Active),
-            "friend-offline" => Some(Self::Offline),
-            "friend-location" => Some(Self::Location),
+    pub(super) fn from_ws_event_kind(event_kind: &RealtimeWsEventKind) -> Option<Self> {
+        match event_kind {
+            RealtimeWsEventKind::FriendAdd => Some(Self::Add),
+            RealtimeWsEventKind::FriendDelete => Some(Self::Delete),
+            RealtimeWsEventKind::FriendUpdate => Some(Self::Update),
+            RealtimeWsEventKind::FriendOnline => Some(Self::Online),
+            RealtimeWsEventKind::FriendActive => Some(Self::Active),
+            RealtimeWsEventKind::FriendOffline => Some(Self::Offline),
+            RealtimeWsEventKind::FriendLocation => Some(Self::Location),
             _ => None,
         }
     }
 }
 
 pub fn is_friend_event_type(message_type: &str) -> bool {
-    FriendEventKind::from_message_type(message_type).is_some()
+    RealtimeWsEventKind::from_name(message_type).is_friend()
 }
 
 pub(super) fn apply_friend_event(
@@ -259,7 +261,7 @@ fn apply_update(
     } else {
         previous
             .as_ref()
-            .map(|previous| previous.state_bucket.trim())
+            .map(|previous| previous.state.trim())
             .filter(|state_bucket| !state_bucket.is_empty())
             .map(ToString::to_string)
             .unwrap_or_else(|| StateBucket::Offline.as_str().to_string())
@@ -405,8 +407,8 @@ fn apply_active_offline(
             PendingOffline {
                 token,
                 patch: FriendRecordPatch::from_value(&patch),
-                state_bucket: next_state.to_string(),
-                previous: previous.clone(),
+                state_bucket: next_state.into(),
+                previous: OfflineFeedPrevious::from_record(previous),
             },
         );
         let pending_patch = json!({
@@ -493,11 +495,10 @@ fn apply_location(
                     &user_id,
                     StateBucket::Offline.as_str(),
                 )),
-                state_bucket: StateBucket::Offline.as_str().to_string(),
-                previous: previous_record
-                    .as_ref()
-                    .expect("checked previous record")
-                    .clone(),
+                state_bucket: StateBucket::Offline.as_str().into(),
+                previous: OfflineFeedPrevious::from_record(
+                    previous_record.as_ref().expect("checked previous record"),
+                ),
             },
         );
         if let Some(patch_object) = patch.as_object_mut() {
@@ -666,13 +667,9 @@ fn record_profile_identity_change(
     let next_name = meaningful_name(patch, user_id);
     let name_changed =
         !next_name.is_empty() && next_name != meaningful_record_name(previous, user_id);
-    let previous_trust_level = first_owned([
-        record_string(previous, "$trustLevel"),
-        record_string(previous, "trustLevel"),
-    ]);
+    let previous_trust_level = record_string(previous, derived_keys::TRUST_LEVEL);
     let trust_level = first_owned([
-        patch.text_field("$trustLevel"),
-        patch.text_field("trustLevel"),
+        patch.text_field(derived_keys::TRUST_LEVEL),
         previous_trust_level.clone(),
     ]);
     let trust_differs = trust_level_differs(&previous_trust_level, &trust_level);
@@ -885,7 +882,6 @@ mod tests {
         let previous = FriendRecord {
             id: "usr_friend".into(),
             state: "active".into(),
-            state_bucket: "active".into(),
             ..FriendRecord::default()
         };
         assert_eq!(

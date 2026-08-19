@@ -41,7 +41,6 @@ export function useModerationPageController({
     });
     const shiftHeld = useModerationShiftKey();
     const actions = useModerationRowActions({
-        rows: rowsState.rows,
         setDetail: rowsState.setDetail,
         setRows: rowsState.setRows
     });

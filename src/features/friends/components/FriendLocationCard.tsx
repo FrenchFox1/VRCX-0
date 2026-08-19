@@ -11,9 +11,10 @@ import { Location } from '@/components/Location';
 import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
@@ -83,21 +84,7 @@ export type FriendLocationCardDensity = Pick<
 >;
 
 function normalizeStatusText(value: unknown) {
-    const status =
-        typeof value === 'string'
-            ? value.trim().toLowerCase()
-            : String(value ?? '')
-                  .trim()
-                  .toLowerCase();
-    if (status === 'joinme') {
-        return 'join me';
-    }
-    if (status === 'askme') {
-        return 'ask me';
-    }
-    if (status === 'offline:offline' || status.startsWith('offline ')) {
-        return 'offline';
-    }
+    const status = normalizeUserStatus(value);
     if (status === 'private:private') {
         return 'private';
     }
@@ -528,6 +515,7 @@ export function FriendLocationCard({
     ) : null;
     const cardActions = (
         <div
+            role="presentation"
             className="pointer-events-none absolute top-[var(--friend-card-padding)] right-[var(--friend-card-padding)] z-20 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 ease-out group-focus-within/card:pointer-events-auto group-focus-within/card:opacity-100 group-hover/card:pointer-events-auto group-hover/card:opacity-100 motion-reduce:transition-none"
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
@@ -654,8 +642,12 @@ export function FriendLocationCard({
                                     {titleNode}
                                     {showLocationInfo ? (
                                         <div
+                                            role="presentation"
                                             className="text-muted-foreground min-w-0 text-left text-xs leading-4"
                                             onClick={(event) =>
+                                                event.stopPropagation()
+                                            }
+                                            onKeyDown={(event) =>
                                                 event.stopPropagation()
                                             }
                                         >
@@ -692,8 +684,12 @@ export function FriendLocationCard({
                                     <CardContent className="flex min-h-0 flex-1 flex-col gap-[var(--friend-card-inner-gap)] overflow-hidden px-[var(--friend-card-padding)]">
                                         {showLocationInfo ? (
                                             <div
+                                                role="presentation"
                                                 className="text-muted-foreground w-full min-w-0 text-left text-xs leading-4"
                                                 onClick={(event) =>
+                                                    event.stopPropagation()
+                                                }
+                                                onKeyDown={(event) =>
                                                     event.stopPropagation()
                                                 }
                                             >

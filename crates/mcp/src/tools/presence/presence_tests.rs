@@ -6,7 +6,7 @@ fn friend(id: &str, display_name: &str, state_bucket: &str, location: &str) -> F
     FriendRecord {
         id: id.into(),
         display_name: display_name.into(),
-        state_bucket: state_bucket.into(),
+        state: state_bucket.into(),
         location: location.into(),
         ..FriendRecord::default()
     }
@@ -118,7 +118,7 @@ fn platform_prefers_current_platform_and_falls_back_to_last_platform() {
     alice.platform = "android".into();
     alice.last_platform = "standalonewindows".into();
     let mut bob = friend("usr_b", "Bob", "online", "");
-    bob.platform = String::new();
+    bob.platform = CompactString::new("");
     bob.last_platform = "standalonewindows".into();
 
     let output = build_online_friends_output(vec![alice, bob], params(None, None));

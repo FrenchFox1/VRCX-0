@@ -1,3 +1,4 @@
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -9,7 +10,6 @@ import {
     InstanceHeaderRow
 } from './FriendsSidebarHeaders';
 import {
-    normalizeLocationStatus,
     readFriendStatusSource,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
@@ -127,7 +127,7 @@ function FriendVirtualRow({
     statusCommands: StatusCommandsView;
 }) {
     const source = readFriendStatusSource(friend);
-    const state = normalizeLocationStatus(source?.stateBucket || source?.state);
+    const state = normalizeStateBucket(source?.state);
     const friendId = friend.id || '';
     const isOnlineFriend =
         runtime.onlineIdSet.has(friendId) || state === 'online';

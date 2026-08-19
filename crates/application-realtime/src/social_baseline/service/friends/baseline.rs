@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
@@ -453,14 +454,14 @@ fn init_friend_roster_records(
             } else {
                 entry
                     .extra
-                    .get("$trustLevel")
+                    .get(derived_keys::TRUST_LEVEL)
                     .or_else(|| entry.extra.get("trustLevel"))
                     .map(value_as_string)
                     .unwrap_or_default()
             };
             FriendLogCurrentEntryInput {
                 user_id: friend_id.clone(),
-                display_name: entry.display_name.clone(),
+                display_name: entry.display_name.to_string(),
                 trust_level: Some(trust_level),
                 friend_number: Value::from((index + 1) as i64),
             }
@@ -529,7 +530,7 @@ pub(crate) fn reconcile_friend_roster_records(
         }
         let trust_level = entry
             .extra
-            .get("$trustLevel")
+            .get(derived_keys::TRUST_LEVEL)
             .or_else(|| entry.extra.get("trustLevel"))
             .map(value_as_string)
             .unwrap_or_default();
@@ -549,7 +550,7 @@ pub(crate) fn reconcile_friend_roster_records(
             continue;
         }
         let display_name = if meaningful_name {
-            entry.display_name.clone()
+            entry.display_name.to_string()
         } else {
             existing_row
                 .map(|row| row.display_name.clone())

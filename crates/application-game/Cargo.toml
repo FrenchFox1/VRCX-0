@@ -14,7 +14,7 @@ test-utils = [
 [dependencies]
 chrono = { workspace = true }
 percent-encoding = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 specta = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync", "time"] }
@@ -33,4 +33,3 @@ vrcx-0-vrchat-client = { path = "../vrchat-client" }
 image = { workspace = true }
 rusqlite = { workspace = true }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }
-vrcx-0-i18n = { path = "../i18n" }

@@ -15,7 +15,7 @@ pub use endpoints::{
     resolve_reasoning_effort, AssistantRuntimeSelection, AssistantRuntimeStatus, EndpointStore,
     LlmEndpointDetectModelsInput, LlmEndpointDto, LlmEndpointUpsertInput, LlmTranslateInput,
 };
-pub use entities::Entity;
+pub use entities::{Entity, EntityKind};
 pub use error::AssistantError;
 pub use events::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,

@@ -1,3 +1,4 @@
+use crate::derived_keys;
 use std::collections::HashMap;
 
 use serde_json::{Map, Number, Value};
@@ -5,7 +6,7 @@ use serde_json::{Map, Number, Value};
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct UserFact {
     pub fields: Map<String, Value>,
-    pub field_sources: HashMap<String, String>,
+    field_ranks: HashMap<&'static str, u8>,
     pub updated_at: String,
 }
 
@@ -53,27 +54,42 @@ fn insert_derived_trust_fields(object: &mut Map<String, Value>) {
         .unwrap_or("");
     let effective_platform = crate::trust::compute_user_platform(platform, last_platform);
 
-    object.insert("$trustLevel".into(), Value::String(trust.trust_level));
-    object.insert("$trustClass".into(), Value::String(trust.trust_class));
     object.insert(
-        "$trustSortNum".into(),
+        derived_keys::TRUST_LEVEL.into(),
+        Value::String(trust.trust_level),
+    );
+    object.insert(
+        derived_keys::TRUST_CLASS.into(),
+        Value::String(trust.trust_class),
+    );
+    object.insert(
+        derived_keys::TRUST_SORT_NUM.into(),
         Number::from_f64(trust.trust_sort_num)
             .map(Value::Number)
             .unwrap_or(Value::Null),
     );
-    object.insert("$isModerator".into(), Value::Bool(trust.is_moderator));
-    object.insert("$isTroll".into(), Value::Bool(trust.is_troll));
     object.insert(
-        "$isProbableTroll".into(),
+        derived_keys::IS_MODERATOR.into(),
+        Value::Bool(trust.is_moderator),
+    );
+    object.insert(derived_keys::IS_TROLL.into(), Value::Bool(trust.is_troll));
+    object.insert(
+        derived_keys::IS_PROBABLE_TROLL.into(),
         Value::Bool(trust.is_probable_troll),
     );
-    object.insert("$platform".into(), Value::String(effective_platform));
+    object.insert(
+        derived_keys::PLATFORM.into(),
+        Value::String(effective_platform),
+    );
 }
 
 fn insert_derived_location_fields(object: &mut Map<String, Value>) {
     for (source, derived) in [
-        ("location", "$location"),
-        ("travelingToLocation", "$travelingToLocation"),
+        ("location", derived_keys::LOCATION_PROJECTION),
+        (
+            "travelingToLocation",
+            derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+        ),
     ] {
         let Some(tag) = object.get(source).and_then(Value::as_str) else {
             continue;
@@ -95,7 +111,6 @@ pub struct UserFactMergeOptions {
     pub received_at: String,
     pub is_current_user: bool,
     pub is_friend: bool,
-    pub state_bucket: String,
 }
 
 impl Default for UserFactMergeOptions {
@@ -106,7 +121,6 @@ impl Default for UserFactMergeOptions {
             received_at: String::new(),
             is_current_user: false,
             is_friend: false,
-            state_bucket: String::new(),
         }
     }
 }
@@ -116,7 +130,7 @@ pub struct UserFactMergeResult {
     pub changed: bool,
 }
 
-fn base_source_rank(source: &str) -> i64 {
+fn base_source_rank(source: &str) -> u8 {
     match source {
         "seed" => 10,
         "instance" => 20,
@@ -130,7 +144,7 @@ fn base_source_rank(source: &str) -> i64 {
     }
 }
 
-fn profile_source_rank(source: &str) -> i64 {
+fn profile_source_rank(source: &str) -> u8 {
     match source {
         "seed" => 10,
         "instance" => 20,
@@ -144,7 +158,7 @@ fn profile_source_rank(source: &str) -> i64 {
     }
 }
 
-fn presence_source_rank(source: &str) -> i64 {
+fn presence_source_rank(source: &str) -> u8 {
     match source {
         "seed" => 10,
         "instance" => 45,
@@ -164,7 +178,6 @@ fn is_presence_field(field: &str) -> bool {
         "status"
             | "statusDescription"
             | "state"
-            | "stateBucket"
             | "location"
             | "travelingToLocation"
             | "locationAt"
@@ -198,7 +211,7 @@ fn is_self_field(field: &str) -> bool {
     matches!(field, "isBoopingEnabled" | "hasSharedConnectionsOptOut")
 }
 
-fn rank_for_field(field: &str, source: &str) -> i64 {
+fn rank_for_field(field: &str, source: &str) -> u8 {
     if is_presence_field(field) {
         presence_source_rank(source)
     } else if is_profile_field(field) {
@@ -212,13 +225,6 @@ fn rank_for_field(field: &str, source: &str) -> i64 {
     } else {
         base_source_rank(source)
     }
-}
-
-fn existing_rank_for_field(field_sources: &HashMap<String, String>, field: &str) -> i64 {
-    field_sources
-        .get(field)
-        .map(|source| rank_for_field(field, source))
-        .unwrap_or(0)
 }
 
 fn user_fact_field_name(field: &str) -> Option<&'static str> {
@@ -237,7 +243,6 @@ fn user_fact_field_name(field: &str) -> Option<&'static str> {
         "status" => "status",
         "statusDescription" => "statusDescription",
         "state" => "state",
-        "stateBucket" => "stateBucket",
         "location" => "location",
         "travelingToLocation" => "travelingToLocation",
         "locationAt" => "locationAt",
@@ -258,12 +263,14 @@ fn resolve_field(raw: &str) -> Option<&'static str> {
     match raw {
         "display_name" | "name" => Some("displayName"),
         "user_id" | "userId" => Some("id"),
-        "$travelingToLocation" => Some("travelingToLocation"),
-        "location_at" | "$location_at" | "joinedAt" | "joined_at" | "$online_for" => {
-            Some("locationAt")
-        }
-        "$travelingToTime" => Some("travelingToTime"),
-        "$friendNumber" => Some("friendNumber"),
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION => Some("travelingToLocation"),
+        "location_at"
+        | derived_keys::LOCATION_UPDATED_AT
+        | "joinedAt"
+        | "joined_at"
+        | derived_keys::ONLINE_FOR => Some("locationAt"),
+        derived_keys::TRAVELING_TO_TIME => Some("travelingToTime"),
+        derived_keys::FRIEND_NUMBER => Some("friendNumber"),
         other => user_fact_field_name(other),
     }
 }
@@ -333,12 +340,6 @@ fn normalize_fact_patch(input: &Value) -> Map<String, Value> {
                     patch.insert("id".into(), Value::String(id));
                 }
             }
-            "stateBucket" => {
-                let state_bucket = normalize_state_bucket(value);
-                if !state_bucket.is_empty() {
-                    patch.insert("stateBucket".into(), Value::String(state_bucket));
-                }
-            }
             "friendNumber" => {
                 let parsed = value.as_i64().or_else(|| {
                     value
@@ -371,12 +372,22 @@ pub fn merge_user_fact(
     input: &Value,
     options: &UserFactMergeOptions,
 ) -> UserFactMergeResult {
+    merge_user_fact_owned(existing.cloned(), input, options)
+}
+
+pub fn merge_user_fact_owned(
+    existing: Option<UserFact>,
+    input: &Value,
+    options: &UserFactMergeOptions,
+) -> UserFactMergeResult {
     let patch = normalize_fact_patch(input);
+    let had_existing = existing.is_some();
 
     let id = {
         let from_patch = patch.get("id").map(normalize_user_id).unwrap_or_default();
         if from_patch.is_empty() {
             existing
+                .as_ref()
                 .map(|fact| fact.id().to_string())
                 .unwrap_or_default()
         } else {
@@ -386,23 +397,13 @@ pub fn merge_user_fact(
     let endpoint = {
         let candidate = if options.endpoint.is_empty() {
             existing
+                .as_ref()
                 .map(|fact| fact.endpoint().to_string())
                 .unwrap_or_default()
         } else {
             options.endpoint.clone()
         };
         normalize_endpoint(&Value::String(candidate))
-    };
-    let normalized_state_bucket = {
-        let from_options = normalize_state_bucket(&Value::String(options.state_bucket.clone()));
-        if from_options.is_empty() {
-            patch
-                .get("stateBucket")
-                .map(normalize_state_bucket)
-                .unwrap_or_default()
-        } else {
-            from_options
-        }
     };
     let updated_at = {
         let received = normalize_fact_text(&Value::String(options.received_at.clone()));
@@ -414,7 +415,7 @@ pub fn merge_user_fact(
     };
 
     let mut fact = match existing {
-        Some(existing) => existing.clone(),
+        Some(existing) => existing,
         None => UserFact {
             fields: {
                 let mut fields = Map::new();
@@ -422,11 +423,11 @@ pub fn merge_user_fact(
                 fields.insert("endpoint".into(), Value::String(endpoint.clone()));
                 fields
             },
-            field_sources: HashMap::new(),
+            field_ranks: HashMap::new(),
             updated_at: updated_at.clone(),
         },
     };
-    let mut changed = existing.is_none();
+    let mut changed = !had_existing;
 
     if !id.is_empty() && fact.id() != id {
         fact.fields.insert("id".into(), Value::String(id));
@@ -449,17 +450,15 @@ pub fn merge_user_fact(
         changed = true;
     }
 
-    let mut patch = patch;
-    if !normalized_state_bucket.is_empty() {
-        patch.insert("stateBucket".into(), Value::String(normalized_state_bucket));
-    }
-
     for (field, value) in &patch {
         if field == "id" || !is_present(value) {
             continue;
         }
-        let rank = rank_for_field(field, &options.source);
-        let existing_rank = existing_rank_for_field(&fact.field_sources, field);
+        let Some(field_name) = user_fact_field_name(field) else {
+            continue;
+        };
+        let rank = rank_for_field(field_name, &options.source);
+        let existing_rank = fact.field_ranks.get(field_name).copied().unwrap_or(0);
         if rank < existing_rank {
             continue;
         }
@@ -468,8 +467,7 @@ pub fn merge_user_fact(
             changed = true;
         }
         if existing_rank != rank {
-            fact.field_sources
-                .insert(field.clone(), options.source.clone());
+            fact.field_ranks.insert(field_name, rank);
             changed = true;
         }
     }
@@ -478,14 +476,7 @@ pub fn merge_user_fact(
         fact.updated_at = updated_at;
     }
 
-    if changed {
-        UserFactMergeResult { fact, changed }
-    } else {
-        UserFactMergeResult {
-            fact: existing.cloned().unwrap_or(fact),
-            changed: false,
-        }
-    }
+    UserFactMergeResult { fact, changed }
 }
 
 pub fn number_value(value: i64) -> Value {

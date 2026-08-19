@@ -10,7 +10,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { UserBadgeRecord } from '@/domain/entities/profileEntities';
+import type { UserBadgeRecord } from '@/domain/entities/user';
 import { cn } from '@/lib/utils';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';

@@ -6,7 +6,7 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use vrcx_0_application::{FavoriteRow, LocalFavoriteSnapshot};
-use vrcx_0_application_core::{FavoriteEntityKind, FavoritesChangedPayload};
+use vrcx_0_application_core::FavoriteEntityKind;
 
 #[tauri::command]
 #[specta::specta]
@@ -36,23 +36,11 @@ pub fn favorite_add(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_application::add_local_favorite(
-        state.db.as_ref(),
-        &owner_user_id,
-        kind,
-        entity_id,
-        group_name,
-    )
-    .map_err(AppError::from)?;
     state
-        .realtime_runtime
-        .notify_favorites_changed(FavoritesChangedPayload {
-            kind: kind.into(),
-            local: true,
-            remote: false,
-        });
-    Ok(affected)
+        .runtime_context
+        .favorite_mutations
+        .add_local(kind, entity_id, group_name)
+        .map_err(AppError::from)
 }
 
 pub fn favorite_remove(
@@ -61,21 +49,9 @@ pub fn favorite_remove(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_application::remove_local_favorite(
-        state.db.as_ref(),
-        &owner_user_id,
-        kind,
-        entity_id,
-        group_name,
-    )
-    .map_err(AppError::from)?;
     state
-        .realtime_runtime
-        .notify_favorites_changed(FavoritesChangedPayload {
-            kind: kind.into(),
-            local: true,
-            remote: false,
-        });
-    Ok(affected)
+        .runtime_context
+        .favorite_mutations
+        .remove_local(kind, entity_id, group_name)
+        .map_err(AppError::from)
 }

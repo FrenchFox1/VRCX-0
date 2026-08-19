@@ -12,6 +12,7 @@ use super::types::*;
 fn query_feed_rows(
     db: &DatabaseService,
     query: &FeedRowsQueryInput,
+    should_interrupt: Option<Box<dyn Fn() -> bool + Send + Sync>>,
 ) -> Result<Vec<FeedRowOutput>, Error> {
     let user_id = normalize_text(&query.user_id);
     let user_prefix = normalize_user_table_prefix(&user_id)?;
@@ -66,18 +67,52 @@ fn query_feed_rows(
     };
     let user_scope_query = format!("{vip_query} {scoped_query} {excluded_query}");
 
+    let normalize_created_at = should_interrupt.is_some();
+    let created_at_expression = if normalize_created_at {
+        "julianday(created_at)"
+    } else {
+        "created_at"
+    };
+    let cursor_created_at_expression = if normalize_created_at {
+        "julianday(@cursor_created_at)"
+    } else {
+        "@cursor_created_at"
+    };
     let search = normalize_text(&query.search);
+    let mut date_query = String::new();
+    if !query.date_from.trim().is_empty() {
+        date_query.push_str(&format!(
+            "AND {created_at_expression} >= {date_from_expression} ",
+            date_from_expression = if normalize_created_at {
+                "julianday(@date_from)"
+            } else {
+                "@date_from"
+            }
+        ));
+        params.insert("@date_from".into(), Value::String(query.date_from.clone()));
+    }
+    if !query.date_to.trim().is_empty() {
+        date_query.push_str(&format!(
+            "AND {created_at_expression} <= {date_to_expression} ",
+            date_to_expression = if normalize_created_at {
+                "julianday(@date_to)"
+            } else {
+                "@date_to"
+            }
+        ));
+        params.insert("@date_to".into(), Value::String(query.date_to.clone()));
+    }
     let instance_mode = query.mode == FeedQueryMode::Instance
         || (query.mode == FeedQueryMode::Search
             && (search.starts_with("wrld_") || search.starts_with("grp_")));
-    let recent_order_sql = "created_at DESC, id DESC";
+    let recent_order_sql = format!("{created_at_expression} DESC, id DESC");
     let flags = feed_filter_flags(&query.filters, !instance_mode);
     let mut selects = Vec::new();
 
     if instance_mode {
         params.insert(
             "@instance_like".into(),
-            Value::String(format!("%{search}%")),
+            Value::String(literal_like_pattern(&search)),
         );
         if flags.gps {
             push_feed_select(
@@ -87,9 +122,13 @@ fn query_feed_rows(
                 FEED_GPS_PROJECTION,
                 FeedSelectOptions {
                     source_rank: FEED_GPS_SOURCE_RANK,
-                    where_sql: &format!("location LIKE @instance_like {user_scope_query}"),
+                    where_sql: &format!(
+                        "(location LIKE @instance_like ESCAPE '\\' OR previous_location LIKE @instance_like ESCAPE '\\') {date_query} {user_scope_query}"
+                    ),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -99,14 +138,21 @@ fn query_feed_rows(
                 (false, true) => "AND type = 'Offline'",
                 _ => "",
             };
-            push_feed_online_offline_select(
+            push_feed_select(
                 &mut selects,
                 &user_prefix,
-                "location LIKE @instance_like",
-                type_filter,
-                &user_scope_query,
-                has_cursor,
-                recent_order_sql,
+                "feed_online_offline",
+                FEED_ONLINE_OFFLINE_PROJECTION,
+                FeedSelectOptions {
+                    source_rank: FEED_ONLINE_OFFLINE_SOURCE_RANK,
+                    where_sql: &format!(
+                        "location LIKE @instance_like ESCAPE '\\' {type_filter} {date_query} {user_scope_query}"
+                    ),
+                    has_cursor,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
+                },
             );
         }
     } else if query.mode == FeedQueryMode::Lookup {
@@ -118,9 +164,11 @@ fn query_feed_rows(
                 FEED_GPS_PROJECTION,
                 FeedSelectOptions {
                     source_rank: FEED_GPS_SOURCE_RANK,
-                    where_sql: &format!("1=1 {user_scope_query}"),
+                    where_sql: &format!("1=1 {date_query} {user_scope_query}"),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -132,9 +180,11 @@ fn query_feed_rows(
                 FEED_STATUS_PROJECTION,
                 FeedSelectOptions {
                     source_rank: FEED_STATUS_SOURCE_RANK,
-                    where_sql: &format!("1=1 {user_scope_query}"),
+                    where_sql: &format!("1=1 {date_query} {user_scope_query}"),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -146,9 +196,11 @@ fn query_feed_rows(
                 FEED_BIO_PROJECTION,
                 FeedSelectOptions {
                     source_rank: FEED_BIO_SOURCE_RANK,
-                    where_sql: &format!("1=1 {user_scope_query}"),
+                    where_sql: &format!("1=1 {date_query} {user_scope_query}"),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -160,9 +212,11 @@ fn query_feed_rows(
                 FEED_AVATAR_PROJECTION,
                 FeedSelectOptions {
                     source_rank: FEED_AVATAR_SOURCE_RANK,
-                    where_sql: &format!("1=1 {user_scope_query}"),
+                    where_sql: &format!("1=1 {date_query} {user_scope_query}"),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -172,27 +226,26 @@ fn query_feed_rows(
                 (false, true) => "AND type = 'Offline'",
                 _ => "",
             };
-            push_feed_online_offline_select(
+            push_feed_select(
                 &mut selects,
                 &user_prefix,
-                "1=1",
-                type_filter,
-                &user_scope_query,
-                has_cursor,
-                recent_order_sql,
+                "feed_online_offline",
+                FEED_ONLINE_OFFLINE_PROJECTION,
+                FeedSelectOptions {
+                    source_rank: FEED_ONLINE_OFFLINE_SOURCE_RANK,
+                    where_sql: &format!("1=1 {type_filter} {date_query} {user_scope_query}"),
+                    has_cursor,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
+                },
             );
         }
     } else {
-        params.insert("@search_like".into(), Value::String(format!("%{search}%")));
-        let mut date_query = String::new();
-        if !query.date_from.trim().is_empty() {
-            date_query.push_str("AND created_at >= @date_from ");
-            params.insert("@date_from".into(), Value::String(query.date_from.clone()));
-        }
-        if !query.date_to.trim().is_empty() {
-            date_query.push_str("AND created_at <= @date_to ");
-            params.insert("@date_to".into(), Value::String(query.date_to.clone()));
-        }
+        params.insert(
+            "@search_like".into(),
+            Value::String(literal_like_pattern(&search)),
+        );
         if flags.gps {
             push_feed_select(
                 &mut selects,
@@ -202,10 +255,12 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_GPS_SOURCE_RANK,
                     where_sql: &format!(
-                        "(display_name LIKE @search_like OR world_name LIKE @search_like OR group_name LIKE @search_like) {date_query} {user_scope_query}"
+                        "(display_name LIKE @search_like ESCAPE '\\' OR location LIKE @search_like ESCAPE '\\' OR world_name LIKE @search_like ESCAPE '\\' OR previous_location LIKE @search_like ESCAPE '\\' OR group_name LIKE @search_like ESCAPE '\\') {date_query} {user_scope_query}"
                     ),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -218,10 +273,12 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_STATUS_SOURCE_RANK,
                     where_sql: &format!(
-                        "(display_name LIKE @search_like OR status LIKE @search_like OR status_description LIKE @search_like) {date_query} {user_scope_query}"
+                        "(display_name LIKE @search_like ESCAPE '\\' OR status LIKE @search_like ESCAPE '\\' OR status_description LIKE @search_like ESCAPE '\\' OR previous_status LIKE @search_like ESCAPE '\\' OR previous_status_description LIKE @search_like ESCAPE '\\') {date_query} {user_scope_query}"
                     ),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -234,20 +291,20 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_BIO_SOURCE_RANK,
                     where_sql: &format!(
-                        "(display_name LIKE @search_like OR bio LIKE @search_like) {date_query} {user_scope_query}"
+                        "(display_name LIKE @search_like ESCAPE '\\' OR bio LIKE @search_like ESCAPE '\\' OR previous_bio LIKE @search_like ESCAPE '\\') {date_query} {user_scope_query}"
                     ),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
         if flags.avatar {
-            let avatar_query = if search.contains("private") {
-                "OR user_id = owner_id"
-            } else if search.contains("public") {
-                "OR user_id != owner_id"
-            } else {
-                ""
+            let avatar_query = match search.as_str() {
+                "private" => "OR user_id = owner_id",
+                "public" => "OR user_id != owner_id",
+                _ => "",
             };
             push_feed_select(
                 &mut selects,
@@ -257,10 +314,12 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_AVATAR_SOURCE_RANK,
                     where_sql: &format!(
-                        "(display_name LIKE @search_like OR avatar_name LIKE @search_like) {avatar_query} {date_query} {user_scope_query}"
+                        "((display_name LIKE @search_like ESCAPE '\\' OR avatar_name LIKE @search_like ESCAPE '\\') {avatar_query}) {date_query} {user_scope_query}"
                     ),
                     has_cursor,
-                    order_sql: recent_order_sql,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
                 },
             );
         }
@@ -270,16 +329,22 @@ fn query_feed_rows(
                 (false, true) => "AND type = 'Offline'",
                 _ => "",
             };
-            let where_sql =
-                "(display_name LIKE @search_like OR world_name LIKE @search_like OR group_name LIKE @search_like)";
-            push_feed_online_offline_select(
+            let where_sql = "(display_name LIKE @search_like ESCAPE '\\' OR location LIKE @search_like ESCAPE '\\' OR world_name LIKE @search_like ESCAPE '\\' OR group_name LIKE @search_like ESCAPE '\\')";
+            push_feed_select(
                 &mut selects,
                 &user_prefix,
-                where_sql,
-                &format!("{type_filter} {date_query}"),
-                &user_scope_query,
-                has_cursor,
-                recent_order_sql,
+                "feed_online_offline",
+                FEED_ONLINE_OFFLINE_PROJECTION,
+                FeedSelectOptions {
+                    source_rank: FEED_ONLINE_OFFLINE_SOURCE_RANK,
+                    where_sql: &format!(
+                        "{where_sql} {type_filter} {date_query} {user_scope_query}"
+                    ),
+                    has_cursor,
+                    order_sql: &recent_order_sql,
+                    created_at_expression,
+                    cursor_created_at_expression,
+                },
             );
         }
     }
@@ -288,14 +353,15 @@ fn query_feed_rows(
         return Ok(Vec::new());
     }
 
-    db.execute(
-        &format!(
-            "SELECT {} FROM ({}) ORDER BY created_at DESC, source_rank DESC, id DESC LIMIT @limit",
-            feed_base_columns(),
-            selects.join(" UNION ALL ")
-        ),
-        &params,
-    )
+    let sql = format!(
+        "SELECT {} FROM ({}) ORDER BY created_at_sort DESC, source_rank DESC, id DESC LIMIT @limit",
+        feed_base_columns(),
+        selects.join(" UNION ALL ")
+    );
+    match should_interrupt {
+        Some(callback) => db.execute_interruptible(&sql, &params, callback),
+        None => db.execute(&sql, &params),
+    }
     .map(|rows| {
         rows.iter()
             .map(|row| feed_row_from_unified_row(row))
@@ -307,7 +373,18 @@ pub fn feed_rows_query(
     db: &DatabaseService,
     query: FeedRowsQueryInput,
 ) -> Result<Vec<FeedRowOutput>, Error> {
-    query_feed_rows(db, &query)
+    query_feed_rows(db, &query, None)
+}
+
+pub fn feed_rows_query_interruptible<F>(
+    db: &DatabaseService,
+    query: FeedRowsQueryInput,
+    should_interrupt: F,
+) -> Result<Vec<FeedRowOutput>, Error>
+where
+    F: Fn() -> bool + Send + Sync + 'static,
+{
+    query_feed_rows(db, &query, Some(Box::new(should_interrupt)))
 }
 
 pub fn feed_latest_query(
@@ -345,6 +422,7 @@ pub fn feed_latest_query(
                 date_to: String::new(),
                 cursor: None,
             },
+            None,
         )?
     } else {
         Vec::new()
@@ -374,45 +452,43 @@ pub fn feed_latest_query(
 pub fn feed_search_query(
     db: &DatabaseService,
     query: FeedSearchQueryInput,
-) -> Result<Vec<FeedRowOutput>, Error> {
-    if query.favorites_only && query.favorite_user_ids.is_empty() {
-        return Ok(Vec::new());
-    }
-    query_feed_rows(
-        db,
-        &FeedRowsQueryInput {
-            user_id: query.user_id,
-            mode: FeedQueryMode::Search,
-            search: query.search,
-            filters: query.filters,
-            vip_list: if query.favorites_only {
-                query.favorite_user_ids
-            } else {
-                Vec::new()
-            },
-            scoped_user_ids: query.scoped_user_ids,
-            excluded_user_ids: query.excluded_user_ids,
-            max_entries: query.max_rows,
-            date_from: query.date_from,
-            date_to: query.date_to,
-            cursor: None,
-        },
-    )
-}
-
-pub fn feed_live_search_query(
-    query: FeedSearchQueryInput,
     live_entries: Vec<FeedLiveEntryInput>,
     watermark: i64,
-) -> FeedReadModelOutput {
+    include_persisted_rows: bool,
+) -> Result<FeedReadModelOutput, Error> {
     if query.favorites_only && query.favorite_user_ids.is_empty() {
-        return FeedReadModelOutput {
+        return Ok(FeedReadModelOutput {
             rows: Vec::new(),
             max_sequence: watermark,
             persisted_cursor: None,
             persisted_has_more: false,
-        };
+        });
     }
+    let rows = if include_persisted_rows {
+        query_feed_rows(
+            db,
+            &FeedRowsQueryInput {
+                user_id: query.user_id.clone(),
+                mode: FeedQueryMode::Search,
+                search: query.search.clone(),
+                filters: query.filters.clone(),
+                vip_list: if query.favorites_only {
+                    query.favorite_user_ids.clone()
+                } else {
+                    Vec::new()
+                },
+                scoped_user_ids: query.scoped_user_ids.clone(),
+                excluded_user_ids: query.excluded_user_ids.clone(),
+                max_entries: query.max_rows,
+                date_from: query.date_from.clone(),
+                date_to: query.date_to.clone(),
+                cursor: None,
+            },
+            None,
+        )?
+    } else {
+        Vec::new()
+    };
     let context = FeedLiveRowsMergeContext {
         current_user_id: &query.user_id,
         filters: &query.filters,
@@ -425,9 +501,9 @@ pub fn feed_live_search_query(
         excluded_user_ids: &query.excluded_user_ids,
         max_rows: query.max_rows,
     };
-    let mut output = merge_feed_rows_with_live(Vec::new(), &live_entries, 0, context);
+    let mut output = merge_feed_rows_with_live(rows, &live_entries, 0, context);
     output.max_sequence = watermark.max(output.max_sequence);
-    output
+    Ok(output)
 }
 
 const FEED_GPS_SOURCE_RANK: i64 = 60;
@@ -447,6 +523,8 @@ struct FeedSelectOptions<'a> {
     where_sql: &'a str,
     has_cursor: bool,
     order_sql: &'a str,
+    created_at_expression: &'a str,
+    cursor_created_at_expression: &'a str,
 }
 
 fn push_feed_select(
@@ -456,20 +534,31 @@ fn push_feed_select(
     projection: &str,
     options: FeedSelectOptions<'_>,
 ) {
-    let cursor_sql = feed_cursor_condition(options.source_rank, options.has_cursor);
+    let cursor_sql = feed_cursor_condition(
+        options.source_rank,
+        options.has_cursor,
+        options.created_at_expression,
+        options.cursor_created_at_expression,
+    );
     let where_sql = options.where_sql;
     let order_sql = options.order_sql;
+    let created_at_expression = options.created_at_expression;
     selects.push(format!(
-        "SELECT * FROM (SELECT {projection} FROM {user_prefix}_{table_suffix} WHERE {where_sql} {cursor_sql} ORDER BY {order_sql} LIMIT @per_table)"
+        "SELECT * FROM (SELECT {projection}, {created_at_expression} AS created_at_sort FROM {user_prefix}_{table_suffix} WHERE {where_sql} {cursor_sql} ORDER BY {order_sql} LIMIT @per_table)"
     ));
 }
 
-fn feed_cursor_condition(source_rank: i64, has_cursor: bool) -> String {
+fn feed_cursor_condition(
+    source_rank: i64,
+    has_cursor: bool,
+    created_at_expression: &str,
+    cursor_created_at_expression: &str,
+) -> String {
     if !has_cursor {
         return String::new();
     }
     format!(
-        "AND (created_at < @cursor_created_at OR (created_at = @cursor_created_at AND {source_rank} < @cursor_source_rank) OR (created_at = @cursor_created_at AND {source_rank} = @cursor_source_rank AND id < @cursor_row_id))"
+        "AND ({created_at_expression} < {cursor_created_at_expression} OR ({created_at_expression} = {cursor_created_at_expression} AND {source_rank} < @cursor_source_rank) OR ({created_at_expression} = {cursor_created_at_expression} AND {source_rank} = @cursor_source_rank AND id < @cursor_row_id))"
     )
 }
 
@@ -659,31 +748,19 @@ fn feed_filter_flags(filters: &[FeedFilter], include_profile: bool) -> FeedFilte
     flags
 }
 
-fn push_feed_online_offline_select(
-    selects: &mut Vec<String>,
-    user_prefix: &str,
-    where_sql: &str,
-    type_filter: &str,
-    vip_query: &str,
-    has_cursor: bool,
-    order_sql: &str,
-) {
-    push_feed_select(
-        selects,
-        user_prefix,
-        "feed_online_offline",
-        FEED_ONLINE_OFFLINE_PROJECTION,
-        FeedSelectOptions {
-            source_rank: FEED_ONLINE_OFFLINE_SOURCE_RANK,
-            where_sql: &format!("{where_sql} {type_filter} {vip_query}"),
-            has_cursor,
-            order_sql,
-        },
-    );
-}
-
 fn feed_base_columns() -> &'static str {
     "id, source_rank, created_at, user_id, display_name, type, location, world_name, previous_location, time, group_name, status, status_description, previous_status, previous_status_description, bio, previous_bio, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url"
+}
+
+fn literal_like_pattern(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        if matches!(character, '\\' | '%' | '_') {
+            escaped.push('\\');
+        }
+        escaped.push(character);
+    }
+    format!("%{escaped}%")
 }
 
 fn feed_entry_value<'a>(entry: &'a Value, keys: &[&str]) -> Option<&'a Value> {
@@ -729,6 +806,18 @@ fn feed_search_matches(row: &Value, search: &str) -> bool {
     let query = search.trim().to_uppercase();
     if query.is_empty() {
         return true;
+    }
+
+    if feed_entry_string(row, &["type"]) == "Avatar" {
+        let user_id = feed_entry_string(row, &["userId", "user_id"]);
+        let owner_id = feed_entry_string(row, &["ownerId", "owner_id"]);
+        if !user_id.is_empty()
+            && !owner_id.is_empty()
+            && ((query == "PRIVATE" && user_id == owner_id)
+                || (query == "PUBLIC" && user_id != owner_id))
+        {
+            return true;
+        }
     }
 
     if (query.starts_with("WRLD_") || query.starts_with("GRP_"))
@@ -953,476 +1042,4 @@ fn merge_feed_rows_with_live(
 }
 
 #[cfg(test)]
-mod tests {
-    use std::path::PathBuf;
-
-    use serde_json::json;
-    use vrcx_0_core::json::RawJson;
-
-    use super::{
-        feed_latest_query, feed_row_from_value, feed_rows_query, merge_feed_rows_with_live,
-        FeedCursorInput, FeedFilter, FeedLatestQueryInput, FeedLiveEntryInput,
-        FeedLiveRowsMergeContext, FeedQueryMode, FeedReadModelOutput, FeedRowsQueryInput,
-    };
-    use crate::database::DatabaseService;
-    use crate::realtime::{write_realtime_batch, RealtimePersistenceBatch};
-
-    struct TestDir {
-        path: PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path =
-                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    #[derive(Default)]
-    struct MergeCase {
-        rows: Vec<RawJson>,
-        current_user_id: String,
-        filters: Vec<FeedFilter>,
-        search: String,
-        date_from: String,
-        date_to: String,
-        favorites_only: bool,
-        favorite_user_ids: Vec<String>,
-        scoped_user_ids: Vec<String>,
-        excluded_user_ids: Vec<String>,
-        live_entries: Vec<FeedLiveEntryInput>,
-        min_live_sequence: i64,
-        max_rows: i64,
-    }
-
-    fn merge_case(input: MergeCase) -> FeedReadModelOutput {
-        let context = FeedLiveRowsMergeContext {
-            current_user_id: &input.current_user_id,
-            filters: &input.filters,
-            search: &input.search,
-            date_from: &input.date_from,
-            date_to: &input.date_to,
-            favorites_only: input.favorites_only,
-            favorite_user_ids: &input.favorite_user_ids,
-            scoped_user_ids: &input.scoped_user_ids,
-            excluded_user_ids: &input.excluded_user_ids,
-            max_rows: input.max_rows,
-        };
-        merge_feed_rows_with_live(
-            input
-                .rows
-                .iter()
-                .map(|row| feed_row_from_value(row.as_value()))
-                .collect(),
-            &input.live_entries,
-            input.min_live_sequence,
-            context,
-        )
-    }
-
-    #[test]
-    fn live_feed_ignores_friend_relationship_events_without_active_filters() {
-        let output = merge_case(MergeCase {
-            rows: Vec::new(),
-            current_user_id: "usr_self".into(),
-            filters: Vec::new(),
-            search: String::new(),
-            date_from: String::new(),
-            date_to: String::new(),
-            favorites_only: false,
-            favorite_user_ids: Vec::new(),
-            scoped_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-            live_entries: vec![
-                FeedLiveEntryInput {
-                    sequence: 1,
-                    entry: RawJson::from(json!({
-                        "type": "Friend",
-                        "userId": "usr_friend",
-                        "displayName": "Friend",
-                        "created_at": "2026-05-15T00:00:00Z",
-                    })),
-                },
-                FeedLiveEntryInput {
-                    sequence: 2,
-                    entry: RawJson::from(json!({
-                        "type": "GPS",
-                        "userId": "usr_friend",
-                        "displayName": "Friend",
-                        "location": "wrld_1:instance",
-                        "created_at": "2026-05-15T00:00:01Z",
-                    })),
-                },
-            ],
-            min_live_sequence: 0,
-            max_rows: 10,
-        });
-
-        assert_eq!(output.max_sequence, 2);
-        assert_eq!(output.rows.len(), 1);
-        assert_eq!(output.rows[0].r#type.as_deref(), Some("GPS"));
-    }
-
-    #[test]
-    fn user_scope_drops_live_entries_and_existing_rows_outside_the_scope() {
-        let output = merge_case(MergeCase {
-            rows: vec![
-                RawJson::from(json!({
-                    "type": "GPS",
-                    "userId": "usr_scoped",
-                    "displayName": "Scoped",
-                    "location": "wrld_1:instance",
-                    "created_at": "2026-05-15T00:00:00Z",
-                })),
-                RawJson::from(json!({
-                    "type": "GPS",
-                    "userId": "usr_other",
-                    "displayName": "Other",
-                    "location": "wrld_2:instance",
-                    "created_at": "2026-05-15T00:00:01Z",
-                })),
-            ],
-            current_user_id: "usr_self".into(),
-            filters: Vec::new(),
-            search: String::new(),
-            date_from: String::new(),
-            date_to: String::new(),
-            favorites_only: false,
-            favorite_user_ids: Vec::new(),
-            scoped_user_ids: vec!["usr_scoped".into()],
-            excluded_user_ids: Vec::new(),
-            live_entries: vec![
-                FeedLiveEntryInput {
-                    sequence: 1,
-                    entry: RawJson::from(json!({
-                        "type": "GPS",
-                        "userId": "usr_other",
-                        "displayName": "Other",
-                        "location": "wrld_3:instance",
-                        "created_at": "2026-05-15T00:00:02Z",
-                    })),
-                },
-                FeedLiveEntryInput {
-                    sequence: 2,
-                    entry: RawJson::from(json!({
-                        "type": "GPS",
-                        "userId": "usr_scoped",
-                        "displayName": "Scoped",
-                        "location": "wrld_4:instance",
-                        "created_at": "2026-05-15T00:00:03Z",
-                    })),
-                },
-            ],
-            min_live_sequence: 0,
-            max_rows: 10,
-        });
-
-        assert_eq!(output.max_sequence, 2);
-        let user_ids = output
-            .rows
-            .iter()
-            .map(|row| row.user_id.as_deref().unwrap_or_default())
-            .collect::<Vec<_>>();
-        assert_eq!(user_ids, vec!["usr_scoped", "usr_scoped"]);
-    }
-
-    #[test]
-    fn live_feed_rows_keep_avatar_fields_that_only_exist_on_live_entries() {
-        let output = merge_case(MergeCase {
-            rows: Vec::new(),
-            current_user_id: "usr_self".into(),
-            filters: Vec::new(),
-            search: String::new(),
-            date_from: String::new(),
-            date_to: String::new(),
-            favorites_only: false,
-            favorite_user_ids: Vec::new(),
-            scoped_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-            live_entries: vec![FeedLiveEntryInput {
-                sequence: 1,
-                entry: RawJson::from(json!({
-                    "type": "Avatar",
-                    "userId": "usr_friend",
-                    "displayName": "Friend",
-                    "created_at": "2026-05-15T00:00:00Z",
-                    "avatarName": "Current",
-                    "previousAvatarName": "Previous",
-                    "ownerId": "usr_owner",
-                    "previousOwnerId": "usr_previous_owner",
-                    "currentAvatarTags": ["content_horror"],
-                    "previousCurrentAvatarTags": [],
-                })),
-            }],
-            min_live_sequence: 0,
-            max_rows: 10,
-        });
-
-        assert_eq!(output.rows.len(), 1);
-        let row = &output.rows[0];
-        assert_eq!(row.previous_avatar_name.as_deref(), Some("Previous"));
-        assert_eq!(row.previous_owner_id.as_deref(), Some("usr_previous_owner"));
-        assert_eq!(
-            row.current_avatar_tags.as_deref(),
-            Some(["content_horror".to_string()].as_slice())
-        );
-        assert_eq!(
-            row.previous_current_avatar_tags.as_deref(),
-            Some([].as_slice())
-        );
-        assert_eq!(row.row_id, None);
-    }
-
-    #[test]
-    fn merged_rows_normalize_snake_case_live_entry_field_names() {
-        let output = merge_case(MergeCase {
-            rows: Vec::new(),
-            current_user_id: "usr_self".into(),
-            filters: Vec::new(),
-            search: String::new(),
-            date_from: String::new(),
-            date_to: String::new(),
-            favorites_only: false,
-            favorite_user_ids: Vec::new(),
-            scoped_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-            live_entries: vec![FeedLiveEntryInput {
-                sequence: 1,
-                entry: RawJson::from(json!({
-                    "type": "GPS",
-                    "user_id": "usr_friend",
-                    "display_name": "Friend",
-                    "createdAt": "2026-05-15T00:00:00Z",
-                    "location": "wrld_1:instance",
-                    "world_name": "World",
-                    "time": "1500",
-                })),
-            }],
-            min_live_sequence: 0,
-            max_rows: 10,
-        });
-
-        assert_eq!(output.rows.len(), 1);
-        let row = &output.rows[0];
-        assert_eq!(row.user_id.as_deref(), Some("usr_friend"));
-        assert_eq!(row.display_name.as_deref(), Some("Friend"));
-        assert_eq!(row.created_at.as_deref(), Some("2026-05-15T00:00:00Z"));
-        assert_eq!(row.world_name.as_deref(), Some("World"));
-        assert_eq!(row.time, Some(1500));
-    }
-
-    #[test]
-    fn persisted_rows_with_matching_content_identity_remain_distinct() {
-        let output = merge_case(MergeCase {
-            rows: vec![
-                RawJson::from(json!({
-                    "rowId": 1,
-                    "sourceRank": 40,
-                    "type": "Status",
-                    "userId": "usr_friend",
-                    "created_at": "2026-05-15T00:00:00Z",
-                    "status": "active"
-                })),
-                RawJson::from(json!({
-                    "rowId": 2,
-                    "sourceRank": 40,
-                    "type": "Status",
-                    "userId": "usr_friend",
-                    "created_at": "2026-05-15T00:00:00Z",
-                    "status": "join me"
-                })),
-            ],
-            current_user_id: "usr_self".into(),
-            max_rows: 10,
-            ..MergeCase::default()
-        });
-
-        assert_eq!(output.rows.len(), 2);
-        assert_eq!(output.rows[0].row_id, Some(1));
-        assert_eq!(output.rows[1].row_id, Some(2));
-    }
-
-    #[test]
-    fn live_row_replaces_the_same_persisted_feed_entry() {
-        let output = merge_case(MergeCase {
-            rows: vec![RawJson::from(json!({
-                "rowId": 1,
-                "sourceRank": 60,
-                "type": "GPS",
-                "userId": "usr_friend",
-                "created_at": "2026-05-15T00:00:00Z",
-                "location": "wrld_1:instance"
-            }))],
-            current_user_id: "usr_self".into(),
-            live_entries: vec![FeedLiveEntryInput {
-                sequence: 1,
-                entry: RawJson::from(json!({
-                    "type": "GPS",
-                    "userId": "usr_friend",
-                    "created_at": "2026-05-15T00:00:00Z",
-                    "location": "wrld_1:instance"
-                })),
-            }],
-            max_rows: 10,
-            ..MergeCase::default()
-        });
-
-        assert_eq!(output.rows.len(), 1);
-        assert_eq!(output.rows[0].row_id, None);
-        assert_eq!(output.max_sequence, 1);
-    }
-
-    #[test]
-    fn latest_query_keeps_the_persisted_cursor_when_live_rows_fill_the_result(
-    ) -> Result<(), crate::Error> {
-        let dir = TestDir::new("feed-latest-persisted-cursor");
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-        write_realtime_batch(
-            &db,
-            "usr_self",
-            &RealtimePersistenceBatch {
-                feed_entries: vec![json!({
-                    "created_at": "2026-05-15T00:00:00Z",
-                    "type": "GPS",
-                    "userId": "usr_persisted",
-                    "displayName": "Persisted",
-                    "location": "wrld_1:persisted",
-                    "worldName": "Persisted World",
-                    "previousLocation": "",
-                    "time": 0,
-                    "groupName": ""
-                })],
-                ..RealtimePersistenceBatch::default()
-            },
-        )?;
-
-        let output = feed_latest_query(
-            &db,
-            FeedLatestQueryInput {
-                user_id: "usr_self".into(),
-                filters: vec![FeedFilter::Gps],
-                favorite_user_ids: Vec::new(),
-                scoped_user_ids: Vec::new(),
-                excluded_user_ids: Vec::new(),
-                favorites_only: false,
-                max_rows: 1,
-            },
-            vec![FeedLiveEntryInput {
-                sequence: 1,
-                entry: RawJson::from(json!({
-                    "type": "GPS",
-                    "userId": "usr_live",
-                    "created_at": "2026-05-15T00:01:00Z",
-                    "location": "wrld_1:live"
-                })),
-            }],
-            1,
-            true,
-        )?;
-
-        assert_eq!(output.rows.len(), 1);
-        assert_eq!(output.rows[0].user_id.as_deref(), Some("usr_live"));
-        assert_eq!(output.rows[0].row_id, None);
-        assert!(output.persisted_has_more);
-        assert!(output.persisted_cursor.is_some());
-        Ok(())
-    }
-
-    #[test]
-    fn lookup_feed_pagination_uses_the_same_date_order_as_its_cursor() -> Result<(), crate::Error> {
-        let dir = TestDir::new("feed-lookup-rowid");
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-
-        write_realtime_batch(
-            &db,
-            "usr_self",
-            &RealtimePersistenceBatch {
-                feed_entries: vec![
-                    json!({
-                        "created_at": "2026-05-15T00:10:00Z",
-                        "type": "GPS",
-                        "userId": "usr_newer_created",
-                        "displayName": "newer-created",
-                        "location": "wrld_1:newer",
-                        "worldName": "Newer Created",
-                        "previousLocation": "",
-                        "time": 0,
-                        "groupName": ""
-                    }),
-                    json!({
-                        "created_at": "2026-05-15T00:00:00Z",
-                        "type": "GPS",
-                        "userId": "usr_later_inserted",
-                        "displayName": "later-inserted",
-                        "location": "wrld_1:later",
-                        "worldName": "Later Inserted",
-                        "previousLocation": "",
-                        "time": 0,
-                        "groupName": ""
-                    }),
-                ],
-                ..RealtimePersistenceBatch::default()
-            },
-        )?;
-
-        let first_page = feed_rows_query(
-            &db,
-            FeedRowsQueryInput {
-                user_id: "usr_self".into(),
-                mode: FeedQueryMode::Lookup,
-                search: String::new(),
-                filters: vec![FeedFilter::Gps],
-                vip_list: Vec::new(),
-                scoped_user_ids: Vec::new(),
-                excluded_user_ids: Vec::new(),
-                max_entries: 1,
-                date_from: String::new(),
-                date_to: String::new(),
-                cursor: None,
-            },
-        )?;
-
-        assert_eq!(first_page.len(), 1);
-        assert_eq!(first_page[0].display_name.as_deref(), Some("newer-created"));
-
-        let second_page = feed_rows_query(
-            &db,
-            FeedRowsQueryInput {
-                user_id: "usr_self".into(),
-                mode: FeedQueryMode::Lookup,
-                search: String::new(),
-                filters: vec![FeedFilter::Gps],
-                vip_list: Vec::new(),
-                scoped_user_ids: Vec::new(),
-                excluded_user_ids: Vec::new(),
-                max_entries: 1,
-                date_from: String::new(),
-                date_to: String::new(),
-                cursor: Some(FeedCursorInput {
-                    created_at: first_page[0].created_at.clone().unwrap(),
-                    source_rank: first_page[0].source_rank.unwrap(),
-                    row_id: first_page[0].row_id.unwrap(),
-                }),
-            },
-        )?;
-
-        assert_eq!(second_page.len(), 1);
-        assert_eq!(
-            second_page[0].display_name.as_deref(),
-            Some("later-inserted")
-        );
-        Ok(())
-    }
-}
+mod tests;

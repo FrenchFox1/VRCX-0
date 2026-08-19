@@ -19,8 +19,8 @@ import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { useKnownUserFacts } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
-import gameLogRepository from '@/repositories/gameLogRepository';
 import { userImage } from '@/services/entityMediaService';
+import { openGameLogUser } from '@/services/gameLogUserDialogService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -43,16 +43,10 @@ import {
     resolveGameLogSessionDuration as resolveSessionDuration,
     resolveGameLogWorldTarget as resolveWorldTarget
 } from '../gameLogRows';
-import {
-    buildGameLogSessionDurationDetails,
-    createEmptyGameLogSessionDurationDetails,
-    type GameLogSessionDurationDetails
-} from '../gameLogSessionDurations';
+import { buildGameLogSessionDurationDetails } from '../gameLogSessionDurations';
 import type { GameLogSession, GameLogSessionEvent } from '../gameLogTypes';
-import { openGameLogUser } from '../gameLogUserLookup';
 import { SessionEventGroups } from './GameLogSessionEventRow';
 
-const EMPTY_DURATION_BY_KEY = new Map<string, number>();
 const FACEPILE_CLASSES = [
     'bg-rose-800 text-rose-100',
     'bg-orange-800 text-orange-100',
@@ -100,7 +94,7 @@ function SessionFriendList({
     const knownFriendsById = useKnownUserFacts(friendUserIds);
 
     return (
-        <ul className="max-h-72 overflow-y-auto py-1" role="list">
+        <ul className="max-h-72 overflow-y-auto py-1">
             {friends.map((friend) => {
                 const knownFriend = knownFriendsById[friend.userId] || null;
                 const displayName =
@@ -213,28 +207,6 @@ function SessionFriendFacepile({
         </div>
     );
 }
-const sessionDurationDetailsCache = new Map<
-    string,
-    GameLogSessionDurationDetails
->();
-
-type PlayerDurationDetailsState = GameLogSessionDurationDetails & {
-    location: string;
-};
-
-function createPlayerDurationDetailsState({
-    details = createEmptyGameLogSessionDurationDetails(),
-    location
-}: {
-    details?: GameLogSessionDurationDetails;
-    location: string;
-}): PlayerDurationDetailsState {
-    return {
-        ...details,
-        location
-    };
-}
-
 function sessionStartValue(session: GameLogSession) {
     const value = session?.created_at || session?.createdAt || '';
     return typeof value === 'number' ? value : String(value);
@@ -350,18 +322,16 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
     const durationMs = resolveSessionDuration(session);
     const sessionStartedAt = Date.parse(session?.created_at || '');
     const sessionLocation = session.location || '';
-    const shouldLoadDurationDetails =
-        Boolean(sessionLocation) && (isOpen || durationMs <= 0);
-    const [playerDurationDetails, setPlayerDurationDetails] =
-        useState<PlayerDurationDetailsState>(() =>
-            createPlayerDurationDetailsState({
-                location: ''
-            })
-        );
-    const playerMaxDurationMs =
-        playerDurationDetails.location === sessionLocation
-            ? playerDurationDetails.maxDurationMs
-            : 0;
+    const playerDurationDetails = useMemo(
+        () =>
+            buildGameLogSessionDurationDetails(
+                Array.isArray(session.playerDurationRows)
+                    ? session.playerDurationRows
+                    : []
+            ),
+        [session.playerDurationRows]
+    );
+    const playerMaxDurationMs = playerDurationDetails.maxDurationMs;
     const effectiveDurationMs = Math.max(durationMs, playerMaxDurationMs);
     const shouldShowLiveDuration =
         effectiveDurationMs <= 0 &&
@@ -390,83 +360,12 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
         () => collectGameLogSessionFriends(session?.events ?? []),
         [session?.events]
     );
-    const durationByKey =
-        playerDurationDetails.location === sessionLocation
-            ? playerDurationDetails.durationByKey
-            : EMPTY_DURATION_BY_KEY;
+    const durationByKey = playerDurationDetails.durationByKey;
     const handleOpenChange = (nextOpen: boolean) => {
         if (sessionKey) {
             onOpenChange?.(sessionKey, nextOpen);
         }
     };
-
-    useEffect(() => {
-        if (!sessionLocation) {
-            setPlayerDurationDetails(
-                createPlayerDurationDetailsState({
-                    location: ''
-                })
-            );
-            return undefined;
-        }
-
-        if (!shouldLoadDurationDetails) {
-            return undefined;
-        }
-
-        const cachedDetails = sessionDurationDetailsCache.get(sessionLocation);
-        if (cachedDetails) {
-            setPlayerDurationDetails(
-                createPlayerDurationDetailsState({
-                    details: cachedDetails,
-                    location: sessionLocation
-                })
-            );
-            return undefined;
-        }
-
-        let active = true;
-        setPlayerDurationDetails(
-            createPlayerDurationDetailsState({
-                location: sessionLocation
-            })
-        );
-
-        gameLogRepository
-            .getPlayerDetailFromInstance(sessionLocation)
-            .then((rows: unknown) => {
-                if (!active) {
-                    return;
-                }
-                const details = buildGameLogSessionDurationDetails(
-                    Array.isArray(rows) ? rows : []
-                );
-                sessionDurationDetailsCache.set(sessionLocation, details);
-                setPlayerDurationDetails(
-                    createPlayerDurationDetailsState({
-                        details,
-                        location: sessionLocation
-                    })
-                );
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-                const details = createEmptyGameLogSessionDurationDetails();
-                sessionDurationDetailsCache.set(sessionLocation, details);
-                setPlayerDurationDetails(
-                    createPlayerDurationDetailsState({
-                        details,
-                        location: sessionLocation
-                    })
-                );
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [sessionLocation, shouldLoadDurationDetails]);
 
     useEffect(() => {
         if (!shouldShowLiveDuration) {

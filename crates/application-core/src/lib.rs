@@ -13,6 +13,7 @@ mod image_cache;
 mod interruptible_sleep;
 pub mod ports;
 mod proxy;
+mod remote_mutation_gate;
 mod runtime_lifecycle;
 mod runtime_output;
 mod runtime_status;
@@ -28,23 +29,24 @@ pub use async_runtime_policy::{
     recommended_tokio_max_blocking_threads, recommended_tokio_max_blocking_threads_for,
     recommended_tokio_worker_threads, recommended_tokio_worker_threads_for,
 };
-pub use auth_scope::{auth_scope_matches, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+pub use auth_scope::{RuntimeAuthIdentity, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 pub use avatar_cache::AvatarCache;
 pub use backend_runtime::{
     BackendRuntime, BackendRuntimeAuthStatus, BackendRuntimeGameLogStatus, BackendRuntimeMode,
     BackendRuntimePhase, BackendRuntimeProcessStatus, BackendRuntimeSnapshot,
-    BackendRuntimeTelemetry, BackendRuntimeTelemetryKind, RealtimeProjectionSync,
+    BackendRuntimeStatusPublisher, BackendRuntimeTelemetry, BackendRuntimeTelemetryKind,
+    GuiRuntimeMode, RealtimeProjectionSync, RuntimeHostProfile,
 };
 pub use background::{
     sleep_until_due_or_stopped, RuntimeBackgroundJobSnapshot, RuntimeBackgroundJobs,
 };
-pub use config::{read_config_string_array, validate_config_writes, write_config_string_array};
+pub use config::{read_config_string_array, write_config_string_array};
 pub use diagnostics::RuntimeDiagnostics;
 pub use error::Error;
 #[cfg(any(test, feature = "test-utils"))]
 pub use event_bus::RuntimeEventForTest;
 pub use event_bus::{
-    FavoritesChangedPayload, RuntimeEventBus, RuntimeEventPayload, RuntimeEventSink,
+    FavoriteChange, FavoritesChangedPayload, RuntimeEventBus, RuntimeEventSink,
     RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
 };
 pub use events::{
@@ -59,15 +61,19 @@ pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteT
 pub use image_cache::{save_ugc_image_to_file, ImageCache};
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
-    BackgroundCapabilitySession, GameProcessEvent, GameProcessEventSink,
-    HostRealtimeSessionContext, HostSessionGameProcessStatus, HostSessionProjection,
-    HostSessionRuntime, LocalGameContextSnapshot, LocalGameContextSource,
+    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, GameProcessEvent,
+    GameProcessEventSink, HostRealtimeSessionContext, HostSessionGameProcessStatus,
+    HostSessionProjection, HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver,
+    InstanceRosterSnapshot, LocalGameContextSnapshot, LocalGameContextSource,
     NoopPrintCleanupInputSink, NoopUpdaterPort, OverlayActivityInputSink, PrintCleanupInputSink,
     PrintCleanupTrigger, SessionHostRuntime, UnavailableLocalGameContextSource,
     UpdaterCheckRequest, UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle,
     UpdaterMetadata, UpdaterPort, UpdaterProgressCallback,
 };
 pub use proxy::{load_proxy_url, test_proxy_connectivity, ProxySettingsTestResult};
+pub use remote_mutation_gate::{
+    is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate,
+};
 pub use runtime_lifecycle::{RuntimeLifecycle, RuntimeLifecycleSnapshot};
 pub use runtime_output::{
     format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputLine, RuntimeOutputMode,
@@ -77,6 +83,8 @@ pub use sync::{RuntimeSyncEngine, RuntimeSyncSnapshot};
 pub use task_supervisor::{
     RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskStopToken, TaskSupervisor,
 };
+pub use vrcx_0_application_contracts::{runtime_event_payload, RuntimeEventPayload};
+pub use vrcx_0_core::FavoriteGroupVisibility;
 pub use web_client::{RealtimeAuthTokenFetch, WebClient};
 pub use world_cache::WorldCache;
 

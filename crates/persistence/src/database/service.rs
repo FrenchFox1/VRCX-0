@@ -4,8 +4,9 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
-    Arc, Mutex, RwLock,
+    Arc, Mutex, MutexGuard, RwLock, RwLockReadGuard, TryLockError,
 };
+use std::time::Duration;
 
 use rusqlite::{
     types::{ToSql, Value as SqlValue},
@@ -31,7 +32,11 @@ pub struct DatabaseUpgradeStatus {
     pub work_db_path: String,
     pub started_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub app_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub stage: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failed_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -262,6 +267,54 @@ impl DatabaseService {
         }
     }
 
+    pub(crate) fn execute_interruptible<F>(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+        should_interrupt: F,
+    ) -> Result<Vec<Vec<serde_json::Value>>, Error>
+    where
+        F: Fn() -> bool + Send + Sync + 'static,
+    {
+        let inner = read_lock_interruptibly(&self.inner, &should_interrupt)?;
+        match &*inner {
+            DatabaseMode::Main(main) => {
+                main.execute_read_interruptible(sql, args, should_interrupt)
+            }
+            DatabaseMode::Upgrade(upgrade) => {
+                let conn = lock_interruptibly(&upgrade.conn, &should_interrupt)?;
+                execute_on_connection_interruptible(&conn, sql, args, should_interrupt)
+            }
+            DatabaseMode::Closed => Err(Error::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
+    }
+
+    pub(crate) fn execute_non_query_exclusive(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, Error> {
+        let inner = self
+            .inner
+            .write()
+            .map_err(|e| Error::Database(e.to_string()))?;
+        match &*inner {
+            DatabaseMode::Main(main) => main.execute_non_query(sql, args),
+            DatabaseMode::Upgrade(upgrade) => {
+                let conn = upgrade
+                    .conn
+                    .lock()
+                    .map_err(|e| Error::Database(e.to_string()))?;
+                execute_non_query_on_connection(&conn, sql, args)
+            }
+            DatabaseMode::Closed => Err(Error::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
+    }
+
     pub(crate) fn execute_non_query(
         &self,
         sql: &str,
@@ -330,10 +383,32 @@ impl DatabaseService {
             }
         };
         checkpoint(&conn)?;
-        conn.execute_batch("VACUUM;")
-            .map_err(Error::sqlite)?;
+        conn.execute_batch("VACUUM;").map_err(Error::sqlite)?;
         checkpoint(&conn)?;
         Ok(())
+    }
+
+    pub fn checkpoint_wal(&self) -> Result<(), Error> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| Error::Database(e.to_string()))?;
+        let conn = match &*inner {
+            DatabaseMode::Main(main) => main
+                .writer
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
+            DatabaseMode::Upgrade(upgrade) => upgrade
+                .conn
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
+            DatabaseMode::Closed => {
+                return Err(Error::Database(
+                    "Database connection is temporarily unavailable.".into(),
+                ));
+            }
+        };
+        checkpoint(&conn)
     }
 }
 
@@ -388,6 +463,46 @@ impl MainDatabase {
             .lock()
             .map_err(|e| Error::Database(e.to_string()))?;
         execute_on_connection(&conn, sql, args)
+    }
+
+    fn execute_read_interruptible<F>(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+        should_interrupt: F,
+    ) -> Result<Vec<Vec<serde_json::Value>>, Error>
+    where
+        F: Fn() -> bool + Send + Sync + 'static,
+    {
+        if self.readers.is_empty() {
+            let conn = lock_interruptibly(&self.writer, &should_interrupt)?;
+            return execute_on_connection_interruptible(&conn, sql, args, should_interrupt);
+        }
+
+        let start = self.next_reader.fetch_add(1, Ordering::Relaxed) % self.readers.len();
+        loop {
+            for offset in 0..self.readers.len() {
+                let index = (start + offset) % self.readers.len();
+                match self.readers[index].try_lock() {
+                    Ok(conn) => {
+                        return execute_on_connection_interruptible(
+                            &conn,
+                            sql,
+                            args,
+                            should_interrupt,
+                        );
+                    }
+                    Err(TryLockError::WouldBlock) => {}
+                    Err(TryLockError::Poisoned(error)) => {
+                        return Err(Error::Database(error.to_string()));
+                    }
+                }
+            }
+            if should_interrupt() {
+                return Err(interrupted_error());
+            }
+            std::thread::sleep(Duration::from_millis(2));
+        }
     }
 
     fn execute_on_writer(
@@ -458,7 +573,8 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
         "PRAGMA locking_mode=NORMAL;
          PRAGMA busy_timeout=5000;
          PRAGMA journal_mode=WAL;
-         PRAGMA secure_delete=ON;
+         PRAGMA synchronous=NORMAL;
+         PRAGMA secure_delete=OFF;
          PRAGMA optimize=0x10002;",
     )
     .map_err(Error::sqlite)?;
@@ -469,7 +585,8 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
 fn configure_read_connection(conn: &Connection) -> Result<(), Error> {
     conn.execute_batch(
         "PRAGMA busy_timeout=5000;
-         PRAGMA query_only=ON;",
+         PRAGMA query_only=ON;
+         PRAGMA temp_store=MEMORY;",
     )
     .map_err(Error::sqlite)?;
     conn.set_prepared_statement_cache_capacity(64);
@@ -505,15 +622,10 @@ fn execute_write_transaction<T, F>(conn: &mut Connection, f: F) -> Result<T, Err
 where
     F: FnOnce(&mut DatabaseWriteTransaction<'_>) -> Result<T, Error>,
 {
-    let tx = conn
-        .transaction()
-        .map_err(Error::sqlite)?;
+    let tx = conn.transaction().map_err(Error::sqlite)?;
     let mut wrapped = DatabaseWriteTransaction { tx };
     let value = f(&mut wrapped)?;
-    wrapped
-        .tx
-        .commit()
-        .map_err(Error::sqlite)?;
+    wrapped.tx.commit().map_err(Error::sqlite)?;
     Ok(value)
 }
 
@@ -542,9 +654,7 @@ fn execute_on_connection(
     sql: &str,
     args: &HashMap<String, serde_json::Value>,
 ) -> Result<Vec<Vec<serde_json::Value>>, Error> {
-    let mut stmt = conn
-        .prepare_cached(sql)
-        .map_err(Error::sqlite)?;
+    let mut stmt = conn.prepare_cached(sql).map_err(Error::sqlite)?;
 
     let param_names = statement_param_names(&stmt);
     let params = statement_param_values(&param_names, args)?;
@@ -575,14 +685,77 @@ fn execute_on_connection(
     Ok(result)
 }
 
+fn execute_on_connection_interruptible<F>(
+    conn: &Connection,
+    sql: &str,
+    args: &HashMap<String, serde_json::Value>,
+    should_interrupt: F,
+) -> Result<Vec<Vec<serde_json::Value>>, Error>
+where
+    F: Fn() -> bool + Send + Sync + 'static,
+{
+    conn.progress_handler(1_000, Some(should_interrupt))
+        .map_err(Error::sqlite)?;
+    let result = execute_on_connection(conn, sql, args);
+    conn.progress_handler(0, None::<fn() -> bool>)
+        .map_err(Error::sqlite)?;
+    result
+}
+
+fn read_lock_interruptibly<'a, T, F>(
+    lock: &'a RwLock<T>,
+    should_interrupt: &F,
+) -> Result<RwLockReadGuard<'a, T>, Error>
+where
+    F: Fn() -> bool,
+{
+    loop {
+        match lock.try_read() {
+            Ok(guard) => return Ok(guard),
+            Err(TryLockError::WouldBlock) => {}
+            Err(TryLockError::Poisoned(error)) => {
+                return Err(Error::Database(error.to_string()));
+            }
+        }
+        if should_interrupt() {
+            return Err(interrupted_error());
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    }
+}
+
+fn lock_interruptibly<'a, T, F>(
+    lock: &'a Mutex<T>,
+    should_interrupt: &F,
+) -> Result<MutexGuard<'a, T>, Error>
+where
+    F: Fn() -> bool,
+{
+    loop {
+        match lock.try_lock() {
+            Ok(guard) => return Ok(guard),
+            Err(TryLockError::WouldBlock) => {}
+            Err(TryLockError::Poisoned(error)) => {
+                return Err(Error::Database(error.to_string()));
+            }
+        }
+        if should_interrupt() {
+            return Err(interrupted_error());
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    }
+}
+
+fn interrupted_error() -> Error {
+    Error::Database("SQLite query interrupted".into())
+}
+
 fn execute_non_query_on_connection(
     conn: &Connection,
     sql: &str,
     args: &HashMap<String, serde_json::Value>,
 ) -> Result<i64, Error> {
-    let mut stmt = conn
-        .prepare_cached(sql)
-        .map_err(Error::sqlite)?;
+    let mut stmt = conn.prepare_cached(sql).map_err(Error::sqlite)?;
 
     let param_names = statement_param_names(&stmt);
     let params = statement_param_values(&param_names, args)?;
@@ -593,9 +766,7 @@ fn execute_non_query_on_connection(
         .map(|(name, val)| (name.as_str(), val as &dyn ToSql))
         .collect();
 
-    let affected = stmt
-        .execute(&*param_refs)
-        .map_err(Error::sqlite)?;
+    let affected = stmt.execute(&*param_refs).map_err(Error::sqlite)?;
 
     Ok(affected as i64)
 }

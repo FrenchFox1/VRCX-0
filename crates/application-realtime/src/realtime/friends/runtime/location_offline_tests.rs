@@ -14,7 +14,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },
@@ -43,7 +42,7 @@ mod tests {
             panic!("friend-location should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "offline");
+        assert_eq!(output.projection.patches[0].patch.state, "offline");
         assert_eq!(
             output.projection.patches[0].state_bucket_authority,
             FriendStateBucketAuthority::Preserve
@@ -64,7 +63,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },
@@ -100,8 +98,8 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0].patch;
-        assert_eq!(output.projection.patches[0].state_bucket, "offline");
-        assert_eq!(patch.state_bucket, "offline");
+        assert_eq!(output.projection.patches[0].patch.state, "offline");
+        assert_eq!(patch.state, "offline");
         assert_eq!(output.profile_refetch_user_ids, vec!["usr_friend"]);
         assert_eq!(
             runtime
@@ -110,7 +108,7 @@ mod tests {
                 .friends_by_id
                 .get("usr_friend")
                 .unwrap()
-                .state_bucket,
+                .state,
             "offline"
         );
     }
@@ -127,7 +125,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -166,14 +163,14 @@ mod tests {
         let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
             panic!("offline location should schedule pending timer");
         };
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert!(output.persistence.feed_entries.is_empty());
         assert_eq!(patch.location, "offline");
         assert_eq!(patch.extra["pendingOffline"], true);
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "offline");
+        assert_eq!(fired.projection.patches[0].patch.state, "offline");
     }
 
     #[test]
@@ -188,7 +185,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -228,13 +224,13 @@ mod tests {
         let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
             panic!("offline location should schedule pending timer");
         };
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert!(output.persistence.feed_entries.is_empty());
         assert_eq!(patch.location, "offline");
         assert_eq!(patch.extra["pendingOffline"], true);
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "offline");
+        assert_eq!(fired.projection.patches[0].patch.state, "offline");
     }
 }

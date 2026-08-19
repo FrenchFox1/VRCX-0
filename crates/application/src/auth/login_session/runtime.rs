@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 use tokio::sync::{Mutex as AsyncMutex, OwnedMutexGuard};
 use vrcx_0_application_core::RuntimeRealtimeTransportEpoch;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_core::TwoFactorMethod;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
@@ -46,7 +47,8 @@ pub struct LoginSessionRespondInput {
     #[serde(default)]
     pub attempt_id: String,
     #[serde(default)]
-    pub method: String,
+    #[specta(type = String)]
+    pub method: TwoFactorMethod,
     #[serde(default)]
     pub code: String,
 }
@@ -138,8 +140,8 @@ struct ActiveChallenge {
     attempt_id: String,
     api: Arc<dyn LoginApi>,
     endpoint: String,
-    methods: Vec<String>,
-    mode: String,
+    methods: Vec<TwoFactorMethod>,
+    mode: TwoFactorMethod,
     error: Option<String>,
     policy: LoginAttemptPolicy,
 }

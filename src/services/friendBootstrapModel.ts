@@ -1,3 +1,4 @@
+import type { FriendRosterInputById } from '@/domain/friends/types';
 import type { FriendLogCurrentRow } from '@/repositories/friendLogRepository';
 
 export type FriendBootstrapSnapshot = Record<string, unknown> & {
@@ -9,31 +10,12 @@ export type FriendBootstrapSnapshot = Record<string, unknown> & {
     detail?: unknown;
 };
 export type FriendStateBucket = 'online' | 'active' | 'offline';
-export type FriendRecord = Record<string, unknown> & {
-    id?: unknown;
-    userId?: unknown;
-    user_id?: unknown;
-    displayName?: unknown;
-    username?: unknown;
-    tags?: unknown;
-    developerType?: unknown;
-    platform?: unknown;
-    last_platform?: unknown;
-    location?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    trustLevel?: unknown;
-    $trustLevel?: unknown;
-    friendNumber?: unknown;
-    $friendNumber?: unknown;
-    $profileSource?: unknown;
-};
-export type FriendLogRow = FriendLogCurrentRow & {
+export type FriendLogBootstrapRow = FriendLogCurrentRow & {
     user_id?: unknown;
     $friendNumber?: unknown;
     $trustLevel?: unknown;
 };
-export type FriendLogSeedRow = Partial<FriendLogRow>;
+export type FriendLogSeedRow = Partial<FriendLogBootstrapRow>;
 export type CurrentUserFriendSnapshot = Record<string, unknown> & {
     id?: unknown;
     friends?: unknown;
@@ -162,7 +144,7 @@ export function buildSeedRosterFriendsById(
     friendLogRows: FriendLogSeedRow[] = []
 ) {
     const rowsById = buildFriendLogRowsById(friendLogRows);
-    const friendsById: Record<string, FriendRecord> = {};
+    const friendsById: FriendRosterInputById = {};
 
     for (const [userId, stateBucket] of stateById.entries()) {
         const row: FriendLogSeedRow = rowsById.get(userId) ?? {};
@@ -183,7 +165,6 @@ export function buildSeedRosterFriendsById(
             last_platform: '',
             location: 'offline',
             state: stateBucket,
-            stateBucket,
             trustLevel,
             $trustLevel: trustLevel,
             friendNumber,

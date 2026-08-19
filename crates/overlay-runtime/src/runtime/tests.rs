@@ -1123,7 +1123,6 @@ fn refresh_loop_consumes_wake_sent_before_first_wait() {
     );
     runtime.enabled.store(true, Ordering::Release);
     runtime.game_running.store(true, Ordering::Release);
-    runtime.vr_mode.store(true, Ordering::Release);
     runtime.steamvr_running.store(true, Ordering::Release);
     runtime.refresh_wake.notify();
 
@@ -1228,6 +1227,35 @@ fn friends_panel_avatar_session_clear_rejects_stale_insert() {
         true,
     ));
     assert!(runtime.friends_panel_avatars.lock().unwrap().is_empty());
+}
+
+#[test]
+fn friends_panel_avatar_cache_evicts_the_least_recently_used_entry() {
+    let mut cache = FriendsPanelAvatarCache::default();
+    for index in 0..FRIENDS_PANEL_AVATAR_CACHE_CAPACITY {
+        cache.insert(
+            format!("usr_{index}"),
+            FriendsPanelAvatarCacheEntry {
+                bitmap: test_avatar_bitmap(),
+                source_url: format!("https://images.example/avatar/{index}"),
+                allow_user_icon: true,
+            },
+        );
+    }
+    assert!(cache.contains_matching("usr_0", "https://images.example/avatar/0", true));
+
+    cache.insert(
+        "usr_new".into(),
+        FriendsPanelAvatarCacheEntry {
+            bitmap: test_avatar_bitmap(),
+            source_url: "https://images.example/avatar/new".into(),
+            allow_user_icon: true,
+        },
+    );
+
+    assert_eq!(cache.entries.len(), FRIENDS_PANEL_AVATAR_CACHE_CAPACITY);
+    assert!(cache.entries.contains_key("usr_0"));
+    assert!(!cache.entries.contains_key("usr_1"));
 }
 
 #[test]
@@ -1355,9 +1383,6 @@ fn frame_producer_is_created_only_while_runtime_can_render_and_released_when_ine
     assert_eq!(created.load(Ordering::SeqCst), 0);
 
     record_process_status(&runtime, true, true, true);
-    assert_eq!(created.load(Ordering::SeqCst), 0);
-
-    runtime.set_vr_mode(true);
     assert!(runtime.is_running());
     assert_eq!(created.load(Ordering::SeqCst), 1);
 
@@ -1402,7 +1427,7 @@ fn steamvr_start_mode_releases_frame_producer_when_steamvr_stops_not_when_game_s
 }
 
 #[test]
-fn hmd_default_start_mode_waits_for_vrchat_vr_mode() {
+fn hmd_default_start_mode_requires_vrchat_and_steamvr_processes() {
     let created = Arc::new(AtomicUsize::new(0));
     let dropped = Arc::new(AtomicUsize::new(0));
     let config = VrOverlayRuntimeConfig {
@@ -1422,9 +1447,6 @@ fn hmd_default_start_mode_waits_for_vrchat_vr_mode() {
     assert!(!runtime.is_running());
 
     record_process_status(&runtime, true, true, true);
-    assert!(!runtime.is_running());
-
-    runtime.set_vr_mode(true);
     assert!(runtime.is_running());
     assert_eq!(created.load(Ordering::SeqCst), 0);
 
@@ -1434,7 +1456,7 @@ fn hmd_default_start_mode_waits_for_vrchat_vr_mode() {
 }
 
 #[test]
-fn hmd_steamvr_start_mode_runs_with_steamvr_without_vrchat_vr_mode() {
+fn hmd_steamvr_start_mode_runs_with_steamvr_without_vrchat_process() {
     let created = Arc::new(AtomicUsize::new(0));
     let dropped = Arc::new(AtomicUsize::new(0));
     let config = VrOverlayRuntimeConfig {

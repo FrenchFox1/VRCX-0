@@ -53,9 +53,9 @@ describe('userIdentityService', () => {
             userId: 'usr_friend',
             patch: {
                 id: 'usr_friend',
-                displayName: 'Friend User'
-            },
-            stateBucket: 'online'
+                displayName: 'Friend User',
+                state: 'online'
+            }
         });
 
         const getUserIdFromDisplayName = vi.fn();

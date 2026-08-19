@@ -6,7 +6,7 @@ import {
     useSensors
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -21,8 +21,12 @@ import {
     isToolCapabilityAvailable,
     triggerToolByKey
 } from '@/services/toolActionService';
-import type { ToolDefinition } from '@/shared/constants/tools';
-import { publishToolsQuickAccessUpdated } from '@/shared/constants/tools';
+import { getRecentToolKeys } from '@/services/toolRecentService';
+import {
+    publishToolsQuickAccessUpdated,
+    TOOLS_RECENT_UPDATED_EVENT,
+    type ToolDefinition
+} from '@/shared/constants/tools';
 import { useDashboardStore } from '@/state/dashboardStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -43,6 +47,7 @@ import {
     toolCatalogDropId,
     toolsPageCategories
 } from './toolsPageHelpers';
+import { useToolStatusSummaries } from './useToolStatusSummaries';
 
 type CollapsedByCategory = Record<string, boolean>;
 type QuickAccessKeysUpdater =
@@ -136,6 +141,46 @@ function useToolsQuickAccessState() {
     return { quickAccessKeys, setQuickAccessKeys };
 }
 
+function useRecentTools(availableToolMap: Map<string, ToolDefinition>) {
+    const [recentToolKeys, setRecentToolKeys] = useState<string[]>([]);
+
+    useEffect(() => {
+        let active = true;
+        let requestRevision = 0;
+        const loadRecentTools = () => {
+            const expectedRevision = ++requestRevision;
+            getRecentToolKeys()
+                .then((keys) => {
+                    if (active && expectedRevision === requestRevision) {
+                        setRecentToolKeys(keys);
+                    }
+                })
+                .catch(() => {
+                    if (active && expectedRevision === requestRevision) {
+                        setRecentToolKeys([]);
+                    }
+                });
+        };
+        loadRecentTools();
+        window.addEventListener(TOOLS_RECENT_UPDATED_EVENT, loadRecentTools);
+        return () => {
+            active = false;
+            window.removeEventListener(
+                TOOLS_RECENT_UPDATED_EVENT,
+                loadRecentTools
+            );
+        };
+    }, []);
+
+    return useMemo(
+        () =>
+            recentToolKeys
+                .map((key) => availableToolMap.get(key))
+                .filter((tool): tool is ToolDefinition => Boolean(tool)),
+        [availableToolMap, recentToolKeys]
+    );
+}
+
 export function useToolsPageState() {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
@@ -165,7 +210,9 @@ export function useToolsPageState() {
             toolsPageCategories
                 .map((category) => ({
                     ...category,
-                    tools: category.tools.filter(isToolCapabilityAvailable)
+                    tools: category.tools.filter((tool) =>
+                        isToolCapabilityAvailable(tool, hostCapabilities)
+                    )
                 }))
                 .filter((category) => category.tools.length > 0),
         [hostCapabilities]
@@ -205,18 +252,30 @@ export function useToolsPageState() {
     );
     const shouldShowQuickAccess =
         isQuickAccessEditing || quickAccessTools.length > 0;
+    const recentToolCandidates = useRecentTools(availableToolMap);
+    const recentTools = useMemo(
+        () =>
+            recentToolCandidates.filter(
+                (tool) => !quickAccessKeySet.has(tool.key)
+            ),
+        [quickAccessKeySet, recentToolCandidates]
+    );
+    const statusByToolKey = useToolStatusSummaries();
 
-    const translateWithFallback = (key: string) => {
-        const localized = t(key);
-        if (localized !== key) {
-            return localized;
-        }
+    const translateWithFallback = useCallback(
+        (key: string) => {
+            const localized = t(key);
+            if (localized !== key) {
+                return localized;
+            }
 
-        const english = i18n?.getFixedT
-            ? i18n.getFixedT('en')(key)
-            : t(key, { lng: 'en' });
-        return english !== key ? english : key;
-    };
+            const english = i18n?.getFixedT
+                ? i18n.getFixedT('en')(key)
+                : t(key, { lng: 'en' });
+            return english !== key ? english : key;
+        },
+        [i18n, t]
+    );
 
     useEffect(() => {
         ensureDashboardsLoaded().catch(() => {});
@@ -255,7 +314,12 @@ export function useToolsPageState() {
                 handleNavLayoutUpdated
             );
         };
-    }, [dashboards, notificationLayout, preferencesHydrated, t]);
+    }, [
+        dashboards,
+        notificationLayout,
+        preferencesHydrated,
+        translateWithFallback
+    ]);
 
     function addQuickAccessToolByKey(
         toolKey: unknown,
@@ -418,10 +482,12 @@ export function useToolsPageState() {
         pinnedToolKeys,
         quickAccessKeySet,
         quickAccessTools,
+        recentTools,
         removeQuickAccessToolByKey,
         sensors,
         setIsQuickAccessEditing,
         shouldShowQuickAccess,
+        statusByToolKey,
         toggleCategoryCollapsed,
         triggerTool,
         unpinToolFromNav

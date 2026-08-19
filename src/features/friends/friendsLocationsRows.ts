@@ -13,7 +13,6 @@ export {
 } from './friends-locations-rows/normalization';
 export {
     buildSameInstanceGroups,
-    isOnlineFriend,
     isShareableInstanceLocation,
     resolveFriendGroupName,
     resolveFriendTravelingWorldId,

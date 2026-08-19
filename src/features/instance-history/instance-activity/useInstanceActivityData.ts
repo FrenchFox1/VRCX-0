@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import instanceActivityRepository from '@/repositories/instanceActivityRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { parseLocation } from '@/shared/utils/location';
@@ -17,8 +18,6 @@ type UseInstanceActivityDataOptions = {
     reloadToken: number;
     selectedDate: string;
 };
-
-type LoadStatus = 'idle' | 'running' | 'ready' | 'error';
 
 type AvailableDatesState = {
     queryKey: string;
@@ -72,7 +71,7 @@ async function loadMissingWorldProfiles(
             continue;
         }
         nextWorldDetailsById[worldId] = {
-            ...(nextWorldDetailsById[worldId] || {}),
+            ...nextWorldDetailsById[worldId],
             ...world
         };
     }

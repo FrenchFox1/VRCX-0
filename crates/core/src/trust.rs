@@ -10,41 +10,73 @@ pub struct TrustLevelInfo {
     pub is_probable_troll: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TrustRank {
+    Visitor,
+    NewUser,
+    User,
+    KnownUser,
+    TrustedUser,
+}
+
+impl TrustRank {
+    pub fn from_tags(tags: &[String]) -> Self {
+        let has = |needle: &str| tags.iter().any(|tag| tag == needle);
+        if has("system_trust_veteran") {
+            Self::TrustedUser
+        } else if has("system_trust_trusted") {
+            Self::KnownUser
+        } else if has("system_trust_known") {
+            Self::User
+        } else if has("system_trust_basic") {
+            Self::NewUser
+        } else {
+            Self::Visitor
+        }
+    }
+
+    pub fn level_label(self) -> &'static str {
+        match self {
+            Self::TrustedUser => "Trusted User",
+            Self::KnownUser => "Known User",
+            Self::User => "User",
+            Self::NewUser => "New User",
+            Self::Visitor => "Visitor",
+        }
+    }
+
+    pub fn class_name(self) -> &'static str {
+        match self {
+            Self::TrustedUser => "x-tag-veteran",
+            Self::KnownUser => "x-tag-trusted",
+            Self::User => "x-tag-known",
+            Self::NewUser => "x-tag-basic",
+            Self::Visitor => "x-tag-untrusted",
+        }
+    }
+
+    pub fn sort_num(self) -> f64 {
+        match self {
+            Self::TrustedUser => 5.0,
+            Self::KnownUser => 4.0,
+            Self::User => 3.0,
+            Self::NewUser => 2.0,
+            Self::Visitor => 1.0,
+        }
+    }
+}
+
 pub fn compute_trust_level(tags: &[String], developer_type: &str) -> TrustLevelInfo {
-    let mut is_moderator = !developer_type.is_empty() && developer_type != "none";
-    let mut is_troll = false;
-    let mut is_probable_troll = false;
-    let mut trust_level = "Visitor".to_string();
-    let mut trust_class = "x-tag-untrusted".to_string();
-    let mut trust_sort_num = 1.0;
+    let has = |needle: &str| tags.iter().any(|tag| tag == needle);
+    let is_moderator =
+        (!developer_type.is_empty() && developer_type != "none") || has("admin_moderator");
+    let is_troll = has("system_troll");
+    let is_probable_troll = has("system_probable_troll") && !is_troll;
 
-    if tags.iter().any(|tag| tag == "admin_moderator") {
-        is_moderator = true;
-    }
-    if tags.iter().any(|tag| tag == "system_troll") {
-        is_troll = true;
-    }
-    if tags.iter().any(|tag| tag == "system_probable_troll") && !is_troll {
-        is_probable_troll = true;
-    }
-
-    if tags.iter().any(|tag| tag == "system_trust_veteran") {
-        trust_level = "Trusted User".into();
-        trust_class = "x-tag-veteran".into();
-        trust_sort_num = 5.0;
-    } else if tags.iter().any(|tag| tag == "system_trust_trusted") {
-        trust_level = "Known User".into();
-        trust_class = "x-tag-trusted".into();
-        trust_sort_num = 4.0;
-    } else if tags.iter().any(|tag| tag == "system_trust_known") {
-        trust_level = "User".into();
-        trust_class = "x-tag-known".into();
-        trust_sort_num = 3.0;
-    } else if tags.iter().any(|tag| tag == "system_trust_basic") {
-        trust_level = "New User".into();
-        trust_class = "x-tag-basic".into();
-        trust_sort_num = 2.0;
-    }
+    let rank = TrustRank::from_tags(tags);
+    let trust_level = rank.level_label().to_string();
+    let trust_class = rank.class_name().to_string();
+    let mut trust_sort_num = rank.sort_num();
 
     if is_troll || is_probable_troll {
         trust_sort_num += 0.1;
@@ -148,5 +180,57 @@ mod tests {
         assert!(!trust_level_differs("", "Known User"));
         assert!(!trust_level_changed("", "Known User"));
         assert!(trust_level_changed("Known User", "Trusted User"));
+    }
+}
+
+#[cfg(test)]
+mod trust_rank_tests {
+    use super::*;
+
+    #[test]
+    fn each_rank_keeps_its_label_class_and_sort_pairing() {
+        let cases = [
+            (TrustRank::Visitor, "Visitor", "x-tag-untrusted", 1.0),
+            (TrustRank::NewUser, "New User", "x-tag-basic", 2.0),
+            (TrustRank::User, "User", "x-tag-known", 3.0),
+            (TrustRank::KnownUser, "Known User", "x-tag-trusted", 4.0),
+            (TrustRank::TrustedUser, "Trusted User", "x-tag-veteran", 5.0),
+        ];
+        for (rank, label, class, sort) in cases {
+            assert_eq!(rank.level_label(), label);
+            assert_eq!(rank.class_name(), class);
+            assert_eq!(rank.sort_num(), sort);
+        }
+    }
+
+    #[test]
+    fn tags_map_to_the_expected_rank() {
+        let tag = |value: &str| vec![value.to_string()];
+        assert_eq!(TrustRank::from_tags(&[]), TrustRank::Visitor);
+        assert_eq!(
+            TrustRank::from_tags(&tag("system_trust_basic")),
+            TrustRank::NewUser
+        );
+        assert_eq!(
+            TrustRank::from_tags(&tag("system_trust_known")),
+            TrustRank::User
+        );
+        assert_eq!(
+            TrustRank::from_tags(&tag("system_trust_trusted")),
+            TrustRank::KnownUser
+        );
+        assert_eq!(
+            TrustRank::from_tags(&tag("system_trust_veteran")),
+            TrustRank::TrustedUser
+        );
+    }
+
+    #[test]
+    fn highest_tag_wins_when_several_are_present() {
+        let tags = vec![
+            "system_trust_basic".to_string(),
+            "system_trust_veteran".to_string(),
+        ];
+        assert_eq!(TrustRank::from_tags(&tags), TrustRank::TrustedUser);
     }
 }

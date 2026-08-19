@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-import type { GroupMemberRow } from '@/domain/entities/profileEntities';
+import type { GroupMemberRow } from '@/domain/entities/group';
+import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/repositories/paginationConstants';
 
@@ -19,7 +20,7 @@ export interface UseGroupMembersPaginationParams {
     endpoint: string;
     enabled: boolean;
     query: string;
-    sort: string;
+    sort: GroupMemberSort;
     roleId: string;
     reloadToken: number;
 }
@@ -44,7 +45,7 @@ function fetchMembersPage({
 }: {
     groupId: string;
     query: string;
-    sort: string;
+    sort: GroupMemberSort;
     roleId: string;
     offset: number;
     force?: boolean;

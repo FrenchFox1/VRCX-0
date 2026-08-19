@@ -11,6 +11,13 @@ use super::output::RealtimeFriendOutput;
 
 pub(crate) const PENDING_OFFLINE_DELAY_MS: u64 = 170_000;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RealtimeCachedUserProfile {
+    pub user_id: String,
+    pub is_friend: bool,
+    pub languages: Vec<String>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RealtimeFriendSnapshot {
     pub current_user_id: String,
@@ -19,6 +26,12 @@ pub struct RealtimeFriendSnapshot {
     pub generation: u64,
     pub baseline_revision: u64,
     pub friends_by_id: HashMap<String, FriendRecord>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RealtimeFriendRecordSnapshot {
+    pub endpoint: String,
+    pub record: FriendRecord,
 }
 
 #[derive(Debug, PartialEq)]

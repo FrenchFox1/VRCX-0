@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import type { PreferencesSnapshot } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import {
@@ -15,55 +16,64 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
+import { useSettingsVrTabState } from '../useSettingsVrTabState';
 
-type SettingsVrPrefs = Record<string, unknown> & {
-    hmdNotificationOpacity?: number;
-    hmdNotificationPosition?: string;
-    hmdNotificationStartMode?: string;
-    hmdNotificationTimeout?: number;
-    hmdNotificationsEnabled?: boolean;
-    imageNotifications?: boolean;
-    notificationOpacity?: number;
-    notificationTimeout?: number;
-    ovrtHudNotifications?: boolean;
-    ovrtWristNotifications?: boolean;
-    wristOverlayButton?: string;
-    wristOverlayDarkBackground?: boolean;
-    wristOverlayEnabled?: boolean;
-    wristOverlayHand?: string;
-    wristOverlayHidePrivateWorlds?: boolean;
-    wristOverlayShowBatteryPercent?: boolean;
-    wristOverlayShowDevices?: boolean;
-    wristOverlaySize?: string;
-    wristOverlayStartMode?: string;
-    xsNotifications?: boolean;
-};
+type SettingsVrPrefs = Pick<
+    PreferencesSnapshot,
+    | 'hmdNotificationOpacity'
+    | 'hmdNotificationPosition'
+    | 'hmdNotificationStartMode'
+    | 'hmdNotificationTimeout'
+    | 'hmdNotificationsEnabled'
+    | 'imageNotifications'
+    | 'notificationOpacity'
+    | 'notificationTimeout'
+    | 'ovrtHudNotifications'
+    | 'ovrtWristNotifications'
+    | 'wristOverlayButton'
+    | 'wristOverlayDarkBackground'
+    | 'wristOverlayEnabled'
+    | 'wristOverlayHand'
+    | 'wristOverlayHidePrivateWorlds'
+    | 'wristOverlayShowBatteryPercent'
+    | 'wristOverlayShowDevices'
+    | 'wristOverlaySize'
+    | 'wristOverlayStartMode'
+    | 'xsNotifications'
+>;
 
-type SettingsVrTabProps = {
+type HmdNotificationPosition = SettingsVrPrefs['hmdNotificationPosition'];
+type HmdNotificationStartMode = SettingsVrPrefs['hmdNotificationStartMode'];
+type WristOverlayButton = SettingsVrPrefs['wristOverlayButton'];
+type WristOverlayHand = SettingsVrPrefs['wristOverlayHand'];
+type WristOverlaySize = SettingsVrPrefs['wristOverlaySize'];
+type WristOverlayStartMode = SettingsVrPrefs['wristOverlayStartMode'];
+
+type SettingsVrTabContentProps = {
     prefs: SettingsVrPrefs;
-    onImageNotificationsChange: (checked: boolean) => unknown;
-    onHmdNotificationOpacityChange: (value: unknown) => unknown;
-    onHmdNotificationPositionChange: (value: string) => unknown;
-    onHmdNotificationStartModeChange: (value: string) => unknown;
-    onHmdNotificationTimeoutSecondsChange: (value: unknown) => unknown;
-    onHmdNotificationsEnabledChange: (checked: boolean) => unknown;
-    onNotificationOpacityChange: (value: unknown) => unknown;
-    onNotificationTimeoutSecondsChange: (value: unknown) => unknown;
-    onOpenHmdNotificationFiltersDialog: () => unknown;
-    onOpenVrNotificationFiltersDialog: () => unknown;
-    onOpenWristFeedNotificationsDialog: () => unknown;
-    onOvrtHudNotificationsChange: (checked: boolean) => unknown;
-    onOvrtWristNotificationsChange: (checked: boolean) => unknown;
-    onWristOverlayButtonChange: (value: string) => unknown;
-    onWristOverlayDarkBackgroundChange: (checked: boolean) => unknown;
-    onWristOverlayEnabledChange: (checked: boolean) => unknown;
-    onWristOverlayHandChange: (value: string) => unknown;
-    onWristOverlayHidePrivateWorldsChange: (checked: boolean) => unknown;
-    onWristOverlayShowBatteryPercentChange: (checked: boolean) => unknown;
-    onWristOverlayShowDevicesChange: (checked: boolean) => unknown;
-    onWristOverlaySizeChange: (value: string) => unknown;
-    onWristOverlayStartModeChange: (value: string) => unknown;
-    onXsNotificationsChange: (checked: boolean) => unknown;
+    onImageNotificationsChange: (checked: boolean) => void;
+    onHmdNotificationOpacityChange: (value: number) => void;
+    onHmdNotificationPositionChange: (value: HmdNotificationPosition) => void;
+    onHmdNotificationStartModeChange: (value: HmdNotificationStartMode) => void;
+    onHmdNotificationTimeoutSecondsChange: (value: string) => void;
+    onHmdNotificationsEnabledChange: (checked: boolean) => void;
+    onNotificationOpacityChange: (value: number) => void;
+    onNotificationTimeoutSecondsChange: (value: string) => void;
+    onOpenHmdNotificationFiltersDialog: () => void;
+    onOpenVrNotificationFiltersDialog: () => void;
+    onOpenWristFeedNotificationsDialog: () => void;
+    onOvrtHudNotificationsChange: (checked: boolean) => void;
+    onOvrtWristNotificationsChange: (checked: boolean) => void;
+    onWristOverlayButtonChange: (value: WristOverlayButton) => void;
+    onWristOverlayDarkBackgroundChange: (checked: boolean) => void;
+    onWristOverlayEnabledChange: (checked: boolean) => void;
+    onWristOverlayHandChange: (value: WristOverlayHand) => void;
+    onWristOverlayHidePrivateWorldsChange: (checked: boolean) => void;
+    onWristOverlayShowBatteryPercentChange: (checked: boolean) => void;
+    onWristOverlayShowDevicesChange: (checked: boolean) => void;
+    onWristOverlaySizeChange: (value: WristOverlaySize) => void;
+    onWristOverlayStartModeChange: (value: WristOverlayStartMode) => void;
+    onXsNotificationsChange: (checked: boolean) => void;
 };
 
 const hmdStartModeOptions = [
@@ -103,7 +113,12 @@ const wristSizeOptions = [
     ['large', 'view.settings.vr.wrist_overlay.size_large']
 ] as const;
 
-export function SettingsVrTab({
+export function SettingsVrTab() {
+    const state = useSettingsVrTabState();
+    return <SettingsVrTabContent {...state} />;
+}
+
+export function SettingsVrTabContent({
     prefs,
     onXsNotificationsChange,
     onOvrtHudNotificationsChange,
@@ -128,36 +143,28 @@ export function SettingsVrTab({
     onWristOverlayShowDevicesChange,
     onWristOverlayShowBatteryPercentChange,
     onOpenWristFeedNotificationsDialog
-}: SettingsVrTabProps) {
+}: SettingsVrTabContentProps) {
     const { t } = useTranslation();
-    const hmdNotificationsEnabled = Boolean(prefs.hmdNotificationsEnabled);
-    const wristOverlayEnabled = Boolean(prefs.wristOverlayEnabled);
+    const hmdNotificationsEnabled = prefs.hmdNotificationsEnabled;
+    const wristOverlayEnabled = prefs.wristOverlayEnabled;
     const vrDeviceStatusEnabled =
-        wristOverlayEnabled && Boolean(prefs.wristOverlayShowDevices);
+        wristOverlayEnabled && prefs.wristOverlayShowDevices;
     const notificationTimeoutSeconds = Math.max(
         0,
-        Math.floor(Number(prefs.notificationTimeout || 0) / 1000)
+        Math.floor(prefs.notificationTimeout / 1000)
     );
-    const notificationOpacity = Number.isFinite(
-        Number(prefs.notificationOpacity)
-    )
-        ? Math.min(
-              100,
-              Math.max(0, Math.round(Number(prefs.notificationOpacity)))
-          )
-        : 100;
+    const notificationOpacity = Math.min(
+        100,
+        Math.max(0, Math.round(prefs.notificationOpacity))
+    );
     const hmdNotificationTimeoutSeconds = Math.max(
         1,
-        Math.floor(Number(prefs.hmdNotificationTimeout || 0) / 1000)
+        Math.floor(prefs.hmdNotificationTimeout / 1000)
     );
-    const hmdNotificationOpacity = Number.isFinite(
-        Number(prefs.hmdNotificationOpacity)
-    )
-        ? Math.min(
-              100,
-              Math.max(0, Math.round(Number(prefs.hmdNotificationOpacity)))
-          )
-        : 100;
+    const hmdNotificationOpacity = Math.min(
+        100,
+        Math.max(0, Math.round(prefs.hmdNotificationOpacity))
+    );
 
     return (
         <SettingsTabContent value="vr">
@@ -172,7 +179,7 @@ export function SettingsVrTab({
                     )}
                 >
                     <Switch
-                        checked={Boolean(prefs.xsNotifications)}
+                        checked={prefs.xsNotifications}
                         onCheckedChange={onXsNotificationsChange}
                     />
                 </Field>
@@ -183,7 +190,7 @@ export function SettingsVrTab({
                     )}
                 >
                     <Switch
-                        checked={Boolean(prefs.ovrtHudNotifications)}
+                        checked={prefs.ovrtHudNotifications}
                         onCheckedChange={onOvrtHudNotificationsChange}
                     />
                 </Field>
@@ -194,7 +201,7 @@ export function SettingsVrTab({
                     )}
                 >
                     <Switch
-                        checked={Boolean(prefs.ovrtWristNotifications)}
+                        checked={prefs.ovrtWristNotifications}
                         onCheckedChange={onOvrtWristNotificationsChange}
                     />
                 </Field>
@@ -219,7 +226,7 @@ export function SettingsVrTab({
                     )}
                 >
                     <Switch
-                        checked={Boolean(prefs.imageNotifications)}
+                        checked={prefs.imageNotifications}
                         onCheckedChange={onImageNotificationsChange}
                     />
                 </Field>
@@ -294,18 +301,18 @@ export function SettingsVrTab({
                     controlId="settings-hmd-notification-start-mode"
                     disabled={!hmdNotificationsEnabled}
                 >
-                    <Select
-                        value={String(
-                            prefs.hmdNotificationStartMode || 'vrchatVrMode'
-                        )}
+                    <Select<HmdNotificationStartMode>
+                        value={prefs.hmdNotificationStartMode}
                         items={hmdStartModeOptions.map(([value, labelKey]) => ({
                             value,
                             label: t(labelKey)
                         }))}
                         disabled={!hmdNotificationsEnabled}
-                        onValueChange={(value) =>
-                            onHmdNotificationStartModeChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onHmdNotificationStartModeChange(value);
+                            }
+                        }}
                     >
                         <SelectTrigger
                             id="settings-hmd-notification-start-mode"
@@ -332,18 +339,18 @@ export function SettingsVrTab({
                     controlId="settings-hmd-notification-position"
                     disabled={!hmdNotificationsEnabled}
                 >
-                    <Select
-                        value={String(
-                            prefs.hmdNotificationPosition || 'bottom'
-                        )}
+                    <Select<HmdNotificationPosition>
+                        value={prefs.hmdNotificationPosition}
                         items={hmdPositionOptions.map(([value, labelKey]) => ({
                             value,
                             label: t(labelKey)
                         }))}
                         disabled={!hmdNotificationsEnabled}
-                        onValueChange={(value) =>
-                            onHmdNotificationPositionChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onHmdNotificationPositionChange(value);
+                            }
+                        }}
                     >
                         <SelectTrigger
                             id="settings-hmd-notification-position"
@@ -445,7 +452,7 @@ export function SettingsVrTab({
                     controlId="settings-wrist-overlay-start-mode"
                     disabled={!wristOverlayEnabled}
                 >
-                    <Select
+                    <Select<WristOverlayStartMode>
                         value={prefs.wristOverlayStartMode}
                         items={wristStartModeOptions.map(
                             ([value, labelKey]) => ({
@@ -454,9 +461,11 @@ export function SettingsVrTab({
                             })
                         )}
                         disabled={!wristOverlayEnabled}
-                        onValueChange={(value) =>
-                            onWristOverlayStartModeChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onWristOverlayStartModeChange(value);
+                            }
+                        }}
                     >
                         <SelectTrigger
                             id="settings-wrist-overlay-start-mode"
@@ -483,16 +492,18 @@ export function SettingsVrTab({
                     controlId="settings-wrist-overlay-button"
                     disabled={!wristOverlayEnabled}
                 >
-                    <Select
+                    <Select<WristOverlayButton>
                         value={prefs.wristOverlayButton}
                         items={wristButtonOptions.map(([value, labelKey]) => ({
                             value,
                             label: t(labelKey)
                         }))}
                         disabled={!wristOverlayEnabled}
-                        onValueChange={(value) =>
-                            onWristOverlayButtonChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onWristOverlayButtonChange(value);
+                            }
+                        }}
                     >
                         <SelectTrigger
                             id="settings-wrist-overlay-button"
@@ -517,16 +528,18 @@ export function SettingsVrTab({
                     controlId="settings-wrist-overlay-hand"
                     disabled={!wristOverlayEnabled}
                 >
-                    <Select
+                    <Select<WristOverlayHand>
                         value={prefs.wristOverlayHand}
                         items={wristHandOptions.map(([value, labelKey]) => ({
                             value,
                             label: t(labelKey)
                         }))}
                         disabled={!wristOverlayEnabled}
-                        onValueChange={(value) =>
-                            onWristOverlayHandChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onWristOverlayHandChange(value);
+                            }
+                        }}
                     >
                         <SelectTrigger
                             id="settings-wrist-overlay-hand"
@@ -551,16 +564,18 @@ export function SettingsVrTab({
                     controlId="settings-wrist-overlay-size"
                     disabled={!wristOverlayEnabled}
                 >
-                    <Select
+                    <Select<WristOverlaySize>
                         value={prefs.wristOverlaySize}
                         items={wristSizeOptions.map(([value, labelKey]) => ({
                             value,
                             label: t(labelKey)
                         }))}
                         disabled={!wristOverlayEnabled}
-                        onValueChange={(value) =>
-                            onWristOverlaySizeChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onWristOverlaySizeChange(value);
+                            }
+                        }}
                     >
                         <SelectTrigger
                             id="settings-wrist-overlay-size"
@@ -585,7 +600,7 @@ export function SettingsVrTab({
                     disabled={!wristOverlayEnabled}
                 >
                     <Switch
-                        checked={Boolean(prefs.wristOverlayDarkBackground)}
+                        checked={prefs.wristOverlayDarkBackground}
                         disabled={!wristOverlayEnabled}
                         onCheckedChange={onWristOverlayDarkBackgroundChange}
                     />
@@ -598,7 +613,7 @@ export function SettingsVrTab({
                     disabled={!wristOverlayEnabled}
                 >
                     <Switch
-                        checked={Boolean(prefs.wristOverlayHidePrivateWorlds)}
+                        checked={prefs.wristOverlayHidePrivateWorlds}
                         disabled={!wristOverlayEnabled}
                         onCheckedChange={onWristOverlayHidePrivateWorldsChange}
                     />
@@ -609,7 +624,7 @@ export function SettingsVrTab({
                     disabled={!wristOverlayEnabled}
                 >
                     <Switch
-                        checked={Boolean(prefs.wristOverlayShowDevices)}
+                        checked={prefs.wristOverlayShowDevices}
                         disabled={!wristOverlayEnabled}
                         onCheckedChange={onWristOverlayShowDevicesChange}
                     />
@@ -622,7 +637,7 @@ export function SettingsVrTab({
                     disabled={!vrDeviceStatusEnabled}
                 >
                     <Switch
-                        checked={Boolean(prefs.wristOverlayShowBatteryPercent)}
+                        checked={prefs.wristOverlayShowBatteryPercent}
                         disabled={!vrDeviceStatusEnabled}
                         onCheckedChange={onWristOverlayShowBatteryPercentChange}
                     />

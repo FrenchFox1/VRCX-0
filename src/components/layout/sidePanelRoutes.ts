@@ -12,7 +12,3 @@ function matchesPath(pathname: string, path: string) {
 export function getDefaultHiddenSidePanelPath(pathname: string) {
     return sidePanelHiddenPaths.find((path) => matchesPath(pathname, path));
 }
-
-export function isSidePanelDefaultHidden(pathname: string) {
-    return Boolean(getDefaultHiddenSidePanelPath(pathname));
-}

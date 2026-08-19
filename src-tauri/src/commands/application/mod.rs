@@ -1,5 +1,4 @@
 pub mod assistant;
-pub mod auth_scope;
 pub mod background_image;
 pub mod background_mode;
 pub mod community_theme;
@@ -10,6 +9,7 @@ pub mod friend_log;
 pub mod frontend_batch;
 pub mod group_calendar;
 pub mod group_quick_moderation;
+pub mod integration_api;
 pub mod lifecycle;
 pub mod llm_endpoint;
 pub mod mcp_server;

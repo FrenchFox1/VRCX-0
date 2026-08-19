@@ -91,18 +91,5 @@ function getFriendsSortFunction(
     };
 }
 
-function isFriendOnline(friend: FriendSortItem | undefined): boolean {
-    if (typeof friend === 'undefined' || typeof friend.ref === 'undefined') {
-        return false;
-    }
-    if (friend.state === 'online') {
-        return true;
-    }
-    if (friend.state !== 'online' && friend.ref.location !== 'private') {
-        return true;
-    }
-    return false;
-}
-
-export { getFriendsSortFunction, sortStatus, isFriendOnline };
+export { getFriendsSortFunction, sortStatus };
 export type { FriendSortItem, FriendSortMethod };

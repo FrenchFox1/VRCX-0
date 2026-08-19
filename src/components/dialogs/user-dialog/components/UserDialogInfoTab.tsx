@@ -6,10 +6,8 @@ import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type {
-    EntityRecord,
-    UserProfileEntity
-} from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import { AvatarInfoLine } from '@/features/feed/components/FeedAvatarInfoLine';
 import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateTime } from '@/lib/dateTime';
@@ -110,7 +108,9 @@ export type UserDialogProfileLinksSectionProps = {
 export type UserDialogActivitySummarySectionProps = {
     friendedAt: string | null | undefined;
     isCurrentUser: boolean;
+    isFriend: boolean;
     lastSeen: string | null | undefined;
+    onOpenFeed?: () => void;
     onOpenInstanceHistory?: () => void;
     presenceActivityAt: string | null | undefined;
     profile: UserDialogInfoProfile;
@@ -335,7 +335,7 @@ function UserDialogPresenceSection({
                         <LocationWorld
                             className="min-w-0"
                             locationObject={{
-                                ...(locationInstance || {}),
+                                ...locationInstance,
                                 tag: visiblePresenceLocation,
                                 location: visiblePresenceLocation,
                                 userId: locationOwnerId,
@@ -468,7 +468,7 @@ function buildRepresentedGroupSeedData(representedGroup: RepresentedGroup) {
         $memberId: representedGroup.id,
         id: representedGroup.groupId,
         myMember: {
-            ...(representedGroup.myMember || {}),
+            ...representedGroup.myMember,
             id: representedGroup.id,
             groupId: representedGroup.groupId,
             isRepresenting: Boolean(representedGroup.isRepresenting),
@@ -644,7 +644,9 @@ function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
 export function UserDialogActivitySummaryPanel({
     friendedAt,
     isCurrentUser,
+    isFriend,
     lastSeen,
+    onOpenFeed,
     onOpenInstanceHistory,
     presenceActivityAt,
     profile,
@@ -676,20 +678,7 @@ export function UserDialogActivitySummaryPanel({
                         presenceActivityAt,
                         dateLocale
                     )}
-                    subtle
-                />
-                <InfoStat
-                    label={t('dialog.user.info.friended')}
-                    value={formatLocalizedActivityDate(friendedAt, dateLocale)}
-                    subtle
-                />
-                <InfoStat
-                    label={t('dialog.user.info.date_joined')}
-                    value={formatLocalizedActivityDate(
-                        profile.date_joined,
-                        dateLocale,
-                        true
-                    )}
+                    onClick={isFriend ? onOpenFeed : undefined}
                     subtle
                 />
                 {isCurrentUser ? (
@@ -712,11 +701,27 @@ export function UserDialogActivitySummaryPanel({
                         <InfoStat
                             label={t('dialog.user.info.time_together')}
                             value={formatStatsDuration(userTimeSpent)}
-                            onClick={onOpenInstanceHistory}
+                            subtle
+                        />
+                        <InfoStat
+                            label={t('dialog.user.info.friended')}
+                            value={formatLocalizedActivityDate(
+                                friendedAt,
+                                dateLocale
+                            )}
                             subtle
                         />
                     </>
                 )}
+                <InfoStat
+                    label={t('dialog.user.info.date_joined')}
+                    value={formatLocalizedActivityDate(
+                        profile.date_joined,
+                        dateLocale,
+                        true
+                    )}
+                    subtle
+                />
             </InfoStatGrid>
         </InfoPanel>
     );
@@ -768,7 +773,9 @@ export function UserDialogInfoTab({
                     <UserDialogActivitySummaryPanel
                         friendedAt={activitySummarySection.friendedAt}
                         isCurrentUser={activitySummarySection.isCurrentUser}
+                        isFriend={activitySummarySection.isFriend}
                         lastSeen={activitySummarySection.lastSeen}
+                        onOpenFeed={activitySummarySection.onOpenFeed}
                         onOpenInstanceHistory={
                             activitySummarySection.onOpenInstanceHistory
                         }

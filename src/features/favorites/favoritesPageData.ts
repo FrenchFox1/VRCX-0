@@ -1,3 +1,4 @@
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { userImage } from '@/services/entityMediaService';
 import { resolveFriendPresenceLocation } from '@/shared/utils/location';
 
@@ -10,9 +11,8 @@ import {
     sortFavoriteItems as sortItems
 } from './favoritesItems';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSeedData
 } from './favoritesTypes';
 
@@ -31,7 +31,7 @@ type FavoriteGroupInput = Record<string, unknown> & {
     key: string;
     label: string;
 };
-export type FavoriteEntityDetail = Record<string, unknown> & {
+export type FavoritePageEntityDetail = Record<string, unknown> & {
     authorName?: unknown;
     description?: unknown;
     imageUrl?: unknown;
@@ -57,7 +57,7 @@ type FavoriteProfileRecord = Record<string, unknown> & {
     username?: unknown;
 };
 type FavoriteGroupSourceMap = Record<string, unknown[]>;
-type FavoriteDetailMap = Record<string, FavoriteEntityDetail | undefined>;
+type FavoriteDetailMap = Record<string, FavoritePageEntityDetail | undefined>;
 type FavoriteProfileMap = Record<string, FavoriteProfileRecord | undefined>;
 type FavoriteSortIndex = Record<string, number | undefined>;
 type FavoriteSortValue = unknown;
@@ -71,7 +71,7 @@ function textValue(value: unknown) {
 }
 
 function favoritePlayerCount(
-    detail: FavoriteEntityDetail | null | undefined
+    detail: FavoritePageEntityDetail | null | undefined
 ): number {
     return Number(detail?.occupants) || 0;
 }
@@ -104,10 +104,12 @@ function stringArray(value: unknown): string[] {
 function firstDisplayableDetail(candidates: unknown[]) {
     return candidates.find((candidate) =>
         hasDisplayableEntityDetail(candidate)
-    ) as FavoriteEntityDetail | undefined;
+    ) as FavoritePageEntityDetail | undefined;
 }
 
-function favoriteImagePair(detail: FavoriteEntityDetail | null | undefined) {
+function favoriteImagePair(
+    detail: FavoritePageEntityDetail | null | undefined
+) {
     const largeImageUrl = resolveFavoriteImage(detail?.imageUrl);
     const thumbnailImageUrl = resolveFavoriteImage(detail?.thumbnailImageUrl);
     return {
@@ -119,7 +121,7 @@ function favoriteImagePair(detail: FavoriteEntityDetail | null | undefined) {
 function buildRemoteFavoriteGroups(
     kind: FavoriteKind,
     sourceGroups: readonly FavoriteGroupRecord[]
-): FavoriteGroup[] {
+): FavoriteGroupView[] {
     return sourceGroups.map((group) => {
         const key = textValue(group.key);
         const name =
@@ -144,7 +146,7 @@ function buildRemoteFavoriteGroups(
 function buildLocalFavoriteGroups(
     names: readonly string[],
     source: FavoriteGroupSourceMap
-): FavoriteGroup[] {
+): FavoriteGroupView[] {
     return names.map((name) => ({
         source: 'local',
         key: name,
@@ -225,7 +227,7 @@ function buildFriendFavoriteItem({
     const normalizedId = normalizeEntityId(friendId);
     const profile = friend
         ? {
-              ...(knownUser || {}),
+              ...knownUser,
               ...friend,
               displayName: friend.displayName || knownUser?.displayName,
               username: friend.username || knownUser?.username
@@ -308,7 +310,7 @@ export function buildFavoriteRemoteGroups({
     favoriteFriendGroups?: readonly FavoriteGroupRecord[];
     favoriteAvatarGroups?: readonly FavoriteGroupRecord[];
     favoriteWorldGroups?: readonly FavoriteGroupRecord[];
-}): FavoriteGroup[] {
+}): FavoriteGroupView[] {
     const sourceGroups =
         kind === 'friend'
             ? favoriteFriendGroups
@@ -335,7 +337,7 @@ export function buildFavoriteLocalGroups({
     localFriendFavorites?: FavoriteGroupSourceMap;
     localAvatarFavorites?: FavoriteGroupSourceMap;
     localWorldFavorites?: FavoriteGroupSourceMap;
-}): FavoriteGroup[] {
+}): FavoriteGroupView[] {
     const names =
         kind === 'friend'
             ? localFriendFavoriteGroups
@@ -360,7 +362,7 @@ export function buildFavoriteAvatarHistoryGroups({
     kind: FavoriteKind;
     avatarHistoryLength: number;
     t: unknown;
-}): FavoriteGroup[] {
+}): FavoriteGroupView[] {
     if (kind !== 'avatar') {
         return [];
     }
@@ -469,8 +471,8 @@ export function buildFavoriteRemoteItemsByGroup({
         }
 
         const detail = remoteEntityDetailsData?.[favoriteId];
-        let liveDetail: FavoriteEntityDetail | null = null;
-        let fallbackDetail: FavoriteEntityDetail | null | undefined = null;
+        let liveDetail: FavoritePageEntityDetail | null = null;
+        let fallbackDetail: FavoritePageEntityDetail | null | undefined = null;
 
         if (kind === 'world') {
             liveDetail = hasDisplayableEntityDetail(detail) ? detail : null;
@@ -662,7 +664,7 @@ export function buildFavoriteAvatarHistoryItems({
     t
 }: {
     kind: FavoriteKind;
-    avatarHistory: readonly FavoriteEntityDetail[];
+    avatarHistory: readonly FavoritePageEntityDetail[];
     t: unknown;
 }): FavoriteItem[] {
     if (kind !== 'avatar') {

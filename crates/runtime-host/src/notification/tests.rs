@@ -5,12 +5,11 @@ use vrcx_0_application_activity::{
     OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityContent,
     OverlayActivityDelivery, OverlayActivityEntry,
 };
-use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+use vrcx_0_persistence::DatabaseService;
 
 use super::{
-    config_tts_name_mode, delivery_actor_image_user_id, generic_webhook_payload,
-    parse_webhook_fields, resolve_delivery_actor_image, NotificationTtsNameMode,
-    RealtimeUserImageResolverSlot, RenderedNotification, UserImageCache,
+    generic_webhook_payload, normalize_avatar_image_url_128, parse_webhook_fields,
+    RealtimeUserImageResolverSlot, RenderedNotification,
 };
 
 #[test]
@@ -50,40 +49,6 @@ fn generic_webhook_fields_ignore_localized_names() {
     );
     assert!(payload.get("位置").is_none());
     assert!(payload.get("タイトル").is_none());
-}
-
-#[test]
-fn notification_tts_name_mode_preserves_legacy_nickname_setting() {
-    let (_dir, db) = test_db("tts-name-mode-legacy");
-    let config = ConfigRepository::new(Arc::new(db));
-
-    config.set_bool("notificationTTSNickName", true).unwrap();
-    assert_eq!(config_tts_name_mode(&config), NotificationTtsNameMode::Note);
-
-    config
-        .set_string("notificationTTSNameMode", "usernameAndNote")
-        .unwrap();
-    assert_eq!(
-        config_tts_name_mode(&config),
-        NotificationTtsNameMode::UsernameAndNote
-    );
-}
-
-#[test]
-fn delivery_actor_image_user_id_skips_current_user_actor() {
-    let mut delivery = delivery();
-    delivery.entry.actor_user_id = "usr_self".into();
-
-    assert_eq!(delivery_actor_image_user_id(&delivery, "usr_self"), None);
-
-    delivery.entry.actor_user_id = "usr_sender".into();
-    assert_eq!(
-        delivery_actor_image_user_id(&delivery, "usr_self"),
-        Some("usr_sender")
-    );
-
-    delivery.entry.content.image_url = "https://images.example/existing.png".into();
-    assert_eq!(delivery_actor_image_user_id(&delivery, "usr_self"), None);
 }
 
 fn rendered() -> RenderedNotification {
@@ -149,12 +114,6 @@ impl Drop for TestDir {
     }
 }
 
-fn test_db(name: &str) -> (TestDir, DatabaseService) {
-    let dir = TestDir::new(name);
-    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
-    (dir, db)
-}
-
 fn test_realtime_runtime(
     name: &str,
 ) -> (
@@ -181,15 +140,27 @@ fn test_realtime_runtime(
         512,
         std::time::Duration::from_secs(30 * 60),
     ));
+    let event_bus = vrcx_0_application_core::RuntimeEventBus::new();
     let runtime = Arc::new(vrcx_0_application_realtime::RealtimeHostRuntime::new(
         vrcx_0_application_realtime::RealtimeHostRuntimeDeps {
             db: Arc::clone(&db),
             web: Arc::clone(&web),
-            event_bus: vrcx_0_application_core::RuntimeEventBus::new(),
+            event_bus: event_bus.clone(),
+            backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
+                vrcx_0_application_core::BackendRuntime::new(
+                    vrcx_0_application_core::RuntimeHostProfile::Desktop,
+                ),
+                event_bus.clone(),
+            ),
+            friend_projection_sink: vrcx_0_application_realtime::FriendProjectionSink::new(
+                event_bus.clone(),
+                None,
+            ),
             sync: vrcx_0_application_core::RuntimeSyncEngine::new(),
             tasks: vrcx_0_application_core::TaskSupervisor::new(),
             session: vrcx_0_application_core::HostSessionRuntime::new(),
             auth_scope: vrcx_0_application_core::RuntimeAuthScope::new(),
+            remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
             local_game_context: Arc::new(
                 vrcx_0_application_core::UnavailableLocalGameContextSource,
             ),
@@ -197,40 +168,35 @@ fn test_realtime_runtime(
             world_cache,
             print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
             friend_note_change_sink: None,
+            current_user_snapshot_sink: None,
         },
     ));
     (dir, runtime, db, web)
 }
 
-#[tokio::test]
-async fn resolve_delivery_actor_image_prefers_realtime_cache_over_api_fallback() {
-    let (_dir, runtime, db, web) = test_realtime_runtime("actor-image-cache-hit");
+#[test]
+fn realtime_image_resolver_reads_the_realtime_cache() {
+    let (_dir, runtime, _active_session) =
+        vrcx_0_application_realtime::test_support::runtime_with_active_session(
+            "actor-image-cache-hit",
+        )
+        .unwrap();
+    let runtime = runtime.runtime();
     let endpoint = "https://api.vrchat.cloud/api/1";
-    runtime.record_user_profile(
-        endpoint,
-        &json!({
+    runtime.ingest_user_facts(vec![json!({
+        "user": {
             "id": "usr_traveler",
             "displayName": "Traveler",
             "userIcon": "https://api.vrchat.cloud/api/1/file/file_1234abcd-0000-1111-2222-abcdefabcdef/2/file",
-        }),
-    );
+        },
+        "source": "test",
+        "isFriend": true,
+    })]);
     let resolver = RealtimeUserImageResolverSlot::default();
-    resolver.set(&runtime);
-    let user_image_cache = UserImageCache::new();
-    let mut sample = delivery();
-    sample.entry.actor_user_id = "usr_traveler".into();
-
-    let image_url = resolve_delivery_actor_image(
-        &user_image_cache,
-        web.as_ref(),
-        db.as_ref(),
-        endpoint,
-        true,
-        "usr_self",
-        &resolver,
-        &sample,
-    )
-    .await;
+    resolver.set(runtime);
+    let image_url = resolver
+        .cached_url(endpoint, "usr_traveler", true)
+        .map(|url| normalize_avatar_image_url_128(&url, endpoint));
 
     assert_eq!(
         image_url.as_deref(),
@@ -240,23 +206,11 @@ async fn resolve_delivery_actor_image_prefers_realtime_cache_over_api_fallback()
     );
 }
 
-#[tokio::test]
-async fn resolve_delivery_actor_image_falls_back_to_none_when_uncached_and_endpoint_missing() {
-    let (_dir, _runtime, db, web) = test_realtime_runtime("actor-image-cache-miss");
+#[test]
+fn realtime_image_resolver_returns_none_when_endpoint_is_missing() {
+    let (_dir, _runtime, _db, _web) = test_realtime_runtime("actor-image-cache-miss");
     let resolver = RealtimeUserImageResolverSlot::default();
-    let user_image_cache = UserImageCache::new();
-
-    let image_url = resolve_delivery_actor_image(
-        &user_image_cache,
-        web.as_ref(),
-        db.as_ref(),
-        "",
-        true,
-        "usr_self",
-        &resolver,
-        &delivery(),
-    )
-    .await;
+    let image_url = resolver.cached_url("", "usr_traveler", true);
 
     assert_eq!(image_url, None);
 }

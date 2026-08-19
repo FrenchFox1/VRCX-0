@@ -1,7 +1,12 @@
 import {
     commands,
+    type AutoLoginStartInput,
     type AutoLoginOutcome,
-    type LoginSessionState
+    type HttpApiExecuteResponse,
+    type LoginSessionRespondInput,
+    type LoginSessionStartInput as StartLoginSessionInput,
+    type LoginSessionState,
+    type VrchatAuthFileAnalysisInput
 } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
@@ -11,12 +16,7 @@ import {
 } from './vrchatRequest';
 
 export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
-export const DEFAULT_WEBSOCKET_DOMAIN = 'wss://pipeline.vrchat.cloud';
-
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 type AuthRecord = Record<string, unknown>;
 
 function unwrapVrchatAuthResponse<TJson = unknown>(
@@ -27,12 +27,6 @@ function unwrapVrchatAuthResponse<TJson = unknown>(
         ...unwrapVrchatResponse<TJson>(response, path),
         endpointDomain: DEFAULT_VRCHAT_API_ENDPOINT
     };
-}
-
-interface FileAnalysisInput {
-    fileId?: unknown;
-    version?: unknown;
-    variant?: unknown;
 }
 
 async function getConfig() {
@@ -50,79 +44,28 @@ async function getCurrentUser() {
     return unwrapVrchatAuthResponse<AuthRecord>(response, 'auth/user');
 }
 
-interface StartBasicLoginSessionInput {
-    mode: 'basic';
-    username?: unknown;
-    password?: unknown;
-    saveCredentials?: boolean;
-}
-
-interface StartSavedCredentialLoginSessionInput {
-    mode: 'savedCredential';
-    userId?: unknown;
-}
-
-type StartLoginSessionInput =
-    | StartBasicLoginSessionInput
-    | StartSavedCredentialLoginSessionInput;
-
-function normalizeString(value: unknown): string {
-    return typeof value === 'string' ? value : String(value ?? '');
-}
-
 async function startLoginSession(
     input: StartLoginSessionInput
 ): Promise<LoginSessionState> {
-    switch (input.mode) {
-        case 'basic':
-            return commands.appVrchatAuthSessionStart({
-                mode: 'basic',
-                username: normalizeString(input.username),
-                password: normalizeString(input.password),
-                saveCredentials: input.saveCredentials === true
-            });
-        case 'savedCredential':
-            return commands.appVrchatAuthSessionStart({
-                mode: 'savedCredential',
-                userId: normalizeString(input.userId)
-            });
-    }
+    return commands.appVrchatAuthSessionStart(input);
 }
 
-async function respondLoginSession({
-    attemptId,
-    method,
-    code
-}: {
-    attemptId: string;
-    method?: unknown;
-    code?: unknown;
-}): Promise<LoginSessionState> {
-    return commands.appVrchatAuthSessionRespond({
-        attemptId: normalizeString(attemptId),
-        method: normalizeString(method),
-        code: normalizeString(code)
-    });
+async function respondLoginSession(
+    input: LoginSessionRespondInput
+): Promise<LoginSessionState> {
+    return commands.appVrchatAuthSessionRespond(input);
 }
 
 async function cancelLoginSession(
     attemptId: string
 ): Promise<LoginSessionState> {
-    return commands.appVrchatAuthSessionCancel({
-        attemptId: normalizeString(attemptId)
-    });
-}
-
-interface AutoLoginStartInput {
-    userId?: unknown;
+    return commands.appVrchatAuthSessionCancel({ attemptId });
 }
 
 async function autoLoginStart({
     userId
 }: AutoLoginStartInput): Promise<AutoLoginOutcome> {
-    return commands.appVrchatAuthAutoLoginStart({
-        userId: normalizeString(userId)
-    });
+    return commands.appVrchatAuthAutoLoginStart({ userId });
 }
 
 async function getOnlineVisits() {
@@ -134,15 +77,15 @@ async function getFileAnalysis({
     fileId,
     version,
     variant
-}: FileAnalysisInput) {
+}: VrchatAuthFileAnalysisInput) {
     const response = await commands.appVrchatAuthFileAnalysisGet({
-        fileId: typeof fileId === 'string' ? fileId : String(fileId ?? ''),
-        version: Number(version) || 0,
-        variant: typeof variant === 'string' ? variant : String(variant ?? '')
+        fileId,
+        version,
+        variant
     });
     return unwrapVrchatAuthResponse(
         response,
-        `analysis/${encodeURIComponent(String(fileId ?? ''))}/${Number(version) || 0}/${encodeURIComponent(String(variant ?? ''))}`
+        `analysis/${encodeURIComponent(fileId ?? '')}/${version ?? 0}/${encodeURIComponent(variant ?? '')}`
     );
 }
 

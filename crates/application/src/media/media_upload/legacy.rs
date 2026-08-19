@@ -1,4 +1,6 @@
+use std::time::Duration;
 use vrcx_0_media::media_files;
+
 use vrcx_0_vrchat_client::http_api::{
     normalize_text, ApiScope, HttpApiExecuteResponse, HttpApiRequestInput,
 };
@@ -12,6 +14,8 @@ use crate::{Error, Result};
 use serde_json::{json, Map, Value};
 
 use super::{LegacyEntityImageKind, LegacyEntityImageUploadInput, LegacyMediaUploadDeps};
+
+const LEGACY_MEDIA_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 struct LegacyEntityImageTarget {
     entity_label: &'static str,
@@ -37,36 +41,43 @@ pub async fn upload_legacy_entity_image(
     kind: LegacyEntityImageKind,
 ) -> Result<HttpApiExecuteResponse> {
     let target = legacy_entity_image_target(kind);
+    let LegacyEntityImageUploadInput {
+        entity_id,
+        image_url,
+        base64_file,
+        file_size_in_bytes,
+    } = input;
     let entity_id = require_text(
-        input.entity_id,
+        entity_id,
         &format!(
             "VrchatMediaLegacyImageUpload requires {} id.",
             target.entity_label
         ),
     )?;
-    let endpoint = normalize_media_endpoint(&input.endpoint);
-    let source_file_id = extract_file_id(&input.image_url);
+    let endpoint = normalize_media_endpoint(&deps.mutation.scope().endpoint);
+    let source_file_id = extract_file_id(&image_url);
     if source_file_id.is_empty() {
         return Err(Error::Custom(format!(
             "{} image upload requires an existing source image file id.",
             target.entity_label
         )));
     }
-    if input.base64_file.trim().is_empty() {
+    if base64_file.trim().is_empty() {
         return Err(Error::Custom(format!(
             "{} image upload requires image data.",
             target.entity_label
         )));
     }
 
-    let file_md5 = media_files::md5_base64(&input.base64_file)?;
-    let file_size_in_bytes = input
-        .file_size_in_bytes
+    let file_data = media_files::decode_file_base64(&base64_file)?;
+    drop(base64_file);
+    let file_md5 = media_files::md5_base64(&file_data);
+    let file_size_in_bytes = file_size_in_bytes
         .filter(|value| *value > 0)
-        .unwrap_or(media_files::base64_byte_len(&input.base64_file)? as i64);
-    let signature_file = media_files::sign_file_base64(&input.base64_file)?;
-    let signature_md5 = media_files::md5_base64(&signature_file)?;
-    let signature_size_in_bytes = media_files::base64_byte_len(&signature_file)? as i64;
+        .unwrap_or(file_data.len() as i64);
+    let signature_file = media_files::sign_file(&file_data);
+    let signature_md5 = media_files::md5_base64(&signature_file);
+    let signature_size_in_bytes = signature_file.len() as i64;
 
     let upload = execute_media_json(
         &deps,
@@ -96,12 +107,7 @@ pub async fn upload_legacy_entity_image(
     }
 
     for (kind, file_data, file_mime, file_md5) in [
-        (
-            FileUploadStageKind::File,
-            input.base64_file,
-            "image/png",
-            file_md5,
-        ),
+        (FileUploadStageKind::File, file_data, "image/png", file_md5),
         (
             FileUploadStageKind::Signature,
             signature_file,
@@ -125,12 +131,7 @@ pub async fn upload_legacy_entity_image(
         }
         execute_media_success(
             &deps,
-            file_put_input(
-                upload_url,
-                file_data,
-                file_mime.to_string(),
-                file_md5,
-            ),
+            file_put_input(upload_url, file_data, file_mime.to_string(), file_md5),
             &format!("{} image file PUT failed", target.entity_label),
         )
         .await?;
@@ -189,12 +190,7 @@ async fn execute_media_json(
     input: HttpApiRequestInput,
     fallback_message: &str,
 ) -> Result<Value> {
-    response_json(
-        deps.web
-            .execute_api(input, ApiScope::VrchatMedia, deps.db)
-            .await?,
-        fallback_message,
-    )
+    response_json(execute_media_request(deps, input).await?, fallback_message)
 }
 
 async fn execute_media_success(
@@ -202,10 +198,7 @@ async fn execute_media_success(
     input: HttpApiRequestInput,
     fallback_message: &str,
 ) -> Result<()> {
-    let response = deps
-        .web
-        .execute_api(input, ApiScope::VrchatMedia, deps.db)
-        .await?;
+    let response = execute_media_request(deps, input).await?;
     if response.status < 200 || response.status >= 300 {
         return Err(Error::Custom(format!(
             "{fallback_message} ({})",
@@ -213,6 +206,20 @@ async fn execute_media_success(
         )));
     }
     Ok(())
+}
+
+async fn execute_media_request(
+    deps: &LegacyMediaUploadDeps<'_>,
+    mut input: HttpApiRequestInput,
+) -> Result<HttpApiExecuteResponse> {
+    deps.mutation.apply_scope_to_request(&mut input);
+    deps.mutation
+        .run_after_wait(LEGACY_MEDIA_REMOTE_MUTATION_INTERVAL, || async move {
+            deps.web
+                .execute_api(input, ApiScope::VrchatMedia, deps.db)
+                .await
+        })
+        .await
 }
 
 fn response_json(response: HttpApiExecuteResponse, fallback_message: &str) -> Result<Value> {

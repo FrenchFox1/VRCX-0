@@ -14,7 +14,7 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
-import { openGameLogUser } from '@/features/game-log/gameLogUserLookup';
+import type { LoadStatus } from '@/domain/shared/types';
 import {
     formatClock,
     formatDateFilterOrFallback,
@@ -26,7 +26,10 @@ import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
+import { openGameLogUser } from '@/services/gameLogUserDialogService';
 import { parseLocation } from '@/shared/utils/location';
+import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
@@ -188,11 +191,15 @@ export function InstanceOwnerCell({
 function PreviousInstancePlayerNameButton({
     player,
     displayName,
-    knownUser = null
+    knownUser = null,
+    isFriend = false,
+    isFavorite = false
 }: {
     player: PreviousInstancePlayerRow;
     displayName: string;
     knownUser?: PreviousInstanceKnownUser | null;
+    isFriend?: boolean;
+    isFavorite?: boolean;
 }) {
     const { t } = useTranslation();
     const userId = playerUserId(player);
@@ -202,31 +209,32 @@ function PreviousInstancePlayerNameButton({
         return <span className="text-muted-foreground">-</span>;
     }
 
-    const isFavorite = Boolean(knownUser?.isFavorite || knownUser?.$isFavorite);
-
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="hover:text-primary h-auto max-w-full min-w-0 justify-start gap-1.5 p-0 text-left font-normal"
-            onClick={() => {
-                if (userId) {
-                    openUserDialog({
-                        userId,
-                        title: displayName || undefined,
-                        seedData: knownUser || null
-                    });
-                    return;
-                }
-                openGameLogUser({ ...player, displayName }, t);
-            }}
-        >
-            <span className="truncate">{displayName || userId}</span>
+        <div className="grid max-w-full grid-cols-[1rem_minmax(0,1fr)] items-center gap-2">
             <AffinityBadge
-                isFriend={Boolean(knownUser?.isFriend)}
+                isFriend={isFriend}
                 isFavorite={isFavorite}
+                iconOnly
             />
-        </Button>
+            <Button
+                type="button"
+                variant="ghost"
+                className="hover:text-primary h-auto max-w-full min-w-0 justify-start p-0 text-left font-normal"
+                onClick={() => {
+                    if (userId) {
+                        openUserDialog({
+                            userId,
+                            title: displayName || undefined,
+                            seedData: knownUser || null
+                        });
+                        return;
+                    }
+                    openGameLogUser({ ...player, displayName }, t);
+                }}
+            >
+                <span className="truncate">{displayName || userId}</span>
+            </Button>
+        </div>
     );
 }
 
@@ -275,9 +283,16 @@ export function PreviousInstanceDetailsPanel({
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const favoriteFriendIds = useFavoriteStore(
+        (state) => state.favoriteFriendIds
+    );
+    const localFriendFavoritesList = useFavoriteStore(
+        (state) => state.localFriendFavoritesList
+    );
     const [detailsViewMode, setDetailsViewMode] = useState('players');
     const [infoData, setInfoData] = useState<{
-        status: 'idle' | 'running' | 'ready' | 'error';
+        status: LoadStatus;
         error: string;
         players: PreviousInstancePlayerRow[];
         details: PreviousInstancePlayerRow[];
@@ -303,6 +318,14 @@ export function PreviousInstanceDetailsPanel({
     const knownPlayersById = useKnownUserFacts(playerFactIds, {
         endpoint: currentEndpoint
     });
+    const favoriteIdSet = useMemo(
+        () =>
+            new Set([
+                ...(favoriteFriendIds || []),
+                ...(localFriendFavoritesList || [])
+            ]),
+        [favoriteFriendIds, localFriendFavoritesList]
+    );
     const missingPlayerProfileIds = useMemo(() => {
         const ids = [];
         for (const userId of playerFactIds) {
@@ -669,6 +692,18 @@ export function PreviousInstanceDetailsPanel({
                                                                                 )
                                                                             ]
                                                                         }
+                                                                        isFriend={Boolean(
+                                                                            friendsById[
+                                                                                playerUserId(
+                                                                                    player
+                                                                                )
+                                                                            ]
+                                                                        )}
+                                                                        isFavorite={favoriteIdSet.has(
+                                                                            playerUserId(
+                                                                                player
+                                                                            )
+                                                                        )}
                                                                     />
                                                                 </TableCell>
                                                                 <TableCell className="align-top text-xs tabular-nums">

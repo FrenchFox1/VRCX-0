@@ -8,7 +8,9 @@ import {
     parseHmdOverlayActivityFilterProfile,
     parseOverlayActivityFilterProfile
 } from '@/shared/constants/overlayActivityFilters';
+import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
+import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 import { normalizeTrustColors } from '@/shared/utils/trustColors';
 import {
     normalizeAutoDeletePrintsLimit,
@@ -39,6 +41,12 @@ import {
 
 import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '../changelogService';
 import { configureRecentActionCooldown } from '../recentActionService';
+import {
+    APP_CJK_FONT_PACK_DEFAULT_KEY,
+    APP_FONT_DEFAULT_KEY,
+    normalizeAppCjkFontPack,
+    normalizeAppFontFamily
+} from '../themeService';
 import { applyTrustColorClasses } from '../trustColorService';
 import {
     DEFAULT_NOTIFICATION_LAYOUT,
@@ -131,6 +139,7 @@ export async function loadPreferenceSnapshot() {
         webhookAuthEventsEnabled,
         webhookUrl,
         webhookFormat,
+        webhookFields,
         wristOverlayEnabled,
         wristOverlayStartMode,
         wristOverlayButton,
@@ -146,6 +155,7 @@ export async function loadPreferenceSnapshot() {
         autoSweepVRChatCache,
         gameLogDisabled,
         feedPersistenceDisabled,
+        avatarFeedPersistenceDisabled,
         avatarAutoCleanup,
         anonymousUsageTelemetry,
         udonExceptionLogging,
@@ -187,6 +197,9 @@ export async function loadPreferenceSnapshot() {
         translationAPIModel,
         translationAPIPrompt,
         translationAPIReasoningEffort,
+        appFontFamily,
+        appCjkFontPack,
+        customFontFamily,
         customFontPrimary,
         customFontSecondary,
         customFontOverride,
@@ -260,6 +273,10 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('webhookAuthEventsEnabled', true),
         configRepository.getString('webhookUrl', ''),
         configRepository.getString('webhookFormat', 'generic'),
+        configRepository.getString(
+            'webhookFields',
+            DEFAULT_GENERIC_WEBHOOK_FIELDS
+        ),
         configRepository.getBool('wristOverlayEnabled', false),
         configRepository.getString('wristOverlayStartMode', 'vrchatVrMode'),
         configRepository.getString('wristOverlayButton', 'grip'),
@@ -275,6 +292,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('autoSweepVRChatCache', false),
         configRepository.getBool('gameLogDisabled', false),
         configRepository.getBool('feedPersistenceDisabled', false),
+        configRepository.getBool('avatarFeedPersistenceDisabled', false),
         configRepository.getString('avatarAutoCleanup', 'Off'),
         configRepository.getBool('anonymousUsageTelemetry', true),
         configRepository.getBool('udonExceptionLogging', false),
@@ -334,6 +352,12 @@ export async function loadPreferenceSnapshot() {
         ),
         configRepository.getString('translationAPIPrompt', ''),
         configRepository.getString('translationAPIReasoningEffort', ''),
+        configRepository.getString('VRCX_fontFamily', APP_FONT_DEFAULT_KEY),
+        configRepository.getString(
+            'VRCX_cjkFontPack',
+            APP_CJK_FONT_PACK_DEFAULT_KEY
+        ),
+        configRepository.getString('customFontFamily', ''),
         configRepository.getString('customFontPrimary', ''),
         configRepository.getString('customFontSecondary', ''),
         configRepository.getString('customFontOverride', ''),
@@ -353,7 +377,9 @@ export async function loadPreferenceSnapshot() {
     useShellStore
         .getState()
         .setNotificationLayout(
-            notificationLayout || DEFAULT_NOTIFICATION_LAYOUT
+            notificationLayout === 'table'
+                ? 'table'
+                : DEFAULT_NOTIFICATION_LAYOUT
         );
     useShellStore.getState().setNotificationIconDot(notificationIconDot);
     useShellStore.getState().setTaskbarIconDot(taskbarIconDot);
@@ -468,6 +494,7 @@ export async function loadPreferenceSnapshot() {
         webhookAuthEventsEnabled: Boolean(webhookAuthEventsEnabled),
         webhookUrl: String(webhookUrl || ''),
         webhookFormat: webhookFormat === 'discord' ? 'discord' : 'generic',
+        webhookFields: String(webhookFields || DEFAULT_GENERIC_WEBHOOK_FIELDS),
         vrOverlayPanelEnabled: false,
         vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: Boolean(wristOverlayEnabled),
@@ -487,7 +514,9 @@ export async function loadPreferenceSnapshot() {
         autoSweepVRChatCache: Boolean(autoSweepVRChatCache),
         gameLogDisabled: Boolean(gameLogDisabled),
         feedPersistenceDisabled: Boolean(feedPersistenceDisabled),
-        avatarAutoCleanup: avatarAutoCleanup || 'Off',
+        avatarFeedPersistenceDisabled: Boolean(avatarFeedPersistenceDisabled),
+        avatarAutoCleanup:
+            normalizeAvatarAutoCleanupPreference(avatarAutoCleanup),
         anonymousUsageTelemetry: Boolean(anonymousUsageTelemetry),
         udonExceptionLogging: Boolean(udonExceptionLogging),
         logResourceLoad: Boolean(logResourceLoad),
@@ -548,6 +577,9 @@ export async function loadPreferenceSnapshot() {
         translationAPIModel: translationAPIModel || DEFAULT_TRANSLATION_MODEL,
         translationAPIPrompt: translationAPIPrompt || '',
         translationAPIReasoningEffort: translationAPIReasoningEffort || '',
+        appFontFamily: normalizeAppFontFamily(appFontFamily),
+        appCjkFontPack: normalizeAppCjkFontPack(appCjkFontPack),
+        customFontFamily: customFontFamily || '',
         customFontPrimary: customFontPrimary || '',
         customFontSecondary: customFontSecondary || '',
         customFontOverride: customFontOverride || '',

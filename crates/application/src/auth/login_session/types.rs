@@ -3,12 +3,11 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use serde::Serialize;
+pub use vrcx_0_core::TwoFactorMethod;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse, HttpApiRequestInput};
 
 use crate::{AuthenticatedRuntimeSession, Result, SavedAuthSnapshot, WebClient};
-
-pub type TwoFactorMethod = String;
 
 pub(crate) type LoginApiFuture<'a> =
     Pin<Box<dyn Future<Output = Result<HttpApiExecuteResponse>> + Send + 'a>>;
@@ -56,7 +55,9 @@ pub enum LoginSessionState {
     Challenge {
         #[serde(rename = "attemptId")]
         attempt_id: String,
+        #[specta(type = Vec<String>)]
         methods: Vec<TwoFactorMethod>,
+        #[specta(type = String)]
         mode: TwoFactorMethod,
         error: Option<String>,
     },

@@ -14,7 +14,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -49,9 +48,9 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0].patch;
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.persistence.feed_entries[0]["type"], "GPS");
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.state, "online");
         assert_eq!(patch.location, "wrld_2:456");
         assert!(output.profile_refetch_user_ids.is_empty());
         assert_eq!(
@@ -78,7 +77,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -112,7 +110,7 @@ mod tests {
             panic!("friend-location should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert!(output.persistence.feed_entries.is_empty());
         assert_eq!(
             runtime
@@ -121,7 +119,7 @@ mod tests {
                 .friends_by_id
                 .get("usr_friend")
                 .unwrap()
-                .state_bucket,
+                .state,
             "online"
         );
     }
@@ -138,7 +136,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -185,7 +182,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0].patch;
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert!(output.persistence.feed_entries.is_empty());
         assert_eq!(patch.extra["pendingOffline"], true);
         assert_eq!(output.profile_refetch_user_ids, vec!["usr_friend"]);

@@ -9,8 +9,8 @@ use vrcx_0_application::{
     AuthenticatedRuntimeStepSnapshot, AuthenticatedRuntimeStepStatus,
 };
 use vrcx_0_application_core::{
-    HostSessionRuntime, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
-    RuntimeVrchatAuthFailurePayload, TaskStopToken, TaskSupervisor, WebClient,
+    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, RuntimeVrchatAuthFailurePayload,
+    TaskStopToken, TaskSupervisor, WebClient,
 };
 use vrcx_0_application_realtime::{
     build_favorites_baseline_from_friend_ids, build_synced_friend_roster_baseline,
@@ -45,12 +45,11 @@ pub struct AuthenticatedRuntimeDeps {
     pub event_bus: RuntimeEventBus,
     pub tasks: TaskSupervisor,
     pub auth_scope: RuntimeAuthScope,
-    pub session: HostSessionRuntime,
     pub realtime_runtime: Arc<RealtimeHostRuntime>,
     pub favorites_sink: Option<RuntimeHostFavoritesCallback>,
 }
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FavoriteGroupMemberships {
     pub friend_groups_by_key: HashMap<String, Vec<String>>,
     pub world_groups_by_key: HashMap<String, Vec<String>>,
@@ -81,7 +80,6 @@ pub struct AuthenticatedRuntimeOrchestrator {
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     auth_scope: RuntimeAuthScope,
-    session: HostSessionRuntime,
     realtime_runtime: Arc<RealtimeHostRuntime>,
     favorites_sink: Option<RuntimeHostFavoritesCallback>,
 }
@@ -96,6 +94,7 @@ struct AuthenticatedRuntimeState {
     phase: AuthenticatedRuntimePhaseSnapshot,
     friend_baseline: Option<FriendBaselineMetadata>,
     favorites_baseline: Option<SocialFavoritesBaselineOutput>,
+    favorite_group_memberships: Option<Arc<FavoriteGroupMemberships>>,
 }
 
 #[derive(Clone, Debug)]
@@ -118,7 +117,6 @@ impl AuthenticatedRuntimeOrchestrator {
             event_bus: deps.event_bus,
             tasks: deps.tasks,
             auth_scope: deps.auth_scope,
-            session: deps.session,
             realtime_runtime: deps.realtime_runtime,
             favorites_sink: deps.favorites_sink,
         }
@@ -171,24 +169,24 @@ impl AuthenticatedRuntimeOrchestrator {
         {
             return;
         }
+        state.favorite_group_memberships = output
+            .snapshot
+            .as_ref()
+            .map(favorite_group_memberships_from_baseline)
+            .map(Arc::new);
         state.favorites_baseline = Some(output);
         state.phase.updated_at = now_iso();
     }
 
     pub(crate) fn favorite_friend_group_membership(&self) -> Option<HashMap<String, Vec<String>>> {
         self.lock_state()
-            .favorites_baseline
+            .favorite_group_memberships
             .as_ref()
-            .and_then(|baseline| baseline.snapshot.as_ref())
-            .map(favorite_group_membership_from_baseline)
+            .map(|memberships| memberships.friend_groups_by_key.clone())
     }
 
-    pub fn favorite_group_memberships(&self) -> Option<FavoriteGroupMemberships> {
-        self.lock_state()
-            .favorites_baseline
-            .as_ref()
-            .and_then(|baseline| baseline.snapshot.as_ref())
-            .map(favorite_group_memberships_from_baseline)
+    pub fn favorite_group_memberships(&self) -> Option<Arc<FavoriteGroupMemberships>> {
+        self.lock_state().favorite_group_memberships.clone()
     }
 
     pub fn apply_favorites_snapshot(&self, snapshot: &FavoriteBaselineSnapshot) {
@@ -207,7 +205,11 @@ impl AuthenticatedRuntimeOrchestrator {
             ));
         }
 
-        let scope = self.auth_scope.set(&session.user_id, &session.endpoint);
+        let scope = self.auth_scope.set_identity(
+            &session.user_id,
+            &session.display_name,
+            &session.endpoint,
+        );
         let current = self.phase_snapshot();
         let same_session = snapshot_matches_session(&current, &session, scope.generation);
         let already_active = match current.phase {
@@ -319,13 +321,7 @@ impl AuthenticatedRuntimeOrchestrator {
         let mut roster_stale = false;
         loop {
             let termination = self
-                .run_realtime_transport(
-                    session,
-                    scope,
-                    run_id,
-                    stop_token,
-                    attempt,
-                )
+                .run_realtime_transport(session, scope, run_id, stop_token, attempt)
                 .await;
             let (reason, probe_auth) = match termination {
                 Some(RealtimeTransportTermination::UnexpectedExit {
@@ -489,10 +485,9 @@ impl AuthenticatedRuntimeOrchestrator {
         .and_then(|baseline| {
             let output = baseline.output;
             match baseline.friends_by_id {
-                Some(friends_by_id) => Ok((
-                    output,
-                    friend_ids_by_roster_id_from_records(friends_by_id),
-                )),
+                Some(friends_by_id) => {
+                    Ok((output, friend_ids_by_roster_id_from_records(friends_by_id)))
+                }
                 None => Err(Error::Custom(if output.detail.trim().is_empty() {
                     "Friend roster baseline was stale.".into()
                 } else {
@@ -746,7 +741,6 @@ impl AuthenticatedRuntimeOrchestrator {
             db: Arc::clone(&self.db),
             web: Arc::clone(&self.web),
             auth_scope: self.auth_scope.clone(),
-            session: self.session.clone(),
         }
     }
 
@@ -977,6 +971,11 @@ fn commit_favorites_baseline(
     output: SocialFavoritesBaselineOutput,
 ) -> AuthenticatedRuntimePhaseSnapshot {
     state.phase.favorites = ready_step(attempt, format!("{} favorites loaded.", output.count));
+    state.favorite_group_memberships = output
+        .snapshot
+        .as_ref()
+        .map(favorite_group_memberships_from_baseline)
+        .map(Arc::new);
     state.favorites_baseline = Some(output.clone());
     state.phase.friend_baseline = None;
     state.phase.favorites_baseline = None;
@@ -1152,308 +1151,4 @@ fn append_typed_favorite_group_membership(
 }
 
 #[cfg(test)]
-mod tests {
-    use std::collections::BTreeMap;
-
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn typed_favorite_membership_normalizes_ids_and_prefixes_local_groups() {
-        let memberships = BTreeMap::from([(
-            "Friends".to_string(),
-            vec![" usr_one ".to_string(), String::new()],
-        )]);
-        let mut groups = HashMap::new();
-
-        append_typed_favorite_group_membership(&mut groups, &memberships, "local:");
-
-        assert_eq!(
-            groups,
-            HashMap::from([("local:Friends".to_string(), vec!["usr_one".to_string()])])
-        );
-    }
-
-    #[test]
-    fn compact_friend_ids_preserve_record_ids_and_fall_back_to_roster_keys() {
-        let friend_ids = friend_ids_by_roster_id_from_records(HashMap::from([
-            (
-                "roster_one".to_string(),
-                FriendRecord {
-                    id: " usr_one ".into(),
-                    ..FriendRecord::default()
-                },
-            ),
-            ("usr_two".to_string(), FriendRecord::default()),
-        ]));
-
-        assert_eq!(friend_ids["roster_one"], "usr_one");
-        assert_eq!(friend_ids["usr_two"], "usr_two");
-    }
-
-    #[test]
-    fn retry_schedule_caps_at_sixty_seconds() {
-        assert_eq!(retry_delay_seconds(1), 5);
-        assert_eq!(retry_delay_seconds(2), 15);
-        assert_eq!(retry_delay_seconds(3), 30);
-        assert_eq!(retry_delay_seconds(4), 60);
-        assert_eq!(retry_delay_seconds(20), 60);
-    }
-
-    #[test]
-    fn recognizes_only_typed_vrchat_auth_failures() {
-        assert_eq!(
-            vrchat_auth_failure_status(&Error::VrchatApi {
-                status_code: 401,
-                message: "opaque auth failure".into(),
-            }),
-            Some(401)
-        );
-        assert_eq!(
-            vrchat_auth_failure_status(&Error::VrchatApi {
-                status_code: 403,
-                message: "opaque auth failure".into(),
-            }),
-            Some(403)
-        );
-        assert_eq!(
-            vrchat_auth_failure_status(&Error::Custom("HTTP 401".into())),
-            None
-        );
-    }
-
-    #[test]
-    fn session_match_includes_scope_and_transport_identity() {
-        let session = AuthenticatedRuntimeSession::from_user(
-            json!({"id": "usr_one", "displayName": "One"}),
-            "https://api.example.test/api/1".into(),
-            "wss://pipeline.example.test".into(),
-        );
-        let snapshot = AuthenticatedRuntimePhaseSnapshot {
-            auth_scope_generation: 4,
-            user_id: session.user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-            ..Default::default()
-        };
-
-        assert!(snapshot_matches_session(&snapshot, &session, 4));
-        assert!(!snapshot_matches_session(&snapshot, &session, 5));
-
-        let mut other_transport = session.clone();
-        other_transport.websocket = "wss://other.example.test".into();
-        assert!(!snapshot_matches_session(&snapshot, &other_transport, 4));
-    }
-
-    #[test]
-    fn realtime_lifecycle_requires_matching_transport_identity() {
-        let transport = RealtimeTransportStartResult {
-            generation: 2,
-            client_run_id: 4,
-            session_generation: 6,
-        };
-        let mut snapshot = AuthenticatedRuntimePhaseSnapshot {
-            realtime_transport: Some(transport.clone()),
-            ..Default::default()
-        };
-        let stale = RealtimeTransportStartResult {
-            generation: 1,
-            ..transport.clone()
-        };
-
-        apply_realtime_connected(&mut snapshot, 1, &stale);
-        assert_eq!(
-            snapshot.realtime.status,
-            AuthenticatedRuntimeStepStatus::Pending
-        );
-
-        apply_realtime_connected(&mut snapshot, 1, &transport);
-        assert_eq!(
-            snapshot.realtime.status,
-            AuthenticatedRuntimeStepStatus::Ready
-        );
-    }
-
-    #[test]
-    fn runtime_is_ready_only_after_every_step_is_ready() {
-        let mut snapshot = AuthenticatedRuntimePhaseSnapshot {
-            friends: ready_step(1, "friends".into()),
-            favorites: ready_step(1, "favorites".into()),
-            ..Default::default()
-        };
-        assert!(!all_steps_ready(&snapshot));
-
-        snapshot.realtime = ready_step(1, "realtime".into());
-        assert!(all_steps_ready(&snapshot));
-    }
-
-    #[test]
-    fn friend_rebaseline_emits_full_output_without_storing_it_in_phase() {
-        let mut state = AuthenticatedRuntimeState::default();
-        let output = SocialFriendRosterBaselineOutput {
-            user_id: "usr_self".into(),
-            stale: false,
-            count: 1,
-            detail: "Friends ready.".into(),
-            snapshot: Some(RawJson::from(json!({"friendsById": {}}))),
-            friend_log_changed: false,
-        };
-
-        let emitted = commit_friend_baseline(&mut state, 1, output.clone());
-
-        assert_eq!(state.phase.friend_baseline_revision, 1);
-        assert!(state.phase.friend_baseline.is_none());
-        let committed = emitted.friend_baseline.as_ref().unwrap();
-        assert_eq!(committed.user_id, "usr_self");
-        assert_eq!(committed.count, 1);
-        assert_eq!(committed.detail, "Friends ready.");
-        assert_eq!(
-            committed.snapshot.as_ref().unwrap().as_value(),
-            &json!({"friendsById": {}})
-        );
-
-        let emitted = commit_friend_baseline(&mut state, 1, output);
-        assert_eq!(state.phase.friend_baseline_revision, 2);
-        assert!(state.phase.friend_baseline.is_none());
-        assert!(emitted.friend_baseline.is_some());
-    }
-
-    #[test]
-    fn favorites_baseline_emits_full_output_without_storing_it_in_phase() {
-        let mut state = AuthenticatedRuntimeState::default();
-        let output = SocialFavoritesBaselineOutput {
-            user_id: "usr_self".into(),
-            stale: false,
-            count: 1,
-            snapshot: Some(FavoriteBaselineSnapshot {
-                current_user_id: "usr_self".into(),
-                ..Default::default()
-            }),
-        };
-
-        let emitted = commit_favorites_baseline(&mut state, 1, output);
-
-        assert_eq!(
-            state.phase.favorites.status,
-            AuthenticatedRuntimeStepStatus::Ready
-        );
-        assert!(state.phase.favorites_baseline.is_none());
-        assert!(state.favorites_baseline.is_some());
-        assert!(emitted.favorites_baseline.is_some());
-    }
-
-    #[test]
-    fn combined_favorite_group_memberships_preserve_remote_and_local_groups() {
-        let snapshot = FavoriteBaselineSnapshot {
-            grouped_favorite_friend_ids_by_group_key: BTreeMap::from([(
-                "group_friend".into(),
-                vec!["usr_friend".into()],
-            )]),
-            local_friend_favorites: BTreeMap::from([(
-                "local_friend".into(),
-                vec!["usr_local".into()],
-            )]),
-            grouped_favorite_world_ids_by_group_key: BTreeMap::from([(
-                "group_world".into(),
-                vec!["wrld_remote".into()],
-            )]),
-            local_world_favorites: BTreeMap::from([(
-                "local_world".into(),
-                vec!["wrld_local".into()],
-            )]),
-            ..Default::default()
-        };
-
-        let memberships = favorite_group_memberships_from_baseline(&snapshot);
-
-        assert_eq!(
-            memberships.friend_groups_by_key["group_friend"],
-            ["usr_friend"]
-        );
-        assert_eq!(
-            memberships.friend_groups_by_key["local:local_friend"],
-            ["usr_local"]
-        );
-        assert_eq!(
-            memberships.world_groups_by_key["group_world"],
-            ["wrld_remote"]
-        );
-        assert_eq!(
-            memberships.world_groups_by_key["local:local_world"],
-            ["wrld_local"]
-        );
-    }
-
-    #[test]
-    fn combined_snapshot_reattaches_current_friend_and_favorites_baselines() {
-        let mut state = AuthenticatedRuntimeState {
-            phase: AuthenticatedRuntimePhaseSnapshot {
-                user_id: "usr_self".into(),
-                endpoint: "https://api.example.test".into(),
-                websocket: "wss://ws.example.test".into(),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        commit_friend_baseline(
-            &mut state,
-            1,
-            SocialFriendRosterBaselineOutput {
-                user_id: "usr_self".into(),
-                stale: false,
-                count: 1,
-                detail: "Friends ready.".into(),
-                snapshot: Some(RawJson::from(json!({
-                    "orderedFriendIds": ["usr_friend"]
-                }))),
-                friend_log_changed: true,
-            },
-        );
-        commit_favorites_baseline(
-            &mut state,
-            1,
-            SocialFavoritesBaselineOutput {
-                user_id: "usr_self".into(),
-                stale: false,
-                count: 1,
-                snapshot: Some(FavoriteBaselineSnapshot {
-                    current_user_id: "usr_self".into(),
-                    ..Default::default()
-                }),
-            },
-        );
-
-        let snapshot = assemble_authenticated_runtime_snapshot(
-            state.phase.clone(),
-            state.friend_baseline.clone(),
-            Some(RealtimeFriendRosterSnapshot {
-                current_user_id: "usr_self".into(),
-                endpoint: "https://api.example.test".into(),
-                websocket: "wss://ws.example.test".into(),
-                friend_count: 1,
-                snapshot: json!({
-                    "currentUserId": "usr_self",
-                    "friendsById": {"usr_friend": {"id": "usr_friend"}},
-                    "orderedFriendIds": ["usr_friend"],
-                    "onlineIds": [],
-                    "activeIds": [],
-                    "offlineIds": ["usr_friend"],
-                    "detail": ""
-                }),
-            }),
-            state.favorites_baseline.clone(),
-        );
-
-        assert!(state.phase.friend_baseline.is_none());
-        assert!(state.phase.favorites_baseline.is_none());
-        assert_eq!(snapshot.friend_baseline.as_ref().unwrap().count, 1);
-        assert!(
-            !snapshot
-                .friend_baseline
-                .as_ref()
-                .unwrap()
-                .friend_log_changed
-        );
-        assert_eq!(snapshot.favorites_baseline.as_ref().unwrap().count, 1);
-    }
-}
+mod tests;

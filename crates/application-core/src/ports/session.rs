@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::process_monitor::{GameProcessEvent, GameProcessEventSink};
-use crate::event_bus::RuntimeEventBus;
+use crate::BackendRuntimeStatusPublisher;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GameProcessStatus {
@@ -22,10 +22,67 @@ pub struct HostRealtimeSessionContext {
 
 #[derive(Clone, Debug, Default)]
 pub struct BackgroundCapabilitySession {
+    pub auth_scope_generation: u64,
     pub current_user_id: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user_snapshot: Value,
+    pub current_user_snapshot: Arc<Value>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct BackgroundCapabilitySessionIdentity {
+    pub auth_scope_generation: u64,
+    pub current_user_id: String,
+    pub endpoint: String,
+    pub websocket: String,
+}
+
+impl BackgroundCapabilitySession {
+    pub fn identity(&self) -> BackgroundCapabilitySessionIdentity {
+        BackgroundCapabilitySessionIdentity {
+            auth_scope_generation: self.auth_scope_generation,
+            current_user_id: self.current_user_id.clone(),
+            endpoint: self.endpoint.clone(),
+            websocket: self.websocket.clone(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod background_capability_session_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn identity_is_independent_of_the_current_user_snapshot() {
+        let first = BackgroundCapabilitySession {
+            auth_scope_generation: 7,
+            current_user_id: "usr_owner".into(),
+            endpoint: "https://api.example.test/api/1".into(),
+            websocket: "wss://pipeline.example.test".into(),
+            current_user_snapshot: json!({"large": [1, 2, 3]}).into(),
+        };
+        let second = BackgroundCapabilitySession {
+            current_user_snapshot: json!({"different": true}).into(),
+            ..first.clone()
+        };
+
+        assert_eq!(first.identity(), second.identity());
+    }
+
+    #[test]
+    fn cloning_a_capability_session_shares_the_current_user_snapshot() {
+        let first = BackgroundCapabilitySession {
+            current_user_snapshot: json!({"large": [1, 2, 3]}).into(),
+            ..BackgroundCapabilitySession::default()
+        };
+        let second = first.clone();
+
+        assert!(Arc::ptr_eq(
+            &first.current_user_snapshot,
+            &second.current_user_snapshot,
+        ));
+    }
 }
 
 impl HostRealtimeSessionContext {
@@ -176,12 +233,15 @@ impl HostSessionRuntime {
 #[derive(Clone)]
 pub struct SessionHostRuntime {
     session: HostSessionRuntime,
-    event_bus: RuntimeEventBus,
+    backend_status: BackendRuntimeStatusPublisher,
 }
 
 impl SessionHostRuntime {
-    pub fn new(session: HostSessionRuntime, event_bus: RuntimeEventBus) -> Self {
-        Self { session, event_bus }
+    pub fn new(session: HostSessionRuntime, backend_status: BackendRuntimeStatusPublisher) -> Self {
+        Self {
+            session,
+            backend_status,
+        }
     }
 }
 
@@ -196,7 +256,7 @@ impl GameProcessEventSink for SessionHostRuntime {
         });
 
         if projection.game_changed || projection.steamvr_changed {
-            self.event_bus.emit_game_process_status(projection);
+            self.backend_status.publish_game_process_status(projection);
         }
 
         Ok(())

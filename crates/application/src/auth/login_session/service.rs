@@ -4,7 +4,10 @@ use vrcx_0_vrchat_client::auth::{
     config_get_input, current_user_get_input, email_otp_verify_input, login_basic_input,
     otp_verify_input, totp_verify_input,
 };
-use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse, HttpApiRequestInput};
+use vrcx_0_vrchat_client::http_api::{
+    classify_vrchat_auth_failure, ApiScope, HttpApiExecuteResponse, HttpApiRequestInput,
+    VrchatAuthFailureKind,
+};
 
 use crate::auth::auth_credentials::saved_credential_login_start_with_api;
 use crate::{
@@ -36,52 +39,21 @@ fn parse_json_or_fail(
 }
 
 fn sort_two_factor_methods(methods: &mut [TwoFactorMethod]) {
-    methods.sort_by_key(|method| TwoFactorMethodKind::from_wire(method).priority());
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum TwoFactorMethodKind {
-    Totp,
-    EmailOtp,
-    Otp,
-    Unsupported,
-}
-
-impl TwoFactorMethodKind {
-    fn from_wire(method: &str) -> Self {
-        match method {
-            "totp" => Self::Totp,
-            "emailOtp" => Self::EmailOtp,
-            "otp" => Self::Otp,
-            _ => Self::Unsupported,
-        }
-    }
-
-    fn priority(self) -> u8 {
-        match self {
-            Self::Totp => 0,
-            Self::EmailOtp => 1,
-            Self::Otp => 2,
-            Self::Unsupported => 3,
-        }
-    }
+    methods.sort_by_key(|method| match method {
+        TwoFactorMethod::Totp => 0,
+        TwoFactorMethod::EmailOtp => 1,
+        TwoFactorMethod::Otp => 2,
+        TwoFactorMethod::Unknown(_) => 3,
+    });
 }
 
 fn classify_status_failure(response: &HttpApiExecuteResponse) -> LoginFailureKind {
-    if response.status == 401 {
-        let message = auth_response_error_message(response, String::new());
-        if message.contains("Invalid Username/Email or Password") {
-            return LoginFailureKind::InvalidCredentials;
-        }
-        if message.contains("Missing Credentials") {
-            return LoginFailureKind::MissingCredentials;
-        }
-        return LoginFailureKind::SessionInvalidated;
+    match classify_vrchat_auth_failure(response) {
+        VrchatAuthFailureKind::InvalidCredentials => LoginFailureKind::InvalidCredentials,
+        VrchatAuthFailureKind::MissingCredentials => LoginFailureKind::MissingCredentials,
+        VrchatAuthFailureKind::SessionInvalidated => LoginFailureKind::SessionInvalidated,
+        VrchatAuthFailureKind::Other => LoginFailureKind::Other,
     }
-    if response.status == 403 {
-        return LoginFailureKind::SessionInvalidated;
-    }
-    LoginFailureKind::Other
 }
 
 fn interpret_login_response(
@@ -232,7 +204,7 @@ pub(super) async fn start_cookie_restore(
             ),
             LoginFailureKind::MissingCredentials,
         ),
-        Ok(CookieProbeResult::UserMismatch) => LoginSessionState::failed(
+        Ok(CookieProbeResult::UserMismatch { .. }) => LoginSessionState::failed(
             "The stored browser session belongs to a different account.",
             LoginFailureKind::MissingCredentials,
         ),
@@ -262,13 +234,13 @@ pub(super) async fn respond_to_challenge(
     method: TwoFactorMethod,
     code: String,
 ) -> LoginSessionState {
-    let verify_request = match TwoFactorMethodKind::from_wire(&method) {
-        TwoFactorMethodKind::Totp => totp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethodKind::EmailOtp => email_otp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethodKind::Otp => otp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethodKind::Unsupported => {
+    let verify_request = match method {
+        TwoFactorMethod::Totp => totp_verify_input(endpoint.to_string(), code),
+        TwoFactorMethod::EmailOtp => email_otp_verify_input(endpoint.to_string(), code),
+        TwoFactorMethod::Otp => otp_verify_input(endpoint.to_string(), code),
+        TwoFactorMethod::Unknown(_) => {
             return LoginSessionState::failed(
-                format!("Unsupported 2FA method: {method}"),
+                format!("Unsupported 2FA method: {}", method.as_str()),
                 LoginFailureKind::TwoFactorUnavailable,
             );
         }
@@ -336,7 +308,7 @@ fn extract_two_factor_methods(json: &Value) -> Vec<TwoFactorMethod> {
         .map(|values| {
             values
                 .iter()
-                .filter_map(|value| value.as_str().map(str::to_string))
+                .filter_map(|value| value.as_str().map(TwoFactorMethod::from))
                 .collect()
         })
         .unwrap_or_default()
@@ -355,7 +327,7 @@ fn challenge_from_methods(
     sort_two_factor_methods(&mut methods);
     let Some(mode) = methods
         .iter()
-        .find(|method| TwoFactorMethodKind::from_wire(method) != TwoFactorMethodKind::Unsupported)
+        .find(|method| !matches!(method, TwoFactorMethod::Unknown(_)))
         .cloned()
     else {
         return LoginSessionState::failed(

@@ -51,6 +51,44 @@ pub fn scalar_text_of(value: Option<&Value>) -> Option<String> {
     .filter(|text| !text.is_empty())
 }
 
+pub fn scalar_text_array(value: Option<&Value>) -> Vec<String> {
+    match value {
+        Some(Value::Array(values)) => values
+            .iter()
+            .filter_map(|value| scalar_text_of(Some(value)))
+            .collect(),
+        Some(value) => scalar_text_of(Some(value))
+            .map(|text| vec![text])
+            .unwrap_or_default(),
+        None => Vec::new(),
+    }
+}
+
+pub fn object_scalar_text(value: &Value, keys: &[&str]) -> String {
+    let Some(object) = value.as_object() else {
+        return String::new();
+    };
+    for key in keys {
+        let text = scalar_text(object.get(*key));
+        if !text.is_empty() {
+            return text;
+        }
+    }
+    String::new()
+}
+
+pub fn result_rows(value: &Value) -> Vec<Value> {
+    if let Some(rows) = value.as_array() {
+        return rows.clone();
+    }
+    value
+        .as_object()
+        .and_then(|object| object.get("results"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+}
+
 fn i64_of(value: Option<&Value>) -> Option<i64> {
     value.and_then(|value| {
         value

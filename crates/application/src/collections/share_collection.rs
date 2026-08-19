@@ -17,6 +17,7 @@ use vrcx_0_persistence::{
     DatabaseService,
 };
 
+use super::blocking_db::run_blocking_db;
 use crate::Error;
 
 pub const SHARE_COLLECTION_MAX_WORLDS: usize = 1_000;
@@ -144,7 +145,7 @@ pub fn prepare_share_collection_payload(
             });
             continue;
         };
-        if !row.release_status.eq_ignore_ascii_case("public") {
+        if !row.release_status.as_str().eq_ignore_ascii_case("public") {
             continue;
         }
         if row.id.trim().is_empty()
@@ -197,7 +198,7 @@ async fn share_collection_create_with_api(
 ) -> Result<ShareCollectionCreateResult, Error> {
     let db = deps.db;
     let current_user_id = deps.current_user_id;
-    let prepared = prepare_share_collection_payload(deps, input)?;
+    let prepared = run_blocking_db(move || prepare_share_collection_payload(deps, input))?;
     let owner_token = get_or_create_share_owner_token_with_api(db, current_user_id, api).await?;
     let response = api
         .create_collection(&owner_token, &prepared.payload)
@@ -241,13 +242,13 @@ pub(crate) fn payload_world_from_row(
         author_id: row.author_id.clone(),
         name: row.name.clone(),
         author_name: row.author_name.clone(),
-        created_at: row.created_at.clone(),
+        created_at: row.created_at.to_string(),
         image_url: row.image_url.clone(),
         description: row.description.clone(),
         release_status: row.release_status.clone(),
         thumbnail_image_url,
         comment,
-        updated_at: row.updated_at.clone(),
+        updated_at: row.updated_at.to_string(),
         version: row.version,
     }
 }
@@ -266,7 +267,7 @@ async fn get_or_create_share_owner_token_with_api(
 ) -> Result<String, Error> {
     let user_id = require_current_user_id(user_id)?;
     let _guard = SHARE_OWNER_TOKENS_LOCK.lock().await;
-    let mut owner_tokens = read_share_owner_tokens(db)?;
+    let mut owner_tokens = run_blocking_db(|| read_share_owner_tokens(db))?;
     if let Some(owner_token) = share_owner_token_for_user(&owner_tokens, user_id)? {
         return Ok(owner_token);
     }
@@ -282,7 +283,7 @@ async fn get_or_create_share_owner_token_with_api(
         ));
     }
     set_share_owner_token(&mut owner_tokens, user_id, &response.token)?;
-    set_json(db, SHARE_OWNER_TOKENS_CONFIG_KEY, &owner_tokens)?;
+    run_blocking_db(|| set_json(db, SHARE_OWNER_TOKENS_CONFIG_KEY, &owner_tokens))?;
     Ok(response.token)
 }
 

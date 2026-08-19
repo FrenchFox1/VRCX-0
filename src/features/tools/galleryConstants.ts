@@ -1,3 +1,4 @@
+import type { MediaFileTag } from '@/platform/tauri/bindings';
 import type {
     InventoryItemRecord,
     MediaFileRecord,
@@ -9,7 +10,7 @@ export type GalleryAssetTab = GalleryTab | 'inventory';
 export type GalleryUploadTarget = GalleryTab | 'emojis' | 'stickers';
 export type FileAssetTab = Exclude<GalleryTab, 'prints'>;
 export type FileTabDefinition = {
-    tag: string;
+    tag: MediaFileTag;
     titleKey: string;
     aspectClass: string;
     max: number;

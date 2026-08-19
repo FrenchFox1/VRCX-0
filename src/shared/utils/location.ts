@@ -1,8 +1,29 @@
-import type { ParsedLocation as BackendParsedLocation } from '@/platform/tauri/bindings';
-
 import { isRealInstance } from './instance';
+import { normalizeString } from './string';
 
-export type ParsedLocation = BackendParsedLocation & Record<string, unknown>;
+export interface ParsedLocation extends Record<string, unknown> {
+    tag: string;
+    isOffline: boolean;
+    isPrivate: boolean;
+    isTraveling: boolean;
+    isRealInstance: boolean;
+    worldId: string;
+    instanceId: string;
+    instanceName: string;
+    accessType: string;
+    accessTypeName: string;
+    region: string;
+    shortName: string;
+    userId: string | null;
+    hiddenId: string | null;
+    privateId: string | null;
+    friendsId: string | null;
+    groupId: string | null;
+    groupAccessType: string | null;
+    canRequestInvite: boolean;
+    strict: boolean;
+    ageGate: boolean;
+}
 
 interface LocationRecord extends Record<string, unknown> {
     tag?: unknown;
@@ -495,7 +516,41 @@ function normalizeLocationValue(value: unknown): string {
     return '';
 }
 
-export { normalizeLocationValue };
+function normalizeLocationStatus(value: unknown): string {
+    const normalized = normalizeString(value).toLowerCase();
+    if (normalized === 'offline:offline') {
+        return 'offline';
+    }
+    if (normalized === 'private:private') {
+        return 'private';
+    }
+    if (normalized === 'traveling:traveling') {
+        return 'traveling';
+    }
+    return normalized;
+}
+
+const LOCATION_SENTINELS = ['offline', 'private', 'traveling'] as const;
+
+type LocationSentinel = (typeof LOCATION_SENTINELS)[number];
+
+function isLocationSentinel(value: string): value is LocationSentinel {
+    return (LOCATION_SENTINELS as readonly string[]).includes(value);
+}
+
+function locationSentinel(value: unknown): LocationSentinel | '' {
+    const status = normalizeLocationStatus(value);
+    return isLocationSentinel(status) ? status : '';
+}
+
+export {
+    isLocationSentinel,
+    LOCATION_SENTINELS,
+    locationSentinel,
+    normalizeLocationStatus,
+    normalizeLocationValue
+};
+export type { LocationSentinel };
 
 function getObject(value: unknown): LocationRecord | null {
     return value && typeof value === 'object'

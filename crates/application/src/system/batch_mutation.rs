@@ -1,19 +1,24 @@
-use std::{collections::HashSet, future::Future, pin::Pin};
+use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use vrcx_0_core::json::RawJson;
+use vrcx_0_core::vrchat_json::response_error_message;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
-    avatars::{avatar_get_input, avatar_save_input},
-    groups::{leave_input, member_props_set_input},
+    avatars::{avatar_get_input, avatar_save_input, AvatarUpdateRequest},
+    groups::{leave_input, member_props_set_input, GroupMemberPatch, GroupMemberVisibility},
     http_api::{ApiScope, HttpApiRequestInput},
     users::user_groups_get_input,
 };
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
+use crate::{
+    is_remote_mutation_request, Error, RemoteMutationGate, Result, RuntimeAuthScope,
+    RuntimeAuthScopeSnapshot, WebClient,
+};
 
 pub const BATCH_MUTATION_MAX_ITEMS: usize = 1_000;
+const BATCH_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -110,11 +115,19 @@ pub struct VrchatBatchMutationActions<'a> {
     pub web: &'a WebClient,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
+    pub remote_mutation_gate: &'a RemoteMutationGate,
 }
 
 impl VrchatBatchMutationActions<'_> {
-    async fn execute_json(&self, request: HttpApiRequestInput, action: &str) -> Result<Value> {
+    async fn execute_json(&self, mut request: HttpApiRequestInput, action: &str) -> Result<Value> {
         ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
+        if is_remote_mutation_request(&request) {
+            self.remote_mutation_gate
+                .wait(&self.expected_scope, BATCH_REMOTE_MUTATION_INTERVAL)
+                .await;
+            ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
+            request.endpoint = Some(self.expected_scope.endpoint.clone());
+        }
         let response = self
             .web
             .execute_api(request, ApiScope::Vrchat, self.db)
@@ -154,7 +167,15 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
             let (_, request) = avatar_save_input(
                 self.expected_scope.endpoint.clone(),
                 avatar_id.to_string(),
-                Some(json!({ "id": avatar_id, "tags": tags })),
+                AvatarUpdateRequest {
+                    id: avatar_id.to_string(),
+                    tags: Some(tags.to_vec()),
+                    name: None,
+                    description: None,
+                    primary_style: None,
+                    secondary_style: None,
+                    release_status: None,
+                },
             )?;
             self.execute_json(request, "avatar content tag update")
                 .await
@@ -186,7 +207,10 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
                 self.expected_scope.endpoint.clone(),
                 group_id.to_string(),
                 self.expected_scope.current_user_id.clone(),
-                Some(json!({ "visibility": visibility_name(visibility) })),
+                GroupMemberPatch {
+                    visibility: Some(group_member_visibility(visibility)),
+                    ..GroupMemberPatch::default()
+                },
             )?;
             self.execute_json(request, "group visibility update")
                 .await?;
@@ -578,6 +602,15 @@ fn group_visibility_from_value(value: &Value) -> GroupVisibility {
     }
 }
 
+fn group_member_visibility(visibility: GroupVisibility) -> GroupMemberVisibility {
+    match visibility {
+        GroupVisibility::Visible => GroupMemberVisibility::Visible,
+        GroupVisibility::Friends => GroupMemberVisibility::Friends,
+        GroupVisibility::Hidden => GroupMemberVisibility::Hidden,
+    }
+}
+
+#[cfg(test)]
 fn visibility_name(visibility: GroupVisibility) -> &'static str {
     match visibility {
         GroupVisibility::Visible => "visible",
@@ -638,17 +671,6 @@ fn ensure_scope_matches(
             "Batch mutation authentication scope changed.".into(),
         ))
     }
-}
-
-fn response_error_message(payload: &Value, status: i32, action: &str) -> String {
-    payload
-        .get("error")
-        .and_then(Value::as_object)
-        .and_then(|error| error.get("message"))
-        .and_then(Value::as_str)
-        .or_else(|| payload.get("message").and_then(Value::as_str))
-        .map(str::to_string)
-        .unwrap_or_else(|| format!("VRChat {action} failed with HTTP {status}."))
 }
 
 #[cfg(test)]

@@ -1,3 +1,8 @@
+import type {
+    GroupSearchParams,
+    UserSearchParams,
+    WorldSearchParams
+} from '@/platform/tauri/bindings';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 export const SEARCH_PAGE_SIZE = 10;
@@ -16,10 +21,7 @@ export function buildWorldSearchRequest(
     includeCommunityLabs: boolean,
     offset = 0
 ) {
-    const params: Record<string, string | number> & {
-        n: number;
-        offset: number;
-    } = {
+    const params: WorldSearchParams & { n: number; offset: number } = {
         n: SEARCH_PAGE_SIZE,
         offset: Math.max(0, offset)
     };
@@ -28,11 +30,11 @@ export function buildWorldSearchRequest(
     switch (category?.sortHeading) {
         case 'featured':
             params.sort = 'order';
-            params.featured = 'true';
+            params.featured = true;
             break;
         case 'trending':
             params.sort = 'popularity';
-            params.featured = 'false';
+            params.featured = false;
             break;
         case 'updated':
             params.sort = 'updated';
@@ -60,7 +62,7 @@ export function buildWorldSearchRequest(
             break;
         case 'heat':
             params.sort = 'heat';
-            params.featured = 'false';
+            params.featured = false;
             break;
         default:
             params.sort = 'relevance';
@@ -68,7 +70,8 @@ export function buildWorldSearchRequest(
             break;
     }
 
-    params.order = category?.sortOrder || 'descending';
+    params.order =
+        category?.sortOrder === 'ascending' ? 'ascending' : 'descending';
 
     if (category?.sortOwnership === 'mine') {
         params.user = 'me';
@@ -93,12 +96,13 @@ export function buildWorldSearchRequest(
 }
 
 export function buildGroupSearchRequest(searchText: unknown, offset = 0) {
+    const params: GroupSearchParams & { n: number; offset: number } = {
+        n: SEARCH_PAGE_SIZE,
+        offset: Math.max(0, offset),
+        query: replaceBioSymbols(searchText)
+    };
     return {
-        params: {
-            n: SEARCH_PAGE_SIZE,
-            offset: Math.max(0, offset),
-            query: replaceBioSymbols(searchText)
-        }
+        params
     };
 }
 
@@ -120,13 +124,14 @@ export function buildUserSearchRequest(
     sortByLastLoggedIn = false,
     offset = 0
 ) {
+    const params: UserSearchParams & { n: number; offset: number } = {
+        n: SEARCH_PAGE_SIZE,
+        offset: Math.max(0, offset),
+        search: typeof searchText === 'string' ? searchText : '',
+        customFields: searchByBio ? 'bio' : 'displayName',
+        sort: sortByLastLoggedIn ? 'last_login' : 'relevance'
+    };
     return {
-        params: {
-            n: SEARCH_PAGE_SIZE,
-            offset: Math.max(0, offset),
-            search: typeof searchText === 'string' ? searchText : '',
-            customFields: searchByBio ? 'bio' : 'displayName',
-            sort: sortByLastLoggedIn ? 'last_login' : 'relevance'
-        }
+        params
     };
 }

@@ -101,7 +101,7 @@ export function GameLogTableShell({
                     pageSize={pagination.pageSize}
                     pageSizes={pageSizes}
                     pageSizeLabel={t('table.pagination.rows_per_page')}
-                    onPageSizeChange={(value: unknown) => {
+                    onPageSizeChange={(value: string) => {
                         const nextPageSize = resolveGameLogPageSize(
                             value,
                             pageSizes,

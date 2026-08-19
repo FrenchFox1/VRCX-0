@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
-use vrcx_0_application_core::RuntimeOperationStatus;
+use vrcx_0_application_core::{RuntimeAuthScopeSnapshot, RuntimeOperationStatus};
 
 use tokio::sync::{broadcast, watch};
-use vrcx_0_application_core::{Error, FavoritesChangedPayload, Result};
+use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
 use vrcx_0_persistence::config as config_store;
 use vrcx_0_persistence::realtime::{
@@ -21,9 +21,10 @@ use crate::realtime::friends::RealtimeFriendsRuntime;
 use crate::realtime::user_cache::UserCacheRuntime;
 use crate::realtime::user_query_cache::UserQueryCache;
 use crate::realtime::{
-    FriendProjection, RealtimeFriendOutput, RealtimeSessionContext,
-    RealtimeTransportLifecycleEvent, RealtimeTransportStartResult, RealtimeTransportTermination,
-    RealtimeWsStatus, RealtimeWsStatusPayload,
+    FriendProjection, RealtimeCachedUserProfile, RealtimeFriendOutput,
+    RealtimeFriendRecordSnapshot, RealtimeSessionContext, RealtimeTransportLifecycleEvent,
+    RealtimeTransportStartResult, RealtimeTransportTermination, RealtimeWsStatus,
+    RealtimeWsStatusPayload,
 };
 
 use super::state::{
@@ -48,6 +49,12 @@ impl RealtimeHostRuntime {
                     tracing::warn!("Feed persistence preference read failed: {error}");
                     false
                 });
+        let avatar_feed_persistence_disabled =
+            config_store::get_bool(deps.db.as_ref(), "avatarFeedPersistenceDisabled", false)
+                .unwrap_or_else(|error| {
+                    tracing::warn!("Avatar Feed persistence preference read failed: {error}");
+                    false
+                });
         Self {
             deps,
             state: Mutex::new(RealtimeHostRuntimeState::default()),
@@ -62,6 +69,7 @@ impl RealtimeHostRuntime {
             feed_owner_lock: Mutex::new(()),
             feed_live_cache: Mutex::new(super::feed::FeedLiveCache::default()),
             feed_persistence_disabled: AtomicBool::new(feed_persistence_disabled),
+            avatar_feed_persistence_disabled: AtomicBool::new(avatar_feed_persistence_disabled),
             notification_apply_lock: tokio::sync::Mutex::new(()),
             friend_profile_bulk_load: Mutex::new(
                 super::friend_profile_bulk_load::FriendProfileBulkLoadState::default(),
@@ -170,6 +178,7 @@ impl RealtimeHostRuntime {
             RealtimeFriendBaselineStart::Supplied(friends_by_id) => Some(friends_by_id),
             RealtimeFriendBaselineStart::PendingOrPreserved => None,
         };
+        let auth_scope_generation = self.deps.auth_scope.snapshot().generation;
         let mut pending_feed_entries = Vec::new();
         let mut pending_projection = FriendProjection::new(0, 0);
         let friend_owner = self.lock_friend_owner();
@@ -207,39 +216,39 @@ impl RealtimeHostRuntime {
             state.world_enrichment.inflight.clear();
             state.world_enrichment.pending_corrections.clear();
             state.automation.invite.clear_all();
-            let friend_user_ids = if let Some(friends_by_id) =
-                pending_friends.or_else(|| supplied_friends.take())
-            {
-                self.friends.clear();
-                let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
-                self.friends.set_baseline(
-                    FriendRosterBaseline {
-                        current_user_id: session.user_id.clone(),
-                        endpoint: session.endpoint.clone(),
-                        websocket: session.websocket.clone(),
-                        friends_by_id,
-                    },
-                    generation,
-                    0,
-                );
-                friend_user_ids
-            } else {
-                let Some(friend_user_ids) = self
-                    .friends
-                    .restart_preserving_baseline(&session, generation)
-                else {
-                    self.deps
-                        .session
-                        .clear_realtime_context_if_generation(session_generation);
-                    return Err(Error::Custom(
-                        "Realtime transport requires a pending or preserved friend baseline."
-                            .into(),
-                    ));
+            let friend_user_ids =
+                if let Some(friends_by_id) = pending_friends.or_else(|| supplied_friends.take()) {
+                    self.friends.clear();
+                    let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
+                    self.friends.set_baseline(
+                        FriendRosterBaseline {
+                            current_user_id: session.user_id.clone(),
+                            endpoint: session.endpoint.clone(),
+                            websocket: session.websocket.clone(),
+                            friends_by_id,
+                        },
+                        generation,
+                        0,
+                    );
+                    friend_user_ids
+                } else {
+                    let Some(friend_user_ids) = self
+                        .friends
+                        .restart_preserving_baseline(&session, generation)
+                    else {
+                        self.deps
+                            .session
+                            .clear_realtime_context_if_generation(session_generation);
+                        return Err(Error::Custom(
+                            "Realtime transport requires a pending or preserved friend baseline."
+                                .into(),
+                        ));
+                    };
+                    friend_user_ids
                 };
-                friend_user_ids
-            };
             state.connection.active_context = Some(ActiveRealtimeContext {
                 session: session.clone(),
+                auth_scope_generation,
                 generation,
                 client_run_id,
                 session_generation,
@@ -281,7 +290,7 @@ impl RealtimeHostRuntime {
         let transport_deps = RealtimeTransportDeps {
             db: Arc::clone(&self.deps.db),
             web: Arc::clone(&self.deps.web),
-            event_bus: self.deps.event_bus.clone(),
+            backend_status: self.deps.backend_status.clone(),
         };
         let message_sink: Arc<dyn RealtimeMessageSink> = Arc::new(RealtimeHostRuntimeMessageSink {
             runtime: Arc::clone(self),
@@ -375,6 +384,9 @@ impl RealtimeHostRuntime {
                 self.cancel_friend_profile_bulk_load_for_session(&active.session);
             }
             if let Some(output) = final_current_user_output {
+                if preserve_snapshot {
+                    self.apply_current_user_snapshot_sink(&active, &output.projection);
+                }
                 self.apply_current_user_output(output);
             }
             let terminal_status = match &termination {
@@ -390,8 +402,8 @@ impl RealtimeHostRuntime {
             if let Some((status, reason, status_code)) = terminal_status {
                 self.deps.sync.record_failure("realtime", reason.clone());
                 self.deps
-                    .event_bus
-                    .emit_realtime_ws_status(RealtimeWsStatusPayload {
+                    .backend_status
+                    .publish_realtime_ws_status(RealtimeWsStatusPayload {
                         status,
                         websocket_domain: normalize_websocket_domain(&active.session.websocket),
                         at: chrono::Utc::now().to_rfc3339(),
@@ -416,6 +428,18 @@ impl RealtimeHostRuntime {
         self.friends.snapshot()
     }
 
+    pub fn is_current_friend(&self, user_id: &str) -> bool {
+        self.friends.is_current_friend(user_id)
+    }
+
+    pub fn current_friend_record(&self, user_id: &str) -> Option<RealtimeFriendRecordSnapshot> {
+        self.friends.current_friend_record(user_id)
+    }
+
+    pub fn friend_user_ids(&self) -> std::collections::HashSet<String> {
+        self.friends.friend_user_ids()
+    }
+
     pub fn friend_roster_snapshot(
         &self,
         previous_order: &[String],
@@ -431,8 +455,50 @@ impl RealtimeHostRuntime {
         self.current_user.snapshot_value()
     }
 
-    pub fn notify_favorites_changed(&self, payload: FavoritesChangedPayload) {
-        self.deps.event_bus.emit_favorites_changed(payload);
+    pub fn cached_user_profiles(
+        &self,
+        auth_scope: &RuntimeAuthScopeSnapshot,
+        user_ids: &[String],
+    ) -> Vec<RealtimeCachedUserProfile> {
+        let endpoint = self
+            .state
+            .lock()
+            .ok()
+            .and_then(|state| {
+                state
+                    .connection
+                    .active_context
+                    .as_ref()
+                    .filter(|active| {
+                        auth_scope.active
+                            && active.auth_scope_generation == auth_scope.generation
+                            && active.session.user_id == auth_scope.current_user_id
+                            && active.session.endpoint == auth_scope.endpoint
+                    })
+                    .map(|active| active.session.endpoint.clone())
+            })
+            .unwrap_or_default();
+        if endpoint.is_empty() {
+            return Vec::new();
+        }
+        self.user_cache
+            .get_users(&endpoint, user_ids)
+            .into_iter()
+            .map(|(user_id, user)| RealtimeCachedUserProfile {
+                user_id,
+                is_friend: user.get("isFriend").and_then(serde_json::Value::as_bool) == Some(true),
+                languages: user
+                    .get("tags")
+                    .and_then(serde_json::Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(serde_json::Value::as_str)
+                    .filter_map(|tag| tag.strip_prefix("language_"))
+                    .filter(|language| !language.is_empty())
+                    .map(str::to_string)
+                    .collect(),
+            })
+            .collect()
     }
 
     pub fn expire_notification(&self, user_id: String, notification_id: String) -> Result<()> {
@@ -565,8 +631,8 @@ impl RealtimeHostRuntime {
         }
 
         self.deps
-            .event_bus
-            .emit_realtime_ws_status(RealtimeWsStatusPayload {
+            .backend_status
+            .publish_realtime_ws_status(RealtimeWsStatusPayload {
                 status: RealtimeWsStatus::Disconnected,
                 websocket_domain,
                 at: chrono::Utc::now().to_rfc3339(),
@@ -582,5 +648,47 @@ impl RealtimeHostRuntime {
             "Realtime transport stopped.",
             0,
         );
+    }
+}
+
+#[cfg(test)]
+mod cached_user_profile_tests {
+    use super::*;
+    use crate::realtime::service::host::test_support::runtime_with_active_session;
+    use serde_json::json;
+
+    #[test]
+    fn cached_user_profiles_reject_a_previous_realtime_auth_scope() -> Result<()> {
+        let (_dir, test_runtime, session) =
+            runtime_with_active_session("cached-user-profile-auth-scope")?;
+        let runtime = test_runtime.runtime();
+        runtime.ingest_user_facts(vec![json!({
+            "user": {
+                "id": "usr_target",
+                "tags": ["language_eng"]
+            },
+            "isFriend": true
+        })]);
+        let user_ids = vec!["usr_target".to_string()];
+        let original_scope = test_runtime.auth_scope().snapshot();
+
+        assert_eq!(
+            runtime.cached_user_profiles(&original_scope, &user_ids),
+            vec![RealtimeCachedUserProfile {
+                user_id: "usr_target".into(),
+                is_friend: true,
+                languages: vec!["eng".into()],
+            }]
+        );
+
+        test_runtime.auth_scope().set("", "");
+        let replacement_scope = test_runtime
+            .auth_scope()
+            .set("usr_replacement", &session.endpoint);
+
+        assert!(runtime
+            .cached_user_profiles(&replacement_scope, &user_ids)
+            .is_empty());
+        Ok(())
     }
 }

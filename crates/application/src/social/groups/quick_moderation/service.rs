@@ -1,5 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use vrcx_0_application_core::RuntimeOperationStatus;
+use vrcx_0_core::text::normalize_text;
+use vrcx_0_core::GroupPermission;
 
 use futures_util::stream::{FuturesUnordered, StreamExt};
 use serde_json::Value;
@@ -11,8 +13,8 @@ use vrcx_0_application_core::vrchat_api::groups::{
     user_groups_get_input,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
-use vrcx_0_application_core::{HostSessionRuntime, RuntimeAuthScope};
-use vrcx_0_core::json::scalar_text as value_as_string;
+use vrcx_0_application_core::RuntimeAuthScope;
+use vrcx_0_core::json::{object_scalar_text, result_rows, scalar_text_array};
 
 use super::super::permissions::{has_permission, parse_permission_map, permissions_for_group};
 use super::super::service::{execute_group_api_raw, GroupApiDeps};
@@ -21,15 +23,14 @@ use super::types::{
     GroupQuickModerationGroup, GroupQuickModerationInput, GroupQuickModerationOutput,
 };
 
-const KICK_PERMISSION: &str = "group-members-remove";
-const BAN_PERMISSION: &str = "group-bans-manage";
+const KICK_PERMISSION: GroupPermission = GroupPermission::MembersRemove;
+const BAN_PERMISSION: GroupPermission = GroupPermission::BansManage;
 const MEMBERSHIP_PROBE_CONCURRENCY: usize = 5;
 
 #[derive(Clone)]
 pub struct GroupQuickModerationDeps {
     pub groups: GroupApiDeps,
     pub auth_scope: RuntimeAuthScope,
-    pub session: HostSessionRuntime,
 }
 
 struct MembershipProbe {
@@ -168,7 +169,7 @@ async fn load_group_quick_moderation(
         .await?,
     );
 
-    let group_rows = array_rows(&current_groups);
+    let group_rows = result_rows(&current_groups);
     let ban_groups = groups_for_permission(
         &group_rows,
         &permission_map,
@@ -257,10 +258,8 @@ async fn execute_group_quick_moderation_action(
 
     let request = quick_action_request(&endpoint, &group_id, &target_user_id, action)?;
     let response = execute_vrchat_api(&deps, request).await?;
-    if response.is_failure() {
-        return Err(Error::Custom(
-            response.error_message_or("VRChat group quick moderation action failed"),
-        ));
+    if let Some(failure) = response.failure_or("VRChat group quick moderation action failed") {
+        return Err(failure.into());
     }
 
     Ok(GroupQuickModerationActionOutput {
@@ -379,8 +378,8 @@ async fn execute_vrchat_json_request(
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
-    if response.is_failure() {
-        return Err(Error::Custom(response.error_message_or(fallback)));
+    if let Some(failure) = response.failure_or(fallback) {
+        return Err(failure.into());
     }
     Ok(response.json)
 }
@@ -391,10 +390,6 @@ async fn execute_vrchat_api(
 ) -> Result<ApiJsonResponse> {
     let response = execute_group_api_raw(&deps.groups, request).await?;
     Ok(ApiJsonResponse::from(&response))
-}
-
-fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
 }
 
 fn normalize_endpoint(value: &str) -> String {
@@ -424,7 +419,7 @@ fn ensure_user_ids(current_user_id: &str, target_user_id: &str) -> Result<()> {
 }
 
 fn auth_scope_matches(deps: &GroupQuickModerationDeps, user_id: &str, endpoint: &str) -> bool {
-    vrcx_0_application_core::auth_scope_matches(&deps.auth_scope, &deps.session, user_id, endpoint)
+    deps.auth_scope.matches(user_id, endpoint)
 }
 
 fn ensure_current_scope(
@@ -451,72 +446,26 @@ fn stale_output(current_user_id: String, target_user_id: String) -> GroupQuickMo
     }
 }
 
-fn array_rows(value: &Value) -> Vec<Value> {
-    if let Some(rows) = value.as_array() {
-        return rows.clone();
-    }
-    value
-        .as_object()
-        .and_then(|object| object.get("results"))
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default()
-}
-
-fn object_string(value: &Value, keys: &[&str]) -> String {
-    let Some(object) = value.as_object() else {
-        return String::new();
-    };
-    for key in keys {
-        let text = value_as_string(object.get(*key));
-        if !text.is_empty() {
-            return text;
-        }
-    }
-    String::new()
-}
-
 fn nested_object_string(value: &Value, object_key: &str, keys: &[&str]) -> String {
     value
         .as_object()
         .and_then(|object| object.get(object_key))
-        .map(|nested| object_string(nested, keys))
+        .map(|nested| object_scalar_text(nested, keys))
         .unwrap_or_default()
 }
 
-fn string_array(value: Option<&Value>) -> Vec<String> {
-    match value {
-        Some(Value::Array(values)) => values
-            .iter()
-            .filter_map(|value| {
-                let text = value_as_string(Some(value));
-                (!text.is_empty()).then_some(text)
-            })
-            .collect(),
-        Some(value) => {
-            let text = value_as_string(Some(value));
-            if text.is_empty() {
-                Vec::new()
-            } else {
-                vec![text]
-            }
-        }
-        None => Vec::new(),
-    }
-}
-
 fn group_from_value(group: &Value) -> Option<GroupQuickModerationGroup> {
-    let group_id = object_string(group, &["groupId", "id"]);
+    let group_id = object_scalar_text(group, &["groupId", "id"]);
     if group_id.is_empty() {
         return None;
     }
-    let name = object_string(group, &["name", "displayName"]);
+    let name = object_scalar_text(group, &["name", "displayName"]);
     let name = if name.is_empty() {
         group_id.clone()
     } else {
         name
     };
-    let owner_id = object_string(group, &["ownerId", "ownerID"]);
+    let owner_id = object_scalar_text(group, &["ownerId", "ownerID"]);
     let owner_id = if owner_id.is_empty() {
         nested_object_string(group, "owner", &["id", "userId"])
     } else {
@@ -525,8 +474,8 @@ fn group_from_value(group: &Value) -> Option<GroupQuickModerationGroup> {
     Some(GroupQuickModerationGroup {
         group_id,
         name,
-        short_code: object_string(group, &["shortCode", "shortcode"]),
-        icon_url: object_string(
+        short_code: object_scalar_text(group, &["shortCode", "shortcode"]),
+        icon_url: object_scalar_text(
             group,
             &["iconUrl", "imageUrl", "thumbnailImageUrl", "bannerUrl"],
         ),
@@ -538,8 +487,8 @@ fn group_from_value(group: &Value) -> Option<GroupQuickModerationGroup> {
 
 fn groups_for_permission(
     group_rows: &[Value],
-    permission_map: &HashMap<String, Vec<String>>,
-    permission: &str,
+    permission_map: &HashMap<String, Vec<GroupPermission>>,
+    permission: GroupPermission,
     target_user_id: &str,
 ) -> Vec<GroupQuickModerationGroup> {
     let mut groups = group_rows
@@ -550,7 +499,7 @@ fn groups_for_permission(
                 return None;
             }
             let permissions = permissions_for_group(group, permission_map, &parsed.group_id);
-            has_permission(&permissions, permission).then_some(parsed)
+            has_permission(&permissions, &permission).then_some(parsed)
         })
         .collect::<Vec<_>>();
     groups.sort_by_key(|group| group.name.to_lowercase());
@@ -561,7 +510,7 @@ fn group_with_member(
     mut group: GroupQuickModerationGroup,
     member: &Value,
 ) -> GroupQuickModerationGroup {
-    group.membership_label = object_string(member, &["membershipStatus", "status"]);
+    group.membership_label = object_scalar_text(member, &["membershipStatus", "status"]);
     if group.membership_label.is_empty() {
         group.membership_label = "member".into();
     }
@@ -582,7 +531,7 @@ fn role_label_from_member(member: &Value) -> String {
                 .filter_map(|role| {
                     let name = match role {
                         Value::String(value) => normalize_text(value),
-                        _ => object_string(role, &["name", "displayName", "id"]),
+                        _ => object_scalar_text(role, &["name", "displayName", "id"]),
                     };
                     (!name.is_empty()).then_some(name)
                 })
@@ -592,7 +541,7 @@ fn role_label_from_member(member: &Value) -> String {
     if !role_names.is_empty() {
         return role_names.join(", ");
     }
-    string_array(object.get("roleIds")).join(", ")
+    scalar_text_array(object.get("roleIds")).join(", ")
 }
 
 #[cfg(test)]

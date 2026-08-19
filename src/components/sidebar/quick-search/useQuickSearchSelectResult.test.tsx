@@ -3,10 +3,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type {
-    QuickSearchEntityType,
-    QuickSearchResult
-} from '../quickSearchCatalog';
+import type { QuickSearchEntityType, QuickSearchResult } from '../quickSearch';
 
 const mocks = vi.hoisted(() => ({
     openAvatarDialog: vi.fn(),

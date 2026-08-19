@@ -1,13 +1,16 @@
-import type { FriendProfileLoadStatusPayload } from '@/platform/tauri/bindings';
+import type { AuthenticatedSessionProjection } from '@/platform/tauri/bindings';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { resumeFrontendSessionFromBackendRuntime } from '../backendRuntimeSessionResumeService';
+import { applyAuthenticatedSessionProjection } from '../backendRuntimeSessionResumeService';
 import { applyFriendProfileLoadStatusPayload } from '../friendProfileLoadService';
-import { isRecord } from './guards';
 import type { RuntimeSnapshotPayload } from './types';
 
 let backendRuntimeHydrationPromise: Promise<void> | null = null;
 let pendingBackendRuntimeHydrationSnapshot: RuntimeSnapshotPayload = null;
+let pendingAuthenticatedSessionProjection: AuthenticatedSessionProjection = {
+    revision: 0,
+    session: null
+};
 let hasPendingBackendRuntimeHydrationSnapshot = false;
 
 function applyBackendRuntimeSnapshot(
@@ -19,14 +22,8 @@ function applyBackendRuntimeSnapshot(
 ): void {
     const runtimeStore = useRuntimeStore.getState();
     runtimeStore.setBackendRuntimeSnapshot(snapshot);
-    if (
-        applyFriendProfileLoad &&
-        isRecord(snapshot) &&
-        isRecord(snapshot.friendProfileLoad)
-    ) {
-        applyFriendProfileLoadStatusPayload(
-            snapshot.friendProfileLoad as FriendProfileLoadStatusPayload
-        );
+    if (applyFriendProfileLoad && snapshot) {
+        applyFriendProfileLoadStatusPayload(snapshot.friendProfileLoad);
     }
     if (markHydrated) {
         runtimeStore.setShellState({
@@ -37,9 +34,11 @@ function applyBackendRuntimeSnapshot(
 
 export function hydrateBackendRuntimeSnapshot(
     snapshot: RuntimeSnapshotPayload,
-    flushPendingProjectionEvents: () => void
+    authenticatedSession: AuthenticatedSessionProjection,
+    reconcilePendingProjectionEvents: () => void
 ): Promise<void> {
     pendingBackendRuntimeHydrationSnapshot = snapshot;
+    pendingAuthenticatedSessionProjection = authenticatedSession;
     hasPendingBackendRuntimeHydrationSnapshot = true;
 
     if (!backendRuntimeHydrationPromise) {
@@ -49,6 +48,8 @@ export function hydrateBackendRuntimeSnapshot(
         backendRuntimeHydrationPromise = (async () => {
             while (hasPendingBackendRuntimeHydrationSnapshot) {
                 const nextSnapshot = pendingBackendRuntimeHydrationSnapshot;
+                const nextAuthenticatedSession =
+                    pendingAuthenticatedSessionProjection;
                 pendingBackendRuntimeHydrationSnapshot = null;
                 hasPendingBackendRuntimeHydrationSnapshot = false;
                 applyBackendRuntimeSnapshot(nextSnapshot, {
@@ -56,8 +57,10 @@ export function hydrateBackendRuntimeSnapshot(
                     applyFriendProfileLoad: true
                 });
                 try {
-                    await resumeFrontendSessionFromBackendRuntime(nextSnapshot);
-                    flushPendingProjectionEvents();
+                    await applyAuthenticatedSessionProjection(
+                        nextAuthenticatedSession
+                    );
+                    reconcilePendingProjectionEvents();
                 } catch (error) {
                     console.warn(
                         'Failed to resume frontend session from backend runtime:',
@@ -78,15 +81,21 @@ export function hydrateBackendRuntimeSnapshot(
 
 export function handleBackendRuntimeSyncSnapshot(
     snapshot: RuntimeSnapshotPayload,
-    flushPendingProjectionEvents: () => void
+    reconcilePendingProjectionEvents: () => void
 ): void {
     if (!useRuntimeStore.getState().shell.backendRuntimeSnapshotHydrated) {
-        hydrateBackendRuntimeSnapshot(snapshot, flushPendingProjectionEvents);
+        hydrateBackendRuntimeSnapshot(
+            snapshot,
+            useRuntimeStore.getState().authenticatedSession,
+            reconcilePendingProjectionEvents
+        );
         return;
     }
 
     applyBackendRuntimeSnapshot(snapshot);
-    resumeFrontendSessionFromBackendRuntime(snapshot)
+    applyAuthenticatedSessionProjection(
+        useRuntimeStore.getState().authenticatedSession
+    )
         .catch((error: unknown) => {
             console.warn(
                 'Failed to resume frontend session from backend runtime:',
@@ -94,6 +103,22 @@ export function handleBackendRuntimeSyncSnapshot(
             );
         })
         .then(() => {
-            flushPendingProjectionEvents();
+            reconcilePendingProjectionEvents();
+        });
+}
+
+export function handleAuthenticatedSessionProjection(
+    projection: AuthenticatedSessionProjection,
+    reconcilePendingProjectionEvents: () => void
+): void {
+    applyAuthenticatedSessionProjection(projection)
+        .catch((error: unknown) => {
+            console.warn(
+                'Failed to apply authenticated session projection:',
+                error
+            );
+        })
+        .then(() => {
+            reconcilePendingProjectionEvents();
         });
 }

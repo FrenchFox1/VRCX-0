@@ -20,7 +20,6 @@ pub enum FriendStateBucketAuthority {
 pub struct FriendProjectionPatch {
     pub user_id: String,
     pub patch: FriendRecord,
-    pub state_bucket: String,
     pub state_bucket_authority: FriendStateBucketAuthority,
 }
 

@@ -1,7 +1,7 @@
 import type {
     FriendPatchEntry,
     FriendRosterBucket
-} from '@/domain/friends/friendRosterTypes';
+} from '@/domain/friends/types';
 import removeConfusables, { removeWhitespace } from '@/services/confusables';
 
 export const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
@@ -71,7 +71,7 @@ export type FriendListStatsPatch = FriendPatchEntry & {
         $mutualOptedOut: boolean;
         $timeSpent?: number;
     };
-    stateBucket: FriendRosterBucket;
+    stateBucketAuthority: 'preserve';
 };
 
 type FriendNumberSource = {

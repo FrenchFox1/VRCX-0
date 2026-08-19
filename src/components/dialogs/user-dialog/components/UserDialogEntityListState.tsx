@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
+import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import {
     Empty,
@@ -49,9 +50,13 @@ export function EntityListState({
     }
 
     if (error) {
+        const errorMessage = userFacingErrorMessage(
+            error,
+            t('common.error.failed_to_load_data')
+        );
         return (
             <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
         );
     }

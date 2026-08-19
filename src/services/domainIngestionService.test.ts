@@ -14,7 +14,6 @@ import { useLocationHintStore } from '@/state/locationHintStore';
 
 import {
     recordCurrentUserSnapshot,
-    recordFriendPatch,
     recordGameRuntimePresence,
     recordLocationHintsFromInstances,
     recordKnownUser,
@@ -49,15 +48,14 @@ describe('domainIngestionService', () => {
             },
             { endpoint: 'api' }
         );
-        recordFriendPatch({
-            endpoint: 'api',
-            userId: 'usr_friend',
-            stateBucket: 'online',
-            patch: {
+        recordKnownUser(
+            {
+                id: 'usr_friend',
                 displayName: 'Friend',
                 location: 'wrld_live:123'
-            }
-        });
+            },
+            { endpoint: 'api', source: 'realtime', isFriend: true }
+        );
         await flushPendingUserFactEntries();
 
         expect(tauriMock.commands.appIngestUserFacts).toHaveBeenCalled();
@@ -73,12 +71,10 @@ describe('domainIngestionService', () => {
             user: {
                 id: 'usr_friend',
                 displayName: 'Friend',
-                stateBucket: 'online',
                 location: 'wrld_live:123'
             },
             source: 'realtime',
-            isFriend: true,
-            stateBucket: 'online'
+            isFriend: true
         });
     });
 

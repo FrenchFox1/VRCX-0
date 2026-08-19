@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use serde_json::Value;
-use vrcx_0_application_core::{BackgroundCapabilitySession, FriendProjection, RuntimeEventBus};
+use vrcx_0_application_core::BackgroundCapabilitySession;
 use vrcx_0_application_realtime::{
     build_favorites_baseline_from_friend_ids, build_synced_friend_roster_baseline,
     RealtimeHostRuntime, SocialBaselineDeps, SocialFavoritesBaselineRequest,
@@ -46,7 +46,6 @@ pub(in crate::state) struct SocialBaselineRefreshCore {
 pub(in crate::state) async fn run_social_baseline_refresh_core(
     deps: SocialBaselineDeps,
     realtime_runtime: &Arc<RealtimeHostRuntime>,
-    event_bus: &RuntimeEventBus,
     authenticated_runtime: &AuthenticatedRuntimeOrchestrator,
     session: &BackgroundCapabilitySession,
 ) -> vrcx_0_application_core::Result<SocialBaselineRefreshCore> {
@@ -57,7 +56,7 @@ pub(in crate::state) async fn run_social_baseline_refresh_core(
             user_id: session.current_user_id.clone(),
             endpoint: session.endpoint.clone(),
             websocket: session.websocket.clone(),
-            current_user_snapshot: RawJson::from(session.current_user_snapshot.clone()),
+            current_user_snapshot: RawJson::from(session.current_user_snapshot.as_ref().clone()),
             is_first_load: false,
         },
     )
@@ -73,17 +72,14 @@ pub(in crate::state) async fn run_social_baseline_refresh_core(
     };
     let friend_ids_by_roster_id = friend_ids_by_roster_id_from_records(friends_by_id);
     if output.friend_log_changed {
-        event_bus.emit_realtime_friend_projection(FriendProjection {
-            friend_log_changed: true,
-            ..FriendProjection::new(0, 0)
-        });
+        realtime_runtime.emit_friend_log_changed();
     }
     let favorites = match build_favorites_baseline_from_friend_ids(
         deps,
         SocialFavoritesBaselineRequest {
             user_id: session.current_user_id.clone(),
             endpoint: session.endpoint.clone(),
-            current_user_snapshot: RawJson::from(session.current_user_snapshot.clone()),
+            current_user_snapshot: RawJson::from(session.current_user_snapshot.as_ref().clone()),
         },
         &friend_ids_by_roster_id,
     )
@@ -131,12 +127,10 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
         db: Arc::clone(context.db),
         web: Arc::clone(context.web),
         auth_scope: context.runtime_context.auth_scope.clone(),
-        session: context.runtime_context.session.clone(),
     };
     let core = match run_social_baseline_refresh_core(
         deps,
         context.realtime_runtime,
-        &context.runtime_context.event_bus,
         context.authenticated_runtime,
         &session,
     )

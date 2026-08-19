@@ -96,9 +96,9 @@ type GameLogQueryResultMap = {
 };
 
 type GameLogArrayQueryKind = {
-    [K in keyof GameLogQueryResultMap]: GameLogQueryResultMap[K] extends unknown[]
-        ? K
-        : never;
+    [
+        K in keyof GameLogQueryResultMap
+    ]: GameLogQueryResultMap[K] extends unknown[] ? K : never;
 }[keyof GameLogQueryResultMap];
 
 type GameLogUserStatsResult = Record<string, unknown> & {

@@ -1,7 +1,5 @@
 mod actor;
 mod command;
-#[cfg(all(feature = "steamvr-overlay", windows))]
-mod gpu_presenter;
 mod noop;
 #[cfg(all(feature = "steamvr-overlay", any(windows, target_os = "linux")))]
 mod openvr_backend;

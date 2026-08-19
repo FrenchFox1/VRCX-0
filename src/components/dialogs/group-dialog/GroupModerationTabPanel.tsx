@@ -15,10 +15,8 @@ import {
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
-import type {
-    EntityRecord,
-    GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';

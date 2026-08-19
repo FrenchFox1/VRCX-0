@@ -1,22 +1,22 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
 use vrcx_0_application_game::{
     build_background_presence_facts, run_background_presence_automation,
     BackgroundPresenceAutomationState, BackgroundPresenceFactsInput,
 };
+use vrcx_0_application_realtime::RealtimeSessionContext;
 
 use super::BackgroundTickContext;
 use super::{
     background_capability_session, background_capability_session_matches, emit_background_error,
-    emit_background_info, replace_backend_frontend_session_user_if_session_matches,
-    update_backend_frontend_session_user_if_session_matches, BACKGROUND_PRESENCE_AUTOMATION_JOB,
-    BACKGROUND_PRESENCE_CADENCE_SECONDS,
+    emit_background_info, BACKGROUND_PRESENCE_AUTOMATION_JOB, BACKGROUND_PRESENCE_CADENCE_SECONDS,
 };
 
 pub(in crate::state) async fn run_background_presence_tick(
     context: &BackgroundTickContext<'_>,
     presence_state: &mut BackgroundPresenceAutomationState,
+    friend_user_ids: &HashSet<String>,
     favorite_friend_groups_by_key: &HashMap<String, Vec<String>>,
     favorite_world_groups_by_key: &HashMap<String, Vec<String>>,
 ) {
@@ -32,16 +32,12 @@ pub(in crate::state) async fn run_background_presence_tick(
         );
         return;
     };
+    let session_identity = session.identity();
     let host_session = context.runtime_context.session.snapshot();
-    let friends_by_id = context
-        .realtime_runtime
-        .friend_snapshot()
-        .map(|snapshot| snapshot.friends_by_id)
-        .unwrap_or_default();
     let facts = match build_background_presence_facts(
         context.db.as_ref(),
         BackgroundPresenceFactsInput {
-            session: session.clone(),
+            session,
             is_game_running: host_session.is_game_running,
             is_steamvr_running: host_session.is_steamvr_running,
             is_game_no_vr: context
@@ -52,9 +48,9 @@ pub(in crate::state) async fn run_background_presence_tick(
             last_game_started_at: host_session.last_game_started_at,
             game_log_snapshot: context.desktop_services.game_log_snapshot(),
             now_playing: context.desktop_services.now_playing(),
-            friends_by_id,
-            favorite_friend_groups_by_key: favorite_friend_groups_by_key.clone(),
-            favorite_world_groups_by_key: favorite_world_groups_by_key.clone(),
+            friend_user_ids,
+            favorite_friend_groups_by_key,
+            favorite_world_groups_by_key,
         },
     ) {
         Ok(facts) => facts,
@@ -75,6 +71,8 @@ pub(in crate::state) async fn run_background_presence_tick(
         context.runtime_context.config(),
         context.web.as_ref(),
         context.db.as_ref(),
+        &context.runtime_context.auth_scope,
+        context.runtime_context.remote_mutations.as_ref(),
         &facts,
         presence_state,
     )
@@ -99,31 +97,20 @@ pub(in crate::state) async fn run_background_presence_tick(
         let accepted = context
             .realtime_runtime
             .sync_current_user_snapshot(
-                session.current_user_id.clone(),
-                session.endpoint.clone(),
-                session.websocket.clone(),
+                RealtimeSessionContext::new(
+                    session_identity.current_user_id.clone(),
+                    session_identity.endpoint.clone(),
+                    session_identity.websocket.clone(),
+                ),
+                session_identity.auth_scope_generation,
                 None,
                 updated_user.clone(),
                 overlay_patch,
             )
             .unwrap_or(false);
-        if !background_capability_session_matches(context.session_slot, &session) {
+        if !background_capability_session_matches(context.session_slot, &session_identity) {
             tracing::warn!("ignored stale background presence automation user update");
-        } else if accepted {
-            if let Some(snapshot) = context.realtime_runtime.current_user_snapshot() {
-                replace_backend_frontend_session_user_if_session_matches(
-                    context.session_slot,
-                    &session,
-                    &snapshot,
-                );
-            } else {
-                update_backend_frontend_session_user_if_session_matches(
-                    context.session_slot,
-                    &session,
-                    &updated_user,
-                );
-            }
-        } else {
+        } else if !accepted {
             tracing::warn!("ignored background presence automation update rejected by realtime");
         }
     }

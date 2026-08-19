@@ -1,4 +1,5 @@
 use serde_json::{Map, Value};
+use vrcx_0_core::derived_keys;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_core::text::first_owned;
 use vrcx_0_persistence::game_log::GameLogLocationTimeUpdate;
@@ -10,7 +11,8 @@ use super::location::location_game_log_entry;
 use super::state::{
     RealtimeCurrentUserState, RealtimeCurrentUserStateSnapshot, RemoteGameLogInterval,
 };
-use super::utils::{is_real_instance, EventTime};
+use super::utils::EventTime;
+use crate::realtime::location_predicates::is_real_instance;
 
 pub(super) fn reconcile_remote_game_log_interval(
     state: &mut RealtimeCurrentUserState,
@@ -99,9 +101,12 @@ pub(super) fn game_log_authority_patch(
         "travelingToInstance".into(),
         Value::String(parsed_traveling.instance_id.clone()),
     );
-    patch.insert("$location".into(), parsed.to_frontend_value(location));
     patch.insert(
-        "$travelingToLocation".into(),
+        derived_keys::LOCATION_PROJECTION.into(),
+        parsed.to_frontend_value(location),
+    );
+    patch.insert(
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION.into(),
         parsed_traveling.to_frontend_value(traveling_to_location),
     );
     let world_name = game_log.world_name.trim();

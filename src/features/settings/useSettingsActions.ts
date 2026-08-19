@@ -9,6 +9,7 @@ import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import {
     addFeedHiddenUserPreference,
     setBoolConfigPreference,
+    setAvatarFeedPersistenceDisabledPreference,
     setGameLogPersistenceDisabledPreference,
     setFeedPersistenceDisabledPreference,
     setCropInstancePrintsPreference,
@@ -79,8 +80,6 @@ type SettingsActionsDeps = Pick<
     | 'setCustomFontDraft'
     | 'setCustomFontOptions'
     | 'setCustomFontOptionsLoading'
-    | 'setDiscordPrefs'
-    | 'setIntegrationPrefs'
     | 'setLocalFavoriteFriendsGroups'
     | 'setOnlineVisitCount'
     | 'setSqliteTableSizes'
@@ -169,6 +168,7 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
         prompt,
         resetTrustColorsPreference,
         setBoolConfigPreference,
+        setAvatarFeedPersistenceDisabledPreference,
         setGameLogPersistenceDisabledPreference,
         setFeedPersistenceDisabledPreference,
         setCropInstancePrintsPreference,

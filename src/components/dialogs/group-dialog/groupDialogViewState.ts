@@ -63,8 +63,6 @@ export function buildGroupDialogViewState({
         ownerDisplayName
     };
 }
-import type {
-    GroupProfileRecord,
-    UserProfileRecord
-} from '@/domain/entities/profileEntities';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { UserProfileRecord } from '@/domain/entities/user';
+import type { FriendRosterById } from '@/domain/friends/types';

@@ -1,10 +1,11 @@
-import type { FriendRecordInput } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecordInput } from '@/domain/friends/types';
 import { isUserId } from '@/shared/constants/vrchatIds';
 export { resolveCurrentInviteLocation as resolveFeedCurrentInviteLocation } from '@/shared/utils/invite';
 import type {
     FavoriteGroupMap,
     FavoriteRecord
-} from '@/state/favoriteStoreTypes';
+} from '@/domain/favorites/types';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
 
 import type { FeedRow } from './feedTypes';
 
@@ -315,15 +316,13 @@ export function toDateInputValue(date: unknown) {
 }
 
 export function resolveFeedStatusMeta(status: unknown) {
-    const normalizedStatus = normalizeFeedId(status);
+    const normalizedStatus = userStatusFromValue(status);
     switch (normalizedStatus) {
         case 'active':
             return { label: 'Online', className: 'bg-[var(--status-online)]' };
         case 'join me':
-        case 'joinme':
             return { label: 'Join Me', className: 'bg-[var(--status-joinme)]' };
         case 'ask me':
-        case 'askme':
             return { label: 'Ask Me', className: 'bg-[var(--status-askme)]' };
         case 'busy':
             return { label: 'Busy', className: 'bg-[var(--status-busy)]' };

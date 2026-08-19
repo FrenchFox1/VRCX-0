@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_core::json::RawJson;
+use vrcx_0_core::text::normalize_text;
 use vrcx_0_persistence::{
     avatars::{avatar_cache_get, avatar_cache_upsert},
     cache_entities::CacheEntityInput,
     worlds::{world_cache_get, world_cache_upsert},
     DatabaseService,
 };
-use vrcx_0_vrchat_client::http_api::normalize_text;
 
 use crate::Result;
 
@@ -267,7 +267,7 @@ mod tests {
 
         let cached = world_cache_get(&db, "wrld_test".into()).unwrap().unwrap();
         assert_eq!(cached.name, "Public name");
-        assert_eq!(cached.release_status, "public");
+        assert_eq!(cached.release_status.as_str(), "public");
         assert_eq!(cached.image_url, "https://example.test/public.png");
     }
 }

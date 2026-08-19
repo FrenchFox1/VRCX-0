@@ -6,16 +6,15 @@ use vrcx_0_application_core::RuntimeOperationStatus;
 use super::{
     run_background_current_user_refresh, run_background_group_instance_refresh,
     run_background_moderation_refresh, run_background_print_cleanup,
-    run_background_social_baseline_refresh, run_social_baseline_refresh_core, session_slot_matches,
-    BackendRuntime, BackendRuntimeFrontendSessionSnapshot, BackendRuntimeMode, BackendRuntimePhase,
-    BackendRuntimeSnapshot, BackendRuntimeTelemetry, BackendRuntimeTelemetryKind,
-    BackgroundCapabilitySession, BackgroundTickContext, RuntimeHostContext, RuntimeHostState,
-    SocialBaselineRefreshOutput, BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
-    BACKGROUND_CURRENT_USER_REFRESH_JOB, BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
-    BACKGROUND_GROUP_INSTANCE_REFRESH_JOB, BACKGROUND_MODERATION_CADENCE_SECONDS,
-    BACKGROUND_MODERATION_REFRESH_JOB, BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS,
-    BACKGROUND_PRINT_CLEANUP_JOB, BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
-    BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+    run_background_social_baseline_refresh, run_social_baseline_refresh_core,
+    AuthenticatedSessionProjection, BackendRuntime, BackendRuntimePhase, BackendRuntimeSnapshot,
+    BackendRuntimeTelemetryKind, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
+    BackgroundTickContext, RuntimeHostContext, RuntimeHostState, SocialBaselineRefreshOutput,
+    BACKGROUND_CURRENT_USER_CADENCE_SECONDS, BACKGROUND_CURRENT_USER_REFRESH_JOB,
+    BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS, BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
+    BACKGROUND_MODERATION_CADENCE_SECONDS, BACKGROUND_MODERATION_REFRESH_JOB,
+    BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS, BACKGROUND_PRINT_CLEANUP_JOB,
+    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS, BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
 };
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
@@ -23,9 +22,11 @@ impl RuntimeHostState {
     pub(super) fn start_social_maintenance_loops(&self) {
         let current = self.backend_runtime.snapshot();
         let auth_scope = self.runtime_context.auth_scope.snapshot();
-        let active_runtime = is_authenticated_maintenance_active_snapshot(&current, &auth_scope);
-        let active_session =
-            background_session_scope_matches_auth(&self.backend_frontend_session, &auth_scope);
+        let active_runtime = is_authenticated_maintenance_active_snapshot(&current);
+        let active_session = background_session_scope_matches_auth(
+            &self.authenticated_session_projection,
+            &auth_scope,
+        );
         if !active_runtime || !active_session {
             return;
         }
@@ -76,7 +77,7 @@ impl RuntimeHostState {
         let running = Arc::clone(&self.social_maintenance_running);
         let group_instances_refresh_running =
             Arc::clone(&self.background_group_instances_refresh_running);
-        let session_slot = Arc::clone(&self.backend_frontend_session);
+        let session_slot = Arc::clone(&self.authenticated_session_projection);
         let realtime_runtime = Arc::clone(&self.realtime_runtime);
         let authenticated_runtime = self.authenticated_runtime.clone();
         let runtime_context = Arc::clone(&self.runtime_context);
@@ -230,7 +231,8 @@ impl RuntimeHostState {
     pub async fn refresh_social_baseline_now(
         &self,
     ) -> vrcx_0_application_core::Result<SocialBaselineRefreshOutput> {
-        let Some(session) = background_capability_session(&self.backend_frontend_session) else {
+        let Some(session) = background_capability_session(&self.authenticated_session_projection)
+        else {
             return Err(vrcx_0_application_core::Error::Custom(
                 "Social baseline refresh requires an authenticated session.".into(),
             ));
@@ -239,12 +241,10 @@ impl RuntimeHostState {
             db: Arc::clone(&self.db),
             web: Arc::clone(&self.web),
             auth_scope: self.runtime_context.auth_scope.clone(),
-            session: self.runtime_context.session.clone(),
         };
         let core = run_social_baseline_refresh_core(
             deps,
             &self.realtime_runtime,
-            &self.runtime_context.event_bus,
             &self.authenticated_runtime,
             &session,
         )
@@ -278,64 +278,62 @@ impl RuntimeHostState {
         detail: impl Into<String>,
         snapshot: BackendRuntimeSnapshot,
     ) {
-        self.runtime_context
-            .event_bus
-            .emit(BackendRuntimeTelemetry {
-                kind,
-                detail: detail.into(),
-                snapshot,
-            });
+        vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
+            self.backend_runtime.clone(),
+            self.runtime_context.event_bus.clone(),
+        )
+        .publish_telemetry(kind, detail, snapshot);
     }
 }
 
 pub(super) fn is_authenticated_maintenance_active(
     runtime: &BackendRuntime,
     runtime_context: &Arc<RuntimeHostContext>,
-    session_slot: &Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
 ) -> bool {
     let auth_scope = runtime_context.auth_scope.snapshot();
-    if !is_authenticated_maintenance_active_snapshot(&runtime.snapshot(), &auth_scope) {
+    if !is_authenticated_maintenance_active_snapshot(&runtime.snapshot()) {
         return false;
     }
-    background_capability_session(session_slot)
+    background_capability_session_identity(session_slot)
         .map(|session| background_session_matches_auth(&session, &auth_scope))
-        .unwrap_or(auth_scope.active)
+        .unwrap_or(false)
 }
 
 pub(super) fn is_authenticated_maintenance_active_snapshot(
     snapshot: &BackendRuntimeSnapshot,
-    auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
 ) -> bool {
     snapshot.phase == BackendRuntimePhase::Running
         && snapshot.auth_status == vrcx_0_application_core::BackendRuntimeAuthStatus::Authenticated
-        && !snapshot.auth_user_id.trim().is_empty()
-        && auth_scope.active
-        && auth_scope.current_user_id == snapshot.auth_user_id
 }
 
 pub(super) fn background_session_scope_matches_auth(
-    session_slot: &Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
     auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
 ) -> bool {
-    background_capability_session(session_slot)
+    background_capability_session_identity(session_slot)
         .map(|session| background_session_matches_auth(&session, auth_scope))
         .unwrap_or(false)
 }
 
 pub(super) fn background_session_matches_auth(
-    session: &BackgroundCapabilitySession,
+    session: &BackgroundCapabilitySessionIdentity,
     auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
 ) -> bool {
     auth_scope.active
+        && session.auth_scope_generation == auth_scope.generation
         && session.current_user_id == auth_scope.current_user_id
         && normalize_vrchat_api_endpoint(Some(&session.endpoint)) == auth_scope.endpoint
 }
 
 pub(super) fn gui_maintenance_runtime_mode(backend_runtime: &BackendRuntime) -> &'static str {
-    match backend_runtime.snapshot().mode {
-        BackendRuntimeMode::Foreground => "normal GUI mode",
-        BackendRuntimeMode::Background => "background GUI mode",
-        BackendRuntimeMode::Headless => "headless mode",
+    match backend_runtime.profile() {
+        crate::RuntimeHostProfile::HeadlessData => "headless mode",
+        crate::RuntimeHostProfile::Desktop => match backend_runtime.gui_mode() {
+            Some(vrcx_0_application_core::GuiRuntimeMode::Foreground) => "normal GUI mode",
+            Some(vrcx_0_application_core::GuiRuntimeMode::Background) => "background GUI mode",
+            None => "normal GUI mode",
+        },
     }
 }
 
@@ -372,37 +370,58 @@ fn emit_background_output(
     detail: impl Into<String>,
 ) {
     let snapshot = backend_runtime.snapshot();
-    if snapshot.mode == BackendRuntimeMode::Headless
+    if backend_runtime.profile() == crate::RuntimeHostProfile::HeadlessData
         || !matches!(snapshot.phase, BackendRuntimePhase::Running)
     {
         return;
     }
-    runtime_context.event_bus.emit(BackendRuntimeTelemetry {
-        kind,
-        detail: detail.into(),
-        snapshot,
-    });
+    vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
+        backend_runtime.clone(),
+        runtime_context.event_bus.clone(),
+    )
+    .publish_telemetry(kind, detail, snapshot);
 }
 
 pub(super) fn background_capability_session(
-    session_slot: &Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
 ) -> Option<BackgroundCapabilitySession> {
-    session_slot.lock().ok().and_then(|slot| {
-        slot.as_ref().map(|session| BackgroundCapabilitySession {
+    let slot = session_slot
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    slot.session
+        .as_ref()
+        .map(|session| BackgroundCapabilitySession {
+            auth_scope_generation: session.auth_scope_generation,
             current_user_id: session.user_id.clone(),
             endpoint: session.endpoint.clone(),
             websocket: session.websocket.clone(),
             current_user_snapshot: session.current_user_snapshot.clone(),
         })
-    })
+}
+
+pub(super) fn background_capability_session_identity(
+    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
+) -> Option<BackgroundCapabilitySessionIdentity> {
+    let slot = session_slot
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    slot.session
+        .as_ref()
+        .map(|session| BackgroundCapabilitySessionIdentity {
+            auth_scope_generation: session.auth_scope_generation,
+            current_user_id: session.user_id.clone(),
+            endpoint: session.endpoint.clone(),
+            websocket: session.websocket.clone(),
+        })
 }
 
 fn background_capability_session_scope_key(
-    session_slot: &Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
+    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
 ) -> Option<String> {
-    background_capability_session(session_slot).map(|session| {
+    background_capability_session_identity(session_slot).map(|session| {
         format!(
-            "{}:{}",
+            "{}:{}:{}",
+            session.auth_scope_generation,
             session.current_user_id,
             normalize_vrchat_api_endpoint(Some(&session.endpoint))
         )
@@ -410,8 +429,48 @@ fn background_capability_session_scope_key(
 }
 
 pub(super) fn background_capability_session_matches(
-    session_slot: &Arc<Mutex<Option<BackendRuntimeFrontendSessionSnapshot>>>,
-    session: &BackgroundCapabilitySession,
+    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
+    session: &BackgroundCapabilitySessionIdentity,
 ) -> bool {
-    session_slot_matches(session_slot.lock().ok().as_deref(), session)
+    let slot = session_slot
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    slot.session
+        .as_ref()
+        .map(|current| {
+            current.auth_scope_generation == session.auth_scope_generation
+                && current.user_id == session.current_user_id
+                && current.endpoint == session.endpoint
+                && current.websocket == session.websocket
+        })
+        .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod background_capability_session_identity_tests {
+    use super::*;
+    use crate::AuthenticatedSessionSnapshot;
+    use serde_json::json;
+
+    #[test]
+    fn maintenance_scope_reads_only_session_identity() {
+        let session_slot = Arc::new(Mutex::new(AuthenticatedSessionProjection {
+            revision: 1,
+            session: Some(AuthenticatedSessionSnapshot {
+                auth_scope_generation: 4,
+                user_id: "usr_owner".into(),
+                display_name: "Owner".into(),
+                endpoint: "https://api.example.test/api/1".into(),
+                websocket: "wss://pipeline.example.test".into(),
+                current_user_snapshot: json!({"large": [1, 2, 3]}).into(),
+            }),
+        }));
+
+        let identity = background_capability_session_identity(&session_slot).unwrap();
+
+        assert_eq!(identity.auth_scope_generation, 4);
+        assert_eq!(identity.current_user_id, "usr_owner");
+        assert_eq!(identity.endpoint, "https://api.example.test/api/1");
+        assert_eq!(identity.websocket, "wss://pipeline.example.test");
+    }
 }

@@ -5,7 +5,9 @@ use tauri::{Manager, WebviewWindowBuilder};
 
 use crate::error::AppError;
 use crate::state::{AppState, BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY};
-use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot};
+use vrcx_0_application_core::{
+    BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot, GuiRuntimeMode,
+};
 
 use super::adapters::start_host_services;
 use super::notification::{is_background_mode_active, is_community_theme_enabled, tray_labels};
@@ -37,7 +39,7 @@ pub fn ensure_main_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::err
     if app.get_webview_window("main").is_none() {
         let state = app.state::<AppState>();
         create_main_window(app, state.web.proxy_url())?;
-        disable_windows_default_context_menu(app);
+        configure_windows_webview_settings(app);
     }
     let state = app.state::<AppState>();
     start_host_services(app, &state);
@@ -64,7 +66,7 @@ pub(crate) async fn rebuild_main_window(
     }
 
     create_main_window(app, state.web.proxy_url())?;
-    disable_windows_default_context_menu(app);
+    configure_windows_webview_settings(app);
     start_host_services(app, &state);
     present_main_window(app);
     let _ = refresh_tray_menu(app, &state);
@@ -130,7 +132,7 @@ pub async fn start_background_mode_for_current_session(
     cancel_background_delay(state);
     super::capture_background_resume_route(app, state);
     let snapshot = match state
-        .start_backend_runtime(BackendRuntimeMode::Background, None)
+        .start_backend_runtime(GuiRuntimeMode::Background, None)
         .await
     {
         Ok(snapshot) => snapshot,
@@ -162,7 +164,7 @@ pub fn restore_foreground_window_from_background_mode(
         let _ = refresh_tray_menu(app, state);
         return Ok(current);
     }
-    let snapshot = state.set_gui_backend_runtime_mode(BackendRuntimeMode::Foreground);
+    let snapshot = state.set_gui_backend_runtime_mode(GuiRuntimeMode::Foreground);
     ensure_main_window(app)?;
     let _ = refresh_tray_menu(app, state);
     Ok(snapshot)
@@ -258,6 +260,7 @@ pub(super) fn create_main_window(
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidInput, error))?;
         builder = builder.proxy_url(proxy_url);
     }
+    builder = builder.browser_extensions_enabled(false);
 
     let main_window = builder.build()?;
     #[cfg(target_os = "windows")]
@@ -319,7 +322,7 @@ fn is_window_docked(window: &tauri::WebviewWindow) -> bool {
     edges.iter().filter(|edge| **edge).count() >= WINDOW_DOCKED_EDGE_COUNT
 }
 
-pub(super) fn disable_windows_default_context_menu(app: &tauri::AppHandle) {
+pub(super) fn configure_windows_webview_settings(app: &tauri::AppHandle) {
     #[cfg(target_os = "windows")]
     if let Some(webview) = app.get_webview_window("main") {
         if let Err(error) = webview.with_webview(|platform_webview| {
@@ -328,11 +331,15 @@ pub(super) fn disable_windows_default_context_menu(app: &tauri::AppHandle) {
                     .controller()
                     .CoreWebView2()
                     .and_then(|webview| webview.Settings())
-                    .and_then(|settings| settings.SetAreDefaultContextMenusEnabled(false))
+                    .and_then(|settings| {
+                        settings.SetAreDefaultContextMenusEnabled(false)?;
+                        settings.SetAreDefaultScriptDialogsEnabled(false)?;
+                        settings.SetAreHostObjectsAllowed(false)
+                    })
             };
 
             if let Err(error) = result {
-                tracing::warn!(?error, "failed to disable WebView2 default context menu");
+                tracing::warn!(?error, "failed to configure WebView2 settings");
             }
         }) {
             tracing::warn!(?error, "failed to access WebView2 instance");

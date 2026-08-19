@@ -19,7 +19,7 @@ import {
     type FriendBootstrapOptions,
     type FriendBootstrapResult,
     type FriendBootstrapSnapshot,
-    type FriendLogRow
+    type FriendLogBootstrapRow
 } from './friendBootstrapModel';
 import { signalFriendLogChanged } from './friendLogMutationService';
 import { syncStartupServicesTask } from './startupServicesStatus';
@@ -44,7 +44,7 @@ async function seedFriendRosterFromCurrentUserSnapshot({
     }
 
     const stateById = buildFriendStateMap(currentUserSnapshot);
-    let friendLogRows: FriendLogRow[] = [];
+    let friendLogRows: FriendLogBootstrapRow[] = [];
     try {
         friendLogRows =
             await friendLogRepository.getFriendLogCurrent(normalizedUserId);
