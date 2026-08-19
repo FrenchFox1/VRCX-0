@@ -10,6 +10,39 @@ export type TimeZoneDateParts = {
     day: string;
 };
 
+const dateTimeFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>();
+
+export function getDateTimeFormatter(
+    locale: string,
+    options: Intl.DateTimeFormatOptions
+): Intl.DateTimeFormat {
+    const key = JSON.stringify([locale, options]);
+    const cached = dateTimeFormatterCache.get(key);
+    if (cached) {
+        return cached;
+    }
+
+    const formatter = new Intl.DateTimeFormat(locale, options);
+    dateTimeFormatterCache.set(key, formatter);
+    return formatter;
+}
+
+export function getRelativeTimeFormatter(
+    locale: string,
+    options: Intl.RelativeTimeFormatOptions
+): Intl.RelativeTimeFormat {
+    const key = JSON.stringify([locale, options]);
+    const cached = relativeTimeFormatterCache.get(key);
+    if (cached) {
+        return cached;
+    }
+
+    const formatter = new Intl.RelativeTimeFormat(locale, options);
+    relativeTimeFormatterCache.set(key, formatter);
+    return formatter;
+}
+
 export function normalizeDateLocale(
     locale: unknown,
     fallback = 'en-gb'
@@ -64,7 +97,7 @@ export function formatDateTimeValue(
     }
 
     try {
-        return new Intl.DateTimeFormat(
+        return getDateTimeFormatter(
             normalizeDateLocale(locale),
             formatOptions
         ).format(date);
@@ -83,7 +116,7 @@ export function getTimeZoneDateParts(
     }
 
     try {
-        const parts = new Intl.DateTimeFormat('en-US', {
+        const parts = getDateTimeFormatter('en-US', {
             timeZone: String(timeZone || ''),
             year: 'numeric',
             month: '2-digit',

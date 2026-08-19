@@ -11,6 +11,7 @@ import {
 import {
     formatDateTimeValue,
     formatIsoDateTime,
+    getRelativeTimeFormatter,
     normalizeDateLocale
 } from './dateTimeFormatters';
 
@@ -245,7 +246,7 @@ export function formatRelativeTimeWithPreferences(
     );
 
     try {
-        return new Intl.RelativeTimeFormat(locale, {
+        return getRelativeTimeFormatter(locale, {
             numeric: 'auto',
             style: preferences.style || 'long'
         }).format(amount, unit);

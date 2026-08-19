@@ -31,6 +31,7 @@ import {
     SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE
 } from '@/shared/constants/time';
+import { getDateTimeFormatter } from '@/shared/utils/dateTimeFormatters';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
@@ -97,7 +98,7 @@ function parseClockOffset(entry: unknown) {
     }
 
     try {
-        const parts = new Intl.DateTimeFormat('en-US', {
+        const parts = getDateTimeFormatter('en-US', {
             timeZone: value,
             timeZoneName: 'longOffset'
         }).formatToParts(new Date());
