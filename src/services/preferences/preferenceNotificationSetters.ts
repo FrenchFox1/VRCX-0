@@ -123,7 +123,7 @@ export function setTtsNotificationActivityFiltersPreference(value: unknown) {
 
 export async function setWristOverlayEnabledPreference(value: boolean) {
     const snapshot = await commands.appVrOverlayEnabledSet(value);
-    const wristOverlayEnabled = Boolean(snapshot.enabled);
+    const wristOverlayEnabled = snapshot.enabled;
     patchPreferences({ wristOverlayEnabled });
     publishPreferenceChanged('wristOverlayEnabled', wristOverlayEnabled);
     return wristOverlayEnabled;

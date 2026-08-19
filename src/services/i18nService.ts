@@ -8,8 +8,9 @@ import {
     loadLocaleMessages
 } from '@/localization/index';
 import { normalizeLanguageCode } from '@/localization/locales';
+import type { TimeUnitLabels } from '@/shared/utils/dateTime';
 
-type TimeUnitLabels = Record<string, string>;
+const TIME_UNIT_KEYS = ['y', 'd', 'h', 'm', 's'] as const;
 const i18nResources = {
     [FALLBACK_LOCALE_CODE]: { translation: fallbackLocaleMessages }
 };
@@ -70,9 +71,9 @@ export function getTimeUnitLabels(
     const localizedMessages =
         getLoadedLocaleMessages(normalizeLocale(locale)) ?? {};
     const fallbackMessages = fallbackLocaleMessages;
-    const labels: TimeUnitLabels = {};
+    const labels: TimeUnitLabels = { ...defaultLabels };
 
-    for (const unit of Object.keys(defaultLabels)) {
+    for (const unit of TIME_UNIT_KEYS) {
         const key = `common.time_units.${unit}`;
         const localized = resolveMessage(localizedMessages, key);
         const fallback = resolveMessage(fallbackMessages, key);

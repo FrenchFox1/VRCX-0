@@ -20,15 +20,15 @@ interface DashboardStateSnapshot {
 export interface DashboardStoreState extends DashboardStateSnapshot {
     loadDashboards: () => Promise<Dashboard[]>;
     ensureLoaded: () => Promise<Dashboard[]>;
-    getDashboard: (id: unknown) => Dashboard | null;
+    getDashboard: (id: string) => Dashboard | null;
     createDashboard: (baseName?: string) => Promise<Dashboard>;
     updateDashboard: (
         id: string,
         updates?: Record<string, unknown>
     ) => Promise<Dashboard>;
     deleteDashboard: (id: string) => Promise<void>;
-    setEditingDashboardId: (id: unknown) => void;
-    consumeEditingDashboardId: (id: unknown) => boolean;
+    setEditingDashboardId: (id: string | null) => void;
+    consumeEditingDashboardId: (id: string) => boolean;
     resetDashboardState: () => void;
 }
 
@@ -89,7 +89,7 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
         return loadPromise;
     },
     getDashboard(id) {
-        const normalizedId = String(id || '').trim();
+        const normalizedId = id.trim();
         if (!normalizedId) {
             return null;
         }
@@ -187,7 +187,7 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
     },
     setEditingDashboardId(id) {
         set({
-            editingDashboardId: typeof id === 'string' && id ? id : null
+            editingDashboardId: id || null
         });
     },
     consumeEditingDashboardId(id) {

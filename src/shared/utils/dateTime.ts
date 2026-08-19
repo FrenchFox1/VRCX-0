@@ -24,7 +24,9 @@ export const DEFAULT_TIME_UNIT_LABELS = Object.freeze({
 });
 
 type DateFilterFormat = 'long' | 'short' | 'time' | 'date' | string;
-type TimeUnitLabels = typeof DEFAULT_TIME_UNIT_LABELS;
+type TimeUnitLabels = {
+    -readonly [Unit in keyof typeof DEFAULT_TIME_UNIT_LABELS]: string;
+};
 
 type DateFilterPreferences = {
     appLocale?: unknown;

@@ -27,9 +27,9 @@ interface SessionState {
     transportStatus: TransportStatus;
     setSessionState: (patch: Partial<SessionSnapshot>) => void;
     resetSessionState: () => void;
-    setLoggedIn: (value: unknown) => void;
-    setFriendsLoaded: (value: unknown) => void;
-    setFavoritesLoaded: (value: unknown) => void;
+    setLoggedIn: (value: boolean) => void;
+    setFriendsLoaded: (value: boolean) => void;
+    setFavoritesLoaded: (value: boolean) => void;
     setSessionPhase: (sessionPhase: SessionPhase) => void;
     setBootStatus: (bootStatus: BootStatus) => void;
     setTransportStatus: (transportStatus: TransportStatus) => void;
@@ -65,13 +65,13 @@ export const useSessionStore = create<SessionState>((set) => ({
         set(initialState);
     },
     setLoggedIn(value) {
-        set({ isLoggedIn: Boolean(value) });
+        set({ isLoggedIn: value });
     },
     setFriendsLoaded(value) {
-        set({ isFriendsLoaded: Boolean(value) });
+        set({ isFriendsLoaded: value });
     },
     setFavoritesLoaded(value) {
-        set({ isFavoritesLoaded: Boolean(value) });
+        set({ isFavoritesLoaded: value });
     },
     setSessionPhase(sessionPhase) {
         set({ sessionPhase });

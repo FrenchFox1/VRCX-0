@@ -69,7 +69,7 @@ type SettingsPreferenceActionsDeps = {
     }) => unknown;
     auth: {
         currentUserEndpoint?: string | null;
-        currentUserId?: unknown;
+        currentUserId?: string | null;
     };
     commit: (
         action: PreferenceAction,
@@ -80,7 +80,7 @@ type SettingsPreferenceActionsDeps = {
     };
     customFontDraft: CustomFontDraft;
     databaseMaintenanceRepository: {
-        getTableSizes(userId: unknown): Promise<Record<string, unknown>>;
+        getTableSizes(userId: string): Promise<Record<string, unknown>>;
     };
     isValidFontFamilyList: (value: unknown) => boolean;
     loadTrustColorPreference: () => Promise<PreferencesSnapshot['trustColor']>;
@@ -450,7 +450,7 @@ export function useSettingsPreferenceActions({
     async function refreshSqliteTableSizes() {
         try {
             const sizes = await databaseMaintenanceRepository.getTableSizes(
-                auth.currentUserId
+                auth.currentUserId || ''
             );
             setSqliteTableSizes({
                 gps: sizes.gps,

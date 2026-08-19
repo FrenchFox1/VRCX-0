@@ -11,7 +11,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: commandMocks
 }));
 
-import databaseMaintenanceRepository, {
+import {
     getBrokenGameLogDisplayNames,
     getBrokenLeaveEntries,
     getGlobalTableSizes,
@@ -40,7 +40,7 @@ describe('databaseMaintenanceRepository', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         commandMocks.appDatabaseMaintenanceMaxFriendLogNumberGet.mockResolvedValue(
-            '42'
+            42
         );
         commandMocks.appDatabaseMaintenanceTableSizesGet.mockResolvedValue(
             runtimeSizes
@@ -52,14 +52,13 @@ describe('databaseMaintenanceRepository', () => {
             [
                 {
                     id: 1,
-                    displayName: 'Fixed Name',
-                    ignored: true
+                    displayName: 'Fixed Name'
                 }
             ]
         );
     });
 
-    it('normalizes max friend log and table-size inputs and outputs', async () => {
+    it('forwards typed max friend log and table-size outputs', async () => {
         await expect(getMaxFriendLogNumber(' usr_1 ')).resolves.toBe(42);
         await expect(getUserTableSizes('usr_1')).resolves.toEqual({
             gps: 1,
@@ -104,7 +103,7 @@ describe('databaseMaintenanceRepository', () => {
         ).toHaveBeenCalledWith('');
     });
 
-    it('defensively shapes broken-row query results', async () => {
+    it('returns typed broken-row query results', async () => {
         await expect(getBrokenLeaveEntries()).resolves.toEqual([{ id: 1 }]);
         await expect(getBrokenGameLogDisplayNames()).resolves.toEqual([
             {
@@ -112,19 +111,5 @@ describe('databaseMaintenanceRepository', () => {
                 displayName: 'Fixed Name'
             }
         ]);
-
-        commandMocks.appDatabaseMaintenanceBrokenLeaveEntriesGet.mockResolvedValueOnce(
-            null
-        );
-        commandMocks.appDatabaseMaintenanceBrokenGameLogDisplayNamesGet.mockResolvedValueOnce(
-            null
-        );
-
-        await expect(
-            databaseMaintenanceRepository.getBrokenLeaveEntries()
-        ).resolves.toEqual([]);
-        await expect(
-            databaseMaintenanceRepository.getBrokenGameLogDisplayNames()
-        ).resolves.toEqual([]);
     });
 });

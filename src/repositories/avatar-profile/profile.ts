@@ -33,7 +33,7 @@ import type {
 
 async function getLocalMetadata(
     avatarId: string,
-    currentUserId: unknown
+    currentUserId: string | null
 ): Promise<AvatarProfileExtras> {
     const [localTags, timeSpentEntry, memoEntry] = await Promise.all([
         avatarLocalRepository

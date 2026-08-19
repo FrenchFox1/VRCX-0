@@ -21,25 +21,9 @@ type PrintFavoriteStoreState = {
     warning: CleanupWarning | null;
     applyPrintCleanup(event: PrintAutoCleanupEvent): void;
     hydratePrintFavorites(state: PrintFavoriteState): void;
-    removeFavoritePrintId(printId: unknown): void;
+    removeFavoritePrintId(printId: string): void;
     resetPrintFavorites(): void;
 };
-
-function normalizePrintId(value: unknown): string {
-    return String(value ?? '').trim();
-}
-
-function normalizeFavoriteIds(values: readonly unknown[] = []): string[] {
-    const normalized = values.map(normalizePrintId).filter(Boolean);
-    return Array.from(new Set(normalized));
-}
-
-function normalizeMaxFavorites(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) && parsed >= 0
-        ? Math.floor(parsed)
-        : DEFAULT_MAX_FAVORITES;
-}
 
 export const usePrintFavoriteStore = create<PrintFavoriteStoreState>((set) => ({
     hydrated: false,
@@ -55,13 +39,13 @@ export const usePrintFavoriteStore = create<PrintFavoriteStoreState>((set) => ({
     hydratePrintFavorites(state) {
         set({
             hydrated: true,
-            favoriteIds: normalizeFavoriteIds(state.favoriteIds),
-            maxFavorites: normalizeMaxFavorites(state.maxFavorites),
-            warning: state.warning ?? null
+            favoriteIds: state.favoriteIds,
+            maxFavorites: state.maxFavorites,
+            warning: state.warning
         });
     },
     removeFavoritePrintId(printId) {
-        const normalizedPrintId = normalizePrintId(printId);
+        const normalizedPrintId = printId.trim();
         if (!normalizedPrintId) {
             return;
         }

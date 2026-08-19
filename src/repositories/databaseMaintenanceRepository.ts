@@ -1,10 +1,18 @@
 import {
     commands,
+    type BrokenGameLogDisplayNameOutput,
+    type JsonValue,
     type MaintenanceTableSizesOutput
 } from '@/platform/tauri/bindings';
 
-type LocalDbValue = unknown;
-
+type UserMaintenanceTableSizeKey =
+    | 'gps'
+    | 'status'
+    | 'bio'
+    | 'avatar'
+    | 'onlineOffline'
+    | 'friendLogHistory'
+    | 'notification';
 type GlobalMaintenanceTableSizeKey =
     | 'location'
     | 'joinLeave'
@@ -13,42 +21,28 @@ type GlobalMaintenanceTableSizeKey =
     | 'event'
     | 'external'
     | 'resourceLoad';
-type MaintenanceTableSizes = Omit<
+type UserMaintenanceTableSizes = Pick<
+    MaintenanceTableSizesOutput,
+    UserMaintenanceTableSizeKey
+>;
+type GlobalMaintenanceTableSizes = Pick<
     MaintenanceTableSizesOutput,
     GlobalMaintenanceTableSizeKey
-> &
-    Partial<Pick<MaintenanceTableSizesOutput, GlobalMaintenanceTableSizeKey>>;
+>;
 
-type BrokenGameLogDisplayNameEntry = {
-    id: LocalDbValue;
-    displayName: unknown;
-};
-
-function normalizeUserId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
-async function getMaxFriendLogNumber(userId: unknown): Promise<number> {
-    return Number(
-        (await commands.appDatabaseMaintenanceMaxFriendLogNumberGet(
-            normalizeUserId(userId)
-        )) ?? 0
-    );
+async function getMaxFriendLogNumber(userId: string): Promise<number> {
+    return commands.appDatabaseMaintenanceMaxFriendLogNumberGet(userId.trim());
 }
 
 async function getRuntimeTableSizes(
-    userId: unknown = ''
-): Promise<MaintenanceTableSizes> {
-    return commands.appDatabaseMaintenanceTableSizesGet(
-        normalizeUserId(userId)
-    );
+    userId = ''
+): Promise<MaintenanceTableSizesOutput> {
+    return commands.appDatabaseMaintenanceTableSizesGet(userId.trim());
 }
 
 async function getUserTableSizes(
-    userId: unknown
-): Promise<MaintenanceTableSizes> {
+    userId: string
+): Promise<UserMaintenanceTableSizes> {
     if (!userId) {
         return {
             gps: 0,
@@ -80,7 +74,7 @@ async function getUserTableSizes(
     };
 }
 
-async function getGlobalTableSizes(): Promise<Partial<MaintenanceTableSizes>> {
+async function getGlobalTableSizes(): Promise<GlobalMaintenanceTableSizes> {
     const {
         location,
         joinLeave,
@@ -89,7 +83,7 @@ async function getGlobalTableSizes(): Promise<Partial<MaintenanceTableSizes>> {
         event,
         external,
         resourceLoad
-    } = await getRuntimeTableSizes('');
+    } = await getRuntimeTableSizes();
     return {
         location,
         joinLeave,
@@ -101,24 +95,20 @@ async function getGlobalTableSizes(): Promise<Partial<MaintenanceTableSizes>> {
     };
 }
 
-async function getTableSizes(userId: unknown): Promise<MaintenanceTableSizes> {
+async function getTableSizes(
+    userId: string
+): Promise<MaintenanceTableSizesOutput> {
     return getRuntimeTableSizes(userId);
 }
 
-async function getBrokenLeaveEntries(): Promise<LocalDbValue[]> {
-    const rows = await commands.appDatabaseMaintenanceBrokenLeaveEntriesGet();
-    return Array.isArray(rows) ? rows : [];
+async function getBrokenLeaveEntries(): Promise<JsonValue[]> {
+    return commands.appDatabaseMaintenanceBrokenLeaveEntriesGet();
 }
 
 async function getBrokenGameLogDisplayNames(): Promise<
-    BrokenGameLogDisplayNameEntry[]
+    BrokenGameLogDisplayNameOutput[]
 > {
-    const rows =
-        await commands.appDatabaseMaintenanceBrokenGameLogDisplayNamesGet();
-    return (Array.isArray(rows) ? rows : []).map((row) => ({
-        id: row.id,
-        displayName: row.displayName
-    }));
+    return commands.appDatabaseMaintenanceBrokenGameLogDisplayNamesGet();
 }
 
 const databaseMaintenanceRepository = Object.freeze({
