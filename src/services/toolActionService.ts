@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
+import type { HostCapabilities } from '@/platform/tauri/bindings';
 import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
@@ -12,6 +13,7 @@ import { recordRecentToolOpen } from '@/services/toolRecentService';
 import {
     toolDefinitionMap,
     type ToolAppApiMethod,
+    type ToolDialogKey,
     type ToolDefinition
 } from '@/shared/constants/tools';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -22,7 +24,6 @@ type TriggerToolOptions = {
     navigate: Navigate;
     t: Translate;
 };
-type HostCapabilitySnapshot = Record<string, unknown>;
 type ToolDialogHostKey =
     | 'appLauncherOpen'
     | 'presenceScheduleOpen'
@@ -45,7 +46,7 @@ const toolRouteMap = {
     'group-moderation': '/tools/group-moderation'
 } satisfies Record<string, string>;
 
-const toolDialogHostMap: Record<string, ToolDialogHostKey> = {
+const toolDialogHostMap: Record<ToolDialogKey, ToolDialogHostKey> = {
     'app-launcher': 'appLauncherOpen',
     'presence-schedule': 'presenceScheduleOpen',
     'presence-room-rules': 'presenceRoomRulesOpen',
@@ -74,7 +75,7 @@ const legacyToolAliases: Record<string, string> = {
 
 export function isToolCapabilityAvailable(
     tool?: ToolDefinition | null,
-    hostCapabilities?: HostCapabilitySnapshot
+    hostCapabilities?: HostCapabilities
 ): boolean {
     const capabilities = [
         ...(tool?.requiredCapabilities ?? []),
@@ -86,19 +87,9 @@ export function isToolCapabilityAvailable(
     if (hostCapabilities) {
         return capabilities.every((capability) => {
             const status = hostCapabilities[capability];
-            if (!status || typeof status !== 'object') {
-                return false;
-            }
-            const capabilityStatus = status as {
-                available?: unknown;
-                enabled?: unknown;
-                supported?: unknown;
-            };
             return tool?.requiredCapabilityMode === 'supported'
-                ? Boolean(
-                      capabilityStatus.supported && capabilityStatus.enabled
-                  )
-                : Boolean(capabilityStatus.available);
+                ? status.supported && status.enabled
+                : status.available;
         });
     }
     if (tool?.requiredCapabilityMode === 'supported') {
@@ -117,7 +108,8 @@ export function getToolCapabilityUnavailableReason(
     if (capabilities.length === 0) {
         return '';
     }
-    return getHostCapabilityUnavailableReason(capabilities[0]);
+    const capability = capabilities[0];
+    return getHostCapabilityUnavailableReason(capability);
 }
 
 export async function triggerToolByKey(
@@ -192,12 +184,10 @@ export async function triggerToolByKey(
     }
 
     if (action.type === 'dialog') {
-        const dialogKey = String(action.dialogKey || '');
-        const hostKey = toolDialogHostMap[dialogKey];
-        if (hostKey) {
-            useRuntimeStore.getState().setSystemHostOpen(hostKey, true);
-            return;
-        }
+        useRuntimeStore
+            .getState()
+            .setSystemHostOpen(toolDialogHostMap[action.dialogKey], true);
+        return;
     }
 
     toast.error(

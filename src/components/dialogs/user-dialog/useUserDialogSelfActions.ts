@@ -8,10 +8,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type {
-    EntityRecord,
-    UserBadgeRecord
-} from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { UserBadgeRecord } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import currentUserProfileService from '@/services/currentUserProfileService';
@@ -264,7 +262,7 @@ export function useUserDialogSelfActions({
         setSelfActionStatus(actionStatusRef, setActionStatus, 'self-profile');
         try {
             const nextUser = await currentUserProfileService.updateCurrentUser({
-                userId: currentUserId,
+                userId: currentUserId || '',
                 params: patch
             });
             applyCurrentUserSnapshot(nextUser);
@@ -382,7 +380,7 @@ export function useUserDialogSelfActions({
             if (Object.keys(patch).length) {
                 const nextProfile =
                     await currentUserProfileService.updateCurrentUser({
-                        userId: currentUserId,
+                        userId: currentUserId || '',
                         params: patch
                     });
                 applyCurrentUserSnapshot(nextProfile);
@@ -390,7 +388,7 @@ export function useUserDialogSelfActions({
             if (removeLanguageKeys.length) {
                 const nextProfile =
                     await currentUserProfileService.removeCurrentUserTags({
-                        userId: currentUserId,
+                        userId: currentUserId || '',
                         tags: removeLanguageKeys.map((key) => `language_${key}`)
                     });
                 applyCurrentUserSnapshot(nextProfile);
@@ -398,7 +396,7 @@ export function useUserDialogSelfActions({
             if (addLanguageKeys.length) {
                 const nextProfile =
                     await currentUserProfileService.addCurrentUserTags({
-                        userId: currentUserId,
+                        userId: currentUserId || '',
                         tags: addLanguageKeys.map((key) => `language_${key}`)
                     });
                 applyCurrentUserSnapshot(nextProfile);
@@ -521,7 +519,7 @@ export function useUserDialogSelfActions({
         return runSelfProfileMutation({
             task: () =>
                 userProfileRepository.updateCurrentUserBadge({
-                    userId: currentUserId,
+                    userId: currentUserId || '',
                     badgeId: badge.badgeId,
                     hidden,
                     showcased: hidden ? false : Boolean(badge.showcased)
@@ -545,7 +543,7 @@ export function useUserDialogSelfActions({
         return runSelfProfileMutation({
             task: () =>
                 userProfileRepository.updateCurrentUserBadge({
-                    userId: currentUserId,
+                    userId: currentUserId || '',
                     badgeId: badge.badgeId,
                     hidden: showcased ? false : Boolean(badge.hidden),
                     showcased

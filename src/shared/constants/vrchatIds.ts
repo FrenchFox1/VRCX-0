@@ -10,8 +10,6 @@ export const VRCHAT_ID_PREFIX = Object.freeze({
 export const VRCHAT_UUID_PATTERN =
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
-export const VRCHAT_ID_RE = vrchatIdRegExp('(?:usr|wrld|avtr|grp|file|inst)_');
-
 const USER_ID_RE = vrchatIdRegExp(VRCHAT_ID_PREFIX.user);
 const WORLD_ID_RE = vrchatIdRegExp(VRCHAT_ID_PREFIX.world);
 const AVATAR_ID_RE = vrchatIdRegExp(VRCHAT_ID_PREFIX.avatar);

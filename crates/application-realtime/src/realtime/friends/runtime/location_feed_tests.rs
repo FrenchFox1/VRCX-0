@@ -14,7 +14,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "active".into(),
-                        state_bucket: "active".into(),
                         location: "wrld_old:123".into(),
                         ..FriendRecord::default()
                     },
@@ -48,7 +47,7 @@ mod tests {
             panic!("friend-location should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.location, "wrld_new:456");
         assert!(output.persistence.feed_entries.is_empty());
         assert!(output.projection.feed_entries.is_empty());
@@ -66,7 +65,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         ..FriendRecord::default()
                     },
@@ -128,7 +126,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         ..FriendRecord::default()
@@ -246,7 +243,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -281,7 +277,7 @@ mod tests {
             panic!("friend-location should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.location, "offline");
         assert_eq!(
             output.projection.patches[0].patch.extra["pendingOffline"],
@@ -301,7 +297,7 @@ mod tests {
             .get("usr_friend")
             .cloned()
             .unwrap();
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "offline");
         assert_eq!(friend.extra["pendingOffline"], true);
     }
@@ -318,7 +314,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         ..FriendRecord::default()
                     },
@@ -381,7 +376,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },

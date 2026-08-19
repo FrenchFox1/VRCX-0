@@ -6,6 +6,7 @@
 //! source of truth for turning that string into structured data; every realtime,
 //! presence, and Discord path consumes it instead of re-implementing parsing.
 
+use compact_str::CompactString;
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -52,12 +53,14 @@ pub struct ParsedLocation {
     pub is_real_instance: bool,
     pub world_id: String,
     pub instance_id: String,
-    pub instance_name: String,
+    #[specta(type = String)]
+    pub instance_name: CompactString,
     pub access_type: String,
     pub access_type_name: String,
     #[specta(type = String)]
     pub region: InstanceRegion,
-    pub short_name: String,
+    #[specta(type = String)]
+    pub short_name: CompactString,
     pub user_id: Option<String>,
     pub hidden_id: Option<String>,
     pub private_id: Option<String>,
@@ -125,7 +128,7 @@ pub fn parse_location(tag: &str) -> ParsedLocation {
     parsed.is_real_instance = true;
     const SHORT_NAME_QUALIFIER: &str = "&shortName=";
     if let Some(index) = raw.find(SHORT_NAME_QUALIFIER) {
-        parsed.short_name = raw[index + SHORT_NAME_QUALIFIER.len()..].to_string();
+        parsed.short_name = raw[index + SHORT_NAME_QUALIFIER.len()..].into();
         raw.truncate(index);
     }
     if let Some(separator) = raw.find(':') {
@@ -133,20 +136,20 @@ pub fn parse_location(tag: &str) -> ParsedLocation {
         parsed.instance_id = raw[separator + 1..].to_string();
         for (index, segment) in parsed.instance_id.split('~').enumerate() {
             if index == 0 {
-                parsed.instance_name = segment.to_string();
+                parsed.instance_name = segment.into();
                 continue;
             }
             let LocationSegment {
                 qualifier,
                 qualifier_value,
             } = parse_location_segment(segment);
-            match qualifier.as_str() {
-                "hidden" => parsed.hidden_id = Some(qualifier_value),
-                "private" => parsed.private_id = Some(qualifier_value),
-                "friends" => parsed.friends_id = Some(qualifier_value),
+            match qualifier {
+                "hidden" => parsed.hidden_id = Some(qualifier_value.to_string()),
+                "private" => parsed.private_id = Some(qualifier_value.to_string()),
+                "friends" => parsed.friends_id = Some(qualifier_value.to_string()),
                 "canRequestInvite" => parsed.can_request_invite = true,
                 "region" => parsed.region = qualifier_value.into(),
-                "group" => parsed.group_id = Some(qualifier_value),
+                "group" => parsed.group_id = Some(qualifier_value.to_string()),
                 "groupAccessType" => parsed.group_access_type = Some(qualifier_value.into()),
                 "strict" => parsed.strict = true,
                 "ageGate" => parsed.age_gate = true,
@@ -194,21 +197,21 @@ pub fn world_id_from_location(tag: &str) -> String {
         .to_string()
 }
 
-struct LocationSegment {
-    qualifier: String,
-    qualifier_value: String,
+struct LocationSegment<'a> {
+    qualifier: &'a str,
+    qualifier_value: &'a str,
 }
 
-impl LocationSegment {
-    fn without_value(qualifier: &str) -> Self {
+impl<'a> LocationSegment<'a> {
+    fn without_value(qualifier: &'a str) -> Self {
         Self {
-            qualifier: qualifier.to_string(),
-            qualifier_value: String::new(),
+            qualifier,
+            qualifier_value: "",
         }
     }
 }
 
-fn parse_location_segment(segment: &str) -> LocationSegment {
+fn parse_location_segment(segment: &str) -> LocationSegment<'_> {
     let Some(open) = segment.find('(') else {
         return LocationSegment::without_value(segment);
     };
@@ -219,8 +222,8 @@ fn parse_location_segment(segment: &str) -> LocationSegment {
         return LocationSegment::without_value(segment);
     }
     LocationSegment {
-        qualifier: segment[..open].to_string(),
-        qualifier_value: segment[open + 1..close].to_string(),
+        qualifier: &segment[..open],
+        qualifier_value: &segment[open + 1..close],
     }
 }
 

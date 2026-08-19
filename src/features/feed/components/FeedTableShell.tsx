@@ -201,7 +201,7 @@ export function FeedTableShell({
                     pageSize={pagination.pageSize}
                     pageSizes={pageSizes}
                     pageSizeLabel={t('table.pagination.rows_per_page')}
-                    onPageSizeChange={(value: unknown) =>
+                    onPageSizeChange={(value: string) =>
                         onPaginationChange({
                             pageIndex: 0,
                             pageSize: resolvePageSize(

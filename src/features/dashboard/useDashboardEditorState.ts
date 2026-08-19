@@ -20,7 +20,7 @@ type DashboardEditorStateProps = {
     saveDashboard: (
         dashboardId: string,
         patch: Pick<Dashboard, 'name' | 'rows'>
-    ) => Promise<unknown>;
+    ) => Promise<void>;
 };
 
 export function useDashboardEditorState({

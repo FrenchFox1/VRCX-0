@@ -267,14 +267,18 @@ describe('notificationActionService', () => {
         mocks.appNotificationInviteResponseSend.mockReturnValue(
             pending.promise
         );
-        const withUploadTimeout = vi.fn((promise: Promise<unknown>) => promise);
+        const withUploadTimeout = vi.fn(
+            (
+                promise: Promise<NotificationActionOutcome>
+            ): Promise<NotificationActionOutcome> => promise
+        );
         const { sendInviteResponseNotification } =
             await import('./notificationActionService');
 
         const action = sendInviteResponseNotification({
             currentUserId: 'usr_self',
             notification,
-            responseSlot: '1',
+            responseSlot: 1,
             imageData: 'base64data',
             withUploadTimeout
         });
@@ -296,7 +300,11 @@ describe('notificationActionService', () => {
     });
 
     it('sends a plain invite response without the upload timeout', async () => {
-        const withUploadTimeout = vi.fn((promise: Promise<unknown>) => promise);
+        const withUploadTimeout = vi.fn(
+            (
+                promise: Promise<NotificationActionOutcome>
+            ): Promise<NotificationActionOutcome> => promise
+        );
         const { sendInviteResponseNotification } =
             await import('./notificationActionService');
 
@@ -397,8 +405,7 @@ describe('notificationActionService', () => {
         const {
             expireNotificationLocally,
             findIncomingFriendRequestNotification,
-            sendBoopReplyNotification,
-            sendInviteResponseNotification
+            sendBoopReplyNotification
         } = await import('./notificationActionService');
 
         await expect(
@@ -413,13 +420,6 @@ describe('notificationActionService', () => {
                 notification: { id: 'notif_without_sender' }
             })
         ).rejects.toThrow('Cannot send boop: no sender user id is available.');
-        await expect(
-            sendInviteResponseNotification({
-                currentUserId: 'usr_self',
-                notification,
-                responseSlot: 'invalid'
-            })
-        ).rejects.toThrow('Response slot must be a number.');
         await expect(
             findIncomingFriendRequestNotification({
                 currentUserId: ' ',

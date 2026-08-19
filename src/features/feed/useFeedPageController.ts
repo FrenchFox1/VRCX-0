@@ -85,6 +85,7 @@ export function useFeedPageController({
         onColumnSizingChange: tableModel.setColumnSizing,
         onSortingChange: tableModel.setSorting,
         onPaginationChange: tableModel.setPagination,
+        autoResetExpanded: false,
         autoResetPageIndex: false,
         enableColumnResizing: true,
         columnResizeMode: 'onEnd',

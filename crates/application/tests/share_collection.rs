@@ -186,7 +186,10 @@ fn prepare_payload_keeps_only_public_worlds_in_input_order() {
         prepared.payload.worlds[0].created_at,
         "2026-01-01T00:00:00.000Z"
     );
-    assert_eq!(prepared.payload.worlds[0].release_status, "public");
+    assert_eq!(
+        prepared.payload.worlds[0].release_status,
+        vrcx_0_core::ReleaseStatus::Public
+    );
     assert_eq!(prepared.payload.worlds[0].version, 1);
     assert_eq!(prepared.payload.worlds[0].comment, "Bring friends");
     assert_eq!(

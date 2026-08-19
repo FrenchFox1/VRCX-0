@@ -1,16 +1,21 @@
 use std::collections::HashMap;
 
-use serde_json::{json, Value};
+use serde_json::json;
+#[cfg(test)]
+use serde_json::Value;
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
 };
 
-pub fn calendars_get_input(
-    endpoint: String,
-    params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    get_input(endpoint, "calendar", params)
+mod params;
+mod request;
+
+pub use params::CalendarListParams;
+pub use request::InviteMessageType;
+
+pub fn calendars_get_input(endpoint: String, params: CalendarListParams) -> HttpApiRequestInput {
+    get_input(endpoint, "calendar", params.into_query_params())
 }
 
 pub fn group_calendar_get_input(
@@ -30,16 +35,16 @@ pub fn group_calendar_get_input(
 
 pub fn following_calendars_get_input(
     endpoint: String,
-    params: HashMap<String, Value>,
+    params: CalendarListParams,
 ) -> HttpApiRequestInput {
-    get_input(endpoint, "calendar/following", params)
+    get_input(endpoint, "calendar/following", params.into_query_params())
 }
 
 pub fn featured_calendars_get_input(
     endpoint: String,
-    params: HashMap<String, Value>,
+    params: CalendarListParams,
 ) -> HttpApiRequestInput {
-    get_input(endpoint, "calendar/featured", params)
+    get_input(endpoint, "calendar/featured", params.into_query_params())
 }
 
 pub fn group_event_follow_input(
@@ -109,21 +114,9 @@ pub fn user_note_save_input(
 pub fn user_report_input(
     endpoint: String,
     user_id: String,
-    content_type: String,
     reason: String,
-    type_name: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatToolsUserReport requires userId.")?;
-    let content_type = if content_type.trim().is_empty() {
-        "user".to_string()
-    } else {
-        content_type
-    };
-    let type_name = if type_name.trim().is_empty() {
-        "report".to_string()
-    } else {
-        type_name
-    };
     Ok((
         user_id.clone(),
         api_input(
@@ -131,9 +124,9 @@ pub fn user_report_input(
             "POST",
             format!("feedback/{}/user", encode_path_segment(&user_id)),
             Some(json!({
-                "contentType": content_type,
+                "contentType": "user",
                 "reason": reason,
-                "type": type_name,
+                "type": "report",
             })),
         ),
     ))
@@ -142,16 +135,13 @@ pub fn user_report_input(
 pub fn invite_messages_get_input(
     endpoint: String,
     current_user_id: String,
-    message_type: String,
+    message_type: InviteMessageType,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let current_user_id = require_text(
         current_user_id,
         "VrchatToolsInviteMessagesGet requires currentUserId.",
     )?;
-    let message_type = require_text(
-        message_type,
-        "VrchatToolsInviteMessagesGet requires messageType.",
-    )?;
+    let message_type = message_type.as_str();
     Ok((
         current_user_id.clone(),
         get_input(
@@ -159,7 +149,7 @@ pub fn invite_messages_get_input(
             format!(
                 "message/{}/{}",
                 encode_path_segment(&current_user_id),
-                encode_path_segment(&message_type)
+                encode_path_segment(message_type)
             ),
             HashMap::new(),
         ),
@@ -169,29 +159,25 @@ pub fn invite_messages_get_input(
 pub fn invite_message_edit_input(
     endpoint: String,
     current_user_id: String,
-    message_type: String,
-    slot: String,
+    message_type: InviteMessageType,
+    slot: i32,
     message: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(i32, HttpApiRequestInput), HttpApiError> {
     let current_user_id = require_text(
         current_user_id,
         "VrchatToolsInviteMessageEdit requires currentUserId.",
     )?;
-    let message_type = require_text(
-        message_type,
-        "VrchatToolsInviteMessageEdit requires messageType.",
-    )?;
-    let slot = require_text(slot, "VrchatToolsInviteMessageEdit requires slot.")?;
+    let message_type = message_type.as_str();
     Ok((
-        slot.clone(),
+        slot,
         api_input(
             endpoint,
             "PUT",
             format!(
                 "message/{}/{}/{}",
                 encode_path_segment(&current_user_id),
-                encode_path_segment(&message_type),
-                encode_path_segment(&slot)
+                encode_path_segment(message_type),
+                slot
             ),
             Some(json!({ "message": message })),
         ),
@@ -208,7 +194,13 @@ mod tests {
 
     #[test]
     fn calendar_reads_keep_query_params_and_encode_identity_segments() {
-        let params = HashMap::from([("n".into(), json!(100)), ("offset".into(), json!(200))]);
+        let params = CalendarListParams {
+            n: Some(100),
+            offset: Some(200),
+            date: None,
+        };
+        let expected_params =
+            HashMap::from([("n".into(), json!(100)), ("offset".into(), json!(200))]);
         for (name, request, path) in [
             (
                 "all",
@@ -228,7 +220,11 @@ mod tests {
         ] {
             assert_eq!(request.method.as_deref(), Some("GET"), "{name}");
             assert_eq!(request.path.as_deref(), Some(path), "{name}");
-            assert_eq!(request.query_params, Some(params.clone()), "{name}");
+            assert_eq!(
+                request.query_params,
+                Some(expected_params.clone()),
+                "{name}"
+            );
         }
 
         let (group_id, group) =
@@ -273,14 +269,8 @@ mod tests {
             &json!({ "targetUserId": "usr/1", "note": "  keep note whitespace  " })
         );
 
-        let (_, report) = user_report_input(
-            "endpoint".into(),
-            " usr/1 ".into(),
-            " ".into(),
-            "reason".into(),
-            "".into(),
-        )
-        .unwrap();
+        let (_, report) =
+            user_report_input("endpoint".into(), " usr/1 ".into(), "reason".into()).unwrap();
         assert_eq!(report.method.as_deref(), Some("POST"));
         assert_eq!(report.path.as_deref(), Some("feedback/usr%2F1/user"));
         assert_eq!(
@@ -291,17 +281,14 @@ mod tests {
         let (slot, edit) = invite_message_edit_input(
             "endpoint".into(),
             " usr/1 ".into(),
-            " invite/request ".into(),
-            " slot 雪 ".into(),
+            InviteMessageType::Request,
+            2,
             "Message".into(),
         )
         .unwrap();
-        assert_eq!(slot, "slot 雪");
+        assert_eq!(slot, 2);
         assert_eq!(edit.method.as_deref(), Some("PUT"));
-        assert_eq!(
-            edit.path.as_deref(),
-            Some("message/usr%2F1/invite%2Frequest/slot%20%E9%9B%AA")
-        );
+        assert_eq!(edit.path.as_deref(), Some("message/usr%2F1/request/2"));
         assert_eq!(json_body(&edit), &json!({ "message": "Message" }));
     }
 
@@ -310,7 +297,7 @@ mod tests {
         let (user_id, request) = invite_messages_get_input(
             "endpoint".into(),
             " usr/1 ".into(),
-            " invite/request ".into(),
+            InviteMessageType::RequestResponse,
         )
         .unwrap();
 
@@ -318,7 +305,7 @@ mod tests {
         assert_eq!(request.method.as_deref(), Some("GET"));
         assert_eq!(
             request.path.as_deref(),
-            Some("message/usr%2F1/invite%2Frequest")
+            Some("message/usr%2F1/requestResponse")
         );
     }
 
@@ -328,22 +315,7 @@ mod tests {
         assert!(group_event_follow_input("".into(), "group".into(), " ".into(), false,).is_err());
         assert!(group_calendar_ics_get_input("".into(), " ".into(), "event".into()).is_err());
         assert!(user_note_save_input("".into(), " ".into(), "note".into()).is_err());
-        assert!(user_report_input(
-            "".into(),
-            " ".into(),
-            "user".into(),
-            "reason".into(),
-            "report".into(),
-        )
-        .is_err());
-        assert!(invite_messages_get_input("".into(), "user".into(), " ".into()).is_err());
-        assert!(invite_message_edit_input(
-            "".into(),
-            "user".into(),
-            "message".into(),
-            " ".into(),
-            "text".into(),
-        )
-        .is_err());
+        assert!(user_report_input("".into(), " ".into(), "reason".into(),).is_err());
+        assert!(serde_json::from_str::<InviteMessageType>(r#""invite""#).is_err());
     }
 }

@@ -1,77 +1,32 @@
 import { commands } from '@/platform/tauri/bindings';
 import type {
-    AvatarCacheOutput,
     AvatarTagInput,
-    AvatarTagsPatchInput
+    AvatarTagsPatchInput,
+    JsonValue
 } from '@/platform/tauri/bindings';
-import { normalizeString } from '@/shared/utils/string';
-
-type ObjectRow = Record<string, unknown>;
 
 interface AvatarTag {
-    tag?: unknown;
-    color?: unknown;
-}
-
-function asObjectRow(row: ObjectRow | unknown[] | null | undefined): ObjectRow {
-    return row && !Array.isArray(row) ? row : {};
-}
-
-function parseInteger(value: unknown, fallback: number) {
-    return Number.parseInt(String(value ?? fallback), 10) || fallback;
-}
-
-function normalizeAvatarCacheRow(
-    row: AvatarCacheOutput | ObjectRow | unknown[] | null | undefined
-) {
-    if (Array.isArray(row)) {
-        return {
-            id: row[0] ?? '',
-            authorId: row[2] ?? '',
-            authorName: row[3] ?? '',
-            created_at: row[4] ?? '',
-            description: row[5] ?? '',
-            imageUrl: row[6] ?? '',
-            name: row[7] ?? '',
-            releaseStatus: row[8] ?? '',
-            thumbnailImageUrl: row[9] ?? '',
-            updated_at: row[10] ?? '',
-            version: row[11] ?? 0
-        };
-    }
-
-    const record = asObjectRow(row);
-    return {
-        id: record.id ?? '',
-        authorId: record.author_id ?? record.authorId ?? '',
-        authorName: record.author_name ?? record.authorName ?? '',
-        created_at: record.created_at ?? '',
-        description: record.description ?? '',
-        imageUrl: record.image_url ?? record.imageUrl ?? '',
-        name: record.name ?? '',
-        releaseStatus: record.release_status ?? record.releaseStatus ?? '',
-        thumbnailImageUrl:
-            record.thumbnail_image_url ?? record.thumbnailImageUrl ?? '',
-        updated_at: record.updated_at ?? '',
-        version: record.version ?? 0
-    };
+    tag?: string;
+    color?: JsonValue;
 }
 
 function normalizeAvatarTagInput(entry: AvatarTag): AvatarTagInput {
     return {
-        tag: normalizeString(entry.tag),
+        tag: entry.tag?.trim() ?? '',
         color: entry.color ?? null
     };
 }
 
 async function addAvatarTimeSpent(
-    userId: unknown,
-    avatarId: unknown,
-    timeSpent: unknown
+    userId: string,
+    avatarId: string,
+    timeSpent: number
 ) {
-    const normalizedUserId = normalizeString(userId);
-    const normalizedAvatarId = normalizeString(avatarId);
-    const normalizedTimeSpent = parseInteger(timeSpent, 0);
+    const normalizedUserId = userId.trim();
+    const normalizedAvatarId = avatarId.trim();
+    const normalizedTimeSpent = Number.isFinite(timeSpent)
+        ? Math.trunc(timeSpent)
+        : 0;
     if (!normalizedUserId || !normalizedAvatarId) {
         return;
     }
@@ -83,9 +38,9 @@ async function addAvatarTimeSpent(
     );
 }
 
-async function getAvatarTimeSpent(userId: unknown, avatarId: unknown) {
-    const normalizedUserId = normalizeString(userId);
-    const normalizedAvatarId = normalizeString(avatarId);
+async function getAvatarTimeSpent(userId: string, avatarId: string) {
+    const normalizedUserId = userId.trim();
+    const normalizedAvatarId = avatarId.trim();
     const ref = {
         timeSpent: 0,
         avatarId: normalizedAvatarId
@@ -98,13 +53,13 @@ async function getAvatarTimeSpent(userId: unknown, avatarId: unknown) {
         normalizedUserId,
         normalizedAvatarId
     );
-    ref.timeSpent = parseInteger(row.timeSpent, 0);
+    ref.timeSpent = row.timeSpent;
     return ref;
 }
 
-async function getAllAvatarTimeSpent(userId: unknown) {
+async function getAllAvatarTimeSpent(userId: string) {
     const map = new Map<string, number>();
-    const normalizedUserId = normalizeString(userId);
+    const normalizedUserId = userId.trim();
     if (!normalizedUserId) {
         return map;
     }
@@ -113,35 +68,35 @@ async function getAllAvatarTimeSpent(userId: unknown) {
     for (const row of rows) {
         const avatarId = row.avatarId;
         if (avatarId) {
-            map.set(avatarId, parseInteger(row.timeSpent, 0));
+            map.set(avatarId, row.timeSpent);
         }
     }
     return map;
 }
 
-async function getAvatarHistory(userId: unknown, limit: unknown = 100) {
-    const normalizedUserId = normalizeString(userId);
+async function getAvatarHistory(userId: string, limit = 100) {
+    const normalizedUserId = userId.trim();
     if (!normalizedUserId) {
         return [];
     }
 
-    const rows = await commands.appAvatarHistoryList(
+    const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit) : 100;
+    return commands.appAvatarHistoryList(
         normalizedUserId,
-        parseInteger(limit, 100)
+        normalizedLimit || 100
     );
-    return rows.map(normalizeAvatarCacheRow);
 }
 
-async function clearAvatarHistory(userId: unknown) {
-    const normalizedUserId = normalizeString(userId);
+async function clearAvatarHistory(userId: string) {
+    const normalizedUserId = userId.trim();
     if (!normalizedUserId) {
         return;
     }
     await commands.appAvatarHistoryClear(normalizedUserId);
 }
 
-async function getAvatarTags(avatarId: unknown) {
-    const normalizedAvatarId = normalizeString(avatarId);
+async function getAvatarTags(avatarId: string) {
+    const normalizedAvatarId = avatarId.trim();
     if (!normalizedAvatarId) {
         return [];
     }
@@ -172,55 +127,46 @@ async function getAllDistinctTags() {
 }
 
 async function addAvatarTag(
-    avatarId: unknown,
-    tag: unknown,
-    color: unknown = null
+    avatarId: string,
+    tag: string,
+    color: JsonValue = null
 ) {
-    await commands.appAvatarTagAdd(normalizeString(avatarId), tag, color);
+    await commands.appAvatarTagAdd(avatarId.trim(), tag, color);
 }
 
 async function updateAvatarTagColor(
-    avatarId: unknown,
-    tag: unknown,
-    color: unknown
+    avatarId: string,
+    tag: string,
+    color: JsonValue
 ) {
-    await commands.appAvatarTagUpdateColor(
-        normalizeString(avatarId),
-        tag,
-        color
-    );
+    await commands.appAvatarTagUpdateColor(avatarId.trim(), tag, color);
 }
 
-async function removeAvatarTag(avatarId: unknown, tag: unknown) {
-    await commands.appAvatarTagRemove(normalizeString(avatarId), tag);
+async function removeAvatarTag(avatarId: string, tag: string) {
+    await commands.appAvatarTagRemove(avatarId.trim(), tag);
 }
 
-async function removeAllAvatarTags(avatarId: unknown) {
-    await commands.appAvatarTagsRemoveAll(normalizeString(avatarId));
+async function removeAllAvatarTags(avatarId: string) {
+    await commands.appAvatarTagsRemoveAll(avatarId.trim());
 }
 
-async function replaceAvatarTags(avatarId: unknown, entries: AvatarTag[] = []) {
+async function replaceAvatarTags(avatarId: string, entries: AvatarTag[] = []) {
     await commands.appAvatarTagsReplace(
-        normalizeString(avatarId),
-        (Array.isArray(entries) ? entries : []).map(normalizeAvatarTagInput)
+        avatarId.trim(),
+        entries.map(normalizeAvatarTagInput)
     );
 }
 
 async function patchAvatarTags(
-    avatarId: unknown,
+    avatarId: string,
     previousEntries: AvatarTag[] = [],
     nextEntries: AvatarTag[] = []
 ) {
     const patch: AvatarTagsPatchInput = {
-        previousEntries: (Array.isArray(previousEntries)
-            ? previousEntries
-            : []
-        ).map(normalizeAvatarTagInput),
-        nextEntries: (Array.isArray(nextEntries) ? nextEntries : []).map(
-            normalizeAvatarTagInput
-        )
+        previousEntries: previousEntries.map(normalizeAvatarTagInput),
+        nextEntries: nextEntries.map(normalizeAvatarTagInput)
     };
-    await commands.appAvatarTagsPatch(normalizeString(avatarId), patch);
+    await commands.appAvatarTagsPatch(avatarId.trim(), patch);
 }
 
 const avatarLocalRepository = Object.freeze({

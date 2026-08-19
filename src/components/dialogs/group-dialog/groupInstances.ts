@@ -1,9 +1,9 @@
 import type {
-    EntityRecord,
     GroupDialogInstanceRow,
     GroupInstanceRecord
-} from '@/domain/entities/profileEntities';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+} from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { parseLocation } from '@/shared/utils/location';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 

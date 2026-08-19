@@ -1,3 +1,10 @@
+import type {
+    AvatarUpdateRequest,
+    AvatarListSort,
+    QueryOrder,
+    ReleaseStatusFilter
+} from '@/platform/tauri/bindings';
+
 export type AvatarRecord = Record<string, unknown>;
 
 export type AvatarStyleRecord = AvatarRecord & {
@@ -54,21 +61,21 @@ export interface AvatarProfileExtras extends AvatarRecord {
 }
 
 export interface AvatarListOptions {
-    userId?: unknown;
+    userId?: string;
     user?: string;
     n?: number;
     offset?: number;
-    sort?: string;
-    order?: string;
-    releaseStatus?: string;
+    sort?: AvatarListSort;
+    order?: QueryOrder;
+    releaseStatus?: ReleaseStatusFilter;
 }
 
 export interface AvatarIdInput {
-    avatarId?: unknown;
+    avatarId?: string;
 }
 
 export interface SaveAvatarInput extends AvatarIdInput {
-    params?: Record<string, unknown>;
+    params: AvatarUpdateRequest;
 }
 
 export interface AvatarStylesInput {
@@ -79,9 +86,7 @@ export interface AvatarProfileInput extends AvatarIdInput {
     force?: boolean;
     dialog?: boolean;
     allowLocalFallback?: boolean;
-    currentUserId?: unknown;
+    currentUserId?: string | null;
 }
 
-export interface AvatarModerationInput extends AvatarIdInput {
-    type?: unknown;
-}
+export type AvatarModerationInput = AvatarIdInput;

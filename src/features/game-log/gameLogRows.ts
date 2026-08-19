@@ -7,18 +7,6 @@ import type {
     GameLogSessionMember
 } from './gameLogTypes';
 
-export const GAME_LOG_TYPE_LABELS: Record<string, string> = {
-    Location: 'Location',
-    OnPlayerJoined: 'Player Joined',
-    OnPlayerLeft: 'Player Left',
-    PortalSpawn: 'Portal Spawn',
-    VideoPlay: 'Video Play',
-    Event: 'Event',
-    External: 'External',
-    StringLoad: 'String Load',
-    ImageLoad: 'Image Load'
-};
-
 export const GAME_LOG_DETAILLESS_TYPES = new Set([
     'OnPlayerJoined',
     'OnPlayerLeft',

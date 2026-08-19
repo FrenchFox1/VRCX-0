@@ -1,5 +1,4 @@
 import type {
-    ColumnSizingState,
     SortingState,
     ColumnVisibilityState
 } from '@tanstack/react-table';
@@ -8,7 +7,6 @@ import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
-    sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 import { moderationTypes } from '@/shared/constants/moderation';
@@ -134,12 +132,6 @@ export function sanitizeModerationColumnOrder(value: unknown): string[] {
         (columnId) => !orderedColumns.includes(columnId)
     );
     return [...orderedColumns, ...missingColumns];
-}
-
-export function sanitizeModerationColumnSizing(
-    value: unknown
-): ColumnSizingState {
-    return sanitizeTableColumnSizing(value, MODERATION_COLUMN_IDS);
 }
 
 export function resolveModerationPageSize(

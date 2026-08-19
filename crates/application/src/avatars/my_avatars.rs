@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use vrcx_0_core::derived_keys;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -8,12 +9,13 @@ use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     avatars::{avatar_list_by_user_get_input, AvatarListByUserGetInput},
     http_api::{ApiScope, HttpApiRequestInput},
+    query::{AvatarListSort, QueryOrder, ReleaseStatusFilter},
 };
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
 
-const MY_AVATARS_PAGE_SIZE: i64 = 50;
-const MY_AVATARS_MAX_OFFSET: i64 = 5_000;
+const MY_AVATARS_PAGE_SIZE: i32 = 50;
+const MY_AVATARS_MAX_OFFSET: i32 = 5_000;
 
 pub struct MyAvatarsDeps<'a> {
     pub db: &'a DatabaseService,
@@ -59,10 +61,10 @@ pub async fn get_my_avatars(deps: &MyAvatarsDeps<'_>, input: MyAvatarsInput) -> 
             }
             if let Some(object) = avatar.as_object_mut() {
                 object.insert(
-                    "$tags".into(),
+                    derived_keys::TAGS.into(),
                     Value::Array(tags_by_avatar.get(&avatar_id).cloned().unwrap_or_default()),
                 );
-                object.insert("$timeSpent".into(), json!(time_spent));
+                object.insert(derived_keys::TIME_SPENT.into(), json!(time_spent));
             }
             avatar
         })
@@ -97,12 +99,12 @@ async fn fetch_my_avatar_pages(
             user: "me".into(),
             n: MY_AVATARS_PAGE_SIZE,
             offset,
-            sort: "updated".into(),
-            order: "descending".into(),
-            release_status: "all".into(),
+            sort: AvatarListSort::Updated,
+            order: QueryOrder::Descending,
+            release_status: ReleaseStatusFilter::All,
         })?;
         let page = execute_json_array(deps, request).await?;
-        let page_len = page.len() as i64;
+        let page_len = page.len();
 
         if let Some(target) = target_avatar_id {
             if let Some(found) = page.into_iter().find(|avatar| record_id(avatar) == target) {
@@ -112,7 +114,7 @@ async fn fetch_my_avatar_pages(
             avatars.extend(page);
         }
 
-        if page_len < MY_AVATARS_PAGE_SIZE {
+        if page_len < MY_AVATARS_PAGE_SIZE as usize {
             break;
         }
         offset += MY_AVATARS_PAGE_SIZE;

@@ -10,24 +10,6 @@ import {
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type ProjectionRecord = Record<string, unknown>;
-type RealtimeInstanceQueueProjectionInput =
-    Partial<RealtimeInstanceQueueProjection> & ProjectionRecord;
-
-function isRecord(value: unknown): value is ProjectionRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function text(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
-function number(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
-}
-
 function translated(
     key: string,
     params: ProjectionRecord,
@@ -54,12 +36,11 @@ function resolveQueueLocationLabel(instanceLocation: string): string {
     );
 }
 
-export function handleRealtimeInstanceQueueProjection(payload: unknown) {
-    const projection: RealtimeInstanceQueueProjectionInput = isRecord(payload)
-        ? payload
-        : {};
-    const kind = text(projection.kind);
-    const instanceLocation = text(projection.instanceLocation);
+export function handleRealtimeInstanceQueueProjection(
+    projection: RealtimeInstanceQueueProjection
+) {
+    const { kind } = projection;
+    const instanceLocation = projection.instanceLocation.trim();
     if (!instanceLocation) {
         return;
     }
@@ -98,9 +79,31 @@ export function handleRealtimeInstanceQueueProjection(payload: unknown) {
     runtimeStore.setInstanceQueueState({
         active: true,
         instanceLocation,
-        position: number(projection.position),
-        queueSize: number(projection.queueSize),
+        position: Math.max(0, projection.position),
+        queueSize: Math.max(0, projection.queueSize),
         label,
-        updatedAt: text(projection.receivedAt) || new Date().toISOString()
+        updatedAt: projection.receivedAt
+    });
+}
+
+export function handleQueuedInstancePatch(instanceLocation: string) {
+    const normalizedLocation = instanceLocation.trim();
+    if (!normalizedLocation) {
+        return;
+    }
+
+    const runtimeStore = useRuntimeStore.getState();
+    const currentQueue = runtimeStore.instanceQueue;
+    runtimeStore.setInstanceQueueState({
+        active: true,
+        instanceLocation: normalizedLocation,
+        position: 0,
+        queueSize: 0,
+        label:
+            currentQueue.instanceLocation === normalizedLocation &&
+            currentQueue.label
+                ? currentQueue.label
+                : resolveQueueLocationLabel(normalizedLocation),
+        updatedAt: new Date().toISOString()
     });
 }

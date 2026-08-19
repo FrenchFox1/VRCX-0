@@ -1,7 +1,8 @@
 import type { PaginationState } from '@tanstack/react-table';
 import type { Dispatch, SetStateAction } from 'react';
 
-import type { AppColumnDef, AppTable } from '@/components/data-table/appTable';
+import type { AppColumnDef } from '@/components/data-table/appTable';
+import type { LoadStatus } from '@/domain/shared/types';
 import type {
     GameLogSessionDto as GeneratedGameLogSession,
     GameLogSessionEventDto as GeneratedGameLogSessionEvent,
@@ -19,7 +20,7 @@ export const GAME_LOG_LIVE_REFRESH_THROTTLE_MS = 1000;
 
 export type GameLogViewMode = 'sessions' | 'table';
 
-export type GameLogLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+export type GameLogLoadStatus = LoadStatus;
 
 export type GameLogRow = {
     id?: unknown;
@@ -64,8 +65,6 @@ export type GameLogDetailValue = {
 export type GameLogPreviousInstanceRow = GameLogPreviousInstanceWorldRow;
 
 export type GameLogColumns = AppColumnDef<GameLogRow>[];
-
-export type GameLogTableInstance = AppTable<GameLogRow>;
 
 export type GameLogPaginationSetter = Dispatch<SetStateAction<PaginationState>>;
 

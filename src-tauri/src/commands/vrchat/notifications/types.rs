@@ -1,28 +1,26 @@
 use serde::Deserialize;
-use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::notifications::RequestInviteRequest;
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VrchatNotificationSendInput {
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatRequestInviteSendInput {
     #[serde(default)]
     pub(crate) receiver_user_id: String,
-    #[serde(default)]
-    pub(crate) params: Value,
+    pub(crate) params: RequestInviteRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VrchatNotificationPhotoSendInput {
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatRequestInvitePhotoSendInput {
     #[serde(default)]
     pub(crate) receiver_user_id: String,
-    #[serde(default)]
-    pub(crate) params: Value,
+    pub(crate) params: RequestInviteRequest,
     #[serde(default)]
     pub(crate) image_data: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatBoopInput {
     #[serde(default)]
     pub(crate) user_id: String,

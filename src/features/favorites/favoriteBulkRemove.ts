@@ -1,9 +1,10 @@
+import type { FavoriteKind } from '@/domain/favorites/types';
 import type {
     FavoriteBulkRemoveInput,
     FavoriteBulkRemoveResult
 } from '@/platform/tauri/bindings';
 
-import type { FavoriteItem, FavoriteKind } from './favoritesTypes';
+import type { FavoriteItem } from './favoritesTypes';
 
 export function buildFavoriteBulkRemoveInput({
     items,

@@ -17,7 +17,7 @@ type NotificationRecord = Record<string, unknown> & {
 };
 
 interface NotificationActionInput {
-    currentUserId?: unknown;
+    currentUserId?: string;
     notification?: NotificationRecord | null;
 }
 
@@ -27,14 +27,16 @@ interface FriendRequestNotificationInput {
 }
 
 interface AcceptRequestInviteInput extends NotificationActionInput {
-    instanceId?: unknown;
-    worldId?: unknown;
+    instanceId?: string;
+    worldId?: string;
 }
 
 interface InviteResponseInput extends NotificationActionInput {
-    responseSlot?: unknown;
-    imageData?: unknown;
-    withUploadTimeout?: (promise: Promise<unknown>) => Promise<unknown>;
+    responseSlot: number;
+    imageData?: string;
+    withUploadTimeout?: (
+        promise: Promise<NotificationActionOutcome>
+    ) => Promise<NotificationActionOutcome>;
 }
 
 interface NotificationResponseInput extends NotificationActionInput {
@@ -42,7 +44,7 @@ interface NotificationResponseInput extends NotificationActionInput {
 }
 
 interface BoopReplyInput extends NotificationActionInput {
-    emojiId?: unknown;
+    emojiId?: string;
 }
 
 function normalizeText(value: unknown): string {
@@ -91,8 +93,8 @@ export async function findIncomingFriendRequestNotification({
     currentUserId,
     targetUserId
 }: {
-    currentUserId?: unknown;
-    targetUserId?: unknown;
+    currentUserId?: string;
+    targetUserId?: string;
 }) {
     const normalizedCurrentUserId = normalizeText(currentUserId);
     const normalizedTargetUserId = normalizeText(targetUserId);
@@ -121,7 +123,7 @@ export async function expireNotificationLocally({
     const target = requireNotification(notification);
     await notificationPersistenceRepository.expireNotification({
         userId: currentUserId,
-        id: target.id
+        id: normalizeText(target.id)
     });
 }
 
@@ -156,12 +158,12 @@ export async function acceptFriendRequestNotification({
         targetDisplayName
     });
     if (result.status === 'notFound') {
-        return { status: 'not-found' as const };
+        return { status: 'not-found' };
     }
     if (!result.outcome) {
         throw new Error('Friend request accept result is incomplete.');
     }
-    return { status: 'accepted' as const, outcome: result.outcome };
+    return { status: 'accepted', outcome: result.outcome };
 }
 
 export async function acceptRequestInviteNotification({
@@ -190,35 +192,27 @@ export async function sendInviteResponseNotification({
     withUploadTimeout
 }: InviteResponseInput) {
     const target = requireNotification(notification);
-    const normalizedResponseSlot = Number.parseInt(
-        String(responseSlot ?? ''),
-        10
-    );
-    if (!Number.isFinite(normalizedResponseSlot)) {
-        throw new Error('Response slot must be a number.');
-    }
-
     const invoke = () =>
         commands.appNotificationInviteResponseSend({
             ownerUserId: normalizeText(currentUserId),
             target: toNotificationTarget(target),
-            responseSlot: normalizedResponseSlot,
-            imageData: imageData ? normalizeText(imageData) : ''
+            responseSlot,
+            imageData: imageData?.trim() ?? ''
         });
     const outcome =
         imageData && withUploadTimeout
             ? await withUploadTimeout(invoke())
             : await invoke();
-    unwrapNotificationActionOutcome(outcome as NotificationActionOutcome);
-    return { sentPhoto: Boolean(imageData) };
+    unwrapNotificationActionOutcome(outcome);
+    return { sentPhoto: Boolean(imageData?.trim()) };
 }
 
 export async function dismissBoopNotifications({
     currentUserId,
     senderUserId
 }: {
-    currentUserId?: unknown;
-    senderUserId?: unknown;
+    currentUserId?: string;
+    senderUserId?: string;
 }) {
     const normalizedSenderUserId = normalizeText(senderUserId);
     if (!currentUserId || !normalizedSenderUserId) {

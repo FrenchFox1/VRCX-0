@@ -2795,7 +2795,6 @@
                         "purge_confirm_description_3": "VRCX-0 wird nach Abschluss des Vorgangs neu gestartet.",
                         "purge_confirm_alert": "Es wird dringend empfohlen, deine Datenbankdatei vorher zu sichern!",
                         "purge_confirm_button": "Bereinigen & Neustarten",
-                        "purge_in_progress": "Avatar-Daten werden bereinigt",
                         "purge_complete": "Avatar-Daten erfolgreich bereinigt. Wird neu gestartet",
                         "purge_failed": "Bereinigung fehlgeschlagen: {error}",
                         "purge_optimization_failed": "Die Avatar-Daten wurden bereinigt, aber die Datenbank konnte nicht optimiert werden: {error}",
@@ -4657,7 +4656,9 @@
             "loading_gallery_description": "Die indizierte Screenshot-Liste wird gelesen.",
             "gallery_load_failed": "Screenshot-Galerie konnte nicht geladen werden",
             "scan_failed": "Screenshot-Bibliothek konnte nicht gescannt werden",
-            "thumbnail_failed": "Vorschaubild nicht verfügbar"
+            "thumbnail_failed": "Vorschaubild nicht verfügbar",
+            "hide_details": "Bildinformationen ausblenden",
+            "show_details": "Bildinformationen einblenden"
         },
         "set_avatar_styles": {
             "header": "Avatar-Stile festlegen",
@@ -5328,6 +5329,8 @@
             "migration_restarting_title": "Daten werden migriert",
             "migration_restarting": "VRCX-0 wird neu gestartet, um die Migration abzuschließen...",
             "upgrade_in_progress_title": "Datenbank-Upgrade läuft",
+            "maintenance_in_progress_title": "Datenbankwartung läuft",
+            "maintenance_in_progress_description": "Speicherplatz wird freigegeben. Der Datenbankzugriff pausiert, bis der Vorgang abgeschlossen ist.",
             "upgrade_stage": {
                 "preflight": "Datenbank wird geprüft",
                 "prepare_legacy_snapshot": "Eine konsistente Kopie der VRCX-Datenbank wird erstellt",

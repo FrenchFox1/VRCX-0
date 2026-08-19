@@ -42,7 +42,6 @@ mod tests {
             id: "usr_friend".into(),
             display_name: "Friend".into(),
             state: state.into(),
-            state_bucket: state.into(),
             location: location.into(),
             ..FriendRecord::default()
         }
@@ -87,7 +86,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "wrld_home:42~region(jp)");
         assert_eq!(patch.patch.world_id, "wrld_home");
@@ -104,7 +103,7 @@ mod tests {
             .any(|entry| entry["type"] == "Online"));
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "wrld_home:42~region(jp)");
     }
 
@@ -131,7 +130,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "traveling");
         assert_eq!(patch.patch.traveling_to_location, "wrld_dest:7~region(us)");
         assert!(output
@@ -172,7 +171,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(
             patch.state_bucket_authority,
             FriendStateBucketAuthority::Explicit
@@ -275,7 +274,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(
             patch.state_bucket_authority,
             FriendStateBucketAuthority::Preserve
@@ -311,13 +310,13 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "active");
+        assert_eq!(patch.patch.state, "active");
         assert_eq!(patch.patch.location, "offline");
         assert_eq!(patch.patch.status, "busy");
         assert_eq!(patch.patch.display_name, "Friend");
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "active");
+        assert_eq!(friend.state, "active");
         assert_eq!(friend.state, "active");
         assert_eq!(friend.location, "offline");
         assert_eq!(friend.status, "busy");
@@ -340,7 +339,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.extra["pendingOffline"], true);
         assert!(output.persistence.feed_entries.is_empty());
         let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
@@ -348,14 +347,14 @@ mod tests {
         };
 
         let debounced = snapshot_friend(&runtime);
-        assert_eq!(debounced.state_bucket, "online");
+        assert_eq!(debounced.state, "online");
         assert_eq!(debounced.status, "join me");
         assert_eq!(debounced.location, "wrld_1:123~region(jp)");
 
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "offline");
+        assert_eq!(fired.projection.patches[0].patch.state, "offline");
         assert_eq!(snapshot_friend(&runtime).status, "join me");
     }
 
@@ -383,15 +382,15 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
-        assert_eq!(patch.patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "wrld_1:123~region(jp)");
         assert_eq!(patch.patch.status, "active");
         assert_eq!(patch.patch.status_description, "fresh");
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "wrld_1:123~region(jp)");
     }
 
@@ -414,7 +413,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "offline");
+        assert_eq!(patch.patch.state, "offline");
         assert_eq!(output.persistence.friend_log_upserts.len(), 1);
         assert!(output
             .persistence
@@ -422,7 +421,7 @@ mod tests {
             .iter()
             .any(|entry| entry["type"] == "Friend" && entry["displayName"] == "Added"));
 
-        assert_eq!(snapshot_friend(&runtime).state_bucket, "offline");
+        assert_eq!(snapshot_friend(&runtime).state, "offline");
     }
 
     #[test]

@@ -245,7 +245,7 @@ pub(crate) fn payload_world_from_row(
         created_at: row.created_at.to_string(),
         image_url: row.image_url.clone(),
         description: row.description.clone(),
-        release_status: row.release_status.as_str().to_string(),
+        release_status: row.release_status.clone(),
         thumbnail_image_url,
         comment,
         updated_at: row.updated_at.to_string(),

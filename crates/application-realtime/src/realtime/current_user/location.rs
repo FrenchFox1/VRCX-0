@@ -1,11 +1,13 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_core::derived_keys;
 use vrcx_0_core::json::text_of;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_core::text::first_owned;
 use vrcx_0_persistence::game_log::GameLogLocationEntry;
 
 use super::state::RealtimeCurrentUserStateSnapshot;
-use super::utils::{is_real_instance, map_from_json, EventTime};
+use super::utils::{map_from_json, EventTime};
+use crate::realtime::location_predicates::is_real_instance;
 
 pub(super) fn build_location_patch(
     location: Option<&Value>,
@@ -42,11 +44,11 @@ pub(super) fn build_location_patch(
         Value::String(parsed_traveling.instance_id.clone()),
     );
     patch.insert(
-        "$location".into(),
+        derived_keys::LOCATION_PROJECTION.into(),
         parsed_location.to_frontend_value(&location),
     );
     patch.insert(
-        "$travelingToLocation".into(),
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION.into(),
         parsed_traveling.to_frontend_value(&traveling),
     );
     patch

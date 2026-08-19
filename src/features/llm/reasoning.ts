@@ -3,8 +3,6 @@ import type {
     LlmModelReasoning
 } from '@/platform/tauri/bindings';
 
-export type ReasoningEffort = string;
-
 const OPENROUTER_CANONICAL_BASE_URL = 'https://openrouter.ai/api/v1';
 
 export function isOpenRouterBaseUrl(baseUrl: string): boolean {

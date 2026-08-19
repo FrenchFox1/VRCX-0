@@ -16,14 +16,6 @@ interface RecordKnownUserOptions extends UserFactMergeOptions {
     source?: UserFactSource;
 }
 
-interface FriendPatchInput {
-    endpoint?: unknown;
-    userId?: unknown;
-    patch?: Record<string, unknown>;
-    stateBucket?: unknown;
-    stateBucketAuthority?: unknown;
-}
-
 interface GameRuntimePresenceInput {
     endpoint?: unknown;
     currentUserId?: unknown;
@@ -60,9 +52,7 @@ function toIngestEntry(
         user,
         source: typeof options.source === 'string' ? options.source : 'seed',
         isFriend: Boolean(options.isFriend),
-        isCurrentUser: Boolean(options.isCurrentUser),
-        stateBucket:
-            typeof options.stateBucket === 'string' ? options.stateBucket : ''
+        isCurrentUser: Boolean(options.isCurrentUser)
     };
 }
 
@@ -98,31 +88,6 @@ function recordCurrentUserSnapshot(
         source,
         isCurrentUser: true
     });
-}
-
-function recordFriendPatch({
-    endpoint = '',
-    userId = '',
-    patch = {},
-    stateBucket = ''
-}: FriendPatchInput = {}) {
-    const normalizedUserId = text(userId || patch?.id || patch?.userId);
-    if (!normalizedUserId) {
-        return;
-    }
-    recordKnownUser(
-        {
-            ...patch,
-            id: normalizedUserId,
-            stateBucket
-        },
-        {
-            endpoint,
-            source: 'realtime',
-            isFriend: true,
-            stateBucket
-        }
-    );
 }
 
 function recordGameRuntimePresence({
@@ -305,7 +270,6 @@ function resetDomainFacts() {
 
 export {
     recordCurrentUserSnapshot,
-    recordFriendPatch,
     recordGameRuntimePresence,
     recordKnownUser,
     recordKnownUsers,

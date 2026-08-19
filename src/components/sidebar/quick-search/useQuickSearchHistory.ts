@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { QuickSearchResult } from '../quickSearchCatalog';
+import type { QuickSearchResult } from '../quickSearch';
 import {
     loadQuickSearchHistory,
     promoteQuickSearchHistoryEntry,

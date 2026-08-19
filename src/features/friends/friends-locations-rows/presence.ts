@@ -104,10 +104,7 @@ export function resolvePresenceLocation(
 export function isOnlineFriend(
     friend: FriendLocationFriend | null | undefined
 ) {
-    return Boolean(
-        isRecord(friend) &&
-        (friend.stateBucket === 'online' || friend.state === 'online')
-    );
+    return Boolean(isRecord(friend) && friend.state === 'online');
 }
 
 export function isShareableInstanceLocation(location: unknown) {

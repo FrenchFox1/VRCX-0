@@ -23,7 +23,10 @@ vi.mock('@/repositories/groupProfileRepository', async (importOriginal) => {
     };
 });
 
-import { useGroupMembersPagination } from './useGroupMembersPagination';
+import {
+    useGroupMembersPagination,
+    type UseGroupMembersPaginationParams
+} from './useGroupMembersPagination';
 
 function deferred<T>() {
     let resolve!: (value: T) => void;
@@ -33,7 +36,7 @@ function deferred<T>() {
     return { promise, resolve };
 }
 
-const baseProps = {
+const baseProps: UseGroupMembersPaginationParams = {
     groupId: 'grp_target',
     endpoint: 'endpoint-a',
     enabled: true,

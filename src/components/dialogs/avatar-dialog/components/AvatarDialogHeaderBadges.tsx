@@ -7,7 +7,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import type { PlatformFileAnalysis } from '@/domain/entities/profileEntities';
+import type { PlatformFileAnalysis } from '@/domain/entities/world';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 

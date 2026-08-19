@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    buildEmojiUploadParams,
     CATEGORY_DEFINITIONS,
     INITIAL_INVENTORY_SUB_TABS,
     MAX_IMAGE_UPLOAD_BYTES,
@@ -28,6 +29,37 @@ vi.mock('sonner', () => ({
 const { toast } = await import('sonner');
 
 describe('inventory helpers', () => {
+    it('builds mutually exclusive static and animated emoji params', () => {
+        expect(
+            buildEmojiUploadParams({
+                isAnimated: false,
+                animationStyle: 'Stop',
+                fps: 0,
+                frames: 1,
+                loopPingPong: true
+            })
+        ).toEqual({
+            tag: 'emoji',
+            animationStyle: 'stop',
+            maskTag: 'square'
+        });
+        expect(
+            buildEmojiUploadParams({
+                isAnimated: true,
+                animationStyle: 'Bounce',
+                fps: 65,
+                frames: 1,
+                loopPingPong: true
+            })
+        ).toEqual({
+            tag: 'emojianimated',
+            animationStyle: 'bounce',
+            maskTag: 'square',
+            frames: 2,
+            framesOverTime: 64,
+            loopStyle: 'pingpong'
+        });
+    });
     beforeEach(() => {
         vi.mocked(toast.error).mockClear();
     });
@@ -171,14 +203,19 @@ describe('inventory helpers', () => {
             labelKey: 'dialog.inventory.profile_decorations',
             source: 'inventory',
             params: {
-                types: 'iconFrame,profileEffect,nameplateEffect',
-                notFlags: 'ugc',
+                types: ['iconFrame', 'profileEffect', 'nameplateEffect'],
+                notFlags: ['ugc'],
                 archived: false
             }
         });
-        expect(archived.params.types).toBe(
-            'droneskin,portalskin,warpeffect,iconFrame,profileEffect,nameplateEffect'
-        );
+        expect(archived.params.types).toEqual([
+            'droneskin',
+            'portalskin',
+            'warpeffect',
+            'iconFrame',
+            'profileEffect',
+            'nameplateEffect'
+        ]);
     });
 
     it('opens cosmetics on profile decorations instead of drones', () => {

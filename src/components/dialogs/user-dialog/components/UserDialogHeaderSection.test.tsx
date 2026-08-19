@@ -73,7 +73,6 @@ function createHeaderModel(effect?: InventoryItemRecord): UserHeaderModel {
         },
         PlatformIcon: null,
         previousDisplayNames: [],
-        previousInstances: [],
         profile: {
             displayName: 'Map1en_',
             id: 'usr_test'
@@ -223,6 +222,31 @@ describe('UserDialogHeaderSection friend number', () => {
 });
 
 describe('UserDialogHeaderSection friend actions', () => {
+    it('opens instance history before its rows have been loaded', async () => {
+        const headerModel = createHeaderModel();
+        headerModel.isCurrentUser = false;
+        const headerCommands = createHeaderCommands();
+        headerCommands.onShowInstanceHistory = vi.fn();
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={headerCommands}
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Open entity actions' })
+        );
+
+        const label = await screen.findByText(
+            'dialog.user.actions.show_previous_instances'
+        );
+        fireEvent.click(label);
+
+        expect(headerCommands.onShowInstanceHistory).toHaveBeenCalledOnce();
+    });
+
     it('offers cancellation for an outgoing friend request', async () => {
         const headerModel = createHeaderModel();
         headerModel.isCurrentUser = false;

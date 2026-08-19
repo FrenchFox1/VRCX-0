@@ -1,7 +1,7 @@
 import { ArrowDownIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import type { UIMessage } from '@/domain/assistant/assistantTypes';
+import type { UIMessage } from '@/domain/assistant/types';
 import {
     MessageScroller,
     MessageScrollerButton,

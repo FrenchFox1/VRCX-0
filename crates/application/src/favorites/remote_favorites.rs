@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use vrcx_0_application_core::{
     vrchat_api::{self, VrchatApiRequest, VrchatApiResponse, VrchatScope},
-    FavoriteChange, FavoriteChangeScope, FavoritesChangedPayload, RuntimeDiagnostics,
-    RuntimeEventBus, RuntimeSyncEngine, VrchatFavoriteType, WebClient,
+    FavoriteChange, FavoriteChangeScope, FavoriteGroupVisibility, FavoritesChangedPayload,
+    RuntimeDiagnostics, RuntimeEventBus, RuntimeSyncEngine, VrchatFavoriteType, WebClient,
 };
 use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
@@ -35,7 +35,7 @@ fn prepare_remote_favorite_add(
     let notification_scope = input.kind.into();
     let (kind, entity_id, request) = vrchat_api::favorites::favorite_add_input(
         endpoint,
-        input.kind.as_str().to_string(),
+        input.kind,
         input.entity_id,
         input.tags,
     )?;
@@ -47,14 +47,14 @@ pub struct FavoriteRemoteDeleteInput {
 }
 
 pub struct FavoriteRemoteGroupSaveInput {
-    pub kind: String,
+    pub kind: VrchatFavoriteType,
     pub group: String,
     pub display_name: Option<String>,
-    pub visibility: Option<String>,
+    pub visibility: Option<FavoriteGroupVisibility>,
 }
 
 pub struct FavoriteRemoteGroupClearInput {
-    pub kind: String,
+    pub kind: VrchatFavoriteType,
     pub group: String,
 }
 
@@ -165,7 +165,7 @@ pub(super) async fn save_remote_favorite_group(
     deps: &FavoriteRemoteMutationDeps<'_>,
     input: FavoriteRemoteGroupSaveInput,
 ) -> Result<VrchatApiResponse> {
-    let notification_scope = FavoriteChangeScope::from_remote_type(&input.kind);
+    let notification_scope = input.kind.into();
     let (group, request) = vrchat_api::favorites::favorite_group_save_input(
         deps.mutation.scope().endpoint.clone(),
         deps.mutation.scope().current_user_id.clone(),
@@ -191,7 +191,7 @@ pub(super) async fn clear_remote_favorite_group(
     deps: &FavoriteRemoteMutationDeps<'_>,
     input: FavoriteRemoteGroupClearInput,
 ) -> Result<VrchatApiResponse> {
-    let notification_scope = FavoriteChangeScope::from_remote_type(&input.kind);
+    let notification_scope = input.kind.into();
     let (group, request) = vrchat_api::favorites::favorite_group_clear_input(
         deps.mutation.scope().endpoint.clone(),
         deps.mutation.scope().current_user_id.clone(),

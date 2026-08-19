@@ -66,6 +66,9 @@ function tauriRelease() {
         displayVersion: '2.7.0',
         tagName: 'v2.7.0',
         displayName: 'VRCX-0 2.7.0',
+        title: 'VRCX-0 2.7.0',
+        currentVersion: '2.6.0',
+        latestVersion: '2.7.0',
         prerelease: false,
         publishedAt: '2026-06-22T00:00:00Z',
         body: ''
@@ -82,9 +85,10 @@ describe('openOrInstallLatestAvailableUpdate', () => {
         vi.clearAllMocks();
         useRuntimeStore.getState().resetRuntimeState();
         useRuntimeStore.getState().setHostCapabilities({
+            ...useRuntimeStore.getState().hostCapabilities,
             platform: 'windows',
             arch: 'x86_64',
-            linuxPackageKind: ''
+            linuxPackageKind: 'unknown'
         });
     });
 
@@ -92,11 +96,18 @@ describe('openOrInstallLatestAvailableUpdate', () => {
         useRuntimeStore.getState().setUpdateLoopState({
             latestUpdaterRelease: {
                 updaterType: 'manual',
+                manifestUrl: '',
+                target: '',
                 htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
                 canonicalVersion: '2.7.0',
                 displayVersion: '2.7.0',
                 tagName: 'v2.7.0',
-                displayName: 'VRCX-0 2.7.0'
+                displayName: 'VRCX-0 2.7.0',
+                publishedAt: '',
+                body: '',
+                title: 'VRCX-0 2.7.0',
+                currentVersion: '2.6.0',
+                latestVersion: '2.7.0'
             }
         });
 
@@ -120,7 +131,12 @@ describe('openOrInstallLatestAvailableUpdate', () => {
                 canonicalVersion: '2.7.0',
                 displayVersion: '2.7.0',
                 tagName: 'v2.7.0',
-                displayName: 'VRCX-0 2.7.0'
+                displayName: 'VRCX-0 2.7.0',
+                publishedAt: '',
+                body: '',
+                title: 'VRCX-0 2.7.0',
+                currentVersion: '2.6.0',
+                latestVersion: '2.7.0'
             }
         });
         mocks.confirmInstall.mockResolvedValue({});

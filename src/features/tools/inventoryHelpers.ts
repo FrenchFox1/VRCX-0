@@ -1,15 +1,24 @@
 import { toast } from 'sonner';
 
 import type {
+    EmojiUploadParams,
+    InventoryItemsCollectInput,
+    MediaFileTag
+} from '@/platform/tauri/bindings';
+import type {
     InventoryItemRecord,
     MediaFileRecord
 } from '@/repositories/mediaRepository';
-import { emojiAnimationStyleList } from '@/shared/constants/emoji';
+import {
+    emojiAnimationStyleNames,
+    type EmojiAnimationStyleName
+} from '@/shared/constants/emoji';
 import {
     MAX_IMAGE_UPLOAD_BYTES,
     validateImageUploadFile
 } from '@/shared/utils/imageUpload';
 
+import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import {
     getGalleryGridDensityConfig,
     sanitizeGalleryGridDensity
@@ -32,9 +41,9 @@ export type InventoryTabDefinition = {
     key: string;
     labelKey: string;
     source: InventorySource;
-    fileTags?: string[];
+    fileTags?: MediaFileTag[];
     uploadTarget?: InventoryUploadTarget;
-    params: Record<string, string | boolean>;
+    params: InventoryItemsCollectInput;
 };
 export type InventoryCategoryDefinition = {
     labelKey: string;
@@ -52,7 +61,6 @@ const PROFILE_DECORATION_ITEM_TYPES = [
     'profileEffect',
     'nameplateEffect'
 ] as const;
-const PROFILE_DECORATION_TYPES_PARAM = PROFILE_DECORATION_ITEM_TYPES.join(',');
 type ProfileDecorationItemType = (typeof PROFILE_DECORATION_ITEM_TYPES)[number];
 export type ProfileDecorationMutation = {
     action: 'equip' | 'unequip';
@@ -104,8 +112,8 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.exclusive',
                 source: 'inventory',
                 params: {
-                    types: 'emoji',
-                    notFlags: 'ugc',
+                    types: ['emoji'],
+                    notFlags: ['ugc'],
                     archived: false
                 }
             },
@@ -114,7 +122,7 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.archived',
                 source: 'inventory',
                 params: {
-                    types: 'emoji',
+                    types: ['emoji'],
                     archived: true
                 }
             }
@@ -136,8 +144,8 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.exclusive',
                 source: 'inventory',
                 params: {
-                    types: 'sticker',
-                    notFlags: 'ugc',
+                    types: ['sticker'],
+                    notFlags: ['ugc'],
                     archived: false
                 }
             },
@@ -146,7 +154,7 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.archived',
                 source: 'inventory',
                 params: {
-                    types: 'sticker',
+                    types: ['sticker'],
                     archived: true
                 }
             }
@@ -160,8 +168,8 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.all_items',
                 source: 'inventory',
                 params: {
-                    types: 'bundle,prop',
-                    notFlags: 'ugc',
+                    types: ['bundle', 'prop'],
+                    notFlags: ['ugc'],
                     archived: false
                 }
             },
@@ -170,7 +178,7 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.archived',
                 source: 'inventory',
                 params: {
-                    types: 'bundle,prop',
+                    types: ['bundle', 'prop'],
                     archived: true
                 }
             }
@@ -184,8 +192,8 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.profile_decorations',
                 source: 'inventory',
                 params: {
-                    types: PROFILE_DECORATION_TYPES_PARAM,
-                    notFlags: 'ugc',
+                    types: [...PROFILE_DECORATION_ITEM_TYPES],
+                    notFlags: ['ugc'],
                     archived: false
                 }
             },
@@ -194,8 +202,8 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.drones',
                 source: 'inventory',
                 params: {
-                    types: 'droneskin',
-                    notFlags: 'ugc',
+                    types: ['droneskin'],
+                    notFlags: ['ugc'],
                     archived: false
                 }
             },
@@ -204,8 +212,8 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.portals',
                 source: 'inventory',
                 params: {
-                    types: 'portalskin',
-                    notFlags: 'ugc',
+                    types: ['portalskin'],
+                    notFlags: ['ugc'],
                     archived: false
                 }
             },
@@ -214,8 +222,8 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.warp_effects',
                 source: 'inventory',
                 params: {
-                    types: 'warpeffect',
-                    notFlags: 'ugc',
+                    types: ['warpeffect'],
+                    notFlags: ['ugc'],
                     archived: false
                 }
             },
@@ -230,7 +238,12 @@ export const CATEGORY_DEFINITIONS: Record<
                 labelKey: 'dialog.inventory.archived',
                 source: 'inventory',
                 params: {
-                    types: `droneskin,portalskin,warpeffect,${PROFILE_DECORATION_TYPES_PARAM}`,
+                    types: [
+                        'droneskin',
+                        'portalskin',
+                        'warpeffect',
+                        ...PROFILE_DECORATION_ITEM_TYPES
+                    ],
                     archived: true
                 }
             }
@@ -421,9 +434,11 @@ export function isArchivedInventoryItem(item: InventoryDisplayRecord) {
     return Boolean(item?.isArchived || item?.archived);
 }
 
-export function resolveEmojiStyleName(rawValue: unknown) {
+export function resolveEmojiStyleName(
+    rawValue: unknown
+): EmojiAnimationStyleName {
     const normalizedValue = String(rawValue || '').toLowerCase();
-    const match = Object.keys(emojiAnimationStyleList).find(
+    const match = emojiAnimationStyleNames.find(
         (styleName) => styleName.toLowerCase() === normalizedValue
     );
     return match || 'Stop';
@@ -436,6 +451,31 @@ export type EmojiUploadSettings = {
     frames: number;
     loopPingPong: boolean;
 };
+
+export function buildEmojiUploadParams(
+    settings: EmojiUploadSettings
+): EmojiUploadParams {
+    const common = {
+        animationStyle:
+            emojiAnimationStyleValues[
+                resolveEmojiStyleName(settings.animationStyle)
+            ],
+        maskTag: 'square'
+    } as const;
+    if (!settings.isAnimated) {
+        return {
+            tag: 'emoji',
+            ...common
+        };
+    }
+    return {
+        tag: 'emojianimated',
+        ...common,
+        frames: Math.min(64, Math.max(2, Number(settings.frames) || 4)),
+        framesOverTime: Math.min(64, Math.max(1, Number(settings.fps) || 15)),
+        ...(settings.loopPingPong ? { loopStyle: 'pingpong' as const } : {})
+    };
+}
 
 export function parseEmojiUploadSettings(
     fileName: unknown,

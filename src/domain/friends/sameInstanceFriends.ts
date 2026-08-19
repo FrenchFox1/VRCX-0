@@ -165,16 +165,14 @@ function resolveObservedPlayerDwellEpochs(
 
 function isOnlineSameInstanceFriend(friend: unknown): boolean {
     const source = friendPresenceSource(friend);
-    return (
-        normalizeFriendState(source?.stateBucket || source?.state) === 'online'
-    );
+    return normalizeFriendState(source?.state) === 'online';
 }
 
 function isExplicitlyOfflineFriend(friend: unknown): boolean {
     const source = friendPresenceSource(friend);
     return Boolean(
         source?.pendingOffline ||
-        normalizeFriendState(source?.stateBucket || source?.state) === 'offline'
+        normalizeFriendState(source?.state) === 'offline'
     );
 }
 

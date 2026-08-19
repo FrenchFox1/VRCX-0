@@ -1,3 +1,4 @@
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     getFriendsSortFunction,
     sortStatus,
@@ -5,17 +6,22 @@ import {
     type FriendSortMethod
 } from '@/shared/utils/friend';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
-import type {
-    FriendLocationProjection,
-    FriendRecordInput
-} from '@/domain/friends/friendRosterTypes';
 import {
     buildSameInstanceFriendGroups,
     isOnlineSameInstanceFriend,
     resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
-import { resolveFriendPresenceLocation } from '@/shared/utils/location';
+import type {
+    FriendLocationProjection,
+    FriendRecordInput
+} from '@/domain/friends/types';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
+import {
+    locationSentinel,
+    normalizeLocationStatus,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { getTrustColor } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
@@ -111,20 +117,6 @@ function isFriendSortMethod(
     return Boolean(value);
 }
 
-export function normalizeLocationStatus(value: unknown) {
-    const normalized = normalizeId(value).toLowerCase();
-    if (normalized === 'offline:offline') {
-        return 'offline';
-    }
-    if (normalized === 'private:private') {
-        return 'private';
-    }
-    if (normalized === 'traveling:traveling') {
-        return 'traveling';
-    }
-    return normalized;
-}
-
 export function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
@@ -181,10 +173,10 @@ export function timestampMsFromValue(value: unknown) {
 }
 
 export function clearStaleOfflineLocation(location: unknown, state: unknown) {
-    const normalizedState = normalizeLocationStatus(state);
+    const normalizedState = normalizeStateBucket(state);
     if (
         (normalizedState === 'online' || normalizedState === 'active') &&
-        normalizeLocationStatus(location) === 'offline'
+        locationSentinel(location) === 'offline'
     ) {
         return '';
     }
@@ -236,14 +228,14 @@ export function resolveTrustNameColour(
 }
 
 export function legacyStatusDotClassName(status: unknown) {
-    const normalizedStatus = normalizeLocationStatus(status);
+    const normalizedStatus = userStatusFromValue(status);
     if (normalizedStatus === 'active') {
         return 'bg-[var(--status-online)]';
     }
-    if (normalizedStatus === 'join me' || normalizedStatus === 'joinme') {
+    if (normalizedStatus === 'join me') {
         return 'bg-[var(--status-joinme)]';
     }
-    if (normalizedStatus === 'ask me' || normalizedStatus === 'askme') {
+    if (normalizedStatus === 'ask me') {
         return 'bg-[var(--status-askme)]';
     }
     if (normalizedStatus === 'busy') {
@@ -252,33 +244,24 @@ export function legacyStatusDotClassName(status: unknown) {
     return '';
 }
 
-export function normalizeStateBucket(value: unknown) {
-    const normalized = normalizeLocationStatus(value);
-    return normalized === 'online' ||
-        normalized === 'active' ||
-        normalized === 'offline'
-        ? normalized
-        : '';
-}
-
 export function resolveCurrentUserStateBucket(
     currentUser: SidebarFriendRecord | null | undefined
 ) {
     const location = normalizeLocationStatus(
         currentUser?.location || locationProjection(currentUser?.$location)?.tag
     );
-    if (location && location !== 'offline') {
+    if (location && locationSentinel(location) !== 'offline') {
         return 'online';
     }
     return 'active';
 }
 
 function activeStatusDotClassName(status: unknown) {
-    const normalizedStatus = normalizeLocationStatus(status);
-    if (normalizedStatus === 'join me' || normalizedStatus === 'joinme') {
+    const normalizedStatus = userStatusFromValue(status);
+    if (normalizedStatus === 'join me') {
         return 'border-[var(--status-joinme)] bg-background';
     }
-    if (normalizedStatus === 'ask me' || normalizedStatus === 'askme') {
+    if (normalizedStatus === 'ask me') {
         return 'border-[var(--status-askme)] bg-background';
     }
     if (normalizedStatus === 'busy') {
@@ -289,7 +272,7 @@ function activeStatusDotClassName(status: unknown) {
 
 function activeStatusSortValue(friend: SidebarFriendRecord) {
     const source = readFriendStatusSource(friend);
-    const normalizedStatus = normalizeLocationStatus(source?.status);
+    const normalizedStatus = userStatusFromValue(source?.status);
     if (
         normalizedStatus === 'join me' ||
         normalizedStatus === 'ask me' ||
@@ -321,7 +304,7 @@ export function resolveSidebarStatusDotClassName(
         return '';
     }
     const userId = normalizeId(source?.id || source?.userId);
-    const status = normalizeLocationStatus(source?.status);
+    const status = userStatusFromValue(source?.status);
     const location = normalizeLocationStatus(
         source?.location || locationProjection(source?.$location)?.tag
     );
@@ -341,12 +324,8 @@ export function resolveSidebarStatusDotClassName(
           : isOfflineByCurrentSnapshot
             ? 'offline'
             : '';
-    const state = normalizeLocationStatus(
-        source?.stateBucket || source?.state || snapshotState
-    );
-    const stateBucket = normalizeLocationStatus(
-        source?.stateBucket || snapshotState
-    );
+    const state = normalizeStateBucket(source?.state || snapshotState);
+    const stateBucket = state;
 
     if (isCurrentUser || userId === currentUser?.id) {
         const currentSource = readFriendStatusSource(currentUser) || source;
@@ -410,10 +389,10 @@ export function resolveSidebarStatusDotClassName(
     if (status === 'active') {
         return 'bg-[var(--status-online)]';
     }
-    if (status === 'join me' || status === 'joinme') {
+    if (status === 'join me') {
         return 'bg-[var(--status-joinme)]';
     }
-    if (status === 'ask me' || status === 'askme') {
+    if (status === 'ask me') {
         return 'bg-[var(--status-askme)]';
     }
     if (status === 'busy') {

@@ -1,51 +1,49 @@
 use serde::Deserialize;
-use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::avatars::{
+    AvatarListSort, AvatarUpdateRequest, QueryOrder, ReleaseStatusFilter,
+};
+use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarIdInput {
     #[serde(default)]
     pub(crate) avatar_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarListByUserInput {
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
     pub(crate) user: String,
-    #[serde(default)]
-    pub(crate) n: i64,
-    #[serde(default)]
-    pub(crate) offset: i64,
-    #[serde(default)]
-    pub(crate) sort: String,
-    #[serde(default)]
-    pub(crate) order: String,
-    #[serde(default)]
-    pub(crate) release_status: String,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) n: i32,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) offset: i32,
+    pub(crate) sort: AvatarListSort,
+    pub(crate) order: QueryOrder,
+    pub(crate) release_status: ReleaseStatusFilter,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarFileInput {
     #[serde(default)]
     pub(crate) file_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarSaveInput {
     #[serde(default)]
     pub(crate) avatar_id: String,
-    pub(crate) params: Option<Value>,
+    pub(crate) params: AvatarUpdateRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarModerationInput {
     #[serde(default)]
     pub(crate) avatar_id: String,
-    #[serde(default, rename = "type")]
-    pub(crate) type_name: String,
 }

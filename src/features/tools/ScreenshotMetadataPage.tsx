@@ -110,6 +110,7 @@ export function ScreenshotMetadataPage() {
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [isDeletingMetadata, setIsDeletingMetadata] = useState(false);
     const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
+    const [isDetailsVisible, setIsDetailsVisible] = useState(true);
     const dateLocale = i18n.resolvedLanguage || i18n.language;
     const {
         folderTree,
@@ -268,6 +269,7 @@ export function ScreenshotMetadataPage() {
 
     const { canNavigateNext, canNavigatePrev, navigateNext, navigatePrev } =
         useScreenshotMetadataNavigation({
+            enabled: !isGalleryMode && searchViewMode === 'detail',
             loadScreenshot,
             metadata,
             onPathChange: updateRoutePath,
@@ -275,6 +277,36 @@ export function ScreenshotMetadataPage() {
             selectedPath,
             setSelectedPath
         });
+
+    useEffect(() => {
+        function handleDetailsShortcut(event: KeyboardEvent) {
+            const target = event.target;
+            if (
+                isGalleryMode ||
+                searchViewMode !== 'detail' ||
+                event.altKey ||
+                event.ctrlKey ||
+                event.metaKey ||
+                event.shiftKey ||
+                event.key.toLowerCase() !== 'i' ||
+                (target instanceof HTMLElement &&
+                    (target.isContentEditable ||
+                        target.tagName === 'INPUT' ||
+                        target.tagName === 'TEXTAREA' ||
+                        target.tagName === 'SELECT'))
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            setIsDetailsVisible((visible) => !visible);
+        }
+
+        window.addEventListener('keydown', handleDetailsShortcut);
+        return () => {
+            window.removeEventListener('keydown', handleDetailsShortcut);
+        };
+    }, [isGalleryMode, searchViewMode]);
 
     async function openFolder() {
         if (!metadata?.filePath) {
@@ -601,18 +633,28 @@ export function ScreenshotMetadataPage() {
                             }
                         />
                     ) : (
-                        <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
+                        <div
+                            className={
+                                isDetailsVisible
+                                    ? 'grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]'
+                                    : 'grid min-h-0 flex-1'
+                            }
+                        >
                             <ScreenshotMetadataPreviewCard
                                 metadata={metadata}
                                 imageUrl={imageUrl}
                                 isMetadataLoading={isMetadataLoading}
                                 canNavigatePrev={canNavigatePrev}
                                 canNavigateNext={canNavigateNext}
+                                isDetailsVisible={isDetailsVisible}
                                 onNavigatePrev={() => {
                                     navigatePrev();
                                 }}
                                 onNavigateNext={() => {
                                     navigateNext();
+                                }}
+                                onToggleDetails={() => {
+                                    setIsDetailsVisible((visible) => !visible);
                                 }}
                                 onImagePreview={() =>
                                     openImagePreview({
@@ -630,14 +672,16 @@ export function ScreenshotMetadataPage() {
                                 }}
                             />
 
-                            <ScreenshotMetadataDetailsCard
-                                metadata={metadata}
-                                metadataError={metadataError}
-                                searchRowsCount={searchRows.length}
-                                onBackToResults={() =>
-                                    setSearchViewMode('table')
-                                }
-                            />
+                            {isDetailsVisible ? (
+                                <ScreenshotMetadataDetailsCard
+                                    metadata={metadata}
+                                    metadataError={metadataError}
+                                    searchRowsCount={searchRows.length}
+                                    onBackToResults={() =>
+                                        setSearchViewMode('table')
+                                    }
+                                />
+                            ) : null}
                         </div>
                     )}
                 </>

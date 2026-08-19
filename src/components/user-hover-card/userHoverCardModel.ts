@@ -1,5 +1,4 @@
 import {
-    normalizeLocationStatus,
     readFriendInstanceEpoch,
     readFriendRef,
     readFriendStatusSource,
@@ -7,8 +6,14 @@ import {
     timestampMsFromValue,
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { userImage } from '@/services/entityMediaService';
-import { parseLocation } from '@/shared/utils/location';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
+import {
+    locationSentinel,
+    normalizeLocationStatus,
+    parseLocation
+} from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { resolveTrustColorKey } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
@@ -65,11 +70,11 @@ function sidebarSeed(value: unknown): SidebarFriendRecord | null {
 }
 
 function statusKeyFromStatus(status: unknown) {
-    const normalized = normalizeLocationStatus(status);
-    if (normalized === 'join me' || normalized === 'joinme') {
+    const normalized = userStatusFromValue(status);
+    if (normalized === 'join me') {
         return 'join_me';
     }
-    if (normalized === 'ask me' || normalized === 'askme') {
+    if (normalized === 'ask me') {
         return 'ask_me';
     }
     if (normalized === 'busy') {
@@ -82,7 +87,7 @@ function statusKeyFromStatus(status: unknown) {
 }
 
 function statusKeyFromPresence(status: unknown, state: unknown) {
-    if (normalizeLocationStatus(state) === 'active') {
+    if (normalizeStateBucket(state) === 'active') {
         return 'active';
     }
     const statusKey = statusKeyFromStatus(status);
@@ -110,7 +115,7 @@ function resolveTrust(identity: HoverCardRecord) {
 }
 
 function estimatedOnlineMs(state: unknown, lastLogin: unknown, nowMs: number) {
-    if (normalizeLocationStatus(state) !== 'online') {
+    if (normalizeStateBucket(state) !== 'online') {
         return 0;
     }
     const lastLoginMs = timestampMsFromValue(lastLogin);
@@ -144,11 +149,8 @@ export function buildUserHoverCardModel({
     const profileRecord = recordOrEmpty(profile);
     const identity = profile ? profileRecord : ref;
 
-    const state = normalizeLocationStatus(
-        statusSource?.stateBucket ||
-            statusSource?.state ||
-            profileRecord?.stateBucket ||
-            profileRecord?.state
+    const state = normalizeStateBucket(
+        statusSource?.state || profileRecord?.state
     );
     const hasPresence = Boolean(statusSource) && Boolean(state);
 
@@ -157,7 +159,7 @@ export function buildUserHoverCardModel({
             locationTag(statusSource?.$location) ||
             profileRecord?.location
     );
-    const isTraveling = normalizeLocationStatus(rawLocation) === 'traveling';
+    const isTraveling = locationSentinel(rawLocation) === 'traveling';
     const travelingTo = normalizeId(
         statusSource?.travelingToLocation || statusSource?.$travelingToLocation
     );

@@ -36,8 +36,9 @@ pub use authenticated_runtime::{
     AuthenticatedRuntimeStepStatus,
 };
 pub use avatars::{
-    delete_avatar, execute_avatar_remote_mutation, save_avatar, select_avatar,
-    AvatarRemoteMutationDeps, AvatarSelectionMutationOutcome,
+    delete_avatar, execute_avatar_moderation_mutation, execute_avatar_remote_mutation,
+    get_avatar_moderations, save_avatar, select_avatar, AvatarModerationDeps,
+    AvatarModerationRuntime, AvatarRemoteMutationDeps, AvatarSelectionMutationOutcome,
 };
 pub use avatars::{
     get_my_avatar_by_id, get_my_avatars, MyAvatarByIdInput, MyAvatarsDeps, MyAvatarsInput,
@@ -133,6 +134,12 @@ pub use social::{
     PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState,
 };
 pub use social::{
+    force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
+    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
+    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, ModerationSyncRuntime,
+    RemoteModerationRow,
+};
+pub use social::{
     get_user_dialog_tab_counts, UserDialogTabCountsDeps, UserDialogTabCountsInput,
     UserDialogTabCountsOutput, UserDialogTabCountsRuntime,
 };
@@ -150,19 +157,10 @@ pub use social::{
     load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarSnapshot,
 };
 pub use social::{
-    load_quick_search_catalog, QuickSearchCatalogDeps, QuickSearchCatalogSnapshot,
-    QuickSearchCatalogStatus,
-};
-pub use social::{
     prepare_note_export, run_note_export, NoteExportActions, NoteExportItemInput,
     NoteExportItemState, NoteExportItemStatus, NoteExportProgress, NoteExportResult,
     NoteExportStartInput, NoteExportState, NoteExportStatus, VrchatNoteExportActions,
     NOTE_EXPORT_MAX_ITEMS,
-};
-pub use social::{
-    refresh_player_moderations, update_player_moderation, ModerationSyncDeps,
-    ModerationSyncMutationInput, ModerationSyncMutationOutput, ModerationSyncRefreshInput,
-    ModerationSyncRefreshOutput, RemoteModerationRow,
 };
 pub use social::{
     resolve_friend_log_names, FriendLogNameResolutionCoordinator, FriendLogNameResolutionDeps,
@@ -179,6 +177,10 @@ pub use social::{
     GroupBanImportActions, GroupBanImportFuture, GroupBanImportItemResult, GroupBanImportItemState,
     GroupBanImportRuntime, GroupBanImportStartInput, GroupBanImportState, GroupBanImportStatus,
     VrchatGroupBanImportActions,
+};
+pub use social::{
+    QuickSearchEntityType, QuickSearchMatchedField, QuickSearchQueryInput, QuickSearchQueryOutput,
+    QuickSearchQueryStatus, QuickSearchResult, QuickSearchRuntime,
 };
 pub use system::DatabaseUpgradeRuntime;
 pub use system::ProfileOperationGate;

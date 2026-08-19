@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import { selectAvatar as selectCurrentAvatar } from '@/services/avatarSelectionService';
@@ -20,9 +21,8 @@ import { useModalStore } from '@/state/modalStore';
 import { normalizeFavoriteEntityId as normalizeEntityId } from './favoritesItems';
 import { resolveFavoritePresenceLocation } from './favoritesPageData';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 
@@ -60,7 +60,7 @@ export function useFavoritesItemActions({
     friendsById: Record<string, unknown>;
     friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     newLocalGroupName: string;
     refreshing: boolean;
     selectedContentItems: FavoriteItem[];

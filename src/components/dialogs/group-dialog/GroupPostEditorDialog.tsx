@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
 import { cn } from '@/lib/utils';
 import mediaRepository from '@/repositories/mediaRepository';
 import { Button } from '@/ui/shadcn/button';
@@ -204,7 +204,10 @@ export function GroupPostEditorDialog({
                             value={form.visibility ? [form.visibility] : []}
                             onValueChange={(value) => {
                                 const visibility = value[0];
-                                if (visibility) {
+                                if (
+                                    visibility === 'group' ||
+                                    visibility === 'public'
+                                ) {
                                     updateForm({ visibility });
                                 }
                             }}

@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use vrcx_0_core::derived_keys;
 
 use serde::Serialize;
 use serde_json::Value;
@@ -161,7 +162,7 @@ fn resolve_current_location(snapshot: &RuntimeSnapshot, current_user: &Value) ->
     first_non_empty([
         snapshot.location.as_str(),
         snapshot.destination.as_str(),
-        string_field(current_user, "$locationTag")
+        string_field(current_user, derived_keys::LOCATION_TAG)
             .as_deref()
             .unwrap_or(""),
         string_field(current_user, "location")

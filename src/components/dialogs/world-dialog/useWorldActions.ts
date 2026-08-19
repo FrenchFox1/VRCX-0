@@ -189,7 +189,7 @@ export function useWorldActions({
 
         try {
             const nextUser = await currentUserProfileService.updateCurrentUser({
-                userId: currentUserId,
+                userId: currentUserId || '',
                 params: {
                     homeLocation: nextHomeLocation
                 }

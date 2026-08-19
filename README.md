@@ -74,14 +74,15 @@ Beyond that:
 - **Social Automation** — auto-switch your status and bio based on time of day,
   instance type, or who you're with; auto-accept invite requests; restores your
   previous state when rules expire
-- **Lightweight VR wrist overlay** with minimal performance impact; supports both
-  OpenVR (SteamVR) and **OpenXR (Linux / WiVRn / Monado)**
+- **Lightweight VR wrist overlay** — supports OpenVR (SteamVR) and
+  **OpenXR on Linux (tested with WiVRn)**
 - **Community Themes** — browse and install themes from a catalog, set a custom
   background image, and layer your own CSS on top
 - **Notifications** — desktop, text-to-speech, VR overlay, and webhooks — four
   channels independently configured per event type; webhooks use a
   Discord-compatible format
 - Full keyboard navigation
+- Integration API for third-party apps — currently room data, expanding over time
 - Headless mode for advanced setups — see `crates/headless`
 
 ## License

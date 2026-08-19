@@ -9,7 +9,6 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useSettingsPageSection } from '../SettingsPageStateContext';
-import { normalizeCheckedState } from '../settingsValues';
 
 export function useSettingsSystemTabState() {
     const { t } = useTranslation();
@@ -65,20 +64,17 @@ export function useSettingsSystemTabState() {
         backgroundModeDelayMinutes: prefs.backgroundModeDelayMinutes,
         proxyEnabled: prefs.proxyEnabled,
         proxyServer: prefs.proxyServer,
-        onStartAtWindowsStartupChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onStartAtWindowsStartupChange: (enabled: boolean) => {
             savePreferenceValue('isStartAtWindowsStartup', enabled, () =>
                 setStartAtWindowsStartupPreference(enabled)
             );
         },
-        onStartAsMinimizedChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onStartAsMinimizedChange: (enabled: boolean) => {
             savePreferenceValue('isStartAsMinimizedState', enabled, () =>
                 setStartAsMinimizedPreference(enabled)
             );
         },
-        onSystemWindowFrameChange: async (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onSystemWindowFrameChange: async (enabled: boolean) => {
             const saved = await savePreferenceValue(
                 'systemWindowFrame',
                 enabled,
@@ -102,46 +98,40 @@ export function useSettingsSystemTabState() {
                 );
             }
         },
-        onCloseToTrayChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onCloseToTrayChange: (enabled: boolean) => {
             savePreferenceValue('isCloseToTray', enabled, () =>
                 setCloseToTrayPreference(enabled)
             );
         },
-        onAutoLoginDelayEnabledChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAutoLoginDelayEnabledChange: (enabled: boolean) => {
             saveBoolPreference(
                 'autoLoginDelayEnabled',
                 'autoLoginDelayEnabled',
                 enabled
             );
         },
-        onBackgroundModeEnabledChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onBackgroundModeEnabledChange: (enabled: boolean) => {
             saveBoolPreference(
                 'backgroundModeEnabled',
                 'backgroundModeEnabled',
                 enabled
             );
         },
-        onBackgroundModeDelayEnabledChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onBackgroundModeDelayEnabledChange: (enabled: boolean) => {
             saveBoolPreference(
                 'backgroundModeDelayEnabled',
                 'backgroundModeDelayEnabled',
                 enabled
             );
         },
-        onAutoInstallUpdatesOnStartupChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAutoInstallUpdatesOnStartupChange: (enabled: boolean) => {
             saveBoolPreference(
                 'autoInstallUpdatesOnStartup',
                 'autoInstallUpdatesOnStartup',
                 enabled
             );
         },
-        onPostUpdateChangelogToastChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onPostUpdateChangelogToastChange: (enabled: boolean) => {
             saveBoolPreference(
                 'showPostUpdateChangelogToast',
                 POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY,
@@ -154,8 +144,7 @@ export function useSettingsSystemTabState() {
         onPromptBackgroundModeDelayMinutes: () => {
             promptBackgroundModeDelayMinutes();
         },
-        onProxyEnabledChange: async (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onProxyEnabledChange: async (enabled: boolean) => {
             const saved = await savePreferenceValue(
                 'proxyEnabled',
                 enabled,

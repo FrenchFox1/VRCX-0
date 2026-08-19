@@ -6,18 +6,15 @@ export function DurationValue({
     formatter,
     startAtMs
 }: DurationValueProps) {
-    const normalizedStartAt = Number(startAtMs);
     const enabled =
-        Boolean(active) &&
-        Number.isFinite(normalizedStartAt) &&
-        normalizedStartAt > 0;
+        active === true && Number.isFinite(startAtMs) && startAtMs > 0;
     const nowMs = useStatusNowMs(enabled);
 
     if (!enabled) {
         return '-';
     }
 
-    return formatter(nowMs - normalizedStartAt);
+    return formatter(nowMs - startAtMs);
 }
 
 export function AppUptimeValue({
@@ -35,8 +32,8 @@ export function ClockValue({
     formatter,
     offset
 }: {
-    formatter: (nowMs: number, offset: unknown) => string;
-    offset: unknown;
+    formatter: (nowMs: number, offset: number) => string;
+    offset: number;
 }) {
     const nowMs = useStatusNowMs(true);
     return formatter(nowMs, offset);
@@ -46,16 +43,16 @@ export function NowPlayingProgress({
     formatter,
     nowPlaying
 }: {
-    formatter: (ms: unknown) => string;
+    formatter: (ms: number) => string;
     nowPlaying: StatusBarNowPlaying;
 }) {
-    const hasLength = Boolean(nowPlaying.length);
+    const lengthSeconds = nowPlaying.length ?? 0;
+    const hasLength = lengthSeconds > 0;
     const nowMs = useStatusNowMs(hasLength && Boolean(nowPlaying.startedAt));
     if (!hasLength) {
         return null;
     }
 
-    const lengthSeconds = Math.max(0, Number(nowPlaying.length) || 0);
     const startedAtMs = nowPlaying.startedAt
         ? Date.parse(nowPlaying.startedAt)
         : Number.NaN;
@@ -63,7 +60,7 @@ export function NowPlayingProgress({
         lengthSeconds,
         Math.max(
             0,
-            Number(nowPlaying.position || 0) +
+            nowPlaying.position +
                 (Number.isFinite(startedAtMs)
                     ? Math.floor((nowMs - startedAtMs) / 1000)
                     : 0)

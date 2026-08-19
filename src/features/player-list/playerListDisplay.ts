@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
@@ -85,26 +86,12 @@ function isLivePlayerLocation(location: unknown) {
     );
 }
 
-function normalizePlayerStatus(value: unknown) {
-    const normalized = normalizeString(value).toLowerCase();
-    if (normalized === 'joinme') {
-        return 'join me';
-    }
-    if (normalized === 'askme') {
-        return 'ask me';
-    }
-    if (normalized === 'offline:offline' || normalized.startsWith('offline ')) {
-        return 'offline';
-    }
-    return normalized;
-}
-
 function resolveStatusIndicatorSource(row: PlayerStatusSource) {
     if (!row?.isCurrentUser || !isLivePlayerLocation(row.location)) {
         return row;
     }
 
-    const status = normalizePlayerStatus(row.status);
+    const status = normalizeUserStatus(row.status);
     return {
         location: row.location,
         state: 'online',

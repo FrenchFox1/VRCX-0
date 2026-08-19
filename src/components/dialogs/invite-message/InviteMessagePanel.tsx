@@ -38,6 +38,7 @@ import {
     isInviteMessageOnCooldown,
     normalizeInviteMessageRows,
     primaryActionLabel,
+    resolveInviteMessageType,
     rowUpdatedAt,
     saveInviteMessage,
     type InviteMessageMode,
@@ -52,7 +53,8 @@ export {
     getInviteCooldownLabel,
     isInviteMessageMode,
     INVITE_MESSAGE_TYPES,
-    normalizeInviteMessageRows
+    normalizeInviteMessageRows,
+    resolveInviteMessageType
 } from './inviteMessagePanelData';
 
 export type {
@@ -94,7 +96,7 @@ export function InviteMessagePanel({
     const { t } = useTranslation();
 
     const resolvedMode = isInviteMessageMode(mode) ? mode : 'select';
-    const resolvedMessageType = messageType || 'message';
+    const resolvedMessageType = resolveInviteMessageType(messageType);
     const [rows, setRows] = useState<InviteMessageRow[]>([]);
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);

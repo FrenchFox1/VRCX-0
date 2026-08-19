@@ -7,6 +7,42 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 #[cfg(any(target_os = "linux", test))]
+pub(crate) fn quoted_tokens(line: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut current = String::new();
+    let mut in_quote = false;
+    let mut escaped = false;
+
+    for ch in line.chars() {
+        if !in_quote {
+            if ch == '"' {
+                in_quote = true;
+                current.clear();
+            }
+            continue;
+        }
+
+        if escaped {
+            current.push(ch);
+            escaped = false;
+            continue;
+        }
+
+        match ch {
+            '\\' => escaped = true,
+            '"' => {
+                in_quote = false;
+                tokens.push(current.clone());
+                current.clear();
+            }
+            _ => current.push(ch),
+        }
+    }
+
+    tokens
+}
+
+#[cfg(any(target_os = "linux", test))]
 const VRCHAT_APP_ID: &str = "438100";
 #[cfg(any(target_os = "linux", test))]
 const OUTPUT_LOG_PREFIX: &str = "output_log_";
@@ -491,42 +527,6 @@ fn read_steam_libraries_from_vdf(path: &Path) -> ParsedSteamLibraries {
     }
 
     parsed
-}
-
-#[cfg(any(target_os = "linux", test))]
-fn quoted_tokens(line: &str) -> Vec<String> {
-    let mut tokens = Vec::new();
-    let mut current = String::new();
-    let mut in_quote = false;
-    let mut escaped = false;
-
-    for ch in line.chars() {
-        if !in_quote {
-            if ch == '"' {
-                in_quote = true;
-                current.clear();
-            }
-            continue;
-        }
-
-        if escaped {
-            current.push(ch);
-            escaped = false;
-            continue;
-        }
-
-        match ch {
-            '\\' => escaped = true,
-            '"' => {
-                in_quote = false;
-                tokens.push(current.clone());
-                current.clear();
-            }
-            _ => current.push(ch),
-        }
-    }
-
-    tokens
 }
 
 #[cfg(any(target_os = "linux", test))]

@@ -2795,7 +2795,6 @@
                         "purge_confirm_description_3": "操作完成後，VRCX-0 將會重新啟動。",
                         "purge_confirm_alert": "強烈建議在繼續之前備份你的資料庫檔案！",
                         "purge_confirm_button": "清除並重新啟動",
-                        "purge_in_progress": "清除角色資料…",
                         "purge_complete": "角色資料清除成功。重新啟動…",
                         "purge_failed": "清除失敗： {error}",
                         "purge_optimization_failed": "角色資料已清除，但資料庫最佳化失敗：{error}",
@@ -4657,7 +4656,9 @@
             "loading_gallery_description": "正在讀取已索引的螢幕截圖列表。",
             "gallery_load_failed": "載入螢幕截圖圖庫失敗",
             "scan_failed": "掃描螢幕截圖圖庫失敗",
-            "thumbnail_failed": "縮略圖無法使用"
+            "thumbnail_failed": "縮略圖無法使用",
+            "hide_details": "隱藏圖片資訊",
+            "show_details": "顯示圖片資訊"
         },
         "set_avatar_styles": {
             "header": "設定角色風格",
@@ -5328,6 +5329,8 @@
             "migration_restarting_title": "正在移轉資料",
             "migration_restarting": "VRCX-0 將重新啟動以完成移轉...",
             "upgrade_in_progress_title": "資料庫升級中",
+            "maintenance_in_progress_title": "資料庫維護中",
+            "maintenance_in_progress_description": "正在回收磁碟空間，期間資料庫存取會暫停。",
             "upgrade_stage": {
                 "preflight": "正在檢查資料庫",
                 "prepare_legacy_snapshot": "正在建立 VRCX 資料庫的一致性副本",

@@ -101,13 +101,14 @@ export function NotificationDrawerRow({
     const expired = Boolean(isNotificationExpired(notification));
     const isAction =
         getNotificationLifecycleBucket(notification?.type) === 'action';
+    const isBoop = notification?.type === 'boop';
     const isQueueReady = notification?.type === 'group.queueReady';
     const showAvatar = usesAvatar(notification);
     const view = useMemo(
         () => toNotificationViewModel(notification),
         [notification]
     );
-    const message = notification.type === 'boop' ? view.body : rawMessage;
+    const message = isBoop ? view.body : rawMessage;
     const actor: NotificationActor =
         showAvatar || view.actor.kind === 'group'
             ? view.actor
@@ -209,11 +210,13 @@ export function NotificationDrawerRow({
                                 <Badge
                                     className={cn(
                                         'border-0',
-                                        !isAction &&
-                                            'bg-muted text-muted-foreground'
+                                        isBoop
+                                            ? 'bg-violet-500/15 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300'
+                                            : !isAction &&
+                                                  'bg-muted text-muted-foreground'
                                     )}
                                     style={
-                                        isAction
+                                        isAction && !isBoop
                                             ? {
                                                   backgroundColor:
                                                       STATUS_JOINME_TINT

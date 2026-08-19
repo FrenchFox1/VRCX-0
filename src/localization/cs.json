@@ -2797,7 +2797,6 @@
                         "purge_confirm_description_3": "Po dokončení operace se VRCX-0 restartuje.",
                         "purge_confirm_alert": "Před pokračováním se důrazně doporučuje zálohovat soubor databáze!",
                         "purge_confirm_button": "Vymazat a restartovat",
-                        "purge_in_progress": "Probíhá mazání dat avatarů",
                         "purge_complete": "Data avatarů byla úspěšně vymazána. Restartuji",
                         "purge_failed": "Mazání se nezdařilo: {error}",
                         "purge_optimization_failed": "Data avatarů byla vymazána, ale databázi se nepodařilo optimalizovat: {error}",
@@ -4661,7 +4660,9 @@
             "loading_gallery_description": "Čte se indexovaný seznam snímků obrazovky.",
             "gallery_load_failed": "Nepodařilo se načíst galerii snímků obrazovky",
             "scan_failed": "Nepodařilo se prohledat knihovnu snímků obrazovky",
-            "thumbnail_failed": "Náhled není k dispozici"
+            "thumbnail_failed": "Náhled není k dispozici",
+            "hide_details": "Skrýt informace",
+            "show_details": "Zobrazit informace"
         },
         "set_avatar_styles": {
             "header": "Nastavit styly avatara",
@@ -5332,6 +5333,8 @@
             "migration_restarting_title": "Migrace dat",
             "migration_restarting": "VRCX-0 se restartuje, aby dokončil migraci...",
             "upgrade_in_progress_title": "Probíhá aktualizace databáze",
+            "maintenance_in_progress_title": "Probíhá údržba databáze",
+            "maintenance_in_progress_description": "Uvolňuje se místo na disku. Přístup k databázi je pozastaven, dokud operace neskončí.",
             "upgrade_stage": {
                 "preflight": "Kontrola databáze",
                 "prepare_legacy_snapshot": "Vytváření konzistentní kopie databáze VRCX",

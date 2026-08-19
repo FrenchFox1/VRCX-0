@@ -1,13 +1,14 @@
 use serde::Deserialize;
-use vrcx_0_application_core::{FavoriteEntityKind, VrchatFavoriteType};
+use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
+use vrcx_0_application_core::{FavoriteEntityKind, FavoriteGroupVisibility, VrchatFavoriteType};
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteWorldsInput {
-    #[serde(default)]
-    pub(crate) n: i64,
-    #[serde(default)]
-    pub(crate) offset: i64,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) n: i32,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) offset: i32,
     #[serde(default)]
     pub(crate) owner_id: String,
     #[serde(default)]
@@ -17,18 +18,18 @@ pub struct VrchatFavoriteWorldsInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteGroupsInput {
-    #[serde(default)]
-    pub(crate) n: i64,
-    #[serde(default)]
-    pub(crate) offset: i64,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) n: i32,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) offset: i32,
     #[serde(default)]
     pub(crate) owner_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteAddInput {
     #[serde(rename = "type")]
     pub(crate) type_name: VrchatFavoriteType,
@@ -39,34 +40,34 @@ pub struct VrchatFavoriteAddInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteDeleteInput {
     #[serde(default)]
     pub(crate) object_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteGroupSaveInput {
-    #[serde(default, rename = "type")]
-    pub(crate) type_name: String,
+    #[serde(rename = "type")]
+    pub(crate) type_name: VrchatFavoriteType,
     #[serde(default)]
     pub(crate) group: String,
     pub(crate) display_name: Option<String>,
-    pub(crate) visibility: Option<String>,
+    pub(crate) visibility: Option<FavoriteGroupVisibility>,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteGroupClearInput {
-    #[serde(default, rename = "type")]
-    pub(crate) type_name: String,
+    #[serde(rename = "type")]
+    pub(crate) type_name: VrchatFavoriteType,
     #[serde(default)]
     pub(crate) group: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalFavoriteInput {
     pub(crate) kind: FavoriteEntityKind,
     #[serde(default)]
@@ -76,7 +77,7 @@ pub struct LocalFavoriteInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalFavoriteGroupInput {
     pub(crate) kind: FavoriteEntityKind,
     #[serde(default)]
@@ -84,7 +85,7 @@ pub struct LocalFavoriteGroupInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalFavoriteGroupRenameInput {
     pub(crate) kind: FavoriteEntityKind,
     #[serde(default)]

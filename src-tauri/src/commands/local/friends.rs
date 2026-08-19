@@ -22,25 +22,6 @@ pub fn app__friend_log_current_list(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__friend_log_delete_current(
-    state: State<'_, AppState>,
-    user_id: String,
-    target_user_id: String,
-) -> Result<i64, AppError> {
-    state
-        .realtime_runtime
-        .run_friend_log_current_mutation(|| {
-            vrcx_0_persistence::friends::friend_log_delete_current(
-                state.db.as_ref(),
-                user_id,
-                target_user_id,
-            )
-        })
-        .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
 pub fn app__friend_log_history_delete(
     state: State<'_, AppState>,
     user_id: String,

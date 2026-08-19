@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use vrcx_0_core::text::normalize_text;
+
 use serde_json::Value;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_persistence::local_moderation::{
@@ -13,9 +15,11 @@ use vrcx_0_vrchat_client::moderation::{
 };
 
 use super::types::{
-    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
-    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, RemoteModerationRow,
+    ModerationMutationType, ModerationSyncDeps, ModerationSyncMutationInput,
+    ModerationSyncMutationOutput, ModerationSyncRefreshInput, ModerationSyncRefreshOutput,
+    RemoteModerationRow,
 };
+use super::ModerationSyncRuntime;
 use crate::{AuthenticatedMutationContext, Error, Result};
 
 const MODERATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
@@ -27,18 +31,36 @@ enum LocalPlayerModerationKind {
 }
 
 impl LocalPlayerModerationKind {
-    fn from_remote_type(value: &str) -> Option<Self> {
+    fn from_mutation_type(value: &ModerationMutationType) -> Option<Self> {
         match value {
-            "block" => Some(Self::Block),
-            "mute" => Some(Self::Mute),
+            ModerationMutationType::Block => Some(Self::Block),
+            ModerationMutationType::Mute => Some(Self::Mute),
             _ => None,
         }
     }
 }
 
 pub async fn refresh_player_moderations(
+    runtime: &ModerationSyncRuntime,
     deps: ModerationSyncDeps<'_>,
     input: ModerationSyncRefreshInput,
+) -> Result<ModerationSyncRefreshOutput> {
+    refresh_player_moderations_with_policy(runtime, deps, input, false).await
+}
+
+pub async fn force_refresh_player_moderations(
+    runtime: &ModerationSyncRuntime,
+    deps: ModerationSyncDeps<'_>,
+    input: ModerationSyncRefreshInput,
+) -> Result<ModerationSyncRefreshOutput> {
+    refresh_player_moderations_with_policy(runtime, deps, input, true).await
+}
+
+async fn refresh_player_moderations_with_policy(
+    runtime: &ModerationSyncRuntime,
+    deps: ModerationSyncDeps<'_>,
+    input: ModerationSyncRefreshInput,
+    force: bool,
 ) -> Result<ModerationSyncRefreshOutput> {
     let user_id = normalize_text(input.user_id);
     if user_id.is_empty() {
@@ -50,9 +72,23 @@ pub async fn refresh_player_moderations(
             rows: Vec::new(),
         });
     }
+    let endpoint = normalize_endpoint(&input.endpoint);
+    let scope = deps.auth_scope.snapshot();
+    let key = runtime.cache_key(&scope, &user_id, &endpoint);
+    runtime
+        .resolve(key, force, move || async move {
+            load_player_moderations(deps, user_id, endpoint).await
+        })
+        .await
+}
 
-    let (remote_count, rows) = fetch_remote_moderations(&deps, &input.endpoint).await?;
-    let accepted = should_write_refresh_snapshot(&deps, &user_id, &input.endpoint);
+async fn load_player_moderations(
+    deps: ModerationSyncDeps<'_>,
+    user_id: String,
+    endpoint: String,
+) -> Result<ModerationSyncRefreshOutput> {
+    let (remote_count, rows) = fetch_remote_moderations(&deps, &endpoint).await?;
+    let accepted = should_write_refresh_snapshot(&deps, &user_id, &endpoint);
     let local_count = if accepted {
         let local_inputs: Vec<RemoteModerationInput> = rows
             .iter()
@@ -74,15 +110,22 @@ pub async fn refresh_player_moderations(
 }
 
 pub async fn update_player_moderation(
+    runtime: &ModerationSyncRuntime,
     deps: ModerationSyncDeps<'_>,
     input: ModerationSyncMutationInput,
 ) -> Result<ModerationSyncMutationOutput> {
     let target_user_id = normalize_text(input.target_user_id);
     let target_display_name = input.target_display_name.clone();
-    let r#type = normalize_text(input.r#type);
+    let moderation_type = input.r#type;
+    let r#type = moderation_type.as_str().to_string();
     if target_user_id.is_empty() || r#type.is_empty() {
         return Err(Error::Custom(
             "ModerationSyncUpdate requires targetUserId and type.".into(),
+        ));
+    }
+    if input.enabled && !moderation_type.is_supported_enable() {
+        return Err(Error::Custom(
+            "ModerationSyncUpdate does not support enabling this moderation type.".into(),
         ));
     }
     let mutation = AuthenticatedMutationContext::capture(
@@ -103,8 +146,10 @@ pub async fn update_player_moderation(
         ),
     )
     .await?;
+    runtime.invalidate();
 
-    let local = if let Some(kind) = LocalPlayerModerationKind::from_remote_type(&r#type) {
+    let local = if let Some(kind) = LocalPlayerModerationKind::from_mutation_type(&moderation_type)
+    {
         let existing = local_moderation::local_moderation_get(
             deps.db,
             owner_user_id.clone(),
@@ -156,10 +201,6 @@ pub async fn update_player_moderation(
         enabled: input.enabled,
         local,
     })
-}
-
-fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
 }
 
 fn value_as_normalized_text(value: Option<&Value>) -> String {
@@ -359,5 +400,16 @@ mod tests {
             resolve_local_moderation_state(Some(&existing), LocalPlayerModerationKind::Block, true,),
             (true, true)
         );
+    }
+
+    #[test]
+    fn moderation_mutation_types_close_enables_but_preserve_unknown_deletes() {
+        let known = ModerationMutationType::from("interactOff".to_string());
+        assert!(known.is_supported_enable());
+        assert_eq!(known.as_str(), "interactOff");
+
+        let unknown = ModerationMutationType::from("futureModeration".to_string());
+        assert!(!unknown.is_supported_enable());
+        assert_eq!(unknown.as_str(), "futureModeration");
     }
 }

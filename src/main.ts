@@ -10,9 +10,10 @@ installDevPerformanceTimelineGuard();
 installErrorLogging();
 
 async function bootstrap() {
-    await import('@/services/i18nService');
-
-    const { App } = await import('./app/App');
+    const [, { App }] = await Promise.all([
+        import('@/services/i18nService'),
+        import('./app/App')
+    ]);
 
     const rootElement = document.getElementById('root');
 

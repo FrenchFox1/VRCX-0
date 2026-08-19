@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { FavoriteItem, FavoriteKind } from './favoritesTypes';
+import type { FavoriteKind } from '@/domain/favorites/types';
+
+import type { FavoriteItem } from './favoritesTypes';
 
 export function computeSelectionRangeKeys({
     fromIndex,

@@ -1,6 +1,9 @@
 import { toast } from 'sonner';
 
-import { invalidateEntityQueries } from '@/lib/entityQueryCache';
+import type {
+    FavoriteKind,
+    StoredLocalFavoriteKind
+} from '@/domain/favorites/types';
 import { commands } from '@/platform/tauri/bindings';
 import type {
     FavoriteChange,
@@ -15,10 +18,6 @@ import {
     useFavoriteRevisionStore
 } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
-import type {
-    FavoriteKind,
-    StoredLocalFavoriteKind
-} from '@/state/favoriteStoreTypes';
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 import {
     createGroupInstancesState,
@@ -172,7 +171,14 @@ function isFavoriteMirrorReady(payload: FavoritesChangedEventPayload): boolean {
 function applyFavoritesChangedEvent(
     payload: FavoritesChangedEventPayload
 ): void {
-    void invalidateEntityQueries(['quickSearch']);
+    void commands
+        .appQuickSearchWorkingSetInvalidate()
+        .catch((error: unknown) => {
+            console.warn(
+                'Failed to invalidate the quick search working set:',
+                error
+            );
+        });
     for (const change of payload.changes) {
         applyFavoriteChange(change);
     }
@@ -278,7 +284,7 @@ export function handleRuntimeGroupInstancesProjection(
     record: RuntimeGroupInstancesProjection
 ): void {
     const runtimeStore = useRuntimeStore.getState();
-    const status = normalizeString(record.status) || 'ready';
+    const status = record.status;
     const userId = normalizeString(record.userId);
     const endpoint = normalizeString(record.endpoint);
     const auth = runtimeStore.auth;

@@ -1,7 +1,10 @@
 import { useTranslation } from 'react-i18next';
 
 import type { TtsVoice } from '@/platform/tauri/bindings';
-import { normalizeNotificationTtsNameMode } from '@/state/preferencesStore';
+import {
+    normalizeNotificationTtsNameMode,
+    type PreferencesSnapshot
+} from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import {
@@ -20,15 +23,16 @@ import { useSettingsNotificationsTabState } from '../useSettingsNotificationsTab
 
 type SettingsOptionList = ReadonlyArray<readonly [string, string]>;
 
-type SettingsNotificationsPrefs = Record<string, unknown> & {
-    afkDesktopToast?: boolean;
-    desktopNotificationSound?: boolean;
-    desktopToast?: string;
-    notificationTTS?: string;
-    notificationTTSNameMode?: string;
-    notificationTTSNickName?: boolean;
-    notificationTTSVoiceNative?: string;
-};
+type SettingsNotificationsPrefs = Pick<
+    PreferencesSnapshot,
+    | 'afkDesktopToast'
+    | 'desktopNotificationSound'
+    | 'desktopToast'
+    | 'notificationTTS'
+    | 'notificationTTSNameMode'
+    | 'notificationTTSNickName'
+    | 'notificationTTSVoiceNative'
+>;
 
 type SettingsNotificationsTabContentProps = {
     desktopToastOptions: SettingsOptionList;
@@ -36,17 +40,17 @@ type SettingsNotificationsTabContentProps = {
     notificationTtsNameModeOptions: SettingsOptionList;
     notificationTtsTest: string;
     notificationTtsTestVisible: boolean;
-    onAfkDesktopToastChange: (checked: boolean) => unknown;
-    onDesktopNotificationSoundChange: (checked: boolean) => unknown;
-    onDesktopToastChange: (value: string) => unknown;
-    onNotificationTtsModeChange: (value: string) => unknown;
-    onNotificationTtsNameModeChange: (value: string) => unknown;
-    onNotificationTtsTestChange: (value: string) => unknown;
-    onNotificationTtsTestVisibleChange: (visible: boolean) => unknown;
-    onNotificationTtsVoiceChange: (value: string) => unknown;
-    onOpenDesktopNotificationFiltersDialog: () => unknown;
-    onOpenTtsNotificationFiltersDialog: () => unknown;
-    onSpeakNotificationTts: (message: string) => unknown;
+    onAfkDesktopToastChange: (checked: boolean) => void;
+    onDesktopNotificationSoundChange: (checked: boolean) => void;
+    onDesktopToastChange: (value: string) => void;
+    onNotificationTtsModeChange: (value: string) => void;
+    onNotificationTtsNameModeChange: (value: string) => void;
+    onNotificationTtsTestChange: (value: string) => void;
+    onNotificationTtsTestVisibleChange: (visible: boolean) => void;
+    onNotificationTtsVoiceChange: (value: string) => void;
+    onOpenDesktopNotificationFiltersDialog: () => void;
+    onOpenTtsNotificationFiltersDialog: () => void;
+    onSpeakNotificationTts: (message: string) => void;
     prefs: SettingsNotificationsPrefs;
     ttsVoices: TtsVoice[];
 };

@@ -1,12 +1,14 @@
 import {
+    useCallback,
     useEffect,
     useEffectEvent,
+    useRef,
     useState,
     type MutableRefObject
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import { readWorldCacheInfo } from '@/lib/worldAssetBundle';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -75,6 +77,7 @@ export function useWorldDialogData({
     );
     const [newInstanceGroups, setNewInstanceGroups] =
         useState<WorldDialogNewInstanceGroups>([]);
+    const newInstanceGroupsLoadGenerationRef = useRef(0);
     const worldAssetUrl =
         typeof world?.assetUrl === 'string' ? world.assetUrl : undefined;
     const worldId = world?.id;
@@ -95,43 +98,42 @@ export function useWorldDialogData({
     }, [profileWorldId]);
 
     useEffect(() => {
-        let active = true;
+        setNewInstanceGroups([]);
+        return () => {
+            newInstanceGroupsLoadGenerationRef.current += 1;
+        };
+    }, [currentUserId]);
 
+    const loadNewInstanceGroups = useCallback(async () => {
+        const generation = ++newInstanceGroupsLoadGenerationRef.current;
         if (!currentUserId) {
             setNewInstanceGroups([]);
-            return () => {
-                active = false;
-            };
+            return [];
         }
 
-        groupProfileRepository
-            .getUserGroups({
+        try {
+            const groups = await groupProfileRepository.getUserGroups({
                 userId: currentUserId
-            })
-            .then((groups) => {
-                if (!active) {
-                    return;
-                }
-                setNewInstanceGroups(
-                    (Array.isArray(groups) ? groups : [])
-                        .filter((group) => groupOptionId(group))
-                        .sort((left, right) =>
-                            normalizeEntityId(left?.name).localeCompare(
-                                normalizeEntityId(right?.name)
-                            )
-                        )
-                );
-            })
-            .catch(() => {
-                if (active) {
-                    setNewInstanceGroups([]);
-                }
             });
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, currentUserId]);
+            const nextGroups = (Array.isArray(groups) ? groups : [])
+                .filter((group) => groupOptionId(group))
+                .sort((left, right) =>
+                    normalizeEntityId(left?.name).localeCompare(
+                        normalizeEntityId(right?.name)
+                    )
+                );
+            if (newInstanceGroupsLoadGenerationRef.current !== generation) {
+                return [];
+            }
+            setNewInstanceGroups(nextGroups);
+            return nextGroups;
+        } catch {
+            if (newInstanceGroupsLoadGenerationRef.current === generation) {
+                setNewInstanceGroups([]);
+            }
+            return [];
+        }
+    }, [currentUserId]);
 
     useEffect(() => {
         let active = true;
@@ -379,6 +381,7 @@ export function useWorldDialogData({
         setHasPersistData,
         worldSideData,
         setWorldSideData,
-        newInstanceGroups
+        newInstanceGroups,
+        loadNewInstanceGroups
     };
 }

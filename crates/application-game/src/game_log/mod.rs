@@ -29,7 +29,7 @@ pub use runtime_state::{
 };
 pub use sessions_view::{
     game_log_sessions_query, GameLogSessionDto, GameLogSessionEventDto, GameLogSessionMemberDto,
-    GameLogSessionsQueryInput,
+    GameLogSessionPlayerDurationRowDto, GameLogSessionsQueryInput,
 };
 pub use snapshot::{
     player_list_current_snapshot, PlayerListSnapshotContext, PlayerListSnapshotOutput,

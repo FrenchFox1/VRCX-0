@@ -17,7 +17,7 @@ import {
     buildGroupAuditLogCsv,
     GROUP_AUDIT_LOG_EXPORT_COLUMNS
 } from './groupModerationCsv';
-import type { GroupAuditLogRow } from './GroupModerationLogsPanel';
+import type { GroupModerationLogRow } from './GroupModerationLogsPanel';
 
 const DEFAULT_EXPORT_COLUMNS = GROUP_AUDIT_LOG_EXPORT_COLUMNS.map(
     (column) => column.key
@@ -30,7 +30,7 @@ export function GroupModerationLogsExportDialog({
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    rows: GroupAuditLogRow[];
+    rows: GroupModerationLogRow[];
 }) {
     const { t } = useTranslation();
     const [selectedColumns, setSelectedColumns] = useState<string[]>(

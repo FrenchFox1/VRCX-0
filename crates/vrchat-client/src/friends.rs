@@ -10,8 +10,8 @@ use crate::http_api::{
 pub fn friends_get_input(
     endpoint: String,
     offline: bool,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
 ) -> HttpApiRequestInput {
     get_input(
         endpoint,

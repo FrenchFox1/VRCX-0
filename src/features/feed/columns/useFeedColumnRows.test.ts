@@ -49,7 +49,7 @@ vi.mock('@/state/preferencesStore', () => ({
     )
 }));
 
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
+import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 
 import type { FeedColumnConfig } from '../feedColumnsState';

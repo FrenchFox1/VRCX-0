@@ -16,73 +16,50 @@ export const GAME_LOG_FILTER_TYPES = Object.freeze([
     'ImageLoad'
 ] as const);
 
-type GameLogFilterType = (typeof GAME_LOG_FILTER_TYPES)[number];
+export type GameLogFilterType = (typeof GAME_LOG_FILTER_TYPES)[number];
+
+export function isGameLogFilterType(value: string): value is GameLogFilterType {
+    return (
+        value === 'Location' ||
+        value === 'OnPlayerJoined' ||
+        value === 'OnPlayerLeft' ||
+        value === 'PortalSpawn' ||
+        value === 'VideoPlay' ||
+        value === 'Event' ||
+        value === 'External' ||
+        value === 'StringLoad' ||
+        value === 'ImageLoad'
+    );
+}
 
 interface QueryGameLogInput {
-    currentUserId?: unknown;
-    search?: unknown;
-    filters?: unknown;
-    favoriteUserIds?: unknown;
-    limit?: unknown;
+    currentUserId?: string;
+    search?: string;
+    filters?: readonly GameLogFilterType[];
+    favoriteUserIds?: string[];
+    limit?: number;
 }
 
 interface QueryLatestSessionsInput extends QueryGameLogInput {
-    dateFrom?: unknown;
-    dateTo?: unknown;
-    limit?: unknown;
+    dateFrom?: string;
+    dateTo?: string;
 }
 
-function normalizeFavoriteSet(favoriteUserIds: unknown = []) {
-    return new Set(
-        (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
-            .map((value) => normalizeString(value))
-            .filter(Boolean)
-    );
-}
-
-function normalizeFilterList(filters: unknown = []): GameLogFilterType[] {
-    if (!Array.isArray(filters)) {
-        return [];
-    }
-
-    return filters.filter(
-        (filter, index, source): filter is GameLogFilterType => {
-            if (typeof filter !== 'string') {
-                return false;
-            }
-
-            if (!GAME_LOG_FILTER_TYPES.includes(filter as GameLogFilterType)) {
-                return false;
-            }
-
-            return source.indexOf(filter) === index;
-        }
-    );
-}
-
-function normalizeSessionLimit(value: unknown, fallback = 25) {
-    const parsed = Number.parseInt(String(value ?? ''), 10);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
+function normalizeSessionLimit(value: number, fallback = 25) {
+    if (!Number.isFinite(value) || value <= 0) {
         return fallback;
     }
-    return Math.min(parsed, 1000);
+    return Math.min(value, 1000);
 }
 
-function normalizeConfigInt(value: unknown, fallback: number) {
-    const parsed = Number.parseInt(String(value ?? ''), 10);
-    if (!Number.isFinite(parsed)) {
-        return fallback;
-    }
-    return parsed;
+function normalizeQueryLimit(value?: number) {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0
+        ? value
+        : null;
 }
 
-function normalizeQueryLimit(value: unknown) {
-    const parsed = Number.parseInt(String(value ?? ''), 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function normalizeDateBoundary(value: unknown, boundary: 'start' | 'end') {
-    const normalized = normalizeString(value);
+function normalizeDateBoundary(value: string, boundary: 'start' | 'end') {
+    const normalized = value.trim();
     if (!normalized) {
         return '';
     }
@@ -129,8 +106,8 @@ async function queryGameLog({
         configRepository.getInt('searchLimit', 50000)
     ]);
     const requestedLimit = normalizeQueryLimit(limit);
-    const configuredMaxTableSize = normalizeConfigInt(maxTableSizeValue, 500);
-    const configuredSearchLimit = normalizeConfigInt(searchLimitValue, 50000);
+    const configuredMaxTableSize = maxTableSizeValue;
+    const configuredSearchLimit = searchLimitValue;
     const maxTableRows =
         requestedLimit === null
             ? configuredMaxTableSize
@@ -140,15 +117,11 @@ async function queryGameLog({
             ? configuredSearchLimit
             : Math.min(configuredSearchLimit, requestedLimit);
 
-    const normalizedFilters = normalizeFilterList(filters);
+    const normalizedFilters = Array.from(new Set(filters));
     const normalizedFavorites = Array.from(
-        new Set(
-            (Array.isArray(favoriteUserIds) ? favoriteUserIds : [])
-                .map((value) => normalizeString(value))
-                .filter(Boolean)
-        )
+        new Set(favoriteUserIds.map((value) => value.trim()).filter(Boolean))
     );
-    const normalizedSearch = String(search || '').trim();
+    const normalizedSearch = search.trim();
 
     if (normalizedSearch) {
         return gameLogPersistenceRepository.searchGameLogDatabase(
@@ -156,7 +129,7 @@ async function queryGameLog({
             normalizedFilters,
             normalizedFavorites,
             configuredSearchLimit,
-            normalizeString(currentUserId),
+            currentUserId.trim(),
             searchRows
         );
     }
@@ -185,14 +158,18 @@ async function queryLatestSessions({
     ]);
 
     return commands.appGameLogSessionsQuery({
-        search: String(search ?? '').trim(),
-        filters: normalizeFilterList(filters),
-        favoriteUserIds: Array.from(normalizeFavoriteSet(favoriteUserIds)),
+        search: search.trim(),
+        filters: Array.from(new Set(filters)),
+        favoriteUserIds: Array.from(
+            new Set(
+                favoriteUserIds.map((userId) => userId.trim()).filter(Boolean)
+            )
+        ),
         dateFrom: normalizeDateBoundary(dateFrom, 'start'),
         dateTo: normalizeDateBoundary(dateTo, 'end'),
         limit: normalizeSessionLimit(limit),
-        maxTableSize: normalizeConfigInt(maxTableSizeValue, 0),
-        searchLimit: normalizeConfigInt(searchLimitValue, 0)
+        maxTableSize: maxTableSizeValue,
+        searchLimit: searchLimitValue
     });
 }
 

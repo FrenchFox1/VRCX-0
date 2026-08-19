@@ -193,9 +193,7 @@ function getCurrentVersion() {
 }
 
 export async function fetchLatestChangelogRelease() {
-    return fetchLatestBranchRelease(STABLE_BRANCH, {
-        requireInstallerAsset: false
-    });
+    return fetchLatestBranchRelease(STABLE_BRANCH);
 }
 
 export async function fetchChangelogRelease(version?: unknown) {
@@ -204,9 +202,7 @@ export async function fetchChangelogRelease(version?: unknown) {
         return fetchLatestChangelogRelease();
     }
 
-    const releases = await fetchBranchReleases(STABLE_BRANCH, {
-        requireInstallerAsset: false
-    });
+    const releases = await fetchBranchReleases(STABLE_BRANCH);
     return (
         releases.find((release) => {
             const canonicalVersion = normalizeReleaseLookupVersion(

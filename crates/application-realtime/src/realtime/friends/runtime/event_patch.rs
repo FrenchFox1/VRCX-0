@@ -1,4 +1,5 @@
 use serde_json::{json, Value};
+use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
 use vrcx_0_persistence::realtime::FriendLogDelete;
@@ -260,7 +261,7 @@ fn apply_update(
     } else {
         previous
             .as_ref()
-            .map(|previous| previous.state_bucket.trim())
+            .map(|previous| previous.state.trim())
             .filter(|state_bucket| !state_bucket.is_empty())
             .map(ToString::to_string)
             .unwrap_or_else(|| StateBucket::Offline.as_str().to_string())
@@ -666,13 +667,9 @@ fn record_profile_identity_change(
     let next_name = meaningful_name(patch, user_id);
     let name_changed =
         !next_name.is_empty() && next_name != meaningful_record_name(previous, user_id);
-    let previous_trust_level = first_owned([
-        record_string(previous, "$trustLevel"),
-        record_string(previous, "trustLevel"),
-    ]);
+    let previous_trust_level = record_string(previous, derived_keys::TRUST_LEVEL);
     let trust_level = first_owned([
-        patch.text_field("$trustLevel"),
-        patch.text_field("trustLevel"),
+        patch.text_field(derived_keys::TRUST_LEVEL),
         previous_trust_level.clone(),
     ]);
     let trust_differs = trust_level_differs(&previous_trust_level, &trust_level);
@@ -885,7 +882,6 @@ mod tests {
         let previous = FriendRecord {
             id: "usr_friend".into(),
             state: "active".into(),
-            state_bucket: "active".into(),
             ..FriendRecord::default()
         };
         assert_eq!(

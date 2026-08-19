@@ -158,8 +158,8 @@ async fn totp_challenge_completes_after_a_correct_code() {
 
     match &state {
         LoginSessionState::Challenge { methods, mode, .. } => {
-            assert_eq!(methods, &vec!["totp".to_string(), "otp".to_string()]);
-            assert_eq!(mode, "totp");
+            assert_eq!(methods, &vec![TwoFactorMethod::Totp, TwoFactorMethod::Otp]);
+            assert_eq!(mode, &TwoFactorMethod::Totp);
         }
         other => panic!("expected Challenge, got {other:?}"),
     }
@@ -189,8 +189,8 @@ async fn email_otp_is_selected_when_totp_is_not_offered() {
 
     match &state {
         LoginSessionState::Challenge { methods, mode, .. } => {
-            assert_eq!(methods, &vec!["emailOtp".to_string()]);
-            assert_eq!(mode, "emailOtp");
+            assert_eq!(methods, &vec![TwoFactorMethod::EmailOtp]);
+            assert_eq!(mode, &TwoFactorMethod::EmailOtp);
         }
         other => panic!("expected Challenge, got {other:?}"),
     }
@@ -274,8 +274,8 @@ async fn a_wrong_code_keeps_the_same_challenge_open_for_a_retry() {
             error,
             ..
         } => {
-            assert_eq!(methods, &vec!["totp".to_string(), "otp".to_string()]);
-            assert_eq!(mode, "totp");
+            assert_eq!(methods, &vec![TwoFactorMethod::Totp, TwoFactorMethod::Otp]);
+            assert_eq!(mode, &TwoFactorMethod::Totp);
             assert_eq!(
                 error.as_deref(),
                 Some("2FA verification failed with HTTP 400")
@@ -348,8 +348,8 @@ async fn a_follow_up_challenge_after_a_successful_verify_recomputes_the_default_
             error,
             ..
         } => {
-            assert_eq!(methods, &vec!["otp".to_string()]);
-            assert_eq!(mode, "otp");
+            assert_eq!(methods, &vec![TwoFactorMethod::Otp]);
+            assert_eq!(mode, &TwoFactorMethod::Otp);
             assert!(error.is_none());
         }
         other => panic!("expected a fresh Challenge, got {other:?}"),
@@ -561,6 +561,60 @@ async fn saved_credential_falls_through_both_cookie_probes_to_a_successful_passw
             "config",
             "auth/user",
         ]
+    );
+}
+
+#[tokio::test]
+async fn switching_saved_accounts_preserves_the_current_accounts_live_cookies() {
+    let (_dir, config, web, db) = test_env("saved-credential-switch-cookie-sync");
+    seed_saved_credential(&config, &web, "usr_current");
+    seed_saved_credential(&config, &web, "usr_target");
+    let cookie_payload = B64.encode(
+        serde_json::to_vec(&json!([
+            {"Name": "auth", "Value": "current-latest", "Domain": ".vrchat.cloud", "Path": "/"},
+            {"Name": "twoFactorAuth", "Value": "current-2fa", "Domain": ".vrchat.cloud", "Path": "/"}
+        ]))
+        .unwrap(),
+    );
+    web.set_cookies(&cookie_payload).unwrap();
+    let current_live_cookies = web.get_cookies();
+    let api = Arc::new(FakeLoginApi::new(vec![
+        (200, json!({})),
+        (
+            200,
+            json!({ "id": "usr_current", "displayName": "Current User" }),
+        ),
+        (200, json!({})),
+        (
+            200,
+            json!({ "id": "usr_target", "displayName": "Target User" }),
+        ),
+    ]));
+
+    let state = LoginSessionRuntime::new()
+        .start_with(
+            api,
+            &web,
+            db.as_ref(),
+            &config,
+            LoginSessionStartInput::SavedCredential {
+                user_id: "usr_target".into(),
+            },
+        )
+        .await;
+
+    assert!(matches!(
+        state,
+        LoginSessionState::Authenticated { ref session, .. }
+            if session.user_id == "usr_target"
+    ));
+    assert_eq!(
+        crate::saved_credential_session_data(&config, "usr_current")
+            .unwrap()
+            .unwrap()
+            .cookies
+            .as_deref(),
+        Some(current_live_cookies.as_str())
     );
 }
 
@@ -1473,11 +1527,13 @@ async fn a_stale_respond_cannot_replace_a_newer_session_or_use_its_finalize() {
     ));
     assert!(matches!(
         newer_task.await.unwrap(),
-        LoginSessionState::Challenge { ref mode, .. } if mode == "emailOtp"
+        LoginSessionState::Challenge { ref mode, .. }
+            if mode == &TwoFactorMethod::EmailOtp
     ));
     assert!(matches!(
         runtime.state(),
-        LoginSessionState::Challenge { ref mode, .. } if mode == "emailOtp"
+        LoginSessionState::Challenge { ref mode, .. }
+            if mode == &TwoFactorMethod::EmailOtp
     ));
     assert_eq!(
         config
@@ -1634,10 +1690,12 @@ async fn a_manual_start_supersedes_an_auto_login_waiting_on_the_network() {
     assert!(error.to_string().contains("superseded"));
     assert!(matches!(
         manual_task.await.unwrap(),
-        LoginSessionState::Challenge { ref mode, .. } if mode == "emailOtp"
+        LoginSessionState::Challenge { ref mode, .. }
+            if mode == &TwoFactorMethod::EmailOtp
     ));
     assert!(matches!(
         runtime.state(),
-        LoginSessionState::Challenge { ref mode, .. } if mode == "emailOtp"
+        LoginSessionState::Challenge { ref mode, .. }
+            if mode == &TwoFactorMethod::EmailOtp
     ));
 }

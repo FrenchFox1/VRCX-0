@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { HostPlatform } from '@/platform/tauri/bindings';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
@@ -12,11 +12,11 @@ import { useSettingsSystemTabState } from '../useSettingsSystemTabState';
 type SettingsSystemTabContentProps = {
     autoInstallUpdatesOnStartup?: boolean;
     autoLoginDelayEnabled?: boolean;
-    autoLoginDelaySeconds?: ReactNode;
+    autoLoginDelaySeconds?: number;
     backgroundModeEnabled?: boolean;
     backgroundModeDelayEnabled?: boolean;
-    backgroundModeDelayMinutes?: ReactNode;
-    hostPlatform?: string;
+    backgroundModeDelayMinutes?: number;
+    hostPlatform?: HostPlatform;
     isCloseToTray?: boolean;
     isStartAsMinimizedState?: boolean;
     isStartAtWindowsStartup?: boolean;
@@ -25,19 +25,19 @@ type SettingsSystemTabContentProps = {
     proxyServer?: string;
     showPostUpdateChangelogToast?: boolean;
     updateCheckDisabled?: boolean;
-    onAutoInstallUpdatesOnStartupChange: (checked: boolean) => unknown;
-    onAutoLoginDelayEnabledChange: (checked: boolean) => unknown;
-    onBackgroundModeEnabledChange: (checked: boolean) => unknown;
-    onBackgroundModeDelayEnabledChange: (checked: boolean) => unknown;
-    onCloseToTrayChange: (checked: boolean) => unknown;
-    onPromptAutoLoginDelaySeconds: () => unknown;
-    onPromptBackgroundModeDelayMinutes: () => unknown;
-    onProxyEnabledChange: (checked: boolean) => unknown;
-    onProxySettings: () => unknown;
-    onPostUpdateChangelogToastChange: (checked: boolean) => unknown;
-    onStartAsMinimizedChange: (checked: boolean) => unknown;
-    onStartAtWindowsStartupChange: (checked: boolean) => unknown;
-    onSystemWindowFrameChange: (checked: boolean) => unknown;
+    onAutoInstallUpdatesOnStartupChange: (checked: boolean) => void;
+    onAutoLoginDelayEnabledChange: (checked: boolean) => void;
+    onBackgroundModeEnabledChange: (checked: boolean) => void;
+    onBackgroundModeDelayEnabledChange: (checked: boolean) => void;
+    onCloseToTrayChange: (checked: boolean) => void;
+    onPromptAutoLoginDelaySeconds: () => void;
+    onPromptBackgroundModeDelayMinutes: () => void;
+    onProxyEnabledChange: (checked: boolean) => void | Promise<void>;
+    onProxySettings: () => void;
+    onPostUpdateChangelogToastChange: (checked: boolean) => void;
+    onStartAsMinimizedChange: (checked: boolean) => void;
+    onStartAtWindowsStartupChange: (checked: boolean) => void;
+    onSystemWindowFrameChange: (checked: boolean) => void | Promise<void>;
 };
 
 export function SettingsSystemTab() {

@@ -1,4 +1,37 @@
-type FriendStatus = 'join me' | 'active' | 'ask me' | 'busy' | 'offline';
+import { normalizeString } from './string';
+
+const FRIEND_STATUSES = [
+    'join me',
+    'active',
+    'ask me',
+    'busy',
+    'offline'
+] as const;
+
+type FriendStatus = (typeof FRIEND_STATUSES)[number];
+
+function isFriendStatus(value: string): value is FriendStatus {
+    return (FRIEND_STATUSES as readonly string[]).includes(value);
+}
+
+function normalizeUserStatus(value: unknown): string {
+    const status = normalizeString(value).toLowerCase();
+    if (status === 'joinme') {
+        return 'join me';
+    }
+    if (status === 'askme') {
+        return 'ask me';
+    }
+    if (status === 'offline:offline' || status.startsWith('offline ')) {
+        return 'offline';
+    }
+    return status;
+}
+
+function userStatusFromValue(value: unknown): FriendStatus | '' {
+    const status = normalizeUserStatus(value);
+    return isFriendStatus(status) ? status : '';
+}
 
 function sortStatus(
     a: FriendStatus | string,
@@ -57,5 +90,11 @@ function sortStatus(
     return 0;
 }
 
-export { sortStatus };
+export {
+    FRIEND_STATUSES,
+    isFriendStatus,
+    normalizeUserStatus,
+    sortStatus,
+    userStatusFromValue
+};
 export type { FriendStatus };

@@ -140,5 +140,5 @@ export type {
     GroupMemberRow,
     GroupMemberUser,
     GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/group';
 export default groupProfileRepository;

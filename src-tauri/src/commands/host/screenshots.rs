@@ -213,7 +213,7 @@ pub fn app__delete_all_screenshot_metadata(state: State<'_, AppState>) -> Result
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__add_screenshot_metadata(
+pub async fn app__add_screenshot_metadata(
     state: State<'_, AppState>,
     path: String,
     metadata_string: String,
@@ -222,10 +222,14 @@ pub fn app__add_screenshot_metadata(
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_write_allowed(&state, &path)?;
-    Ok(screenshot::add_screenshot_metadata(
-        &path,
-        &metadata_string,
-        &world_id,
-        change_filename.unwrap_or(false),
-    ))
+    tauri::async_runtime::spawn_blocking(move || {
+        screenshot::add_screenshot_metadata(
+            &path,
+            &metadata_string,
+            &world_id,
+            change_filename.unwrap_or(false),
+        )
+    })
+    .await
+    .map_err(|error| AppError::Custom(format!("screenshot metadata task failed: {error}")))
 }

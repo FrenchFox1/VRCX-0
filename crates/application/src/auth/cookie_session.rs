@@ -21,7 +21,9 @@ pub(super) enum CookieProbeResult {
     },
     MissingCredentials(HttpApiExecuteResponse),
     RequiresTwoFactor(HttpApiExecuteResponse),
-    UserMismatch,
+    UserMismatch {
+        actual_user_id: String,
+    },
     Rejected {
         stage: CookieProbeStage,
         response: HttpApiExecuteResponse,
@@ -80,7 +82,7 @@ pub(super) async fn probe_cookie_session(
     }
     let expected_user_id = expected_user_id.trim();
     if !expected_user_id.is_empty() && actual_user_id != expected_user_id {
-        return Ok(CookieProbeResult::UserMismatch);
+        return Ok(CookieProbeResult::UserMismatch { actual_user_id });
     }
 
     Ok(CookieProbeResult::Authenticated { response, user })

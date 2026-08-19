@@ -27,7 +27,7 @@ type FetchWithEntityPolicyOptions<TData = unknown> = {
 
 export const entityQueryPolicies = Object.freeze({
     instance: Object.freeze({
-        staleTime: 20 * SECOND_MS,
+        staleTime: 0,
         gcTime: 90 * SECOND_MS,
         retry: 1,
         refetchOnWindowFocus: false
@@ -81,7 +81,7 @@ export const entityQueryPolicies = Object.freeze({
         refetchOnWindowFocus: false
     }),
     fileAnalysis: Object.freeze({
-        staleTime: 60 * MINUTE_MS,
+        staleTime: 120 * MINUTE_MS,
         gcTime: 240 * MINUTE_MS,
         retry: 1,
         refetchOnWindowFocus: false
@@ -203,8 +203,6 @@ export const queryKeys = Object.freeze({
         }: { eventId?: unknown; groupId?: unknown } = {},
         endpoint: unknown = ''
     ) => withEndpoint(['calendar', groupId, eventId], endpoint),
-    quickSearchCatalog: (userId: unknown, endpoint: unknown = '') =>
-        withEndpoint(['quickSearch', userId], endpoint),
     avatarGallery: (avatarId: unknown, endpoint: unknown = '') =>
         withEndpoint(['avatar', avatarId, 'gallery'], endpoint),
     userInventoryItem: (
@@ -321,10 +319,6 @@ export function invalidateEntityQueries(queryKey: QueryKey) {
 export async function clearEntityQueryCache() {
     await queryClient.cancelQueries();
     queryClient.clear();
-}
-
-export function getEntityQueryCacheSize() {
-    return queryClient.getQueryCache().getAll().length;
 }
 
 export function getEntityQueryCacheStats() {

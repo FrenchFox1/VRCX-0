@@ -2,8 +2,6 @@ import type { DashboardConfig } from '@/features/dashboard/dashboardConfig';
 import { formatDateFilter } from '@/lib/dateTime';
 import { normalizeString } from '@/shared/utils/string';
 
-export const MAX_WIDGET_ROWS = 50;
-
 export function buildFavoriteIdSet(
     remoteFavoriteIds: readonly unknown[] | null | undefined,
     localFriendFavorites: unknown

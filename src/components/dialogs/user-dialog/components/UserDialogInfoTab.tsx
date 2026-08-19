@@ -6,10 +6,8 @@ import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type {
-    EntityRecord,
-    UserProfileEntity
-} from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import { AvatarInfoLine } from '@/features/feed/components/FeedAvatarInfoLine';
 import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateTime } from '@/lib/dateTime';

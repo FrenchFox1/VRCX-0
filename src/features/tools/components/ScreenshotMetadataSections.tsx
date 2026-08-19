@@ -3,6 +3,8 @@ import {
     ArrowRightIcon,
     CopyIcon,
     FolderOpenIcon,
+    PanelRightCloseIcon,
+    PanelRightOpenIcon,
     SearchIcon,
     Trash2Icon,
     UploadIcon,
@@ -19,7 +21,6 @@ import {
     PageToolbarRow,
     PageTitle
 } from '@/components/layout/PageScaffold';
-import { FadeInImage } from '@/components/media/FadeInImage';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -387,8 +388,10 @@ export function ScreenshotMetadataPreviewCard({
     isMetadataLoading,
     canNavigatePrev,
     canNavigateNext,
+    isDetailsVisible,
     onNavigatePrev,
     onNavigateNext,
+    onToggleDetails,
     onImagePreview,
     onDragOver,
     onDrop
@@ -398,8 +401,10 @@ export function ScreenshotMetadataPreviewCard({
     isMetadataLoading: boolean;
     canNavigatePrev: boolean;
     canNavigateNext: boolean;
+    isDetailsVisible: boolean;
     onNavigatePrev: () => void;
     onNavigateNext: () => void;
+    onToggleDetails: () => void;
     onImagePreview: () => void;
     onDragOver: (event: DragEvent<HTMLDivElement>) => void;
     onDrop: (event: DragEvent<HTMLDivElement>) => void;
@@ -426,7 +431,7 @@ export function ScreenshotMetadataPreviewCard({
                         >
                             <ArrowLeftIcon data-icon="inline-start" />
                             {t('view.tools.label.prev')}
-                            <KeyboardShortcut keys={['Alt', 'ArrowLeft']} />
+                            <KeyboardShortcut keys="ArrowLeft" />
                         </Button>
                         <Button
                             variant="outline"
@@ -435,8 +440,25 @@ export function ScreenshotMetadataPreviewCard({
                             onClick={onNavigateNext}
                         >
                             {t('table.pagination.next')}
-                            <KeyboardShortcut keys={['Alt', 'ArrowRight']} />
+                            <KeyboardShortcut keys="ArrowRight" />
                             <ArrowRightIcon data-icon="inline-end" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={onToggleDetails}
+                        >
+                            {isDetailsVisible ? (
+                                <PanelRightCloseIcon data-icon="inline-start" />
+                            ) : (
+                                <PanelRightOpenIcon data-icon="inline-start" />
+                            )}
+                            {t(
+                                isDetailsVisible
+                                    ? 'dialog.screenshot_metadata.hide_details'
+                                    : 'dialog.screenshot_metadata.show_details'
+                            )}
+                            <KeyboardShortcut keys="I" />
                         </Button>
                     </div>
                 </div>
@@ -462,10 +484,10 @@ export function ScreenshotMetadataPreviewCard({
                         className="h-auto w-full p-0"
                         onClick={onImagePreview}
                     >
-                        <FadeInImage
+                        <img
                             src={imageUrl}
                             alt={metadata?.fileName || 'Screenshot preview'}
-                            className="max-h-[70vh] w-full rounded-lg object-contain"
+                            className="max-h-[70vh] w-full rounded-lg object-contain transition-none"
                         />
                     </Button>
                 ) : (

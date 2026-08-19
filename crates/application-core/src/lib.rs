@@ -84,6 +84,7 @@ pub use task_supervisor::{
     RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskStopToken, TaskSupervisor,
 };
 pub use vrcx_0_application_contracts::{runtime_event_payload, RuntimeEventPayload};
+pub use vrcx_0_core::FavoriteGroupVisibility;
 pub use web_client::{RealtimeAuthTokenFetch, WebClient};
 pub use world_cache::WorldCache;
 

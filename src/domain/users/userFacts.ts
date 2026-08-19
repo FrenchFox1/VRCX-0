@@ -8,7 +8,9 @@ type UserFactSource =
     | 'currentUser'
     | 'gameRuntime';
 
-type UserStateBucket = 'online' | 'active' | 'offline' | '';
+const USER_STATE_BUCKETS = ['online', 'active', 'offline'] as const;
+
+type UserStateBucket = (typeof USER_STATE_BUCKETS)[number] | '';
 
 interface UserFactLocation {
     tag?: string;
@@ -23,7 +25,6 @@ interface UserFactMergeOptions {
     receivedAt?: unknown;
     isCurrentUser?: boolean;
     isFriend?: boolean;
-    stateBucket?: unknown;
 }
 
 interface UserFact {
@@ -43,7 +44,6 @@ interface UserFact {
     status?: string;
     statusDescription?: string;
     state?: string;
-    stateBucket?: UserStateBucket;
     location?: string;
     travelingToLocation?: string;
     locationAt?: unknown;
@@ -93,13 +93,13 @@ function userFactKey(endpoint: unknown, userId: unknown): string {
         : '';
 }
 
+function isUserStateBucket(value: string): value is UserStateBucket {
+    return (USER_STATE_BUCKETS as readonly string[]).includes(value);
+}
+
 function normalizeStateBucket(value: unknown): UserStateBucket {
     const normalized = normalizeText(value).toLowerCase();
-    return normalized === 'online' ||
-        normalized === 'active' ||
-        normalized === 'offline'
-        ? normalized
-        : '';
+    return isUserStateBucket(normalized) ? normalized : '';
 }
 
 export {

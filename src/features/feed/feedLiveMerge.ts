@@ -2,8 +2,8 @@ import type {
     FeedLiveEntry,
     FeedLiveEntryPayload,
     FeedLivePatch
-} from '@/domain/feed/feedLiveTypes';
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
+} from '@/domain/feed/live';
+import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import type { FeedFilterType } from '@/repositories/feedRepository';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 

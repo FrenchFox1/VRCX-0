@@ -71,5 +71,5 @@ export type {
 export type {
     AvatarProfileRecord,
     AvatarStyleSelection
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/avatar';
 export default avatarProfileRepository;

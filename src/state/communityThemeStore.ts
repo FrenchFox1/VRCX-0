@@ -4,7 +4,7 @@ import type {
     CommunityThemeInstallMetadata,
     CommunityThemeLocalPreview,
     CommunityThemeManifest
-} from '@/domain/themes/communityThemeTypes';
+} from '@/domain/themes/types';
 
 interface CommunityThemeLocalPreviewWatch {
     enabled: boolean;

@@ -20,6 +20,7 @@ import { ContextRulesTab } from './ContextRulesTab';
 import { InviteRulesTab, type InviteRulesTabValues } from './InviteRulesTab';
 import {
     normalizeContextRule,
+    normalizeTimeRule,
     type ContextAutomationRule,
     type TimeAutomationRule
 } from './presenceAutomationDialogUtils';
@@ -32,7 +33,6 @@ const DEFAULT_INVITE_VALUES: InviteRulesTabValues = {
 
 const I18N_ROOT = 'view.tools.social_automation';
 
-type ConfigValueType = 'array' | 'bool' | 'string';
 type DialogOpenProps = {
     onOpenChange: (open: boolean) => void;
     open: boolean;
@@ -41,18 +41,11 @@ type ConfigWriteQueueRef = {
     current: Map<string, Promise<unknown>>;
 };
 
-async function saveConfigValue(
-    key: string,
-    value: unknown,
-    type: ConfigValueType = 'string'
-) {
-    if (type === 'bool') {
-        await configRepository.setBool(key, value as boolean);
-    } else if (type === 'array') {
-        await configRepository.setString(key, JSON.stringify(value));
-    } else {
-        await configRepository.setString(key, value);
-    }
+async function saveConfigValue(key: string, value: string | string[]) {
+    await configRepository.setString(
+        key,
+        Array.isArray(value) ? JSON.stringify(value) : value
+    );
 }
 
 function enqueueConfigWrite(
@@ -99,7 +92,7 @@ export function PresenceScheduleDialog({
                 if (!active) {
                     return;
                 }
-                setTimeRules(result as TimeAutomationRule[]);
+                setTimeRules(result.map(normalizeTimeRule));
             })
             .catch((error: unknown) =>
                 toast.error(
@@ -322,22 +315,15 @@ export function PresenceInviteRequestsDialog({
         };
     }, [open, t]);
 
-    async function saveValue(
-        key: keyof InviteRulesTabValues,
-        value: unknown,
-        type: ConfigValueType = 'string'
+    async function saveValue<K extends keyof InviteRulesTabValues>(
+        key: K,
+        value: InviteRulesTabValues[K]
     ) {
-        setValues(
-            (current) =>
-                ({
-                    ...current,
-                    [key]: value
-                }) as InviteRulesTabValues
-        );
+        setValues((current) => ({ ...current, [key]: value }));
         await enqueueConfigWrite(
             writeQueuesRef,
             key,
-            () => saveConfigValue(key, value, type),
+            () => saveConfigValue(key, value),
             (error) =>
                 toast.error(
                     userFacingErrorMessage(

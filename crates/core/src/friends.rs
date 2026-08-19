@@ -1,3 +1,4 @@
+use crate::derived_keys;
 use std::collections::HashMap;
 
 use compact_str::CompactString;
@@ -102,9 +103,6 @@ pub struct FriendRecord {
     #[specta(type = String)]
     pub state: CompactString,
     #[serde(default)]
-    #[specta(type = String)]
-    pub state_bucket: CompactString,
-    #[serde(default)]
     pub location: String,
     #[serde(default)]
     pub traveling_to_location: String,
@@ -171,25 +169,22 @@ impl FriendRecord {
             return None;
         }
 
-        self.state_bucket = StateBucket::normalize(first_non_empty([
-            self.state_bucket.as_str(),
-            self.state.as_str(),
-        ]))
-        .unwrap_or(StateBucket::Offline)
-        .as_str()
-        .into();
-        self.state = self.state_bucket.clone();
+        self.state = StateBucket::normalize(self.state.as_str())
+            .unwrap_or(StateBucket::Offline)
+            .as_str()
+            .into();
         Some(self)
     }
 
     pub fn resolved_state_bucket(&self) -> Option<StateBucket> {
-        [self.state_bucket.as_str(), self.state.as_str()]
-            .into_iter()
-            .find_map(StateBucket::normalize)
+        StateBucket::normalize(self.state.as_str())
     }
 
     pub fn is_placeholder(&self) -> bool {
-        self.extra.get("$profileSource").and_then(Value::as_str) == Some("placeholder")
+        self.extra
+            .get(derived_keys::PROFILE_SOURCE)
+            .and_then(Value::as_str)
+            == Some("placeholder")
     }
 
     pub fn display_name_or_id(&self) -> String {
@@ -250,6 +245,54 @@ pub fn normalize_user_id(value: &str) -> String {
 
 pub fn normalize_state_bucket(value: &str) -> Option<String> {
     StateBucket::normalize(value).map(|bucket| bucket.as_str().to_string())
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+pub enum UserStatus {
+    #[serde(rename = "active")]
+    Active,
+    #[serde(rename = "join me")]
+    JoinMe,
+    #[serde(rename = "ask me")]
+    AskMe,
+    #[serde(rename = "busy")]
+    Busy,
+    #[serde(rename = "offline")]
+    Offline,
+}
+
+impl UserStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::JoinMe => "join me",
+            Self::AskMe => "ask me",
+            Self::Busy => "busy",
+            Self::Offline => "offline",
+        }
+    }
+
+    pub fn normalize(value: &str) -> Option<Self> {
+        match normalize_user_status(value).as_str() {
+            "active" => Some(Self::Active),
+            "join me" => Some(Self::JoinMe),
+            "ask me" => Some(Self::AskMe),
+            "busy" => Some(Self::Busy),
+            "offline" => Some(Self::Offline),
+            _ => None,
+        }
+    }
+}
+
+pub fn normalize_user_status(value: &str) -> String {
+    let status = value.trim().to_ascii_lowercase();
+    match status.as_str() {
+        "joinme" => "join me".to_string(),
+        "askme" => "ask me".to_string(),
+        "offline:offline" => "offline".to_string(),
+        _ if status.starts_with("offline ") => "offline".to_string(),
+        _ => status,
+    }
 }
 
 pub fn meaningful_display_name(
@@ -341,7 +384,7 @@ mod tests {
         assert_eq!(baseline.websocket, "wss://ws.example.test");
         let friend = baseline.friends_by_id.get("usr_friend").unwrap();
         assert_eq!(friend.id, "usr_friend");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.display_name_or_id(), "Friend");
     }
 
@@ -352,7 +395,6 @@ mod tests {
             "id": "usr_friend",
             "displayName": "Friend",
             "state": "online",
-            "stateBucket": "online",
             "platform": "standalonewindows",
             "last_platform": "android",
             "status": "join me",
@@ -363,7 +405,6 @@ mod tests {
 
         assert!(!record.display_name.is_heap_allocated());
         assert!(!record.state.is_heap_allocated());
-        assert!(!record.state_bucket.is_heap_allocated());
         assert!(!record.platform.is_heap_allocated());
         assert!(!record.last_platform.is_heap_allocated());
         assert!(!record.status.is_heap_allocated());
@@ -372,7 +413,6 @@ mod tests {
         let serialized = serde_json::to_value(record).unwrap();
         assert_eq!(serialized["displayName"], "Friend");
         assert_eq!(serialized["state"], "online");
-        assert_eq!(serialized["stateBucket"], "online");
         assert_eq!(serialized["platform"], "standalonewindows");
         assert_eq!(serialized["lastPlatform"], "android");
         assert_eq!(serialized["status"], "join me");
@@ -424,5 +464,45 @@ mod tests {
         assert_eq!(meaningful_display_name("usr_1", "", "usr_1"), None);
         assert_eq!(meaningful_display_name("usr_other", "", "usr_1"), None);
         assert_eq!(meaningful_display_name("", "", "usr_1"), None);
+    }
+}
+
+#[cfg(test)]
+mod user_status_tests {
+    use super::*;
+
+    #[test]
+    fn normalize_resolves_the_five_known_statuses() {
+        assert_eq!(UserStatus::normalize("active"), Some(UserStatus::Active));
+        assert_eq!(UserStatus::normalize("joinme"), Some(UserStatus::JoinMe));
+        assert_eq!(UserStatus::normalize("Ask Me"), Some(UserStatus::AskMe));
+        assert_eq!(UserStatus::normalize("busy"), Some(UserStatus::Busy));
+        assert_eq!(
+            UserStatus::normalize("offline:offline"),
+            Some(UserStatus::Offline)
+        );
+        assert_eq!(UserStatus::normalize("sleeping"), None);
+    }
+
+    #[test]
+    fn as_str_round_trips_through_normalize() {
+        for status in [
+            UserStatus::Active,
+            UserStatus::JoinMe,
+            UserStatus::AskMe,
+            UserStatus::Busy,
+            UserStatus::Offline,
+        ] {
+            assert_eq!(UserStatus::normalize(status.as_str()), Some(status));
+        }
+    }
+
+    #[test]
+    fn serde_accepts_only_supported_wire_values() {
+        assert_eq!(
+            serde_json::from_value::<UserStatus>(serde_json::json!("join me")).unwrap(),
+            UserStatus::JoinMe
+        );
+        assert!(serde_json::from_value::<UserStatus>(serde_json::json!("future")).is_err());
     }
 }

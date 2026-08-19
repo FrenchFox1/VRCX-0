@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
+import type { FavoriteGroupVisibility } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -31,13 +32,12 @@ import { Input } from '@/ui/shadcn/input';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-import type { FavoriteGroup, FavoriteSource } from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteSource } from '../favoritesTypes';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'] as const;
-type FavoriteVisibility = (typeof VISIBILITY_OPTIONS)[number];
 
 const VISIBILITY_META: Record<
-    FavoriteVisibility,
+    FavoriteGroupVisibility,
     { labelKey: string; icon: LucideIcon }
 > = {
     public: { labelKey: 'view.favorite.visibility.public', icon: GlobeIcon },
@@ -45,12 +45,19 @@ const VISIBILITY_META: Record<
     private: { labelKey: 'view.favorite.visibility.private', icon: LockIcon }
 };
 
+function isFavoriteGroupVisibility(
+    visibility: string
+): visibility is FavoriteGroupVisibility {
+    return VISIBILITY_OPTIONS.some((option) => option === visibility);
+}
+
 function getVisibilityLabel(
     t: ReturnType<typeof useTranslation>['t'],
     visibility: string
 ) {
-    const meta = VISIBILITY_META[visibility as FavoriteVisibility];
-    return meta ? t(meta.labelKey) : visibility;
+    return isFavoriteGroupVisibility(visibility)
+        ? t(VISIBILITY_META[visibility].labelKey)
+        : visibility;
 }
 
 function GroupVisibilityIcon({
@@ -60,14 +67,14 @@ function GroupVisibilityIcon({
     visibility: string;
     label: string;
 }) {
-    const meta = VISIBILITY_META[visibility as FavoriteVisibility];
-    if (!meta) {
+    if (!isFavoriteGroupVisibility(visibility)) {
         return (
             <span className="text-muted-foreground shrink-0 text-xs">
                 {label}
             </span>
         );
     }
+    const meta = VISIBILITY_META[visibility];
     return (
         <span className="shrink-0" title={label}>
             <meta.icon
@@ -112,14 +119,14 @@ function GroupCapacityMeter({
     );
 }
 
-type FavoriteGroupHandler = (group: FavoriteGroup) => void | Promise<void>;
+type FavoriteGroupHandler = (group: FavoriteGroupView) => void | Promise<void>;
 
 type GroupMenuProps = {
-    group: FavoriteGroup;
+    group: FavoriteGroupView;
     onRemoteRename: FavoriteGroupHandler;
     onRemoteVisibility(
-        group: FavoriteGroup,
-        visibility: FavoriteVisibility
+        group: FavoriteGroupView,
+        visibility: FavoriteGroupVisibility
     ): void | Promise<void>;
     onRemoteClear: FavoriteGroupHandler;
     onLocalRename: FavoriteGroupHandler;
@@ -297,7 +304,7 @@ type GroupRailSectionProps = {
     icon: LucideIcon;
     emptyTitle: string;
     emptyDescription: string;
-    groups: FavoriteGroup[];
+    groups: FavoriteGroupView[];
     selectedSource: FavoriteSource | '';
     selectedGroupKey: string;
     loading?: boolean;
@@ -313,8 +320,8 @@ type GroupRailSectionProps = {
     onCancelCreate?(): void;
     onRemoteRename: FavoriteGroupHandler;
     onRemoteVisibility(
-        group: FavoriteGroup,
-        visibility: FavoriteVisibility
+        group: FavoriteGroupView,
+        visibility: FavoriteGroupVisibility
     ): void | Promise<void>;
     onRemoteClear: FavoriteGroupHandler;
     onLocalRename: FavoriteGroupHandler;

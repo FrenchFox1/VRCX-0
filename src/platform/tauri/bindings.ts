@@ -257,8 +257,13 @@ export const commands = {
             input
         });
     },
-    async appQuickSearchCatalogGet(): Promise<QuickSearchCatalogSnapshot> {
-        return await TAURI_INVOKE('app__quick_search_catalog_get');
+    async appQuickSearchQuery(
+        input: QuickSearchQueryInput
+    ): Promise<QuickSearchQueryOutput> {
+        return await TAURI_INVOKE('app__quick_search_query', { input });
+    },
+    async appQuickSearchWorkingSetInvalidate(): Promise<null> {
+        return await TAURI_INVOKE('app__quick_search_working_set_invalidate');
     },
     async appVrcStatusGet(): Promise<VrcStatusSnapshot> {
         return await TAURI_INVOKE('app__vrc_status_get');
@@ -695,9 +700,6 @@ export const commands = {
     async appUserTablesEnsure(userId: string): Promise<UserTableContextOutput> {
         return await TAURI_INVOKE('app__user_tables_ensure', { userId });
     },
-    async appDatabaseMaintenanceRun(task: string): Promise<null> {
-        return await TAURI_INVOKE('app__database_maintenance_run', { task });
-    },
     async appDatabaseMaintenanceTableSizesGet(
         userId: string
     ): Promise<MaintenanceTableSizesOutput> {
@@ -1115,15 +1117,6 @@ export const commands = {
         query: FriendLogHistoryQueryInput
     ): Promise<FriendLogHistoryOutput[]> {
         return await TAURI_INVOKE('app__friend_log_history_query', { query });
-    },
-    async appFriendLogDeleteCurrent(
-        userId: string,
-        targetUserId: string
-    ): Promise<number> {
-        return await TAURI_INVOKE('app__friend_log_delete_current', {
-            userId,
-            targetUserId
-        });
     },
     async appFriendLogHistoryDelete(
         userId: string,
@@ -1722,12 +1715,12 @@ export const commands = {
         );
     },
     async appVrchatMediaAssetUpload(
-        input: VrchatMediaAssetUploadInput
+        input: MediaAssetUploadRequest
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_media_asset_upload', { input });
     },
     async appVrchatMediaEmojiUpload(
-        input: VrchatMediaImageUploadInput
+        input: VrchatMediaEmojiUploadInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_media_emoji_upload', { input });
     },
@@ -1737,7 +1730,7 @@ export const commands = {
         return await TAURI_INVOKE('app__vrchat_media_file_delete', { input });
     },
     async appVrchatMediaFilesGet(
-        input: VrchatMediaParamsInput
+        input: VrchatMediaFilesInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_media_files_get', { input });
     },
@@ -1757,7 +1750,7 @@ export const commands = {
         );
     },
     async appVrchatMediaInventoryItemUpdate(
-        input: VrchatMediaInventoryItemInput
+        input: VrchatMediaInventoryItemUpdateInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_media_inventory_item_update', {
             input
@@ -1771,7 +1764,7 @@ export const commands = {
         });
     },
     async appVrchatMediaInventoryItemsGet(
-        input: VrchatMediaParamsInput
+        input: VrchatMediaInventoryItemsInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_media_inventory_items_get', {
             input
@@ -1902,24 +1895,24 @@ export const commands = {
         return await TAURI_INVOKE('app__vrchat_boop_send', { input });
     },
     async appVrchatRequestInvitePhotoSend(
-        input: VrchatNotificationPhotoSendInput
+        input: VrchatRequestInvitePhotoSendInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_request_invite_photo_send', {
             input
         });
     },
     async appVrchatRequestInviteSend(
-        input: VrchatNotificationSendInput
+        input: VrchatRequestInviteSendInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_request_invite_send', { input });
     },
     async appVrchatSearchGroupsGet(
-        input: VrchatSearchParamsInput
+        input: VrchatSearchGroupsInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_search_groups_get', { input });
     },
     async appVrchatSearchGroupsStrictGet(
-        input: VrchatSearchParamsInput
+        input: VrchatSearchGroupsInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_search_groups_strict_get', {
             input
@@ -1934,7 +1927,7 @@ export const commands = {
         );
     },
     async appVrchatSearchUsersGet(
-        input: VrchatSearchParamsInput
+        input: VrchatSearchUsersInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_search_users_get', { input });
     },
@@ -3042,11 +3035,18 @@ export type AvatarGetInput = {
     full?: boolean;
     fresh?: boolean;
 };
+export type AvatarListSort =
+    | 'created'
+    | 'updated'
+    | 'order'
+    | '_created_at'
+    | '_updated_at';
 export type AvatarMemoOutput = {
     avatarId: string;
     editedAt: string;
     memo: string;
 };
+export type AvatarReleaseStatus = 'public' | 'private';
 export type AvatarSelectionMutationOutcome = {
     applied: boolean;
     response: HttpApiExecuteResponse;
@@ -3062,6 +3062,15 @@ export type AvatarTagsPatchInput = {
     nextEntries?: AvatarTagInput[];
 };
 export type AvatarTimeSpentOutput = { avatarId: string; timeSpent: number };
+export type AvatarUpdateRequest = {
+    id: string;
+    name?: string | null;
+    description?: string | null;
+    primaryStyle?: string | null;
+    secondaryStyle?: string | null;
+    tags?: string[] | null;
+    releaseStatus?: AvatarReleaseStatus | null;
+};
 export type BackendRuntimeAuthStatus =
     | 'unknown'
     | 'authenticating'
@@ -3282,6 +3291,11 @@ export type BrowseHistoryRecordInput = {
     recordVisit?: boolean;
 };
 export type CacheCheckResult = { Item1: number; Item2: boolean; Item3: string };
+export type CalendarListParams = {
+    n?: number | null;
+    offset?: number | null;
+    date?: string | null;
+};
 export type CapabilityStatus = {
     supported: boolean;
     enabled: boolean;
@@ -3365,10 +3379,39 @@ export type CommunityThemeProjection = {
 export type CommunityThemeStatsEntry = { downloads: number };
 export type ConfigReadEntry = { key: string; value: string };
 export type ConfigWriteEntry = { key: string; value: string };
+export type ContentFilter =
+    | 'content_adult'
+    | 'content_gore'
+    | 'content_horror'
+    | 'content_sex'
+    | 'content_violence';
 export type CrashRelaunchDecisionPayload =
     | { handled: boolean; error: string }
     | { handled: boolean; location: string; delayMs: number | null };
+export type CurrentUserProfileUpdateRequest =
+    | { backgroundType: 'default' }
+    | {
+          backgroundType: 'gradient';
+          backgroundGradientBottom: string;
+          backgroundGradientTop: string;
+      }
+    | { backgroundType: 'texture'; backgroundTextureId: string };
 export type CurrentUserRefreshOutcome = { applied: boolean };
+export type CurrentUserUpdateRequest = {
+    homeLocation?: string | null;
+    status?: UserStatus | null;
+    statusDescription?: string | null;
+    bio?: string | null;
+    bioLinks?: string[] | null;
+    pronouns?: string | null;
+    userIcon?: string | null;
+    profilePicOverride?: string | null;
+    allowAvatarCopying?: boolean | null;
+    isBoopingEnabled?: boolean | null;
+    hasSharedConnectionsOptOut?: boolean | null;
+    hasDiscordFriendsOptOut?: boolean | null;
+    contentFilters?: ContentFilter[] | null;
+};
 export type DataDirCleanupPending = {
     oldDir: string;
     bytes: number;
@@ -3524,8 +3567,24 @@ export type DeepLinkAction =
     | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
 export type DesktopNotificationActivation = { userId: string };
+export type EmojiLoopStyle = 'pingpong';
+export type EmojiUploadParams =
+    | {
+          tag: 'emoji';
+          animationStyle: ImageAnimationStyle;
+          maskTag: ImageMaskTag;
+      }
+    | {
+          tag: 'emojianimated';
+          animationStyle: ImageAnimationStyle;
+          maskTag: ImageMaskTag;
+          frames: number;
+          framesOverTime: number;
+          loopStyle?: EmojiLoopStyle | null;
+      };
 export type EmptyEventPayload = Record<string, never>;
-export type Entity = { kind: string; id: string; displayName: string };
+export type Entity = { kind: EntityKind; id: string; displayName: string };
+export type EntityKind = 'user' | 'world';
 export type ExternalApiAvatarSearchInput = { url?: string; vrcxId?: string };
 export type ExternalApiExecuteResponse = {
     status: number;
@@ -3649,6 +3708,7 @@ export type FavoriteGroupOutput = {
     count: number;
     visibility: string;
 };
+export type FavoriteGroupVisibility = 'friends' | 'private' | 'public';
 export type FavoriteImportItemResult = {
     id: string;
     state: FavoriteImportItemState;
@@ -3690,7 +3750,7 @@ export type FavoriteImportStatus = {
 export type FavoriteImportTarget = {
     location: FavoriteImportLocation;
     group?: string;
-    favoriteType?: string;
+    favoriteType: VrchatFavoriteType | null;
 };
 export type FavoriteRow = {
     createdAt: string;
@@ -3758,7 +3818,7 @@ export type FavoriteTransferStage =
 export type FavoriteTransferTarget = {
     location: FavoriteTransferLocation;
     group?: string;
-    favoriteType?: string;
+    favoriteType: VrchatFavoriteType | null;
 };
 export type FavoritesChangedPayload = {
     ownerUserId: string;
@@ -3916,7 +3976,6 @@ export type FriendProjection = {
 export type FriendProjectionPatch = {
     userId: string;
     patch: FriendRecord;
-    stateBucket: string;
     stateBucketAuthority: FriendStateBucketAuthority;
 };
 export type FriendRecord = Partial<{
@@ -3932,7 +3991,6 @@ export type FriendRecord = Partial<{
     displayName?: string;
     username?: string;
     state?: string;
-    stateBucket?: string;
     location?: string;
     travelingToLocation?: string;
     worldId?: string;
@@ -4001,6 +4059,7 @@ export type GameLogSessionDto = {
     worldName: string;
     groupName: string;
     duration: number | null;
+    playerDurationRows: GameLogSessionPlayerDurationRowDto[];
     events: GameLogSessionEventDto[];
 };
 export type GameLogSessionEventDto = {
@@ -4023,6 +4082,11 @@ export type GameLogSessionMemberDto = {
     userId: string;
     created_at: string;
     isFavorite: boolean;
+};
+export type GameLogSessionPlayerDurationRowDto = {
+    displayName: string;
+    userId: string;
+    time: number;
 };
 export type GameLogSessionsQueryInput = {
     search?: string;
@@ -4087,6 +4151,14 @@ export type GroupCalendarSnapshot = {
     groupProfiles: Partial<{ [key in string]: JsonValue }>;
 };
 export type GroupJoinRequestAction = 'accept' | 'reject';
+export type GroupMemberPatch = {
+    isSubscribedToAnnouncements?: boolean | null;
+    isSubscribedToEventAnnouncements?: boolean | null;
+    managerNotes?: string | null;
+    visibility?: GroupMemberVisibility | null;
+};
+export type GroupMemberSort = 'joinedAt:asc' | 'joinedAt:desc';
+export type GroupMemberVisibility = 'friends' | 'hidden' | 'visible';
 export type GroupModerationBatchAction =
     | { type: 'kick' }
     | { type: 'ban' }
@@ -4134,6 +4206,15 @@ export type GroupModerationBatchResult = {
     lastError: string | null;
 };
 export type GroupModerationBatchTarget = { userId: string; roleIds?: string[] };
+export type GroupPostMutation = {
+    title: string;
+    text: string;
+    sendNotification: boolean;
+    visibility: GroupPostVisibility;
+    roleIds?: string[];
+    imageId: string | null;
+};
+export type GroupPostVisibility = 'group' | 'public';
 export type GroupQuickModerationAction = 'kick' | 'ban';
 export type GroupQuickModerationActionInput = {
     currentUserId?: string;
@@ -4170,6 +4251,11 @@ export type GroupQuickModerationOutput = {
     banGroups: GroupQuickModerationGroup[];
     membershipErrorCount: number;
 };
+export type GroupSearchParams = {
+    query?: string | null;
+    offset?: number | null;
+    n?: number | null;
+};
 export type HostArchitecture = 'x86_64' | 'aarch64' | 'unknown';
 export type HostCapabilities = {
     platform: HostPlatform;
@@ -4203,6 +4289,35 @@ export type HostSessionProjection = {
     changedAt: string;
 };
 export type HttpApiExecuteResponse = { status: number; data: string };
+export type ImageAnimationStyle =
+    | 'aura'
+    | 'bats'
+    | 'bees'
+    | 'bounce'
+    | 'cloud'
+    | 'confetti'
+    | 'crying'
+    | 'dislike'
+    | 'fire'
+    | 'idea'
+    | 'lasers'
+    | 'like'
+    | 'magnet'
+    | 'mistletoe'
+    | 'money'
+    | 'noise'
+    | 'orbit'
+    | 'pizza'
+    | 'rain'
+    | 'rotate'
+    | 'shake'
+    | 'snow'
+    | 'snowball'
+    | 'spin'
+    | 'splash'
+    | 'stop'
+    | 'zzz';
+export type ImageMaskTag = 'square';
 export type ImportPreview = { title: string; worldIds: string[] };
 export type InstanceActivityRowOutput = {
     id: number;
@@ -4213,6 +4328,28 @@ export type InstanceActivityRowOutput = {
     userId: string;
     time: number;
 };
+export type InstanceCreateGroupAccessType = 'members' | 'plus' | 'public';
+export type InstanceCreateMinimumAvatarPerformance = 'Poor' | 'Medium' | 'Good';
+export type InstanceCreateRegion = 'eu' | 'jp' | 'us' | 'use';
+export type InstanceCreateRequest = {
+    type: InstanceCreateType;
+    canRequestInvite: boolean;
+    worldId: string;
+    ownerId?: string | null;
+    region: InstanceCreateRegion;
+    groupAccessType?: InstanceCreateGroupAccessType | null;
+    queueEnabled?: boolean | null;
+    roleIds?: string[] | null;
+    ageGate?: boolean | null;
+    displayName?: string | null;
+    minimumAvatarPerformance?: InstanceCreateMinimumAvatarPerformance | null;
+};
+export type InstanceCreateType =
+    | 'friends'
+    | 'group'
+    | 'hidden'
+    | 'private'
+    | 'public';
 export type InstanceHistoryEntryOutput = {
     createdAt: string;
     location: string;
@@ -4288,13 +4425,55 @@ export type IntegrationApiStatus = {
     activeConnections: number;
     lastError: IntegrationApiFailure | null;
 };
+export type InventoryItemUpdateRequest = { isArchived: boolean };
 export type InventoryItemsCollectInput = {
-    params?: Partial<{ [key in string]: JsonValue }>;
+    types?: InventoryQueryItemType[];
+    notFlags?: InventoryQueryFlag[];
+    archived?: boolean | null;
 };
 export type InventoryItemsCollectOutput = {
     items: RawJson[];
     truncated: boolean;
 };
+export type InventoryListParams = {
+    n?: number | null;
+    offset?: number | null;
+    holderId?: string | null;
+    equipSlot?: string | null;
+    order?: InventoryOrder | null;
+    tags?: string | null;
+    types?: string | null;
+    flags?: string | null;
+    notTypes?: string | null;
+    notFlags?: string | null;
+    archived?: boolean | null;
+};
+export type InventoryOrder = 'newest';
+export type InventoryQueryFlag =
+    | 'archivable'
+    | 'cloneable'
+    | 'consumable'
+    | 'equippable'
+    | 'instantiatable'
+    | 'trashable'
+    | 'ugc'
+    | 'unique';
+export type InventoryQueryItemType =
+    | 'bundle'
+    | 'droneskin'
+    | 'emoji'
+    | 'iconFrame'
+    | 'nameplateEffect'
+    | 'portalskin'
+    | 'profileEffect'
+    | 'prop'
+    | 'sticker'
+    | 'warpeffect';
+export type InviteMessageType =
+    | 'message'
+    | 'request'
+    | 'requestResponse'
+    | 'response';
 export type JsonValue = unknown;
 export type LegacyVrcxMigrationStatus = {
     detected: boolean;
@@ -4451,12 +4630,29 @@ export type McpServerStatus = {
     lastError: string | null;
     clientConfig: ClientConfigSnippets | null;
 };
-export type MediaAssetKind =
+export type MediaAssetUploadRequest =
+    | { assetKind: 'gallery'; imageData: string }
+    | { assetKind: 'icons'; imageData: string }
+    | { assetKind: 'emojis'; imageData: string; params: EmojiUploadParams }
+    | { assetKind: 'stickers'; imageData: string }
+    | {
+          assetKind: 'prints';
+          imageData: string;
+          cropWhiteBorder: boolean;
+          params: PrintUploadParams;
+      };
+export type MediaFileListParams = {
+    n?: number | null;
+    offset?: number | null;
+    tag?: MediaFileTag | null;
+};
+export type MediaFileTag =
     | 'gallery'
-    | 'icons'
-    | 'emojis'
-    | 'stickers'
-    | 'prints';
+    | 'avatargallery'
+    | 'icon'
+    | 'emoji'
+    | 'emojianimated'
+    | 'sticker';
 export type MemoSaveResult = {
     entityId: string;
     editedAt: string;
@@ -4845,6 +5041,7 @@ export type PrintFavoriteState = {
     maxFavorites: number;
     warning: CleanupWarning | null;
 };
+export type PrintUploadParams = { note: string; timestamp: string };
 export type ProfileBackupActionOutcome = {
     accepted: boolean;
     status: ProfileBackupStatus;
@@ -4895,6 +5092,10 @@ export type ProfileBackupStatus = {
     error: ProfileBackupError | null;
     lastOutcome: ProfileBackupOutcome | null;
 };
+export type ProfileDecorationEquipSlot =
+    | 'iconFrame'
+    | 'profileEffect'
+    | 'nameplateEffect';
 export type ProfileRestoreAppVersionCheck = 'compatible';
 export type ProfileRestoreArchiveCheck = 'valid';
 export type ProfileRestoreDataDisposition =
@@ -4982,18 +5183,35 @@ export type ProxySettingsTestResult = {
     normalizedProxy: string | null;
     status: number;
 };
-export type QuickSearchCatalogSnapshot = {
-    status: QuickSearchCatalogStatus;
+export type QueryOrder = 'ascending' | 'descending';
+export type QuickSearchEntityType = 'friend' | 'avatar' | 'world' | 'group';
+export type QuickSearchMatchedField = 'name' | 'memo' | 'note';
+export type QuickSearchQueryInput = { query: string };
+export type QuickSearchQueryOutput = {
+    status: QuickSearchQueryStatus;
     detail: string;
-    ownAvatars: JsonValue[];
-    favoriteAvatars: JsonValue[];
-    ownWorlds: JsonValue[];
-    favoriteWorlds: JsonValue[];
-    groups: JsonValue[];
-    userMemos: JsonValue[];
-    userNotes: JsonValue[];
+    friends: QuickSearchResult[];
+    ownAvatars: QuickSearchResult[];
+    favoriteAvatars: QuickSearchResult[];
+    ownWorlds: QuickSearchResult[];
+    favoriteWorlds: QuickSearchResult[];
+    ownGroups: QuickSearchResult[];
+    joinedGroups: QuickSearchResult[];
 };
-export type QuickSearchCatalogStatus = 'ready' | 'partial';
+export type QuickSearchQueryStatus = 'ready' | 'partial';
+export type QuickSearchResult = {
+    id: string;
+    type: QuickSearchEntityType;
+    source: string;
+    name: string;
+    subtitle: string;
+    imageUrl: string;
+    seedData: JsonValue | null;
+    memo: string;
+    note: string;
+    matchedField: QuickSearchMatchedField;
+    userColour: string;
+};
 export type RawJson = JsonValue;
 export type RealtimeCurrentUserProjection = {
     generation: number;
@@ -5089,6 +5307,7 @@ export type RegistryBackupSnapshot = {
     date: string;
     data: JsonValue;
 };
+export type ReleaseStatusFilter = 'all' | 'hidden' | 'private' | 'public';
 export type RemoteModerationRow = {
     id: string;
     type: string;
@@ -5098,6 +5317,7 @@ export type RemoteModerationRow = {
     targetDisplayName: string;
     created: string;
 };
+export type RequestInviteRequest = { requestSlot?: number | null };
 export type ResolvedFriendLogName = { userId: string; displayName: string };
 export type Role = 'user' | 'assistant';
 export type RuntimeGameLogEventPayload = {
@@ -5454,7 +5674,7 @@ export type UpdaterMetadata = {
 };
 export type UserDialogTabCountsInput = {
     userId: string;
-    avatarReleaseStatus?: string;
+    avatarReleaseStatus?: ReleaseStatusFilter;
     includeMutualFriends?: boolean;
     force?: boolean;
 };
@@ -5490,6 +5710,24 @@ export type UserNoteOutput = {
     note: string;
     createdAt: string;
 };
+export type UserSearchCustomField = 'bio' | 'displayName';
+export type UserSearchParams = {
+    search?: string | null;
+    developerType?: string | null;
+    n?: number | null;
+    offset?: number | null;
+    isInternalVariant?: boolean | null;
+    customFields?: UserSearchCustomField | null;
+    sort?: UserSearchSort | null;
+    order?: QueryOrder | null;
+};
+export type UserSearchSort =
+    | '_created_at'
+    | 'created'
+    | 'last_login'
+    | 'nuisanceFactor'
+    | 'relevance';
+export type UserStatus = 'active' | 'join me' | 'ask me' | 'busy' | 'offline';
 export type UserTableContextOutput = { userId: string; userPrefix: string };
 export type VrOverlayRuntimeSnapshot = {
     enabled: boolean;
@@ -5521,14 +5759,14 @@ export type VrchatAvatarListByUserInput = {
     user?: string;
     n?: number;
     offset?: number;
-    sort?: string;
-    order?: string;
-    releaseStatus?: string;
+    sort: AvatarListSort;
+    order: QueryOrder;
+    releaseStatus: ReleaseStatusFilter;
 };
-export type VrchatAvatarModerationInput = { avatarId?: string; type?: string };
+export type VrchatAvatarModerationInput = { avatarId?: string };
 export type VrchatAvatarSaveInput = {
     avatarId?: string;
-    params: JsonValue | null;
+    params: AvatarUpdateRequest;
 };
 export type VrchatBoopInput = { userId?: string; emojiId?: string };
 export type VrchatConfigWriteResult = { oldCacheCleanupError: string | null };
@@ -5537,21 +5775,26 @@ export type VrchatCurrentUserBadgeInput = {
     hidden?: boolean;
     showcased?: boolean;
 };
-export type VrchatCurrentUserProfileUpdateInput = { params: JsonValue | null };
+export type VrchatCurrentUserProfileUpdateInput = {
+    params: CurrentUserProfileUpdateRequest;
+};
 export type VrchatCurrentUserTagsInput = { tags?: string[] };
-export type VrchatCurrentUserUpdateInput = { params: JsonValue | null };
+export type VrchatCurrentUserUpdateInput = { params: CurrentUserUpdateRequest };
 export type VrchatFavoriteAddInput = {
     type: VrchatFavoriteType;
     favoriteId?: string;
     tags?: string;
 };
 export type VrchatFavoriteDeleteInput = { objectId?: string };
-export type VrchatFavoriteGroupClearInput = { type?: string; group?: string };
+export type VrchatFavoriteGroupClearInput = {
+    type: VrchatFavoriteType;
+    group?: string;
+};
 export type VrchatFavoriteGroupSaveInput = {
-    type?: string;
+    type: VrchatFavoriteType;
     group?: string;
     displayName: string | null;
-    visibility: string | null;
+    visibility: FavoriteGroupVisibility | null;
 };
 export type VrchatFavoriteGroupsInput = {
     n?: number;
@@ -5595,7 +5838,7 @@ export type VrchatGroupLogsInput = {
 export type VrchatGroupMemberPropsInput = {
     groupId?: string;
     userId?: string;
-    params: JsonValue | null;
+    params: GroupMemberPatch;
 };
 export type VrchatGroupMemberRoleInput = {
     groupId?: string;
@@ -5606,7 +5849,7 @@ export type VrchatGroupMembersInput = {
     groupId?: string;
     n?: number;
     offset?: number;
-    sort?: string;
+    sort?: GroupMemberSort;
     roleId?: string;
 };
 export type VrchatGroupMembersSearchInput = {
@@ -5622,13 +5865,13 @@ export type VrchatGroupPagedInput = {
 };
 export type VrchatGroupPostCreateInput = {
     groupId?: string;
-    params: JsonValue | null;
+    params: GroupPostMutation;
 };
 export type VrchatGroupPostDeleteInput = { groupId?: string; postId?: string };
 export type VrchatGroupPostEditInput = {
     groupId?: string;
     postId?: string;
-    params: JsonValue | null;
+    params: GroupPostMutation;
 };
 export type VrchatGroupProfileInput = {
     groupId?: string;
@@ -5644,7 +5887,7 @@ export type VrchatInstanceCloseInput = {
     location?: string;
     hardClose?: boolean;
 };
-export type VrchatInstanceCreateInput = { params: JsonValue | null };
+export type VrchatInstanceCreateInput = { params: InstanceCreateRequest };
 export type VrchatInstanceIdentityInput = {
     worldId?: string;
     instanceId?: string;
@@ -5705,25 +5948,23 @@ export type VrchatLogTailReadInput = {
     levels: string[] | null;
     categories: string[] | null;
 };
-export type VrchatMediaAssetUploadInput = {
-    assetKind: MediaAssetKind;
-    imageData?: string;
-    cropWhiteBorder?: boolean;
-    params?: Partial<{ [key in string]: JsonValue }>;
-};
 export type VrchatMediaAvatarGalleryImageUploadInput = {
     imageData?: string;
-    avatarId: JsonValue;
+    avatarId: string;
+};
+export type VrchatMediaEmojiUploadInput = {
+    imageData?: string;
+    params: EmojiUploadParams;
 };
 export type VrchatMediaFileIdInput = { fileId?: string };
-export type VrchatMediaImageUploadInput = {
-    imageData?: string;
-    params?: Partial<{ [key in string]: JsonValue }>;
-};
-export type VrchatMediaInventoryItemInput = {
+export type VrchatMediaFilesInput = { params?: MediaFileListParams };
+export type VrchatMediaImageUploadInput = { imageData?: string };
+export type VrchatMediaInventoryItemInput = { inventoryId?: string };
+export type VrchatMediaInventoryItemUpdateInput = {
     inventoryId?: string;
-    params?: Partial<{ [key in string]: JsonValue }>;
+    params: InventoryItemUpdateRequest;
 };
+export type VrchatMediaInventoryItemsInput = { params?: InventoryListParams };
 export type VrchatMediaInventoryTemplateInput = {
     inventoryTemplateId?: string;
 };
@@ -5733,46 +5974,44 @@ export type VrchatMediaLegacyImageUploadInput = {
     base64File?: string;
     fileSizeInBytes?: number | null;
 };
-export type VrchatMediaParamsInput = {
-    params?: Partial<{ [key in string]: JsonValue }>;
-};
 export type VrchatMediaPrintIdInput = { printId?: string };
 export type VrchatMediaPrintUploadInput = {
     imageData?: string;
     cropWhiteBorder?: boolean;
-    params?: Partial<{ [key in string]: JsonValue }>;
+    params: PrintUploadParams;
 };
 export type VrchatMediaPrintsInput = { userId?: string; n?: number };
 export type VrchatMediaProfileDecorationEquipInput = {
     inventoryId?: string;
-    equipSlot?: string;
+    equipSlot: ProfileDecorationEquipSlot;
 };
-export type VrchatMediaProfileDecorationUnequipInput = { equipSlot?: string };
+export type VrchatMediaProfileDecorationUnequipInput = {
+    equipSlot: ProfileDecorationEquipSlot;
+};
 export type VrchatMediaRewardRedeemInput = { code?: string };
 export type VrchatMediaUserInventoryItemInput = {
     userId?: string;
     inventoryId?: string;
 };
-export type VrchatNotificationPhotoSendInput = {
-    receiverUserId?: string;
-    params?: JsonValue;
-    imageData?: string;
-};
-export type VrchatNotificationSendInput = {
-    receiverUserId?: string;
-    params?: JsonValue;
-};
 export type VrchatPrintFavoriteSetInput = {
     printId?: string;
     favorite?: boolean;
 };
-export type VrchatRichPresenceDisableResult = { changed: boolean };
-export type VrchatSearchParamsInput = {
-    params?: Partial<{ [key in string]: JsonValue }>;
+export type VrchatRequestInvitePhotoSendInput = {
+    receiverUserId?: string;
+    params: RequestInviteRequest;
+    imageData?: string;
 };
+export type VrchatRequestInviteSendInput = {
+    receiverUserId?: string;
+    params: RequestInviteRequest;
+};
+export type VrchatRichPresenceDisableResult = { changed: boolean };
+export type VrchatSearchGroupsInput = { params?: GroupSearchParams };
 export type VrchatSearchShortNameInput = { shortName?: string };
+export type VrchatSearchUsersInput = { params?: UserSearchParams };
 export type VrchatSearchWorldsInput = {
-    params?: Partial<{ [key in string]: JsonValue }>;
+    params?: WorldSearchParams;
     option: string | null;
 };
 export type VrchatToolsCalendarEventInput = {
@@ -5780,9 +6019,7 @@ export type VrchatToolsCalendarEventInput = {
     eventId?: string;
 };
 export type VrchatToolsCalendarGroupInput = { groupId?: string };
-export type VrchatToolsCalendarListInput = {
-    params?: Partial<{ [key in string]: JsonValue }>;
-};
+export type VrchatToolsCalendarListInput = { params?: CalendarListParams };
 export type VrchatToolsFollowGroupEventInput = {
     groupId?: string;
     eventId?: string;
@@ -5790,24 +6027,19 @@ export type VrchatToolsFollowGroupEventInput = {
 };
 export type VrchatToolsInviteMessageEditInput = {
     currentUserId?: string;
-    messageType?: string;
-    slot?: string;
+    messageType: InviteMessageType;
+    slot: number;
     message?: string;
 };
 export type VrchatToolsInviteMessagesInput = {
     currentUserId?: string;
-    messageType?: string;
+    messageType: InviteMessageType;
 };
 export type VrchatToolsUserNoteSaveInput = {
     targetUserId?: string;
     note?: string;
 };
-export type VrchatToolsUserReportInput = {
-    userId?: string;
-    contentType?: string;
-    reason?: string;
-    type?: string;
-};
+export type VrchatToolsUserReportInput = { userId?: string; reason?: string };
 export type VrchatUserInput = {
     userId?: string;
     force?: boolean;
@@ -5820,9 +6052,9 @@ export type VrchatWorldListByUserInput = {
     userId?: string;
     n?: number;
     offset?: number;
-    sort?: string;
-    order?: string;
-    releaseStatus?: string;
+    sort: WorldSearchSort;
+    order: QueryOrder;
+    releaseStatus: ReleaseStatusFilter;
 };
 export type VrchatWorldPersistentDataDeleteInput = {
     userId?: string;
@@ -5830,7 +6062,7 @@ export type VrchatWorldPersistentDataDeleteInput = {
 };
 export type VrchatWorldSaveInput = {
     worldId?: string;
-    params: JsonValue | null;
+    params: WorldUpdateRequest;
 };
 export type WebhookDeliveryChannelSnapshot = {
     lastSuccess: WebhookDeliveryRecord | null;
@@ -5863,6 +6095,44 @@ export type WorldMemoOutput = {
     editedAt: string;
     memo: string;
 };
+export type WorldSearchParams = {
+    featured?: boolean | null;
+    sort?: WorldSearchSort | null;
+    user?: string | null;
+    userId?: string | null;
+    n?: number | null;
+    order?: QueryOrder | null;
+    offset?: number | null;
+    search?: string | null;
+    tag?: string | null;
+    notag?: string | null;
+    releaseStatus?: ReleaseStatusFilter | null;
+    maxUnityVersion?: string | null;
+    minUnityVersion?: string | null;
+    platform?: string | null;
+    noplatform?: string | null;
+    fuzzy?: boolean | null;
+    avatarSpecific?: boolean | null;
+};
+export type WorldSearchSort =
+    | '_created_at'
+    | '_updated_at'
+    | 'created'
+    | 'favorites'
+    | 'heat'
+    | 'labsPublicationDate'
+    | 'magic'
+    | 'name'
+    | 'order'
+    | 'popularity'
+    | 'publicationDate'
+    | 'random'
+    | 'relevance'
+    | 'reportCount'
+    | 'reportScore'
+    | 'shuffle'
+    | 'trust'
+    | 'updated';
 export type WorldSummaryOutput = {
     id: string;
     authorId: string;
@@ -5875,6 +6145,17 @@ export type WorldSummaryOutput = {
     thumbnailImageUrl: string;
     updated_at: string;
     version: number;
+};
+export type WorldUpdateRequest = {
+    id: string;
+    name?: string | null;
+    description?: string | null;
+    capacity?: number | null;
+    recommendedCapacity?: number | null;
+    previewYoutubeId?: string | null;
+    tags?: string[] | null;
+    urlList?: string[] | null;
+    disabledPropAbilities?: string[] | null;
 };
 
 /** tauri-specta globals **/

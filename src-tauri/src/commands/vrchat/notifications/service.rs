@@ -9,7 +9,7 @@ use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, V
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use super::types::{
-    VrchatBoopInput, VrchatNotificationPhotoSendInput, VrchatNotificationSendInput,
+    VrchatBoopInput, VrchatRequestInvitePhotoSendInput, VrchatRequestInviteSendInput,
 };
 use crate::error::AppError;
 use crate::state::AppState;
@@ -44,7 +44,7 @@ async fn execute_media_api(
 #[specta::specta]
 pub async fn app__vrchat_request_invite_send(
     state: State<'_, AppState>,
-    input: VrchatNotificationSendInput,
+    input: VrchatRequestInviteSendInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (receiver_user_id, request) = request_invite_send_input(
         VRCHAT_API_DEFAULT_ENDPOINT.into(),
@@ -64,7 +64,7 @@ pub async fn app__vrchat_request_invite_send(
 #[specta::specta]
 pub async fn app__vrchat_request_invite_photo_send(
     state: State<'_, AppState>,
-    input: VrchatNotificationPhotoSendInput,
+    input: VrchatRequestInvitePhotoSendInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let (receiver_user_id, request) = request_invite_photo_input(
         VRCHAT_API_DEFAULT_ENDPOINT.into(),

@@ -8,7 +8,7 @@ import {
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
 import { formatDateTime } from '@/lib/dateTime';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';

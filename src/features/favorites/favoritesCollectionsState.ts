@@ -1,7 +1,7 @@
+import type { FavoriteKind } from '@/domain/favorites/types';
 import type { FavoriteStore } from '@/state/favoriteStore';
 
 import { normalizeFavoriteEntityId as normalizeEntityId } from './favoritesItems';
-import type { FavoriteKind } from './favoritesTypes';
 
 const EMPTY_ARRAY: [] = [];
 const EMPTY_OBJECT: Record<string, never> = {};

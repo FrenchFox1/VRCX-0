@@ -12,6 +12,7 @@ use tokio::sync::Semaphore;
 use vrcx_0_application_core::vrchat_api::groups::profile_get_input;
 use vrcx_0_application_core::vrchat_api::tools::{
     calendars_get_input, featured_calendars_get_input, following_calendars_get_input,
+    CalendarListParams,
 };
 use vrcx_0_application_core::{
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
@@ -22,7 +23,7 @@ use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestIn
 
 use crate::{Error, Result};
 
-const CALENDAR_PAGE_SIZE: i64 = 100;
+const CALENDAR_PAGE_SIZE: i32 = 100;
 const CALENDAR_MAX_PAGES: usize = 50;
 const GROUP_PROFILE_CONCURRENCY: usize = 4;
 const GROUP_PROFILE_CACHE_CAPACITY: u64 = 32;
@@ -181,12 +182,12 @@ async fn collect_calendar_pages(
     let mut rows = Vec::new();
     for page_index in 0..=CALENDAR_MAX_PAGES {
         ensure_scope_matches(&deps.auth_scope, scope)?;
-        let offset = (page_index as i64) * CALENDAR_PAGE_SIZE;
-        let params = HashMap::from([
-            ("n".into(), Value::from(CALENDAR_PAGE_SIZE)),
-            ("offset".into(), Value::from(offset)),
-            ("date".into(), Value::from(date)),
-        ]);
+        let offset = (page_index as i32) * CALENDAR_PAGE_SIZE;
+        let params = CalendarListParams {
+            n: Some(CALENDAR_PAGE_SIZE),
+            offset: Some(offset),
+            date: Some(date.to_string()),
+        };
         let request = match kind {
             CalendarKind::All => calendars_get_input(scope.endpoint.clone(), params),
             CalendarKind::Following => {

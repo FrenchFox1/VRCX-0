@@ -12,7 +12,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LocationWorld } from '@/components/LocationWorld';
-import type { FriendRecordInput } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecordInput } from '@/domain/friends/types';
 import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
 import type { DashboardConfig } from '@/features/dashboard/dashboardConfig';
 import { timeToText } from '@/lib/dateTime';

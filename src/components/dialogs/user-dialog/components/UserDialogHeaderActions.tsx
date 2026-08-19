@@ -58,7 +58,6 @@ type UserActionMenuModel = Pick<
     | 'currentUserBoopingEnabled'
     | 'currentAvatarTarget'
     | 'fallbackAvatarTarget'
-    | 'previousInstances'
     | 'recentDialogShortcut'
 >;
 
@@ -110,7 +109,6 @@ export function UserDialogHeaderActions({
         currentUserBoopingEnabled,
         currentAvatarTarget,
         fallbackAvatarTarget,
-        previousInstances,
         recentDialogShortcut
     } = model;
     const {
@@ -190,7 +188,6 @@ export function UserDialogHeaderActions({
                 {!isCurrentUser ? (
                     <EntityActionItem
                         icon={HistoryIcon}
-                        disabled={!previousInstances.length}
                         onClick={onShowInstanceHistory}
                     >
                         {t('dialog.user.actions.show_previous_instances')}

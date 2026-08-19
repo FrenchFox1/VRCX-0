@@ -8,11 +8,9 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type {
-    EntityRecord,
-    GroupProfileRecord,
-    WorldProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -276,6 +274,7 @@ export function WorldDialogTabbedView({
     }, [instanceRows, world]);
     const instanceData = useWorldDialogInstanceData({
         endpoint: currentEndpoint,
+        sourceRevision: world.instances,
         targets: instanceDetailTargets
     });
     const instanceDetailsByLocation = instanceData.detailsByLocation;

@@ -5,7 +5,7 @@ import { normalizeZoomLevel } from './themeService';
 
 type ZoomErrorHandler = (error: unknown) => void;
 type ZoomPreferenceOptions = {
-    onError?: unknown;
+    onError?: ZoomErrorHandler;
 };
 
 let applyingZoom = false;
@@ -47,7 +47,7 @@ async function flushPendingZoom(): Promise<void> {
     }
 }
 
-export function syncQueuedZoomLevel(value: unknown): void {
+export function syncQueuedZoomLevel(value: number): void {
     if (applyingZoom || pendingZoom !== null) {
         return;
     }
@@ -56,11 +56,11 @@ export function syncQueuedZoomLevel(value: unknown): void {
 }
 
 export function queueZoomLevelPreference(
-    value: unknown,
+    value: number,
     { onError }: ZoomPreferenceOptions = {}
 ): number {
-    if (typeof onError === 'function') {
-        latestErrorHandler = onError as ZoomErrorHandler;
+    if (onError) {
+        latestErrorHandler = onError;
     }
 
     targetZoom = normalizeZoomLevel(value);

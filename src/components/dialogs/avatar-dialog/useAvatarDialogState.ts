@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AvatarProfileRecord } from '@/domain/entities/profileEntities';
-import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import { getCurrentAvatarLiveWearTime } from '@/services/avatarWearTimeService';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
@@ -14,17 +13,17 @@ import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
-import { avatarGalleryImageUrl, defaultAvatarSideData } from './avatarAssets';
-import { readAvatarCacheInfo } from './avatarCacheAdapter';
 import { createAvatarDialogActions } from './avatarDialogActions';
 import type {
     AvatarActionStatus,
     AvatarDialogInput,
+    AvatarDialogTab,
     AvatarImageCropRequest,
     AvatarLoadStatus,
     AvatarOwnerEditor,
     AvatarViewRecord
 } from './avatarDialogTypes';
+import { useAvatarDialogSideData } from './useAvatarDialogSideData';
 
 function normalizeEntityId(value: unknown): string {
     return typeof value === 'string'
@@ -58,8 +57,6 @@ export function useAvatarDialogState({
     const [avatar, setAvatar] = useState(() =>
         seedData ? avatarProfileRepository.normalize(seedData) : null
     );
-    const avatarAssetUrl = avatar?.assetUrl;
-    const avatarUnityPackages = avatar?.unityPackages;
     const [loadStatus, setLoadStatus] = useState<AvatarLoadStatus>(
         normalizedAvatarId ? 'running' : 'idle'
     );
@@ -70,9 +67,27 @@ export function useAvatarDialogState({
         seedData ? avatarProfileRepository.normalize(seedData).$memo : ''
     );
     const [avatarBlocked, setAvatarBlocked] = useState(false);
-    const [avatarSideData, setAvatarSideData] = useState(() =>
-        defaultAvatarSideData()
-    );
+    const [activeTabState, setActiveTabState] = useState<{
+        avatarId: string;
+        endpoint: string;
+        tab: AvatarDialogTab;
+    }>(() => ({
+        avatarId: normalizedAvatarId,
+        endpoint: currentEndpoint,
+        tab: 'info'
+    }));
+    const activeTab =
+        activeTabState.avatarId === normalizedAvatarId &&
+        activeTabState.endpoint === currentEndpoint
+            ? activeTabState.tab
+            : 'info';
+    const { avatarSideData, galleryStatus, setAvatarSideData } =
+        useAvatarDialogSideData({
+            avatar,
+            currentEndpoint,
+            galleryActive: activeTab === 'gallery',
+            sdkUnityVersion
+        });
     const [imageCropRequest, setImageCropRequest] =
         useState<AvatarImageCropRequest | null>(null);
     const [ownerEditor, setOwnerEditor] = useState<AvatarOwnerEditor>(null);
@@ -131,84 +146,8 @@ export function useAvatarDialogState({
         if (!avatar?.id) {
             imageUploadAvatarRef.current = null;
             setImageCropRequest(null);
-            setAvatarSideData(defaultAvatarSideData());
         }
     }, [avatar?.id]);
-
-    useEffect(() => {
-        let active = true;
-
-        if (!avatar?.id) {
-            setAvatarSideData(defaultAvatarSideData());
-            return () => {
-                active = false;
-            };
-        }
-
-        setAvatarSideData((current) => ({
-            ...current,
-            galleryRows: [],
-            galleryImages: [],
-            fileAnalysis: {}
-        }));
-
-        Promise.allSettled([
-            avatarProfileRepository.getAvatarGallery({
-                avatarId: avatar.id
-            })
-        ]).then(([galleryResult]) => {
-            if (!active) {
-                return;
-            }
-            const galleryRows =
-                galleryResult.status === 'fulfilled' ? galleryResult.value : [];
-            return Promise.allSettled([
-                readAvatarCacheInfo(
-                    {
-                        id: avatar?.id,
-                        assetUrl: avatarAssetUrl,
-                        unityPackages: avatarUnityPackages
-                    },
-                    sdkUnityVersion
-                ),
-                getFileAnalysisForUnityPackages({
-                    unityPackages: avatarUnityPackages,
-                    sdkUnityVersion,
-                    endpoint: currentEndpoint
-                })
-            ]).then(([cacheResult, fileAnalysisResult]) => {
-                if (!active) {
-                    return;
-                }
-                setAvatarSideData({
-                    galleryRows,
-                    galleryImages: galleryRows
-                        .map(avatarGalleryImageUrl)
-                        .filter((url): url is string => Boolean(url)),
-                    fileAnalysis:
-                        fileAnalysisResult.status === 'fulfilled'
-                            ? fileAnalysisResult.value
-                            : {},
-                    cache:
-                        cacheResult.status === 'fulfilled'
-                            ? cacheResult.value
-                            : defaultAvatarSideData().cache
-                });
-            });
-        });
-
-        return () => {
-            active = false;
-        };
-    }, [
-        avatar?.id,
-        avatar?.updated_at,
-        avatar?.version,
-        avatarAssetUrl,
-        avatarUnityPackages,
-        currentEndpoint,
-        sdkUnityVersion
-    ]);
 
     useEffect(() => {
         let active = true;
@@ -458,11 +397,20 @@ export function useAvatarDialogState({
         t
     });
 
+    function setActiveTab(tab: AvatarDialogTab) {
+        setActiveTabState({
+            avatarId: normalizedAvatarId,
+            endpoint: currentEndpoint,
+            tab
+        });
+    }
+
     return {
         status: 'ready' as const,
         avatar,
         avatarActions,
         avatarForView,
+        activeTab,
         currentEndpoint,
         currentUserId,
         imageCropRequest,
@@ -482,6 +430,7 @@ export function useAvatarDialogState({
             canSelectFallbackAvatar,
             detail,
             fileAnalysis: avatarSideData.fileAnalysis,
+            galleryStatus,
             isCurrentAvatar,
             memo
         },
@@ -489,6 +438,7 @@ export function useAvatarDialogState({
         labels: {
             cropTitle: t('dialog.avatar.action.change_avatar_image')
         },
+        setActiveTab,
         applyCurrentAvatarUpdate
     };
 }

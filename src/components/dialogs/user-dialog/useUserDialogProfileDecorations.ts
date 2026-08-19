@@ -19,8 +19,6 @@ import {
     type UserDialogProfileAppearanceOverrides
 } from './userDialogProfileAppearance';
 
-const PROFILE_DECORATION_TYPES_PARAM = PROFILE_DECORATION_SLOTS.join(',');
-
 type ItemsBySlot = Record<ProfileDecorationSlot, InventoryItemRecord[]>;
 
 type ProfileDecorationsAuthTarget = {
@@ -158,9 +156,8 @@ export function useUserDialogProfileDecorations({
         try {
             const { items: rows, truncated } =
                 await mediaRepository.collectInventoryItems({
-                    order: 'newest',
-                    types: PROFILE_DECORATION_TYPES_PARAM,
-                    notFlags: 'ugc',
+                    types: [...PROFILE_DECORATION_SLOTS],
+                    notFlags: ['ugc'],
                     archived: false
                 });
             if (truncated) {

@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, MutexGuard};
+use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
 use compact_str::CompactString;
@@ -201,15 +202,15 @@ impl RealtimeFriendsRuntime {
                     record
                         .extra
                         .insert("pendingOffline".into(), Value::Bool(false));
-                    if leaves_online(&record.state_bucket) {
+                    if leaves_online(&record.state) {
                         confirmed_pending.push(OfflineBaselineTransition {
                             user_id: user_id.clone(),
                             next: record.clone(),
                             previous: pending.previous.clone(),
                         });
                     }
-                } else if StateBucket::Online.matches(&existing_record.state_bucket)
-                    && leaves_online(&record.state_bucket)
+                } else if StateBucket::Online.matches(&existing_record.state)
+                    && leaves_online(&record.state)
                 {
                     pending_to_create.push(OfflineBaselineTransition {
                         user_id: user_id.clone(),
@@ -252,7 +253,7 @@ impl RealtimeFriendsRuntime {
                 PendingOffline {
                     token,
                     patch: FriendRecordPatch::from_record(&transition.next),
-                    state_bucket: transition.next.state_bucket.clone(),
+                    state_bucket: transition.next.state.clone(),
                     previous: transition.previous,
                 },
             );
@@ -789,12 +790,7 @@ fn current_friend_roster_snapshot(
 }
 
 fn friend_snapshot_state_bucket(friend: &FriendRecord) -> &str {
-    let state = if friend.state_bucket.is_empty() {
-        friend.state.as_str()
-    } else {
-        friend.state_bucket.as_str()
-    };
-    match state {
+    match friend.state.as_str() {
         "online" => "online",
         "active" => "active",
         _ => "offline",
@@ -843,24 +839,24 @@ fn preserve_fields_over_placeholder(incoming: &mut FriendRecord, existing: &Frie
 
     for key in [
         "pendingOffline",
-        "$location",
-        "$location_at",
+        derived_keys::LOCATION_PROJECTION,
+        derived_keys::LOCATION_UPDATED_AT,
         "locationUpdatedAt",
         "instanceId",
         "travelingToWorld",
         "travelingToInstance",
-        "$travelingToLocation",
-        "$travelingToTime",
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+        derived_keys::TRAVELING_TO_TIME,
         "travelingToLocation",
         "tags",
         "developerType",
         "trustLevel",
-        "$trustLevel",
-        "$trustClass",
-        "$trustSortNum",
-        "$isModerator",
-        "$isTroll",
-        "$isProbableTroll",
+        derived_keys::TRUST_LEVEL,
+        derived_keys::TRUST_CLASS,
+        derived_keys::TRUST_SORT_NUM,
+        derived_keys::IS_MODERATOR,
+        derived_keys::IS_TROLL,
+        derived_keys::IS_PROBABLE_TROLL,
     ] {
         match existing.extra.get(key) {
             Some(value) => {

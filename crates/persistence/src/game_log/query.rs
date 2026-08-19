@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use chrono::Utc;
 use sea_query::{Expr, ExprTrait, Order, Query, SqliteQueryBuilder};
@@ -14,6 +14,7 @@ use super::types::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogJoinLeaveSnapshot,
     GameLogLocationEntry, GameLogLocationSnapshot, GameLogPreviousInstanceGroupOutput,
     GameLogPreviousInstanceWorldOutput, SessionEventRow, SessionLocationSegmentRow,
+    SessionPlayerDurationRow,
 };
 
 fn latest_join_leave_lookup_sql() -> String {
@@ -523,6 +524,52 @@ pub fn get_session_events_for_range(
         });
     }
     Ok(rows)
+}
+
+pub fn get_session_player_duration_rows(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    locations: &[String],
+) -> Result<Vec<SessionPlayerDurationRow>, Error> {
+    ensure_game_log_tables(db)?;
+    let locations = locations
+        .iter()
+        .map(|location| location.trim())
+        .filter(|location| !location.is_empty())
+        .collect::<BTreeSet<_>>();
+    if locations.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut params = owner_params(db, owner_user_id)?;
+    let mut placeholders = Vec::with_capacity(locations.len());
+    for (index, location) in locations.into_iter().enumerate() {
+        let key = format!("location{index}");
+        placeholders.push(format!("@{key}"));
+        params = params.set(&key, location.to_string());
+    }
+    let rows = db.execute(
+        &format!(
+            "SELECT location, display_name, user_id, time
+             FROM gamelog_join_leave
+             WHERE owner_id IN (0, @ownerId)
+               AND type = 'OnPlayerLeft'
+               AND location IN ({})
+             ORDER BY created_at ASC, id ASC",
+            placeholders.join(", ")
+        ),
+        &params.build(),
+    )?;
+
+    Ok(rows
+        .iter()
+        .map(|row| SessionPlayerDurationRow {
+            location: row_string(row, 0),
+            display_name: row_string(row, 1),
+            user_id: row_string(row, 2),
+            time: row_i64(row, 3),
+        })
+        .collect())
 }
 
 pub fn get_game_log_events(

@@ -217,6 +217,20 @@ fn strict_age_gate_and_short_name() {
 }
 
 #[test]
+fn location_names_preserve_long_wire_values() {
+    let instance_name = "instance-name-longer-than-inline-capacity";
+    let short_name = "short-name-longer-than-inline-capacity";
+    let location = format!("wrld_a:{instance_name}~region(eu)&shortName={short_name}");
+    let parsed = parse_location(&location);
+
+    assert_eq!(parsed.instance_name, instance_name);
+    assert_eq!(parsed.short_name, short_name);
+    let serialized = serde_json::to_value(parsed).unwrap();
+    assert_eq!(serialized["instanceName"], json!(instance_name));
+    assert_eq!(serialized["shortName"], json!(short_name));
+}
+
+#[test]
 fn bare_world_id_without_instance() {
     let parsed = parse_location("wrld_only");
     assert_eq!(parsed.world_id, "wrld_only");

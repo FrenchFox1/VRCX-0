@@ -2,6 +2,7 @@
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 const virtualizerMocks = vi.hoisted(() => ({
@@ -94,7 +95,7 @@ describe('InstanceHistoryList', () => {
             sortKey: 'date',
             onOpenDetails: vi.fn(),
             onDeleteRow: vi.fn()
-        };
+        } satisfies ComponentProps<typeof InstanceHistoryList>;
 
         const { rerender } = render(<InstanceHistoryList {...props} />);
 

@@ -1,69 +1,82 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { useKnownUserFacts } from '@/lib/useKnownUser';
-import { useFavoriteStore } from '@/state/favoriteStore';
-import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import type { QuickSearchCatalog } from '../quickSearchCatalog';
-import { buildQuickSearchResults } from './quickSearchResultModel';
-import { useWorldSearchDetails } from './useWorldSearchDetails';
+import {
+    createEmptyQuickSearchState,
+    loadQuickSearchResults
+} from '../quickSearch';
+import {
+    mergeQuickSearchGroupInstances,
+    USER_QUERY_MIN_LENGTH
+} from './quickSearchResultModel';
 
 const EMPTY_GROUP_INSTANCES: unknown[] = [];
 
 export function useQuickSearchResults({
-    catalog,
-    normalizedQuery
+    currentEndpoint,
+    currentUserId,
+    normalizedQuery,
+    open
 }: {
-    catalog: QuickSearchCatalog;
+    currentEndpoint?: string | null;
+    currentUserId?: string | null;
     normalizedQuery: string;
+    open: boolean;
 }) {
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const remoteFavoritesByObjectId = useFavoriteStore(
-        (state) => state.remoteFavoritesByObjectId
-    );
-    const worldSearchDetailsById = useWorldSearchDetails(normalizedQuery);
-    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
+    const [state, setState] = useState(() => createEmptyQuickSearchState());
     const groupInstancesState = useRuntimeStore(
-        (state) => state.groupInstances
+        (runtimeState) => runtimeState.groupInstances
     );
     const groupInstances =
         groupInstancesState.userId === currentUserId &&
         groupInstancesState.endpoint === currentEndpoint
             ? groupInstancesState.instances
             : EMPTY_GROUP_INSTANCES;
-    const friendIds = useMemo(
-        () => Object.keys(friendsById || {}).filter(Boolean),
-        [friendsById]
-    );
-    const knownFriendUsersById = useKnownUserFacts(friendIds, {
-        endpoint: currentEndpoint
-    });
+
+    useEffect(() => {
+        if (
+            !open ||
+            !currentUserId ||
+            normalizedQuery.length < USER_QUERY_MIN_LENGTH
+        ) {
+            setState(createEmptyQuickSearchState());
+            return;
+        }
+
+        let active = true;
+        setState(createEmptyQuickSearchState('running'));
+        loadQuickSearchResults(normalizedQuery)
+            .then((results) => {
+                if (active) {
+                    setState(results);
+                }
+            })
+            .catch((error: unknown) => {
+                if (active) {
+                    setState(
+                        createEmptyQuickSearchState(
+                            'error',
+                            error instanceof Error
+                                ? error.message
+                                : 'Search failed.'
+                        )
+                    );
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [currentEndpoint, currentUserId, normalizedQuery, open]);
 
     return useMemo(
         () =>
-            buildQuickSearchResults({
-                catalog,
+            mergeQuickSearchGroupInstances(
+                state,
                 normalizedQuery,
-                currentUserId,
-                friendsById,
-                knownFriendUsersById,
-                remoteFavoritesByObjectId,
-                worldSearchDetailsById,
                 groupInstances
-            }),
-        [
-            catalog,
-            currentUserId,
-            friendsById,
-            groupInstances,
-            knownFriendUsersById,
-            worldSearchDetailsById,
-            normalizedQuery,
-            remoteFavoritesByObjectId
-        ]
+            ),
+        [groupInstances, normalizedQuery, state]
     );
 }

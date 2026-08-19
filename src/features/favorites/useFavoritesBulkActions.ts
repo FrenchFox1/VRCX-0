@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { FavoriteRecord } from '@/domain/favorites/types';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import type {
     FavoriteBulkRemoveResult,
     FavoriteTransferItemResult,
@@ -10,7 +12,6 @@ import type {
 } from '@/platform/tauri/bindings';
 import { commands } from '@/platform/tauri/bindings';
 import favoriteTransferRepository from '@/repositories/favoriteTransferRepository';
-import type { FavoriteRecord } from '@/state/favoriteStoreTypes';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -19,9 +20,8 @@ import {
     favoriteBulkRemoveSuccessfulKeys
 } from './favoriteBulkRemove';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 import {
@@ -49,9 +49,9 @@ export function useFavoritesBulkActions({
 }: {
     currentEndpoint: string;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     remoteFavoritesByObjectId: Record<string, FavoriteRecord | undefined>;
-    remoteGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroupView[];
     selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
@@ -211,7 +211,7 @@ export function useFavoritesBulkActions({
     }
 
     async function bulkTransferSelection(
-        targetGroup: FavoriteGroup,
+        targetGroup: FavoriteGroupView,
         mode: FavoriteTransferMode
     ) {
         if (!selectedContentItems.length) {
@@ -312,11 +312,11 @@ export function useFavoritesBulkActions({
         );
     }
 
-    function bulkMoveSelection(targetGroup: FavoriteGroup) {
+    function bulkMoveSelection(targetGroup: FavoriteGroupView) {
         return bulkTransferSelection(targetGroup, 'move');
     }
 
-    function bulkCopySelection(targetGroup: FavoriteGroup) {
+    function bulkCopySelection(targetGroup: FavoriteGroupView) {
         return bulkTransferSelection(targetGroup, 'copy');
     }
 

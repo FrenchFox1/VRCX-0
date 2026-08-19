@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::Result;
@@ -33,28 +34,29 @@ fn normalize_friend_entry(
         .unwrap_or_default();
     let trust = compute_trust_level(&tags, &developer_type);
     let explicit_trust_level = source
-        .get("$trustLevel")
+        .get(derived_keys::TRUST_LEVEL)
         .or_else(|| source.get("trustLevel"))
         .map(value_as_string)
         .unwrap_or_default();
     let has_trust_metadata = has_remote_profile
         && (!tags.is_empty() || !developer_type.is_empty() || !explicit_trust_level.is_empty());
-    let existing_trust_level = object_field_string(existing_row, &["trustLevel", "$trustLevel"]);
+    let existing_trust_level =
+        object_field_string(existing_row, &["trustLevel", derived_keys::TRUST_LEVEL]);
     let trust_level = if !explicit_trust_level.is_empty() {
         explicit_trust_level
     } else if has_trust_metadata {
-        trust.trust_level.clone()
+        trust.trust_level().to_string()
     } else if !existing_trust_level.is_empty() {
         existing_trust_level
     } else {
-        trust.trust_level.clone()
+        trust.trust_level().to_string()
     };
     let friend_number = value_as_i64(
         source
             .get("friendNumber")
-            .or_else(|| source.get("$friendNumber"))
+            .or_else(|| source.get(derived_keys::FRIEND_NUMBER))
             .or_else(|| object_field(existing_row, "friendNumber"))
-            .or_else(|| object_field(existing_row, "$friendNumber")),
+            .or_else(|| object_field(existing_row, derived_keys::FRIEND_NUMBER)),
     );
     let source_user_id = source
         .get("id")
@@ -97,23 +99,29 @@ fn normalize_friend_entry(
     // location never participates in bucketing; the /auth/user list bucket is the only authority.
     object.insert("state".into(), Value::String(state_bucket.to_string()));
     object.insert(
-        "stateBucket".into(),
-        Value::String(state_bucket.to_string()),
+        derived_keys::FRIEND_NUMBER.into(),
+        number_value(friend_number),
     );
-    object.insert("friendNumber".into(), number_value(friend_number));
-    object.insert("trustLevel".into(), Value::String(trust_level.clone()));
-    object.insert("$friendNumber".into(), number_value(friend_number));
-    object.insert("$trustLevel".into(), Value::String(trust_level));
-    object.insert("$trustClass".into(), Value::String(trust.trust_class));
-    object.insert("$trustSortNum".into(), float_value(trust.trust_sort_num));
-    object.insert("$isModerator".into(), Value::Bool(trust.is_moderator));
-    object.insert("$isTroll".into(), Value::Bool(trust.is_troll));
+    object.insert(derived_keys::TRUST_LEVEL.into(), Value::String(trust_level));
     object.insert(
-        "$isProbableTroll".into(),
+        derived_keys::TRUST_CLASS.into(),
+        Value::String(trust.trust_class().to_string()),
+    );
+    object.insert(
+        derived_keys::TRUST_SORT_NUM.into(),
+        float_value(trust.trust_sort_num()),
+    );
+    object.insert(
+        derived_keys::IS_MODERATOR.into(),
+        Value::Bool(trust.is_moderator),
+    );
+    object.insert(derived_keys::IS_TROLL.into(), Value::Bool(trust.is_troll));
+    object.insert(
+        derived_keys::IS_PROBABLE_TROLL.into(),
         Value::Bool(trust.is_probable_troll),
     );
     object.insert(
-        "$platform".into(),
+        derived_keys::PLATFORM.into(),
         Value::String(compute_user_platform(&platform, &last_platform)),
     );
     vrcx_0_core::friends::strip_default_avatar_image(&mut object);
@@ -122,10 +130,12 @@ fn normalize_friend_entry(
 
 fn compare_friend_entries(left: &Value, right: &Value) -> Ordering {
     let left_number = value_as_i64(
-        object_field(left, "friendNumber").or_else(|| object_field(left, "$friendNumber")),
+        object_field(left, "friendNumber")
+            .or_else(|| object_field(left, derived_keys::FRIEND_NUMBER)),
     );
     let right_number = value_as_i64(
-        object_field(right, "friendNumber").or_else(|| object_field(right, "$friendNumber")),
+        object_field(right, "friendNumber")
+            .or_else(|| object_field(right, derived_keys::FRIEND_NUMBER)),
     );
     let left_has_number = left_number > 0;
     let right_has_number = right_number > 0;
@@ -217,7 +227,7 @@ fn build_bucket_ids(
         .filter(|user_id| {
             friends_by_id
                 .get(*user_id)
-                .map(|friend| object_field_string(friend, &["stateBucket"]) == state_bucket)
+                .map(|friend| object_field_string(friend, &["state"]) == state_bucket)
                 .unwrap_or(false)
         })
         .cloned()
@@ -260,7 +270,7 @@ pub(super) fn build_fast_roster_records(
         let mut normalized_friend = normalize_friend_entry(friend, state_bucket, &existing_row);
         if let Some(object) = normalized_friend.as_object_mut() {
             object.insert(
-                "$profileSource".into(),
+                derived_keys::PROFILE_SOURCE.into(),
                 Value::String(if has_remote_profile {
                     "remote".into()
                 } else {

@@ -57,7 +57,7 @@ vi.mock('@/ui/shadcn/dropdown-menu', () => {
     };
 });
 
-import type { FavoriteGroup } from '../favoritesTypes';
+import type { FavoriteGroupView } from '../favoritesTypes';
 import { FavoritesSelectionBar } from './FavoritesSelectionBar';
 
 type SelectionBarProps = ComponentProps<typeof FavoritesSelectionBar>;
@@ -138,14 +138,14 @@ describe('FavoritesSelectionBar', () => {
     });
 
     it('disables only over-capacity targets and preserves remote-first ordering', () => {
-        const remoteFull: FavoriteGroup = {
+        const remoteFull: FavoriteGroupView = {
             key: 'remote-full',
             source: 'remote',
             label: 'Remote full',
             count: 99,
             capacity: 100
         };
-        const localAvailable: FavoriteGroup = {
+        const localAvailable: FavoriteGroupView = {
             key: 'local-available',
             source: 'local',
             label: 'Local available',

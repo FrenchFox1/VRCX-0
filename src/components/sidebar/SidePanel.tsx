@@ -67,21 +67,39 @@ type SidePanelProps = {
 
 function parseConfigArray(value: unknown): string[] {
     if (Array.isArray(value)) {
-        return value as string[];
+        return value.filter(
+            (entry): entry is string => typeof entry === 'string'
+        );
     }
     if (typeof value !== 'string' || !value.trim()) {
         return [];
     }
     try {
         const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? (parsed as string[]) : [];
+        return Array.isArray(parsed)
+            ? parsed.filter(
+                  (entry): entry is string => typeof entry === 'string'
+              )
+            : [];
     } catch {
         return [];
     }
 }
 
 function toSidePanelSortMethod(value: string): SidePanelSortMethod {
-    return value as SidePanelSortMethod;
+    switch (value) {
+        case 'Sort Alphabetically':
+        case 'Sort Private to Bottom':
+        case 'Sort by Status':
+        case 'Sort by Last Active':
+        case 'Sort by Last Seen':
+        case 'Sort by Time in Instance':
+        case 'Sort by Location':
+        case 'None':
+            return value;
+        default:
+            return '';
+    }
 }
 
 export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(

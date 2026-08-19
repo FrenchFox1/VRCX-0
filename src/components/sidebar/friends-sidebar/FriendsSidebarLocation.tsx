@@ -12,12 +12,14 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import {
     getLocationText,
+    locationSentinel,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
@@ -28,7 +30,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     clearStaleOfflineLocation,
-    normalizeLocationStatus,
     readFriendInstanceEpoch,
     readFriendRef,
     readFriendRefLocation,
@@ -163,12 +164,8 @@ export function resolveFriendRowLocationState({
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeLocationStatus(
-        statusSource?.stateBucket || statusSource?.state
-    );
-    const friendStateBucket = normalizeLocationStatus(
-        statusSource?.stateBucket
-    );
+    const friendState = normalizeStateBucket(statusSource?.state);
+    const friendStateBucket = friendState;
     const rawFriendLocation = isCurrentUser
         ? resolvePresenceLocation(friend)
         : readFriendRefLocation(friend);
@@ -177,7 +174,7 @@ export function resolveFriendRowLocationState({
         friendState
     );
     const parsedFriendLocation = parseLocation(friendLocation);
-    const isTraveling = normalizeLocationStatus(friendLocation) === 'traveling';
+    const isTraveling = locationSentinel(friendLocation) === 'traveling';
     const displayLocation = isTraveling ? 'traveling' : friendLocation;
     const displayTraveling = isTraveling
         ? readFriendRefTravelingLocation(friend) || undefined
@@ -403,7 +400,7 @@ export function StaticSidebarLocation({
                             : 'cursor-default'
                     )}
                 >
-                    {normalizeLocationStatus(location) === 'traveling' ? (
+                    {locationSentinel(location) === 'traveling' ? (
                         <Spinner
                             aria-hidden="true"
                             aria-label={undefined}

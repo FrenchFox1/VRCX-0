@@ -18,14 +18,6 @@ function createBackoffCancelledError() {
     return error;
 }
 
-export function isBackoffCancelledError(error: unknown) {
-    return Boolean(
-        error &&
-        typeof error === 'object' &&
-        (error as { cancelled?: unknown }).cancelled === true
-    );
-}
-
 type CancelCheck = (() => boolean) | null;
 
 function throwIfCancelled(isCancelled: CancelCheck) {

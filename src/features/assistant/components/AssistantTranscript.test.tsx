@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { UIMessage } from '@/domain/assistant/assistantTypes';
+import type { UIMessage } from '@/domain/assistant/types';
 
 import { AssistantTranscript } from './AssistantTranscript';
 

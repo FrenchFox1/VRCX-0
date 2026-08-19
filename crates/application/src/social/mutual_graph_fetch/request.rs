@@ -18,7 +18,7 @@ use super::types::{
 };
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
 
-const MUTUAL_GRAPH_PAGE_SIZE: i64 = 100;
+const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
 const MUTUAL_GRAPH_REQUEST_INTERVAL_MS: u64 = 200;
 const MUTUAL_GRAPH_MAX_RETRIES: usize = 4;
 const MUTUAL_GRAPH_MAX_PAGES: usize = 50;
@@ -145,8 +145,8 @@ pub(super) async fn fetch_friend_mutuals(
                 if page_len < MUTUAL_GRAPH_PAGE_SIZE as usize {
                     return FriendFetchResult::MutualIds(collected);
                 }
-                offset += page_len as i64;
-                if offset / MUTUAL_GRAPH_PAGE_SIZE >= MUTUAL_GRAPH_MAX_PAGES as i64 {
+                offset += page_len as i32;
+                if offset / MUTUAL_GRAPH_PAGE_SIZE >= MUTUAL_GRAPH_MAX_PAGES as i32 {
                     return FriendFetchResult::MutualIds(collected);
                 }
             }
@@ -167,7 +167,7 @@ enum PageFetchResult {
 async fn fetch_mutual_page(
     context: &mut MutualGraphFetchContext<'_>,
     friend_id: &str,
-    offset: i64,
+    offset: i32,
     include_user_id_param: bool,
 ) -> PageFetchResult {
     let mut attempt = 0usize;
@@ -250,7 +250,7 @@ async fn fetch_mutual_friend_rows(
 ) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     for page in 0..MUTUAL_GRAPH_MAX_PAGES {
-        let offset = (page as i64) * MUTUAL_GRAPH_PAGE_SIZE;
+        let offset = (page as i32) * MUTUAL_GRAPH_PAGE_SIZE;
         match fetch_mutual_page(context, user_id, offset, false).await {
             PageFetchResult::Rows(next_rows) => {
                 let page_len = next_rows.len();

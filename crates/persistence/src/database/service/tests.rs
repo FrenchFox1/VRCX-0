@@ -141,13 +141,38 @@ fn interruptible_read_can_cancel_while_all_readers_are_busy() -> Result<(), Erro
 }
 
 #[test]
-fn configured_writer_enables_secure_delete() -> Result<(), Error> {
+fn configured_writer_trades_secure_delete_and_full_sync_for_write_throughput() -> Result<(), Error>
+{
     let conn = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
     configure_connection(&conn)?;
-    let enabled = conn
+    let secure_delete = conn
         .query_row("PRAGMA secure_delete;", [], |row| row.get::<_, i64>(0))
         .map_err(|e| Error::Database(e.to_string()))?;
-    assert_eq!(enabled, 1);
+    let synchronous = conn
+        .query_row("PRAGMA synchronous;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+    assert_eq!(secure_delete, 0);
+    assert_eq!(synchronous, 1);
+    Ok(())
+}
+
+#[test]
+fn configured_reader_sorts_in_memory_while_the_writer_keeps_spilling_to_disk() -> Result<(), Error>
+{
+    let reader = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
+    configure_read_connection(&reader)?;
+    let writer = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
+    configure_connection(&writer)?;
+
+    let reader_temp_store = reader
+        .query_row("PRAGMA temp_store;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+    let writer_temp_store = writer
+        .query_row("PRAGMA temp_store;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+
+    assert_eq!(reader_temp_store, 2);
+    assert_ne!(writer_temp_store, 2);
     Ok(())
 }
 

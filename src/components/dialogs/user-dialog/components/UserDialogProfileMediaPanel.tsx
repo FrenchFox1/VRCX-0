@@ -15,6 +15,7 @@ import {
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
+import type { MediaFileTag } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Badge } from '@/ui/shadcn/badge';
@@ -30,7 +31,7 @@ type MediaFile = Awaited<
 interface MediaSection {
     key: string;
     fieldName: ProfileMediaFieldName;
-    fileTag: string;
+    fileTag: MediaFileTag;
     assetKey: string;
     titleKey: string;
     clearKey: string;

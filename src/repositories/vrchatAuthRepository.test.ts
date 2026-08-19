@@ -76,21 +76,21 @@ describe('vrchatAuthRepository', () => {
         );
     });
 
-    it('passes normalized login-session payloads to the Tauri bridge', async () => {
+    it('passes typed login-session payloads to the Tauri bridge', async () => {
         await startLoginSession({
             mode: 'basic',
             username: 'user@example.test',
-            password: 123,
+            password: '123',
             saveCredentials: true
         });
         await startLoginSession({
             mode: 'savedCredential',
-            userId: 456
+            userId: '456'
         });
         await respondLoginSession({
             attemptId: 'attempt-1',
             method: 'totp',
-            code: 111111
+            code: '111111'
         });
         await cancelLoginSession('attempt-1');
 
@@ -146,7 +146,7 @@ describe('vrchatAuthRepository', () => {
         await expect(
             getFileAnalysis({
                 fileId: 'file 1',
-                version: '2',
+                version: 2,
                 variant: 'Quest/Android'
             })
         ).rejects.toMatchObject({

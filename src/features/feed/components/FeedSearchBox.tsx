@@ -2,7 +2,7 @@ import { SearchIcon, XIcon } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { userImage } from '@/services/entityMediaService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';

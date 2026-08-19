@@ -8,6 +8,7 @@ use crate::{Result, RuntimeOperationStatus};
 pub type VrchatApiRequest = vrcx_0_vrchat_client::http_api::HttpApiRequestInput;
 pub type VrchatApiResponse = vrcx_0_vrchat_client::http_api::HttpApiExecuteResponse;
 pub type VrchatScope = vrcx_0_vrchat_client::http_api::ApiScope;
+pub use vrcx_0_vrchat_client::query::deserialize_nonnegative_i32;
 
 pub mod auth {
     pub use vrcx_0_vrchat_client::auth::{
@@ -23,8 +24,10 @@ pub mod avatars {
         avatar_impostor_create_input, avatar_impostor_delete_input, avatar_list_by_user_get_input,
         avatar_moderation_delete_input, avatar_moderation_send_input, avatar_moderations_get_input,
         avatar_save_input, avatar_select_fallback_input, avatar_select_input,
-        avatar_styles_get_input, AvatarListByUserGetInput,
+        avatar_styles_get_input, AvatarListByUserGetInput, AvatarReleaseStatus,
+        AvatarUpdateRequest,
     };
+    pub use vrcx_0_vrchat_client::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
 }
 
 pub mod favorites {
@@ -32,6 +35,7 @@ pub mod favorites {
         favorite_add_input, favorite_avatars_get_input, favorite_delete_input,
         favorite_group_clear_input, favorite_group_save_input, favorite_groups_get_input,
         favorite_limits_get_input, favorite_worlds_get_input, favorites_get_input,
+        VrchatFavoriteType,
     };
 }
 
@@ -52,14 +56,17 @@ pub mod groups {
         member_unban_input, members_get_input, members_search_input, post_create_input,
         post_delete_input, post_edit_input, profile_get_input, representation_set_input,
         request_cancel_input, unblock_input, user_group_instances_get_input,
-        user_group_permissions_get_input, user_groups_get_input,
+        user_group_permissions_get_input, user_groups_get_input, GroupMemberPatch, GroupMemberSort,
+        GroupMemberVisibility, GroupPostMutation, GroupPostVisibility,
     };
 }
 
 pub mod instances {
     pub use vrcx_0_vrchat_client::instances::{
         instance_close_input, instance_create_input, instance_get_input,
-        instance_self_invite_input, instance_short_name_get_input,
+        instance_self_invite_input, instance_short_name_get_input, InstanceCreateGroupAccessType,
+        InstanceCreateMinimumAvatarPerformance, InstanceCreateRegion, InstanceCreateRequest,
+        InstanceCreateType,
     };
 }
 
@@ -72,7 +79,10 @@ pub mod media {
         inventory_items_get_input, inventory_slot_unequip_input, inventory_template_get_input,
         print_delete_input, print_get_input, print_upload_input, prints_get_input,
         reward_redeem_input, sticker_upload_input, tagged_image_upload_input,
-        user_inventory_item_get_input, world_image_set_input, FileUploadStageKind, MediaAssetKind,
+        user_inventory_item_get_input, world_image_set_input, EmojiLoopStyle, EmojiUploadParams,
+        FileUploadStageKind, ImageAnimationStyle, ImageMaskTag, InventoryItemUpdateRequest,
+        InventoryListParams, InventoryOrder, MediaAssetKind, MediaAssetUploadRequest,
+        MediaFileListParams, MediaFileTag, PrintUploadParams, ProfileDecorationEquipSlot,
     };
 }
 
@@ -81,7 +91,7 @@ pub mod notifications {
         boop_send_input, invite_photo_input, invite_response_photo_input,
         invite_response_send_input, invite_send_input, notification_accept_friend_request_input,
         notification_hide_remote_input, notification_mark_seen_input, notification_respond_input,
-        request_invite_photo_input, request_invite_send_input,
+        request_invite_photo_input, request_invite_send_input, RequestInviteRequest,
     };
 }
 
@@ -89,6 +99,7 @@ pub mod search {
     pub use vrcx_0_vrchat_client::search::{
         search_groups_get_input, search_groups_strict_get_input,
         search_instance_short_name_get_input, search_users_get_input, search_worlds_get_input,
+        GroupSearchParams, UserSearchParams, WorldSearchParams,
     };
 }
 
@@ -97,7 +108,7 @@ pub mod tools {
         calendars_get_input, featured_calendars_get_input, following_calendars_get_input,
         group_calendar_get_input, group_calendar_ics_get_input, group_event_follow_input,
         invite_message_edit_input, invite_messages_get_input, user_note_save_input,
-        user_report_input,
+        user_report_input, CalendarListParams, InviteMessageType,
     };
 }
 
@@ -106,15 +117,17 @@ pub mod users {
         current_user_badge_update_input, current_user_tags_add_input,
         current_user_tags_remove_input, current_user_update_input, profile_get_input,
         profile_update_input, user_groups_get_input, user_mutual_counts_get_input,
-        user_mutual_friends_get_input, user_represented_group_get_input,
+        user_mutual_friends_get_input, user_represented_group_get_input, ContentFilter,
+        CurrentUserProfileUpdateRequest, CurrentUserUpdateRequest,
     };
 }
 
 pub mod worlds {
+    pub use vrcx_0_vrchat_client::query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort};
     pub use vrcx_0_vrchat_client::worlds::{
         world_delete_input, world_get_input, world_list_by_user_get_input,
         world_persistent_data_delete_input, world_persistent_data_exists_input,
-        world_publish_input, world_save_input, world_unpublish_input,
+        world_publish_input, world_save_input, world_unpublish_input, WorldUpdateRequest,
     };
 }
 

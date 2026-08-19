@@ -216,7 +216,7 @@ pub async fn app__vrchat_instance_create(
         state,
         "app__vrchat_instance_create",
         "Creating instance.",
-        instance_create_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
+        instance_create_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params)?,
     )
     .await
 }

@@ -185,11 +185,11 @@ describe('modalStore', () => {
         useModalStore.getState().handleBoopDismiss('ignored');
         expect(useModalStore.getState().boopDialog.open).toBe(true);
 
-        useModalStore.getState().handleBoopOk({ emojiId: 'wave' });
+        useModalStore.getState().handleBoopOk('wave');
         await expect(result).resolves.toEqual({
             ok: true,
             reason: 'ok',
-            value: { emojiId: 'wave' }
+            value: 'wave'
         });
     });
 

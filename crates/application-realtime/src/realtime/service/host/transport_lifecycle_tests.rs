@@ -58,7 +58,6 @@ fn seed_online_friend(
                 id: "usr_friend".into(),
                 display_name: "Friend".into(),
                 state: "online".into(),
-                state_bucket: "online".into(),
                 location: "wrld_old:123".into(),
                 ..FriendRecord::default()
             },
@@ -89,7 +88,6 @@ fn baseline_friend_cache_seed_preserves_profile_and_friend_fields() -> Result<()
                 id: "usr_future".into(),
                 display_name: "Future Friend".into(),
                 state: "online".into(),
-                state_bucket: "online".into(),
                 extra,
                 ..FriendRecord::default()
             },
@@ -267,7 +265,6 @@ fn unexpected_exit_keeps_old_roster_until_pending_baseline_replacement_starts() 
             id: "usr_friend".into(),
             display_name: "Friend".into(),
             state: "online".into(),
-            state_bucket: "online".into(),
             location: "wrld_fresh:456".into(),
             ..FriendRecord::default()
         },
@@ -350,7 +347,6 @@ fn reconnect_without_a_fresh_baseline_preserves_the_latest_canonical_roster() ->
                 id: "usr_friend".into(),
                 display_name: "Friend".into(),
                 state: "online".into(),
-                state_bucket: "online".into(),
                 location: "wrld_latest:456".into(),
                 ..FriendRecord::default()
             },
@@ -504,7 +500,7 @@ fn friend_ws_dispatch_fans_out_one_canonical_output() -> Result<()> {
         .get("usr_friend")
         .expect("friend-add should update the canonical snapshot");
     assert_eq!(friend.display_name, "Friend");
-    assert_eq!(friend.state_bucket, "offline");
+    assert_eq!(friend.state, "offline");
 
     let current = vrcx_0_persistence::friends::friend_log_current_list(
         runtime.database(),
@@ -660,6 +656,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
     )?;
     let watermark = runtime.runtime().capture_friend_baseline_watermark()?;
     let friend = FriendRecord {
+        state: "online".into(),
         id: "usr_friend".into(),
         display_name: "Friend".into(),
         extra: [("$trustLevel".into(), json!("Trusted User"))]

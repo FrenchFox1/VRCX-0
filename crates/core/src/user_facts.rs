@@ -1,3 +1,4 @@
+use crate::derived_keys;
 use std::collections::HashMap;
 
 use serde_json::{Map, Number, Value};
@@ -53,27 +54,42 @@ fn insert_derived_trust_fields(object: &mut Map<String, Value>) {
         .unwrap_or("");
     let effective_platform = crate::trust::compute_user_platform(platform, last_platform);
 
-    object.insert("$trustLevel".into(), Value::String(trust.trust_level));
-    object.insert("$trustClass".into(), Value::String(trust.trust_class));
     object.insert(
-        "$trustSortNum".into(),
-        Number::from_f64(trust.trust_sort_num)
+        derived_keys::TRUST_LEVEL.into(),
+        Value::String(trust.trust_level().to_string()),
+    );
+    object.insert(
+        derived_keys::TRUST_CLASS.into(),
+        Value::String(trust.trust_class().to_string()),
+    );
+    object.insert(
+        derived_keys::TRUST_SORT_NUM.into(),
+        Number::from_f64(trust.trust_sort_num())
             .map(Value::Number)
             .unwrap_or(Value::Null),
     );
-    object.insert("$isModerator".into(), Value::Bool(trust.is_moderator));
-    object.insert("$isTroll".into(), Value::Bool(trust.is_troll));
     object.insert(
-        "$isProbableTroll".into(),
+        derived_keys::IS_MODERATOR.into(),
+        Value::Bool(trust.is_moderator),
+    );
+    object.insert(derived_keys::IS_TROLL.into(), Value::Bool(trust.is_troll));
+    object.insert(
+        derived_keys::IS_PROBABLE_TROLL.into(),
         Value::Bool(trust.is_probable_troll),
     );
-    object.insert("$platform".into(), Value::String(effective_platform));
+    object.insert(
+        derived_keys::PLATFORM.into(),
+        Value::String(effective_platform),
+    );
 }
 
 fn insert_derived_location_fields(object: &mut Map<String, Value>) {
     for (source, derived) in [
-        ("location", "$location"),
-        ("travelingToLocation", "$travelingToLocation"),
+        ("location", derived_keys::LOCATION_PROJECTION),
+        (
+            "travelingToLocation",
+            derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+        ),
     ] {
         let Some(tag) = object.get(source).and_then(Value::as_str) else {
             continue;
@@ -95,7 +111,6 @@ pub struct UserFactMergeOptions {
     pub received_at: String,
     pub is_current_user: bool,
     pub is_friend: bool,
-    pub state_bucket: String,
 }
 
 impl Default for UserFactMergeOptions {
@@ -106,7 +121,6 @@ impl Default for UserFactMergeOptions {
             received_at: String::new(),
             is_current_user: false,
             is_friend: false,
-            state_bucket: String::new(),
         }
     }
 }
@@ -164,7 +178,6 @@ fn is_presence_field(field: &str) -> bool {
         "status"
             | "statusDescription"
             | "state"
-            | "stateBucket"
             | "location"
             | "travelingToLocation"
             | "locationAt"
@@ -230,7 +243,6 @@ fn user_fact_field_name(field: &str) -> Option<&'static str> {
         "status" => "status",
         "statusDescription" => "statusDescription",
         "state" => "state",
-        "stateBucket" => "stateBucket",
         "location" => "location",
         "travelingToLocation" => "travelingToLocation",
         "locationAt" => "locationAt",
@@ -251,12 +263,14 @@ fn resolve_field(raw: &str) -> Option<&'static str> {
     match raw {
         "display_name" | "name" => Some("displayName"),
         "user_id" | "userId" => Some("id"),
-        "$travelingToLocation" => Some("travelingToLocation"),
-        "location_at" | "$location_at" | "joinedAt" | "joined_at" | "$online_for" => {
-            Some("locationAt")
-        }
-        "$travelingToTime" => Some("travelingToTime"),
-        "$friendNumber" => Some("friendNumber"),
+        derived_keys::TRAVELING_TO_LOCATION_PROJECTION => Some("travelingToLocation"),
+        "location_at"
+        | derived_keys::LOCATION_UPDATED_AT
+        | "joinedAt"
+        | "joined_at"
+        | derived_keys::ONLINE_FOR => Some("locationAt"),
+        derived_keys::TRAVELING_TO_TIME => Some("travelingToTime"),
+        derived_keys::FRIEND_NUMBER => Some("friendNumber"),
         other => user_fact_field_name(other),
     }
 }
@@ -326,12 +340,6 @@ fn normalize_fact_patch(input: &Value) -> Map<String, Value> {
                     patch.insert("id".into(), Value::String(id));
                 }
             }
-            "stateBucket" => {
-                let state_bucket = normalize_state_bucket(value);
-                if !state_bucket.is_empty() {
-                    patch.insert("stateBucket".into(), Value::String(state_bucket));
-                }
-            }
             "friendNumber" => {
                 let parsed = value.as_i64().or_else(|| {
                     value
@@ -397,17 +405,6 @@ pub fn merge_user_fact_owned(
         };
         normalize_endpoint(&Value::String(candidate))
     };
-    let normalized_state_bucket = {
-        let from_options = normalize_state_bucket(&Value::String(options.state_bucket.clone()));
-        if from_options.is_empty() {
-            patch
-                .get("stateBucket")
-                .map(normalize_state_bucket)
-                .unwrap_or_default()
-        } else {
-            from_options
-        }
-    };
     let updated_at = {
         let received = normalize_fact_text(&Value::String(options.received_at.clone()));
         if received.is_empty() {
@@ -451,11 +448,6 @@ pub fn merge_user_fact_owned(
     if options.is_friend && fact.fields.get("isFriend").and_then(Value::as_bool) != Some(true) {
         fact.fields.insert("isFriend".into(), Value::Bool(true));
         changed = true;
-    }
-
-    let mut patch = patch;
-    if !normalized_state_bucket.is_empty() {
-        patch.insert("stateBucket".into(), Value::String(normalized_state_bucket));
     }
 
     for (field, value) in &patch {

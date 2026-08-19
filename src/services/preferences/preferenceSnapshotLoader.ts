@@ -377,7 +377,9 @@ export async function loadPreferenceSnapshot() {
     useShellStore
         .getState()
         .setNotificationLayout(
-            notificationLayout || DEFAULT_NOTIFICATION_LAYOUT
+            notificationLayout === 'table'
+                ? 'table'
+                : DEFAULT_NOTIFICATION_LAYOUT
         );
     useShellStore.getState().setNotificationIconDot(notificationIconDot);
     useShellStore.getState().setTaskbarIconDot(taskbarIconDot);

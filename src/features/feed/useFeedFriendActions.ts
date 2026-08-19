@@ -384,7 +384,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 initialNewInstanceDefaults: {
                     groupId: parsedLocation.groupId || '',
                     groupAccessType: parsedLocation.groupAccessType || '',
-                    groupName,
+                    groupName: normalizeId(groupName),
                     region: parsedLocation.region || ''
                 }
             });

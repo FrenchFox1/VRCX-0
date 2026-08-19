@@ -218,11 +218,6 @@ impl RealtimeHostRuntime {
                     .get("isFriend")
                     .and_then(Value::as_bool)
                     .unwrap_or(false),
-                state_bucket: entry
-                    .get("stateBucket")
-                    .and_then(Value::as_str)
-                    .unwrap_or("")
-                    .to_string(),
                 ..Default::default()
             };
             if let Some(output) = self.user_cache.record_user(user, &options) {

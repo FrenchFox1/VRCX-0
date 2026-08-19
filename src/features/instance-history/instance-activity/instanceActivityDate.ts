@@ -1,9 +1,5 @@
 import { formatDateTime } from '@/lib/dateTime';
 
-export function getTodayKey() {
-    return toLocalDayKey(new Date());
-}
-
 export function toLocalDayKey(value: Date | string | number) {
     const date = value instanceof Date ? value : new Date(value);
     const time = date.getTime();

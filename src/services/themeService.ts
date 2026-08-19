@@ -19,7 +19,6 @@ type AppFontPreferenceInput = {
     locale?: unknown;
 };
 
-const VALID_THEME_MODES = new Set<ThemeMode>(['light', 'dark', 'system']);
 const NATIVE_THEME_VALUES: Readonly<Record<ThemeMode, WindowTheme | null>> =
     Object.freeze({
         system: null,
@@ -170,8 +169,8 @@ export function resolveThemeMode(value: unknown): ThemeMode {
         return 'dark';
     }
 
-    if (VALID_THEME_MODES.has(value as ThemeMode)) {
-        return value as ThemeMode;
+    if (value === 'system' || value === 'light' || value === 'dark') {
+        return value;
     }
 
     return 'system';

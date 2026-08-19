@@ -6,7 +6,7 @@ import { rowLocation } from '@/components/dialogs/previous-instances-table/previ
 import gameLogRepository from '@/repositories/gameLogRepository';
 import { useModalStore } from '@/state/modalStore';
 
-import type { PreviousInstanceRow } from './instance-activity/instanceActivityTypes';
+import type { InstanceHistoryEntryRow } from './instance-activity/instanceActivityTypes';
 import {
     buildLocalDayInstanceHistoryDateRange,
     isEmptyInstanceHistoryDateRange,
@@ -41,11 +41,11 @@ export function useInstanceHistoryRowsController({
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
-    const [rows, setRows] = useState<PreviousInstanceRow[]>([]);
+    const [rows, setRows] = useState<InstanceHistoryEntryRow[]>([]);
     const [rowsQueryKey, setRowsQueryKey] = useState('');
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
-    const [detailRow, setDetailRow] = useState<PreviousInstanceRow | null>(
+    const [detailRow, setDetailRow] = useState<InstanceHistoryEntryRow | null>(
         null
     );
     const isDayMode = mode === 'day';
@@ -145,7 +145,7 @@ export function useInstanceHistoryRowsController({
         t
     ]);
 
-    async function deleteRow(row: PreviousInstanceRow) {
+    async function deleteRow(row: InstanceHistoryEntryRow) {
         const location = rowLocation(row);
         if (!location || !activeUserId) {
             return;

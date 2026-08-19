@@ -291,6 +291,30 @@ impl DatabaseService {
         }
     }
 
+    pub(crate) fn execute_non_query_exclusive(
+        &self,
+        sql: &str,
+        args: &HashMap<String, serde_json::Value>,
+    ) -> Result<i64, Error> {
+        let inner = self
+            .inner
+            .write()
+            .map_err(|e| Error::Database(e.to_string()))?;
+        match &*inner {
+            DatabaseMode::Main(main) => main.execute_non_query(sql, args),
+            DatabaseMode::Upgrade(upgrade) => {
+                let conn = upgrade
+                    .conn
+                    .lock()
+                    .map_err(|e| Error::Database(e.to_string()))?;
+                execute_non_query_on_connection(&conn, sql, args)
+            }
+            DatabaseMode::Closed => Err(Error::Database(
+                "Database connection is temporarily unavailable.".into(),
+            )),
+        }
+    }
+
     pub(crate) fn execute_non_query(
         &self,
         sql: &str,
@@ -362,6 +386,29 @@ impl DatabaseService {
         conn.execute_batch("VACUUM;").map_err(Error::sqlite)?;
         checkpoint(&conn)?;
         Ok(())
+    }
+
+    pub fn checkpoint_wal(&self) -> Result<(), Error> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| Error::Database(e.to_string()))?;
+        let conn = match &*inner {
+            DatabaseMode::Main(main) => main
+                .writer
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
+            DatabaseMode::Upgrade(upgrade) => upgrade
+                .conn
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
+            DatabaseMode::Closed => {
+                return Err(Error::Database(
+                    "Database connection is temporarily unavailable.".into(),
+                ));
+            }
+        };
+        checkpoint(&conn)
     }
 }
 
@@ -526,7 +573,8 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
         "PRAGMA locking_mode=NORMAL;
          PRAGMA busy_timeout=5000;
          PRAGMA journal_mode=WAL;
-         PRAGMA secure_delete=ON;
+         PRAGMA synchronous=NORMAL;
+         PRAGMA secure_delete=OFF;
          PRAGMA optimize=0x10002;",
     )
     .map_err(Error::sqlite)?;
@@ -537,7 +585,8 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
 fn configure_read_connection(conn: &Connection) -> Result<(), Error> {
     conn.execute_batch(
         "PRAGMA busy_timeout=5000;
-         PRAGMA query_only=ON;",
+         PRAGMA query_only=ON;
+         PRAGMA temp_store=MEMORY;",
     )
     .map_err(Error::sqlite)?;
     conn.set_prepared_statement_cache_capacity(64);

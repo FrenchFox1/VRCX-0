@@ -1,12 +1,8 @@
-import type {
-    AuthenticatedSessionProjection,
-    FriendProfileLoadStatusPayload
-} from '@/platform/tauri/bindings';
+import type { AuthenticatedSessionProjection } from '@/platform/tauri/bindings';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { applyAuthenticatedSessionProjection } from '../backendRuntimeSessionResumeService';
 import { applyFriendProfileLoadStatusPayload } from '../friendProfileLoadService';
-import { isRecord } from './guards';
 import type { RuntimeSnapshotPayload } from './types';
 
 let backendRuntimeHydrationPromise: Promise<void> | null = null;
@@ -26,14 +22,8 @@ function applyBackendRuntimeSnapshot(
 ): void {
     const runtimeStore = useRuntimeStore.getState();
     runtimeStore.setBackendRuntimeSnapshot(snapshot);
-    if (
-        applyFriendProfileLoad &&
-        isRecord(snapshot) &&
-        isRecord(snapshot.friendProfileLoad)
-    ) {
-        applyFriendProfileLoadStatusPayload(
-            snapshot.friendProfileLoad as FriendProfileLoadStatusPayload
-        );
+    if (applyFriendProfileLoad && snapshot) {
+        applyFriendProfileLoadStatusPayload(snapshot.friendProfileLoad);
     }
     if (markHydrated) {
         runtimeStore.setShellState({

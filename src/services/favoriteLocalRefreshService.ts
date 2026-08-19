@@ -1,12 +1,9 @@
+import type { FavoriteGroupMap, FavoriteKind } from '@/domain/favorites/types';
 import favoritePersistenceRepository, {
     type AvatarFavoriteRow,
     type FriendFavoriteRow
 } from '@/repositories/favoritePersistenceRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
-import type {
-    FavoriteGroupMap,
-    FavoriteKind
-} from '@/state/favoriteStoreTypes';
 
 const refreshSequences: Record<Exclude<FavoriteKind, 'world'>, number> = {
     friend: 0,

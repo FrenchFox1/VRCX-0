@@ -39,7 +39,6 @@ fn friend(id: &str, display_name: &str, state_bucket: &str, location: &str) -> F
         id: id.into(),
         display_name: display_name.into(),
         state: state_bucket.into(),
-        state_bucket: state_bucket.into(),
         location: location.into(),
         status: "active".into(),
         ..FriendRecord::default()

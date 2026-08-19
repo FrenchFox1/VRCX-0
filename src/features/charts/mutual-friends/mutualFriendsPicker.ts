@@ -1,4 +1,4 @@
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterById } from '@/domain/friends/types';
 
 import { mutualFriendUsername } from './mutualFriendsGraphData';
 import {

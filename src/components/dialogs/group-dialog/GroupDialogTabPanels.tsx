@@ -10,9 +10,9 @@ import { useTranslation } from 'react-i18next';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type {
     GroupDialogJson,
-    GroupProfileRecord,
-    UserProfileEntity
-} from '@/domain/entities/profileEntities';
+    GroupProfileRecord
+} from '@/domain/entities/group';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateFilter } from '@/lib/dateTime';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';

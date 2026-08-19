@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 import { useFavoritesBulkActions } from './useFavoritesBulkActions';
@@ -51,10 +51,10 @@ export function useFavoritesActions({
     friendsById: Record<string, unknown>;
     friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     newLocalGroupName: string;
     reloadLocalWorldFavorites(): Promise<unknown>;
-    remoteGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroupView[];
     selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;

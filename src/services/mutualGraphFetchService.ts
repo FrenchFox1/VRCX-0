@@ -1,6 +1,8 @@
 import { commands } from '@/platform/tauri/bindings';
-import type { MutualGraphFetchStatus } from '@/platform/tauri/bindings';
-import { normalizeNumber } from '@/shared/utils/coerce';
+import type {
+    MutualGraphFetchState,
+    MutualGraphFetchStatus
+} from '@/platform/tauri/bindings';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type StartMutualGraphFetchInput = {
@@ -9,40 +11,21 @@ type StartMutualGraphFetchInput = {
     friendIds: string[];
 };
 
-const TERMINAL_STATUSES = new Set(['completed', 'cancelled', 'error']);
-const ACTIVE_STATUSES = new Set(['running', 'cancelling']);
+const TERMINAL_STATUSES: ReadonlySet<MutualGraphFetchState> = new Set([
+    'completed',
+    'cancelled',
+    'error'
+]);
+const ACTIVE_STATUSES: ReadonlySet<MutualGraphFetchState> = new Set([
+    'running',
+    'cancelling'
+]);
 const TERMINAL_RESET_DELAY_MS = 5000;
 
 let resetTimer: number | null = null;
 let latestAcceptedRunId = 0;
 let latestAcceptedRevision = 0;
 const sessionStartedRunIds = new Set<number>();
-
-function normalizeString(value: unknown) {
-    return typeof value === 'string' ? value : String(value ?? '');
-}
-
-function normalizeStatus(
-    status: Partial<MutualGraphFetchStatus> | null | undefined
-) {
-    return {
-        runId: normalizeNumber(status?.runId),
-        revision: normalizeNumber(status?.revision),
-        status: normalizeString(status?.status || 'idle'),
-        ownerUserId: normalizeString(status?.ownerUserId),
-        totalFriends: normalizeNumber(status?.totalFriends),
-        processedFriends: normalizeNumber(status?.processedFriends),
-        currentFriendId: normalizeString(status?.currentFriendId),
-        fetchedFriends: normalizeNumber(status?.fetchedFriends),
-        optedOutFriends: normalizeNumber(status?.optedOutFriends),
-        failedFriends: normalizeNumber(status?.failedFriends),
-        cancelRequested: Boolean(status?.cancelRequested),
-        startedAt: status?.startedAt || null,
-        updatedAt: status?.updatedAt || null,
-        finishedAt: status?.finishedAt || null,
-        lastError: status?.lastError || null
-    };
-}
 
 function isNewerStatus(runId: number, revision: number): boolean {
     return (
@@ -66,26 +49,23 @@ function scheduleTerminalReset() {
     }, TERMINAL_RESET_DELAY_MS);
 }
 
-function applyMutualGraphFetchStatus(
-    status: Partial<MutualGraphFetchStatus> | null | undefined
-) {
-    const normalized = normalizeStatus(status);
-    if (!isNewerStatus(normalized.runId, normalized.revision)) {
-        return normalized;
+function applyMutualGraphFetchStatus(status: MutualGraphFetchStatus) {
+    if (!isNewerStatus(status.runId, status.revision)) {
+        return status;
     }
-    latestAcceptedRunId = normalized.runId;
-    latestAcceptedRevision = normalized.revision;
-    useRuntimeStore.getState().setMutualGraphState(normalized);
-    if (ACTIVE_STATUSES.has(normalized.status)) {
+    latestAcceptedRunId = status.runId;
+    latestAcceptedRevision = status.revision;
+    useRuntimeStore.getState().setMutualGraphState(status);
+    if (ACTIVE_STATUSES.has(status.status)) {
         clearResetTimer();
-    } else if (TERMINAL_STATUSES.has(normalized.status)) {
+    } else if (TERMINAL_STATUSES.has(status.status)) {
         scheduleTerminalReset();
     }
-    return normalized;
+    return status;
 }
 
 export function handleMutualGraphFetchStatusEvent(
-    status: Partial<MutualGraphFetchStatus> | null | undefined
+    status: MutualGraphFetchStatus
 ) {
     return applyMutualGraphFetchStatus(status);
 }
@@ -105,7 +85,7 @@ export async function startMutualGraphFetch({
         endpoint,
         friendIds
     });
-    const runId = normalizeNumber(status.runId);
+    const runId = status.runId;
     if (runId) {
         sessionStartedRunIds.add(runId);
     }

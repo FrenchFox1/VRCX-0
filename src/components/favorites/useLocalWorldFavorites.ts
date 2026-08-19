@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import {
     loadLocalWorldFavoritesSnapshot,
     type LocalWorldFavoritesSnapshot
 } from '@/services/localWorldFavoritesService';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 
-type LocalWorldFavoritesStatus = 'idle' | 'running' | 'ready' | 'error';
+type LocalWorldFavoritesStatus = LoadStatus;
 
 const EMPTY_SNAPSHOT: LocalWorldFavoritesSnapshot = {
     favoritesByGroup: {},

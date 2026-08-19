@@ -11,11 +11,9 @@ import { useTranslation } from 'react-i18next';
 
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type {
-    AvatarProfileRecord,
-    UserProfileRecord,
-    WorldProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
+import type { UserProfileRecord } from '@/domain/entities/user';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import { cn } from '@/lib/utils';
 import type { SearchGroupJson } from '@/repositories/vrchatSearchRepository';
 import {

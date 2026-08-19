@@ -4,6 +4,7 @@ use std::path::{Component, Path, PathBuf};
 use sha2::{Digest, Sha256};
 
 use crate::error::Error;
+use crate::ugc_image_files::is_windows_reserved_name;
 
 pub struct ImageCache {
     cache_dir: PathBuf,
@@ -141,39 +142,6 @@ fn is_safe_path_component(value: &str) -> bool {
         (Some(Component::Normal(component)), None) => component == std::ffi::OsStr::new(value),
         _ => false,
     }
-}
-
-fn is_windows_reserved_name(value: &str) -> bool {
-    let upper = value
-        .split('.')
-        .next()
-        .unwrap_or_default()
-        .to_ascii_uppercase();
-    matches!(
-        upper.as_str(),
-        "CON"
-            | "PRN"
-            | "AUX"
-            | "NUL"
-            | "COM1"
-            | "COM2"
-            | "COM3"
-            | "COM4"
-            | "COM5"
-            | "COM6"
-            | "COM7"
-            | "COM8"
-            | "COM9"
-            | "LPT1"
-            | "LPT2"
-            | "LPT3"
-            | "LPT4"
-            | "LPT5"
-            | "LPT6"
-            | "LPT7"
-            | "LPT8"
-            | "LPT9"
-    )
 }
 
 #[cfg(test)]

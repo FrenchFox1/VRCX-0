@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
     resolveCreatedInstanceDetails: vi.fn(),
     selfInviteToInstance: vi.fn(),
     tryOpenLaunchLocation: vi.fn(),
-    showLaunchDialog: vi.fn()
+    showLaunchDialog: vi.fn(),
+    loadNewInstanceGroups: vi.fn().mockResolvedValue([])
 }));
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -32,7 +33,8 @@ vi.mock('@/repositories/configRepository', () => ({
         setString: vi.fn().mockResolvedValue(undefined),
         setBool: vi.fn().mockResolvedValue(undefined),
         getString: vi.fn().mockResolvedValue(''),
-        getBool: vi.fn().mockResolvedValue(false)
+        getBool: vi.fn().mockResolvedValue(false),
+        getArray: vi.fn().mockResolvedValue([])
     }
 }));
 
@@ -55,8 +57,6 @@ vi.mock('./worldInstanceResolver', () => ({
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import {
-    isNewInstanceOpenInGameRequest,
-    isNewInstanceSelfInviteRequest,
     resolveNewInstanceAfterCreateAction,
     useWorldInstanceActions
 } from './useWorldInstanceActions';
@@ -67,30 +67,16 @@ describe('useWorldInstanceActions helpers', () => {
         expect(resolveNewInstanceAfterCreateAction(true, true)).toBe(
             'openInGame'
         );
-        expect(
-            isNewInstanceOpenInGameRequest({ afterCreateAction: 'openInGame' })
-        ).toBe(true);
-        expect(
-            isNewInstanceSelfInviteRequest({ afterCreateAction: 'openInGame' })
-        ).toBe(false);
     });
 
     it('keeps the follow-up new-instance action as self-invite when VRChat is not running', () => {
         expect(resolveNewInstanceAfterCreateAction(true, false)).toBe(
             'selfInvite'
         );
-        expect(
-            isNewInstanceSelfInviteRequest({ afterCreateAction: 'selfInvite' })
-        ).toBe(true);
-        expect(
-            isNewInstanceOpenInGameRequest({ afterCreateAction: 'selfInvite' })
-        ).toBe(false);
     });
 
     it('does not attach a follow-up action for a plain new instance', () => {
         expect(resolveNewInstanceAfterCreateAction(false, true)).toBe('');
-        expect(isNewInstanceSelfInviteRequest(null)).toBe(false);
-        expect(isNewInstanceOpenInGameRequest({})).toBe(false);
     });
 });
 
@@ -121,6 +107,7 @@ function renderCreateFlow(
             isGameRunning,
             profileWorldId: 'wrld_test',
             newInstanceGroups: [],
+            loadNewInstanceGroups: mocks.loadNewInstanceGroups,
             actionStatusRef,
             setActionStatus: vi.fn(),
             isCurrentWorldTarget: () => true,
@@ -168,6 +155,20 @@ describe('useWorldInstanceActions createWorldInstance', () => {
         mocks.resolveCreatedInstanceDetails.mockResolvedValue(created);
         mocks.selfInviteToInstance.mockResolvedValue(undefined);
         mocks.tryOpenLaunchLocation.mockResolvedValue(true);
+    });
+
+    it('loads current-user groups when opening the new-instance dialog', async () => {
+        const result = renderCreateFlow('');
+        act(() => {
+            result.current.setNewInstanceRequest(null);
+        });
+
+        await act(async () => {
+            await result.current.openNewInstanceDialog();
+        });
+
+        expect(mocks.loadNewInstanceGroups).toHaveBeenCalledOnce();
+        expect(result.current.newInstanceRequest).not.toBeNull();
     });
 
     it('closes the dialog and hands a plain new instance to the launch dialog', async () => {

@@ -1,4 +1,5 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_core::friends::UserStatus;
 use vrcx_0_core::location::{launch_url, GroupAccessType, ParsedLocation};
 
 use super::super::presence_facts::BackgroundPresenceFacts;
@@ -262,28 +263,28 @@ fn status_info<'a>(
     hide_invite: bool,
     labels: &'a DiscordPresenceLabels,
 ) -> StatusInfo<'a> {
-    match status.unwrap_or_default() {
-        "active" => StatusInfo {
+    match UserStatus::normalize(status.unwrap_or_default()) {
+        Some(UserStatus::Active) => StatusInfo {
             status_name: &labels.status_active,
             status_image: "active",
             hide_private: false,
         },
-        "join me" => StatusInfo {
+        Some(UserStatus::JoinMe) => StatusInfo {
             status_name: &labels.status_join_me,
             status_image: "joinme",
             hide_private: false,
         },
-        "ask me" => StatusInfo {
+        Some(UserStatus::AskMe) => StatusInfo {
             status_name: &labels.status_ask_me,
             status_image: "askme",
             hide_private: hide_invite,
         },
-        "busy" => StatusInfo {
+        Some(UserStatus::Busy) => StatusInfo {
             status_name: &labels.status_busy,
             status_image: "busy",
             hide_private: true,
         },
-        _ => StatusInfo {
+        Some(UserStatus::Offline) | None => StatusInfo {
             status_name: &labels.status_offline,
             status_image: "offline",
             hide_private: true,

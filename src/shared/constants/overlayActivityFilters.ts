@@ -1,13 +1,5 @@
 import hmdDefaultScopes from './overlayActivityHmdDefaults.json';
 
-export type OverlayActivitySurface =
-    | 'wrist'
-    | 'desktop'
-    | 'vr'
-    | 'hmd'
-    | 'webhook'
-    | 'tts';
-
 export type OverlayActivityCategory =
     | 'actionRequired'
     | 'currentInstance'
@@ -435,24 +427,6 @@ export function disabledOverlayActivityFilterProfileFromDefinitions(
             disabledOverlayActivityTypeRules(definitions),
             definitions
         )
-    };
-}
-
-export function defaultOverlayActivityFiltersFromDefinitions(
-    definitions: OverlayActivityTypeDefinition[]
-): OverlayActivityFiltersPreference {
-    const profile =
-        defaultOverlayActivityFilterProfileFromDefinitions(definitions);
-    const hmdProfile =
-        hmdDefaultOverlayActivityFilterProfileFromDefinitions(definitions);
-    return {
-        version: 1,
-        wrist: {
-            types: profile.types
-        },
-        hmd: {
-            types: hmdProfile.types
-        }
     };
 }
 

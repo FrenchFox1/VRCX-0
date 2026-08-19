@@ -3,13 +3,14 @@ import {
     type HttpApiExecuteResponse,
     type NotificationListItemOutput,
     type NotificationListQueryInput,
+    type RequestInviteRequest,
     type VrchatBoopInput,
-    type VrchatNotificationPhotoSendInput,
-    type VrchatNotificationSendInput
+    type VrchatRequestInvitePhotoSendInput,
+    type VrchatRequestInviteSendInput
 } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';
-import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
+import { unwrapVrchatResponse } from './vrchatRequest';
 
 export type NotificationDetails = Record<string, unknown> & {
     displayLocation?: string;
@@ -65,15 +66,15 @@ export type NotificationRow = Omit<
 type NotificationRecord = NotificationRow;
 
 interface NotificationUserOptions {
-    userId?: unknown;
+    userId?: string;
 }
 
 interface NotificationActionOptions {
-    imageData?: unknown;
-    receiverUserId?: unknown;
-    userId?: unknown;
-    emojiId?: unknown;
-    params?: QueryParams;
+    imageData?: string;
+    receiverUserId?: string;
+    userId?: string;
+    emojiId?: string;
+    params?: RequestInviteRequest;
 }
 
 export const NOTIFICATION_TYPES = Object.freeze([
@@ -251,7 +252,7 @@ async function addNotificationV2ToDatabase({
 async function expireNotificationV2({
     userId,
     id
-}: NotificationUserOptions & { id?: unknown } = {}) {
+}: NotificationUserOptions & { id?: string } = {}) {
     const normalizedUserId = normalizeUserId(userId);
     const normalizedId = normalizeUserId(id);
     if (!normalizedUserId || !normalizedId) {
@@ -264,7 +265,7 @@ async function expireNotificationV2({
 async function seenNotificationV2({
     userId,
     id
-}: NotificationUserOptions & { id?: unknown } = {}) {
+}: NotificationUserOptions & { id?: string } = {}) {
     const normalizedUserId = normalizeUserId(userId);
     const normalizedId = normalizeUserId(id);
     if (!normalizedUserId || !normalizedId) {
@@ -294,10 +295,9 @@ async function updateNotificationExpired({
 async function deleteNotification({
     userId,
     id
-}: NotificationUserOptions & { id?: unknown; version?: unknown }) {
+}: NotificationUserOptions & { id?: string }) {
     const normalizedUserId = normalizeUserId(userId);
-    const normalizedId =
-        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    const normalizedId = id?.trim() ?? '';
     if (!normalizedUserId || !normalizedId) {
         return;
     }
@@ -308,10 +308,9 @@ async function deleteNotification({
 async function expireNotification({
     userId,
     id
-}: NotificationUserOptions & { id?: unknown }) {
+}: NotificationUserOptions & { id?: string }) {
     const normalizedUserId = normalizeUserId(userId);
-    const normalizedId =
-        typeof id === 'string' ? id.trim() : String(id ?? '').trim();
+    const normalizedId = id?.trim() ?? '';
     if (!normalizedUserId || !normalizedId) {
         return;
     }
@@ -323,10 +322,7 @@ async function sendRequestInvite({
     receiverUserId,
     params = {}
 }: NotificationActionOptions = {}) {
-    const normalizedReceiverUserId =
-        typeof receiverUserId === 'string'
-            ? receiverUserId.trim()
-            : String(receiverUserId ?? '').trim();
+    const normalizedReceiverUserId = receiverUserId?.trim() ?? '';
     if (!normalizedReceiverUserId) {
         return null;
     }
@@ -334,7 +330,7 @@ async function sendRequestInvite({
     const input = {
         receiverUserId: normalizedReceiverUserId,
         params
-    } satisfies VrchatNotificationSendInput;
+    } satisfies VrchatRequestInviteSendInput;
     const response = await commands.appVrchatRequestInviteSend(input);
     return unwrapVrchatNotificationResponse(
         response,
@@ -347,14 +343,8 @@ async function sendRequestInvitePhoto({
     params = {},
     imageData
 }: NotificationActionOptions = {}) {
-    const normalizedReceiverUserId =
-        typeof receiverUserId === 'string'
-            ? receiverUserId.trim()
-            : String(receiverUserId ?? '').trim();
-    const normalizedImageData =
-        typeof imageData === 'string'
-            ? imageData.trim()
-            : String(imageData ?? '').trim();
+    const normalizedReceiverUserId = receiverUserId?.trim() ?? '';
+    const normalizedImageData = imageData?.trim() ?? '';
     if (!normalizedReceiverUserId || !normalizedImageData) {
         return null;
     }
@@ -363,7 +353,7 @@ async function sendRequestInvitePhoto({
         receiverUserId: normalizedReceiverUserId,
         params,
         imageData: normalizedImageData
-    } satisfies VrchatNotificationPhotoSendInput;
+    } satisfies VrchatRequestInvitePhotoSendInput;
     const response = await commands.appVrchatRequestInvitePhotoSend(input);
     return unwrapVrchatNotificationResponse(
         response,
@@ -375,18 +365,12 @@ async function sendBoop({
     userId,
     emojiId = ''
 }: NotificationActionOptions = {}) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         return null;
     }
 
-    const normalizedEmojiId =
-        typeof emojiId === 'string'
-            ? emojiId.trim()
-            : String(emojiId ?? '').trim();
+    const normalizedEmojiId = emojiId.trim();
     const input = {
         userId: normalizedUserId,
         emojiId: normalizedEmojiId

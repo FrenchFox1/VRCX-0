@@ -6,7 +6,7 @@ fn friend(id: &str, display_name: &str, state_bucket: &str, location: &str) -> F
     FriendRecord {
         id: id.into(),
         display_name: display_name.into(),
-        state_bucket: state_bucket.into(),
+        state: state_bucket.into(),
         location: location.into(),
         ..FriendRecord::default()
     }

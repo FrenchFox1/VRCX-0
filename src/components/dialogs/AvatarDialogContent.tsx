@@ -1,6 +1,6 @@
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
-import type { AvatarProfileRecord } from '@/domain/entities/profileEntities';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -49,6 +49,7 @@ export function AvatarDialogContent({
 
     const {
         applyCurrentAvatarUpdate,
+        activeTab,
         avatar,
         avatarActions,
         avatarForView,
@@ -58,6 +59,7 @@ export function AvatarDialogContent({
         ownerEditor,
         refs,
         setImageCropRequest,
+        setActiveTab,
         setOwnerEditor,
         viewState
     } = dialogState;
@@ -67,7 +69,9 @@ export function AvatarDialogContent({
             <AvatarDialogTabbedView
                 avatar={avatarForView}
                 avatarView={viewState}
+                activeTab={activeTab}
                 imageUrl={imageUrl}
+                onActiveTabChange={setActiveTab}
                 avatarControls={{
                     onRefresh: () => {
                         avatarActions.refreshAvatarProfile();

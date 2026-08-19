@@ -214,7 +214,10 @@ fn run_database_maintenance_task(
             }
         }
         DatabaseMaintenanceTask::Vacuum => {
-            db.execute_non_query("VACUUM", &Default::default())?;
+            db.execute_non_query_exclusive("VACUUM", &Default::default())?;
+            if let Err(error) = db.checkpoint_wal() {
+                tracing::warn!("failed to truncate WAL after vacuum: {error}");
+            }
         }
         DatabaseMaintenanceTask::Optimize => {
             db.execute_non_query("PRAGMA optimize", &Default::default())?;

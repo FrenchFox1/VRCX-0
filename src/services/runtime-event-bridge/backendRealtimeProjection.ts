@@ -3,6 +3,7 @@ import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
+import { currentRealtimeTransportGeneration } from '../authenticatedRuntimeService';
 import { handleRealtimeInstanceQueueProjection } from '../realtimeInstanceQueueService';
 import {
     handleRealtimeCurrentUserProjection,
@@ -13,7 +14,6 @@ import {
     handleRealtimeUserCacheProjection
 } from '../realtimePresenceService';
 import { showSQLiteErrorDialog } from '../sqliteErrorDialogService';
-import { isRecord } from './guards';
 import type { RuntimeEvent } from './types';
 
 type BackendRealtimeProjectionScope = {
@@ -40,12 +40,10 @@ let pendingBackendRealtimeProjectionEvents: Array<{
 function isBackendRuntimeRealtimeOwner(): boolean {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
-    const snapshot = isRecord(runtimeState.backendRuntime)
-        ? runtimeState.backendRuntime
-        : {};
+    const snapshot = runtimeState.backendRuntime;
     const authenticatedSession = runtimeState.authenticatedSession.session;
     return Boolean(
-        snapshot.phase === 'running' &&
+        snapshot?.phase === 'running' &&
         snapshot.wsStatus !== 'authFailure' &&
         snapshot.mode !== 'headless' &&
         authenticatedSession &&
@@ -58,8 +56,7 @@ function isBackendRuntimeRealtimeCandidate(): boolean {
     const runtimeState = useRuntimeStore.getState();
     const snapshot = runtimeState.backendRuntime;
     return Boolean(
-        isRecord(snapshot) &&
-        snapshot.phase === 'running' &&
+        snapshot?.phase === 'running' &&
         snapshot.wsStatus !== 'authFailure' &&
         snapshot.mode !== 'headless' &&
         runtimeState.authenticatedSession.session
@@ -234,6 +231,15 @@ export function handleBackendRealtimeProjectionEvent(
 ): boolean {
     if (!isRealtimeProjectionEvent(event)) {
         return false;
+    }
+    const realtimeGeneration = projectionGeneration(event.payload);
+    const authoritativeGeneration = currentRealtimeTransportGeneration();
+    if (
+        realtimeGeneration &&
+        authoritativeGeneration !== null &&
+        realtimeGeneration !== authoritativeGeneration
+    ) {
+        return true;
     }
     if (!isBackendRuntimeRealtimeOwner()) {
         if (isBackendRuntimeRealtimeCandidate()) {

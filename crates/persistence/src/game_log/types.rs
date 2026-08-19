@@ -196,6 +196,14 @@ pub struct SessionEventRow {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SessionPlayerDurationRow {
+    pub location: String,
+    pub display_name: String,
+    pub user_id: String,
+    pub time: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PreviousInstanceEventRow {
     pub created_at: String,
     pub created_at_ts: i64,

@@ -18,6 +18,7 @@ import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
+    buildEmojiUploadParams,
     CATEGORY_DEFINITIONS,
     INITIAL_INVENTORY_SUB_TABS,
     getInventoryGridDensityConfig,
@@ -30,7 +31,8 @@ import {
     writeGridDensityPreference,
     type InventoryCategory,
     type InventoryTabDefinition,
-    type InventoryUploadTarget
+    type InventoryUploadTarget,
+    type EmojiUploadSettings
 } from './inventoryHelpers';
 
 export { IMAGE_UPLOAD_ACCEPT };
@@ -46,13 +48,7 @@ export type InventoryRow = MediaFileRecord & Partial<InventoryItemRecord>;
 const EMPTY_ROWS_BY_SCOPE: Record<string, InventoryRow[]> = Object.freeze({});
 const EMPTY_LOADING_BY_SCOPE: Record<string, boolean> = Object.freeze({});
 
-type InventoryUploadSettings = {
-    animationStyle: string;
-    fps: number;
-    frames: number;
-    isAnimated: boolean;
-    loopPingPong: boolean;
-};
+type InventoryUploadSettings = EmojiUploadSettings;
 
 type InventoryCropRequest = {
     aspectRatio: number;
@@ -118,7 +114,6 @@ async function loadInventoryRows(definition: InventoryTabDefinition) {
         return [];
     }
     const { items, truncated } = await mediaRepository.collectInventoryItems({
-        order: 'newest',
         ...definition.params
     });
     if (truncated) {
@@ -286,30 +281,6 @@ export function useInventoryPageState() {
         uploadInputRef.current?.click();
     }
 
-    function getEmojiUploadParams(settings: InventoryUploadSettings) {
-        const params: Record<string, string | number> = {
-            tag: settings.isAnimated ? 'emojianimated' : 'emoji',
-            animationStyle: String(
-                settings.animationStyle || 'Stop'
-            ).toLowerCase(),
-            maskTag: 'square'
-        };
-        if (settings.isAnimated) {
-            params.frames = Math.min(
-                64,
-                Math.max(2, Number(settings.frames) || 4)
-            );
-            params.framesOverTime = Math.min(
-                64,
-                Math.max(1, Number(settings.fps) || 15)
-            );
-        }
-        if (settings.loopPingPong) {
-            params.loopStyle = 'pingpong';
-        }
-        return params;
-    }
-
     function uploadAsset(
         target: unknown,
         base64Body: string,
@@ -318,7 +289,7 @@ export function useInventoryPageState() {
         if (target === 'emojis') {
             return mediaRepository.uploadEmoji(
                 base64Body,
-                getEmojiUploadParams(settings)
+                buildEmojiUploadParams(settings)
             );
         }
         if (target === 'stickers') {
@@ -639,7 +610,8 @@ export function useInventoryPageState() {
             confirmText: t('prompt.redeem.redeem'),
             cancelText: t('prompt.redeem.cancel')
         });
-        if (!result.ok || !String(result.value || '').trim()) {
+        const code = result.value?.trim();
+        if (!result.ok || !code) {
             return;
         }
         if (!isCurrentInventoryAuthTarget(authTarget)) {
@@ -647,7 +619,7 @@ export function useInventoryPageState() {
         }
         setMutatingKey('inventory:redeem');
         try {
-            await mediaRepository.redeemReward(result.value);
+            await mediaRepository.redeemReward(code);
             if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.success(t('prompt.redeem.success'));
                 await refreshScope(activeCategory, activeSubTab);

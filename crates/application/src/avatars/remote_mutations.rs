@@ -19,6 +19,7 @@ pub struct AvatarRemoteMutationDeps<'a> {
     pub sync: &'a RuntimeSyncEngine,
     pub realtime: &'a Arc<RealtimeHostRuntime>,
     pub avatar_cache: &'a Arc<AvatarCache>,
+    pub avatar_moderation: &'a super::AvatarModerationRuntime,
     pub mutation: AuthenticatedMutationContext<'a>,
 }
 

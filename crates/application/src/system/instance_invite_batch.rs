@@ -352,7 +352,7 @@ fn normalize_input(
     }
 
     let short_name = if input.short_name.trim().is_empty() {
-        parsed.short_name.clone()
+        parsed.short_name.to_string()
     } else {
         input.short_name.trim().to_string()
     };

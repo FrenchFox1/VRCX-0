@@ -130,9 +130,7 @@ pub async fn app__vrchat_tools_user_report(
     let (user_id, request) = user_report_input(
         VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.user_id,
-        input.content_type,
         input.reason,
-        input.type_name,
     )?;
     execute_tools_api(
         state,

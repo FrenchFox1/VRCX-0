@@ -2,10 +2,9 @@ import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type {
-    EntityRecord,
-    GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { GroupPostVisibility } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 
 import type { GroupRemoteData, GroupRemoteStatus } from './groupDialogTypes';
@@ -16,7 +15,7 @@ export type GroupPostForm = {
     title: string;
     text: string;
     sendNotification: boolean;
-    visibility: string;
+    visibility: GroupPostVisibility;
     roleIds: string[];
     imageId: string;
 };
@@ -85,11 +84,12 @@ export function useGroupDialogPosts({
             if (form.mode === 'edit') {
                 await groupProfileRepository.editGroupPost({
                     groupId: group.id,
-                    postId: form.post?.id,
+                    postId:
+                        typeof form.post?.id === 'string' ? form.post.id : '',
                     params: {
                         title,
                         text,
-                        visibility: form.visibility || 'group',
+                        visibility: form.visibility,
                         roleIds,
                         sendNotification: Boolean(form.sendNotification),
                         imageId: form.imageId || null
@@ -102,7 +102,7 @@ export function useGroupDialogPosts({
                         title,
                         text,
                         sendNotification: Boolean(form.sendNotification),
-                        visibility: form.visibility || 'group',
+                        visibility: form.visibility,
                         roleIds,
                         imageId: form.imageId || null
                     }
@@ -135,7 +135,7 @@ export function useGroupDialogPosts({
             title: text(post.title),
             text: text(post.text),
             sendNotification: Boolean(post?.sendNotification),
-            visibility: text(post.visibility) || 'group',
+            visibility: post.visibility === 'public' ? 'public' : 'group',
             roleIds: Array.isArray(post.roleIds)
                 ? post.roleIds.filter(
                       (roleId): roleId is string => typeof roleId === 'string'
@@ -159,7 +159,7 @@ export function useGroupDialogPosts({
         try {
             await groupProfileRepository.deleteGroupPost({
                 groupId: group.id,
-                postId: post.id
+                postId: text(post.id)
             });
             setRemoteData((current) => ({
                 ...current,

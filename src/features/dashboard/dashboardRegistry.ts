@@ -219,22 +219,6 @@ export function resolveDashboardPanelKey(panel: unknown): string | null {
     return null;
 }
 
-export function resolveDashboardPanelConfig(
-    panel: unknown
-): Record<string, unknown> {
-    if (!panel || typeof panel === 'string') {
-        return {};
-    }
-
-    if (!isRecord(panel)) {
-        return {};
-    }
-
-    return panel.config && typeof panel.config === 'object'
-        ? (panel.config as Record<string, unknown>)
-        : {};
-}
-
 export function getDashboardPanelDefinition(
     key: unknown
 ): DashboardPanelDefinition | null {

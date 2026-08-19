@@ -61,10 +61,6 @@ export function dismissProfileBackupError(): Promise<ProfileBackupStatus> {
     return commands.appProfileBackupDismissError();
 }
 
-export function getCurrentProfileBackupStatus(): Promise<ProfileBackupStatus> {
-    return commands.appProfileBackupCurrentStatus();
-}
-
 export function validateProfileRestore(
     path: string
 ): Promise<ProfileRestoreValidationOutcome> {

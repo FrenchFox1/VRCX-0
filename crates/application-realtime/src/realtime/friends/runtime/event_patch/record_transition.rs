@@ -81,14 +81,12 @@ pub(super) fn apply_friend_patch(
     patch.apply_to(&mut next);
     next.id = user_id.to_string();
     next.state = state_bucket.into();
-    next.state_bucket = state_bucket.into();
     sanitize_extra(&mut next);
 
     FriendRecordTransition {
         projection: FriendProjectionPatch {
             user_id: user_id.to_string(),
             patch: next.clone(),
-            state_bucket: state_bucket.into(),
             state_bucket_authority,
         },
         next,
@@ -101,7 +99,6 @@ const FRIEND_NAMED_FIELD_KEYS: &[&str] = &[
     "displayName",
     "username",
     "state",
-    "stateBucket",
     "location",
     "travelingToLocation",
     "worldId",
@@ -215,7 +212,6 @@ pub(in crate::realtime::friends::runtime) fn record_string(
         "displayName" => record.display_name.to_string(),
         "username" => record.username.clone(),
         "state" => record.state.to_string(),
-        "stateBucket" => record.state_bucket.to_string(),
         "location" => record.location.clone(),
         "travelingToLocation" => record.traveling_to_location.clone(),
         "worldId" => record.world_id.clone(),
@@ -271,7 +267,6 @@ mod tests {
         let previous = FriendRecord {
             id: "usr_x".into(),
             state: "active".into(),
-            state_bucket: "active".into(),
             location: "offline".into(),
             status_description: "hi".into(),
             date_joined: "2026-01-01".into(),
@@ -315,6 +310,7 @@ mod tests {
     #[test]
     fn full_record_patch_preserves_dates_missing_from_replacement() {
         let previous = FriendRecord {
+            state: "active".into(),
             id: "usr_x".into(),
             date_joined: "2026-01-01".into(),
             last_login: "2026-01-02T03:04:05.000Z".into(),

@@ -1,4 +1,4 @@
-import type { AppDataDirState } from '@/platform/tauri/bindings';
+import type { AppDataDirState, HostPlatform } from '@/platform/tauri/bindings';
 import type { AvatarAutoCleanupPreference } from '@/shared/constants/settings';
 
 export type SettingsAdvancedPrefs = {
@@ -15,34 +15,34 @@ export type SettingsAdvancedPrefs = {
     vrcQuitFix?: boolean;
 };
 
-export type SettingsAdvancedAction = () => unknown | Promise<unknown>;
+export type SettingsAdvancedAction = () => void | Promise<void>;
 
 export type SettingsAdvancedModel = {
     appDataDirState?: AppDataDirState | null;
-    hostPlatform?: string;
+    hostPlatform?: HostPlatform;
     avatarAutoCleanupOptions: readonly AvatarAutoCleanupPreference[];
     configTreeData: Record<string, unknown>;
-    onAnonymousUsageTelemetryChange: (checked: boolean) => unknown;
-    onAutoSweepVRChatCacheChange: (checked: boolean) => unknown;
-    onAvatarAutoCleanupChange: (value: AvatarAutoCleanupPreference) => unknown;
+    onAnonymousUsageTelemetryChange: (checked: boolean) => void;
+    onAutoSweepVRChatCacheChange: (checked: boolean) => void;
+    onAvatarAutoCleanupChange: (value: AvatarAutoCleanupPreference) => void;
     onClearConfigTreeData: () => void;
     onCleanupAppDataDir: SettingsAdvancedAction;
     onDismissAppDataDirCleanup: SettingsAdvancedAction;
-    onGameLogDisabledChange: (disabled: boolean) => unknown;
-    onFeedPersistenceDisabledChange: (disabled: boolean) => unknown;
-    onAvatarFeedPersistenceDisabledChange: (disabled: boolean) => unknown;
-    onFocusVrchatOnJoinChange: (checked: boolean) => unknown;
-    onLogResourceLoadChange: (checked: boolean) => unknown;
+    onGameLogDisabledChange: (disabled: boolean) => void;
+    onFeedPersistenceDisabledChange: (disabled: boolean) => void;
+    onAvatarFeedPersistenceDisabledChange: (disabled: boolean) => void;
+    onFocusVrchatOnJoinChange: (checked: boolean) => void;
+    onLogResourceLoadChange: (checked: boolean) => void;
     onMigrateLegacyVrcxData: SettingsAdvancedAction;
     onOpenAppDataDirSelector: SettingsAdvancedAction;
     onOpenPurgeDialog: () => void;
     onRefreshConfigTreeData: SettingsAdvancedAction;
     onRefreshOnlineVisits: SettingsAdvancedAction;
     onRefreshSqliteTableSizes: SettingsAdvancedAction;
-    onRelaunchVRChatAfterCrashChange: (checked: boolean) => unknown;
+    onRelaunchVRChatAfterCrashChange: (checked: boolean) => void;
     onResetAppDataDir: SettingsAdvancedAction;
-    onUdonExceptionLoggingChange: (checked: boolean) => unknown;
-    onVrcQuitFixChange: (checked: boolean) => unknown;
+    onUdonExceptionLoggingChange: (checked: boolean) => void;
+    onVrcQuitFixChange: (checked: boolean) => void;
     onlineVisitCount: number | null;
     prefs: SettingsAdvancedPrefs;
     sqliteTableSizeRows: ReadonlyArray<readonly [string, string]>;

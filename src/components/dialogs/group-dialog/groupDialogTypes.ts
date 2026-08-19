@@ -1,12 +1,13 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 
 import type {
-    EntityRecord,
     GroupDialogInstanceRow,
     GroupMemberRow,
-    GroupProfileRecord,
-    UserProfileEntity
-} from '@/domain/entities/profileEntities';
+    GroupProfileRecord
+} from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { UserProfileEntity } from '@/domain/entities/user';
+import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 
 import type { GroupPreviousInstanceRow } from './useGroupDialogState';
@@ -71,7 +72,7 @@ export type GroupDialogControls = {
     onCancelRequest: () => void;
     onRepresent: (enabled: boolean) => void;
     onSubscribe: (enabled: boolean) => void;
-    onVisibility: (visibility: string) => void;
+    onVisibility: (visibility: GroupMemberVisibility) => void;
     onBlock: (enabled: boolean) => void;
 };
 

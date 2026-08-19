@@ -151,12 +151,12 @@ export function useFeedRows({
         }
         friendLogRepository
             .getFriendLogCurrent(normalizedCurrentUserId)
-            .then((entries: unknown) => {
+            .then((entries) => {
                 if (!active) {
                     return;
                 }
                 const nextNamesById: Record<string, string> = {};
-                for (const entry of Array.isArray(entries) ? entries : []) {
+                for (const entry of entries) {
                     const userId = normalizeId(entry?.userId);
                     const displayName = resolveDisplayNameCandidate(
                         entry?.displayName,

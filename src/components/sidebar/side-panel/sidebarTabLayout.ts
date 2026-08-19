@@ -196,9 +196,10 @@ export function serializeSidebarTabLayout(layout: SidebarTabLayout): string {
 export function normalizeSidebarTabDisplayMode(
     value: unknown
 ): SidebarTabDisplayMode {
-    return SIDEBAR_TAB_DISPLAY_MODES.includes(value as SidebarTabDisplayMode)
-        ? (value as SidebarTabDisplayMode)
-        : 'auto';
+    if (value === 'auto' || value === 'iconText' || value === 'iconOnly') {
+        return value;
+    }
+    return 'auto';
 }
 
 export function createFavoriteCollectionTab(

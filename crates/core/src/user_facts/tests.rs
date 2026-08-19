@@ -198,19 +198,11 @@ fn unchanged_merge_reports_not_changed() {
 }
 
 #[test]
-fn state_bucket_normalizes_and_friend_number_parses() {
+fn friend_number_parses_from_a_string() {
     let result = merge_user_fact(
         None,
-        &json!({ "id": "usr_1", "stateBucket": "ONLINE", "friendNumber": "42" }),
+        &json!({ "id": "usr_1", "friendNumber": "42" }),
         &opts("friend"),
-    );
-    assert_eq!(
-        result
-            .fact
-            .fields
-            .get("stateBucket")
-            .and_then(Value::as_str),
-        Some("online")
     );
     assert_eq!(result.fact.fields.get("friendNumber"), Some(&json!(42)));
 }

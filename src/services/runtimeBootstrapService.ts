@@ -155,18 +155,23 @@ export function startI18nLanguageSync() {
         if (typeof document !== 'undefined') {
             document.documentElement.setAttribute('lang', nextLocale);
         }
-        useShellStore
-            .getState()
-            .setTimeUnitLabels(
-                getTimeUnitLabels(nextLocale, DEFAULT_TIME_UNIT_LABELS)
-            );
-        setI18nLanguage(nextLocale).catch((error: unknown) => {
-            pushRuntimeNotification({
-                level: 'warning',
-                title: 'Language sync failed',
-                error
+        setI18nLanguage(nextLocale)
+            .then(() => {
+                const shellStore = useShellStore.getState();
+                if (normalizeLanguageCode(shellStore.locale) !== nextLocale) {
+                    return;
+                }
+                shellStore.setTimeUnitLabels(
+                    getTimeUnitLabels(nextLocale, DEFAULT_TIME_UNIT_LABELS)
+                );
+            })
+            .catch((error: unknown) => {
+                pushRuntimeNotification({
+                    level: 'warning',
+                    title: 'Language sync failed',
+                    error
+                });
             });
-        });
     };
 
     syncLanguage(useShellStore.getState().locale);

@@ -63,8 +63,8 @@ import type {
 function formatFriendProfileLoadValue(
     friendProfileLoad: StatusBarFriendProfileLoad
 ) {
-    const processed = Number(friendProfileLoad.processedFriends) || 0;
-    const total = Number(friendProfileLoad.totalFriends) || 0;
+    const { processedFriends: processed, totalFriends: total } =
+        friendProfileLoad;
     return total > 0 ? `${processed}/${total}` : '';
 }
 
@@ -72,7 +72,7 @@ function formatFriendProfileLoadTooltip(
     friendProfileLoad: StatusBarFriendProfileLoad,
     t: ReturnType<typeof useTranslation>['t']
 ) {
-    const status = String(friendProfileLoad.status || 'idle');
+    const status = friendProfileLoad.status;
     if (status === 'cancelled') {
         return t('view.friend_list.success.friend_detail_loading_cancelled');
     }
@@ -86,8 +86,7 @@ function formatInstanceQueueValue(
     instanceQueue: StatusBarInstanceQueue,
     t: ReturnType<typeof useTranslation>['t']
 ) {
-    const position = Number(instanceQueue?.position) || 0;
-    const queueSize = Number(instanceQueue?.queueSize) || 0;
+    const { position, queueSize } = instanceQueue;
     if (position > 0 && queueSize > 0) {
         return `${position}/${queueSize}`;
     }
@@ -100,8 +99,7 @@ function formatInstanceQueueValue(
 }
 
 function formatMutualGraphValue(mutualGraph: StatusBarMutualGraph) {
-    const processed = Number(mutualGraph?.processedFriends) || 0;
-    const total = Number(mutualGraph?.totalFriends) || 0;
+    const { processedFriends: processed, totalFriends: total } = mutualGraph;
     if (total > 0) {
         return `${processed}/${total}`;
     }
@@ -112,9 +110,11 @@ function formatMutualGraphLabel(
     mutualGraph: StatusBarMutualGraph,
     t: ReturnType<typeof useTranslation>['t']
 ) {
-    const status = String(mutualGraph?.status || 'idle');
-    const processed = Number(mutualGraph?.processedFriends) || 0;
-    const total = Number(mutualGraph?.totalFriends) || 0;
+    const {
+        status,
+        processedFriends: processed,
+        totalFriends: total
+    } = mutualGraph;
     if (
         status === 'running' ||
         status === 'cancelling' ||
@@ -129,9 +129,9 @@ function formatMutualGraphTooltip(
     mutualGraph: StatusBarMutualGraph,
     t: ReturnType<typeof useTranslation>['t']
 ) {
-    const status = String(mutualGraph?.status || 'idle');
+    const status = mutualGraph.status;
     if (status === 'error') {
-        const lastError = String(mutualGraph?.lastError || '').trim();
+        const lastError = mutualGraph.lastError?.trim() ?? '';
         return (
             lastError ||
             t('view.charts.toast.failed_to_fetch_mutual_friends_graph')
@@ -151,7 +151,7 @@ function formatVrcStatusTooltip(
         'summary' | 'status' | 'refreshing' | 'error' | 'lastFetchedAt'
     >,
     t: ReturnType<typeof useTranslation>['t'],
-    formatStatusDate: (value: unknown) => string
+    formatStatusDate: (value: string | null) => string
 ) {
     const status =
         vrcStatus.summary || vrcStatus.status || t('status_bar.servers_ok');
@@ -223,12 +223,11 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
         } = footer;
         const { t } = useTranslation();
         const proxyAnchorRef = useRef<HTMLSpanElement>(null);
-        const instanceQueueActive = Boolean(
-            instanceQueue?.active && instanceQueue?.instanceLocation
-        );
-        const mutualGraphStatus = String(mutualGraph?.status || 'idle');
+        const instanceQueueActive =
+            instanceQueue.active && Boolean(instanceQueue.instanceLocation);
+        const mutualGraphStatus = mutualGraph.status;
         const friendProfileLoadVisible = isFriendProfileLoadStatusVisible(
-            friendProfileLoad?.status
+            friendProfileLoad.status
         );
         const mutualGraphVisible = [
             'running',
@@ -237,7 +236,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             'cancelled',
             'error'
         ].includes(mutualGraphStatus);
-        const vrcStatusIndicator = String(vrcStatus?.indicator || '');
+        const vrcStatusIndicator = vrcStatus.indicator;
         const vrcStatusHasIssue = Boolean(
             vrcStatusIndicator && vrcStatusIndicator !== 'none'
         );
@@ -369,7 +368,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             value={formatInstanceQueueValue(instanceQueue, t)}
                             tooltip={
                                 <div className="flex flex-col gap-1 text-xs">
-                                    {instanceQueue?.label ? (
+                                    {instanceQueue.label ? (
                                         <div className="text-muted-foreground max-w-64 truncate">
                                             {instanceQueue.label}
                                         </div>
@@ -395,7 +394,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                         </span>
                                         <span>
                                             {formatStatusDate(
-                                                instanceQueue?.updatedAt
+                                                instanceQueue.updatedAt
                                             )}
                                         </span>
                                     </div>
@@ -571,7 +570,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             visible={friendProfileLoadVisible}
                             showDot={false}
                             label={t(
-                                friendProfileLoad?.status === 'cancelling'
+                                friendProfileLoad.status === 'cancelling'
                                     ? 'view.friend_list.description.cancelling'
                                     : 'view.friend_list.loading.loading_friend_details'
                             )}

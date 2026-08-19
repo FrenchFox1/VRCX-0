@@ -2,6 +2,24 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
+pub enum FavoriteGroupVisibility {
+    Friends,
+    Private,
+    Public,
+}
+
+impl FavoriteGroupVisibility {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Friends => "friends",
+            Self::Private => "private",
+            Self::Public => "public",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub enum FavoriteEntityKind {
     Avatar,
     World,

@@ -29,7 +29,7 @@ const PAGED_ARRAY_RETRY_BASE_DELAY_MS: u64 = 1;
 
 #[derive(Debug)]
 struct PageFetch {
-    offset: i64,
+    offset: i32,
     rows: Vec<Value>,
 }
 
@@ -78,12 +78,12 @@ pub(crate) async fn execute_vrchat_json_request(
 
 pub(super) async fn fetch_paged_array<F>(
     deps: &SocialBaselineDeps,
-    page_size: i64,
-    max_offset: Option<i64>,
+    page_size: i32,
+    max_offset: Option<i32>,
     build_request: F,
 ) -> Result<Vec<Value>>
 where
-    F: Fn(i64, i64) -> HttpApiRequestInput + Clone,
+    F: Fn(i32, i32) -> HttpApiRequestInput + Clone,
 {
     fetch_paged_array_with_page_fetcher(page_size, max_offset, |n, offset| {
         let build_request = build_request.clone();
@@ -127,12 +127,12 @@ async fn execute_vrchat_json_page_request(
 }
 
 async fn fetch_paged_array_with_page_fetcher<F, Fut>(
-    page_size: i64,
-    max_offset: Option<i64>,
+    page_size: i32,
+    max_offset: Option<i32>,
     fetch_page: F,
 ) -> RemoteFetchResult<Vec<Value>>
 where
-    F: Fn(i64, i64) -> Fut + Clone,
+    F: Fn(i32, i32) -> Fut + Clone,
     Fut: Future<Output = RemoteFetchResult<Vec<Value>>>,
 {
     if page_size <= 0 {
@@ -141,7 +141,7 @@ where
 
     let mut pages = Vec::<PageFetch>::new();
     let mut in_flight = FuturesUnordered::new();
-    let mut next_offset = 0i64;
+    let mut next_offset = 0i32;
     let mut should_stop_scheduling = false;
 
     while in_flight.len() < PAGED_ARRAY_CONCURRENCY && offset_allowed(next_offset, max_offset) {
@@ -179,11 +179,11 @@ where
 
 async fn fetch_page_with_backoff<F, Fut>(
     fetch_page: F,
-    page_size: i64,
-    offset: i64,
+    page_size: i32,
+    offset: i32,
 ) -> RemoteFetchResult<PageFetch>
 where
-    F: Fn(i64, i64) -> Fut,
+    F: Fn(i32, i32) -> Fut,
     Fut: Future<Output = RemoteFetchResult<Vec<Value>>>,
 {
     let mut attempt = 0usize;
@@ -199,7 +199,7 @@ where
     }
 }
 
-fn offset_allowed(offset: i64, max_offset: Option<i64>) -> bool {
+fn offset_allowed(offset: i32, max_offset: Option<i32>) -> bool {
     offset >= 0
         && max_offset
             .map(|max_offset| offset <= max_offset)
@@ -414,7 +414,7 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_paged_array_retries_rate_limited_pages_with_backoff() {
-        let attempts = Arc::new(std::sync::Mutex::new(HashMap::<i64, usize>::new()));
+        let attempts = Arc::new(std::sync::Mutex::new(HashMap::<i32, usize>::new()));
         let attempts_for_fetch = Arc::clone(&attempts);
 
         let rows = fetch_paged_array_with_page_fetcher(50, None, move |_, offset| {

@@ -1,4 +1,13 @@
-import { commands, type VrchatFavoriteType } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type HttpApiExecuteResponse,
+    type VrchatFavoriteAddInput,
+    type VrchatFavoriteDeleteInput,
+    type VrchatFavoriteGroupClearInput,
+    type VrchatFavoriteGroupSaveInput,
+    type VrchatFavoriteGroupsInput,
+    type VrchatFavoriteWorldsInput
+} from '@/platform/tauri/bindings';
 
 import { collectPages } from './pagination';
 import { unwrapVrchatResponse } from './vrchatRequest';
@@ -6,56 +15,13 @@ import { unwrapVrchatResponse } from './vrchatRequest';
 const FAVORITE_GROUPS_PAGE_SIZE = 50;
 const FAVORITE_DETAIL_PAGE_SIZE = 300;
 
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
-interface FavoritePagingInput {
-    n?: number;
-    offset?: number;
-}
-
-interface FavoriteWorldsInput extends FavoritePagingInput {
-    ownerId?: string;
-    userId?: string;
-    tag?: string;
-}
-
-interface FavoriteGroupsInput extends FavoritePagingInput {
-    ownerId?: string;
-}
-
-interface FavoriteMutationInput {
-    type?: unknown;
-    favoriteId?: unknown;
-    tags?: unknown;
-}
-
-interface DeleteFavoriteInput {
-    objectId?: unknown;
-}
-
-interface FavoriteGroupMutationInput {
-    type?: unknown;
-    group?: unknown;
-    displayName?: unknown;
-    visibility?: unknown;
-}
-
-function requireVrchatFavoriteType(value: unknown): VrchatFavoriteType {
-    if (
-        value === 'friend' ||
-        value === 'world' ||
-        value === 'vrcPlusWorld' ||
-        value === 'avatar'
-    ) {
-        return value;
-    }
-    throw new Error(
-        'VrchatFavoriteRepository.addFavorite requires a valid favorite type.'
-    );
-}
+type FavoriteGroupSaveInput = Omit<
+    VrchatFavoriteGroupSaveInput,
+    'displayName' | 'visibility'
+> &
+    Partial<Pick<VrchatFavoriteGroupSaveInput, 'displayName' | 'visibility'>>;
 
 function unwrapVrchatFavoriteResponse<TJson = unknown>(
     response: VrchatApiResult,
@@ -65,18 +31,11 @@ function unwrapVrchatFavoriteResponse<TJson = unknown>(
     return unwrapVrchatResponse<TJson>(response, path, { fallbackMessage });
 }
 
-async function addFavorite({
-    type,
-    favoriteId,
-    tags
-}: FavoriteMutationInput = {}) {
+async function addFavorite({ type, favoriteId, tags }: VrchatFavoriteAddInput) {
     const response = await commands.appVrchatFavoriteAdd({
-        type: requireVrchatFavoriteType(type),
-        favoriteId:
-            typeof favoriteId === 'string'
-                ? favoriteId
-                : String(favoriteId ?? ''),
-        tags: typeof tags === 'string' ? tags : String(tags ?? '')
+        type,
+        favoriteId,
+        tags
     });
     return unwrapVrchatFavoriteResponse(
         response,
@@ -85,11 +44,8 @@ async function addFavorite({
     );
 }
 
-async function deleteFavorite({ objectId }: DeleteFavoriteInput = {}) {
-    const normalizedObjectId =
-        typeof objectId === 'string'
-            ? objectId.trim()
-            : String(objectId ?? '').trim();
+async function deleteFavorite({ objectId }: VrchatFavoriteDeleteInput = {}) {
+    const normalizedObjectId = objectId?.trim() ?? '';
     if (!normalizedObjectId) {
         throw new Error(
             'VrchatFavoriteRepository.deleteFavorite requires an object id.'
@@ -112,7 +68,7 @@ async function getFavoriteWorlds({
     ownerId = '',
     userId = '',
     tag = ''
-}: FavoriteWorldsInput = {}) {
+}: VrchatFavoriteWorldsInput = {}) {
     const response = await commands.appVrchatFavoriteWorldsGet({
         n,
         offset,
@@ -131,7 +87,7 @@ async function getAllFavoriteWorlds({
     ownerId = '',
     userId = '',
     tag = ''
-}: FavoriteWorldsInput = {}) {
+}: VrchatFavoriteWorldsInput = {}) {
     return collectPages(
         async ({ n, offset }) => {
             const response = await getFavoriteWorlds({
@@ -151,7 +107,7 @@ async function getFavoriteGroups({
     n = FAVORITE_GROUPS_PAGE_SIZE,
     offset = 0,
     ownerId = ''
-}: FavoriteGroupsInput = {}) {
+}: VrchatFavoriteGroupsInput = {}) {
     const response = await commands.appVrchatFavoriteGroupsGet({
         n,
         offset,
@@ -181,27 +137,24 @@ async function saveFavoriteGroup({
     group,
     displayName,
     visibility
-}: FavoriteGroupMutationInput = {}) {
-    const normalizedType =
-        typeof type === 'string' ? type.trim() : String(type ?? '').trim();
-    const normalizedGroup =
-        typeof group === 'string' ? group.trim() : String(group ?? '').trim();
+}: FavoriteGroupSaveInput) {
+    const normalizedGroup = group?.trim() ?? '';
 
-    if (!normalizedType || !normalizedGroup) {
+    if (!normalizedGroup) {
         throw new Error(
             'VrchatFavoriteRepository.saveFavoriteGroup requires type and group.'
         );
     }
 
     const response = await commands.appVrchatFavoriteGroupSave({
-        type: normalizedType,
+        type,
         group: normalizedGroup,
-        displayName: typeof displayName === 'string' ? displayName : null,
-        visibility: typeof visibility === 'string' ? visibility : null
+        displayName: displayName ?? null,
+        visibility: visibility ?? null
     });
     return unwrapVrchatFavoriteResponse(
         response,
-        `favorite/group/${encodeURIComponent(normalizedType)}/${encodeURIComponent(normalizedGroup)}`,
+        `favorite/group/${encodeURIComponent(type)}/${encodeURIComponent(normalizedGroup)}`,
         'VRChat favorite request failed'
     );
 }
@@ -209,25 +162,22 @@ async function saveFavoriteGroup({
 async function clearFavoriteGroup({
     type,
     group
-}: FavoriteGroupMutationInput = {}) {
-    const normalizedType =
-        typeof type === 'string' ? type.trim() : String(type ?? '').trim();
-    const normalizedGroup =
-        typeof group === 'string' ? group.trim() : String(group ?? '').trim();
+}: VrchatFavoriteGroupClearInput) {
+    const normalizedGroup = group?.trim() ?? '';
 
-    if (!normalizedType || !normalizedGroup) {
+    if (!normalizedGroup) {
         throw new Error(
             'VrchatFavoriteRepository.clearFavoriteGroup requires type and group.'
         );
     }
 
     const response = await commands.appVrchatFavoriteGroupClear({
-        type: normalizedType,
+        type,
         group: normalizedGroup
     });
     return unwrapVrchatFavoriteResponse(
         response,
-        `favorite/group/${encodeURIComponent(normalizedType)}/${encodeURIComponent(normalizedGroup)}`,
+        `favorite/group/${encodeURIComponent(type)}/${encodeURIComponent(normalizedGroup)}`,
         'VRChat favorite request failed'
     );
 }

@@ -1,4 +1,5 @@
 use serde_json::Value;
+use vrcx_0_core::friends::{normalize_user_status, UserStatus};
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::location::{format_display_location, parse_location};
 use vrcx_0_core::text::{first_non_empty, first_non_empty_owned};
@@ -406,12 +407,15 @@ fn summary(title: &str, body: &str) -> String {
 }
 
 fn status_icon(status: &str) -> &'static str {
-    match status.trim().to_ascii_lowercase().as_str() {
-        "active" | "online" => "status-online",
-        "join me" | "joinme" => "status-joinme",
-        "ask me" | "askme" => "status-askme",
-        "busy" => "status-busy",
-        _ => "status",
+    if normalize_user_status(status) == "online" {
+        return "status-online";
+    }
+    match UserStatus::normalize(status) {
+        Some(UserStatus::Active) => "status-online",
+        Some(UserStatus::JoinMe) => "status-joinme",
+        Some(UserStatus::AskMe) => "status-askme",
+        Some(UserStatus::Busy) => "status-busy",
+        Some(UserStatus::Offline) | None => "status",
     }
 }
 

@@ -12,7 +12,7 @@ use vrcx_0_application::{
 use vrcx_0_application_core::vrchat_api::{
     execute_api_command,
     instances::{instance_self_invite_input, instance_short_name_get_input},
-    notifications::{invite_send_input, request_invite_send_input},
+    notifications::{invite_send_input, request_invite_send_input, RequestInviteRequest},
     VrchatApiRequest, VrchatApiResponse, VrchatScope,
 };
 use vrcx_0_application_core::{is_remote_mutation_request, AuthenticatedMutationContext};
@@ -374,8 +374,8 @@ fn friends_panel_invite_params(
     }))
 }
 
-pub(crate) fn friends_panel_request_invite_params() -> serde_json::Value {
-    json!({ "platform": "standalonewindows" })
+pub(crate) fn friends_panel_request_invite_params() -> RequestInviteRequest {
+    RequestInviteRequest { request_slot: None }
 }
 
 fn set_friends_panel_status_message(
@@ -430,10 +430,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn friends_panel_request_invite_params_match_frontend_default_platform() {
+    fn friends_panel_request_invite_params_use_no_message_slot() {
         assert_eq!(
             friends_panel_request_invite_params(),
-            serde_json::json!({ "platform": "standalonewindows" })
+            RequestInviteRequest { request_slot: None }
         );
     }
 }

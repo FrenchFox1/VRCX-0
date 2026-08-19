@@ -13,16 +13,15 @@ import { recordGameRuntimePresence } from './domainIngestionService';
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
 type GameStatePatch = Parameters<RuntimeState['setGameState']>[0];
 export function applyRuntimeGameLogProjection(projection: GameLogProjection) {
-    const currentLocation = normalizeString(projection.currentLocation);
-    const currentWorldId = normalizeString(projection.currentWorldId);
-    const currentWorldName = normalizeString(projection.currentWorldName);
-    const currentDestination = normalizeString(projection.currentDestination);
-    const currentLocationStartedAt = normalizeString(
-        projection.currentLocationStartedAt
-    );
-    const lastGameLogAt =
-        normalizeString(projection.lastGameLogAt) || new Date().toISOString();
-    const lastGameLogType = normalizeString(projection.lastGameLogType);
+    const {
+        currentLocation,
+        currentWorldId,
+        currentWorldName,
+        currentDestination,
+        currentLocationStartedAt,
+        lastGameLogAt,
+        lastGameLogType
+    } = projection;
     const {
         playerIds: currentLocationPlayerIds,
         players: currentLocationPlayers
@@ -33,7 +32,7 @@ export function applyRuntimeGameLogProjection(projection: GameLogProjection) {
         currentWorldId,
         currentWorldName,
         currentDestination,
-        currentLocationStartedAt: currentLocationStartedAt || null,
+        currentLocationStartedAt,
         currentLocationPlayerIds,
         currentLocationPlayers,
         lastGameLogAt,
@@ -146,9 +145,7 @@ function patchCurrentUserLocationFromGameState(
         return;
     }
 
-    const startedAt = Date.parse(
-        normalizeString(gameStatePatch.currentLocationStartedAt)
-    );
+    const startedAt = Date.parse(gameStatePatch.currentLocationStartedAt || '');
     const locationTime = Number.isFinite(startedAt) ? startedAt : Date.now();
     const timedPresencePatch: Record<string, unknown> = {
         ...presencePatch,

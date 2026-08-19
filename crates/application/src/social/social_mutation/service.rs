@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use vrcx_0_core::text::normalize_text;
+
 use serde_json::{json, Value};
 use vrcx_0_core::time::now_iso;
 
@@ -338,7 +340,6 @@ fn fallback_accept(
                 id: target_user_id.to_string(),
                 display_name: display_name.clone().into(),
                 state: "offline".into(),
-                state_bucket: "offline".into(),
                 ..vrcx_0_core::friends::FriendRecord::default()
             });
     let history_entry = history_entry("Friend", target_user_id, target_display_name);
@@ -483,10 +484,6 @@ fn ensure_expected_auth_scope(
             "Backend social mutation authentication scope changed.".into(),
         ))
     }
-}
-
-fn normalize_text(value: &str) -> String {
-    value.trim().to_string()
 }
 
 async fn execute_vrchat_json_request(

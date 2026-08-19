@@ -36,9 +36,10 @@ import {
 } from './vrc-notification-center/notificationCenterUtils';
 
 type InviteResponseSlotPayload = {
+    imageData: string;
     notification: NotificationRow;
-    row?: {
-        slot?: unknown;
+    row: {
+        slot: number;
     };
 };
 

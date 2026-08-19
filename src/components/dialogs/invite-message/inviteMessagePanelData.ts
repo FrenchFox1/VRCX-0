@@ -1,3 +1,4 @@
+import type { InviteMessageType } from '@/platform/tauri/bindings';
 import vrchatToolsRepository, {
     type InviteMessageRecord
 } from '@/repositories/vrchatToolsRepository';
@@ -7,20 +8,20 @@ export type InviteMessageMode = 'select' | 'manage' | 'respond';
 
 export type InviteMessageRow = InviteMessageRecord & {
     message: string;
-    messageType: string;
+    messageType: InviteMessageType;
     slot: number;
 };
 
 export type InviteMessageUsePayload = {
     row: InviteMessageRow;
-    messageType: string;
+    messageType: InviteMessageType;
     message: string;
     imageData: string;
 };
 
 export type InviteMessageSavePayload = {
     currentUserId?: string | null;
-    messageType: string;
+    messageType: InviteMessageType;
     row: InviteMessageRow;
     message: string;
     t: Translate;
@@ -47,16 +48,19 @@ export const INVITE_MESSAGE_TYPES = [
     }
 ] as const;
 
-export const validModes = new Set<InviteMessageMode>([
-    'select',
-    'manage',
-    'respond'
-]);
-
 export function isInviteMessageMode(
     value: unknown
 ): value is InviteMessageMode {
     return value === 'select' || value === 'manage' || value === 'respond';
+}
+
+export function resolveInviteMessageType(value: unknown): InviteMessageType {
+    return value === 'message' ||
+        value === 'request' ||
+        value === 'requestResponse' ||
+        value === 'response'
+        ? value
+        : 'message';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -81,7 +85,7 @@ function inviteMessageSourceRows(value: unknown): InviteMessageRecord[] {
 
 export function normalizeInviteMessageRows(
     value: unknown,
-    messageType: string
+    messageType: InviteMessageType
 ): InviteMessageRow[] {
     const rows = inviteMessageSourceRows(value);
     return rows
@@ -134,7 +138,7 @@ export function rowUpdatedAt(row: InviteMessageRow) {
 
 export function dialogTitle(
     mode: InviteMessageMode,
-    messageType: string,
+    messageType: InviteMessageType,
     t: Translate
 ) {
     if (mode === 'manage') {
@@ -152,7 +156,7 @@ export function dialogTitle(
 
 export function dialogDescription(
     mode: InviteMessageMode,
-    messageType: string,
+    messageType: InviteMessageType,
     _targetLabel: unknown,
     t: Translate
 ) {
@@ -167,7 +171,7 @@ export function dialogDescription(
 
 export function primaryActionLabel(
     mode: InviteMessageMode,
-    messageType: string,
+    messageType: InviteMessageType,
     t: Translate
 ) {
     if (mode === 'manage') {

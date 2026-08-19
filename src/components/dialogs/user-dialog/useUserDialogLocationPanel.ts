@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { firstNonNegativeLocationNumber } from '@/components/location/locationModel';
 import {
@@ -68,6 +68,11 @@ type UserDialogLocationGameState = {
     currentWorldId: string;
     currentWorldName: string;
     isGameRunning: boolean | null;
+};
+
+type UserDialogInstanceRequest = {
+    key: string;
+    request: Promise<Record<string, unknown> | null>;
 };
 
 function recordValues(value: unknown): Record<string, unknown>[] {
@@ -144,15 +149,19 @@ function mergeProfileIntoLocationUser(
     return mergeLocationUserRows(user, row) ?? user;
 }
 
-async function enrichLocationUsersWithProfiles({
+export async function enrichLocationUsersWithProfiles({
+    friendsById,
     knownUsersById,
+    loadUserProfile = (input) => userProfileRepository.getUserProfile(input),
     shouldContinue = () => true,
     users
 }: {
+    friendsById: Record<string, Record<string, unknown>>;
     knownUsersById: Map<string, unknown>;
+    loadUserProfile?: (input: { userId: string }) => Promise<unknown>;
     shouldContinue?: () => boolean;
     users: InstanceRosterRow[];
-}) {
+}): Promise<InstanceRosterRow[]> {
     const nextUsers = [...users];
     const fetchTargets: Array<{ index: number; userId: string }> = [];
 
@@ -160,6 +169,12 @@ async function enrichLocationUsersWithProfiles({
         const user = nextUsers[index];
         const userId = locationUserId(user);
         if (!hasUserIdPrefix(userId) || locationUserHasImage(user)) {
+            continue;
+        }
+
+        const cachedFriend = friendsById[userId];
+        if (cachedFriend) {
+            nextUsers[index] = mergeProfileIntoLocationUser(user, cachedFriend);
             continue;
         }
 
@@ -191,7 +206,7 @@ async function enrichLocationUsersWithProfiles({
                     break;
                 }
                 try {
-                    const profile = await userProfileRepository.getUserProfile({
+                    const profile = await loadUserProfile({
                         userId: target.userId
                     });
                     if (!shouldContinue()) {
@@ -258,13 +273,8 @@ export function useUserDialogLocationPanel({
     const [locationPanel, setLocationPanel] = useState(() =>
         createEmptyUserDialogLocationPanel()
     );
-    const [currentInviteInstance, setCurrentInviteInstance] = useState<Record<
-        string,
-        unknown
-    > | null>(null);
-    const [currentInviteInstanceStatus, setCurrentInviteInstanceStatus] =
-        useState('idle');
     const [locationRefreshToken, setLocationRefreshToken] = useState(0);
+    const instanceRequestRef = useRef<UserDialogInstanceRequest | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -279,6 +289,7 @@ export function useUserDialogLocationPanel({
             parsedLocation.isPrivate ||
             parsedLocation.isTraveling
         ) {
+            instanceRequestRef.current = null;
             setLocationPanel(createEmptyUserDialogLocationPanel());
             return () => {
                 active = false;
@@ -402,16 +413,33 @@ export function useUserDialogLocationPanel({
             ownerSeed,
             groupFallback: resolveGroupFallback(locationMetadata, ownerId)
         });
-        const instancePromise = canFetchInstance
-            ? vrchatInstanceRepository
-                  .getInstance({
-                      worldId: parsedLocation.worldId,
-                      instanceId: parsedLocation.instanceId,
-                      endpoint: currentEndpoint
-                  })
-                  .then((response) => record(response.json))
-                  .catch((): null => null)
-            : Promise.resolve(null);
+        let instancePromise: Promise<Record<string, unknown> | null>;
+        if (canFetchInstance) {
+            const requestKey = JSON.stringify([
+                currentEndpoint,
+                normalizedCurrentUserId,
+                normalizeUserId(profile.id),
+                activeLocation,
+                reloadToken,
+                locationRefreshToken
+            ]);
+            if (instanceRequestRef.current?.key !== requestKey) {
+                instanceRequestRef.current = {
+                    key: requestKey,
+                    request: vrchatInstanceRepository
+                        .getInstance({
+                            worldId: parsedLocation.worldId,
+                            instanceId: parsedLocation.instanceId
+                        })
+                        .then((response) => record(response.json))
+                        .catch((): null => null)
+                };
+            }
+            instancePromise = instanceRequestRef.current.request;
+        } else {
+            instanceRequestRef.current = null;
+            instancePromise = Promise.resolve(null);
+        }
         const playerSnapshotPromise = currentLocationMatches
             ? loadCurrentInstanceRoster({
                   currentUserId: normalizedCurrentUserId,
@@ -610,6 +638,7 @@ export function useUserDialogLocationPanel({
                     });
 
                     enrichLocationUsersWithProfiles({
+                        friendsById,
                         knownUsersById,
                         shouldContinue: () => active,
                         users
@@ -683,56 +712,6 @@ export function useUserDialogLocationPanel({
         reloadToken
     ]);
 
-    useEffect(() => {
-        let active = true;
-        const parsedLocation = parseLocation(currentInviteLocation);
-        if (
-            !parsedLocation.isRealInstance ||
-            !parsedLocation.worldId ||
-            !parsedLocation.instanceId
-        ) {
-            setCurrentInviteInstance(null);
-            setCurrentInviteInstanceStatus('idle');
-            return () => {
-                active = false;
-            };
-        }
-
-        setCurrentInviteInstance(null);
-        setCurrentInviteInstanceStatus('running');
-        vrchatInstanceRepository
-            .getInstance({
-                worldId: parsedLocation.worldId,
-                instanceId: parsedLocation.instanceId,
-                endpoint: currentEndpoint
-            })
-            .then((response) => {
-                if (!active) {
-                    return;
-                }
-                const instance = response?.json ? record(response.json) : null;
-                recordLocationHintsFromInstances({
-                    endpoint: currentEndpoint,
-                    instances: instance
-                        ? [{ ...instance, location: currentInviteLocation }]
-                        : []
-                });
-                setCurrentInviteInstance(instance);
-                setCurrentInviteInstanceStatus('ready');
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-                setCurrentInviteInstance(null);
-                setCurrentInviteInstanceStatus('error');
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, currentInviteLocation, reloadToken]);
-
     function refreshLocationPanel(requestLocation: unknown): null {
         const activeLocation =
             presenceLocation || resolvePresenceLocation(profile);
@@ -782,10 +761,6 @@ export function useUserDialogLocationPanel({
         ) {
             setCachedInstance(currentInviteLocation, locationPanel.instance);
         }
-        if (currentInviteLocation && currentInviteInstance) {
-            setCachedInstance(currentInviteLocation, currentInviteInstance);
-        }
-
         const currentInviteKey = locationCacheKey(currentInviteLocation);
         const cachedCurrentInviteInstance = currentInviteKey
             ? cache.get(currentInviteKey)
@@ -803,7 +778,6 @@ export function useUserDialogLocationPanel({
         };
     }, [
         currentInviteLocation,
-        currentInviteInstance,
         groupInstances,
         groupInstancesRevision,
         locationPanel.instance,
@@ -811,13 +785,11 @@ export function useUserDialogLocationPanel({
     ]);
     const inviteInstanceCache = inviteInstanceSnapshot.cache;
 
-    const canInviteFromCurrentLocation =
-        currentInviteInstanceStatus !== 'running' &&
-        checkCanInvite(currentInviteLocation, {
-            currentUserId: normalizedCurrentUserId,
-            lastLocationStr: '',
-            cachedInstances: inviteInstanceCache
-        });
+    const canInviteFromCurrentLocation = checkCanInvite(currentInviteLocation, {
+        currentUserId: normalizedCurrentUserId,
+        lastLocationStr: '',
+        cachedInstances: inviteInstanceCache
+    });
 
     return {
         locationPanel,

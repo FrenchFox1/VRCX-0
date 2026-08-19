@@ -15,6 +15,8 @@ const allowedSelfStatuses = new Set([
     'offline'
 ]);
 
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+
 export {
     fallbackLanguageOptions,
     languageDisplayName,
@@ -68,13 +70,7 @@ export function buildFavoriteIdSet(
 }
 
 export function normalizeSelfStatusInput(value: unknown) {
-    const normalized = normalizeUserId(value).toLowerCase();
-    if (normalized === 'joinme') {
-        return 'join me';
-    }
-    if (normalized === 'askme') {
-        return 'ask me';
-    }
+    const normalized = normalizeUserStatus(value);
     if (allowedSelfStatuses.has(normalized)) {
         return normalized;
     }

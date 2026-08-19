@@ -8,8 +8,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import configRepository from '@/repositories/configRepository';
@@ -21,6 +21,15 @@ import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
+import {
+    isUserDialogAvatarSort,
+    type UserDialogAvatarReleaseStatus,
+    type UserDialogAvatarSort,
+    type UserDialogGroupSort,
+    type UserDialogMutualFriendSort,
+    type UserDialogWorldOrder,
+    type UserDialogWorldSort
+} from './userDialogListOptions';
 import { resolveTabValue } from './userDialogRows';
 import {
     isUserDialogDataTab,
@@ -63,7 +72,6 @@ const emptyUserDialogSearch = Object.freeze({
 });
 
 const USER_DIALOG_AVATAR_SORT_CONFIG_KEY = 'UserDialogAvatarSort';
-const userDialogAvatarSortValues = new Set(['name', 'update', 'createdAt']);
 
 type UserDialogRemoteData = {
     groups: readonly EntityRecord[];
@@ -79,17 +87,17 @@ type UserDialogLoadContext = {
     userId: string;
     reloadToken: number;
     tab?: UserDialogDataTab;
-    worldSort?: string;
-    worldOrder?: string;
-    avatarSort?: string;
-    avatarReleaseStatus?: string;
+    worldSort?: UserDialogWorldSort;
+    worldOrder?: UserDialogWorldOrder;
+    avatarSort?: UserDialogAvatarSort;
+    avatarReleaseStatus?: UserDialogAvatarReleaseStatus;
     currentAvatarId?: string;
     previousAvatarSwapTime?: number;
 };
 
 type UserDialogCountContext = UserDialogLoadContext & {
     currentUserId: string;
-    avatarReleaseStatus: string;
+    avatarReleaseStatus: UserDialogAvatarReleaseStatus;
     includeMutualFriends: boolean;
 };
 
@@ -106,11 +114,9 @@ interface UseUserDialogTabDataInput {
     inGameGroupOrder: readonly unknown[];
 }
 
-function normalizeUserDialogAvatarSort(value: unknown) {
-    const normalizedValue = String(value ?? '').trim();
-    return userDialogAvatarSortValues.has(normalizedValue)
-        ? normalizedValue
-        : 'name';
+function normalizeUserDialogAvatarSort(value: unknown): UserDialogAvatarSort {
+    const normalizedValue = typeof value === 'string' ? value.trim() : '';
+    return isUserDialogAvatarSort(normalizedValue) ? normalizedValue : 'name';
 }
 
 function emptyDataPatchForTab(
@@ -161,12 +167,15 @@ export function useUserDialogTabData({
         avatars?: number;
     }>(emptyUserDialogStatus);
     const [search, setSearch] = useState(emptyUserDialogSearch);
-    const [worldSort, setWorldSort] = useState('updated');
-    const [worldOrder, setWorldOrder] = useState('descending');
-    const [avatarSort, setAvatarSort] = useState('name');
-    const [avatarReleaseStatus, setAvatarReleaseStatus] = useState('all');
-    const [mutualSort, setMutualSort] = useState('alphabetical');
-    const [groupSort, setGroupSort] = useState(
+    const [worldSort, setWorldSort] = useState<UserDialogWorldSort>('updated');
+    const [worldOrder, setWorldOrder] =
+        useState<UserDialogWorldOrder>('descending');
+    const [avatarSort, setAvatarSort] = useState<UserDialogAvatarSort>('name');
+    const [avatarReleaseStatus, setAvatarReleaseStatus] =
+        useState<UserDialogAvatarReleaseStatus>('all');
+    const [mutualSort, setMutualSort] =
+        useState<UserDialogMutualFriendSort>('alphabetical');
+    const [groupSort, setGroupSort] = useState<UserDialogGroupSort>(
         isCurrentUser ? 'inGame' : 'alphabetical'
     );
     const vrchatConfigConstants = useVrchatConfigStore(
@@ -458,7 +467,7 @@ export function useUserDialogTabData({
         setActiveTab(nextTab);
     }
 
-    function changeWorldSort(value: string) {
+    function changeWorldSort(value: UserDialogWorldSort) {
         loadContextRef.current = {
             ...loadContextRef.current,
             worldSort: value
@@ -467,7 +476,7 @@ export function useUserDialogTabData({
         setRemoteStatus((current) => ({ ...current, worlds: '' }));
     }
 
-    function changeWorldOrder(value: string) {
+    function changeWorldOrder(value: UserDialogWorldOrder) {
         loadContextRef.current = {
             ...loadContextRef.current,
             worldOrder: value
@@ -476,24 +485,23 @@ export function useUserDialogTabData({
         setRemoteStatus((current) => ({ ...current, worlds: '' }));
     }
 
-    function changeAvatarSort(value: unknown) {
-        const nextSort = normalizeUserDialogAvatarSort(value);
+    function changeAvatarSort(value: UserDialogAvatarSort) {
         avatarSortLoadVersionRef.current += 1;
         loadContextRef.current = {
             ...loadContextRef.current,
-            avatarSort: nextSort
+            avatarSort: value
         };
-        setAvatarSort(nextSort);
+        setAvatarSort(value);
         if (profileUserId === currentUserId) {
             configRepository.setString(
                 USER_DIALOG_AVATAR_SORT_CONFIG_KEY,
-                nextSort
+                value
             );
             setRemoteStatus((current) => ({ ...current, avatars: '' }));
         }
     }
 
-    function changeAvatarReleaseStatus(value: string) {
+    function changeAvatarReleaseStatus(value: UserDialogAvatarReleaseStatus) {
         loadContextRef.current = {
             ...loadContextRef.current,
             avatarReleaseStatus: value

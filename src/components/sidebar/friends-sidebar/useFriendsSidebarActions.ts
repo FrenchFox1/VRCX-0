@@ -169,11 +169,13 @@ export function useFriendsSidebarActions({
             return;
         }
         try {
-            const inviteLocation = parsedLocation.tag || currentInviteLocation;
+            const inviteLocation =
+                normalizeId(parsedLocation.tag) ||
+                normalizeId(currentInviteLocation);
             await sendInviteToLocation({
                 receiverUserId: friendId,
                 instanceId: inviteLocation,
-                worldId: parsedLocation.worldId,
+                worldId: normalizeId(parsedLocation.worldId),
                 rsvp: true
             });
             recordRecentAction(friendId, 'Invite');

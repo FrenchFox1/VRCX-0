@@ -23,7 +23,9 @@ import { useShellStore } from '@/state/shellStore';
 const pendingSeenIds = new Set<string>();
 let notificationScopeGeneration = 0;
 
-export type LoadStatus = 'idle' | 'running' | 'ready' | 'error';
+import type { LoadStatus } from '@/domain/shared/types';
+
+export type { LoadStatus };
 export type NotificationCategoryKey = 'friend' | 'group' | 'other';
 type NotificationPatch = Partial<{
     displayName: string;
@@ -60,13 +62,11 @@ const NOTIFICATION_PATCH_KEYS = [
     'displayLocation'
 ] as const;
 
-function normalizeNotificationId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeNotificationId(value: string | null | undefined): string {
+    return value?.trim() ?? '';
 }
 
-function normalizeNotificationIds(value: unknown | unknown[]): string[] {
+function normalizeNotificationIds(value: string | string[]): string[] {
     return (Array.isArray(value) ? value : [value])
         .map((entry) => normalizeNotificationId(entry))
         .filter(Boolean);
@@ -123,12 +123,12 @@ type VrcNotificationStore = {
     detail: string;
     loadForCurrentUser(): Promise<NotificationRow[]>;
     refreshForCurrentUser(): Promise<NotificationRow[]>;
-    setCenterOpen(isCenterOpen: unknown): void;
+    setCenterOpen(isCenterOpen: boolean): void;
     openCenter(): void;
     upsertNotification(notification: NotificationRow): void;
-    patchNotification(id: unknown, fields: NotificationPatch): void;
-    expireNotifications(ids: unknown | unknown[]): void;
-    markNotificationsSeen(ids: unknown | unknown[]): void;
+    patchNotification(id: string, fields: NotificationPatch): void;
+    expireNotifications(ids: string | string[]): void;
+    markNotificationsSeen(ids: string | string[]): void;
     markNotificationSeen(notification?: NotificationRow | null): Promise<void>;
     markAllSeen(): Promise<void>;
     resetVrcNotificationState(): void;
@@ -211,7 +211,7 @@ function createNotificationState(
 }
 
 function getCurrentAuth(): RuntimeAuthSnapshot {
-    return (useRuntimeStore.getState().auth || {}) as RuntimeAuthSnapshot;
+    return useRuntimeStore.getState().auth;
 }
 
 function captureNotificationScope(): NotificationOperationScope | null {
@@ -303,7 +303,7 @@ function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {
     );
 }
 
-function syncShellUnseenCount(unseenCount: unknown) {
+function syncShellUnseenCount(unseenCount: number) {
     useShellStore.getState().setVrcUnseenNotificationCount(unseenCount);
 }
 
@@ -397,10 +397,9 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             }
             return rows;
         },
-        setCenterOpen(isCenterOpen: unknown) {
-            const nextOpen = Boolean(isCenterOpen);
-            set({ isCenterOpen: nextOpen });
-            if (nextOpen) {
+        setCenterOpen(isCenterOpen) {
+            set({ isCenterOpen });
+            if (isCenterOpen) {
                 get()
                     .refreshForCurrentUser()
                     .catch(() => {});
@@ -436,9 +435,9 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             });
             syncShellUnseenCount(get().unseenCount);
         },
-        patchNotification(id: unknown, fields: NotificationPatch) {
+        patchNotification(id, fields) {
             const normalizedId = normalizeNotificationId(id);
-            if (!normalizedId || !isRecord(fields)) {
+            if (!normalizedId) {
                 return;
             }
             set((state) => {
@@ -468,7 +467,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             });
             syncShellUnseenCount(get().unseenCount);
         },
-        expireNotifications(ids: unknown | unknown[]) {
+        expireNotifications(ids) {
             const idSet = new Set(normalizeNotificationIds(ids));
             if (!idSet.size) {
                 return;
@@ -492,7 +491,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             });
             syncShellUnseenCount(get().unseenCount);
         },
-        markNotificationsSeen(ids: unknown | unknown[]) {
+        markNotificationsSeen(ids) {
             const idSet = new Set(normalizeNotificationIds(ids));
             if (!idSet.size) {
                 return;

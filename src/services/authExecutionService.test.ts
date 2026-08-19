@@ -73,6 +73,13 @@ vi.mock('./sessionBootstrapService', () => ({
     bootstrapAuthenticatedSession: mocks.bootstrapAuthenticatedSession
 }));
 
+import {
+    cachePreviousInstances,
+    cacheUserStats,
+    dialogTargetKey,
+    readCachedPreviousInstances,
+    readCachedUserStats
+} from '@/components/dialogs/user-dialog/userDialogCache';
 import type {
     LoginFailureKind,
     LoginSessionState,
@@ -430,6 +437,33 @@ describe('authExecutionService characterization', () => {
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             'message.auth.logout_greeting:Self'
         );
+    });
+
+    it('drops per-account user dialog caches on logout', async () => {
+        const targetKey = dialogTargetKey(
+            'https://api.vrchat.cloud/api/1',
+            'usr_friend'
+        );
+        cacheUserStats(targetKey, {
+            timeSpent: 1234,
+            lastSeen: '2026-08-18T00:00:00Z',
+            joinCount: 7
+        });
+        cachePreviousInstances(targetKey, [
+            { location: 'wrld_stale:123' } as never
+        ]);
+        expect(readCachedUserStats(targetKey).joinCount).toBe(7);
+        expect(readCachedPreviousInstances(targetKey)).toHaveLength(1);
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_self',
+            currentUserDisplayName: 'Self'
+        });
+
+        await expect(logoutFromReactShell()).resolves.toBe(true);
+
+        expect(readCachedUserStats(targetKey).joinCount).toBe(0);
+        expect(readCachedPreviousInstances(targetKey)).toEqual([]);
     });
 
     it('ends the backend session when logout supersedes an in-flight login', async () => {

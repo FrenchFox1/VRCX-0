@@ -1,30 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    createEmptyCatalog,
+    createEmptyQuickSearchState,
     type QuickSearchResult
-} from '../quickSearchCatalog';
+} from '../quickSearch';
 import {
-    buildEntityResult,
-    buildQuickSearchResults,
-    dedupeQuickSearchResults,
     filterQuickSearchResults,
-    matchedField,
-    matchesFriend,
+    mergeQuickSearchGroupInstances,
     normalizeSearchQuery
 } from './quickSearchResultModel';
 
-function result(
-    id: string,
-    name: string,
-    fields: Pick<QuickSearchResult, 'memo' | 'note'> = {}
-): QuickSearchResult {
+function result(id: string, name: string): QuickSearchResult {
     return {
         id,
         name,
         type: 'friend',
         source: 'test',
-        ...fields
+        subtitle: '',
+        imageUrl: '',
+        seedData: null,
+        memo: '',
+        note: '',
+        matchedField: 'name',
+        userColour: ''
     };
 }
 
@@ -33,108 +31,7 @@ describe('quick search result model', () => {
         expect(normalizeSearchQuery('  ⓐlpha  BETA ')).toBe('alphabeta');
     });
 
-    it('matches names without whitespace and across confusable variants', () => {
-        const rows = [
-            result('world_1', 'Alpha World'),
-            result('world_2', 'ⓐlpha Station')
-        ];
-
-        expect(
-            filterQuickSearchResults(
-                rows,
-                normalizeSearchQuery('alphaworld')
-            ).map((row) => row.id)
-        ).toEqual(['world_1']);
-        expect(
-            filterQuickSearchResults(rows, normalizeSearchQuery('alpha')).map(
-                (row) => row.id
-            )
-        ).toEqual(['world_2', 'world_1']);
-    });
-
-    it('matches friend details only after the detail threshold', () => {
-        const friend = result('usr_1', 'Alpha', {
-            memo: 'x-ray',
-            note: 'yellow'
-        });
-
-        expect(matchesFriend(friend, 'x')).toBe(false);
-        expect(matchesFriend(friend, 'x-')).toBe(true);
-        expect(matchesFriend(friend, 'ye')).toBe(true);
-        expect(matchedField(friend, 'x-')).toBe('memo');
-        expect(matchedField(friend, 'ye')).toBe('note');
-        expect(matchedField(friend, 'al')).toBe('name');
-    });
-
-    it('requires two characters before searching non-friend details', () => {
-        const input = {
-            catalog: {
-                ...createEmptyCatalog(),
-                ownAvatars: [{ id: 'avtr_1', name: 'Alpha' }]
-            },
-            currentUserId: 'usr_owner',
-            friendsById: {},
-            knownFriendUsersById: {},
-            remoteFavoritesByObjectId: {},
-            groupInstances: []
-        };
-
-        expect(
-            buildQuickSearchResults({ ...input, normalizedQuery: 'a' })
-                .ownAvatars
-        ).toEqual([]);
-        expect(
-            buildQuickSearchResults({ ...input, normalizedQuery: 'al' })
-                .ownAvatars
-        ).toHaveLength(1);
-    });
-
-    it('keeps separately hydrated world-cache rows searchable', () => {
-        const results = buildQuickSearchResults({
-            catalog: createEmptyCatalog(),
-            normalizedQuery: 'cached',
-            currentUserId: 'usr_owner',
-            friendsById: {},
-            knownFriendUsersById: {},
-            remoteFavoritesByObjectId: {},
-            worldSearchDetailsById: {
-                wrld_cached: {
-                    id: 'wrld_cached',
-                    name: 'Cached World'
-                }
-            },
-            groupInstances: []
-        });
-
-        expect(results.favoriteWorlds).toMatchObject([
-            {
-                id: 'wrld_cached',
-                name: 'Cached World',
-                source: 'local'
-            }
-        ]);
-    });
-
-    it('keeps the first duplicate and removes excluded or empty ids', () => {
-        const first = result('usr_1', 'First');
-        const duplicate = result('usr_1', 'Duplicate');
-
-        expect(
-            dedupeQuickSearchResults(
-                [
-                    first,
-                    duplicate,
-                    result('usr_2', 'Excluded'),
-                    result('', 'Empty'),
-                    null,
-                    undefined
-                ],
-                new Set(['usr_2'])
-            )
-        ).toEqual([first]);
-    });
-
-    it('sorts prefix matches first and limits each result group to eight', () => {
+    it('sorts prefix matches first and limits local results to eight', () => {
         const rows = [
             result('9', 'Zed alpha'),
             result('1', 'Alpha 9'),
@@ -163,25 +60,36 @@ describe('quick search result model', () => {
         ]);
     });
 
-    it('builds entity rows with the existing id and display precedence', () => {
-        const built = buildEntityResult(
-            {
-                id: 'avtr_raw',
-                objectId: 'avtr_object',
-                favoriteId: 'avtr_favorite',
-                displayName: 'Display Name',
-                author_name: 'Author'
-            },
-            'avatar',
-            'favorite'
-        );
+    it('merges matching in-memory group instances without duplicates', () => {
+        const state = {
+            ...createEmptyQuickSearchState('ready'),
+            joinedGroups: [
+                {
+                    ...result('grp_existing', 'Alpha Existing'),
+                    type: 'group' as const
+                }
+            ]
+        };
 
-        expect(built).toMatchObject({
-            id: 'avtr_favorite',
-            name: 'Display Name',
-            subtitle: 'Author',
-            type: 'avatar',
-            source: 'favorite'
-        });
+        const merged = mergeQuickSearchGroupInstances(state, 'alpha', [
+            {
+                groupId: 'grp_existing',
+                groupName: 'Alpha Duplicate'
+            },
+            {
+                groupId: 'grp_instance',
+                groupName: 'Alpha Instance',
+                worldName: 'World'
+            },
+            {
+                groupId: 'grp_other',
+                groupName: 'Other Group'
+            }
+        ]);
+
+        expect(merged.joinedGroups.map((row) => row.id)).toEqual([
+            'grp_existing',
+            'grp_instance'
+        ]);
     });
 });

@@ -6,12 +6,17 @@ use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, require_text, HttpApiError,
     HttpApiRequestInput,
 };
+use vrcx_0_core::FavoriteGroupVisibility;
+
+mod request;
+
+pub use request::VrchatFavoriteType;
 
 pub fn favorite_limits_get_input(endpoint: String) -> HttpApiRequestInput {
     get_input(endpoint, "auth/user/favoritelimits", HashMap::new())
 }
 
-pub fn favorites_get_input(endpoint: String, n: i64, offset: i64) -> HttpApiRequestInput {
+pub fn favorites_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
     get_input(
         endpoint,
         "favorites",
@@ -24,8 +29,8 @@ pub fn favorites_get_input(endpoint: String, n: i64, offset: i64) -> HttpApiRequ
 
 pub fn favorite_worlds_get_input(
     endpoint: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     owner_id: String,
     user_id: String,
     tag: String,
@@ -51,8 +56,8 @@ pub fn favorite_worlds_get_input(
 
 pub fn favorite_avatars_get_input(
     endpoint: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     tag: String,
 ) -> HttpApiRequestInput {
     let tag = normalize_text(tag);
@@ -68,8 +73,8 @@ pub fn favorite_avatars_get_input(
 
 pub fn favorite_groups_get_input(
     endpoint: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     owner_id: String,
 ) -> HttpApiRequestInput {
     let owner_id = normalize_text(owner_id);
@@ -85,13 +90,13 @@ pub fn favorite_groups_get_input(
 
 pub fn favorite_add_input(
     endpoint: String,
-    type_name: String,
+    favorite_type: VrchatFavoriteType,
     favorite_id: String,
     tags: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
-    let type_name = require_text(type_name, "VrchatFavoriteAdd requires type.")?;
     let favorite_id = require_text(favorite_id, "VrchatFavoriteAdd requires favoriteId.")?;
     let tags = require_text(tags, "VrchatFavoriteAdd requires tags.")?;
+    let type_name = favorite_type.as_str().to_string();
     Ok((
         type_name.clone(),
         favorite_id.clone(),
@@ -127,14 +132,14 @@ pub fn favorite_delete_input(
 pub fn favorite_group_save_input(
     endpoint: String,
     owner_id: String,
-    type_name: String,
+    favorite_type: VrchatFavoriteType,
     group: String,
     display_name: Option<String>,
-    visibility: Option<String>,
+    visibility: Option<FavoriteGroupVisibility>,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let owner_id = require_text(owner_id, "VrchatFavoriteGroupSave requires ownerId.")?;
-    let type_name = require_text(type_name, "VrchatFavoriteGroupSave requires type.")?;
     let group = require_text(group, "VrchatFavoriteGroupSave requires group.")?;
+    let type_name = favorite_type.as_str();
     let mut body = json!({
         "type": type_name,
         "group": group,
@@ -143,7 +148,7 @@ pub fn favorite_group_save_input(
         body["displayName"] = Value::String(display_name);
     }
     if let Some(visibility) = visibility {
-        body["visibility"] = Value::String(visibility);
+        body["visibility"] = Value::String(visibility.as_str().to_string());
     }
     Ok((
         group.clone(),
@@ -152,7 +157,7 @@ pub fn favorite_group_save_input(
             "PUT",
             format!(
                 "favorite/group/{}/{}/{}",
-                encode_path_segment(&type_name),
+                encode_path_segment(type_name),
                 encode_path_segment(&group),
                 encode_path_segment(&owner_id)
             ),
@@ -164,12 +169,12 @@ pub fn favorite_group_save_input(
 pub fn favorite_group_clear_input(
     endpoint: String,
     owner_id: String,
-    type_name: String,
+    favorite_type: VrchatFavoriteType,
     group: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let owner_id = require_text(owner_id, "VrchatFavoriteGroupClear requires ownerId.")?;
-    let type_name = require_text(type_name, "VrchatFavoriteGroupClear requires type.")?;
     let group = require_text(group, "VrchatFavoriteGroupClear requires group.")?;
+    let type_name = favorite_type.as_str();
     Ok((
         group.clone(),
         api_input(
@@ -177,7 +182,7 @@ pub fn favorite_group_clear_input(
             "DELETE",
             format!(
                 "favorite/group/{}/{}/{}",
-                encode_path_segment(&type_name),
+                encode_path_segment(type_name),
                 encode_path_segment(&group),
                 encode_path_segment(&owner_id)
             ),
@@ -256,7 +261,7 @@ mod tests {
     fn favorite_mutations_trim_required_values_and_build_legacy_contracts() {
         let (type_name, favorite_id, add) = favorite_add_input(
             "endpoint".into(),
-            " world ".into(),
+            VrchatFavoriteType::World,
             " wrld_1 ".into(),
             " worlds1 ".into(),
         )
@@ -285,10 +290,10 @@ mod tests {
         let (group, save) = favorite_group_save_input(
             "endpoint".into(),
             " usr/owner ".into(),
-            " world ".into(),
+            VrchatFavoriteType::World,
             " group 雪 ".into(),
             Some("Display name".into()),
-            Some("friends".into()),
+            Some(FavoriteGroupVisibility::Friends),
         )
         .unwrap();
         assert_eq!(group, "group 雪");
@@ -310,7 +315,7 @@ mod tests {
         let (group, clear) = favorite_group_clear_input(
             "endpoint".into(),
             " usr/owner ".into(),
-            " world ".into(),
+            VrchatFavoriteType::World,
             " group 雪 ".into(),
         )
         .unwrap();
@@ -325,14 +330,26 @@ mod tests {
 
     #[test]
     fn favorite_mutations_reject_blank_required_values() {
-        assert!(favorite_add_input("".into(), " ".into(), "id".into(), "tag".into()).is_err());
-        assert!(favorite_add_input("".into(), "world".into(), " ".into(), "tag".into()).is_err());
-        assert!(favorite_add_input("".into(), "world".into(), "id".into(), " ".into()).is_err());
+        assert!(favorite_add_input(
+            "".into(),
+            VrchatFavoriteType::World,
+            " ".into(),
+            "tag".into(),
+        )
+        .is_err());
+        assert!(favorite_add_input(
+            "".into(),
+            VrchatFavoriteType::World,
+            "id".into(),
+            " ".into(),
+        )
+        .is_err());
+        assert!(serde_json::from_str::<VrchatFavoriteType>(r#""unsupported""#).is_err());
         assert!(favorite_delete_input("".into(), " ".into()).is_err());
         assert!(favorite_group_save_input(
             "".into(),
             " ".into(),
-            "world".into(),
+            VrchatFavoriteType::World,
             "group".into(),
             None,
             None,
@@ -341,24 +358,18 @@ mod tests {
         assert!(favorite_group_save_input(
             "".into(),
             "owner".into(),
+            VrchatFavoriteType::World,
             " ".into(),
-            "group".into(),
             None,
             None,
         )
         .is_err());
-        assert!(favorite_group_save_input(
+        assert!(favorite_group_clear_input(
             "".into(),
             "owner".into(),
-            "world".into(),
+            VrchatFavoriteType::World,
             " ".into(),
-            None,
-            None,
         )
         .is_err());
-        assert!(
-            favorite_group_clear_input("".into(), "owner".into(), "world".into(), " ".into(),)
-                .is_err()
-        );
     }
 }

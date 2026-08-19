@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 
+import type {
+    FavoriteGroupMap,
+    FavoriteRecord,
+    FavoriteStore
+} from '@/domain/favorites/types';
 import { createDefaultFavoriteCachedRef } from '@/shared/utils/entityTransforms';
 
 import {
@@ -23,11 +28,6 @@ import {
     removeFromFavoriteGroups,
     renameLocalFavoriteGroupState
 } from './favoriteStoreModel';
-import type {
-    FavoriteGroupMap,
-    FavoriteRecord,
-    FavoriteStore
-} from './favoriteStoreTypes';
 
 export type {
     FavoriteKind,
@@ -37,7 +37,7 @@ export type {
     LocalFavoriteAction,
     LocalFavoriteGroupAction,
     RenameLocalFavoriteGroupAction
-} from './favoriteStoreTypes';
+} from '@/domain/favorites/types';
 export { DEFAULT_FAVORITE_LIMITS } from './favoriteStoreModel';
 
 export const useFavoriteStore = create<FavoriteStore>((set, get) => ({

@@ -2791,7 +2791,6 @@
                         "purge_confirm_description_3": "VRCX-0 は、完了後に自動的に再起動します。",
                         "purge_confirm_alert": "データベースのファイルをバックアップすることを、強くお勧めします。",
                         "purge_confirm_button": "削除して再起動",
-                        "purge_in_progress": "アバターデータの削除中",
                         "purge_complete": "アバターデータの削除が完了しました。VRCX-0 は再起動します",
                         "purge_failed": "削除に失敗しました: {error}",
                         "purge_optimization_failed": "アバターデータは削除されましたが、データベースを最適化できませんでした: {error}",
@@ -4652,7 +4651,9 @@
             "loading_gallery_description": "インデックス済みのスクリーンショット一覧を読み込んでいます。",
             "gallery_load_failed": "スクリーンショットギャラリーの読み込みに失敗しました",
             "scan_failed": "スクリーンショットライブラリのスキャンに失敗しました",
-            "thumbnail_failed": "サムネイルを表示できません"
+            "thumbnail_failed": "サムネイルを表示できません",
+            "hide_details": "画像情報を隠す",
+            "show_details": "画像情報を表示"
         },
         "set_avatar_styles": {
             "header": "アバタースタイルを設定",
@@ -5321,6 +5322,8 @@
             "migration_restarting_title": "データを移行中",
             "migration_restarting": "VRCX-0 を再起動して移行を完了します...",
             "upgrade_in_progress_title": "データベースのアップグレードが進行中",
+            "maintenance_in_progress_title": "データベースのメンテナンス中",
+            "maintenance_in_progress_description": "ディスク領域を解放しています。完了するまでデータベースへのアクセスは一時停止します。",
             "upgrade_stage": {
                 "preflight": "データベースを確認しています",
                 "prepare_legacy_snapshot": "VRCX データベースの整合性のあるコピーを作成しています",

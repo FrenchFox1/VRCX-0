@@ -1,6 +1,31 @@
 import { describe, expect, it } from 'vitest';
 
-import { sortStatus } from './friendStatus';
+import {
+    normalizeUserStatus,
+    sortStatus,
+    userStatusFromValue
+} from './friendStatus';
+
+describe('normalizeUserStatus', () => {
+    it('accepts both spaced and spaceless status aliases', () => {
+        expect(normalizeUserStatus('joinme')).toBe('join me');
+        expect(normalizeUserStatus('JoinMe')).toBe('join me');
+        expect(normalizeUserStatus('  join me  ')).toBe('join me');
+        expect(normalizeUserStatus('askme')).toBe('ask me');
+        expect(normalizeUserStatus('Ask Me')).toBe('ask me');
+    });
+
+    it('collapses offline sentinels', () => {
+        expect(normalizeUserStatus('offline:offline')).toBe('offline');
+        expect(normalizeUserStatus('offline 2 hours ago')).toBe('offline');
+    });
+
+    it('passes through other values lowercased', () => {
+        expect(normalizeUserStatus('Active')).toBe('active');
+        expect(normalizeUserStatus('busy')).toBe('busy');
+        expect(normalizeUserStatus(null)).toBe('');
+    });
+});
 
 describe('sortStatus', () => {
     it('returns 0 for identical statuses', () => {
@@ -62,5 +87,21 @@ describe('sortStatus', () => {
 
     it('returns 0 for unknown statuses', () => {
         expect(sortStatus('unknown', 'other')).toBe(0);
+    });
+});
+
+describe('userStatusFromValue', () => {
+    it('resolves the five known statuses, including spaceless aliases', () => {
+        expect(userStatusFromValue('active')).toBe('active');
+        expect(userStatusFromValue('joinme')).toBe('join me');
+        expect(userStatusFromValue('Ask Me')).toBe('ask me');
+        expect(userStatusFromValue('busy')).toBe('busy');
+        expect(userStatusFromValue('offline:offline')).toBe('offline');
+    });
+
+    it('returns an empty string for anything outside the known set', () => {
+        expect(userStatusFromValue('sleeping')).toBe('');
+        expect(userStatusFromValue(null)).toBe('');
+        expect(userStatusFromValue(undefined)).toBe('');
     });
 });

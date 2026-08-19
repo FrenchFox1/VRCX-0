@@ -1,7 +1,4 @@
-import type {
-    FriendRecord,
-    FriendRosterById
-} from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
 
 import {
     isValidMutualFriendId,

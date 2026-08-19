@@ -1,6 +1,6 @@
 import type { UserFact } from '@/domain/users/userFacts';
 
-import type { FriendRecord, FriendRosterById } from './friendRosterTypes';
+import type { FriendRecord, FriendRosterById } from './types';
 
 const FACT_DERIVED_FIELDS = [
     '$trustLevel',

@@ -11,6 +11,7 @@ import {
 import {
     formatDateTimeValue,
     formatIsoDateTime,
+    getRelativeTimeFormatter,
     normalizeDateLocale
 } from './dateTimeFormatters';
 
@@ -23,7 +24,9 @@ export const DEFAULT_TIME_UNIT_LABELS = Object.freeze({
 });
 
 type DateFilterFormat = 'long' | 'short' | 'time' | 'date' | string;
-type TimeUnitLabels = typeof DEFAULT_TIME_UNIT_LABELS;
+type TimeUnitLabels = {
+    -readonly [Unit in keyof typeof DEFAULT_TIME_UNIT_LABELS]: string;
+};
 
 type DateFilterPreferences = {
     appLocale?: unknown;
@@ -245,7 +248,7 @@ export function formatRelativeTimeWithPreferences(
     );
 
     try {
-        return new Intl.RelativeTimeFormat(locale, {
+        return getRelativeTimeFormatter(locale, {
             numeric: 'auto',
             style: preferences.style || 'long'
         }).format(amount, unit);

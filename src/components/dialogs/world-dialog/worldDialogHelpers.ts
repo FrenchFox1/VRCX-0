@@ -1,9 +1,16 @@
 import type { TFunction } from 'i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
+import type { InstanceCreateGroupAccessType } from '@/platform/tauri/bindings';
+import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 
 import { normalizeEntityId } from './worldInstances';
+import type {
+    WorldInstanceAccessType,
+    WorldInstanceRegion,
+    WorldNewInstanceForm
+} from './worldNewInstanceTypes';
 
 type InstanceGroupOption = EntityRecord & {
     groupId?: unknown;
@@ -51,8 +58,10 @@ export function defaultWorldSideData() {
     };
 }
 
-export function normalizeInstanceRegion(value: unknown) {
-    const region = normalizeEntityId(value);
+export function normalizeInstanceRegion(
+    value: string | null | undefined
+): WorldInstanceRegion | '' {
+    const region = value?.trim() ?? '';
     switch (region) {
         case 'us':
         case 'US West':
@@ -67,29 +76,61 @@ export function normalizeInstanceRegion(value: unknown) {
         case 'Japan':
             return 'Japan';
         default:
-            return region;
+            return '';
     }
 }
 
-export function normalizeNewInstanceSeed(seed: unknown) {
-    if (!isRecord(seed)) {
-        return {};
+export function normalizeInstanceAccessType(
+    value: string | null | undefined
+): WorldInstanceAccessType | '' {
+    const accessType = value?.trim() ?? '';
+    if (
+        accessType === 'public' ||
+        accessType === 'friends' ||
+        accessType === 'friends+' ||
+        accessType === 'invite' ||
+        accessType === 'invite+' ||
+        accessType === 'group'
+    ) {
+        return accessType;
     }
-    const groupId = normalizeEntityId(seed.groupId);
+    return '';
+}
+
+export function normalizeGroupAccessType(
+    value: string | null | undefined
+): InstanceCreateGroupAccessType | '' {
+    const accessType = value?.trim() ?? '';
+    if (
+        accessType === 'members' ||
+        accessType === 'plus' ||
+        accessType === 'public'
+    ) {
+        return accessType;
+    }
+    return '';
+}
+
+type NewInstanceSeed = Partial<
+    Pick<
+        WorldNewInstanceForm,
+        'accessType' | 'region' | 'groupId' | 'groupName' | 'groupAccessType'
+    >
+>;
+
+export function normalizeNewInstanceSeed(
+    seed: WorldNewInstanceDefaults | null
+): NewInstanceSeed {
+    const groupId = seed?.groupId?.trim() ?? '';
+    const accessType = normalizeInstanceAccessType(seed?.accessType);
+    const region = normalizeInstanceRegion(seed?.region);
+    const groupAccessType = normalizeGroupAccessType(seed?.groupAccessType);
     return {
-        ...(seed.accessType
-            ? { accessType: normalizeEntityId(seed.accessType) }
-            : {}),
-        ...(seed.region
-            ? { region: normalizeInstanceRegion(seed.region) }
-            : {}),
+        ...(accessType ? { accessType } : {}),
+        ...(region ? { region } : {}),
         ...(groupId ? { accessType: 'group', groupId } : {}),
-        ...(seed.groupAccessType
-            ? { groupAccessType: normalizeEntityId(seed.groupAccessType) }
-            : {}),
-        ...(seed.groupName
-            ? { groupName: normalizeEntityId(seed.groupName) }
-            : {})
+        ...(groupAccessType ? { groupAccessType } : {}),
+        ...(seed?.groupName ? { groupName: seed.groupName.trim() } : {})
     };
 }
 

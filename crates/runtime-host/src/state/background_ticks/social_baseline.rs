@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use serde_json::Value;
-use vrcx_0_application_core::{BackgroundCapabilitySession, FriendProjection};
+use vrcx_0_application_core::BackgroundCapabilitySession;
 use vrcx_0_application_realtime::{
     build_favorites_baseline_from_friend_ids, build_synced_friend_roster_baseline,
     RealtimeHostRuntime, SocialBaselineDeps, SocialFavoritesBaselineRequest,
@@ -72,10 +72,7 @@ pub(in crate::state) async fn run_social_baseline_refresh_core(
     };
     let friend_ids_by_roster_id = friend_ids_by_roster_id_from_records(friends_by_id);
     if output.friend_log_changed {
-        realtime_runtime.emit_friend_projection(FriendProjection {
-            friend_log_changed: true,
-            ..FriendProjection::new(0, 0)
-        });
+        realtime_runtime.emit_friend_log_changed();
     }
     let favorites = match build_favorites_baseline_from_friend_ids(
         deps,

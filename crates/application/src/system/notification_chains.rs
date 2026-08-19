@@ -1,5 +1,8 @@
 use std::{future::Future, pin::Pin, time::Duration};
 
+use vrcx_0_core::text::normalize_text;
+use vrcx_0_core::NotificationKind;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use vrcx_0_application_core::{RealtimeNotificationProjection, RuntimeEventBus, WorldCache};
@@ -102,7 +105,7 @@ pub struct NotificationInstanceInviteInput {
     #[serde(default)]
     pub world_name: String,
     #[serde(default)]
-    pub message_slot: Option<i64>,
+    pub message_slot: Option<i32>,
     #[serde(default)]
     pub image_data: String,
     #[serde(default)]
@@ -116,7 +119,7 @@ pub struct NotificationInviteResponseInput {
     #[serde(default)]
     pub endpoint: String,
     pub target: NotificationTarget,
-    pub response_slot: i64,
+    pub response_slot: i32,
     #[serde(default)]
     pub image_data: String,
 }
@@ -183,11 +186,11 @@ pub enum NotificationChainRemoteCall {
     },
     InviteResponse {
         id: String,
-        response_slot: i64,
+        response_slot: i32,
     },
     InviteResponsePhoto {
         id: String,
-        response_slot: i64,
+        response_slot: i32,
         image_data: String,
     },
     InviteSend {
@@ -432,17 +435,17 @@ fn normalize_target(mut target: NotificationTarget) -> NotificationTarget {
     target
 }
 
-fn normalize_text(value: &str) -> String {
-    value.trim().to_string()
-}
-
 pub fn boop_rows_matching(
     rows: Vec<BoopNotificationRow>,
     sender_user_id: &str,
 ) -> Vec<BoopNotificationRow> {
     let link = format!("user:{sender_user_id}");
     rows.into_iter()
-        .filter(|row| row.notification_type == "boop" && !row.expired && row.link == link)
+        .filter(|row| {
+            NotificationKind::from(row.notification_type.as_str()) == NotificationKind::Boop
+                && !row.expired
+                && row.link == link
+        })
         .collect()
 }
 

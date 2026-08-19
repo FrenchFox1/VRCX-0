@@ -15,6 +15,7 @@ import {
     type GroupIdInput,
     type GroupPageInput,
     type GroupPostInput,
+    type GroupPostMutationInput,
     type GroupRecord,
     normalizeEntityId,
     responseRows,
@@ -52,8 +53,8 @@ export async function getAllGroupPosts({ groupId }: GroupIdInput) {
 
 export async function createGroupPost({
     groupId,
-    params = {}
-}: Pick<GroupPostInput, 'groupId' | 'params'>) {
+    params
+}: Pick<GroupPostMutationInput, 'groupId' | 'params'>) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -73,8 +74,8 @@ export async function createGroupPost({
 export async function editGroupPost({
     groupId,
     postId,
-    params = {}
-}: GroupPostInput) {
+    params
+}: GroupPostMutationInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedPostId = normalizeEntityId(postId);
     if (!normalizedGroupId || !normalizedPostId) {
