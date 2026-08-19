@@ -47,9 +47,6 @@ export function EntityList({
     showInstanceDuration?: boolean;
 }) {
     const { t } = useTranslation();
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
@@ -77,7 +74,6 @@ export function EntityList({
                         <UserGroupCard
                             key={`${row?.id || row?.groupId || row?.name || 'group'}:${index}`}
                             group={row}
-                            currentEndpoint={currentEndpoint}
                         />
                     );
                 }

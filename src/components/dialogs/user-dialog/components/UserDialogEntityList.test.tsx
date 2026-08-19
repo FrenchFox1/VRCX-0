@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+    getGroupProfile: vi.fn(),
     openRow: vi.fn()
 }));
 
@@ -49,6 +50,12 @@ vi.mock('@/components/sidebar/friends-sidebar/FriendsSidebarLocation', () => ({
 vi.mock('@/services/entityMediaService', () => ({
     convertFileUrlToImageUrl: () => '',
     userImage: () => ''
+}));
+
+vi.mock('@/repositories/groupProfileRepository', () => ({
+    default: {
+        getGroupProfile: mocks.getGroupProfile
+    }
 }));
 
 vi.mock('@/state/runtimeStore', () => ({
@@ -245,5 +252,24 @@ describe('UserDialog EntityList', () => {
 
         const timer = screen.getByTestId('instance-timer');
         expect(timer.dataset.epoch).toBe('');
+    });
+
+    it('renders group list data without requesting every group profile', () => {
+        render(
+            <EntityList
+                kind="group"
+                rows={[
+                    {
+                        id: 'grp_test',
+                        name: 'Group from membership list',
+                        memberCount: 42
+                    }
+                ]}
+            />
+        );
+
+        expect(screen.getByText('Group from membership list')).toBeTruthy();
+        expect(screen.getByText('42')).toBeTruthy();
+        expect(mocks.getGroupProfile).not.toHaveBeenCalled();
     });
 });

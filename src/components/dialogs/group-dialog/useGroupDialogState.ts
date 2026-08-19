@@ -88,7 +88,11 @@ export function useGroupDialogState({
         groupId: normalizedGroupId,
         endpoint: currentEndpoint
     });
-    const { activeInstances, setRawActiveInstances } =
+    const activeInstancesTargetRef = useRef<ActiveGroupTarget>({
+        groupId: '',
+        endpoint: ''
+    });
+    const { activeInstances, rawActiveInstances, setRawActiveInstances } =
         useGroupDialogActiveInstances({
             groupId: normalizedGroupId,
             friendsById,
@@ -241,6 +245,10 @@ export function useGroupDialogState({
 
     useEffect(() => {
         let active = true;
+        activeInstancesTargetRef.current = {
+            groupId: '',
+            endpoint: ''
+        };
 
         if (!normalizedGroupId || !currentUserId) {
             setRawActiveInstances([]);
@@ -263,14 +271,10 @@ export function useGroupDialogState({
                     : Array.isArray(response.json.instances)
                       ? response.json.instances
                       : [];
-                recordLocationHintsFromInstances({
+                activeInstancesTargetRef.current = {
                     endpoint: currentEndpoint,
-                    instances: rows.map((row) => ({
-                        ...row,
-                        groupId: normalizedGroupId,
-                        groupName: group?.name || group?.displayName || ''
-                    }))
-                });
+                    groupId: normalizedGroupId
+                };
                 setRawActiveInstances(rows);
             })
             .catch(() => {
@@ -285,10 +289,34 @@ export function useGroupDialogState({
     }, [
         currentEndpoint,
         currentUserId,
+        normalizedGroupId,
+        setRawActiveInstances
+    ]);
+
+    useEffect(() => {
+        const target = activeInstancesTargetRef.current;
+        if (
+            !rawActiveInstances.length ||
+            target.endpoint !== currentEndpoint ||
+            target.groupId !== normalizedGroupId
+        ) {
+            return;
+        }
+
+        recordLocationHintsFromInstances({
+            endpoint: currentEndpoint,
+            instances: rawActiveInstances.map((row) => ({
+                ...row,
+                groupId: normalizedGroupId,
+                groupName: group?.name || group?.displayName || ''
+            }))
+        });
+    }, [
+        currentEndpoint,
         group?.displayName,
         group?.name,
         normalizedGroupId,
-        setRawActiveInstances
+        rawActiveInstances
     ]);
 
     if (loadStatus === 'running' && !group) {

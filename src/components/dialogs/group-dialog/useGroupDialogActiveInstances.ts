@@ -41,6 +41,7 @@ export function useGroupDialogActiveInstances({
 
     return {
         activeInstances,
+        rawActiveInstances,
         setRawActiveInstances
     };
 }

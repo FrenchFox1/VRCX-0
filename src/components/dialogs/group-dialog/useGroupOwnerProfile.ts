@@ -14,7 +14,7 @@ export function useGroupOwnerProfile({
 }: {
     currentEndpoint: string;
     friendsById: FriendRosterById;
-    group: GroupProfileRecord | null;
+    group: Pick<GroupProfileRecord, 'ownerDisplayName' | 'ownerId'> | null;
 }) {
     const [ownerProfile, setOwnerProfile] = useState<UserProfileRecord | null>(
         null
@@ -25,7 +25,11 @@ export function useGroupOwnerProfile({
         const ownerId = normalizeEntityId(group?.ownerId);
         setOwnerProfile(null);
 
-        if (!ownerId || friendsById[ownerId]?.displayName) {
+        if (
+            !ownerId ||
+            group?.ownerDisplayName ||
+            friendsById[ownerId]?.displayName
+        ) {
             return () => {
                 active = false;
             };
@@ -49,7 +53,7 @@ export function useGroupOwnerProfile({
         return () => {
             active = false;
         };
-    }, [currentEndpoint, friendsById, group?.ownerId]);
+    }, [currentEndpoint, friendsById, group?.ownerDisplayName, group?.ownerId]);
 
     return ownerProfile;
 }
