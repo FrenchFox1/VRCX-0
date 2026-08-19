@@ -334,12 +334,15 @@ fn queue_deep_link_url(app: &tauri::AppHandle, value: &str) {
     };
     queue_deep_link_action(&state.pending_deep_links, action, || {
         let app_handle = app.clone();
-        if let Err(error) = app.run_on_main_thread(move || {
-            show_main_window_for_deep_link(&app_handle);
-            emit_deep_link_arrived(&app_handle);
-        }) {
-            tracing::warn!(error = %error, "failed to schedule deep link window restore");
-        }
+        tauri::async_runtime::spawn(async move {
+            let main_thread_handle = app_handle.clone();
+            if let Err(error) = app_handle.run_on_main_thread(move || {
+                show_main_window_for_deep_link(&main_thread_handle);
+                emit_deep_link_arrived(&main_thread_handle);
+            }) {
+                tracing::warn!(error = %error, "failed to schedule deep link window restore");
+            }
+        });
     });
 }
 
