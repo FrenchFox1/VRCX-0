@@ -245,6 +245,10 @@ mod tests {
                 preview_youtube_id: None,
                 tags: None,
                 url_list: None,
+                disabled_prop_abilities: Some(vec![
+                    "player_movement".into(),
+                    "future_ability".into(),
+                ]),
             },
         )
         .unwrap();
@@ -252,7 +256,11 @@ mod tests {
         assert_eq!(save.path.as_deref(), Some("worlds/wrld%2F1"));
         assert_eq!(
             json_body(&save),
-            &json!({ "id": "wrld/1", "name": "World" })
+            &json!({
+                "id": "wrld/1",
+                "name": "World",
+                "disabledPropAbilities": ["player_movement", "future_ability"],
+            })
         );
 
         let (_, delete) = world_delete_input("endpoint".into(), " wrld/1 ".into()).unwrap();
@@ -311,6 +319,7 @@ mod tests {
                 preview_youtube_id: None,
                 tags: None,
                 url_list: None,
+                disabled_prop_abilities: None,
             },
         )
         .is_err());

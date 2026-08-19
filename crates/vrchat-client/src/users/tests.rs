@@ -126,11 +126,18 @@ fn current_user_mutations_build_paths_and_json_bodies() {
         " usr/1 ".into(),
         CurrentUserUpdateRequest {
             status: Some(vrcx_0_core::friends::UserStatus::AskMe),
+            content_filters: Some(vec![ContentFilter::Horror, ContentFilter::Violence]),
             ..Default::default()
         },
     )
     .unwrap();
-    assert_eq!(json_body(&update), &json!({ "status": "ask me" }));
+    assert_eq!(
+        json_body(&update),
+        &json!({
+            "status": "ask me",
+            "contentFilters": ["content_horror", "content_violence"],
+        })
+    );
 
     let (user_id, badge_id, badge) = current_user_badge_update_input(
         "endpoint".into(),
@@ -228,6 +235,10 @@ fn current_user_requests_reject_unknown_fields_and_statuses() {
     .is_err());
     assert!(serde_json::from_value::<CurrentUserUpdateRequest>(json!({
         "status": "future",
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<CurrentUserUpdateRequest>(json!({
+        "contentFilters": ["content_future"],
     }))
     .is_err());
     assert!(

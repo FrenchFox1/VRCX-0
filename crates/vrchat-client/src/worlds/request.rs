@@ -18,4 +18,6 @@ pub struct WorldUpdateRequest {
     pub tags: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub url_list: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disabled_prop_abilities: Option<Vec<String>>,
 }

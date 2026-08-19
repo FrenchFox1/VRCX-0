@@ -137,8 +137,12 @@ async function createInstance({
     }
 
     const type = toApiAccessType(accessType);
-    const instanceOwnerId =
-        type === 'group' ? (groupId?.trim() ?? '') : normalizedOwnerId;
+    let instanceOwnerId = normalizedOwnerId;
+    if (type === 'public') {
+        instanceOwnerId = '';
+    } else if (type === 'group') {
+        instanceOwnerId = groupId?.trim() ?? '';
+    }
     const params: InstanceCreateRequest = {
         type,
         canRequestInvite: accessType === 'invite+',

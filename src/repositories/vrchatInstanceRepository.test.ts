@@ -113,6 +113,23 @@ describe('InstanceRepository', () => {
         });
     });
 
+    it('omits the legacy owner id from public instance requests', async () => {
+        await vrchatInstanceRepository.createInstance({
+            worldId: 'wrld_public',
+            ownerId: 'usr_owner',
+            accessType: 'public'
+        });
+
+        expect(tauriApp.appVrchatInstanceCreate).toHaveBeenCalledWith({
+            params: {
+                type: 'public',
+                canRequestInvite: false,
+                worldId: 'wrld_public',
+                region: 'us'
+            }
+        });
+    });
+
     it('maps group-only options without leaking role ids to non-member instances', async () => {
         await vrchatInstanceRepository.createInstance({
             worldId: 'wrld_group',

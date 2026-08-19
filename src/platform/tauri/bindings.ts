@@ -3379,6 +3379,12 @@ export type CommunityThemeProjection = {
 export type CommunityThemeStatsEntry = { downloads: number };
 export type ConfigReadEntry = { key: string; value: string };
 export type ConfigWriteEntry = { key: string; value: string };
+export type ContentFilter =
+    | 'content_adult'
+    | 'content_gore'
+    | 'content_horror'
+    | 'content_sex'
+    | 'content_violence';
 export type CrashRelaunchDecisionPayload =
     | { handled: boolean; error: string }
     | { handled: boolean; location: string; delayMs: number | null };
@@ -3404,6 +3410,7 @@ export type CurrentUserUpdateRequest = {
     isBoopingEnabled?: boolean | null;
     hasSharedConnectionsOptOut?: boolean | null;
     hasDiscordFriendsOptOut?: boolean | null;
+    contentFilters?: ContentFilter[] | null;
 };
 export type DataDirCleanupPending = {
     oldDir: string;
@@ -4317,6 +4324,7 @@ export type InstanceActivityRowOutput = {
     time: number;
 };
 export type InstanceCreateGroupAccessType = 'members' | 'plus' | 'public';
+export type InstanceCreateMinimumAvatarPerformance = 'Poor' | 'Medium' | 'Good';
 export type InstanceCreateRegion = 'eu' | 'jp' | 'us' | 'use';
 export type InstanceCreateRequest = {
     type: InstanceCreateType;
@@ -4329,6 +4337,7 @@ export type InstanceCreateRequest = {
     roleIds?: string[] | null;
     ageGate?: boolean | null;
     displayName?: string | null;
+    minimumAvatarPerformance?: InstanceCreateMinimumAvatarPerformance | null;
 };
 export type InstanceCreateType =
     | 'friends'
@@ -6125,6 +6134,7 @@ export type WorldUpdateRequest = {
     previewYoutubeId?: string | null;
     tags?: string[] | null;
     urlList?: string[] | null;
+    disabledPropAbilities?: string[] | null;
 };
 
 /** tauri-specta globals **/

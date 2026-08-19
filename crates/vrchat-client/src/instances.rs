@@ -10,7 +10,8 @@ use crate::http_api::{
 mod request;
 
 pub use request::{
-    InstanceCreateGroupAccessType, InstanceCreateRegion, InstanceCreateRequest, InstanceCreateType,
+    InstanceCreateGroupAccessType, InstanceCreateMinimumAvatarPerformance, InstanceCreateRegion,
+    InstanceCreateRequest, InstanceCreateType,
 };
 
 pub fn instance_get_input(
@@ -123,6 +124,7 @@ mod tests {
             role_ids: None,
             age_gate: None,
             display_name: None,
+            minimum_avatar_performance: None,
         }
     }
 
@@ -157,6 +159,42 @@ mod tests {
         let mut request = public_instance();
         request.can_request_invite = true;
         assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.minimum_avatar_performance = Some(InstanceCreateMinimumAvatarPerformance::Good);
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+    }
+
+    #[test]
+    fn create_group_instance_serializes_minimum_avatar_performance() {
+        let mut request = public_instance();
+        request.r#type = InstanceCreateType::Group;
+        request.owner_id = Some("grp_owner".into());
+        request.group_access_type = Some(InstanceCreateGroupAccessType::Plus);
+        request.minimum_avatar_performance = Some(InstanceCreateMinimumAvatarPerformance::Medium);
+
+        let request = instance_create_input("endpoint".into(), request).unwrap();
+
+        assert_eq!(
+            request.body.as_json(),
+            Some(&json!({
+                "type": "group",
+                "canRequestInvite": false,
+                "worldId": "wrld_123",
+                "ownerId": "grp_owner",
+                "region": "us",
+                "groupAccessType": "plus",
+                "minimumAvatarPerformance": "Medium",
+            }))
+        );
+    }
+
+    #[test]
+    fn create_instance_rejects_none_as_a_minimum_avatar_performance_value() {
+        assert!(
+            serde_json::from_value::<InstanceCreateMinimumAvatarPerformance>(json!("None"))
+                .is_err()
+        );
     }
 
     #[test]

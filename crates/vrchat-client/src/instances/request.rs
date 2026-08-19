@@ -38,6 +38,13 @@ pub enum InstanceCreateGroupAccessType {
     Public,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum InstanceCreateMinimumAvatarPerformance {
+    Poor,
+    Medium,
+    Good,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct InstanceCreateRequest {
@@ -58,6 +65,8 @@ pub struct InstanceCreateRequest {
     pub age_gate: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_avatar_performance: Option<InstanceCreateMinimumAvatarPerformance>,
 }
 
 impl InstanceCreateRequest {
@@ -144,6 +153,7 @@ impl InstanceCreateRequest {
             || self.queue_enabled.is_some()
             || self.role_ids.is_some()
             || self.age_gate.is_some()
+            || self.minimum_avatar_performance.is_some()
         {
             return Err(HttpApiError::Custom(
                 "VrchatInstanceCreate group options require a group instance.".into(),
