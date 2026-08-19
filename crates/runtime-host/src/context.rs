@@ -2,8 +2,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use vrcx_0_application::{
-    FavoriteMutationCoordinator, LoginSessionRuntime, MutualGraphFetchRuntime, PrintCleanupQueue,
-    ModerationSyncRuntime, RemoteMutationGate, VrcStatusService,
+    FavoriteMutationCoordinator, LoginSessionRuntime, ModerationSyncRuntime,
+    MutualGraphFetchRuntime, PrintCleanupQueue, RemoteMutationGate, VrcStatusService,
 };
 use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivityRuntime, OverlayActivitySink, OverlayActivitySnapshot,

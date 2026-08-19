@@ -172,9 +172,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
-function isUserMutualFriendRow(
-    value: unknown
-): value is UserMutualFriendRow {
+function isUserMutualFriendRow(value: unknown): value is UserMutualFriendRow {
     return isRecord(value) && typeof value.id === 'string' && Boolean(value.id);
 }
 

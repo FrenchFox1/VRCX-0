@@ -147,8 +147,7 @@ function mergeProfileIntoLocationUser(
 export async function enrichLocationUsersWithProfiles({
     friendsById,
     knownUsersById,
-    loadUserProfile = (input) =>
-        userProfileRepository.getUserProfile(input),
+    loadUserProfile = (input) => userProfileRepository.getUserProfile(input),
     shouldContinue = () => true,
     users
 }: {
@@ -170,10 +169,7 @@ export async function enrichLocationUsersWithProfiles({
 
         const cachedFriend = friendsById[userId];
         if (cachedFriend) {
-            nextUsers[index] = mergeProfileIntoLocationUser(
-                user,
-                cachedFriend
-            );
+            nextUsers[index] = mergeProfileIntoLocationUser(user, cachedFriend);
             continue;
         }
 
@@ -765,14 +761,11 @@ export function useUserDialogLocationPanel({
     ]);
     const inviteInstanceCache = inviteInstanceSnapshot.cache;
 
-    const canInviteFromCurrentLocation = checkCanInvite(
-        currentInviteLocation,
-        {
-            currentUserId: normalizedCurrentUserId,
-            lastLocationStr: '',
-            cachedInstances: inviteInstanceCache
-        }
-    );
+    const canInviteFromCurrentLocation = checkCanInvite(currentInviteLocation, {
+        currentUserId: normalizedCurrentUserId,
+        lastLocationStr: '',
+        cachedInstances: inviteInstanceCache
+    });
 
     return {
         locationPanel,

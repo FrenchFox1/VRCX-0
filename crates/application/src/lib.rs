@@ -133,6 +133,12 @@ pub use social::{
     PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState,
 };
 pub use social::{
+    force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
+    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
+    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, ModerationSyncRuntime,
+    RemoteModerationRow,
+};
+pub use social::{
     get_user_dialog_tab_counts, UserDialogTabCountsDeps, UserDialogTabCountsInput,
     UserDialogTabCountsOutput, UserDialogTabCountsRuntime,
 };
@@ -158,12 +164,6 @@ pub use social::{
     NoteExportItemState, NoteExportItemStatus, NoteExportProgress, NoteExportResult,
     NoteExportStartInput, NoteExportState, NoteExportStatus, VrchatNoteExportActions,
     NOTE_EXPORT_MAX_ITEMS,
-};
-pub use social::{
-    force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
-    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
-    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, ModerationSyncRuntime,
-    RemoteModerationRow,
 };
 pub use social::{
     resolve_friend_log_names, FriendLogNameResolutionCoordinator, FriendLogNameResolutionDeps,

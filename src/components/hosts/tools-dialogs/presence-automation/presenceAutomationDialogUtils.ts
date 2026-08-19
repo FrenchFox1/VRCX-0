@@ -306,12 +306,14 @@ export function createTimeRule(label = ''): TimeAutomationRule {
 }
 
 export function getTimeWindow(rule: PresenceAutomationRule) {
-    return rule.conditions?.find(isTimeWindowCondition) || {
-        type: 'timeWindow',
-        start: '21:00',
-        end: '02:00',
-        days: []
-    };
+    return (
+        rule.conditions?.find(isTimeWindowCondition) || {
+            type: 'timeWindow',
+            start: '21:00',
+            end: '02:00',
+            days: []
+        }
+    );
 }
 
 export function shouldRestorePreviousState(rule: PresenceAutomationRule) {

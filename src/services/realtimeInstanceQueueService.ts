@@ -14,9 +14,7 @@ type RealtimeInstanceQueueProjectionInput = Pick<
     RealtimeInstanceQueueProjection,
     'kind' | 'instanceLocation'
 > &
-    Partial<
-        Omit<RealtimeInstanceQueueProjection, 'kind' | 'instanceLocation'>
-    >;
+    Partial<Omit<RealtimeInstanceQueueProjection, 'kind' | 'instanceLocation'>>;
 
 function queueCount(value?: number): number {
     return typeof value === 'number' && Number.isFinite(value)
@@ -96,7 +94,6 @@ export function handleRealtimeInstanceQueueProjection(
         position: queueCount(projection.position),
         queueSize: queueCount(projection.queueSize),
         label,
-        updatedAt:
-            projection.receivedAt?.trim() || new Date().toISOString()
+        updatedAt: projection.receivedAt?.trim() || new Date().toISOString()
     });
 }

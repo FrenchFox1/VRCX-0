@@ -47,9 +47,7 @@ function scheduleTerminalReset() {
     }, TERMINAL_RESET_DELAY_MS);
 }
 
-function applyMutualGraphFetchStatus(
-    status: MutualGraphFetchStatus
-) {
+function applyMutualGraphFetchStatus(status: MutualGraphFetchStatus) {
     const normalized = normalizeStatus(status);
     if (!isNewerStatus(normalized.runId, normalized.revision)) {
         return normalized;

@@ -43,8 +43,7 @@ export function shouldShowUpdateUi({
         return false;
     }
     return (
-        latestUpdaterRelease.updaterType !== 'tauri' ||
-        autoDownloadUiVisible
+        latestUpdaterRelease.updaterType !== 'tauri' || autoDownloadUiVisible
     );
 }
 

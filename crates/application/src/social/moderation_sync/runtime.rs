@@ -123,11 +123,7 @@ mod tests {
 
         for (force, expected) in [(false, 1), (false, 1), (true, 2)] {
             let calls = Arc::clone(&calls);
-            let key = runtime.cache_key(
-                &scope(),
-                "usr_self",
-                "https://api.example.test/api/1/",
-            );
+            let key = runtime.cache_key(&scope(), "usr_self", "https://api.example.test/api/1/");
             let actual = runtime
                 .resolve(key, force, move || async move {
                     let count = calls.fetch_add(1, Ordering::SeqCst) + 1;
@@ -142,11 +138,7 @@ mod tests {
         let calls_after_invalidation = Arc::clone(&calls);
         let actual = runtime
             .resolve(
-                runtime.cache_key(
-                    &scope(),
-                    "usr_self",
-                    "https://api.example.test/api/1",
-                ),
+                runtime.cache_key(&scope(), "usr_self", "https://api.example.test/api/1"),
                 false,
                 move || async move {
                     let count = calls_after_invalidation.fetch_add(1, Ordering::SeqCst) + 1;
@@ -171,11 +163,7 @@ mod tests {
             rejected.accepted = false;
             runtime
                 .resolve(
-                    runtime.cache_key(
-                        &scope(),
-                        "usr_self",
-                        "https://api.example.test/api/1",
-                    ),
+                    runtime.cache_key(&scope(), "usr_self", "https://api.example.test/api/1"),
                     false,
                     move || async move {
                         calls.fetch_add(1, Ordering::SeqCst);
@@ -200,11 +188,7 @@ mod tests {
         let first = tokio::spawn(async move {
             first_runtime
                 .resolve(
-                    first_runtime.cache_key(
-                        &scope(),
-                        "usr_self",
-                        "https://api.example.test/api/1",
-                    ),
+                    first_runtime.cache_key(&scope(), "usr_self", "https://api.example.test/api/1"),
                     false,
                     move || async move {
                         first_calls.fetch_add(1, Ordering::SeqCst);

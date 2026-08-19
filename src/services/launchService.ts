@@ -69,12 +69,11 @@ export async function resolveLaunchDialogDetails(
     let worldName = '';
     if (!secureOrShortName) {
         try {
-            const response = await vrchatInstanceRepository.getInstanceShortName(
-                {
+            const response =
+                await vrchatInstanceRepository.getInstanceShortName({
                     worldId: parsed.worldId,
                     instanceId: parsed.instanceId
-                }
-            );
+                });
             nextShortName = normalizeString(response.json?.shortName);
             secureOrShortName =
                 nextShortName || normalizeString(response.json?.secureName);

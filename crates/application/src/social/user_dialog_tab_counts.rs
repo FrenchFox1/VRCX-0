@@ -289,7 +289,7 @@ async fn count_favorite_worlds(
         })
         .buffer_unordered(FAVORITE_GROUP_FETCH_CONCURRENCY)
         .collect::<Vec<_>>()
-    .await;
+        .await;
     let mut count = 0;
     for result in results {
         match result {
