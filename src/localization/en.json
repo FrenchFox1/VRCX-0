@@ -1043,8 +1043,8 @@
         "game_log": {
             "filters": {
                 "Location": "Location",
-                "OnPlayerJoined": "Player joined",
-                "OnPlayerLeft": "Player left",
+                "OnPlayerJoined": "Player Joined",
+                "OnPlayerLeft": "Player Left",
                 "PortalSpawn": "Portal spawn",
                 "VideoPlay": "Video play",
                 "Event": "Event",
@@ -2236,8 +2236,8 @@
                     "information_types": "Shared information",
                     "information_types_description": "Choose what connected apps can read.",
                     "information_type_fixed": "Currently fixed",
-                    "room_information": "Room information",
-                    "room_information_description": "Current room, player roster, language tags, and notes. Individual fields cannot be changed yet.",
+                    "room_information": "Instance information",
+                    "room_information_description": "Current instance, player roster, language tags, and notes. Individual fields cannot be changed yet.",
                     "allow_lan_connections": "Allow LAN connections",
                     "allow_lan_connections_description": "Allow other devices on your local network to read this stream. Keep this off on untrusted networks.",
                     "port_label": "Server port",
@@ -2266,7 +2266,7 @@
             "advanced_groups": {
                 "diagnostics": {
                     "header": "Diagnostics",
-                    "refresh_online_users": "Refresh online users",
+                    "refresh_online_users": "Refresh online players",
                     "refresh_config_json": "Read Config JSON",
                     "clear_config_json": "Clear displayed JSON"
                 },
@@ -4624,8 +4624,8 @@
             "search_placeholder": "Search",
             "search_type_placeholder": "Search Type",
             "search_types": {
-                "player_name": "Player Name",
-                "player_id": "Player ID",
+                "player_name": "User Name",
+                "player_id": "User ID",
                 "world_name": "World Name",
                 "world_id": "World ID"
             },
@@ -5969,7 +5969,7 @@
             "table_heavy_game_event_log": "Table-heavy game event log.",
             "instance_history": "Instance History",
             "local_instance_history_for_a_selected_user": "Instance history for a selected user.",
-            "current_players": "Current Players",
+            "current_players": "Current players",
             "search": "Search",
             "world_and_group_search_route": "World and group search route.",
             "dashboard": "Dashboard",
