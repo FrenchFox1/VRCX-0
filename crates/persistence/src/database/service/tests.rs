@@ -157,6 +157,26 @@ fn configured_writer_trades_secure_delete_and_full_sync_for_write_throughput() -
 }
 
 #[test]
+fn configured_reader_sorts_in_memory_while_the_writer_keeps_spilling_to_disk() -> Result<(), Error>
+{
+    let reader = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
+    configure_read_connection(&reader)?;
+    let writer = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
+    configure_connection(&writer)?;
+
+    let reader_temp_store = reader
+        .query_row("PRAGMA temp_store;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+    let writer_temp_store = writer
+        .query_row("PRAGMA temp_store;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+
+    assert_eq!(reader_temp_store, 2);
+    assert_ne!(writer_temp_store, 2);
+    Ok(())
+}
+
+#[test]
 fn rolls_back_writer_transaction_when_any_statement_fails() -> Result<(), Error> {
     let dir = TestDir::new("sqlite-transaction-rollback");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;

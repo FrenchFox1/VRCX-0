@@ -585,7 +585,8 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
 fn configure_read_connection(conn: &Connection) -> Result<(), Error> {
     conn.execute_batch(
         "PRAGMA busy_timeout=5000;
-         PRAGMA query_only=ON;",
+         PRAGMA query_only=ON;
+         PRAGMA temp_store=MEMORY;",
     )
     .map_err(Error::sqlite)?;
     conn.set_prepared_statement_cache_capacity(64);
