@@ -27,7 +27,7 @@ type FetchWithEntityPolicyOptions<TData = unknown> = {
 
 export const entityQueryPolicies = Object.freeze({
     instance: Object.freeze({
-        staleTime: 20 * SECOND_MS,
+        staleTime: 0,
         gcTime: 90 * SECOND_MS,
         retry: 1,
         refetchOnWindowFocus: false
@@ -81,7 +81,7 @@ export const entityQueryPolicies = Object.freeze({
         refetchOnWindowFocus: false
     }),
     fileAnalysis: Object.freeze({
-        staleTime: 60 * MINUTE_MS,
+        staleTime: 120 * MINUTE_MS,
         gcTime: 240 * MINUTE_MS,
         retry: 1,
         refetchOnWindowFocus: false

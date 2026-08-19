@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
     clearEntityQueryCache,
+    entityQueryPolicies,
     getEntityQueryCacheStats,
     queryKeys,
     setCachedQueryData
@@ -57,5 +58,12 @@ describe('entityQueryCache', () => {
             avatars: 1,
             groups: 1
         });
+    });
+
+    it('keeps instance reads live and file analysis cached for two hours', () => {
+        expect(entityQueryPolicies.instance.staleTime).toBe(0);
+        expect(entityQueryPolicies.fileAnalysis.staleTime).toBe(
+            2 * 60 * 60 * 1000
+        );
     });
 });

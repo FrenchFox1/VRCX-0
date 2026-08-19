@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
     resolveCreatedInstanceDetails: vi.fn(),
     selfInviteToInstance: vi.fn(),
     tryOpenLaunchLocation: vi.fn(),
-    showLaunchDialog: vi.fn()
+    showLaunchDialog: vi.fn(),
+    loadNewInstanceGroups: vi.fn().mockResolvedValue([])
 }));
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -32,7 +33,8 @@ vi.mock('@/repositories/configRepository', () => ({
         setString: vi.fn().mockResolvedValue(undefined),
         setBool: vi.fn().mockResolvedValue(undefined),
         getString: vi.fn().mockResolvedValue(''),
-        getBool: vi.fn().mockResolvedValue(false)
+        getBool: vi.fn().mockResolvedValue(false),
+        getArray: vi.fn().mockResolvedValue([])
     }
 }));
 
@@ -121,6 +123,7 @@ function renderCreateFlow(
             isGameRunning,
             profileWorldId: 'wrld_test',
             newInstanceGroups: [],
+            loadNewInstanceGroups: mocks.loadNewInstanceGroups,
             actionStatusRef,
             setActionStatus: vi.fn(),
             isCurrentWorldTarget: () => true,
@@ -168,6 +171,20 @@ describe('useWorldInstanceActions createWorldInstance', () => {
         mocks.resolveCreatedInstanceDetails.mockResolvedValue(created);
         mocks.selfInviteToInstance.mockResolvedValue(undefined);
         mocks.tryOpenLaunchLocation.mockResolvedValue(true);
+    });
+
+    it('loads current-user groups when opening the new-instance dialog', async () => {
+        const result = renderCreateFlow('');
+        act(() => {
+            result.current.setNewInstanceRequest(null);
+        });
+
+        await act(async () => {
+            await result.current.openNewInstanceDialog();
+        });
+
+        expect(mocks.loadNewInstanceGroups).toHaveBeenCalledOnce();
+        expect(result.current.newInstanceRequest).not.toBeNull();
     });
 
     it('closes the dialog and hands a plain new instance to the launch dialog', async () => {

@@ -74,6 +74,7 @@ interface UseWorldInstanceActionsInput {
     isGameRunning: boolean;
     profileWorldId: string;
     newInstanceGroups: InstanceGroupOption[];
+    loadNewInstanceGroups: () => Promise<InstanceGroupOption[]>;
     actionStatusRef: MutableRefObject<string>;
     setActionStatus: Dispatch<SetStateAction<string>>;
     isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
@@ -87,6 +88,7 @@ export function useWorldInstanceActions({
     isGameRunning,
     profileWorldId,
     newInstanceGroups,
+    loadNewInstanceGroups,
     actionStatusRef,
     setActionStatus,
     isCurrentWorldTarget,
@@ -113,7 +115,8 @@ export function useWorldInstanceActions({
             displayName,
             displayNamePresets,
             instanceName,
-            legacyUserId
+            legacyUserId,
+            groupOptions
         ] = await Promise.all([
             configRepository.getString('instanceDialogAccessType', 'public'),
             configRepository.getString('instanceRegion', 'US West'),
@@ -127,15 +130,13 @@ export function useWorldInstanceActions({
                 []
             ),
             configRepository.getString('instanceDialogInstanceName', ''),
-            configRepository.getString('instanceDialogUserId', '')
+            configRepository.getString('instanceDialogUserId', ''),
+            loadNewInstanceGroups()
         ]);
         const seedDefaults = normalizeNewInstanceSeed(seed);
         const selectedGroupId =
             seedDefaults.groupId || normalizeEntityId(groupId) || '';
-        const selectedGroup = findGroupOption(
-            newInstanceGroups,
-            selectedGroupId
-        );
+        const selectedGroup = findGroupOption(groupOptions, selectedGroupId);
         return {
             accessType:
                 seedDefaults.accessType ||

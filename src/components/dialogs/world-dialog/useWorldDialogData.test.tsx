@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -57,6 +57,7 @@ import { useWorldDialogData } from './useWorldDialogData';
 
 describe('useWorldDialogData', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         useVrchatConfigStore.getState().setSnapshot({
             sdkUnityVersion: '2022.3.22f1'
         });
@@ -100,5 +101,46 @@ describe('useWorldDialogData', () => {
             sdkUnityVersion: '2022.3.22f1',
             endpoint: 'https://api.example.test'
         });
+    });
+
+    it('loads current-user groups only when the new-instance flow requests them', async () => {
+        const world = {
+            id: 'wrld_test',
+            unityPackages: []
+        };
+        mocks.getFileAnalysisForUnityPackages.mockResolvedValue({});
+        mocks.getPreviousInstancesByWorldId.mockResolvedValue([]);
+        mocks.getUserGroups.mockResolvedValue([
+            { id: 'grp_two', name: 'Two' },
+            { id: 'grp_one', name: 'One' }
+        ]);
+        mocks.getWorldMemo.mockResolvedValue(null);
+        mocks.getWorldProfile.mockResolvedValue(world);
+        mocks.hasWorldPersistentData.mockResolvedValue(false);
+        mocks.readWorldCacheInfo.mockResolvedValue({});
+
+        const { result } = renderHook(() =>
+            useWorldDialogData({
+                normalizedWorldId: world.id,
+                profileWorldId: world.id,
+                seedData: world,
+                currentEndpoint: 'https://api.example.test',
+                currentUserId: 'usr_self',
+                isCurrentWorldTarget: () => true,
+                memoRevisionRef: { current: 0 }
+            })
+        );
+
+        expect(mocks.getUserGroups).not.toHaveBeenCalled();
+
+        await act(async () => {
+            await result.current.loadNewInstanceGroups();
+        });
+
+        expect(mocks.getUserGroups).toHaveBeenCalledOnce();
+        expect(result.current.newInstanceGroups).toEqual([
+            { id: 'grp_one', name: 'One' },
+            { id: 'grp_two', name: 'Two' }
+        ]);
     });
 });

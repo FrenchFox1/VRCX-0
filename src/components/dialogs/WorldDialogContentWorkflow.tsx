@@ -141,7 +141,8 @@ export function WorldDialogContentWorkflow({
         setHasPersistData,
         worldSideData,
         setWorldSideData,
-        newInstanceGroups
+        newInstanceGroups,
+        loadNewInstanceGroups
     } = useWorldDialogData({
         normalizedWorldId,
         profileWorldId,
@@ -194,6 +195,7 @@ export function WorldDialogContentWorkflow({
         isGameRunning,
         profileWorldId,
         newInstanceGroups,
+        loadNewInstanceGroups,
         actionStatusRef,
         setActionStatus,
         isCurrentWorldTarget,
