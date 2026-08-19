@@ -45,11 +45,11 @@ fn normalize_friend_entry(
     let trust_level = if !explicit_trust_level.is_empty() {
         explicit_trust_level
     } else if has_trust_metadata {
-        trust.trust_level.clone()
+        trust.trust_level().to_string()
     } else if !existing_trust_level.is_empty() {
         existing_trust_level
     } else {
-        trust.trust_level.clone()
+        trust.trust_level().to_string()
     };
     let friend_number = value_as_i64(
         source
@@ -105,11 +105,11 @@ fn normalize_friend_entry(
     object.insert(derived_keys::TRUST_LEVEL.into(), Value::String(trust_level));
     object.insert(
         derived_keys::TRUST_CLASS.into(),
-        Value::String(trust.trust_class),
+        Value::String(trust.trust_class().to_string()),
     );
     object.insert(
         derived_keys::TRUST_SORT_NUM.into(),
-        float_value(trust.trust_sort_num),
+        float_value(trust.trust_sort_num()),
     );
     object.insert(
         derived_keys::IS_MODERATOR.into(),

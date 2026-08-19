@@ -56,15 +56,15 @@ fn insert_derived_trust_fields(object: &mut Map<String, Value>) {
 
     object.insert(
         derived_keys::TRUST_LEVEL.into(),
-        Value::String(trust.trust_level),
+        Value::String(trust.trust_level().to_string()),
     );
     object.insert(
         derived_keys::TRUST_CLASS.into(),
-        Value::String(trust.trust_class),
+        Value::String(trust.trust_class().to_string()),
     );
     object.insert(
         derived_keys::TRUST_SORT_NUM.into(),
-        Number::from_f64(trust.trust_sort_num)
+        Number::from_f64(trust.trust_sort_num())
             .map(Value::Number)
             .unwrap_or(Value::Null),
     );

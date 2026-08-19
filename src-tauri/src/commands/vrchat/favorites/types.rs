@@ -1,18 +1,13 @@
 use serde::Deserialize;
+use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
 use vrcx_0_application_core::{FavoriteEntityKind, FavoriteGroupVisibility, VrchatFavoriteType};
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteWorldsInput {
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) offset: i32,
     #[serde(default)]
     pub(crate) owner_id: String,
@@ -25,15 +20,9 @@ pub struct VrchatFavoriteWorldsInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteGroupsInput {
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) offset: i32,
     #[serde(default)]
     pub(crate) owner_id: String,

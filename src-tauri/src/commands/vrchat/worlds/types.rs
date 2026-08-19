@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
 use vrcx_0_application_core::vrchat_api::worlds::{
     QueryOrder, ReleaseStatusFilter, WorldSearchSort, WorldUpdateRequest,
 };
@@ -15,15 +16,9 @@ pub struct VrchatWorldIdInput {
 pub struct VrchatWorldListByUserInput {
     #[serde(default)]
     pub(crate) user_id: String,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) offset: i32,
     pub(crate) sort: WorldSearchSort,
     pub(crate) order: QueryOrder,

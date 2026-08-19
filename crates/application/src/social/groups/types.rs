@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
 use vrcx_0_application_core::vrchat_api::groups::{
     GroupMemberPatch, GroupMemberSort, GroupPostMutation,
 };
@@ -32,15 +33,9 @@ pub struct VrchatGroupUserGroupsInput {
 pub struct VrchatGroupPagedInput {
     #[serde(default)]
     pub(super) group_id: String,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) offset: i32,
 }
 
@@ -49,15 +44,9 @@ pub struct VrchatGroupPagedInput {
 pub struct VrchatGroupMembersInput {
     #[serde(default)]
     pub(super) group_id: String,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) offset: i32,
     #[serde(default)]
     pub(super) sort: GroupMemberSort,
@@ -70,15 +59,9 @@ pub struct VrchatGroupMembersInput {
 pub struct VrchatGroupMembersSearchInput {
     #[serde(default)]
     pub(super) group_id: String,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) offset: i32,
     #[serde(default)]
     pub(super) query: String,
@@ -91,15 +74,9 @@ pub struct VrchatGroupGalleryInput {
     pub(super) group_id: String,
     #[serde(default)]
     pub(super) gallery_id: String,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) offset: i32,
 }
 
@@ -108,15 +85,9 @@ pub struct VrchatGroupGalleryInput {
 pub struct VrchatGroupJoinRequestsInput {
     #[serde(default)]
     pub(super) group_id: String,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) offset: i32,
     #[serde(default)]
     pub(super) blocked: bool,
@@ -127,15 +98,9 @@ pub struct VrchatGroupJoinRequestsInput {
 pub struct VrchatGroupLogsInput {
     #[serde(default)]
     pub(super) group_id: String,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) n: i32,
-    #[serde(
-        default,
-        deserialize_with = "vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32"
-    )]
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(super) offset: i32,
     #[serde(default)]
     pub(super) event_types: String,
