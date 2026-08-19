@@ -2,8 +2,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use vrcx_0_application::{
-    FavoriteMutationCoordinator, LoginSessionRuntime, ModerationSyncRuntime,
-    MutualGraphFetchRuntime, PrintCleanupQueue, RemoteMutationGate, VrcStatusService,
+    AvatarModerationRuntime, FavoriteMutationCoordinator, LoginSessionRuntime,
+    ModerationSyncRuntime, MutualGraphFetchRuntime, PrintCleanupQueue, RemoteMutationGate,
+    VrcStatusService,
 };
 use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivityRuntime, OverlayActivitySink, OverlayActivitySnapshot,
@@ -88,6 +89,7 @@ pub struct RuntimeHostContext {
     pub vrc_status: VrcStatusService,
     pub login_session: LoginSessionRuntime,
     pub avatar_cache: Arc<AvatarCache>,
+    pub avatar_moderation: AvatarModerationRuntime,
     pub world_cache: Arc<WorldCache>,
     pub config: ConfigRepository,
     overlay_activity: OverlayActivityRuntime,
@@ -178,6 +180,7 @@ impl RuntimeHostContext {
             vrc_status,
             login_session: LoginSessionRuntime::new(),
             avatar_cache,
+            avatar_moderation: AvatarModerationRuntime::new(),
             world_cache,
             config,
             overlay_activity,

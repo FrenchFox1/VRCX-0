@@ -49,6 +49,7 @@ export function AvatarDialogContent({
 
     const {
         applyCurrentAvatarUpdate,
+        activeTab,
         avatar,
         avatarActions,
         avatarForView,
@@ -58,6 +59,7 @@ export function AvatarDialogContent({
         ownerEditor,
         refs,
         setImageCropRequest,
+        setActiveTab,
         setOwnerEditor,
         viewState
     } = dialogState;
@@ -67,7 +69,9 @@ export function AvatarDialogContent({
             <AvatarDialogTabbedView
                 avatar={avatarForView}
                 avatarView={viewState}
+                activeTab={activeTab}
                 imageUrl={imageUrl}
+                onActiveTabChange={setActiveTab}
                 avatarControls={{
                     onRefresh: () => {
                         avatarActions.refreshAvatarProfile();

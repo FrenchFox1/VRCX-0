@@ -2,7 +2,9 @@ import { ImageIcon, UploadIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import type { LoadStatus } from '@/domain/shared/types';
 import { Button } from '@/ui/shadcn/button';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 import {
     EntityDialogTabContent,
@@ -18,6 +20,7 @@ import type {
 export function AvatarDialogGalleryTab({
     canManageAvatar,
     actionStatus,
+    galleryStatus,
     media,
     onOpenGalleryPreview,
     onGalleryIndexChange,
@@ -25,6 +28,7 @@ export function AvatarDialogGalleryTab({
 }: {
     canManageAvatar: boolean;
     actionStatus: AvatarActionStatus;
+    galleryStatus: LoadStatus;
     media: {
         galleryImages: AvatarGalleryEntry[];
         currentGalleryImage: string;
@@ -42,92 +46,96 @@ export function AvatarDialogGalleryTab({
     return (
         <EntityDialogTabContent value="gallery" forceMount>
             <EntityInfoGrid>
-                {galleryImages.length || canManageAvatar ? (
-                    <EntityInfoBlock
-                        label={t('dialog.avatar.info.gallery')}
-                        full
-                    >
-                        <div className="mt-2 flex w-full flex-col gap-2">
-                            {canManageAvatar ? (
+                <EntityInfoBlock label={t('dialog.avatar.info.gallery')} full>
+                    <div className="mt-2 flex w-full flex-col gap-2">
+                        {canManageAvatar ? (
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={
+                                    actionStatus === 'gallery-upload' ||
+                                    galleryStatus === 'idle' ||
+                                    galleryStatus === 'running'
+                                }
+                                onClick={onUploadGallery}
+                            >
+                                <UploadIcon data-icon="inline-start" />
+                                {t('dialog.screenshot_metadata.upload')}
+                            </Button>
+                        ) : null}
+                        {galleryStatus === 'idle' ||
+                        galleryStatus === 'running' ? (
+                            <div className="text-muted-foreground flex min-h-24 items-center justify-center rounded-md border border-dashed">
+                                <Spinner aria-label={t('common.loading')} />
+                            </div>
+                        ) : galleryImages.length ? (
+                            <div className="flex flex-col gap-2">
                                 <Button
                                     type="button"
-                                    size="sm"
+                                    disabled={!currentGalleryImage}
                                     variant="outline"
-                                    disabled={actionStatus === 'gallery-upload'}
-                                    onClick={onUploadGallery}
+                                    className="bg-muted/20 h-52 w-full overflow-hidden p-0"
+                                    onClick={onOpenGalleryPreview}
                                 >
-                                    <UploadIcon data-icon="inline-start" />
-                                    {t('dialog.screenshot_metadata.upload')}
+                                    {currentGalleryImage ? (
+                                        <FadeInImage
+                                            src={currentGalleryImage}
+                                            alt=""
+                                            className="size-full object-contain"
+                                        />
+                                    ) : (
+                                        <span className="text-muted-foreground flex size-full items-center justify-center [&>svg]:size-8">
+                                            <ImageIcon />
+                                        </span>
+                                    )}
                                 </Button>
-                            ) : null}
-                            {galleryImages.length ? (
-                                <div className="flex flex-col gap-2">
+                                <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
                                     <Button
                                         type="button"
-                                        disabled={!currentGalleryImage}
+                                        size="sm"
                                         variant="outline"
-                                        className="bg-muted/20 h-52 w-full overflow-hidden p-0"
-                                        onClick={onOpenGalleryPreview}
+                                        disabled={galleryImages.length <= 1}
+                                        onClick={() =>
+                                            onGalleryIndexChange(
+                                                (currentIndex) =>
+                                                    (currentIndex +
+                                                        galleryImages.length -
+                                                        1) %
+                                                    galleryImages.length
+                                            )
+                                        }
                                     >
-                                        {currentGalleryImage ? (
-                                            <FadeInImage
-                                                src={currentGalleryImage}
-                                                alt=""
-                                                className="size-full object-contain"
-                                            />
-                                        ) : (
-                                            <span className="text-muted-foreground flex size-full items-center justify-center [&>svg]:size-8">
-                                                <ImageIcon />
-                                            </span>
-                                        )}
+                                        {t('table.pagination.previous')}
                                     </Button>
-                                    <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={galleryImages.length <= 1}
-                                            onClick={() =>
-                                                onGalleryIndexChange(
-                                                    (currentIndex) =>
-                                                        (currentIndex +
-                                                            galleryImages.length -
-                                                            1) %
-                                                        galleryImages.length
-                                                )
-                                            }
-                                        >
-                                            {t('table.pagination.previous')}
-                                        </Button>
-                                        <span>
-                                            {galleryIndex + 1} /{' '}
-                                            {galleryImages.length}
-                                        </span>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={galleryImages.length <= 1}
-                                            onClick={() =>
-                                                onGalleryIndexChange(
-                                                    (currentIndex) =>
-                                                        (currentIndex + 1) %
-                                                        galleryImages.length
-                                                )
-                                            }
-                                        >
-                                            {t('table.pagination.next')}
-                                        </Button>
-                                    </div>
+                                    <span>
+                                        {galleryIndex + 1} /{' '}
+                                        {galleryImages.length}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={galleryImages.length <= 1}
+                                        onClick={() =>
+                                            onGalleryIndexChange(
+                                                (currentIndex) =>
+                                                    (currentIndex + 1) %
+                                                    galleryImages.length
+                                            )
+                                        }
+                                    >
+                                        {t('table.pagination.next')}
+                                    </Button>
                                 </div>
-                            ) : (
-                                <div className="text-muted-foreground rounded-md border border-dashed p-4 text-xs">
-                                    {t('dialog.avatar.empty.no_gallery_images')}
-                                </div>
-                            )}
-                        </div>
-                    </EntityInfoBlock>
-                ) : null}
+                            </div>
+                        ) : (
+                            <div className="text-muted-foreground rounded-md border border-dashed p-4 text-xs">
+                                {t('dialog.avatar.empty.no_gallery_images')}
+                            </div>
+                        )}
+                    </div>
+                </EntityInfoBlock>
                 {listings.length ? (
                     <EntityInfoBlock
                         label={t('dialog.avatar.info.listings')}

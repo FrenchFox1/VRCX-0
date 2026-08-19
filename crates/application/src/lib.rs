@@ -36,8 +36,9 @@ pub use authenticated_runtime::{
     AuthenticatedRuntimeStepStatus,
 };
 pub use avatars::{
-    delete_avatar, execute_avatar_remote_mutation, save_avatar, select_avatar,
-    AvatarRemoteMutationDeps, AvatarSelectionMutationOutcome,
+    delete_avatar, execute_avatar_moderation_mutation, execute_avatar_remote_mutation,
+    get_avatar_moderations, save_avatar, select_avatar, AvatarModerationDeps,
+    AvatarModerationRuntime, AvatarRemoteMutationDeps, AvatarSelectionMutationOutcome,
 };
 pub use avatars::{
     get_my_avatar_by_id, get_my_avatars, MyAvatarByIdInput, MyAvatarsDeps, MyAvatarsInput,
