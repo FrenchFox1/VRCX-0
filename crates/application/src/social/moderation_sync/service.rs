@@ -19,6 +19,7 @@ use super::types::{
     ModerationSyncMutationOutput, ModerationSyncRefreshInput, ModerationSyncRefreshOutput,
     RemoteModerationRow,
 };
+use super::ModerationSyncRuntime;
 use crate::{AuthenticatedMutationContext, Error, Result};
 
 const MODERATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
@@ -40,8 +41,26 @@ impl LocalPlayerModerationKind {
 }
 
 pub async fn refresh_player_moderations(
+    runtime: &ModerationSyncRuntime,
     deps: ModerationSyncDeps<'_>,
     input: ModerationSyncRefreshInput,
+) -> Result<ModerationSyncRefreshOutput> {
+    refresh_player_moderations_with_policy(runtime, deps, input, false).await
+}
+
+pub async fn force_refresh_player_moderations(
+    runtime: &ModerationSyncRuntime,
+    deps: ModerationSyncDeps<'_>,
+    input: ModerationSyncRefreshInput,
+) -> Result<ModerationSyncRefreshOutput> {
+    refresh_player_moderations_with_policy(runtime, deps, input, true).await
+}
+
+async fn refresh_player_moderations_with_policy(
+    runtime: &ModerationSyncRuntime,
+    deps: ModerationSyncDeps<'_>,
+    input: ModerationSyncRefreshInput,
+    force: bool,
 ) -> Result<ModerationSyncRefreshOutput> {
     let user_id = normalize_text(input.user_id);
     if user_id.is_empty() {
@@ -53,9 +72,23 @@ pub async fn refresh_player_moderations(
             rows: Vec::new(),
         });
     }
+    let endpoint = normalize_endpoint(&input.endpoint);
+    let scope = deps.auth_scope.snapshot();
+    let key = runtime.cache_key(&scope, &user_id, &endpoint);
+    runtime
+        .resolve(key, force, move || async move {
+            load_player_moderations(deps, user_id, endpoint).await
+        })
+        .await
+}
 
-    let (remote_count, rows) = fetch_remote_moderations(&deps, &input.endpoint).await?;
-    let accepted = should_write_refresh_snapshot(&deps, &user_id, &input.endpoint);
+async fn load_player_moderations(
+    deps: ModerationSyncDeps<'_>,
+    user_id: String,
+    endpoint: String,
+) -> Result<ModerationSyncRefreshOutput> {
+    let (remote_count, rows) = fetch_remote_moderations(&deps, &endpoint).await?;
+    let accepted = should_write_refresh_snapshot(&deps, &user_id, &endpoint);
     let local_count = if accepted {
         let local_inputs: Vec<RemoteModerationInput> = rows
             .iter()
@@ -77,6 +110,7 @@ pub async fn refresh_player_moderations(
 }
 
 pub async fn update_player_moderation(
+    runtime: &ModerationSyncRuntime,
     deps: ModerationSyncDeps<'_>,
     input: ModerationSyncMutationInput,
 ) -> Result<ModerationSyncMutationOutput> {
@@ -112,6 +146,7 @@ pub async fn update_player_moderation(
         ),
     )
     .await?;
+    runtime.invalidate();
 
     let local = if let Some(kind) = LocalPlayerModerationKind::from_mutation_type(&moderation_type)
     {

@@ -34,7 +34,12 @@ pub async fn app__moderation_sync_refresh(
         "Moderation snapshot refresh started.",
     );
 
-    let result = moderation_sync::refresh_player_moderations(deps(&state), input).await;
+    let result = moderation_sync::refresh_player_moderations(
+        &state.runtime_context.moderation_sync,
+        deps(&state),
+        input,
+    )
+    .await;
     match &result {
         Ok(output) => {
             diagnostics.record_command(
@@ -79,7 +84,12 @@ pub async fn app__moderation_sync_update(
         "Moderation mutation started.",
     );
 
-    let result = moderation_sync::update_player_moderation(deps(&state), input).await;
+    let result = moderation_sync::update_player_moderation(
+        &state.runtime_context.moderation_sync,
+        deps(&state),
+        input,
+    )
+    .await;
     match &result {
         Ok(output) => {
             diagnostics.record_command(

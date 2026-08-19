@@ -67,14 +67,15 @@ const BACKGROUND_PRINT_CLEANUP_JOB: &str = "printAutoCleanup";
 const BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS: u64 = 300;
 const BACKGROUND_CURRENT_USER_CADENCE_SECONDS: u64 = 300;
 const BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS: u64 = 3_600;
-const BACKGROUND_MODERATION_CADENCE_SECONDS: u64 = 3_600;
+const BACKGROUND_MODERATION_CADENCE_SECONDS: u64 = 30 * 60;
 const BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS: u64 = 30 * 60;
 #[cfg(test)]
 mod web_ua_tests {
     use super::{
         web_ua_app_version, BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
         BACKGROUND_CURRENT_USER_REFRESH_JOB, BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
-        BACKGROUND_GROUP_INSTANCE_REFRESH_JOB, BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
+        BACKGROUND_GROUP_INSTANCE_REFRESH_JOB, BACKGROUND_MODERATION_CADENCE_SECONDS,
+        BACKGROUND_MODERATION_REFRESH_JOB, BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
         BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
     };
     use crate::RuntimeHostProfile;
@@ -110,11 +111,16 @@ mod web_ua_tests {
                     BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
                     BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
                 ),
+                (
+                    BACKGROUND_MODERATION_REFRESH_JOB,
+                    BACKGROUND_MODERATION_CADENCE_SECONDS,
+                ),
             ],
             [
                 ("backgroundCurrentUserRefresh", 300),
                 ("backgroundGroupInstanceRefresh", 300),
                 ("backgroundSocialBaselineRefresh", 3_600),
+                ("backgroundModerationRefresh", 1_800),
             ]
         );
     }

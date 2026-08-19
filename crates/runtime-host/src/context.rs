@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use vrcx_0_application::{
     FavoriteMutationCoordinator, LoginSessionRuntime, MutualGraphFetchRuntime, PrintCleanupQueue,
-    RemoteMutationGate, VrcStatusService,
+    ModerationSyncRuntime, RemoteMutationGate, VrcStatusService,
 };
 use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivityRuntime, OverlayActivitySink, OverlayActivitySnapshot,
@@ -82,6 +82,7 @@ pub struct RuntimeHostContext {
     pub auth_scope: RuntimeAuthScope,
     pub print_cleanup: PrintCleanupQueue,
     pub mutual_graph_fetch: MutualGraphFetchRuntime,
+    pub moderation_sync: ModerationSyncRuntime,
     pub remote_mutations: Arc<RemoteMutationGate>,
     pub favorite_mutations: FavoriteMutationCoordinator,
     pub vrc_status: VrcStatusService,
@@ -171,6 +172,7 @@ impl RuntimeHostContext {
             auth_scope,
             print_cleanup: PrintCleanupQueue::new(),
             mutual_graph_fetch,
+            moderation_sync: ModerationSyncRuntime::new(),
             remote_mutations,
             favorite_mutations,
             vrc_status,

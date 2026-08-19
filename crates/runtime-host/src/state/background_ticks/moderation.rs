@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application::{
-    refresh_player_moderations, ModerationSyncDeps, ModerationSyncRefreshInput,
+    force_refresh_player_moderations, ModerationSyncDeps, ModerationSyncRefreshInput,
 };
 use vrcx_0_application_core::{BackendRuntime, RuntimeBackgroundJobs, WebClient};
 use vrcx_0_persistence::DatabaseService;
@@ -40,7 +40,8 @@ pub(in crate::state) async fn run_background_moderation_refresh(
         auth_scope: &runtime_context.auth_scope,
         remote_mutations: runtime_context.remote_mutations.as_ref(),
     };
-    match refresh_player_moderations(
+    match force_refresh_player_moderations(
+        &runtime_context.moderation_sync,
         deps,
         ModerationSyncRefreshInput {
             user_id: session.current_user_id,

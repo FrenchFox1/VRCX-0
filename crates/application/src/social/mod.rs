@@ -52,9 +52,10 @@ pub use groups::{
     VrchatGroupBanImportActions,
 };
 pub use moderation_sync::{
-    refresh_player_moderations, update_player_moderation, ModerationSyncDeps,
-    ModerationSyncMutationInput, ModerationSyncMutationOutput, ModerationSyncRefreshInput,
-    ModerationSyncRefreshOutput, RemoteModerationRow,
+    force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
+    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
+    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, ModerationSyncRuntime,
+    RemoteModerationRow,
 };
 pub use mutual_graph_fetch::{
     get_user_mutual_friends_list, refresh_mutual_graph_friend, MutualGraphFetchCancelInput,

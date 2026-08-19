@@ -71,7 +71,7 @@ pub struct ModerationSyncMutationInput {
     pub(super) enabled: bool,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ModerationSyncRefreshOutput {
     pub accepted: bool,

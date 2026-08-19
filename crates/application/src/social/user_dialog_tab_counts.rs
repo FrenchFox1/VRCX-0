@@ -3,6 +3,7 @@ use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::stream::{self, StreamExt};
 use moka::future::Cache;
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
@@ -33,6 +34,7 @@ const TAB_COUNTS_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const WORLD_PAGE_SIZE: usize = 100;
 const WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * WORLD_PAGE_SIZE) as i64;
 const FAVORITE_GROUP_PAGE_SIZE: usize = 50;
+const FAVORITE_GROUP_FETCH_CONCURRENCY: usize = 8;
 const FAVORITE_WORLD_PAGE_SIZE: usize = 300;
 const FAVORITE_WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i64;
 const MY_AVATAR_PAGE_SIZE: usize = 50;
@@ -171,22 +173,27 @@ async fn load_user_dialog_tab_counts(
     avatar_provider: Result<Option<String>>,
     include_mutual_friends: bool,
 ) -> Result<UserDialogTabCountsOutput> {
-    let mutual_friends = if include_mutual_friends {
-        Some(count_mutual_friends(&deps, &scope, &target_user_id).await)
-    } else {
-        None
+    let mutual_friends = async {
+        if include_mutual_friends {
+            Some(count_mutual_friends(&deps, &scope, &target_user_id).await)
+        } else {
+            None
+        }
     };
-    let groups = count_groups(&deps, &scope, &target_user_id).await;
-    let worlds = count_worlds(&deps, &scope, &target_user_id).await;
-    let favorite_worlds = count_favorite_worlds(&deps, &scope, &target_user_id).await;
     let avatars = count_avatars(
         &deps,
         &scope,
         &target_user_id,
         &avatar_release_status,
         avatar_provider,
-    )
-    .await;
+    );
+    let (mutual_friends, groups, worlds, favorite_worlds, avatars) = tokio::join!(
+        mutual_friends,
+        count_groups(&deps, &scope, &target_user_id),
+        count_worlds(&deps, &scope, &target_user_id),
+        count_favorite_worlds(&deps, &scope, &target_user_id),
+        avatars,
+    );
     Ok(counts_from_results(
         mutual_friends,
         groups,
@@ -257,28 +264,34 @@ async fn count_favorite_worlds(
     target_user_id: &str,
 ) -> Result<usize> {
     let group_names = collect_world_favorite_group_names(deps, scope, target_user_id).await?;
+    let results = stream::iter(group_names)
+        .map(|group_name| async move {
+            count_payload_pages_bounded(
+                FAVORITE_WORLD_PAGE_SIZE,
+                FAVORITE_WORLD_MAX_OFFSET,
+                |offset| {
+                    let group_name = group_name.clone();
+                    async move {
+                        let request = favorite_worlds_get_input(
+                            scope.endpoint.clone(),
+                            FAVORITE_WORLD_PAGE_SIZE as i64,
+                            offset,
+                            target_user_id.into(),
+                            target_user_id.into(),
+                            group_name,
+                        );
+                        execute_vrchat_payload(deps, scope, request, "favorite worlds").await
+                    }
+                },
+                count_all_rows,
+            )
+            .await
+        })
+        .buffer_unordered(FAVORITE_GROUP_FETCH_CONCURRENCY)
+        .collect::<Vec<_>>()
+    .await;
     let mut count = 0;
-    for group_name in group_names {
-        let result = count_payload_pages_bounded(
-            FAVORITE_WORLD_PAGE_SIZE,
-            FAVORITE_WORLD_MAX_OFFSET,
-            |offset| {
-                let group_name = group_name.clone();
-                async move {
-                    let request = favorite_worlds_get_input(
-                        scope.endpoint.clone(),
-                        FAVORITE_WORLD_PAGE_SIZE as i64,
-                        offset,
-                        target_user_id.into(),
-                        target_user_id.into(),
-                        group_name,
-                    );
-                    execute_vrchat_payload(deps, scope, request, "favorite worlds").await
-                }
-            },
-            count_all_rows,
-        )
-        .await;
+    for result in results {
         match result {
             Ok(group_count) => count += group_count,
             Err(error) => tracing::debug!(%error, "favorite world count source failed"),

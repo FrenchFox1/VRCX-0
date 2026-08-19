@@ -160,9 +160,10 @@ pub use social::{
     NOTE_EXPORT_MAX_ITEMS,
 };
 pub use social::{
-    refresh_player_moderations, update_player_moderation, ModerationSyncDeps,
-    ModerationSyncMutationInput, ModerationSyncMutationOutput, ModerationSyncRefreshInput,
-    ModerationSyncRefreshOutput, RemoteModerationRow,
+    force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
+    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
+    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, ModerationSyncRuntime,
+    RemoteModerationRow,
 };
 pub use social::{
     resolve_friend_log_names, FriendLogNameResolutionCoordinator, FriendLogNameResolutionDeps,
