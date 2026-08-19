@@ -1,19 +1,18 @@
 import { createInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { getAllLocalizedStrings } from '@/localization/index';
+import {
+    FALLBACK_LOCALE_CODE,
+    fallbackLocaleMessages,
+    getLoadedLocaleMessages,
+    loadLocaleMessages
+} from '@/localization/index';
 import { normalizeLanguageCode } from '@/localization/locales';
 
-type LocalizedMessages = Record<string, unknown>;
-type LocalizedStringMap = Record<string, LocalizedMessages>;
 type TimeUnitLabels = Record<string, string>;
-const allLocalizedStrings = getAllLocalizedStrings() as LocalizedStringMap;
-const i18nResources = Object.fromEntries(
-    Object.entries(allLocalizedStrings).map(([locale, messages]) => [
-        locale,
-        { translation: messages || {} }
-    ])
-);
+const i18nResources = {
+    [FALLBACK_LOCALE_CODE]: { translation: fallbackLocaleMessages }
+};
 
 export const i18n = createInstance();
 const i18nReady = i18n.use(initReactI18next).init({
@@ -56,6 +55,10 @@ function normalizeLocale(locale: unknown): string {
 export async function setI18nLanguage(locale: unknown): Promise<string> {
     const normalizedLocale = normalizeLocale(locale);
     await i18nReady;
+    if (!i18n.hasResourceBundle(normalizedLocale, 'translation')) {
+        const messages = await loadLocaleMessages(normalizedLocale);
+        i18n.addResourceBundle(normalizedLocale, 'translation', messages);
+    }
     await i18n.changeLanguage(normalizedLocale);
     return normalizedLocale;
 }
@@ -64,11 +67,9 @@ export function getTimeUnitLabels(
     locale: unknown,
     defaultLabels: TimeUnitLabels
 ): TimeUnitLabels {
-    const normalizedLocale = allLocalizedStrings[normalizeLocale(locale)]
-        ? normalizeLocale(locale)
-        : 'en';
-    const localizedMessages = allLocalizedStrings[normalizedLocale] ?? {};
-    const fallbackMessages = allLocalizedStrings.en ?? {};
+    const localizedMessages =
+        getLoadedLocaleMessages(normalizeLocale(locale)) ?? {};
+    const fallbackMessages = fallbackLocaleMessages;
     const labels: TimeUnitLabels = {};
 
     for (const unit of Object.keys(defaultLabels)) {

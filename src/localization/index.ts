@@ -1,76 +1,88 @@
-import csMessages from './cs.json';
-import deMessages from './de.json';
 import enMessages from './en.json';
-import esMessages from './es.json';
-import frMessages from './fr.json';
-import jaMessages from './ja.json';
-import koMessages from './ko.json';
-import ptMessages from './pt.json';
-import ruMessages from './ru.json';
-import zhCnMessages from './zh-CN.json';
-import zhTwMessages from './zh-TW.json';
 
 type LocalizedStringTable = Record<string, unknown> & {
     language?: unknown;
 };
 
-const localizedStrings: Record<string, LocalizedStringTable> = {
-    cs: csMessages,
-    de: deMessages,
-    en: enMessages,
-    es: esMessages,
-    fr: frMessages,
-    ja: jaMessages,
-    ko: koMessages,
-    pt: ptMessages,
-    ru: ruMessages,
-    'zh-CN': zhCnMessages,
-    'zh-TW': zhTwMessages
+type LocaleLoader = () => Promise<{ default: LocalizedStringTable }>;
+
+const languageNames: Record<string, string> = {
+    cs: 'Čeština (cs)',
+    de: 'Deutsch (de)',
+    en: 'English (en)',
+    es: 'Español (es)',
+    fr: 'Français (fr)',
+    ja: '日本語 (ja)',
+    ko: '한국어 (ko)',
+    pt: 'Português Brasileiro (pt-br)',
+    ru: 'Русский (ru)',
+    'zh-CN': '中文（简体） (zh-CN)',
+    'zh-TW': '中文（繁體） (zh-TW)'
 };
 
-function getAllLocalizedStrings() {
-    return { ...localizedStrings };
+const localeLoaders: Record<string, LocaleLoader> = {
+    cs: () => import('./cs.json'),
+    de: () => import('./de.json'),
+    es: () => import('./es.json'),
+    fr: () => import('./fr.json'),
+    ja: () => import('./ja.json'),
+    ko: () => import('./ko.json'),
+    pt: () => import('./pt.json'),
+    ru: () => import('./ru.json'),
+    'zh-CN': () => import('./zh-CN.json'),
+    'zh-TW': () => import('./zh-TW.json')
+};
+
+const loadedLocales = new Map<string, LocalizedStringTable>([
+    ['en', enMessages]
+]);
+const pendingLocales = new Map<string, Promise<LocalizedStringTable>>();
+
+export const FALLBACK_LOCALE_CODE = 'en';
+export const fallbackLocaleMessages: LocalizedStringTable = enMessages;
+
+export function getLoadedLocaleMessages(
+    code: string
+): LocalizedStringTable | undefined {
+    return loadedLocales.get(code);
+}
+
+export function loadLocaleMessages(
+    code: string
+): Promise<LocalizedStringTable> {
+    const loaded = loadedLocales.get(code);
+    if (loaded) {
+        return Promise.resolve(loaded);
+    }
+
+    const pending = pendingLocales.get(code);
+    if (pending) {
+        return pending;
+    }
+
+    const loader = localeLoaders[code];
+    if (!loader) {
+        return Promise.resolve(enMessages);
+    }
+
+    const request = loader()
+        .then((module) => {
+            const messages = module.default;
+            loadedLocales.set(code, messages);
+            pendingLocales.delete(code);
+            return messages;
+        })
+        .catch((error: unknown) => {
+            pendingLocales.delete(code);
+            throw error;
+        });
+    pendingLocales.set(code, request);
+    return request;
 }
 
 function getLanguageName(code: string) {
-    return String(localizedStrings[code]?.language ?? code).replace(
-        /\s+\([^)]+\)$/,
-        ''
-    );
-}
-
-function resolveSystemLanguage(
-    systemLanguage: string | null | undefined,
-    codes: readonly string[]
-) {
-    if (!systemLanguage) return null;
-
-    if (codes.includes(systemLanguage)) {
-        return systemLanguage;
-    }
-
-    const lang = systemLanguage.split('-')[0];
-
-    if (lang === 'zh') {
-        const parts = systemLanguage.split('-').slice(1);
-        const hasHant = parts.includes('Hant');
-        const hasHans = parts.includes('Hans');
-        const traditionalRegions = ['TW', 'HK', 'MO'];
-        const hasTraditionalRegion = parts.some((p) =>
-            traditionalRegions.includes(p)
-        );
-
-        if (hasHant || hasTraditionalRegion) {
-            return codes.includes('zh-TW') ? 'zh-TW' : null;
-        }
-        if (hasHans) {
-            return codes.includes('zh-CN') ? 'zh-CN' : null;
-        }
-        return codes.includes('zh-CN') ? 'zh-CN' : null;
-    }
-
-    return codes.find((code) => code.split('-')[0] === lang) ?? null;
+    return String(languageNames[code] ?? code).replace(/\s+\([^)]+\)$/, '');
 }
 
 export * from './locales';
-export { getAllLocalizedStrings, getLanguageName, resolveSystemLanguage };
+export { getLanguageName };
