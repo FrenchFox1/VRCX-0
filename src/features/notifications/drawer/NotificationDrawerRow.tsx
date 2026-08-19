@@ -212,8 +212,9 @@ export function NotificationDrawerRow({
                                         'border-0',
                                         isBoop
                                             ? 'bg-violet-500/15 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300'
-                                            : !isAction &&
-                                                  'bg-muted text-muted-foreground'
+                                            : isAction
+                                              ? 'text-[var(--status-joinme)]'
+                                              : 'bg-muted text-muted-foreground'
                                     )}
                                     style={
                                         isAction && !isBoop
