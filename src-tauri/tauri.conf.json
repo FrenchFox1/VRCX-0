@@ -1,5 +1,5 @@
 {
-    "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+    "$schema": "https://schema.tauri.app/config/2",
     "productName": "VRCX-0",
     "version": "2.24.2",
     "identifier": "com.vrcx-0.app",
