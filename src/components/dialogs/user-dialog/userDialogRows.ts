@@ -9,6 +9,11 @@ import {
 } from '@/shared/utils/compare';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 
+import type {
+    UserDialogAvatarSort,
+    UserDialogMutualFriendSort
+} from './userDialogListOptions';
+
 const DASH = '\u2014';
 const UNDISCLOSED_MUTUAL_FRIEND_ID = 'usr_00000000-0000-0000-0000-000000000000';
 
@@ -158,7 +163,7 @@ export function filterRows<T extends UserDialogRow>(rows: T[], query: unknown) {
 
 export function sortAvatarRows<T extends UserDialogRow>(
     rows: readonly T[],
-    sortBy: unknown
+    sortBy: UserDialogAvatarSort
 ) {
     const nextRows = [...rows];
     if (sortBy === 'update') {
@@ -182,16 +187,14 @@ export function sortAvatarRows<T extends UserDialogRow>(
 
 export function sortMutualFriendRows<T extends ComparableRecord>(
     rows: readonly T[],
-    sortBy: unknown
+    sortBy: UserDialogMutualFriendSort
 ) {
-    const comparers: Record<string, Comparator> = {
+    const comparers: Record<UserDialogMutualFriendSort, Comparator> = {
         alphabetical: compareByDisplayName,
         lastActive: compareByLastActiveRef,
         friendOrder: compareByFriendOrder
     };
-    const comparer =
-        (typeof sortBy === 'string' ? comparers[sortBy] : undefined) ||
-        comparers.alphabetical;
+    const comparer = comparers[sortBy];
     return [...rows].sort((left, right) => {
         const result = comparer(left, right);
         return Number.isFinite(result)

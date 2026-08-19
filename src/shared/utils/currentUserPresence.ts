@@ -11,7 +11,7 @@ import { normalizeString } from './string';
 export type CurrentUserPresenceRecord = Record<string, unknown>;
 
 export interface CurrentUserPresenceGameState {
-    isGameRunning?: boolean;
+    isGameRunning?: boolean | null;
     currentLocation?: unknown;
     currentDestination?: unknown;
     currentWorldId?: unknown;

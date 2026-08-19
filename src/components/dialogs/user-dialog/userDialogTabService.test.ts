@@ -197,8 +197,6 @@ describe('userDialogTabService', () => {
                 currentAvatarId: 'avtr_current',
                 previousAvatarSwapTime: 1234,
                 endpoint: 'https://api.example.test',
-                avatarSort: 'update',
-                effectiveAvatarReleaseStatus: 'private',
                 repositories: fakeRepositories
             })
         ).resolves.toEqual({

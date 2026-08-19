@@ -1,6 +1,5 @@
 import {
     buildCurrentUserPresenceView,
-    type CurrentUserPresenceGameState,
     type CurrentUserPresenceRecord
 } from '@/shared/utils/currentUserPresence';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
@@ -214,7 +213,7 @@ function buildCurrentUserRows({
     }
 
     const currentUserRow = buildCurrentUserPresenceView(currentUser, {
-        gameState: gameState as CurrentUserPresenceGameState
+        gameState
     });
     const currentUserDisplayRow = stripStoppedGameCurrentUserPresence(
         currentUserRow,

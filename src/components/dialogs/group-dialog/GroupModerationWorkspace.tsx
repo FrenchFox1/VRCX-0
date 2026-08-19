@@ -38,7 +38,6 @@ import {
 } from './useGroupModerationTabData';
 
 const MEMBER_SEARCH_DEBOUNCE_MS = 300;
-const BULK_SELECTABLE_TABS = new Set(['bans', 'members']);
 
 export function GroupModerationWorkspace({
     group,
@@ -104,7 +103,8 @@ export function GroupModerationWorkspace({
         removeMemberRow: members.removeRow,
         removeTabRow: tabData.removeRow
     });
-    const bulkSelectable = BULK_SELECTABLE_TABS.has(activeTab);
+    const bulkTab =
+        activeTab === 'bans' || activeTab === 'members' ? activeTab : null;
 
     const openModerationUserDialog = useCallback((row: EntityRecord) => {
         const userId = moderationRowUserId(row);
@@ -209,9 +209,14 @@ export function GroupModerationWorkspace({
         <div className="flex min-h-0 flex-1 flex-col">
             <Tabs
                 value={activeTab}
-                onValueChange={(value) =>
-                    setActiveTab(value as GroupModerationTabValue)
-                }
+                onValueChange={(value) => {
+                    const tab = moderationTabs.find(
+                        (candidate) => candidate.value === value
+                    );
+                    if (tab) {
+                        setActiveTab(tab.value);
+                    }
+                }}
                 className="min-h-0 flex-1 gap-0"
             >
                 <TabsList
@@ -229,10 +234,10 @@ export function GroupModerationWorkspace({
                         </TabsTrigger>
                     ))}
                 </TabsList>
-                {bulkSelectable && batch.selectedRows.length ? (
+                {bulkTab && batch.selectedRows.length ? (
                     <div className="shrink-0">
                         <GroupModerationBulkPanel
-                            tabValue={activeTab as 'bans' | 'members'}
+                            tabValue={bulkTab}
                             group={group}
                             selectedRows={batch.selectedRows}
                             busy={batch.bulkBusy}
@@ -272,7 +277,9 @@ export function GroupModerationWorkspace({
                             onToggleAllVisible={batch.toggleSelectedVisible}
                             onToggleRow={batch.toggleSelectedRow}
                             rows={rows}
-                            selectable={BULK_SELECTABLE_TABS.has(tab.value)}
+                            selectable={
+                                tab.value === 'bans' || tab.value === 'members'
+                            }
                             selectedIds={batch.selectedIds || undefined}
                             server={
                                 tab.value === 'members'

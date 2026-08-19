@@ -349,7 +349,7 @@ export function DataTablePagination<TData extends RowData>({
     pageIndex?: number;
     pageCount?: number;
     pageSize?: number;
-    pageSizes?: unknown[];
+    pageSizes?: readonly number[];
     pageSizeLabel?: string;
     onPageSizeChange?: (value: string) => void;
     previousLabel?: string;
@@ -377,11 +377,9 @@ export function DataTablePagination<TData extends RowData>({
         typeof pageSize === 'number' && Number.isFinite(pageSize)
             ? pageSize
             : table.state.pagination?.pageSize;
-    const pageSizeOptions = Array.isArray(pageSizes)
-        ? pageSizes
-              .map((value) => Number.parseInt(String(value), 10))
-              .filter((value) => Number.isFinite(value) && value > 0)
-        : [];
+    const pageSizeOptions = pageSizes.filter(
+        (value) => Number.isFinite(value) && value > 0
+    );
     const pageSizeSelectVisible = Boolean(
         pageSizeOptions.length &&
         Number.isFinite(resolvedPageSize) &&
@@ -395,11 +393,13 @@ export function DataTablePagination<TData extends RowData>({
                     <span className="text-muted-foreground text-sm">
                         {resolvedPageSizeLabel}
                     </span>
-                    <Select
+                    <Select<string>
                         value={String(resolvedPageSize)}
-                        onValueChange={(value) =>
-                            onPageSizeChange?.(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onPageSizeChange?.(value);
+                            }
+                        }}
                     >
                         <SelectTrigger size="sm" className="w-20">
                             <SelectValue placeholder={resolvedPageSizeLabel} />

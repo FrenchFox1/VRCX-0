@@ -3,6 +3,12 @@ import {
     sortUserGroupRows,
     splitUserGroups
 } from './userDialogGroupRows';
+import type {
+    UserDialogAvatarReleaseStatus,
+    UserDialogAvatarSort,
+    UserDialogGroupSort,
+    UserDialogMutualFriendSort
+} from './userDialogListOptions';
 import {
     filterRows,
     firstArray,
@@ -224,12 +230,12 @@ export function buildUserDialogListViewData({
     remoteStatus: Record<string, string>;
     friendsById?: Record<string, DialogRecord> | null;
     search: Record<string, string>;
-    mutualSort: unknown;
-    groupSort: string;
+    mutualSort: UserDialogMutualFriendSort;
+    groupSort: UserDialogGroupSort;
     isCurrentUser: boolean;
     inGameGroupOrder: readonly unknown[];
-    effectiveAvatarReleaseStatus: string;
-    avatarSort: unknown;
+    effectiveAvatarReleaseStatus: UserDialogAvatarReleaseStatus;
+    avatarSort: UserDialogAvatarSort;
     currentUserHasSharedConnectionsOptOut: boolean;
     t?: Translate;
 }) {

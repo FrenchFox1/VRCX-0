@@ -5639,7 +5639,7 @@ export type UpdaterMetadata = {
 };
 export type UserDialogTabCountsInput = {
     userId: string;
-    avatarReleaseStatus?: string;
+    avatarReleaseStatus?: ReleaseStatusFilter;
     includeMutualFriends?: boolean;
     force?: boolean;
 };

@@ -148,9 +148,11 @@ export function ToolbarSegmented<TValue extends string>({
             variant="outline"
             value={value ? [value] : []}
             onValueChange={(next) => {
-                const selected = next[0];
+                const selected = options.find(
+                    (option) => option.value === next[0]
+                );
                 if (selected) {
-                    onValueChange(selected as TValue);
+                    onValueChange(selected.value);
                 }
             }}
             className="shrink-0"
@@ -246,9 +248,15 @@ export function ToolbarFilterChips<TValue extends string>({
                     onValueChange([]);
                     return;
                 }
-                const picked = next.filter(
-                    (entry) => entry !== ALL_CHIP_VALUE
-                ) as TValue[];
+                const picked: TValue[] = [];
+                for (const entry of next) {
+                    const option = options.find(
+                        (candidate) => candidate.value === entry
+                    );
+                    if (option) {
+                        picked.push(option.value);
+                    }
+                }
                 onValueChange(picked.length === options.length ? [] : picked);
             }}
             className="max-w-full shrink-0 overflow-x-auto"

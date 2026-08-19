@@ -29,7 +29,7 @@ export function FriendLogPageTable({
     orderedRowsLength: number;
     pagination: PaginationState;
     pageSizes: number[];
-    onPageSizeChange: (value: unknown) => void;
+    onPageSizeChange: (value: string) => void;
 }) {
     const { t } = useTranslation();
 

@@ -122,10 +122,7 @@ pub async fn get_user_dialog_tab_counts(
             "User dialog tab counts require a user id.".into(),
         ));
     }
-    let avatar_release_status = match input.avatar_release_status.trim() {
-        "" => "all".to_string(),
-        value => value.to_string(),
-    };
+    let avatar_release_status = input.avatar_release_status;
     let avatar_provider = if target_user_id == scope.current_user_id {
         Ok(None)
     } else {
@@ -141,7 +138,7 @@ pub async fn get_user_dialog_tab_counts(
         current_user_id: scope.current_user_id.clone(),
         endpoint: scope.endpoint.clone(),
         target_user_id: target_user_id.clone(),
-        avatar_release_status: avatar_release_status.clone(),
+        avatar_release_status: avatar_release_status.as_str().to_string(),
         avatar_provider: avatar_provider_key,
         include_mutual_friends: input.include_mutual_friends,
     };
@@ -169,7 +166,7 @@ async fn load_user_dialog_tab_counts(
     deps: UserDialogTabCountsDeps,
     scope: RuntimeAuthScopeSnapshot,
     target_user_id: String,
-    avatar_release_status: String,
+    avatar_release_status: ReleaseStatusFilter,
     avatar_provider: Result<Option<String>>,
     include_mutual_friends: bool,
 ) -> Result<UserDialogTabCountsOutput> {
@@ -184,7 +181,7 @@ async fn load_user_dialog_tab_counts(
         &deps,
         &scope,
         &target_user_id,
-        &avatar_release_status,
+        avatar_release_status,
         avatar_provider,
     );
     let (mutual_friends, groups, worlds, favorite_worlds, avatars) = tokio::join!(
@@ -327,7 +324,7 @@ async fn count_avatars(
     deps: &UserDialogTabCountsDeps,
     scope: &RuntimeAuthScopeSnapshot,
     target_user_id: &str,
-    release_status: &str,
+    release_status: ReleaseStatusFilter,
     avatar_provider: Result<Option<String>>,
 ) -> Result<usize> {
     if target_user_id == scope.current_user_id {
@@ -512,16 +509,20 @@ fn count_all_rows(payload: &str) -> Result<(usize, usize)> {
     Ok((page_len, page_len))
 }
 
-#[derive(Clone, Debug, Default, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDialogTabCountsInput {
     pub user_id: String,
-    #[serde(default)]
-    pub avatar_release_status: String,
+    #[serde(default = "default_avatar_release_status")]
+    pub avatar_release_status: ReleaseStatusFilter,
     #[serde(default)]
     pub include_mutual_friends: bool,
     #[serde(default)]
     pub force: bool,
+}
+
+fn default_avatar_release_status() -> ReleaseStatusFilter {
+    ReleaseStatusFilter::All
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
@@ -653,14 +654,14 @@ struct MyAvatarCountRow {
     release_status: Value,
 }
 
-fn count_my_avatars(payload: &str, release_status: &str) -> Result<usize> {
+fn count_my_avatars(payload: &str, release_status: ReleaseStatusFilter) -> Result<usize> {
     let rows = serde_json::from_str::<Vec<MyAvatarCountRow>>(payload)?;
-    if release_status == "all" {
+    if release_status == ReleaseStatusFilter::All {
         return Ok(rows.len());
     }
     Ok(rows
         .iter()
-        .filter(|row| row.release_status.as_str() == Some(release_status))
+        .filter(|row| row.release_status.as_str() == Some(release_status.as_str()))
         .count())
 }
 
@@ -757,9 +758,48 @@ mod tests {
         ])
         .to_string();
 
-        assert_eq!(count_my_avatars(&payload, "all").unwrap(), 3);
-        assert_eq!(count_my_avatars(&payload, "public").unwrap(), 2);
-        assert_eq!(count_my_avatars(&payload, "private").unwrap(), 1);
+        assert_eq!(
+            count_my_avatars(&payload, ReleaseStatusFilter::All).unwrap(),
+            3
+        );
+        assert_eq!(
+            count_my_avatars(&payload, ReleaseStatusFilter::Public).unwrap(),
+            2
+        );
+        assert_eq!(
+            count_my_avatars(&payload, ReleaseStatusFilter::Private).unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn tab_counts_input_uses_the_release_status_enum() {
+        let default_input = serde_json::from_value::<UserDialogTabCountsInput>(
+            serde_json::json!({ "userId": "usr_target" }),
+        )
+        .unwrap();
+        assert_eq!(
+            default_input.avatar_release_status,
+            ReleaseStatusFilter::All
+        );
+
+        let public_input = serde_json::from_value::<UserDialogTabCountsInput>(serde_json::json!({
+            "userId": "usr_target",
+            "avatarReleaseStatus": "public"
+        }))
+        .unwrap();
+        assert_eq!(
+            public_input.avatar_release_status,
+            ReleaseStatusFilter::Public
+        );
+
+        assert!(
+            serde_json::from_value::<UserDialogTabCountsInput>(serde_json::json!({
+                "userId": "usr_target",
+                "avatarReleaseStatus": "invalid"
+            }))
+            .is_err()
+        );
     }
 
     #[tokio::test]
