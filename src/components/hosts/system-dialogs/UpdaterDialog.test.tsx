@@ -107,9 +107,10 @@ describe('UpdaterDialog', () => {
         vi.stubGlobal('VERSION', '2.6.0');
         useRuntimeStore.getState().resetRuntimeState();
         useRuntimeStore.getState().setHostCapabilities({
+            ...useRuntimeStore.getState().hostCapabilities,
             platform: 'windows',
             arch: 'x86_64',
-            linuxPackageKind: ''
+            linuxPackageKind: 'unknown'
         });
         mocks.getPreviewStableReleaseUpdateMode.mockReturnValue({
             enabled: false,

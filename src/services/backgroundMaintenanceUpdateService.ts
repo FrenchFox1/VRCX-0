@@ -31,6 +31,7 @@ function toUpdaterReleaseSnapshot(release: UpdaterReleaseSnapshotSource) {
         htmlUrl: release.htmlUrl || '',
         tagName: release.tagName || '',
         displayName: release.displayName || '',
+        body: release.body || '',
         updaterType: release.updaterType || 'manual'
     };
 }

@@ -92,13 +92,9 @@ export function useUserHoverCardData({
             });
         memoPersistenceRepository
             .getUserMemo(normalizedUserId)
-            .then((entry: unknown) => {
+            .then((entry) => {
                 if (active) {
-                    const memoEntry =
-                        entry && typeof entry === 'object'
-                            ? (entry as { memo?: unknown })
-                            : null;
-                    setMemo(String(memoEntry?.memo || '').trim());
+                    setMemo(entry.memo.trim());
                 }
             })
             .catch(() => {});
@@ -146,17 +142,9 @@ export function useUserHoverCardData({
         setPopulationLoading(true);
         vrchatInstanceRepository
             .getInstance({ worldId, instanceId })
-            .then((response: unknown) => {
+            .then((response) => {
                 if (active) {
-                    const responseRecord =
-                        response && typeof response === 'object'
-                            ? (response as { json?: unknown })
-                            : null;
-                    setPopulation(
-                        normalizeInstanceCounts(
-                            responseRecord?.json ?? response
-                        )
-                    );
+                    setPopulation(normalizeInstanceCounts(response.json));
                 }
             })
             .catch(() => {})

@@ -47,6 +47,16 @@ function avatarIdFromValue(avatar: MyAvatarRow | null | undefined) {
         : String(avatar?.id ?? '').trim();
 }
 
+function isMyAvatarRow(value: unknown): value is MyAvatarRow & { id: string } {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'id' in value &&
+        typeof value.id === 'string' &&
+        Boolean(value.id.trim())
+    );
+}
+
 function isRuntimeAuthTarget(authTarget: MyAvatarsAuthTarget) {
     const runtimeAuth = useRuntimeStore.getState().auth;
     return (
@@ -140,21 +150,15 @@ export function useMyAvatarsActions({
     }
 
     function applyAvatarUpdate(nextAvatar: unknown) {
-        if (
-            !nextAvatar ||
-            typeof nextAvatar !== 'object' ||
-            !('id' in nextAvatar) ||
-            !nextAvatar.id
-        ) {
+        if (!isMyAvatarRow(nextAvatar)) {
             return;
         }
-        const nextAvatarRow = nextAvatar as MyAvatarRow;
         setAvatars((currentAvatars) =>
             currentAvatars.map((entry) =>
-                entry.id === nextAvatarRow.id
+                entry.id === nextAvatar.id
                     ? {
                           ...entry,
-                          ...nextAvatarRow,
+                          ...nextAvatar,
                           $tags: entry.$tags || [],
                           $timeSpent: entry.$timeSpent || 0
                       }

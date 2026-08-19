@@ -1,6 +1,7 @@
 import {
     commands,
     type GroupSearchParams,
+    type HttpApiExecuteResponse,
     type UserSearchParams,
     type WorldSearchParams
 } from '@/platform/tauri/bindings';
@@ -49,10 +50,7 @@ function normalizeParams<TParams extends object>(params: TParams): TParams {
     return { ...params };
 }
 
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 function unwrapVrchatSearchResponse<
     TJson = unknown,

@@ -1,36 +1,20 @@
 import { useEffect, useState } from 'react';
 
+import type { LogLocationSnapshot } from '@/platform/tauri/bindings';
 import { getCurrentLogLocation } from '@/services/gameLogWatcherService';
-import { normalizeString } from '@/shared/utils/string';
 
 import { isLiveLocation } from './playerListRows';
 
-type LogLocationSnapshot = {
-    createdAt: string;
-    fileName: string;
-    location: string;
-    worldName: string;
-};
-
 function normalizeLogLocationSnapshot(
-    snapshot: unknown
+    snapshot: LogLocationSnapshot | null
 ): LogLocationSnapshot | null {
-    if (!snapshot || typeof snapshot !== 'object') {
-        return null;
-    }
-    const source = snapshot as Record<string, unknown>;
-
-    const location = normalizeString(source.location);
-    if (!isLiveLocation(location)) {
+    if (!snapshot || !isLiveLocation(snapshot.location)) {
         return null;
     }
 
     return {
-        createdAt:
-            normalizeString(source.createdAt) || new Date().toISOString(),
-        fileName: normalizeString(source.fileName),
-        location,
-        worldName: normalizeString(source.worldName)
+        ...snapshot,
+        createdAt: snapshot.createdAt || new Date().toISOString()
     };
 }
 

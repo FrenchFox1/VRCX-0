@@ -20,6 +20,7 @@ import { ContextRulesTab } from './ContextRulesTab';
 import { InviteRulesTab, type InviteRulesTabValues } from './InviteRulesTab';
 import {
     normalizeContextRule,
+    normalizeTimeRule,
     type ContextAutomationRule,
     type TimeAutomationRule
 } from './presenceAutomationDialogUtils';
@@ -47,7 +48,7 @@ async function saveConfigValue(
     type: ConfigValueType = 'string'
 ) {
     if (type === 'bool') {
-        await configRepository.setBool(key, value as boolean);
+        await configRepository.setBool(key, value === true);
     } else if (type === 'array') {
         await configRepository.setString(key, JSON.stringify(value));
     } else {
@@ -99,7 +100,7 @@ export function PresenceScheduleDialog({
                 if (!active) {
                     return;
                 }
-                setTimeRules(result as TimeAutomationRule[]);
+                setTimeRules(result.map(normalizeTimeRule));
             })
             .catch((error: unknown) =>
                 toast.error(
@@ -322,18 +323,12 @@ export function PresenceInviteRequestsDialog({
         };
     }, [open, t]);
 
-    async function saveValue(
-        key: keyof InviteRulesTabValues,
-        value: unknown,
+    async function saveValue<K extends keyof InviteRulesTabValues>(
+        key: K,
+        value: InviteRulesTabValues[K],
         type: ConfigValueType = 'string'
     ) {
-        setValues(
-            (current) =>
-                ({
-                    ...current,
-                    [key]: value
-                }) as InviteRulesTabValues
-        );
+        setValues((current) => ({ ...current, [key]: value }));
         await enqueueConfigWrite(
             writeQueuesRef,
             key,

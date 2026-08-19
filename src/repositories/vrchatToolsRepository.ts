@@ -7,6 +7,7 @@ import {
 import {
     commands,
     type CalendarListParams,
+    type HttpApiExecuteResponse,
     type InviteMessageType
 } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
@@ -77,10 +78,7 @@ export type InviteMessageRecord = Record<string, unknown> & {
     updatedAt?: string;
 };
 type InviteMessagesRecord = InviteMessageRecord[];
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 function unwrapVrchatToolsResponse<TJson = Record<string, unknown>>(
     response: VrchatApiResult,

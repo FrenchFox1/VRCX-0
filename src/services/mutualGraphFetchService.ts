@@ -1,6 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
 import type { MutualGraphFetchStatus } from '@/platform/tauri/bindings';
-import { normalizeNumber } from '@/shared/utils/coerce';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type StartMutualGraphFetchInput = {
@@ -18,29 +17,11 @@ let latestAcceptedRunId = 0;
 let latestAcceptedRevision = 0;
 const sessionStartedRunIds = new Set<number>();
 
-function normalizeString(value: unknown) {
-    return typeof value === 'string' ? value : String(value ?? '');
-}
-
-function normalizeStatus(
-    status: Partial<MutualGraphFetchStatus> | null | undefined
-) {
+function normalizeStatus(status: MutualGraphFetchStatus) {
     return {
-        runId: normalizeNumber(status?.runId),
-        revision: normalizeNumber(status?.revision),
-        status: normalizeString(status?.status || 'idle'),
-        ownerUserId: normalizeString(status?.ownerUserId),
-        totalFriends: normalizeNumber(status?.totalFriends),
-        processedFriends: normalizeNumber(status?.processedFriends),
-        currentFriendId: normalizeString(status?.currentFriendId),
-        fetchedFriends: normalizeNumber(status?.fetchedFriends),
-        optedOutFriends: normalizeNumber(status?.optedOutFriends),
-        failedFriends: normalizeNumber(status?.failedFriends),
-        cancelRequested: Boolean(status?.cancelRequested),
-        startedAt: status?.startedAt || null,
-        updatedAt: status?.updatedAt || null,
-        finishedAt: status?.finishedAt || null,
-        lastError: status?.lastError || null
+        ...status,
+        startedAt: status.startedAt || null,
+        updatedAt: status.updatedAt || null
     };
 }
 
@@ -67,7 +48,7 @@ function scheduleTerminalReset() {
 }
 
 function applyMutualGraphFetchStatus(
-    status: Partial<MutualGraphFetchStatus> | null | undefined
+    status: MutualGraphFetchStatus
 ) {
     const normalized = normalizeStatus(status);
     if (!isNewerStatus(normalized.runId, normalized.revision)) {
@@ -85,7 +66,7 @@ function applyMutualGraphFetchStatus(
 }
 
 export function handleMutualGraphFetchStatusEvent(
-    status: Partial<MutualGraphFetchStatus> | null | undefined
+    status: MutualGraphFetchStatus
 ) {
     return applyMutualGraphFetchStatus(status);
 }
@@ -105,7 +86,7 @@ export async function startMutualGraphFetch({
         endpoint,
         friendIds
     });
-    const runId = normalizeNumber(status.runId);
+    const runId = status.runId;
     if (runId) {
         sessionStartedRunIds.add(runId);
     }

@@ -35,9 +35,9 @@ type ConfigValueType = 'array' | 'bool' | 'string';
 
 type InviteRulesTabProps = {
     loading: boolean;
-    onSaveValue: (
-        key: keyof InviteRulesTabValues,
-        value: unknown,
+    onSaveValue: <K extends keyof InviteRulesTabValues>(
+        key: K,
+        value: InviteRulesTabValues[K],
         type?: ConfigValueType
     ) => unknown;
     values: InviteRulesTabValues;
@@ -123,7 +123,10 @@ export function InviteRulesTab({
                                 }
                             ]}
                             onValueChange={(value) => {
-                                onSaveValue('autoAcceptInviteRequests', value);
+                                onSaveValue(
+                                    'autoAcceptInviteRequests',
+                                    value ?? 'Off'
+                                );
                             }}
                         >
                             <SelectTrigger>

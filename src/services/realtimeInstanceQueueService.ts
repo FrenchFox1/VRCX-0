@@ -10,22 +10,18 @@ import {
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type ProjectionRecord = Record<string, unknown>;
-type RealtimeInstanceQueueProjectionInput =
-    Partial<RealtimeInstanceQueueProjection> & ProjectionRecord;
+type RealtimeInstanceQueueProjectionInput = Pick<
+    RealtimeInstanceQueueProjection,
+    'kind' | 'instanceLocation'
+> &
+    Partial<
+        Omit<RealtimeInstanceQueueProjection, 'kind' | 'instanceLocation'>
+    >;
 
-function isRecord(value: unknown): value is ProjectionRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function text(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
-function number(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
+function queueCount(value?: number): number {
+    return typeof value === 'number' && Number.isFinite(value)
+        ? Math.max(0, Math.round(value))
+        : 0;
 }
 
 function translated(
@@ -54,12 +50,11 @@ function resolveQueueLocationLabel(instanceLocation: string): string {
     );
 }
 
-export function handleRealtimeInstanceQueueProjection(payload: unknown) {
-    const projection: RealtimeInstanceQueueProjectionInput = isRecord(payload)
-        ? payload
-        : {};
-    const kind = text(projection.kind);
-    const instanceLocation = text(projection.instanceLocation);
+export function handleRealtimeInstanceQueueProjection(
+    projection: RealtimeInstanceQueueProjectionInput
+) {
+    const { kind } = projection;
+    const instanceLocation = projection.instanceLocation.trim();
     if (!instanceLocation) {
         return;
     }
@@ -98,9 +93,10 @@ export function handleRealtimeInstanceQueueProjection(payload: unknown) {
     runtimeStore.setInstanceQueueState({
         active: true,
         instanceLocation,
-        position: number(projection.position),
-        queueSize: number(projection.queueSize),
+        position: queueCount(projection.position),
+        queueSize: queueCount(projection.queueSize),
         label,
-        updatedAt: text(projection.receivedAt) || new Date().toISOString()
+        updatedAt:
+            projection.receivedAt?.trim() || new Date().toISOString()
     });
 }

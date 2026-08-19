@@ -795,6 +795,9 @@ export function AppStatusBar() {
         zoomLabel: formatZoomPercentage(currentZoomLevel),
         zoomLevel: currentZoomLevel,
         onOpenMediaLink: () => {
+            if (!nowPlaying.url) {
+                return;
+            }
             openExternalLink(nowPlaying.url).catch((error: unknown) => {
                 toast.error(
                     error instanceof Error

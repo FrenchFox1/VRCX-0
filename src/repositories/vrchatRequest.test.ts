@@ -32,7 +32,6 @@ describe('vrchat response unwrapping', () => {
 
     it.each([
         { status: 204, data: '' },
-        { status: 204, data: null },
         { status: 204, data: '   ' }
     ])('allows an empty $status response body', ({ status, data }) => {
         expect(unwrapVrchatResponse({ status, data }, 'files')).toMatchObject({

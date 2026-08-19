@@ -1,8 +1,10 @@
 import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
+import type { HostCapabilities } from '@/platform/tauri/bindings';
 import {
     getHostCapabilityUnavailableReason,
+    isHostCapabilityKey,
     isHostCapabilityAvailable,
     isHostCapabilitySupported
 } from '@/services/hostCapabilityService';
@@ -22,7 +24,6 @@ type TriggerToolOptions = {
     navigate: Navigate;
     t: Translate;
 };
-type HostCapabilitySnapshot = Record<string, unknown>;
 type ToolDialogHostKey =
     | 'appLauncherOpen'
     | 'presenceScheduleOpen'
@@ -74,7 +75,7 @@ const legacyToolAliases: Record<string, string> = {
 
 export function isToolCapabilityAvailable(
     tool?: ToolDefinition | null,
-    hostCapabilities?: HostCapabilitySnapshot
+    hostCapabilities?: HostCapabilities
 ): boolean {
     const capabilities = [
         ...(tool?.requiredCapabilities ?? []),
@@ -85,26 +86,27 @@ export function isToolCapabilityAvailable(
     }
     if (hostCapabilities) {
         return capabilities.every((capability) => {
-            const status = hostCapabilities[capability];
-            if (!status || typeof status !== 'object') {
+            if (!isHostCapabilityKey(capability)) {
                 return false;
             }
-            const capabilityStatus = status as {
-                available?: unknown;
-                enabled?: unknown;
-                supported?: unknown;
-            };
+            const status = hostCapabilities[capability];
             return tool?.requiredCapabilityMode === 'supported'
-                ? Boolean(
-                      capabilityStatus.supported && capabilityStatus.enabled
-                  )
-                : Boolean(capabilityStatus.available);
+                ? status.supported && status.enabled
+                : status.available;
         });
     }
     if (tool?.requiredCapabilityMode === 'supported') {
-        return capabilities.every(isHostCapabilitySupported);
+        return capabilities.every(
+            (capability) =>
+                isHostCapabilityKey(capability) &&
+                isHostCapabilitySupported(capability)
+        );
     }
-    return capabilities.every(isHostCapabilityAvailable);
+    return capabilities.every(
+        (capability) =>
+            isHostCapabilityKey(capability) &&
+            isHostCapabilityAvailable(capability)
+    );
 }
 
 export function getToolCapabilityUnavailableReason(
@@ -117,7 +119,10 @@ export function getToolCapabilityUnavailableReason(
     if (capabilities.length === 0) {
         return '';
     }
-    return getHostCapabilityUnavailableReason(capabilities[0]);
+    const capability = capabilities[0];
+    return isHostCapabilityKey(capability)
+        ? getHostCapabilityUnavailableReason(capability)
+        : `${capability} is unavailable in the current host.`;
 }
 
 export async function triggerToolByKey(

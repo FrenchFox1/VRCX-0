@@ -1,3 +1,5 @@
+import type { HttpApiExecuteResponse } from '@/platform/tauri/bindings';
+
 export type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = Record<string, QueryValue | QueryValue[]>;
 
@@ -15,10 +17,7 @@ export interface VrchatRequestError extends Error {
     payload: unknown;
 }
 
-interface VrchatResponseEnvelope {
-    status: number;
-    data: unknown;
-}
+export type VrchatResponseEnvelope = HttpApiExecuteResponse;
 
 interface UnwrapResponseOptions {
     fallbackMessage?: string;
@@ -54,15 +53,7 @@ export function isVrchatMissingCredentialsError(error: unknown): boolean {
     return status === 401 || statusCode === 401;
 }
 
-function parseResponseData(data: unknown, allowPlainText: boolean): unknown {
-    if (data === null || data === undefined || data === '') {
-        return data === '' ? '' : null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
-    }
-
+function parseResponseData(data: string, allowPlainText: boolean): unknown {
     if (!data.trim()) {
         return '';
     }

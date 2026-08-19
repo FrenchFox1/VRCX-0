@@ -34,7 +34,9 @@ interface AcceptRequestInviteInput extends NotificationActionInput {
 interface InviteResponseInput extends NotificationActionInput {
     responseSlot?: unknown;
     imageData?: unknown;
-    withUploadTimeout?: (promise: Promise<unknown>) => Promise<unknown>;
+    withUploadTimeout?: (
+        promise: Promise<NotificationActionOutcome>
+    ) => Promise<NotificationActionOutcome>;
 }
 
 interface NotificationResponseInput extends NotificationActionInput {
@@ -209,7 +211,7 @@ export async function sendInviteResponseNotification({
         imageData && withUploadTimeout
             ? await withUploadTimeout(invoke())
             : await invoke();
-    unwrapNotificationActionOutcome(outcome as NotificationActionOutcome);
+    unwrapNotificationActionOutcome(outcome);
     return { sentPhoto: Boolean(imageData) };
 }
 

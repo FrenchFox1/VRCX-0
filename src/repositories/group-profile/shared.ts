@@ -6,7 +6,8 @@ import type {
 import type {
     GroupMemberPatch,
     GroupMemberSort,
-    GroupPostMutation
+    GroupPostMutation,
+    HttpApiExecuteResponse
 } from '@/platform/tauri/bindings';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
@@ -72,10 +73,7 @@ export type GroupModerationRow = Partial<GroupMemberRow> & {
     userId: string;
 };
 
-export type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+export type VrchatApiResult = HttpApiExecuteResponse;
 
 export type { CollectPagesOptions, PageRequest };
 

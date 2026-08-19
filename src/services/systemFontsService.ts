@@ -7,12 +7,11 @@ export function loadSystemFonts(): Promise<string[]> {
     if (!cache) {
         cache = commands
             .appListSystemFonts()
-            .then((fonts: unknown) => {
-                const list = Array.isArray(fonts) ? fonts : [];
-                if (!list.length) {
+            .then((fonts) => {
+                if (!fonts.length) {
                     cache = null;
                 }
-                return list;
+                return fonts;
             })
             .catch((): string[] => {
                 cache = null;

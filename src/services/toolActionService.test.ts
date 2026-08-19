@@ -17,6 +17,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
 }));
 vi.mock('@/services/hostCapabilityService', () => ({
     getHostCapabilityUnavailableReason: vi.fn(() => 'Unavailable'),
+    isHostCapabilityKey: vi.fn(() => true),
     isHostCapabilityAvailable: vi.fn(() => false),
     isHostCapabilitySupported: vi.fn(() => false)
 }));

@@ -24,54 +24,49 @@ type DirectUpdateInstallOptions = {
     toastId?: string | number;
 };
 
+type RuntimeUpdateLoopState = ReturnType<
+    typeof useRuntimeStore.getState
+>['updateLoop'];
+
 type UpdateUiState = {
     hasAvailableUpdate: boolean;
-    latestUpdaterRelease: unknown;
+    latestUpdaterRelease: RuntimeUpdateLoopState['latestUpdaterRelease'];
     autoDownloadUiVisible: boolean;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
-function getString(value: unknown) {
-    return typeof value === 'string' ? value : String(value || '');
-}
 
 export function shouldShowUpdateUi({
     hasAvailableUpdate,
     latestUpdaterRelease,
     autoDownloadUiVisible
 }: UpdateUiState): boolean {
-    if (!hasAvailableUpdate || !isRecord(latestUpdaterRelease)) {
+    if (!hasAvailableUpdate || !latestUpdaterRelease) {
         return false;
     }
     return (
-        getString(latestUpdaterRelease.updaterType) !== 'tauri' ||
+        latestUpdaterRelease.updaterType !== 'tauri' ||
         autoDownloadUiVisible
     );
 }
 
 function readLatestUpdateRelease(): NormalizedRelease | null {
     const release = useRuntimeStore.getState().updateLoop.latestUpdaterRelease;
-    if (!isRecord(release)) {
+    if (!release) {
         return null;
     }
 
     return {
-        manifestUrl: getString(release.manifestUrl).trim() || undefined,
-        target: getString(release.target).trim() || undefined,
-        canonicalVersion: getString(release.canonicalVersion),
+        manifestUrl: release.manifestUrl.trim() || undefined,
+        target: release.target.trim() || undefined,
+        canonicalVersion: release.canonicalVersion,
         channel: 'Stable',
-        displayVersion: getString(release.displayVersion),
-        htmlUrl: getString(release.htmlUrl),
-        tagName: getString(release.tagName),
-        displayName: getString(release.displayName || release.title),
+        displayVersion: release.displayVersion,
+        htmlUrl: release.htmlUrl,
+        tagName: release.tagName,
+        displayName: release.displayName || release.title,
         prerelease: false,
-        publishedAt: getString(release.publishedAt),
+        publishedAt: release.publishedAt,
         body: '',
-        updaterType:
-            getString(release.updaterType) === 'tauri' ? 'tauri' : 'manual'
+        updaterType: release.updaterType
     };
 }
 
@@ -89,7 +84,13 @@ function canInstallUpdateRelease(
     );
 }
 
-const IDLE_DOWNLOAD_STATE = {
+const IDLE_DOWNLOAD_STATE: Pick<
+    RuntimeUpdateLoopState,
+    | 'autoDownloadState'
+    | 'downloadedVersion'
+    | 'downloadProgress'
+    | 'downloadedBytes'
+> = {
     autoDownloadState: 'idle',
     downloadedVersion: null,
     downloadProgress: 0,

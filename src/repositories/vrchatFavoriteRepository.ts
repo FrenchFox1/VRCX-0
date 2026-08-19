@@ -1,6 +1,7 @@
 import {
     commands,
     type FavoriteGroupVisibility,
+    type HttpApiExecuteResponse,
     type VrchatFavoriteType
 } from '@/platform/tauri/bindings';
 
@@ -10,10 +11,7 @@ import { unwrapVrchatResponse } from './vrchatRequest';
 const FAVORITE_GROUPS_PAGE_SIZE = 50;
 const FAVORITE_DETAIL_PAGE_SIZE = 300;
 
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 interface FavoritePagingInput {
     n?: number;

@@ -1,5 +1,8 @@
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type LogLocationSnapshot
+} from '@/platform/tauri/bindings';
 
-export async function getCurrentLogLocation(): Promise<unknown> {
+export async function getCurrentLogLocation(): Promise<LogLocationSnapshot | null> {
     return commands.logWatcherGetCurrentLocation();
 }

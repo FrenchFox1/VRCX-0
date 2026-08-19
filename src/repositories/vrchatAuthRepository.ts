@@ -1,6 +1,7 @@
 import {
     commands,
     type AutoLoginOutcome,
+    type HttpApiExecuteResponse,
     type LoginSessionState
 } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
@@ -11,10 +12,7 @@ import {
 } from './vrchatRequest';
 
 export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 type AuthRecord = Record<string, unknown>;
 
 function unwrapVrchatAuthResponse<TJson = unknown>(

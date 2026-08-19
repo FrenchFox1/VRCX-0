@@ -7,7 +7,7 @@ import type {
     AssistantToolCallEvent,
     AssistantToolResultEvent,
     AssistantTurnEntitiesEvent
-} from '@/domain/assistant/types';
+} from '@/platform/tauri/bindings';
 import { tauriClient } from '@/platform/tauri/client';
 import {
     recordAssistantToolError,
@@ -15,15 +15,6 @@ import {
 } from '@/services/telemetry/telemetryAssistantHealth';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-
-const EVENT_NAMES = [
-    'assistantDelta',
-    'assistantToolCall',
-    'assistantToolResult',
-    'assistantTurnEntities',
-    'assistantDone',
-    'assistantError'
-] as const;
 
 function isCurrentAccountEvent(event: {
     ownerUserId: string;
@@ -90,9 +81,8 @@ export function useAssistantEvents(): void {
             }
         };
 
-        const handlers: Record<string, (payload: unknown) => void> = {
-            assistantDelta: (payload) => {
-                const event = payload as AssistantDeltaEvent;
+        const handlers = {
+            assistantDelta: (event: AssistantDeltaEvent) => {
                 if (!isCurrentAccountEvent(event)) {
                     return;
                 }
@@ -111,8 +101,7 @@ export function useAssistantEvents(): void {
                     rafHandle = requestAnimationFrame(flushDeltas);
                 }
             },
-            assistantToolCall: (payload) => {
-                const event = payload as AssistantToolCallEvent;
+            assistantToolCall: (event: AssistantToolCallEvent) => {
                 if (!isCurrentAccountEvent(event)) {
                     return;
                 }
@@ -123,8 +112,7 @@ export function useAssistantEvents(): void {
                 });
                 store.applyToolCall(event);
             },
-            assistantToolResult: (payload) => {
-                const event = payload as AssistantToolResultEvent;
+            assistantToolResult: (event: AssistantToolResultEvent) => {
                 if (!isCurrentAccountEvent(event)) {
                     return;
                 }
@@ -140,22 +128,19 @@ export function useAssistantEvents(): void {
                 }
                 toolCallsById.delete(event.toolCallId);
             },
-            assistantTurnEntities: (payload) => {
-                const event = payload as AssistantTurnEntitiesEvent;
+            assistantTurnEntities: (event: AssistantTurnEntitiesEvent) => {
                 if (isCurrentAccountEvent(event)) {
                     store.applyTurnEntities(event);
                 }
             },
-            assistantDone: (payload) => {
-                const event = payload as AssistantDoneEvent;
+            assistantDone: (event: AssistantDoneEvent) => {
                 if (isCurrentAccountEvent(event)) {
                     flushNow();
                     store.applyDone(event);
                     evictFinishedSessionIfClosed(event.sessionId);
                 }
             },
-            assistantError: (payload) => {
-                const event = payload as AssistantErrorEvent;
+            assistantError: (event: AssistantErrorEvent) => {
                 if (!isCurrentAccountEvent(event)) {
                     return;
                 }
@@ -185,9 +170,34 @@ export function useAssistantEvents(): void {
             }
         );
 
-        for (const name of EVENT_NAMES) {
-            tauriClient.events
-                .subscribe<unknown>(name, handlers[name])
+        const subscriptions = [
+            tauriClient.events.subscribe(
+                'assistantDelta',
+                handlers.assistantDelta
+            ),
+            tauriClient.events.subscribe(
+                'assistantToolCall',
+                handlers.assistantToolCall
+            ),
+            tauriClient.events.subscribe(
+                'assistantToolResult',
+                handlers.assistantToolResult
+            ),
+            tauriClient.events.subscribe(
+                'assistantTurnEntities',
+                handlers.assistantTurnEntities
+            ),
+            tauriClient.events.subscribe(
+                'assistantDone',
+                handlers.assistantDone
+            ),
+            tauriClient.events.subscribe(
+                'assistantError',
+                handlers.assistantError
+            )
+        ];
+        for (const subscription of subscriptions) {
+            subscription
                 .then((unsubscribe) => {
                     if (active) {
                         unsubscribers.push(unsubscribe);

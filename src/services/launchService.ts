@@ -14,13 +14,6 @@ import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
-type InstanceShortNameResponse = {
-    json?: {
-        shortName?: unknown;
-        secureName?: unknown;
-    };
-};
-
 export type LaunchDialogDetails = {
     tag: string;
     location: string;
@@ -76,11 +69,12 @@ export async function resolveLaunchDialogDetails(
     let worldName = '';
     if (!secureOrShortName) {
         try {
-            const response =
-                (await vrchatInstanceRepository.getInstanceShortName({
+            const response = await vrchatInstanceRepository.getInstanceShortName(
+                {
                     worldId: parsed.worldId,
                     instanceId: parsed.instanceId
-                })) as InstanceShortNameResponse;
+                }
+            );
             nextShortName = normalizeString(response.json?.shortName);
             secureOrShortName =
                 nextShortName || normalizeString(response.json?.secureName);

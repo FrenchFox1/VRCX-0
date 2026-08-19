@@ -213,7 +213,7 @@ function createNotificationState(
 }
 
 function getCurrentAuth(): RuntimeAuthSnapshot {
-    return (useRuntimeStore.getState().auth || {}) as RuntimeAuthSnapshot;
+    return useRuntimeStore.getState().auth;
 }
 
 function captureNotificationScope(): NotificationOperationScope | null {

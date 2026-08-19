@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import type { HttpApiExecuteResponse } from '@/platform/tauri/bindings';
 
 import { unwrapVrchatResponse } from './vrchatRequest';
 
@@ -10,7 +11,7 @@ interface FriendEndpointInput {
 }
 
 function unwrapVrchatFriendResponse<TJson = unknown>(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     path: string
 ) {
     return unwrapVrchatResponse<TJson>(response, path, {

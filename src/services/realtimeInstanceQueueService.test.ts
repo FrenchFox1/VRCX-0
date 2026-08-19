@@ -29,9 +29,11 @@ describe('realtimeInstanceQueueService', () => {
         vi.useRealTimers();
     });
 
-    it('ignores malformed payloads and payloads without a location', () => {
-        handleRealtimeInstanceQueueProjection(null);
-        handleRealtimeInstanceQueueProjection({ kind: 'queued' });
+    it('ignores projections without a location', () => {
+        handleRealtimeInstanceQueueProjection({
+            kind: 'update',
+            instanceLocation: ''
+        });
 
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(false);
         expect(mocks.success).not.toHaveBeenCalled();
@@ -45,7 +47,7 @@ describe('realtimeInstanceQueueService', () => {
         });
 
         handleRealtimeInstanceQueueProjection({
-            kind: 'queued',
+            kind: 'update',
             instanceLocation: ' wrld_queue:123 ',
             position: -3,
             queueSize: 4.6
@@ -102,7 +104,7 @@ describe('realtimeInstanceQueueService', () => {
         });
 
         handleRealtimeInstanceQueueProjection({
-            kind: 'queued',
+            kind: 'update',
             instanceLocation: 'wrld_hint:123~group(grp_hint)',
             position: 2,
             queueSize: 8,

@@ -3,7 +3,11 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
-import { commands, type AvatarUpdateRequest } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type AvatarUpdateRequest,
+    type HttpApiExecuteResponse
+} from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import avatarLocalRepository from './avatarLocalRepository';
@@ -11,10 +15,7 @@ import type { AvatarStyleRecord } from './avatarProfileRepository';
 import { unwrapVrchatResponse } from './vrchatRequest';
 
 type AvatarRecord = Record<string, unknown>;
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');

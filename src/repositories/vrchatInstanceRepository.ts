@@ -6,6 +6,7 @@ import {
 } from '@/lib/entityQueryCache';
 import {
     commands,
+    type HttpApiExecuteResponse,
     type InstanceCreateGroupAccessType,
     type InstanceCreateRegion,
     type InstanceCreateRequest,
@@ -55,10 +56,7 @@ interface CloseInstanceOptions extends InstanceRepositoryOptions {
     hardClose?: unknown;
 }
 
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 type VrchatInstanceIdentity = {
     worldId: string;

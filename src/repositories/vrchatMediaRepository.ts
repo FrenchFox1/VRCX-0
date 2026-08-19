@@ -6,6 +6,7 @@ import {
 import { commands } from '@/platform/tauri/bindings';
 import type {
     EmojiUploadParams,
+    HttpApiExecuteResponse,
     InventoryItemUpdateRequest,
     InventoryListParams,
     MediaAssetUploadRequest,
@@ -191,15 +192,15 @@ interface MediaCommandOptions {
 }
 
 function unwrapMediaResponse(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     options?: MediaCommandOptions
 ): VrchatRequestResponse<MediaApiRecord>;
 function unwrapMediaResponse<TJson>(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     options?: MediaCommandOptions
 ): VrchatRequestResponse<TJson>;
 function unwrapMediaResponse<TJson = MediaApiRecord>(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     {
         params = {},
         extra = {},
@@ -216,15 +217,15 @@ function unwrapMediaResponse<TJson = MediaApiRecord>(
 }
 
 async function executeMediaCommand(
-    command: () => Promise<{ status: number; data: unknown }>,
+    command: () => Promise<HttpApiExecuteResponse>,
     options?: MediaCommandOptions
 ): Promise<VrchatRequestResponse<MediaApiRecord>>;
 async function executeMediaCommand<TJson>(
-    command: () => Promise<{ status: number; data: unknown }>,
+    command: () => Promise<HttpApiExecuteResponse>,
     options?: MediaCommandOptions
 ): Promise<VrchatRequestResponse<TJson>>;
 async function executeMediaCommand<TJson = MediaApiRecord>(
-    command: () => Promise<{ status: number; data: unknown }>,
+    command: () => Promise<HttpApiExecuteResponse>,
     options: MediaCommandOptions = {}
 ): Promise<VrchatRequestResponse<TJson>> {
     try {

@@ -206,7 +206,7 @@ class ConfigRepository {
         return Array.isArray(value) ? value : defaultValue;
     }
 
-    async setString(key: string, value: unknown): Promise<unknown> {
+    async setString(key: string, value: unknown): Promise<null> {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
         if (isHiddenVrPanelConfigDbKey(dbKey)) {
@@ -221,23 +221,23 @@ class ConfigRepository {
         return result;
     }
 
-    async set(key: string, value: unknown): Promise<unknown> {
+    async set(key: string, value: unknown): Promise<null> {
         return this.setString(key, value);
     }
 
-    async setBool(key: string, value: boolean): Promise<unknown> {
+    async setBool(key: string, value: boolean): Promise<null> {
         return this.setString(key, value ? 'true' : 'false');
     }
 
-    async setInt(key: string, value: number): Promise<unknown> {
+    async setInt(key: string, value: number): Promise<null> {
         return this.setString(key, value);
     }
 
-    async setFloat(key: string, value: number): Promise<unknown> {
+    async setFloat(key: string, value: number): Promise<null> {
         return this.setString(key, value);
     }
 
-    async setObject(key: string, value: unknown): Promise<unknown> {
+    async setObject(key: string, value: unknown): Promise<null> {
         return this.setString(key, safeJsonStringify(value));
     }
 
@@ -275,7 +275,7 @@ class ConfigRepository {
         }
     }
 
-    async setArray(key: string, value: unknown[]): Promise<unknown> {
+    async setArray(key: string, value: unknown[]): Promise<null> {
         return this.setObject(key, value);
     }
 
@@ -290,7 +290,7 @@ class ConfigRepository {
         this.#cache.set(dbKey, value);
     }
 
-    async remove(key: string): Promise<unknown> {
+    async remove(key: string): Promise<number> {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
         const result = await commands.appConfigRemoveValue(dbKey);

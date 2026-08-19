@@ -267,7 +267,11 @@ describe('notificationActionService', () => {
         mocks.appNotificationInviteResponseSend.mockReturnValue(
             pending.promise
         );
-        const withUploadTimeout = vi.fn((promise: Promise<unknown>) => promise);
+        const withUploadTimeout = vi.fn(
+            (
+                promise: Promise<NotificationActionOutcome>
+            ): Promise<NotificationActionOutcome> => promise
+        );
         const { sendInviteResponseNotification } =
             await import('./notificationActionService');
 
@@ -296,7 +300,11 @@ describe('notificationActionService', () => {
     });
 
     it('sends a plain invite response without the upload timeout', async () => {
-        const withUploadTimeout = vi.fn((promise: Promise<unknown>) => promise);
+        const withUploadTimeout = vi.fn(
+            (
+                promise: Promise<NotificationActionOutcome>
+            ): Promise<NotificationActionOutcome> => promise
+        );
         const { sendInviteResponseNotification } =
             await import('./notificationActionService');
 

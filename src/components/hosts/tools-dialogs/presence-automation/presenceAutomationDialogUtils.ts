@@ -125,14 +125,18 @@ export const priorityOptions = [
 
 type PriorityValue = (typeof priorityOptions)[number]['value'];
 
+function isRuleRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object';
+}
+
 function asRuleRecord(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : {};
+    return isRuleRecord(value) ? value : {};
 }
 
 function asStringArray(value: unknown): string[] {
-    return Array.isArray(value) ? (value as string[]) : [];
+    return Array.isArray(value)
+        ? value.filter((entry): entry is string => typeof entry === 'string')
+        : [];
 }
 
 export function priorityValueFromNumber(
@@ -302,14 +306,12 @@ export function createTimeRule(label = ''): TimeAutomationRule {
 }
 
 export function getTimeWindow(rule: PresenceAutomationRule) {
-    return (rule.conditions?.find(
-        (condition) => condition.type === 'timeWindow'
-    ) || {
+    return rule.conditions?.find(isTimeWindowCondition) || {
         type: 'timeWindow',
         start: '21:00',
         end: '02:00',
         days: []
-    }) as TimeWindowCondition;
+    };
 }
 
 export function shouldRestorePreviousState(rule: PresenceAutomationRule) {
@@ -337,7 +339,7 @@ export function setGameRunningCondition<TRule extends PresenceAutomationRule>(
         conditions: enabled
             ? [{ type: 'isGameRunning' }, ...otherConditions]
             : otherConditions
-    } as TRule;
+    };
 }
 
 export function buildContextConditions(rule: ContextAutomationRule) {
@@ -423,11 +425,43 @@ export function normalizeContextRule(rule: unknown): ContextAutomationRule {
         specificFriendIds: asStringArray(source.specificFriendIds),
         friendCountValue: Number(source.friendCountValue) || 1,
         playerCountValue: Number(source.playerCountValue) || 1,
-        actions: asRuleRecord(source.actions) as PresenceRuleActions
+        actions: asRuleRecord(source.actions)
     };
     return {
         ...normalized,
         conditions: buildContextConditions(normalized)
+    };
+}
+
+function isTimeWindowCondition(
+    condition: PresenceRuleCondition
+): condition is TimeWindowCondition {
+    return (
+        condition.type === 'timeWindow' &&
+        typeof condition.start === 'string' &&
+        typeof condition.end === 'string' &&
+        Array.isArray(condition.days) &&
+        condition.days.every((day) => typeof day === 'number')
+    );
+}
+
+export function normalizeTimeRule(rule: unknown): TimeAutomationRule {
+    const source = asRuleRecord(rule);
+    const conditions = Array.isArray(source.conditions)
+        ? source.conditions.map((condition) => {
+              const conditionSource = asRuleRecord(condition);
+              return {
+                  ...conditionSource,
+                  type: String(conditionSource.type || '')
+              };
+          })
+        : [];
+    return {
+        ...source,
+        id: String(source.id || createRuleId('time')),
+        domain: 'time',
+        conditions,
+        actions: asRuleRecord(source.actions)
     };
 }
 

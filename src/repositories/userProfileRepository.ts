@@ -12,7 +12,8 @@ import {
 import {
     commands,
     type CurrentUserProfileUpdateRequest,
-    type CurrentUserUpdateRequest
+    type CurrentUserUpdateRequest,
+    type HttpApiExecuteResponse
 } from '@/platform/tauri/bindings';
 import { stripDefaultAvatarImage } from '@/shared/utils/avatar';
 import {
@@ -25,10 +26,7 @@ import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { unwrapVrchatResponse } from './vrchatRequest';
 
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 type UserFriendStatus = {
     incomingRequest: boolean;
@@ -172,6 +170,12 @@ function hasOwnField(source: unknown, field: PropertyKey) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
+}
+
+function isUserMutualFriendRow(
+    value: unknown
+): value is UserMutualFriendRow {
+    return isRecord(value) && typeof value.id === 'string' && Boolean(value.id);
 }
 
 function unwrapVrchatUserResponse<TJson = unknown>(
@@ -389,7 +393,8 @@ async function getAllMutualFriends({ userId }: UserEndpointInput) {
     const rows = await commands.appUserMutualFriendsListGet({
         userId: normalizedUserId
     });
-    return Array.isArray(rows) ? (rows as UserMutualFriendRow[]) : [];
+    const candidates: unknown[] = rows;
+    return candidates.filter(isUserMutualFriendRow);
 }
 
 async function updateCurrentUser({

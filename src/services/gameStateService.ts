@@ -16,8 +16,6 @@ import { useSessionStore } from '@/state/sessionStore';
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
 type GameState = RuntimeState['gameState'];
 type GameStatePatch = Parameters<RuntimeState['setGameState']>[0];
-type GameRunningPayload = Partial<HostSessionProjection> &
-    Record<string, unknown>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
@@ -124,10 +122,9 @@ function clearStoppedGameLocationSnapshot(
     }
 }
 
-export async function handleGameRunningUpdate(payload: unknown = {}) {
-    const projection: GameRunningPayload = isRecord(payload)
-        ? (payload as GameRunningPayload)
-        : {};
+export async function handleGameRunningUpdate(
+    projection: HostSessionProjection
+) {
     const runtimeStore = useRuntimeStore.getState();
     const previousGameState = runtimeStore.gameState;
     const currentUserSnapshot = runtimeStore.auth.currentUserSnapshot;

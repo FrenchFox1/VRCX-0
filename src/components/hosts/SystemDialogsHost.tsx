@@ -6,7 +6,8 @@ import { ProxySettingsDialog } from '@/components/proxy/ProxySettingsDialog';
 import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
-    isHostCapabilitySupported
+    isHostCapabilitySupported,
+    type HostCapabilityKey
 } from '@/services/hostCapabilityService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -66,7 +67,7 @@ export function SystemDialogsHost() {
         type CapabilityGuard = [
             hostKey: string,
             open: boolean,
-            capability: keyof typeof hostCapabilities,
+            capability: HostCapabilityKey,
             mode?: 'available' | 'supported'
         ];
         const guards: CapabilityGuard[] = [

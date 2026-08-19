@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { commands } from '@/platform/tauri/bindings';
+import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
@@ -266,11 +267,13 @@ export function AvatarContentTagsDialog({
             const currentAvatarResult = result.items.find(
                 (item) => item.id === avatar.id
             );
-            if (
-                currentAvatarResult?.entity &&
-                typeof currentAvatarResult.entity === 'object'
-            ) {
-                onSavedCurrentAvatar(currentAvatarResult.entity as OwnAvatar);
+            if (currentAvatarResult?.entity) {
+                const nextAvatar = avatarProfileRepository.normalize(
+                    currentAvatarResult.entity
+                );
+                if (nextAvatar.id) {
+                    onSavedCurrentAvatar(nextAvatar);
+                }
             }
             if (result.failed) {
                 const baseMessage =
