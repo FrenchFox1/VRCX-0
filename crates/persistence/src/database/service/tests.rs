@@ -141,13 +141,18 @@ fn interruptible_read_can_cancel_while_all_readers_are_busy() -> Result<(), Erro
 }
 
 #[test]
-fn configured_writer_enables_secure_delete() -> Result<(), Error> {
+fn configured_writer_trades_secure_delete_and_full_sync_for_write_throughput() -> Result<(), Error>
+{
     let conn = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
     configure_connection(&conn)?;
-    let enabled = conn
+    let secure_delete = conn
         .query_row("PRAGMA secure_delete;", [], |row| row.get::<_, i64>(0))
         .map_err(|e| Error::Database(e.to_string()))?;
-    assert_eq!(enabled, 1);
+    let synchronous = conn
+        .query_row("PRAGMA synchronous;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+    assert_eq!(secure_delete, 0);
+    assert_eq!(synchronous, 1);
     Ok(())
 }
 

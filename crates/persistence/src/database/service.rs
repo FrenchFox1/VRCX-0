@@ -387,6 +387,29 @@ impl DatabaseService {
         checkpoint(&conn)?;
         Ok(())
     }
+
+    pub fn checkpoint_wal(&self) -> Result<(), Error> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| Error::Database(e.to_string()))?;
+        let conn = match &*inner {
+            DatabaseMode::Main(main) => main
+                .writer
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
+            DatabaseMode::Upgrade(upgrade) => upgrade
+                .conn
+                .lock()
+                .map_err(|e| Error::Database(e.to_string()))?,
+            DatabaseMode::Closed => {
+                return Err(Error::Database(
+                    "Database connection is temporarily unavailable.".into(),
+                ));
+            }
+        };
+        checkpoint(&conn)
+    }
 }
 
 fn map_profile_backup_sqlite_error(error: rusqlite::Error) -> Error {
@@ -550,7 +573,8 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
         "PRAGMA locking_mode=NORMAL;
          PRAGMA busy_timeout=5000;
          PRAGMA journal_mode=WAL;
-         PRAGMA secure_delete=ON;
+         PRAGMA synchronous=NORMAL;
+         PRAGMA secure_delete=OFF;
          PRAGMA optimize=0x10002;",
     )
     .map_err(Error::sqlite)?;
