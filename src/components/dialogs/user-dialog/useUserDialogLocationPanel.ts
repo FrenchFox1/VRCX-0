@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { firstNonNegativeLocationNumber } from '@/components/location/locationModel';
 import {
@@ -68,6 +68,11 @@ type UserDialogLocationGameState = {
     currentWorldId: string;
     currentWorldName: string;
     isGameRunning: boolean | null;
+};
+
+type UserDialogInstanceRequest = {
+    key: string;
+    request: Promise<Record<string, unknown> | null>;
 };
 
 function recordValues(value: unknown): Record<string, unknown>[] {
@@ -269,6 +274,7 @@ export function useUserDialogLocationPanel({
         createEmptyUserDialogLocationPanel()
     );
     const [locationRefreshToken, setLocationRefreshToken] = useState(0);
+    const instanceRequestRef = useRef<UserDialogInstanceRequest | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -283,6 +289,7 @@ export function useUserDialogLocationPanel({
             parsedLocation.isPrivate ||
             parsedLocation.isTraveling
         ) {
+            instanceRequestRef.current = null;
             setLocationPanel(createEmptyUserDialogLocationPanel());
             return () => {
                 active = false;
@@ -406,16 +413,34 @@ export function useUserDialogLocationPanel({
             ownerSeed,
             groupFallback: resolveGroupFallback(locationMetadata, ownerId)
         });
-        const instancePromise = canFetchInstance
-            ? vrchatInstanceRepository
-                  .getInstance({
-                      worldId: parsedLocation.worldId,
-                      instanceId: parsedLocation.instanceId,
-                      endpoint: currentEndpoint
-                  })
-                  .then((response) => record(response.json))
-                  .catch((): null => null)
-            : Promise.resolve(null);
+        let instancePromise: Promise<Record<string, unknown> | null>;
+        if (canFetchInstance) {
+            const requestKey = JSON.stringify([
+                currentEndpoint,
+                normalizedCurrentUserId,
+                normalizeUserId(profile.id),
+                activeLocation,
+                reloadToken,
+                locationRefreshToken
+            ]);
+            if (instanceRequestRef.current?.key !== requestKey) {
+                instanceRequestRef.current = {
+                    key: requestKey,
+                    request: vrchatInstanceRepository
+                        .getInstance({
+                            worldId: parsedLocation.worldId,
+                            instanceId: parsedLocation.instanceId,
+                            endpoint: currentEndpoint
+                        })
+                        .then((response) => record(response.json))
+                        .catch((): null => null)
+                };
+            }
+            instancePromise = instanceRequestRef.current.request;
+        } else {
+            instanceRequestRef.current = null;
+            instancePromise = Promise.resolve(null);
+        }
         const playerSnapshotPromise = currentLocationMatches
             ? loadCurrentInstanceRoster({
                   currentUserId: normalizedCurrentUserId,

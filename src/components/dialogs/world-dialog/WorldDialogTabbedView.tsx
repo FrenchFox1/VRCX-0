@@ -274,6 +274,7 @@ export function WorldDialogTabbedView({
     }, [instanceRows, world]);
     const instanceData = useWorldDialogInstanceData({
         endpoint: currentEndpoint,
+        sourceRevision: world.instances,
         targets: instanceDetailTargets
     });
     const instanceDetailsByLocation = instanceData.detailsByLocation;

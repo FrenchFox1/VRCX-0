@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 
 import type { EntityRecord } from '@/domain/entities/shared';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
@@ -33,9 +33,11 @@ function isInstanceDetailResult(
 
 export function useWorldDialogInstanceData({
     endpoint,
+    sourceRevision,
     targets
 }: {
     endpoint: string;
+    sourceRevision?: unknown;
     targets: WorldDialogInstanceDetailTarget[];
 }) {
     const [detailsByLocation, setDetailsByLocation] = useState<
@@ -49,19 +51,21 @@ export function useWorldDialogInstanceData({
                 .join('|'),
         [targets]
     );
+    const readTargets = useEffectEvent(() => targets);
 
     useEffect(() => {
-        if (!targets.length) {
+        const currentTargets = readTargets();
+        if (!currentTargets.length) {
             setDetailsByLocation({});
             return;
         }
 
         let active = true;
         const targetLocations = new Set(
-            targets.map((target) => target.location)
+            currentTargets.map((target) => target.location)
         );
         Promise.all(
-            targets.map((target) =>
+            currentTargets.map((target) =>
                 vrchatInstanceRepository
                     .getInstance({
                         worldId: target.worldId,
@@ -118,7 +122,7 @@ export function useWorldDialogInstanceData({
         return () => {
             active = false;
         };
-    }, [endpoint, targetKey, targets]);
+    }, [endpoint, sourceRevision, targetKey]);
 
     return { detailsByLocation };
 }
