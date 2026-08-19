@@ -76,8 +76,8 @@ pub fn user_group_permissions_get_input(
 pub fn group_paged_get_input(
     group_id: String,
     suffix: &str,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     message: &str,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, message)?;
@@ -133,8 +133,8 @@ pub fn member_get_input(
 
 pub fn members_get_input(
     group_id: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     sort: GroupMemberSort,
     role_id: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
@@ -160,8 +160,8 @@ pub fn members_get_input(
 
 pub fn members_search_input(
     group_id: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     query: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupMembersSearch requires groupId.")?;
@@ -182,8 +182,8 @@ pub fn members_search_input(
 pub fn gallery_get_input(
     group_id: String,
     gallery_id: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupGalleryGet requires groupId.")?;
     let gallery_id = require_text(gallery_id, "VrchatGroupGalleryGet requires galleryId.")?;
@@ -227,8 +227,8 @@ pub fn user_group_instances_get_input(
 
 pub fn join_requests_get_input(
     group_id: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     blocked: bool,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupJoinRequestsGet requires groupId.")?;
@@ -248,8 +248,8 @@ pub fn join_requests_get_input(
 
 pub fn logs_get_input(
     group_id: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     event_types: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupLogsGet requires groupId.")?;

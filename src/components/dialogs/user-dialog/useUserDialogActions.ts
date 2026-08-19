@@ -505,9 +505,7 @@ export function useUserDialogActions({
         try {
             await vrchatToolsRepository.reportUser({
                 userId: rosterUserId,
-                contentType: 'user',
-                reason: 'behavior-hacking',
-                type: 'report'
+                reason: 'behavior-hacking'
             });
             toast.success(t('dialog.user.success.report_sent'));
         } catch (error) {

@@ -8,6 +8,7 @@ import type {
     EmojiUploadParams,
     HttpApiExecuteResponse,
     InventoryItemUpdateRequest,
+    InventoryItemsCollectInput,
     InventoryListParams,
     MediaAssetUploadRequest,
     MediaFileListParams,
@@ -534,13 +535,11 @@ async function getInventoryItems(
 }
 
 async function collectInventoryItems(
-    params: InventoryListParams = {}
+    input: InventoryItemsCollectInput = {}
 ): Promise<InventoryItemsCollectResult> {
-    const normalizedParams = { ...params };
     try {
-        const result = await commands.appVrchatMediaInventoryItemsCollect({
-            params: normalizedParams
-        });
+        const result =
+            await commands.appVrchatMediaInventoryItemsCollect(input);
         const items = result.items.flatMap((value) => {
             if (!value || typeof value !== 'object' || Array.isArray(value)) {
                 return [];

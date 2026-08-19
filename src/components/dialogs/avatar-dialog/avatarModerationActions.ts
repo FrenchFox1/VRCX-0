@@ -147,13 +147,11 @@ export function createAvatarModerationActions({
         try {
             if (enabled) {
                 await avatarProfileRepository.sendAvatarModeration({
-                    avatarId: avatar.id,
-                    type: 'block'
+                    avatarId: avatar.id
                 });
             } else {
                 await avatarProfileRepository.deleteAvatarModeration({
-                    avatarId: avatar.id,
-                    type: 'block'
+                    avatarId: avatar.id
                 });
             }
             moderationRevisionRef.current += 1;

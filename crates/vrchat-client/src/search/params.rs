@@ -15,12 +15,20 @@ pub struct WorldSearchParams {
     pub user: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub n: Option<i64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub n: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub order: Option<QueryOrder>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub offset: Option<i64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub offset: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub search: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -50,10 +58,18 @@ pub struct UserSearchParams {
     pub search: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub developer_type: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub n: Option<i64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub offset: Option<i64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub n: Option<i32>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub offset: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub is_internal_variant: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -69,8 +85,16 @@ pub struct UserSearchParams {
 pub struct GroupSearchParams {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub offset: Option<i64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub n: Option<i64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub offset: Option<i32>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub n: Option<i32>,
 }

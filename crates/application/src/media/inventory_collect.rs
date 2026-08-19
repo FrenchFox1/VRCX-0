@@ -6,7 +6,7 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     http_api::{ApiJsonResponse, ApiScope},
-    media::{inventory_items_get_input, InventoryListParams},
+    media::{inventory_items_get_input, InventoryListParams, InventoryOrder},
 };
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
@@ -14,11 +14,78 @@ use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient
 const INVENTORY_COLLECT_PAGE_SIZE: usize = 100;
 const INVENTORY_COLLECT_MAX_PAGES: usize = 100;
 
-#[derive(Clone, Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "lowercase")]
+pub enum InventoryQueryItemType {
+    Bundle,
+    DroneSkin,
+    Emoji,
+    #[serde(rename = "iconFrame")]
+    IconFrame,
+    #[serde(rename = "nameplateEffect")]
+    NameplateEffect,
+    PortalSkin,
+    #[serde(rename = "profileEffect")]
+    ProfileEffect,
+    Prop,
+    Sticker,
+    WarpEffect,
+}
+
+impl InventoryQueryItemType {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Bundle => "bundle",
+            Self::DroneSkin => "droneskin",
+            Self::Emoji => "emoji",
+            Self::IconFrame => "iconFrame",
+            Self::NameplateEffect => "nameplateEffect",
+            Self::PortalSkin => "portalskin",
+            Self::ProfileEffect => "profileEffect",
+            Self::Prop => "prop",
+            Self::Sticker => "sticker",
+            Self::WarpEffect => "warpeffect",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "lowercase")]
+pub enum InventoryQueryFlag {
+    Archivable,
+    Cloneable,
+    Consumable,
+    Equippable,
+    Instantiatable,
+    Trashable,
+    Ugc,
+    Unique,
+}
+
+impl InventoryQueryFlag {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Archivable => "archivable",
+            Self::Cloneable => "cloneable",
+            Self::Consumable => "consumable",
+            Self::Equippable => "equippable",
+            Self::Instantiatable => "instantiatable",
+            Self::Trashable => "trashable",
+            Self::Ugc => "ugc",
+            Self::Unique => "unique",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct InventoryItemsCollectInput {
     #[serde(default)]
-    pub params: InventoryListParams,
+    pub types: Vec<InventoryQueryItemType>,
+    #[serde(default)]
+    pub not_flags: Vec<InventoryQueryFlag>,
+    #[serde(default)]
+    pub archived: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -40,7 +107,7 @@ pub async fn collect_inventory_items(
     input: InventoryItemsCollectInput,
 ) -> Result<InventoryItemsCollectOutput> {
     let (rows, truncated) =
-        collect_paged(|page_index| fetch_inventory_page(deps, &input.params, page_index)).await?;
+        collect_paged(|page_index| fetch_inventory_page(deps, &input, page_index)).await?;
     Ok(InventoryItemsCollectOutput {
         items: rows.into_iter().map(RawJson::from).collect(),
         truncated,
@@ -66,13 +133,13 @@ where
 
 async fn fetch_inventory_page(
     deps: &InventoryItemsCollectDeps<'_>,
-    base_params: &InventoryListParams,
+    input: &InventoryItemsCollectInput,
     page_index: usize,
 ) -> Result<Vec<Value>> {
     ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
     let request = inventory_items_get_input(
         deps.expected_scope.endpoint.clone(),
-        page_request_params(base_params, page_index),
+        page_request_params(input, page_index),
     );
     let response = deps
         .web
@@ -83,13 +150,30 @@ async fn fetch_inventory_page(
 }
 
 fn page_request_params(
-    base_params: &InventoryListParams,
+    input: &InventoryItemsCollectInput,
     page_index: usize,
 ) -> InventoryListParams {
-    let mut params = base_params.clone();
-    params.n = Some(INVENTORY_COLLECT_PAGE_SIZE as i64);
-    params.offset = Some((page_index * INVENTORY_COLLECT_PAGE_SIZE) as i64);
-    params
+    let types = input
+        .types
+        .iter()
+        .map(|value| value.as_str())
+        .collect::<Vec<_>>()
+        .join(",");
+    let not_flags = input
+        .not_flags
+        .iter()
+        .map(|value| value.as_str())
+        .collect::<Vec<_>>()
+        .join(",");
+    InventoryListParams {
+        n: Some(INVENTORY_COLLECT_PAGE_SIZE as i32),
+        offset: Some((page_index * INVENTORY_COLLECT_PAGE_SIZE) as i32),
+        order: Some(InventoryOrder::Newest),
+        types: (!types.is_empty()).then_some(types),
+        not_flags: (!not_flags.is_empty()).then_some(not_flags),
+        archived: input.archived,
+        ..Default::default()
+    }
 }
 
 fn parse_inventory_page(response: ApiJsonResponse) -> Result<Vec<Value>> {
@@ -173,15 +257,17 @@ mod tests {
     }
 
     #[test]
-    fn page_request_params_override_caller_pagination() {
-        let base = InventoryListParams {
-            order: Some(vrcx_0_vrchat_client::media::InventoryOrder::Newest),
-            n: Some(5),
-            offset: Some(7),
-            ..Default::default()
+    fn page_request_params_serialize_typed_filters_and_own_pagination() {
+        let input = InventoryItemsCollectInput {
+            types: vec![
+                InventoryQueryItemType::IconFrame,
+                InventoryQueryItemType::ProfileEffect,
+            ],
+            not_flags: vec![InventoryQueryFlag::Ugc],
+            archived: Some(false),
         };
 
-        let params = page_request_params(&base, 3);
+        let params = page_request_params(&input, 3);
 
         assert_eq!(
             params.order,
@@ -189,6 +275,21 @@ mod tests {
         );
         assert_eq!(params.n, Some(100));
         assert_eq!(params.offset, Some(300));
+        assert_eq!(params.types.as_deref(), Some("iconFrame,profileEffect"));
+        assert_eq!(params.not_flags.as_deref(), Some("ugc"));
+        assert_eq!(params.archived, Some(false));
+    }
+
+    #[test]
+    fn collect_input_rejects_unknown_filters_and_fields() {
+        assert!(serde_json::from_value::<InventoryItemsCollectInput>(json!({
+            "types": ["futureType"],
+        }))
+        .is_err());
+        assert!(serde_json::from_value::<InventoryItemsCollectInput>(json!({
+            "flags": ["ugc"],
+        }))
+        .is_err());
     }
 
     fn page_response(status: i32, json: Value) -> ApiJsonResponse {

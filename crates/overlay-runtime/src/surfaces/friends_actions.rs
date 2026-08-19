@@ -375,10 +375,7 @@ fn friends_panel_invite_params(
 }
 
 pub(crate) fn friends_panel_request_invite_params() -> RequestInviteRequest {
-    RequestInviteRequest {
-        platform: "standalonewindows".into(),
-        request_slot: None,
-    }
+    RequestInviteRequest { request_slot: None }
 }
 
 fn set_friends_panel_status_message(
@@ -433,13 +430,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn friends_panel_request_invite_params_match_frontend_default_platform() {
+    fn friends_panel_request_invite_params_use_no_message_slot() {
         assert_eq!(
             friends_panel_request_invite_params(),
-            RequestInviteRequest {
-                platform: "standalonewindows".into(),
-                request_slot: None,
-            }
+            RequestInviteRequest { request_slot: None }
         );
     }
 }

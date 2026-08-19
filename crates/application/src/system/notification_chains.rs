@@ -105,7 +105,7 @@ pub struct NotificationInstanceInviteInput {
     #[serde(default)]
     pub world_name: String,
     #[serde(default)]
-    pub message_slot: Option<i64>,
+    pub message_slot: Option<i32>,
     #[serde(default)]
     pub image_data: String,
     #[serde(default)]
@@ -119,7 +119,7 @@ pub struct NotificationInviteResponseInput {
     #[serde(default)]
     pub endpoint: String,
     pub target: NotificationTarget,
-    pub response_slot: i64,
+    pub response_slot: i32,
     #[serde(default)]
     pub image_data: String,
 }
@@ -186,11 +186,11 @@ pub enum NotificationChainRemoteCall {
     },
     InviteResponse {
         id: String,
-        response_slot: i64,
+        response_slot: i32,
     },
     InviteResponsePhoto {
         id: String,
-        response_slot: i64,
+        response_slot: i32,
         image_data: String,
     },
     InviteSend {

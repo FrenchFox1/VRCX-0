@@ -71,12 +71,11 @@ fn avatar_list_by_user_requires_user_or_user_id() {
 }
 
 #[test]
-fn avatar_moderation_send_defaults_type_to_block_when_blank() {
-    let (avatar_id, type_name, input) =
-        avatar_moderation_send_input(ENDPOINT.into(), " avtr_test ".into(), "  ".into()).unwrap();
+fn avatar_moderation_send_uses_block_type() {
+    let (avatar_id, input) =
+        avatar_moderation_send_input(ENDPOINT.into(), " avtr_test ".into()).unwrap();
 
     assert_eq!(avatar_id, "avtr_test");
-    assert_eq!(type_name, "block");
     let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
     assert_eq!(
         request.body.as_deref(),
@@ -85,25 +84,11 @@ fn avatar_moderation_send_defaults_type_to_block_when_blank() {
 }
 
 #[test]
-fn avatar_moderation_send_preserves_given_type() {
-    let (_, type_name, input) =
-        avatar_moderation_send_input(ENDPOINT.into(), "avtr_test".into(), " hide ".into()).unwrap();
-
-    assert_eq!(type_name, "hide");
-    let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
-    assert_eq!(
-        request.body.as_deref(),
-        Some(r#"{"avatarModerationType":"hide","targetAvatarId":"avtr_test"}"#)
-    );
-}
-
-#[test]
-fn avatar_moderation_delete_defaults_type_to_block_and_uses_query_params() {
-    let (avatar_id, type_name, input) =
-        avatar_moderation_delete_input(ENDPOINT.into(), " avtr_test ".into(), "  ".into()).unwrap();
+fn avatar_moderation_delete_uses_block_type_and_query_params() {
+    let (avatar_id, input) =
+        avatar_moderation_delete_input(ENDPOINT.into(), " avtr_test ".into()).unwrap();
 
     assert_eq!(avatar_id, "avtr_test");
-    assert_eq!(type_name, "block");
     let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
     assert_eq!(request.method, "DELETE");
     let params = query_pairs(&request.url);

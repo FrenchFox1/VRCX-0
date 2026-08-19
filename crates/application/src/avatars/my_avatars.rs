@@ -14,8 +14,8 @@ use vrcx_0_vrchat_client::{
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
 
-const MY_AVATARS_PAGE_SIZE: i64 = 50;
-const MY_AVATARS_MAX_OFFSET: i64 = 5_000;
+const MY_AVATARS_PAGE_SIZE: i32 = 50;
+const MY_AVATARS_MAX_OFFSET: i32 = 5_000;
 
 pub struct MyAvatarsDeps<'a> {
     pub db: &'a DatabaseService,
@@ -104,7 +104,7 @@ async fn fetch_my_avatar_pages(
             release_status: ReleaseStatusFilter::All,
         })?;
         let page = execute_json_array(deps, request).await?;
-        let page_len = page.len() as i64;
+        let page_len = page.len();
 
         if let Some(target) = target_avatar_id {
             if let Some(found) = page.into_iter().find(|avatar| record_id(avatar) == target) {
@@ -114,7 +114,7 @@ async fn fetch_my_avatar_pages(
             avatars.extend(page);
         }
 
-        if page_len < MY_AVATARS_PAGE_SIZE {
+        if page_len < MY_AVATARS_PAGE_SIZE as usize {
             break;
         }
         offset += MY_AVATARS_PAGE_SIZE;

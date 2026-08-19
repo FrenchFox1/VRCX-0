@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAuthFileAnalysisInput {
     #[serde(default)]
     pub(crate) file_id: String,
@@ -12,7 +12,7 @@ pub struct VrchatAuthFileAnalysisInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAuthSavedCredentialDeleteInput {
     #[serde(default)]
     pub(crate) user_id: String,

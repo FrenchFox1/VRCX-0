@@ -60,12 +60,11 @@ fn emoji_and_sticker_assets_use_expected_params_and_mask() {
         ENDPOINT.into(),
         MediaAssetUploadRequest::Emojis {
             image_data: "emoji-image".into(),
-            params: EmojiUploadParams {
-                tag: EmojiFileTag::EmojiAnimated,
+            params: EmojiUploadParams::EmojiAnimated {
                 animation_style: ImageAnimationStyle::Bounce,
                 mask_tag: ImageMaskTag::Square,
-                frames: Some(4),
-                frames_over_time: Some(15),
+                frames: 4,
+                frames_over_time: 15,
                 loop_style: Some(EmojiLoopStyle::PingPong),
             },
         },
@@ -157,6 +156,28 @@ fn media_params_reject_unknown_fields_and_enum_values() {
         "tag": "emoji",
         "animationStyle": "wave",
         "maskTag": "square",
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<EmojiUploadParams>(json!({
+        "tag": "emoji",
+        "animationStyle": "stop",
+        "maskTag": "square",
+        "frames": 4,
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<EmojiUploadParams>(json!({
+        "tag": "emojianimated",
+        "animationStyle": "stop",
+        "maskTag": "square",
+        "frames": 1,
+        "framesOverTime": 65,
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<EmojiUploadParams>(json!({
+        "tag": "emojianimated",
+        "animationStyle": "stop",
+        "maskTag": "square",
+        "frames": 4,
     }))
     .is_err());
     assert!(serde_json::from_value::<InventoryListParams>(json!({

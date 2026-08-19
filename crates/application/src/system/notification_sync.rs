@@ -17,7 +17,7 @@ use vrcx_0_vrchat_client::{
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
 
-const NOTIFICATION_SYNC_PAGE_SIZE: i64 = 100;
+const NOTIFICATION_SYNC_PAGE_SIZE: i32 = 100;
 const NOTIFICATION_SYNC_MAX_PAGES: usize = 50;
 
 pub struct NotificationSyncDeps<'a> {
@@ -126,14 +126,14 @@ pub async fn sync_notifications(
 
 async fn fetch_notification_pages(
     deps: &NotificationSyncDeps<'_>,
-    build_request: impl Fn(i64, i64) -> HttpApiRequestInput,
+    build_request: impl Fn(i32, i32) -> HttpApiRequestInput,
 ) -> Result<NotificationPages> {
     let mut rows = Vec::new();
     for page in 0..NOTIFICATION_SYNC_MAX_PAGES {
         ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
         let request = build_request(
             NOTIFICATION_SYNC_PAGE_SIZE,
-            page as i64 * NOTIFICATION_SYNC_PAGE_SIZE,
+            page as i32 * NOTIFICATION_SYNC_PAGE_SIZE,
         );
         let response = deps
             .web

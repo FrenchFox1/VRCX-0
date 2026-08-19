@@ -24,8 +24,8 @@ use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestIn
 
 use crate::{get_my_avatars, Error, MyAvatarsDeps, MyAvatarsInput, Result};
 
-const WORLD_PAGE_SIZE: i64 = 50;
-const FAVORITE_PAGE_SIZE: i64 = 300;
+const WORLD_PAGE_SIZE: i32 = 50;
+const FAVORITE_PAGE_SIZE: i32 = 300;
 const MAX_PAGES_PER_SOURCE: usize = 50;
 const RESULT_LIMIT: usize = 8;
 const DETAIL_QUERY_MIN_LENGTH: usize = 2;
@@ -482,12 +482,12 @@ async fn collect_pages(
     runtime: &QuickSearchRuntimeInner,
     scope: &RuntimeAuthScopeSnapshot,
     source: QuickSearchRemoteSource,
-    page_size: i64,
+    page_size: i32,
 ) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     for page in 0..=MAX_PAGES_PER_SOURCE {
         ensure_scope_matches(&runtime.auth_scope, scope)?;
-        let offset = (page as i64) * page_size;
+        let offset = (page as i32) * page_size;
         let request = match source {
             QuickSearchRemoteSource::OwnWorlds => {
                 let (_, request) = world_list_by_user_get_input(

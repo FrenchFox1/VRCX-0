@@ -20,7 +20,6 @@ interface SendInvitesToLocationInput {
 
 interface SendRequestInviteToUserInput {
     receiverUserId?: string;
-    platform?: string;
     requestSlot?: number | null;
     imageData?: string;
 }
@@ -89,7 +88,6 @@ export async function sendInviteToLocation({
 
 export async function sendRequestInviteToUser({
     receiverUserId,
-    platform = 'standalonewindows',
     requestSlot = null,
     imageData = ''
 }: SendRequestInviteToUserInput = {}) {
@@ -98,7 +96,7 @@ export async function sendRequestInviteToUser({
         return null;
     }
 
-    const params: RequestInviteRequest = { platform };
+    const params: RequestInviteRequest = {};
     if (requestSlot !== null) {
         params.requestSlot = requestSlot;
     }

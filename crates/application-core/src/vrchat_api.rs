@@ -8,6 +8,7 @@ use crate::{Result, RuntimeOperationStatus};
 pub type VrchatApiRequest = vrcx_0_vrchat_client::http_api::HttpApiRequestInput;
 pub type VrchatApiResponse = vrcx_0_vrchat_client::http_api::HttpApiExecuteResponse;
 pub type VrchatScope = vrcx_0_vrchat_client::http_api::ApiScope;
+pub use vrcx_0_vrchat_client::query::deserialize_nonnegative_i32;
 
 pub mod auth {
     pub use vrcx_0_vrchat_client::auth::{
@@ -78,11 +79,10 @@ pub mod media {
         inventory_items_get_input, inventory_slot_unequip_input, inventory_template_get_input,
         print_delete_input, print_get_input, print_upload_input, prints_get_input,
         reward_redeem_input, sticker_upload_input, tagged_image_upload_input,
-        user_inventory_item_get_input, world_image_set_input, EmojiFileTag, EmojiLoopStyle,
-        EmojiUploadParams, FileUploadStageKind, ImageAnimationStyle, ImageMaskTag,
-        InventoryItemUpdateRequest, InventoryListParams, InventoryOrder, MediaAssetKind,
-        MediaAssetUploadRequest, MediaFileListParams, MediaFileTag, PrintUploadParams,
-        ProfileDecorationEquipSlot,
+        user_inventory_item_get_input, world_image_set_input, EmojiLoopStyle, EmojiUploadParams,
+        FileUploadStageKind, ImageAnimationStyle, ImageMaskTag, InventoryItemUpdateRequest,
+        InventoryListParams, InventoryOrder, MediaAssetKind, MediaAssetUploadRequest,
+        MediaFileListParams, MediaFileTag, PrintUploadParams, ProfileDecorationEquipSlot,
     };
 }
 

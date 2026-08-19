@@ -14,7 +14,7 @@ pub struct ModerationSyncDeps<'a> {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ModerationSyncRefreshInput {
     pub user_id: String,
     #[serde(default)]
@@ -61,7 +61,7 @@ impl From<String> for ModerationMutationType {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ModerationSyncMutationInput {
     pub(super) target_user_id: String,
     #[serde(default)]

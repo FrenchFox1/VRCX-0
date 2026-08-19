@@ -8,10 +8,18 @@ pub struct WorldUpdateRequest {
     pub name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub capacity: Option<i64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub recommended_capacity: Option<i64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub capacity: Option<i32>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub recommended_capacity: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preview_youtube_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

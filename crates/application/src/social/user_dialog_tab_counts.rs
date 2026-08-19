@@ -32,13 +32,13 @@ const MAX_PROFILE_PAGES: usize = 50;
 const TAB_COUNTS_CACHE_CAPACITY: u64 = 32;
 const TAB_COUNTS_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const WORLD_PAGE_SIZE: usize = 100;
-const WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * WORLD_PAGE_SIZE) as i64;
+const WORLD_MAX_OFFSET: i32 = ((MAX_PROFILE_PAGES - 1) * WORLD_PAGE_SIZE) as i32;
 const FAVORITE_GROUP_PAGE_SIZE: usize = 50;
 const FAVORITE_GROUP_FETCH_CONCURRENCY: usize = 8;
 const FAVORITE_WORLD_PAGE_SIZE: usize = 300;
-const FAVORITE_WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i64;
+const FAVORITE_WORLD_MAX_OFFSET: i32 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i32;
 const MY_AVATAR_PAGE_SIZE: usize = 50;
-const MY_AVATAR_MAX_OFFSET: i64 = 5_000;
+const MY_AVATAR_MAX_OFFSET: i32 = 5_000;
 const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
 const AVATAR_PROVIDER_ENABLED_KEY: &str = "avatarRemoteDatabase";
 const AVATAR_PROVIDER_LIST_KEY: &str = "VRCX_avatarRemoteDatabaseProviderList";
@@ -242,7 +242,7 @@ async fn count_worlds(
             let (_, request) = world_list_by_user_get_input(
                 scope.endpoint.clone(),
                 target_user_id.into(),
-                WORLD_PAGE_SIZE as i64,
+                WORLD_PAGE_SIZE as i32,
                 offset,
                 WorldSearchSort::Updated,
                 QueryOrder::Descending,
@@ -271,7 +271,7 @@ async fn count_favorite_worlds(
                     async move {
                         let request = favorite_worlds_get_input(
                             scope.endpoint.clone(),
-                            FAVORITE_WORLD_PAGE_SIZE as i64,
+                            FAVORITE_WORLD_PAGE_SIZE as i32,
                             offset,
                             target_user_id.into(),
                             target_user_id.into(),
@@ -306,8 +306,8 @@ async fn collect_world_favorite_group_names(
     for page in 0..MAX_PROFILE_PAGES {
         let request = favorite_groups_get_input(
             scope.endpoint.clone(),
-            FAVORITE_GROUP_PAGE_SIZE as i64,
-            (page * FAVORITE_GROUP_PAGE_SIZE) as i64,
+            FAVORITE_GROUP_PAGE_SIZE as i32,
+            (page * FAVORITE_GROUP_PAGE_SIZE) as i32,
             target_user_id.into(),
         );
         let payload = execute_vrchat_payload(deps, scope, request, "favorite groups").await?;
@@ -336,7 +336,7 @@ async fn count_avatars(
                     endpoint: scope.endpoint.clone(),
                     user_id: String::new(),
                     user: "me".into(),
-                    n: MY_AVATAR_PAGE_SIZE as i64,
+                    n: MY_AVATAR_PAGE_SIZE as i32,
                     offset,
                     sort: AvatarListSort::Updated,
                     order: QueryOrder::Descending,
@@ -667,12 +667,12 @@ fn count_my_avatars(payload: &str, release_status: ReleaseStatusFilter) -> Resul
 
 async fn count_payload_pages_bounded<F, Fut, C>(
     page_size: usize,
-    max_offset: i64,
+    max_offset: i32,
     fetch_page: F,
     count_page: C,
 ) -> Result<usize>
 where
-    F: FnMut(i64) -> Fut,
+    F: FnMut(i32) -> Fut,
     Fut: Future<Output = Result<String>>,
     C: Fn(&str) -> Result<(usize, usize)>,
 {
@@ -686,7 +686,7 @@ where
         if page_len < page_size || offset >= max_offset {
             return Ok(count);
         }
-        offset += page_size as i64;
+        offset += page_size as i32;
     }
 }
 

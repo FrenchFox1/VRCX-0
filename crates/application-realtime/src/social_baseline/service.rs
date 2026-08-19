@@ -23,9 +23,9 @@ use crate::social_baseline::types::{
     SocialFriendRosterBaselineInput, SocialFriendRosterBaselineOutput,
 };
 
-const FAVORITES_PAGE_SIZE: i64 = 300;
-const FAVORITE_GROUPS_PAGE_SIZE: i64 = 50;
-const FRIEND_PAGE_SIZE: i64 = 50;
+const FAVORITES_PAGE_SIZE: i32 = 300;
+const FAVORITE_GROUPS_PAGE_SIZE: i32 = 50;
+const FRIEND_PAGE_SIZE: i32 = 50;
 
 #[derive(Clone)]
 pub struct SocialBaselineDeps {

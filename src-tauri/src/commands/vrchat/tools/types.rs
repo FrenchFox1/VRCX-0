@@ -9,14 +9,14 @@ pub struct VrchatToolsCalendarListInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsCalendarGroupInput {
     #[serde(default)]
     pub(crate) group_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsCalendarEventInput {
     #[serde(default)]
     pub(crate) group_id: String,
@@ -25,7 +25,7 @@ pub struct VrchatToolsCalendarEventInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsFollowGroupEventInput {
     #[serde(default)]
     pub(crate) group_id: String,
@@ -36,7 +36,7 @@ pub struct VrchatToolsFollowGroupEventInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsUserNoteSaveInput {
     #[serde(default)]
     pub(crate) target_user_id: String,
@@ -45,16 +45,12 @@ pub struct VrchatToolsUserNoteSaveInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsUserReportInput {
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
-    pub(crate) content_type: String,
-    #[serde(default)]
     pub(crate) reason: String,
-    #[serde(default, rename = "type")]
-    pub(crate) type_name: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -71,8 +67,7 @@ pub struct VrchatToolsInviteMessageEditInput {
     #[serde(default)]
     pub(crate) current_user_id: String,
     pub(crate) message_type: InviteMessageType,
-    #[serde(default)]
-    pub(crate) slot: String,
+    pub(crate) slot: i32,
     #[serde(default)]
     pub(crate) message: String,
 }

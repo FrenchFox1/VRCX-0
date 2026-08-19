@@ -20,7 +20,7 @@ pub struct VrchatRequestInvitePhotoSendInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatBoopInput {
     #[serde(default)]
     pub(crate) user_id: String,

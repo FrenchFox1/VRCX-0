@@ -26,7 +26,7 @@ pub const PRINT_AUTO_DELETE_LIMIT_MIN: i64 = 30;
 pub const PRINT_AUTO_DELETE_LIMIT_MAX: i64 = 60;
 pub const PRINT_FAVORITE_LIMIT_BUFFER: usize = 5;
 const PRINT_CLEANUP_DEBOUNCE: Duration = Duration::from_millis(2500);
-const PRINT_CLEANUP_LIST_COUNT: i64 = 100;
+const PRINT_CLEANUP_LIST_COUNT: i32 = 100;
 const PRINT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 #[derive(Clone, Debug, PartialEq, Eq)]

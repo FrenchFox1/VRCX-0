@@ -8,10 +8,18 @@ use crate::query::serialize_query;
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CalendarListParams {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub n: Option<i64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub offset: Option<i64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub n: Option<i32>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::query::deserialize_optional_nonnegative_i32"
+    )]
+    pub offset: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub date: Option<String>,
 }

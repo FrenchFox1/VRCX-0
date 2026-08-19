@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { EmojiUploadParams } from '@/platform/tauri/bindings';
 import mediaRepository, {
     type InventoryItemRecord,
     type MediaFileRecord
@@ -18,22 +17,22 @@ import {
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import {
+    buildEmojiUploadParams,
     CATEGORY_DEFINITIONS,
     INITIAL_INVENTORY_SUB_TABS,
     getInventoryGridDensityConfig,
     parseEmojiUploadSettings,
     readGridDensityPreference,
     resolveProfileDecorationMutation,
-    resolveEmojiStyleName,
     sanitizeInventoryGridDensity,
     scopeKey,
     validateImageFile,
     writeGridDensityPreference,
     type InventoryCategory,
     type InventoryTabDefinition,
-    type InventoryUploadTarget
+    type InventoryUploadTarget,
+    type EmojiUploadSettings
 } from './inventoryHelpers';
 
 export { IMAGE_UPLOAD_ACCEPT };
@@ -49,13 +48,7 @@ export type InventoryRow = MediaFileRecord & Partial<InventoryItemRecord>;
 const EMPTY_ROWS_BY_SCOPE: Record<string, InventoryRow[]> = Object.freeze({});
 const EMPTY_LOADING_BY_SCOPE: Record<string, boolean> = Object.freeze({});
 
-type InventoryUploadSettings = {
-    animationStyle: string;
-    fps: number;
-    frames: number;
-    isAnimated: boolean;
-    loopPingPong: boolean;
-};
+type InventoryUploadSettings = EmojiUploadSettings;
 
 type InventoryCropRequest = {
     aspectRatio: number;
@@ -121,7 +114,6 @@ async function loadInventoryRows(definition: InventoryTabDefinition) {
         return [];
     }
     const { items, truncated } = await mediaRepository.collectInventoryItems({
-        order: 'newest',
         ...definition.params
     });
     if (truncated) {
@@ -289,31 +281,6 @@ export function useInventoryPageState() {
         uploadInputRef.current?.click();
     }
 
-    function getEmojiUploadParams(settings: InventoryUploadSettings) {
-        const params: EmojiUploadParams = {
-            tag: settings.isAnimated ? 'emojianimated' : 'emoji',
-            animationStyle:
-                emojiAnimationStyleValues[
-                    resolveEmojiStyleName(settings.animationStyle)
-                ],
-            maskTag: 'square'
-        };
-        if (settings.isAnimated) {
-            params.frames = Math.min(
-                64,
-                Math.max(2, Number(settings.frames) || 4)
-            );
-            params.framesOverTime = Math.min(
-                64,
-                Math.max(1, Number(settings.fps) || 15)
-            );
-        }
-        if (settings.loopPingPong) {
-            params.loopStyle = 'pingpong';
-        }
-        return params;
-    }
-
     function uploadAsset(
         target: unknown,
         base64Body: string,
@@ -322,7 +289,7 @@ export function useInventoryPageState() {
         if (target === 'emojis') {
             return mediaRepository.uploadEmoji(
                 base64Body,
-                getEmojiUploadParams(settings)
+                buildEmojiUploadParams(settings)
             );
         }
         if (target === 'stickers') {

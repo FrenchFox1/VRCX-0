@@ -11,7 +11,7 @@ mod request;
 
 pub use request::RequestInviteRequest;
 
-pub fn notifications_v1_get_input(endpoint: String, n: i64, offset: i64) -> HttpApiRequestInput {
+pub fn notifications_v1_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
     get_input(
         endpoint,
         "auth/user/notifications",
@@ -22,7 +22,7 @@ pub fn notifications_v1_get_input(endpoint: String, n: i64, offset: i64) -> Http
     )
 }
 
-pub fn notifications_v2_get_input(endpoint: String, n: i64, offset: i64) -> HttpApiRequestInput {
+pub fn notifications_v2_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
     get_input(
         endpoint,
         "notifications",
@@ -35,8 +35,8 @@ pub fn notifications_v2_get_input(endpoint: String, n: i64, offset: i64) -> Http
 
 pub fn hidden_friend_requests_get_input(
     endpoint: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
 ) -> HttpApiRequestInput {
     get_input(
         endpoint,
@@ -150,7 +150,7 @@ pub fn notification_respond_input(
 pub fn invite_response_send_input(
     endpoint: String,
     id: String,
-    response_slot: i64,
+    response_slot: i32,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let id = require_text(id, "VrchatInviteResponseSend requires id.")?;
     Ok((
@@ -170,7 +170,7 @@ pub fn invite_response_send_input(
 pub fn invite_response_photo_input(
     endpoint: String,
     id: String,
-    response_slot: i64,
+    response_slot: i32,
     image_data: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let id = require_text(id, "VrchatInviteResponsePhotoSend requires id.")?;
@@ -271,7 +271,7 @@ pub fn request_invite_send_input(
             endpoint,
             "POST",
             format!("requestInvite/{}", encode_path_segment(&receiver_user_id)),
-            Some(json!(params)),
+            Some(request_invite_params(params)),
         ),
     ))
 }
@@ -300,12 +300,20 @@ pub fn request_invite_photo_input(
                 encode_path_segment(&receiver_user_id)
             )),
             body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
-                post_data: Some(json!(params).to_string()),
+                post_data: Some(request_invite_params(params).to_string()),
                 image_data,
             }),
             ..Default::default()
         },
     ))
+}
+
+fn request_invite_params(params: RequestInviteRequest) -> Value {
+    let mut value = json!({ "platform": "standalonewindows" });
+    if let Some(request_slot) = params.request_slot {
+        value["requestSlot"] = json!(request_slot);
+    }
+    value
 }
 
 pub fn boop_send_input(

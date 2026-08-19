@@ -3567,16 +3567,21 @@ export type DeepLinkAction =
     | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
 export type DesktopNotificationActivation = { userId: string };
-export type EmojiFileTag = 'emoji' | 'emojianimated';
 export type EmojiLoopStyle = 'pingpong';
-export type EmojiUploadParams = {
-    tag: EmojiFileTag;
-    animationStyle: ImageAnimationStyle;
-    maskTag: ImageMaskTag;
-    frames?: number | null;
-    framesOverTime?: number | null;
-    loopStyle?: EmojiLoopStyle | null;
-};
+export type EmojiUploadParams =
+    | {
+          tag: 'emoji';
+          animationStyle: ImageAnimationStyle;
+          maskTag: ImageMaskTag;
+      }
+    | {
+          tag: 'emojianimated';
+          animationStyle: ImageAnimationStyle;
+          maskTag: ImageMaskTag;
+          frames: number;
+          framesOverTime: number;
+          loopStyle?: EmojiLoopStyle | null;
+      };
 export type EmptyEventPayload = Record<string, never>;
 export type Entity = { kind: EntityKind; id: string; displayName: string };
 export type EntityKind = 'user' | 'world';
@@ -4421,7 +4426,11 @@ export type IntegrationApiStatus = {
     lastError: IntegrationApiFailure | null;
 };
 export type InventoryItemUpdateRequest = { isArchived: boolean };
-export type InventoryItemsCollectInput = { params?: InventoryListParams };
+export type InventoryItemsCollectInput = {
+    types?: InventoryQueryItemType[];
+    notFlags?: InventoryQueryFlag[];
+    archived?: boolean | null;
+};
 export type InventoryItemsCollectOutput = {
     items: RawJson[];
     truncated: boolean;
@@ -4440,6 +4449,26 @@ export type InventoryListParams = {
     archived?: boolean | null;
 };
 export type InventoryOrder = 'newest';
+export type InventoryQueryFlag =
+    | 'archivable'
+    | 'cloneable'
+    | 'consumable'
+    | 'equippable'
+    | 'instantiatable'
+    | 'trashable'
+    | 'ugc'
+    | 'unique';
+export type InventoryQueryItemType =
+    | 'bundle'
+    | 'droneskin'
+    | 'emoji'
+    | 'iconFrame'
+    | 'nameplateEffect'
+    | 'portalskin'
+    | 'profileEffect'
+    | 'prop'
+    | 'sticker'
+    | 'warpeffect';
 export type InviteMessageType =
     | 'message'
     | 'request'
@@ -5288,10 +5317,7 @@ export type RemoteModerationRow = {
     targetDisplayName: string;
     created: string;
 };
-export type RequestInviteRequest = {
-    platform: string;
-    requestSlot?: number | null;
-};
+export type RequestInviteRequest = { requestSlot?: number | null };
 export type ResolvedFriendLogName = { userId: string; displayName: string };
 export type Role = 'user' | 'assistant';
 export type RuntimeGameLogEventPayload = {
@@ -5737,7 +5763,7 @@ export type VrchatAvatarListByUserInput = {
     order: QueryOrder;
     releaseStatus: ReleaseStatusFilter;
 };
-export type VrchatAvatarModerationInput = { avatarId?: string; type?: string };
+export type VrchatAvatarModerationInput = { avatarId?: string };
 export type VrchatAvatarSaveInput = {
     avatarId?: string;
     params: AvatarUpdateRequest;
@@ -6002,7 +6028,7 @@ export type VrchatToolsFollowGroupEventInput = {
 export type VrchatToolsInviteMessageEditInput = {
     currentUserId?: string;
     messageType: InviteMessageType;
-    slot?: string;
+    slot: number;
     message?: string;
 };
 export type VrchatToolsInviteMessagesInput = {
@@ -6013,12 +6039,7 @@ export type VrchatToolsUserNoteSaveInput = {
     targetUserId?: string;
     note?: string;
 };
-export type VrchatToolsUserReportInput = {
-    userId?: string;
-    contentType?: string;
-    reason?: string;
-    type?: string;
-};
+export type VrchatToolsUserReportInput = { userId?: string; reason?: string };
 export type VrchatUserInput = {
     userId?: string;
     force?: boolean;

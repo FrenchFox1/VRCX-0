@@ -2,7 +2,7 @@ use serde::Deserialize;
 use vrcx_0_application_core::vrchat_api::instances::InstanceCreateRequest;
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatInstanceIdentityInput {
     #[serde(default)]
     pub(crate) world_id: String,
@@ -11,7 +11,7 @@ pub struct VrchatInstanceIdentityInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatInstanceShortNameInput {
     #[serde(default)]
     pub(crate) world_id: String,
@@ -28,7 +28,7 @@ pub struct VrchatInstanceCreateInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatInstanceSelfInviteInput {
     #[serde(default)]
     pub(crate) world_id: String,
@@ -39,7 +39,7 @@ pub struct VrchatInstanceSelfInviteInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatInstanceCloseInput {
     #[serde(default)]
     pub(crate) location: String,

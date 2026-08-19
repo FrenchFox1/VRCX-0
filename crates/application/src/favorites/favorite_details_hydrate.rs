@@ -25,7 +25,7 @@ use super::cache_policy::{
     FavoriteCacheKind,
 };
 
-const FAVORITE_DETAILS_PAGE_SIZE: i64 = 300;
+const FAVORITE_DETAILS_PAGE_SIZE: i32 = 300;
 const FAVORITE_DETAILS_MAX_PAGES: usize = 50;
 const FAVORITE_DETAILS_PROBE_CONCURRENCY: usize = 3;
 
@@ -387,7 +387,7 @@ async fn fetch_favorite_world_entities(
     deps: &FavoriteDetailsHydrateDeps<'_>,
 ) -> Result<Vec<Value>> {
     let mut entities = Vec::new();
-    let mut offset = 0_i64;
+    let mut offset = 0_i32;
     for _ in 0..FAVORITE_DETAILS_MAX_PAGES {
         let request = favorite_worlds_get_input(
             deps.expected_scope.endpoint.clone(),
@@ -416,7 +416,7 @@ async fn fetch_favorite_avatar_entities(
     let mut entities = Vec::new();
     let mut seen_ids = HashSet::new();
     for tag in tags {
-        let mut offset = 0_i64;
+        let mut offset = 0_i32;
         for _ in 0..FAVORITE_DETAILS_MAX_PAGES {
             let request = favorite_avatars_get_input(
                 deps.expected_scope.endpoint.clone(),

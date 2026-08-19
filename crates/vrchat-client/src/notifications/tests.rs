@@ -208,7 +208,6 @@ fn invite_and_request_invite_photos_build_legacy_upload_requests() {
         ENDPOINT.into(),
         " usr_target/unsafe ".into(),
         RequestInviteRequest {
-            platform: "standalonewindows".into(),
             request_slot: Some(2),
         },
         " request-image ".into(),
@@ -250,10 +249,7 @@ fn required_notification_fields_reject_empty_text() {
     assert!(request_invite_photo_input(
         ENDPOINT.into(),
         "usr_1".into(),
-        RequestInviteRequest {
-            platform: "standalonewindows".into(),
-            request_slot: None,
-        },
+        RequestInviteRequest { request_slot: None },
         " ".into(),
     )
     .is_err());
@@ -262,7 +258,6 @@ fn required_notification_fields_reject_empty_text() {
 #[test]
 fn request_invite_params_reject_unknown_fields() {
     assert!(serde_json::from_value::<RequestInviteRequest>(json!({
-        "platform": "standalonewindows",
         "message": "unsupported",
     }))
     .is_err());

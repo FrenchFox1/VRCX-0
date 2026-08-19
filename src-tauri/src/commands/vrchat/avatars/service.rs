@@ -262,15 +262,12 @@ pub async fn app__vrchat_avatar_moderation_send(
     input: VrchatAvatarModerationInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, type_name, request) = avatar_moderation_send_input(
-        deps.mutation.scope().endpoint.clone(),
-        input.avatar_id,
-        input.type_name,
-    )?;
+    let (avatar_id, request) =
+        avatar_moderation_send_input(deps.mutation.scope().endpoint.clone(), input.avatar_id)?;
     Ok(vrcx_0_application::execute_avatar_moderation_mutation(
         &deps,
         "app__vrchat_avatar_moderation_send",
-        format!("Sending avatar moderation {type_name} for {avatar_id}."),
+        format!("Sending avatar moderation block for {avatar_id}."),
         request,
     )
     .await?)
@@ -283,15 +280,12 @@ pub async fn app__vrchat_avatar_moderation_delete(
     input: VrchatAvatarModerationInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, type_name, request) = avatar_moderation_delete_input(
-        deps.mutation.scope().endpoint.clone(),
-        input.avatar_id,
-        input.type_name,
-    )?;
+    let (avatar_id, request) =
+        avatar_moderation_delete_input(deps.mutation.scope().endpoint.clone(), input.avatar_id)?;
     Ok(vrcx_0_application::execute_avatar_moderation_mutation(
         &deps,
         "app__vrchat_avatar_moderation_delete",
-        format!("Deleting avatar moderation {type_name} for {avatar_id}."),
+        format!("Deleting avatar moderation block for {avatar_id}."),
         request,
     )
     .await?)

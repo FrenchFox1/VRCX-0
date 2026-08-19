@@ -26,7 +26,7 @@ pub struct VrchatSearchWorldsInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatSearchShortNameInput {
     #[serde(default)]
     pub(crate) short_name: String,

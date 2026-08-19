@@ -320,7 +320,7 @@ async function expireNotification({
 
 async function sendRequestInvite({
     receiverUserId,
-    params = { platform: 'standalonewindows' }
+    params = {}
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId = receiverUserId?.trim() ?? '';
     if (!normalizedReceiverUserId) {
@@ -340,7 +340,7 @@ async function sendRequestInvite({
 
 async function sendRequestInvitePhoto({
     receiverUserId,
-    params = { platform: 'standalonewindows' },
+    params = {},
     imageData
 }: NotificationActionOptions = {}) {
     const normalizedReceiverUserId = receiverUserId?.trim() ?? '';

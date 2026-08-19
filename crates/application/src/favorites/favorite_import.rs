@@ -39,7 +39,7 @@ use super::FavoriteMutationCoordinator;
 pub const FAVORITE_IMPORT_MAX_ITEMS: usize = 1_000;
 const FAVORITE_IMPORT_INTERVAL: Duration = Duration::from_millis(500);
 const FAVORITE_IMPORT_CANCEL_POLL: Duration = Duration::from_millis(50);
-const FAVORITE_IMPORT_PAGE_SIZE: i64 = 300;
+const FAVORITE_IMPORT_PAGE_SIZE: i32 = 300;
 const FAVORITE_IMPORT_MAX_PAGES: usize = 50;
 
 pub type FavoriteImportKind = FavoriteEntityKind;

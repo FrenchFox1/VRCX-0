@@ -89,6 +89,4 @@ export interface AvatarProfileInput extends AvatarIdInput {
     currentUserId?: string | null;
 }
 
-export interface AvatarModerationInput extends AvatarIdInput {
-    type?: string;
-}
+export type AvatarModerationInput = AvatarIdInput;

@@ -110,8 +110,8 @@ pub fn user_represented_group_get_input(
 pub fn user_mutual_friends_get_input(
     endpoint: String,
     user_id: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     include_user_id_param: bool,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatUserMutualFriendsGet requires userId.")?;
