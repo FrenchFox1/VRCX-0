@@ -10,6 +10,7 @@ import { enrichEntityDialogHistory } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
+import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -31,12 +32,12 @@ import {
 } from './WorldOwnerEditDialogs';
 
 export interface WorldDialogWorkflowProps {
-    worldId?: unknown;
+    worldId?: string;
     seedData?: unknown;
-    initialAction?: unknown;
-    openNonce?: unknown;
-    initialActionNonce?: unknown;
-    initialNewInstanceDefaults?: unknown;
+    initialAction?: string;
+    openNonce?: number;
+    initialActionNonce?: number;
+    initialNewInstanceDefaults?: WorldNewInstanceDefaults | null;
 }
 
 type NewInstanceDialogProps = ComponentProps<typeof WorldNewInstanceDialog>;
@@ -84,11 +85,8 @@ export function WorldDialogContentWorkflow({
     const { t } = useTranslation();
     const navigate = useNavigate();
 
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     const normalizedSeedData = isRecord(seedData) ? seedData : null;
-    const normalizedOpenNonce = typeof openNonce === 'number' ? openNonce : 0;
-    const normalizedInitialActionNonce =
-        typeof initialActionNonce === 'number' ? initialActionNonce : 0;
     const profileWorldId = normalizedWorldId.split(':')[0] || normalizedWorldId;
     const {
         closeDialog,
@@ -268,25 +266,24 @@ export function WorldDialogContentWorkflow({
     }, [profileWorldId]);
 
     useEffect(() => {
-        const normalizedInitialAction = normalizeEntityId(initialAction);
-        const actionKey = `${profileWorldId}:${normalizedInitialAction}:${normalizedInitialActionNonce}`;
+        const actionKey = `${profileWorldId}:${initialAction}:${initialActionNonce}`;
         if (
             !world?.id ||
-            !normalizedInitialAction ||
+            !initialAction ||
             handledInitialActionRef.current === actionKey
         ) {
             return;
         }
 
         handledInitialActionRef.current = actionKey;
-        if (normalizedInitialAction === 'newInstanceSelfInvite') {
+        if (initialAction === 'newInstanceSelfInvite') {
             openNewInstanceDialog(true, initialNewInstanceDefaults);
-        } else if (normalizedInitialAction === 'newInstance') {
+        } else if (initialAction === 'newInstance') {
             openNewInstanceDialog(false, initialNewInstanceDefaults);
         }
     }, [
         initialAction,
-        normalizedInitialActionNonce,
+        initialActionNonce,
         initialNewInstanceDefaults,
         newInstanceGroups,
         openNewInstanceDialog,
@@ -364,7 +361,7 @@ export function WorldDialogContentWorkflow({
                     imageUrl,
                     actionStatus,
                     normalizedWorldId,
-                    openNonce: normalizedOpenNonce,
+                    openNonce,
                     previousInstances
                 }}
                 permissions={{

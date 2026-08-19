@@ -18,6 +18,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
 
+import type { WorldInstanceAccessType } from './worldNewInstanceTypes';
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
@@ -315,9 +317,9 @@ describe('WorldNewInstanceDialog', () => {
         });
     });
 
-    it.each(['friends', 'invite'])(
+    it.each<[WorldInstanceAccessType]>([['friends'], ['invite']])(
         'disables inviting to a non-owned legacy %s instance',
-        (accessType) => {
+        (accessType: WorldInstanceAccessType) => {
             const props = defaultProps({
                 request: makeRequest({
                     selectedTab: 'Legacy',

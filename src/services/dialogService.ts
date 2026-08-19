@@ -9,7 +9,8 @@ import { recordUserProfile } from '@/services/userFactAccessService';
 import {
     useDialogStore,
     type ActiveDialog,
-    type DialogBreadcrumb
+    type DialogBreadcrumb,
+    type WorldNewInstanceDefaults
 } from '@/state/dialogStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -22,7 +23,7 @@ type EntityDialogPayload =
           seedData?: DialogRecord | null;
           initialAction?: string;
           initialActionNonce?: number;
-          initialNewInstanceDefaults?: DialogRecord | null;
+          initialNewInstanceDefaults?: WorldNewInstanceDefaults | null;
       })
     | null;
 type EntityDialog = ActiveDialog & {
@@ -63,7 +64,7 @@ type OpenWorldDialogOptions = {
     description?: unknown;
     seedData?: DialogRecord | null;
     initialAction?: string;
-    initialNewInstanceDefaults?: DialogRecord | null;
+    initialNewInstanceDefaults?: WorldNewInstanceDefaults | null;
 };
 
 type OpenAvatarDialogOptions = {

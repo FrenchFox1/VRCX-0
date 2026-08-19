@@ -4,7 +4,6 @@ import { commands } from '@/platform/tauri/bindings';
 import type { HostCapabilities } from '@/platform/tauri/bindings';
 import {
     getHostCapabilityUnavailableReason,
-    isHostCapabilityKey,
     isHostCapabilityAvailable,
     isHostCapabilitySupported
 } from '@/services/hostCapabilityService';
@@ -14,6 +13,7 @@ import { recordRecentToolOpen } from '@/services/toolRecentService';
 import {
     toolDefinitionMap,
     type ToolAppApiMethod,
+    type ToolDialogKey,
     type ToolDefinition
 } from '@/shared/constants/tools';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -46,7 +46,7 @@ const toolRouteMap = {
     'group-moderation': '/tools/group-moderation'
 } satisfies Record<string, string>;
 
-const toolDialogHostMap: Record<string, ToolDialogHostKey> = {
+const toolDialogHostMap: Record<ToolDialogKey, ToolDialogHostKey> = {
     'app-launcher': 'appLauncherOpen',
     'presence-schedule': 'presenceScheduleOpen',
     'presence-room-rules': 'presenceRoomRulesOpen',
@@ -86,9 +86,6 @@ export function isToolCapabilityAvailable(
     }
     if (hostCapabilities) {
         return capabilities.every((capability) => {
-            if (!isHostCapabilityKey(capability)) {
-                return false;
-            }
             const status = hostCapabilities[capability];
             return tool?.requiredCapabilityMode === 'supported'
                 ? status.supported && status.enabled
@@ -96,17 +93,9 @@ export function isToolCapabilityAvailable(
         });
     }
     if (tool?.requiredCapabilityMode === 'supported') {
-        return capabilities.every(
-            (capability) =>
-                isHostCapabilityKey(capability) &&
-                isHostCapabilitySupported(capability)
-        );
+        return capabilities.every(isHostCapabilitySupported);
     }
-    return capabilities.every(
-        (capability) =>
-            isHostCapabilityKey(capability) &&
-            isHostCapabilityAvailable(capability)
-    );
+    return capabilities.every(isHostCapabilityAvailable);
 }
 
 export function getToolCapabilityUnavailableReason(
@@ -120,9 +109,7 @@ export function getToolCapabilityUnavailableReason(
         return '';
     }
     const capability = capabilities[0];
-    return isHostCapabilityKey(capability)
-        ? getHostCapabilityUnavailableReason(capability)
-        : `${capability} is unavailable in the current host.`;
+    return getHostCapabilityUnavailableReason(capability);
 }
 
 export async function triggerToolByKey(
@@ -197,12 +184,10 @@ export async function triggerToolByKey(
     }
 
     if (action.type === 'dialog') {
-        const dialogKey = String(action.dialogKey || '');
-        const hostKey = toolDialogHostMap[dialogKey];
-        if (hostKey) {
-            useRuntimeStore.getState().setSystemHostOpen(hostKey, true);
-            return;
-        }
+        useRuntimeStore
+            .getState()
+            .setSystemHostOpen(toolDialogHostMap[action.dialogKey], true);
+        return;
     }
 
     toast.error(

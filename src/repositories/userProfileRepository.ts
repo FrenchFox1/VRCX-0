@@ -70,7 +70,7 @@ type UserMutualFriendRow = UserRecord & {
 };
 
 interface UserEndpointInput {
-    userId?: unknown;
+    userId?: string;
 }
 
 interface UserProfileInput extends UserEndpointInput {
@@ -94,18 +94,18 @@ interface CurrentUserUpdateInput extends UserEndpointInput {
 export type ProfileBackgroundUpdate = CurrentUserProfileUpdateRequest;
 
 interface CurrentUserProfileUpdateInput {
-    expectedUserId?: unknown;
+    expectedUserId?: string;
     params: CurrentUserProfileUpdateRequest;
 }
 
 interface CurrentUserBadgeInput extends UserEndpointInput {
-    badgeId?: unknown;
+    badgeId?: string;
     hidden?: boolean;
     showcased?: boolean;
 }
 
 interface CurrentUserTagsInput extends UserEndpointInput {
-    tags?: unknown;
+    tags?: string[];
 }
 
 function normalizeUserProfile(user: unknown): UserProfileRecord {
@@ -191,7 +191,7 @@ function mergeCurrentUserUpdateResponse(
 ): UserRecord {
     const responseUser: UserRecord = isRecord(responseJson) ? responseJson : {};
     const cachedUserRecord = isRecord(cachedUser) ? cachedUser : {};
-    const paramsRecord = isRecord(params) ? params : {};
+    const paramsRecord = params;
     let nextUser: UserRecord = responseUser;
 
     if (
@@ -224,10 +224,7 @@ async function getUserProfile({
     dialog = false,
     isFriend = null
 }: UserProfileInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getUserProfile requires a user id.'
@@ -250,10 +247,7 @@ async function getUserProfile({
 async function getFriendStatus({
     userId
 }: UserEndpointInput): Promise<UserFriendStatus> {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getFriendStatus requires a user id.'
@@ -280,10 +274,7 @@ async function getUserAppearanceProfile({
     userId,
     asSelf = false
 }: UserAppearanceProfileInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getUserAppearanceProfile requires a user id.'
@@ -293,7 +284,7 @@ async function getUserAppearanceProfile({
     const requestProfile = async () => {
         const response = await commands.appVrchatUserProfileGet({
             userId: normalizedUserId,
-            asSelf: asSelf === true
+            asSelf
         });
         const json = unwrapVrchatUserResponse<UserProfileEntity>(
             response,
@@ -317,10 +308,7 @@ async function getUserAppearanceProfile({
 }
 
 async function getUserGroups({ userId }: UserEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getUserGroups requires a user id.'
@@ -347,10 +335,7 @@ async function getUserGroups({ userId }: UserEndpointInput) {
 }
 
 async function getRepresentedGroup({ userId, force = false }: UserGroupsInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getRepresentedGroup requires a user id.'
@@ -378,10 +363,7 @@ async function getRepresentedGroup({ userId, force = false }: UserGroupsInput) {
 }
 
 async function getAllMutualFriends({ userId }: UserEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getAllMutualFriends requires a user id.'
@@ -399,10 +381,7 @@ async function updateCurrentUser({
     userId,
     params = {}
 }: CurrentUserUpdateInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.updateCurrentUser requires a user id.'
@@ -431,10 +410,7 @@ async function updateCurrentUserProfile({
     expectedUserId,
     params
 }: CurrentUserProfileUpdateInput) {
-    const normalizedUserId =
-        typeof expectedUserId === 'string'
-            ? expectedUserId.trim()
-            : String(expectedUserId ?? '').trim();
+    const normalizedUserId = expectedUserId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.updateCurrentUserProfile requires a user id.'
@@ -456,14 +432,8 @@ async function updateCurrentUserBadge({
     hidden = false,
     showcased = false
 }: CurrentUserBadgeInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
-    const normalizedBadgeId =
-        typeof badgeId === 'string'
-            ? badgeId.trim()
-            : String(badgeId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
+    const normalizedBadgeId = badgeId.trim();
     if (!normalizedUserId || !normalizedBadgeId) {
         throw new Error(
             'UserProfileRepository.updateCurrentUserBadge requires a user id and badge id.'
@@ -472,8 +442,8 @@ async function updateCurrentUserBadge({
 
     const response = await commands.appVrchatCurrentUserBadgeUpdate({
         badgeId: normalizedBadgeId,
-        hidden: Boolean(hidden),
-        showcased: Boolean(showcased)
+        hidden,
+        showcased
     });
     unwrapVrchatUserResponse(
         response,
@@ -484,10 +454,7 @@ async function updateCurrentUserBadge({
 }
 
 async function addCurrentUserTags({ userId, tags = [] }: CurrentUserTagsInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.addCurrentUserTags requires a user id.'
@@ -495,7 +462,7 @@ async function addCurrentUserTags({ userId, tags = [] }: CurrentUserTagsInput) {
     }
 
     const response = await commands.appVrchatCurrentUserTagsAdd({
-        tags: Array.isArray(tags) ? tags.map(String) : []
+        tags
     });
     const json = unwrapVrchatUserResponse(
         response,
@@ -508,10 +475,7 @@ async function removeCurrentUserTags({
     userId,
     tags = []
 }: CurrentUserTagsInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.removeCurrentUserTags requires a user id.'
@@ -519,7 +483,7 @@ async function removeCurrentUserTags({
     }
 
     const response = await commands.appVrchatCurrentUserTagsRemove({
-        tags: Array.isArray(tags) ? tags.map(String) : []
+        tags
     });
     const json = unwrapVrchatUserResponse(
         response,

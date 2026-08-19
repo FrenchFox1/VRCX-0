@@ -12,6 +12,7 @@ import type {
     FavoriteStore,
     RemoteFavoriteKind
 } from '@/domain/favorites/types';
+import type { VrchatFavoriteType } from '@/platform/tauri/bindings';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { persistAvatarDetails } from '@/services/favoriteAvatarCacheService';
@@ -118,8 +119,23 @@ function groupDisplayLabel(group: FavoriteStoreGroup | undefined) {
 export function resolveFavoriteAddType(
     group: FavoriteStoreGroup,
     fallbackKind: FavoriteKind
-): RemoteFavoriteKind {
-    return group.type || fallbackKind;
+): VrchatFavoriteType {
+    const type: RemoteFavoriteKind | undefined = group.type;
+    if (isVrchatFavoriteType(type)) {
+        return type;
+    }
+    return fallbackKind;
+}
+
+function isVrchatFavoriteType(
+    type: RemoteFavoriteKind | undefined
+): type is VrchatFavoriteType {
+    return (
+        type === 'friend' ||
+        type === 'avatar' ||
+        type === 'world' ||
+        type === 'vrcPlusWorld'
+    );
 }
 
 export function resolveRemoteFavoriteGroupLabel(

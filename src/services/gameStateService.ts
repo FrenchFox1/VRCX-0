@@ -7,7 +7,6 @@ import {
     stopCurrentAvatarWearTimer
 } from '@/services/avatarWearTimeService';
 import { resetGameLogSessionState } from '@/services/gameLogIngestService';
-import { normalizeBoolean } from '@/shared/utils/coerce';
 import { normalizeString } from '@/shared/utils/string';
 import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -130,15 +129,14 @@ export async function handleGameRunningUpdate(
     const currentUserSnapshot = runtimeStore.auth.currentUserSnapshot;
     const previousGameRunning = runtimeStore.gameState.isGameRunning;
     const previousSteamVrRunning = runtimeStore.gameState.isSteamVRRunning;
-    const nextGameRunning = normalizeBoolean(projection?.isGameRunning);
-    const nextSteamVrRunning = normalizeBoolean(projection?.isSteamVRRunning);
+    const nextGameRunning = projection.isGameRunning;
+    const nextSteamVrRunning = projection.isSteamVRRunning;
     const gameRunningChanged = previousGameRunning !== nextGameRunning;
     const steamVrRunningChanged = previousSteamVrRunning !== nextSteamVrRunning;
     const changed = gameRunningChanged || steamVrRunningChanged;
     const payloadChangedAt =
-        normalizeString(projection?.lastGameStateChangedAt) ||
-        normalizeString(projection?.changedAt);
-    const payloadStartedAt = normalizeString(projection?.lastGameStartedAt);
+        projection.lastGameStateChangedAt || projection.changedAt;
+    const payloadStartedAt = projection.lastGameStartedAt || '';
     const shouldRefreshDiscordPresence =
         gameRunningChanged ||
         (nextGameRunning === true &&

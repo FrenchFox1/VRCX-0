@@ -14,28 +14,6 @@ export type HostCapabilityKey = {
     ]: HostCapabilities[K] extends HostCapabilityStatus ? K : never;
 }[keyof HostCapabilities];
 
-const HOST_CAPABILITY_KEYS: ReadonlySet<string> = new Set([
-    'localDatabase',
-    'websocketRuntime',
-    'gameLogWatcher',
-    'runtimeGameLogIngest',
-    'runtimeGameLogSideEffects',
-    'runtimeGameClientLifecycle',
-    'runtimeRealtimeTransport',
-    'gameProcessMonitor',
-    'vrchatPathDiscovery',
-    'steamLibraryDiscovery',
-    'steamRuntimeIntegration',
-    'registryPrefs',
-    'gameLaunch',
-    'vrchatLaunchPipe',
-    'screenshotCache'
-]);
-
-export function isHostCapabilityKey(key: string): key is HostCapabilityKey {
-    return HOST_CAPABILITY_KEYS.has(key);
-}
-
 export async function initializeHostCapabilities(
     prefetchedCapabilities?: HostCapabilities
 ): Promise<HostCapabilities> {

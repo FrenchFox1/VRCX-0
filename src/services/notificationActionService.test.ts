@@ -278,7 +278,7 @@ describe('notificationActionService', () => {
         const action = sendInviteResponseNotification({
             currentUserId: 'usr_self',
             notification,
-            responseSlot: '1',
+            responseSlot: 1,
             imageData: 'base64data',
             withUploadTimeout
         });
@@ -405,8 +405,7 @@ describe('notificationActionService', () => {
         const {
             expireNotificationLocally,
             findIncomingFriendRequestNotification,
-            sendBoopReplyNotification,
-            sendInviteResponseNotification
+            sendBoopReplyNotification
         } = await import('./notificationActionService');
 
         await expect(
@@ -421,13 +420,6 @@ describe('notificationActionService', () => {
                 notification: { id: 'notif_without_sender' }
             })
         ).rejects.toThrow('Cannot send boop: no sender user id is available.');
-        await expect(
-            sendInviteResponseNotification({
-                currentUserId: 'usr_self',
-                notification,
-                responseSlot: 'invalid'
-            })
-        ).rejects.toThrow('Response slot must be a number.');
         await expect(
             findIncomingFriendRequestNotification({
                 currentUserId: ' ',

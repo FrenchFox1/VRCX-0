@@ -69,17 +69,16 @@ function unwrapVrchatSearchResponse<
     };
 }
 
-async function getWorlds(params: WorldSearchParams = {}, option?: unknown) {
+async function getWorlds(
+    params: WorldSearchParams = {},
+    option: string | null = null
+) {
     const normalizedParams = normalizeParams(params);
-    const normalizedOption =
-        typeof option === 'undefined' || option === null ? '' : String(option);
     const response = await commands.appVrchatSearchWorldsGet({
         params: normalizedParams,
-        option: normalizedOption
+        option
     });
-    const path = normalizedOption
-        ? `worlds/${encodeURIComponent(normalizedOption)}`
-        : 'worlds';
+    const path = option ? `worlds/${encodeURIComponent(option)}` : 'worlds';
     return unwrapVrchatSearchResponse<SearchWorldJson[]>(
         response,
         path,
@@ -90,8 +89,8 @@ async function getWorlds(params: WorldSearchParams = {}, option?: unknown) {
     );
 }
 
-async function getWorldById(worldId: unknown) {
-    const normalizedWorldId = String(worldId || '').trim();
+async function getWorldById(worldId: string) {
+    const normalizedWorldId = worldId.trim();
     const response = await commands.appVrchatSearchWorldsGet({
         params: {},
         option: normalizedWorldId
@@ -140,8 +139,8 @@ async function getGroupsStrictSearch(params: GroupSearchParams = {}) {
     );
 }
 
-async function getInstanceFromShortName(shortName: unknown) {
-    const normalizedShortName = String(shortName || '').trim();
+async function getInstanceFromShortName(shortName: string) {
+    const normalizedShortName = shortName.trim();
     const response = await commands.appVrchatSearchInstanceShortNameGet({
         shortName: normalizedShortName
     });

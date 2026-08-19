@@ -118,15 +118,15 @@ const initialState: ShellStoreState = {
     taskbarIconNotify: false
 };
 
-const themeModeValues = new Set<unknown>(['system', 'light', 'dark']);
 const themeColorValues = new Set(Object.keys(THEME_COLOR_CONFIG));
-const tableDensityValues = new Set<unknown>(['standard', 'compact']);
 
 function normalizeThemeMode(value: unknown): ThemeMode {
     if (value === 'midnight') {
         return 'dark';
     }
-    return themeModeValues.has(value) ? (value as ThemeMode) : 'system';
+    return value === 'system' || value === 'light' || value === 'dark'
+        ? value
+        : 'system';
 }
 
 function normalizeThemeColor(value: unknown): string {
@@ -142,7 +142,7 @@ export function normalizeTableDensity(value: unknown): TableDensity {
     if (value === 'comfortable') {
         return 'standard';
     }
-    return tableDensityValues.has(value) ? (value as TableDensity) : 'standard';
+    return value === 'standard' || value === 'compact' ? value : 'standard';
 }
 
 export function normalizeNavWidth(value: unknown): number {

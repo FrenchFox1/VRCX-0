@@ -76,7 +76,7 @@ type SettingsPreferenceActionsDeps = {
         optimistic?: () => PreferenceRollback
     ) => Promise<boolean>;
     configRepository: {
-        setMany(entries: Array<[string, unknown]>): Promise<void>;
+        setMany(entries: Array<[string, string]>): Promise<void>;
     };
     customFontDraft: CustomFontDraft;
     databaseMaintenanceRepository: {

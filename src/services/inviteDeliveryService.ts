@@ -2,38 +2,36 @@ import { commands, type RequestInviteRequest } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
 
 interface SendInviteToLocationInput {
-    receiverUserId?: unknown;
-    instanceId?: unknown;
-    worldId?: unknown;
-    worldName?: unknown;
-    messageSlot?: unknown;
-    imageData?: unknown;
-    rsvp?: unknown;
+    receiverUserId?: string;
+    instanceId?: string;
+    worldId?: string;
+    worldName?: string;
+    messageSlot?: number | null;
+    imageData?: string;
+    rsvp?: boolean | null;
 }
 
 interface SendInvitesToLocationInput {
-    receiverUserIds?: unknown[];
-    location?: unknown;
-    shortName?: unknown;
-    worldName?: unknown;
+    receiverUserIds?: string[];
+    location?: string;
+    shortName?: string;
+    worldName?: string;
 }
 
 interface SendRequestInviteToUserInput {
-    receiverUserId?: unknown;
+    receiverUserId?: string;
     platform?: string;
-    requestSlot?: unknown;
-    imageData?: unknown;
+    requestSlot?: number | null;
+    imageData?: string;
 }
 
 interface SendBoopToUserInput {
-    userId?: unknown;
-    emojiId?: unknown;
+    userId?: string;
+    emojiId?: string;
 }
 
-function normalizeText(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeText(value?: string | null): string {
+    return value?.trim() ?? '';
 }
 
 export async function sendInvitesToLocation({
@@ -43,7 +41,9 @@ export async function sendInvitesToLocation({
     worldName
 }: SendInvitesToLocationInput = {}) {
     return commands.appInstanceInviteBatch({
-        receiverUserIds: receiverUserIds.map(normalizeText).filter(Boolean),
+        receiverUserIds: receiverUserIds
+            .map((userId) => userId.trim())
+            .filter(Boolean),
         location: normalizeText(location),
         shortName: normalizeText(shortName),
         worldName: normalizeText(worldName)
@@ -70,20 +70,14 @@ export async function sendInviteToLocation({
         return null;
     }
 
-    const normalizedMessageSlot = Number.parseInt(
-        String(messageSlot ?? ''),
-        10
-    );
     const outcome = await commands.appNotificationInstanceInviteSend({
         receiverUserId: normalizedReceiverUserId,
         instanceId: normalizedInstanceId,
         worldId: normalizedWorldId,
         worldName: normalizeText(worldName),
-        messageSlot: Number.isFinite(normalizedMessageSlot)
-            ? normalizedMessageSlot
-            : null,
+        messageSlot,
         imageData: normalizeText(imageData),
-        rsvp: typeof rsvp === 'boolean' ? rsvp : null
+        rsvp
     });
     if (outcome.status === 'remoteFailed') {
         throw new Error(
@@ -105,12 +99,8 @@ export async function sendRequestInviteToUser({
     }
 
     const params: RequestInviteRequest = { platform };
-    const normalizedRequestSlot = Number.parseInt(
-        String(requestSlot ?? ''),
-        10
-    );
-    if (Number.isFinite(normalizedRequestSlot)) {
-        params.requestSlot = normalizedRequestSlot;
+    if (requestSlot !== null) {
+        params.requestSlot = requestSlot;
     }
 
     const normalizedImageData = normalizeText(imageData);

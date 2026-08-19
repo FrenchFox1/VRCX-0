@@ -113,7 +113,7 @@ export function createGalleryAssetActions({
         setTabLoading('prints', true);
         try {
             const { json } = await mediaRepository.getPrints({
-                userId: currentUserId,
+                userId: currentUserId || '',
                 n: 100
             });
             const rows = Array.isArray(json) ? [...json] : [];

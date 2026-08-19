@@ -28,9 +28,9 @@ export type GalleryUploadOptions = {
     note?: string;
 };
 
-type DialogResult = {
+type DialogResult<TValue = never> = {
     ok: boolean;
-    value?: unknown;
+    value?: TValue;
 };
 
 type DialogRequest = {
@@ -87,7 +87,7 @@ export type GalleryActionDeps = GalleryControllerDeps & {
         fileName: unknown,
         settings?: Partial<EmojiUploadSettings>
     ): EmojiUploadSettings;
-    prompt(request: DialogRequest): Promise<DialogResult>;
+    prompt(request: DialogRequest): Promise<DialogResult<string>>;
     readFileAsBase64(file: Blob): Promise<string>;
     t: Translation;
     toast: ToastApi;

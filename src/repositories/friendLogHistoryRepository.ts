@@ -1,6 +1,5 @@
 import {
     FRIEND_LOG_TYPES,
-    isFriendLogType,
     type FriendLogType
 } from '@/domain/friends/friendLog';
 import {
@@ -34,15 +33,11 @@ export interface FriendLogHistoryEntry {
 }
 
 export interface FriendLogHistoryOptions {
-    targetUserId?: unknown;
-    types?: unknown[];
+    targetUserId?: string;
+    types?: FriendLogType[];
 }
 
 type FriendLogHistorySourceRow = FriendLogHistoryOutput;
-
-function valueAsString(value: unknown): string {
-    return value == null ? '' : String(value);
-}
 
 function valueAsInt(value: unknown): number {
     return Number.parseInt(String(value ?? 0), 10) || 0;
@@ -54,7 +49,7 @@ function normalizeFriendLogHistoryRow(
     const normalizedRow: FriendLogHistoryRow = {
         rowId: row.rowId,
         created_at: row.createdAt,
-        type: valueAsString(row.type),
+        type: row.type,
         userId: row.userId,
         displayName: row.displayName,
         friendNumber: row.friendNumber
@@ -87,30 +82,12 @@ function normalizeFriendLogHistoryEntryForRuntime(
 }
 
 async function getFriendLogHistory(
-    userId: unknown,
+    userId: string,
     options: FriendLogHistoryOptions = {}
 ): Promise<FriendLogHistoryRow[]> {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
-    const normalizedTargetUserId =
-        typeof options.targetUserId === 'string'
-            ? options.targetUserId.trim()
-            : String(options.targetUserId ?? '').trim();
-
-    const normalizedTypes = Array.isArray(options.types)
-        ? options.types
-              .map((entry) =>
-                  typeof entry === 'string'
-                      ? entry.trim()
-                      : String(entry ?? '').trim()
-              )
-              .filter(
-                  (entry): entry is FriendLogType =>
-                      Boolean(entry) && isFriendLogType(entry)
-              )
-        : [];
+    const normalizedUserId = userId.trim();
+    const normalizedTargetUserId = options.targetUserId?.trim() ?? '';
+    const normalizedTypes = Array.from(new Set(options.types ?? []));
 
     const rows = await commands.appFriendLogHistoryQuery({
         userId: normalizedUserId,
@@ -120,17 +97,15 @@ async function getFriendLogHistory(
 
     return rows
         .map(normalizeFriendLogHistoryRow)
-        .filter((row) => typeof row.userId === 'string' && row.userId.trim());
+        .filter((row) => row.userId.trim());
 }
 
 async function deleteFriendLogHistory(
-    userId: unknown,
+    userId: string,
     entry: FriendLogHistoryEntry | null | undefined
 ) {
     return commands.appFriendLogHistoryDelete(
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim(),
+        userId.trim(),
         normalizeFriendLogHistoryEntryForRuntime(entry)
     );
 }

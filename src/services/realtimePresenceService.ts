@@ -18,7 +18,7 @@ import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { buildAvatarWearSnapshotUpdate } from './avatarWearTimeService';
 import { recordCurrentUserSnapshot } from './domainIngestionService';
-import { handleRealtimeInstanceQueueProjection } from './realtimeInstanceQueueService';
+import { handleQueuedInstancePatch } from './realtimeInstanceQueueService';
 import { pushSharedFeedNotification } from './sharedFeedNotificationService';
 
 type ProjectionRecord = Record<string, unknown>;
@@ -318,10 +318,7 @@ function handleRealtimeCurrentUserProjection(
     if (hasOwn(patch, 'queuedInstance')) {
         const queuedInstance = normalizeUserId(patch.queuedInstance);
         if (queuedInstance) {
-            handleRealtimeInstanceQueueProjection({
-                kind: 'update',
-                instanceLocation: queuedInstance
-            });
+            handleQueuedInstancePatch(queuedInstance);
         } else if (useRuntimeStore.getState().instanceQueue.active) {
             useRuntimeStore.getState().clearInstanceQueueState();
         }

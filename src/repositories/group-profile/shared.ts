@@ -7,6 +7,7 @@ import type {
     GroupMemberPatch,
     GroupMemberSort,
     GroupPostMutation,
+    GroupJoinRequestAction,
     HttpApiExecuteResponse
 } from '@/platform/tauri/bindings';
 import { replaceBioSymbols } from '@/shared/utils/string';
@@ -78,26 +79,26 @@ export type VrchatApiResult = HttpApiExecuteResponse;
 export type { CollectPagesOptions, PageRequest };
 
 export interface GroupProfileInput {
-    groupId?: unknown;
+    groupId?: string;
     includeRoles?: boolean;
     force?: boolean;
     dialog?: boolean;
 }
 
 export interface GroupIdInput {
-    groupId?: unknown;
+    groupId?: string;
 }
 
 export interface GroupUserInput extends GroupIdInput {
-    userId?: unknown;
+    userId?: string;
 }
 
 export interface GroupUserRoleInput extends GroupUserInput {
-    roleId?: unknown;
+    roleId?: string;
 }
 
 export interface GroupPostInput extends GroupIdInput {
-    postId?: unknown;
+    postId?: string;
 }
 
 export interface GroupPostMutationInput extends GroupPostInput {
@@ -116,11 +117,11 @@ export interface GroupMembersInput extends GroupPageInput {
 }
 
 export interface GroupMembersSearchInput extends GroupPageInput {
-    query?: unknown;
+    query?: string;
 }
 
 export interface GroupGalleryInput extends GroupPageInput {
-    galleryId?: unknown;
+    galleryId?: string;
     force?: boolean;
 }
 
@@ -129,16 +130,16 @@ export interface GroupJoinRequestInput extends GroupPageInput {
 }
 
 export interface GroupJoinRequestResponseInput extends GroupUserInput {
-    action?: unknown;
+    action: GroupJoinRequestAction;
     block?: boolean;
 }
 
 export interface GroupLogsInput extends GroupPageInput {
-    eventTypes?: unknown;
+    eventTypes?: string[];
 }
 
 export interface GroupRepresentationInput extends GroupIdInput {
-    isRepresenting?: unknown;
+    isRepresenting?: boolean;
 }
 
 export interface GroupMemberPropsInput extends GroupUserInput {

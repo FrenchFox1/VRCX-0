@@ -4,17 +4,15 @@ import {
 } from '@/platform/tauri/bindings';
 
 interface LocalModerationQueryInput {
-    ownerUserId?: unknown;
-    userId?: unknown;
+    ownerUserId?: string;
+    userId?: string;
 }
 
-function normalizeUserId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeUserId(value?: string): string {
+    return value?.trim() ?? '';
 }
 
-async function getAllLocalModerations(ownerUserId: unknown) {
+async function getAllLocalModerations(ownerUserId: string) {
     const normalizedOwnerUserId = normalizeUserId(ownerUserId);
     if (!normalizedOwnerUserId) {
         return [];
@@ -31,8 +29,8 @@ async function getAllLocalModerations(ownerUserId: unknown) {
 }
 
 async function getLocalModerationRow(
-    ownerUserId: unknown,
-    userId: unknown
+    ownerUserId: string,
+    userId: string
 ): Promise<LocalModerationOutput | null> {
     const normalizedOwnerUserId = normalizeUserId(ownerUserId);
     const normalizedUserId = normalizeUserId(userId);
@@ -66,8 +64,8 @@ async function getLocalModeration({
     const row = await getLocalModerationRow(ownerUserId, normalizedUserId);
     return {
         userId: normalizedUserId,
-        block: Boolean(row?.block),
-        mute: Boolean(row?.mute)
+        block: row?.block ?? false,
+        mute: row?.mute ?? false
     };
 }
 

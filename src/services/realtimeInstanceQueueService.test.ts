@@ -10,10 +10,32 @@ vi.mock('@/services/i18nService', () => ({
     default: { t: mocks.t }
 }));
 
+import type { RealtimeInstanceQueueProjection } from '@/platform/tauri/bindings';
 import { useLocationHintStore } from '@/state/locationHintStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { handleRealtimeInstanceQueueProjection } from './realtimeInstanceQueueService';
+
+function queueProjection(
+    kind: RealtimeInstanceQueueProjection['kind'],
+    instanceLocation: string,
+    values: {
+        position?: number;
+        queueSize?: number;
+        receivedAt?: string;
+    } = {}
+): RealtimeInstanceQueueProjection {
+    return {
+        generation: 1,
+        kind,
+        instanceLocation,
+        worldId: 'wrld_queue',
+        worldName: 'Queue World',
+        position: values.position ?? 0,
+        queueSize: values.queueSize ?? 0,
+        receivedAt: values.receivedAt ?? '2026-08-02T00:00:00.000Z'
+    };
+}
 
 describe('realtimeInstanceQueueService', () => {
     beforeEach(() => {
@@ -30,28 +52,25 @@ describe('realtimeInstanceQueueService', () => {
     });
 
     it('ignores projections without a location', () => {
-        handleRealtimeInstanceQueueProjection({
-            kind: 'update',
-            instanceLocation: ''
-        });
+        handleRealtimeInstanceQueueProjection(queueProjection('update', ''));
 
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(false);
         expect(mocks.success).not.toHaveBeenCalled();
     });
 
-    it('normalizes queue numbers and reuses the current label', () => {
+    it('clamps negative queue numbers and reuses the current label', () => {
         useRuntimeStore.getState().setInstanceQueueState({
             active: true,
             instanceLocation: 'wrld_queue:123',
             label: 'Known Queue'
         });
 
-        handleRealtimeInstanceQueueProjection({
-            kind: 'update',
-            instanceLocation: ' wrld_queue:123 ',
-            position: -3,
-            queueSize: 4.6
-        });
+        handleRealtimeInstanceQueueProjection(
+            queueProjection('update', ' wrld_queue:123 ', {
+                position: -3,
+                queueSize: 5
+            })
+        );
 
         expect(useRuntimeStore.getState().instanceQueue).toEqual({
             active: true,
@@ -70,25 +89,22 @@ describe('realtimeInstanceQueueService', () => {
             label: 'Current Queue'
         });
 
-        handleRealtimeInstanceQueueProjection({
-            kind: 'left',
-            instanceLocation: 'wrld_other:456'
-        });
+        handleRealtimeInstanceQueueProjection(
+            queueProjection('left', 'wrld_other:456')
+        );
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(true);
 
-        handleRealtimeInstanceQueueProjection({
-            kind: 'ready',
-            instanceLocation: 'wrld_other:456'
-        });
+        handleRealtimeInstanceQueueProjection(
+            queueProjection('ready', 'wrld_other:456')
+        );
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(true);
         expect(mocks.success).toHaveBeenCalledWith(
             'Instance ready to join wrld_other public'
         );
 
-        handleRealtimeInstanceQueueProjection({
-            kind: 'left',
-            instanceLocation: 'wrld_current:123'
-        });
+        handleRealtimeInstanceQueueProjection(
+            queueProjection('left', 'wrld_current:123')
+        );
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(false);
     });
 
@@ -103,13 +119,13 @@ describe('realtimeInstanceQueueService', () => {
             groupName: 'Hinted Group'
         });
 
-        handleRealtimeInstanceQueueProjection({
-            kind: 'update',
-            instanceLocation: 'wrld_hint:123~group(grp_hint)',
-            position: 2,
-            queueSize: 8,
-            receivedAt: '2026-08-01T23:59:00.000Z'
-        });
+        handleRealtimeInstanceQueueProjection(
+            queueProjection('update', 'wrld_hint:123~group(grp_hint)', {
+                position: 2,
+                queueSize: 8,
+                receivedAt: '2026-08-01T23:59:00.000Z'
+            })
+        );
 
         expect(useRuntimeStore.getState().instanceQueue).toMatchObject({
             label: 'Hinted World group(Hinted Group)',

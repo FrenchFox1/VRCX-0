@@ -137,8 +137,7 @@ describe('useNotificationActions', () => {
 
         expect(mocks.deleteNotification).toHaveBeenCalledWith({
             id: 'not_1',
-            userId: 'usr_self',
-            version: 3
+            userId: 'usr_self'
         });
         expect(
             mocks.deleteNotification.mock.invocationCallOrder[0]

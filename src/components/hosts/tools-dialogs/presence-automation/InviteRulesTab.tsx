@@ -31,14 +31,11 @@ export type InviteRulesTabValues = {
     autoAcceptInviteRequests: string;
 };
 
-type ConfigValueType = 'array' | 'bool' | 'string';
-
 type InviteRulesTabProps = {
     loading: boolean;
     onSaveValue: <K extends keyof InviteRulesTabValues>(
         key: K,
-        value: InviteRulesTabValues[K],
-        type?: ConfigValueType
+        value: InviteRulesTabValues[K]
     ) => unknown;
     values: InviteRulesTabValues;
 };
@@ -165,11 +162,7 @@ export function InviteRulesTab({
                                 !selectedFavoritesOnly
                             }
                             onChange={(next) => {
-                                onSaveValue(
-                                    'autoAcceptInviteGroups',
-                                    next,
-                                    'array'
-                                );
+                                onSaveValue('autoAcceptInviteGroups', next);
                             }}
                         />
                     </Field>

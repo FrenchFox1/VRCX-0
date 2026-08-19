@@ -643,7 +643,8 @@ export function useInventoryPageState() {
             confirmText: t('prompt.redeem.redeem'),
             cancelText: t('prompt.redeem.cancel')
         });
-        if (!result.ok || !String(result.value || '').trim()) {
+        const code = result.value?.trim();
+        if (!result.ok || !code) {
             return;
         }
         if (!isCurrentInventoryAuthTarget(authTarget)) {
@@ -651,7 +652,7 @@ export function useInventoryPageState() {
         }
         setMutatingKey('inventory:redeem');
         try {
-            await mediaRepository.redeemReward(result.value);
+            await mediaRepository.redeemReward(code);
             if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.success(t('prompt.redeem.success'));
                 await refreshScope(activeCategory, activeSubTab);

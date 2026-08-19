@@ -6,7 +6,7 @@ import { unwrapVrchatResponse } from './vrchatRequest';
 type FriendRecord = Record<string, unknown> & { id: string };
 
 interface FriendEndpointInput {
-    userId?: unknown;
+    userId?: string;
     isFriend?: boolean | null;
 }
 
@@ -20,10 +20,7 @@ function unwrapVrchatFriendResponse<TJson = unknown>(
 }
 
 async function getUser({ userId, isFriend = null }: FriendEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error('VrchatFriendRepository.getUser requires a user id.');
     }

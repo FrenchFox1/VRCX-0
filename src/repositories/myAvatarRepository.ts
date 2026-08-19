@@ -31,7 +31,7 @@ function unwrapVrchatAvatarResponse<TJson = unknown>(
 }
 
 interface AvatarByIdOptions {
-    avatarId?: unknown;
+    avatarId?: string;
 }
 
 interface MyAvatarsOptions {
@@ -53,28 +53,26 @@ export type MyAvatarRecord = AvatarRecord & {
 };
 
 interface UpdateAvatarTagsInput {
-    avatarId?: unknown;
+    avatarId?: string;
     previousTags?: AvatarTagEntry[];
     nextTags?: AvatarTagEntry[];
 }
 
 interface SaveAvatarInput {
-    avatarId?: unknown;
+    avatarId?: string;
     params?: Omit<AvatarUpdateRequest, 'id'>;
 }
 
 interface AvatarIdInput {
-    avatarId?: unknown;
+    avatarId?: string;
 }
 
 interface AvatarStylesInput {
     force?: boolean;
 }
 
-function avatarIdFromValue(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function avatarIdFromValue(value?: string): string {
+    return value?.trim() ?? '';
 }
 
 async function getMyAvatarById({ avatarId }: AvatarByIdOptions = {}) {
@@ -111,8 +109,7 @@ async function updateAvatarTags({
     previousTags = [],
     nextTags = []
 }: UpdateAvatarTagsInput) {
-    const normalizedAvatarId =
-        typeof avatarId === 'string' ? avatarId.trim() : '';
+    const normalizedAvatarId = avatarId?.trim() ?? '';
     if (!normalizedAvatarId) {
         throw new Error(
             'MyAvatarRepository.updateAvatarTags requires an avatar id.'
@@ -120,22 +117,16 @@ async function updateAvatarTags({
     }
 
     const previousMap = new Map(
-        (Array.isArray(previousTags) ? previousTags : [])
-            .filter(
-                (entry): entry is AvatarTagEntry =>
-                    typeof entry?.tag === 'string' && Boolean(entry.tag.trim())
-            )
+        previousTags
+            .filter((entry) => Boolean(entry.tag.trim()))
             .map((entry) => [
                 entry.tag.trim(),
                 { tag: entry.tag.trim(), color: entry.color || null }
             ])
     );
     const nextMap = new Map(
-        (Array.isArray(nextTags) ? nextTags : [])
-            .filter(
-                (entry): entry is AvatarTagEntry =>
-                    typeof entry?.tag === 'string' && Boolean(entry.tag.trim())
-            )
+        nextTags
+            .filter((entry) => Boolean(entry.tag.trim()))
             .map((entry) => [
                 entry.tag.trim(),
                 { tag: entry.tag.trim(), color: entry.color || null }
@@ -156,8 +147,7 @@ async function updateAvatarTags({
 }
 
 async function saveAvatar({ avatarId, params = {} }: SaveAvatarInput) {
-    const normalizedAvatarId =
-        typeof avatarId === 'string' ? avatarId.trim() : '';
+    const normalizedAvatarId = avatarId?.trim() ?? '';
     if (!normalizedAvatarId) {
         throw new Error('MyAvatarRepository.saveAvatar requires an avatar id.');
     }
@@ -177,8 +167,7 @@ async function saveAvatar({ avatarId, params = {} }: SaveAvatarInput) {
 }
 
 async function createImpostor({ avatarId }: AvatarIdInput = {}) {
-    const normalizedAvatarId =
-        typeof avatarId === 'string' ? avatarId.trim() : '';
+    const normalizedAvatarId = avatarId?.trim() ?? '';
     if (!normalizedAvatarId) {
         throw new Error(
             'MyAvatarRepository.createImpostor requires an avatar id.'

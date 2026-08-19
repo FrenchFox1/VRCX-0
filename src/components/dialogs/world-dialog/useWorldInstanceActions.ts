@@ -15,10 +15,14 @@ import { copyTextToClipboard } from '@/services/clipboardService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { parseLocation } from '@/shared/utils/location';
+import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import type { LaunchStoreState } from '@/state/launchStore';
 
 import {
     findGroupOption,
+    normalizeGroupAccessType,
+    normalizeInstanceAccessType,
+    normalizeInstanceRegion,
     normalizeNewInstanceSeed
 } from './worldDialogHelpers';
 import {
@@ -46,25 +50,13 @@ import type {
 export type { NewInstanceAfterCreateAction } from './worldNewInstanceTypes';
 
 export function resolveNewInstanceAfterCreateAction(
-    requestedFollowUp: unknown,
+    requestedFollowUp: boolean,
     isGameRunning: boolean
 ): NewInstanceAfterCreateAction {
     if (!requestedFollowUp) {
         return '';
     }
     return isGameRunning ? 'openInGame' : 'selfInvite';
-}
-
-export function isNewInstanceSelfInviteRequest(
-    request: { afterCreateAction?: unknown } | null | undefined
-): boolean {
-    return request?.afterCreateAction === 'selfInvite';
-}
-
-export function isNewInstanceOpenInGameRequest(
-    request: { afterCreateAction?: unknown } | null | undefined
-): boolean {
-    return request?.afterCreateAction === 'openInGame';
 }
 
 interface UseWorldInstanceActionsInput {
@@ -104,7 +96,9 @@ export function useWorldInstanceActions({
         setNewInstanceRequest(null);
     }, [profileWorldId]);
 
-    async function loadNewInstanceDefaults(seed: unknown = null) {
+    async function loadNewInstanceDefaults(
+        seed: WorldNewInstanceDefaults | null = null
+    ) {
         const [
             accessType,
             region,
@@ -140,29 +134,34 @@ export function useWorldInstanceActions({
         return {
             accessType:
                 seedDefaults.accessType ||
-                accessType ||
+                normalizeInstanceAccessType(accessType) ||
                 (selectedGroupId ? 'group' : 'public'),
-            region: seedDefaults.region || region || 'US West',
+            region:
+                seedDefaults.region ||
+                normalizeInstanceRegion(region) ||
+                'US West',
             groupId: selectedGroupId,
             groupName: selectedGroup?.name || seedDefaults.groupName || '',
             groupAccessType:
-                seedDefaults.groupAccessType || groupAccessType || 'plus',
-            queueEnabled: Boolean(queueEnabled),
-            ageGate: Boolean(ageGate),
-            displayName: displayName || '',
+                seedDefaults.groupAccessType ||
+                normalizeGroupAccessType(groupAccessType) ||
+                'plus',
+            queueEnabled,
+            ageGate,
+            displayName,
             displayNamePresets: normalizeInstanceDialogDisplayNamePresets(
                 displayNamePresets,
                 displayName
             ),
             roleIds: '',
-            instanceName: instanceName || '',
+            instanceName,
             legacyUserId: legacyUserId || currentUserId || ''
         };
     }
 
     async function openNewInstanceDialog(
         requestedFollowUp: boolean = false,
-        seed: unknown = null
+        seed: WorldNewInstanceDefaults | null = null
     ) {
         if (!world?.id || actionStatusRef.current !== 'idle') {
             return;
@@ -268,9 +267,9 @@ export function useWorldInstanceActions({
             return;
         }
         const shouldSelfInvite =
-            isNewInstanceSelfInviteRequest(newInstanceRequest);
+            newInstanceRequest.afterCreateAction === 'selfInvite';
         const shouldOpenInGame =
-            isNewInstanceOpenInGameRequest(newInstanceRequest);
+            newInstanceRequest.afterCreateAction === 'openInGame';
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
         if (form.accessType === 'group' && !normalizeEntityId(form.groupId)) {
@@ -319,7 +318,7 @@ export function useWorldInstanceActions({
             );
             const response = await vrchatInstanceRepository.createInstance({
                 worldId: targetWorldId,
-                ownerId: currentUserId,
+                ownerId: currentUserId || '',
                 accessType: form.accessType || 'public',
                 region: form.region || 'US West',
                 groupId: form.groupId || '',

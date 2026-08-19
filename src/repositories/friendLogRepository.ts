@@ -22,15 +22,11 @@ function normalizeFriendLogRow(row: FriendLogSourceRow): FriendLogCurrentRow {
 }
 
 async function getFriendLogCurrent(
-    userId: unknown
+    userId: string
 ): Promise<FriendLogCurrentRow[]> {
-    const rows = await commands.appFriendLogCurrentList(
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim()
-    );
+    const rows = await commands.appFriendLogCurrentList(userId.trim());
 
-    return rows
-        .map(normalizeFriendLogRow)
-        .filter((row) => typeof row.userId === 'string' && row.userId.trim());
+    return rows.map(normalizeFriendLogRow).filter((row) => row.userId.trim());
 }
 
 const friendLogRepository = {

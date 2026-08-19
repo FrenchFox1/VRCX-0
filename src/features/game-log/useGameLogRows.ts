@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { useThrottledValue } from '@/lib/useThrottledValue';
-import gameLogRepository from '@/repositories/gameLogRepository';
+import gameLogRepository, {
+    type GameLogFilterType
+} from '@/repositories/gameLogRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -21,7 +23,7 @@ import type {
 type UseGameLogRowsOptions = {
     deferredSearchQuery: string;
     favoritesOnly: boolean;
-    filters: readonly string[];
+    filters: readonly GameLogFilterType[];
     preferencesReady: boolean;
     refreshToken: number;
     sessionDateFrom: string;

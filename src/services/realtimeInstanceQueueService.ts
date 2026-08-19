@@ -10,18 +10,6 @@ import {
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type ProjectionRecord = Record<string, unknown>;
-type RealtimeInstanceQueueProjectionInput = Pick<
-    RealtimeInstanceQueueProjection,
-    'kind' | 'instanceLocation'
-> &
-    Partial<Omit<RealtimeInstanceQueueProjection, 'kind' | 'instanceLocation'>>;
-
-function queueCount(value?: number): number {
-    return typeof value === 'number' && Number.isFinite(value)
-        ? Math.max(0, Math.round(value))
-        : 0;
-}
-
 function translated(
     key: string,
     params: ProjectionRecord,
@@ -49,7 +37,7 @@ function resolveQueueLocationLabel(instanceLocation: string): string {
 }
 
 export function handleRealtimeInstanceQueueProjection(
-    projection: RealtimeInstanceQueueProjectionInput
+    projection: RealtimeInstanceQueueProjection
 ) {
     const { kind } = projection;
     const instanceLocation = projection.instanceLocation.trim();
@@ -91,9 +79,31 @@ export function handleRealtimeInstanceQueueProjection(
     runtimeStore.setInstanceQueueState({
         active: true,
         instanceLocation,
-        position: queueCount(projection.position),
-        queueSize: queueCount(projection.queueSize),
+        position: Math.max(0, projection.position),
+        queueSize: Math.max(0, projection.queueSize),
         label,
-        updatedAt: projection.receivedAt?.trim() || new Date().toISOString()
+        updatedAt: projection.receivedAt
+    });
+}
+
+export function handleQueuedInstancePatch(instanceLocation: string) {
+    const normalizedLocation = instanceLocation.trim();
+    if (!normalizedLocation) {
+        return;
+    }
+
+    const runtimeStore = useRuntimeStore.getState();
+    const currentQueue = runtimeStore.instanceQueue;
+    runtimeStore.setInstanceQueueState({
+        active: true,
+        instanceLocation: normalizedLocation,
+        position: 0,
+        queueSize: 0,
+        label:
+            currentQueue.instanceLocation === normalizedLocation &&
+            currentQueue.label
+                ? currentQueue.label
+                : resolveQueueLocationLabel(normalizedLocation),
+        updatedAt: new Date().toISOString()
     });
 }

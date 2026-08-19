@@ -1,3 +1,5 @@
+import type { HostCapabilityKey } from '@/services/hostCapabilityService';
+
 type ToolCategoryKey =
     | 'image'
     | 'shortcuts'
@@ -14,6 +16,20 @@ export type ToolAppApiMethod =
     | 'OpenVrcxAppDataFolder'
     | 'OpenVrcAppDataFolder'
     | 'OpenCrashVrcCrashDumps';
+
+export type ToolDialogKey =
+    | 'app-launcher'
+    | 'presence-schedule'
+    | 'presence-room-rules'
+    | 'presence-invite-requests'
+    | 'group-calendar'
+    | 'export-discord-names'
+    | 'note-export'
+    | 'export-friends-list'
+    | 'export-avatars-list'
+    | 'edit-invite-messages'
+    | 'llm-endpoints'
+    | 'profile-backup';
 
 type ToolAction =
     | {
@@ -41,7 +57,7 @@ type ToolAction =
       }
     | {
           type: 'dialog';
-          dialogKey: string;
+          dialogKey: ToolDialogKey;
       };
 
 interface ToolCategory {
@@ -57,8 +73,8 @@ interface ToolDefinition {
     titleKey: string;
     descriptionKey: string;
     navEligible: boolean;
-    requiredCapability?: string;
-    requiredCapabilities?: string[];
+    requiredCapability?: HostCapabilityKey;
+    requiredCapabilities?: HostCapabilityKey[];
     requiredCapabilityMode?: 'supported';
     action: ToolAction;
 }

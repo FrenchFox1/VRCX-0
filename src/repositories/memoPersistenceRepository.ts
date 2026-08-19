@@ -7,26 +7,24 @@ import {
 } from '@/platform/tauri/bindings';
 
 interface SaveUserMemoInput {
-    userId?: unknown;
-    memo?: unknown;
+    userId?: string;
+    memo?: string;
 }
 
 interface SaveWorldMemoInput {
-    worldId?: unknown;
-    memo?: unknown;
+    worldId?: string;
+    memo?: string;
 }
 
 interface SaveAvatarMemoInput {
-    avatarId?: unknown;
-    memo?: unknown;
+    avatarId?: string;
+    memo?: string;
 }
 
 type UserMemoListEntry = Pick<UserMemoOutput, 'userId' | 'memo'>;
 
-function normalizeEntityId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeEntityId(value?: string | null) {
+    return value?.trim() ?? '';
 }
 
 function createEmptyUserMemo(userId = ''): UserMemoOutput {
@@ -53,7 +51,7 @@ function createEmptyAvatarMemo(avatarId = ''): AvatarMemoOutput {
     };
 }
 
-async function getUserMemo(userId: unknown): Promise<UserMemoOutput> {
+async function getUserMemo(userId: string | null): Promise<UserMemoOutput> {
     const normalizedUserId = normalizeEntityId(userId);
     if (!normalizedUserId) {
         return createEmptyUserMemo();
@@ -74,7 +72,7 @@ async function getAllUserMemos(): Promise<UserMemoListEntry[]> {
 }
 
 async function getAllUserNotes(
-    ownerUserId: unknown = ''
+    ownerUserId: string | null = ''
 ): Promise<UserNoteOutput[]> {
     const normalizedOwnerUserId = normalizeEntityId(ownerUserId);
     if (!normalizedOwnerUserId) {
@@ -93,7 +91,7 @@ async function saveUserMemo({
         throw new Error('MemoRepository.saveUserMemo requires a user id.');
     }
 
-    const nextMemo = typeof memo === 'string' ? memo : '';
+    const nextMemo = memo ?? '';
     let result: UserMemoOutput;
     if (!nextMemo) {
         await commands.appMemoSaveUser(normalizedUserId, '');
@@ -112,7 +110,7 @@ async function saveUserMemo({
     return result;
 }
 
-async function getWorldMemo(worldId: unknown): Promise<WorldMemoOutput> {
+async function getWorldMemo(worldId: string | null): Promise<WorldMemoOutput> {
     const normalizedWorldId = normalizeEntityId(worldId);
     if (!normalizedWorldId) {
         return createEmptyWorldMemo();
@@ -133,7 +131,7 @@ async function saveWorldMemo({
         throw new Error('MemoRepository.saveWorldMemo requires a world id.');
     }
 
-    const nextMemo = typeof memo === 'string' ? memo : '';
+    const nextMemo = memo ?? '';
     if (!nextMemo) {
         await commands.appMemoSaveWorld(normalizedWorldId, '');
         return createEmptyWorldMemo(normalizedWorldId);
@@ -147,7 +145,9 @@ async function saveWorldMemo({
     };
 }
 
-async function getAvatarMemo(avatarId: unknown): Promise<AvatarMemoOutput> {
+async function getAvatarMemo(
+    avatarId: string | null
+): Promise<AvatarMemoOutput> {
     const normalizedAvatarId = normalizeEntityId(avatarId);
     if (!normalizedAvatarId) {
         return createEmptyAvatarMemo();
@@ -168,7 +168,7 @@ async function saveAvatarMemo({
         throw new Error('MemoRepository.saveAvatarMemo requires an avatar id.');
     }
 
-    const nextMemo = typeof memo === 'string' ? memo : '';
+    const nextMemo = memo ?? '';
     if (!nextMemo) {
         await commands.appMemoSaveAvatar(normalizedAvatarId, '');
         return createEmptyAvatarMemo(normalizedAvatarId);

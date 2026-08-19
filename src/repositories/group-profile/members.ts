@@ -183,7 +183,7 @@ export async function setGroupRepresentation({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupRepresentationSet({
             groupId: normalizedGroupId,
-            isRepresenting: Boolean(isRepresenting)
+            isRepresenting
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/representation`
     );

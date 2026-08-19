@@ -359,7 +359,9 @@ export function WorldNewInstanceDialog({
                                         label: t(option.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ accessType: value || '' })
+                                        patchForm({
+                                            accessType: value || 'public'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -390,7 +392,9 @@ export function WorldNewInstanceDialog({
                                         label: t(region.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ region: value || '' })
+                                        patchForm({
+                                            region: value || 'US West'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -436,7 +440,8 @@ export function WorldNewInstanceDialog({
                                             )}
                                             onValueChange={(value) =>
                                                 patchForm({
-                                                    groupAccessType: value || ''
+                                                    groupAccessType:
+                                                        value || 'plus'
                                                 })
                                             }
                                         >
@@ -602,7 +607,9 @@ export function WorldNewInstanceDialog({
                                         label: t(option.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ accessType: value || '' })
+                                        patchForm({
+                                            accessType: value || 'public'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -633,7 +640,9 @@ export function WorldNewInstanceDialog({
                                         label: t(region.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ region: value || '' })
+                                        patchForm({
+                                            region: value || 'US West'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -716,7 +725,8 @@ export function WorldNewInstanceDialog({
                                             )}
                                             onValueChange={(value) =>
                                                 patchForm({
-                                                    groupAccessType: value || ''
+                                                    groupAccessType:
+                                                        value || 'plus'
                                                 })
                                             }
                                         >

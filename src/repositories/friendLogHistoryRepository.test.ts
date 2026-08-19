@@ -14,7 +14,7 @@ describe('friendLogHistoryRepository', () => {
         commandMocks.appFriendLogHistoryQuery.mockResolvedValue([]);
     });
 
-    it('keeps rename and trust context while restricting history to supported events', async () => {
+    it('keeps rename and trust context while omitting empty user rows', async () => {
         commandMocks.appFriendLogHistoryQuery.mockResolvedValueOnce([
             {
                 rowId: 1,
@@ -53,13 +53,7 @@ describe('friendLogHistoryRepository', () => {
 
         const rows = await getFriendLogHistory(' owner_user ', {
             targetUserId: ' target_user ',
-            types: [
-                'Friend',
-                ' DisplayName ',
-                'unsupported',
-                null,
-                'TrustLevel'
-            ]
+            types: ['Friend', 'DisplayName', 'TrustLevel']
         });
 
         expect(commandMocks.appFriendLogHistoryQuery).toHaveBeenCalledWith({

@@ -19,7 +19,7 @@ import { normalizeUserTablePrefix } from './userSessionRepository';
 export type { FeedCursor } from '@/domain/feed/readModel';
 
 interface FeedRowsQueryOptions {
-    userId: unknown;
+    userId: string;
     mode: FeedQueryMode;
     search?: string;
     filters?: FeedFilter[];
@@ -33,7 +33,7 @@ interface FeedRowsQueryOptions {
 }
 
 interface FeedLatestQueryOptions {
-    userId: unknown;
+    userId: string;
     filters?: FeedFilter[];
     favoriteUserIds?: string[];
     scopedUserIds?: string[];
@@ -42,34 +42,17 @@ interface FeedLatestQueryOptions {
     maxRows?: number;
 }
 
-function normalizeStringList(value: unknown): string[] {
-    return Array.isArray(value)
-        ? value.map(normalizeString).filter(Boolean)
-        : [];
+function normalizeStringList(value: string[]): string[] {
+    return value.map((entry) => entry.trim()).filter(Boolean);
 }
 
-const FEED_FILTER_SET: ReadonlySet<string> = new Set<FeedFilter>([
-    'GPS',
-    'Status',
-    'Bio',
-    'Avatar',
-    'Online',
-    'Offline'
-]);
-
-function normalizeFeedFilters(value: unknown): FeedFilter[] {
-    return normalizeStringList(value).filter((filter): filter is FeedFilter =>
-        FEED_FILTER_SET.has(filter)
-    );
-}
-
-function getUserPrefix(userId: unknown) {
+function getUserPrefix(userId: string) {
     return normalizeUserTablePrefix(userId);
 }
 
 const ensuredFeedTablePrefixes = new Map<string, Promise<void>>();
 
-function ensureFeedTablesForUser(userId: unknown): Promise<void> {
+function ensureFeedTablesForUser(userId: string): Promise<void> {
     const userPrefix = getUserPrefix(userId);
     const existing = ensuredFeedTablePrefixes.get(userPrefix);
     if (existing) {
@@ -89,11 +72,11 @@ function ensureFeedTablesForUser(userId: unknown): Promise<void> {
     return promise;
 }
 
-function markFeedTablesEnsured(userPrefix: unknown) {
+function markFeedTablesEnsured(userPrefix: string) {
     if (!userPrefix) {
         return;
     }
-    ensuredFeedTablePrefixes.set(String(userPrefix), Promise.resolve());
+    ensuredFeedTablePrefixes.set(userPrefix, Promise.resolve());
 }
 
 async function queryFeedRows({
@@ -114,7 +97,7 @@ async function queryFeedRows({
         userId: normalizeString(userId),
         mode,
         search,
-        filters: normalizeFeedFilters(filters),
+        filters,
         vipList: normalizeStringList(vipList),
         scopedUserIds: normalizeStringList(scopedUserIds),
         excludedUserIds: normalizeStringList(excludedUserIds),
@@ -136,7 +119,7 @@ const feed = {
         maxEntries: number = DEFAULT_SEARCH_LIMIT,
         dateFrom: string = '',
         dateTo: string = '',
-        userId: unknown = '',
+        userId: string = '',
         excludedUserIds: string[] = [],
         scopedUserIds: string[] = [],
         favoritesOnly: boolean = false
@@ -145,7 +128,7 @@ const feed = {
         const query = {
             userId: normalizeString(userId),
             search,
-            filters: normalizeFeedFilters(filters),
+            filters,
             favoriteUserIds: normalizeStringList(vipList),
             scopedUserIds: normalizeStringList(scopedUserIds),
             excludedUserIds: normalizeStringList(excludedUserIds),
@@ -169,7 +152,7 @@ const feed = {
         await ensureFeedTablesForUser(userId);
         const query = {
             userId: normalizeString(userId),
-            filters: normalizeFeedFilters(filters),
+            filters,
             favoriteUserIds: normalizeStringList(favoriteUserIds),
             scopedUserIds: normalizeStringList(scopedUserIds),
             favoritesOnly,
@@ -180,7 +163,7 @@ const feed = {
     },
 
     async lookupFeedDatabase(
-        userId: unknown,
+        userId: string,
         filters: FeedFilter[],
         vipList: string[],
         maxEntries: number = DEFAULT_MAX_TABLE_SIZE,
@@ -201,7 +184,7 @@ const feed = {
     },
 
     async getFeedByInstanceId(
-        userId: unknown,
+        userId: string,
         instanceId: string,
         filters: FeedFilter[],
         vipList: string[],

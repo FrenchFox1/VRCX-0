@@ -27,7 +27,7 @@ interface WorldRepositoryOptions {
 }
 
 interface WorldsByUserOptions extends WorldRepositoryOptions {
-    userId?: unknown;
+    userId?: string;
     n?: number;
     offset?: number;
     sort?: WorldSearchSort;
@@ -36,7 +36,7 @@ interface WorldsByUserOptions extends WorldRepositoryOptions {
 }
 
 interface WorldIdInput extends WorldRepositoryOptions {
-    worldId?: unknown;
+    worldId?: string;
 }
 
 interface WorldProfileInput extends WorldIdInput {
@@ -49,7 +49,7 @@ interface WorldSaveInput extends WorldIdInput {
 }
 
 interface WorldPersistentDataInput extends WorldIdInput {
-    userId?: unknown;
+    userId?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -227,7 +227,7 @@ async function getWorldProfile({
     dialog = false,
     full = false
 }: WorldProfileInput): Promise<WorldProfileRecord> {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.getWorldProfile requires a world id.'
@@ -245,8 +245,8 @@ async function getWorldProfile({
     return normalize(response.json);
 }
 
-async function searchWorlds(query: unknown): Promise<WorldProfileRecord[]> {
-    const normalizedQuery = String(query ?? '').trim();
+async function searchWorlds(query: string): Promise<WorldProfileRecord[]> {
+    const normalizedQuery = query.trim();
     if (!normalizedQuery) {
         return [];
     }
@@ -263,14 +263,14 @@ async function getWorldsByUser({
     releaseStatus = 'all',
     force = false
 }: WorldsByUserOptions = {}): Promise<WorldProfileRecord[]> {
-    const normalizedUserId = normalizeEntityId(userId);
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'WorldProfileRepository.getWorldsByUser requires a user id.'
         );
     }
 
-    const params: Record<string, unknown> = {
+    const params: VrchatWorldListByUserInput = {
         n,
         offset,
         sort,
@@ -302,7 +302,7 @@ async function getWorldsByUser({
 }
 
 async function saveWorld({ worldId, params }: WorldSaveInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.saveWorld requires a world id.'
@@ -321,7 +321,7 @@ async function saveWorld({ worldId, params }: WorldSaveInput) {
 }
 
 async function deleteWorld({ worldId }: WorldIdInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.deleteWorld requires a world id.'
@@ -335,7 +335,7 @@ async function deleteWorld({ worldId }: WorldIdInput) {
 }
 
 async function publishWorld({ worldId }: WorldIdInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.publishWorld requires a world id.'
@@ -351,7 +351,7 @@ async function publishWorld({ worldId }: WorldIdInput) {
 }
 
 async function unpublishWorld({ worldId }: WorldIdInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.unpublishWorld requires a world id.'
@@ -370,8 +370,8 @@ async function deleteWorldPersistentData({
     userId,
     worldId
 }: WorldPersistentDataInput) {
-    const normalizedUserId = normalizeEntityId(userId);
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedUserId = userId?.trim() ?? '';
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedUserId || !normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.deleteWorldPersistentData requires user and world ids.'
@@ -401,8 +401,8 @@ async function hasWorldPersistentData({
     worldId,
     force = false
 }: WorldPersistentDataInput) {
-    const normalizedUserId = normalizeEntityId(userId);
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedUserId = userId?.trim() ?? '';
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedUserId || !normalizedWorldId) {
         return false;
     }
@@ -444,8 +444,8 @@ async function hasWorldPersistentData({
     });
 }
 
-function registerWorldOpenShare(worldId: unknown): void {
-    const normalizedWorldId = normalizeEntityId(worldId);
+function registerWorldOpenShare(worldId: string): void {
+    const normalizedWorldId = worldId.trim();
     if (!normalizedWorldId) {
         return;
     }

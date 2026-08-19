@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
+import type { FavoriteGroupVisibility } from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
@@ -285,7 +286,7 @@ export function useFavoritesCollectionActions({
 
     async function handleRemoteGroupVisibility(
         group: FavoriteGroupView,
-        visibility: string
+        visibility: FavoriteGroupVisibility
     ) {
         if (group.visibility === visibility) {
             return;

@@ -287,7 +287,7 @@ describe('vrchatMediaRepository', () => {
         await vrchatMediaRepository.equipProfileDecoration({
             expectedUserId: ' usr_self ',
             inventoryId: ' inv_frame ',
-            equipSlot: ' iconFrame '
+            equipSlot: 'iconFrame'
         });
 
         expect(
@@ -320,7 +320,7 @@ describe('vrchatMediaRepository', () => {
         });
     });
 
-    it('rejects invalid profile decoration mutation input before invoking commands', async () => {
+    it('rejects an empty profile decoration owner before invoking commands', async () => {
         await expect(
             vrchatMediaRepository.equipProfileDecoration({
                 expectedUserId: '',
@@ -328,13 +328,6 @@ describe('vrchatMediaRepository', () => {
                 equipSlot: 'iconFrame'
             })
         ).rejects.toThrow('requires a user id');
-        await expect(
-            vrchatMediaRepository.unequipProfileDecoration({
-                expectedUserId: 'usr_self',
-                equipSlot: 'invalid'
-            })
-        ).rejects.toThrow('requires a profile decoration slot');
-
         expect(
             commandMocks.appVrchatMediaProfileDecorationEquip
         ).not.toHaveBeenCalled();
@@ -343,12 +336,12 @@ describe('vrchatMediaRepository', () => {
         ).not.toHaveBeenCalled();
     });
 
-    it('treats only literal true as a print favorite write', async () => {
+    it('passes typed print favorite values to the command', async () => {
         commandMocks.appVrchatPrintsFavoriteSet.mockResolvedValue({
             favoritePrintIds: []
         });
 
-        await vrchatMediaRepository.setPrintFavorite(' print_1 ', 1);
+        await vrchatMediaRepository.setPrintFavorite(' print_1 ', false);
         await vrchatMediaRepository.setPrintFavorite('print_1', true);
 
         expect(commandMocks.appVrchatPrintsFavoriteSet).toHaveBeenNthCalledWith(

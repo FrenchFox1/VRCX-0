@@ -429,8 +429,7 @@ export function useUserDialogLocationPanel({
                     request: vrchatInstanceRepository
                         .getInstance({
                             worldId: parsedLocation.worldId,
-                            instanceId: parsedLocation.instanceId,
-                            endpoint: currentEndpoint
+                            instanceId: parsedLocation.instanceId
                         })
                         .then((response) => record(response.json))
                         .catch((): null => null)

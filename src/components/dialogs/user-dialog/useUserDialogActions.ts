@@ -293,7 +293,7 @@ export function useUserDialogActions({
                 incomingNotification =
                     action === 'accept'
                         ? await findIncomingFriendRequestNotification({
-                              currentUserId,
+                              currentUserId: currentUserId || '',
                               targetUserId: rosterUserId
                           })
                         : null;
@@ -379,7 +379,7 @@ export function useUserDialogActions({
                 incomingNotification =
                     action === 'decline'
                         ? await findIncomingFriendRequestNotification({
-                              currentUserId,
+                              currentUserId: currentUserId || '',
                               targetUserId: rosterUserId
                           })
                         : null;
@@ -403,7 +403,7 @@ export function useUserDialogActions({
                 let cancelOutcome: SocialFriendMutationOutcome | null = null;
                 if (incomingNotification) {
                     await hideRemoteAndExpireNotification({
-                        currentUserId,
+                        currentUserId: currentUserId || '',
                         notification: incomingNotification
                     });
                 } else {
@@ -449,7 +449,7 @@ export function useUserDialogActions({
                 errorRecord.status === 404
             ) {
                 await expireNotificationLocally({
-                    currentUserId,
+                    currentUserId: currentUserId || '',
                     notification: incomingNotification
                 }).catch(() => {});
                 if (
@@ -556,7 +556,7 @@ export function useUserDialogActions({
         setActionStatus('boop');
         try {
             await dismissBoopNotifications({
-                currentUserId,
+                currentUserId: currentUserId || '',
                 senderUserId: context.userId
             });
             await sendBoopToUser({

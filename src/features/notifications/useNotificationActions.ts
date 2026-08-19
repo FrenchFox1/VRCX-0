@@ -41,9 +41,9 @@ type ConfirmationOptions = {
     skipConfirm?: boolean;
 };
 type InviteResponseSlotPayload = {
-    imageData?: unknown;
+    imageData: string;
     notification: NotificationRow;
-    row?: { slot?: unknown } | null;
+    row: { slot: number };
 };
 
 export function useNotificationActions({
@@ -221,9 +221,11 @@ export function useNotificationActions({
                     }
                 }
                 await notificationPersistenceRepository.deleteNotification({
-                    id: notification.id,
-                    userId: currentUserId,
-                    version: notification.version
+                    id:
+                        typeof notification.id === 'string'
+                            ? notification.id
+                            : '',
+                    userId: currentUserId
                 });
                 await reload();
                 toast.success(
@@ -431,7 +433,7 @@ export function useNotificationActions({
                 currentUserId,
                 imageData,
                 notification,
-                responseSlot: row?.slot,
+                responseSlot: row.slot,
                 withUploadTimeout
             });
             await reload();
@@ -445,7 +447,7 @@ export function useNotificationActions({
     );
 
     const sendBoopReply = useCallback(
-        async (notification: NotificationRow | null, emojiId: unknown = '') => {
+        async (notification: NotificationRow | null, emojiId: string = '') => {
             if (!notification) {
                 return;
             }

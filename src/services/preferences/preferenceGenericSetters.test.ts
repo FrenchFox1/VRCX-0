@@ -217,7 +217,7 @@ describe('preferenceGenericSetters', () => {
 
         expect(mocks.setMany).toHaveBeenCalledWith([
             ['VRCX_tablePageSizes', '[10,25,50]'],
-            ['VRCX_tablePageSize', 25]
+            ['VRCX_tablePageSize', '25']
         ]);
         expect(usePreferencesStore.getState()).toMatchObject({
             tablePageSize: 25,
@@ -245,8 +245,8 @@ describe('preferenceGenericSetters', () => {
         });
 
         expect(mocks.setMany).toHaveBeenCalledWith([
-            ['maxTableSize_v2', 750],
-            ['searchLimit', 25000]
+            ['maxTableSize_v2', '750'],
+            ['searchLimit', '25000']
         ]);
         expect(usePreferencesStore.getState().tableLimits).toEqual({
             maxTableSize: 750,

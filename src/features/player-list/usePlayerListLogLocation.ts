@@ -12,10 +12,7 @@ function normalizeLogLocationSnapshot(
         return null;
     }
 
-    return {
-        ...snapshot,
-        createdAt: snapshot.createdAt || new Date().toISOString()
-    };
+    return snapshot;
 }
 
 export function usePlayerListLogLocation({

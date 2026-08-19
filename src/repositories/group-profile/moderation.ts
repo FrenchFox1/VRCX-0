@@ -11,7 +11,6 @@ import {
     type GroupUserInput,
     type GroupUserRoleInput,
     normalizeEntityId,
-    normalizeString,
     responseRows,
     unwrapVrchatGroupResponse
 } from './shared';
@@ -147,12 +146,7 @@ export async function respondGroupJoinRequest({
 }: GroupJoinRequestResponseInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedUserId = normalizeEntityId(userId);
-    const normalizedAction = normalizeString(action);
-    if (
-        !normalizedGroupId ||
-        !normalizedUserId ||
-        (normalizedAction !== 'accept' && normalizedAction !== 'reject')
-    ) {
+    if (!normalizedGroupId || !normalizedUserId) {
         throw new Error(
             'GroupProfileRepository.respondGroupJoinRequest requires group id, user id, and action.'
         );
@@ -162,8 +156,8 @@ export async function respondGroupJoinRequest({
         await commands.appVrchatGroupJoinRequestRespond({
             groupId: normalizedGroupId,
             userId: normalizedUserId,
-            action: normalizedAction,
-            block: Boolean(block)
+            action,
+            block
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/requests/${encodeURIComponent(normalizedUserId)}`
     );
@@ -252,7 +246,7 @@ export async function getGroupJoinRequests({
             groupId: normalizedGroupId,
             n,
             offset,
-            blocked: Boolean(blocked)
+            blocked
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/requests`
     );

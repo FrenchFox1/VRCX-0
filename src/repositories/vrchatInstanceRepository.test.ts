@@ -119,7 +119,7 @@ describe('InstanceRepository', () => {
             accessType: 'group',
             groupId: ' grp_team ',
             groupAccessType: 'plus',
-            queueEnabled: 0,
+            queueEnabled: false,
             roleIds: ['grol_hidden'],
             ageGate: true,
             displayName: 'Raid Night',

@@ -61,7 +61,7 @@ export interface AvatarProfileExtras extends AvatarRecord {
 }
 
 export interface AvatarListOptions {
-    userId?: unknown;
+    userId?: string;
     user?: string;
     n?: number;
     offset?: number;
@@ -71,7 +71,7 @@ export interface AvatarListOptions {
 }
 
 export interface AvatarIdInput {
-    avatarId?: unknown;
+    avatarId?: string;
 }
 
 export interface SaveAvatarInput extends AvatarIdInput {
@@ -86,9 +86,9 @@ export interface AvatarProfileInput extends AvatarIdInput {
     force?: boolean;
     dialog?: boolean;
     allowLocalFallback?: boolean;
-    currentUserId?: unknown;
+    currentUserId?: string | null;
 }
 
 export interface AvatarModerationInput extends AvatarIdInput {
-    type?: unknown;
+    type?: string;
 }

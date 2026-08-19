@@ -145,7 +145,7 @@ export async function fetchGroupProfile({
     const response = unwrapVrchatGroupResponse<GroupRecord>(
         await commands.appVrchatGroupGet({
             groupId: normalizedGroupId,
-            includeRoles: Boolean(includeRoles)
+            includeRoles
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}`
     );

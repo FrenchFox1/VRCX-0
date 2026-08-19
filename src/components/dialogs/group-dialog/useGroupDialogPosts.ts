@@ -84,7 +84,8 @@ export function useGroupDialogPosts({
             if (form.mode === 'edit') {
                 await groupProfileRepository.editGroupPost({
                     groupId: group.id,
-                    postId: form.post?.id,
+                    postId:
+                        typeof form.post?.id === 'string' ? form.post.id : '',
                     params: {
                         title,
                         text,
@@ -158,7 +159,7 @@ export function useGroupDialogPosts({
         try {
             await groupProfileRepository.deleteGroupPost({
                 groupId: group.id,
-                postId: post.id
+                postId: text(post.id)
             });
             setRemoteData((current) => ({
                 ...current,
