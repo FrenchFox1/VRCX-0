@@ -194,7 +194,6 @@ async function saveUserNote({
         targetUserId,
         note
     });
-    void invalidateEntityQueries(['quickSearch']);
     return unwrapVrchatToolsResponse(response, 'userNotes').json;
 }
 

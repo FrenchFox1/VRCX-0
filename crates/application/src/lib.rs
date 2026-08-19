@@ -157,10 +157,6 @@ pub use social::{
     load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarSnapshot,
 };
 pub use social::{
-    load_quick_search_catalog, QuickSearchCatalogDeps, QuickSearchCatalogSnapshot,
-    QuickSearchCatalogStatus,
-};
-pub use social::{
     prepare_note_export, run_note_export, NoteExportActions, NoteExportItemInput,
     NoteExportItemState, NoteExportItemStatus, NoteExportProgress, NoteExportResult,
     NoteExportStartInput, NoteExportState, NoteExportStatus, VrchatNoteExportActions,
@@ -181,6 +177,10 @@ pub use social::{
     GroupBanImportActions, GroupBanImportFuture, GroupBanImportItemResult, GroupBanImportItemState,
     GroupBanImportRuntime, GroupBanImportStartInput, GroupBanImportState, GroupBanImportStatus,
     VrchatGroupBanImportActions,
+};
+pub use social::{
+    QuickSearchEntityType, QuickSearchMatchedField, QuickSearchQueryInput, QuickSearchQueryOutput,
+    QuickSearchQueryStatus, QuickSearchResult, QuickSearchRuntime,
 };
 pub use system::DatabaseUpgradeRuntime;
 pub use system::ProfileOperationGate;

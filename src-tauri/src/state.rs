@@ -9,7 +9,7 @@ use crate::desktop_notification_activation::PendingDesktopNotificationActivation
 use crate::error::AppError;
 use vrcx_0_application::{
     DatabaseUpgradeRuntime, FavoriteDetailsRuntime, FriendLogNameResolutionCoordinator,
-    GroupModerationBatchCoordinator, UserDialogTabCountsRuntime,
+    GroupModerationBatchCoordinator, QuickSearchRuntime, UserDialogTabCountsRuntime,
 };
 use vrcx_0_application_core::UpdaterPort;
 use vrcx_0_assistant::AssistantController;
@@ -30,6 +30,7 @@ pub struct AppState {
     pub group_moderation_batches: GroupModerationBatchCoordinator,
     pub friend_log_name_resolutions: FriendLogNameResolutionCoordinator,
     pub user_dialog_tab_counts: UserDialogTabCountsRuntime,
+    pub quick_search: QuickSearchRuntime,
     assistant: tokio::sync::OnceCell<AssistantController>,
     background_resume_route: Mutex<Option<String>>,
     pub(crate) background_delay_generation: AtomicU64,
@@ -81,6 +82,14 @@ impl AppState {
             runtime.runtime_context.auth_scope.clone(),
             runtime.runtime_context.world_cache.clone(),
         );
+        let quick_search = QuickSearchRuntime::new(
+            runtime.db.clone(),
+            runtime.web.clone(),
+            runtime.runtime_context.auth_scope.clone(),
+            runtime.runtime_context.diagnostics.clone(),
+            runtime.runtime_context.sync.clone(),
+            runtime.runtime_context.world_cache.clone(),
+        );
         let mcp_controller =
             McpServerController::new(McpRuntime::from_host(&runtime, McpCaller::ExternalServer));
         let log_watcher_compat_bridge = LogWatcherCompatBridge::new();
@@ -97,6 +106,7 @@ impl AppState {
             group_moderation_batches: GroupModerationBatchCoordinator::default(),
             friend_log_name_resolutions: FriendLogNameResolutionCoordinator::default(),
             user_dialog_tab_counts: UserDialogTabCountsRuntime::new(),
+            quick_search,
             assistant: tokio::sync::OnceCell::new(),
             background_resume_route: Mutex::new(None),
             background_delay_generation: AtomicU64::new(0),

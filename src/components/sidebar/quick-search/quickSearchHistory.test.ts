@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { QuickSearchResult } from '../quickSearchCatalog';
+import type { QuickSearchResult } from '../quickSearch';
 
 const mocks = vi.hoisted(() => ({
     contents: '',

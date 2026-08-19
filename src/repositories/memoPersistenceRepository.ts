@@ -1,4 +1,3 @@
-import { invalidateEntityQueries } from '@/lib/entityQueryCache';
 import {
     commands,
     type AvatarMemoOutput,
@@ -110,7 +109,6 @@ async function saveUserMemo({
             memo: entry.memo
         };
     }
-    void invalidateEntityQueries(['quickSearch']);
     return result;
 }
 

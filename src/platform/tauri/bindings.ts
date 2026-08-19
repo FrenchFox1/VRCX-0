@@ -257,8 +257,13 @@ export const commands = {
             input
         });
     },
-    async appQuickSearchCatalogGet(): Promise<QuickSearchCatalogSnapshot> {
-        return await TAURI_INVOKE('app__quick_search_catalog_get');
+    async appQuickSearchQuery(
+        input: QuickSearchQueryInput
+    ): Promise<QuickSearchQueryOutput> {
+        return await TAURI_INVOKE('app__quick_search_query', { input });
+    },
+    async appQuickSearchWorkingSetInvalidate(): Promise<null> {
+        return await TAURI_INVOKE('app__quick_search_working_set_invalidate');
     },
     async appVrcStatusGet(): Promise<VrcStatusSnapshot> {
         return await TAURI_INVOKE('app__vrc_status_get');
@@ -5141,18 +5146,34 @@ export type ProxySettingsTestResult = {
     status: number;
 };
 export type QueryOrder = 'ascending' | 'descending';
-export type QuickSearchCatalogSnapshot = {
-    status: QuickSearchCatalogStatus;
+export type QuickSearchEntityType = 'friend' | 'avatar' | 'world' | 'group';
+export type QuickSearchMatchedField = 'name' | 'memo' | 'note';
+export type QuickSearchQueryInput = { query: string };
+export type QuickSearchQueryOutput = {
+    status: QuickSearchQueryStatus;
     detail: string;
-    ownAvatars: JsonValue[];
-    favoriteAvatars: JsonValue[];
-    ownWorlds: JsonValue[];
-    favoriteWorlds: JsonValue[];
-    groups: JsonValue[];
-    userMemos: JsonValue[];
-    userNotes: JsonValue[];
+    friends: QuickSearchResult[];
+    ownAvatars: QuickSearchResult[];
+    favoriteAvatars: QuickSearchResult[];
+    ownWorlds: QuickSearchResult[];
+    favoriteWorlds: QuickSearchResult[];
+    ownGroups: QuickSearchResult[];
+    joinedGroups: QuickSearchResult[];
 };
-export type QuickSearchCatalogStatus = 'ready' | 'partial';
+export type QuickSearchQueryStatus = 'ready' | 'partial';
+export type QuickSearchResult = {
+    id: string;
+    type: QuickSearchEntityType;
+    source: string;
+    name: string;
+    subtitle: string;
+    imageUrl: string;
+    seedData: JsonValue | null;
+    memo: string;
+    note: string;
+    matchedField: QuickSearchMatchedField;
+    userColour: string;
+};
 export type RawJson = JsonValue;
 export type RealtimeCurrentUserProjection = {
     generation: number;

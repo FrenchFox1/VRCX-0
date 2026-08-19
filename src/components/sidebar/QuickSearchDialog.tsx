@@ -33,7 +33,6 @@ import {
     normalizeSearchQuery,
     USER_QUERY_MIN_LENGTH
 } from './quick-search/quickSearchResultModel';
-import { useQuickSearchCatalogState } from './quick-search/useQuickSearchCatalogState';
 import { useQuickSearchHistory } from './quick-search/useQuickSearchHistory';
 import { useQuickSearchResults } from './quick-search/useQuickSearchResults';
 import { useQuickSearchSelectResult } from './quick-search/useQuickSearchSelectResult';
@@ -61,14 +60,11 @@ export function QuickSearchDialog({
     const normalizedQuery = normalizeSearchQuery(query);
     const showSearchOverview = normalizedQuery.length < USER_QUERY_MIN_LENGTH;
     const navCommands = useNavCommands(normalizedQuery);
-    const catalog = useQuickSearchCatalogState({
+    const results = useQuickSearchResults({
         currentEndpoint,
         currentUserId,
+        normalizedQuery,
         open
-    });
-    const results = useQuickSearchResults({
-        catalog,
-        normalizedQuery
     });
     const history = useQuickSearchHistory({
         currentEndpoint,
@@ -280,14 +276,14 @@ export function QuickSearchDialog({
                                     onSelect={selectResult}
                                 />
                             </>
-                        ) : (
+                        ) : results.status === 'running' ? null : (
                             <CommandEmpty>
                                 {t('side_panel.search_no_results')}
                             </CommandEmpty>
                         )}
-                        {catalog.status === 'error' && catalog.detail ? (
+                        {results.status === 'error' && results.detail ? (
                             <div className="text-destructive px-2 pb-2 text-xs">
-                                {catalog.detail}
+                                {results.detail}
                             </div>
                         ) : null}
                     </CommandList>

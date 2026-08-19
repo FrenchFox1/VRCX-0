@@ -4,7 +4,6 @@ import type {
     FavoriteKind,
     StoredLocalFavoriteKind
 } from '@/domain/favorites/types';
-import { invalidateEntityQueries } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
 import type {
     FavoriteChange,
@@ -172,7 +171,14 @@ function isFavoriteMirrorReady(payload: FavoritesChangedEventPayload): boolean {
 function applyFavoritesChangedEvent(
     payload: FavoritesChangedEventPayload
 ): void {
-    void invalidateEntityQueries(['quickSearch']);
+    void commands
+        .appQuickSearchWorkingSetInvalidate()
+        .catch((error: unknown) => {
+            console.warn(
+                'Failed to invalidate the quick search working set:',
+                error
+            );
+        });
     for (const change of payload.changes) {
         applyFavoriteChange(change);
     }

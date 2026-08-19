@@ -75,8 +75,8 @@ pub use prints::{
     PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState,
 };
 pub use quick_search_catalog::{
-    load_quick_search_catalog, QuickSearchCatalogDeps, QuickSearchCatalogSnapshot,
-    QuickSearchCatalogStatus,
+    QuickSearchEntityType, QuickSearchMatchedField, QuickSearchQueryInput, QuickSearchQueryOutput,
+    QuickSearchQueryStatus, QuickSearchResult, QuickSearchRuntime,
 };
 pub use social_mutation::{
     accept_friend_request, accept_friend_request_notification, cancel_friend_request,
