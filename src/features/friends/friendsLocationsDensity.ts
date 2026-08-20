@@ -19,6 +19,9 @@ export const FRIENDS_LOCATIONS_DENSITY_OPTIONS = Object.freeze([
     }
 ]);
 
+export type FriendsLocationsDensity =
+    (typeof FRIENDS_LOCATIONS_DENSITY_OPTIONS)[number]['value'];
+
 const DENSITY_CONFIGS = Object.freeze({
     standard: Object.freeze({
         value: 'standard',

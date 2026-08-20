@@ -14,6 +14,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 
 import {
+    normalizeTopWorldsSort,
     OVERLAP_RENDER_DELAY_MS,
     USER_ACTIVITY_HOUR_LABELS,
     type ActivityHeatmapData,
@@ -42,7 +43,7 @@ export function UserActivityOverlapSection({
     weekStartsOn
 }: {
     bestOverlapTime: string;
-    changeExcludeHours: (value: unknown) => void;
+    changeExcludeHours: (value: boolean) => void;
     changeExcludeRange: (kind: 'start' | 'end', value: string) => void;
     dayLabels: string[];
     emptyColor: string;
@@ -227,8 +228,8 @@ export function UserActivityTopWorldsSection({
     topWorldsLoadingVisible,
     topWorldsSortBy
 }: {
-    changeExcludeHomeWorld: (value: unknown) => void;
-    changeTopWorldsSort: (value: unknown) => void;
+    changeExcludeHomeWorld: (value: boolean) => void;
+    changeTopWorldsSort: (value: TopWorldsSort) => void;
     currentHomeWorldId: string;
     excludeHomeWorldEnabled: boolean;
     loading: boolean;
@@ -282,7 +283,9 @@ export function UserActivityTopWorldsSection({
                             <Select
                                 value={topWorldsSortBy}
                                 onValueChange={(value) => {
-                                    changeTopWorldsSort(value);
+                                    changeTopWorldsSort(
+                                        normalizeTopWorldsSort(value)
+                                    );
                                 }}
                                 disabled={topWorldsLoading}
                                 items={[

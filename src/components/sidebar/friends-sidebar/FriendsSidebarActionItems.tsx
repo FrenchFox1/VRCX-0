@@ -8,6 +8,7 @@ import {
 import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { UserStatus } from '@/platform/tauri/bindings';
 import { isActionRecent } from '@/services/recentActionService';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 
@@ -18,7 +19,7 @@ const statusOptions = [
     { value: 'active', labelKey: 'dialog.user.status.online' },
     { value: 'ask me', labelKey: 'dialog.user.status.ask_me' },
     { value: 'busy', labelKey: 'dialog.user.status.busy' }
-];
+] satisfies ReadonlyArray<{ value: UserStatus; labelKey: string }>;
 
 export type StatusPreset = {
     status?: unknown;
@@ -82,7 +83,7 @@ export function CurrentUserActionItems({
 }: {
     friend: SidebarFriendRecord & { statusHistory?: unknown };
     onOpen?: () => void;
-    onChangeStatus?: (status: string) => void;
+    onChangeStatus?: (status: UserStatus) => void;
     onSetStatusDescription?: (statusDescription: string) => void;
     onEditSocialStatus?: () => void;
     onApplyStatusPreset?: (preset: StatusPreset) => void;

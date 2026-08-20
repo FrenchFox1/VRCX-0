@@ -38,10 +38,12 @@ type SameInstanceFriendGroupOptions = {
     includeCurrentUser?: boolean;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 function asRecord(value: unknown): FriendPresenceRecord | null {
-    return value && typeof value === 'object'
-        ? (value as FriendPresenceRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function friendPresenceSource(friend: unknown): FriendPresenceRecord | null {

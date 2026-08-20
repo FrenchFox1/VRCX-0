@@ -158,7 +158,7 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
     const buildMergeOptions = useCallback<FeedLiveMergeOptionsBuilder>(
         ({ liveEntries, rows }) => ({
             rows,
-            userId: currentUserId,
+            userId: currentUserId || '',
             filters: column.feedTypes,
             excludedFavoriteUserIds,
             favoriteUserIds,
@@ -206,7 +206,7 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
 
         feedRepository
             .queryFeedLatest({
-                userId: currentUserId,
+                userId: currentUserId || '',
                 filters: column.feedTypes,
                 excludedFavoriteUserIds,
                 favoriteUserIds,
@@ -326,7 +326,7 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
         setLoadingOlder(true);
         feedRepository
             .queryFeedPage({
-                userId: currentUserId,
+                userId: currentUserId || '',
                 filters: column.feedTypes,
                 excludedFavoriteUserIds,
                 favoriteUserIds,

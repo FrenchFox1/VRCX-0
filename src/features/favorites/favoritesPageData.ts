@@ -8,7 +8,8 @@ import {
     normalizeFavoriteEntityId as normalizeEntityId,
     resolveFavoriteImage,
     shrinkFavoriteImage as shrinkImage,
-    sortFavoriteItems as sortItems
+    sortFavoriteItems as sortItems,
+    type FavoriteSortValue
 } from './favoritesItems';
 import type {
     FavoriteGroupView,
@@ -60,8 +61,6 @@ type FavoriteGroupSourceMap = Record<string, unknown[]>;
 type FavoriteDetailMap = Record<string, FavoritePageEntityDetail | undefined>;
 type FavoriteProfileMap = Record<string, FavoriteProfileRecord | undefined>;
 type FavoriteSortIndex = Record<string, number | undefined>;
-type FavoriteSortValue = unknown;
-
 function textValue(value: unknown) {
     return typeof value === 'string'
         ? value
@@ -101,10 +100,12 @@ function stringArray(value: unknown): string[] {
     return Array.isArray(value) ? value.map(textValue).filter(Boolean) : [];
 }
 
-function firstDisplayableDetail(candidates: unknown[]) {
+function firstDisplayableDetail(
+    candidates: unknown[]
+): FavoritePageEntityDetail | undefined {
     return candidates.find((candidate) =>
         hasDisplayableEntityDetail(candidate)
-    ) as FavoritePageEntityDetail | undefined;
+    );
 }
 
 function favoriteImagePair(
@@ -156,8 +157,12 @@ function buildLocalFavoriteGroups(
     }));
 }
 
+function isTranslateFn(value: unknown): value is TranslateFn {
+    return typeof value === 'function';
+}
+
 function resolveTranslator(t: unknown): TranslateFn {
-    return typeof t === 'function' ? (t as TranslateFn) : (key) => key;
+    return isTranslateFn(t) ? t : (key) => key;
 }
 
 function defaultFavoriteEntityTitle(kind: FavoriteKind, t: unknown) {
@@ -398,7 +403,7 @@ export function buildFavoriteRemoteItemsByGroup({
     friendsById,
     knownUsersById = {},
     favoritesSortIndex,
-    sortValue,
+    sortValue = 'name',
     remoteFavoritesById,
     remoteEntityDetailsData,
     remoteEntityDetailsStatus,
@@ -570,7 +575,7 @@ export function buildFavoriteLocalItemsByGroup({
     worldDetailFallbacksById = {},
     friendsById,
     knownUsersById = {},
-    sortValue,
+    sortValue = 'name',
     t
 }: {
     kind: FavoriteKind;

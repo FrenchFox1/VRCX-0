@@ -1,3 +1,6 @@
+import type { UserStatus } from '@/platform/tauri/bindings';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+
 export const statusPresetsConfigKey = 'VRCX_statusPresets';
 export const maxStatusPresets = 10;
 export const selfStatusBaseOptions = [
@@ -5,17 +8,7 @@ export const selfStatusBaseOptions = [
     { value: 'active', labelKey: 'dialog.user.status.online' },
     { value: 'ask me', labelKey: 'dialog.user.status.ask_me' },
     { value: 'busy', labelKey: 'dialog.user.status.busy' }
-];
-
-const allowedSelfStatuses = new Set([
-    'active',
-    'join me',
-    'ask me',
-    'busy',
-    'offline'
-]);
-
-import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+] satisfies ReadonlyArray<{ value: UserStatus; labelKey: string }>;
 
 export {
     fallbackLanguageOptions,
@@ -69,9 +62,15 @@ export function buildFavoriteIdSet(
     return set;
 }
 
-export function normalizeSelfStatusInput(value: unknown) {
+export function normalizeSelfStatusInput(value: unknown): UserStatus | '' {
     const normalized = normalizeUserStatus(value);
-    if (allowedSelfStatuses.has(normalized)) {
+    if (
+        normalized === 'active' ||
+        normalized === 'join me' ||
+        normalized === 'ask me' ||
+        normalized === 'busy' ||
+        normalized === 'offline'
+    ) {
         return normalized;
     }
     return '';

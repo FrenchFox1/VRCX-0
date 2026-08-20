@@ -10,9 +10,9 @@ type PlayerListContext = PlayerListSnapshotContext;
 type PlayerListPlayer = PlayerListSnapshotPlayer;
 
 interface CurrentInstanceSnapshotInput {
-    currentUserId?: unknown;
-    currentLocation?: unknown;
-    currentLocationStartedAt?: unknown;
+    currentUserId?: string;
+    currentLocation?: string;
+    currentLocationStartedAt?: string;
 }
 
 function comparePlayers(left: PlayerListPlayer, right: PlayerListPlayer) {

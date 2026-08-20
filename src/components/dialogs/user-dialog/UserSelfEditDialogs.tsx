@@ -2,6 +2,7 @@ import { BookmarkIcon, HistoryIcon, PlusIcon, XIcon } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { UserStatus } from '@/platform/tauri/bindings';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -59,7 +60,7 @@ import type { SocialStatusDraft } from './useSelfStatusPresets';
 import type { ProfileDetailsDraft } from './useUserDialogSelfActions';
 
 type LanguageOption = { key: string; value: string };
-type StatusOption = { value: string; label: string };
+type StatusOption = { value: UserStatus; label: string };
 type SocialStatusDialogController = ReturnType<
     typeof useCurrentUserSocialStatusDialog
 >['dialog'];
@@ -247,7 +248,9 @@ export function UserSocialStatusDialog({
                             className="w-full flex-wrap"
                             aria-label={t('dialog.user.label.social_status')}
                             onValueChange={(value) => {
-                                const nextStatus = value[0] ?? '';
+                                const nextStatus = normalizeSelfStatusInput(
+                                    value[0]
+                                );
                                 if (!nextStatus) {
                                     return;
                                 }

@@ -35,7 +35,7 @@ type LoadTopWorldsViewOptions = {
     excludeWorldId?: string;
     limit?: number;
     rangeDays?: number;
-    sortBy?: string;
+    sortBy?: 'time' | 'count';
 };
 type TopWorldRows = Awaited<
     ReturnType<typeof gameLogRepository.getMyTopWorlds>

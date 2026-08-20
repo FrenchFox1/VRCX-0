@@ -37,12 +37,12 @@ export type FeedPreviousInstanceRow = GameLogPreviousInstanceWorldRow;
 export type FeedFriendActions = {
     canSendInviteFromFeed: boolean;
     canBoopFromFeed: boolean;
-    isFeedUserHidden(userId: unknown): boolean;
-    addFeedHiddenUser(userId: unknown): Promise<void>;
-    removeFeedHiddenUser(userId: unknown): Promise<void>;
-    canUseFeedFriendLocation(location: unknown): boolean;
-    launchFeedFriendLocation(location: unknown): Promise<void>;
-    selfInviteFeedFriendLocation(location: unknown): Promise<void>;
+    isFeedUserHidden(userId: string): boolean;
+    addFeedHiddenUser(userId: string): Promise<void>;
+    removeFeedHiddenUser(userId: string): Promise<void>;
+    canUseFeedFriendLocation(location: string): boolean;
+    launchFeedFriendLocation(location: string): Promise<void>;
+    selfInviteFeedFriendLocation(location: string): Promise<void>;
     sendFeedFriendInvite(friend: FeedFriendActionTarget): Promise<void>;
     requestFeedFriendInvite(friend: FeedFriendActionTarget): Promise<void>;
     sendFeedFriendBoop(friend: FeedFriendActionTarget): Promise<void>;

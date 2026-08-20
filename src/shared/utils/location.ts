@@ -535,7 +535,7 @@ const LOCATION_SENTINELS = ['offline', 'private', 'traveling'] as const;
 type LocationSentinel = (typeof LOCATION_SENTINELS)[number];
 
 function isLocationSentinel(value: string): value is LocationSentinel {
-    return (LOCATION_SENTINELS as readonly string[]).includes(value);
+    return LOCATION_SENTINELS.some((sentinel) => sentinel === value);
 }
 
 function locationSentinel(value: unknown): LocationSentinel | '' {

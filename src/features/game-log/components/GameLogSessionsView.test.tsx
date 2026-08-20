@@ -109,7 +109,10 @@ describe('GameLogSessionsView', () => {
                         created_at: '2026-08-10T00:00:00.000Z',
                         duration: 60_000,
                         location: 'wrld_test:1',
+                        worldId: 'wrld_test',
                         worldName: 'Test World',
+                        groupName: '',
+                        playerDurationRows: [],
                         events: friends.map(([userId, displayName], index) => ({
                             type: 'OnPlayerJoined',
                             created_at: `2026-08-10T00:0${index}:00.000Z`,
@@ -147,7 +150,9 @@ describe('GameLogSessionsView', () => {
                         created_at: '2026-08-10T00:00:00.000Z',
                         duration: 0,
                         location: 'wrld_test:1',
+                        worldId: 'wrld_test',
                         worldName: 'Test World',
+                        groupName: '',
                         playerDurationRows: [
                             {
                                 displayName: 'Alice',

@@ -103,7 +103,7 @@ type SettingsPreferenceActionsDeps = {
     setCustomFontOptionsLoading: (value: boolean) => void;
     setLocalFavoriteFriendsGroups: (value: string[]) => void;
     setLocalFavoriteFriendsGroupsPreference: (
-        value: unknown
+        value: string[]
     ) => Promise<string[]>;
     setOnlineVisitCount: (value: number) => void;
     setPrefs: StateSetter<SettingsPrefs>;
@@ -125,7 +125,7 @@ type SettingsPreferenceActionsDeps = {
     setTablePageSizesDialogOpen: (value: boolean) => void;
     setTrustColorPreference: (
         key: TrustColorKey,
-        value: unknown
+        value: string
     ) => Promise<PreferencesSnapshot['trustColor']>;
     setOverlayActivityFiltersPreference: (
         value: unknown,
@@ -185,10 +185,12 @@ type ActivityFilterSurfaceSetter<Field extends ActivityFilterSurfaceField> = (
     definitions?: OverlayActivityTypeDefinition[]
 ) => Promise<PreferencesSnapshot[Field]>;
 
-function readCustomFontDraft(value: unknown): Partial<CustomFontDraft> {
-    return value && typeof value === 'object'
-        ? (value as Partial<CustomFontDraft>)
-        : {};
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readCustomFontDraft(value: unknown): Record<string, unknown> {
+    return isRecord(value) ? value : {};
 }
 
 export function useSettingsPreferenceActions({
@@ -313,7 +315,7 @@ export function useSettingsPreferenceActions({
             customFontFamily
         });
     }
-    async function selectCjkFontPack(cjkFontPack: unknown) {
+    async function selectCjkFontPack(cjkFontPack: string) {
         await saveFontPreferences({
             fontFamily:
                 prefs.appFontFamily === 'custom'
@@ -415,7 +417,7 @@ export function useSettingsPreferenceActions({
             trustColor: persisted
         }));
     }
-    async function saveTrustColor(key: TrustColorKey, value: unknown) {
+    async function saveTrustColor(key: TrustColorKey, value: string) {
         try {
             const nextTrustColor = await setTrustColorPreference(key, value);
             setPrefs((current) => ({

@@ -49,7 +49,7 @@ export function FriendListTable({
     isError: boolean;
     hasRows: boolean;
     onResetTableLayout: () => void;
-    onPageSizeChange: (value: unknown) => void;
+    onPageSizeChange: (value: string) => void;
     onOpenUser: (friend: FriendListRow) => void;
 }) {
     const { t } = useTranslation();

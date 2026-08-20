@@ -26,16 +26,9 @@ type FavoritesCollectionsStoreSlice = Pick<
     loadStatus: string;
 };
 
-type FavoriteAvatarTagSource = {
-    tags?: unknown[];
-    type?: unknown;
-};
-
-type FavoriteRemoteGroupSource = {
-    type?: unknown;
-    favoriteId?: unknown;
-    $groupKey?: unknown;
-};
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
 function addNormalizedFavoriteIds(
     ids: Set<string>,
@@ -108,11 +101,8 @@ export function buildFavoriteAvatarTags({
     return Array.from(
         new Set(
             Object.values(remoteFavoritesById)
-                .filter(
-                    (favorite): favorite is FavoriteAvatarTagSource =>
-                        Boolean(favorite && typeof favorite === 'object') &&
-                        (favorite as FavoriteAvatarTagSource).type === 'avatar'
-                )
+                .filter(isRecord)
+                .filter((favorite) => favorite.type === 'avatar')
                 .map((favorite) =>
                     Array.isArray(favorite.tags) &&
                     typeof favorite.tags[0] === 'string'
@@ -140,10 +130,10 @@ export function buildFavoriteRemoteGroupEntityIds({
 
     const ids = new Set<string>();
     for (const value of Object.values(remoteFavoritesById)) {
-        if (!value || typeof value !== 'object') {
+        if (!isRecord(value)) {
             continue;
         }
-        const favorite = value as FavoriteRemoteGroupSource;
+        const favorite = value;
         const matchesKind =
             kind === 'avatar'
                 ? favorite.type === 'avatar'

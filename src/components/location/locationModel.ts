@@ -47,10 +47,12 @@ export type LocationObjectRecord = Record<string, unknown> & {
 export type NormalizedLocationObject = LocationObjectRecord &
     ReturnType<typeof parseLocation> & { launchToken?: string };
 
+function isLocationObjectRecord(value: unknown): value is LocationObjectRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
 function recordFromUnknown(value: unknown): LocationObjectRecord {
-    return value && typeof value === 'object'
-        ? (value as LocationObjectRecord)
-        : {};
+    return isLocationObjectRecord(value) ? value : {};
 }
 
 export function normalizeLocationText(value: unknown) {
@@ -165,7 +167,7 @@ export function normalizeLocationObject(
             strict: Boolean(source.strict ?? parsed.strict),
             groupId: normalizeLocationText(source.groupId) || parsed.groupId,
             userId: normalizeLocationText(source.userId) || parsed.userId
-        } as NormalizedLocationObject;
+        };
     }
     return parseLocation('');
 }

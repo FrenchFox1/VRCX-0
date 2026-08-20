@@ -9,7 +9,7 @@ describe('statusBarFriendProfileLoad', () => {
             'cancelling',
             'completed',
             'cancelled'
-        ]) {
+        ] as const) {
             expect(isFriendProfileLoadStatusVisible(status)).toBe(true);
         }
         expect(isFriendProfileLoadStatusVisible('idle')).toBe(false);

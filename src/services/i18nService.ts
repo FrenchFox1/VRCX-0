@@ -49,11 +49,11 @@ function resolveMessage(messages: unknown, key: string): unknown {
         );
 }
 
-function normalizeLocale(locale: unknown): string {
+function normalizeLocale(locale: string): string {
     return normalizeLanguageCode(locale);
 }
 
-export async function setI18nLanguage(locale: unknown): Promise<string> {
+export async function setI18nLanguage(locale: string): Promise<string> {
     const normalizedLocale = normalizeLocale(locale);
     await i18nReady;
     if (!i18n.hasResourceBundle(normalizedLocale, 'translation')) {
@@ -65,7 +65,7 @@ export async function setI18nLanguage(locale: unknown): Promise<string> {
 }
 
 export function getTimeUnitLabels(
-    locale: unknown,
+    locale: string,
     defaultLabels: TimeUnitLabels
 ): TimeUnitLabels {
     const localizedMessages =

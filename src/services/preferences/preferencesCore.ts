@@ -12,7 +12,7 @@ import {
     type PreferencesSnapshot,
     usePreferencesStore
 } from '@/state/preferencesStore';
-import { normalizeTableDensity } from '@/state/shellStore';
+import { normalizeTableDensity, type TableDensity } from '@/state/shellStore';
 
 import {
     DEFAULT_TABLE_PAGE_SIZE,
@@ -35,7 +35,7 @@ export function applyAccessibleStatusClass(enabled: boolean) {
     );
 }
 
-export function applyTableDensityClass(density: unknown) {
+export function applyTableDensityClass(density: TableDensity) {
     const normalized = normalizeTableDensity(density);
     document.documentElement.classList.remove('is-compact-table');
     if (normalized === 'compact') {

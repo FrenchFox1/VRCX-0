@@ -62,10 +62,10 @@ export type {
 type MediaRepository = typeof vrchatMediaRepository &
     typeof mediaFileRepository;
 
-const mediaRepository = Object.freeze({
+const mediaRepository: MediaRepository = Object.freeze({
     ...vrchatMediaRepository,
     ...mediaFileRepository
-}) as MediaRepository;
+});
 
 export {
     getFiles,

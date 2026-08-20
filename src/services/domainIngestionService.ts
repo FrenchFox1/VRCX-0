@@ -38,10 +38,12 @@ function text(value: unknown): string {
         : String(value ?? '').trim();
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function record(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : {};
+    return isRecord(value) ? value : {};
 }
 
 function toIngestEntry(

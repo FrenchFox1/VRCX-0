@@ -106,7 +106,7 @@ export function useNotificationTableState({
         }));
     }, [activeTypes, deferredSearchQuery, quickFilter]);
 
-    function handlePageSizeChange(value: unknown) {
+    function handlePageSizeChange(value: string) {
         setPagination({
             pageIndex: 0,
             pageSize: resolvePageSize(value, pageSizes, pagination.pageSize)

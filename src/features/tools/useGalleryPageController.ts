@@ -9,7 +9,8 @@ import {
 } from './galleryConstants';
 import {
     getGalleryGridDensityConfig,
-    sanitizeGalleryGridDensity
+    sanitizeGalleryGridDensity,
+    type GalleryGridDensity
 } from './galleryDensity';
 import type {
     GalleryAuthTarget,
@@ -35,7 +36,7 @@ function readGalleryGridDensityPreference() {
     }
 }
 
-function writeGalleryGridDensityPreference(value: string) {
+function writeGalleryGridDensityPreference(value: GalleryGridDensity) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -152,12 +153,11 @@ export function useGalleryPageController() {
         );
     }, [searchParams]);
 
-    function changeGridDensity(nextValue: unknown) {
-        const nextDensity = sanitizeGalleryGridDensity(nextValue);
-        setGridDensity(nextDensity);
-        writeGalleryGridDensityPreference(nextDensity);
+    function changeGridDensity(nextValue: GalleryGridDensity) {
+        setGridDensity(nextValue);
+        writeGalleryGridDensityPreference(nextValue);
     }
-    function setActiveTab(nextValue: unknown) {
+    function setActiveTab(nextValue: string) {
         const nextTab = sanitizeGalleryTab(nextValue);
         setActiveTabState(nextTab);
         setSearchParams(

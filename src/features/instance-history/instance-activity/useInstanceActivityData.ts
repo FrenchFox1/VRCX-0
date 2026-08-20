@@ -34,11 +34,17 @@ type ActivityDataState = {
     error: string;
 };
 
-function hasWorldName(world: unknown): world is { name: string } {
-    if (!world || typeof world !== 'object') {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function hasWorldName(
+    world: unknown
+): world is Record<string, unknown> & { name: string } {
+    if (!isRecord(world)) {
         return false;
     }
-    return Boolean(String((world as { name?: unknown }).name || '').trim());
+    return typeof world.name === 'string' && Boolean(world.name.trim());
 }
 
 async function loadMissingWorldProfiles(
@@ -62,10 +68,7 @@ async function loadMissingWorldProfiles(
         if (result.status !== 'fulfilled' || !hasWorldName(result.value)) {
             continue;
         }
-        const world = result.value as Record<string, unknown> & {
-            id?: string;
-            name: string;
-        };
+        const world = result.value;
         const worldId = String(world.id || '').trim();
         if (!worldId) {
             continue;
@@ -152,9 +155,7 @@ export function useInstanceActivityData({
                 const uniqueDates = Array.from(
                     new Set(
                         rows
-                            .map((value) =>
-                                toLocalDayKey(value as string | number | Date)
-                            )
+                            .map((value) => toLocalDayKey(value))
                             .filter(Boolean)
                     )
                 ).sort((left, right) => right.localeCompare(left));
@@ -212,9 +213,11 @@ export function useInstanceActivityData({
                     new Set(
                         rows
                             .map((row) => parseLocation(row.location).worldId)
-                            .filter(Boolean)
+                            .filter((worldId): worldId is string =>
+                                Boolean(worldId)
+                            )
                     )
-                ) as string[];
+                );
                 const nextWorldDetailsById =
                     await instanceActivityRepository.getWorldSummariesByIds(
                         worldIds

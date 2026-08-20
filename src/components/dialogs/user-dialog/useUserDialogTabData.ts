@@ -36,7 +36,9 @@ import {
     loadUserDialogTabData,
     loadUserDialogTabCounts,
     userDialogDataKeyForTab,
-    type UserDialogDataTab
+    type UserDialogDataTab,
+    type UserDialogRemoteStatus,
+    type UserDialogTabCounts
 } from './userDialogTabService';
 import { buildUserDialogListViewData } from './userDialogViewData';
 import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
@@ -153,19 +155,15 @@ export function useUserDialogTabData({
     const [remoteData, setRemoteData] = useState<UserDialogRemoteData>(
         emptyUserDialogRemoteData
     );
-    const [remoteStatus, setRemoteStatus] = useState<Record<string, string>>(
+    const [remoteStatus, setRemoteStatus] = useState<UserDialogRemoteStatus>(
         emptyUserDialogStatus
     );
-    const [remoteErrors, setRemoteErrors] = useState<Record<string, string>>(
+    const [remoteErrors, setRemoteErrors] = useState<
+        Partial<Record<UserDialogDataTab, string>>
+    >(emptyUserDialogStatus);
+    const [remoteTabCounts, setRemoteTabCounts] = useState<UserDialogTabCounts>(
         emptyUserDialogStatus
     );
-    const [remoteTabCounts, setRemoteTabCounts] = useState<{
-        mutual?: number;
-        groups?: number;
-        worlds?: number;
-        'favorite-worlds'?: number;
-        avatars?: number;
-    }>(emptyUserDialogStatus);
     const [search, setSearch] = useState(emptyUserDialogSearch);
     const [worldSort, setWorldSort] = useState<UserDialogWorldSort>('updated');
     const [worldOrder, setWorldOrder] =

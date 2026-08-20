@@ -21,6 +21,7 @@ import {
     sortAvatarRows,
     sortMutualFriendRows
 } from './userDialogRows';
+import type { UserDialogRemoteStatus } from './userDialogTabService';
 import {
     normalizeLanguageOptionsFromConfig,
     normalizeProfileLanguageRows
@@ -227,7 +228,7 @@ export function buildUserDialogListViewData({
 }: {
     profile: DialogRecord;
     remoteData: DialogRecord;
-    remoteStatus: Record<string, string>;
+    remoteStatus: UserDialogRemoteStatus;
     friendsById?: Record<string, DialogRecord> | null;
     search: Record<string, string>;
     mutualSort: UserDialogMutualFriendSort;

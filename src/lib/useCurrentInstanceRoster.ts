@@ -124,9 +124,9 @@ export function useCurrentInstanceRoster({
         setDetail('');
 
         loadCurrentInstanceRoster({
-            currentLocation: playerListLocation,
-            currentLocationStartedAt: playerListStartedAt,
-            currentUserId
+            currentLocation: normalizeString(playerListLocation),
+            currentLocationStartedAt: normalizeString(playerListStartedAt),
+            currentUserId: normalizeString(currentUserId)
         })
             .then((result) => {
                 if (!active) {

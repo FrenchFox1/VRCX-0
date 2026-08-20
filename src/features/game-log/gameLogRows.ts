@@ -299,14 +299,17 @@ export function collectGameLogSessionFriends(
 }
 
 export function resolveGameLogSessionDuration(
-    session: GameLogSession | null | undefined
+    session: Pick<GameLogSession, 'duration'> | null | undefined
 ) {
-    const duration = Number(session?.duration ?? 0);
-    return Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const duration = session?.duration ?? 0;
+    return duration > 0 ? duration : 0;
 }
 
 export function getGameLogSessionKey(
-    session: GameLogSession | null | undefined
+    session:
+        | Pick<GameLogSession, 'created_at' | 'id' | 'location'>
+        | null
+        | undefined
 ) {
     return [session?.id, session?.created_at, session?.location]
         .map((value) => normalizeGameLogId(value))

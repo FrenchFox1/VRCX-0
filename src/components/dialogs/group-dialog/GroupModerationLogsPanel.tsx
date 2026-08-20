@@ -169,7 +169,7 @@ function isAuditLogDiffShape(
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
         return false;
     }
-    const entries = Object.values(data as Record<string, unknown>);
+    const entries = Object.values(data);
     return entries.length > 0 && entries.every(isAuditLogDiffField);
 }
 

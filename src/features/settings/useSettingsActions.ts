@@ -223,11 +223,8 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
             }
         );
     }
-    async function removeFeedHiddenUser(userId: unknown) {
-        const normalizedUserId =
-            typeof userId === 'string'
-                ? userId.trim()
-                : String(userId ?? '').trim();
+    async function removeFeedHiddenUser(userId: string) {
+        const normalizedUserId = userId.trim();
         if (!normalizedUserId) {
             return;
         }

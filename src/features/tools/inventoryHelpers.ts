@@ -21,7 +21,8 @@ import {
 import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import {
     getGalleryGridDensityConfig,
-    sanitizeGalleryGridDensity
+    sanitizeGalleryGridDensity,
+    type GalleryGridDensity
 } from './galleryDensity';
 
 export { MAX_IMAGE_UPLOAD_BYTES };
@@ -268,7 +269,7 @@ export function readGridDensityPreference() {
     }
 }
 
-export function writeGridDensityPreference(value: string) {
+export function writeGridDensityPreference(value: GalleryGridDensity) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -279,7 +280,7 @@ export function writeGridDensityPreference(value: string) {
     }
 }
 
-export function getInventoryGridDensityConfig(gridDensity: unknown) {
+export function getInventoryGridDensityConfig(gridDensity: GalleryGridDensity) {
     return getGalleryGridDensityConfig(gridDensity);
 }
 

@@ -24,9 +24,9 @@ export type CurrentUserFriendSnapshot = Record<string, unknown> & {
     onlineFriends?: unknown;
 };
 export type FriendBootstrapOptions = {
-    userId?: unknown;
-    endpoint?: unknown;
-    websocket?: unknown;
+    userId?: string;
+    endpoint?: string;
+    websocket?: string;
     currentUserSnapshot?: unknown;
     preserveLoadedState?: boolean;
 };
@@ -60,9 +60,13 @@ export function normalizeFriendsById(
         return {};
     }
 
-    return Object.fromEntries(
-        Object.entries(value).filter(([, friend]) => isRecord(friend))
-    ) as Record<string, Record<string, unknown>>;
+    const friendsById: Record<string, Record<string, unknown>> = {};
+    for (const [userId, friend] of Object.entries(value)) {
+        if (isRecord(friend)) {
+            friendsById[userId] = friend;
+        }
+    }
+    return friendsById;
 }
 
 export function getDisplayName(

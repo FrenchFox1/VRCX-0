@@ -281,7 +281,7 @@ export function UserDialogFavoriteWorldsTab({
                 search={search.favoriteWorlds}
                 filteredRows={filteredFavoriteWorlds}
                 loading={remoteStatus['favorite-worlds'] === 'running'}
-                error={remoteErrors['favorite-worlds']}
+                error={remoteErrors['favorite-worlds'] || ''}
             />
         </EntityDialogTabContent>
     );

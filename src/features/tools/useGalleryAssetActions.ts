@@ -346,12 +346,9 @@ export function createGalleryAssetActions({
     }
     async function deleteFileAsset(
         tab: keyof typeof FILE_TABS,
-        fileId: unknown
+        fileId: string
     ) {
-        const normalizedFileId =
-            typeof fileId === 'string'
-                ? fileId.trim()
-                : String(fileId ?? '').trim();
+        const normalizedFileId = fileId.trim();
         if (!normalizedFileId) {
             return;
         }

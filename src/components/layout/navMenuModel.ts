@@ -497,7 +497,7 @@ export async function loadNavMenuModel({
 
     if (storedValue) {
         try {
-            const parsed = JSON.parse(storedValue) as unknown;
+            const parsed: unknown = JSON.parse(storedValue);
             if (Array.isArray(parsed)) {
                 layout = insertDashboardEntries(parsed, dashboardDefinitions);
             } else if (isRecord(parsed) && Array.isArray(parsed.layout)) {
@@ -648,8 +648,12 @@ export function getPathForNavEntry(entry: NavDefinition | MenuItem | null) {
     if (entry.routeName === 'dashboard' && entry.routeParams?.id) {
         return `/dashboard/${entry.routeParams.id}`;
     }
-    if (entry.routeName && entry.routeName in routePathByName) {
-        return routePathByName[entry.routeName as keyof typeof routePathByName];
+    if (entry.routeName) {
+        const routePaths: Record<string, string> = routePathByName;
+        const routePath = routePaths[entry.routeName];
+        if (routePath) {
+            return routePath;
+        }
     }
     return entry.path || '';
 }

@@ -44,8 +44,8 @@ import {
 type Navigation = ReturnType<typeof useNavigate>;
 type RouteLocation = ReturnType<typeof useLocation>;
 type SaveAndApplyNavLayout = (
-    layout: unknown,
-    hiddenKeys: unknown
+    layout: CustomNavLayout,
+    hiddenKeys: string[]
 ) => Promise<NavMenuModel>;
 
 function resolveActiveIndex(menuItems: NavMenuItem[], pathname: string) {
@@ -135,8 +135,8 @@ function useAppNavModel({
     }, [dashboards, notificationLayout, preferencesHydrated, t]);
 
     async function saveAndApplyNavLayout(
-        nextLayout: unknown,
-        nextHiddenKeys: unknown
+        nextLayout: CustomNavLayout,
+        nextHiddenKeys: string[]
     ) {
         const model = await saveNavMenuModel({
             layout: nextLayout,
@@ -450,7 +450,7 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
     async function handleCustomNavSave(
         nextLayout: CustomNavLayout,
-        nextHiddenKeys: unknown[]
+        nextHiddenKeys: string[]
     ) {
         try {
             await saveAndApplyNavLayout(nextLayout, nextHiddenKeys);
@@ -470,7 +470,7 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
     async function handleDashboardCreatedFromCustomNav(
         dashboardId: string,
         nextLayout: CustomNavLayout,
-        nextHiddenKeys: unknown[]
+        nextHiddenKeys: string[]
     ) {
         try {
             await saveAndApplyNavLayout(nextLayout, nextHiddenKeys);

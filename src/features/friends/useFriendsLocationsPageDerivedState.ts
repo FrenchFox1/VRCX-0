@@ -18,11 +18,15 @@ import {
     type InviteLocationGameState
 } from '@/shared/utils/invite';
 
-import { buildFriendsLocationsSegmentOptions } from './friendsLocationsConfig';
+import {
+    buildFriendsLocationsSegmentOptions,
+    type FriendsLocationsSegment
+} from './friendsLocationsConfig';
 import {
     getFriendsLocationsCardRowHeight,
     getFriendsLocationsDensityConfig,
-    type FriendsLocationsCardContentMode
+    type FriendsLocationsCardContentMode,
+    type FriendsLocationsDensity
 } from './friendsLocationsDensity';
 import {
     buildSameInstanceGroups,
@@ -43,14 +47,6 @@ import {
     sortActiveFriendsBySidebarPrefs,
     sortFriendsBySidebarPrefs
 } from './friendsLocationsSections';
-
-type FriendsLocationsSegment =
-    | 'online'
-    | 'favorite'
-    | 'same-instance'
-    | 'active'
-    | 'offline'
-    | string;
 
 type FriendsLocationsFavoritePreferences = {
     isDivideByGroup: boolean;
@@ -128,7 +124,7 @@ type FriendsLocationsPageDerivedStateInput = {
     currentUserId?: string | null;
     currentUserSnapshot?: FriendsLocationsCurrentUserSnapshot | null;
     deferredSearchQuery: string;
-    density: unknown;
+    density: FriendsLocationsDensity;
     favoriteFriendGroups: FavoriteGroup[];
     friendsById: FriendRosterById;
     gameState?: FriendsLocationsGameState | null;

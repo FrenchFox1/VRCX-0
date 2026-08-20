@@ -574,7 +574,7 @@ export function AppStatusBar() {
         persistVisibility(nextVisibility);
     }
 
-    function setClockCountValue(nextValue: unknown) {
+    function setClockCountValue(nextValue: number) {
         const parsed = Math.max(0, Math.min(3, Number(nextValue) || 0));
         setClockCount(parsed);
         if (parsed > 0 && !visibility.clocks) {

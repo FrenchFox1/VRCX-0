@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { usePersistedTableColumnSizing } from '@/components/data-table/dataTablePersistence';
 import configRepository from '@/repositories/configRepository';
-import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
+import { isFeedFilterType } from '@/repositories/feedRepository';
 import {
     getTablePageSizePreference,
     getTablePageSizesPreference
@@ -33,7 +33,7 @@ type UseFeedTableStateOptions = {
     favoritesOnly: boolean;
     scopedUserIds: readonly string[];
     setFavoritesOnly: Dispatch<SetStateAction<boolean>>;
-    setFeedFilters(filters: readonly unknown[]): void;
+    setFeedFilters(filters: FeedFilterType[]): void;
 };
 
 export function useFeedTableState({
@@ -116,11 +116,7 @@ export function useFeedTableState({
 
                 setFeedFilters(
                     Array.isArray(parsedFilters)
-                        ? parsedFilters.filter((filter) =>
-                              FEED_FILTER_TYPES.includes(
-                                  filter as FeedFilterType
-                              )
-                          )
+                        ? parsedFilters.filter(isFeedFilterType)
                         : []
                 );
                 setFavoritesOnly(Boolean(savedVip));

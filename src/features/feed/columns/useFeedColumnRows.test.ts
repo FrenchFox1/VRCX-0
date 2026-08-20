@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
     }
 }));
 
-vi.mock('@/repositories/feedRepository', () => ({
+vi.mock('@/repositories/feedRepository', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/repositories/feedRepository')>()),
     default: {
         queryFeedLatest: mocks.queryFeedLatest,
         queryFeedPage: mocks.queryFeedPage

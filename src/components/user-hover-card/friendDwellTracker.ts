@@ -14,16 +14,16 @@ let started = false;
 
 let previousFriendsById: FriendRosterById | null = null;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function getFriendRefRecord(friend: FriendRecord): Record<string, unknown> {
-    return friend.ref && typeof friend.ref === 'object'
-        ? (friend.ref as Record<string, unknown>)
-        : friend;
+    return isRecord(friend.ref) ? friend.ref : friend;
 }
 
 function readLocationProjectionTag(value: unknown): unknown {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>).tag
-        : undefined;
+    return isRecord(value) ? value.tag : undefined;
 }
 
 function readEntryLocationTag(friend: FriendRecord) {

@@ -47,15 +47,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
-function normalizeType(type: unknown): FavoriteImportKind | null {
-    const normalized = normalizeString(type);
-    return normalized === 'avatar' ||
-        normalized === 'world' ||
-        normalized === 'friend'
-        ? normalized
-        : null;
-}
-
 function normalizeFavoriteType(
     type: unknown,
     fallback: FavoriteImportKind
@@ -310,16 +301,12 @@ export function openFavoriteImportDialog({
     type,
     input = ''
 }: {
-    type?: unknown;
-    input?: unknown;
-} = {}): void {
-    const normalizedType = normalizeType(type);
-    if (!normalizedType) {
-        throw new Error(`Unsupported favorite import type: ${type}`);
-    }
+    type: FavoriteImportKind;
+    input?: string;
+}): void {
     const normalizedInput = normalizeString(input);
     useFavoriteImportStore.getState().openDialog({
-        type: normalizedType,
+        type,
         input: normalizedInput
     });
     if (normalizedInput) {
@@ -329,10 +316,7 @@ export function openFavoriteImportDialog({
 
 export async function processFavoriteImportList(): Promise<void> {
     const store = useFavoriteImportStore.getState();
-    const type = normalizeType(store.type);
-    if (!type) {
-        return;
-    }
+    const type = store.type;
     const existingIds = new Set(store.rows.map((row) => row.id));
     const ids = extractIds(type, store.input).filter(
         (id) => !existingIds.has(id)
@@ -358,8 +342,8 @@ export async function processFavoriteImportList(): Promise<void> {
 
 export async function importFavoriteImportRows(): Promise<void> {
     const state = useFavoriteImportStore.getState();
-    const type = normalizeType(state.type);
-    if (!type || state.rows.length === 0) {
+    const type = state.type;
+    if (state.rows.length === 0) {
         return;
     }
     const remoteGroups = getRemoteFavoriteGroups(type);
@@ -432,7 +416,6 @@ export function closeFavoriteImportDialog(): void {
     requestFavoriteImportCancel();
 }
 
-export function getFavoriteImportTypeConfig(type: unknown) {
-    const normalized = normalizeType(type);
-    return normalized ? TYPE_CONFIG[normalized] : null;
+export function getFavoriteImportTypeConfig(type: FavoriteImportKind) {
+    return TYPE_CONFIG[type];
 }

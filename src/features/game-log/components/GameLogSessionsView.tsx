@@ -208,8 +208,7 @@ function SessionFriendFacepile({
     );
 }
 function sessionStartValue(session: GameLogSession) {
-    const value = session?.created_at || session?.createdAt || '';
-    return typeof value === 'number' ? value : String(value);
+    return session.created_at;
 }
 
 function localDayKey(value: string | number) {

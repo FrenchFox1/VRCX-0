@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { UserStatus } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 
 import {
@@ -11,7 +12,7 @@ import {
 } from './userProfileFields';
 
 export type SocialStatusDraft = {
-    status: string;
+    status: UserStatus;
     statusDescription: string;
 };
 

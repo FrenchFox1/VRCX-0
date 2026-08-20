@@ -11,6 +11,10 @@ type PreferenceChangedCallback = (
     detail: PreferenceChangedDetail
 ) => void;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 export function normalizePreferenceKey(key: unknown): string {
     const normalized = String(key ?? '');
     return normalized.startsWith('VRCX_') ? normalized.slice(5) : normalized;
@@ -42,8 +46,10 @@ export function onPreferenceChanged(
         (Array.isArray(keys) ? keys : [keys]).map(normalizePreferenceKey)
     );
     const handler = (event: Event) => {
-        const detail =
-            (event as CustomEvent<PreferenceChangedDetail>).detail || {};
+        const detailValue = 'detail' in event ? event.detail : undefined;
+        const detail: PreferenceChangedDetail = isRecord(detailValue)
+            ? detailValue
+            : {};
         const normalizedKey = normalizePreferenceKey(
             detail.normalizedKey || detail.key
         );

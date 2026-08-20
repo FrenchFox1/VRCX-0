@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { UserStatus } from '@/platform/tauri/bindings';
+
 import {
     normalizeSelfStatusInput,
     normalizeStatusHistoryRows,
@@ -14,7 +16,7 @@ import {
 import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
 export type SocialStatusPatch = {
-    status: string;
+    status: UserStatus;
     statusDescription: string;
 };
 
@@ -39,7 +41,9 @@ export function useCurrentUserSocialStatusDialog({
         statusDescription: ''
     });
     const busy = externalBusy || saving;
-    const statusOptions = useMemo(() => {
+    const statusOptions = useMemo<
+        Array<{ value: UserStatus; label: string }>
+    >(() => {
         const baseOptions = selfStatusBaseOptions.map((option) => ({
             value: option.value,
             label: t(option.labelKey)

@@ -23,7 +23,8 @@ const mocks = vi.hoisted(() => ({
     friendLog: { revision: 0 }
 }));
 
-vi.mock('@/repositories/feedRepository', () => ({
+vi.mock('@/repositories/feedRepository', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/repositories/feedRepository')>()),
     default: {
         queryFeedLatest: mocks.queryFeedLatest,
         queryFeed: mocks.queryFeed

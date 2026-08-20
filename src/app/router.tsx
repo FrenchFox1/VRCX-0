@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ComponentType } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     HashRouter,
@@ -41,7 +41,7 @@ function RouteErrorFallback() {
 
 const AppShellLayout = lazy(() =>
     import('@/components/layout/AppShellLayout').then((module) => ({
-        default: module.AppShellLayout as ComponentType
+        default: module.AppShellLayout
     }))
 );
 

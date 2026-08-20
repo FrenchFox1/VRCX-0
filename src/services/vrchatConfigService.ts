@@ -5,10 +5,12 @@ import {
     type VrchatConfigSnapshot
 } from '@/state/vrchatConfigStore';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function configSnapshot(value: unknown): VrchatConfigSnapshot {
-    return value && typeof value === 'object' && !Array.isArray(value)
-        ? (value as VrchatConfigSnapshot)
-        : {};
+    return isRecord(value) ? value : {};
 }
 
 export async function loadVrchatConfigSnapshot({

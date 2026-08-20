@@ -10,6 +10,7 @@ import {
     APP_FONT_FAMILIES,
     supportsConfigurableCjkFontPack
 } from '@/services/themeService';
+import type { NotificationLayout, TableDensity } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -70,10 +71,10 @@ type SettingsInterfaceAppearanceCardProps = {
     onZoomInputChange: (value: string) => void;
     onZoomBlur: () => void;
     notificationLayoutOptions: readonly SettingsOption[];
-    onNotificationLayoutChange: (value: string) => void;
+    onNotificationLayoutChange: (value: NotificationLayout) => void;
     onNotificationIconDotChange: (value: boolean) => void;
     onTaskbarIconDotChange: (value: boolean) => void;
-    onTableDensityChange: (value: string) => void;
+    onTableDensityChange: (value: TableDensity) => void;
     onDataTableStripedChange: (value: boolean) => void;
     onAccessibleStatusIndicatorsChange: (value: boolean) => void;
     onReducedMotionAndBlurChange: (value: boolean) => void;
@@ -355,9 +356,14 @@ export function SettingsInterfaceAppearanceCard({
                 <Select
                     value={prefs.notificationLayout}
                     items={notificationLayoutItems}
-                    onValueChange={(value) =>
-                        onNotificationLayoutChange(value ?? '')
-                    }
+                    onValueChange={(value) => {
+                        if (
+                            value === 'notification-center' ||
+                            value === 'table'
+                        ) {
+                            onNotificationLayoutChange(value);
+                        }
+                    }}
                 >
                     <SelectTrigger
                         id="settings-notification-layout"
@@ -409,7 +415,11 @@ export function SettingsInterfaceAppearanceCard({
             >
                 <SegmentedPreference
                     value={prefs.tableDensity || 'standard'}
-                    onChange={onTableDensityChange}
+                    onChange={(value) => {
+                        if (value === 'standard' || value === 'compact') {
+                            onTableDensityChange(value);
+                        }
+                    }}
                     options={[
                         {
                             value: 'standard',

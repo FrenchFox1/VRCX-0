@@ -36,6 +36,7 @@ import {
 } from '@/services/preferencesService';
 import { isDevToolsBuild } from '@/shared/buildLabel';
 import { communityThemeControlsAccent } from '@/state/communityThemeStore';
+import type { ThemeMode } from '@/state/shellStore';
 
 import { resolveActiveThemeSource, type ThemeSource } from './themeHelpers';
 import { useThemesRuntimeState } from './useThemesRuntimeState';
@@ -378,7 +379,7 @@ export function useThemesController() {
         ? t('view.themes.summary.custom_css_on')
         : '';
 
-    async function updateThemeMode(nextThemeMode: string) {
+    async function updateThemeMode(nextThemeMode: ThemeMode) {
         if (appearanceControlled) {
             return;
         }

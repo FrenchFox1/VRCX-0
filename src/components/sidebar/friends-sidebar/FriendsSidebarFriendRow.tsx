@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserDetailContent } from '@/components/UserDetailTile';
+import type { UserStatus } from '@/platform/tauri/bindings';
 import { getNameColour, userImage } from '@/services/entityMediaService';
 import { TRUST_COLOR_DEFAULTS } from '@/shared/utils/trustColors';
 import { buttonVariants } from '@/ui/shadcn/button';
@@ -53,7 +54,7 @@ type FriendRowCommands = {
     onInvite?: (friend: SidebarFriendRecord) => unknown;
     onRequestInvite?: (friend: SidebarFriendRecord) => unknown;
     onBoop?: (friend: SidebarFriendRecord) => unknown;
-    onChangeStatus?: (status: string) => unknown;
+    onChangeStatus?: (status: UserStatus) => unknown;
     onSetStatusDescription?: (statusDescription: string) => unknown;
     onEditSocialStatus?: () => unknown;
     onApplyStatusPreset?: (preset: StatusPreset) => unknown;

@@ -77,8 +77,8 @@ export function useScrollViewportMetrics({
         );
     }, []);
 
-    const setScrollTop = useCallback((value: unknown) => {
-        const nextScrollTop = Math.max(0, Number(value) || 0);
+    const setScrollTop = useCallback((value: number) => {
+        const nextScrollTop = Math.max(0, value || 0);
         pendingScrollTopRef.current = nextScrollTop;
         const node = viewportRef.current;
         if (node) {

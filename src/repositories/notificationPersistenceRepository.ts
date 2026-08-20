@@ -105,21 +105,16 @@ export const NOTIFICATION_TYPES = Object.freeze([
     'vrcplus.gift'
 ]);
 
-function normalizeUserId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeUserId(value?: string | null): string {
+    return value?.trim() ?? '';
 }
 
-function normalizeNotificationFilters(filters: unknown): string[] {
-    return Array.isArray(filters)
-        ? filters.map((value) => String(value || '').trim()).filter(Boolean)
-        : [];
+function normalizeNotificationFilters(filters: readonly string[]): string[] {
+    return filters.map((value) => value.trim()).filter(Boolean);
 }
 
-function normalizeNotificationLimit(value: unknown, fallback: number): number {
-    const limit = Number.parseInt(String(value ?? ''), 10);
-    return Number.isFinite(limit) && limit > 0 ? limit : fallback;
+function normalizeNotificationLimit(value: number, fallback: number): number {
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -164,7 +159,7 @@ async function queryNotifications({
     filters = []
 }: NotificationUserOptions & {
     search?: string;
-    filters?: unknown[];
+    filters?: string[];
 } = {}): Promise<NotificationListRow[]> {
     const normalizedUserId = normalizeUserId(userId);
     if (!normalizedUserId) {

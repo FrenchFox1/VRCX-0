@@ -191,7 +191,13 @@ function resolveInitialAvatarInfoLineState({
 }
 
 function isEmptyAvatarTags(value: unknown): boolean {
-    return !(value as { length?: unknown } | null | undefined)?.length;
+    if (typeof value === 'string' || Array.isArray(value)) {
+        return value.length === 0;
+    }
+    if (value && typeof value === 'object' && 'length' in value) {
+        return !value.length;
+    }
+    return true;
 }
 
 function avatarTagsEqual(left: unknown, right: unknown): boolean {

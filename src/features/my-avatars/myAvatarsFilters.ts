@@ -1,6 +1,11 @@
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 
-import type { MyAvatarRow, MyAvatarTag } from './myAvatarsTypes';
+import type {
+    MyAvatarRow,
+    MyAvatarTag,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter
+} from './myAvatarsTypes';
 
 export function toggleMyAvatarsTagFilter(
     currentTags: Iterable<string> | null | undefined,
@@ -29,7 +34,7 @@ export function collectMyAvatarTags(avatars: readonly MyAvatarRow[]) {
 
 export function matchesMyAvatarsPlatformFilter(
     avatar: MyAvatarRow,
-    platformFilter: string
+    platformFilter: MyAvatarsPlatformFilter
 ) {
     if (platformFilter === 'all') {
         return true;
@@ -46,8 +51,8 @@ export function matchesMyAvatarsPlatformFilter(
 type FilterMyAvatarsInput = {
     avatars: readonly MyAvatarRow[] | null | undefined;
     searchQuery?: unknown;
-    platformFilter: string;
-    releaseStatusFilter: string;
+    platformFilter: MyAvatarsPlatformFilter;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
     tagFilters?: Set<string>;
 };
 

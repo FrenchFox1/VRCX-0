@@ -9,13 +9,9 @@ export const EMPTY_FALLBACKS: DetailMap = {};
 
 type FetchEntityById = (id: string) => Promise<unknown>;
 
-function normalizeFavoriteIds(values: unknown): string[] {
+function normalizeFavoriteIds(values: readonly string[]): string[] {
     return Array.from(
-        new Set(
-            (Array.isArray(values) ? values : [])
-                .map((value) => normalizeEntityId(value))
-                .filter(Boolean)
-        )
+        new Set(values.map((value) => value.trim()).filter(Boolean))
     );
 }
 
@@ -28,7 +24,7 @@ export function getRemoteEntityCacheFallbackIds({
     detailSources,
     isReady
 }: {
-    entityIds: unknown;
+    entityIds: string[];
     detailSources: Array<DetailMap | undefined>;
     isReady: boolean;
 }): string[] {

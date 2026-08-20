@@ -16,9 +16,9 @@ import {
 const MIN_NAV_WIDTH = 64;
 const MAX_NAV_WIDTH = 480;
 
-type ThemeMode = 'system' | 'light' | 'dark';
-type TableDensity = 'standard' | 'compact';
-type NotificationLayout = 'notification-center' | 'table';
+export type ThemeMode = 'system' | 'light' | 'dark';
+export type TableDensity = 'standard' | 'compact';
+export type NotificationLayout = 'notification-center' | 'table';
 type ShellStore = {
     sidebarOpen: boolean;
     rightSidebarOpen: boolean;

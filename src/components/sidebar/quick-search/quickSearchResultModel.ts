@@ -19,10 +19,12 @@ type QuickSearchRecord = Record<string, unknown> & {
     worldName?: unknown;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function recordValue(value: unknown): QuickSearchRecord | null {
-    return value && typeof value === 'object'
-        ? (value as QuickSearchRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 export function normalizeSearchValue(value: unknown) {

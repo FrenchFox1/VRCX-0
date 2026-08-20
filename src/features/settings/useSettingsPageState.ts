@@ -346,11 +346,11 @@ export function useSettingsPageState() {
         });
     }
 
-    function saveAvatarProviderEnabled(value: unknown) {
+    function saveAvatarProviderEnabled(value: boolean) {
         const previousConfig = avatarProviderConfigRef.current;
         const nextConfig: AvatarProviderConfig = {
             ...previousConfig,
-            enabled: Boolean(value)
+            enabled: value
         };
         commit(
             () => saveAvatarProviderConfig(nextConfig),

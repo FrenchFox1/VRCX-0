@@ -23,6 +23,11 @@ export type UserDialogDataTab =
     | 'favorite-worlds'
     | 'avatars';
 
+export type UserDialogLoadStatus = '' | 'running' | 'ready' | 'error';
+export type UserDialogRemoteStatus = Partial<
+    Record<UserDialogDataTab, UserDialogLoadStatus>
+>;
+
 export type UserDialogRepositories = {
     avatarSearchProviderRepository: {
         getConfig(): Promise<{ enabled: boolean; selectedProvider: string }>;
@@ -74,7 +79,7 @@ export type UserDialogRepositories = {
     };
 };
 
-type UserDialogTabCounts = {
+export type UserDialogTabCounts = {
     mutual?: number;
     groups?: number;
     worlds?: number;

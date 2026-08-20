@@ -164,10 +164,10 @@ function gameLogSpreadSource(value: unknown): Record<string, unknown> {
     if (!value) {
         return {};
     }
-    if (typeof value === 'object' || typeof value === 'function') {
-        return value as Record<string, unknown>;
+    if (isGameLogRecord(value)) {
+        return value;
     }
-    return Object(value) as Record<string, unknown>;
+    return Object.fromEntries(Object.entries(Object(value)));
 }
 
 function normalizeGameLogUserStats(result: unknown): GameLogUserStatsResult {
@@ -592,8 +592,8 @@ const gameLog = {
     async getMyTopWorlds(
         days: number = 0,
         limit: number = 5,
-        sortBy: 'time' | 'count' | string = 'time',
-        excludeWorldId: unknown = ''
+        sortBy: 'time' | 'count' = 'time',
+        excludeWorldId: string = ''
     ) {
         const rows = await queryGameLog('topWorlds', {
             days,

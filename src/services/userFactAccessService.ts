@@ -18,10 +18,12 @@ type UserFactIngestEntry = {
 const pendingUserFactEntries = new Map<string, UserFactIngestEntry>();
 let userFactFlushScheduled = false;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function userIdFromRecord(source: Record<string, unknown>): string {

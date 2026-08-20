@@ -19,6 +19,8 @@ import type {
     MyAvatarsGridDensity,
     MyAvatarsLoadStatus,
     MyAvatarRow,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter,
     MyAvatarsViewMode
 } from '../myAvatarsTypes';
 import { GridSettingsMenu, MyAvatarFilterPopover } from './MyAvatarsViewParts';
@@ -27,20 +29,20 @@ type MyAvatarsToolbarProps = {
     viewMode: MyAvatarsViewMode;
     activeFilterCount: number;
     allTags: string[];
-    releaseStatusFilter: string;
-    platformFilter: string;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
+    platformFilter: MyAvatarsPlatformFilter;
     tagFilters: Set<string>;
     loadStatus: MyAvatarsLoadStatus;
     searchQuery: string;
     gridDensity: MyAvatarsGridDensity;
     table: AppTable<MyAvatarRow>;
     onViewModeChange: (value: MyAvatarsViewMode) => void;
-    onReleaseStatusChange: (value: string) => void;
-    onPlatformChange: (value: string) => void;
+    onReleaseStatusChange: (value: MyAvatarsReleaseStatusFilter) => void;
+    onPlatformChange: (value: MyAvatarsPlatformFilter) => void;
     onTagFiltersChange: Dispatch<SetStateAction<Set<string>>>;
     onClearFilters: () => void;
     onSearchChange: (value: string) => void;
-    onGridDensityChange: (value: string) => void;
+    onGridDensityChange: (value: MyAvatarsGridDensity) => void;
     onRefresh: () => void;
 };
 

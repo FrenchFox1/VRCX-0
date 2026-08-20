@@ -11,6 +11,10 @@ let lastContent = '';
 
 export type I18nWatchResult = { error: string | null; loadedAt?: string };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 export function detectLangFromPath(filePath: string): string | null {
     const base = filePath
         .replace(/\\/g, '/')
@@ -35,7 +39,10 @@ export async function loadI18nFromFile(
     const content = await commands.appDevkitReadFile(filePath);
     if (content === lastContent) return;
     lastContent = content;
-    const data = JSON.parse(content) as Record<string, unknown>;
+    const data: unknown = JSON.parse(content);
+    if (!isRecord(data)) {
+        throw new TypeError('Translation file must contain a JSON object');
+    }
     i18n.addResourceBundle(targetLang, 'translation', data, true, true);
     await i18n.changeLanguage(targetLang);
 }

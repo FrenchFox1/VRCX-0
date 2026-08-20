@@ -5,7 +5,6 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useSettingsPageSection } from '../SettingsPageStateContext';
-import { normalizeCheckedState } from '../settingsValues';
 
 export function useSettingsAdvancedTabState() {
     const advanced = useSettingsPageSection('advanced');
@@ -60,69 +59,55 @@ export function useSettingsAdvancedTabState() {
         onlineVisitCount,
         configTreeData,
         appDataDirState,
-        onRelaunchVRChatAfterCrashChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onRelaunchVRChatAfterCrashChange: (checked: boolean) => {
             saveBoolPreference(
                 'relaunchVRChatAfterCrash',
                 'VRCX_relaunchVRChatAfterCrash',
-                enabled
+                checked
             );
         },
-        onVrcQuitFixChange: (checked: unknown) => {
-            saveBoolPreference(
-                'vrcQuitFix',
-                'vrcQuitFix',
-                normalizeCheckedState(checked)
-            );
+        onVrcQuitFixChange: (checked: boolean) => {
+            saveBoolPreference('vrcQuitFix', 'vrcQuitFix', checked);
         },
-        onFocusVrchatOnJoinChange: (checked: unknown) => {
+        onFocusVrchatOnJoinChange: (checked: boolean) => {
             saveBoolPreference(
                 'focusVrchatOnJoin',
                 'focusVrchatOnJoin',
-                normalizeCheckedState(checked)
+                checked
             );
         },
-        onAutoSweepVRChatCacheChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAutoSweepVRChatCacheChange: (checked: boolean) => {
             saveBoolPreference(
                 'autoSweepVRChatCache',
                 'VRCX_autoSweepVRChatCache',
-                enabled
+                checked
             );
         },
-        onUdonExceptionLoggingChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onUdonExceptionLoggingChange: (checked: boolean) => {
             saveBoolPreference(
                 'udonExceptionLogging',
                 'VRCX_udonExceptionLogging',
-                enabled
+                checked
             );
         },
-        onLogResourceLoadChange: (checked: unknown) => {
-            saveBoolPreference(
-                'logResourceLoad',
-                'logResourceLoad',
-                normalizeCheckedState(checked)
-            );
+        onLogResourceLoadChange: (checked: boolean) => {
+            saveBoolPreference('logResourceLoad', 'logResourceLoad', checked);
         },
-        onAnonymousUsageTelemetryChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAnonymousUsageTelemetryChange: (checked: boolean) => {
             saveBoolPreference(
                 'anonymousUsageTelemetry',
                 'anonymousUsageTelemetry',
-                enabled
+                checked
             );
         },
-        onGameLogDisabledChange: (checked: unknown) => {
-            handleGameLogDisabledChange(normalizeCheckedState(checked));
+        onGameLogDisabledChange: (checked: boolean) => {
+            handleGameLogDisabledChange(checked);
         },
-        onFeedPersistenceDisabledChange: (checked: unknown) => {
-            handleFeedPersistenceDisabledChange(normalizeCheckedState(checked));
+        onFeedPersistenceDisabledChange: (checked: boolean) => {
+            handleFeedPersistenceDisabledChange(checked);
         },
-        onAvatarFeedPersistenceDisabledChange: (checked: unknown) => {
-            handleAvatarFeedPersistenceDisabledChange(
-                normalizeCheckedState(checked)
-            );
+        onAvatarFeedPersistenceDisabledChange: (checked: boolean) => {
+            handleAvatarFeedPersistenceDisabledChange(checked);
         },
         onAvatarAutoCleanupChange: (value: AvatarAutoCleanupPreference) => {
             saveStringPreference(

@@ -24,7 +24,7 @@ import {
 import { createGalleryAssetActions } from './useGalleryAssetActions';
 import { useGalleryInventoryActions } from './useGalleryInventoryActions';
 
-function buildProfilePicOverride(endpoint: unknown, fileId: unknown) {
+function buildProfilePicOverride(endpoint: string, fileId: string) {
     if (!fileId) {
         return '';
     }

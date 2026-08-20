@@ -87,8 +87,10 @@ describe('SessionEventGroups player durations', () => {
                         created_at: '2026-08-12T10:02:00.000Z',
                         members: [
                             {
+                                created_at: '2026-08-12T10:02:00.000Z',
                                 displayName: 'Alice',
-                                userId: 'usr_alice'
+                                userId: 'usr_alice',
+                                isFavorite: false
                             }
                         ]
                     },
@@ -97,8 +99,10 @@ describe('SessionEventGroups player durations', () => {
                         created_at: '2026-08-12T10:03:00.000Z',
                         members: [
                             {
+                                created_at: '2026-08-12T10:03:00.000Z',
                                 displayName: 'Alice',
-                                userId: 'usr_alice'
+                                userId: 'usr_alice',
+                                isFavorite: false
                             }
                         ]
                     }

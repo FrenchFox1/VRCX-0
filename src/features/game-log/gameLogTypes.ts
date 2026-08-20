@@ -8,7 +8,10 @@ import type {
     GameLogSessionEventDto as GeneratedGameLogSessionEvent,
     GameLogSessionMemberDto as GeneratedGameLogSessionMember
 } from '@/platform/tauri/bindings';
-import type { GameLogPreviousInstanceWorldRow } from '@/repositories/gameLogRepository';
+import type {
+    GameLogFilterType as RepositoryGameLogFilterType,
+    GameLogPreviousInstanceWorldRow
+} from '@/repositories/gameLogRepository';
 
 export const GAME_LOG_SESSION_FILTER_TYPES = [
     'OnPlayerJoined',
@@ -44,18 +47,21 @@ export type GameLogRow = {
     [key: string]: unknown;
 };
 
-export type GameLogSessionMember = GameLogRow &
-    Partial<GeneratedGameLogSessionMember>;
+export type GameLogSessionMember = GeneratedGameLogSessionMember & {
+    isFriend?: boolean;
+};
 
-export type GameLogSessionEvent = GameLogRow &
-    Partial<Omit<GeneratedGameLogSessionEvent, 'members'>> & {
-        members?: GameLogSessionMember[] | null;
-    };
+export type GameLogSessionEvent = Omit<
+    GeneratedGameLogSessionEvent,
+    'members'
+> & {
+    isFriend?: boolean;
+    members?: GameLogSessionMember[] | null;
+};
 
-export type GameLogSession = GameLogRow &
-    Partial<Omit<GeneratedGameLogSession, 'events' | 'id'>> & {
-        events?: GameLogSessionEvent[];
-    };
+export type GameLogSession = Omit<GeneratedGameLogSession, 'events'> & {
+    events: GameLogSessionEvent[];
+};
 
 export type GameLogDetailValue = {
     primary?: unknown;
@@ -68,6 +74,6 @@ export type GameLogColumns = AppColumnDef<GameLogRow>[];
 
 export type GameLogPaginationSetter = Dispatch<SetStateAction<PaginationState>>;
 
-export type GameLogFilterType = string;
+export type GameLogFilterType = RepositoryGameLogFilterType;
 
 export type { PaginationState };

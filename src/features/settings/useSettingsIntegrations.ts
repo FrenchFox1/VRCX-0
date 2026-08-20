@@ -16,6 +16,7 @@ import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import {
     normalizeTranslationApiType,
     type DiscordPreferenceKey,
+    type TranslationApiType,
     usePreferencesStore
 } from '@/state/preferencesStore';
 
@@ -35,7 +36,7 @@ export type SettingsIntegrationPrefs = {
     youtubeAPIKey: string;
     translationAPI: boolean;
     bioLanguage: string;
-    translationAPIType: string;
+    translationAPIType: TranslationApiType;
     translationAPIKey: string;
     translationEndpointId: string;
     translationAPIEndpoint: string;
@@ -79,7 +80,7 @@ type SettingsIntegrationStatus = {
 
 type SettingsTranslationDraft = {
     bioLanguage: string;
-    translationAPIType: string;
+    translationAPIType: TranslationApiType;
     translationAPIKey: string;
     translationEndpointId: string;
     translationAPIEndpoint: string;

@@ -112,7 +112,7 @@ export function useFeedRows({
         }): FeedLiveMergeOptionsBuilder =>
             ({ rows }) => ({
                 rows,
-                userId: currentUserId,
+                userId: currentUserId || '',
                 search: deferredSearchQuery,
                 filters: activeFilters,
                 excludedFavoriteUserIds: excludedUserIds,

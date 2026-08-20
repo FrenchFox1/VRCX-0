@@ -281,13 +281,15 @@ function handleWindowError(event: Event): void {
         return;
     }
 
-    const errorEvent = event as ErrorEvent;
+    const error = 'error' in event ? event.error : undefined;
+    const message = 'message' in event ? event.message : undefined;
+    const filename = 'filename' in event ? event.filename : undefined;
+    const lineno = 'lineno' in event ? event.lineno : undefined;
+    const colno = 'colno' in event ? event.colno : undefined;
     const values = [
-        errorEvent.error,
-        errorEvent.message,
-        errorEvent.filename
-            ? `${errorEvent.filename}:${errorEvent.lineno || 0}:${errorEvent.colno || 0}`
-            : ''
+        error,
+        message,
+        filename ? `${filename}:${lineno || 0}:${colno || 0}` : ''
     ].filter(Boolean);
 
     recordErrorLog('js:error', values);

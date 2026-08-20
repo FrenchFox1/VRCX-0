@@ -3,12 +3,13 @@ import {
     type LocalFavoriteGroupInput as IpcLocalFavoriteGroupInput,
     type LocalFavoriteGroupRenameInput as IpcLocalFavoriteGroupRenameInput,
     type LocalFavoriteInput as IpcLocalFavoriteInput,
+    type FavoriteEntityKind,
     type FavoriteRow
 } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';
 
-export type LocalFavoriteKind = 'friend' | 'avatar' | 'world';
+export type LocalFavoriteKind = FavoriteEntityKind;
 
 export interface WorldFavoriteRow {
     created_at: string;

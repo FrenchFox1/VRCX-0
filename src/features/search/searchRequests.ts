@@ -16,7 +16,7 @@ export type WorldSearchCategory = {
 };
 
 export function buildWorldSearchRequest(
-    searchText: unknown,
+    searchText: string,
     category: WorldSearchCategory | null | undefined,
     includeCommunityLabs: boolean,
     offset = 0
@@ -95,7 +95,7 @@ export function buildWorldSearchRequest(
     };
 }
 
-export function buildGroupSearchRequest(searchText: unknown, offset = 0) {
+export function buildGroupSearchRequest(searchText: string, offset = 0) {
     const params: GroupSearchParams & { n: number; offset: number } = {
         n: SEARCH_PAGE_SIZE,
         offset: Math.max(0, offset),
@@ -107,19 +107,19 @@ export function buildGroupSearchRequest(searchText: unknown, offset = 0) {
 }
 
 export function buildAvatarSearchRequest(
-    searchText: unknown,
+    searchText: string,
     provider: string,
     offset = 0
 ) {
     return {
         provider,
-        query: typeof searchText === 'string' ? searchText : '',
+        query: searchText,
         offset: Math.max(0, offset)
     };
 }
 
 export function buildUserSearchRequest(
-    searchText: unknown,
+    searchText: string,
     searchByBio = false,
     sortByLastLoggedIn = false,
     offset = 0
@@ -127,7 +127,7 @@ export function buildUserSearchRequest(
     const params: UserSearchParams & { n: number; offset: number } = {
         n: SEARCH_PAGE_SIZE,
         offset: Math.max(0, offset),
-        search: typeof searchText === 'string' ? searchText : '',
+        search: searchText,
         customFields: searchByBio ? 'bio' : 'displayName',
         sort: sortByLastLoggedIn ? 'last_login' : 'relevance'
     };

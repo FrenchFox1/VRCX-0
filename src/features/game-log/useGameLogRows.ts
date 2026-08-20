@@ -20,6 +20,10 @@ import type {
     GameLogViewMode
 } from './gameLogTypes';
 
+function isGameLogRow(value: unknown): value is GameLogRow {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
 type UseGameLogRowsOptions = {
     deferredSearchQuery: string;
     favoritesOnly: boolean;
@@ -130,7 +134,7 @@ export function useGameLogRows({
                     return;
                 }
                 setRows(
-                    Array.isArray(nextRows) ? (nextRows as GameLogRow[]) : []
+                    Array.isArray(nextRows) ? nextRows.filter(isGameLogRow) : []
                 );
                 setSessions([]);
             }

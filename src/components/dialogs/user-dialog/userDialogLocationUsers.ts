@@ -13,6 +13,10 @@ import { parseLocation } from '@/shared/utils/location';
 
 const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<string, unknown>();
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 function shouldIncludeUserDialogLocationFriend({
     currentLocationMatches,
     currentLocationPlayerIds,
@@ -22,10 +26,7 @@ function shouldIncludeUserDialogLocationFriend({
     currentLocationPlayerIds: ReadonlySet<string>;
     friend: unknown;
 }): boolean {
-    const friendRecord =
-        friend && typeof friend === 'object'
-            ? (friend as Record<string, unknown>)
-            : {};
+    const friendRecord = isRecord(friend) ? friend : {};
     const friendId = firstText(
         friendRecord.id,
         friendRecord.userId,
@@ -72,10 +73,7 @@ function filterVisibleUserDialogLocationUsers<TUser>({
     const normalizedCurrentUserId = firstText(currentUserId);
     const normalizedOwnerId = firstText(ownerId);
     return users.filter((user) => {
-        const userRecord =
-            user && typeof user === 'object'
-                ? (user as Record<string, unknown>)
-                : {};
+        const userRecord: Record<string, unknown> = isRecord(user) ? user : {};
         const userId = firstText(userRecord.id, userRecord.userId);
         const friend = userId ? friendDirectory[userId] : null;
         const friendLocation = resolvePresenceLocation(friend);

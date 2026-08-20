@@ -1,9 +1,9 @@
 import type { TrustColorKey } from '@/shared/utils/trustColors';
 import { normalizeFeedTimeDisplayMode } from '@/state/preferencesStore';
+import type { NotificationLayout, TableDensity } from '@/state/shellStore';
 
 import { notificationLayoutOptions } from '../settingsOptions';
 import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
-import { normalizeCheckedState } from '../settingsValues';
 
 export function buildInterfaceSection({
     locale,
@@ -75,7 +75,7 @@ export function buildInterfaceSection({
         onZoomBlur: () => {
             saveInterfaceZoomLevel(zoomInput);
         },
-        onNotificationLayoutChange: (value: string) => {
+        onNotificationLayoutChange: (value: NotificationLayout) => {
             commit(
                 async () => {
                     const nextLayout =
@@ -99,89 +99,72 @@ export function buildInterfaceSection({
                 }
             );
         },
-        onNotificationIconDotChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onNotificationIconDotChange: (checked: boolean) => {
             saveBoolPreference(
                 'notificationIconDot',
                 'notificationIconDot',
-                enabled
+                checked
             );
         },
-        onTaskbarIconDotChange: (checked: unknown) => {
-            saveBoolPreference(
-                'taskbarIconDot',
-                'taskbarIconDot',
-                normalizeCheckedState(checked)
-            );
+        onTaskbarIconDotChange: (checked: boolean) => {
+            saveBoolPreference('taskbarIconDot', 'taskbarIconDot', checked);
         },
-        onTableDensityChange: (value: unknown) => {
+        onTableDensityChange: (value: TableDensity) => {
             savePreferenceValue('tableDensity', value, () =>
                 setTableDensityPreference(value)
             );
         },
-        onDataTableStripedChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('dataTableStriped', enabled, () =>
-                setDataTableStripedPreference(enabled)
+        onDataTableStripedChange: (checked: boolean) => {
+            savePreferenceValue('dataTableStriped', checked, () =>
+                setDataTableStripedPreference(checked)
             );
         },
-        onAccessibleStatusIndicatorsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('accessibleStatusIndicators', enabled, () =>
-                setAccessibleStatusIndicatorsPreference(enabled)
+        onAccessibleStatusIndicatorsChange: (checked: boolean) => {
+            savePreferenceValue('accessibleStatusIndicators', checked, () =>
+                setAccessibleStatusIndicatorsPreference(checked)
             );
         },
-        onReducedMotionAndBlurChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onReducedMotionAndBlurChange: (checked: boolean) => {
             saveBoolPreference(
                 'reducedMotionAndBlur',
                 'reducedMotionAndBlur',
-                enabled
+                checked
             );
         },
-        onShowInstanceIdInLocationChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onShowInstanceIdInLocationChange: (checked: boolean) => {
             saveBoolPreference(
                 'showInstanceIdInLocation',
                 'VRCX_showInstanceIdInLocation',
-                enabled
+                checked
             );
         },
-        onAgeGatedInstancesVisibleChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAgeGatedInstancesVisibleChange: (checked: boolean) => {
             saveBoolPreference(
                 'isAgeGatedInstancesVisible',
                 'VRCX_isAgeGatedInstancesVisible',
-                enabled
+                checked
             );
         },
-        onHideNicknamesChange: (checked: unknown) => {
-            saveBoolPreference(
-                'hideNicknames',
-                'hideNicknames',
-                !normalizeCheckedState(checked)
-            );
+        onHideNicknamesChange: (checked: boolean) => {
+            saveBoolPreference('hideNicknames', 'hideNicknames', !checked);
         },
-        onDisplayVrcPlusIconsAsAvatarChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onDisplayVrcPlusIconsAsAvatarChange: (checked: boolean) => {
             saveBoolPreference(
                 'displayVRCPlusIconsAsAvatar',
                 'displayVRCPlusIconsAsAvatar',
-                enabled
+                checked
             );
         },
-        onShowUserDialogProfileDecorationsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onShowUserDialogProfileDecorationsChange: (checked: boolean) => {
             saveBoolPreference(
                 'showUserDialogProfileDecorations',
                 'showUserDialogProfileDecorations',
-                enabled
+                checked
             );
         },
-        onShowNewDashboardButtonChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('showNewDashboardButton', enabled, () =>
-                setShowNewDashboardButtonPreference(enabled)
+        onShowNewDashboardButtonChange: (checked: boolean) => {
+            savePreferenceValue('showNewDashboardButton', checked, () =>
+                setShowNewDashboardButtonPreference(checked)
             );
         },
         onOpenTablePageSizes: () => {
@@ -190,15 +173,11 @@ export function buildInterfaceSection({
         onOpenTableLimits: () => {
             openTableLimitsDialog();
         },
-        onHour12Change: (value: unknown) => {
+        onHour12Change: (value: string) => {
             saveBoolPreference('dtHour12', 'dtHour12', value === '12');
         },
-        onIsoFormatChange: (checked: unknown) => {
-            saveBoolPreference(
-                'dtIsoFormat',
-                'dtIsoFormat',
-                normalizeCheckedState(checked)
-            );
+        onIsoFormatChange: (checked: boolean) => {
+            saveBoolPreference('dtIsoFormat', 'dtIsoFormat', checked);
         },
         onWeekStartsOnChange: (value: string) => {
             const nextValue = Number.parseInt(value, 10);
@@ -210,7 +189,7 @@ export function buildInterfaceSection({
                 })
             );
         },
-        onFeedTimeDisplayModeChange: (value: unknown) => {
+        onFeedTimeDisplayModeChange: (value: string) => {
             const nextValue = normalizeFeedTimeDisplayMode(value);
             saveStringPreference(
                 'feedTimeDisplayMode',
@@ -218,26 +197,17 @@ export function buildInterfaceSection({
                 nextValue
             );
         },
-        onHideUserNotesChange: (checked: unknown) => {
-            saveBoolPreference(
-                'hideUserNotes',
-                'hideUserNotes',
-                !normalizeCheckedState(checked)
-            );
+        onHideUserNotesChange: (checked: boolean) => {
+            saveBoolPreference('hideUserNotes', 'hideUserNotes', !checked);
         },
-        onHideUserMemosChange: (checked: unknown) => {
-            saveBoolPreference(
-                'hideUserMemos',
-                'hideUserMemos',
-                !normalizeCheckedState(checked)
-            );
+        onHideUserMemosChange: (checked: boolean) => {
+            saveBoolPreference('hideUserMemos', 'hideUserMemos', !checked);
         },
-        onRandomUserColoursChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onRandomUserColoursChange: (checked: boolean) => {
             saveBoolPreference(
                 'randomUserColours',
                 'randomUserColours',
-                enabled
+                checked
             );
         },
         onResetTrustColors: () => {

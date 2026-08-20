@@ -39,7 +39,7 @@ function isFeedSortingEntry(value: unknown): value is SortingState[number] {
     if (!value || typeof value !== 'object') {
         return false;
     }
-    const id = (value as { id?: unknown }).id;
+    const id = 'id' in value ? value.id : undefined;
     return typeof id === 'string' && FEED_TABLE_COLUMN_IDS.includes(id);
 }
 

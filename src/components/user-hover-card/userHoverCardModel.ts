@@ -53,20 +53,20 @@ type UserHoverCardModelInput = {
     nowMs: number;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function recordOrEmpty(value: unknown): HoverCardRecord {
-    return value && typeof value === 'object' ? (value as HoverCardRecord) : {};
+    return isRecord(value) ? value : {};
 }
 
 function locationTag(value: unknown) {
-    return value && typeof value === 'object'
-        ? (value as { tag?: unknown }).tag
-        : undefined;
+    return isRecord(value) ? value.tag : undefined;
 }
 
 function sidebarSeed(value: unknown): SidebarFriendRecord | null {
-    return value && typeof value === 'object'
-        ? (value as SidebarFriendRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function statusKeyFromStatus(status: unknown) {
@@ -126,10 +126,10 @@ function estimatedOnlineMs(state: unknown, lastLogin: unknown, nowMs: number) {
 }
 
 export function normalizeInstanceCounts(json: unknown) {
-    if (!json || typeof json !== 'object') {
+    if (!isRecord(json)) {
         return null;
     }
-    const source = json as Record<string, unknown>;
+    const source = json;
     const nUsers = Number(source.n_users ?? source.userCount);
     if (!Number.isFinite(nUsers)) {
         return null;

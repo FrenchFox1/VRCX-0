@@ -27,7 +27,7 @@ export type LaunchDialogDetails = {
     parsed: ReturnType<typeof parseLocation>;
 };
 
-function resolveLaunchLocation(location: unknown): string {
+function resolveLaunchLocation(location: string): string {
     const parsed = parseLocation(location);
     if (!parsed.worldId) {
         return normalizeString(location);
@@ -39,9 +39,9 @@ function resolveLaunchLocation(location: unknown): string {
 }
 
 export async function resolveLaunchDialogDetails(
-    tag: unknown,
-    shortName: unknown = '',
-    launchToken: unknown = ''
+    tag: string,
+    shortName: string = '',
+    launchToken: string = ''
 ): Promise<LaunchDialogDetails> {
     const normalizedTag = normalizeString(tag);
     const parsed = parseLocation(normalizedTag);
@@ -105,8 +105,8 @@ export async function resolveLaunchDialogDetails(
 }
 
 export async function attachRunningVrchat(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName: string = ''
 ): Promise<void> {
     const parsed = parseLocation(location);
     const launchLocation = resolveLaunchLocation(location);
@@ -131,8 +131,8 @@ export async function attachRunningVrchat(
 }
 
 export async function selfInviteToInstance(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName: string = ''
 ): Promise<void> {
     const parsed = parseLocation(location);
     if (!parsed.worldId || !parsed.instanceId) {
@@ -146,9 +146,9 @@ export async function selfInviteToInstance(
 }
 
 export async function launchVrchat(
-    location: unknown,
-    shortName: unknown = '',
-    desktopMode: unknown = false
+    location: string,
+    shortName: string = '',
+    desktopMode: boolean = false
 ): Promise<void> {
     requireHostCapabilitySupported('gameLaunch');
     const launchLocation = normalizeString(location);

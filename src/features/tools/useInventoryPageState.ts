@@ -17,6 +17,7 @@ import {
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import type { GalleryGridDensity } from './galleryDensity';
 import {
     buildEmojiUploadParams,
     CATEGORY_DEFINITIONS,
@@ -25,7 +26,6 @@ import {
     parseEmojiUploadSettings,
     readGridDensityPreference,
     resolveProfileDecorationMutation,
-    sanitizeInventoryGridDensity,
     scopeKey,
     validateImageFile,
     writeGridDensityPreference,
@@ -190,16 +190,15 @@ export function useInventoryPageState() {
     const activeSubTab = activeSubTabs[activeCategory];
     const activeScopeKey = scopeKey(activeCategory, activeSubTab);
 
-    function changeGridDensity(nextValue: unknown) {
-        const nextDensity = sanitizeInventoryGridDensity(nextValue);
-        setGridDensity(nextDensity);
-        writeGridDensityPreference(nextDensity);
+    function changeGridDensity(nextValue: GalleryGridDensity) {
+        setGridDensity(nextValue);
+        writeGridDensityPreference(nextValue);
     }
 
-    const setScopeLoading = useCallback((key: string, value: unknown) => {
+    const setScopeLoading = useCallback((key: string, value: boolean) => {
         setLoadingByScope((current) => ({
             ...current,
-            [key]: Boolean(value)
+            [key]: value
         }));
     }, []);
 
@@ -404,11 +403,8 @@ export function useInventoryPageState() {
         }
     }
 
-    async function deleteFileAsset(fileId: unknown) {
-        const normalizedFileId =
-            typeof fileId === 'string'
-                ? fileId.trim()
-                : String(fileId ?? '').trim();
+    async function deleteFileAsset(fileId: string) {
+        const normalizedFileId = fileId.trim();
         if (!normalizedFileId) {
             return;
         }
@@ -453,13 +449,10 @@ export function useInventoryPageState() {
     }
 
     async function archiveInventoryItem(
-        inventoryId: unknown,
+        inventoryId: string,
         archived: boolean
     ) {
-        const normalizedInventoryId =
-            typeof inventoryId === 'string'
-                ? inventoryId.trim()
-                : String(inventoryId ?? '').trim();
+        const normalizedInventoryId = inventoryId.trim();
         if (!normalizedInventoryId) {
             return;
         }
@@ -492,11 +485,8 @@ export function useInventoryPageState() {
         }
     }
 
-    async function consumeInventoryBundle(inventoryId: unknown) {
-        const normalizedInventoryId =
-            typeof inventoryId === 'string'
-                ? inventoryId.trim()
-                : String(inventoryId ?? '').trim();
+    async function consumeInventoryBundle(inventoryId: string) {
+        const normalizedInventoryId = inventoryId.trim();
         if (!normalizedInventoryId) {
             return;
         }

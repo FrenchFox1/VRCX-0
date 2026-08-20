@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 
 import type { AppDataDirState, TtsVoice } from '@/platform/tauri/bindings';
+import type { NotificationLayout, TableDensity } from '@/state/shellStore';
 
 import { buildDialogsSection } from './settings-page-state-sections/dialogsSection';
 import { buildIntegrationsSection } from './settings-page-state-sections/integrationsSection';
@@ -176,7 +177,7 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> &
         setIntConfigPreference: SettingsCallback<
             [string, number, { min?: number; max?: number; fallback?: number }]
         >;
-        setNotificationLayoutPreference: SettingsCallback<[string]>;
+        setNotificationLayoutPreference: SettingsCallback<[NotificationLayout]>;
         setNotificationTtsTest: SettingsCallback<[string]>;
         setNotificationTtsTestVisible: SettingsCallback<[boolean]>;
         setPrefs: SetSettingsPrefs;
@@ -198,7 +199,7 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> &
         setStartAsMinimizedPreference: SettingsCallback<[boolean]>;
         setStartAtWindowsStartupPreference: SettingsCallback<[boolean]>;
         setSystemWindowFramePreference: SettingsCallback<[boolean]>;
-        setTableDensityPreference: SettingsCallback<[unknown]>;
+        setTableDensityPreference: SettingsCallback<[TableDensity]>;
         setHmdNotificationsDialogOpen: SettingsCallback<[boolean]>;
         setTranslationApiEnabledPreference: SettingsCallback<[boolean]>;
         setTtsNotificationsDialogOpen: SettingsCallback<[boolean]>;
@@ -209,7 +210,7 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> &
         setZoomInput: SettingsCallback<[string]>;
         speakNotificationTts: SettingsCallback<[string, string?]>;
         sqliteTableSizes: Record<string, unknown>;
-        toggleLocalFavoriteFriendsGroup: SettingsCallback<[unknown, boolean]>;
+        toggleLocalFavoriteFriendsGroup: SettingsCallback<[string, boolean]>;
         ttsNotificationsDialogOpen: boolean;
         ttsVoices: TtsVoice[];
         vrNotificationsDialogOpen: boolean;

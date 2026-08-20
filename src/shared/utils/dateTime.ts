@@ -23,7 +23,7 @@ export const DEFAULT_TIME_UNIT_LABELS = Object.freeze({
     s: 's'
 });
 
-type DateFilterFormat = 'long' | 'short' | 'time' | 'date' | string;
+type DateFilterFormat = 'long' | 'short' | 'time' | 'date';
 type TimeUnitLabels = {
     -readonly [Unit in keyof typeof DEFAULT_TIME_UNIT_LABELS]: string;
 };

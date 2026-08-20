@@ -85,8 +85,9 @@ function moveColumnByDrag<TData extends RowData>(
 }
 
 function getColumnId<TData extends RowData>(column: AppColumnDef<TData>) {
-    const source = column as { id?: unknown; accessorKey?: unknown };
-    const columnId = source.id ?? source.accessorKey ?? null;
+    const columnId =
+        ('id' in column ? column.id : undefined) ??
+        ('accessorKey' in column ? column.accessorKey : null);
     return typeof columnId === 'string' ? columnId : null;
 }
 

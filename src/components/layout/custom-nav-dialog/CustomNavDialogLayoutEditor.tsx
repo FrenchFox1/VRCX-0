@@ -67,7 +67,7 @@ type SortableRowRenderProps = {
 };
 
 type MoveCandidate = {
-    key: unknown;
+    key: string;
     label: string;
     icon: unknown;
 };
@@ -78,7 +78,7 @@ type SortableNavItemRowProps = {
 };
 
 type NavDefinitionRowProps = {
-    itemKey: unknown;
+    itemKey: string;
     definition: CustomNavDefinition;
     icon: unknown;
     indent?: boolean;
@@ -90,24 +90,24 @@ type NavDefinitionRowProps = {
 };
 
 type FolderHeaderRowProps = {
-    folderId: unknown;
+    folderId: string;
     name: unknown;
     icon: unknown;
     itemCount: number;
     candidates: MoveCandidate[];
     onIconChange: (icon: string) => void;
-    onAddItem: (key: unknown) => void;
+    onAddItem: (key: string) => void;
     onRename: () => void;
     onUngroup: () => void;
 };
 
 type FolderDropZoneProps = {
-    folderId: unknown;
+    folderId: string;
     label: ReactNode;
 };
 
 type HiddenNavItem = {
-    key: unknown;
+    key: string;
     label: string;
 };
 
@@ -132,11 +132,11 @@ type CustomNavDialogLayoutEditorProps = {
         icon: string,
         fallbackIcon: unknown
     ) => void;
-    onMoveItemToFolder: (key: unknown, folderId: unknown) => void;
-    onHideItem: (key: unknown) => void;
-    onEditDashboard: (key: unknown) => void;
-    onDeleteDashboard: (key: unknown) => void;
-    onShowItem: (key: unknown) => void;
+    onMoveItemToFolder: (key: string, folderId: string) => void;
+    onHideItem: (key: string) => void;
+    onEditDashboard: (key: string) => void;
+    onDeleteDashboard: (key: string) => void;
+    onShowItem: (key: string) => void;
 };
 
 const JUST_MOVED_CLASS =
@@ -364,7 +364,7 @@ function FolderAddItemsButton({
     onAdd
 }: {
     candidates: MoveCandidate[];
-    onAdd: (key: unknown) => void;
+    onAdd: (key: string) => void;
 }) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
@@ -517,13 +517,14 @@ export function CustomNavDialogLayoutEditor({
         if (entry.type !== 'item') {
             return [];
         }
-        const definition = definitionMap.get(entry.key);
+        const key = String(entry.key || '');
+        const definition = definitionMap.get(key);
         if (!definition) {
             return [];
         }
         return [
             {
-                key: entry.key,
+                key,
                 label: definitionLabel(definition, t),
                 icon: entry.icon || definition.icon
             }
@@ -558,13 +559,14 @@ export function CustomNavDialogLayoutEditor({
                         <div className="flex flex-col gap-1">
                             {localLayout.map((entry, index) => {
                                 if (entry.type === 'folder') {
+                                    const folderId = String(entry.id || '');
                                     return (
                                         <div
                                             key={String(entry.id)}
                                             className="flex flex-col gap-1 rounded-lg border p-2"
                                         >
                                             <FolderHeaderRow
-                                                folderId={entry.id}
+                                                folderId={folderId}
                                                 name={entry.name}
                                                 icon={entry.icon}
                                                 itemCount={entry.items.length}
@@ -578,7 +580,7 @@ export function CustomNavDialogLayoutEditor({
                                                 onAddItem={(key) =>
                                                     onMoveItemToFolder(
                                                         key,
-                                                        entry.id
+                                                        folderId
                                                     )
                                                 }
                                                 onRename={() =>
@@ -592,10 +594,11 @@ export function CustomNavDialogLayoutEditor({
                                                 <div className="flex flex-col gap-1">
                                                     {entry.items.map(
                                                         (item, childIndex) => {
-                                                            const key =
+                                                            const key = String(
                                                                 getFolderItemKey(
                                                                     item
-                                                                );
+                                                                ) || ''
+                                                            );
                                                             const definition =
                                                                 definitionMap.get(
                                                                     key
@@ -660,7 +663,7 @@ export function CustomNavDialogLayoutEditor({
                                                 </div>
                                             ) : (
                                                 <FolderDropZone
-                                                    folderId={entry.id}
+                                                    folderId={folderId}
                                                     label={t(
                                                         'nav_menu.custom_nav.folder_drop_here'
                                                     )}
@@ -670,19 +673,18 @@ export function CustomNavDialogLayoutEditor({
                                     );
                                 }
 
-                                const definition = definitionMap.get(entry.key);
+                                const key = String(entry.key || '');
+                                const definition = definitionMap.get(key);
                                 if (!definition) {
                                     return null;
                                 }
                                 return (
                                     <NavDefinitionRow
-                                        key={String(entry.key)}
-                                        itemKey={entry.key}
+                                        key={key}
+                                        itemKey={key}
                                         definition={definition}
                                         icon={entry.icon || definition.icon}
-                                        justMoved={
-                                            justMovedKey === String(entry.key)
-                                        }
+                                        justMoved={justMovedKey === key}
                                         onIconChange={(icon) =>
                                             onFolderIconChange(
                                                 index,
@@ -691,12 +693,12 @@ export function CustomNavDialogLayoutEditor({
                                                     DEFAULT_NAV_ICON_KEY
                                             )
                                         }
-                                        onHide={() => onHideItem(entry.key)}
+                                        onHide={() => onHideItem(key)}
                                         onEditDashboard={() =>
-                                            onEditDashboard(entry.key)
+                                            onEditDashboard(key)
                                         }
                                         onDeleteDashboard={() =>
-                                            onDeleteDashboard(entry.key)
+                                            onDeleteDashboard(key)
                                         }
                                     />
                                 );

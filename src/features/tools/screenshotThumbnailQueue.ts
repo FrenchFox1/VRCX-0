@@ -45,8 +45,8 @@ function runNextThumbnailRequest() {
     }
 }
 
-export function requestScreenshotThumbnail(path: unknown) {
-    const filePath = String(path || '');
+export function requestScreenshotThumbnail(path: string) {
+    const filePath = path;
     if (!filePath) {
         return {
             promise: Promise.reject(new Error('Screenshot path is empty.')),

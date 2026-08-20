@@ -48,9 +48,7 @@ function mapProfileQueryResults(
             continue;
         }
 
-        const profile = userProfileRepository.normalize(
-            result.data
-        ) as PlayerListProfileRecord | null;
+        const profile = userProfileRepository.normalize(result.data);
         const userId = normalizeString(profile?.id || userIds[index]);
         if (userId && profile) {
             profilesByUserId[userId] = profile;

@@ -32,15 +32,6 @@ type WorldCacheInfo = {
     cachePath: string;
 };
 
-type CacheInfoTuple = Record<string, unknown> & {
-    Item1?: unknown;
-    item1?: unknown;
-    Item2?: unknown;
-    item2?: unknown;
-    Item3?: unknown;
-    item3?: unknown;
-};
-
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
@@ -131,15 +122,15 @@ export async function readWorldCacheInfo(
     if (!args) {
         return defaultWorldCacheInfo();
     }
-    const cacheInfo = (await assetBundleRepository.checkVRChatCache(
+    const cacheInfo = await assetBundleRepository.checkVRChatCache(
         args.fileId,
         args.fileVersion,
         args.variant,
         args.variantVersion
-    )) as CacheInfoTuple;
-    const size = Number(cacheInfo?.Item1 ?? cacheInfo?.item1 ?? 0);
-    const cacheLocked = Boolean(cacheInfo?.Item2 ?? cacheInfo?.item2);
-    const cachePath = String(cacheInfo?.Item3 ?? cacheInfo?.item3 ?? '');
+    );
+    const size = cacheInfo.Item1;
+    const cacheLocked = cacheInfo.Item2;
+    const cachePath = cacheInfo.Item3;
     return {
         inCache: size > 0,
         cacheSize: size > 0 ? `${(size / 1048576).toFixed(2)} MB` : '',

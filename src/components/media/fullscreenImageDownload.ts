@@ -30,12 +30,12 @@ async function fetchImageBlobViaRust(url: string): Promise<Blob> {
     return dataUrlToBlob(dataUrl);
 }
 
-export async function fetchImageBlob(url: unknown): Promise<Blob> {
+export async function fetchImageBlob(url: string | undefined): Promise<Blob> {
     if (!url) {
         throw new Error('Missing image URL');
     }
 
-    const normalizedUrl = String(url);
+    const normalizedUrl = url;
     if (normalizedUrl.startsWith('data:')) {
         return dataUrlToBlob(normalizedUrl);
     }

@@ -9,14 +9,21 @@ import {
     resolveMyAvatarsGridDensity,
     sanitizeMyAvatarsGridDensity
 } from './myAvatarsState';
-import type { MyAvatarsGridDensity, MyAvatarsViewMode } from './myAvatarsTypes';
+import type {
+    MyAvatarsGridDensity,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter,
+    MyAvatarsViewMode
+} from './myAvatarsTypes';
 
 export function useMyAvatarsFilters() {
     const [viewMode, setViewMode] = useState<MyAvatarsViewMode>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const deferredSearchQuery = useDeferredValue(searchQuery);
-    const [releaseStatusFilter, setReleaseStatusFilter] = useState('all');
-    const [platformFilter, setPlatformFilter] = useState('all');
+    const [releaseStatusFilter, setReleaseStatusFilter] =
+        useState<MyAvatarsReleaseStatusFilter>('all');
+    const [platformFilter, setPlatformFilter] =
+        useState<MyAvatarsPlatformFilter>('all');
     const [tagFilters, setTagFilters] = useState<Set<string>>(() => new Set());
     const [gridDensity, setGridDensity] = useState<MyAvatarsGridDensity>(() =>
         resolveMyAvatarsGridDensity()
@@ -71,7 +78,7 @@ export function useMyAvatarsFilters() {
         configRepository.setString('MyAvatarsViewMode', nextViewMode);
     }
 
-    function handleGridDensityChange(value: string) {
+    function handleGridDensityChange(value: MyAvatarsGridDensity) {
         const nextDensity = sanitizeMyAvatarsGridDensity(value);
         setGridDensity(nextDensity);
         configRepository.setString(

@@ -95,10 +95,12 @@ function firstText(...values: unknown[]): string {
     return '';
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 function record(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : {};
+    return isRecord(value) ? value : {};
 }
 
 function userId(value: unknown): string {

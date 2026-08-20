@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
 
-import { normalizeFavoriteSearchValue as normalizeSearchValue } from './favoritesItems';
+import {
+    normalizeFavoriteSearchValue as normalizeSearchValue,
+    type FavoriteSortValue
+} from './favoritesItems';
 import {
     buildFavoriteAvatarHistoryGroups,
     buildFavoriteAvatarHistoryItems,
@@ -47,7 +50,7 @@ type FavoritesViewDataInputs = ReturnType<
     searchQuery: string;
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    sortValue: string;
+    sortValue: FavoriteSortValue;
 };
 
 export function useFavoritesViewData({

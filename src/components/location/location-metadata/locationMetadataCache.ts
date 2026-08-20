@@ -3,16 +3,16 @@ import { normalizeString } from '@/shared/utils/string';
 
 import type { LocationCacheRecord } from './locationMetadataTypes';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function recordValue(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function cacheRecord(value: unknown): LocationCacheRecord | null {
-    return value && typeof value === 'object'
-        ? (value as LocationCacheRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function instanceLocation(instance: LocationCacheRecord | null | undefined) {

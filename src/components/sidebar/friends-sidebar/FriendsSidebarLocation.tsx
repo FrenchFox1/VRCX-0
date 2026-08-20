@@ -53,10 +53,12 @@ type SidebarLocationMetadata = Record<string, unknown> & {
 const FRIEND_INSTANCE_TIMER_FIRST_STEP_MS = 30_000;
 const FRIEND_INSTANCE_TIMER_STEP_MS = 60_000;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function recordValue(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 export function FriendInstanceTimer({

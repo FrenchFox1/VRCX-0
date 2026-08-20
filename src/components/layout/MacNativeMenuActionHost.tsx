@@ -38,7 +38,7 @@ function readMenuAction(payload: unknown): string {
         return '';
     }
 
-    const action = (payload as { action?: unknown }).action;
+    const action = 'action' in payload ? payload.action : undefined;
     return typeof action === 'string' ? action : '';
 }
 

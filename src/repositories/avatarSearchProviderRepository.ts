@@ -25,13 +25,13 @@ export type AvatarSearchProviderResult = {
 
 interface SaveConfigInput {
     enabled: boolean;
-    providerList: unknown;
-    selectedProvider?: unknown;
+    providerList: string[];
+    selectedProvider?: string;
 }
 
 interface SearchInput {
-    provider: unknown;
-    query: unknown;
+    provider: string;
+    query: string;
 }
 
 const DEFAULT_PROVIDER = 'https://api.avtrdb.com/v3/avatar/search/vrcx';
@@ -243,7 +243,7 @@ async function saveConfig({
     return savedConfig;
 }
 
-async function saveSelectedProvider(provider: unknown): Promise<string> {
+async function saveSelectedProvider(provider: string): Promise<string> {
     const normalizedProvider = normalizeString(provider);
     if (!normalizedProvider) {
         return '';

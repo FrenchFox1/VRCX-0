@@ -606,7 +606,7 @@ export function useUserActivityPanelController({
         refreshTopWorldsForHomeWorldChange();
     }, [currentHomeWorldId]);
 
-    async function changePeriod(value: unknown) {
+    async function changePeriod(value: string) {
         const nextPeriod = normalizeActivityPeriod(value);
         setSelectedPeriod(nextPeriod);
         await configRepository.setString(
@@ -618,31 +618,28 @@ export function useUserActivityPanelController({
         await refreshData({ period: nextPeriod });
     }
 
-    async function changeTopWorldsSort(value: unknown) {
-        const nextSortBy = normalizeTopWorldsSort(value);
-        setTopWorldsSortBy(nextSortBy);
+    async function changeTopWorldsSort(value: TopWorldsSort) {
+        setTopWorldsSortBy(value);
         await configRepository.setString(
             ACTIVITY_SELF_TOP_WORLDS_SORT_KEY,
-            nextSortBy
+            value
         );
-        await refreshTopWorldsOnly({ sortBy: nextSortBy });
+        await refreshTopWorldsOnly({ sortBy: value });
     }
 
-    async function changeExcludeHomeWorld(value: unknown) {
-        const enabled = value === true;
-        setExcludeHomeWorldEnabled(enabled);
+    async function changeExcludeHomeWorld(value: boolean) {
+        setExcludeHomeWorldEnabled(value);
         await configRepository.setBool(
             ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY,
-            enabled
+            value
         );
-        await refreshTopWorldsOnly({ excludeHomeWorld: enabled });
+        await refreshTopWorldsOnly({ excludeHomeWorld: value });
     }
 
-    async function changeExcludeHours(value: unknown) {
-        const enabled = value === true;
-        setExcludeHoursEnabled(enabled);
-        await configRepository.setBool(OVERLAP_EXCLUDE_ENABLED_KEY, enabled);
-        await refreshOverlapOnly({ excludeOverlap: enabled });
+    async function changeExcludeHours(value: boolean) {
+        setExcludeHoursEnabled(value);
+        await configRepository.setBool(OVERLAP_EXCLUDE_ENABLED_KEY, value);
+        await refreshOverlapOnly({ excludeOverlap: value });
     }
 
     async function changeExcludeRange(kind: 'start' | 'end', value: string) {

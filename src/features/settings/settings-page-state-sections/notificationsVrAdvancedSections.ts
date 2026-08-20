@@ -6,7 +6,6 @@ import {
     sqliteTableSizeRows
 } from '../settingsOptions';
 import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
-import { normalizeCheckedState } from '../settingsValues';
 
 export function buildNotificationsSection({
     ttsVoices,
@@ -106,12 +105,11 @@ export function buildAdvancedSection({
         dismissAppDataDirCleanup,
         setConfigTreeData,
         migrateLegacyVrcxData,
-        onAnonymousUsageTelemetryChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAnonymousUsageTelemetryChange: (checked: boolean) => {
             saveBoolPreference(
                 'anonymousUsageTelemetry',
                 'anonymousUsageTelemetry',
-                enabled
+                checked
             );
         }
     };

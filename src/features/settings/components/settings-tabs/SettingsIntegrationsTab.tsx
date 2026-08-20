@@ -3,15 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
-import { commands } from '@/platform/tauri/bindings';
-import type { WebhookDeliverySnapshot } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type NotificationWebhookFormat,
+    type WebhookDeliverySnapshot
+} from '@/platform/tauri/bindings';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import { normalizeCheckedState } from '../../settingsValues';
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { IntegrationApiSettingsGroup } from './IntegrationApiSettingsGroup';
@@ -89,18 +91,14 @@ export function SettingsIntegrationsTab() {
     }
 
     function saveWebhookEnabled(checked: boolean) {
-        saveBoolPreference(
-            'webhookEnabled',
-            'webhookEnabled',
-            normalizeCheckedState(checked)
-        );
+        saveBoolPreference('webhookEnabled', 'webhookEnabled', checked);
     }
 
     function saveWebhookAuthEventsEnabled(checked: boolean) {
         saveBoolPreference(
             'webhookAuthEventsEnabled',
             'webhookAuthEventsEnabled',
-            normalizeCheckedState(checked)
+            checked
         );
     }
 
@@ -115,7 +113,7 @@ export function SettingsIntegrationsTab() {
         saveStringPreference('webhookUrl', 'webhookUrl', value);
     }
 
-    function saveWebhookFormat(value: string) {
+    function saveWebhookFormat(value: NotificationWebhookFormat) {
         saveStringPreference('webhookFormat', 'webhookFormat', value);
     }
 

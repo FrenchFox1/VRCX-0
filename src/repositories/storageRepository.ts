@@ -48,16 +48,15 @@ export class StorageRepository {
         return safeJsonParse(value, defaultValue);
     }
 
-    async setString(key: string, value: unknown) {
+    async setString(key: string, value: string) {
         await this.init();
         const dbKey = this.key(key);
-        const stringValue = String(value);
-        const result = await commands.storageSet(dbKey, stringValue);
-        this.#cache.set(dbKey, stringValue);
+        const result = await commands.storageSet(dbKey, value);
+        this.#cache.set(dbKey, value);
         return result;
     }
 
-    async set(key: string, value: unknown) {
+    async set(key: string, value: string) {
         return this.setString(key, value);
     }
 

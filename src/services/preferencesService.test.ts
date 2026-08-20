@@ -399,10 +399,10 @@ describe('preferencesService characterization', () => {
         expect(snapshot.hmdNotificationsEnabled).toBe(false);
     });
 
-    it('normalizes notification layout and syncs shell/store state', async () => {
-        await expect(setNotificationLayoutPreference('unknown')).resolves.toBe(
-            'notification-center'
-        );
+    it('stores notification layout and syncs shell/store state', async () => {
+        await expect(
+            setNotificationLayoutPreference('notification-center')
+        ).resolves.toBe('notification-center');
 
         expect(mocks.setString).toHaveBeenCalledWith(
             'notificationLayout',

@@ -1,5 +1,4 @@
 import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
-import { normalizeCheckedState } from '../settingsValues';
 
 export function buildIntegrationsSection({
     discordPrefs,
@@ -42,74 +41,51 @@ export function buildIntegrationsSection({
         avatarProviderConfigRef,
         applyAvatarProviderConfig,
         setAvatarProviderDialogOpen,
-        onDiscordActiveChange: (checked: unknown) => {
-            saveDiscordBoolPreference(
-                'discordActive',
-                normalizeCheckedState(checked)
-            );
+        onDiscordActiveChange: (checked: boolean) => {
+            saveDiscordBoolPreference('discordActive', checked);
         },
-        onDiscordWorldIntegrationChange: (checked: unknown) => {
-            saveDiscordBoolPreference(
-                'discordWorldIntegration',
-                normalizeCheckedState(checked)
-            );
+        onDiscordWorldIntegrationChange: (checked: boolean) => {
+            saveDiscordBoolPreference('discordWorldIntegration', checked);
         },
-        onDiscordInstanceChange: (checked: unknown) => {
-            saveDiscordBoolPreference(
-                'discordInstance',
-                normalizeCheckedState(checked)
-            );
+        onDiscordInstanceChange: (checked: boolean) => {
+            saveDiscordBoolPreference('discordInstance', checked);
         },
-        onDiscordShowPlatformChange: (checked: unknown) => {
-            saveDiscordBoolPreference(
-                'discordShowPlatform',
-                normalizeCheckedState(checked)
-            );
+        onDiscordShowPlatformChange: (checked: boolean) => {
+            saveDiscordBoolPreference('discordShowPlatform', checked);
         },
-        onDiscordShowPrivateDetailsChange: (checked: unknown) => {
-            saveDiscordBoolPreference(
-                'discordHideInvite',
-                !normalizeCheckedState(checked)
-            );
+        onDiscordShowPrivateDetailsChange: (checked: boolean) => {
+            saveDiscordBoolPreference('discordHideInvite', !checked);
         },
-        onDiscordJoinButtonChange: (checked: unknown) => {
-            saveDiscordBoolPreference(
-                'discordJoinButton',
-                normalizeCheckedState(checked)
-            );
+        onDiscordJoinButtonChange: (checked: boolean) => {
+            saveDiscordBoolPreference('discordJoinButton', checked);
         },
-        onDiscordShowImagesChange: (checked: unknown) => {
-            saveDiscordBoolPreference(
-                'discordHideImage',
-                !normalizeCheckedState(checked)
-            );
+        onDiscordShowImagesChange: (checked: boolean) => {
+            saveDiscordBoolPreference('discordHideImage', !checked);
         },
-        onDiscordWorldNameAsStatusChange: (checked: unknown) => {
+        onDiscordWorldNameAsStatusChange: (checked: boolean) => {
             saveDiscordBoolPreference(
                 'discordWorldNameAsDiscordStatus',
-                normalizeCheckedState(checked)
+                checked
             );
         },
-        onTranslationApiEnabledChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            saveIntegrationBoolPreference('translationAPI', enabled, () =>
-                setTranslationApiEnabledPreference(enabled)
+        onTranslationApiEnabledChange: (checked: boolean) => {
+            saveIntegrationBoolPreference('translationAPI', checked, () =>
+                setTranslationApiEnabledPreference(checked)
             );
         },
         onOpenTranslationApiDialog: () => {
             openTranslationApiDialog();
         },
-        onYoutubeApiEnabledChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            saveIntegrationBoolPreference('youtubeAPI', enabled, () =>
-                setYoutubeApiEnabledPreference(enabled)
+        onYoutubeApiEnabledChange: (checked: boolean) => {
+            saveIntegrationBoolPreference('youtubeAPI', checked, () =>
+                setYoutubeApiEnabledPreference(checked)
             );
         },
         onOpenYoutubeApiDialog: () => {
             openYoutubeApiDialog();
         },
-        onAvatarProviderEnabledChange: (checked: unknown) => {
-            saveAvatarProviderEnabled(normalizeCheckedState(checked));
+        onAvatarProviderEnabledChange: (checked: boolean) => {
+            saveAvatarProviderEnabled(checked);
         },
         onOpenAvatarProviderDialog: () => {
             setAvatarProviderDialogOpen(true);

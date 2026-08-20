@@ -16,6 +16,10 @@ import {
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import type {
+    FavoriteEntityKind,
+    FavoriteImportLocation
+} from '@/platform/tauri/bindings';
 import {
     openAvatarDialog,
     openUserDialog,
@@ -54,8 +58,8 @@ import {
 import { Textarea } from '@/ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
-type ImportKind = 'world' | 'avatar' | 'friend';
-type ImportLocation = 'remote' | 'local';
+type ImportKind = FavoriteEntityKind;
+type ImportLocation = FavoriteImportLocation;
 
 const BACK_ROUTE: Record<ImportKind, { path: string; titleKey: string }> = {
     world: {

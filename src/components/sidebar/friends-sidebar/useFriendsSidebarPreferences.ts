@@ -23,6 +23,12 @@ const groupToggleKeys: Record<FriendsSidebarGroupKey, string> = {
     sameInstance: 'sidebarGroupByInstanceCollapsed'
 };
 
+export function isFriendsSidebarGroupKey(
+    value: string
+): value is FriendsSidebarGroupKey {
+    return Object.prototype.hasOwnProperty.call(groupToggleKeys, value);
+}
+
 const defaultGroupState: FriendsSidebarOpenGroups = {
     me: true,
     favorites: true,

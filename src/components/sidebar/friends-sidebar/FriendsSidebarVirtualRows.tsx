@@ -1,5 +1,6 @@
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
+import type { UserStatus } from '@/platform/tauri/bindings';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
@@ -14,7 +15,10 @@ import {
     type SidebarFriendRecord
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
-import type { FriendsSidebarGroupKey } from './useFriendsSidebarPreferences';
+import {
+    isFriendsSidebarGroupKey,
+    type FriendsSidebarGroupKey
+} from './useFriendsSidebarPreferences';
 
 type FriendCommandsView = {
     onOpenFriend: (friend: SidebarFriendRecord) => void;
@@ -54,7 +58,7 @@ type LocationView = {
 
 type StatusCommandsView = {
     statusPresets?: StatusPreset[];
-    onChangeStatus?: (status: string) => unknown;
+    onChangeStatus?: (status: UserStatus) => unknown;
     onSetStatusDescription?: (statusDescription: string) => unknown;
     onEditSocialStatus?: () => unknown;
     onApplyStatusPreset?: (preset: StatusPreset) => unknown;
@@ -202,11 +206,11 @@ function FriendsSidebarVirtualRow({
                     count={row.count}
                     open={row.open}
                     isFirst={isFirstRow}
-                    onToggle={(id) =>
-                        friendCommands.onToggleSection(
-                            id as FriendsSidebarGroupKey
-                        )
-                    }
+                    onToggle={(id) => {
+                        if (isFriendsSidebarGroupKey(id)) {
+                            friendCommands.onToggleSection(id);
+                        }
+                    }}
                 />
             );
         case 'favorite-group-header':

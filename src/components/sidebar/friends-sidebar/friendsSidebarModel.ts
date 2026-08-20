@@ -12,10 +12,7 @@ import {
     resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
-import type {
-    FriendLocationProjection,
-    FriendRecordInput
-} from '@/domain/friends/types';
+import type { FriendRecordInput } from '@/domain/friends/types';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
     locationSentinel,
@@ -105,10 +102,12 @@ const observedJoinsByFallbackMap = new WeakMap<
     Map<string, SameInstanceObservedJoin>
 >();
 
-function locationProjection(value: unknown): FriendLocationProjection | null {
-    return value && typeof value === 'object'
-        ? (value as FriendLocationProjection)
-        : null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
+function locationProjection(value: unknown): Record<string, unknown> | null {
+    return isRecord(value) ? value : null;
 }
 
 function isFriendSortMethod(

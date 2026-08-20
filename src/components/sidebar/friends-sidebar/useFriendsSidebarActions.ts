@@ -2,7 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { useCurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/useCurrentUserSocialStatusDialog';
+import { normalizeSelfStatusInput } from '@/components/dialogs/user-dialog/userProfileFields';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type {
+    CurrentUserUpdateRequest,
+    UserStatus
+} from '@/platform/tauri/bindings';
 import currentUserProfileService from '@/services/currentUserProfileService';
 import { openUserDialog } from '@/services/dialogService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
@@ -116,7 +121,10 @@ export function useFriendsSidebarActions({
             return;
         }
         try {
-            await selfInviteToInstance(location, parsedLocation.shortName);
+            await selfInviteToInstance(
+                parsedLocation.tag,
+                parsedLocation.shortName
+            );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
             toast.error(
@@ -247,7 +255,7 @@ export function useFriendsSidebarActions({
     }
 
     async function saveCurrentUserPatch(
-        patch: Record<string, unknown>,
+        patch: CurrentUserUpdateRequest,
         { successMessage, errorMessage }: SaveCurrentUserPatchMessages
     ) {
         if (!currentUserId) {
@@ -286,7 +294,7 @@ export function useFriendsSidebarActions({
         }
     }
 
-    async function changeCurrentUserStatus(status: string) {
+    async function changeCurrentUserStatus(status: UserStatus) {
         await saveCurrentUserPatch(
             { status },
             {
@@ -315,12 +323,13 @@ export function useFriendsSidebarActions({
     }
 
     async function applyCurrentUserStatusPreset(preset: StatusPreset) {
-        if (!preset?.status) {
+        const status = normalizeSelfStatusInput(preset?.status);
+        if (!status) {
             return;
         }
-        const patch: Record<string, unknown> = { status: preset.status };
+        const patch: CurrentUserUpdateRequest = { status };
         if (Object.prototype.hasOwnProperty.call(preset, 'statusDescription')) {
-            patch.statusDescription = preset.statusDescription || '';
+            patch.statusDescription = String(preset.statusDescription || '');
         }
         await saveCurrentUserPatch(patch, {
             successMessage: t(

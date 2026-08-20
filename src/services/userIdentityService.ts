@@ -37,10 +37,12 @@ type UserIdentityRepositories = {
     };
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function asUserRecord(value: unknown): UserIdentityRecord | null {
-    return value && typeof value === 'object'
-        ? (value as UserIdentityRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function text(value: unknown): string {
@@ -124,10 +126,10 @@ function findFriendByDisplayName(
     }
 
     const { friendsById } = useFriendRosterStore.getState();
-    return (
-        (Object.values(friendsById || {}).find((friend) =>
+    return asUserRecord(
+        Object.values(friendsById || {}).find((friend) =>
             displayNameMatches(friend, targetDisplayName)
-        ) as UserIdentityRecord | undefined) || null
+        )
     );
 }
 

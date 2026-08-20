@@ -11,12 +11,25 @@ import {
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 
-import type { MyAvatarsGridDensity } from './myAvatarsTypes';
+import type {
+    MyAvatarsGridDensity,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter
+} from './myAvatarsTypes';
 
 export const MY_AVATARS_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const MY_AVATARS_DEFAULT_SORTING = [{ id: 'updated_at', desc: true }];
-export const MY_AVATARS_RELEASE_STATUS_OPTIONS = ['all', 'public', 'private'];
-export const MY_AVATARS_PLATFORM_OPTIONS = ['all', 'pc', 'android', 'ios'];
+export const MY_AVATARS_RELEASE_STATUS_OPTIONS = [
+    'all',
+    'public',
+    'private'
+] satisfies readonly MyAvatarsReleaseStatusFilter[];
+export const MY_AVATARS_PLATFORM_OPTIONS = [
+    'all',
+    'pc',
+    'android',
+    'ios'
+] satisfies readonly MyAvatarsPlatformFilter[];
 export const MY_AVATARS_DEFAULT_CARD_SCALE = 0.6;
 export const MY_AVATARS_GRID_DENSITY_CONFIG_KEY = 'VRCX_MyAvatarsGridDensityV2';
 export const MY_AVATARS_LEGACY_GRID_DENSITY_CONFIG_KEY =
@@ -36,6 +49,23 @@ export const MY_AVATARS_GRID_DENSITY_OPTIONS = Object.freeze([
         labelKey: 'view.my_avatars.label.grid_density_dense'
     }
 ]);
+
+export function isMyAvatarsReleaseStatusFilter(
+    value: unknown
+): value is MyAvatarsReleaseStatusFilter {
+    return value === 'all' || value === 'public' || value === 'private';
+}
+
+export function isMyAvatarsPlatformFilter(
+    value: unknown
+): value is MyAvatarsPlatformFilter {
+    return (
+        value === 'all' ||
+        value === 'pc' ||
+        value === 'android' ||
+        value === 'ios'
+    );
+}
 export const MY_AVATARS_COLUMN_IDS = [
     'thumbnail',
     'name',
@@ -100,7 +130,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
-function isMyAvatarsGridDensity(value: string): value is MyAvatarsGridDensity {
+export function isMyAvatarsGridDensity(
+    value: string
+): value is MyAvatarsGridDensity {
     return GRID_DENSITY_VALUES.has(value);
 }
 
@@ -121,11 +153,13 @@ export function sanitizeMyAvatarsSorting(value: unknown): SortingState {
     const allowedIds = new Set(SORT_COLUMN_IDS);
     const filtered = value
         .map((entry): SortingState[number] | null =>
-            isRecord(entry) && typeof entry.id === 'string'
-                ? ({
-                      ...entry,
-                      id: normalizeMyAvatarsColumnId(entry.id)
-                  } as SortingState[number])
+            isRecord(entry) &&
+            typeof entry.id === 'string' &&
+            typeof entry.desc === 'boolean'
+                ? {
+                      id: normalizeMyAvatarsColumnId(entry.id),
+                      desc: entry.desc
+                  }
                 : null
         )
         .filter((entry): entry is SortingState[number] =>

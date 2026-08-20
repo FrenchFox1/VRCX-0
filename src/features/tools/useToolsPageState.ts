@@ -322,8 +322,8 @@ export function useToolsPageState() {
     ]);
 
     function addQuickAccessToolByKey(
-        toolKey: unknown,
-        beforeToolKey: unknown = ''
+        toolKey: string,
+        beforeToolKey: string = ''
     ) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         const normalizedBeforeToolKey = normalizePinnedToolKey(beforeToolKey);
@@ -342,7 +342,7 @@ export function useToolsPageState() {
         });
     }
 
-    function addQuickAccessToolByKeyWithFeedback(toolKey: unknown) {
+    function addQuickAccessToolByKeyWithFeedback(toolKey: string) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         if (quickAccessKeySet.has(normalizedToolKey)) {
             toast.info(
@@ -353,7 +353,7 @@ export function useToolsPageState() {
         addQuickAccessToolByKey(normalizedToolKey);
     }
 
-    function removeQuickAccessToolByKey(toolKey: unknown) {
+    function removeQuickAccessToolByKey(toolKey: string) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         setQuickAccessKeys((current) =>
             current.filter((key) => key !== normalizedToolKey)
@@ -361,8 +361,8 @@ export function useToolsPageState() {
     }
 
     function reorderQuickAccessTool(
-        activeToolKey: unknown,
-        overToolKey: unknown
+        activeToolKey: string,
+        overToolKey: string
     ) {
         const normalizedActiveToolKey = normalizePinnedToolKey(activeToolKey);
         const normalizedOverToolKey = normalizePinnedToolKey(overToolKey);
@@ -386,6 +386,7 @@ export function useToolsPageState() {
         const activeData = active?.data?.current;
         const overData = over?.data?.current;
         const activeToolKey = normalizePinnedToolKey(activeData?.toolKey);
+        const overToolKey = normalizePinnedToolKey(overData?.toolKey);
         if (!activeToolKey || !knownToolKeys.has(activeToolKey)) {
             return;
         }
@@ -404,11 +405,11 @@ export function useToolsPageState() {
             overData?.target === 'quick-access'
         ) {
             if (activeData?.source === 'catalog') {
-                addQuickAccessToolByKey(activeToolKey, overData?.toolKey);
+                addQuickAccessToolByKey(activeToolKey, overToolKey);
                 return;
             }
             if (activeData?.source === 'quick-access') {
-                reorderQuickAccessTool(activeToolKey, overData?.toolKey);
+                reorderQuickAccessTool(activeToolKey, overToolKey);
             }
         }
     }

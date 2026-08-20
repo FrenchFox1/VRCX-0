@@ -13,10 +13,7 @@ import mediaRepository from '@/repositories/vrchatMediaRepository';
 import { printCleanupWarningMessageKey } from '@/shared/utils/printFavoriteMessages';
 import { normalizeString } from '@/shared/utils/string';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
-import {
-    type FavoriteRevisionKind,
-    useFavoriteRevisionStore
-} from '@/state/favoriteRevisionStore';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 import {
@@ -73,12 +70,6 @@ function refreshPrintFavoritesAfterCleanup(): void {
                 error
             );
         });
-}
-
-function normalizeFavoritesChangedKind(kind: string): FavoriteRevisionKind {
-    return kind === 'friend' || kind === 'world' || kind === 'avatar'
-        ? kind
-        : 'unknown';
 }
 
 function isStoredLocalFavoriteKind(
@@ -182,7 +173,7 @@ function applyFavoritesChangedEvent(
     for (const change of payload.changes) {
         applyFavoriteChange(change);
     }
-    const kind = normalizeFavoritesChangedKind(payload.kind);
+    const kind = payload.kind;
     useFavoriteRevisionStore.getState().bumpRevision({
         kind,
         local: Boolean(payload.local),

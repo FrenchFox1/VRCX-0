@@ -122,11 +122,11 @@ export function createRequestError(
     endpoint: string,
     payload: unknown = null
 ): VrchatRequestError {
-    const error = new Error(message) as VrchatRequestError;
-    error.status = status;
-    error.endpoint = endpoint;
-    error.payload = payload;
-    return error;
+    return Object.assign(new Error(message), {
+        status,
+        endpoint,
+        payload
+    });
 }
 
 export function unwrapVrchatResponse<TJson = unknown>(

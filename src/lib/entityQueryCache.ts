@@ -1,6 +1,13 @@
 import type { QueryKey } from '@tanstack/react-query';
 
 import { queryClient } from '@/lib/queryClient';
+import type {
+    CalendarListParams,
+    ReleaseStatusFilter,
+    VrchatGroupGalleryInput,
+    VrchatGroupMembersInput,
+    VrchatWorldListByUserInput
+} from '@/platform/tauri/bindings';
 import { MINUTE_MS, SECOND_MS } from '@/shared/constants/time';
 import {
     hasAvatarIdPrefix,
@@ -15,8 +22,6 @@ type EntityQueryPolicy = Readonly<{
     retry: number;
     refetchOnWindowFocus: boolean;
 }>;
-
-type EntityQueryParams = Record<string, unknown>;
 
 type FetchWithEntityPolicyOptions<TData = unknown> = {
     queryKey: QueryKey;
@@ -130,18 +135,27 @@ export const entityQueryPolicies = Object.freeze({
     })
 });
 
-function withEndpoint(queryKey: unknown[], endpoint: unknown = ''): QueryKey {
+type UserDialogTabCountQueryParams = {
+    userId: string;
+    currentUserId: string;
+    avatarReleaseStatus: ReleaseStatusFilter;
+    includeMutualFriends: boolean;
+};
+
+type AggregateCalendarQueryParams = {
+    date: string;
+    includeFeatured: boolean;
+    userId: string | null;
+};
+
+function withEndpoint(queryKey: QueryKey, endpoint: string = ''): QueryKey {
     const normalizedEndpoint = normalizeVrchatEndpointKey(endpoint);
     return normalizedEndpoint
         ? [...queryKey, { endpoint: normalizedEndpoint }]
         : queryKey;
 }
 
-function stableParams(params: unknown = {}): Record<string, unknown> {
-    if (!params || typeof params !== 'object') {
-        return {};
-    }
-
+function stableParams(params: object = {}): Record<string, unknown> {
     return Object.fromEntries(
         Object.entries(params)
             .filter(([, value]) => value !== undefined)
@@ -150,37 +164,37 @@ function stableParams(params: unknown = {}): Record<string, unknown> {
 }
 
 export const queryKeys = Object.freeze({
-    user: (userId: unknown, endpoint: unknown = '') =>
+    user: (userId: string, endpoint: string = '') =>
         withEndpoint(['user', userId], endpoint),
-    userAppearanceProfile: (userId: unknown, endpoint: unknown = '') =>
+    userAppearanceProfile: (userId: string, endpoint: string = '') =>
         withEndpoint(['user', userId, 'appearanceProfile'], endpoint),
-    userGroups: (userId: unknown, endpoint: unknown = '') =>
+    userGroups: (userId: string, endpoint: string = '') =>
         withEndpoint(['user', userId, 'groups'], endpoint),
-    userGroupsOverview: (userId: unknown, endpoint: unknown = '') =>
+    userGroupsOverview: (userId: string, endpoint: string = '') =>
         withEndpoint(['user', userId, 'groupsOverview'], endpoint),
-    instance: (worldId: unknown, instanceId: unknown, endpoint: unknown = '') =>
+    instance: (worldId: string, instanceId: string, endpoint: string = '') =>
         withEndpoint(['instance', worldId, instanceId], endpoint),
     instanceShortName: (
-        worldId: unknown,
-        instanceId: unknown,
-        endpoint: unknown = ''
+        worldId: string,
+        instanceId: string,
+        endpoint: string = ''
     ) => withEndpoint(['instance', worldId, instanceId, 'shortName'], endpoint),
     group: (
-        groupId: unknown,
-        includeRoles: unknown = false,
-        endpoint: unknown = ''
-    ) => withEndpoint(['group', groupId, Boolean(includeRoles)], endpoint),
-    worldsByUser: (params: EntityQueryParams = {}, endpoint: unknown = '') =>
+        groupId: string,
+        includeRoles: boolean = false,
+        endpoint: string = ''
+    ) => withEndpoint(['group', groupId, includeRoles], endpoint),
+    worldsByUser: (params: VrchatWorldListByUserInput, endpoint: string = '') =>
         withEndpoint(
             ['worlds', 'user', params.userId, stableParams(params)],
             endpoint
         ),
-    groupMembers: (params: EntityQueryParams = {}, endpoint: unknown = '') =>
+    groupMembers: (params: VrchatGroupMembersInput, endpoint: string = '') =>
         withEndpoint(
             ['group', params.groupId, 'members', stableParams(params)],
             endpoint
         ),
-    groupGallery: (params: EntityQueryParams = {}, endpoint: unknown = '') =>
+    groupGallery: (params: VrchatGroupGalleryInput, endpoint: string = '') =>
         withEndpoint(
             [
                 'group',
@@ -192,49 +206,48 @@ export const queryKeys = Object.freeze({
             endpoint
         ),
     groupCalendarList: (
-        kind: unknown = 'all',
-        params: EntityQueryParams = {},
-        endpoint: unknown = ''
+        kind: 'aggregate' | 'group' | 'following',
+        params:
+            | AggregateCalendarQueryParams
+            | CalendarListParams
+            | { groupId: string },
+        endpoint: string = ''
     ) => withEndpoint(['calendar', kind, stableParams(params)], endpoint),
     groupCalendarEvent: (
         {
             groupId = '',
             eventId = ''
-        }: { eventId?: unknown; groupId?: unknown } = {},
-        endpoint: unknown = ''
+        }: { eventId?: string; groupId?: string } = {},
+        endpoint: string = ''
     ) => withEndpoint(['calendar', groupId, eventId], endpoint),
-    avatarGallery: (avatarId: unknown, endpoint: unknown = '') =>
+    avatarGallery: (avatarId: string, endpoint: string = '') =>
         withEndpoint(['avatar', avatarId, 'gallery'], endpoint),
     userInventoryItem: (
         {
             inventoryId = '',
             userId = ''
-        }: { inventoryId?: unknown; userId?: unknown } = {},
-        endpoint: unknown = ''
+        }: { inventoryId?: string; userId?: string } = {},
+        endpoint: string = ''
     ) => withEndpoint(['inventory', 'item', userId, inventoryId], endpoint),
-    inventoryTemplate: (inventoryTemplateId: unknown, endpoint: unknown = '') =>
+    inventoryTemplate: (inventoryTemplateId: string, endpoint: string = '') =>
         withEndpoint(['inventory', 'template', inventoryTemplateId], endpoint),
     fileAnalysis: (
         {
             fileId = '',
             version = 0,
             variant = ''
-        }: { fileId?: unknown; variant?: unknown; version?: unknown } = {},
-        endpoint: unknown = ''
-    ) =>
-        withEndpoint(
-            ['analysis', fileId, Number(version), String(variant || '')],
-            endpoint
-        ),
-    file: (fileId: unknown, endpoint: unknown = '') =>
+        }: { fileId?: string; variant?: string; version?: number } = {},
+        endpoint: string = ''
+    ) => withEndpoint(['analysis', fileId, version, variant], endpoint),
+    file: (fileId: string, endpoint: string = '') =>
         withEndpoint(['file', fileId], endpoint),
-    avatarStyles: (endpoint: unknown = '') =>
+    avatarStyles: (endpoint: string = '') =>
         withEndpoint(['avatar', 'styles'], endpoint),
-    representedGroup: (userId: unknown, endpoint: unknown = '') =>
+    representedGroup: (userId: string, endpoint: string = '') =>
         withEndpoint(['user', userId, 'representedGroup'], endpoint),
     userDialogTabCounts: (
-        params: EntityQueryParams = {},
-        endpoint: unknown = ''
+        params: UserDialogTabCountQueryParams,
+        endpoint: string = ''
     ) =>
         withEndpoint(
             ['user', params.userId, 'dialogTabCounts', stableParams(params)],
@@ -244,8 +257,8 @@ export const queryKeys = Object.freeze({
         {
             userId = '',
             worldId = ''
-        }: { userId?: unknown; worldId?: unknown } = {},
-        endpoint: unknown = ''
+        }: { userId?: string; worldId?: string } = {},
+        endpoint: string = ''
     ) => withEndpoint(['world', worldId, 'persistData', userId], endpoint)
 });
 

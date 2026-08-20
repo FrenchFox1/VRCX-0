@@ -7,7 +7,18 @@ export const FRIENDS_LOCATIONS_SEGMENTS = [
     },
     { value: 'active', labelKey: 'view.friends_locations.active' },
     { value: 'offline', labelKey: 'view.friends_locations.offline' }
-];
+] as const;
+
+export type FriendsLocationsSegment =
+    (typeof FRIENDS_LOCATIONS_SEGMENTS)[number]['value'];
+
+export function isFriendsLocationsSegment(
+    value: string
+): value is FriendsLocationsSegment {
+    return FRIENDS_LOCATIONS_SEGMENTS.some(
+        (segment) => segment.value === value
+    );
+}
 
 export function buildFriendsLocationsSegmentOptions(
     counts: Record<string, number>

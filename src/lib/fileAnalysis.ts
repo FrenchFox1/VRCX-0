@@ -47,13 +47,10 @@ function isAnalyzablePackage(
     unityPackage: unknown,
     sdkUnityVersion: string
 ): unityPackage is UnityPackage {
-    if (
-        !unityPackage ||
-        (typeof unityPackage !== 'object' && typeof unityPackage !== 'function')
-    ) {
+    if (!isRecord(unityPackage)) {
         return false;
     }
-    const source = unityPackage as UnityPackage;
+    const source = unityPackage;
     if (
         source.variant &&
         source.variant !== 'standard' &&

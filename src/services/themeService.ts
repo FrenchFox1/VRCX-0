@@ -146,6 +146,17 @@ type AppFontKey = keyof typeof APP_FONT_CONFIG;
 type AppCjkFontPackKey = keyof typeof APP_CJK_FONT_PACK_CONFIG;
 type ThemeColorStyleToken = keyof typeof THEME_COLOR_STYLE_PROPERTIES;
 
+function isAppFontKey(value: string): value is AppFontKey {
+    return Object.prototype.hasOwnProperty.call(APP_FONT_CONFIG, value);
+}
+
+function isAppCjkFontPackKey(value: string): value is AppCjkFontPackKey {
+    return Object.prototype.hasOwnProperty.call(
+        APP_CJK_FONT_PACK_CONFIG,
+        value
+    );
+}
+
 const THEME_COLOR_STYLE_ENTRIES: Array<[ThemeColorStyleToken, string]> = [
     ['primary', THEME_COLOR_STYLE_PROPERTIES.primary],
     ['primaryDark', THEME_COLOR_STYLE_PROPERTIES.primaryDark],
@@ -337,20 +348,15 @@ export function normalizeAppFontFamily(value: unknown): AppFontKey {
     const normalized = String(value || '')
         .trim()
         .toLowerCase();
-    return Object.prototype.hasOwnProperty.call(APP_FONT_CONFIG, normalized)
-        ? (normalized as AppFontKey)
-        : APP_FONT_DEFAULT_KEY;
+    return isAppFontKey(normalized) ? normalized : APP_FONT_DEFAULT_KEY;
 }
 
 export function normalizeAppCjkFontPack(value: unknown): AppCjkFontPackKey {
     const normalized = String(value || '')
         .trim()
         .toLowerCase();
-    return Object.prototype.hasOwnProperty.call(
-        APP_CJK_FONT_PACK_CONFIG,
-        normalized
-    )
-        ? (normalized as AppCjkFontPackKey)
+    return isAppCjkFontPackKey(normalized)
+        ? normalized
         : APP_CJK_FONT_PACK_DEFAULT_KEY;
 }
 

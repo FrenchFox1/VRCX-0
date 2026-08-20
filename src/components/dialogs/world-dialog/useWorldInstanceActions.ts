@@ -231,7 +231,7 @@ export function useWorldInstanceActions({
         ]).catch(() => {});
     }
 
-    function saveNewInstanceDisplayNamePreset(value: unknown) {
+    function saveNewInstanceDisplayNamePreset(value: string) {
         const normalized = normalizeInstanceDialogDisplayName(value);
         if (!normalized) {
             return;

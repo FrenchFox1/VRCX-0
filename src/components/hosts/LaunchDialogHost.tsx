@@ -82,10 +82,14 @@ type CreatedInstanceRecord = Record<string, unknown> & {
     $location?: { tag?: unknown };
 };
 
+function isCreatedInstanceRecord(
+    value: unknown
+): value is CreatedInstanceRecord {
+    return Boolean(value && typeof value === 'object');
+}
+
 function createdInstanceRecord(value: unknown): CreatedInstanceRecord | null {
-    return value && typeof value === 'object'
-        ? (value as CreatedInstanceRecord)
-        : null;
+    return isCreatedInstanceRecord(value) ? value : null;
 }
 
 function normalizeInstanceLocation(value: unknown) {

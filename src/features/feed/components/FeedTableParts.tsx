@@ -46,7 +46,11 @@ import {
     resolveFeedUserId,
     UNKNOWN_FEED_USER_DISPLAY_NAME
 } from '../feedRows';
-import type { FeedFriendActions, FeedRow } from '../feedTypes';
+import type {
+    FeedFriendActions,
+    FeedFriendActionTarget,
+    FeedRow
+} from '../feedTypes';
 import { FeedDetailCell } from './FeedDetailCell';
 import { FeedExpandedRow } from './FeedExpandedRow';
 
@@ -167,7 +171,7 @@ function FeedUserLink({
     const imageUrl = showAvatar
         ? userImage(displayUser || null, true, '64')
         : '';
-    const actionTarget = (friend || row) as FeedRow;
+    const actionTarget: FeedFriendActionTarget = friend || row;
 
     return (
         <ContextMenu>

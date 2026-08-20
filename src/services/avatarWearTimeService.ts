@@ -1,24 +1,10 @@
-import {
-    useRuntimeStore,
-    type CurrentUserSnapshotState
-} from '@/state/runtimeStore';
-
-type AvatarSnapshot = Record<string, unknown> & {
-    id?: string;
-    currentAvatar?: unknown;
-    $previousAvatarSwapTime?: unknown;
-};
+import { useRuntimeStore } from '@/state/runtimeStore';
 
 type AvatarWearSnapshotUpdateOptions = {
     previousSnapshot?: unknown;
     nextSnapshot?: unknown;
     isGameRunning?: boolean | null;
     now?: number;
-};
-
-type RuntimeAvatarSnapshot = CurrentUserSnapshotState & {
-    currentAvatar?: string;
-    $previousAvatarSwapTime?: number | null;
 };
 
 type TimerOptions = {
@@ -40,6 +26,10 @@ function normalizeTimestamp(value: unknown): number {
     return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : 0;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 function buildAvatarWearSnapshotUpdate({
     previousSnapshot,
     nextSnapshot,
@@ -48,12 +38,7 @@ function buildAvatarWearSnapshotUpdate({
 }: AvatarWearSnapshotUpdateOptions): {
     snapshot: unknown;
 } {
-    const next =
-        nextSnapshot && typeof nextSnapshot === 'object'
-            ? ({
-                  ...(nextSnapshot as Record<string, unknown>)
-              } as AvatarSnapshot)
-            : null;
+    const next = isRecord(nextSnapshot) ? { ...nextSnapshot } : null;
 
     if (!next) {
         return {
@@ -62,11 +47,9 @@ function buildAvatarWearSnapshotUpdate({
     }
 
     const previous =
-        previousSnapshot &&
-        typeof previousSnapshot === 'object' &&
-        normalizeAvatarId((previousSnapshot as AvatarSnapshot).id) ===
-            normalizeAvatarId(next.id)
-            ? (previousSnapshot as AvatarSnapshot)
+        isRecord(previousSnapshot) &&
+        normalizeAvatarId(previousSnapshot.id) === normalizeAvatarId(next.id)
+            ? previousSnapshot
             : null;
     const previousAvatarId = normalizeAvatarId(previous?.currentAvatar);
     const nextAvatarId = normalizeAvatarId(next.currentAvatar);
@@ -115,10 +98,7 @@ function buildAvatarWearSnapshotUpdate({
 
 function startCurrentAvatarWearTimer({ now = Date.now() }: TimerOptions = {}) {
     const runtimeStore = useRuntimeStore.getState();
-    const snapshot = runtimeStore.auth.currentUserSnapshot as
-        | RuntimeAvatarSnapshot
-        | null
-        | undefined;
+    const snapshot = runtimeStore.auth.currentUserSnapshot;
     if (!snapshot || typeof snapshot !== 'object') {
         return;
     }
@@ -136,10 +116,7 @@ async function stopCurrentAvatarWearTimer(
     _options: StopTimerOptions = {}
 ): Promise<void> {
     const runtimeStore = useRuntimeStore.getState();
-    const snapshot = runtimeStore.auth.currentUserSnapshot as
-        | RuntimeAvatarSnapshot
-        | null
-        | undefined;
+    const snapshot = runtimeStore.auth.currentUserSnapshot;
     if (!snapshot || typeof snapshot !== 'object') {
         return;
     }
@@ -158,10 +135,7 @@ function getCurrentAvatarLiveWearTime(
 ): number {
     const normalizedAvatarId = normalizeAvatarId(avatarId);
     const runtimeState = useRuntimeStore.getState();
-    const currentUserSnapshot = runtimeState.auth.currentUserSnapshot as
-        | AvatarSnapshot
-        | null
-        | undefined;
+    const currentUserSnapshot = runtimeState.auth.currentUserSnapshot;
     if (
         !normalizedAvatarId ||
         runtimeState.gameState.isGameRunning !== true ||

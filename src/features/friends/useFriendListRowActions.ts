@@ -183,7 +183,7 @@ export function useFriendListRowActions({
     ]);
 
     const setFriendDeleting = useCallback(
-        (userId: unknown, isDeleting: boolean) => {
+        (userId: string, isDeleting: boolean) => {
             const normalizedUserId = normalizeId(userId);
             if (!normalizedUserId) {
                 return;
@@ -202,7 +202,7 @@ export function useFriendListRowActions({
     );
 
     const toggleSelectedFriend = useCallback(
-        (userId: unknown) => {
+        (userId: string) => {
             const normalizedUserId = normalizeId(userId);
             if (!normalizedUserId) {
                 return;
@@ -221,7 +221,7 @@ export function useFriendListRowActions({
     );
 
     const deleteFriendById = useCallback(
-        async (userId: unknown) => {
+        async (userId: string) => {
             const normalizedUserId = normalizeId(userId);
             const friend =
                 useFriendRosterStore.getState().friendsById[normalizedUserId];

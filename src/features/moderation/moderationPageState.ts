@@ -107,13 +107,12 @@ export function sanitizeModerationColumnVisibility(
     value: unknown
 ): ColumnVisibilityState {
     const visibility: ColumnVisibilityState = {};
-    if (!value || typeof value !== 'object') {
+    if (!isRecord(value)) {
         return visibility;
     }
-    const source = value as Record<string, unknown>;
     for (const columnId of MODERATION_COLUMN_IDS) {
-        if (typeof source[columnId] === 'boolean') {
-            visibility[columnId] = source[columnId];
+        if (typeof value[columnId] === 'boolean') {
+            visibility[columnId] = value[columnId];
         }
     }
     return visibility;

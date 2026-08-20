@@ -418,15 +418,12 @@ export function useUserDialogSelfActions({
 
     async function setSelfProfileMediaField(
         fieldName: 'userIcon' | 'profilePicOverride',
-        fileId: unknown
+        fileId: string
     ) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle' || !profile) {
             return;
         }
-        const normalizedFileId =
-            typeof fileId === 'string'
-                ? fileId.trim()
-                : String(fileId ?? '').trim();
+        const normalizedFileId = fileId.trim();
         const nextValue = buildProfileMediaFileUrl(
             currentEndpoint,
             normalizedFileId

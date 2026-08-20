@@ -22,14 +22,16 @@ import {
 
 function normalizeFilters(
     filters: unknown,
-    allowedFilters: readonly string[]
+    allowedFilters: readonly GameLogFilterType[]
 ): GameLogFilterType[] {
     if (!Array.isArray(filters)) {
         return [];
     }
     return filters.filter(
-        (entry): entry is string =>
-            typeof entry === 'string' && allowedFilters.includes(entry)
+        (entry): entry is GameLogFilterType =>
+            typeof entry === 'string' &&
+            isGameLogFilterType(entry) &&
+            allowedFilters.includes(entry)
     );
 }
 

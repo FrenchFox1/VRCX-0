@@ -26,7 +26,11 @@ import {
     sanitizeMyAvatarsSorting,
     writePersistedMyAvatarsState
 } from './myAvatarsState';
-import type { MyAvatarsViewMode } from './myAvatarsTypes';
+import type {
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter,
+    MyAvatarsViewMode
+} from './myAvatarsTypes';
 
 export function useMyAvatarsTableState({
     deferredSearchQuery,
@@ -38,8 +42,8 @@ export function useMyAvatarsTableState({
 }: {
     deferredSearchQuery: string;
     filteredCount: number;
-    platformFilter: string;
-    releaseStatusFilter: string;
+    platformFilter: MyAvatarsPlatformFilter;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
     tagFilters: Set<string>;
     viewMode: MyAvatarsViewMode;
 }) {
@@ -215,7 +219,7 @@ export function useMyAvatarsTableState({
         );
     }
 
-    function handlePageSizeChange(value: unknown) {
+    function handlePageSizeChange(value: string) {
         const nextPageSize = resolveMyAvatarsPageSize(
             value,
             pageSizes,

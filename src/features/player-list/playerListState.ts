@@ -46,6 +46,10 @@ export function writePersistedPlayerListState(patch: Record<string, unknown>) {
     writePersistedTableState(PLAYER_LIST_STORAGE_KEY, patch);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object';
+}
+
 export function sanitizePlayerListSorting(value: unknown): SortingState {
     if (!Array.isArray(value)) {
         return DEFAULT_PLAYER_LIST_SORTING;
@@ -65,15 +69,14 @@ export function sanitizePlayerListColumnVisibility(
     value: unknown
 ): ColumnVisibilityState {
     const visibility: ColumnVisibilityState = {};
-    if (value && typeof value === 'object') {
-        const source = value as Record<string, unknown>;
-        for (const columnId of PLAYER_LIST_COLUMN_IDS) {
-            if (typeof source[columnId] === 'boolean') {
-                visibility[columnId] = source[columnId];
-            }
+    if (!isRecord(value)) {
+        return visibility;
+    }
+    for (const columnId of PLAYER_LIST_COLUMN_IDS) {
+        if (typeof value[columnId] === 'boolean') {
+            visibility[columnId] = value[columnId];
         }
     }
-
     return visibility;
 }
 

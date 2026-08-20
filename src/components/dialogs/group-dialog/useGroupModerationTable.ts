@@ -17,6 +17,10 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 const GROUP_MODERATION_DEFAULT_PAGE_SIZE = 25;
 const GROUP_MODERATION_DEFAULT_PAGE_SIZES = [10, 25, 50, 100];
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
+}
+
 function sanitizeSorting(
     value: unknown,
     columnIds: readonly string[]
@@ -25,8 +29,8 @@ function sanitizeSorting(
         return [];
     }
     return value.reduce<SortingState>((result, entry) => {
-        const id = (entry as { id?: unknown })?.id;
-        const desc = (entry as { desc?: unknown })?.desc;
+        const id = isRecord(entry) ? entry.id : undefined;
+        const desc = isRecord(entry) ? entry.desc : undefined;
         if (
             typeof id === 'string' &&
             typeof desc === 'boolean' &&

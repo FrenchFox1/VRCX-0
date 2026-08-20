@@ -61,8 +61,12 @@ import type {
     MediaPreviewOptions
 } from './components/MediaAssetTile';
 import { MediaLibraryToolbar } from './components/MediaLibraryToolbar';
-import { GALLERY_GRID_DENSITY_OPTIONS } from './galleryDensity';
-import type { getGalleryGridDensityConfig } from './galleryDensity';
+import {
+    GALLERY_GRID_DENSITY_OPTIONS,
+    sanitizeGalleryGridDensity,
+    type GalleryGridDensity,
+    type getGalleryGridDensityConfig
+} from './galleryDensity';
 import {
     CATEGORY_DEFINITIONS,
     CATEGORY_ORDER,
@@ -93,8 +97,8 @@ function GridSettingsMenu({
     gridDensity,
     onGridDensityChange
 }: {
-    gridDensity: string;
-    onGridDensityChange: (value: string) => void;
+    gridDensity: GalleryGridDensity;
+    onGridDensityChange: (value: GalleryGridDensity) => void;
 }) {
     const { t } = useTranslation();
 
@@ -125,7 +129,9 @@ function GridSettingsMenu({
                             value={gridDensity ? [gridDensity] : []}
                             onValueChange={(nextValue) => {
                                 if (nextValue[0]) {
-                                    onGridDensityChange(nextValue[0]);
+                                    onGridDensityChange(
+                                        sanitizeGalleryGridDensity(nextValue[0])
+                                    );
                                 }
                             }}
                             className="grid w-full grid-cols-3"

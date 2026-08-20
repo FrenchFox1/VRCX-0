@@ -119,7 +119,7 @@ export function useWorldDialogCurrentInstance({
                 .catch((): null => null),
             isCurrentLiveInstance
                 ? loadCurrentInstanceRoster({
-                      currentUserId,
+                      currentUserId: currentUserId || '',
                       currentLocation: normalizedWorldId,
                       runtime: {
                           currentLocation: currentResolvedLocation,

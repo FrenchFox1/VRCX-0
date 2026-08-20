@@ -36,6 +36,7 @@ import {
     isOfflineLikeValue,
     normalizedText
 } from './user-dialog/userDialogRows';
+import type { UserDialogLoadStatus } from './user-dialog/userDialogTabService';
 import { buildUserDialogProfileSummary } from './user-dialog/userDialogViewData';
 import { useUserDialogAvatarAuthorAction } from './user-dialog/useUserDialogAvatarAuthorAction';
 import { useUserDialogClipboardActions } from './user-dialog/useUserDialogClipboardActions';
@@ -150,6 +151,10 @@ const SELF_PANELS = ['profile-media', 'profile-decorations'] as const;
 const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<string, unknown>();
 type SelfPanel = '' | (typeof SELF_PANELS)[number];
 
+function isSelfPanel(value: string): value is Exclude<SelfPanel, ''> {
+    return SELF_PANELS.some((panel) => panel === value);
+}
+
 const VRC_PLUS_SUMMARY_SNAPSHOT = Object.freeze({ $isVRCPlus: true });
 
 function finiteTabCount(value: unknown) {
@@ -157,8 +162,11 @@ function finiteTabCount(value: unknown) {
     return Number.isFinite(count) && count >= 0 ? count : undefined;
 }
 
-function loadedTabCount(status: unknown, rows: unknown) {
-    return status === 'ready' && Array.isArray(rows) ? rows.length : undefined;
+function loadedTabCount(
+    status: UserDialogLoadStatus | undefined,
+    rows: readonly unknown[]
+) {
+    return status === 'ready' ? rows.length : undefined;
 }
 
 function resolveTabCount(primary: unknown, fallback: unknown) {
@@ -317,11 +325,8 @@ export function UserDialogTabbedView({
     });
 
     useEffect(() => {
-        if (
-            isCurrentUser &&
-            (SELF_PANELS as readonly string[]).includes(initialAction)
-        ) {
-            setSelfPanel(initialAction as SelfPanel);
+        if (isCurrentUser && isSelfPanel(initialAction)) {
+            setSelfPanel(initialAction);
         }
     }, [initialAction, isCurrentUser]);
 

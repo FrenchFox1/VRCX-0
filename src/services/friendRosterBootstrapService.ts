@@ -65,29 +65,26 @@ async function seedFriendRosterFromCurrentUserSnapshot({
 }
 
 function bootstrapTargetKey(
-    userId: unknown,
-    endpoint: unknown = '',
-    websocket: unknown = ''
+    userId: string,
+    endpoint: string = '',
+    websocket: string = ''
 ) {
     const normalizedUserId = normalizeUserId(userId);
-    const normalizedEndpoint = String(endpoint || '');
-    const normalizedWebsocket = String(websocket || '');
-    return `${normalizedUserId}\u0000${normalizedEndpoint}\u0000${normalizedWebsocket}`;
+    return `${normalizedUserId}\u0000${endpoint}\u0000${websocket}`;
 }
 
 function isCurrentBootstrapTarget(
-    userId: unknown,
-    endpoint: unknown = '',
-    websocket: unknown = null
+    userId: string,
+    endpoint: string = '',
+    websocket: string | null = null
 ) {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
-    const expectedWebsocket =
-        websocket === null ? null : String(websocket || '');
+    const expectedWebsocket = websocket;
 
     return (
         runtimeState.auth.currentUserId === userId &&
-        runtimeState.auth.currentUserEndpoint === String(endpoint || '') &&
+        runtimeState.auth.currentUserEndpoint === endpoint &&
         (expectedWebsocket === null ||
             runtimeState.auth.currentUserWebsocket === expectedWebsocket) &&
         sessionState.isLoggedIn &&
@@ -98,7 +95,7 @@ function isCurrentBootstrapTarget(
 async function runFriendBootstrap({
     userId,
     endpoint = '',
-    websocket = null,
+    websocket,
     currentUserSnapshot,
     preserveLoadedState = false
 }: FriendBootstrapOptions): Promise<FriendBootstrapResult> {

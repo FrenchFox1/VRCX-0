@@ -20,7 +20,6 @@ import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { normalizeBackgroundModeDelayMinutes } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { normalizeCheckedState } from './settingsValues';
 import type {
     SettingsActionPrefs,
     useSettingsPreferenceActions
@@ -78,7 +77,7 @@ type SettingsMaintenanceActionsDeps = {
     language?: string;
     mediaRepository: {
         cropAllPrints(path: string): Promise<unknown>;
-        getUgcPhotoLocation(path: unknown): Promise<string>;
+        getUgcPhotoLocation(path: string): Promise<string>;
     };
     prefs: SettingsPrefs;
     prompt: (options: SettingsPromptOptions) => Promise<SettingsDialogResult>;
@@ -434,8 +433,7 @@ export function createSettingsMaintenanceActions({
         await mediaRepository.cropAllPrints(ugcFolderPath);
         toast.success(t('view.settings.label.existing_saved_prints_cropped'));
     }
-    async function handleCropInstancePrintsChange(checked: unknown) {
-        const enabled = normalizeCheckedState(checked);
+    async function handleCropInstancePrintsChange(enabled: boolean) {
         const saved = await commit(
             () => setCropInstancePrintsPreference(enabled),
             () => {
@@ -462,8 +460,7 @@ export function createSettingsMaintenanceActions({
             });
         }
     }
-    async function handleGameLogDisabledChange(checked: unknown) {
-        const disabled = normalizeCheckedState(checked);
+    async function handleGameLogDisabledChange(disabled: boolean) {
         if (gameState.isGameRunning) {
             toast.error(t('message.gamelog.vrchat_must_be_closed'));
             return;
@@ -481,8 +478,7 @@ export function createSettingsMaintenanceActions({
             setGameLogPersistenceDisabledPreference(disabled)
         );
     }
-    async function handleFeedPersistenceDisabledChange(checked: unknown) {
-        const disabled = normalizeCheckedState(checked);
+    async function handleFeedPersistenceDisabledChange(disabled: boolean) {
         if (disabled) {
             const result = await confirm({
                 title: t('confirm.title'),
@@ -496,8 +492,9 @@ export function createSettingsMaintenanceActions({
             setFeedPersistenceDisabledPreference(disabled)
         );
     }
-    async function handleAvatarFeedPersistenceDisabledChange(checked: unknown) {
-        const disabled = normalizeCheckedState(checked);
+    async function handleAvatarFeedPersistenceDisabledChange(
+        disabled: boolean
+    ) {
         await savePreferenceValue(
             'avatarFeedPersistenceDisabled',
             disabled,

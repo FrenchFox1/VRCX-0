@@ -31,8 +31,10 @@ function isScreenshotThumbnailItem(
     return Boolean(
         value &&
         typeof value === 'object' &&
-        typeof (value as { path?: unknown }).path === 'string' &&
-        typeof (value as { fileName?: unknown }).fileName === 'string'
+        'path' in value &&
+        typeof value.path === 'string' &&
+        'fileName' in value &&
+        typeof value.fileName === 'string'
     );
 }
 

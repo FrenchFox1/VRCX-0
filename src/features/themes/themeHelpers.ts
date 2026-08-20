@@ -1,13 +1,21 @@
 import type { CommunityThemeManifest } from '@/domain/themes/types';
 import { links } from '@/shared/constants/link';
 import type { THEME_COLORS } from '@/shared/constants/themes';
+import type { ThemeMode } from '@/state/shellStore';
 
 export type ThemeSource = 'built-in' | 'background' | 'community';
 
-export const THEME_MODE_OPTIONS = ['system', 'light', 'dark'];
+export const THEME_MODE_OPTIONS = [
+    'system',
+    'light',
+    'dark'
+] as const satisfies readonly ThemeMode[];
 export const COMMUNITY_THEMES_REPOSITORY_URL = links.communityThemesRepository;
 
-export function themeModeLabel(themeMode: string, t: (key: string) => string) {
+export function themeModeLabel(
+    themeMode: ThemeMode,
+    t: (key: string) => string
+) {
     return t(`view.settings.appearance.appearance.theme_mode_${themeMode}`);
 }
 
