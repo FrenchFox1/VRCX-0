@@ -11,14 +11,17 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { GroupProfileRecord } from '@/domain/entities/group';
-import type { EntityRecord } from '@/domain/entities/shared';
+import type {
+    GroupGalleryPhotoRow,
+    GroupMemberRow,
+    GroupPostRecord,
+    GroupProfileRecord
+} from '@/domain/entities/group';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
@@ -32,13 +35,28 @@ import {
 } from './groupDialogUtils';
 import { GroupListState } from './GroupListState';
 
-type RowAction = (row: EntityRecord) => void;
+type GroupPostAction = (post: GroupPostRecord) => void;
 
 interface RowListActions {
     onPreviewImage?: (url: string, title: string) => void;
-    onEditPost?: RowAction;
-    onDeletePost?: RowAction;
+    onEditPost?: GroupPostAction;
+    onDeletePost?: GroupPostAction;
 }
+
+type RowListBaseProps = RowListActions & {
+    group?: GroupProfileRecord | null;
+    loading?: boolean;
+    error?: string;
+};
+
+type RowListProps =
+    | (RowListBaseProps & {
+          kind: 'posts';
+          rows: GroupPostRecord[];
+          canManagePosts?: boolean;
+      })
+    | (RowListBaseProps & { kind: 'members'; rows: GroupMemberRow[] })
+    | (RowListBaseProps & { kind: 'photos'; rows: GroupGalleryPhotoRow[] });
 
 function text(value: unknown): string {
     return typeof value === 'string' ? value : '';
@@ -101,7 +119,7 @@ function PostList({
     onEditPost,
     onDeletePost
 }: RowListActions & {
-    rows: EntityRecord[];
+    rows: GroupPostRecord[];
     group: GroupProfileRecord | null;
     canManagePosts: boolean;
 }) {
@@ -112,10 +130,13 @@ function PostList({
         <div className="flex flex-wrap items-start">
             {rows.map((post, index) => {
                 const image = getGroupRowRawImage(post);
-                const title = text(post.title) || 'Post';
+                const title = post.title || 'Post';
+                const postRoleNames = (post.roleIds ?? []).map(
+                    (roleId) => rolesById.get(roleId) || roleId
+                );
                 return (
                     <div
-                        key={text(post.id) || `${title}:${index}`}
+                        key={post.id || `${title}:${index}`}
                         className="box-border flex w-full items-center p-1.5 text-sm"
                     >
                         <div className="min-w-0 flex-1 overflow-hidden">
@@ -146,30 +167,20 @@ function PostList({
                                 </Button>
                             ) : null}
                             <pre className="text-muted-foreground inline-block align-top font-sans text-xs whitespace-pre-wrap">
-                                {text(post.text) || '—'}
+                                {post.text || '—'}
                             </pre>
                             <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                                {Array.isArray(post?.roleIds) &&
-                                post.roleIds.length ? (
+                                {postRoleNames.length ? (
                                     <span className="inline-flex items-center gap-1 truncate">
                                         <EyeIcon data-icon="inline-start" />
-                                        {post.roleIds
-                                            .map(
-                                                (roleId) =>
-                                                    rolesById.get(
-                                                        text(roleId)
-                                                    ) || text(roleId)
-                                            )
-                                            .join(', ')}
+                                        {postRoleNames.join(', ')}
                                     </span>
                                 ) : null}
-                                {text(post.createdAt) ? (
-                                    <span>{text(post.createdAt)}</span>
+                                {post.createdAt ? (
+                                    <span>{post.createdAt}</span>
                                 ) : null}
-                                {text(post.authorId) ? (
-                                    <PostAuthorButton
-                                        userId={text(post.authorId)}
-                                    />
+                                {post.authorId ? (
+                                    <PostAuthorButton userId={post.authorId} />
                                 ) : null}
                             </div>
                         </div>
@@ -205,7 +216,7 @@ function PostList({
 
 type GalleryEntry = {
     gallery: { id: string; name: string; description?: string };
-    rows: EntityRecord[];
+    rows: GroupGalleryPhotoRow[];
 };
 
 function PhotoGalleryRows({
@@ -214,7 +225,7 @@ function PhotoGalleryRows({
     error,
     onPreviewImage
 }: RowListActions & {
-    rows: EntityRecord[];
+    rows: GroupGalleryPhotoRow[];
     loading: boolean;
     error: string;
 }) {
@@ -338,24 +349,8 @@ function PhotoGalleryRows({
     );
 }
 
-export function RowList({
-    rows,
-    group = null,
-    kind = '',
-    loading = false,
-    error = '',
-    onPreviewImage,
-    canManagePosts = false,
-    onEditPost,
-    onDeletePost
-}: RowListActions & {
-    rows: EntityRecord[];
-    group?: GroupProfileRecord | null;
-    kind?: string;
-    loading?: boolean;
-    error?: string;
-    canManagePosts?: boolean;
-}) {
+export function RowList(props: RowListProps) {
+    const { kind, loading = false, error = '' } = props;
     if (loading) {
         return <GroupListState title={groupRowsEmptyTitle(kind)} loading />;
     }
@@ -364,45 +359,44 @@ export function RowList({
             <GroupListState title={groupRowsEmptyTitle(kind)} error={error} />
         );
     }
-    if (kind === 'photos') {
+    if (props.kind === 'photos') {
         return (
             <PhotoGalleryRows
-                rows={rows}
+                rows={props.rows}
                 loading={loading}
                 error={error}
-                onPreviewImage={onPreviewImage}
+                onPreviewImage={props.onPreviewImage}
             />
         );
     }
-    if (!rows.length) {
+    if (!props.rows.length) {
         return <GroupListState title={groupRowsEmptyTitle(kind)} />;
     }
-    if (kind === 'posts') {
+    if (props.kind === 'posts') {
         return (
             <PostList
-                rows={rows}
-                group={group}
-                onPreviewImage={onPreviewImage}
-                canManagePosts={canManagePosts}
-                onEditPost={onEditPost}
-                onDeletePost={onDeletePost}
+                rows={props.rows}
+                group={props.group ?? null}
+                onPreviewImage={props.onPreviewImage}
+                canManagePosts={props.canManagePosts ?? false}
+                onEditPost={props.onEditPost}
+                onDeletePost={props.onDeletePost}
             />
         );
     }
 
+    const group = props.group ?? null;
     return (
         <div className="flex flex-wrap items-start">
-            {rows.map((row, index) => {
+            {props.rows.map((row, index) => {
                 const label = getGroupRowLabel(row);
-                const image = getGroupRowImage(row, kind);
-                const user = isRecord(row.user) ? row.user : null;
+                const image = getGroupRowImage(row, 'members');
+                const user = row.user ?? null;
                 const memberUserId = text(row.userId || user?.id);
                 const rolesById = getGroupRoleNameMap(group);
-                const memberRoles = Array.isArray(row?.roleIds)
+                const memberRoles = Array.isArray(row.roleIds)
                     ? row.roleIds
-                          .map(
-                              (roleId) => rolesById.get(text(roleId)) || 'Role'
-                          )
+                          .map((roleId) => rolesById.get(roleId) || 'Role')
                           .filter(Boolean)
                     : [];
                 const subtitle = memberRoles.join(', ') || '';
@@ -413,10 +407,10 @@ export function RowList({
                         variant="ghost"
                         className="box-border h-auto w-44 justify-start p-1.5 text-left text-sm"
                         onClick={() => {
-                            if (kind === 'members' && memberUserId) {
+                            if (memberUserId) {
                                 openUserDialog({
                                     userId: memberUserId,
-                                    title: text(user?.displayName) || undefined,
+                                    title: user?.displayName || undefined,
                                     seedData: user
                                 });
                             }
@@ -442,24 +436,21 @@ export function RowList({
                                     {subtitle}
                                 </span>
                             ) : null}
-                            {kind === 'members' ? (
-                                <span className="text-muted-foreground flex items-center gap-1 truncate text-xs">
-                                    {row.isRepresenting ? (
-                                        <TagIcon data-icon="inline-start" />
-                                    ) : null}
-                                    {row.visibility &&
-                                    row.visibility !== 'visible' ? (
-                                        <EyeIcon data-icon="inline-start" />
-                                    ) : null}
-                                    {row.isSubscribedToAnnouncements ===
-                                    false ? (
-                                        <MessageSquareIcon data-icon="inline-start" />
-                                    ) : null}
-                                    {row.managerNotes ? (
-                                        <PencilIcon data-icon="inline-start" />
-                                    ) : null}
-                                </span>
-                            ) : null}
+                            <span className="text-muted-foreground flex items-center gap-1 truncate text-xs">
+                                {row.isRepresenting ? (
+                                    <TagIcon data-icon="inline-start" />
+                                ) : null}
+                                {row.visibility &&
+                                row.visibility !== 'visible' ? (
+                                    <EyeIcon data-icon="inline-start" />
+                                ) : null}
+                                {row.isSubscribedToAnnouncements === false ? (
+                                    <MessageSquareIcon data-icon="inline-start" />
+                                ) : null}
+                                {row.managerNotes ? (
+                                    <PencilIcon data-icon="inline-start" />
+                                ) : null}
+                            </span>
                         </span>
                     </Button>
                 );

@@ -1,5 +1,6 @@
 import { finiteLocationNumber } from '@/components/location/locationModel';
 import type { EntityRecord } from '@/domain/entities/shared';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import {
     isExplicitlyOfflineFriend,
     resolveObservedPlayerDwellEpochs,
@@ -47,7 +48,7 @@ type BuildWorldDialogDisplayInstanceRowsInput = {
     instanceRows: EntityRecord[];
     isInstanceLocation: boolean;
     normalizedWorldId: string;
-    world: EntityRecord & { id: string; capacity: number };
+    world: Pick<WorldProfileRecord, 'id' | 'capacity'>;
     worldDialogShortName?: string;
 };
 

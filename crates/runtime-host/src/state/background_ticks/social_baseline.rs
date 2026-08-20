@@ -1,11 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
-use serde_json::Value;
 use vrcx_0_application_core::BackgroundCapabilitySession;
 use vrcx_0_application_realtime::{
     build_favorites_baseline_from_friend_ids, build_synced_friend_roster_baseline,
-    RealtimeHostRuntime, SocialBaselineDeps, SocialFavoritesBaselineRequest,
-    SocialFriendRosterBaselineInput,
+    FavoriteBaselineSnapshot, RealtimeHostRuntime, SocialBaselineDeps,
+    SocialFavoritesBaselineRequest, SocialFriendRosterBaselineInput,
 };
 use vrcx_0_core::json::RawJson;
 
@@ -27,11 +26,11 @@ pub struct SocialBaselineRefreshOutput {
     pub stale: bool,
     pub friend_count: usize,
     pub friend_log_changed: bool,
-    pub favorites_snapshot: Option<Value>,
+    pub favorites_snapshot: Option<FavoriteBaselineSnapshot>,
 }
 
 pub(in crate::state) struct SocialBaselineFavoritesRefresh {
-    pub(in crate::state) snapshot: Value,
+    pub(in crate::state) snapshot: FavoriteBaselineSnapshot,
     pub(in crate::state) groups: HashMap<String, Vec<String>>,
 }
 
@@ -90,11 +89,7 @@ pub(in crate::state) async fn run_social_baseline_refresh_core(
             Ok(favorites_output.snapshot.map(|snapshot| {
                 let groups = favorite_group_membership_from_baseline(&snapshot);
                 authenticated_runtime.apply_favorites_snapshot(&snapshot);
-                let value = snapshot.into_value();
-                SocialBaselineFavoritesRefresh {
-                    snapshot: value,
-                    groups,
-                }
+                SocialBaselineFavoritesRefresh { snapshot, groups }
             }))
         }
         Err(error) => Err(error),

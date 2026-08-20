@@ -8,6 +8,7 @@ import {
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import type { UserProfileEntity } from '@/domain/entities/user';
+import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
@@ -132,7 +133,8 @@ export function GroupDialogTabbedView({
     const [groupEvents, setGroupEvents] = useState<GroupCalendarEventRecord[]>(
         []
     );
-    const [groupEventsStatus, setGroupEventsStatus] = useState('idle');
+    const [groupEventsStatus, setGroupEventsStatus] =
+        useState<LoadStatus>('idle');
     const [groupEventsError, setGroupEventsError] = useState('');
     const [search, setSearch] = useState<GroupDialogSearch>({
         posts: '',
@@ -803,11 +805,7 @@ export function GroupDialogTabbedView({
             loadAllMembers();
         },
         onMemberRoleChange: handleMemberRoleChange,
-        onMemberSortChange: (value) => {
-            if (value === 'joinedAt:asc' || value === 'joinedAt:desc') {
-                setMemberSort(value);
-            }
-        },
+        onMemberSortChange: setMemberSort,
         onOpenLink: openExternalLink,
         onOpenOwner: openGroupOwner,
         onOpenUser: handleOpenUser,

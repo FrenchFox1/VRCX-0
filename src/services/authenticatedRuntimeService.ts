@@ -136,19 +136,13 @@ function applyFavoritesStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
     const baseline = snapshot.favoritesBaseline?.snapshot;
     if (
         snapshot.favorites.status !== 'ready' ||
-        !isRecord(baseline) ||
+        !baseline ||
         appliedFavoritesRunId === snapshot.runId
     ) {
         return;
     }
 
-    useFavoriteStore.getState().setFavoritesSnapshot({
-        ...baseline,
-        detail:
-            typeof baseline.detail === 'string'
-                ? baseline.detail
-                : snapshot.favorites.detail
-    });
+    useFavoriteStore.getState().setFavoritesSnapshot(baseline);
     useSessionStore.getState().setFavoritesLoaded(true);
     appliedFavoritesRunId = snapshot.runId;
 }

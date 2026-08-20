@@ -46,6 +46,34 @@ export type GroupAnnouncementRecord = EntityRecord & {
     updatedAt?: string;
 };
 
+export type GroupPostRecord = GroupAnnouncementRecord & {
+    authorId?: string;
+    authorDisplayName?: string;
+    editorId?: string;
+    editorDisplayName?: string;
+    imageId?: string | null;
+    sendNotification?: boolean;
+    visibility?: string;
+};
+
+export type GroupGalleryFileRow = EntityRecord & {
+    approved?: boolean;
+    approvedAt?: string | null;
+    approvedByUserId?: string | null;
+    createdAt?: string;
+    fileId: string;
+    galleryId: string;
+    groupId: string;
+    id: string;
+    imageUrl?: string;
+    submittedByUserId?: string;
+};
+
+export type GroupGalleryPhotoRow = Partial<GroupGalleryFileRow> & {
+    $galleryId?: string;
+    $galleryName?: string;
+};
+
 export type GroupMemberUser = EntityRecord & {
     currentAvatarImageUrl: string;
     currentAvatarTags: string[];
@@ -214,9 +242,9 @@ export type GroupProfileRecord = EntityRecord & {
     onlineMemberCount: number;
     ownerId: string;
     ownerDisplayName: string;
-    gallery?: EntityRecord[];
-    photos?: EntityRecord[];
-    posts?: EntityRecord[];
+    gallery?: GroupGalleryPhotoRow[];
+    photos?: GroupGalleryPhotoRow[];
+    posts?: GroupPostRecord[];
     privacy: string;
     roles: GroupRoleRecord[];
     storeId?: string;
@@ -230,11 +258,11 @@ export type GroupProfileRecord = EntityRecord & {
 
 export type GroupDialogJson = {
     group: GroupProfileRecord;
-    posts: EntityRecord[];
+    posts: GroupPostRecord[];
     events: EntityRecord[];
     instances: GroupDialogInstanceRow[];
     members: GroupMemberRow[];
     galleries: GroupGallerySummary[];
-    photos: EntityRecord[];
+    photos: GroupGalleryPhotoRow[];
     activeInstances: GroupDialogInstanceRow[];
 };

@@ -9,6 +9,7 @@ import {
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { LoadStatus } from '@/domain/shared/types';
 import { formatDateTime } from '@/lib/dateTime';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
@@ -170,7 +171,7 @@ export function GroupEventSummary({
     onOpenEvents
 }: {
     events: GroupCalendarEventRecord[];
-    status: string;
+    status: LoadStatus;
     error: string;
     group: GroupProfileRecord;
     onOpenEvents: () => void;
@@ -253,7 +254,7 @@ export function GroupEventsTab({
     onToggleFollow
 }: {
     events: GroupCalendarEventRecord[];
-    status: string;
+    status: LoadStatus;
     error: string;
     group: GroupProfileRecord;
     onRefresh: () => void;

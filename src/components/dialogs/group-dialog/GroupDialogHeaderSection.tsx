@@ -44,11 +44,11 @@ import {
     EntityActionSub,
     EntityOverviewCard
 } from '../EntityDialogScaffold';
-import type { GroupRemoteStatus } from './groupDialogTypes';
+import type { GroupActionStatus, GroupRemoteStatus } from './groupDialogTypes';
 import { GroupTitleLanguages } from './GroupDialogViewParts';
 
 interface GroupHeaderModel {
-    actionStatus: string;
+    actionStatus: GroupActionStatus;
     canInviteToGroup: boolean;
     canJoin: boolean;
     canManagePosts: boolean;

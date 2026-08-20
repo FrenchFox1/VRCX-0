@@ -1,3 +1,4 @@
+import type { LoadStatus } from '@/domain/shared/types';
 import type {
     CurrentUserPresenceGameState,
     CurrentUserPresenceRecord
@@ -32,11 +33,7 @@ export type UserDialogAvatarRecord = Record<string, unknown> & {
     avatarName?: string | null;
 };
 
-export type UserDialogProfileLoadStatus =
-    | 'idle'
-    | 'running'
-    | 'ready'
-    | 'error';
+export type UserDialogProfileLoadStatus = LoadStatus;
 
 export type ActiveUserTarget = {
     userId: string;

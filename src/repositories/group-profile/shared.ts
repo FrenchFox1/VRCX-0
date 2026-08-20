@@ -1,5 +1,6 @@
 import type {
     GroupAuditLogRow,
+    GroupGalleryFileRow,
     GroupInstanceRecord,
     GroupMemberRow
 } from '@/domain/entities/group';
@@ -21,19 +22,6 @@ import {
 import { unwrapVrchatResponse } from '../vrchatRequest';
 
 export type GroupRecord = Record<string, unknown>;
-
-export type GroupGalleryFileRow = GroupRecord & {
-    approved?: boolean;
-    approvedAt?: string | null;
-    approvedByUserId?: string | null;
-    createdAt?: string;
-    fileId: string;
-    galleryId: string;
-    groupId: string;
-    id: string;
-    imageUrl?: string;
-    submittedByUserId?: string;
-};
 
 export type GroupUserGroupRow = GroupRecord & {
     bannerId?: string;
@@ -77,7 +65,7 @@ export type GroupModerationRow = Partial<GroupMemberRow> & {
 
 export type VrchatApiResult = HttpApiExecuteResponse;
 
-export type { CollectPagesOptions, PageRequest };
+export type { CollectPagesOptions, GroupGalleryFileRow, PageRequest };
 
 export interface GroupProfileInput {
     groupId?: string;

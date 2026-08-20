@@ -7,6 +7,7 @@ import {
     type SetStateAction
 } from 'react';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -60,7 +61,7 @@ type RepresentedGroupState = {
             typeof import('@/repositories/userProfileRepository').getRepresentedGroup
         >
     >;
-    status: 'idle' | 'running' | 'ready' | 'error';
+    status: LoadStatus;
     userId: string;
 };
 

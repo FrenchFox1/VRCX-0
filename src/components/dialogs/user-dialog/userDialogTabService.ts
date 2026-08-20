@@ -1,4 +1,5 @@
 import type { EntityRecord } from '@/domain/entities/shared';
+import type { RemoteTabStatus } from '@/domain/shared/types';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -25,7 +26,7 @@ export type UserDialogDataTab =
     | 'favorite-worlds'
     | 'avatars';
 
-export type UserDialogLoadStatus = '' | 'running' | 'ready' | 'error';
+export type UserDialogLoadStatus = RemoteTabStatus;
 export type UserDialogRemoteStatus = Partial<
     Record<UserDialogDataTab, UserDialogLoadStatus>
 >;

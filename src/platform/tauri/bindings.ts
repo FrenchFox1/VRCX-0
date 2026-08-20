@@ -5410,7 +5410,7 @@ export type SocialBaselineRefreshOutput = {
     stale: boolean;
     friendCount: number;
     friendLogChanged: boolean;
-    favoritesSnapshot: JsonValue | null;
+    favoritesSnapshot: FavoriteBaselineSnapshot | null;
 };
 export type SocialFavoritesBaselineInput = {
     userId?: string;

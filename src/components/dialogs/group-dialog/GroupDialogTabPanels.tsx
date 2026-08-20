@@ -671,19 +671,13 @@ export function GroupDialogTabPanels({
                             {
                                 value: 'joinedAt:asc',
                                 label: t('dialog.group.success.joined_oldest')
-                            },
-                            {
-                                value: 'user.displayName:asc',
-                                label: t('dialog.group.label.name_a_z')
-                            },
-                            {
-                                value: 'user.displayName:desc',
-                                label: t('dialog.group.label.name_z_a')
                             }
                         ]}
-                        onValueChange={(value) =>
-                            onMemberSortChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onMemberSortChange(value);
+                            }
+                        }}
                         disabled={remoteStatus.members === 'running'}
                     >
                         <SelectTrigger size="sm" className="w-44">
@@ -698,12 +692,6 @@ export function GroupDialogTabPanels({
                                 </SelectItem>
                                 <SelectItem value="joinedAt:asc">
                                     {t('dialog.group.success.joined_oldest')}
-                                </SelectItem>
-                                <SelectItem value="user.displayName:asc">
-                                    {t('dialog.group.label.name_a_z')}
-                                </SelectItem>
-                                <SelectItem value="user.displayName:desc">
-                                    {t('dialog.group.label.name_z_a')}
                                 </SelectItem>
                             </SelectGroup>
                         </SelectContent>

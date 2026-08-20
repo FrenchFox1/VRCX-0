@@ -91,9 +91,7 @@ export async function refreshFriendAndFavoriteSnapshots(
     }
 
     const result = await commands.appSocialBaselineRefresh();
-    const favoritesSnapshot = isRecord(result.favoritesSnapshot)
-        ? result.favoritesSnapshot
-        : null;
+    const favoritesSnapshot = result.favoritesSnapshot;
     if (!favoritesSnapshot) {
         return;
     }
@@ -108,10 +106,7 @@ export async function refreshFriendAndFavoriteSnapshots(
     ) {
         return;
     }
-    useFavoriteStore.getState().setFavoritesSnapshot({
-        ...favoritesSnapshot,
-        detail: String(favoritesSnapshot.detail || '')
-    });
+    useFavoriteStore.getState().setFavoritesSnapshot(favoritesSnapshot);
     useSessionStore.getState().setFavoritesLoaded(true);
 }
 
