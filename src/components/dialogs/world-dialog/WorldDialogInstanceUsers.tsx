@@ -24,6 +24,7 @@ import {
 import { timeToText } from '@/lib/dateTime';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { useKnownUserFact } from '@/lib/useKnownUser';
+import { useNowMs } from '@/lib/useNowMs';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
@@ -68,7 +69,11 @@ function instanceUserTravelingTimestamp(user: InstanceRosterRow) {
     );
 }
 
-function instanceUserSubtitle(user: InstanceRosterRow, t: Translate) {
+function instanceUserSubtitle(
+    user: InstanceRosterRow,
+    nowMs: number,
+    t: Translate
+) {
     if (user.$subtitle) {
         return user.$subtitle;
     }
@@ -84,7 +89,7 @@ function instanceUserSubtitle(user: InstanceRosterRow, t: Translate) {
         timestampFromValue(user.created_at) ||
         timestampFromValue(user.createdAt);
     if (timestamp) {
-        return timeToText(Date.now() - timestamp);
+        return timeToText(nowMs - timestamp);
     }
     return firstText(
         user.subtitle,
@@ -128,6 +133,7 @@ export function InstanceUserTiles({
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning === true
     );
+    const nowMs = useNowMs();
     const source = record(instance);
     const instanceLocation = firstText(source.location, source.tag);
     const fallbackJoinTimes = getSharedSameInstanceFallbackJoinTimes();
@@ -299,7 +305,7 @@ export function InstanceUserTiles({
                     userId,
                     'User'
                 );
-                const subtitle = instanceUserSubtitle(user, t);
+                const subtitle = instanceUserSubtitle(user, nowMs, t);
                 const travelingTimestamp = instanceUserTravelingTimestamp(user);
                 const isInstanceCreator = userId === creatorUserId;
                 const sharedFallbackEpoch =
@@ -333,7 +339,7 @@ export function InstanceUserTiles({
                                 role="presentation"
                                 className="mr-1 inline-block size-3"
                             />
-                            {timeToText(Date.now() - travelingTimestamp)}
+                            {timeToText(nowMs - travelingTimestamp)}
                         </>
                     );
                 } else {

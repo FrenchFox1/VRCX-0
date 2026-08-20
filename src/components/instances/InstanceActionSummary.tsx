@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
+import { useNowMs } from '@/lib/useNowMs';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -26,11 +27,12 @@ function disabledContentSettings(instance: InstanceActionRecord | null) {
 
 function InstanceOpenDuration({ joinedAtMs }: { joinedAtMs: number }) {
     const { t } = useTranslation();
+    const nowMs = useNowMs();
 
     return (
         <div>
             {t('dialog.instance.label.open_for_at_least', {
-                duration: timeToText(Date.now() - joinedAtMs)
+                duration: timeToText(nowMs - joinedAtMs)
             })}
         </div>
     );

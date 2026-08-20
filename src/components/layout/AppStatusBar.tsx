@@ -181,7 +181,7 @@ function formatStatusDate(value: string | null | undefined) {
 
 export function AppStatusBar() {
     const { t } = useTranslation();
-    const appStartedAtRef = useRef(Date.now());
+    const [appStartedAt] = useState(Date.now);
     const observedMutualGraphRunRef = useRef(0);
     const notifiedMutualGraphRunRef = useRef(0);
     const [visibility, setVisibility] = useState(DEFAULT_VISIBILITY);
@@ -757,7 +757,7 @@ export function AppStatusBar() {
     }
 
     const footer = {
-        appStartedAt: appStartedAtRef.current,
+        appStartedAt,
         clockPopoverOpen,
         currentLocationStartedTimestamp,
         currentWorld,

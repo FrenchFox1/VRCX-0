@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { useNowMs } from '@/lib/useNowMs';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
@@ -52,6 +53,7 @@ export function useUserHoverCardData({
     const [population, setPopulation] = useState<UserHoverCardPopulation>(null);
     const [populationLoading, setPopulationLoading] = useState(false);
     const [profileLoading, setProfileLoading] = useState(true);
+    const nowMs = useNowMs();
     const [worldProfile, setWorldProfile] = useState<Awaited<
         ReturnType<typeof worldProfileRepository.getWorldProfile>
     > | null>(null);
@@ -61,9 +63,9 @@ export function useUserHoverCardData({
             buildUserHoverCardModel({
                 seed: effectiveSeed,
                 profile,
-                nowMs: Date.now()
+                nowMs
             }),
-        [effectiveSeed, profile]
+        [effectiveSeed, nowMs, profile]
     );
 
     useEffect(() => {

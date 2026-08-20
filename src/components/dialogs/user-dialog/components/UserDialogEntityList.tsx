@@ -14,6 +14,7 @@ import { UserDetailTile } from '@/components/UserDetailTile';
 import type { EntityRecord } from '@/domain/entities/shared';
 import { resolveInstanceDwellEpoch } from '@/domain/instances/instanceRoster';
 import { timeToText } from '@/lib/dateTime';
+import { useNowMs } from '@/lib/useNowMs';
 import { cn } from '@/lib/utils';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -53,6 +54,7 @@ export function EntityList({
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning === true
     );
+    const nowMs = useNowMs({ active: kind === 'user' });
 
     if (loading) {
         return <EntityListState kind={kind} loading />;
@@ -63,8 +65,6 @@ export function EntityList({
     if (!rows.length) {
         return <EntityListState kind={kind} />;
     }
-
-    const nowMs = Date.now();
 
     return (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] items-start gap-1">
@@ -179,9 +179,7 @@ export function EntityList({
                                             data-icon="inline-start"
                                             className="mr-1 inline-block"
                                         />
-                                        {timeToText(
-                                            Date.now() - travelingTimestamp
-                                        )}
+                                        {timeToText(nowMs - travelingTimestamp)}
                                     </>
                                 ) : (
                                     subtitle || undefined
