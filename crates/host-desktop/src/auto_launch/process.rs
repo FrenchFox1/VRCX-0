@@ -7,6 +7,34 @@ use super::{
 
 const UNTRACKED_CLOSE_PROCESS_DENYLIST: &[&str] = &["steam", "steam.sh"];
 
+const PROTECTED_PROCESS_NAMES: &[&str] = &[
+    "csrss",
+    "ctfmon",
+    "dwm",
+    "explorer",
+    "fontdrvhost",
+    "lsass",
+    "logonui",
+    "runtimebroker",
+    "searchhost",
+    "services",
+    "shellexperiencehost",
+    "sihost",
+    "smss",
+    "startmenuexperiencehost",
+    "svchost",
+    "system",
+    "taskhostw",
+    "textinputhost",
+    "userinit",
+    "wininit",
+    "winlogon",
+];
+
+const PROTECTED_PROCESS_IDS: &[u32] = &[0, 4];
+
+const SHELL_LAUNCH_REUSE_SLACK_SECONDS: u64 = 2;
+
 #[cfg(any(windows, test))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ShellExecuteVerb {
@@ -215,6 +243,7 @@ fn shell_execute_local_app(
         hProcess: std::ptr::null_mut(),
     };
 
+    let launched_at = now_timestamp();
     let launched = unsafe { ShellExecuteExW(&mut info) };
     if launched == 0 {
         return Err(LaunchFailure::from_io(
@@ -232,7 +261,8 @@ fn shell_execute_local_app(
     unsafe {
         CloseHandle(info.hProcess);
     }
-    tracked_shell_process_id(target, pid, pid_error)
+    let tracked = tracked_shell_process_id(target, pid, pid_error)?;
+    Ok(tracked.filter(|pid| shell_launch_is_trackable(*pid, launched_at)))
 }
 
 #[cfg(any(windows, test))]
@@ -246,6 +276,30 @@ pub(super) fn tracked_shell_process_id(
     } else {
         Ok(Some(pid))
     }
+}
+
+#[cfg(windows)]
+fn shell_launch_is_trackable(pid: u32, launched_at: u64) -> bool {
+    let mut sys = System::new();
+    sys.refresh_processes(ProcessesToUpdate::Some(&[Pid::from_u32(pid)]), true);
+    let Some(process) = sys.process(Pid::from_u32(pid)) else {
+        return false;
+    };
+    shell_launch_pid_is_trackable(
+        &process.name().to_string_lossy(),
+        process.start_time(),
+        launched_at,
+    )
+}
+
+#[cfg(any(windows, test))]
+pub(super) fn shell_launch_pid_is_trackable(
+    process_name: &str,
+    process_start_time: u64,
+    launched_at: u64,
+) -> bool {
+    !is_protected_process_name(process_name)
+        && process_start_time.saturating_add(SHELL_LAUNCH_REUSE_SLACK_SECONDS) >= launched_at
 }
 
 #[cfg(windows)]
@@ -394,8 +448,8 @@ pub(super) fn stop_tracked_run(run: &mut AppLauncherRun) {
         all_pids.extend(find_child_pids_recursive(&sys, pid));
         all_pids.push(pid);
     }
-    all_pids.sort_unstable();
-    all_pids.dedup();
+    let mut seen_pids = HashSet::new();
+    all_pids.retain(|pid| seen_pids.insert(*pid));
 
     let untracked_matching_pids = process_pids_by_run_target(&sys, run)
         .into_iter()
@@ -541,7 +595,14 @@ fn process_exe_matches_run_target(process_exe: &str, run: &AppLauncherRun) -> bo
 
 fn should_close_untracked_process_name(process_name: &str) -> bool {
     let normalized = normalize_process_name(process_name);
-    !normalized.is_empty() && !UNTRACKED_CLOSE_PROCESS_DENYLIST.contains(&normalized.as_str())
+    !normalized.is_empty()
+        && !UNTRACKED_CLOSE_PROCESS_DENYLIST.contains(&normalized.as_str())
+        && !is_protected_process_name(&normalized)
+}
+
+pub(super) fn is_protected_process_name(process_name: &str) -> bool {
+    let normalized = normalize_process_name(process_name);
+    normalized.is_empty() || PROTECTED_PROCESS_NAMES.contains(&normalized.as_str())
 }
 
 pub(super) fn should_close_untracked_matching_processes(
@@ -561,7 +622,15 @@ fn kill_process_by_pid(
     failed_pids: &mut Vec<u32>,
     missing_pids: &mut Vec<u32>,
 ) {
+    if PROTECTED_PROCESS_IDS.contains(&pid) {
+        missing_pids.push(pid);
+        return;
+    }
     if let Some(process) = sys.process(Pid::from_u32(pid)) {
+        if is_protected_process_name(&process.name().to_string_lossy()) {
+            missing_pids.push(pid);
+            return;
+        }
         if process.kill() {
             killed_pids.push(pid);
         } else {
@@ -573,10 +642,19 @@ fn kill_process_by_pid(
 }
 
 fn find_child_pids_recursive(sys: &System, parent_pid: u32) -> Vec<u32> {
+    let Some(parent_start_time) = sys
+        .process(Pid::from_u32(parent_pid))
+        .map(sysinfo::Process::start_time)
+    else {
+        return Vec::new();
+    };
+
     let mut result = Vec::new();
     for (pid, process) in sys.processes() {
         if let Some(parent) = process.parent() {
-            if parent.as_u32() == parent_pid {
+            if parent.as_u32() == parent_pid
+                && child_start_time_matches_parent(process.start_time(), parent_start_time)
+            {
                 let child = pid.as_u32();
                 result.push(child);
                 result.extend(find_child_pids_recursive(sys, child));
@@ -584,6 +662,13 @@ fn find_child_pids_recursive(sys: &System, parent_pid: u32) -> Vec<u32> {
         }
     }
     result
+}
+
+pub(super) fn child_start_time_matches_parent(
+    child_start_time: u64,
+    parent_start_time: u64,
+) -> bool {
+    child_start_time >= parent_start_time
 }
 
 pub(super) fn now_timestamp() -> u64 {
