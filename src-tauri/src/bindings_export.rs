@@ -297,15 +297,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::player_list::app__instance_activity_dates_get,
             commands::local::player_list::app__instance_activity_rows_get,
             commands::local::player_list::app__world_summaries_get,
-            commands::local::activity::app__activity_self_source_bounds,
-            commands::local::activity::app__activity_self_sessions_refresh,
-            commands::local::activity::app__activity_sync_state_get,
-            commands::local::activity::app__activity_sync_state_upsert,
-            commands::local::activity::app__activity_sessions_get,
-            commands::local::activity::app__activity_sessions_replace,
-            commands::local::activity::app__activity_sessions_append,
-            commands::local::activity::app__activity_bucket_cache_get,
-            commands::local::activity::app__activity_bucket_cache_upsert,
             commands::local::activity::app__activity_view,
             commands::local::activity::app__activity_overlap_view,
             commands::local::mutual_graph::app__mutual_graph_snapshot_get,
@@ -614,7 +605,8 @@ pub fn export_bindings() -> Result<(), String> {
                 env!("CARGO_MANIFEST_DIR"),
                 "/../src/platform/tauri/bindings.ts"
             );
-            std::fs::write(path, patch_bindings(&raw))
+            let patched = patch_bindings(&raw)?;
+            std::fs::write(path, patched)
                 .map_err(|error| format!("write bindings.ts: {error}"))
         })
         .map_err(|error| format!("spawn export thread: {error}"))?
@@ -625,8 +617,9 @@ pub fn export_bindings() -> Result<(), String> {
 // Post-process the tauri-specta output to fit this app's frontend bridge:
 // - route the generated invoke through the repo error-logging wrapper,
 // - drop the placeholder `TAURI_CHANNEL` type and an unused Channel import,
-// - remove `any` from the generated event helper.
-fn patch_bindings(raw: &str) -> String {
+// - remove `any` from the generated event helper;
+// - fail before writing when the generated shape no longer satisfies these invariants.
+fn patch_bindings(raw: &str) -> Result<String, String> {
     let mut out: Vec<String> = Vec::new();
     let mut routed_invoke = false;
     for line in raw.lines() {
@@ -715,5 +708,79 @@ fn patch_bindings(raw: &str) -> String {
     }
     let mut result = out.join("\n");
     result.push('\n');
-    result
+    validate_patched_bindings(&result)?;
+    Ok(result)
+}
+
+fn validate_patched_bindings(result: &str) -> Result<(), String> {
+    let required_fragments = [
+        ("JsonValue unknown boundary", "export type JsonValue = unknown;"),
+        (
+            "generated invoke import",
+            r#"import { invoke as TAURI_INVOKE } from "./generatedInvoke";"#,
+        ),
+        (
+            "event record unknown boundary",
+            "function __makeEvents__<T extends Record<string, unknown>>(",
+        ),
+        (
+            "event proxy unknown boundary",
+            "return new Proxy((() => {}) as (...args: unknown[]) => unknown, {",
+        ),
+        (
+            "event object unknown boundary",
+            "get: (_, command: keyof __EventObj__<unknown>) => {",
+        ),
+        (
+            "window listen callback boundary",
+            "listen: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.listen<unknown>(name, arg),",
+        ),
+        (
+            "window once callback boundary",
+            "once: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.once<unknown>(name, arg),",
+        ),
+        (
+            "window emit boundary",
+            "emit: (arg: unknown) => window.emit(name, arg),",
+        ),
+        (
+            "event listen callback boundary",
+            "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.listen<unknown>(name, arg);",
+        ),
+        (
+            "event once callback boundary",
+            "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.once<unknown>(name, arg);",
+        ),
+        (
+            "event emit boundary",
+            "return (arg: unknown) => TAURI_API_EVENT.emit(name, arg);",
+        ),
+    ];
+    for (label, fragment) in required_fragments {
+        let count = result.matches(fragment).count();
+        if count != 1 {
+            return Err(format!(
+                "bindings patch invariant failed: expected exactly one {label}, found {count}"
+            ));
+        }
+    }
+
+    let forbidden_fragments = [
+        "invoke as TAURI_INVOKE,",
+        "Channel as TAURI_CHANNEL",
+        "export type TAURI_CHANNEL<TSend> = null",
+        "Record<string, any>",
+        "__EventObj__<any>",
+        "(arg: any)",
+        "as any",
+    ];
+    for fragment in forbidden_fragments {
+        if result.contains(fragment) {
+            return Err(format!(
+                "bindings patch invariant failed: generated output still contains {fragment:?}"
+            ));
+        }
+    }
+
+    Ok(())
 }

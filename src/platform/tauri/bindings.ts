@@ -962,63 +962,6 @@ export const commands = {
     ): Promise<Partial<{ [key in string]: WorldSummaryOutput }>> {
         return await TAURI_INVOKE('app__world_summaries_get', { worldIds });
     },
-    async appActivitySelfSourceBounds(): Promise<ActivitySelfSourceBoundsOutput> {
-        return await TAURI_INVOKE('app__activity_self_source_bounds');
-    },
-    async appActivitySelfSessionsRefresh(
-        input: ActivitySelfSessionsRefreshInput
-    ): Promise<ActivitySelfSessionsRefreshOutput> {
-        return await TAURI_INVOKE('app__activity_self_sessions_refresh', {
-            input
-        });
-    },
-    async appActivitySyncStateGet(
-        userId: string
-    ): Promise<ActivitySyncStateOutput | null> {
-        return await TAURI_INVOKE('app__activity_sync_state_get', { userId });
-    },
-    async appActivitySyncStateUpsert(
-        entry: ActivitySyncStateInput
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_sync_state_upsert', { entry });
-    },
-    async appActivitySessionsGet(
-        userId: string
-    ): Promise<ActivitySessionOutput[]> {
-        return await TAURI_INVOKE('app__activity_sessions_get', { userId });
-    },
-    async appActivitySessionsReplace(
-        userId: string,
-        sessions: ActivitySessionInput[]
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_sessions_replace', {
-            userId,
-            sessions
-        });
-    },
-    async appActivitySessionsAppend(
-        userId: string,
-        sessions: ActivitySessionInput[],
-        replaceFromStartAt: number | null
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_sessions_append', {
-            userId,
-            sessions,
-            replaceFromStartAt
-        });
-    },
-    async appActivityBucketCacheGet(
-        query: ActivityBucketCacheQueryInput
-    ): Promise<ActivityBucketCacheOutput | null> {
-        return await TAURI_INVOKE('app__activity_bucket_cache_get', { query });
-    },
-    async appActivityBucketCacheUpsert(
-        entry: ActivityBucketCacheInput
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_bucket_cache_upsert', {
-            entry
-        });
-    },
     async appActivityView(
         input: ActivityViewBuildInput
     ): Promise<ActivityViewOutput> {
@@ -2623,39 +2566,6 @@ export const commands = {
 /** user-defined types **/
 
 export type ActiveTurn = { turnId: string; status: TurnStatus };
-export type ActivityBucketCacheInput = {
-    ownerUserId: string;
-    targetUserId?: string;
-    rangeDays: JsonValue;
-    viewKind: ActivityViewKind;
-    excludeKey?: string;
-    bucketVersion?: JsonValue;
-    builtFromCursor?: string;
-    rawBuckets?: JsonValue;
-    normalizedBuckets?: JsonValue;
-    summary?: JsonValue;
-    builtAt?: string;
-};
-export type ActivityBucketCacheOutput = {
-    ownerUserId: string;
-    targetUserId: string;
-    rangeDays: number;
-    viewKind: ActivityViewKind;
-    excludeKey: string;
-    bucketVersion: number;
-    builtFromCursor: string;
-    rawBuckets: JsonValue;
-    normalizedBuckets: JsonValue;
-    summary: JsonValue;
-    builtAt: string;
-};
-export type ActivityBucketCacheQueryInput = {
-    ownerUserId: string;
-    targetUserId?: string;
-    rangeDays: JsonValue;
-    viewKind: ActivityViewKind;
-    excludeKey?: string;
-};
 export type ActivityOverlapViewBuildInput = {
     ownerUserId: string;
     currentUserId: string;
@@ -2678,51 +2588,6 @@ export type ActivityOverlapViewOutput = {
     builtFromCursor: string;
     builtAt: string;
 };
-export type ActivityRefreshMode = 'full' | 'incremental' | 'expand';
-export type ActivitySelfSessionsRefreshInput = {
-    userId: string;
-    mode: ActivityRefreshMode;
-    rangeDays?: JsonValue;
-    nowMs?: number | null;
-};
-export type ActivitySelfSessionsRefreshOutput = {
-    sync: ActivitySyncStateOutput;
-    sessions: ActivitySessionOutput[];
-    sourceCount: number;
-};
-export type ActivitySelfSourceBoundsOutput = {
-    firstCreatedAt: string;
-    lastCreatedAt: string;
-    count: number;
-};
-export type ActivitySessionInput = {
-    start?: JsonValue;
-    end?: JsonValue;
-    isOpenTail?: boolean;
-    sourceRevision?: string;
-};
-export type ActivitySessionOutput = {
-    start: number;
-    end: number;
-    isOpenTail: boolean;
-    sourceRevision: string;
-};
-export type ActivitySyncStateInput = {
-    userId?: string;
-    updatedAt?: string;
-    isSelf?: boolean;
-    sourceLastCreatedAt?: string;
-    pendingSessionStartAt?: JsonValue | null;
-    cachedRangeDays?: JsonValue;
-};
-export type ActivitySyncStateOutput = {
-    userId: string;
-    updatedAt: string;
-    isSelf: boolean;
-    sourceLastCreatedAt: string;
-    pendingSessionStartAt: JsonValue;
-    cachedRangeDays: number;
-};
 export type ActivityViewBuildInput = {
     ownerUserId: string;
     targetUserId: string;
@@ -2732,7 +2597,6 @@ export type ActivityViewBuildInput = {
     nowMs: number;
     forceRefresh: boolean;
 };
-export type ActivityViewKind = 'activity' | 'overlap';
 export type ActivityViewOutput = {
     rawBuckets: number[];
     normalizedBuckets: number[];
