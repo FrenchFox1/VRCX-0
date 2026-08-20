@@ -7,7 +7,7 @@ use crate::state::AppState;
 
 use vrcx_0_persistence::local_moderation::LocalModerationOutput;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_moderation_get(
     state: State<'_, AppState>,
@@ -22,7 +22,7 @@ pub fn app__local_moderation_get(
     .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_moderation_list(
     state: State<'_, AppState>,

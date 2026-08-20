@@ -20,7 +20,7 @@ pub fn app__browse_history_record(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__browse_history_query(
     state: State<'_, AppState>,
@@ -62,7 +62,7 @@ pub fn app__browse_history_clear(
     .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__browse_history_retention_days_get(state: State<'_, AppState>) -> Result<i64, AppError> {
     vrcx_0_persistence::browse_history::browse_history_retention_days_get(state.db.as_ref())

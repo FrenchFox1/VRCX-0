@@ -124,7 +124,7 @@ pub fn app__game_log_previous_instances_by_group_id(
     .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__game_log_previous_instances_by_world_id(
     state: State<'_, AppState>,

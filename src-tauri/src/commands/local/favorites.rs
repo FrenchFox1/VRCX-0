@@ -8,7 +8,7 @@ use crate::state::AppState;
 use vrcx_0_application::{FavoriteRow, LocalFavoriteSnapshot};
 use vrcx_0_application_core::FavoriteEntityKind;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_list(
     state: State<'_, AppState>,
@@ -19,7 +19,7 @@ pub fn app__favorite_list(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_local_snapshot(
     state: State<'_, AppState>,

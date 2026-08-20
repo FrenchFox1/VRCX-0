@@ -10,7 +10,7 @@ use vrcx_0_persistence::friends::{
     FriendLogHistoryQueryInput,
 };
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__friend_log_current_list(
     state: State<'_, AppState>,

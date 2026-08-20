@@ -7,7 +7,7 @@ use crate::state::AppState;
 
 use vrcx_0_persistence::config::{ConfigReadEntry, ConfigWriteEntry};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__config_list_values(
     state: State<'_, AppState>,

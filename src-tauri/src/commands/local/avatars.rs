@@ -80,7 +80,7 @@ pub fn app__avatar_history_clear(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_history_list(
     state: State<'_, AppState>,
@@ -126,13 +126,13 @@ pub fn app__avatar_tag_update_color(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tags_distinct(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     vrcx_0_persistence::avatars::avatar_tags_distinct(state.db.as_ref()).map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tags_get(
     state: State<'_, AppState>,
@@ -142,7 +142,7 @@ pub fn app__avatar_tags_get(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tags_list(state: State<'_, AppState>) -> Result<Vec<AvatarTagOutput>, AppError> {
     vrcx_0_persistence::avatars::avatar_tags_list(state.db.as_ref()).map_err(AppError::from)
@@ -197,7 +197,7 @@ pub fn app__avatar_time_spent_add(
     .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_time_spent_get(
     state: State<'_, AppState>,
@@ -208,7 +208,7 @@ pub fn app__avatar_time_spent_get(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_time_spent_list(
     state: State<'_, AppState>,

@@ -32,7 +32,7 @@ pub fn app__database_maintenance_broken_leave_entries_get(
     .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__database_maintenance_max_friend_log_number_get(
     state: State<'_, AppState>,

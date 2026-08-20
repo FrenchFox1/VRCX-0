@@ -10,7 +10,7 @@ use vrcx_0_application_game::PlayerListSnapshotOutput;
 use vrcx_0_persistence::player_list::InstanceActivityRowOutput;
 use vrcx_0_persistence::worlds::WorldSummaryOutput;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__player_list_current_snapshot(
     state: State<'_, AppState>,
@@ -29,7 +29,7 @@ pub fn app__player_list_current_snapshot(
     .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__instance_activity_dates_get(
     state: State<'_, AppState>,
@@ -61,7 +61,7 @@ pub fn app__instance_activity_rows_get(
     .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__world_summaries_get(
     state: State<'_, AppState>,

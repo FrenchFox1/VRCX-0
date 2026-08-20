@@ -9,7 +9,7 @@ use vrcx_0_persistence::memos::{
     AvatarMemoOutput, MemoSaveResult, UserMemoOutput, UserNoteOutput, WorldMemoOutput,
 };
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_get_avatar(
     state: State<'_, AppState>,
@@ -18,7 +18,7 @@ pub fn app__memo_get_avatar(
     vrcx_0_persistence::memos::memo_get_avatar(state.db.as_ref(), avatar_id).map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_get_user(
     state: State<'_, AppState>,
@@ -27,7 +27,7 @@ pub fn app__memo_get_user(
     vrcx_0_persistence::memos::memo_get_user(state.db.as_ref(), user_id).map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_get_world(
     state: State<'_, AppState>,
@@ -36,7 +36,7 @@ pub fn app__memo_get_world(
     vrcx_0_persistence::memos::memo_get_world(state.db.as_ref(), world_id).map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_list_user_notes(
     state: State<'_, AppState>,
@@ -46,7 +46,7 @@ pub fn app__memo_list_user_notes(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_list_users(state: State<'_, AppState>) -> Result<Vec<UserMemoOutput>, AppError> {
     vrcx_0_persistence::memos::memo_list_users(state.db.as_ref()).map_err(AppError::from)

@@ -18,7 +18,7 @@ pub struct StartupBootstrapSnapshot {
     pub system_culture: String,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__startup_bootstrap_snapshot_get(
     state: State<'_, AppState>,
