@@ -73,7 +73,7 @@ export function FeedColumnItem(props: FeedColumnItemProps) {
         timeDisplayMode
     } = props;
     const { t } = useTranslation();
-    const type = String(row?.type || '');
+    const type = row.type || '';
     const typeLabel = type ? t(`view.feed.filters.${type}`) : '';
     const showAvatar = densityConfig.showAvatar;
     const time = resolveFeedColumnTimeDisplay({

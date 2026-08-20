@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { firstNonNegativeLocationNumber } from '@/components/location/locationModel';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import {
     resolveObservedPlayerUserId,
     resolveObservedPlayerUserIds,
@@ -28,6 +29,7 @@ import {
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 
 import {
     buildCachedInstanceMap,
@@ -47,7 +49,7 @@ import {
 import { normalizeUserId } from './userProfileFields';
 
 const locationUserProfileFetchConcurrency = 4;
-const EMPTY_GROUP_INSTANCES: unknown[] = [];
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
 
 type UserDialogLocationPanelData = {
     location: unknown;
@@ -242,7 +244,7 @@ export function useUserDialogLocationPanel({
     reloadToken
 }: {
     currentEndpoint: string;
-    currentUserId: unknown;
+    currentUserId: string | null;
     currentUserSnapshot: Record<string, unknown> | null;
     gameState: UserDialogLocationGameState | null;
     groupInstancesState: Record<string, unknown>;
@@ -567,9 +569,8 @@ export function useUserDialogLocationPanel({
                             currentLocationPlayers: snapshotPlayers,
                             currentWorldName:
                                 playerSnapshot?.context?.worldName ||
-                                instance?.worldName ||
-                                locationMetadata.worldName ||
-                                ''
+                                normalizeString(instance?.worldName) ||
+                                normalizeString(locationMetadata.worldName)
                         });
                     }
 
@@ -712,7 +713,7 @@ export function useUserDialogLocationPanel({
         reloadToken
     ]);
 
-    function refreshLocationPanel(requestLocation: unknown): null {
+    function refreshLocationPanel(requestLocation: string): void {
         const activeLocation =
             presenceLocation || resolvePresenceLocation(profile);
         if (
@@ -720,11 +721,10 @@ export function useUserDialogLocationPanel({
             activeLocation &&
             !isSameLocationTag(requestLocation, activeLocation)
         ) {
-            return null;
+            return;
         }
 
         setLocationRefreshToken((value) => value + 1);
-        return null;
     }
 
     const inviteInstanceSnapshot = useMemo(() => {

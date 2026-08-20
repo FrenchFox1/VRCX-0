@@ -66,7 +66,7 @@ type SettingsTableLimitsDraft = {
     maxTableSize: string;
     searchLimit: string;
 };
-type PreferenceAction = () => unknown | Promise<unknown>;
+type PreferenceAction = () => void;
 type SettingsIntegrationBoolKey = Extract<
     keyof SettingsIntegrationPrefs,
     'translationAPI' | 'youtubeAPI'
@@ -316,8 +316,8 @@ export function useSettingsPageState() {
         ]
     );
 
-    function normalizeRecentActionCooldownMinutes(value: unknown) {
-        const parsed = Number.parseInt(String(value), 10);
+    function normalizeRecentActionCooldownMinutes(value: string) {
+        const parsed = Number.parseInt(value, 10);
         if (!Number.isFinite(parsed)) {
             return 60;
         }

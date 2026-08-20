@@ -11,6 +11,7 @@ import {
     sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 
 export { safeJsonParse };
 
@@ -44,10 +45,6 @@ export function readPersistedPlayerListState() {
 
 export function writePersistedPlayerListState(patch: Record<string, unknown>) {
     writePersistedTableState(PLAYER_LIST_STORAGE_KEY, patch);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object';
 }
 
 export function sanitizePlayerListSorting(value: unknown): SortingState {

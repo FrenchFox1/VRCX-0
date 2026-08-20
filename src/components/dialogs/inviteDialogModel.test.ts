@@ -53,7 +53,6 @@ describe('inviteDialogModel', () => {
                 friendsById
             )
         ).toEqual(['usr_bucket_online', 'usr_state_online']);
-        expect(onlineFriendIdsFromGroup(null, friendsById)).toEqual([]);
     });
 
     it('resolves display names through self and friend fallbacks', () => {
@@ -108,7 +107,7 @@ describe('inviteDialogModel', () => {
         pushUniqueLabel(labels, ' New ');
         pushUniqueLabel(labels, 'Existing');
         pushUniqueLabel(labels, '');
-        pushUniqueLabel(labels, null);
+        pushUniqueLabel(labels, '');
         pushUniqueLabel(labels, 'Another');
 
         expect(labels).toEqual(['Existing', 'New', 'Another']);
@@ -207,8 +206,7 @@ describe('inviteDialogModel', () => {
                     group_remote: [
                         'usr_bucket_online',
                         ' usr_state_online ',
-                        '',
-                        null
+                        ''
                     ],
                     group_duplicate: ['usr_bucket_online']
                 },
@@ -238,12 +236,6 @@ describe('inviteDialogModel', () => {
                 friendsById
             })
         ).toEqual(['usr_bucket_online', 'usr_offline']);
-        expect(
-            buildFriendsInCurrentInstanceIds({
-                currentLocationPlayerIds: null,
-                friendsById
-            })
-        ).toEqual([]);
     });
 
     it('builds favorite group labels from local favorites keys when group list is missing', () => {

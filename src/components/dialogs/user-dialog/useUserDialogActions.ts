@@ -66,7 +66,7 @@ type UseUserDialogActionsProps = {
     openGroupQuickModerationDialog?: () => void;
     moderationRevisionRef: MutableRefObject<number>;
     moderationState: ModerationState;
-    openNonce: unknown;
+    openNonce: number;
     profile: UserDialogProfileRecord | null;
     setActionStatus: Dispatch<SetStateAction<string>>;
     setAvatarOverrideState: Dispatch<SetStateAction<AvatarOverrideState>>;

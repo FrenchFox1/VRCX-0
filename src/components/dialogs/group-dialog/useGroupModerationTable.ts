@@ -12,14 +12,11 @@ import {
     sanitizeTableColumnVisibility,
     usePersistedDataTableLayout
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 const GROUP_MODERATION_DEFAULT_PAGE_SIZE = 25;
 const GROUP_MODERATION_DEFAULT_PAGE_SIZES = [10, 25, 50, 100];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function sanitizeSorting(
     value: unknown,

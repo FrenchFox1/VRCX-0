@@ -7,6 +7,7 @@ import {
     resolveObservedPlayerUserIds
 } from '@/domain/friends/sameInstanceFriends';
 import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
+import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
 import { applyInstanceDwellEpochs } from '@/domain/instances/instanceRoster';
 import {
     getVisibleKnownSizeRows,
@@ -61,9 +62,8 @@ type FriendsLocationsScrollMetrics = {
 };
 
 type FriendsLocationsGameState = InviteLocationGameState & {
-    currentLocationPlayerIds?: unknown;
-    currentLocationPlayers?: unknown;
-    isGameRunning?: unknown;
+    currentLocationPlayerIds?: readonly string[];
+    currentLocationPlayers?: readonly CurrentInstanceRosterPlayer[];
 };
 
 type FriendsLocationsCurrentUserSnapshot = InviteLocationCurrentUserSnapshot &
@@ -97,7 +97,13 @@ type FriendsLocationsFavoriteGroupDescriptor = {
 
 export type FriendsLocationsVirtualRow =
     | {
-          type: 'group-header' | 'header';
+          type: 'group-header';
+          key: string;
+          height: number;
+          section: FriendsLocationsSection;
+      }
+    | {
+          type: 'header';
           key: string;
           height: number;
           section: FriendsLocationsSection;

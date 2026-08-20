@@ -10,6 +10,8 @@ import {
     type ReleaseStatusFilter,
     type WorldSearchSort
 } from '@/platform/tauri/bindings';
+import type { AvatarProfileRecord } from '@/repositories/avatarProfileRepository';
+import { isRecord } from '@/shared/utils/record';
 
 import type {
     UserDialogWorldOrder,
@@ -28,13 +30,16 @@ export type UserDialogRemoteStatus = Partial<
     Record<UserDialogDataTab, UserDialogLoadStatus>
 >;
 
+type UserDialogAvatarSearchRow = EntityRecord &
+    Pick<AvatarProfileRecord, 'authorId'>;
+
 export type UserDialogRepositories = {
     avatarSearchProviderRepository: {
         getConfig(): Promise<{ enabled: boolean; selectedProvider: string }>;
         search(input: {
             provider: string;
             query: string;
-        }): Promise<{ avatars: unknown[] }>;
+        }): Promise<{ avatars: UserDialogAvatarSearchRow[] }>;
     };
     myAvatarRepository: {
         getMyAvatars(input: {
@@ -87,10 +92,6 @@ export type UserDialogTabCounts = {
     avatars?: number;
 };
 
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
-}
-
 function recordRows(value: unknown): EntityRecord[] {
     return Array.isArray(value) ? value.filter(isRecord) : [];
 }
@@ -103,7 +104,7 @@ const userDialogDataTabs = [
     'avatars'
 ] as const satisfies readonly UserDialogDataTab[];
 
-export function isUserDialogDataTab(tab: unknown): tab is UserDialogDataTab {
+export function isUserDialogDataTab(tab: string): tab is UserDialogDataTab {
     return userDialogDataTabs.some((candidate) => candidate === tab);
 }
 
@@ -238,8 +239,7 @@ export async function loadUserDialogTabData({
             });
         return {
             rows: response.avatars.filter(
-                (avatar): avatar is EntityRecord =>
-                    isRecord(avatar) && avatar.authorId === userId
+                (avatar) => avatar.authorId === userId
             ),
             favoriteWorldGroups: []
         };

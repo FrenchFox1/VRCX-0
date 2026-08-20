@@ -3,17 +3,17 @@ import { normalizeString } from '@/shared/utils/string';
 import { useNotificationStore } from '@/state/notificationStore';
 
 type SharedFeedNotificationEntry = Record<string, unknown> & {
-    type?: unknown;
-    userId?: unknown;
-    displayName?: unknown;
-    worldName?: unknown;
-    avatarName?: unknown;
-    videoName?: unknown;
-    notyName?: unknown;
-    message?: unknown;
-    status?: unknown;
-    statusDescription?: unknown;
-    trustLevel?: unknown;
+    type?: string;
+    userId?: string;
+    displayName?: string;
+    worldName?: string;
+    avatarName?: string;
+    videoName?: string;
+    notyName?: string;
+    message?: string;
+    status?: string;
+    statusDescription?: string;
+    trustLevel?: string;
 };
 
 export async function pushSharedFeedNotification(

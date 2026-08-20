@@ -26,7 +26,7 @@ interface UseWorldDialogOwnerActionsInput {
     confirm: RuntimeState['confirm'];
     currentEndpoint: string;
     currentUserId: string | null;
-    isCurrentWorldTarget: (worldId: unknown, endpoint: string) => boolean;
+    isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
     prompt: RuntimeState['prompt'];
     setActionStatus: Dispatch<SetStateAction<string>>;
     setHasPersistData: Dispatch<SetStateAction<boolean>>;

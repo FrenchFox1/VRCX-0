@@ -186,7 +186,7 @@ export interface UserHeaderCommands {
     onInviteRequestMessage: () => void;
     onInviteToGroup: () => void;
     onModeration: (type: ModerationType, enabled: boolean) => void;
-    onOpenDiscordProfile: (discordId: unknown) => void | Promise<void>;
+    onOpenDiscordProfile: (discordId: string) => void | Promise<void>;
     onOpenFallbackAvatar: () => void;
     onOpenImagePreview: (options?: Record<string, unknown>) => void;
     onOpenUserIcon: () => void;

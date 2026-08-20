@@ -1,7 +1,9 @@
+import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
+import type { TrustColorMap } from '@/shared/utils/trustColors';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
@@ -23,8 +25,8 @@ import {
 type FriendCommandsView = {
     onOpenFriend: (friend: SidebarFriendRecord) => void;
     onToggleSection: (id: FriendsSidebarGroupKey) => void;
-    onLaunch?: (location: unknown) => void;
-    onSelfInvite?: (location: unknown) => void;
+    onLaunch?: (location: string) => void;
+    onSelfInvite?: (location: string) => void;
     onInvite?: (friend: SidebarFriendRecord) => void;
     onRequestInvite?: (friend: SidebarFriendRecord) => void;
     onBoop?: (friend: SidebarFriendRecord) => void;
@@ -46,34 +48,31 @@ type AppearanceView = {
     randomUserColours?: boolean;
     recentActionVersion?: number;
     showInstanceIdInLocation?: boolean;
-    trustColor?: unknown;
+    trustColor?: TrustColorMap;
 };
 
 type LocationView = {
-    locationMetadataByKey: Map<
-        unknown,
-        Record<string, unknown> | null | undefined
-    >;
+    locationMetadataByKey: Map<string, LocationMetadata>;
 };
 
 type StatusCommandsView = {
     statusPresets?: StatusPreset[];
-    onChangeStatus?: (status: UserStatus) => unknown;
-    onSetStatusDescription?: (statusDescription: string) => unknown;
-    onEditSocialStatus?: () => unknown;
-    onApplyStatusPreset?: (preset: StatusPreset) => unknown;
+    onChangeStatus?: (status: UserStatus) => void;
+    onSetStatusDescription?: (statusDescription: string) => void;
+    onEditSocialStatus?: () => void;
+    onApplyStatusPreset?: (preset: StatusPreset) => void;
 };
 
 function FavoriteGroupHeaderRow({
     label,
     count
 }: {
-    label?: unknown;
+    label?: string;
     count?: number;
 }) {
     return (
         <div className="text-muted-foreground flex w-full items-center px-1.5 py-1 text-left text-xs">
-            {String(label || '')} - {count || 0}
+            {label || ''} - {count || 0}
         </div>
     );
 }
@@ -83,7 +82,7 @@ function SidebarMessageRow({
     text
 }: {
     className?: string;
-    text?: unknown;
+    text?: string;
 }) {
     return (
         <div
@@ -92,7 +91,7 @@ function SidebarMessageRow({
                 className
             )}
         >
-            {String(text || '')}
+            {text || ''}
         </div>
     );
 }
@@ -122,7 +121,7 @@ function FriendVirtualRow({
 }: {
     appearance: AppearanceView;
     friend: SidebarFriendRecord;
-    metadataKey?: unknown;
+    metadataKey?: string;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
     friendCommands: FriendCommandsView;
@@ -223,7 +222,7 @@ function FriendsSidebarVirtualRow({
                     location={row.location}
                     count={row.count}
                     isCurrentInstance={row.isCurrentInstance}
-                    metadata={location.locationMetadataByKey.get(row.key)}
+                    metadata={location.locationMetadataByKey.get(row.key ?? '')}
                     showInstanceIdInLocation={
                         appearance.showInstanceIdInLocation
                     }

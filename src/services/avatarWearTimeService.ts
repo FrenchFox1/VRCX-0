@@ -1,3 +1,4 @@
+import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type AvatarWearSnapshotUpdateOptions = {
@@ -12,7 +13,7 @@ type TimerOptions = {
 };
 
 type StopTimerOptions = TimerOptions & {
-    fallbackStartedAt?: unknown;
+    fallbackStartedAt?: number;
 };
 
 function normalizeAvatarId(value: unknown): string {
@@ -24,10 +25,6 @@ function normalizeAvatarId(value: unknown): string {
 function normalizeTimestamp(value: unknown): number {
     const timestamp = Number(value);
     return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : 0;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function buildAvatarWearSnapshotUpdate({
@@ -130,8 +127,8 @@ async function stopCurrentAvatarWearTimer(
 }
 
 function getCurrentAvatarLiveWearTime(
-    avatarId: unknown,
-    baseTimeSpent: unknown = 0
+    avatarId: string,
+    baseTimeSpent = 0
 ): number {
     const normalizedAvatarId = normalizeAvatarId(avatarId);
     const runtimeState = useRuntimeStore.getState();
@@ -142,17 +139,17 @@ function getCurrentAvatarLiveWearTime(
         normalizeAvatarId(currentUserSnapshot?.currentAvatar) !==
             normalizedAvatarId
     ) {
-        return Number(baseTimeSpent) || 0;
+        return baseTimeSpent || 0;
     }
 
     const startedAt = normalizeTimestamp(
         currentUserSnapshot?.$previousAvatarSwapTime
     );
     if (!startedAt) {
-        return Number(baseTimeSpent) || 0;
+        return baseTimeSpent || 0;
     }
 
-    return (Number(baseTimeSpent) || 0) + Math.max(0, Date.now() - startedAt);
+    return (baseTimeSpent || 0) + Math.max(0, Date.now() - startedAt);
 }
 
 export {

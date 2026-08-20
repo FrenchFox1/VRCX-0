@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -11,7 +12,7 @@ import {
     USER_QUERY_MIN_LENGTH
 } from './quickSearchResultModel';
 
-const EMPTY_GROUP_INSTANCES: unknown[] = [];
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
 
 export function useQuickSearchResults({
     currentEndpoint,

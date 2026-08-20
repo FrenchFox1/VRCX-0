@@ -17,8 +17,19 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import type { Button } from '@/ui/shadcn/button';
+import type { InputGroupButton } from '@/ui/shadcn/input-group';
 
 import type { WorldInstanceAccessType } from './worldNewInstanceTypes';
+
+type ButtonMockProps = PropsWithChildren<
+    ButtonHTMLAttributes<HTMLButtonElement> &
+        Pick<ComponentProps<typeof Button>, 'size' | 'variant'>
+>;
+type InputGroupButtonMockProps = PropsWithChildren<
+    ButtonHTMLAttributes<HTMLButtonElement> &
+        Pick<ComponentProps<typeof InputGroupButton>, 'size'>
+>;
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
@@ -30,12 +41,7 @@ vi.mock('@/ui/shadcn/button', () => ({
         variant: _variant,
         size: _size,
         ...props
-    }: PropsWithChildren<
-        ButtonHTMLAttributes<HTMLButtonElement> & {
-            size?: unknown;
-            variant?: unknown;
-        }
-    >) => <button {...props}>{children}</button>
+    }: ButtonMockProps) => <button {...props}>{children}</button>
 }));
 
 vi.mock('@/ui/shadcn/checkbox', () => ({
@@ -95,9 +101,7 @@ vi.mock('@/ui/shadcn/input-group', async () => {
             children,
             size: _size,
             ...props
-        }: PropsWithChildren<
-            ButtonHTMLAttributes<HTMLButtonElement> & { size?: unknown }
-        >) => <button {...props}>{children}</button>,
+        }: InputGroupButtonMockProps) => <button {...props}>{children}</button>,
         InputGroupInput: (props: InputHTMLAttributes<HTMLInputElement>) => (
             <input {...props} />
         )

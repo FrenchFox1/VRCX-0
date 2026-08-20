@@ -17,6 +17,7 @@ import {
     RECENT_WINDOW_MS,
     shouldMarkSeenRemotely
 } from '@/shared/utils/notificationSeen';
+import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
@@ -70,10 +71,6 @@ function normalizeNotificationIds(value: string | string[]): string[] {
     return (Array.isArray(value) ? value : [value])
         .map((entry) => normalizeNotificationId(entry))
         .filter(Boolean);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function nonEmptyNotificationPatch(

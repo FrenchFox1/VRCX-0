@@ -17,6 +17,7 @@ import favoritePersistenceRepository from '@/repositories/favoritePersistenceRep
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { persistAvatarDetails } from '@/services/favoriteAvatarCacheService';
 import { persistWorldDetails } from '@/services/favoriteWorldCacheService';
+import { isRecord } from '@/shared/utils/record';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
@@ -38,7 +39,7 @@ const EMPTY_FAVORITES: FavoriteGroupMap = {};
 
 type FavoriteActionMenuProps = {
     kind: FavoriteKind;
-    entityId: unknown;
+    entityId: string;
     entity?: unknown;
     label?: string;
     iconOnly?: boolean;
@@ -50,13 +51,9 @@ function normalizeEntityId(value: unknown) {
         : String(value ?? '').trim();
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
 export function resolveFavoriteEntityLabel(
     entity: unknown,
-    entityId: unknown
+    entityId: string
 ): string {
     const normalizedEntityId = normalizeEntityId(entityId);
     if (!isRecord(entity)) {
@@ -190,7 +187,7 @@ export function FavoriteActionMenu({
 }: FavoriteActionMenuProps) {
     const { t } = useTranslation();
 
-    const normalizedEntityId = normalizeEntityId(entityId);
+    const normalizedEntityId = entityId.trim();
     const entityLabel = resolveFavoriteEntityLabel(entity, normalizedEntityId);
     const confirm = useModalStore((state) => state.confirm);
     const groups = useFavoriteStore((state) => resolveGroups(kind, state));

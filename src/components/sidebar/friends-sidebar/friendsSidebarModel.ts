@@ -1,3 +1,4 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     getFriendsSortFunction,
@@ -5,6 +6,7 @@ import {
     type FriendSortItem,
     type FriendSortMethod
 } from '@/shared/utils/friend';
+import { isRecord } from '@/shared/utils/record';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 import {
     buildSameInstanceFriendGroups,
@@ -12,7 +14,12 @@ import {
     resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
-import type { FriendRecordInput } from '@/domain/friends/types';
+import type {
+    FriendProfileFields,
+    FriendRecordInput
+} from '@/domain/friends/types';
+import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
+import { timestampMsFromValue } from '@/shared/utils/dateTime';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
     locationSentinel,
@@ -20,41 +27,40 @@ import {
     resolveFriendPresenceLocation
 } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
-import { getTrustColor } from '@/shared/utils/trustColors';
+import { getTrustColor, type TrustColorMap } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
 
-export type SidebarFriendRecord = FriendRecordInput & {
-    $friendNumber?: number;
-    $lastSeen?: string | number;
-    $location_at?: string | number | null;
-    $online_for?: string | number;
-    $userColour?: string;
-    created_at?: string;
-    developerType?: string;
-    displayName?: string;
-    id?: string;
-    last_activity?: string | number;
-    last_login?: string | number;
-    location?: string;
-    memberCount?: number;
-    name?: string;
-    state?: string;
-    stateBucket?: string;
-    status?: string | null;
-    tags?: string[];
-    updated_at?: string;
-    username?: string;
-    activeFriends?: unknown[];
-    isFriend?: unknown;
-    offlineFriends?: unknown[];
-    onlineFriends?: unknown[];
-    pendingOffline?: unknown;
-    ref?: SidebarFriendRecord | null;
-    statusDescription?: unknown;
-    travelingToLocation?: unknown;
-    traveling_to_time?: unknown;
-    travelingToTime?: unknown;
-};
+export type SidebarFriendRecord = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        $friendNumber?: number;
+        $lastSeen?: string | number;
+        $location_at?: string | number | null;
+        $online_for?: string | number;
+        $userColour?: string;
+        created_at?: string;
+        developerType?: string;
+        displayName?: string;
+        id?: string;
+        last_activity?: string | number;
+        last_login?: string | number;
+        location?: string;
+        memberCount?: number;
+        name?: string;
+        state?: string;
+        stateBucket?: string;
+        tags?: string[];
+        updated_at?: string;
+        username?: string;
+        activeFriends?: string[];
+        isFriend?: boolean;
+        offlineFriends?: string[];
+        onlineFriends?: string[];
+        pendingOffline?: boolean;
+        ref?: SidebarFriendRecord | null;
+        travelingToLocation?: string | null;
+        traveling_to_time?: InstanceRosterTimestamp | null;
+        travelingToTime?: InstanceRosterTimestamp | null;
+    };
 
 export type SidebarPreferences = {
     isShowCurrentUserInSameInstance?: boolean;
@@ -72,17 +78,23 @@ export type SidebarPreferences = {
 export type LastLocationSnapshot = SameInstanceLastLocation;
 
 type FriendInstanceEpochSource = {
-    $location_at?: unknown;
-    $travelingToTime?: unknown;
-    locationAt?: unknown;
-    location_at?: unknown;
-    travelingToTime?: unknown;
-    traveling_to_time?: unknown;
+    $location_at?: InstanceRosterTimestamp | null;
+    $travelingToTime?: InstanceRosterTimestamp | null;
+    locationAt?: InstanceRosterTimestamp | null;
+    location_at?: InstanceRosterTimestamp | null;
+    travelingToTime?: InstanceRosterTimestamp | null;
+    traveling_to_time?: InstanceRosterTimestamp | null;
 };
 
 type SidebarStatusOptions = {
     hideNonFriend?: boolean;
     isGameRunning?: boolean | null;
+};
+
+type CurrentUserLocationSource = {
+    [key: string]: unknown;
+    location?: string | null;
+    $location?: { tag?: string | null } | null;
 };
 
 export type SameInstanceGroup = {
@@ -101,10 +113,6 @@ const observedJoinsByFallbackMap = new WeakMap<
     Map<string, number>,
     Map<string, SameInstanceObservedJoin>
 >();
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function locationProjection(value: unknown): Record<string, unknown> | null {
     return isRecord(value) ? value : null;
@@ -159,19 +167,7 @@ export function readFriendRefTravelingLocation(
     );
 }
 
-export function timestampMsFromValue(value: unknown) {
-    if (value === null || value === undefined || value === '') {
-        return 0;
-    }
-    const numberValue = Number(value);
-    if (Number.isFinite(numberValue) && numberValue > 0) {
-        return numberValue;
-    }
-    const parsed = Date.parse(String(value));
-    return Number.isFinite(parsed) ? parsed : 0;
-}
-
-export function clearStaleOfflineLocation(location: unknown, state: unknown) {
+export function clearStaleOfflineLocation(location: string, state: unknown) {
     const normalizedState = normalizeStateBucket(state);
     if (
         (normalizedState === 'online' || normalizedState === 'active') &&
@@ -182,18 +178,17 @@ export function clearStaleOfflineLocation(location: unknown, state: unknown) {
     return location;
 }
 
+export { timestampMsFromValue };
+
 export function buildFavoriteIdSet(
-    remoteFavoriteIds: readonly unknown[] | null | undefined,
-    localFriendFavorites: Record<string, unknown> | null | undefined
+    remoteFavoriteIds: readonly string[] | null | undefined,
+    localFriendFavorites: FavoriteGroupMap | null | undefined
 ) {
     const ids = new Set(
         (remoteFavoriteIds || []).map(normalizeId).filter(Boolean)
     );
     for (const values of Object.values(localFriendFavorites || {})) {
-        if (!Array.isArray(values)) {
-            continue;
-        }
-        for (const id of values || []) {
+        for (const id of values) {
             const normalized = normalizeId(id);
             if (normalized) {
                 ids.add(normalized);
@@ -205,7 +200,7 @@ export function buildFavoriteIdSet(
 
 export function resolveTrustNameColour(
     friend: SidebarFriendRecord | null | undefined,
-    trustColor: unknown
+    trustColor: TrustColorMap
 ) {
     if (!friend?.$trustClass && Array.isArray(friend?.tags)) {
         const trust = computeTrustLevel(
@@ -244,7 +239,7 @@ export function legacyStatusDotClassName(status: unknown) {
 }
 
 export function resolveCurrentUserStateBucket(
-    currentUser: SidebarFriendRecord | null | undefined
+    currentUser: CurrentUserLocationSource | null | undefined
 ) {
     const location = normalizeLocationStatus(
         currentUser?.location || locationProjection(currentUser?.$location)?.tag
@@ -471,7 +466,7 @@ export function readFriendInstanceEpoch(
 }
 
 export function sameInstanceFallbackKey(
-    locationTag: unknown,
+    locationTag: string,
     friend: SidebarFriendRecord
 ) {
     const friendId = normalizeId(friend?.id);

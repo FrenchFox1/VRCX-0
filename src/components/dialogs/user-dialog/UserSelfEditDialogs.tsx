@@ -56,7 +56,10 @@ import {
     normalizeLanguageKey,
     normalizeSelfStatusInput
 } from './userProfileFields';
-import type { SocialStatusDraft } from './useSelfStatusPresets';
+import type {
+    SocialStatusDraft,
+    SocialStatusPreset
+} from './useSelfStatusPresets';
 import type { ProfileDetailsDraft } from './useUserDialogSelfActions';
 
 type LanguageOption = { key: string; value: string };
@@ -64,12 +67,6 @@ type StatusOption = { value: UserStatus; label: string };
 type SocialStatusDialogController = ReturnType<
     typeof useCurrentUserSocialStatusDialog
 >['dialog'];
-
-function record(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object'
-        ? Object.fromEntries(Object.entries(value))
-        : {};
-}
 
 function normalizeLanguageComboboxValues(values: unknown) {
     const nextKeys: string[] = [];
@@ -112,7 +109,7 @@ export function UserSocialStatusDialog({
     setDraft: Dispatch<SetStateAction<SocialStatusDraft>>;
     statusHistoryRows: string[];
     statusOptions: StatusOption[];
-    statusPresets: unknown[];
+    statusPresets: SocialStatusPreset[];
     statusLabelByValue: ReadonlyMap<string, string>;
     onSavePreset: () => void;
     onRemovePreset: (index: number) => void;
@@ -305,13 +302,10 @@ export function UserSocialStatusDialog({
                         {statusPresets.length ? (
                             <div className="flex flex-wrap gap-2">
                                 {statusPresets.map((preset, index) => {
-                                    const presetRecord = record(preset);
                                     const presetStatus =
-                                        normalizeSelfStatusInput(
-                                            presetRecord.status
-                                        ) || 'active';
-                                    const presetDescription = String(
-                                        presetRecord.statusDescription || ''
+                                        preset.status || 'active';
+                                    const presetDescription = (
+                                        preset.statusDescription ?? ''
                                     ).slice(0, 32);
                                     const label =
                                         presetDescription ||

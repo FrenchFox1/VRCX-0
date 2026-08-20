@@ -110,12 +110,12 @@ describe('AvatarProfileRepository', () => {
                 authorId: ' usr_author '
             },
             {
-                cachedAvatar: { id: 'avtr_local' },
+                cachedAvatar: true,
                 localTags: [
                     { tag: ' favorite ', color: ' #123456 ' },
                     { tag: '', color: 'ignored' }
                 ],
-                timeSpent: '42',
+                timeSpent: 42,
                 memo: ' local memo '
             }
         );

@@ -2,6 +2,7 @@ import {
     DEFAULT_NAV_ICON_KEY,
     normalizeNavIconKey
 } from '@/shared/constants/navIcons';
+import { isRecord } from '@/shared/utils/record';
 
 const SYSTEM_TAB_FRIENDS = 'friends';
 const SYSTEM_TAB_GROUPS = 'groups';
@@ -97,10 +98,6 @@ function parseLayoutValue(value: unknown): unknown {
     } catch {
         return [];
     }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function normalizeSystemTab(

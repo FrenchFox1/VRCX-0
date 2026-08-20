@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -19,19 +20,14 @@ type RuntimeAuthTarget = {
 };
 
 type RefreshCurrentUserOptions = {
-    expectedUserId?: unknown;
-    expectedEndpoint?: unknown;
-    expectedWebsocket?: unknown;
-    overlayPatch?: unknown;
+    expectedUserId?: string;
+    expectedEndpoint?: string;
+    expectedWebsocket?: string;
 };
 
 type RefreshPlayerModerationsOptions = {
     isCurrent?: (() => boolean) | null;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function getRuntimeAuth(): RuntimeAuthSnapshot {
     const runtimeState = useRuntimeStore.getState();
@@ -45,19 +41,15 @@ function getRuntimeAuth(): RuntimeAuthSnapshot {
     };
 }
 
-function normalizeRuntimeAuthValue(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeRuntimeAuthValue(value: string | null | undefined) {
+    return value?.trim() ?? '';
 }
 
 export async function refreshCurrentUser({
     expectedUserId = '',
     expectedEndpoint = '',
-    expectedWebsocket = '',
-    overlayPatch = null
+    expectedWebsocket = ''
 }: RefreshCurrentUserOptions = {}): Promise<boolean | null> {
-    void overlayPatch;
     const auth = getRuntimeAuth();
     const target: RuntimeAuthTarget = {
         currentUserId: normalizeRuntimeAuthValue(

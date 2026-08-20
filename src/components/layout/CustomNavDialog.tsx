@@ -204,8 +204,8 @@ export function CustomNavDialog({
 
     function updateEntryIcon(
         index: number,
-        icon: unknown,
-        fallbackIcon: unknown
+        icon: string,
+        fallbackIcon: string
     ) {
         const normalizedIcon = normalizeNavIconKey(icon, fallbackIcon);
         setLocalLayout((current) =>
@@ -223,8 +223,8 @@ export function CustomNavDialog({
     function updateFolderChildIcon(
         folderIndex: number,
         itemIndex: number,
-        icon: unknown,
-        fallbackIcon: unknown
+        icon: string,
+        fallbackIcon: string
     ) {
         const normalizedIcon = normalizeNavIconKey(icon, fallbackIcon);
         updateFolderItems(folderIndex, (items) =>
@@ -391,12 +391,10 @@ export function CustomNavDialog({
 
     function moveItemToFolder(key: string, folderId: string) {
         const next = cloneLayout(localLayout);
-        const folder = findFolder(next, String(folderId));
+        const folder = findFolder(next, folderId);
         if (
             !folder ||
-            folder.items.some(
-                (item) => String(getFolderItemKey(item)) === String(key)
-            )
+            folder.items.some((item) => getFolderItemKey(item) === key)
         ) {
             return;
         }
@@ -406,11 +404,11 @@ export function CustomNavDialog({
         }
         folder.items.push(createFolderItem(removed.key, removed.icon || ''));
         setLocalLayout(next);
-        setJustMovedKey(String(key || ''));
+        setJustMovedKey(key);
     }
 
     function hideItem(key: string) {
-        const normalizedKey = String(key || '');
+        const normalizedKey = key;
         const result = removeKeyFromLayout(localLayout, key);
         setJustMovedKey(normalizedKey);
         setLocalLayout(result.layout);
@@ -433,7 +431,7 @@ export function CustomNavDialog({
     }
 
     function showItem(key: string) {
-        const normalizedKey = String(key || '');
+        const normalizedKey = key;
         const placement = hiddenPlacement.get(normalizedKey) || null;
         setJustMovedKey(normalizedKey);
         setLocalHiddenKeys((current) => {
@@ -561,10 +559,7 @@ export function CustomNavDialog({
     }
 
     async function editDashboard(key: string) {
-        const dashboardId = String(key || '').replace(
-            DASHBOARD_NAV_KEY_PREFIX,
-            ''
-        );
+        const dashboardId = key.replace(DASHBOARD_NAV_KEY_PREFIX, '');
         const dashboard = getDashboard(dashboardId);
         if (!dashboard) {
             return;
@@ -599,10 +594,7 @@ export function CustomNavDialog({
     }
 
     async function removeDashboard(key: string) {
-        const dashboardId = String(key || '').replace(
-            DASHBOARD_NAV_KEY_PREFIX,
-            ''
-        );
+        const dashboardId = key.replace(DASHBOARD_NAV_KEY_PREFIX, '');
         const result = await confirm({
             title: t('dashboard.confirmations.delete_title'),
             description: `${t('dashboard.confirmations.delete_description')} ${t('nav_menu.custom_nav.applies_immediately')}`,
@@ -673,8 +665,8 @@ export function CustomNavDialog({
                     onDragEnd={handleDragEnd}
                     onFolderIconChange={(
                         index: number,
-                        icon: unknown,
-                        fallbackIcon: unknown
+                        icon: string,
+                        fallbackIcon?: string
                     ) =>
                         updateEntryIcon(
                             index,

@@ -12,6 +12,8 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
+import type { LocationMetadata } from '@/components/location/useLocationMetadata';
+import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -23,6 +25,7 @@ import {
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useShellStore } from '@/state/shellStore';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -41,21 +44,8 @@ import {
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
 
-type SidebarLocationMetadata = Record<string, unknown> & {
-    groupName?: unknown;
-    instanceName?: unknown;
-    isClosed?: unknown;
-    region?: unknown;
-    worldName?: unknown;
-    worldNameHint?: unknown;
-};
-
 const FRIEND_INSTANCE_TIMER_FIRST_STEP_MS = 30_000;
 const FRIEND_INSTANCE_TIMER_STEP_MS = 60_000;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 function recordValue(value: unknown): Record<string, unknown> | null {
     return isRecord(value) ? value : null;
@@ -65,7 +55,7 @@ export function FriendInstanceTimer({
     epoch,
     traveling = false
 }: {
-    epoch?: unknown;
+    epoch?: InstanceRosterTimestamp | null;
     traveling?: boolean;
 }) {
     const timeUnitLabels = useShellStore((state) => state.timeUnitLabels);
@@ -128,12 +118,11 @@ function sidebarLocationTarget(location: unknown, traveling: unknown = '') {
 function friendLocationHint(
     displaySource: SidebarFriendRecord | null | undefined
 ) {
-    return (
+    return normalizeId(
         displaySource?.worldName ||
-        displaySource?.$worldName ||
-        displaySource?.travelingToWorld ||
-        displaySource?.$travelingToWorld ||
-        ''
+            displaySource?.$worldName ||
+            displaySource?.travelingToWorld ||
+            displaySource?.$travelingToWorld
     );
 }
 
@@ -143,15 +132,14 @@ function friendGroupHint(
     const location = recordValue(displaySource?.$location);
     const group = recordValue(location?.group);
     const sourceGroup = recordValue(displaySource?.group);
-    return (
+    return normalizeId(
         displaySource?.groupName ||
-        displaySource?.$groupName ||
-        location?.groupName ||
-        group?.name ||
-        group?.displayName ||
-        sourceGroup?.name ||
-        sourceGroup?.displayName ||
-        ''
+            displaySource?.$groupName ||
+            location?.groupName ||
+            group?.name ||
+            group?.displayName ||
+            sourceGroup?.name ||
+            sourceGroup?.displayName
     );
 }
 
@@ -230,14 +218,14 @@ function StaticLocationTooltip({
 }: {
     disabled?: boolean;
     content?: ReactNode;
-    children: ReactNode;
+    children: ReactElement;
 }) {
     if (disabled || !content) {
         return children;
     }
     return (
         <Tooltip>
-            <TooltipTrigger render={children as ReactElement} />
+            <TooltipTrigger render={children} />
             <TooltipContent>{content}</TooltipContent>
         </Tooltip>
     );
@@ -255,13 +243,13 @@ export function StaticSidebarLocation({
     ageGatedInstancesVisible = false,
     className = ''
 }: {
-    location?: unknown;
-    traveling?: unknown;
-    hint?: unknown;
+    location?: string | null;
+    traveling?: string | null;
+    hint?: string | null;
     link?: boolean;
     showGroupLink?: boolean;
     tooltips?: boolean;
-    metadata?: SidebarLocationMetadata | null;
+    metadata?: LocationMetadata | null;
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
     className?: string;
@@ -471,7 +459,7 @@ export function buildSidebarLocationMetadataEntry(row: SidebarVirtualRow) {
         key: row.key,
         locationInfo: parseLocation(locationState.metadataCurrentLocation),
         currentLocation: locationState.metadataCurrentLocation,
-        hint: locationState.metadataHint,
-        groupHint: locationState.metadataGroupHint
+        hint: normalizeId(locationState.metadataHint),
+        groupHint: normalizeId(locationState.metadataGroupHint)
     };
 }

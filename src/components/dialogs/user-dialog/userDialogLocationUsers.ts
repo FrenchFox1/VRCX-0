@@ -7,15 +7,16 @@ import {
     buildInstanceRosterRows,
     firstText,
     isSameInstanceLocation,
-    resolvePresenceLocation
+    resolvePresenceLocation,
+    type InstanceRosterTimestamp
 } from '@/domain/instances/instanceRoster';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
-const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<string, unknown>();
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
+const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<
+    string,
+    InstanceRosterTimestamp
+>();
 
 function shouldIncludeUserDialogLocationFriend({
     currentLocationMatches,
@@ -59,11 +60,11 @@ function filterVisibleUserDialogLocationUsers<TUser>({
     ownerId,
     users
 }: {
-    currentUserId: unknown;
+    currentUserId: string | null;
     friendsById: unknown;
     location?: unknown;
     memberUserIds?: ReadonlySet<string>;
-    ownerId?: unknown;
+    ownerId?: string;
     users: readonly TUser[];
 }): TUser[] {
     const friendDirectory =
@@ -106,8 +107,8 @@ export function buildUserDialogLocationUsers({
     t,
     visiblePresenceParsedLocation
 }: {
-    currentUserId: unknown;
-    dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
+    currentUserId: string | null;
+    dwellEpochsByUserId?: ReadonlyMap<string, InstanceRosterTimestamp>;
     friendsById: unknown;
     locationInstance: unknown;
     locationOwnerGroup: unknown;

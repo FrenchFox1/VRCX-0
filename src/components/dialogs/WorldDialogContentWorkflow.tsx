@@ -5,11 +5,11 @@ import { useNavigate } from 'react-router';
 
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
-import type { EntityRecord } from '@/domain/entities/shared';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
@@ -46,10 +46,6 @@ type WorldTagsDialogProps = ComponentProps<typeof WorldTagsDialog>;
 type WorldAllowedDomainsDialogProps = ComponentProps<
     typeof WorldAllowedDomainsDialog
 >;
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function WorldDialogEmptyState({
     title,
@@ -115,12 +111,11 @@ export function WorldDialogContentWorkflow({
     const handledInitialActionRef = useRef('');
 
     function isCurrentWorldTarget(
-        targetWorldId: unknown,
+        targetWorldId: string,
         targetEndpoint: string
     ) {
         return (
-            activeWorldTargetRef.current.worldId ===
-                normalizeEntityId(targetWorldId) &&
+            activeWorldTargetRef.current.worldId === targetWorldId.trim() &&
             activeWorldTargetRef.current.endpoint === targetEndpoint
         );
     }

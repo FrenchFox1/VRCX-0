@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
 import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
@@ -44,28 +45,28 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 
+import type { FriendLocationRecord } from '../friends-locations-rows/types';
 import type {
     FriendsLocationsCardContentMode,
     getFriendsLocationsDensityConfig
 } from '../friendsLocationsDensity';
 
-type FriendLocationCardSource = Record<string, unknown> & {
-    id?: unknown;
-    userId?: unknown;
-    location?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    status?: unknown;
-    pendingOffline?: unknown;
-    travelingToLocation?: unknown;
-    $travelingToLocation?: unknown;
-};
+type FriendLocationCardSource = Pick<
+    FriendLocationRecord,
+    | 'id'
+    | 'userId'
+    | 'location'
+    | 'state'
+    | 'stateBucket'
+    | 'status'
+    | 'travelingToLocation'
+    | '$travelingToLocation'
+> & { pendingOffline?: boolean };
 
 export type FriendLocationCardFriend = FriendRecord & {
     ref?: FriendLocationCardSource | null;
-    pendingOffline?: unknown;
-    travelingToLocation?: unknown;
-    $travelingToLocation?: unknown;
+    pendingOffline?: boolean;
+    travelingToLocation?: string | null;
 };
 
 export type FriendLocationCardDensity = Pick<
@@ -304,10 +305,10 @@ function resolveLineClampClass(lineClamp: number) {
 export interface FriendLocationCardLocationModel {
     label?: string;
     groupHint?: string;
-    raw?: unknown;
+    raw?: string | null;
     traveling?: boolean;
-    travelingTo?: unknown;
-    instanceEpoch?: unknown;
+    travelingTo?: string | null;
+    instanceEpoch?: number | string | null;
 }
 
 export interface FriendLocationCardPresentation {
@@ -433,7 +434,7 @@ export function FriendLocationCard({
     const showStatusDescription =
         contentMode !== 'identity' &&
         resolvedDensityConfig.showStatusDescription;
-    const hoverUserId = source?.id || friend?.id;
+    const hoverUserId = normalizeString(source?.id || friend?.id);
     const avatarNode = (
         <UserHoverCard userId={hoverUserId} seed={source}>
             <Avatar className="size-[var(--friend-card-avatar-size)]">

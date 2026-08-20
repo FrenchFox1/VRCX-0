@@ -12,8 +12,8 @@ export function useWorldDialogRuntimeState() {
     const currentHomeLocation = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot?.homeLocation || ''
     );
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const setAuthBootstrap = useRuntimeStore((state) => state.setAuthBootstrap);
     const confirm = useModalStore((state) => state.confirm);

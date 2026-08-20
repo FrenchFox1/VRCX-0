@@ -13,7 +13,9 @@ describe('moderationPageState', () => {
             id: 'pmod_shared',
             type: 'mute',
             sourceUserId: 'usr_source',
+            sourceDisplayName: 'Source User',
             targetUserId: 'usr_target',
+            targetDisplayName: 'Target User',
             created: '2026-07-08T02:07:00.000Z'
         };
         const muteChat = {

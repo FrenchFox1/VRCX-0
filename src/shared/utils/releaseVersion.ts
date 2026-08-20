@@ -45,7 +45,7 @@ function buildVersionInfo(
 export function parseReleaseVersion(
     version: string
 ): ReleaseVersionInfo | null {
-    const normalizedVersion = String(version || '').trim();
+    const normalizedVersion = version.trim();
     const match = RELEASE_VERSION_PATTERN.exec(normalizedVersion);
     if (!match?.groups) {
         return null;
@@ -70,10 +70,7 @@ export function parseReleaseVersion(
 }
 
 export function formatReleaseDisplayVersion(version: string): string {
-    return (
-        parseReleaseVersion(version)?.displayVersion ??
-        String(version || '').trim()
-    );
+    return parseReleaseVersion(version)?.displayVersion ?? version.trim();
 }
 
 export function compareReleaseVersions(

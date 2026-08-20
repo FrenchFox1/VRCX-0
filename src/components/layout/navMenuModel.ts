@@ -17,6 +17,7 @@ import {
     publishNavCustomizeRequested,
     publishNavLayoutUpdated
 } from '@/shared/events/navLayoutEvents';
+import { isRecord } from '@/shared/utils/record';
 
 type TranslateKey = (key: string) => string;
 
@@ -70,10 +71,6 @@ export type NavMenuModel = {
     defaultLayout: NavLayoutEntry[];
     menuItems: NavMenuItem[];
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 export const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
 export {

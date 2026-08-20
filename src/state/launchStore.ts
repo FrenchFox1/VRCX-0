@@ -1,17 +1,28 @@
 import { create } from 'zustand';
 
+interface LaunchCreatedInstance {
+    location: string;
+    shortName: string;
+    secureOrShortName: string;
+    accessType: string;
+    ownerId: string;
+    groupId: string;
+    group: unknown;
+    url: string;
+}
+
 interface LaunchDialogState {
     open: boolean;
     loading: boolean;
     tag: string;
     shortName: string;
     launchToken: string;
-    createdInstance: unknown;
+    createdInstance: LaunchCreatedInstance | null;
     worldName: string;
 }
 
 interface LaunchDialogOptions {
-    createdInstance?: unknown;
+    createdInstance?: LaunchCreatedInstance | null;
     worldName?: string;
 }
 
@@ -74,4 +85,9 @@ export const useLaunchStore = create<LaunchStoreState>((set) => ({
         }));
     }
 }));
-export type { LaunchDialogOptions, LaunchDialogState, LaunchStoreState };
+export type {
+    LaunchCreatedInstance,
+    LaunchDialogOptions,
+    LaunchDialogState,
+    LaunchStoreState
+};

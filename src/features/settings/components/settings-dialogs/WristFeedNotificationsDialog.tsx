@@ -74,7 +74,7 @@ type WristFeedNotificationsDialogProps = {
     onSave(
         value: OverlayActivityFiltersPreference,
         definitions: OverlayActivityTypeDefinition[]
-    ): Promise<unknown>;
+    ): Promise<OverlayActivityFiltersPreference | null | undefined>;
 };
 
 type NotificationProfileDialogProps = {
@@ -84,10 +84,22 @@ type NotificationProfileDialogProps = {
     onSave(
         value: OverlayActivityFilterProfilePreference,
         definitions: OverlayActivityTypeDefinition[]
-    ): Promise<unknown>;
+    ): Promise<OverlayActivityFilterProfilePreference | null | undefined>;
 };
 
-type OverlayActivityFilterDialogProps = NotificationProfileDialogProps & {
+type OverlayActivityFilterDialogProps = Omit<
+    NotificationProfileDialogProps,
+    'onSave'
+> & {
+    onSave(
+        value: OverlayActivityFilterProfilePreference,
+        definitions: OverlayActivityTypeDefinition[]
+    ): Promise<
+        | OverlayActivityFiltersPreference
+        | OverlayActivityFilterProfilePreference
+        | null
+        | undefined
+    >;
     titleKey: string;
     descriptionKey: string;
     defaultProfileFromDefinitions?: (

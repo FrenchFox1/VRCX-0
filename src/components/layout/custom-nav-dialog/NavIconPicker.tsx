@@ -11,8 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 type NavIconPickerProps = {
-    value?: unknown;
-    fallbackIcon?: unknown;
+    value?: string;
+    fallbackIcon?: string;
     ariaLabel: string;
     onValueChange: (value: string) => void;
 };

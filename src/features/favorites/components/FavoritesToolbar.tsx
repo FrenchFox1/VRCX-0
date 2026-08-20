@@ -41,18 +41,19 @@ import {
     normalizeFavoriteSortValue,
     type FavoriteSortValue
 } from '../favoritesItems';
+import type { FavoriteSearchMode } from '../favoritesTypes';
 
 type FavoritesToolbarProps = {
     kind: FavoriteKind;
     sortValue: FavoriteSortValue;
     searchQuery: string;
     searchPlaceholder: string;
-    searchMode: string;
+    searchMode: FavoriteSearchMode;
     density: FavoritesDensity;
     refreshing: boolean;
     onSortValueChange: (value: FavoriteSortValue) => void;
     onSearchChange: (value: string) => void;
-    onSearchModeChange: (mode: string) => void;
+    onSearchModeChange: (mode: FavoriteSearchMode) => void;
     onDensityChange: (value: FavoritesDensity) => void;
     onRefresh: () => void;
     onImport: () => void;

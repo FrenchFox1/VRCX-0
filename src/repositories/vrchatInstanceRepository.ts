@@ -13,6 +13,7 @@ import {
     type InstanceCreateType
 } from '@/platform/tauri/bindings';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
@@ -97,10 +98,6 @@ function toRegionCode(region: InstanceRegion): InstanceCreateRegion {
         return 'jp';
     }
     return 'us';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function unwrapVrchatInstanceResponse(

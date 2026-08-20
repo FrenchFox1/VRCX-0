@@ -104,7 +104,7 @@ export function useFriendLogColumns({
                     />
                 ),
                 cell: ({ row }) => (
-                    <FriendLogTypeIndicator type={row.original?.type} />
+                    <FriendLogTypeIndicator type={row.original.type} />
                 )
             },
             {

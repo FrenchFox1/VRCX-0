@@ -1,3 +1,4 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { parseLocation } from '@/shared/utils/location';
 
 import type {
@@ -20,15 +21,13 @@ const GAME_LOG_UNACTIONABLE_TYPES = new Set([
     'PortalSpawn'
 ]);
 
-export function normalizeGameLogId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+export function normalizeGameLogId(value: string | number | null | undefined) {
+    return typeof value === 'number' ? String(value) : (value ?? '').trim();
 }
 
 export function buildGameLogFavoriteIdSet(
-    remoteFavoriteIds: readonly unknown[] | null | undefined,
-    localFriendFavorites: Record<string, unknown> | null | undefined
+    remoteFavoriteIds: readonly string[] | null | undefined,
+    localFriendFavorites: FavoriteGroupMap | null | undefined
 ) {
     const ids = new Set<string>();
 
@@ -40,9 +39,6 @@ export function buildGameLogFavoriteIdSet(
     }
 
     for (const groupIds of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(groupIds)) {
-            continue;
-        }
         for (const id of groupIds) {
             const normalized = normalizeGameLogId(id);
             if (normalized) {
@@ -209,8 +205,7 @@ export function getGameLogRowKey(row: GameLogRow | null | undefined) {
         row?.message,
         row?.resourceUrl,
         row?.location,
-        row?.rowId,
-        row?.id
+        row?.rowId
     ]
         .map((value) => normalizeGameLogId(value))
         .filter(Boolean)

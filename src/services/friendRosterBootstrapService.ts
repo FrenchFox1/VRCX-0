@@ -147,7 +147,17 @@ async function runFriendBootstrap({
         });
 
     const snapshot: FriendBootstrapSnapshot | null = isRecord(result.snapshot)
-        ? result.snapshot
+        ? {
+              ...result.snapshot,
+              friendsById: normalizeFriendsById(result.snapshot.friendsById),
+              orderedFriendIds: normalizeStringArray(
+                  result.snapshot.orderedFriendIds
+              ),
+              onlineIds: normalizeStringArray(result.snapshot.onlineIds),
+              activeIds: normalizeStringArray(result.snapshot.activeIds),
+              offlineIds: normalizeStringArray(result.snapshot.offlineIds),
+              detail: normalizeUserId(result.snapshot.detail)
+          }
         : null;
     const detail = String(result.detail || snapshot?.detail || '');
 
@@ -194,14 +204,13 @@ async function runFriendBootstrap({
     if (preserveLoadedState) {
         useFriendRosterStore.getState().setRosterReady(detail);
     } else {
-        const friendsById = normalizeFriendsById(snapshot.friendsById);
         useFriendRosterStore.getState().setRosterSnapshot({
             currentUserId: normalizedUserId,
-            friendsById,
-            orderedFriendIds: normalizeStringArray(snapshot.orderedFriendIds),
-            onlineIds: normalizeStringArray(snapshot.onlineIds),
-            activeIds: normalizeStringArray(snapshot.activeIds),
-            offlineIds: normalizeStringArray(snapshot.offlineIds),
+            friendsById: snapshot.friendsById ?? {},
+            orderedFriendIds: snapshot.orderedFriendIds ?? [],
+            onlineIds: snapshot.onlineIds ?? [],
+            activeIds: snapshot.activeIds ?? [],
+            offlineIds: snapshot.offlineIds ?? [],
             detail
         });
     }

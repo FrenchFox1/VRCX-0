@@ -44,11 +44,9 @@ function countKey(baseKey: string, count: number): string {
 }
 
 function fileNameFromPath(path?: string | null): string {
+    const normalizedPath = path ?? '';
     return (
-        String(path || '')
-            .split(/[\\/]/)
-            .filter(Boolean)
-            .pop() || String(path || '')
+        normalizedPath.split(/[\\/]/).filter(Boolean).pop() || normalizedPath
     );
 }
 
@@ -61,7 +59,9 @@ function resolveProviderName(providerId?: BackgroundImageProviderId): string {
     return (
         backgroundImageRemoteProviders.find(
             (provider) => provider.id === providerId
-        )?.name || String(providerId || '')
+        )?.name ||
+        providerId ||
+        ''
     );
 }
 

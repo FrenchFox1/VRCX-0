@@ -6,6 +6,8 @@ import { resolveObservedPlayerDwellEpochs } from '@/domain/friends/sameInstanceF
 import { recordKnownUser } from '@/services/domainIngestionService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
+import { dialogTargetKey } from '@/services/userDialogSessionCacheService';
+import { isRecord } from '@/shared/utils/record';
 import { useDialogStore } from '@/state/dialogStore';
 
 import { UserDialogContentDialogs } from './user-dialog/components/UserDialogContentDialogs';
@@ -13,7 +15,6 @@ import {
     UserDialogEmptyState,
     UserDialogProfileSkeleton
 } from './user-dialog/components/UserDialogContentStates';
-import { dialogTargetKey } from './user-dialog/userDialogCache';
 import {
     isSameLocationTag,
     resolveUserDialogTargetPresenceLocation,
@@ -47,10 +48,6 @@ import { UserDialogTabbedView } from './UserDialogTabbedView';
 
 const userDialogSkeletonDelayMs = 160;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
 function useDelayedUserDialogSkeleton(loading: boolean, identity: string) {
     const [visible, setVisible] = useState(false);
 
@@ -77,19 +74,17 @@ export function UserDialogContent({
     userId,
     seedData = null,
     initialAction = '',
-    openNonce: openNonceValue = 0
+    openNonce = 0
 }: {
-    userId: unknown;
+    userId?: string;
     seedData?: unknown;
     initialAction?: string;
-    openNonce?: unknown;
+    openNonce?: number;
 }) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const closeDialog = useDialogStore((s) => s.closeDialog);
-    const openNonce = typeof openNonceValue === 'number' ? openNonceValue : 0;
-
-    const normalizedUserId = normalizeUserId(userId);
+    const normalizedUserId = userId?.trim() ?? '';
     const {
         confirm,
         currentEndpoint,
@@ -219,7 +214,7 @@ export function UserDialogContent({
                       friendsById,
                       presenceLocation
                   )
-                : new Map<string, unknown>(),
+                : new Map<string, number | string>(),
         [
             friendsById,
             gameState?.currentLocation,

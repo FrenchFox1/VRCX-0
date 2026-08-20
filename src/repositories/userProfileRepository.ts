@@ -16,6 +16,7 @@ import {
     type HttpApiExecuteResponse
 } from '@/platform/tauri/bindings';
 import { stripDefaultAvatarImage } from '@/shared/utils/avatar';
+import { isRecord } from '@/shared/utils/record';
 import {
     computeTrustLevel,
     computeUserPlatform,
@@ -166,10 +167,6 @@ function hasOwnField(source: unknown, field: PropertyKey) {
         typeof source === 'object' &&
         Object.prototype.hasOwnProperty.call(source, field)
     );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function isUserMutualFriendRow(value: unknown): value is UserMutualFriendRow {

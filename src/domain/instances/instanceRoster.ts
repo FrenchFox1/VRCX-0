@@ -1,12 +1,15 @@
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import {
     parseLocation,
-    resolveFriendPresenceLocation
+    resolveFriendPresenceLocation,
+    type FriendListMembership
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 type InstanceRosterRecord = Record<string, unknown>;
 type InstanceRosterSource = InstanceRosterRecord | string | null | undefined;
 type InstanceRosterMap = Map<string, InstanceRosterRow>;
+export type InstanceRosterTimestamp = number | string;
 
 export interface MergeInstanceUserOptions {
     incomingPresenceWins?: boolean;
@@ -34,19 +37,15 @@ interface ResolvePresenceLocationOptions {
     preferTraveling?: boolean;
     requireInstance?: boolean;
     lastLocation?: {
-        friendList?:
-            | Set<string>
-            | Map<string, unknown>
-            | string[]
-            | Record<string, unknown>;
-        location?: unknown;
+        friendList?: FriendListMembership;
+        location?: string | null;
     } | null;
 }
 
 interface BuildInstanceRosterRowsInput {
     includeProfileFallback?: boolean;
     instanceCreatorLabel?: string;
-    ownerFallbackId?: unknown;
+    ownerFallbackId?: string;
     ownerGroup?: InstanceRosterSource;
     ownerUser?: InstanceRosterSource;
     parsedLocation?: InstanceRosterRecord | null;
@@ -65,18 +64,14 @@ export interface InstanceRosterRow extends InstanceRosterRecord {
     currentAvatarThumbnailImageUrl: string;
     currentAvatarImageUrl: string;
     $subtitle: string;
-    $location_at: unknown;
-    joinedAt: unknown;
+    $location_at: InstanceRosterTimestamp;
+    joinedAt: InstanceRosterTimestamp;
 }
 
 export interface InstanceRosterRows {
     ownerId: string;
     ownerIsGroup: boolean;
     rows: InstanceRosterRow[];
-}
-
-function isRecord(value: unknown): value is InstanceRosterRecord {
-    return Boolean(value && typeof value === 'object');
 }
 
 function field(source: unknown, key: string): unknown {
@@ -138,30 +133,43 @@ export function userIdForRosterRow(user: unknown): string {
     );
 }
 
-export function resolveInstanceDwellEpoch(user: unknown): unknown {
+function firstTimestamp(...values: unknown[]): InstanceRosterTimestamp {
+    for (const value of values) {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value;
+        }
+        if (typeof value === 'string' && value.trim()) {
+            return value;
+        }
+    }
+    return '';
+}
+
+export function resolveInstanceDwellEpoch(
+    user: unknown
+): InstanceRosterTimestamp {
     const ref = field(user, 'ref');
-    return (
-        field(user, '$location_at') ||
-        field(user, 'locationAt') ||
-        field(user, 'location_at') ||
-        field(user, 'joinedAtMs') ||
-        field(user, 'joinTimeMs') ||
-        field(user, 'joinedAt') ||
-        field(user, 'joined_at') ||
-        field(ref, '$location_at') ||
-        field(ref, 'locationAt') ||
-        field(ref, 'location_at') ||
-        field(ref, 'joinedAtMs') ||
-        field(ref, 'joinTimeMs') ||
-        field(ref, 'joinedAt') ||
-        field(ref, 'joined_at') ||
-        ''
+    return firstTimestamp(
+        field(user, '$location_at'),
+        field(user, 'locationAt'),
+        field(user, 'location_at'),
+        field(user, 'joinedAtMs'),
+        field(user, 'joinTimeMs'),
+        field(user, 'joinedAt'),
+        field(user, 'joined_at'),
+        field(ref, '$location_at'),
+        field(ref, 'locationAt'),
+        field(ref, 'location_at'),
+        field(ref, 'joinedAtMs'),
+        field(ref, 'joinTimeMs'),
+        field(ref, 'joinedAt'),
+        field(ref, 'joined_at')
     );
 }
 
 export function applyInstanceDwellEpochs<TUser extends InstanceRosterRecord>(
     users: readonly TUser[],
-    dwellEpochsByUserId: ReadonlyMap<string, unknown>
+    dwellEpochsByUserId: ReadonlyMap<string, InstanceRosterTimestamp>
 ): TUser[] {
     return users.map((user) => {
         const epoch = dwellEpochsByUserId.get(userIdForRosterRow(user));
@@ -274,17 +282,17 @@ export function createInstanceUserRow(
             field(sourceRecord, '$subtitle'),
             field(sourceRecord, 'subtitle')
         ),
-        $location_at:
-            resolveInstanceDwellEpoch(sourceRecord) ||
-            field(fallback, 'joinedAt') ||
-            field(fallback, 'joined_at') ||
-            '',
-        joinedAt:
-            field(sourceRecord, 'joinedAt') ||
-            field(sourceRecord, 'joined_at') ||
-            field(fallback, 'joinedAt') ||
-            field(fallback, 'joined_at') ||
-            ''
+        $location_at: firstTimestamp(
+            resolveInstanceDwellEpoch(sourceRecord),
+            field(fallback, 'joinedAt'),
+            field(fallback, 'joined_at')
+        ),
+        joinedAt: firstTimestamp(
+            field(sourceRecord, 'joinedAt'),
+            field(sourceRecord, 'joined_at'),
+            field(fallback, 'joinedAt'),
+            field(fallback, 'joined_at')
+        )
     };
 }
 

@@ -190,7 +190,7 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
         tableLimitsSaveDisabled,
         toast,
         usePreferencesStore,
-        setPrefs: deps.setPrefs as SettingsPreferenceActionDeps['setPrefs'],
+        setPrefs: deps.setPrefs,
         vrchatAuthRepository
     };
     const preferenceActions = useSettingsPreferenceActions(actionDeps);

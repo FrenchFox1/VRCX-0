@@ -37,6 +37,7 @@ import {
     prependInstanceDialogDisplayNamePreset
 } from './worldInstanceDisplayNamePresets';
 import { buildLegacyCreatedInstance } from './worldInstances';
+import { isWorldNewInstanceTab } from './worldNewInstanceTypes';
 import type {
     CreatedWorldInstance,
     InstanceGroupOption,
@@ -248,7 +249,7 @@ export function WorldNewInstanceDialog({
     }
 
     function commitDisplayNamePreset(
-        value: unknown = form.displayName
+        value: string = form.displayName
     ): string | null {
         const displayName = normalizeInstanceDialogDisplayName(value);
         if (!displayName) {
@@ -336,7 +337,11 @@ export function WorldNewInstanceDialog({
                 </DialogHeader>
                 <Tabs
                     value={form.selectedTab}
-                    onValueChange={(value) => patchForm({ selectedTab: value })}
+                    onValueChange={(value) => {
+                        if (isWorldNewInstanceTab(value)) {
+                            patchForm({ selectedTab: value });
+                        }
+                    }}
                 >
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="Normal">

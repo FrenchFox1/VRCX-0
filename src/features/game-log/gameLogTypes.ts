@@ -9,6 +9,7 @@ import type {
     GameLogSessionMemberDto as GeneratedGameLogSessionMember
 } from '@/platform/tauri/bindings';
 import type {
+    GameLogDatabaseRow,
     GameLogFilterType as RepositoryGameLogFilterType,
     GameLogPreviousInstanceWorldRow
 } from '@/repositories/gameLogRepository';
@@ -25,26 +26,9 @@ export type GameLogViewMode = 'sessions' | 'table';
 
 export type GameLogLoadStatus = LoadStatus;
 
-export type GameLogRow = {
-    id?: unknown;
-    rowId?: unknown;
-    type?: unknown;
-    created_at?: unknown;
-    createdAt?: unknown;
-    displayName?: unknown;
-    userId?: unknown;
-    location?: unknown;
-    instanceId?: unknown;
-    worldId?: unknown;
-    worldName?: unknown;
-    groupName?: unknown;
-    videoUrl?: unknown;
-    data?: unknown;
-    message?: unknown;
-    resourceUrl?: unknown;
+export type GameLogRow = GameLogDatabaseRow & {
     isFavorite?: boolean | null;
     isFriend?: boolean;
-    [key: string]: unknown;
 };
 
 export type GameLogSessionMember = GeneratedGameLogSessionMember & {
@@ -64,8 +48,8 @@ export type GameLogSession = Omit<GeneratedGameLogSession, 'events'> & {
 };
 
 export type GameLogDetailValue = {
-    primary?: unknown;
-    secondary?: unknown;
+    primary?: string;
+    secondary?: string;
 };
 
 export type GameLogPreviousInstanceRow = GameLogPreviousInstanceWorldRow;

@@ -1,36 +1,32 @@
+import type { FavoriteGroup, FavoriteGroupMap } from '@/domain/favorites/types';
 import type {
     FriendRecordInput,
     FriendRosterInputById
 } from '@/domain/friends/types';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 
 type InviteCurrentUser = FriendRecordInput | null | undefined;
 
 type InviteFavoriteInputs = {
-    favoriteFriendGroups?: unknown;
-    groupedFavoriteFriendIdsByGroupKey?: Record<string, unknown> | null;
-    localFriendFavoriteGroups?: unknown;
-    localFriendFavorites?: Record<string, unknown> | null;
+    favoriteFriendGroups?: readonly FavoriteGroup[];
+    groupedFavoriteFriendIdsByGroupKey?: Record<string, string[]> | null;
+    localFriendFavoriteGroups?: readonly string[];
+    localFriendFavorites?: FavoriteGroupMap | null;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
 export function onlineFriendIdsFromGroup(
-    userIds: unknown,
+    userIds: readonly string[] | null | undefined,
     friendsById: FriendRosterInputById
 ) {
-    return (Array.isArray(userIds) ? userIds : [])
-        .map(normalizeId)
-        .filter((userId, index, source) => {
-            const friend = friendsById[userId];
-            return (
-                userId &&
-                source.indexOf(userId) === index &&
-                friend?.state === 'online'
-            );
-        });
+    return (userIds ?? []).map(normalizeId).filter((userId, index, source) => {
+        const friend = friendsById[userId];
+        return (
+            userId &&
+            source.indexOf(userId) === index &&
+            friend?.state === 'online'
+        );
+    });
 }
 
 export function displayNameForUser(
@@ -55,7 +51,7 @@ export function displayNameForUser(
     );
 }
 
-export function pushUniqueLabel(labels: string[], label: unknown) {
+export function pushUniqueLabel(labels: string[], label: string) {
     const normalizedLabel = normalizeId(label);
     if (normalizedLabel && !labels.includes(normalizedLabel)) {
         labels.push(normalizedLabel);
@@ -111,7 +107,7 @@ export function buildFavoriteGroupLabelsByUserId({
     localFriendFavorites
 }: InviteFavoriteInputs) {
     const labelsByUserId: Record<string, string[]> = {};
-    function addLabel(userId: unknown, label: unknown) {
+    function addLabel(userId: string, label: string) {
         const normalizedUserId = normalizeId(userId);
         if (!normalizedUserId) {
             return;
@@ -122,28 +118,18 @@ export function buildFavoriteGroupLabelsByUserId({
         pushUniqueLabel(labelsByUserId[normalizedUserId], label);
     }
 
-    for (const group of Array.isArray(favoriteFriendGroups)
-        ? favoriteFriendGroups
-        : []) {
-        const groupRecord = isRecord(group) ? group : {};
-        const key = normalizeId(groupRecord.key);
-        const label = normalizeId(groupRecord.displayName) || key;
-        for (const userId of Array.isArray(
-            groupedFavoriteFriendIdsByGroupKey?.[key]
-        )
-            ? groupedFavoriteFriendIdsByGroupKey[key]
-            : []) {
+    for (const group of favoriteFriendGroups ?? []) {
+        const key = normalizeId(group.key);
+        const label = normalizeId(group.displayName) || key;
+        for (const userId of groupedFavoriteFriendIdsByGroupKey?.[key] ?? []) {
             addLabel(userId, label);
         }
     }
 
-    for (const groupName of Array.isArray(localFriendFavoriteGroups)
-        ? localFriendFavoriteGroups
-        : Object.keys(localFriendFavorites || {})) {
+    for (const groupName of localFriendFavoriteGroups ??
+        Object.keys(localFriendFavorites || {})) {
         const key = normalizeId(groupName);
-        for (const userId of Array.isArray(localFriendFavorites?.[key])
-            ? localFriendFavorites[key]
-            : []) {
+        for (const userId of localFriendFavorites?.[key] ?? []) {
             addLabel(userId, key);
         }
     }
@@ -155,15 +141,10 @@ export function buildFriendsInCurrentInstanceIds({
     currentLocationPlayerIds,
     friendsById
 }: {
-    currentLocationPlayerIds: unknown;
+    currentLocationPlayerIds: readonly string[];
     friendsById: FriendRosterInputById;
 }) {
-    const ids = new Set(
-        (Array.isArray(currentLocationPlayerIds)
-            ? currentLocationPlayerIds
-            : []
-        ).map(normalizeId)
-    );
+    const ids = new Set(currentLocationPlayerIds.map(normalizeId));
     return [...ids].filter((userId) => userId && friendsById[userId]);
 }
 
@@ -174,29 +155,22 @@ export function buildFavoriteGroupItems({
     localFriendFavorites,
     friendsById
 }: InviteFavoriteInputs & { friendsById: FriendRosterInputById }) {
-    const remote = (
-        Array.isArray(favoriteFriendGroups) ? favoriteFriendGroups : []
-    )
+    const remote = (favoriteFriendGroups ?? [])
         .map((group) => {
-            const groupRecord = isRecord(group) ? group : {};
-            const key = normalizeId(groupRecord.key);
+            const key = normalizeId(group.key);
             const userIds = onlineFriendIdsFromGroup(
                 groupedFavoriteFriendIdsByGroupKey?.[key],
                 friendsById
             );
             return {
                 key: `remote:${key}`,
-                label: normalizeId(groupRecord.displayName) || key,
+                label: normalizeId(group.displayName) || key,
                 userIds
             };
         })
         .filter((group) => group.key && group.userIds.length);
 
-    const local = (
-        Array.isArray(localFriendFavoriteGroups)
-            ? localFriendFavoriteGroups
-            : []
-    )
+    const local = (localFriendFavoriteGroups ?? [])
         .map((groupName) => {
             const key = normalizeId(groupName);
             const userIds = onlineFriendIdsFromGroup(

@@ -5,6 +5,7 @@ import {
     type QuickSearchResult as BackendQuickSearchResult
 } from '@/platform/tauri/bindings';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 
 export type { QuickSearchEntityType };
 
@@ -32,10 +33,6 @@ export type QuickSearchState = {
     ownGroups: QuickSearchResult[];
     joinedGroups: QuickSearchResult[];
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function normalizeResult(result: BackendQuickSearchResult): QuickSearchResult {
     return {

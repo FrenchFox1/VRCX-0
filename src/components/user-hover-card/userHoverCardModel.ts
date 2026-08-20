@@ -6,6 +6,10 @@ import {
     timestampMsFromValue,
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import type {
+    FriendProfileFields,
+    FriendRecordInput
+} from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { userImage } from '@/services/entityMediaService';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
@@ -14,6 +18,7 @@ import {
     normalizeLocationStatus,
     parseLocation
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { resolveTrustColorKey } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
@@ -25,37 +30,19 @@ export type UserHoverCardVariant =
     | 'offline'
     | 'profile-only';
 
-type HoverCardRecord = Record<string, unknown> & {
-    $location?: unknown;
-    $travelingToLocation?: unknown;
-    $trustClass?: unknown;
-    $isModerator?: unknown;
-    $isTroll?: unknown;
-    $isProbableTroll?: unknown;
-    $userColour?: unknown;
-    developerType?: unknown;
-    displayName?: unknown;
-    id?: unknown;
-    last_login?: unknown;
-    location?: unknown;
-    note?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    status?: unknown;
-    statusDescription?: unknown;
-    tags?: unknown;
-    username?: unknown;
-};
+type HoverCardRecord = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        $userColour?: string;
+        last_login?: number | string | null;
+        note?: string | null;
+        stateBucket?: string;
+    };
 
 type UserHoverCardModelInput = {
     seed?: HoverCardRecord | SidebarFriendRecord | null;
     profile?: HoverCardRecord | null;
     nowMs: number;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 function recordOrEmpty(value: unknown): HoverCardRecord {
     return isRecord(value) ? value : {};

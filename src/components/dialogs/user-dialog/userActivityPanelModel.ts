@@ -31,14 +31,9 @@ export type UserActivityTopWorld = Record<string, unknown> & {
     totalTime?: number;
 };
 
-export const VALID_ACTIVITY_PERIODS = new Set([
-    '7',
-    '30',
-    '90',
-    '180',
-    '365',
-    'all'
-]);
+const ACTIVITY_PERIODS = ['7', '30', '90', '180', '365', 'all'] as const;
+export type ActivityPeriod = (typeof ACTIVITY_PERIODS)[number];
+export const VALID_ACTIVITY_PERIODS = new Set<string>(ACTIVITY_PERIODS);
 export const USER_ACTIVITY_HOUR_LABELS = Array.from(
     { length: 24 },
     (_, index) => `${String(index).padStart(2, '0')}:00`
@@ -47,11 +42,11 @@ export const TOP_WORLDS_LOADING_DELAY_MS = 150;
 export const OVERLAP_LOADING_DELAY_MS = 120;
 export const OVERLAP_RENDER_DELAY_MS = 80;
 
-export function getRangeDays(period: unknown) {
+export function getRangeDays(period: string | null | undefined) {
     if (period === 'all') {
         return 0;
     }
-    const parsed = Number.parseInt(String(period), 10);
+    const parsed = Number.parseInt(period ?? '', 10);
     return Number.isNaN(parsed) ? 30 : parsed;
 }
 
@@ -65,12 +60,15 @@ export function getDisplayDayLabels(
     );
 }
 
-export function normalizeActivityPeriod(period: unknown) {
-    const value = String(period || '');
-    return VALID_ACTIVITY_PERIODS.has(value) ? value : '30';
+function isActivityPeriod(value: string): value is ActivityPeriod {
+    return VALID_ACTIVITY_PERIODS.has(value);
 }
 
-export function normalizeTopWorldsSort(sortBy: unknown): TopWorldsSort {
+export function normalizeActivityPeriod(period: string): ActivityPeriod {
+    return isActivityPeriod(period) ? period : '30';
+}
+
+export function normalizeTopWorldsSort(sortBy: string | null): TopWorldsSort {
     return sortBy === 'time' || sortBy === 'count' ? sortBy : 'time';
 }
 

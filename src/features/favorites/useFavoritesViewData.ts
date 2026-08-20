@@ -18,8 +18,11 @@ import {
     getFavoritesPageConfig,
     type FavoritePageEntityDetail
 } from './favoritesPageData';
-import type { FavoriteItem } from './favoritesTypes';
-import type { FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteItem,
+    FavoriteSearchMode,
+    FavoriteSource
+} from './favoritesTypes';
 import type { useFavoritesCollectionsState } from './useFavoritesCollectionsState';
 
 const EMPTY_ITEMS: FavoriteItem[] = [];
@@ -46,7 +49,7 @@ type FavoritesViewDataInputs = ReturnType<
     typeof useFavoritesCollectionsState
 >['viewDataInputs'] & {
     kind: FavoriteKind;
-    searchMode: string;
+    searchMode: FavoriteSearchMode;
     searchQuery: string;
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
@@ -148,11 +151,6 @@ export function useFavoritesViewData({
         () => normalizeFavoriteDetailMap(avatarDetailFallbacksById),
         [avatarDetailFallbacksById]
     );
-    const normalizedAvatarHistory = useMemo(
-        () => avatarHistory.filter(isFavoriteEntityDetail),
-        [avatarHistory]
-    );
-
     const remoteItemsByGroup = useMemo(() => {
         return buildFavoriteRemoteItemsByGroup({
             kind,
@@ -220,10 +218,10 @@ export function useFavoritesViewData({
     const avatarHistoryItems = useMemo(() => {
         return buildFavoriteAvatarHistoryItems({
             kind,
-            avatarHistory: normalizedAvatarHistory,
+            avatarHistory,
             t
         });
-    }, [kind, normalizedAvatarHistory, t]);
+    }, [avatarHistory, kind, t]);
 
     const allItems = useMemo(
         () => [

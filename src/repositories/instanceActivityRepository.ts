@@ -4,7 +4,7 @@ import {
     type WorldSummaryOutput
 } from '@/platform/tauri/bindings';
 
-interface InstanceActivityRow {
+export interface InstanceActivityRow {
     id: number;
     created_at: string;
     type: string;

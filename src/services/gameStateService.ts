@@ -7,6 +7,7 @@ import {
     stopCurrentAvatarWearTimer
 } from '@/services/avatarWearTimeService';
 import { resetGameLogSessionState } from '@/services/gameLogIngestService';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -15,10 +16,6 @@ import { useSessionStore } from '@/state/sessionStore';
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
 type GameState = RuntimeState['gameState'];
 type GameStatePatch = Parameters<RuntimeState['setGameState']>[0];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 async function handleGameStopped(
     previousGameState: GameState,
@@ -30,14 +27,12 @@ async function handleGameStopped(
     resetGameLogSessionState(stoppedAt);
 
     clearStoppedGameLocationSnapshot(previousGameState, currentUserSnapshot);
-    await commands
-        .appRuntimeDiscordReconcileRequest()
-        .catch((error: unknown) => {
-            console.warn(
-                'Discord presence reconcile after game stop failed:',
-                error
-            );
-        });
+    await commands.appRuntimeDiscordReconcileRequest().catch((error) => {
+        console.warn(
+            'Discord presence reconcile after game stop failed:',
+            error
+        );
+    });
 
     const startedAt = Date.parse(previousGameState.lastGameStartedAt || '');
     try {
@@ -191,13 +186,11 @@ export async function handleGameRunningUpdate(
     }
 
     if (shouldRefreshDiscordPresence) {
-        await commands
-            .appRuntimeDiscordReconcileRequest()
-            .catch((error: unknown) => {
-                console.warn(
-                    'Discord presence reconcile after game state update failed:',
-                    error
-                );
-            });
+        await commands.appRuntimeDiscordReconcileRequest().catch((error) => {
+            console.warn(
+                'Discord presence reconcile after game state update failed:',
+                error
+            );
+        });
     }
 }

@@ -18,6 +18,10 @@ import { ResizableTableCell } from '@/components/data-table/ResizableTableParts'
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { LocationWorld } from '@/components/LocationWorld';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import type {
+    PlatformFileAnalysis,
+    WorldProfileRecord
+} from '@/domain/entities/world';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
@@ -39,33 +43,12 @@ import { parseTimeMs } from '../playerListRows';
 import { PLAYER_LIST_COLUMN_IDS as COLUMN_IDS } from '../playerListState';
 import type {
     PlayerListProfileRecord,
-    PlayerListRecord,
     PlayerListRow
 } from '../playerListTypes';
 
 export { DataTableSortButton as SortButton };
 
 type PlayerListTable = AppTable<PlayerListRow>;
-
-type PlayerListWorld = PlayerListRecord & {
-    id?: unknown;
-    name?: unknown;
-    authorName?: unknown;
-    authorId?: unknown;
-    imageUrl?: unknown;
-    thumbnailImageUrl?: unknown;
-    platforms?: unknown[];
-    tags?: unknown[];
-    isLabs?: unknown;
-    releaseStatus?: unknown;
-    description?: unknown;
-    recommendedCapacity?: unknown;
-    capacity?: unknown;
-    updatedAt?: unknown;
-    createdAt?: unknown;
-};
-
-type PlayerListFileAnalysis = Record<string, PlayerListRecord | undefined>;
 
 export function CurrentWorldHeader({
     cacheInfo = defaultWorldCacheInfo(),
@@ -89,10 +72,10 @@ export function CurrentWorldHeader({
     cacheInfo?: ReturnType<typeof defaultWorldCacheInfo>;
     clockNow: number;
     currentUserSnapshot?: PlayerListProfileRecord | null;
-    fileAnalysis?: PlayerListFileAnalysis;
+    fileAnalysis?: PlatformFileAnalysis;
     friendCount: number;
     instanceCapacity?: number | null;
-    instanceCreatedAt?: unknown;
+    instanceCreatedAt?: string;
     instanceGroupName?: string;
     instanceLocation?: string;
     instanceWorldId?: string;
@@ -101,34 +84,27 @@ export function CurrentWorldHeader({
     onPreviewImage?: (image: { url: string; title: string }) => void;
     playerCount: number;
     parsedLocation: ReturnType<typeof parseLocation>;
-    startedAt?: unknown;
-    world?: PlayerListWorld | null;
+    startedAt?: string | null;
+    world?: WorldProfileRecord | null;
 }) {
     const { t } = useTranslation();
     const worldId =
-        normalizeString(world?.id) ||
-        instanceWorldId ||
-        parsedLocation.worldId ||
-        '';
-    const worldName =
-        normalizeString(world?.name) || instanceWorldName || 'Current instance';
-    const authorName = normalizeString(world?.authorName);
-    const authorId = normalizeString(world?.authorId);
-    const description = normalizeString(world?.description);
+        world?.id || instanceWorldId || parsedLocation.worldId || '';
+    const worldName = world?.name || instanceWorldName || 'Current instance';
+    const authorName = world?.authorName || '';
+    const authorId = world?.authorId || '';
+    const description = world?.description || '';
     const homeWorldId = getHomeWorldId(
         currentUserSnapshot?.$homeLocation || currentUserSnapshot?.homeLocation
     );
     const isHome = Boolean(homeWorldId && worldId && homeWorldId === worldId);
     const imageUrl = getWorldImage(world);
-    const platforms = Array.isArray(world?.platforms)
-        ? world.platforms.map(resolvePlatformBadge)
-        : [];
+    const platforms = world?.platforms.map(resolvePlatformBadge) ?? [];
     const startedAtMs = parseTimeMs(startedAt || instanceCreatedAt);
     const elapsedMs = startedAtMs ? Math.max(clockNow - startedAtMs, 0) : 0;
-    const capacity = Number(instanceCapacity) || Number(world?.capacity) || 0;
-    const hasAvatarScalingDisabled = Array.isArray(world?.tags)
-        ? world.tags.includes('feature_avatar_scaling_disabled')
-        : false;
+    const capacity = instanceCapacity || world?.capacity || 0;
+    const hasAvatarScalingDisabled =
+        world?.tags.includes('feature_avatar_scaling_disabled') ?? false;
     const currentInstanceLocationObject = parseLocation(instanceLocation || '');
     const worldDialogTarget =
         currentInstanceLocationObject.isRealInstance &&
@@ -152,7 +128,7 @@ export function CurrentWorldHeader({
                     imageUrl &&
                     onPreviewImage?.({
                         url: convertFileUrlToImageUrl(
-                            normalizeString(world?.imageUrl) || imageUrl,
+                            world?.imageUrl || imageUrl,
                             1024
                         ),
                         title: worldName
@@ -231,15 +207,14 @@ export function CurrentWorldHeader({
                     ) : null}
                     {platforms.map((platform) => {
                         const Icon = platform.icon;
-                        const platformKey = String(platform.key ?? '');
                         return (
                             <Badge
-                                key={platformKey}
+                                key={platform.key}
                                 variant="outline"
                                 className="gap-1"
                             >
                                 {Icon ? <Icon className="size-3.5" /> : null}
-                                {String(platform.label ?? '')}
+                                {platform.label}
                                 {fileAnalysisSizeForPlatform(
                                     fileAnalysis,
                                     platform.key

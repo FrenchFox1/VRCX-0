@@ -13,6 +13,7 @@ import { FadeInImage } from '@/components/media/FadeInImage';
 import type { UserBadgeRecord } from '@/domain/entities/user';
 import { cn } from '@/lib/utils';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
@@ -26,10 +27,6 @@ import type {
     UserHeaderCommands,
     UserHeaderModel
 } from './UserDialogHeaderSection';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function resolveBadgeImageUrl(badge: UserBadgeRecord) {
     const imageUrl =

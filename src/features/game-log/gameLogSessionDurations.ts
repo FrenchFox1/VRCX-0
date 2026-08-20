@@ -1,17 +1,14 @@
-import { normalizeString as normalizeId } from '@/shared/utils/string';
+import type { GameLogSessionPlayerDurationRowDto } from '@/platform/tauri/bindings';
 
 export type GameLogSessionDurationDetails = {
     durationByKey: Map<string, number>;
     maxDurationMs: number;
 };
 
-type GameLogSessionDurationRow = {
-    displayName?: unknown;
-    display_name?: unknown;
-    time?: unknown;
-    userId?: unknown;
-    user_id?: unknown;
-};
+type GameLogSessionPlayerIdentity = Pick<
+    GameLogSessionPlayerDurationRowDto,
+    'displayName' | 'userId'
+>;
 
 export function createEmptyGameLogSessionDurationDetails(): GameLogSessionDurationDetails {
     return {
@@ -21,26 +18,24 @@ export function createEmptyGameLogSessionDurationDetails(): GameLogSessionDurati
 }
 
 export function playerDurationKey(
-    item: GameLogSessionDurationRow | null | undefined
+    item: GameLogSessionPlayerIdentity | null | undefined
 ) {
-    const userId = normalizeId(item?.userId || item?.user_id);
+    const userId = item?.userId.trim() ?? '';
     if (userId) {
         return `id:${userId}`;
     }
-    const displayName = String(item?.displayName || item?.display_name || '')
-        .trim()
-        .toUpperCase();
+    const displayName = (item?.displayName ?? '').trim().toUpperCase();
     return displayName ? `name:${displayName}` : '';
 }
 
 export function buildGameLogSessionDurationDetails(
-    rows: readonly GameLogSessionDurationRow[]
+    rows: readonly GameLogSessionPlayerDurationRowDto[]
 ): GameLogSessionDurationDetails {
     const durationByKey = new Map<string, number>();
 
     for (const row of rows) {
         const key = playerDurationKey(row);
-        const durationMs = Number(row?.time || 0);
+        const durationMs = row.time;
         if (!key || !Number.isFinite(durationMs) || durationMs <= 0) {
             continue;
         }
@@ -55,7 +50,7 @@ export function buildGameLogSessionDurationDetails(
 
 export function getGameLogSessionPlayerDuration(
     durationByKey: Map<string, number>,
-    item: GameLogSessionDurationRow | null | undefined
+    item: GameLogSessionPlayerIdentity | null | undefined
 ) {
     const key = playerDurationKey(item);
     return key ? durationByKey.get(key) || 0 : 0;

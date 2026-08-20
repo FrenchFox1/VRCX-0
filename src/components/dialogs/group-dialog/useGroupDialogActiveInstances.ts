@@ -7,10 +7,10 @@ import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 import { mergeGroupInstances } from './groupInstances';
 
 interface GroupDialogActiveInstancesInput {
-    groupId: unknown;
+    groupId: string;
     friendsById: FriendRosterById;
     currentUserSnapshot: CurrentUserSnapshotState | null;
-    currentLocation: unknown;
+    currentLocation: string;
 }
 
 export function useGroupDialogActiveInstances({

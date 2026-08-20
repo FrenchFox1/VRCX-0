@@ -26,6 +26,7 @@ import vrchatToolsRepository, {
     type GroupCalendarEventRecord,
     type GroupCalendarGroupRecord
 } from '@/repositories/vrchatToolsRepository';
+import { isRecord } from '@/shared/utils/record';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -68,10 +69,6 @@ type GroupCalendarDayButtonProps = ComponentProps<typeof CalendarDayButton> & {
     followedCountByDate: Record<string, number>;
     timeZone: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function getLocalTimeZone() {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;

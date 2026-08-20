@@ -3,6 +3,7 @@ import {
     profileBackgroundAssetUrl,
     profileBackgroundFileList
 } from '@/shared/constants/profileBackgrounds';
+import { isRecord } from '@/shared/utils/record';
 
 import type {
     UserDialogProfileRecord,
@@ -59,10 +60,6 @@ type ProfileDecorationAssetUrls = {
     animatedUrl: string;
     staticUrl: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeText(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';

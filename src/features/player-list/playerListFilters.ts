@@ -1,5 +1,3 @@
-import { normalizeString } from '@/shared/utils/string';
-
 import type { PlayerListRow } from './playerListTypes';
 
 export type PlayerListFilterScope =
@@ -24,8 +22,8 @@ export type PlayerListFilterableRow = Pick<
 
 export type PlayerListScopeCounts = Record<PlayerListFilterScope, number>;
 
-function normalizedSearchText(value: unknown): string {
-    return normalizeString(value).normalize('NFKC').toLowerCase();
+function normalizedSearchText(value: string): string {
+    return value.normalize('NFKC').toLowerCase();
 }
 
 function isRestrictedPlayer(row: PlayerListFilterableRow): boolean {

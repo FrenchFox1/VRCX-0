@@ -30,8 +30,8 @@ import type {
 import { FeedExpandedRow } from './FeedTableParts';
 
 function shouldSkipRowToggle(event: MouseEvent<HTMLTableRowElement>) {
-    const target = event.target as HTMLElement;
-    if (target.closest('button,a')) {
+    const target = event.target;
+    if (target instanceof Element && target.closest('button,a')) {
         return true;
     }
 

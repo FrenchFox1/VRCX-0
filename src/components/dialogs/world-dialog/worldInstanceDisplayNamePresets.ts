@@ -10,7 +10,7 @@ export function normalizeInstanceDialogDisplayName(value: unknown) {
 
 export function normalizeInstanceDialogDisplayNamePresets(
     values: unknown,
-    fallback: unknown = ''
+    fallback: string = ''
 ) {
     const next: string[] = [];
     const seen = new Set<string>();
@@ -36,7 +36,7 @@ export function normalizeInstanceDialogDisplayNamePresets(
 
 export function prependInstanceDialogDisplayNamePreset(
     values: unknown,
-    value: unknown
+    value: string
 ) {
     const normalized = normalizeInstanceDialogDisplayName(value);
     if (!normalized) {

@@ -12,6 +12,7 @@ import {
     setTranslationApiConfigPreference,
     setYoutubeApiKeyPreference
 } from '@/services/preferencesService';
+import { isRecord } from '@/shared/utils/record';
 import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import {
     normalizeTranslationApiType,
@@ -90,7 +91,7 @@ type SettingsTranslationDraft = {
     [key: string]: unknown;
 };
 
-type PreferenceAction = () => unknown | Promise<unknown>;
+type PreferenceAction = () => void;
 type PreferenceRollback = void | (() => void);
 type SettingsIntegrationsDeps = {
     commit: (
@@ -98,10 +99,6 @@ type SettingsIntegrationsDeps = {
         optimistic?: () => PreferenceRollback
     ) => Promise<boolean>;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
     const { t } = useTranslation();

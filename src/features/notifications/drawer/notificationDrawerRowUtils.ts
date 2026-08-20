@@ -92,11 +92,11 @@ export function isFriendNotification(
     ].includes(String(notification?.type || ''));
 }
 
-export function computeRemaining(expiresAt: unknown) {
+export function computeRemaining(expiresAt: string | null | undefined) {
     if (!expiresAt) {
         return null;
     }
-    const ts = Date.parse(String(expiresAt));
+    const ts = Date.parse(expiresAt);
     if (!Number.isFinite(ts)) {
         return null;
     }

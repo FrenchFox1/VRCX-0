@@ -19,10 +19,10 @@ import { useFriendsLocationsRosterState } from './useFriendsLocationsRosterState
 import { useFriendsLocationsRuntime } from './useFriendsLocationsRuntime';
 
 type GateFriendRecord = Record<string, unknown> & {
-    id?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    userId?: unknown;
+    id?: string;
+    state?: string;
+    stateBucket?: string;
+    userId?: string;
 };
 
 function stringField(value: unknown): string {

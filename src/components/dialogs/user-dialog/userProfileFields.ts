@@ -1,8 +1,13 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 
 export const statusPresetsConfigKey = 'VRCX_statusPresets';
 export const maxStatusPresets = 10;
+export type SocialStatusPreset = {
+    status: UserStatus | '';
+    statusDescription?: string;
+};
 export const selfStatusBaseOptions = [
     { value: 'join me', labelKey: 'dialog.user.status.join_me' },
     { value: 'active', labelKey: 'dialog.user.status.online' },
@@ -32,25 +37,19 @@ export function normalizeUserId(value: unknown) {
 }
 
 export function buildFavoriteIdSet(
-    remoteFavoriteIds: unknown,
-    localFriendFavorites: unknown
+    remoteFavoriteIds: readonly string[],
+    localFriendFavorites: FavoriteGroupMap
 ) {
     const set = new Set<string>();
 
-    for (const id of Array.isArray(remoteFavoriteIds)
-        ? remoteFavoriteIds
-        : []) {
+    for (const id of remoteFavoriteIds) {
         const normalized = normalizeUserId(id);
         if (normalized) {
             set.add(normalized);
         }
     }
 
-    for (const values of Object.values(record(localFriendFavorites))) {
-        if (!Array.isArray(values)) {
-            continue;
-        }
-
+    for (const values of Object.values(localFriendFavorites)) {
         for (const id of values) {
             const normalized = normalizeUserId(id);
             if (normalized) {
@@ -74,6 +73,18 @@ export function normalizeSelfStatusInput(value: unknown): UserStatus | '' {
         return normalized;
     }
     return '';
+}
+
+export function normalizeSocialStatusPreset(
+    value: unknown
+): SocialStatusPreset {
+    const preset = record(value);
+    return {
+        status: normalizeSelfStatusInput(preset.status),
+        ...(Object.prototype.hasOwnProperty.call(preset, 'statusDescription')
+            ? { statusDescription: String(preset.statusDescription || '') }
+            : null)
+    };
 }
 
 export function normalizeStatusHistoryRows(

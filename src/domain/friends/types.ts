@@ -17,7 +17,7 @@ export type FriendProfileFields = {
     $previousLocation?: string | null;
     $previousLocation_at?: number | string | null;
     $travelingToLocation?: FriendLocationProjection | null;
-    $travelingToTime?: string | null;
+    $travelingToTime?: number | string | null;
     ageVerificationStatus?: string | null;
     ageVerified?: boolean;
     allowAvatarCopying?: boolean;

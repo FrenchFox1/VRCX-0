@@ -6,6 +6,7 @@ import {
     type UserFactMergeOptions
 } from '@/domain/users/userFacts';
 import { commands } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { useUserFactsStore } from '@/state/userFactsStore';
 
 type UserFactIngestEntry = {
@@ -17,10 +18,6 @@ type UserFactIngestEntry = {
 
 const pendingUserFactEntries = new Map<string, UserFactIngestEntry>();
 let userFactFlushScheduled = false;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
     return isRecord(value) ? value : null;
@@ -36,7 +33,7 @@ function userIdFromRecord(source: Record<string, unknown>): string {
     );
 }
 
-function getKnownUserFact(endpoint: unknown, userId: unknown): UserFact | null {
+function getKnownUserFact(endpoint: string, userId: string): UserFact | null {
     const key = userFactKey(endpoint, userId);
     return key ? useUserFactsStore.getState().usersByKey[key] || null : null;
 }
@@ -105,7 +102,7 @@ async function flushPendingUserFactEntries(): Promise<void> {
     if (!entries.length) {
         return;
     }
-    await commands.appIngestUserFacts(entries).catch((error: unknown) => {
+    await commands.appIngestUserFacts(entries).catch((error) => {
         console.warn('Failed to ingest user facts:', error);
     });
 }

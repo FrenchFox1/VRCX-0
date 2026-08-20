@@ -71,7 +71,7 @@ function facepileClass(key: string) {
 }
 
 function facepileInitial(name: string) {
-    const trimmed = String(name || '').trim();
+    const trimmed = name.trim();
     if (!trimmed) {
         return '?';
     }

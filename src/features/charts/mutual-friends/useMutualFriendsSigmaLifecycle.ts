@@ -1,4 +1,3 @@
-import type Graph from 'graphology';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,6 +9,7 @@ import {
     buildSigmaGraph,
     destroySigmaInstance,
     renderSigmaGraph,
+    type MutualFriendsSigmaGraph,
     type SigmaGraphController,
     type SigmaInstance
 } from './mutualFriendsSigmaGraph';
@@ -43,7 +43,7 @@ export function useMutualFriendsSigmaLifecycle({
     const containerRef = useRef<HTMLElement | null>(null);
     const instanceRef = useRef<SigmaInstance | null>(null);
     const controllerRef = useRef<SigmaGraphController | null>(null);
-    const graphologyRef = useRef<Graph | null>(null);
+    const graphologyRef = useRef<MutualFriendsSigmaGraph | null>(null);
     const resizeObserverRef = useRef<ResizeObserver | null>(null);
     const pendingRenderFrameRef = useRef(0);
     const selectNodeRef = useRef(onSelectNode);

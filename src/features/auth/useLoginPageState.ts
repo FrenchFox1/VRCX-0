@@ -9,7 +9,8 @@ import type {
 } from '@/repositories/authRepository';
 import {
     executeManualLogin,
-    executeSavedCredentialLogin
+    executeSavedCredentialLogin,
+    getAuthSnapshotFromExecutionError
 } from '@/services/authExecutionService';
 import {
     deleteSavedAuthSnapshot,
@@ -50,16 +51,6 @@ type LoginErrors = {
     password: string;
     username: string;
 };
-
-function getAuthSnapshotFromError(error: unknown): SavedAuthSnapshot | null {
-    if (!error || typeof error !== 'object' || !('authSnapshot' in error)) {
-        return null;
-    }
-    const candidate = error.authSnapshot;
-    return candidate && typeof candidate === 'object'
-        ? (candidate as SavedAuthSnapshot)
-        : null;
-}
 
 export function useLoginPageState() {
     const { t } = useTranslation();
@@ -319,7 +310,7 @@ export function useLoginPageState() {
                 t('common.label.authenticated_and_prepared_the_session')
             );
         } catch (error) {
-            const failureSnapshot = getAuthSnapshotFromError(error);
+            const failureSnapshot = getAuthSnapshotFromExecutionError(error);
             if (failureSnapshot) {
                 setSnapshot(failureSnapshot);
             }
@@ -360,7 +351,7 @@ export function useLoginPageState() {
                 )
             );
         } catch (error) {
-            const failureSnapshot = getAuthSnapshotFromError(error);
+            const failureSnapshot = getAuthSnapshotFromExecutionError(error);
             if (failureSnapshot) {
                 setSnapshot(failureSnapshot);
             }

@@ -35,10 +35,6 @@ function normalizeFilters(
     );
 }
 
-function normalizeViewMode(value: unknown): GameLogViewMode {
-    return value === 'sessions' || value === 'table' ? value : 'table';
-}
-
 export function useGameLogFilters() {
     const preferencesReadyRef = useRef(false);
     const [preferencesReady, setPreferencesReady] = useState(false);
@@ -95,11 +91,15 @@ export function useGameLogFilters() {
                             GAME_LOG_SESSION_FILTER_TYPES
                         )
                     );
-                    setTableFavoritesOnly(Boolean(nextTableFavoritesOnly));
-                    setSessionFavoritesOnly(Boolean(nextSessionFavoritesOnly));
-                    setSessionDateFrom(String(nextSessionDateFrom || ''));
-                    setSessionDateTo(String(nextSessionDateTo || ''));
-                    setViewMode(normalizeViewMode(nextViewMode));
+                    setTableFavoritesOnly(nextTableFavoritesOnly);
+                    setSessionFavoritesOnly(nextSessionFavoritesOnly);
+                    setSessionDateFrom(nextSessionDateFrom);
+                    setSessionDateTo(nextSessionDateTo);
+                    setViewMode(
+                        nextViewMode === 'sessions' || nextViewMode === 'table'
+                            ? nextViewMode
+                            : 'table'
+                    );
                     preferencesReadyRef.current = true;
                     setPreferencesReady(true);
                 }

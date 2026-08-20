@@ -11,25 +11,28 @@ export function RouteLoadingFallback() {
     );
 }
 
-type LazyRouteImporter<TModule extends Record<string, unknown>> =
-    () => Promise<TModule>;
+type LazyRouteImporter<TExportName extends string> = () => Promise<
+    Record<TExportName, ComponentType>
+>;
 
 export type AppRouteDefinition = {
     path: string;
-    element: ReactElement<{ to?: string } & Record<string, unknown>>;
+    element: ReactElement<{ to?: string }>;
     titleKey?: string;
     descriptionKey?: string;
 };
 
-function lazyRouteElement<TModule extends Record<string, unknown>>(
-    importPage: LazyRouteImporter<TModule>,
-    exportName: keyof TModule
+function lazyRouteElement<TExportName extends string>(
+    importPage: LazyRouteImporter<TExportName>,
+    exportName: TExportName
 ) {
-    const RouteComponent = lazy(() =>
-        importPage().then((module) => ({
-            default: module[exportName] as ComponentType
-        }))
-    );
+    const loadRouteComponent = async (): Promise<{
+        default: ComponentType;
+    }> => {
+        const module = await importPage();
+        return { default: module[exportName] };
+    };
+    const RouteComponent = lazy(loadRouteComponent);
 
     return (
         <Suspense fallback={<RouteLoadingFallback />}>

@@ -10,15 +10,15 @@ const previousInstanceSearchCollator = new Intl.Collator(undefined, {
 });
 
 type PreviousInstanceLocation = Record<string, unknown> & {
-    groupName?: unknown;
-    location?: unknown;
-    ownerDisplayName?: unknown;
-    ownerUserId?: unknown;
-    owner_user_id?: unknown;
-    tag?: unknown;
-    userId?: unknown;
-    user_id?: unknown;
-    worldName?: unknown;
+    groupName?: string;
+    location?: string;
+    ownerDisplayName?: string;
+    ownerUserId?: string;
+    owner_user_id?: string;
+    tag?: string;
+    userId?: string;
+    user_id?: string;
+    worldName?: string;
 };
 
 export type PreviousInstanceVariant = 'group' | 'world';
@@ -32,32 +32,33 @@ export type PreviousInstanceSortKey =
 
 export type PreviousInstanceRow = Partial<InstanceHistoryEntryOutput> & {
     $location?: PreviousInstanceLocation | null;
-    count?: unknown;
-    created_at?: unknown;
-    duration?: unknown;
-    id?: unknown;
-    left_at?: unknown;
-    leftAt?: unknown;
-    ownerDisplayName?: unknown;
-    ownerId?: unknown;
-    ownerName?: unknown;
-    ownerUserId?: unknown;
-    owner_id?: unknown;
-    owner_user_id?: unknown;
-    userId?: unknown;
-    user_id?: unknown;
-    worldId?: unknown;
+    count?: number;
+    created_at?: string | number | Date;
+    duration?: string | number;
+    id?: string | number;
+    last_ts?: string | number | Date;
+    left_at?: string | number | Date;
+    leftAt?: string | number | Date;
+    ownerDisplayName?: string;
+    ownerId?: string;
+    ownerName?: string;
+    ownerUserId?: string;
+    owner_id?: string;
+    owner_user_id?: string;
+    userId?: string;
+    user_id?: string;
+    worldId?: string;
 };
 
 export type PreviousInstancePlayerRow = PreviousInstanceRow & {
-    displayName?: unknown;
-    display_name?: unknown;
+    displayName?: string;
+    display_name?: string;
 };
 
 export type PreviousInstanceKnownUser = {
     [key: string]: unknown;
-    displayName?: unknown;
-    username?: unknown;
+    displayName?: string;
+    username?: string;
 };
 
 function textValue(value: unknown) {
@@ -83,14 +84,13 @@ function timestampMs(value: unknown) {
     return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : 0;
 }
 
-export function formatPreviousInstanceCount(count: unknown) {
-    const value = Number(count);
-    if (!Number.isFinite(value) || value < 0) {
+export function formatPreviousInstanceCount(count: number) {
+    if (!Number.isFinite(count) || count < 0) {
         return '0';
     }
-    return value >= PREVIOUS_INSTANCE_COUNT_CAP
+    return count >= PREVIOUS_INSTANCE_COUNT_CAP
         ? '9999+'
-        : String(Math.trunc(value));
+        : String(Math.trunc(count));
 }
 
 export function createdTime(row: PreviousInstanceRow | null | undefined) {
@@ -325,7 +325,7 @@ function knownDisplayName(
     return textValue(knownUser?.displayName || knownUser?.username || userId);
 }
 
-function needsKnownDisplayName(displayName: unknown, userId: string) {
+function needsKnownDisplayName(displayName: string, userId: string) {
     return !displayName || displayName === '\u2014' || displayName === userId;
 }
 

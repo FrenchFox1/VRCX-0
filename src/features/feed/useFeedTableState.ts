@@ -119,7 +119,7 @@ export function useFeedTableState({
                         ? parsedFilters.filter(isFeedFilterType)
                         : []
                 );
-                setFavoritesOnly(Boolean(savedVip));
+                setFavoritesOnly(savedVip);
                 setPageSizes(nextPageSizes);
                 setPagination((current) => ({
                     ...current,

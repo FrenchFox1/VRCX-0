@@ -15,6 +15,7 @@ import { selfInviteToInstance } from '@/services/launchService';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -282,7 +283,8 @@ function GroupInstanceRow({
         instance?.instance?.userCount ??
         '';
     const capacity = instance?.capacity ?? instance?.instance?.capacity ?? '';
-    const worldHint = instance?.world?.name || instance?.worldName || '';
+    const worldHint =
+        normalizeString(instance?.world?.name) || instance?.worldName || '';
     const parsedLocation = parseLocation(location);
     const instanceRef = instance?.instance || instance;
     const canUseInstanceAction = Boolean(

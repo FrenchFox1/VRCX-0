@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { InviteMessageType } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository, {
     type NotificationResponse
 } from '@/repositories/notificationPersistenceRepository';
@@ -58,8 +59,8 @@ export function useNotificationActions({
     canInviteFromCurrentLocation: boolean;
     currentInviteLocation?: string;
     currentUserId?: string;
-    notificationTypeLabel: (type: unknown) => string;
-    reload: () => void | Promise<unknown>;
+    notificationTypeLabel: (type: string | undefined) => string;
+    reload: () => void;
     setBoopReplyRequest: (request: NotificationRow | null) => void;
     setInviteResponseRequest: (request: NotificationDialogRequest) => void;
 }) {
@@ -405,7 +406,7 @@ export function useNotificationActions({
     );
 
     const sendInviteResponseWithMessage = useCallback(
-        (notification: NotificationRow, messageType: string) => {
+        (notification: NotificationRow, messageType: InviteMessageType) => {
             if (!currentUserId) {
                 toast.error(
                     t(

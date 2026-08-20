@@ -1,4 +1,8 @@
-import type { FavoriteKind } from '@/domain/favorites/types';
+import type {
+    FavoriteGroupMap,
+    FavoriteKind,
+    FavoriteRecord
+} from '@/domain/favorites/types';
 import type { FavoriteStore } from '@/state/favoriteStore';
 
 import { normalizeFavoriteEntityId as normalizeEntityId } from './favoritesItems';
@@ -26,16 +30,12 @@ type FavoritesCollectionsStoreSlice = Pick<
     loadStatus: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
 function addNormalizedFavoriteIds(
     ids: Set<string>,
-    idsByGroupKey: Record<string, unknown>
+    idsByGroupKey: FavoriteGroupMap
 ) {
     for (const groupIds of Object.values(idsByGroupKey)) {
-        for (const favoriteId of Array.isArray(groupIds) ? groupIds : []) {
+        for (const favoriteId of groupIds) {
             const normalizedId = normalizeEntityId(favoriteId);
             if (normalizedId) {
                 ids.add(normalizedId);
@@ -49,9 +49,9 @@ export function buildFavoriteFriendFactIds({
     kind,
     localFriendFavorites = EMPTY_OBJECT
 }: {
-    groupedFavoriteFriendIdsByGroupKey?: Record<string, unknown>;
+    groupedFavoriteFriendIdsByGroupKey?: FavoriteGroupMap;
     kind: FavoriteKind;
-    localFriendFavorites?: Record<string, unknown>;
+    localFriendFavorites?: FavoriteGroupMap;
 }) {
     if (kind !== 'friend') {
         return [];
@@ -68,9 +68,9 @@ export function buildFavoriteAvatarDetailIds({
     kind,
     localAvatarFavorites = EMPTY_OBJECT
 }: {
-    favoriteAvatarIds?: unknown[];
+    favoriteAvatarIds?: string[];
     kind: FavoriteKind;
-    localAvatarFavorites?: Record<string, unknown>;
+    localAvatarFavorites?: FavoriteGroupMap;
 }) {
     if (kind !== 'avatar') {
         return [];
@@ -92,7 +92,7 @@ export function buildFavoriteAvatarTags({
     remoteFavoritesById = EMPTY_OBJECT
 }: {
     kind: FavoriteKind;
-    remoteFavoritesById?: Record<string, unknown>;
+    remoteFavoritesById?: Record<string, FavoriteRecord>;
 }) {
     if (kind !== 'avatar') {
         return [];
@@ -101,7 +101,6 @@ export function buildFavoriteAvatarTags({
     return Array.from(
         new Set(
             Object.values(remoteFavoritesById)
-                .filter(isRecord)
                 .filter((favorite) => favorite.type === 'avatar')
                 .map((favorite) =>
                     Array.isArray(favorite.tags) &&
@@ -119,9 +118,9 @@ export function buildFavoriteRemoteGroupEntityIds({
     kind,
     remoteFavoritesById = EMPTY_OBJECT
 }: {
-    groupKey: unknown;
+    groupKey: string;
     kind: FavoriteKind;
-    remoteFavoritesById?: Record<string, unknown>;
+    remoteFavoritesById?: Record<string, FavoriteRecord>;
 }): string[] {
     const normalizedGroupKey = normalizeEntityId(groupKey);
     if (!normalizedGroupKey || kind === 'friend') {
@@ -129,11 +128,7 @@ export function buildFavoriteRemoteGroupEntityIds({
     }
 
     const ids = new Set<string>();
-    for (const value of Object.values(remoteFavoritesById)) {
-        if (!isRecord(value)) {
-            continue;
-        }
-        const favorite = value;
+    for (const favorite of Object.values(remoteFavoritesById)) {
         const matchesKind =
             kind === 'avatar'
                 ? favorite.type === 'avatar'

@@ -25,9 +25,9 @@ const ACTIVITY_TYPES = new Set<string>([
 ]);
 
 export function getNotificationLifecycleBucket(
-    type: unknown
+    type: string | null | undefined
 ): NotificationLifecycleBucket {
-    const normalized = String(type || '');
+    const normalized = type ?? '';
     if (ACTION_TYPES.has(normalized)) {
         return 'action';
     }

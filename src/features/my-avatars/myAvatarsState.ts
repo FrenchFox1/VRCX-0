@@ -10,6 +10,7 @@ import {
     sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 
 import type {
     MyAvatarsGridDensity,
@@ -126,10 +127,6 @@ export function writePersistedMyAvatarsState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 export function isMyAvatarsGridDensity(
     value: string
 ): value is MyAvatarsGridDensity {
@@ -189,14 +186,9 @@ export function sanitizeMyAvatarsPageSizes(value: unknown): number[] {
 
 export function resolveMyAvatarsPageSize(
     candidate: unknown,
-    allowed: unknown,
-    fallback: unknown = MY_AVATARS_DEFAULT_PAGE_SIZES[1]
+    pageSizes: readonly number[],
+    fallback: number = MY_AVATARS_DEFAULT_PAGE_SIZES[1]
 ): number {
-    const pageSizes = Array.isArray(allowed)
-        ? allowed.filter(
-              (size): size is number => Number.isFinite(size) && size > 0
-          )
-        : MY_AVATARS_DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : MY_AVATARS_DEFAULT_PAGE_SIZES[0];
@@ -213,12 +205,11 @@ export function resolveMyAvatarsPageSize(
         return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
 
-    const parsedFallback = Number.parseInt(String(fallback), 10);
-    if (pageSizes.includes(parsedFallback)) {
-        return parsedFallback;
+    if (pageSizes.includes(fallback)) {
+        return fallback;
     }
 
-    return nearestPageSize(Number(fallback) || fallbackPageSize);
+    return nearestPageSize(fallback);
 }
 
 export function sanitizeMyAvatarsGridDensity(
@@ -235,22 +226,20 @@ export function resolveMyAvatarsGridDensity({
     legacyGridDensity,
     legacyCardScale
 }: {
-    persistedDensity?: unknown;
-    legacyGridDensity?: unknown;
-    legacyCardScale?: unknown;
+    persistedDensity?: string;
+    legacyGridDensity?: string;
+    legacyCardScale?: string;
 } = {}): MyAvatarsGridDensity {
-    const normalized =
-        typeof persistedDensity === 'string' ? persistedDensity.trim() : '';
+    const normalized = persistedDensity?.trim() ?? '';
     if (isMyAvatarsGridDensity(normalized)) {
         return normalized;
     }
-    const normalizedLegacyDensity =
-        typeof legacyGridDensity === 'string' ? legacyGridDensity.trim() : '';
+    const normalizedLegacyDensity = legacyGridDensity?.trim() ?? '';
     if (LEGACY_GRID_DENSITY_ALIASES[normalizedLegacyDensity]) {
         return LEGACY_GRID_DENSITY_ALIASES[normalizedLegacyDensity];
     }
 
-    const legacyScale = Number.parseFloat(String(legacyCardScale));
+    const legacyScale = Number.parseFloat(legacyCardScale ?? '');
     if (!Number.isFinite(legacyScale)) {
         return MY_AVATARS_DEFAULT_GRID_DENSITY;
     }

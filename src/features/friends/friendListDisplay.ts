@@ -5,8 +5,8 @@ import {
     userStatusSortRank
 } from '@/shared/utils/userStatus';
 
-export function languageCodeLabel(languageKey: unknown) {
-    const key = String(languageKey ?? '')
+export function languageCodeLabel(languageKey: string) {
+    const key = languageKey
         .trim()
         .toLowerCase()
         .replace(/^language_/, '');

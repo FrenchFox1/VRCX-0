@@ -6,10 +6,8 @@ export interface LocalWorldFavoritesSnapshot {
     groupNames: string[];
 }
 
-function normalize(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalize(value: string | null | undefined): string {
+    return (value ?? '').trim();
 }
 
 export async function loadLocalWorldFavoritesSnapshot(): Promise<LocalWorldFavoritesSnapshot> {

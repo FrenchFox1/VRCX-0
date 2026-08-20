@@ -559,10 +559,10 @@ export function useUserActivityPanelController({
 
             const nextPeriod = normalizeActivityPeriod(period);
             const nextSortBy = normalizeTopWorldsSort(sortBy);
-            const nextExcludeStart = String(overlapExcludeStart);
-            const nextExcludeEnd = String(overlapExcludeEnd);
-            const nextExcludeHomeWorld = Boolean(excludeHomeWorld);
-            const nextExcludeOverlap = Boolean(overlapExcludeEnabled);
+            const nextExcludeStart = overlapExcludeStart;
+            const nextExcludeEnd = overlapExcludeEnd;
+            const nextExcludeHomeWorld = excludeHomeWorld;
+            const nextExcludeOverlap = overlapExcludeEnabled;
             setSelectedPeriod(nextPeriod);
             setTopWorldsSortBy(nextSortBy);
             setExcludeHomeWorldEnabled(nextExcludeHomeWorld);

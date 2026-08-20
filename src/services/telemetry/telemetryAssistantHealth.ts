@@ -1,3 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
+
 import { recordTelemetryEvent } from './telemetryEvent';
 
 type AssistantToolErrorInput = {
@@ -22,10 +24,6 @@ const SAFE_STRING_ARG_KEYS = new Set([
     'time_window',
     'type'
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function summarizeArgValue(key: string, value: unknown): string {
     if (value === null) {

@@ -11,7 +11,7 @@ const FRIEND_STATUSES = [
 type FriendStatus = (typeof FRIEND_STATUSES)[number];
 
 function isFriendStatus(value: string): value is FriendStatus {
-    return (FRIEND_STATUSES as readonly string[]).includes(value);
+    return FRIEND_STATUSES.some((status) => status === value);
 }
 
 function normalizeUserStatus(value: unknown): string {

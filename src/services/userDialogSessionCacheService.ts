@@ -1,6 +1,5 @@
 import type { InstanceHistoryEntryOutput } from '@/platform/tauri/bindings';
-
-import { normalizeUserId } from './userProfileFields';
+import { normalizeString } from '@/shared/utils/string';
 
 export type UserDialogPreviousDisplayName = {
     displayName: string;
@@ -44,12 +43,12 @@ const cachedPreviousInstancesByTarget = new Map<
     UserDialogPreviousInstance[]
 >();
 
-export function dialogTargetKey(endpoint: unknown, userId: unknown) {
-    const normalizedUserId = normalizeUserId(userId);
+export function dialogTargetKey(endpoint: string, userId: string) {
+    const normalizedUserId = normalizeString(userId);
     if (!normalizedUserId) {
         return '';
     }
-    return `${normalizeUserId(endpoint)}:${normalizedUserId}`;
+    return `${normalizeString(endpoint)}:${normalizedUserId}`;
 }
 
 function clonePreviousDisplayNames(
@@ -59,7 +58,7 @@ function clonePreviousDisplayNames(
         ? source.map((entry) => {
               const row = record(entry);
               return {
-                  displayName: normalizeUserId(row.displayName),
+                  displayName: normalizeString(row.displayName),
                   ...(typeof row.updated_at === 'string'
                       ? { updated_at: row.updated_at }
                       : {})
@@ -89,10 +88,10 @@ function cloneUserStats(source: unknown = DEFAULT_USER_STATS): UserDialogStats {
             : undefined;
 
     return {
-        timeSpent: Number(stats?.timeSpent) || 0,
-        lastSeen: normalizeUserId(stats.lastSeen),
-        friendedAt: normalizeUserId(stats.friendedAt),
-        joinCount: Number(stats?.joinCount) || 0,
+        timeSpent: Number(stats.timeSpent) || 0,
+        lastSeen: normalizeString(stats.lastSeen),
+        friendedAt: normalizeString(stats.friendedAt),
+        joinCount: Number(stats.joinCount) || 0,
         previousDisplayNames,
         ...(previousDisplayNameSources ? { previousDisplayNameSources } : {})
     };

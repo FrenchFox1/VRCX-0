@@ -1,3 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
+
 import hmdDefaultScopes from './overlayActivityHmdDefaults.json';
 
 export type OverlayActivityCategory =
@@ -441,10 +443,6 @@ export function disabledOverlayActivityFilterProfileFromDefinitions(
 
 export function overlayActivityTypeLabelKey(type: string) {
     return type.replace(/\./g, '_');
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function cloneOverlayActivityTypeRules(

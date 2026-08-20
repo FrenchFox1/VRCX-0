@@ -1,7 +1,26 @@
 import { openUGCPhotosFolder } from '@/services/shellIntegrationService';
 import { normalizeAutoDeletePrintsLimit } from '@/state/preferencesStore';
 
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type MediaSectionInput = SettingsSectionInput<
+    | 'prefs'
+    | 'commit'
+    | 'setScreenshotHelperPreference'
+    | 'setScreenshotHelperModifyFilenamePreference'
+    | 'setScreenshotHelperCopyToClipboardPreference'
+    | 'deleteAllScreenshotMetadata'
+    | 'openUgcFolderSelector'
+    | 'resetUgcFolder'
+    | 'setSaveInstancePrintsPreference'
+    | 'handleCropInstancePrintsChange'
+    | 'setSaveInstanceStickersPreference'
+    | 'setSaveInstanceEmojiPreference'
+    | 'setPrefs'
+    | 'savePreferenceValue'
+    | 'saveBoolPreference'
+    | 'setIntConfigPreference'
+>;
 
 export function buildMediaSection({
     prefs,
@@ -20,7 +39,7 @@ export function buildMediaSection({
     savePreferenceValue,
     saveBoolPreference,
     setIntConfigPreference
-}: BuildSettingsPageStateSectionsInput) {
+}: MediaSectionInput) {
     return {
         commit,
         setScreenshotHelperPreference,

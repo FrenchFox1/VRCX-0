@@ -5,21 +5,26 @@ import {
     buildSettingsPageStateSections,
     type BuildSettingsPageStateSectionsInput
 } from './settingsPageStateSections';
+import type { AvatarProviderConfig } from './useAvatarProviderConfig';
 
 function createInput(
     overrides: Partial<BuildSettingsPageStateSectionsInput> = {}
 ): BuildSettingsPageStateSectionsInput {
     const callback = vi.fn();
     const asyncCallback = vi.fn(async () => undefined);
+    const prefs = createDefaultSettingsPrefs();
+    const avatarProviderConfig: AvatarProviderConfig = {
+        enabled: true,
+        providerList: [],
+        selectedProvider: ''
+    };
 
     return {
         activeSettingsTab: 'system',
         addAvatarProvider: callback,
-        avatarProviderConfig: {
-            enabled: true,
-            providerList: [],
-            selectedProvider: ''
-        },
+        applyAvatarProviderConfig: callback,
+        avatarProviderConfig,
+        avatarProviderConfigRef: { current: avatarProviderConfig },
         avatarProviderDialogOpen: false,
         configTreeData: {},
         commit: callback,
@@ -78,7 +83,7 @@ function createInput(
         openTranslationApiDialog: callback,
         openUgcFolderSelector: callback,
         openYoutubeApiDialog: callback,
-        prefs: createDefaultSettingsPrefs(),
+        prefs,
         promptAutoLoginDelaySeconds: callback,
         promptBackgroundModeDelayMinutes: callback,
         purgeAvatarFeedData: asyncCallback,
@@ -93,26 +98,41 @@ function createInput(
         resetUgcFolder: callback,
         removeAvatarProvider: callback,
         saveAvatarProviderEnabled: callback,
+        saveAvatarProviderConfig: vi.fn(
+            async (config: AvatarProviderConfig) => config
+        ),
         saveAvatarProviderField: callback,
         saveBoolPreference: callback,
         saveCustomFontFamily: asyncCallback,
-        saveDesktopNotificationActivityFilters: asyncCallback,
+        saveDesktopNotificationActivityFilters: vi.fn(
+            async () => prefs.desktopNotificationActivityFilters
+        ),
         saveDiscordBoolPreference: callback,
         saveFontFamilyPreference: callback,
-        saveHmdNotificationActivityFilters: asyncCallback,
+        saveHmdNotificationActivityFilters: vi.fn(
+            async () => prefs.hmdNotificationActivityFilters
+        ),
         saveIntegrationBoolPreference: callback,
         saveInterfaceZoomLevel: callback,
         saveNotificationTtsMode: callback,
         saveNotificationTtsVoice: callback,
-        saveOverlayActivityFilters: asyncCallback,
+        saveOverlayActivityFilters: vi.fn(
+            async () => prefs.overlayActivityFilters
+        ),
         savePreferenceValue: callback,
         saveStringPreference: callback,
         saveTableLimitsDialog: callback,
         saveTranslationApiConfig: asyncCallback,
         saveTrustColor: callback,
-        saveTtsNotificationActivityFilters: asyncCallback,
-        saveVrNotificationActivityFilters: asyncCallback,
-        saveWebhookActivityFilters: asyncCallback,
+        saveTtsNotificationActivityFilters: vi.fn(
+            async () => prefs.ttsNotificationActivityFilters
+        ),
+        saveVrNotificationActivityFilters: vi.fn(
+            async () => prefs.vrNotificationActivityFilters
+        ),
+        saveWebhookActivityFilters: vi.fn(
+            async () => prefs.webhookActivityFilters
+        ),
         saveWristOverlayEnabled: callback,
         saveYoutubeApiKey: asyncCallback,
         searchLimitError: '',
@@ -129,6 +149,7 @@ function createInput(
         setDesktopNotificationsDialogOpen: callback,
         setHmdNotificationsDialogOpen: callback,
         setIntConfigPreference: callback,
+        setIntegrationValue: callback,
         setNotificationLayoutPreference: callback,
         setNotificationTtsTest: callback,
         setNotificationTtsTestVisible: callback,
@@ -162,6 +183,7 @@ function createInput(
         setYoutubeApiDialogOpen: callback,
         setYoutubeApiEnabledPreference: callback,
         setYoutubeApiKeyDraft: callback,
+        setZoomLevelPreference: callback,
         setZoomInput: callback,
         speakNotificationTts: callback,
         sqliteTableSizes: {},
@@ -200,6 +222,7 @@ function createInput(
         youtubeApiDialogOpen: false,
         youtubeApiKeyDraft: '',
         zoomInput: '100',
+        zoomLevel: 1,
         ...overrides
     };
 }

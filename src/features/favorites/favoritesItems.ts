@@ -5,8 +5,8 @@ import type { FavoriteKind } from '@/domain/favorites/types';
 import type { VrchatFavoriteType } from '@/platform/tauri/bindings';
 
 type SortableFavoriteItem = {
-    id?: unknown;
-    title?: unknown;
+    id: string;
+    title?: string;
     orderIndex?: number;
     playerCount?: number;
 };
@@ -40,8 +40,8 @@ export function normalizeFavoriteSortValue(
     return DEFAULT_SORT_VALUE;
 }
 
-export function normalizeFavoriteSearchValue(value: unknown): string {
-    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+export function normalizeFavoriteSearchValue(value: string): string {
+    return value.trim().toLowerCase();
 }
 
 export function normalizeFavoriteEntityId(value: unknown): string {
@@ -107,7 +107,7 @@ export function shrinkFavoriteImage(url: unknown): string {
 
 export function favoriteGroupType(
     kind: FavoriteKind,
-    group: { type?: unknown }
+    group: { type?: string }
 ): VrchatFavoriteType {
     if (
         group.type === 'avatar' ||

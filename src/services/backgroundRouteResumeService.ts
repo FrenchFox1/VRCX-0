@@ -1,11 +1,8 @@
 export const BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY =
     'VRCX_BackgroundModeResumeRoute';
 
-export function normalizeBackgroundResumeRoute(value: unknown): string {
-    const route = String(value ?? '')
-        .trim()
-        .replace(/^#/, '')
-        .trim();
+export function normalizeBackgroundResumeRoute(value: string | null): string {
+    const route = value?.trim().replace(/^#/, '').trim() ?? '';
     if (
         !route ||
         route === '/' ||

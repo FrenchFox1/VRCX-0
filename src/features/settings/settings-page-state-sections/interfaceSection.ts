@@ -3,7 +3,36 @@ import { normalizeFeedTimeDisplayMode } from '@/state/preferencesStore';
 import type { NotificationLayout, TableDensity } from '@/state/shellStore';
 
 import { notificationLayoutOptions } from '../settingsOptions';
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type InterfaceSectionInput = SettingsSectionInput<
+    | 'locale'
+    | 'prefs'
+    | 'zoomInput'
+    | 'zoomLevel'
+    | 'commit'
+    | 'setAppLanguagePreference'
+    | 'openCustomFontDialog'
+    | 'saveFontFamilyPreference'
+    | 'selectCjkFontPack'
+    | 'setZoomInput'
+    | 'setZoomLevelPreference'
+    | 'saveBoolPreference'
+    | 'savePreferenceValue'
+    | 'setDataTableStripedPreference'
+    | 'setAccessibleStatusIndicatorsPreference'
+    | 'setShowNewDashboardButtonPreference'
+    | 'openTablePageSizesDialog'
+    | 'openTableLimitsDialog'
+    | 'setIntConfigPreference'
+    | 'resetTrustColors'
+    | 'saveTrustColor'
+    | 'setPrefs'
+    | 'saveInterfaceZoomLevel'
+    | 'setNotificationLayoutPreference'
+    | 'saveStringPreference'
+    | 'setTableDensityPreference'
+>;
 
 export function buildInterfaceSection({
     locale,
@@ -32,7 +61,7 @@ export function buildInterfaceSection({
     setNotificationLayoutPreference,
     saveStringPreference,
     setTableDensityPreference
-}: BuildSettingsPageStateSectionsInput) {
+}: InterfaceSectionInput) {
     return {
         locale,
         zoomInput,

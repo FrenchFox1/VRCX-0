@@ -79,11 +79,11 @@ export function FriendLogEmptyState({
     return <EmptyState {...props} title={title} description={description} />;
 }
 
-export function friendLogTypeLabel(type: unknown, t: TFunction) {
+export function friendLogTypeLabel(type: string, t: TFunction) {
     return isFriendLogType(type) ? t(`view.friend_log.filters.${type}`) : '';
 }
 
-function FriendLogTypeIcon({ type }: { type: unknown }) {
+function FriendLogTypeIcon({ type }: { type: string }) {
     if (!isFriendLogType(type)) {
         return null;
     }
@@ -93,9 +93,9 @@ function FriendLogTypeIcon({ type }: { type: unknown }) {
     );
 }
 
-export function FriendLogTypeIndicator({ type }: { type: unknown }) {
+export function FriendLogTypeIndicator({ type }: { type: string }) {
     const { t } = useTranslation();
-    const label = friendLogTypeLabel(type, t) || String(type || '');
+    const label = friendLogTypeLabel(type, t) || type;
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">
             <FriendLogTypeIcon type={type} />

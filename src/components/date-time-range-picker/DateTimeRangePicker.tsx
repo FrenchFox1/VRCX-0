@@ -4,7 +4,6 @@ import {
     useMemo,
     useState,
     type ReactElement,
-    type ReactNode,
     type ComponentProps
 } from 'react';
 import type { DateRange } from 'react-day-picker';
@@ -50,7 +49,7 @@ interface DateTimeRangePickerProps {
     disabled?: ComponentProps<typeof Calendar>['disabled'];
     align?: 'start' | 'center' | 'end';
     triggerClassName?: string;
-    renderTrigger?: (state: { active: boolean; label: string }) => ReactNode;
+    renderTrigger?: (state: { active: boolean; label: string }) => ReactElement;
 }
 
 function twoDigitOptions(count: number) {
@@ -197,10 +196,10 @@ export function DateTimeRangePicker({
             <PopoverTrigger
                 render={
                     renderTrigger ? (
-                        (renderTrigger({
+                        renderTrigger({
                             active,
                             label: triggerLabel
-                        }) as ReactElement)
+                        })
                     ) : (
                         <Button
                             type="button"

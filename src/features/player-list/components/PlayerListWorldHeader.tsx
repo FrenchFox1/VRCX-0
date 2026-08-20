@@ -30,12 +30,12 @@ function isInstanceProfile(value: unknown): value is CurrentInstanceProfile {
 
 type PlayerListWorldHeaderProps = {
     clockNow: number;
-    currentUserLocation?: unknown;
+    currentUserLocation?: string;
     friendCount: number;
     instanceSnapshot: PlayerListContext;
     isGameRunning: boolean;
     playerCount: number;
-    startedAt?: unknown;
+    startedAt?: string | null;
 };
 
 export function PlayerListWorldHeader({

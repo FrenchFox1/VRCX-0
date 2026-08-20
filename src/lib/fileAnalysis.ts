@@ -10,6 +10,7 @@ import {
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { compareUnityVersion } from '@/shared/utils/avatar';
 import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils';
+import { isRecord } from '@/shared/utils/record';
 
 type UnityPackage = Record<string, unknown> & {
     assetUrl?: string;
@@ -35,12 +36,6 @@ function formatMiB(value: unknown) {
 
 function normalizePlatform(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(
-        value && (typeof value === 'object' || typeof value === 'function')
-    );
 }
 
 function isAnalyzablePackage(

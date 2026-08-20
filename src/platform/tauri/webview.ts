@@ -1,7 +1,7 @@
 import { normalizePlatformError } from './errors';
 
 type WebviewWindowLike = {
-    setZoom?: (zoom: number) => Promise<unknown> | unknown;
+    setZoom?: (zoom: number) => Promise<void>;
     scaleFactor?: (() => Promise<number> | number) | number;
 };
 
@@ -18,19 +18,15 @@ export type WindowResizeDirection =
 export type WindowTheme = 'light' | 'dark';
 
 type WindowLike = {
-    startDragging?: () => Promise<unknown> | unknown;
-    startResizeDragging?: (
-        direction: WindowResizeDirection
-    ) => Promise<unknown> | unknown;
-    minimize?: () => Promise<unknown> | unknown;
-    toggleMaximize?: () => Promise<unknown> | unknown;
-    close?: () => Promise<unknown> | unknown;
+    startDragging?: () => Promise<void>;
+    startResizeDragging?: (direction: WindowResizeDirection) => Promise<void>;
+    minimize?: () => Promise<void>;
+    toggleMaximize?: () => Promise<void>;
+    close?: () => Promise<void>;
     isMaximized?: () => Promise<boolean> | boolean;
-    setFocus?: () => Promise<unknown> | unknown;
-    requestUserAttention?: (
-        requestType: number | null
-    ) => Promise<unknown> | unknown;
-    setTheme?: (theme: WindowTheme | null) => Promise<unknown> | unknown;
+    setFocus?: () => Promise<void>;
+    requestUserAttention?: (requestType: number | null) => Promise<void>;
+    setTheme?: (theme: WindowTheme | null) => Promise<void>;
 };
 
 async function loadCurrentWebviewWindow() {
@@ -68,7 +64,7 @@ export async function getCurrentWindow(): Promise<WindowLike> {
     return getWindow();
 }
 
-export async function setZoom(zoom: number): Promise<unknown> {
+export async function setZoom(zoom: number): Promise<void> {
     const current = await getCurrentWebviewWindow();
     if (current && typeof current.setZoom === 'function') {
         return current.setZoom(zoom);
@@ -93,7 +89,7 @@ export async function getScaleFactor(): Promise<number | null> {
     return null;
 }
 
-export async function startDraggingWindow(): Promise<unknown> {
+export async function startDraggingWindow(): Promise<void> {
     const current = await getCurrentWindow();
     if (current && typeof current.startDragging === 'function') {
         return current.startDragging();
@@ -103,7 +99,7 @@ export async function startDraggingWindow(): Promise<unknown> {
 
 export async function startResizeDraggingWindow(
     direction: WindowResizeDirection
-): Promise<unknown> {
+): Promise<void> {
     const current = await getCurrentWindow();
     if (current && typeof current.startResizeDragging === 'function') {
         return current.startResizeDragging(direction);
@@ -111,7 +107,7 @@ export async function startResizeDraggingWindow(
     return undefined;
 }
 
-export async function minimizeWindow(): Promise<unknown> {
+export async function minimizeWindow(): Promise<void> {
     const current = await getCurrentWindow();
     if (current && typeof current.minimize === 'function') {
         return current.minimize();
@@ -119,7 +115,7 @@ export async function minimizeWindow(): Promise<unknown> {
     return undefined;
 }
 
-export async function toggleMaximizeWindow(): Promise<unknown> {
+export async function toggleMaximizeWindow(): Promise<void> {
     const current = await getCurrentWindow();
     if (current && typeof current.toggleMaximize === 'function') {
         return current.toggleMaximize();
@@ -127,7 +123,7 @@ export async function toggleMaximizeWindow(): Promise<unknown> {
     return undefined;
 }
 
-export async function closeWindow(): Promise<unknown> {
+export async function closeWindow(): Promise<void> {
     const current = await getCurrentWindow();
     if (current && typeof current.close === 'function') {
         return current.close();
@@ -135,7 +131,7 @@ export async function closeWindow(): Promise<unknown> {
     return undefined;
 }
 
-export async function focusWindow(): Promise<unknown> {
+export async function focusWindow(): Promise<void> {
     const current = await getCurrentWindow();
     if (current && typeof current.setFocus === 'function') {
         return current.setFocus();
@@ -143,7 +139,7 @@ export async function focusWindow(): Promise<unknown> {
     return undefined;
 }
 
-export async function flashWindow(): Promise<unknown> {
+export async function flashWindow(): Promise<void> {
     const module = await loadWindowModule();
     const current: WindowLike = module.getCurrentWindow();
     if (current && typeof current.requestUserAttention === 'function') {
@@ -154,9 +150,7 @@ export async function flashWindow(): Promise<unknown> {
     return undefined;
 }
 
-export async function setWindowTheme(
-    theme: WindowTheme | null
-): Promise<unknown> {
+export async function setWindowTheme(theme: WindowTheme | null): Promise<void> {
     const current = await getCurrentWindow();
     if (current && typeof current.setTheme === 'function') {
         return current.setTheme(theme);

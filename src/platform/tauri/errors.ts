@@ -1,3 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
+
 import type {
     AppErrorCode,
     AppErrorPayload,
@@ -28,10 +30,6 @@ export class PlatformCommandError extends Error {
         this.port = payload.port ?? undefined;
         this.cause = cause;
     }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
 }
 
 function appErrorCode(value: unknown): AppErrorCode | null {

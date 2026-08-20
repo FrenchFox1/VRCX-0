@@ -146,10 +146,7 @@ export function MyAvatarsEmptyState({
 }
 
 export function openAvatarDetails(avatar: MyAvatarRow | null | undefined) {
-    const avatarId =
-        typeof avatar?.id === 'string'
-            ? avatar.id.trim()
-            : String(avatar?.id ?? '').trim();
+    const avatarId = avatar?.id?.trim() ?? '';
     if (!avatarId) {
         return;
     }

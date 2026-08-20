@@ -28,7 +28,7 @@ export function useModerationPageController({
             ? new Set(filters.selectedTypes)
             : null;
         return rowsState.rows.filter((row) => {
-            if (activeTypeSet && !activeTypeSet.has(row.type || '')) {
+            if (activeTypeSet && !activeTypeSet.has(row.type)) {
                 return false;
             }
             return matchesModerationSearch(row, filters.searchQuery);

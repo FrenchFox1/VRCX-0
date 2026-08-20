@@ -25,11 +25,11 @@ export type UserDialogProfileRecord = CurrentUserPresenceRecord & {
 export type UserDialogProfileSnapshot = UserDialogProfileRecord | null;
 
 export type UserDialogAvatarRecord = Record<string, unknown> & {
-    id?: unknown;
-    name?: unknown;
-    imageUrl?: unknown;
-    thumbnailImageUrl?: unknown;
-    avatarName?: unknown;
+    id?: string | null;
+    name?: string | null;
+    imageUrl?: string | null;
+    thumbnailImageUrl?: string | null;
+    avatarName?: string | null;
 };
 
 export type UserDialogProfileLoadStatus =
@@ -53,7 +53,7 @@ export type UserDialogGameStateInput = Omit<
 export type UseUserDialogProfileResourceInput = {
     activitySnapshot?: unknown;
     currentEndpoint?: string;
-    currentUserSnapshot?: unknown;
+    currentUserSnapshot?: UserDialogProfileRecord | null;
     gameState?: UserDialogGameStateInput | null;
     isFriend?: boolean;
     isTargetCurrentUser: boolean;

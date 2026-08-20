@@ -39,7 +39,7 @@ export function useModerationRowActions({
         { skipConfirm = false }: DeleteModerationOptions = {}
     ) => {
         const ownerUserId = currentUserId;
-        if (!ownerUserId || row?.sourceUserId !== ownerUserId) {
+        if (!ownerUserId || row.sourceUserId !== ownerUserId) {
             return;
         }
         const result = skipConfirm

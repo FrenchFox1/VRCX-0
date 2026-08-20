@@ -35,7 +35,6 @@ describe('playerListRows', () => {
             Array.from(
                 buildFavoriteIdSet([' usr_remote ', 'usr_shared', ''], {
                     groupA: ['usr_local', 'usr_shared'],
-                    groupB: null,
                     groupC: ['usr_other']
                 })
             )

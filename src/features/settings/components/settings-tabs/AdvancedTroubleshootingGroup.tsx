@@ -33,11 +33,11 @@ type DiagnosticAction = 'config' | 'online' | 'tables';
 type AdvancedTroubleshootingGroupProps = {
     configTreeData: Record<string, unknown>;
     onClearConfigTreeData: () => void;
-    onLogResourceLoadChange: (checked: boolean) => unknown;
+    onLogResourceLoadChange: (checked: boolean) => void;
     onRefreshConfigTreeData: SettingsAdvancedAction;
     onRefreshOnlineVisits: SettingsAdvancedAction;
     onRefreshSqliteTableSizes: SettingsAdvancedAction;
-    onUdonExceptionLoggingChange: (checked: boolean) => unknown;
+    onUdonExceptionLoggingChange: (checked: boolean) => void;
     onlineVisitCount: number | null;
     prefs: SettingsAdvancedPrefs;
     sqliteTableSizeRows: ReadonlyArray<readonly [string, string]>;

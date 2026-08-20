@@ -6,7 +6,7 @@ interface HoverCardNodeData {
     x: number;
     y: number;
     size: number;
-    label?: string;
+    label?: string | null;
     fullLabel?: string;
     lastFetchedAt?: string | null;
     optedOut?: boolean;

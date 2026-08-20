@@ -9,10 +9,7 @@ import type {
     GalleryAssetActionDeps,
     GalleryUploadOptions
 } from './galleryTypes';
-import {
-    buildPrintUploadParams,
-    resolvePrintCropWhiteBorder
-} from './galleryUploadParams';
+import { buildPrintUploadParams } from './galleryUploadParams';
 import {
     buildEmojiUploadParams,
     type EmojiUploadSettings
@@ -64,7 +61,7 @@ export function createGalleryAssetActions({
     function setTabLoading(tab: GalleryAssetTab, value: boolean) {
         setLoadingByTab((current) => ({
             ...current,
-            [tab]: Boolean(value)
+            [tab]: value
         }));
     }
     function updateAssets<TTab extends GalleryAssetTab>(
@@ -207,9 +204,7 @@ export function createGalleryAssetActions({
         if (tab === 'prints') {
             return mediaRepository.uploadAssetImage(base64Body, {
                 assetKind: tab,
-                cropWhiteBorder: resolvePrintCropWhiteBorder(
-                    uploadOptions.cropWhiteBorder
-                ),
+                cropWhiteBorder: uploadOptions.cropWhiteBorder ?? true,
                 params: buildPrintUploadParams({
                     note: uploadOptions.note,
                     timestamp: getLocalTimestampString()

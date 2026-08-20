@@ -7,6 +7,7 @@ import {
     type ComparableRecord,
     type Comparator
 } from '@/shared/utils/compare';
+import { isRecord } from '@/shared/utils/record';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 
 import type {
@@ -30,8 +31,8 @@ type UserDialogRow = ComparableRecord & {
     statusDescription?: string;
     subtitle?: string;
     targetUserId?: string;
-    travelingToTime?: unknown;
-    traveling_to_time?: unknown;
+    travelingToTime?: number | string | null;
+    traveling_to_time?: number | string | null;
     updatedAt?: string;
     userCount?: number;
     userId?: string;
@@ -39,7 +40,7 @@ type UserDialogRow = ComparableRecord & {
     $favoriteGroup?: string;
     $location_at?: string | number;
     $subtitle?: string;
-    $travelingToTime?: unknown;
+    $travelingToTime?: number | string | null;
 };
 
 export type PreviousDisplayNameRow = {
@@ -55,10 +56,6 @@ export type PreviousDisplayNameSources = {
 export type PreviousDisplayNameSource = keyof PreviousDisplayNameSources;
 
 type TranslateFn = (key: string) => string;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 export function firstArray(...values: unknown[]) {
     return values.find((value) => Array.isArray(value)) || [];
@@ -135,10 +132,8 @@ export function groupDisplayName(row: unknown, fallback = 'Group') {
     );
 }
 
-export function filterRows<T extends UserDialogRow>(rows: T[], query: unknown) {
-    const normalizedQuery = String(query || '')
-        .trim()
-        .toLowerCase();
+export function filterRows<T extends UserDialogRow>(rows: T[], query: string) {
+    const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
         return rows;
     }
@@ -237,9 +232,8 @@ export function formatStatsDate(value: unknown) {
     return formatDateFilterOrFallback(value, 'long', { empty: DASH });
 }
 
-export function formatStatsDuration(value: unknown) {
-    const duration = Number(value) || 0;
-    return duration > 0 ? timeToText(duration) : DASH;
+export function formatStatsDuration(value: number | null | undefined) {
+    return typeof value === 'number' && value > 0 ? timeToText(value) : DASH;
 }
 
 export function normalizePreviousDisplayNames(value: unknown) {
@@ -330,7 +324,7 @@ export function isUndisclosedMutualFriendRow(
     return userIdForRow(row) === UNDISCLOSED_MUTUAL_FRIEND_ID;
 }
 
-export function formatCountText(count: unknown, max: unknown) {
+export function formatCountText(count: number, max: unknown) {
     const normalizedMax = Number(max) || 0;
     return normalizedMax ? `${count}/${normalizedMax}` : String(count);
 }
@@ -362,7 +356,7 @@ export function userTravelingTimestamp(row: UserDialogRow) {
 
 export function userRowSubtitle(
     row: UserDialogRow,
-    nowMs: unknown,
+    nowMs: number,
     t: TranslateFn
 ) {
     if (userTravelingTimestamp(row)) {
@@ -380,9 +374,8 @@ export function userRowSubtitle(
             row?.createdAt
     );
     const timestamp = joinedAt ? Date.parse(joinedAt) : Number.NaN;
-    const normalizedNowMs = Number(nowMs);
-    if (!Number.isNaN(timestamp) && Number.isFinite(normalizedNowMs)) {
-        return timeToText(normalizedNowMs - timestamp);
+    if (!Number.isNaN(timestamp) && Number.isFinite(nowMs)) {
+        return timeToText(nowMs - timestamp);
     }
     return row?.statusDescription || userStatusLabel(row, t);
 }

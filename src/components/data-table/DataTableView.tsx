@@ -7,6 +7,7 @@ import {
     useSensor,
     useSensors
 } from '@dnd-kit/core';
+import type { UniqueIdentifier } from '@dnd-kit/core';
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
     SortableContext,
@@ -64,8 +65,8 @@ import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu';
 
 function moveColumnByDrag<TData extends RowData>(
     table: AppTable<TData>,
-    activeId: unknown,
-    overId: unknown
+    activeId: UniqueIdentifier,
+    overId: UniqueIdentifier | undefined
 ) {
     if (!activeId || !overId || activeId === overId) {
         return;

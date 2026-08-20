@@ -629,7 +629,10 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         localFavoriteFriendsGroups: Array.isArray(
             next.localFavoriteFriendsGroups
         )
-            ? next.localFavoriteFriendsGroups.filter(Boolean)
+            ? next.localFavoriteFriendsGroups.filter(
+                  (groupKey): groupKey is string =>
+                      typeof groupKey === 'string' && Boolean(groupKey)
+              )
             : [],
         feedHiddenUsers: normalizeFeedHiddenUsers(next.feedHiddenUsers),
         overlayActivityFilters: parseOverlayActivityFiltersPreference(

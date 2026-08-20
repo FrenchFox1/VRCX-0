@@ -606,8 +606,7 @@ pub fn export_bindings() -> Result<(), String> {
                 "/../src/platform/tauri/bindings.ts"
             );
             let patched = patch_bindings(&raw)?;
-            std::fs::write(path, patched)
-                .map_err(|error| format!("write bindings.ts: {error}"))
+            std::fs::write(path, patched).map_err(|error| format!("write bindings.ts: {error}"))
         })
         .map_err(|error| format!("spawn export thread: {error}"))?
         .join()
@@ -616,6 +615,7 @@ pub fn export_bindings() -> Result<(), String> {
 
 // Post-process the tauri-specta output to fit this app's frontend bridge:
 // - route the generated invoke through the repo error-logging wrapper,
+// - preserve the generated command return type while exposing typed rejections,
 // - drop the placeholder `TAURI_CHANNEL` type and an unused Channel import,
 // - remove `any` from the generated event helper;
 // - fail before writing when the generated shape no longer satisfies these invariants.
@@ -624,6 +624,25 @@ fn patch_bindings(raw: &str) -> Result<String, String> {
     let mut routed_invoke = false;
     for line in raw.lines() {
         let trimmed = line.trim();
+        if trimmed == "export const commands = {" {
+            out.push("const generatedCommands = {".to_string());
+            continue;
+        }
+        if trimmed == "/** user-defined events **/" {
+            out.extend([
+                "type TypedCommands<TCommands> = {".to_string(),
+                "    [TName in keyof TCommands]: TCommands[TName] extends (".to_string(),
+                "        ...args: infer TArgs".to_string(),
+                "    ) => Promise<infer TResult>".to_string(),
+                "        ? (...args: TArgs) => CommandPromise<TResult>".to_string(),
+                "        : TCommands[TName];".to_string(),
+                "};".to_string(),
+                "".to_string(),
+                "export const commands: TypedCommands<typeof generatedCommands> =".to_string(),
+                "    generatedCommands;".to_string(),
+                "".to_string(),
+            ]);
+        }
         if trimmed.starts_with("export type JsonValue =") {
             out.push("export type JsonValue = unknown;".to_string());
             continue;
@@ -696,7 +715,10 @@ fn patch_bindings(raw: &str) -> Result<String, String> {
         }
         out.push(line.to_string());
         if !routed_invoke && trimmed == r#"} from "@tauri-apps/api/core";"# {
-            out.push(r#"import { invoke as TAURI_INVOKE } from "./generatedInvoke";"#.to_string());
+            out.push(
+                r#"import { type CommandPromise, invoke as TAURI_INVOKE } from "./generatedInvoke";"#
+                    .to_string(),
+            );
             routed_invoke = true;
         }
     }
@@ -717,7 +739,16 @@ fn validate_patched_bindings(result: &str) -> Result<(), String> {
         ("JsonValue unknown boundary", "export type JsonValue = unknown;"),
         (
             "generated invoke import",
-            r#"import { invoke as TAURI_INVOKE } from "./generatedInvoke";"#,
+            r#"import { type CommandPromise, invoke as TAURI_INVOKE } from "./generatedInvoke";"#,
+        ),
+        ("generated commands owner", "const generatedCommands = {"),
+        (
+            "typed commands mapping",
+            "type TypedCommands<TCommands> = {",
+        ),
+        (
+            "typed commands export",
+            "export const commands: TypedCommands<typeof generatedCommands> =",
         ),
         (
             "event record unknown boundary",

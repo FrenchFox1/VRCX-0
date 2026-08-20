@@ -8,6 +8,7 @@ import {
     type FavoriteDetailsHydrateKind,
     type FavoriteDetailsHydrateOutput
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -75,10 +76,6 @@ function normalizeOptionalString(value: unknown): string | undefined {
     }
     const normalized = value.trim();
     return normalized || undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 interface RemoteDetailsState {

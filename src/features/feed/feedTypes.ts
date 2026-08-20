@@ -6,6 +6,7 @@ import type {
 import type { Dispatch, SetStateAction } from 'react';
 
 import type { AppColumnDef, AppTable } from '@/components/data-table/appTable';
+import type { LocationNewInstanceTarget } from '@/components/Location';
 import type { LoadStatus } from '@/domain/shared/types';
 import type { UserFact } from '@/domain/users/userFacts';
 import type { FeedRowOutput } from '@/platform/tauri/bindings';
@@ -23,14 +24,7 @@ export type FeedDateRange = {
 
 export type FeedFriendActionTarget = Record<string, unknown> | null;
 
-export type FeedLocationActionPayload = {
-    location?: unknown;
-    worldId?: unknown;
-    worldName?: unknown;
-    groupName?: unknown;
-    selfInvite?: boolean;
-    [key: string]: unknown;
-};
+export type FeedLocationActionPayload = Partial<LocationNewInstanceTarget>;
 
 export type FeedPreviousInstanceRow = GameLogPreviousInstanceWorldRow;
 

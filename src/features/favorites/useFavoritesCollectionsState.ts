@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
 import type { FavoriteKind } from '@/domain/favorites/types';
 import { useKnownUserFacts } from '@/lib/useKnownUser';
+import type { AvatarCacheOutput } from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -73,7 +74,7 @@ export function useFavoritesCollectionsState({
     const localWorldFavorites = useLocalWorldFavorites(kind === 'world');
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const [avatarHistoryLoading, setAvatarHistoryLoading] = useState(false);
-    const [avatarHistory, setAvatarHistory] = useState<unknown[]>([]);
+    const [avatarHistory, setAvatarHistory] = useState<AvatarCacheOutput[]>([]);
     const friendsMap = useMemo(
         () => new Map(Object.entries(friendsById || {})),
         [friendsById]

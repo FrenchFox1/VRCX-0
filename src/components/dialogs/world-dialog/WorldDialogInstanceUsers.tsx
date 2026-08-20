@@ -27,6 +27,7 @@ import { useKnownUserFact } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -35,10 +36,6 @@ export { firstText, isGroupId, mergeInstanceUsers, normalizeInstanceUsers };
 
 type InstanceUserSource = Record<string, unknown> | string | null | undefined;
 type Translate = NonNullable<Parameters<typeof userStatusLabel>[1]>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function record(value: unknown): Record<string, unknown> {
     return isRecord(value) ? value : {};
@@ -269,8 +266,14 @@ export function InstanceUserTiles({
                             : undefined,
                     status:
                         typeof user.status === 'string' ? user.status : null,
-                    statusDescription: user.statusDescription,
-                    isFriend: user.isFriend,
+                    statusDescription:
+                        typeof user.statusDescription === 'string'
+                            ? user.statusDescription
+                            : undefined,
+                    isFriend:
+                        typeof user.isFriend === 'boolean'
+                            ? user.isFriend
+                            : undefined,
                     $userColour:
                         typeof user.$userColour === 'string'
                             ? user.$userColour

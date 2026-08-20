@@ -1,5 +1,72 @@
 import { translationProviderOptions } from '../settingsOptions';
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type DialogsSectionInput = SettingsSectionInput<
+    | 'customFontDialogOpen'
+    | 'setCustomFontDialogOpen'
+    | 'customFontDraft'
+    | 'setCustomFontDraft'
+    | 'customFontOptions'
+    | 'customFontOptionsLoading'
+    | 'saveCustomFontFamily'
+    | 'youtubeApiDialogOpen'
+    | 'setYoutubeApiDialogOpen'
+    | 'youtubeApiKeyDraft'
+    | 'setYoutubeApiKeyDraft'
+    | 'integrationStatus'
+    | 'saveYoutubeApiKey'
+    | 'translationApiDialogOpen'
+    | 'setTranslationApiDialogOpen'
+    | 'translationDraft'
+    | 'setTranslationDraftValue'
+    | 'llmEndpoints'
+    | 'fetchTranslationModels'
+    | 'testTranslationApiConfig'
+    | 'saveTranslationApiConfig'
+    | 'tablePageSizesDialogOpen'
+    | 'setTablePageSizesDialogOpen'
+    | 'setPrefs'
+    | 'tableLimitsDialogOpen'
+    | 'setTableLimitsDialogOpen'
+    | 'tableLimitsDraft'
+    | 'setTableLimitsDraft'
+    | 'tableMaxSizeError'
+    | 'searchLimitError'
+    | 'tableLimitsSaveDisabled'
+    | 'saveTableLimitsDialog'
+    | 'avatarProviderDialogOpen'
+    | 'setAvatarProviderDialogOpen'
+    | 'avatarProviderConfig'
+    | 'updateAvatarProvider'
+    | 'saveAvatarProviderField'
+    | 'removeAvatarProvider'
+    | 'addAvatarProvider'
+    | 'purgeDialogOpen'
+    | 'setPurgeDialogOpen'
+    | 'purgePeriod'
+    | 'setPurgePeriod'
+    | 'purgeInProgress'
+    | 'purgeAvatarFeedData'
+    | 'wristFeedNotificationsDialogOpen'
+    | 'setWristFeedNotificationsDialogOpen'
+    | 'vrNotificationsDialogOpen'
+    | 'setVrNotificationsDialogOpen'
+    | 'hmdNotificationsDialogOpen'
+    | 'setHmdNotificationsDialogOpen'
+    | 'desktopNotificationsDialogOpen'
+    | 'setDesktopNotificationsDialogOpen'
+    | 'webhookNotificationsDialogOpen'
+    | 'setWebhookNotificationsDialogOpen'
+    | 'ttsNotificationsDialogOpen'
+    | 'setTtsNotificationsDialogOpen'
+    | 'prefs'
+    | 'saveOverlayActivityFilters'
+    | 'saveVrNotificationActivityFilters'
+    | 'saveHmdNotificationActivityFilters'
+    | 'saveDesktopNotificationActivityFilters'
+    | 'saveWebhookActivityFilters'
+    | 'saveTtsNotificationActivityFilters'
+>;
 
 export function buildDialogsSection({
     customFontDialogOpen,
@@ -66,7 +133,7 @@ export function buildDialogsSection({
     saveDesktopNotificationActivityFilters,
     saveWebhookActivityFilters,
     saveTtsNotificationActivityFilters
-}: BuildSettingsPageStateSectionsInput) {
+}: DialogsSectionInput) {
     return {
         customFontDialogOpen,
         setCustomFontDialogOpen,

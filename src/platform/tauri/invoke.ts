@@ -1,10 +1,8 @@
+import type { InvokeArgs } from '@tauri-apps/api/core';
+
 import { PlatformUnavailableError } from './errors';
 
-type InvokeArgs = Record<string, unknown> | number[] | ArrayBuffer | Uint8Array;
-type InvokeFn = <TReturn = unknown>(
-    command: string,
-    args?: InvokeArgs
-) => Promise<TReturn>;
+type InvokeFn = typeof import('@tauri-apps/api/core').invoke;
 
 let invokeFn: InvokeFn | null = null;
 
@@ -15,7 +13,7 @@ async function loadInvoke(): Promise<InvokeFn> {
 
     try {
         const core = await import('@tauri-apps/api/core');
-        invokeFn = core.invoke as InvokeFn;
+        invokeFn = core.invoke;
         return invokeFn;
     } catch {
         throw new PlatformUnavailableError('Unable to load Tauri invoke API');

@@ -6,12 +6,12 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { getEstimatedDwellSince } from '@/services/friendDwellTrackingService';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { getEstimatedDwellSince } from './friendDwellTracker';
 import {
     buildUserHoverCardModel,
     normalizeInstanceCounts
@@ -23,7 +23,7 @@ type UserHoverCardProfile = Awaited<
 type UserHoverCardPopulation = ReturnType<typeof normalizeInstanceCounts>;
 
 type UserHoverCardDataInput = {
-    userId: unknown;
+    userId: string;
     seed?: SidebarFriendRecord | Record<string, unknown> | null;
 };
 

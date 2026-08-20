@@ -54,7 +54,7 @@ function FeedDetailCell({
             <div className="flex min-w-0 items-center gap-2">
                 <FeedStatusBadge status={row?.status} />
                 <span className="block w-full min-w-0 truncate">
-                    {String(row?.statusDescription || '')}
+                    {row.statusDescription || ''}
                 </span>
             </div>
         );
@@ -78,7 +78,7 @@ function FeedDetailCell({
     if (type === 'Bio') {
         return (
             <span className="block w-full min-w-0 truncate">
-                {String(row?.bio || '')}
+                {row.bio || ''}
             </span>
         );
     }

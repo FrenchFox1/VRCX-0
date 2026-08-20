@@ -24,25 +24,25 @@ function repositories(
     return {
         avatarSearchProviderRepository: {
             getConfig: async () => ({ enabled: false, selectedProvider: '' }),
-            search: async (): Promise<{ avatars: unknown[] }> => ({
+            search: async () => ({
                 avatars: []
             })
         },
         myAvatarRepository: {
-            getMyAvatars: async (): Promise<unknown[]> => []
+            getMyAvatars: async () => []
         },
         groupProfileRepository: {
-            getUserGroups: async (): Promise<unknown[]> => []
+            getUserGroups: async () => []
         },
         userProfileRepository: {
-            getAllMutualFriends: async (): Promise<unknown[]> => []
+            getAllMutualFriends: async () => []
         },
         vrchatFavoriteRepository: {
-            getAllFavoriteGroups: async (): Promise<unknown[]> => [],
-            getAllFavoriteWorlds: async (): Promise<unknown[]> => []
+            getAllFavoriteGroups: async () => [],
+            getAllFavoriteWorlds: async () => []
         },
         worldProfileRepository: {
-            getAllWorldsByUser: async (): Promise<unknown[]> => []
+            getAllWorldsByUser: async () => []
         },
         ...overrides
     };
@@ -97,7 +97,7 @@ describe('userDialogTabService', () => {
     });
 
     it('requests mutual friends, groups, and worlds with the viewed user context', async () => {
-        const calls: [string, unknown][] = [];
+        const calls: Array<[string, Record<string, string>]> = [];
         const fakeRepositories = repositories({
             userProfileRepository: {
                 getAllMutualFriends: async (params) => {
@@ -260,7 +260,11 @@ describe('userDialogTabService', () => {
 
     it('loads favorite worlds by world favorite group and keeps partial successes', async () => {
         let favoriteGroupRequest = null;
-        const favoriteWorldRequests: unknown[] = [];
+        const favoriteWorldRequests: Array<
+            Parameters<
+                UserDialogRepositories['vrchatFavoriteRepository']['getAllFavoriteWorlds']
+            >[0]
+        > = [];
         const fakeRepositories = repositories({
             vrchatFavoriteRepository: {
                 getAllFavoriteGroups: async (params) => {

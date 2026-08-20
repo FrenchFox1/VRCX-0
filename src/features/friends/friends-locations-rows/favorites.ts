@@ -13,12 +13,11 @@ import type {
 
 function appendLabel(
     labelsByFriendId: FavoriteGroupLabelsByFriendId,
-    friendId: unknown,
-    label: unknown
+    friendId: string,
+    label: string
 ) {
     const normalizedFriendId = normalizeFriendsLocationId(friendId);
-    const normalizedLabel =
-        typeof label === 'string' ? label.trim() : String(label ?? '').trim();
+    const normalizedLabel = label.trim();
     if (!normalizedFriendId || !normalizedLabel) {
         return;
     }
@@ -46,20 +45,14 @@ export function buildFavoriteGroupLabelsByFriendId({
 
         const label = group.displayName || group.name || groupKey;
         const friendIds = groupedFavoriteFriendIdsByGroupKey?.[groupKey];
-        if (Array.isArray(friendIds)) {
-            for (const friendId of friendIds) {
-                appendLabel(labelsByFriendId, friendId, label);
-            }
+        for (const friendId of friendIds ?? []) {
+            appendLabel(labelsByFriendId, friendId, label);
         }
     }
 
     for (const [groupName, friendIds] of Object.entries(
         localFriendFavorites ?? {}
     )) {
-        if (!Array.isArray(friendIds)) {
-            continue;
-        }
-
         const label = localized(
             t,
             'view.friends_locations.local_group',

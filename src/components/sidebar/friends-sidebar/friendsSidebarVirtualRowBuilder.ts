@@ -27,7 +27,7 @@ export interface SidebarVirtualRow {
     count?: number;
     open?: boolean;
     label?: string;
-    location?: unknown;
+    location?: string;
     friend?: SidebarFriendRecord;
     isCurrentUser?: boolean;
     isCurrentInstance?: boolean;
@@ -57,9 +57,9 @@ type FavoriteGroupSection = {
 
 type SidebarGameState = Record<string, unknown> & {
     isGameRunning?: boolean | null;
-    currentLocation?: unknown;
-    currentDestination?: unknown;
-    currentWorldId?: unknown;
+    currentLocation?: string | null;
+    currentDestination?: string | null;
+    currentWorldId?: string | null;
 };
 
 const STOPPED_GAME_CURRENT_USER_PRESENCE_FIELDS = [
@@ -226,7 +226,7 @@ function buildCurrentUserRows({
             {
                 ...currentUserDisplayRow,
                 stateBucket: resolveCurrentUserStateBucket(
-                    currentUserDisplayRow as SidebarFriendRecord
+                    currentUserDisplayRow
                 )
             }
         ],

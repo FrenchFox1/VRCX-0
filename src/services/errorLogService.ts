@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 
 const HTTP_ERROR_STATUS_MIN = 400;
 const HTTP_ERROR_STATUS_MAX = 599;
@@ -10,11 +11,7 @@ let flushingLogQueue = false;
 let originalConsoleError: ((...data: unknown[]) => void) | null = null;
 const logQueue: string[] = [];
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
-function pad(value: unknown, length: number = 2): string {
+function pad(value: number, length: number = 2): string {
     return String(value).padStart(length, '0');
 }
 

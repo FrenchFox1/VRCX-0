@@ -20,8 +20,8 @@ function record(value: unknown): DialogRecord {
 
 export function resolveOwnerId(
     sourceValue: unknown,
-    fallbackOwnerId: unknown = '',
-    fallbackGroupId: unknown = ''
+    fallbackOwnerId: string | null = '',
+    fallbackGroupId: string | null = ''
 ) {
     const source = record(sourceValue);
     const ownerUser = record(source.ownerUser);
@@ -62,7 +62,7 @@ export function resolveOwnerId(
 
 export function resolveOwnerSeed(
     sourceValue: unknown,
-    ownerId: unknown,
+    ownerId: string,
     knownUsersById: Map<string, unknown>
 ) {
     const source = record(sourceValue);
@@ -92,7 +92,7 @@ export function resolveOwnerSeed(
     );
 }
 
-export function resolveGroupFallback(sourceValue: unknown, ownerId: unknown) {
+export function resolveGroupFallback(sourceValue: unknown, ownerId: string) {
     const source = record(sourceValue);
     const group = record(source.group);
     return {

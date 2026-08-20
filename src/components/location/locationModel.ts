@@ -1,48 +1,44 @@
+import type { ParsedLocation as ParsedLocationDto } from '@/platform/tauri/bindings';
 import { parseLocation, normalizeLocationValue } from '@/shared/utils/location';
 
-export type LocationObjectRecord = Record<string, unknown> & {
-    tag?: unknown;
-    location?: unknown;
-    worldId?: unknown;
-    world_id?: unknown;
-    instanceId?: unknown;
-    instance_id?: unknown;
-    id?: unknown;
-    isOffline?: unknown;
-    isPrivate?: unknown;
-    isTraveling?: unknown;
-    isRealInstance?: unknown;
-    accessTypeName?: unknown;
-    instanceName?: unknown;
-    region?: unknown;
-    regionName?: unknown;
-    region_name?: unknown;
-    shortName?: unknown;
-    launchLocation?: unknown;
-    inviteLocation?: unknown;
-    instanceLocation?: unknown;
-    launchToken?: unknown;
-    secureOrShortName?: unknown;
-    secureName?: unknown;
-    strict?: unknown;
-    groupId?: unknown;
-    userId?: unknown;
-    worldName?: unknown;
-    world_name?: unknown;
-    groupName?: unknown;
-    groupDisplayName?: unknown;
-    playerCount?: unknown;
-    userCount?: unknown;
-    occupants?: unknown;
-    n_users?: unknown;
-    capacity?: unknown;
-    users?: unknown[];
-    world?: LocationObjectRecord;
-    group?: LocationObjectRecord;
-    ref?: LocationObjectRecord;
-    $location?: LocationObjectRecord;
-    $worldName?: unknown;
+type LocationTextValue = string | null;
+type LocationNumberValue = number | string | null;
+type LocationParsedFields = {
+    [Field in keyof ParsedLocationDto]?: ParsedLocationDto[Field] | null;
 };
+
+export type LocationObjectRecord = Record<string, unknown> &
+    LocationParsedFields & {
+        location?: LocationTextValue;
+        world_id?: LocationTextValue;
+        instance_id?: LocationTextValue;
+        id?: LocationTextValue;
+        name?: LocationTextValue;
+        displayName?: LocationTextValue;
+        regionName?: LocationTextValue;
+        region_name?: LocationTextValue;
+        launchLocation?: LocationTextValue;
+        inviteLocation?: LocationTextValue;
+        instanceLocation?: LocationTextValue;
+        launchToken?: LocationTextValue;
+        secureOrShortName?: LocationTextValue;
+        secureName?: LocationTextValue;
+        worldName?: LocationTextValue;
+        world_name?: LocationTextValue;
+        groupName?: LocationTextValue;
+        groupDisplayName?: LocationTextValue;
+        playerCount?: LocationNumberValue;
+        userCount?: LocationNumberValue;
+        occupants?: LocationNumberValue;
+        n_users?: LocationNumberValue;
+        capacity?: LocationNumberValue;
+        users?: Array<Record<string, unknown> | string> | null;
+        world?: LocationObjectRecord | null;
+        group?: LocationObjectRecord | null;
+        ref?: LocationObjectRecord | null;
+        $location?: LocationObjectRecord | null;
+        $worldName?: LocationTextValue;
+    };
 
 export type NormalizedLocationObject = LocationObjectRecord &
     ReturnType<typeof parseLocation> & { launchToken?: string };
@@ -145,6 +141,8 @@ export function normalizeLocationObject(
             ),
             worldId: rawWorldId || parsed.worldId,
             instanceId,
+            accessType:
+                normalizeLocationText(source.accessType) || parsed.accessType,
             accessTypeName:
                 normalizeLocationText(source.accessTypeName) ||
                 parsed.accessTypeName,
@@ -164,9 +162,21 @@ export function normalizeLocationObject(
                 normalizeLocationText(source.secureName) ||
                 normalizeLocationText(source.shortName) ||
                 parsed.shortName,
+            hiddenId: normalizeLocationText(source.hiddenId) || parsed.hiddenId,
+            privateId:
+                normalizeLocationText(source.privateId) || parsed.privateId,
+            friendsId:
+                normalizeLocationText(source.friendsId) || parsed.friendsId,
             strict: Boolean(source.strict ?? parsed.strict),
             groupId: normalizeLocationText(source.groupId) || parsed.groupId,
-            userId: normalizeLocationText(source.userId) || parsed.userId
+            userId: normalizeLocationText(source.userId) || parsed.userId,
+            groupAccessType:
+                normalizeLocationText(source.groupAccessType) ||
+                parsed.groupAccessType,
+            canRequestInvite: Boolean(
+                source.canRequestInvite ?? parsed.canRequestInvite
+            ),
+            ageGate: Boolean(source.ageGate ?? parsed.ageGate)
         };
     }
     return parseLocation('');

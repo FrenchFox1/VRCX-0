@@ -8,25 +8,25 @@ import {
 import { useSettingsPageSection } from '../SettingsPageStateContext';
 
 function secondsInputToMilliseconds(
-    value: unknown,
+    value: string,
     min: number,
     max: number,
     fallback: number
 ): number {
-    const seconds = Number.parseInt(String(value), 10);
+    const seconds = Number.parseInt(value, 10);
     return Number.isFinite(seconds)
         ? Math.min(max, Math.max(min, seconds * 1000))
         : fallback;
 }
 
 function roundedBoundedNumber(
-    value: unknown,
+    value: number,
     min: number,
     max: number,
     fallback: number
 ): number {
-    return Number.isFinite(Number(value))
-        ? Math.min(max, Math.max(min, Math.round(Number(value))))
+    return Number.isFinite(value)
+        ? Math.min(max, Math.max(min, Math.round(value)))
         : fallback;
 }
 

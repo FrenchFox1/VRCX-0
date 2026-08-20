@@ -54,8 +54,10 @@ export const UPLOAD_ASPECT_RATIOS: Record<GalleryTab, number> = {
     prints: 16 / 9
 };
 
-export function sanitizeGalleryTab(value: unknown): GalleryTab {
-    const normalized = String(value || '');
+export function sanitizeGalleryTab(
+    value: string | null | undefined
+): GalleryTab {
+    const normalized = value || '';
     return normalized === 'gallery' ||
         normalized === 'icons' ||
         normalized === 'prints'

@@ -1,4 +1,27 @@
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type IntegrationsSectionInput = SettingsSectionInput<
+    | 'discordPrefs'
+    | 'integrationPrefs'
+    | 'avatarProviderConfig'
+    | 'saveDiscordBoolPreference'
+    | 'setPrefs'
+    | 'setWebhookNotificationsDialogOpen'
+    | 'saveStringPreference'
+    | 'saveBoolPreference'
+    | 'commit'
+    | 'setTranslationApiEnabledPreference'
+    | 'setIntegrationValue'
+    | 'openTranslationApiDialog'
+    | 'setYoutubeApiEnabledPreference'
+    | 'openYoutubeApiDialog'
+    | 'saveAvatarProviderConfig'
+    | 'avatarProviderConfigRef'
+    | 'applyAvatarProviderConfig'
+    | 'setAvatarProviderDialogOpen'
+    | 'saveIntegrationBoolPreference'
+    | 'saveAvatarProviderEnabled'
+>;
 
 export function buildIntegrationsSection({
     discordPrefs,
@@ -21,7 +44,7 @@ export function buildIntegrationsSection({
     setAvatarProviderDialogOpen,
     saveIntegrationBoolPreference,
     saveAvatarProviderEnabled
-}: BuildSettingsPageStateSectionsInput) {
+}: IntegrationsSectionInput) {
     return {
         discordPrefs,
         integrationPrefs,

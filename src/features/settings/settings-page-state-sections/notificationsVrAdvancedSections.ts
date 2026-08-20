@@ -5,7 +5,55 @@ import {
     notificationTtsOptions,
     sqliteTableSizeRows
 } from '../settingsOptions';
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type NotificationsSectionInput = SettingsSectionInput<
+    | 'ttsVoices'
+    | 'notificationTtsTestVisible'
+    | 'notificationTtsTest'
+    | 'setDesktopNotificationsDialogOpen'
+    | 'setTtsNotificationsDialogOpen'
+    | 'saveStringPreference'
+    | 'saveBoolPreference'
+    | 'saveNotificationTtsMode'
+    | 'saveNotificationTtsVoice'
+    | 'setNotificationTtsTestVisible'
+    | 'setNotificationTtsTest'
+    | 'speakNotificationTts'
+>;
+
+type VrSectionInput = SettingsSectionInput<
+    | 'setVrNotificationsDialogOpen'
+    | 'setHmdNotificationsDialogOpen'
+    | 'setWristFeedNotificationsDialogOpen'
+    | 'savePreferenceValue'
+    | 'saveStringPreference'
+    | 'saveBoolPreference'
+    | 'setIntConfigPreference'
+    | 'saveWristOverlayEnabled'
+>;
+
+type AdvancedSectionInput = SettingsSectionInput<
+    | 'sqliteTableSizes'
+    | 'onlineVisitCount'
+    | 'configTreeData'
+    | 'appDataDirState'
+    | 'saveBoolPreference'
+    | 'handleGameLogDisabledChange'
+    | 'handleFeedPersistenceDisabledChange'
+    | 'handleAvatarFeedPersistenceDisabledChange'
+    | 'saveStringPreference'
+    | 'setPurgeDialogOpen'
+    | 'refreshSqliteTableSizes'
+    | 'refreshOnlineVisits'
+    | 'refreshConfigTreeData'
+    | 'openAppDataDirSelector'
+    | 'resetAppDataDir'
+    | 'cleanupAppDataDir'
+    | 'dismissAppDataDirCleanup'
+    | 'setConfigTreeData'
+    | 'migrateLegacyVrcxData'
+>;
 
 export function buildNotificationsSection({
     ttsVoices,
@@ -20,7 +68,7 @@ export function buildNotificationsSection({
     setNotificationTtsTestVisible,
     setNotificationTtsTest,
     speakNotificationTts
-}: BuildSettingsPageStateSectionsInput) {
+}: NotificationsSectionInput) {
     return {
         desktopToastOptions,
         notificationTtsOptions,
@@ -49,7 +97,7 @@ export function buildVrSection({
     saveBoolPreference,
     setIntConfigPreference,
     saveWristOverlayEnabled
-}: BuildSettingsPageStateSectionsInput) {
+}: VrSectionInput) {
     return {
         setVrNotificationsDialogOpen,
         setHmdNotificationsDialogOpen,
@@ -82,7 +130,7 @@ export function buildAdvancedSection({
     dismissAppDataDirCleanup,
     setConfigTreeData,
     migrateLegacyVrcxData
-}: BuildSettingsPageStateSectionsInput) {
+}: AdvancedSectionInput) {
     return {
         avatarAutoCleanupOptions,
         sqliteTableSizes,

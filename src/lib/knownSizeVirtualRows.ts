@@ -1,21 +1,20 @@
-type KnownSizeRow = Record<string, unknown> & {
-    height?: unknown;
-    top?: unknown;
+type KnownSizeRow = {
+    height: number;
 };
 
-type VisibleKnownSizeRowsOptions<T extends KnownSizeRow> = {
+type VisibleKnownSizeRowsOptions<T extends KnownSizeRow & { top: number }> = {
     rows?: readonly T[] | null;
-    scrollTop?: unknown;
-    viewportHeight?: unknown;
-    overscan?: unknown;
+    scrollTop: number;
+    viewportHeight: number;
+    overscan: number;
 };
 
 export function positionKnownSizeRows<T extends KnownSizeRow>(
     rows: readonly T[] | null | undefined
 ) {
     let top = 0;
-    const positionedRows = (Array.isArray(rows) ? rows : []).map((row) => {
-        const height = Math.max(0, Number(row?.height) || 0);
+    const positionedRows = (rows ?? []).map((row) => {
+        const height = Math.max(0, row.height);
         const positioned: T & { height: number; top: number } = {
             ...row,
             height,
@@ -31,26 +30,28 @@ export function positionKnownSizeRows<T extends KnownSizeRow>(
     };
 }
 
-export function getVisibleKnownSizeRows<T extends KnownSizeRow>({
+export function getVisibleKnownSizeRows<
+    T extends KnownSizeRow & { top: number }
+>({
     rows,
     scrollTop,
     viewportHeight,
     overscan
 }: VisibleKnownSizeRowsOptions<T>) {
-    const safeRows = Array.isArray(rows) ? rows : [];
+    const safeRows = rows ?? [];
     if (!safeRows.length) {
         return [];
     }
 
-    const safeScrollTop = Math.max(0, Number(scrollTop) || 0);
-    const safeViewportHeight = Math.max(0, Number(viewportHeight) || 0);
-    const safeOverscan = Math.max(0, Number(overscan) || 0);
+    const safeScrollTop = Math.max(0, scrollTop);
+    const safeViewportHeight = Math.max(0, viewportHeight);
+    const safeOverscan = Math.max(0, overscan);
     const start = Math.max(0, safeScrollTop - safeOverscan);
     const end = safeScrollTop + safeViewportHeight + safeOverscan;
 
     return safeRows.filter((row) => {
-        const top = Math.max(0, Number(row?.top) || 0);
-        const height = Math.max(0, Number(row?.height) || 0);
+        const top = Math.max(0, row.top);
+        const height = Math.max(0, row.height);
         return top + height >= start && top <= end;
     });
 }

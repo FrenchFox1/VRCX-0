@@ -1,4 +1,5 @@
 import type { EntityRecord } from '@/domain/entities/shared';
+import { isRecord } from '@/shared/utils/record';
 
 import {
     getGroupRoleNameMap,
@@ -29,10 +30,6 @@ export interface GroupModerationAction {
     key: GroupModerationActionKey;
     label: string;
     destructive?: boolean;
-}
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
 }
 
 function record(value: unknown): EntityRecord {

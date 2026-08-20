@@ -8,6 +8,7 @@ import type {
     RealtimeNotificationProjectionPayload,
     RealtimeUserProjectionPayload
 } from '@/services/runtime-event-bridge/realtimeProjectionTypes';
+import { isRecord } from '@/shared/utils/record';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendLogStore } from '@/state/friendLogStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -29,10 +30,6 @@ const CURRENT_USER_FRIEND_ARRAY_FIELDS = [
     'activeFriends',
     'offlineFriends'
 ];
-
-function isRecord(value: unknown): value is ProjectionRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function hasOwn(record: ProjectionRecord, key: string): boolean {
     return Object.prototype.hasOwnProperty.call(record, key);
@@ -58,10 +55,7 @@ function getCurrentUserSnapshot(
         : null;
 }
 
-function currentUserDisplayName(
-    snapshot: ProjectionRecord,
-    fallback: unknown = ''
-) {
+function currentUserDisplayName(snapshot: ProjectionRecord, fallback = '') {
     return (
         normalizeUserId(snapshot.displayName) ||
         normalizeUserId(snapshot.username) ||

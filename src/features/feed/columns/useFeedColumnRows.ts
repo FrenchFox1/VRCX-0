@@ -24,9 +24,8 @@ import type { FeedLoadStatus, FeedRow } from '../feedTypes';
 
 const FEED_COLUMN_PAGE_SIZE = 80;
 
-export function resolveFeedColumnInitialLiveSequence(value: unknown) {
-    const sequence = Number(value);
-    return Number.isFinite(sequence) && sequence > 0 ? sequence : 0;
+export function resolveFeedColumnInitialLiveSequence(value: number) {
+    return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 function resolveFeedCursor(row: FeedRow): FeedCursor | null {

@@ -7,7 +7,7 @@ function FeedStatusBadge({
     label
 }: {
     label?: string;
-    status: unknown;
+    status: string | null | undefined;
 }) {
     const meta = resolveStatusMeta(status);
     const dotLabel = label ? undefined : meta.label;

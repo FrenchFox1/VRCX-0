@@ -3,16 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import externalApiRepository from '@/repositories/externalApiRepository';
 import { links } from '@/shared/constants/link';
 import { HOUR_MS } from '@/shared/constants/time';
+import { isRecord } from '@/shared/utils/record';
 
 export type AboutContributor = {
     login: string;
     avatarUrl: string;
     profileUrl: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function isBotContributor(entry: Record<string, unknown>): boolean {
     return (

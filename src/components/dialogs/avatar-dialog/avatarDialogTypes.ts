@@ -126,7 +126,7 @@ export type AvatarControls = {
 };
 
 export type AvatarDialogInput = {
-    avatarId: unknown;
+    avatarId?: string;
     seedData?: unknown;
 };
 

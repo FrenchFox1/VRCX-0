@@ -281,7 +281,7 @@ export function useInventoryPageState() {
     }
 
     function uploadAsset(
-        target: unknown,
+        target: InventoryUploadTarget,
         base64Body: string,
         settings: InventoryUploadSettings
     ) {

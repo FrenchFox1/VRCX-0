@@ -17,6 +17,7 @@ import {
     type WorldUpdateRequest,
     type WorldSearchSort
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { collectPages } from './pagination';
@@ -50,10 +51,6 @@ interface WorldSaveInput extends WorldIdInput {
 
 interface WorldPersistentDataInput extends WorldIdInput {
     userId?: string;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function unwrapVrchatWorldResponse<TJson = unknown>(

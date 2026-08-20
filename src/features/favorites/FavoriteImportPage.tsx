@@ -76,7 +76,7 @@ const BACK_ROUTE: Record<ImportKind, { path: string; titleKey: string }> = {
     }
 };
 
-function normalizeKind(value: unknown): ImportKind | null {
+function normalizeKind(value: string | undefined): ImportKind | null {
     return value === 'world' || value === 'avatar' || value === 'friend'
         ? value
         : null;

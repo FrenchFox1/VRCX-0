@@ -512,8 +512,11 @@ export function useFriendListRowActions({
 
     function openFriendDetails(friend: FriendListRow) {
         openUserDialog({
-            userId: friend?.id,
-            title: friend?.displayName || friend?.username || undefined
+            userId: normalizeId(friend?.id),
+            title:
+                normalizeId(friend?.displayName) ||
+                normalizeId(friend?.username) ||
+                undefined
         });
     }
 

@@ -37,7 +37,7 @@ export function buildDefaultInstanceHistoryDateRange(
 export function buildLocalDayInstanceHistoryDateRange(
     dayKey: string
 ): DateTimeRangeValue {
-    const [yearValue, monthValue, dayValue] = String(dayKey || '')
+    const [yearValue, monthValue, dayValue] = dayKey
         .split('-')
         .map((value) => Number.parseInt(value, 10));
     if (

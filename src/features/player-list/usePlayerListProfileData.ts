@@ -19,13 +19,13 @@ type ProfileQueryResult = { data?: unknown };
 
 function buildPlayerProfileIds(
     playerRows: readonly PlayerListSourceRow[],
-    currentUserId: unknown
+    currentUserId: string | null | undefined
 ) {
-    const currentUserKey = normalizeString(currentUserId);
+    const currentUserKey = currentUserId ?? '';
     const ids: string[] = [];
     const seen = new Set<string>();
 
-    for (const row of Array.isArray(playerRows) ? playerRows : []) {
+    for (const row of playerRows) {
         const userId = resolvePlayerRowUserId(row);
         if (!userId || userId === currentUserKey || seen.has(userId)) {
             continue;
@@ -64,7 +64,7 @@ export function usePlayerListProfileData({
     playerSourceRows
 }: {
     currentUserEndpoint?: string;
-    currentUserId?: unknown;
+    currentUserId?: string | null;
     playerSourceRows: PlayerListSourceRow[];
 }) {
     const vrchatConfig = useVrchatConfigStore((state) => state.snapshot);

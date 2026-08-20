@@ -18,6 +18,7 @@ import { useKnownUserFact } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
@@ -37,10 +38,6 @@ interface RowListActions {
     onPreviewImage?: (url: string, title: string) => void;
     onEditPost?: RowAction;
     onDeletePost?: RowAction;
-}
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
 }
 
 function text(value: unknown): string {

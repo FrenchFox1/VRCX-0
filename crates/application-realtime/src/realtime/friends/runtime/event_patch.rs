@@ -806,12 +806,10 @@ pub(super) fn apply_record_patch_to_state(
     }
 
     let friend_was_added = match state.baseline.as_mut() {
-        Some(baseline) => {
-            baseline
-                .friends_by_id
-                .insert(user_id.to_string(), transition.next)
-                .is_none()
-        }
+        Some(baseline) => baseline
+            .friends_by_id
+            .insert(user_id.to_string(), transition.next)
+            .is_none(),
         None => false,
     };
     if friend_was_added {

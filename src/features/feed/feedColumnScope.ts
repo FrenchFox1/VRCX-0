@@ -1,4 +1,9 @@
 import type {
+    FavoriteGroupMap,
+    FavoriteRecord
+} from '@/domain/favorites/types';
+
+import type {
     FeedColumnConfig,
     FeedColumnFavoriteGroupSelection
 } from './feedColumnsState';
@@ -18,11 +23,10 @@ export type FeedColumnScopeDescriptionOptions = {
     typeLabel(type: string): string;
 };
 
-type FeedRemoteFavorite = {
-    $groupKey?: unknown;
-    favoriteId?: unknown;
-    type?: unknown;
-};
+type FeedRemoteFavorite = Pick<
+    FavoriteRecord,
+    '$groupKey' | 'favoriteId' | 'type'
+>;
 
 function buildFavoriteIdsForGroupSelection({
     groupKeys,
@@ -30,7 +34,7 @@ function buildFavoriteIdsForGroupSelection({
     remoteFavoritesById
 }: {
     groupKeys: FeedColumnFavoriteGroupSelection;
-    localFriendFavorites: Record<string, unknown>;
+    localFriendFavorites: FavoriteGroupMap;
     remoteFavoritesById: Record<string, FeedRemoteFavorite>;
 }) {
     const ids = new Set<string>();
@@ -38,10 +42,10 @@ function buildFavoriteIdsForGroupSelection({
     const selectedGroups = new Set(
         allGroups ? [] : groupKeys.map(normalizeId).filter(Boolean)
     );
-    const acceptsRemoteGroup = (groupKey: unknown) => {
+    const acceptsRemoteGroup = (groupKey: string | undefined) => {
         return allGroups || selectedGroups.has(normalizeId(groupKey));
     };
-    const acceptsLocalGroup = (groupName: unknown) => {
+    const acceptsLocalGroup = (groupName: string) => {
         const normalizedGroupName = normalizeId(groupName);
         return allGroups || selectedGroups.has(`local:${normalizedGroupName}`);
     };
@@ -82,7 +86,7 @@ export function buildFeedColumnFavoriteIds({
     remoteFavoritesById
 }: {
     column: FeedColumnConfig;
-    localFriendFavorites: Record<string, unknown>;
+    localFriendFavorites: FavoriteGroupMap;
     remoteFavoritesById: Record<string, FeedRemoteFavorite>;
 }) {
     if (column.friendScope.kind !== 'favorites') {
@@ -101,7 +105,7 @@ export function buildFeedColumnExcludedFavoriteIds({
     remoteFavoritesById
 }: {
     column: FeedColumnConfig;
-    localFriendFavorites: Record<string, unknown>;
+    localFriendFavorites: FavoriteGroupMap;
     remoteFavoritesById: Record<string, FeedRemoteFavorite>;
 }) {
     const excludedGroupKeys = column.friendScope.excludedFavoriteGroupKeys;

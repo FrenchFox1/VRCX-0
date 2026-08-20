@@ -24,7 +24,7 @@ import { Skeleton } from '@/ui/shadcn/skeleton';
 import { useUserHoverCardData } from './useUserHoverCardData';
 
 type UserHoverCardContentProps = {
-    userId: unknown;
+    userId: string;
     seed?: Parameters<typeof useUserHoverCardData>[0]['seed'];
 };
 

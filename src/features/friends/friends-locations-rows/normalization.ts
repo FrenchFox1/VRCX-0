@@ -1,10 +1,9 @@
 import { hasWorldIdPrefix } from '@/shared/constants/vrchatIds';
+import { isRecord } from '@/shared/utils/record';
 
 import type { FriendLocationRecord, TranslationFn } from './types';
 
-export function isRecord(value: unknown): value is FriendLocationRecord {
-    return typeof value === 'object' && value !== null;
-}
+export { isRecord };
 
 export function sourceFromFriend(friend: unknown): FriendLocationRecord {
     if (!isRecord(friend)) {
@@ -29,9 +28,10 @@ export function normalizeFriendsLocationId(value: unknown): string {
     if (!isRecord(value)) {
         return String(value ?? '').trim();
     }
+    const location = isRecord(value.$location) ? value.$location : {};
 
     const tag = normalizeFriendsLocationId(
-        value.tag || value.location || value.$location?.tag
+        value.tag || value.location || location.tag
     );
     if (tag) {
         return tag;
@@ -43,10 +43,10 @@ export function normalizeFriendsLocationId(value: unknown): string {
         return id;
     }
     const worldId = normalizeFriendsLocationId(
-        value.worldId || value.world_id || value.$location?.worldId
+        value.worldId || value.world_id || location.worldId
     );
     const instanceId = normalizeFriendsLocationId(
-        value.instanceId || value.instance_id || value.$location?.instanceId
+        value.instanceId || value.instance_id || location.instanceId
     );
     if (worldId && instanceId) {
         return `${worldId}:${instanceId}`;
@@ -95,14 +95,15 @@ export function normalizeDisplayText(value: unknown) {
     if (!isRecord(value)) {
         return String(value ?? '').trim();
     }
+    const location = isRecord(value.$location) ? value.$location : {};
     return normalizeDisplayText(
         value.name ||
             value.displayName ||
             value.worldName ||
             value.groupName ||
             value.shortCode ||
-            value.$location?.worldName ||
-            value.$location?.groupName
+            location.worldName ||
+            location.groupName
     );
 }
 

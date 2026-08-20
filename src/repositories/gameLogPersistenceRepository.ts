@@ -19,14 +19,14 @@ type GameLogParams = Record<string, unknown>;
 type GameLogEntry = Record<string, unknown>;
 
 type GameLogUserIdentity = {
-    id?: unknown;
-    displayName?: unknown;
+    id?: string;
+    displayName?: string;
 };
 
 type GameLogPreviousInstancesOptions = {
-    dateFrom?: unknown;
-    dateTo?: unknown;
-    limit?: unknown;
+    dateFrom?: string;
+    dateTo?: string;
+    limit?: number;
 };
 
 type GameLogWorldCacheEntry = {
@@ -78,6 +78,56 @@ type GameLogPreviousDisplayNameRow = {
     displayName: string;
 };
 
+export type GameLogDatabaseRow = {
+    rowId?: number;
+    type?: string;
+    created_at?: string;
+    displayName?: string;
+    userId?: string;
+    location?: string;
+    instanceId?: string;
+    worldId?: string;
+    worldName?: string;
+    groupName?: string;
+    time?: number;
+    videoUrl?: string;
+    videoName?: string;
+    videoId?: string;
+    data?: string;
+    message?: string;
+    resourceUrl?: string;
+};
+
+type GameLogLocationResult = {
+    created_at: string;
+    worldId: string;
+};
+
+type GameLogVisitCountResult = {
+    visitCount: number;
+    worldId: string;
+};
+
+type GameLogTimeSpentResult = {
+    timeSpent: number;
+    worldId?: string;
+    userId?: string;
+};
+
+type GameLogLastGroupVisitResult = {
+    created_at: string;
+};
+
+type GameLogLastSeenResult = {
+    created_at: string;
+    userId: string;
+};
+
+type GameLogJoinCountResult = {
+    joinCount: number;
+    userId: string;
+};
+
 type GameLogUserStatsQueryResult = {
     joinCount: number;
     lastSeen: string;
@@ -86,11 +136,62 @@ type GameLogUserStatsQueryResult = {
     userId: string;
 };
 
+export type GameLogAllUserStatsRow = Omit<
+    GameLogUserStatsQueryResult,
+    'previousDisplayNames'
+> & {
+    displayName: string;
+};
+
+type GameLogLocationBeforeResult = {
+    created_at: string;
+    location: string;
+    worldId: string;
+    worldName: string;
+    groupName: string;
+};
+
+type GameLogInstanceTimeRow = {
+    location: string;
+    time: number;
+};
+
+type GameLogTopWorldRow = {
+    worldId: string;
+    worldName: string;
+    visitCount: number;
+    totalTime: number;
+};
+
+type GameLogInstanceJoinHistoryRow = {
+    created_at: string;
+    location: string;
+};
+
 type GameLogQueryResultMap = {
+    recentDatabase: GameLogDatabaseRow[];
+    lastVisit: GameLogLocationResult;
+    visitCount: GameLogVisitCountResult;
+    timeSpentInWorld: GameLogTimeSpentResult;
+    lastGroupVisit: GameLogLastGroupVisitResult;
+    lastSeen: GameLogLastSeenResult;
+    joinCount: GameLogJoinCountResult;
+    timeSpent: GameLogTimeSpentResult;
+    allUserStats: GameLogAllUserStatsRow[];
+    rowsByLocation: GameLogDatabaseRow[];
+    lookupRows: GameLogDatabaseRow[];
+    searchRows: GameLogDatabaseRow[];
     playersFromInstanceRows: GameLogPlayerEventRow[];
+    locationBeforeOrAt: GameLogLocationBeforeResult | null;
     playerDetailFromInstance: GameLogPlayerDetailRow[];
     joinLeaveRange: GameLogJoinLeaveRangeRow[];
+    previousDisplayNamesByUserId: GameLogPreviousDisplayNameRow[];
+    instanceTimes: GameLogInstanceTimeRow[];
     onlineSessions: GameLogOnlineSessionRow[];
+    onlineSessionsAfter: GameLogOnlineSessionRow[];
+    topWorlds: GameLogTopWorldRow[];
+    instanceJoinHistory: GameLogInstanceJoinHistoryRow[];
+    userIdFromDisplayName: string;
     userStats: GameLogUserStatsQueryResult;
     worldNameByWorldId: string;
 };
@@ -101,26 +202,24 @@ type GameLogArrayQueryKind = {
     ]: GameLogQueryResultMap[K] extends unknown[] ? K : never;
 }[keyof GameLogQueryResultMap];
 
-type GameLogUserStatsResult = Record<string, unknown> & {
-    previousDisplayNames: Map<unknown, unknown>;
+type GameLogUserStatsResult = Omit<
+    GameLogUserStatsQueryResult,
+    'previousDisplayNames'
+> & {
+    previousDisplayNames: Map<string, string>;
 };
 
 type GameLogInstanceDeleteInput = {
-    id?: unknown;
     location: string;
-    events?: unknown[];
+    events?: number[];
 };
 
-function normalizeCurrentUserId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeCurrentUserId(value: string) {
+    return value.trim();
 }
 
-function normalizeGameLogIdentifier(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeGameLogIdentifier(value: string | undefined) {
+    return value?.trim() ?? '';
 }
 
 function addGameLogEntries(
@@ -156,32 +255,19 @@ async function queryGameLogRows<K extends GameLogArrayQueryKind>(
     return (Array.isArray(rows) ? rows : []) as GameLogQueryResultMap[K];
 }
 
-function isGameLogRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-}
-
-function gameLogSpreadSource(value: unknown): Record<string, unknown> {
-    if (!value) {
-        return {};
-    }
-    if (isGameLogRecord(value)) {
-        return value;
-    }
-    return Object.fromEntries(Object.entries(Object(value)));
-}
-
-function normalizeGameLogUserStats(result: unknown): GameLogUserStatsResult {
-    const resultRecord = gameLogSpreadSource(result);
+function normalizeGameLogUserStats(
+    result: GameLogUserStatsQueryResult
+): GameLogUserStatsResult {
     const ref: GameLogUserStatsResult = {
-        ...resultRecord,
+        ...result,
         previousDisplayNames: new Map()
     };
-    const previousDisplayNames = resultRecord.previousDisplayNames;
-    for (const row of Array.isArray(previousDisplayNames)
-        ? previousDisplayNames
-        : []) {
-        if (isGameLogRecord(row) && row.displayName && row.created_at) {
-            ref.previousDisplayNames.set(row.displayName, row.created_at);
+    for (const row of result.previousDisplayNames) {
+        if (row.displayName && row.created_at) {
+            ref.previousDisplayNames.set(
+                normalizeGameLogIdentifier(row.displayName),
+                normalizeGameLogIdentifier(row.created_at)
+            );
         }
     }
     return ref;
@@ -192,7 +278,7 @@ const EMPTY_WORLD_NAME_CACHE_TTL = MINUTE_MS;
 const gameLogWorldNameCache = new Map<string, GameLogWorldCacheEntry>();
 const gameLogWorldNameRequests = new Map<string, Promise<string>>();
 
-function setCachedGameLogWorldName(worldId: unknown, worldName: unknown) {
+function setCachedGameLogWorldName(worldId: string, worldName: string) {
     const normalizedWorldId = normalizeGameLogIdentifier(worldId);
     if (!normalizedWorldId) {
         return;
@@ -216,7 +302,7 @@ function setCachedGameLogWorldName(worldId: unknown, worldName: unknown) {
     }
 }
 
-function getCachedGameLogWorldName(worldId: unknown) {
+function getCachedGameLogWorldName(worldId: string) {
     const normalizedWorldId = normalizeGameLogIdentifier(worldId);
     if (!normalizedWorldId || !gameLogWorldNameCache.has(normalizedWorldId)) {
         return undefined;
@@ -239,11 +325,10 @@ const gameLog = {
         var date = new Date();
         date.setDate(date.getDate() - 1);
         var dateOffset = date.toJSON();
-        const rows = await queryGameLog('recentDatabase', {
+        return queryGameLogRows('recentDatabase', {
             dateOffset,
             maxTableSize
         });
-        return Array.isArray(rows) ? rows : [];
     },
 
     async addGamelogEventToDatabase(entry: GameLogEntry) {
@@ -254,23 +339,23 @@ const gameLog = {
         await addGameLogEntries('External', [entry]);
     },
 
-    async getLastVisit(worldId: unknown, currentWorldMatch: unknown) {
+    async getLastVisit(worldId: string, currentWorldMatch: boolean) {
         return queryGameLog('lastVisit', { worldId, currentWorldMatch });
     },
 
-    async getVisitCount(worldId: unknown) {
+    async getVisitCount(worldId: string) {
         return queryGameLog('visitCount', { worldId });
     },
 
-    async getTimeSpentInWorld(worldId: unknown) {
+    async getTimeSpentInWorld(worldId: string) {
         return queryGameLog('timeSpentInWorld', { worldId });
     },
 
-    async getLastGroupVisit(groupId: unknown) {
+    async getLastGroupVisit(groupId: string) {
         return queryGameLog('lastGroupVisit', { groupId });
     },
 
-    async getPreviousInstancesByGroupId(groupId: unknown) {
+    async getPreviousInstancesByGroupId(groupId: string) {
         const rows = await commands.appGameLogPreviousInstancesByGroupId(
             normalizeGameLogIdentifier(groupId)
         );
@@ -281,7 +366,7 @@ const gameLog = {
         return data;
     },
 
-    async getLastSeen(input: GameLogUserIdentity, inCurrentWorld: unknown) {
+    async getLastSeen(input: GameLogUserIdentity, inCurrentWorld: boolean) {
         return queryGameLog('lastSeen', {
             userId: input.id,
             displayName: input.displayName,
@@ -303,7 +388,7 @@ const gameLog = {
         });
     },
 
-    async getUserStats(input: GameLogUserIdentity, inCurrentWorld: unknown) {
+    async getUserStats(input: GameLogUserIdentity, inCurrentWorld: boolean) {
         const result = await queryGameLog('userStats', {
             userId: input.id,
             displayName: input.displayName,
@@ -312,16 +397,15 @@ const gameLog = {
         return normalizeGameLogUserStats(result);
     },
 
-    async getAllUserStats(userIds: unknown, displayNames: unknown) {
-        const rows = await queryGameLog('allUserStats', {
+    async getAllUserStats(userIds: string[], displayNames: string[]) {
+        return queryGameLogRows('allUserStats', {
             userIds,
             displayNames
         });
-        return Array.isArray(rows) ? rows : [];
     },
 
     async getGameLogByLocation(
-        instanceId: unknown,
+        instanceId: string,
         filters: string[],
         vipList: string[] = [],
         {
@@ -329,12 +413,12 @@ const gameLog = {
             maxEntries = DEFAULT_SEARCH_LIMIT,
             maxRows = maxEntries
         }: {
-            currentUserId?: unknown;
+            currentUserId?: string;
             maxEntries?: number;
             maxRows?: number;
         } = {}
     ) {
-        const rows = await queryGameLog('rowsByLocation', {
+        return queryGameLogRows('rowsByLocation', {
             instanceId,
             filters,
             vipList,
@@ -342,7 +426,6 @@ const gameLog = {
             maxEntries,
             maxRows
         });
-        return Array.isArray(rows) ? rows : [];
     },
 
     async lookupGameLogDatabase(
@@ -351,13 +434,12 @@ const gameLog = {
         maxEntries: number = DEFAULT_MAX_TABLE_SIZE,
         maxRows: number = maxEntries
     ) {
-        const rows = await queryGameLog('lookupRows', {
+        return queryGameLogRows('lookupRows', {
             filters,
             vipList,
             maxEntries,
             maxRows
         });
-        return Array.isArray(rows) ? rows : [];
     },
 
     async searchGameLogDatabase(
@@ -365,7 +447,7 @@ const gameLog = {
         filters: string[],
         vipList: string[],
         maxEntries: number = DEFAULT_SEARCH_LIMIT,
-        currentUserId: unknown = '',
+        currentUserId: string = '',
         maxRows: number = maxEntries
     ) {
         const normalizedCurrentUserId = normalizeCurrentUserId(currentUserId);
@@ -376,7 +458,7 @@ const gameLog = {
                 maxRows
             });
         }
-        const rows = await queryGameLog('searchRows', {
+        return queryGameLogRows('searchRows', {
             search,
             filters,
             vipList,
@@ -384,10 +466,9 @@ const gameLog = {
             maxEntries,
             maxRows
         });
-        return Array.isArray(rows) ? rows : [];
     },
 
-    async getGameLogWorldNameByWorldId(worldId: unknown) {
+    async getGameLogWorldNameByWorldId(worldId: string) {
         const normalizedWorldId = normalizeGameLogIdentifier(worldId);
         if (!normalizedWorldId) {
             return '';
@@ -429,7 +510,7 @@ const gameLog = {
         const normalizedUserId = normalizeGameLogIdentifier(input?.id);
         const dateFrom = normalizeGameLogIdentifier(options.dateFrom);
         const dateTo = normalizeGameLogIdentifier(options.dateTo);
-        const requestedLimit = Number(options.limit);
+        const requestedLimit = options.limit ?? 0;
         const limit =
             Number.isFinite(requestedLimit) && requestedLimit > 0
                 ? Math.floor(requestedLimit)
@@ -453,7 +534,7 @@ const gameLog = {
         );
     },
 
-    async getPlayersFromInstance(location: unknown) {
+    async getPlayersFromInstance(location: string) {
         var players = new Map<string, InstancePlayerAggregate>();
         const rows = await queryGameLogRows('playersFromInstanceRows', {
             location
@@ -501,14 +582,14 @@ const gameLog = {
         return players;
     },
 
-    async getLocationBeforeOrAt(createdAt: unknown) {
+    async getLocationBeforeOrAt(createdAt: string) {
         return queryGameLog('locationBeforeOrAt', { createdAt });
     },
 
     async getJoinLeaveEntriesForLocationRange(
-        location: unknown,
-        afterDate: unknown,
-        beforeDate: unknown
+        location: string,
+        afterDate: string,
+        beforeDate: string
     ) {
         const rows = await queryGameLogRows('joinLeaveRange', {
             location,
@@ -518,7 +599,7 @@ const gameLog = {
         return rows;
     },
 
-    async getPlayerDetailFromInstance(location: unknown) {
+    async getPlayerDetailFromInstance(location: string) {
         const rows = await queryGameLogRows('playerDetailFromInstance', {
             location
         });
@@ -526,22 +607,24 @@ const gameLog = {
     },
 
     async getPreviousDisplayNamesByUserId(ref: GameLogUserIdentity) {
-        var data = new Map<unknown, unknown>();
-        const rows = await queryGameLog('previousDisplayNamesByUserId', {
+        var data = new Map<string, string>();
+        const rows = await queryGameLogRows('previousDisplayNamesByUserId', {
             userId: ref.id
         });
-        for (const row of Array.isArray(rows) ? rows : []) {
-            if (ref.displayName !== row.displayName) {
-                data.set(row.displayName, row.created_at);
+        for (const row of rows) {
+            const displayName = normalizeGameLogIdentifier(row.displayName);
+            const createdAt = normalizeGameLogIdentifier(row.created_at);
+            if (ref.displayName !== displayName) {
+                data.set(displayName, createdAt);
             }
         }
         return data;
     },
 
     async getGameLogInstancesTime() {
-        var instances = new Map();
-        const rows = await queryGameLog('instanceTimes');
-        for (const dbRow of Array.isArray(rows) ? rows : []) {
+        var instances = new Map<string, number>();
+        const rows = await queryGameLogRows('instanceTimes');
+        for (const dbRow of rows) {
             var time = 0;
             var location = dbRow.location;
             if (dbRow.time) {
@@ -579,14 +662,13 @@ const gameLog = {
     },
 
     async getCurrentUserOnlineSessionsAfter(
-        afterCreatedAt: unknown,
+        afterCreatedAt: string,
         inclusive: boolean = false
     ) {
-        const rows = await queryGameLog('onlineSessionsAfter', {
+        return queryGameLogRows('onlineSessionsAfter', {
             afterCreatedAt,
             inclusive
         });
-        return Array.isArray(rows) ? rows : [];
     },
 
     async getMyTopWorlds(
@@ -595,27 +677,26 @@ const gameLog = {
         sortBy: 'time' | 'count' = 'time',
         excludeWorldId: string = ''
     ) {
-        const rows = await queryGameLog('topWorlds', {
+        return queryGameLogRows('topWorlds', {
             days,
             limit,
             sortBy,
             excludeWorldId
         });
-        return Array.isArray(rows) ? rows : [];
     },
 
-    async getUserIdFromDisplayName(displayName: unknown) {
+    async getUserIdFromDisplayName(displayName: string) {
         return queryGameLog('userIdFromDisplayName', { displayName });
     },
 
-    async getInstanceJoinHistory(currentUserId: unknown = '') {
+    async getInstanceJoinHistory(currentUserId: string = '') {
         var oneWeekAgo = new Date(Date.now() - 604800000).toJSON();
-        var instances = new Map();
-        const rows = await queryGameLog('instanceJoinHistory', {
+        var instances = new Map<string, number>();
+        const rows = await queryGameLogRows('instanceJoinHistory', {
             userId: normalizeCurrentUserId(currentUserId),
             createdAt: oneWeekAgo
         });
-        for (const row of Array.isArray(rows) ? rows : []) {
+        for (const row of rows) {
             if (!instances.has(row.location)) {
                 var epoch = new Date(row.created_at).getTime();
                 instances.set(row.location, epoch);
@@ -630,9 +711,9 @@ const gameLog = {
 
     deleteGameLogInstance(input: GameLogInstanceDeleteInput) {
         const eventIds = Array.isArray(input.events)
-            ? input.events
-                  .map((value) => Number.parseInt(String(value), 10))
-                  .filter((value) => Number.isFinite(value) && value > 0)
+            ? input.events.filter(
+                  (value) => Number.isFinite(value) && value > 0
+              )
             : [];
         if (!eventIds.length) {
             return Promise.resolve();
@@ -640,7 +721,7 @@ const gameLog = {
         return commands.appGameLogInstanceDelete(input.location, eventIds);
     },
 
-    async deleteGameLogEntry(input: GameLogEntry) {
+    async deleteGameLogEntry(input: GameLogDatabaseRow) {
         switch (input.type) {
             case 'VideoPlay':
                 await this.deleteGameLogVideoPlay(input);

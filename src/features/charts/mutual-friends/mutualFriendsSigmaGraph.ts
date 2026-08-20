@@ -35,6 +35,39 @@ const HOVER_ENTER_DURATION = 140;
 const HOVER_LEAVE_DURATION = 110;
 const SELECTION_DURATION = 180;
 
+type MutualFriendsNodeAttributes = Record<string, unknown> & {
+    baseColor?: string;
+    baseSize: number;
+    baseX?: number;
+    baseY?: number;
+    color?: string;
+    community: number;
+    degree: number;
+    forceLabel?: boolean;
+    fullLabel: string;
+    label: string;
+    lastFetchedAt: string | null;
+    optedOut: boolean;
+    size: number;
+    type: string;
+    x?: number;
+    y?: number;
+    zIndex: number;
+};
+
+type MutualFriendsEdgeAttributes = Record<string, unknown> & {
+    color?: string;
+    curvature?: number;
+    size: number;
+    type?: string;
+    zIndex?: number;
+};
+
+export type MutualFriendsSigmaGraph = Graph<
+    MutualFriendsNodeAttributes,
+    MutualFriendsEdgeAttributes
+>;
+
 const {
     edgeCurvature: EDGE_CURVATURE_LIMITS,
     communitySeparation: COMMUNITY_SEPARATION_LIMITS
@@ -105,7 +138,7 @@ function prefersReducedMotion() {
     );
 }
 
-function serializeGraph(graph: Graph) {
+function serializeGraph(graph: MutualFriendsSigmaGraph) {
     return {
         nodes: graph.nodes().map((id) => ({
             id,
@@ -124,7 +157,7 @@ function serializeGraph(graph: Graph) {
 }
 
 function applyLayoutPositions(
-    graph: Graph,
+    graph: MutualFriendsSigmaGraph,
     positions: Record<string, { x: number; y: number }>
 ) {
     for (const [node, position] of Object.entries(positions || {})) {
@@ -139,7 +172,7 @@ function applyLayoutPositions(
     }
 }
 
-function buildFallbackLayout(graph: Graph) {
+function buildFallbackLayout(graph: MutualFriendsSigmaGraph) {
     const nodes = graph.nodes();
     const radius = Math.max(50, Math.sqrt(nodes.length || 1) * 30);
     nodes.forEach((node, index) => {
@@ -151,7 +184,7 @@ function buildFallbackLayout(graph: Graph) {
 }
 
 export function applyMutualFriendsEdgeCurvature(
-    graph: Graph,
+    graph: MutualFriendsSigmaGraph,
     layoutSettings: MutualFriendsLayoutSettings
 ) {
     const curvature = clampMutualGraphNumber(
@@ -167,7 +200,7 @@ export function applyMutualFriendsEdgeCurvature(
 }
 
 export function applyMutualFriendsCommunitySeparation(
-    graph: Graph,
+    graph: MutualFriendsSigmaGraph,
     layoutSettings: MutualFriendsLayoutSettings
 ) {
     const separation = clampMutualGraphNumber(
@@ -196,10 +229,7 @@ export function applyMutualFriendsCommunitySeparation(
         }
     >();
     graph.forEachNode((node, attributes) => {
-        const community = attributes.community as number | undefined;
-        if (typeof community !== 'number') {
-            return;
-        }
+        const community = attributes.community;
         const bucket = communities.get(community) ?? {
             nodes: [],
             cx: 0,
@@ -246,13 +276,15 @@ export function applyMutualFriendsCommunitySeparation(
 }
 
 export function applyMutualFriendsGraphTheme(
-    graph: Graph,
+    graph: MutualFriendsSigmaGraph,
     theme: MutualFriendsGraphTheme
 ) {
     graph.forEachNode((node, attributes) => {
-        const community = (attributes.community as number | undefined) ?? 0;
         graph.mergeNodeAttributes(node, {
-            baseColor: communityColor(theme.communityPalette, community)
+            baseColor: communityColor(
+                theme.communityPalette,
+                attributes.community
+            )
         });
     });
 }
@@ -268,7 +300,10 @@ export async function buildSigmaGraph({
     communityIndexById: Map<string, number>;
     theme: MutualFriendsGraphTheme;
 }) {
-    const graph = new Graph({
+    const graph = new Graph<
+        MutualFriendsNodeAttributes,
+        MutualFriendsEdgeAttributes
+    >({
         type: 'undirected',
         multi: false,
         allowSelfLoops: false
@@ -356,7 +391,7 @@ export function renderSigmaGraph({
     onOpenNode,
     hoverCardStringsRef
 }: {
-    graph: Graph;
+    graph: MutualFriendsSigmaGraph;
     container: HTMLElement;
     instanceRef: { current: SigmaInstance | null };
     resizeObserverRef: { current: ResizeObserver | null };
@@ -412,8 +447,31 @@ export function renderSigmaGraph({
     renderer.setSetting('labelRenderedSizeThreshold', NODE_LABEL_THRESHOLD);
     renderer.setSetting('defaultDrawNodeHover', (ctx, data, settings) =>
         drawMutualFriendHoverCard(
-            ctx as CanvasRenderingContext2D,
-            data as never,
+            ctx,
+            {
+                x: data.x,
+                y: data.y,
+                size: data.size,
+                label: data.label,
+                fullLabel:
+                    'fullLabel' in data && typeof data.fullLabel === 'string'
+                        ? data.fullLabel
+                        : undefined,
+                lastFetchedAt:
+                    'lastFetchedAt' in data &&
+                    (typeof data.lastFetchedAt === 'string' ||
+                        data.lastFetchedAt === null)
+                        ? data.lastFetchedAt
+                        : undefined,
+                optedOut:
+                    'optedOut' in data && typeof data.optedOut === 'boolean'
+                        ? data.optedOut
+                        : undefined,
+                degree:
+                    'degree' in data && typeof data.degree === 'number'
+                        ? data.degree
+                        : undefined
+            },
             settings,
             themeRef.current,
             hoverCardStringsRef.current

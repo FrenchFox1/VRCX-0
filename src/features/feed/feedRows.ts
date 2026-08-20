@@ -1,5 +1,6 @@
 import type { FriendRecordInput } from '@/domain/friends/types';
 import { isUserId } from '@/shared/constants/vrchatIds';
+import { isRecord } from '@/shared/utils/record';
 export { resolveCurrentInviteLocation as resolveFeedCurrentInviteLocation } from '@/shared/utils/invite';
 import type {
     FavoriteGroupMap,
@@ -15,16 +16,12 @@ type FeedRecord = Record<string, unknown>;
 type FriendLike = FriendRecordInput | FeedRecord | null | undefined;
 type CurrentUserSnapshotLike =
     | (FeedRecord & {
-          activeFriends?: unknown;
-          offlineFriends?: unknown;
-          onlineFriends?: unknown;
+          activeFriends?: string[];
+          offlineFriends?: string[];
+          onlineFriends?: string[];
       })
     | null
     | undefined;
-function isRecord(value: unknown): value is FeedRecord {
-    return Boolean(value && typeof value === 'object');
-}
-
 function recordValue(value: unknown, key: string): unknown {
     return isRecord(value) ? value[key] : undefined;
 }
@@ -46,7 +43,7 @@ export function isUserIdLike(value: unknown) {
     return isUserId(normalizeFeedId(value));
 }
 
-export function resolveDisplayNameCandidate(value: unknown, userId: unknown) {
+export function resolveDisplayNameCandidate(value: unknown, userId: string) {
     const normalized = normalizeFeedId(value);
     if (
         !normalized ||
@@ -72,7 +69,7 @@ export function resolveFeedUserId(row: FeedRow | null | undefined) {
 export function resolveFeedUserDisplayName(
     row: FeedRow | null | undefined,
     friend: FriendLike,
-    cachedDisplayName: unknown = ''
+    cachedDisplayName: string = ''
 ) {
     const userId = resolveFeedUserId(row);
     const rowDisplayName = resolveDisplayNameCandidate(
@@ -129,7 +126,7 @@ export function getFeedRowCreatedAtMs(row: FeedRow | null | undefined): number {
     if (cached !== undefined) {
         return cached;
     }
-    const parsed = new Date(String(row.created_at || 0)).valueOf() || 0;
+    const parsed = new Date(row.created_at || 0).valueOf() || 0;
     feedRowCreatedAtMsCache.set(row, parsed);
     return parsed;
 }
@@ -144,8 +141,8 @@ export function canExpandFeedRow(row: FeedRow): boolean {
             return false;
         case 'Status':
             return (
-                String(row.statusDescription || '') !==
-                String(row.previousStatusDescription || '')
+                (row.statusDescription || '') !==
+                (row.previousStatusDescription || '')
             );
         case 'Avatar':
             return Boolean(
@@ -220,21 +217,12 @@ export function canRequestInviteFromFeedFriend(
 export function buildFeedFavoriteIdSet(
     remoteFavoritesById: Record<string, FavoriteRecord> | null | undefined,
     localFriendFavorites: FavoriteGroupMap | null | undefined,
-    selectedFavoriteGroupIds: unknown[] = []
+    selectedFavoriteGroupIds: readonly string[] = []
 ) {
     const ids = new Set<string>();
-    const remoteFavorites =
-        remoteFavoritesById && typeof remoteFavoritesById === 'object'
-            ? Object.values(remoteFavoritesById).filter(
-                  (favorite): favorite is Record<string, unknown> =>
-                      Boolean(favorite && typeof favorite === 'object')
-              )
-            : [];
-    const selectedGroups = Array.isArray(selectedFavoriteGroupIds)
-        ? selectedFavoriteGroupIds
-        : [];
-    const hasRemoteGroupFilter = selectedGroups.some(
-        (groupKey) => !String(groupKey || '').startsWith('local:')
+    const remoteFavorites = Object.values(remoteFavoritesById ?? {});
+    const hasRemoteGroupFilter = selectedFavoriteGroupIds.some(
+        (groupKey) => !groupKey.startsWith('local:')
     );
 
     for (const favorite of remoteFavorites) {
@@ -243,7 +231,7 @@ export function buildFeedFavoriteIdSet(
         }
         if (
             hasRemoteGroupFilter &&
-            !selectedGroups.includes(favorite.$groupKey)
+            !selectedFavoriteGroupIds.includes(favorite.$groupKey ?? '')
         ) {
             continue;
         }
@@ -254,9 +242,6 @@ export function buildFeedFavoriteIdSet(
     }
 
     for (const groupIds of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(groupIds)) {
-            continue;
-        }
         for (const id of groupIds) {
             const normalized = normalizeFeedId(id);
             if (normalized) {
@@ -315,7 +300,7 @@ export function toDateInputValue(date: unknown) {
     return `${year}-${month}-${day}`;
 }
 
-export function resolveFeedStatusMeta(status: unknown) {
+export function resolveFeedStatusMeta(status: string | null | undefined) {
     const normalizedStatus = userStatusFromValue(status);
     switch (normalizedStatus) {
         case 'active':

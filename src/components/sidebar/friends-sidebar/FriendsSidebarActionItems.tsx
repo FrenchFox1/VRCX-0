@@ -8,6 +8,7 @@ import {
 import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { SocialStatusPreset } from '@/components/dialogs/user-dialog/userProfileFields';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { isActionRecent } from '@/services/recentActionService';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
@@ -21,10 +22,7 @@ const statusOptions = [
     { value: 'busy', labelKey: 'dialog.user.status.busy' }
 ] satisfies ReadonlyArray<{ value: UserStatus; labelKey: string }>;
 
-export type StatusPreset = {
-    status?: unknown;
-    statusDescription?: unknown;
-};
+export type StatusPreset = SocialStatusPreset;
 
 type ContextMenuItemComponent = ComponentType<{
     children?: ReactNode;
@@ -48,13 +46,13 @@ function statusPresetLabel(
     t: (key: string) => string
 ) {
     if (preset?.statusDescription) {
-        return String(preset.statusDescription);
+        return preset.statusDescription;
     }
     const option = statusOptions.find((row) => row.value === preset?.status);
-    return option ? t(option.labelKey) : String(preset?.status || '');
+    return option ? t(option.labelKey) : preset?.status || '';
 }
 
-function StatusMenuIcon({ status }: { status: unknown }) {
+function StatusMenuIcon({ status }: { status: string }) {
     return (
         <span className="mr-2 flex size-4 shrink-0 items-center justify-center">
             <i
@@ -175,9 +173,7 @@ export function CurrentUserActionItems({
                                     }}
                                 >
                                     <StatusMenuIcon
-                                        status={String(
-                                            preset?.status || 'active'
-                                        )}
+                                        status={preset.status || 'active'}
                                     />
                                     <span className="max-w-52 truncate">
                                         {statusPresetLabel(preset, t)}
@@ -211,14 +207,14 @@ export function FriendActionItems({
     recentActionVersion = 0
 }: {
     friend: SidebarFriendRecord;
-    friendLocation?: unknown;
+    friendLocation: string;
     canUseFriendLocation?: boolean;
     canSendInvite?: boolean;
     canRequestInvite?: boolean;
     canBoop?: boolean;
     onOpen?: () => void;
-    onLaunch?: (location: unknown) => void;
-    onSelfInvite?: (location: unknown) => void;
+    onLaunch?: (location: string) => void;
+    onSelfInvite?: (location: string) => void;
     onInvite?: (friend: SidebarFriendRecord) => void;
     onRequestInvite?: (friend: SidebarFriendRecord) => void;
     onBoop?: (friend: SidebarFriendRecord) => void;

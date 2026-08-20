@@ -19,6 +19,7 @@ import { timeToText } from '@/lib/dateTime';
 import { useCurrentInstanceRoster } from '@/lib/useCurrentInstanceRoster';
 import { cn } from '@/lib/utils';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -124,10 +125,6 @@ type DashboardLanguageEntry = {
     value: string;
     code: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function resolveLanguageEntries(
     friend: FriendRecordInput | null | undefined
@@ -500,8 +497,8 @@ export function DashboardInstanceWidget({
     const currentWorldId = useRuntimeStore(
         (state) => state.gameState.currentWorldId
     );
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.runtimeEvents.addGameLogEvent.count

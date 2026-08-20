@@ -7,6 +7,7 @@ import {
     type VrchatFavoriteType
 } from '@/platform/tauri/bindings';
 import i18n from '@/services/i18nService';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteImportStore } from '@/state/favoriteImportStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -42,10 +43,6 @@ const TYPE_CONFIG: Record<FavoriteImportKind, FavoriteTypeConfig> = {
         remoteGroupsKey: 'favoriteFriendGroups'
     }
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeFavoriteType(
     type: unknown,
@@ -147,11 +144,9 @@ function dismissFavoriteImportStatus(status: FavoriteImportStatus): void {
     if (!status.runId || isBackendActive(status)) {
         return;
     }
-    void commands
-        .appFavoriteImportDismiss(status.runId)
-        .catch((error: unknown) => {
-            console.warn('Failed to dismiss favorite import result:', error);
-        });
+    void commands.appFavoriteImportDismiss(status.runId).catch((error) => {
+        console.warn('Failed to dismiss favorite import result:', error);
+    });
 }
 
 function requestFavoriteImportCancel(): void {

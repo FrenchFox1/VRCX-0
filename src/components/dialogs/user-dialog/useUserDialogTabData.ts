@@ -113,11 +113,11 @@ interface UseUserDialogTabDataInput {
     previousAvatarSwapTime?: number;
     currentUserHasSharedConnectionsOptOut: boolean;
     friendsById: FriendRosterById;
-    inGameGroupOrder: readonly unknown[];
+    inGameGroupOrder: readonly string[];
 }
 
-function normalizeUserDialogAvatarSort(value: unknown): UserDialogAvatarSort {
-    const normalizedValue = typeof value === 'string' ? value.trim() : '';
+function normalizeUserDialogAvatarSort(value: string): UserDialogAvatarSort {
+    const normalizedValue = value.trim();
     return isUserDialogAvatarSort(normalizedValue) ? normalizedValue : 'name';
 }
 

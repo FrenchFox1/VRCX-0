@@ -2,7 +2,7 @@
 
 /** user-defined commands **/
 
-export const commands = {
+const generatedCommands = {
     async storageSet(key: string, value: string): Promise<null> {
         return await TAURI_INVOKE('storage__set', { key, value });
     },
@@ -2558,6 +2558,17 @@ export const commands = {
         });
     }
 };
+
+type TypedCommands<TCommands> = {
+    [TName in keyof TCommands]: TCommands[TName] extends (
+        ...args: infer TArgs
+    ) => Promise<infer TResult>
+        ? (...args: TArgs) => CommandPromise<TResult>
+        : TCommands[TName];
+};
+
+export const commands: TypedCommands<typeof generatedCommands> =
+    generatedCommands;
 
 /** user-defined events **/
 
@@ -6028,7 +6039,7 @@ import {} from '@tauri-apps/api/core';
 import * as TAURI_API_EVENT from '@tauri-apps/api/event';
 import { type WebviewWindow as __WebviewWindow__ } from '@tauri-apps/api/webviewWindow';
 
-import { invoke as TAURI_INVOKE } from './generatedInvoke';
+import { type CommandPromise, invoke as TAURI_INVOKE } from './generatedInvoke';
 
 type __EventObj__<T> = {
     listen: (

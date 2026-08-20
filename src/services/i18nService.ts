@@ -9,6 +9,7 @@ import {
 } from '@/localization/index';
 import { normalizeLanguageCode } from '@/localization/locales';
 import type { TimeUnitLabels } from '@/shared/utils/dateTime';
+import { isRecord } from '@/shared/utils/record';
 
 const TIME_UNIT_KEYS = ['y', 'd', 'h', 'm', 's'] as const;
 const i18nResources = {
@@ -34,10 +35,6 @@ const i18nReady = i18n.use(initReactI18next).init({
 });
 
 export default i18n;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function resolveMessage(messages: unknown, key: string): unknown {
     return key

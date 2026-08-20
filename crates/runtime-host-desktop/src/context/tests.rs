@@ -112,5 +112,8 @@ fn game_log_side_effect_observer_merges_and_resets_now_playing() {
         EmptyEventPayload::default(),
     ));
 
-    assert_eq!(services.now_playing().as_ref(), &default_now_playing_value());
+    assert_eq!(
+        services.now_playing().as_ref(),
+        &default_now_playing_value()
+    );
 }

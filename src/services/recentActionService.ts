@@ -8,14 +8,6 @@ export type RecentActionType =
     | 'Request Invite Message'
     | 'Invite Message';
 
-const TRACKED_ACTIONS: ReadonlySet<string> = new Set<RecentActionType>([
-    'Send Friend Request',
-    'Request Invite',
-    'Invite',
-    'Request Invite Message',
-    'Invite Message'
-]);
-
 let cooldownEnabled = false;
 let cooldownMinutes = 60;
 let cachedActions: Record<string, number> | null = null;
@@ -23,20 +15,17 @@ const listeners = new Set<() => void>();
 
 type RecentActionCooldownOptions = {
     enabled?: boolean;
-    minutes?: unknown;
+    minutes?: number;
 };
 
-function normalizeUserId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeUserId(value: string | null | undefined): string {
+    return value?.trim() ?? '';
 }
 
-function normalizeMinutes(value: unknown): number {
-    const parsed = Number.parseInt(String(value), 10);
-    return Number.isNaN(parsed)
+function normalizeMinutes(value: number): number {
+    return !Number.isFinite(value)
         ? 60
-        : Math.min(MINUTES_PER_DAY, Math.max(1, parsed));
+        : Math.min(MINUTES_PER_DAY, Math.max(1, Math.trunc(value)));
 }
 
 function readActions(): Record<string, number> {
@@ -74,11 +63,12 @@ function writeActions(actions: Record<string, number>): void {
     }
 }
 
-function actionKey(userId: unknown, actionType: string): string {
+function actionKey(
+    userId: string | null | undefined,
+    actionType: RecentActionType
+): string {
     const normalizedUserId = normalizeUserId(userId);
-    return normalizedUserId && TRACKED_ACTIONS.has(actionType)
-        ? `${normalizedUserId}:${actionType}`
-        : '';
+    return normalizedUserId ? `${normalizedUserId}:${actionType}` : '';
 }
 
 function notifyRecentActionListeners(): void {
@@ -109,7 +99,10 @@ export function readRecentActionCooldown(): {
     return { enabled: cooldownEnabled, minutes: cooldownMinutes };
 }
 
-export function recordRecentAction(userId: unknown, actionType: string): void {
+export function recordRecentAction(
+    userId: string | null | undefined,
+    actionType: RecentActionType
+): void {
     const key = actionKey(userId, actionType);
     if (!key) {
         return;
@@ -122,7 +115,10 @@ export function recordRecentAction(userId: unknown, actionType: string): void {
     notifyRecentActionListeners();
 }
 
-export function isActionRecent(userId: unknown, actionType: string): boolean {
+export function isActionRecent(
+    userId: string | null | undefined,
+    actionType: RecentActionType
+): boolean {
     if (!cooldownEnabled) {
         return false;
     }

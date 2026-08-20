@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import type {
+    InstanceRosterRow,
+    InstanceRosterTimestamp
+} from '@/domain/instances/instanceRoster';
 import { openAvatarDialog, openGroupDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
@@ -106,11 +110,11 @@ interface UserDialogTabbedViewProps {
         hideUserMemos?: boolean;
     };
     locationPanel: {
-        sameInstanceUsers?: unknown[];
-        dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
-        locationOwnerUser?: unknown;
-        locationOwnerGroup?: unknown;
-        locationInstance?: unknown;
+        sameInstanceUsers?: InstanceRosterRow[];
+        dwellEpochsByUserId?: ReadonlyMap<string, InstanceRosterTimestamp>;
+        locationOwnerUser?: Record<string, unknown> | null;
+        locationOwnerGroup?: Record<string, unknown> | null;
+        locationInstance?: Record<string, unknown> | null;
         locationFriendCount?: number;
         locationPlayerCount?: number;
         onRefreshLocation?: LocationPanelController['refreshLocationPanel'];
@@ -148,7 +152,10 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 const SELF_PANELS = ['profile-media', 'profile-decorations'] as const;
-const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<string, unknown>();
+const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<
+    string,
+    InstanceRosterTimestamp
+>();
 type SelfPanel = '' | (typeof SELF_PANELS)[number];
 
 function isSelfPanel(value: string): value is Exclude<SelfPanel, ''> {
@@ -157,9 +164,10 @@ function isSelfPanel(value: string): value is Exclude<SelfPanel, ''> {
 
 const VRC_PLUS_SUMMARY_SNAPSHOT = Object.freeze({ $isVRCPlus: true });
 
-function finiteTabCount(value: unknown) {
-    const count = Number(value);
-    return Number.isFinite(count) && count >= 0 ? count : undefined;
+function finiteTabCount(value: number | undefined) {
+    return value !== undefined && Number.isFinite(value) && value >= 0
+        ? value
+        : undefined;
 }
 
 function loadedTabCount(
@@ -169,7 +177,10 @@ function loadedTabCount(
     return status === 'ready' ? rows.length : undefined;
 }
 
-function resolveTabCount(primary: unknown, fallback: unknown) {
+function resolveTabCount(
+    primary: number | undefined,
+    fallback: number | undefined
+) {
     return finiteTabCount(primary) ?? finiteTabCount(fallback);
 }
 

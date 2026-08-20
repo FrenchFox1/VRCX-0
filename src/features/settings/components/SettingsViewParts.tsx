@@ -92,7 +92,7 @@ export function TablePageSizesDialog({
     }, [open]);
 
     async function persist(
-        nextSizes: unknown,
+        nextSizes: readonly number[],
         { close = false, showToast = false }: PersistOptions = {}
     ): Promise<void> {
         const normalizedSizes = normalizeTablePageSizes(nextSizes);

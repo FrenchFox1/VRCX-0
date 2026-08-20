@@ -1,4 +1,3 @@
-import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import {
@@ -79,13 +78,9 @@ export async function reloadWristOverlayRuntimeConfigIfNeeded(key: string) {
     if (!WRIST_OVERLAY_RUNTIME_CONFIG_KEYS.has(normalizedKey)) {
         return;
     }
-    await commands.appVrOverlayConfigReload().catch((error: unknown) => {
+    await commands.appVrOverlayConfigReload().catch((error) => {
         console.warn('Failed to reload wrist overlay runtime config:', error);
     });
-}
-
-export function normalizeBioLanguage(language: unknown) {
-    return normalizeLanguageCode(language);
 }
 
 export function normalizeStringList(value: unknown): string[] {
@@ -123,13 +118,16 @@ export async function getIntConfigWithLegacy(
 }
 
 export function getLegacyOverlayNotificationKey(key: string) {
-    return LEGACY_OVERLAY_NOTIFICATION_KEYS[
-        key as keyof typeof LEGACY_OVERLAY_NOTIFICATION_KEYS
-    ];
+    return Object.entries(LEGACY_OVERLAY_NOTIFICATION_KEYS).find(
+        ([currentKey]) => currentKey === key
+    )?.[1];
 }
 
-export function resolveTablePageSize(candidate: unknown, pageSizes: unknown) {
-    const allowed = normalizeTablePageSizes(pageSizes);
+export function resolveTablePageSize(
+    candidate: number,
+    pageSizes: readonly number[]
+) {
+    const allowed = pageSizes;
     const fallbackPageSize = allowed[0] ?? DEFAULT_TABLE_PAGE_SIZE;
     const nearestPageSize = (value: number) =>
         allowed.reduce((previous, size) =>

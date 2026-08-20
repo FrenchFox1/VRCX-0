@@ -1,11 +1,15 @@
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserDetailContent } from '@/components/UserDetailTile';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { getNameColour, userImage } from '@/services/entityMediaService';
-import { TRUST_COLOR_DEFAULTS } from '@/shared/utils/trustColors';
+import {
+    TRUST_COLOR_DEFAULTS,
+    type TrustColorMap
+} from '@/shared/utils/trustColors';
 import { buttonVariants } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -49,26 +53,26 @@ type FriendRowModel = {
 
 type FriendRowCommands = {
     onOpen?: () => void;
-    onLaunch?: (location: unknown) => unknown;
-    onSelfInvite?: (location: unknown) => unknown;
-    onInvite?: (friend: SidebarFriendRecord) => unknown;
-    onRequestInvite?: (friend: SidebarFriendRecord) => unknown;
-    onBoop?: (friend: SidebarFriendRecord) => unknown;
-    onChangeStatus?: (status: UserStatus) => unknown;
-    onSetStatusDescription?: (statusDescription: string) => unknown;
-    onEditSocialStatus?: () => unknown;
-    onApplyStatusPreset?: (preset: StatusPreset) => unknown;
+    onLaunch?: (location: string) => void;
+    onSelfInvite?: (location: string) => void;
+    onInvite?: (friend: SidebarFriendRecord) => void;
+    onRequestInvite?: (friend: SidebarFriendRecord) => void;
+    onBoop?: (friend: SidebarFriendRecord) => void;
+    onChangeStatus?: (status: UserStatus) => void;
+    onSetStatusDescription?: (statusDescription: string) => void;
+    onEditSocialStatus?: () => void;
+    onApplyStatusPreset?: (preset: StatusPreset) => void;
     statusPresets?: StatusPreset[];
 };
 
 type FriendRowAppearance = {
     randomUserColours?: boolean;
     isDarkMode?: boolean;
-    trustColor?: unknown;
+    trustColor?: TrustColorMap;
     currentUserSnapshot?: SidebarFriendRecord | null;
     isGameRunning?: boolean | null;
     recentActionVersion?: number;
-    locationMetadata?: Record<string, unknown> | null;
+    locationMetadata?: LocationMetadata | null;
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
 };

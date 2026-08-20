@@ -6,7 +6,13 @@ import {
     useSensors
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -14,7 +20,8 @@ import { toast } from 'sonner';
 import {
     loadNavMenuModel,
     NAV_LAYOUT_UPDATED_EVENT,
-    saveNavMenuModel
+    saveNavMenuModel,
+    type NavLayoutEntry
 } from '@/components/layout/navMenuModel';
 import configRepository from '@/repositories/configRepository';
 import {
@@ -50,9 +57,6 @@ import {
 import { useToolStatusSummaries } from './useToolStatusSummaries';
 
 type CollapsedByCategory = Record<string, boolean>;
-type QuickAccessKeysUpdater =
-    | string[]
-    | ((current: string[]) => string[] | unknown);
 
 function useToolsCollapsedState() {
     const [collapsed, setCollapsed] = useState<CollapsedByCategory>({
@@ -125,7 +129,7 @@ function useToolsQuickAccessState() {
         };
     }, []);
 
-    function setQuickAccessKeys(updater: QuickAccessKeysUpdater) {
+    function setQuickAccessKeys(updater: SetStateAction<string[]>) {
         setQuickAccessKeysState((current) => {
             const value =
                 typeof updater === 'function' ? updater(current) : updater;
@@ -229,7 +233,7 @@ export function useToolsPageState() {
     const { collapsed, toggleCategoryCollapsed } = useToolsCollapsedState();
     const { quickAccessKeys, setQuickAccessKeys } = useToolsQuickAccessState();
     const [isQuickAccessEditing, setIsQuickAccessEditing] = useState(false);
-    const [navLayout, setNavLayout] = useState<unknown[]>([]);
+    const [navLayout, setNavLayout] = useState<NavLayoutEntry[]>([]);
     const [navHiddenKeys, setNavHiddenKeys] = useState<string[]>([]);
     const pinnedToolKeys = useMemo(() => {
         const keys = collectLayoutKeys(navLayout);

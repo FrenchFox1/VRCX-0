@@ -20,11 +20,16 @@ import {
     resetDomainFacts
 } from './domainIngestionService';
 
+type IngestedEntry = {
+    user?: { id?: string };
+    source?: string;
+};
+
 function ingestedEntryFor(userId: string, source?: string) {
     return tauriMock.commands.appIngestUserFacts.mock.calls
         .flatMap((call) => (Array.isArray(call[0]) ? call[0] : []))
         .filter(
-            (entry: { user?: { id?: unknown }; source?: unknown }) =>
+            (entry: IngestedEntry) =>
                 entry?.user?.id === userId &&
                 (source === undefined || entry?.source === source)
         )
@@ -157,7 +162,7 @@ describe('domainIngestionService', () => {
 
         const ingestedIds = tauriMock.commands.appIngestUserFacts.mock.calls
             .flatMap((call) => (Array.isArray(call[0]) ? call[0] : []))
-            .map((entry: { user?: { id?: unknown } }) => entry?.user?.id);
+            .map((entry: IngestedEntry) => entry?.user?.id);
         expect(ingestedIds).not.toContain('row:1');
         expect(ingestedIds).not.toContain('id:usr_dup');
     });

@@ -8,6 +8,7 @@ import {
     type VrchatRequestInvitePhotoSendInput,
     type VrchatRequestInviteSendInput
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 
 import configRepository from './configRepository';
 import { unwrapVrchatResponse } from './vrchatRequest';
@@ -115,10 +116,6 @@ function normalizeNotificationFilters(filters: readonly string[]): string[] {
 
 function normalizeNotificationLimit(value: number, fallback: number): number {
     return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function normalizeNotificationObject(value: unknown): Record<string, unknown> {

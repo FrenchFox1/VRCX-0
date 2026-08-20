@@ -3,13 +3,19 @@ import { notifySQLiteError } from '../../shared/sqliteErrorEvents';
 import { normalizePlatformError } from './errors';
 import { invokeTauri } from './invoke';
 
-export async function invoke<TReturn = unknown>(
+export interface CommandPromise<TResult> extends Promise<TResult> {
+    catch<TResult2 = never>(
+        onrejected?:
+            | ((reason: Error) => TResult2 | PromiseLike<TResult2>)
+            | null
+    ): Promise<TResult | TResult2>;
+}
+
+export function invoke<TReturn = unknown>(
     command: string,
     args?: Record<string, unknown>
-): Promise<TReturn> {
-    try {
-        return await invokeTauri<TReturn>(command, args);
-    } catch (error) {
+): CommandPromise<TReturn> {
+    return invokeTauri<TReturn>(command, args).catch((error) => {
         const normalizedError = normalizePlatformError(
             error,
             `Tauri command failed: ${command}`
@@ -24,5 +30,5 @@ export async function invoke<TReturn = unknown>(
         notifySQLiteError(normalizedError);
 
         throw normalizedError;
-    }
+    });
 }

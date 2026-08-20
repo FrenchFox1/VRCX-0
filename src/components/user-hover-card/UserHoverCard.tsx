@@ -3,8 +3,7 @@ import {
     useRef,
     useState,
     type ComponentProps,
-    type ReactElement,
-    type ReactNode
+    type ReactElement
 } from 'react';
 
 import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
@@ -25,14 +24,14 @@ const MODAL_CONTENT_SELECTOR =
     '[data-slot="dialog-content"],[data-slot="alert-dialog-content"],[data-slot="sheet-content"]';
 
 type UserHoverCardProps = {
-    userId?: unknown;
+    userId?: string;
     seed?: SidebarFriendRecord | Record<string, unknown> | null;
     openDelay?: number;
     closeDelay?: number;
     side?: ComponentProps<typeof HoverCardContent>['side'];
     align?: ComponentProps<typeof HoverCardContent>['align'];
     disabled?: boolean;
-    children: ReactNode;
+    children: ReactElement;
 };
 
 export function UserHoverCard({
@@ -55,8 +54,11 @@ export function UserHoverCard({
             return;
         }
         const handleScroll = (event: Event) => {
-            const target = event.target as Element | null;
-            if (target?.closest?.('[data-slot="hover-card-content"]')) {
+            const target = event.target;
+            if (
+                target instanceof Element &&
+                target.closest('[data-slot="hover-card-content"]')
+            ) {
                 return;
             }
             setScrollClosed(true);
@@ -101,7 +103,7 @@ export function UserHoverCard({
             <HoverCardTrigger
                 delay={openDelay}
                 closeDelay={closeDelay}
-                render={children as ReactElement}
+                render={children}
                 onPointerOverCapture={(event) => {
                     if (
                         !event.currentTarget.closest(MODAL_CONTENT_SELECTOR) &&

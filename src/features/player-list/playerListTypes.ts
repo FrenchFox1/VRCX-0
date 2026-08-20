@@ -1,9 +1,14 @@
 import type { LucideIcon } from 'lucide-react';
 
 import type {
+    FriendProfileFields,
+    FriendRecordInput
+} from '@/domain/friends/types';
+import type {
     CurrentInstanceRosterContext,
     CurrentInstanceRosterPlayer
 } from '@/domain/instances/currentInstanceRoster';
+import type { LocalModerationOutput } from '@/platform/tauri/bindings';
 
 export type PlayerListRecord = Record<string, unknown>;
 export type PlayerListRosterRow = Partial<CurrentInstanceRosterPlayer>;
@@ -11,60 +16,38 @@ export type PlayerListRosterRow = Partial<CurrentInstanceRosterPlayer>;
 export type PlayerListLanguageRow = {
     key: string;
     value?: string;
-    label?: unknown;
-    name?: unknown;
 };
 
 export type PlayerListModerationRecord = PlayerListRecord & {
-    block?: unknown;
-    mute?: unknown;
-    timeoutTime?: unknown;
-    isAvatarInteractionDisabled?: unknown;
-    isChatBoxMuted?: unknown;
-    isBlocked?: unknown;
-    isMuted?: unknown;
+    block?: boolean;
+    mute?: boolean;
+    timeoutTime?: number | null;
+    isAvatarInteractionDisabled?: boolean;
+    isChatBoxMuted?: boolean;
+    isBlocked?: boolean;
+    isMuted?: boolean;
 };
 
-export type PlayerListProfileRecord = PlayerListRecord & {
-    id?: unknown;
-    userId?: unknown;
-    user_id?: unknown;
-    displayName?: unknown;
-    username?: unknown;
-    tags?: unknown[];
-    developerType?: unknown;
-    $trustLevel?: unknown;
-    $trustClass?: unknown;
-    $trustSortNum?: unknown;
-    $isModerator?: unknown;
-    $isTroll?: unknown;
-    $isProbableTroll?: unknown;
-    $platform?: unknown;
-    platform?: unknown;
-    last_platform?: unknown;
-    status?: unknown;
-    statusDescription?: unknown;
-    profilePicOverrideThumbnail?: unknown;
-    profilePicOverride?: unknown;
-    thumbnailUrl?: unknown;
-    currentAvatarThumbnailImageUrl?: unknown;
-    currentAvatarImageUrl?: unknown;
-    userIcon?: unknown;
-    $languages?: unknown[];
-    languages?: unknown[];
-    bioLinks?: unknown[];
-    note?: unknown;
-    memo?: unknown;
-    $moderations?: PlayerListModerationRecord | null;
-    moderations?: PlayerListModerationRecord | null;
-    ageVerified?: unknown;
-    ageVerificationStatus?: unknown;
-    isFriend?: unknown;
-    isChatBoxMuted?: unknown;
-    timeoutTime?: unknown;
-    location?: unknown;
-    worldId?: unknown;
-};
+export type PlayerListLocalModerationRecord = Pick<
+    LocalModerationOutput,
+    'userId' | 'block' | 'mute'
+>;
+
+export type PlayerListProfileRecord = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        thumbnailUrl?: string | null;
+        $languages?: string[];
+        languages?: string[];
+        note?: string | null;
+        memo?: string | null;
+        $moderations?: PlayerListModerationRecord | null;
+        moderations?: PlayerListModerationRecord | null;
+        stateBucket?: string;
+        isFriend?: boolean;
+        isChatBoxMuted?: boolean;
+        timeoutTime?: number | null;
+        worldId?: string;
+    };
 
 export type PlayerListCurrentUserSnapshot = PlayerListProfileRecord & {
     displayName?: string;
@@ -73,18 +56,18 @@ export type PlayerListCurrentUserSnapshot = PlayerListProfileRecord & {
 
 export type PlayerListSourceRow = PlayerListRecord &
     PlayerListRosterRow & {
-        rowId?: unknown;
-        user_id?: unknown;
-        username?: unknown;
-        inVRMode?: unknown;
-        isMaster?: unknown;
-        isModerator?: unknown;
-        isBlocked?: unknown;
-        isMuted?: unknown;
-        isChatBoxMuted?: unknown;
-        ageVerified?: unknown;
-        ageVerificationStatus?: unknown;
-        timeoutTime?: unknown;
+        rowId?: string;
+        user_id?: string;
+        username?: string;
+        inVRMode?: boolean | null;
+        isMaster?: boolean;
+        isModerator?: boolean;
+        isBlocked?: boolean;
+        isMuted?: boolean;
+        isChatBoxMuted?: boolean;
+        ageVerified?: boolean;
+        ageVerificationStatus?: string;
+        timeoutTime?: number;
         ref?: PlayerListProfileRecord | null;
     };
 
@@ -100,11 +83,11 @@ export type PlayerListRow = PlayerListSourceRow & {
     platformLabel: string;
     platformIcon: LucideIcon | null;
     platformClassName: string;
-    inVRMode: unknown;
-    status: unknown;
+    inVRMode: boolean | null;
+    status: string;
     statusDescription: string;
     languages: PlayerListLanguageRow[];
-    bioLinks: unknown[];
+    bioLinks: string[];
     note: string;
     avatarUrl: string;
     isCurrentUser: boolean;
@@ -118,6 +101,6 @@ export type PlayerListRow = PlayerListSourceRow & {
     moderationSeverity: 'blocked' | 'muted' | '';
     ageVerified: boolean;
     timerMs: number;
-    worldName: unknown;
-    location: unknown;
+    worldName: string;
+    location: string;
 };

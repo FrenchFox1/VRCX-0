@@ -40,24 +40,22 @@ export type ParsedLocalizedChangelog = {
 };
 
 type PostUpdateChangelogToastInput = {
-    currentVersion?: unknown;
-    lastStartedVersion?: unknown;
-    seenVersion?: unknown;
-    enabled?: unknown;
+    currentVersion?: string;
+    lastStartedVersion?: string;
+    seenVersion?: string;
+    enabled?: boolean;
 };
 
-function normalizeVersion(value: unknown) {
-    return String(value || '').trim();
+function normalizeVersion(value: string | undefined) {
+    return (value ?? '').trim();
 }
 
-function normalizeReleaseLookupVersion(value: unknown) {
+function normalizeReleaseLookupVersion(value: string | undefined) {
     return normalizeVersion(value).replace(/^v/i, '');
 }
 
-function sanitizeChangelogMarkdown(markdown: unknown) {
-    return String(markdown || '')
-        .replace(MARKDOWN_ANCHOR_PATTERN, '')
-        .trim();
+function sanitizeChangelogMarkdown(markdown: string) {
+    return markdown.replace(MARKDOWN_ANCHOR_PATTERN, '').trim();
 }
 
 function normalizeChangelogLanguage(language: string) {
@@ -141,12 +139,10 @@ export function parseLocalizedChangelog(body: unknown) {
 
 export function resolvePreferredChangelogLanguage(
     entries: LocalizedChangelogEntry[],
-    locale: unknown
+    locale: string
 ) {
     const availableLanguages = entries.map((entry) => entry.lang);
-    const requestedLocale = normalizeChangelogLanguage(
-        String(locale || '').trim()
-    );
+    const requestedLocale = normalizeChangelogLanguage(locale.trim());
     const baseLanguage = requestedLocale.split('-')[0];
 
     if (availableLanguages.includes(requestedLocale)) {
@@ -196,7 +192,7 @@ export async function fetchLatestChangelogRelease() {
     return fetchLatestBranchRelease(STABLE_BRANCH);
 }
 
-export async function fetchChangelogRelease(version?: unknown) {
+export async function fetchChangelogRelease(version?: string) {
     const targetVersion = normalizeReleaseLookupVersion(version);
     if (!targetVersion) {
         return fetchLatestChangelogRelease();
@@ -220,7 +216,7 @@ export async function fetchChangelogRelease(version?: unknown) {
 }
 
 export async function markPostUpdateChangelogVersionSeen(
-    version: unknown = getCurrentVersion()
+    version: string = getCurrentVersion()
 ) {
     const normalizedVersion = normalizeVersion(version);
     if (!normalizedVersion) {
@@ -237,7 +233,7 @@ export async function markPostUpdateChangelogVersionSeen(
 }
 
 export async function loadPostUpdateChangelogToastState(
-    version: unknown = getCurrentVersion()
+    version: string = getCurrentVersion()
 ) {
     const currentVersion = normalizeVersion(version);
     const [enabled, lastStartedVersion, seenVersion] = await Promise.all([

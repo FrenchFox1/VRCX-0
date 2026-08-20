@@ -60,7 +60,7 @@ export function getDashboardRowKey(row: Partial<DashboardRow> | null) {
 }
 
 export function createDashboardPanelSelectOptions(
-    currentPanelKey: unknown,
+    currentPanelKey: string,
     t: DashboardTranslate
 ): DashboardPanelSelectOption[] {
     const options = [
@@ -84,7 +84,7 @@ export function createDashboardPanelSelectOptions(
         !options.some((option) => option.value === currentPanelKey)
     ) {
         options.unshift({
-            value: String(currentPanelKey),
+            value: currentPanelKey,
             label: t('view.dashboard.dynamic.existing_value', {
                 value:
                     getDashboardPanelLabel(

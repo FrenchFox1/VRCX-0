@@ -72,12 +72,10 @@ export function useFriendsLocationsPreferences() {
                     }
 
                     setDensity(sanitizeFriendsLocationsDensity(nextDensity));
-                    setShowSameInstanceInOnline(Boolean(nextShowSameInstance));
-                    setShowCurrentUserInSameInstance(
-                        Boolean(nextShowCurrentUser)
-                    );
+                    setShowSameInstanceInOnline(nextShowSameInstance);
+                    setShowCurrentUserInSameInstance(nextShowCurrentUser);
                     setSidebarFavoritePrefs({
-                        isDivideByGroup: Boolean(nextDivideByGroup),
+                        isDivideByGroup: nextDivideByGroup,
                         selectedGroups: parseConfigArray(nextSelectedGroups),
                         groupOrder: parseConfigArray(nextGroupOrder)
                     });
@@ -150,11 +148,9 @@ export function useFriendsLocationsPreferences() {
                         configRepository.getString('sidebarSortMethod3', '')
                     ]);
                     if (active) {
-                        setShowCurrentUserInSameInstance(
-                            Boolean(nextShowCurrentUser)
-                        );
+                        setShowCurrentUserInSameInstance(nextShowCurrentUser);
                         setSidebarFavoritePrefs({
-                            isDivideByGroup: Boolean(nextDivideByGroup),
+                            isDivideByGroup: nextDivideByGroup,
                             selectedGroups:
                                 parseConfigArray(nextSelectedGroups),
                             groupOrder: parseConfigArray(nextGroupOrder)

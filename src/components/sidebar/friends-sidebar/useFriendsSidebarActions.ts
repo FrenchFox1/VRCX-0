@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { useCurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/useCurrentUserSocialStatusDialog';
-import { normalizeSelfStatusInput } from '@/components/dialogs/user-dialog/userProfileFields';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type {
     CurrentUserUpdateRequest,
@@ -33,7 +32,7 @@ type CurrentUserRecord = Record<string, unknown>;
 type FriendsSidebarActionsInput = {
     canInviteFromCurrentLocation?: boolean;
     confirm: ModalStoreActions['confirm'];
-    currentInviteLocation?: unknown;
+    currentInviteLocation?: string;
     currentUser?: CurrentUserRecord | null;
     currentUserId?: string | null;
 };
@@ -77,7 +76,7 @@ export function useFriendsSidebarActions({
         });
     }
 
-    async function launchFriendLocation(location: unknown) {
+    async function launchFriendLocation(location: string) {
         const parsedLocation = parseLocation(location);
         if (
             !parsedLocation.isRealInstance ||
@@ -88,7 +87,7 @@ export function useFriendsSidebarActions({
         }
         try {
             const opened = await tryOpenLaunchLocation(
-                location,
+                parsedLocation.tag,
                 parsedLocation.shortName
             );
             if (opened) {
@@ -111,7 +110,7 @@ export function useFriendsSidebarActions({
         }
     }
 
-    async function selfInviteToFriendLocation(location: unknown) {
+    async function selfInviteToFriendLocation(location: string) {
         const parsedLocation = parseLocation(location);
         if (
             !parsedLocation.isRealInstance ||
@@ -323,13 +322,13 @@ export function useFriendsSidebarActions({
     }
 
     async function applyCurrentUserStatusPreset(preset: StatusPreset) {
-        const status = normalizeSelfStatusInput(preset?.status);
+        const status = preset.status;
         if (!status) {
             return;
         }
         const patch: CurrentUserUpdateRequest = { status };
-        if (Object.prototype.hasOwnProperty.call(preset, 'statusDescription')) {
-            patch.statusDescription = String(preset.statusDescription || '');
+        if (preset.statusDescription !== undefined) {
+            patch.statusDescription = preset.statusDescription;
         }
         await saveCurrentUserPatch(patch, {
             successMessage: t(

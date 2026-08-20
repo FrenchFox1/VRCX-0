@@ -4,6 +4,7 @@ import type { LoadStatus } from '@/domain/shared/types';
 import instanceActivityRepository from '@/repositories/instanceActivityRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 import { toLocalDayKey } from './instanceActivityDate';
 import { getLocalDayBounds } from './instanceActivityRows';
@@ -33,10 +34,6 @@ type ActivityDataState = {
     status: LoadStatus;
     error: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function hasWorldName(
     world: unknown

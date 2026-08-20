@@ -1,4 +1,7 @@
-import type { CommunityThemeManifest } from '@/domain/themes/types';
+import type {
+    CommunityThemeLocalPreview,
+    CommunityThemeManifest
+} from '@/domain/themes/types';
 import { links } from '@/shared/constants/link';
 import type { THEME_COLORS } from '@/shared/constants/themes';
 import type { ThemeMode } from '@/state/shellStore';
@@ -29,7 +32,7 @@ export function themeColorLabel(
 export function resolveActiveThemeSource(
     backgroundImageEnabled: boolean,
     communityThemeEnabled: boolean,
-    localPreview: unknown
+    localPreview: CommunityThemeLocalPreview | null
 ): ThemeSource {
     if (localPreview || communityThemeEnabled) {
         return 'community';
@@ -41,9 +44,7 @@ export function resolveActiveThemeSource(
 }
 
 export function normalizeVersionForThemeCompatibility(version: string): string {
-    return String(version || '')
-        .trim()
-        .replace(/^v/i, '');
+    return version.trim().replace(/^v/i, '');
 }
 
 export function isSameThemeVersion(left: string, right: string): boolean {

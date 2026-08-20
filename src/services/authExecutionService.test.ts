@@ -73,22 +73,25 @@ vi.mock('./sessionBootstrapService', () => ({
     bootstrapAuthenticatedSession: mocks.bootstrapAuthenticatedSession
 }));
 
-import {
-    cachePreviousInstances,
-    cacheUserStats,
-    dialogTargetKey,
-    readCachedPreviousInstances,
-    readCachedUserStats
-} from '@/components/dialogs/user-dialog/userDialogCache';
 import type {
     LoginFailureKind,
     LoginSessionState,
     SavedAuthSnapshot,
     SavedCredentialSnapshot
 } from '@/platform/tauri/bindings';
+import {
+    cachePreviousInstances,
+    cacheUserStats,
+    dialogTargetKey,
+    readCachedPreviousInstances,
+    readCachedUserStats
+} from '@/services/userDialogSessionCacheService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useModalStore } from '@/state/modalStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
+import {
+    type CurrentUserSnapshotState,
+    useRuntimeStore
+} from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import {
@@ -218,16 +221,17 @@ describe('authExecutionService characterization', () => {
         mocks.respondLoginSession.mockResolvedValue(authenticatedState());
         mocks.cancelLoginSession.mockResolvedValue({ status: 'cancelled' });
         mocks.applySavedAuthSnapshot.mockImplementation(
-            (snapshot: unknown) => snapshot
+            (snapshot: SavedAuthSnapshot) => snapshot
         );
         mocks.buildAvatarWearSnapshotUpdate.mockImplementation(
-            ({ nextSnapshot }: { nextSnapshot: unknown }) => ({
-                snapshot: nextSnapshot
-            })
+            ({
+                nextSnapshot
+            }: {
+                nextSnapshot: CurrentUserSnapshotState | null;
+            }) => ({ snapshot: nextSnapshot })
         );
-        mocks.t.mockImplementation(
-            (key: string, values?: Record<string, unknown>) =>
-                Promise.resolve(values?.name ? `${key}:${values.name}` : key)
+        mocks.t.mockImplementation((key: string, values?: { name?: string }) =>
+            Promise.resolve(values?.name ? `${key}:${values.name}` : key)
         );
         mocks.bootstrapAuthenticatedSession.mockResolvedValue(undefined);
         mocks.loadVrchatConfigSnapshot.mockResolvedValue({});

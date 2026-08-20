@@ -1,4 +1,5 @@
 import { userImage } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
@@ -7,16 +8,11 @@ import { resolvePlatformMeta } from './playerListDisplay';
 import { parseTimeMs, resolvePlayerRowUserId } from './playerListRows';
 import type {
     PlayerListContext,
-    PlayerListModerationRecord,
+    PlayerListLocalModerationRecord,
     PlayerListProfileRecord,
-    PlayerListRecord,
     PlayerListRow,
     PlayerListSourceRow
 } from './playerListTypes';
-
-function isRecord(value: unknown): value is PlayerListRecord {
-    return Boolean(value && typeof value === 'object');
-}
 
 function hasArrayItems(value: unknown) {
     return Array.isArray(value) && value.length > 0;
@@ -73,7 +69,7 @@ function resolveRowProfile(row: PlayerListSourceRow) {
 
 function normalizeUserRef(
     source: unknown,
-    fallbackUserId: unknown
+    fallbackUserId: string
 ): PlayerListProfileRecord | null {
     if (!isRecord(source)) {
         return null;
@@ -92,7 +88,7 @@ function normalizeUserRef(
 
     return {
         ...source,
-        id: id || source.id,
+        id,
         $trustLevel: hasUpstreamTrust
             ? normalizeString(source.$trustLevel)
             : trust.trustLevel,
@@ -109,7 +105,7 @@ function normalizeUserRef(
         $isProbableTroll: hasUpstreamTrust
             ? Boolean(source.$isProbableTroll)
             : trust.isProbableTroll,
-        $platform: source.$platform || ''
+        $platform: normalizeString(source.$platform)
     };
 }
 
@@ -219,7 +215,7 @@ function resolveUserRef({
 type EnrichPlayerListRowsInput = {
     clockNow: number;
     context: PlayerListContext;
-    currentUserId?: unknown;
+    currentUserId?: string | null;
     currentUserSnapshot?: PlayerListProfileRecord | null;
     favoriteFriendIds: Set<string>;
     friendsById: Record<string, PlayerListProfileRecord | null | undefined>;
@@ -227,7 +223,7 @@ type EnrichPlayerListRowsInput = {
     knownUsersById?: Record<string, PlayerListProfileRecord | null | undefined>;
     moderationByUserId?: Record<
         string,
-        PlayerListModerationRecord | null | undefined
+        PlayerListLocalModerationRecord | null | undefined
     >;
     playerSourceRows: readonly PlayerListSourceRow[];
     profilesByUserId?: Record<
@@ -259,8 +255,7 @@ export function enrichPlayerListRows({
             ? moderationByUserId[normalizedUserId]
             : null;
         const isCurrentUser =
-            normalizedUserId &&
-            normalizedUserId === normalizeString(currentUserId);
+            normalizedUserId && normalizedUserId === currentUserId;
         const { userRef } = resolveUserRef({
             currentUserSnapshot,
             friend,
@@ -289,7 +284,9 @@ export function enrichPlayerListRows({
             ? normalizeProfileLanguageRows(userRef, languageOptionsMap)
             : [];
         const bioLinks = Array.isArray(userRef?.bioLinks)
-            ? userRef.bioLinks.filter(Boolean)
+            ? userRef.bioLinks.filter(
+                  (link): link is string => typeof link === 'string'
+              )
             : [];
         const note =
             typeof userRef?.note === 'string'
@@ -314,15 +311,13 @@ export function enrichPlayerListRows({
         );
         const isAvatarInteractionDisabled = Boolean(
             userRef?.$moderations?.isAvatarInteractionDisabled ||
-            userRef?.moderations?.isAvatarInteractionDisabled ||
-            moderation?.isAvatarInteractionDisabled
+            userRef?.moderations?.isAvatarInteractionDisabled
         );
         const isChatBoxMuted = Boolean(
             row.isChatBoxMuted ||
             userRef?.isChatBoxMuted ||
             userRef?.$moderations?.isChatBoxMuted ||
-            userRef?.moderations?.isChatBoxMuted ||
-            moderation?.isChatBoxMuted
+            userRef?.moderations?.isChatBoxMuted
         );
         const timeoutTime =
             Number(
@@ -330,7 +325,6 @@ export function enrichPlayerListRows({
                     userRef?.timeoutTime ??
                     userRef?.$moderations?.timeoutTime ??
                     userRef?.moderations?.timeoutTime ??
-                    moderation?.timeoutTime ??
                     0
             ) || 0;
         const ageVerified = Boolean(
@@ -359,8 +353,8 @@ export function enrichPlayerListRows({
             platformLabel: platformMeta.label,
             platformIcon: platformMeta.icon,
             platformClassName: platformMeta.className,
-            inVRMode: row.inVRMode,
-            status: userRef?.status || '',
+            inVRMode: typeof row.inVRMode === 'boolean' ? row.inVRMode : null,
+            status: normalizeString(userRef?.status),
             statusDescription,
             languages,
             bioLinks,
@@ -378,8 +372,8 @@ export function enrichPlayerListRows({
             ageVerified,
             timerMs:
                 joinedAtTime > 0 ? Math.max(clockNow - joinedAtTime, 0) : 0,
-            worldName: context.worldName,
-            location: context.location
+            worldName: normalizeString(context.worldName),
+            location: normalizeString(context.location)
         };
     });
 }

@@ -2,7 +2,10 @@ import { commands } from '@/platform/tauri/bindings';
 import { normalizeString } from '@/shared/utils/string';
 
 import configRepository from './configRepository';
-import gameLogPersistenceRepository from './gameLogPersistenceRepository';
+import gameLogPersistenceRepository, {
+    type GameLogDatabaseRow
+} from './gameLogPersistenceRepository';
+export type { GameLogDatabaseRow } from './gameLogPersistenceRepository';
 
 export const GAME_LOG_FILTER_TYPES = Object.freeze([
     'Location',
@@ -173,18 +176,18 @@ async function queryLatestSessions({
     });
 }
 
-async function deleteGameLogEntry(row: Record<string, unknown>) {
+async function deleteGameLogEntry(row: GameLogDatabaseRow) {
     await gameLogPersistenceRepository.deleteGameLogEntry(row);
 }
 
-async function getUserIdFromDisplayName(displayName: unknown) {
+async function getUserIdFromDisplayName(displayName: string) {
     return gameLogPersistenceRepository.getUserIdFromDisplayName(displayName);
 }
 
 async function getPreviousInstancesByWorldId({
     worldId
 }: {
-    worldId?: unknown;
+    worldId?: string;
 }) {
     return gameLogPersistenceRepository.getPreviousInstancesByWorldId({
         id: worldId
@@ -195,7 +198,7 @@ export type GameLogPreviousInstanceWorldRow = Awaited<
     ReturnType<typeof getPreviousInstancesByWorldId>
 >[number];
 
-async function getWorldNameByWorldId(worldId: unknown) {
+async function getWorldNameByWorldId(worldId: string) {
     const normalizedWorldId = normalizeString(worldId);
     if (!normalizedWorldId) {
         return '';
@@ -209,16 +212,12 @@ async function getAllUserStats({
     userIds = [],
     displayNames = []
 }: {
-    userIds?: unknown;
-    displayNames?: unknown;
+    userIds?: string[];
+    displayNames?: string[];
 } = {}) {
     return gameLogPersistenceRepository.getAllUserStats(
-        (Array.isArray(userIds) ? userIds : [])
-            .map((value) => normalizeString(value))
-            .filter(Boolean),
-        (Array.isArray(displayNames) ? displayNames : [])
-            .map((value) => String(value || '').trim())
-            .filter(Boolean)
+        userIds.map(normalizeString).filter(Boolean),
+        displayNames.map(normalizeString).filter(Boolean)
     );
 }
 

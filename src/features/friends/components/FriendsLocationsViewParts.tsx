@@ -11,12 +11,15 @@ import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import { readFriendInstanceEpoch } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import type { FriendRecord } from '@/domain/friends/types';
+import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
+import { normalizeLocationValue } from '@/shared/utils/location';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
 import { isOnlineFriend } from '../friends-locations-rows/presence';
+import type { FriendLocationRecord } from '../friends-locations-rows/types';
 import type { getFriendsLocationsDensityConfig } from '../friendsLocationsDensity';
 import {
     normalizeFriendsLocationId as normalizeId,
@@ -32,21 +35,22 @@ type BivariantCallback<Args extends unknown[]> = {
 }['bivarianceHack'];
 
 type FriendsLocationsFriend = FriendRecord & {
-    $travelingToLocation?: unknown;
     ref?: FriendLocationSource | null;
-    travelingToLocation?: unknown;
-    userId?: unknown;
+    pendingOffline?: boolean;
+    travelingToLocation?: string | null;
 };
 
-type FriendLocationSource = {
-    $location_at?: unknown;
-    $travelingToLocation?: unknown;
-    $travelingToTime?: unknown;
-    location?: unknown;
-    pendingOffline?: unknown;
-    travelingToLocation?: unknown;
-    travelingToTime?: unknown;
-    traveling_to_time?: unknown;
+type FriendLocationSource = Pick<
+    FriendLocationRecord,
+    | '$location_at'
+    | '$travelingToLocation'
+    | '$travelingToTime'
+    | 'location'
+    | 'travelingToLocation'
+    | 'travelingToTime'
+> & {
+    pendingOffline?: boolean;
+    traveling_to_time?: InstanceRosterTimestamp | null;
 };
 
 type FriendsLocationsEmptyStateProps = {
@@ -217,8 +221,9 @@ export function FriendsLocationCardItem({
     const source = isFriendLocationSource(friend.ref) ? friend.ref : friend;
     const isTravelingLocation =
         normalizeId(source?.location).toLowerCase() === 'traveling';
-    const travelingLocation =
-        source?.travelingToLocation || source?.$travelingToLocation || '';
+    const travelingLocation = normalizeLocationValue(
+        source?.travelingToLocation || source?.$travelingToLocation
+    );
     const friendIsCurrentUser =
         normalizeId(friend?.id || friend?.userId) ===
         normalizeId(currentUserId);

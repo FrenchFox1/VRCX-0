@@ -1,4 +1,5 @@
 import { commands, type RawJson } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -22,10 +23,6 @@ type ActiveFavoriteHydration = {
 };
 
 const activeHydrations = new Map<string, ActiveFavoriteHydration>();
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeUserId(value: unknown) {
     return typeof value === 'string'

@@ -1,5 +1,6 @@
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { isAvatarSearchQueryLongEnough } from '@/shared/utils/avatarSearchQuery';
+import { isRecord } from '@/shared/utils/record';
 
 import avatarProfileRepository from './avatarProfileRepository';
 import type { AvatarProfileRecord } from './avatarProfileRepository';
@@ -48,10 +49,6 @@ const LEGACY_PROVIDER_URLS = new Map<string, string | null>([
 
 function normalizeString(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function pick(value: unknown, ...keys: string[]): unknown {

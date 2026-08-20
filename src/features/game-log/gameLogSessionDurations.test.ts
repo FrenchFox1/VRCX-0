@@ -14,24 +14,28 @@ describe('gameLogSessionDurations', () => {
                 time: 60_000
             },
             {
-                display_name: 'Renamed Alice',
-                user_id: 'usr_alice',
+                displayName: 'Renamed Alice',
+                userId: 'usr_alice',
                 time: 90_000
             },
             {
                 displayName: 'Fallback User',
+                userId: '',
                 time: 20_000
             },
             {
-                display_name: 'fallback user',
+                displayName: 'fallback user',
+                userId: '',
                 time: 30_000
             },
             {
                 displayName: 'Ignored',
+                userId: '',
                 time: 0
             },
             {
                 displayName: 'Ignored',
+                userId: '',
                 time: -1
             }
         ]);
@@ -45,7 +49,8 @@ describe('gameLogSessionDurations', () => {
         ).toBe(150_000);
         expect(
             getGameLogSessionPlayerDuration(details.durationByKey, {
-                displayName: 'FALLBACK USER'
+                displayName: 'FALLBACK USER',
+                userId: ''
             })
         ).toBe(50_000);
     });

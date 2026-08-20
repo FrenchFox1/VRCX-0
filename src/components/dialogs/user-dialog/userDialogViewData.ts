@@ -91,20 +91,20 @@ function isCurrentlyOnline(profile: DialogRecord) {
     return state === 'online';
 }
 
-function estimatedOnlineDuration(profile: DialogRecord, nowMs: unknown) {
+function estimatedOnlineDuration(profile: DialogRecord, nowMs?: number) {
     if (!isCurrentlyOnline(profile)) {
         return 0;
     }
     const lastLoginMs = validTimestampMs(profile?.last_login);
-    const normalizedNowMs = Number(nowMs);
     if (
         !lastLoginMs ||
-        !Number.isFinite(normalizedNowMs) ||
-        lastLoginMs > normalizedNowMs
+        typeof nowMs !== 'number' ||
+        !Number.isFinite(nowMs) ||
+        lastLoginMs > nowMs
     ) {
         return 0;
     }
-    return normalizedNowMs - lastLoginMs;
+    return nowMs - lastLoginMs;
 }
 
 function resolvePresenceActivityAt(profile: DialogRecord) {
@@ -234,14 +234,14 @@ export function buildUserDialogListViewData({
     mutualSort: UserDialogMutualFriendSort;
     groupSort: UserDialogGroupSort;
     isCurrentUser: boolean;
-    inGameGroupOrder: readonly unknown[];
+    inGameGroupOrder: readonly string[];
     effectiveAvatarReleaseStatus: UserDialogAvatarReleaseStatus;
     avatarSort: UserDialogAvatarSort;
     currentUserHasSharedConnectionsOptOut: boolean;
     t?: Translate;
 }) {
     const normalizedGroupOrder = inGameGroupOrder
-        .map(normalizedText)
+        .map((groupId) => groupId.trim())
         .filter(Boolean);
     const profileGroups = normalizeUserGroupMembershipRows(
         remoteStatus.groups === 'ready'
@@ -352,7 +352,7 @@ export function buildUserDialogProfileSummary({
     isCurrentUser: boolean;
     vrchatConfigConstants: unknown;
     currentUserSnapshot: DialogRecord | null;
-    nowMs?: unknown;
+    nowMs?: number;
 } & DialogRecord) {
     const statsPreviousDisplayNames = Array.isArray(
         userStats.previousDisplayNames
@@ -376,7 +376,7 @@ export function buildUserDialogProfileSummary({
     const statusStateText = resolveStatusStateText(profile);
     const userGroupSections = splitUserGroups(
         sortedProfileGroups,
-        profile.id,
+        normalizedText(profile.id),
         isCurrentUser
     );
     const groupLimits = record(record(vrchatConfigConstants).GROUPS);

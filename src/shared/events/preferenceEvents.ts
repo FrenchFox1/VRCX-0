@@ -1,26 +1,34 @@
+import { isRecord } from '@/shared/utils/record';
 export const PREFERENCE_CHANGED_EVENT = 'vrcx:preference-changed';
 
+type PreferenceChangedValue =
+    | string
+    | number
+    | boolean
+    | object
+    | null
+    | undefined;
+
 type PreferenceChangedDetail = {
-    key?: unknown;
-    normalizedKey?: unknown;
-    value?: unknown;
+    key?: string;
+    normalizedKey?: string;
+    value?: PreferenceChangedValue;
 };
 
 type PreferenceChangedCallback = (
-    value: unknown,
+    value: PreferenceChangedValue,
     detail: PreferenceChangedDetail
 ) => void;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 export function normalizePreferenceKey(key: unknown): string {
     const normalized = String(key ?? '');
     return normalized.startsWith('VRCX_') ? normalized.slice(5) : normalized;
 }
 
-export function publishPreferenceChanged(key: unknown, value: unknown) {
+export function publishPreferenceChanged(
+    key: string,
+    value: PreferenceChangedValue
+) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -35,8 +43,19 @@ export function publishPreferenceChanged(key: unknown, value: unknown) {
     );
 }
 
+function preferenceChangedValue(value: unknown): PreferenceChangedValue {
+    return value === null ||
+        typeof value === 'undefined' ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        typeof value === 'object'
+        ? value
+        : undefined;
+}
+
 export function onPreferenceChanged(
-    keys: unknown | readonly unknown[],
+    keys: string | readonly string[],
     callback: PreferenceChangedCallback
 ) {
     if (typeof window === 'undefined') {
@@ -48,7 +67,17 @@ export function onPreferenceChanged(
     const handler = (event: Event) => {
         const detailValue = 'detail' in event ? event.detail : undefined;
         const detail: PreferenceChangedDetail = isRecord(detailValue)
-            ? detailValue
+            ? {
+                  key:
+                      typeof detailValue.key === 'string'
+                          ? detailValue.key
+                          : undefined,
+                  normalizedKey:
+                      typeof detailValue.normalizedKey === 'string'
+                          ? detailValue.normalizedKey
+                          : undefined,
+                  value: preferenceChangedValue(detailValue.value)
+              }
             : {};
         const normalizedKey = normalizePreferenceKey(
             detail.normalizedKey || detail.key

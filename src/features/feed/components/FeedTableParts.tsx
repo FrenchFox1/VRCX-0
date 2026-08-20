@@ -58,7 +58,7 @@ function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
 
-function formatTimestampParts(value: unknown) {
+function formatTimestampParts(value: string | null | undefined) {
     if (!value) {
         return { date: '-', time: '' };
     }
@@ -78,7 +78,7 @@ function formatTimestampParts(value: unknown) {
     return { date, time };
 }
 
-function formatTimestampLong(value: unknown) {
+function formatTimestampLong(value: string | null | undefined) {
     if (!value) {
         return '-';
     }
@@ -86,8 +86,8 @@ function formatTimestampLong(value: unknown) {
     return formatDateFilter(value, 'long');
 }
 
-async function copyFeedText(text: unknown, successMessage: string) {
-    const value = String(text || '').trim();
+async function copyFeedText(text: string, successMessage: string) {
+    const value = text.trim();
     if (!value) {
         return;
     }
@@ -253,7 +253,9 @@ function FeedUserLink({
                         onClick={() =>
                             openWorldDialog({
                                 worldId: worldDialogTarget,
-                                title: friend?.worldName || worldTarget
+                                title:
+                                    normalizeId(friend?.worldName) ||
+                                    worldTarget
                             })
                         }
                     >

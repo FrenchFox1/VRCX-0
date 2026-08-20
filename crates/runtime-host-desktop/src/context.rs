@@ -217,7 +217,9 @@ impl VrOverlayRuntimeServices for DesktopRuntimeServices {
     }
 
     fn game_log_snapshot(&self) -> RuntimeSnapshot {
-        DesktopRuntimeServices::game_log_snapshot(self).as_ref().clone()
+        DesktopRuntimeServices::game_log_snapshot(self)
+            .as_ref()
+            .clone()
     }
 }
 

@@ -5,7 +5,7 @@ type ParsedInviteLocation = ReturnType<typeof parseLocation>;
 export type InviteInstanceCache = Map<
     string,
     {
-        closedAt?: unknown;
+        closedAt?: boolean | string | null;
     }
 >;
 
@@ -18,18 +18,18 @@ export interface CheckCanInviteDeps {
 export interface CheckCanInviteSelfDeps {
     currentUserId: string;
     cachedInstances?: InviteInstanceCache | null;
-    friends?: Map<string, unknown> | Set<string> | null;
+    friends?: { has(userId: string): boolean } | null;
 }
 
 export interface InviteLocationGameState {
-    currentLocation?: unknown;
-    currentDestination?: unknown;
-    isGameRunning?: unknown;
+    currentLocation?: string;
+    currentDestination?: string;
+    isGameRunning?: boolean | null;
 }
 
 export interface InviteLocationCurrentUserSnapshot {
-    $locationTag?: unknown;
-    location?: unknown;
+    $locationTag?: string | null;
+    location?: string | null;
 }
 
 export type LocalInstanceActionGateTarget = {
@@ -52,7 +52,7 @@ export type LocalInstanceActionGates = {
 export type LocalInstanceActionGatesBatchInput = {
     currentUserId?: string | null;
     currentInviteLocation?: string;
-    isGameRunning?: unknown;
+    isGameRunning?: boolean | null;
     friendUserIds?: string[];
     closedLocations?: string[];
     targets: LocalInstanceActionGateTarget[];

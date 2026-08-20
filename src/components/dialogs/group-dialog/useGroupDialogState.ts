@@ -20,7 +20,7 @@ import { useGroupDialogActiveInstances } from './useGroupDialogActiveInstances';
 import { useGroupOwnerProfile } from './useGroupOwnerProfile';
 
 interface GroupDialogStateInput {
-    groupId: unknown;
+    groupId?: string;
     seedData?: EntityRecord | null;
 }
 
@@ -56,7 +56,7 @@ export function useGroupDialogState({
 }: GroupDialogStateInput) {
     const { t } = useTranslation();
 
-    const normalizedGroupId = normalizeEntityId(groupId);
+    const normalizedGroupId = groupId?.trim() ?? '';
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );

@@ -32,6 +32,7 @@ import {
     SECONDS_PER_MINUTE
 } from '@/shared/constants/time';
 import { getDateTimeFormatter } from '@/shared/utils/dateTimeFormatters';
+import { isRecord } from '@/shared/utils/record';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
@@ -61,10 +62,6 @@ const DEFAULT_VISIBILITY: StatusBarVisibility = {
     clocks: true,
     servers: true
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeUtcHour(value: unknown) {
     const numeric = Number(value);
@@ -120,7 +117,7 @@ function parseClockOffset(entry: unknown) {
     return 0;
 }
 
-function formatUtcHour(offset: unknown) {
+function formatUtcHour(offset: number) {
     const normalized = normalizeUtcHour(offset);
     return `UTC${normalized >= 0 ? '+' : ''}${normalized}`;
 }

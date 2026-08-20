@@ -26,7 +26,7 @@ const COMMUNITY_CSS_LAYERS: VrcxCssLayer[] = [
 ];
 
 function toCssString(value: string): string {
-    return `"${String(value || '')
+    return `"${value
         .replace(/\\/g, '\\\\')
         .replace(/"/g, '\\"')
         .replace(/\n/g, '\\A ')}"`;
@@ -104,8 +104,8 @@ export async function syncBackgroundImageAppearance(
     restoreAppTheme = true
 ): Promise<void> {
     const state = useBackgroundImageStore.getState();
-    const suppressCommunityLayers = Boolean(state.enabled);
-    const shouldApply = Boolean(state.enabled && state.snapshot);
+    const suppressCommunityLayers = state.enabled;
+    const shouldApply = state.enabled && state.snapshot !== null;
     setVrcxCssLayer(
         BACKGROUND_IMAGE_LAYER,
         shouldApply && state.snapshot

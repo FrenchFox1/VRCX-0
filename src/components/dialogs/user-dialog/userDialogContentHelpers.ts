@@ -4,6 +4,7 @@ import {
     isExplicitlyOfflineFriend,
     resolveObservedPlayerUserIds
 } from '@/domain/friends/sameInstanceFriends';
+import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import {
     parseLocation,
@@ -143,10 +144,10 @@ export function resolveUserDialogTargetPresenceLocation({
     friendsById = {}
 }: {
     profile: unknown;
-    targetUserId: unknown;
-    currentLocation: unknown;
-    currentLocationPlayerIds: unknown;
-    currentLocationPlayers?: unknown;
+    targetUserId: string;
+    currentLocation: string;
+    currentLocationPlayerIds: readonly string[];
+    currentLocationPlayers?: readonly CurrentInstanceRosterPlayer[];
     friendsById?: Record<string, unknown>;
 }) {
     const presenceLocation = resolvePresenceLocation(profile);

@@ -25,8 +25,8 @@ vi.mock('@/components/affinity/AffinityBadge', () => ({
 }));
 
 vi.mock('@/lib/dateTime', () => ({
-    formatDateFilter: (value: unknown) => String(value),
-    timeToText: (value: unknown) => `duration:${String(value)}`
+    formatDateFilter: (value: string) => value,
+    timeToText: (value: number) => `duration:${String(value)}`
 }));
 
 vi.mock('@/services/clipboardService', () => ({

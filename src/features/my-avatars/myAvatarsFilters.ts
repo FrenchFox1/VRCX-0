@@ -50,7 +50,7 @@ export function matchesMyAvatarsPlatformFilter(
 
 type FilterMyAvatarsInput = {
     avatars: readonly MyAvatarRow[] | null | undefined;
-    searchQuery?: unknown;
+    searchQuery?: string;
     platformFilter: MyAvatarsPlatformFilter;
     releaseStatusFilter: MyAvatarsReleaseStatusFilter;
     tagFilters?: Set<string>;
@@ -63,9 +63,7 @@ export function filterMyAvatars({
     releaseStatusFilter,
     tagFilters
 }: FilterMyAvatarsInput) {
-    const searchValue = String(searchQuery || '')
-        .trim()
-        .toLowerCase();
+    const searchValue = (searchQuery || '').trim().toLowerCase();
     const selectedTags =
         tagFilters instanceof Set ? tagFilters : new Set<string>();
     const avatarRows: readonly MyAvatarRow[] = Array.isArray(avatars)
@@ -98,16 +96,10 @@ export function filterMyAvatars({
         }
 
         return (
-            String(avatar?.name || '')
-                .toLowerCase()
-                .includes(searchValue) ||
-            String(avatar?.description || '')
-                .toLowerCase()
-                .includes(searchValue) ||
+            (avatar.name || '').toLowerCase().includes(searchValue) ||
+            (avatar.description || '').toLowerCase().includes(searchValue) ||
             (avatar?.$tags || []).some((entry) =>
-                String(entry?.tag || '')
-                    .toLowerCase()
-                    .includes(searchValue)
+                (entry.tag || '').toLowerCase().includes(searchValue)
             )
         );
     });

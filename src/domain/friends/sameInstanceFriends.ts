@@ -1,29 +1,33 @@
+import type {
+    FriendProfileFields,
+    FriendRecordInput,
+    FriendRosterBucket
+} from '@/domain/friends/types';
 import {
     isSameInstanceLocation,
-    resolveInstanceDwellEpoch
+    resolveInstanceDwellEpoch,
+    type InstanceRosterTimestamp
 } from '@/domain/instances/instanceRoster';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { isRealInstance } from '@/shared/utils/instance';
 import {
     getFriendsLocations,
-    normalizeLocationValue
+    normalizeLocationValue,
+    type FriendListMembership
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
-type FriendPresenceRecord = Record<string, unknown> & {
-    ref?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-};
+type FriendPresenceRecord = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        ref?: FriendPresenceRecord | null;
+        stateBucket?: FriendRosterBucket;
+    };
 
 type SameInstanceLastLocation = {
-    dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
-    friendList?:
-        | Set<unknown>
-        | Map<unknown, unknown>
-        | readonly unknown[]
-        | Record<string, unknown>;
-    location?: unknown;
-    locationStartedAt?: unknown;
+    dwellEpochsByUserId?: ReadonlyMap<string, InstanceRosterTimestamp>;
+    friendList?: FriendListMembership;
+    location?: string | null;
+    locationStartedAt?: InstanceRosterTimestamp | null;
 };
 
 type SameInstanceFriendGroup<TFriend> = {
@@ -37,10 +41,6 @@ const OTHER_INSTANCE_MIN_FRIENDS = 2;
 type SameInstanceFriendGroupOptions = {
     includeCurrentUser?: boolean;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function asRecord(value: unknown): FriendPresenceRecord | null {
     return isRecord(value) ? value : null;
@@ -146,8 +146,8 @@ function resolveObservedPlayerDwellEpochs(
     players: unknown,
     friendsById: Record<string, unknown>,
     currentLocation: unknown
-): Map<string, unknown> {
-    const dwellEpochsByUserId = new Map<string, unknown>();
+): Map<string, InstanceRosterTimestamp> {
+    const dwellEpochsByUserId = new Map<string, InstanceRosterTimestamp>();
     for (const player of Array.isArray(players) ? players : []) {
         const userId = resolveObservedPlayerUserId(player, friendsById);
         const friend = userId ? friendsById[userId] : null;

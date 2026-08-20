@@ -1,4 +1,23 @@
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type SocialSectionInput = SettingsSectionInput<
+    | 'prefs'
+    | 'selectedFavoriteFriendGroupLabel'
+    | 'favoriteFriendGroupOptions'
+    | 'remoteFavoriteFriendGroupOptions'
+    | 'localFavoriteFriendGroupOptions'
+    | 'localFavoriteFriendsGroups'
+    | 'commit'
+    | 'addFeedHiddenUser'
+    | 'removeFeedHiddenUser'
+    | 'setRecentActionCooldownEnabledPreference'
+    | 'setRecentActionCooldownMinutesPreference'
+    | 'toggleLocalFavoriteFriendsGroup'
+    | 'setPrefs'
+    | 'saveBoolPreference'
+    | 'savePreferenceValue'
+    | 'normalizeRecentActionCooldownMinutes'
+>;
 
 export function buildSocialSection({
     prefs,
@@ -17,7 +36,7 @@ export function buildSocialSection({
     saveBoolPreference,
     savePreferenceValue,
     normalizeRecentActionCooldownMinutes
-}: BuildSettingsPageStateSectionsInput) {
+}: SocialSectionInput) {
     return {
         selectedFavoriteFriendGroupLabel,
         favoriteFriendGroupOptions,

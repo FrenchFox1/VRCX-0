@@ -1,7 +1,11 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import type {
     FriendPatchEntry,
+    FriendProfileFields,
+    FriendRecordInput,
     FriendRosterBucket
 } from '@/domain/friends/types';
+import type { GameLogAllUserStatsRow } from '@/repositories/gameLogPersistenceRepository';
 import removeConfusables, { removeWhitespace } from '@/services/confusables';
 
 export const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
@@ -13,53 +17,27 @@ export const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
     'memo'
 ];
 
-export type FriendListRow = Record<string, unknown> & {
-    $friendNumber?: unknown;
-    $joinCount?: number;
-    $lastSeen?: string;
-    $mutualCount?: number | string;
-    $mutualOptedOut?: boolean;
-    $timeSpent?: number;
-    $trustLevel?: unknown;
-    bio?: unknown;
-    displayName?: string;
-    friendNumber?: unknown;
-    id?: unknown;
-    memo?: unknown;
-    note?: unknown;
-    state?: FriendRosterBucket;
-    stateBucket?: FriendRosterBucket;
-    status?: unknown;
-    statusDescription?: unknown;
-    userId?: unknown;
-    username?: unknown;
-};
+export type FriendListRow = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        $joinCount?: number;
+        $lastSeen?: string;
+        $mutualCount?: number | string;
+        $mutualOptedOut?: boolean;
+        $timeSpent?: number;
+        friendNumber?: number;
+        memo?: string;
+        note?: string;
+        state?: FriendRosterBucket;
+        stateBucket?: FriendRosterBucket;
+    };
 
-export type FriendListUserStatsRow = {
-    displayName?: unknown;
-    joinCount?: unknown;
-    lastSeen?: unknown;
-    timeSpent?: unknown;
-    userId?: unknown;
-};
+export type FriendListUserStatsRow = GameLogAllUserStatsRow;
 
 export type FriendListUserStats = {
     displayName: string;
     joinCount: number;
     lastSeen: string;
     timeSpent: number;
-};
-
-export type FriendMemoRow = {
-    userId?: unknown;
-    memo?: unknown;
-};
-
-export type FriendNoteRow = {
-    userId?: unknown;
-    displayName?: unknown;
-    note?: unknown;
-    createdAt?: unknown;
 };
 
 export type FriendListStatsPatch = FriendPatchEntry & {
@@ -75,8 +53,8 @@ export type FriendListStatsPatch = FriendPatchEntry & {
 };
 
 type FriendNumberSource = {
-    $friendNumber?: unknown;
-    friendNumber?: unknown;
+    $friendNumber?: number | string;
+    friendNumber?: number | string;
 };
 
 type FriendListFilterInput = {
@@ -89,15 +67,13 @@ type FriendListFilterInput = {
     userNoteById: ReadonlyMap<string, string>;
 };
 
-export function normalizeFriendListId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+export function normalizeFriendListId(value: string | null | undefined) {
+    return (value ?? '').trim();
 }
 
 export function buildFriendListFavoriteIdSet(
-    remoteFavoriteIds: readonly unknown[] = [],
-    localFriendFavorites: Record<string, unknown> = {}
+    remoteFavoriteIds: readonly string[] = [],
+    localFriendFavorites: FavoriteGroupMap = {}
 ): Set<string> {
     const set = new Set<string>();
     for (const id of remoteFavoriteIds ?? []) {
@@ -107,9 +83,6 @@ export function buildFriendListFavoriteIdSet(
         }
     }
     for (const values of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(values)) {
-            continue;
-        }
         for (const id of values) {
             const normalized = normalizeFriendListId(id);
             if (normalized) {
@@ -129,8 +102,8 @@ export function buildFriendListUserStatsById(
     const statsById = new Map<string, FriendListUserStats>();
 
     for (const row of statsRows) {
-        const displayName = String(row?.displayName || '').trim();
-        const userId = normalizeFriendListId(row?.userId);
+        const displayName = row.displayName.trim();
+        const userId = normalizeFriendListId(row.userId);
         if (displayName && userId) {
             dataByDisplayName.set(displayName, userId);
         }
@@ -145,9 +118,9 @@ export function buildFriendListUserStatsById(
     }
 
     for (const row of statsRows) {
-        const displayName = String(row?.displayName || '').trim();
+        const displayName = row.displayName.trim();
         const userId =
-            normalizeFriendListId(row?.userId) ||
+            normalizeFriendListId(row.userId) ||
             normalizeFriendListId(dataByDisplayName.get(displayName)) ||
             normalizeFriendListId(friendsByDisplayName.get(displayName));
         if (!userId) {
@@ -156,9 +129,9 @@ export function buildFriendListUserStatsById(
 
         const current = statsById.get(userId);
         const next: FriendListUserStats = {
-            lastSeen: String(row?.lastSeen || ''),
-            timeSpent: Number(row?.timeSpent) || 0,
-            joinCount: Number(row?.joinCount) || 0,
+            lastSeen: row.lastSeen,
+            timeSpent: row.timeSpent,
+            joinCount: row.joinCount,
             displayName
         };
         if (!current) {

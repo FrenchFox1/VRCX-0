@@ -9,7 +9,7 @@ import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
 
 const sidePanelStorageKey = 'vrcx-main-layout-right-sidebar-width';
 
-function clampSidePanelWidth(value: unknown) {
+function clampSidePanelWidth(value: string | number | null) {
     const width = Number.parseInt(String(value ?? ''), 10);
     if (!Number.isFinite(width)) {
         return 320;
@@ -66,7 +66,7 @@ export function AppShellLayout() {
         }
     }, [sidePanelVisible]);
 
-    function applySidePanelWidth(width: unknown) {
+    function applySidePanelWidth(width: number) {
         const nextWidth = clampSidePanelWidth(width);
         sidePanelWidthRef.current = nextWidth;
         if (sidePanelElementRef.current) {

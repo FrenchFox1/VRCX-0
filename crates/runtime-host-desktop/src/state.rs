@@ -63,9 +63,8 @@ mod background_ticks;
 
 use background_ticks::{
     run_background_discord_tick, run_background_presence_tick, BackgroundTickContext,
-    DiscordPresenceLabelCache, BACKGROUND_DISCORD_CADENCE_SECONDS,
-    BACKGROUND_DISCORD_PRESENCE_JOB, BACKGROUND_PRESENCE_AUTOMATION_JOB,
-    BACKGROUND_PRESENCE_CADENCE_SECONDS,
+    DiscordPresenceLabelCache, BACKGROUND_DISCORD_CADENCE_SECONDS, BACKGROUND_DISCORD_PRESENCE_JOB,
+    BACKGROUND_PRESENCE_AUTOMATION_JOB, BACKGROUND_PRESENCE_CADENCE_SECONDS,
 };
 
 const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";

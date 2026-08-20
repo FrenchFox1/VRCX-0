@@ -3,6 +3,7 @@ import {
     isFeedFilterType,
     type FeedFilterType
 } from '@/repositories/feedRepository';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 
 export type FeedViewMode = 'table' | 'columns';
@@ -39,10 +40,6 @@ const FAVORITE_EXCLUDED_PRESET_IDS = new Set([
     'profile',
     'presence'
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object';
-}
 
 export const FEED_COLUMNS_DEFAULT_CONFIG: FeedColumnConfig[] = [
     {

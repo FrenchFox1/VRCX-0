@@ -208,7 +208,7 @@ export function useFeedRows({
             .getAllUserStats({
                 userIds: missingUserIds
             })
-            .then((statsRows: unknown) => {
+            .then((statsRows) => {
                 if (!active) {
                     return;
                 }

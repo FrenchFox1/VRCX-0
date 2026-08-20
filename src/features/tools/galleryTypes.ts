@@ -44,8 +44,8 @@ type DialogRequest = {
 type Translation = (key: string, options?: Record<string, unknown>) => string;
 
 type ToastApi = {
-    error(message: string): unknown;
-    success(message: string): unknown;
+    error(message: string): void;
+    success(message: string): void;
 };
 
 export type GalleryControllerDeps = {
@@ -84,7 +84,7 @@ export type GalleryActionDeps = GalleryControllerDeps & {
     isRuntimeAuthTarget(authTarget: GalleryAuthTarget): boolean;
     mediaRepository: typeof import('@/repositories/mediaRepository').default;
     parseEmojiUploadSettings(
-        fileName: unknown,
+        fileName: string,
         settings?: Partial<EmojiUploadSettings>
     ): EmojiUploadSettings;
     prompt(request: DialogRequest): Promise<DialogResult<string>>;

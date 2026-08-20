@@ -104,8 +104,10 @@ const INTERNAL_LINK_SCHEMES = new Set<string>([
     'avatar'
 ]);
 
-export function getNotificationLinkScheme(link: unknown): string {
-    const value = String(link || '').trim();
+export function getNotificationLinkScheme(
+    link: string | null | undefined
+): string {
+    const value = (link ?? '').trim();
     const separatorIndex = value.indexOf(':');
     if (separatorIndex <= 0) {
         return '';
@@ -113,7 +115,9 @@ export function getNotificationLinkScheme(link: unknown): string {
     return value.slice(0, separatorIndex).toLowerCase();
 }
 
-export function notificationLinkIsInternal(link: unknown): boolean {
+export function notificationLinkIsInternal(
+    link: string | null | undefined
+): boolean {
     return INTERNAL_LINK_SCHEMES.has(getNotificationLinkScheme(link));
 }
 

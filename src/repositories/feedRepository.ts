@@ -86,8 +86,8 @@ class FeedRepository {
 
         return {
             normalizedUserId,
-            maxTableSize: Number(maxTableSize),
-            searchLimit: Number(searchLimit)
+            maxTableSize,
+            searchLimit
         };
     }
 

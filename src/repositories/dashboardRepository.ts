@@ -3,6 +3,7 @@ import {
     DEFAULT_DASHBOARD_ICON
 } from '@/shared/constants/dashboard';
 import { normalizeNavIconKey } from '@/shared/constants/navIcons';
+import { isRecord } from '@/shared/utils/record';
 
 import configRepository from './configRepository';
 
@@ -29,10 +30,6 @@ export interface Dashboard {
 
 interface CloneRowsOptions {
     generateMissingRowIds?: boolean;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function generateDashboardRowId(): string {
@@ -141,11 +138,12 @@ async function getDashboards(): Promise<Dashboard[]> {
     }
 
     try {
-        const parsed = JSON.parse(String(stored));
-        const source = Array.isArray(parsed?.dashboards)
-            ? parsed.dashboards
-            : [];
-        return (source as unknown[])
+        const parsed: unknown = JSON.parse(stored);
+        const source: unknown[] =
+            isRecord(parsed) && Array.isArray(parsed.dashboards)
+                ? parsed.dashboards
+                : [];
+        return source
             .map((dashboard) =>
                 sanitizeDashboard(dashboard, { generateMissingRowIds: false })
             )
@@ -184,12 +182,9 @@ function generateDashboardId(): string {
 
 function generateNextDashboardName(
     dashboards: unknown[] = [],
-    baseName: unknown = 'Dashboard'
+    baseName: string = 'Dashboard'
 ): string {
-    const normalizedBaseName =
-        typeof baseName === 'string' && baseName.trim()
-            ? baseName.trim()
-            : 'Dashboard';
+    const normalizedBaseName = baseName.trim() || 'Dashboard';
     const existingNames = new Set(
         (Array.isArray(dashboards) ? dashboards : [])
             .map((dashboard) => (isRecord(dashboard) ? dashboard.name : ''))

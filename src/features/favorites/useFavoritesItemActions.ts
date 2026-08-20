@@ -1,7 +1,10 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
+import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
+import type { AvatarCacheOutput } from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import { selectAvatar as selectCurrentAvatar } from '@/services/avatarSelectionService';
@@ -23,15 +26,11 @@ import { resolveFavoritePresenceLocation } from './favoritesPageData';
 import type {
     FavoriteGroupView,
     FavoriteItem,
+    FavoriteSeedData,
     FavoriteSource
 } from './favoritesTypes';
 
-type FavoriteFriendRecord = Record<string, unknown> & {
-    displayName?: unknown;
-    id?: unknown;
-    location?: unknown;
-    username?: unknown;
-};
+type FavoriteFriendRecord = FavoriteSeedData | FriendRecord;
 
 export function useFavoritesItemActions({
     avatarHistoryLoading,
@@ -57,17 +56,15 @@ export function useFavoritesItemActions({
     canInviteFromCurrentLocation: boolean;
     currentInviteLocation: string;
     currentUserId: string;
-    friendsById: Record<string, unknown>;
-    friendsMap: Map<string, unknown>;
+    friendsById: FriendRosterById;
+    friendsMap: Map<string, FriendRecord>;
     kind: FavoriteKind;
     localGroups: FavoriteGroupView[];
     newLocalGroupName: string;
     refreshing: boolean;
     selectedContentItems: FavoriteItem[];
     selectedSource: FavoriteSource;
-    setAvatarHistory(
-        value: unknown[] | ((current: unknown[]) => unknown[])
-    ): void;
+    setAvatarHistory: Dispatch<SetStateAction<AvatarCacheOutput[]>>;
     setAvatarHistoryLoading(value: boolean): void;
     setCreatingLocalGroup(value: boolean): void;
     setNewLocalGroupName(value: string): void;
@@ -77,12 +74,6 @@ export function useFavoritesItemActions({
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const boopPrompt = useModalStore((state) => state.boopPrompt);
-    function isFavoriteFriendRecord(
-        value: unknown
-    ): value is FavoriteFriendRecord {
-        return Boolean(value && typeof value === 'object');
-    }
-
     function friendText(value: unknown): string {
         return typeof value === 'string' ? value : String(value ?? '');
     }
@@ -97,7 +88,7 @@ export function useFavoritesItemActions({
                 currentUserId,
                 100
             );
-            setAvatarHistory(Array.isArray(rows) ? rows : []);
+            setAvatarHistory(rows);
         } catch (error) {
             toast.error(
                 error instanceof Error
@@ -139,11 +130,11 @@ export function useFavoritesItemActions({
     function getFavoriteFriend(item: FavoriteItem): FavoriteFriendRecord {
         const userId = normalizeEntityId(item.id);
         const seedData = item.seedData;
-        if (isFavoriteFriendRecord(seedData)) {
+        if (seedData) {
             return seedData;
         }
         const knownFriend = friendsById[userId];
-        if (isFavoriteFriendRecord(knownFriend)) {
+        if (knownFriend) {
             return knownFriend;
         }
         return {
@@ -260,8 +251,7 @@ export function useFavoritesItemActions({
         const result = await confirm({
             title: t('view.favorites.modal.send_invite'),
             description:
-                friendText(friend?.displayName) ||
-                t('view.favorites.description.this_user'),
+                friend.displayName || t('view.favorites.description.this_user'),
             confirmText: t('view.favorites.modal.invite'),
             cancelText: t('common.actions.cancel')
         });

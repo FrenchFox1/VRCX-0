@@ -1,33 +1,34 @@
 import type { FriendRosterInputById } from '@/domain/friends/types';
 import type { FriendLogCurrentRow } from '@/repositories/friendLogRepository';
+import { isRecord } from '@/shared/utils/record';
 
 export type FriendBootstrapSnapshot = Record<string, unknown> & {
-    friendsById?: unknown;
-    orderedFriendIds?: unknown;
-    onlineIds?: unknown;
-    activeIds?: unknown;
-    offlineIds?: unknown;
-    detail?: unknown;
+    friendsById?: FriendRosterInputById;
+    orderedFriendIds?: string[];
+    onlineIds?: string[];
+    activeIds?: string[];
+    offlineIds?: string[];
+    detail?: string;
 };
 export type FriendStateBucket = 'online' | 'active' | 'offline';
 export type FriendLogBootstrapRow = FriendLogCurrentRow & {
-    user_id?: unknown;
-    $friendNumber?: unknown;
-    $trustLevel?: unknown;
+    user_id?: string;
+    $friendNumber?: number;
+    $trustLevel?: string;
 };
 export type FriendLogSeedRow = Partial<FriendLogBootstrapRow>;
 export type CurrentUserFriendSnapshot = Record<string, unknown> & {
-    id?: unknown;
-    friends?: unknown;
-    offlineFriends?: unknown;
-    activeFriends?: unknown;
-    onlineFriends?: unknown;
+    id?: string;
+    friends?: string[];
+    offlineFriends?: string[];
+    activeFriends?: string[];
+    onlineFriends?: string[];
 };
 export type FriendBootstrapOptions = {
     userId?: string;
     endpoint?: string;
     websocket?: string;
-    currentUserSnapshot?: unknown;
+    currentUserSnapshot?: CurrentUserFriendSnapshot | null;
     preserveLoadedState?: boolean;
 };
 export type FriendBootstrapResult = {
@@ -43,9 +44,7 @@ export function normalizeUserId(value: unknown) {
         : String(value ?? '').trim();
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
+export { isRecord };
 
 export function normalizeStringArray(value: unknown): string[] {
     return Array.isArray(value)
@@ -53,14 +52,12 @@ export function normalizeStringArray(value: unknown): string[] {
         : [];
 }
 
-export function normalizeFriendsById(
-    value: unknown
-): Record<string, Record<string, unknown>> {
+export function normalizeFriendsById(value: unknown): FriendRosterInputById {
     if (!isRecord(value)) {
         return {};
     }
 
-    const friendsById: Record<string, Record<string, unknown>> = {};
+    const friendsById: FriendRosterInputById = {};
     for (const [userId, friend] of Object.entries(value)) {
         if (isRecord(friend)) {
             friendsById[userId] = friend;

@@ -11,7 +11,8 @@ import {
     normalizeLocationText,
     firstFiniteLocationNumber,
     firstNonNegativeLocationNumber,
-    worldDialogTarget
+    worldDialogTarget,
+    type LocationObjectRecord
 } from '@/components/location/locationModel';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { useLocationMetadata } from '@/components/location/useLocationMetadata';
@@ -24,17 +25,17 @@ import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 export type InstanceLocationSummaryProps = {
-    locationObject?: unknown;
-    currentUserId?: unknown;
-    worldDialogShortName?: unknown;
-    groupHint?: unknown;
-    grouphint?: unknown;
-    instanceOwner?: unknown;
-    instanceOwnerName?: unknown;
-    playerCount?: unknown;
-    capacity?: unknown;
-    endpoint?: unknown;
-    hint?: unknown;
+    locationObject?: LocationObjectRecord | string | null;
+    currentUserId?: string | null;
+    worldDialogShortName?: string;
+    groupHint?: string | null;
+    grouphint?: string | null;
+    instanceOwner?: string | null;
+    instanceOwnerName?: string;
+    playerCount?: number | string | null;
+    capacity?: number | string | null;
+    endpoint?: string;
+    hint?: string | null;
     interactive?: boolean;
     disableTooltip?: boolean;
     instanceClickAction?: 'launch' | 'world';

@@ -130,10 +130,10 @@ describe('gameLogRows', () => {
                 type: 'VideoPlay',
                 created_at: '2026-04-16T00:00:00.000Z',
                 videoUrl: 'https://video.example.test/watch',
-                id: 'row_1'
+                rowId: 1
             })
         ).toBe(
-            'VideoPlay:2026-04-16T00:00:00.000Z:https://video.example.test/watch:row_1'
+            'VideoPlay:2026-04-16T00:00:00.000Z:https://video.example.test/watch:1'
         );
         expect(
             getGameLogSessionKey({

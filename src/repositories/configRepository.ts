@@ -176,7 +176,7 @@ class ConfigRepository {
         defaultValue: T | null = null
     ): Promise<T | null> {
         const value = await this.getString(key, null);
-        return safeJsonParse(value, defaultValue) as T | null;
+        return safeJsonParse(value, defaultValue);
     }
 
     async getArray<T = unknown>(

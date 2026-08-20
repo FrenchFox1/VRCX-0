@@ -49,7 +49,15 @@ describe('useFriendsLocationsPageDerivedState', () => {
                 gameState: {
                     currentLocation: location,
                     currentLocationPlayerIds: [friend.id],
-                    currentLocationPlayers: [{ id: friend.id, joinedAtMs }],
+                    currentLocationPlayers: [
+                        {
+                            id: friend.id,
+                            userId: friend.id,
+                            displayName: friend.displayName,
+                            joinedAt: new Date(joinedAtMs).toISOString(),
+                            joinedAtMs
+                        }
+                    ],
                     isGameRunning: true
                 },
                 groupedFavoriteFriendIdsByGroupKey: {},

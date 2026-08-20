@@ -8,7 +8,7 @@ import {
     readCachedPreviousInstances,
     readCachedUserStats,
     type UserDialogPreviousInstance
-} from './userDialogCache';
+} from './userDialogSessionCacheService';
 
 function previousInstance(location: string): UserDialogPreviousInstance {
     return {
@@ -22,7 +22,7 @@ function previousInstance(location: string): UserDialogPreviousInstance {
     };
 }
 
-describe('userDialogCache', () => {
+describe('userDialogSessionCacheService', () => {
     beforeEach(() => {
         clearUserDialogCaches();
     });

@@ -24,7 +24,7 @@ function parseHex(value: string): Rgba | null {
 }
 
 function parseGraphColor(value: string): Rgba {
-    const input = String(value || '').trim();
+    const input = value.trim();
     if (input.startsWith('#')) {
         return parseHex(input) ?? FALLBACK_RGBA;
     }

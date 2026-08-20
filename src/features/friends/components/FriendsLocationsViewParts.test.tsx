@@ -18,7 +18,7 @@ vi.mock('./FriendLocationCard', () => ({
         location,
         capabilities
     }: {
-        location?: { instanceEpoch?: unknown };
+        location?: { instanceEpoch?: number | string | null };
         capabilities?: {
             useLocation?: boolean;
             sendInvite?: boolean;

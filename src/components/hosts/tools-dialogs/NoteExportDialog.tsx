@@ -17,6 +17,7 @@ import { commands, type NoteExportStatus } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
 import { subscribeRuntimeEvent } from '@/services/runtime-event-bridge/subscription';
+import { isRecord } from '@/shared/utils/record';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { Alert, AlertAction, AlertDescription } from '@/ui/shadcn/alert';
@@ -54,10 +55,6 @@ type NoteExportDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 function asObjectRecord(value: unknown): Record<string, unknown> | null {
     return isRecord(value) ? value : null;
@@ -202,7 +199,7 @@ export function NoteExportDialog({
         if (!open) {
             refreshRequestRef.current += 1;
             if (activeRunIdRef.current) {
-                void commands.appNoteExportCancel().catch((error: unknown) => {
+                void commands.appNoteExportCancel().catch((error) => {
                     console.warn('Failed to cancel note export:', error);
                 });
             }

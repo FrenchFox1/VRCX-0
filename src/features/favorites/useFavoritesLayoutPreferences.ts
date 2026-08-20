@@ -124,7 +124,7 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
         };
     }, [kind]);
 
-    function persistSplitterSizePx(nextSizePx: unknown): void {
+    function persistSplitterSizePx(nextSizePx: number): void {
         const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
         setSplitterSizePx(normalizedSizePx);
         configRepository.setString(

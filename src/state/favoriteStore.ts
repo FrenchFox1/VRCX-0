@@ -493,10 +493,7 @@ export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
         });
     },
     getRemoteFavoriteByObjectId(objectId) {
-        const normalizedObjectId =
-            typeof objectId === 'string'
-                ? objectId.trim()
-                : String(objectId ?? '').trim();
+        const normalizedObjectId = objectId.trim();
         if (!normalizedObjectId) {
             return null;
         }

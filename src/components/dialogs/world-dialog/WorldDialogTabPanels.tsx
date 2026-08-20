@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next';
 
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
+import { normalizeLocationText } from '@/components/location/locationModel';
 import { LocationWorld } from '@/components/LocationWorld';
 import type { WorldDialogJson } from '@/domain/entities/world';
 import { ScreenshotThumbnailCard } from '@/features/tools/components/ScreenshotThumbnailGrid';
 import { useScreenshotGalleryGrid } from '@/features/tools/useScreenshotGalleryGrid';
 import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
 import { openExternalLink } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -47,17 +49,19 @@ const WORLD_DATE_FALLBACKS = {
     invalid: String
 };
 
-function firstKnownValue(...values: unknown[]) {
+function firstKnownValue(...values: unknown[]): number | undefined {
     for (const value of values) {
-        if (value !== null && typeof value !== 'undefined' && value !== '') {
-            return value;
+        const numeric = Number(value);
+        if (
+            value !== null &&
+            typeof value !== 'undefined' &&
+            value !== '' &&
+            Number.isFinite(numeric)
+        ) {
+            return numeric;
         }
     }
     return undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -253,9 +257,12 @@ export function WorldDialogTabPanels({
                                 world,
                                 instance
                             );
-                            const shortName = instance.shortName || '';
+                            const shortName = normalizeLocationText(
+                                instance.shortName
+                            );
                             const launchToken =
-                                instance.shortName || instance.secureName || '';
+                                shortName ||
+                                normalizeLocationText(instance.secureName);
                             const playerCount = firstKnownValue(
                                 instance.playerCount,
                                 instance.userCount,
@@ -292,18 +299,24 @@ export function WorldDialogTabPanels({
                                                     worldDialogShortName
                                                 }
                                                 grouphint={
-                                                    instanceRecord.groupName ||
-                                                    instanceGroup.name ||
-                                                    ''
+                                                    normalizeLocationText(
+                                                        instanceRecord.groupName
+                                                    ) ||
+                                                    normalizeLocationText(
+                                                        instanceGroup.name
+                                                    )
                                                 }
                                                 playerCount={playerCount}
                                                 capacity={capacity}
                                                 showPlayerSummary={false}
                                                 hint={
                                                     world.name ||
-                                                    instanceRecord.worldName ||
-                                                    instanceWorld.name ||
-                                                    ''
+                                                    normalizeLocationText(
+                                                        instanceRecord.worldName
+                                                    ) ||
+                                                    normalizeLocationText(
+                                                        instanceWorld.name
+                                                    )
                                                 }
                                             />
                                             {instance.isCurrentInstance ? (
@@ -316,10 +329,11 @@ export function WorldDialogTabPanels({
                                                 location,
                                                 shortName: launchToken,
                                                 worldName:
-                                                    world.name ||
-                                                    instanceRecord.worldName ||
-                                                    instanceWorld.name ||
-                                                    ''
+                                                    normalizeLocationText(
+                                                        world.name ||
+                                                            instanceRecord.worldName ||
+                                                            instanceWorld.name
+                                                    )
                                             }}
                                             instance={instance}
                                             friendCount={

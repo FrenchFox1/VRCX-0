@@ -5,6 +5,7 @@ import {
     extractFileVersion,
     extractVariantVersion
 } from '@/shared/utils/fileUtils';
+import { isRecord } from '@/shared/utils/record';
 
 type UnityPackage = Record<string, unknown> & {
     assetUrl?: string;
@@ -32,10 +33,6 @@ type WorldCacheInfo = {
     cachePath: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 export function defaultWorldCacheInfo(): WorldCacheInfo {
     return {
         inCache: false,
@@ -47,7 +44,7 @@ export function defaultWorldCacheInfo(): WorldCacheInfo {
 
 function isWorldCacheCandidatePackage(
     unityPackage: unknown,
-    sdkUnityVersion: unknown = ''
+    sdkUnityVersion: string = ''
 ): unityPackage is UnityPackage {
     if (!isRecord(unityPackage)) {
         return false;
@@ -78,7 +75,7 @@ function isWorldCacheCandidatePackage(
 
 export function resolveWorldAssetBundleArgs(
     world: WorldRecord | null | undefined,
-    sdkUnityVersion: unknown = ''
+    sdkUnityVersion: string = ''
 ): WorldAssetBundleArgs | null {
     const unityPackages = Array.isArray(world?.unityPackages)
         ? world.unityPackages

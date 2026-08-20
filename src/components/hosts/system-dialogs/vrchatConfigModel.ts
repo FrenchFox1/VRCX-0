@@ -1,8 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
 export type VrchatConfig = Record<string, unknown>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 export function parseVrchatConfig(json: string): VrchatConfig {
     if (!json) {
@@ -25,8 +22,8 @@ export function getConfigFieldValue(
 }
 
 export function getResolutionKey(row: {
-    width?: unknown;
-    height?: unknown;
+    width?: string | number;
+    height?: string | number;
 }): string {
     const width = Number(row.width);
     const height = Number(row.height);

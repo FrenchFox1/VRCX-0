@@ -10,6 +10,7 @@ import type {
     GroupJoinRequestAction,
     HttpApiExecuteResponse
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {
@@ -146,9 +147,7 @@ export interface GroupMemberPropsInput extends GroupUserInput {
     params: GroupMemberPatch;
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
+export { isRecord };
 
 export function unwrapVrchatGroupResponse<TJson = GroupRecord>(
     response: VrchatApiResult,

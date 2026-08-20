@@ -8,7 +8,7 @@ import { replaceBioSymbols } from '@/shared/utils/string';
 export const SEARCH_PAGE_SIZE = 10;
 
 export type WorldSearchCategory = {
-    index?: unknown;
+    index?: string | number;
     sortHeading?: string;
     sortOrder?: string;
     sortOwnership?: string;
