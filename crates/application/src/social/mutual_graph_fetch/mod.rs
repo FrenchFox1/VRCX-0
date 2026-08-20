@@ -8,4 +8,5 @@ pub use types::{
     MutualGraphFetchCancelInput, MutualGraphFetchStartInput, MutualGraphFetchState,
     MutualGraphFetchStatus, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
     MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
+    UserMutualFriendsListOutput,
 };

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
 
 use crate::{RuntimeAuthScope, WebClient};
@@ -88,4 +89,11 @@ pub struct MutualGraphFriendRefreshOutput {
 #[serde(rename_all = "camelCase")]
 pub struct UserMutualFriendsListInput {
     pub user_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct UserMutualFriendsListOutput {
+    pub rows: Vec<RawJson>,
+    pub persisted: bool,
 }

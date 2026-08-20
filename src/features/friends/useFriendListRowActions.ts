@@ -18,6 +18,7 @@ import friendRelationshipService from '@/services/friendRelationshipService';
 import { startMutualGraphFetch } from '@/services/mutualGraphFetchService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
+import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -33,7 +34,7 @@ type MutualProgress = {
 type MutualGraphSnapshotScope = {
     endpoint: string;
     ownerUserId: string;
-    runId: number;
+    runId?: number;
 };
 
 export function useFriendListRowActions({
@@ -85,6 +86,9 @@ export function useFriendListRowActions({
     const friendProfileLoadStatus = useRuntimeStore(
         (state) => state.friendProfileLoad.status
     );
+    const backfillRevision = useMutualGraphRevisionStore((state) =>
+        state.ownerUserId === currentUserId ? state.revision : 0
+    );
     const handledMutualGraphRunRef = useRef('');
     const bulkUnfriendRunRef = useRef(0);
     const isMutualFetching =
@@ -101,10 +105,15 @@ export function useFriendListRowActions({
             const runtimeState = useRuntimeStore.getState();
             if (
                 runtimeState.auth.currentUserId !== ownerUserId ||
-                runtimeState.auth.currentUserEndpoint !== endpoint ||
-                runtimeState.mutualGraph.ownerUserId !== ownerUserId ||
-                runtimeState.mutualGraph.runId !== runId ||
-                runtimeState.mutualGraph.status !== 'completed'
+                runtimeState.auth.currentUserEndpoint !== endpoint
+            ) {
+                return;
+            }
+            if (
+                runId !== undefined &&
+                (runtimeState.mutualGraph.ownerUserId !== ownerUserId ||
+                    runtimeState.mutualGraph.runId !== runId ||
+                    runtimeState.mutualGraph.status !== 'completed')
             ) {
                 return;
             }
@@ -128,6 +137,26 @@ export function useFriendListRowActions({
         },
         [applyFriendPatch]
     );
+
+    useEffect(() => {
+        if (!currentUserId || !backfillRevision) {
+            return;
+        }
+        applyCachedMutualFriendStats({
+            endpoint: currentEndpoint,
+            ownerUserId: currentUserId
+        }).catch((error) => {
+            console.warn(
+                '[FriendListPage] Failed to apply mutual graph backfill',
+                error
+            );
+        });
+    }, [
+        applyCachedMutualFriendStats,
+        backfillRevision,
+        currentEndpoint,
+        currentUserId
+    ]);
 
     useEffect(() => {
         if (!isMutualFetching) {

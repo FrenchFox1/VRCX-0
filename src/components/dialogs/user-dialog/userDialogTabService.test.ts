@@ -35,7 +35,10 @@ function repositories(
             getUserGroups: async () => []
         },
         userProfileRepository: {
-            getAllMutualFriends: async () => []
+            getAllMutualFriends: async () => ({
+                rows: [],
+                persisted: false
+            })
         },
         vrchatFavoriteRepository: {
             getAllFavoriteGroups: async () => [],
@@ -102,7 +105,7 @@ describe('userDialogTabService', () => {
             userProfileRepository: {
                 getAllMutualFriends: async (params) => {
                     calls.push(['mutual', params]);
-                    return [{ id: 'usr_friend' }];
+                    return { rows: [{ id: 'usr_friend' }], persisted: true };
                 }
             },
             groupProfileRepository: {
@@ -128,7 +131,8 @@ describe('userDialogTabService', () => {
             })
         ).resolves.toEqual({
             rows: [{ id: 'usr_friend' }],
-            favoriteWorldGroups: []
+            favoriteWorldGroups: [],
+            mutualGraphUpdated: true
         });
         await expect(
             loadUserDialogTabData({

@@ -152,6 +152,7 @@ pub use social::{
     MutualGraphFetchRuntime, MutualGraphFetchStartInput, MutualGraphFetchState,
     MutualGraphFetchStatus, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
     MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
+    UserMutualFriendsListOutput,
 };
 pub use social::{
     load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarSnapshot,

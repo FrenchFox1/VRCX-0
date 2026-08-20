@@ -999,7 +999,7 @@ const generatedCommands = {
     },
     async appUserMutualFriendsListGet(
         input: UserMutualFriendsListInput
-    ): Promise<RawJson[]> {
+    ): Promise<UserMutualFriendsListOutput> {
         return await TAURI_INVOKE('app__user_mutual_friends_list_get', {
             input
         });
@@ -5579,6 +5579,10 @@ export type UserGroupsOverviewOutput = {
 };
 export type UserMemoOutput = { userId: string; editedAt: string; memo: string };
 export type UserMutualFriendsListInput = { userId: string };
+export type UserMutualFriendsListOutput = {
+    rows: RawJson[];
+    persisted: boolean;
+};
 export type UserNoteOutput = {
     userId: string;
     displayName: string;

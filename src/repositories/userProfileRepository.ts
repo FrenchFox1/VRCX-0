@@ -367,11 +367,14 @@ async function getAllMutualFriends({ userId }: UserEndpointInput) {
         );
     }
 
-    const rows = await commands.appUserMutualFriendsListGet({
+    const { rows, persisted } = await commands.appUserMutualFriendsListGet({
         userId: normalizedUserId
     });
     const candidates: unknown[] = rows;
-    return candidates.filter(isUserMutualFriendRow);
+    return {
+        rows: candidates.filter(isUserMutualFriendRow),
+        persisted
+    };
 }
 
 async function updateCurrentUser({

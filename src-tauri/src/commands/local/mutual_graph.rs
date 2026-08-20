@@ -5,8 +5,8 @@ use vrcx_0_application::{
     get_user_mutual_friends_list, refresh_mutual_graph_friend, MutualGraphFetchCancelInput,
     MutualGraphFetchStartInput, MutualGraphFetchStatus, MutualGraphFriendRefreshInput,
     MutualGraphFriendRefreshOutput, MutualGraphRequestDeps, UserMutualFriendsListInput,
+    UserMutualFriendsListOutput,
 };
-use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::mutual_graph::MutualGraphSnapshotOutput;
 
 use crate::error::AppError;
@@ -82,7 +82,7 @@ pub async fn app__mutual_graph_friend_refresh(
 pub async fn app__user_mutual_friends_list_get(
     state: State<'_, AppState>,
     input: UserMutualFriendsListInput,
-) -> Result<Vec<RawJson>, AppError> {
+) -> Result<UserMutualFriendsListOutput, AppError> {
     Ok(get_user_mutual_friends_list(
         MutualGraphRequestDeps {
             db: state.db.as_ref(),

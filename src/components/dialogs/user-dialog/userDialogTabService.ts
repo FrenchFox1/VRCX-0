@@ -59,7 +59,10 @@ export type UserDialogRepositories = {
         getAllMutualFriends(input: {
             userId?: string;
             endpoint?: string;
-        }): Promise<unknown[]>;
+        }): Promise<{
+            rows: unknown[];
+            persisted: boolean;
+        }>;
     };
     vrchatFavoriteRepository: {
         getAllFavoriteGroups(input: {
@@ -181,18 +184,26 @@ export async function loadUserDialogTabData({
     worldSort?: UserDialogWorldSort;
     worldOrder?: UserDialogWorldOrder;
     repositories: UserDialogRepositories;
-}): Promise<{ rows: EntityRecord[]; favoriteWorldGroups: EntityRecord[] }> {
+}): Promise<{
+    rows: EntityRecord[];
+    favoriteWorldGroups: EntityRecord[];
+    mutualGraphUpdated?: boolean;
+}> {
     if (!isUserDialogDataTab(tab)) {
         return { rows: [], favoriteWorldGroups: [] };
     }
 
     if (tab === 'mutual') {
-        const rows =
+        const { rows, persisted } =
             await repositories.userProfileRepository.getAllMutualFriends({
                 userId,
                 endpoint
             });
-        return { rows: recordRows(rows), favoriteWorldGroups: [] };
+        return {
+            rows: recordRows(rows),
+            favoriteWorldGroups: [],
+            mutualGraphUpdated: persisted
+        };
     }
 
     if (tab === 'groups') {
