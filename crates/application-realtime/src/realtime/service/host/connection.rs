@@ -436,8 +436,8 @@ impl RealtimeHostRuntime {
         self.friends.current_friend_record(user_id)
     }
 
-    pub fn friend_user_ids(&self) -> std::collections::HashSet<String> {
-        self.friends.friend_user_ids()
+    pub fn friend_user_ids_snapshot(&self) -> std::sync::Arc<std::collections::HashSet<String>> {
+        self.friends.friend_user_ids_snapshot()
     }
 
     pub fn friend_roster_snapshot(

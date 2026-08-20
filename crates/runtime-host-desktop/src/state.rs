@@ -63,8 +63,9 @@ mod background_ticks;
 
 use background_ticks::{
     run_background_discord_tick, run_background_presence_tick, BackgroundTickContext,
-    BACKGROUND_DISCORD_CADENCE_SECONDS, BACKGROUND_DISCORD_PRESENCE_JOB,
-    BACKGROUND_PRESENCE_AUTOMATION_JOB, BACKGROUND_PRESENCE_CADENCE_SECONDS,
+    DiscordPresenceLabelCache, BACKGROUND_DISCORD_CADENCE_SECONDS,
+    BACKGROUND_DISCORD_PRESENCE_JOB, BACKGROUND_PRESENCE_AUTOMATION_JOB,
+    BACKGROUND_PRESENCE_CADENCE_SECONDS,
 };
 
 const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";
@@ -244,7 +245,7 @@ impl DesktopRuntimeHostState {
             context: Arc::clone(&builder.runtime_context),
             file_access: host_file_access.clone(),
             app_paths: builder.paths.clone(),
-            snapshot: Arc::clone(&game_log_snapshot),
+            snapshot: game_log_snapshot.clone(),
             overlay_activity: overlay_activity.clone(),
             instance_roster_observer: Some(Arc::clone(&instance_roster_observer)),
             backend_status: backend_status.clone(),
@@ -1017,6 +1018,7 @@ impl DesktopRuntimeProfileExtension {
                     serde_json::to_string(&presence_state).unwrap_or_default();
                 let mut discord_state =
                     vrcx_0_application_game::BackgroundDiscordPresenceState::default();
+                let mut discord_label_cache = DiscordPresenceLabelCache::default();
                 let mut last_discord_output: Option<String> = None;
                 let mut next_presence = Instant::now();
                 let mut next_discord = Instant::now();
@@ -1078,7 +1080,7 @@ impl DesktopRuntimeProfileExtension {
                         let favorite_group_memberships = authenticated_runtime
                             .favorite_group_memberships()
                             .unwrap_or_default();
-                        let friend_user_ids = realtime_runtime.friend_user_ids();
+                        let friend_user_ids = realtime_runtime.friend_user_ids_snapshot();
                         if run_presence {
                             run_background_presence_tick(
                                 &tick_context,
@@ -1096,11 +1098,13 @@ impl DesktopRuntimeProfileExtension {
                                 now + Duration::from_secs(BACKGROUND_PRESENCE_CADENCE_SECONDS);
                         }
                         if run_discord {
+                            let labels = discord_label_cache.get(runtime_context.config());
                             run_background_discord_tick(
                                 &tick_context,
                                 &discord_rpc,
                                 &mut discord_state,
                                 &mut last_discord_output,
+                                labels.as_ref(),
                                 &friend_user_ids,
                                 &favorite_group_memberships.friend_groups_by_key,
                             )

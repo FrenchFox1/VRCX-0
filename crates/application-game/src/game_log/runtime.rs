@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use vrcx_0_core::game_log_parser::GameLogEvent;
 use vrcx_0_persistence::DatabaseService;
@@ -17,7 +17,7 @@ use vrcx_0_application_core::InstanceRosterObserver;
 use super::host::GameLogHostActions;
 use super::ingest::GameLogProcessEvent;
 use super::processor::{GameLogProcessor, GameLogProcessorDeps, GameLogWorkerJob};
-use super::runtime_state::RuntimeSnapshot;
+use super::runtime_state::RuntimeSnapshotStore;
 
 #[derive(Clone)]
 pub struct GameLogRuntimeDeps {
@@ -31,7 +31,7 @@ pub struct GameLogRuntimeDeps {
     pub sync: RuntimeSyncEngine,
     pub auth_scope: RuntimeAuthScope,
     pub session: HostSessionRuntime,
-    pub snapshot: Arc<Mutex<RuntimeSnapshot>>,
+    pub snapshot: RuntimeSnapshotStore,
     pub host_actions: Arc<dyn GameLogHostActions>,
     pub overlay_activity: OverlayActivityRuntime,
     pub world_cache: Arc<WorldCache>,

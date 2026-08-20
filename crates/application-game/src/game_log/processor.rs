@@ -21,7 +21,7 @@ use crate::game_log::ingest::{
     GameLogSideEffect,
 };
 use crate::game_log::instance_media::InstanceMediaQueue;
-use crate::game_log::runtime_state::RuntimeSnapshot;
+use crate::game_log::runtime_state::{RuntimeSnapshot, RuntimeSnapshotStore};
 use crate::overlay_activity::OverlayActivityGameIngestExt;
 use crate::GameLogEventOrigin;
 use crate::ImageCache;
@@ -65,7 +65,7 @@ pub struct GameLogProcessorDeps {
     pub tasks: TaskSupervisor,
     pub sync: RuntimeSyncEngine,
     pub auth_scope: RuntimeAuthScope,
-    pub snapshot: Arc<Mutex<RuntimeSnapshot>>,
+    pub snapshot: RuntimeSnapshotStore,
     pub host_actions: Arc<dyn GameLogHostActions>,
     pub overlay_activity: OverlayActivityRuntime,
     pub world_cache: Arc<WorldCache>,
@@ -105,14 +105,7 @@ impl GameLogProcessorDeps {
         } else {
             None
         };
-        match self.snapshot.lock() {
-            Ok(mut current) => {
-                *current = snapshot;
-            }
-            Err(error) => {
-                tracing::warn!("failed to lock game log snapshot: {error}");
-            }
-        }
+        self.snapshot.replace(snapshot);
         if let Some((current_location, current_player_user_ids)) = current_instance_presence {
             self.overlay_activity
                 .set_current_instance_presence(&current_location, current_player_user_ids);
@@ -341,12 +334,9 @@ impl GameLogProcessor {
     }
 
     fn ingest_overlay_activity(&self, output: &GameLogIngestOutput) {
-        let (current_location, current_started_at) = self
-            .deps
-            .snapshot
-            .lock()
-            .map(|snapshot| (snapshot.location.clone(), snapshot.started_at.clone()))
-            .unwrap_or_default();
+        let snapshot = self.deps.snapshot.snapshot();
+        let current_location = snapshot.location.clone();
+        let current_started_at = snapshot.started_at.clone();
         let current_user_id = self.deps.auth_scope.snapshot().current_user_id;
         let context = OverlayJoinLeaveSuppressionContext::from_output(
             output,

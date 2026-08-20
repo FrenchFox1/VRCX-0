@@ -403,9 +403,10 @@ impl RuntimeBackgroundJobs {
         let detail = detail.into();
         match self.inner.jobs.lock() {
             Ok(mut jobs) => {
-                let job =
-                    jobs.entry(name.to_string())
-                        .or_insert_with(|| RuntimeBackgroundJobSnapshot {
+                let job = match jobs.get_mut(name) {
+                    Some(job) => job,
+                    None => jobs.entry(name.to_string()).or_insert_with(|| {
+                        RuntimeBackgroundJobSnapshot {
                             name: name.to_string(),
                             owner: "rust".into(),
                             status,
@@ -416,7 +417,9 @@ impl RuntimeBackgroundJobs {
                             last_detail: String::new(),
                             last_error: None,
                             failure_count: 0,
-                        });
+                        }
+                    }),
+                };
                 job.status = status;
                 if let Some(started_at) = timing.started_at {
                     job.last_started_at = Some(started_at);

@@ -427,6 +427,7 @@ mod tests {
     #[test]
     fn friend_delete_removes_from_roster() {
         let runtime = runtime_with_friend(friend_record("online", "wrld_1:123~region(jp)"));
+        let friend_user_ids = runtime.friend_user_ids_snapshot();
 
         let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
             "type": "friend-delete",
@@ -448,6 +449,12 @@ mod tests {
             .unwrap()
             .friends_by_id
             .contains_key("usr_friend"));
+        let empty_friend_user_ids = runtime.friend_user_ids_snapshot();
+        assert!(!std::sync::Arc::ptr_eq(
+            &friend_user_ids,
+            &empty_friend_user_ids
+        ));
+        assert!(empty_friend_user_ids.is_empty());
     }
 
     #[test]

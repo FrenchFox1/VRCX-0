@@ -133,6 +133,7 @@ mod tests {
             1,
             0,
         );
+        let empty_friend_user_ids = runtime.friend_user_ids_snapshot();
 
         let event = RealtimeWsMessagePayload {
             json: json!({
@@ -151,6 +152,12 @@ mod tests {
         };
         assert_eq!(first.persistence.friend_log_upserts.len(), 1);
         assert!(first.projection.friend_log_changed);
+        let friend_user_ids = runtime.friend_user_ids_snapshot();
+        assert!(!std::sync::Arc::ptr_eq(
+            &empty_friend_user_ids,
+            &friend_user_ids
+        ));
+        assert!(friend_user_ids.contains("usr_added"));
 
         let RealtimeFriendApplyResult::Output(second) = runtime.apply_ws_message(&event) else {
             panic!("repeated friend-add should still produce an output");
@@ -162,6 +169,10 @@ mod tests {
             .iter()
             .all(|entry| entry["type"] != "Friend"));
         assert!(!second.projection.friend_log_changed);
+        assert!(std::sync::Arc::ptr_eq(
+            &friend_user_ids,
+            &runtime.friend_user_ids_snapshot()
+        ));
     }
 
     #[test]

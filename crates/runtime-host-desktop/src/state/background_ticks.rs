@@ -11,7 +11,7 @@ use vrcx_0_runtime_host::{AuthenticatedSessionProjection, RuntimeHostContext};
 mod discord;
 mod presence;
 
-pub(in crate::state) use discord::run_background_discord_tick;
+pub(in crate::state) use discord::{run_background_discord_tick, DiscordPresenceLabelCache};
 pub(in crate::state) use presence::run_background_presence_tick;
 
 pub(in crate::state) const BACKGROUND_PRESENCE_AUTOMATION_JOB: &str =

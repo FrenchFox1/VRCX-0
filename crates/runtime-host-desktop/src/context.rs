@@ -3,7 +3,9 @@ use std::sync::{Arc, Mutex};
 use serde_json::{json, Map, Value};
 use vrcx_0_application_activity::{OverlayActivityRuntime, OverlayActivitySink};
 use vrcx_0_application_core::FriendProjection;
-use vrcx_0_application_game::{GameLogSideEffectEvent, GameLogSideEffectObserver, RuntimeSnapshot};
+use vrcx_0_application_game::{
+    GameLogSideEffectEvent, GameLogSideEffectObserver, RuntimeSnapshot, RuntimeSnapshotStore,
+};
 use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeHostRuntime};
 use vrcx_0_core::friends::StateBucket;
 use vrcx_0_host_desktop::tts::{SystemTtsEngine, TtsEngine};
@@ -29,8 +31,8 @@ pub struct DesktopRuntimeServices {
     tts: Arc<dyn TtsEngine>,
     notification_desktop_notifier: DesktopNotifierSlot,
     realtime_user_image_resolver: RealtimeUserImageResolverSlot,
-    game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
-    now_playing: Arc<Mutex<Value>>,
+    game_log_snapshot: RuntimeSnapshotStore,
+    now_playing: Arc<Mutex<Arc<Value>>>,
 }
 
 impl DesktopRuntimeServices {
@@ -60,8 +62,8 @@ impl DesktopRuntimeServices {
             tts,
             notification_desktop_notifier,
             realtime_user_image_resolver,
-            game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
-            now_playing: Arc::new(Mutex::new(default_now_playing_value())),
+            game_log_snapshot: RuntimeSnapshotStore::default(),
+            now_playing: Arc::new(Mutex::new(Arc::new(default_now_playing_value()))),
         }
     }
 
@@ -85,22 +87,19 @@ impl DesktopRuntimeServices {
         self.realtime_user_image_resolver.set(realtime_runtime);
     }
 
-    pub fn game_log_snapshot_handle(&self) -> Arc<Mutex<RuntimeSnapshot>> {
-        Arc::clone(&self.game_log_snapshot)
+    pub fn game_log_snapshot_handle(&self) -> RuntimeSnapshotStore {
+        self.game_log_snapshot.clone()
     }
 
-    pub fn game_log_snapshot(&self) -> RuntimeSnapshot {
-        self.game_log_snapshot
-            .lock()
-            .map(|snapshot| snapshot.clone())
-            .unwrap_or_default()
+    pub fn game_log_snapshot(&self) -> Arc<RuntimeSnapshot> {
+        self.game_log_snapshot.snapshot()
     }
 
-    pub fn now_playing(&self) -> Value {
+    pub fn now_playing(&self) -> Arc<Value> {
         self.now_playing
             .lock()
-            .map(|snapshot| snapshot.clone())
-            .unwrap_or_else(|_| default_now_playing_value())
+            .map(|snapshot| Arc::clone(&snapshot))
+            .unwrap_or_else(|_| Arc::new(default_now_playing_value()))
     }
 
     pub fn overlay_activity(&self) -> OverlayActivityRuntime {
@@ -119,14 +118,16 @@ impl DesktopRuntimeServices {
                 };
                 match self.now_playing.lock() {
                     Ok(mut current) => {
-                        let mut merged = current
-                            .as_object()
-                            .cloned()
-                            .unwrap_or_else(default_now_playing_map);
+                        let current = Arc::make_mut(&mut current);
+                        if !current.is_object() {
+                            *current = Value::Object(default_now_playing_map());
+                        }
+                        let merged = current
+                            .as_object_mut()
+                            .expect("now playing snapshot was normalized to an object");
                         for (key, value) in patch {
                             merged.insert(key, value);
                         }
-                        *current = Value::Object(merged);
                     }
                     Err(error) => {
                         tracing::warn!("failed to lock now playing snapshot: {error}");
@@ -135,7 +136,7 @@ impl DesktopRuntimeServices {
             }
             GameLogSideEffectEvent::NowPlayingReset(_) => match self.now_playing.lock() {
                 Ok(mut current) => {
-                    *current = default_now_playing_value();
+                    *current = Arc::new(default_now_playing_value());
                 }
                 Err(error) => {
                     tracing::warn!("failed to lock now playing snapshot: {error}");
@@ -216,7 +217,7 @@ impl VrOverlayRuntimeServices for DesktopRuntimeServices {
     }
 
     fn game_log_snapshot(&self) -> RuntimeSnapshot {
-        DesktopRuntimeServices::game_log_snapshot(self)
+        DesktopRuntimeServices::game_log_snapshot(self).as_ref().clone()
     }
 }
 

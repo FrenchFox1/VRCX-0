@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
@@ -79,8 +79,15 @@ pub(super) struct RealtimeFriendState {
     pub(super) friend_state_sequence: u64,
     pub(super) friend_state_sequence_by_user: HashMap<String, u64>,
     pub(super) baseline: Option<RealtimeFriendSnapshot>,
+    pub(super) friend_user_ids_snapshot: Option<Arc<HashSet<String>>>,
     pub(super) pending_offline: HashMap<String, PendingOffline>,
     pub(super) recent_gps: HashMap<String, RecentGps>,
+}
+
+impl RealtimeFriendState {
+    pub(super) fn invalidate_friend_user_ids_snapshot(&mut self) {
+        self.friend_user_ids_snapshot = None;
+    }
 }
 
 #[derive(Debug, Default)]
@@ -302,6 +309,16 @@ impl RealtimeFriendsRuntime {
                 }
             }
         }
+        let friend_membership_changed = state.baseline.as_ref().map_or(
+            !baseline.friends_by_id.is_empty(),
+            |existing_snapshot| {
+                existing_snapshot.friends_by_id.len() != baseline.friends_by_id.len()
+                    || existing_snapshot
+                        .friends_by_id
+                        .keys()
+                        .any(|user_id| !baseline.friends_by_id.contains_key(user_id))
+            },
+        );
         let friend_count = baseline.friends_by_id.len();
         state.baseline = Some(RealtimeFriendSnapshot {
             current_user_id: baseline.current_user_id,
@@ -311,6 +328,9 @@ impl RealtimeFriendsRuntime {
             baseline_revision,
             friends_by_id: baseline.friends_by_id,
         });
+        if friend_membership_changed {
+            state.invalidate_friend_user_ids_snapshot();
+        }
         if !changed_user_ids.is_empty() {
             state.friend_state_sequence = state.friend_state_sequence.saturating_add(1);
             let sequence = state.friend_state_sequence;
@@ -337,6 +357,7 @@ impl RealtimeFriendsRuntime {
         let mut state = self.lock_state();
         state.generation = state.generation.saturating_add(1);
         state.baseline = None;
+        state.invalidate_friend_user_ids_snapshot();
         state.pending_offline.clear();
         state.recent_gps.clear();
         state.friend_state_sequence_by_user.clear();
@@ -355,6 +376,7 @@ impl RealtimeFriendsRuntime {
         if should_clear {
             state.generation = state.generation.saturating_add(1);
             state.baseline = None;
+            state.invalidate_friend_user_ids_snapshot();
             state.pending_offline.clear();
             state.recent_gps.clear();
             state.friend_state_sequence_by_user.clear();
@@ -425,12 +447,20 @@ impl RealtimeFriendsRuntime {
         })
     }
 
-    pub fn friend_user_ids(&self) -> HashSet<String> {
-        self.lock_state()
-            .baseline
-            .as_ref()
-            .map(|baseline| baseline.friends_by_id.keys().cloned().collect())
-            .unwrap_or_default()
+    pub fn friend_user_ids_snapshot(&self) -> Arc<HashSet<String>> {
+        let mut state = self.lock_state();
+        if let Some(snapshot) = state.friend_user_ids_snapshot.as_ref() {
+            return Arc::clone(snapshot);
+        }
+        let snapshot = Arc::new(
+            state
+                .baseline
+                .as_ref()
+                .map(|baseline| baseline.friends_by_id.keys().cloned().collect())
+                .unwrap_or_default(),
+        );
+        state.friend_user_ids_snapshot = Some(Arc::clone(&snapshot));
+        snapshot
     }
 
     pub(crate) fn with_user_cache_records<R>(

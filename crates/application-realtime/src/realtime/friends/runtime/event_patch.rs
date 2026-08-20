@@ -206,8 +206,13 @@ fn apply_delete(
     let previous = get_friend_record(state, &user_id);
     state.pending_offline.remove(&user_id);
     state.recent_gps.remove(&user_id);
-    if let Some(baseline) = state.baseline.as_mut() {
-        baseline.friends_by_id.remove(&user_id);
+    let friend_was_removed = state
+        .baseline
+        .as_mut()
+        .and_then(|baseline| baseline.friends_by_id.remove(&user_id))
+        .is_some();
+    if friend_was_removed {
+        state.invalidate_friend_user_ids_snapshot();
     }
     output.projection.removals.push(user_id.clone());
     output.persistence.friend_log_deletes.push(FriendLogDelete {
@@ -800,10 +805,17 @@ pub(super) fn apply_record_patch_to_state(
         output.projection.feed_entries.push(entry);
     }
 
-    if let Some(baseline) = state.baseline.as_mut() {
-        baseline
-            .friends_by_id
-            .insert(user_id.to_string(), transition.next);
+    let friend_was_added = match state.baseline.as_mut() {
+        Some(baseline) => {
+            baseline
+                .friends_by_id
+                .insert(user_id.to_string(), transition.next)
+                .is_none()
+        }
+        None => false,
+    };
+    if friend_was_added {
+        state.invalidate_friend_user_ids_snapshot();
     }
     output.projection.patches.push(transition.projection);
 }

@@ -9,7 +9,8 @@ use vrcx_0_application_core::{
     BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, InstanceRosterObserver,
 };
 use vrcx_0_application_game::{
-    GameLogHostActions, GameLogRuntime, GameLogRuntimeDeps, GameLogSideEffectSink, RuntimeSnapshot,
+    GameLogHostActions, GameLogRuntime, GameLogRuntimeDeps, GameLogSideEffectSink,
+    RuntimeSnapshotStore,
 };
 use vrcx_0_host::app_paths::AppPaths;
 use vrcx_0_host_desktop::{clipboard, game_launch, vrchat_paths};
@@ -67,7 +68,7 @@ pub struct GameLogHostRuntimeDeps {
     pub context: Arc<RuntimeHostContext>,
     pub file_access: HostFileAccess,
     pub app_paths: AppPaths,
-    pub snapshot: Arc<std::sync::Mutex<RuntimeSnapshot>>,
+    pub snapshot: RuntimeSnapshotStore,
     pub overlay_activity: OverlayActivityRuntime,
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
     pub backend_status: BackendRuntimeStatusPublisher,

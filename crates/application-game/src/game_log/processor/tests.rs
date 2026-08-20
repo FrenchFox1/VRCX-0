@@ -6,7 +6,7 @@ use vrcx_0_persistence::config as config_store;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::game_log::runtime_state::RuntimeSnapshot;
+use crate::game_log::runtime_state::RuntimeSnapshotStore;
 use crate::game_log::NoopGameLogHostActions;
 use crate::ImageCache;
 use crate::Result;
@@ -129,7 +129,7 @@ fn build_test_processor(dir: &TestDir, db: Arc<DatabaseService>) -> Result<GameL
         tasks: TaskSupervisor::new(),
         sync: RuntimeSyncEngine::new(),
         auth_scope: RuntimeAuthScope::new(),
-        snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
+        snapshot: RuntimeSnapshotStore::default(),
         host_actions: Arc::new(NoopGameLogHostActions),
         overlay_activity: OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(
             serde_json::json!({
@@ -248,7 +248,7 @@ fn enabled_process_stop_keeps_session_closure_and_side_effect_order() -> Result<
 
     let locations = vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?;
     assert_eq!(locations[0].time, 300_000);
-    assert!(processor.deps.snapshot.lock().unwrap().location.is_empty());
+    assert!(processor.deps.snapshot.snapshot().location.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     let persisted_index = events
         .iter()
@@ -297,7 +297,7 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
     ])?;
 
     assert!(vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?.is_empty());
-    let snapshot = processor.deps.snapshot.lock().unwrap().clone();
+    let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_disabled:1");
     assert_eq!(snapshot.players[0].user_id, "usr_live");
     assert!(config_store::get_bool(&db, "isGameNoVR", false)?);
@@ -343,7 +343,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
     ])?;
 
     assert!(!vrcx_0_persistence::game_log::game_log_location_table_exists(&db)?);
-    let snapshot = processor.deps.snapshot.lock().unwrap().clone();
+    let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_replay:1");
     assert_eq!(snapshot.players[0].user_id, "usr_replay");
     assert!(!config_store::get_bool(&db, "isGameNoVR", false)?);
@@ -406,7 +406,7 @@ fn disabled_process_stop_clears_memory_without_persisting_session_closure() -> R
         changed_at: "2026-05-14T05:35:00.000Z".into(),
     })])?;
 
-    assert!(processor.deps.snapshot.lock().unwrap().location.is_empty());
+    assert!(processor.deps.snapshot.snapshot().location.is_empty());
     assert!(!vrcx_0_persistence::game_log::game_log_location_table_exists(&db)?);
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
@@ -439,7 +439,7 @@ fn resume_cutoff_skips_a_queued_process_stop_closure() -> Result<()> {
     })])?;
 
     assert!(!vrcx_0_persistence::game_log::game_log_location_table_exists(&db)?);
-    assert!(processor.deps.snapshot.lock().unwrap().location.is_empty());
+    assert!(processor.deps.snapshot.snapshot().location.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
         event.name == "gameLogSideEffect"

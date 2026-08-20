@@ -19,8 +19,8 @@ pub struct BackgroundPresenceFactsInput<'a> {
     pub is_steamvr_running: bool,
     pub is_game_no_vr: bool,
     pub last_game_started_at: Option<String>,
-    pub game_log_snapshot: RuntimeSnapshot,
-    pub now_playing: Value,
+    pub game_log_snapshot: Arc<RuntimeSnapshot>,
+    pub now_playing: Arc<Value>,
     pub friend_user_ids: &'a HashSet<String>,
     pub favorite_friend_groups_by_key: &'a HashMap<String, Vec<String>>,
     pub favorite_world_groups_by_key: &'a HashMap<String, Vec<String>>,
@@ -51,7 +51,7 @@ pub struct BackgroundPresenceFacts {
     pub current_world_favorite_group_keys: Vec<String>,
     pub can_invite_from_current_location: bool,
     pub world_name: String,
-    pub now_playing: Value,
+    pub now_playing: Arc<Value>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
@@ -128,8 +128,8 @@ pub fn build_background_presence_facts(
         is_game_no_vr: input.is_game_no_vr,
         last_game_started_at: input.last_game_started_at,
         current_location,
-        current_destination: game_snapshot.destination,
-        current_location_started_at: game_snapshot.started_at,
+        current_destination: game_snapshot.destination.clone(),
+        current_location_started_at: game_snapshot.started_at.clone(),
         parsed_location,
         instance_type,
         player_count: players.len(),
@@ -141,7 +141,7 @@ pub fn build_background_presence_facts(
         present_favorite_group_keys,
         current_world_favorite_group_keys,
         can_invite_from_current_location,
-        world_name: game_snapshot.world_name,
+        world_name: game_snapshot.world_name.clone(),
         now_playing: input.now_playing,
     })
 }

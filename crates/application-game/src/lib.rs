@@ -47,7 +47,7 @@ pub use game_log::{
     GameLogSessionsQueryInput, GameLogSideEffect, InstanceHistoryEntryOutput,
     InstanceHistoryQueryInput, NoopGameLogHostActions, PlayerListSnapshotContext,
     PlayerListSnapshotOutput, PlayerListSnapshotPlayer, PlayerListSnapshotSource, PlayerState,
-    RuntimeSnapshot, ScreenshotInput,
+    RuntimeSnapshot, RuntimeSnapshotStore, ScreenshotInput,
 };
 pub use game_log_parser::GameLogEvent;
 pub use game_log_watcher::{

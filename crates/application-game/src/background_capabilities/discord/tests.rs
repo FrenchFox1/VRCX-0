@@ -82,7 +82,8 @@ fn discord_rpc_world_uses_now_playing_details_and_thumbnail() {
             "thumbnailUrl": "https://image.example/thumb.jpg",
             "startedAt": "2026-05-19T01:00:00Z",
             "length": 120,
-        }),
+        })
+        .into(),
         ..Default::default()
     };
     let parsed = parse_location("wrld_266523e8-9161-40da-acd0-6bd82e075833:12345");

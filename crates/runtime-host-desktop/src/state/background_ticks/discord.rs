@@ -21,11 +21,38 @@ use super::{
 };
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
-fn discord_presence_labels(config: &ConfigRepository) -> DiscordPresenceLabels {
-    let language = config
-        .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
-        .unwrap_or_else(|_| "en".into());
-    let localized = |key| text(&language, key);
+#[derive(Default)]
+pub(in crate::state) struct DiscordPresenceLabelCache {
+    language: String,
+    labels: Option<Arc<DiscordPresenceLabels>>,
+}
+
+impl DiscordPresenceLabelCache {
+    pub(in crate::state) fn get(
+        &mut self,
+        config: &ConfigRepository,
+    ) -> Arc<DiscordPresenceLabels> {
+        let language = config
+            .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
+            .unwrap_or_else(|_| "en".into());
+        self.get_for_language(&language)
+    }
+
+    fn get_for_language(&mut self, language: &str) -> Arc<DiscordPresenceLabels> {
+        if self.labels.is_none() || self.language != language {
+            self.labels = Some(Arc::new(discord_presence_labels(language)));
+            self.language = language.to_string();
+        }
+        Arc::clone(
+            self.labels
+                .as_ref()
+                .expect("Discord presence labels were initialized"),
+        )
+    }
+}
+
+fn discord_presence_labels(language: &str) -> DiscordPresenceLabels {
+    let localized = |key| text(language, key);
     DiscordPresenceLabels {
         access_public: localized(DiscordPresenceKey::DiscordAccessPublic),
         access_invite_plus: localized(DiscordPresenceKey::DiscordAccessInvitePlus),
@@ -52,6 +79,7 @@ pub(in crate::state) async fn run_background_discord_tick(
     discord_rpc: &Arc<DiscordRpc>,
     discord_state: &mut BackgroundDiscordPresenceState,
     last_discord_output: &mut Option<String>,
+    labels: &DiscordPresenceLabels,
     friend_user_ids: &HashSet<String>,
     favorite_friend_groups_by_key: &HashMap<String, Vec<String>>,
 ) {
@@ -106,7 +134,7 @@ pub(in crate::state) async fn run_background_discord_tick(
         context.web.as_ref(),
         context.db.as_ref(),
         &facts,
-        &discord_presence_labels(context.runtime_context.config()),
+        labels,
         discord_state,
         false,
     )
@@ -240,7 +268,22 @@ pub(in crate::state) async fn run_background_discord_tick(
 
 #[cfg(test)]
 mod tests {
-    use super::remember_background_output_if_changed;
+    use std::sync::Arc;
+
+    use super::{remember_background_output_if_changed, DiscordPresenceLabelCache};
+
+    #[test]
+    fn discord_presence_labels_are_reused_until_the_language_changes() {
+        let mut cache = DiscordPresenceLabelCache::default();
+
+        let first = cache.get_for_language("en");
+        let second = cache.get_for_language("en");
+        let japanese = cache.get_for_language("ja");
+
+        assert!(Arc::ptr_eq(&first, &second));
+        assert!(!Arc::ptr_eq(&second, &japanese));
+        assert_ne!(first.private_world, japanese.private_world);
+    }
 
     #[test]
     fn repeated_discord_failure_is_suppressed_until_output_changes() {

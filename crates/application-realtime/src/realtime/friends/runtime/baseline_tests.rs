@@ -51,6 +51,22 @@ mod tests {
             snapshot.friends_by_id.get("usr_friend").unwrap().state,
             "active"
         );
+
+        let friend_user_ids = runtime.friend_user_ids_snapshot();
+        assert_eq!(friend_user_ids.len(), 1);
+        assert!(friend_user_ids.contains("usr_friend"));
+        assert!(std::sync::Arc::ptr_eq(
+            &friend_user_ids,
+            &runtime.friend_user_ids_snapshot()
+        ));
+
+        runtime.set_baseline(FriendRosterBaseline::default(), 7, 4);
+        let empty_friend_user_ids = runtime.friend_user_ids_snapshot();
+        assert!(!std::sync::Arc::ptr_eq(
+            &friend_user_ids,
+            &empty_friend_user_ids
+        ));
+        assert!(empty_friend_user_ids.is_empty());
     }
 
     #[test]
