@@ -33,6 +33,7 @@ const PROTECTED_PROCESS_NAMES: &[&str] = &[
 
 const PROTECTED_PROCESS_IDS: &[u32] = &[0, 4];
 
+#[cfg(any(windows, test))]
 const SHELL_LAUNCH_REUSE_SLACK_SECONDS: u64 = 2;
 
 #[cfg(any(windows, test))]
