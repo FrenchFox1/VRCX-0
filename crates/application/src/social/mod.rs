@@ -1,4 +1,6 @@
 mod friend_log_names;
+#[cfg(test)]
+mod friend_mutation_sink_tests;
 mod group_calendar;
 mod groups;
 mod moderation_sync;
@@ -6,8 +8,6 @@ mod mutual_graph_fetch;
 mod note_export;
 mod prints;
 mod quick_search_catalog;
-#[cfg(test)]
-mod realtime;
 mod social_mutation;
 mod user_dialog_tab_counts;
 

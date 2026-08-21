@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::{sync::OnceLock, time::Duration};
 
 use serde_json::json;
-use vrcx_0_application_core::{Result, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_application_core::{
+    RemoteMutationGate, Result, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
+};
 use vrcx_0_application_realtime::test_support::{
     runtime_with_active_session, TestRealtimeHostRuntime,
 };
@@ -19,7 +21,6 @@ use vrcx_0_persistence::realtime::{
 
 use crate::social::social_mutation::{apply_friend_request_accept_locally, apply_unfriend_locally};
 use crate::{SocialFriendMutationStatus, SocialMutationDeps};
-use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Copy)]
