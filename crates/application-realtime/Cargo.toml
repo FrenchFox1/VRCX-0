@@ -31,4 +31,5 @@ vrcx-0-persistence = { path = "../persistence" }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
 
 [dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }

@@ -4,7 +4,8 @@ use super::friend_profile::FriendProfileRefreshExpectation;
 use super::friend_profile_bulk_load::{
     friend_profile_bulk_load_backoff_delay_ms, select_friend_profile_bulk_load_targets,
     FriendProfileBulkLoadInitialProgress, FriendProfileBulkLoadItemOutcome,
-    FriendProfileBulkLoadStatus,
+    FriendProfileBulkLoadPacer, FriendProfileBulkLoadStatus, FRIEND_PROFILE_BULK_LOAD_CONCURRENCY,
+    FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS, FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS,
 };
 use super::test_support::*;
 use super::*;
@@ -78,6 +79,33 @@ fn backoff_delay_grows_exponentially_from_base() {
     assert_eq!(friend_profile_bulk_load_backoff_delay_ms(1), 1_000);
     assert_eq!(friend_profile_bulk_load_backoff_delay_ms(2), 2_000);
     assert_eq!(friend_profile_bulk_load_backoff_delay_ms(3), 4_000);
+}
+
+#[tokio::test(start_paused = true)]
+async fn pacer_releases_concurrency_slots_within_one_interval() {
+    let pacer = FriendProfileBulkLoadPacer::new();
+    let start = tokio::time::Instant::now();
+    for _ in 0..FRIEND_PROFILE_BULK_LOAD_CONCURRENCY {
+        pacer.acquire_slot().await;
+    }
+    assert!(start.elapsed() < Duration::from_millis(FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS));
+
+    pacer.acquire_slot().await;
+    assert_eq!(
+        start.elapsed(),
+        Duration::from_millis(FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS * 3)
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn pacer_holds_every_worker_back_after_a_rate_limit() {
+    let pacer = FriendProfileBulkLoadPacer::new();
+    pacer.acquire_slot().await;
+    pacer.delay_next_slots(Duration::from_millis(2_000)).await;
+
+    let start = tokio::time::Instant::now();
+    pacer.acquire_slot().await;
+    assert_eq!(start.elapsed(), Duration::from_millis(2_000));
 }
 
 #[test]
