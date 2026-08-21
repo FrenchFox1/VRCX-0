@@ -8,7 +8,7 @@ use vrcx_0_application_core::{
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{AuthenticatedMutationContext, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Result};
 
 const AVATAR_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 

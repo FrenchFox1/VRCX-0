@@ -3,8 +3,8 @@ use std::pin::Pin;
 
 use serde::{Deserialize, Serialize};
 
-use crate::Result;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_application_core::Result;
 
 pub type InstanceLaunchApiFuture<'a> =
     Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;

@@ -17,7 +17,9 @@ use super::types::{
     MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
     UserMutualFriendsListOutput,
 };
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
+use vrcx_0_application_core::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
+};
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
 const MUTUAL_GRAPH_REQUEST_INTERVAL_MS: u64 = 200;

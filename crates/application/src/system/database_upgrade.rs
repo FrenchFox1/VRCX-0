@@ -12,7 +12,7 @@ use vrcx_0_persistence::{
     DatabaseUpgradeStatus, SqliteErrorCategory, VRCX0_SCHEMA_VERSION,
 };
 
-use crate::Error;
+use vrcx_0_application_core::Error;
 
 const LEGACY_SCHEMA_VERSION: i64 = 16;
 const COPRESENCE_DURATION_REPAIR_KEY: &str = "copresenceDurationRepairV1Done";

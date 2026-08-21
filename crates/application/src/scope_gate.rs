@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 
 pub(crate) fn require_active_scope(
     auth_scope: &RuntimeAuthScope,

@@ -95,7 +95,7 @@ fn test_server(
         512,
         Duration::from_secs(30 * 60),
     ));
-    let remote_mutations = Arc::new(vrcx_0_application::RemoteMutationGate::default());
+    let remote_mutations = Arc::new(vrcx_0_application_core::RemoteMutationGate::default());
     let favorite_mutations = FavoriteMutationCoordinator::new(
         Arc::clone(&db),
         Arc::clone(&web),

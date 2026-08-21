@@ -9,7 +9,7 @@ use vrcx_0_vrchat_client::{
     http_api::{ApiScope, HttpApiRequestInput},
 };
 
-use crate::{
+use vrcx_0_application_core::{
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
 

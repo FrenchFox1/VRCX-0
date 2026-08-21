@@ -7,7 +7,7 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
 
 use super::cache_policy::{
     cache_entry_from_entity, cache_write_decision, CacheWriteDecision, FavoriteCacheKind,

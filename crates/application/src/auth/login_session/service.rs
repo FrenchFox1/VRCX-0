@@ -13,8 +13,8 @@ use crate::auth::auth_credentials::saved_credential_login_start_with_api;
 use crate::{
     auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage},
     auth_response_error_message, AuthenticatedRuntimeSession, SavedCredentialLoginStartInput,
-    WebClient,
 };
+use vrcx_0_application_core::WebClient;
 
 use super::types::{LoginApi, LoginFailureKind, LoginSessionState, TwoFactorMethod};
 

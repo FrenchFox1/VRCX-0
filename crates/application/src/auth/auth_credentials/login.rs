@@ -12,7 +12,7 @@ use super::storage::read_saved_credentials;
 use super::types::SavedCredentialLoginStartInput;
 use crate::auth::cookie_session::{probe_cookie_session, CookieProbeResult};
 use crate::auth::{LoginApi, WebClientLoginApi};
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub async fn saved_credential_login_start(
     config: &ConfigRepository,

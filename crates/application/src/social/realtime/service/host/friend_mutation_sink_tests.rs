@@ -18,7 +18,8 @@ use vrcx_0_persistence::realtime::{
 };
 
 use crate::social::social_mutation::{apply_friend_request_accept_locally, apply_unfriend_locally};
-use crate::{RemoteMutationGate, SocialFriendMutationStatus, SocialMutationDeps};
+use crate::{SocialFriendMutationStatus, SocialMutationDeps};
+use vrcx_0_application_core::RemoteMutationGate;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;

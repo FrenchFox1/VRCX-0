@@ -21,7 +21,7 @@ use vrcx_0_core::vrchat_json::GroupJson;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 const CALENDAR_PAGE_SIZE: i32 = 100;
 const CALENDAR_MAX_PAGES: usize = 50;

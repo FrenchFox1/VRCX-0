@@ -4,7 +4,7 @@ use vrcx_0_integrations::external_api::ExternalApiScope;
 use vrcx_0_integrations::translation as protocol;
 use vrcx_0_persistence::{config as config_store, DatabaseService};
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub use vrcx_0_integrations::translation::TranslationProvider;
 

@@ -11,7 +11,7 @@ use vrcx_0_application_core::{
 use vrcx_0_core::time::now_iso;
 use vrcx_0_integrations::external_api::{self, ExternalApiScope};
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 const OK_POLL_MS: u32 = 5 * 60 * 1_000;
 const ISSUE_POLL_MS: u32 = 2 * 60 * 1_000;

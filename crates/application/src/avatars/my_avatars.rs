@@ -12,7 +12,9 @@ use vrcx_0_vrchat_client::{
     query::{AvatarListSort, QueryOrder, ReleaseStatusFilter},
 };
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
+use vrcx_0_application_core::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
+};
 
 const MY_AVATARS_PAGE_SIZE: i32 = 50;
 const MY_AVATARS_MAX_OFFSET: i32 = 5_000;

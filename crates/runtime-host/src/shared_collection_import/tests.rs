@@ -181,7 +181,7 @@ fn terminal_status_is_committed_after_favorites_changed_delivery() {
     let tasks = TaskSupervisor::new();
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_current", "https://api.vrchat.cloud/api/1");
-    let remote_mutations = Arc::new(vrcx_0_application::RemoteMutationGate::default());
+    let remote_mutations = Arc::new(vrcx_0_application_core::RemoteMutationGate::default());
     let favorite_mutations = FavoriteMutationCoordinator::new(
         Arc::clone(&db),
         Arc::clone(&web),

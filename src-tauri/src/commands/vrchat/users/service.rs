@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::AuthenticatedMutationContext;
 use vrcx_0_application_core::vrchat_api::users::{
     current_user_badge_update_input, current_user_tags_add_input, current_user_tags_remove_input,
     current_user_update_input, profile_get_input, profile_update_input, user_groups_get_input,
     user_represented_group_get_input,
 };
+use vrcx_0_application_core::AuthenticatedMutationContext;
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 

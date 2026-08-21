@@ -8,7 +8,7 @@ use vrcx_0_persistence::{
 };
 use vrcx_0_vrchat_client::{http_api::ApiScope, notifications::notification_mark_seen_input};
 
-use crate::{
+use vrcx_0_application_core::{
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
 

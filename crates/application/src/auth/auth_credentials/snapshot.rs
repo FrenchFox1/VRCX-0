@@ -8,7 +8,7 @@ use super::types::{
     SavedAuthAutoLoginStatus, SavedAuthSnapshot, SavedCredential, SavedCredentialSnapshot,
     SavedCredentials, SavedLoginParamsSnapshot,
 };
-use crate::Result;
+use vrcx_0_application_core::Result;
 
 const MAX_AUTO_LOGIN_DELAY_SECONDS: i64 = 10;
 const LEGACY_PRIMARY_PASSWORD_KEY: &str = "enablePrimaryPassword";

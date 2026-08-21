@@ -10,7 +10,7 @@ use vrcx_0_vrchat_client::{
     notifications::invite_send_input,
 };
 
-use crate::{
+use vrcx_0_application_core::{
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
     WorldCache,
 };

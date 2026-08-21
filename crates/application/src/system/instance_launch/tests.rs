@@ -85,7 +85,10 @@ impl MockLaunchPipe {
 }
 
 impl InstanceLaunchPipe for MockLaunchPipe {
-    fn try_open_vrchat_launch_url(&self, launch_url: &str) -> crate::Result<bool> {
+    fn try_open_vrchat_launch_url(
+        &self,
+        launch_url: &str,
+    ) -> vrcx_0_application_core::Result<bool> {
         self.calls.lock().unwrap().push(launch_url.to_string());
         Ok(self.results.lock().unwrap().remove(0))
     }

@@ -10,8 +10,8 @@ use vrcx_0_vrchat_client::media::{
     world_image_set_input, FileUploadStageKind,
 };
 
-use crate::{Error, Result};
 use serde_json::{json, Map, Value};
+use vrcx_0_application_core::{Error, Result};
 
 use super::{LegacyEntityImageKind, LegacyEntityImageUploadInput, LegacyMediaUploadDeps};
 

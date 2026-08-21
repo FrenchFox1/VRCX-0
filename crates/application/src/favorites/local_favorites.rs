@@ -3,11 +3,11 @@ use vrcx_0_persistence::favorites;
 use vrcx_0_persistence::favorites::FavoriteRow;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{AuthenticatedMutationContext, Error, Result};
 use vrcx_0_application_core::{
     read_config_string_array, write_config_string_array, FavoriteChange, FavoriteChangeScope,
     FavoriteEntityKind, FavoritesChangedPayload, RuntimeEventBus,
 };
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
 
 #[derive(Clone, Debug, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

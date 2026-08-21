@@ -13,7 +13,7 @@ use super::database_upgrade::{
     DatabaseUpgradePreflightStatus, DatabaseUpgradeProgress, DatabaseUpgradeRunResult,
     DatabaseUpgradeRunStatus, DatabaseUpgradeStage,
 };
-use crate::{Error, RuntimeBackgroundJobs, RuntimeDiagnostics};
+use vrcx_0_application_core::{Error, RuntimeBackgroundJobs, RuntimeDiagnostics};
 
 const COMMAND: &str = "app__database_upgrade_run";
 const JOB: &str = "databaseUpgrade";

@@ -18,7 +18,7 @@ use vrcx_0_persistence::{
 };
 
 use super::blocking_db::run_blocking_db;
-use crate::Error;
+use vrcx_0_application_core::Error;
 
 pub const SHARE_COLLECTION_MAX_WORLDS: usize = 1_000;
 const SHARE_COLLECTION_WORLD_BATCH_SIZE: usize = 500;

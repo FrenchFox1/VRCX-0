@@ -229,7 +229,7 @@ fn test_deps(path: &std::path::Path) -> PrintCleanupDeps {
     let storage =
         vrcx_0_persistence::storage::StorageService::new(&path.join("storage.json")).unwrap();
     let web = Arc::new(
-        crate::WebClient::new(
+        vrcx_0_application_core::WebClient::new(
             &storage,
             db.as_ref(),
             "wss://pipeline.vrchat.cloud".into(),

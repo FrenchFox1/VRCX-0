@@ -3,7 +3,7 @@ use vrcx_0_persistence::feed::feed_avatar_purge;
 use vrcx_0_persistence::maintenance::database_vacuum_if_fragmented;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::Result;
+use vrcx_0_application_core::Result;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

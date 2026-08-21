@@ -7,7 +7,7 @@ use vrcx_0_application_core::WebClient;
 use vrcx_0_integrations::community_theme as protocol;
 use vrcx_0_integrations::external_api::ExternalApiScope;
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 use super::types::{CommunityThemeCatalog, CommunityThemeManifest, CommunityThemeStatsById};
 

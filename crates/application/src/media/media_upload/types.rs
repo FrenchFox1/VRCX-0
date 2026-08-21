@@ -5,7 +5,7 @@ use vrcx_0_application_core::WebClient;
 pub struct LegacyMediaUploadDeps<'a> {
     pub db: &'a DatabaseService,
     pub web: &'a WebClient,
-    pub mutation: crate::AuthenticatedMutationContext<'a>,
+    pub mutation: vrcx_0_application_core::AuthenticatedMutationContext<'a>,
 }
 
 pub struct LegacyEntityImageUploadInput {

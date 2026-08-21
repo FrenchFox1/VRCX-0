@@ -7,7 +7,8 @@ pub use vrcx_0_core::TwoFactorMethod;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse, HttpApiRequestInput};
 
-use crate::{AuthenticatedRuntimeSession, Result, SavedAuthSnapshot, WebClient};
+use crate::{AuthenticatedRuntimeSession, SavedAuthSnapshot};
+use vrcx_0_application_core::{Result, WebClient};
 
 pub(crate) type LoginApiFuture<'a> =
     Pin<Box<dyn Future<Output = Result<HttpApiExecuteResponse>> + Send + 'a>>;

@@ -9,7 +9,7 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::parse_api_json;
 
-use crate::{AuthenticatedMutationContext, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Result};
 
 const FAVORITE_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 

@@ -15,11 +15,12 @@ use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application::{
-    self as media_upload, collect_inventory_items, AuthenticatedMutationContext,
-    InventoryItemsCollectDeps, InventoryItemsCollectInput, InventoryItemsCollectOutput,
-    LegacyEntityImageKind, LegacyEntityImageUploadInput, LegacyMediaUploadDeps, PrintFavoriteState,
+    self as media_upload, collect_inventory_items, InventoryItemsCollectDeps,
+    InventoryItemsCollectInput, InventoryItemsCollectOutput, LegacyEntityImageKind,
+    LegacyEntityImageUploadInput, LegacyMediaUploadDeps, PrintFavoriteState,
 };
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::AuthenticatedMutationContext;
 
 use super::types::{
     VrchatMediaAvatarGalleryImageUploadInput, VrchatMediaEmojiUploadInput, VrchatMediaFileIdInput,

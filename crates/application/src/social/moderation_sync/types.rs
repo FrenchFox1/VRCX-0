@@ -3,7 +3,7 @@ use vrcx_0_core::text::normalize_text;
 use vrcx_0_persistence::local_moderation::{LocalModerationOutput, RemoteModerationInput};
 use vrcx_0_persistence::DatabaseService;
 
-use crate::RemoteMutationGate;
+use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{RuntimeAuthScope, WebClient};
 
 pub struct ModerationSyncDeps<'a> {

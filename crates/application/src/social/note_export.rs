@@ -8,7 +8,7 @@ use vrcx_0_vrchat_client::{
     tools::user_note_save_input,
 };
 
-use crate::{
+use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, WebClient,
 };
 

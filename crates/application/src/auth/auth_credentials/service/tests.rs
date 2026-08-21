@@ -49,7 +49,7 @@ fn contains_secret_key(value: &serde_json::Value) -> bool {
 }
 
 #[test]
-fn saved_snapshot_redacts_passwords_and_cookies() -> crate::Result<()> {
+fn saved_snapshot_redacts_passwords_and_cookies() -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("auth-snapshot-redacted");
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     let config = ConfigRepository::new(db);
@@ -102,13 +102,17 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> crate::Result<()> {
     Ok(())
 }
 
-fn test_web_client(dir: &TestDir, db: &Arc<DatabaseService>) -> crate::Result<WebClient> {
+fn test_web_client(
+    dir: &TestDir,
+    db: &Arc<DatabaseService>,
+) -> vrcx_0_application_core::Result<WebClient> {
     let storage = StorageService::new(&dir.path.join("VRCX-0.json"))?;
     WebClient::new(&storage, db.as_ref(), "https://app.example".into(), "2.9.2")
 }
 
 #[test]
-fn record_login_success_with_save_credentials_captures_live_cookies() -> crate::Result<()> {
+fn record_login_success_with_save_credentials_captures_live_cookies(
+) -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("login-success-save-live-cookies");
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     let config = ConfigRepository::new(Arc::clone(&db));
@@ -146,8 +150,8 @@ fn record_login_success_with_save_credentials_captures_live_cookies() -> crate::
 }
 
 #[test]
-fn record_login_success_without_save_credentials_does_not_persist_a_new_entry() -> crate::Result<()>
-{
+fn record_login_success_without_save_credentials_does_not_persist_a_new_entry(
+) -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("login-success-no-save");
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     let config = ConfigRepository::new(Arc::clone(&db));
@@ -178,7 +182,7 @@ fn record_login_success_without_save_credentials_does_not_persist_a_new_entry() 
 
 #[test]
 fn record_login_success_without_save_credentials_refreshes_an_existing_record_in_place(
-) -> crate::Result<()> {
+) -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("login-success-refresh-existing");
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     let config = ConfigRepository::new(Arc::clone(&db));
@@ -231,7 +235,8 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
 }
 
 #[test]
-fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering() -> crate::Result<()> {
+fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
+) -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("auth-typed-legacy-decode");
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     let config = ConfigRepository::new(db);

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{RuntimeAuthScope, WebClient};
+use vrcx_0_application_core::{RuntimeAuthScope, WebClient};
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

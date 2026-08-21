@@ -10,7 +10,7 @@ use vrcx_0_application_core::RuntimeRealtimeTransportEpoch;
 use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 use vrcx_0_vrchat_client::http_api::{execute_response, ApiScope, HttpApiRequestInput};
 
-use crate::WebClient;
+use vrcx_0_application_core::WebClient;
 
 use super::service::{
     respond_to_challenge, start_cookie_restore, start_gui_basic_login, start_login,

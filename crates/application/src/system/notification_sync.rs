@@ -15,7 +15,9 @@ use vrcx_0_vrchat_client::{
     },
 };
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
+use vrcx_0_application_core::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
+};
 
 const NOTIFICATION_SYNC_PAGE_SIZE: i32 = 100;
 const NOTIFICATION_SYNC_MAX_PAGES: usize = 50;

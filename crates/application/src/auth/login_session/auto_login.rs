@@ -7,7 +7,8 @@ use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{saved_snapshot, SavedAuthAutoLoginStatus, SavedAuthSnapshot, WebClient};
+use crate::{saved_snapshot, SavedAuthAutoLoginStatus, SavedAuthSnapshot};
+use vrcx_0_application_core::WebClient;
 
 use super::runtime::{
     apply_login_failure_cleanup, clear_auth_cookies_and_save, LoginAttemptPolicy,
@@ -109,7 +110,7 @@ pub(super) async fn drive_auto_login(
     throttle: &AutoLoginThrottle,
     operation: &LoginSessionOperation,
     input: AutoLoginStartInput,
-) -> crate::Result<AutoLoginDrive> {
+) -> vrcx_0_application_core::Result<AutoLoginDrive> {
     let user_id = input.user_id.trim().to_string();
 
     let can_attempt =
@@ -194,7 +195,7 @@ fn failure_outcome(
     config: &ConfigRepository,
     reason: String,
     kind: LoginFailureKind,
-) -> crate::Result<AutoLoginOutcome> {
+) -> vrcx_0_application_core::Result<AutoLoginOutcome> {
     let snapshot = operation.run_if_current(|| saved_snapshot(config))?;
     Ok(AutoLoginOutcome::Session(LoginSessionState::Failed {
         reason,
@@ -209,7 +210,7 @@ fn apply_failure_cleanup(
     config: &ConfigRepository,
     user_id: &str,
     kind: LoginFailureKind,
-) -> crate::Result<SavedAuthSnapshot> {
+) -> vrcx_0_application_core::Result<SavedAuthSnapshot> {
     apply_login_failure_cleanup(
         web,
         db,

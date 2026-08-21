@@ -10,7 +10,8 @@ use vrcx_0_vrchat_client::{
     worlds::world_get_input,
 };
 
-use crate::{create_local_favorite_group, Error, Result, WebClient, WorldCache};
+use crate::create_local_favorite_group;
+use vrcx_0_application_core::{Error, Result, WebClient, WorldCache};
 
 pub const SHARED_COLLECTION_IMPORT_MAX_WORLDS: usize = 1_000;
 const SHARED_COLLECTION_IMPORT_INTERVAL: Duration = Duration::from_millis(500);

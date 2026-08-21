@@ -8,7 +8,7 @@ use super::cleanup::{
     clamp_print_limit, favorite_limit_for_print_limit, CleanupWarning, PRINT_AUTO_DELETE_LIMIT_MAX,
     PRINT_HARD_CAP,
 };
-use crate::Result;
+use vrcx_0_application_core::Result;
 
 pub use super::cleanup::CleanupWarningKind;
 

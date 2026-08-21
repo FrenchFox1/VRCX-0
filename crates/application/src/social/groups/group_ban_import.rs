@@ -15,7 +15,7 @@ use vrcx_0_application_core::TaskStopToken;
 use vrcx_0_core::vrchat_ids::is_user_id;
 use vrcx_0_vrchat_client::http_api::ApiJsonResponse;
 
-use crate::{
+use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
 

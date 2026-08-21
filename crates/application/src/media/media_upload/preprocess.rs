@@ -1,7 +1,7 @@
 use vrcx_0_media::image_processing;
 use vrcx_0_vrchat_client::http_api::{HttpApiRequestInput, HttpApiUpload};
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub fn prepare_media_upload_request(mut input: HttpApiRequestInput) -> Result<HttpApiRequestInput> {
     match input.body.as_upload_mut() {

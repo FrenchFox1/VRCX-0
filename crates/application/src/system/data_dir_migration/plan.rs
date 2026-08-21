@@ -3,7 +3,7 @@ use vrcx_0_persistence::data_dir_migration::{
 };
 
 use super::DataDirMigrationPlan;
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub fn build_data_dir_migration_plan(
     target_path: String,

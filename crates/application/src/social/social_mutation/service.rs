@@ -17,8 +17,8 @@ use vrcx_0_vrchat_client::friends::{
 use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
 use vrcx_0_vrchat_client::notifications::notification_accept_friend_request_input;
 
-use crate::{Error, Result, RuntimeAuthScopeSnapshot};
 use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
+use vrcx_0_application_core::{Error, Result, RuntimeAuthScopeSnapshot};
 use vrcx_0_application_realtime::{
     SyntheticFriendEventOutcome, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,
 };

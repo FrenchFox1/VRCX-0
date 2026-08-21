@@ -18,7 +18,9 @@ use vrcx_0_vrchat_client::{
     worlds::world_get_input,
 };
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient, WorldCache};
+use vrcx_0_application_core::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient, WorldCache,
+};
 
 use super::cache_policy::{
     cache_entry_from_entity, cache_write_decision, entity_id, release_status, CacheWriteDecision,

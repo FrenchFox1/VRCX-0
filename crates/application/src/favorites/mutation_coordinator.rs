@@ -26,7 +26,7 @@ use super::{
     FavoriteRemoteDeleteInput, FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
     FavoriteTransferSelectionInput, FavoriteTransferSelectionResult, LocalFavoriteGroupWrite,
 };
-use crate::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
 
 #[derive(Clone)]
 pub struct FavoriteMutationCoordinator {

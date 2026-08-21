@@ -17,7 +17,7 @@ use vrcx_0_persistence::{
     DatabaseService,
 };
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 mod helpers;
 mod types;

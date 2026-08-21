@@ -2,7 +2,7 @@ use std::{collections::HashSet, future::Future, pin::Pin};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, Result, RuntimeAuthScopeSnapshot};
+use vrcx_0_application_core::{Error, Result, RuntimeAuthScopeSnapshot};
 
 use super::{
     service::unfriend_with_expected_scope,

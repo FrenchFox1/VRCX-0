@@ -8,7 +8,7 @@ use vrcx_0_application_core::RuntimeAuthScopeSnapshot;
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 use super::ModerationSyncRefreshOutput;
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 const MODERATION_SYNC_CACHE_CAPACITY: u64 = 4;
 const MODERATION_SYNC_CACHE_TTL: Duration = Duration::from_secs(30 * 60);

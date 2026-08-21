@@ -10,7 +10,7 @@ use super::storage::{
     write_saved_credentials, LAST_USER_LOGGED_IN_KEY,
 };
 use super::types::{LoginSuccessRecordInput, LogoutRecordInput, SavedAuthSnapshot};
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub fn delete_saved_credential(
     config: &ConfigRepository,

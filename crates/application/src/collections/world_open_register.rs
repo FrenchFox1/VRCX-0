@@ -6,7 +6,7 @@ use vrcx_0_integrations::world_collections::{
 use vrcx_0_persistence::{worlds::world_cache_get, DatabaseService};
 
 use super::blocking_db::run_blocking_db;
-use crate::Error;
+use vrcx_0_application_core::Error;
 
 use super::share_collection::{
     get_or_create_share_owner_token, payload_world_from_row, share_collection_owner_hint,

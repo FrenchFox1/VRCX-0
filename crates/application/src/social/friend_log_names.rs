@@ -15,7 +15,7 @@ use vrcx_0_persistence::friends::friend_display_names;
 use vrcx_0_persistence::game_log::{game_log_query, GameLogQueryInput};
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub const FRIEND_LOG_NAME_RESOLUTION_MAX_USERS: usize = 100;
 const FRIEND_LOG_REMOTE_LOOKUP_MAX_USERS: usize = 30;

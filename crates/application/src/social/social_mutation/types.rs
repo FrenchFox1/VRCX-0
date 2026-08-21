@@ -12,7 +12,7 @@ pub struct SocialMutationDeps<'a> {
     pub db: &'a DatabaseService,
     pub web: &'a WebClient,
     pub auth_scope: &'a RuntimeAuthScope,
-    pub remote_mutations: &'a crate::RemoteMutationGate,
+    pub remote_mutations: &'a vrcx_0_application_core::RemoteMutationGate,
     pub realtime: &'a Arc<RealtimeHostRuntime>,
 }
 

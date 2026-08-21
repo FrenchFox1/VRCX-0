@@ -2,9 +2,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use vrcx_0_application::{
-    FavoriteMutationCoordinator, MutualGraphFetchRuntime, RemoteMutationGate,
-};
+use vrcx_0_application::{FavoriteMutationCoordinator, MutualGraphFetchRuntime};
+use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{
     HostSessionRuntime, NoopPrintCleanupInputSink, RuntimeAuthScope, RuntimeDiagnostics,
     RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor, UnavailableLocalGameContextSource,

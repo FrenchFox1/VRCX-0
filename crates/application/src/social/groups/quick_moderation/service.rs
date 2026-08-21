@@ -7,13 +7,13 @@ use futures_util::stream::{FuturesUnordered, StreamExt};
 use serde_json::Value;
 use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiJsonResponse};
 
-use crate::{Error, Result};
 use vrcx_0_application_core::vrchat_api::groups::{
     member_ban_input, member_get_input, member_kick_input, user_group_permissions_get_input,
     user_groups_get_input,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::RuntimeAuthScope;
+use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::json::{object_scalar_text, result_rows, scalar_text_array};
 
 use super::super::permissions::{has_permission, parse_permission_map, permissions_for_group};

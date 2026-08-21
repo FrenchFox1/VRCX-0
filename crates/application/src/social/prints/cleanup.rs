@@ -19,7 +19,7 @@ use super::favorites::{
     read_auto_delete_old_prints_enabled, read_auto_delete_prints_limit, read_favorite_ids,
     write_favorite_ids,
 };
-use crate::{AuthenticatedMutationContext, Error, RemoteMutationGate, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, RemoteMutationGate, Result};
 
 pub const PRINT_HARD_CAP: i64 = 64;
 pub const PRINT_AUTO_DELETE_LIMIT_MIN: i64 = 30;

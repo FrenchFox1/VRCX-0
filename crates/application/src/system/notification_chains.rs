@@ -19,9 +19,9 @@ use vrcx_0_vrchat_client::{
     },
 };
 
-use crate::{
-    media::prepare_media_upload_request, Error, RemoteMutationGate, Result, RuntimeAuthScope,
-    RuntimeAuthScopeSnapshot, WebClient,
+use crate::media::prepare_media_upload_request;
+use vrcx_0_application_core::{
+    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
 
 use super::notification_actions::ensure_scope_matches;

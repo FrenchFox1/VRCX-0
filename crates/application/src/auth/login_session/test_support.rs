@@ -9,7 +9,8 @@ use vrcx_0_vrchat_client::http_api::{
     execute_response, ApiScope, HttpApiExecuteResponse, HttpApiRequestInput,
 };
 
-use crate::{record_login_success, Error, LoginSuccessRecordInput, WebClient};
+use crate::{record_login_success, LoginSuccessRecordInput};
+use vrcx_0_application_core::{Error, WebClient};
 
 use super::types::{LoginApi, LoginApiFuture};
 

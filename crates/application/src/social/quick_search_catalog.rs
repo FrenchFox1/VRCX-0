@@ -22,7 +22,8 @@ use vrcx_0_persistence::memos::{memo_list_user_notes, memo_list_users};
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
 
-use crate::{get_my_avatars, Error, MyAvatarsDeps, MyAvatarsInput, Result};
+use crate::{get_my_avatars, MyAvatarsDeps, MyAvatarsInput};
+use vrcx_0_application_core::{Error, Result};
 
 const WORLD_PAGE_SIZE: i32 = 50;
 const FAVORITE_PAGE_SIZE: i32 = 300;

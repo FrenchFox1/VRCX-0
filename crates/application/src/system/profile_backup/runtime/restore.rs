@@ -9,7 +9,7 @@ use vrcx_0_persistence::profile_backup::{
     RequestStagedProfileRestoreError, RESTORE_ROLLBACK_DIRECTORY,
 };
 
-use crate::Result;
+use vrcx_0_application_core::Result;
 
 use super::super::{
     ProfileBackupError, ProfileBackupErrorCode, ProfileRestoreFailure, ProfileRestoreFailureCode,
@@ -122,7 +122,7 @@ impl ProfileBackupRuntime {
 
     pub fn discard_staged_restore(&self) -> Result<()> {
         let Some(_guard) = OperationGuard::try_acquire(&self.inner.operation_gate) else {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "A profile backup or restore operation is already running.".into(),
             ));
         };

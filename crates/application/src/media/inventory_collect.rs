@@ -9,7 +9,9 @@ use vrcx_0_vrchat_client::{
     media::{inventory_items_get_input, InventoryListParams, InventoryOrder},
 };
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
+use vrcx_0_application_core::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
+};
 
 const INVENTORY_COLLECT_PAGE_SIZE: usize = 100;
 const INVENTORY_COLLECT_MAX_PAGES: usize = 100;

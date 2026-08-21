@@ -15,7 +15,7 @@ use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 const AVATAR_MODERATION_CACHE_CAPACITY: u64 = 4;
 const AVATAR_MODERATION_CACHE_TTL: Duration = Duration::from_secs(30 * 60);

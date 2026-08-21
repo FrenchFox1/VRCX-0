@@ -10,7 +10,7 @@ use vrcx_0_vrchat_client::groups::current_user_group_instances_get_input;
 use vrcx_0_vrchat_client::groups::profile_get_input as group_profile_get_input;
 use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
 
-use crate::{Error, Result, WebClient};
+use vrcx_0_application_core::{Error, Result, WebClient};
 
 use super::shared::parse_response_json;
 

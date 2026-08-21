@@ -30,7 +30,7 @@ fn avatar_mutation_deps<'a>(
         realtime: &state.realtime_runtime,
         avatar_cache: &state.runtime_context.avatar_cache,
         avatar_moderation: &state.runtime_context.avatar_moderation,
-        mutation: vrcx_0_application::AuthenticatedMutationContext::capture(
+        mutation: vrcx_0_application_core::AuthenticatedMutationContext::capture(
             &state.runtime_context.auth_scope,
             &state.runtime_context.remote_mutations,
             "Avatar mutation",

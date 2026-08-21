@@ -3,8 +3,8 @@
 use std::time::Duration;
 
 use tauri::State;
-use vrcx_0_application::{is_remote_mutation_request, AuthenticatedMutationContext};
 use vrcx_0_application_core::vrchat_api::{self, VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::{is_remote_mutation_request, AuthenticatedMutationContext};
 
 use crate::error::AppError;
 use crate::state::AppState;

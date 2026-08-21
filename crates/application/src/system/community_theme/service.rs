@@ -24,7 +24,7 @@ use super::types::{
     CommunityThemeCatalog, CommunityThemeConfigureInput, CommunityThemeInstallMetadata,
     CommunityThemeProjection, CommunityThemeStatsById,
 };
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 struct CommunityThemeServiceInner {
     db: Arc<DatabaseService>,

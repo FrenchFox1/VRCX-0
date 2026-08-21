@@ -26,7 +26,7 @@ use vrcx_0_integrations::external_api::{self, ExternalApiScope, ExternalHttpRequ
 use vrcx_0_persistence::{config, DatabaseService};
 use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 const MAX_PROFILE_PAGES: usize = 50;
 const TAB_COUNTS_CACHE_CAPACITY: u64 = 32;

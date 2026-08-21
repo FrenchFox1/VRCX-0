@@ -6,7 +6,7 @@ use vrcx_0_vrchat_client::http_api::{
 };
 
 use super::LoginApi;
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum CookieProbeStage {

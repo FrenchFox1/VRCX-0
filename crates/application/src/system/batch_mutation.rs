@@ -12,7 +12,7 @@ use vrcx_0_vrchat_client::{
     users::user_groups_get_input,
 };
 
-use crate::{
+use vrcx_0_application_core::{
     is_remote_mutation_request, Error, RemoteMutationGate, Result, RuntimeAuthScope,
     RuntimeAuthScopeSnapshot, WebClient,
 };

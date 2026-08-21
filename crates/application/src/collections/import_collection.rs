@@ -7,7 +7,7 @@ use vrcx_0_integrations::world_collections::{
 };
 
 use super::share_collection::SHARE_COLLECTION_MAX_WORLDS;
-use crate::Error;
+use vrcx_0_application_core::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

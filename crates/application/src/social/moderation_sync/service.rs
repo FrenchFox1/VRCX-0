@@ -20,7 +20,7 @@ use super::types::{
     RemoteModerationRow,
 };
 use super::ModerationSyncRuntime;
-use crate::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
 
 const MODERATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 

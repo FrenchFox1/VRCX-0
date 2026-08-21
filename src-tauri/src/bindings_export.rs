@@ -5,7 +5,7 @@ use vrcx_0_application::{
     AuthenticatedRuntimePhaseSnapshot, BackgroundImageProjection, CommunityThemeProjection,
     DataDirMigrationStatus, FavoriteImportStatus, GroupBanImportStatus,
     GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus, ProfileBackupStatus,
-    ProfileRestoreProgress, RealtimeFeedProjection, SharedCollectionImportStatus,
+    ProfileRestoreProgress, SharedCollectionImportStatus,
 };
 use vrcx_0_application_core::{
     BackendRuntimeTelemetry, FavoritesChangedPayload, FriendProfileLoadStatusPayload,
@@ -18,6 +18,7 @@ use vrcx_0_application_game::{
     AddGameLogEventPayload, GameClientEvent, GameLogPersistenceFallbackPayload, GameLogProjection,
     GameLogSideEffectEvent, RuntimeWorkerErrorPayload,
 };
+use vrcx_0_application_realtime::RealtimeFeedProjection;
 use vrcx_0_assistant::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
     AssistantToolResultEvent, AssistantTurnEntitiesEvent,

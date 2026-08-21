@@ -5,12 +5,12 @@ use vrcx_0_core::text::normalize_text;
 use serde_json::Value;
 use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiJsonResponse};
 
-use crate::{Error, Result};
 use vrcx_0_application_core::vrchat_api::groups::{
     user_group_permissions_get_input, user_groups_get_input,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::RuntimeAuthScope;
+use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::json::{object_scalar_text, result_rows};
 use vrcx_0_core::GroupPermission;
 

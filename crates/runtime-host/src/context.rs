@@ -3,12 +3,12 @@ use std::time::Duration;
 
 use vrcx_0_application::{
     AvatarModerationRuntime, FavoriteMutationCoordinator, LoginSessionRuntime,
-    ModerationSyncRuntime, MutualGraphFetchRuntime, PrintCleanupQueue, RemoteMutationGate,
-    VrcStatusService,
+    ModerationSyncRuntime, MutualGraphFetchRuntime, PrintCleanupQueue, VrcStatusService,
 };
 use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivityRuntime, OverlayActivitySink, OverlayActivitySnapshot,
 };
+use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{
     AvatarCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry, RuntimeAuthScope,
     RuntimeBackgroundJobs, RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle,

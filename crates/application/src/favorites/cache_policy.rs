@@ -9,7 +9,7 @@ use vrcx_0_persistence::{
     DatabaseService,
 };
 
-use crate::Result;
+use vrcx_0_application_core::Result;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

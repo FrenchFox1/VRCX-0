@@ -10,8 +10,6 @@ mod scope_gate;
 mod social;
 mod system;
 
-pub use vrcx_0_application_core::{ports, vrchat_api};
-
 pub use auth::run_authenticated_session_maintenance;
 pub use auth::{
     auth_response_error_message, current_user_from_cookie, parse_current_user_response,
@@ -262,68 +260,3 @@ pub use system::{
     ProfileRestoreResultStatus, ProfileRestoreRollbackCleanupOutcome, ProfileRestoreRollbackState,
     ProfileRestoreValidation, ProfileRestoreValidationOutcome,
 };
-pub use vrcx_0_application_core::OverlayActivityInputSink;
-pub use vrcx_0_application_core::{
-    format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputLine, RuntimeOutputMode,
-};
-pub use vrcx_0_application_core::{
-    is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate,
-};
-pub use vrcx_0_application_core::{
-    recommended_tokio_max_blocking_threads, recommended_tokio_max_blocking_threads_for,
-    recommended_tokio_worker_threads, recommended_tokio_worker_threads_for,
-};
-pub use vrcx_0_application_core::{save_ugc_image_to_file, ImageCache};
-pub use vrcx_0_application_core::{test_proxy_connectivity, ProxySettingsTestResult};
-pub use vrcx_0_application_core::{
-    BackendRuntime, BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot,
-    BackendRuntimeTelemetry,
-};
-pub use vrcx_0_application_core::{
-    Error, RuntimeDiagnostics, RuntimeEventBus, RuntimeEventSink, RuntimeVrchatAuthFailurePayload,
-    VrcStatusSnapshot,
-};
-pub use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink};
-pub use vrcx_0_application_core::{
-    HostRealtimeSessionContext, HostSessionGameProcessStatus, HostSessionProjection,
-    HostSessionRuntime, SessionHostRuntime,
-};
-pub use vrcx_0_application_core::{
-    LocalGameContextSnapshot, LocalGameContextSource, UnavailableLocalGameContextSource,
-};
-pub use vrcx_0_application_core::{
-    NoopUpdaterPort, UpdaterCheckRequest, UpdaterDownloadOutcome, UpdaterDownloadProgress,
-    UpdaterInstallHandle, UpdaterMetadata, UpdaterPort, UpdaterProgressCallback,
-};
-pub use vrcx_0_application_core::{ParsedLocation, UgcCategory, WebClient, WorldCache};
-pub use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
-pub use vrcx_0_application_core::{RuntimeBackgroundJobSnapshot, RuntimeBackgroundJobs};
-pub use vrcx_0_application_core::{RuntimeLifecycle, RuntimeLifecycleSnapshot};
-pub use vrcx_0_application_core::{RuntimeSyncEngine, RuntimeSyncSnapshot};
-pub use vrcx_0_application_core::{
-    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskStopToken, TaskSupervisor,
-};
-pub use vrcx_0_application_realtime::world_id_from_location_or_id;
-pub use vrcx_0_application_realtime::{
-    apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
-    build_friend_roster_baseline, build_friend_roster_baseline_deferred, FavoriteBaselineSnapshot,
-    FavoriteGroupOutput, SocialBaselineDeps, SocialFavoritesBaselineInput,
-    SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
-    SocialFriendRosterBaselineOutput,
-};
-pub use vrcx_0_application_realtime::{
-    is_friend_event_type, FriendBaselineCausalWatermark, FriendBaselineResult,
-    FriendBaselineSyncOutcome, FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload,
-    FriendProjection, FriendProjectionPatch, FriendStateBucketAuthority, PendingOfflineTimerAction,
-    RealtimeCurrentUserAuthority, RealtimeCurrentUserOutput, RealtimeCurrentUserProjection,
-    RealtimeEntryCorrection, RealtimeEntryCorrectionFields, RealtimeEntryCorrectionStream,
-    RealtimeFeedPatch, RealtimeFeedProjection, RealtimeFeedUpsert, RealtimeFriendApplyResult,
-    RealtimeFriendOutput, RealtimeFriendSnapshot, RealtimeFriendsRuntime, RealtimeHostRuntime,
-    RealtimeHostRuntimeDeps, RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection,
-    RealtimeInstanceQueueKind, RealtimeInstanceQueueProjection, RealtimeNotificationOutput,
-    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeSessionContext,
-    RealtimeStopRequest, RealtimeTransportStartResult, RealtimeWsMessagePayload,
-    RealtimeWsStatusPayload, SyntheticFriendEventOutcome,
-};
-
-pub use vrcx_0_application_core::Result;

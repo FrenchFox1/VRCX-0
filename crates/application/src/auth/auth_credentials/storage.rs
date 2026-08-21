@@ -10,7 +10,7 @@ use super::compat::{
     value_as_string,
 };
 use super::types::{SavedCredential, SavedCredentialSessionData, SavedCredentials};
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub(super) const SAVED_CREDENTIALS_KEY: &str = "savedCredentials";
 pub(super) const LAST_USER_LOGGED_IN_KEY: &str = "lastUserLoggedIn";

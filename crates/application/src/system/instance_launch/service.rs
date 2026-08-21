@@ -7,8 +7,8 @@ use vrcx_0_core::{
     vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT,
 };
 
-use crate::{Error, Result};
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_application_core::{Error, Result};
 
 use super::types::{
     InstanceActionGates, InstanceActionGatesBatchInput, InstanceActionGatesBatchOutput,
