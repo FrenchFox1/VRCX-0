@@ -148,19 +148,27 @@ export function DataTableColumnDndProvider<TData extends RowData>({
     children: ReactNode;
 }) {
     const columnOrderLocked = getColumnOrderLocked(table);
-    const reorderableColumnIds = getReorderableColumnIds(table);
+    const visibleLeafColumns = table.getVisibleLeafColumns();
+    const reorderableColumnIds = useMemo(
+        () => getReorderableColumnIds(visibleLeafColumns),
+        [visibleLeafColumns]
+    );
     const canReorder =
         enableColumnReorder &&
         !columnOrderLocked &&
         reorderableColumnIds.length > 1;
     const sensors = useColumnDndSensors();
-    const contextValue = canReorder
-        ? {
-              enabled: true,
-              items: reorderableColumnIds,
-              table
-          }
-        : dataTableColumnDndDefaultState;
+    const contextValue = useMemo(
+        () =>
+            canReorder
+                ? {
+                      enabled: true,
+                      items: reorderableColumnIds,
+                      table
+                  }
+                : dataTableColumnDndDefaultState,
+        [canReorder, reorderableColumnIds, table]
+    );
 
     if (!canReorder) {
         return (

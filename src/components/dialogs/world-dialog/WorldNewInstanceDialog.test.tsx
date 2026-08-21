@@ -148,7 +148,7 @@ vi.mock('@/ui/shadcn/select', () => {
 });
 
 vi.mock('@/ui/shadcn/tabs', async () => {
-    const { createContext, useContext } = await import('react');
+    const { createContext, useContext, useMemo } = await import('react');
     type TabsContextValue = {
         onValueChange(value: string): void;
         value: string;
@@ -162,11 +162,17 @@ vi.mock('@/ui/shadcn/tabs', async () => {
             children,
             onValueChange,
             value
-        }: PropsWithChildren<TabsContextValue>) => (
-            <TabsContext.Provider value={{ onValueChange, value }}>
-                {children}
-            </TabsContext.Provider>
-        ),
+        }: PropsWithChildren<TabsContextValue>) => {
+            const contextValue = useMemo(
+                () => ({ onValueChange, value }),
+                [onValueChange, value]
+            );
+            return (
+                <TabsContext.Provider value={contextValue}>
+                    {children}
+                </TabsContext.Provider>
+            );
+        },
         TabsContent: ({
             children,
             value

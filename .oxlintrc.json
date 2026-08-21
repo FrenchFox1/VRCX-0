@@ -4,7 +4,7 @@
         "correctness": "error"
     },
     "plugins": ["unicorn", "typescript", "oxc", "react", "jsx-a11y"],
-    "ignorePatterns": ["node_modules/**"],
+    "ignorePatterns": ["node_modules/**", "src/ui/shadcn/**"],
     "options": {
         "reportUnusedDisableDirectives": "error"
     },
@@ -20,15 +20,24 @@
     "rules": {
         "no-unused-vars": "warn",
         "no-control-regex": "warn",
+        "react/button-has-type": "error",
         "react/rules-of-hooks": "error",
         "react/exhaustive-deps": "error",
         "react/globals": "error",
+        "react/iframe-missing-sandbox": "error",
         "react/immutability": "off",
+        "react/jsx-no-comment-textnodes": "error",
+        "react/jsx-no-constructed-context-values": "error",
+        "react/jsx-no-script-url": "error",
+        "react/jsx-no-target-blank": "error",
+        "react/no-unknown-property": "error",
+        "react/no-unstable-nested-components": "error",
         "react/preserve-manual-memoization": "off",
         "react/purity": "error",
         "react/refs": "off",
         "react/set-state-in-effect": "off",
         "react/static-components": "off",
+        "react/style-prop-object": "error",
         "jsx-a11y/alt-text": "error",
         "jsx-a11y/anchor-has-content": "error",
         "jsx-a11y/anchor-is-valid": "error",
@@ -90,6 +99,7 @@
         {
             "files": ["**/*.test.{ts,tsx}"],
             "rules": {
+                "react/button-has-type": "off",
                 "react/globals": "off"
             }
         },
@@ -105,19 +115,6 @@
                 "no-control-regex": "off",
                 "no-irregular-whitespace": "off",
                 "no-misleading-character-class": "off"
-            }
-        },
-        {
-            "files": ["src/ui/shadcn/label.tsx"],
-            "rules": {
-                "jsx-a11y/label-has-associated-control": "off"
-            }
-        },
-        {
-            "files": ["src/ui/shadcn/input-group.tsx"],
-            "rules": {
-                "jsx-a11y/click-events-have-key-events": "off",
-                "jsx-a11y/no-noninteractive-element-interactions": "off"
             }
         },
         {
