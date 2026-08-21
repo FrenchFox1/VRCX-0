@@ -33,7 +33,7 @@
         "rust:check": "cargo check --all-targets -p",
         "rust:clippy:fix": "cargo clippy --fix --allow-dirty --keep-going --all-targets --no-deps -p",
         "rust:clippy:fix:all": "cargo clippy --workspace --exclude vrcx-0-overlay-devtool --fix --allow-dirty --keep-going --all-targets --no-deps",
-        "rust:clippy:ci": "cargo clippy --all-targets --no-deps --locked -- -D warnings",
+        "rust:clippy:ci": "cargo clippy --workspace --all-targets --no-deps --locked -- -D warnings",
         "rust:deny": "cargo deny check",
         "rust:fmt": "cargo fmt --all",
         "rust:fmt:check": "cargo fmt --all -- --check",
