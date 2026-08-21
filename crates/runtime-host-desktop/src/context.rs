@@ -7,15 +7,15 @@ use vrcx_0_application_game::{
     GameLogSideEffectEvent, GameLogSideEffectObserver, RuntimeSnapshot, RuntimeSnapshotStore,
 };
 use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeHostRuntime};
+use vrcx_0_composition::notification::{
+    extract_file_id, extract_file_version, fallback_file_version, normalize_avatar_image_url_128,
+    RealtimeUserImageResolverSlot,
+};
+use vrcx_0_composition::RuntimeHostContext;
 use vrcx_0_core::friends::StateBucket;
 use vrcx_0_host_desktop::tts::{SystemTtsEngine, TtsEngine};
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_overlay_runtime::VrOverlayRuntimeServices;
-use vrcx_0_runtime_host::notification::{
-    extract_file_id, extract_file_version, fallback_file_version, normalize_avatar_image_url_128,
-    RealtimeUserImageResolverSlot,
-};
-use vrcx_0_runtime_host::RuntimeHostContext;
 
 use crate::host_actions::RuntimeHost;
 use crate::notification::{

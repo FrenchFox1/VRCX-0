@@ -4,7 +4,7 @@ use std::process::Command;
 #[cfg(windows)]
 use std::time::Duration;
 
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 #[cfg(windows)]
 const WINDOWS_CLIPBOARD_OPEN_RETRY_COUNT: usize = 5;

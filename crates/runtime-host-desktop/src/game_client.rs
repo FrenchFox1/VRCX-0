@@ -11,17 +11,17 @@ use vrcx_0_application_game::{
     GameClientActions, GameClientCacheActions, GameClientDebugLoggingActions,
     GameClientLocationSource, GameClientRuntime, GameClientRuntimeDeps, GameClientWindowActions,
 };
+use vrcx_0_composition::RuntimeHostContext;
 use vrcx_0_core::game_log_parser::LogLocationSnapshot;
-use vrcx_0_host::app_paths::AppPaths;
 use vrcx_0_host_desktop::vrchat_registry;
 use vrcx_0_host_desktop::{asset_bundle_cache, game_launch, process_status};
-use vrcx_0_runtime_host::RuntimeHostContext;
+use vrcx_0_platform::app_paths::AppPaths;
 
-fn host_error(error: vrcx_0_host::Error) -> RuntimeError {
+fn host_error(error: vrcx_0_platform::Error) -> RuntimeError {
     match error {
-        vrcx_0_host::Error::Io(error) => RuntimeError::Io(error),
-        vrcx_0_host::Error::Json(error) => RuntimeError::Json(error),
-        vrcx_0_host::Error::Custom(message) => RuntimeError::Custom(message),
+        vrcx_0_platform::Error::Io(error) => RuntimeError::Io(error),
+        vrcx_0_platform::Error::Json(error) => RuntimeError::Json(error),
+        vrcx_0_platform::Error::Custom(message) => RuntimeError::Custom(message),
     }
 }
 

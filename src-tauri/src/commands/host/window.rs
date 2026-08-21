@@ -237,7 +237,7 @@ pub fn app__set_startup(
             {
                 return Err(format!(
                     "Autostart is not supported on {}",
-                    vrcx_0_host::host_capabilities::current_platform()
+                    vrcx_0_platform::host_capabilities::current_platform()
                 ));
             }
             let autolaunch = self.0.autolaunch();

@@ -57,12 +57,12 @@ impl From<vrcx_0_media::Error> for Error {
     }
 }
 
-impl From<vrcx_0_host::Error> for Error {
-    fn from(value: vrcx_0_host::Error) -> Self {
+impl From<vrcx_0_platform::Error> for Error {
+    fn from(value: vrcx_0_platform::Error) -> Self {
         match value {
-            vrcx_0_host::Error::Io(error) => Error::Io(error),
-            vrcx_0_host::Error::Json(error) => Error::Json(error),
-            vrcx_0_host::Error::Custom(message) => Error::Custom(message),
+            vrcx_0_platform::Error::Io(error) => Error::Io(error),
+            vrcx_0_platform::Error::Json(error) => Error::Json(error),
+            vrcx_0_platform::Error::Custom(message) => Error::Custom(message),
         }
     }
 }

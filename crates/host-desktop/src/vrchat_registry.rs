@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 pub fn get_registry_key(key: &str) -> Result<serde_json::Value, Error> {
     let _ = key;

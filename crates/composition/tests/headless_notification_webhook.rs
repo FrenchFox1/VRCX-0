@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 
 use serde_json::json;
 use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, RealtimeWsMessagePayload};
-use vrcx_0_host::app_paths::{AppDataDirResolution, AppDataDirSource};
+use vrcx_0_composition::{RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState};
 use vrcx_0_persistence::OwnerId;
-use vrcx_0_runtime_host::{RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState};
+use vrcx_0_platform::app_paths::{AppDataDirResolution, AppDataDirSource};
 
 struct TestDir {
     path: PathBuf,

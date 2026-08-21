@@ -2,7 +2,7 @@ use crate::host_capabilities::{
     current_host_architecture, current_host_capabilities, current_host_platform, HostArchitecture,
     HostPlatform, LinuxPackageKind,
 };
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 pub fn expected_updater_target() -> Result<String, Error> {
     updater_target(

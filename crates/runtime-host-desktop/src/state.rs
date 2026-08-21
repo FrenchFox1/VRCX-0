@@ -37,7 +37,12 @@ use vrcx_0_application_game::{
     RegistryBackupSnapshot,
 };
 use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, FriendProjectionObserver};
-use vrcx_0_host::app_paths::AppDataDirResolution;
+use vrcx_0_composition::telemetry::{TelemetryRuntime, TelemetryRuntimeDeps};
+use vrcx_0_composition::{
+    Result, RuntimeHostCallback, RuntimeHostComposition, RuntimeHostFavoritesCallback,
+    RuntimeHostOptions, RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState,
+    RuntimeHostStateBuilder,
+};
 use vrcx_0_host_desktop::auto_launch::{
     deserialize_app_launcher_entries, normalize_app_launcher_entries, AppLauncherEntry,
     AppLauncherSnapshot, AutoAppLaunchManager, APP_LAUNCHER_ENABLED_CONFIG_KEY,
@@ -52,12 +57,7 @@ use vrcx_0_integration_api::{
 };
 use vrcx_0_persistence::legacy_migration::cleanup_legacy_updater_files;
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
-use vrcx_0_runtime_host::telemetry::{TelemetryRuntime, TelemetryRuntimeDeps};
-use vrcx_0_runtime_host::{
-    Result, RuntimeHostCallback, RuntimeHostComposition, RuntimeHostFavoritesCallback,
-    RuntimeHostOptions, RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState,
-    RuntimeHostStateBuilder,
-};
+use vrcx_0_platform::app_paths::AppDataDirResolution;
 
 mod background_ticks;
 
@@ -198,7 +198,7 @@ impl DesktopRuntimeHostState {
         );
         let integration_api_controller = Arc::new(
             IntegrationApiController::new(integration_api_config, app_version.clone())
-                .map_err(|error| vrcx_0_runtime_host::Error::Custom(error.to_string()))?,
+                .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))?,
         );
         let (integration_api_runtime, integration_api_enrichment_receiver) =
             DesktopIntegrationApiRuntime::new(
@@ -487,14 +487,14 @@ impl DesktopRuntimeHostState {
         self.game
             .auto_launch
             .test_entry(entry_id)
-            .map_err(vrcx_0_runtime_host::Error::Custom)
+            .map_err(vrcx_0_composition::Error::Custom)
     }
 
     pub fn stop_app_launcher_test_run(&self, run_id: &str) -> Result<AppLauncherSnapshot> {
         self.game
             .auto_launch
             .stop_test_run(run_id)
-            .map_err(vrcx_0_runtime_host::Error::Custom)
+            .map_err(vrcx_0_composition::Error::Custom)
     }
 
     pub fn registry_backup_list(&self) -> Result<Vec<RegistryBackupSnapshot>> {
@@ -587,9 +587,7 @@ impl DesktopRuntimeHostState {
             .registry_backup_state
             .lock()
             .map_err(|error| {
-                vrcx_0_runtime_host::Error::Custom(format!(
-                    "registry backup lock poisoned: {error}"
-                ))
+                vrcx_0_composition::Error::Custom(format!("registry backup lock poisoned: {error}"))
             })
     }
 }
@@ -1253,7 +1251,7 @@ fn run_coordinated_registry_backup_maintenance(
 
 fn is_authenticated_maintenance_active(
     state: &RuntimeHostState,
-    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
+    session_slot: &Arc<Mutex<vrcx_0_composition::AuthenticatedSessionProjection>>,
 ) -> bool {
     is_authenticated_maintenance_active_parts(
         &state.backend_runtime,
@@ -1280,8 +1278,8 @@ fn session_matches_auth_scope(
 
 fn is_authenticated_maintenance_active_parts(
     runtime: &vrcx_0_application_core::BackendRuntime,
-    runtime_context: &Arc<vrcx_0_runtime_host::RuntimeHostContext>,
-    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
+    runtime_context: &Arc<vrcx_0_composition::RuntimeHostContext>,
+    session_slot: &Arc<Mutex<vrcx_0_composition::AuthenticatedSessionProjection>>,
 ) -> bool {
     let snapshot = runtime.snapshot();
     let auth_scope = runtime_context.auth_scope.snapshot();
@@ -1297,7 +1295,7 @@ fn is_authenticated_maintenance_active_parts(
 }
 
 fn background_capability_session_scope_key(
-    session_slot: &Arc<Mutex<vrcx_0_runtime_host::AuthenticatedSessionProjection>>,
+    session_slot: &Arc<Mutex<vrcx_0_composition::AuthenticatedSessionProjection>>,
 ) -> Option<String> {
     background_ticks::background_capability_session_identity(session_slot).map(|session| {
         format!(
@@ -1319,7 +1317,7 @@ fn observe_discord_reconcile_request(generation: &AtomicU64, observed: &mut u64)
 }
 
 fn emit_profile_background_info(
-    runtime_context: &Arc<vrcx_0_runtime_host::RuntimeHostContext>,
+    runtime_context: &Arc<vrcx_0_composition::RuntimeHostContext>,
     backend_runtime: &vrcx_0_application_core::BackendRuntime,
     detail: impl Into<String>,
 ) {
@@ -1332,7 +1330,7 @@ fn emit_profile_background_info(
 }
 
 fn emit_profile_background_error(
-    runtime_context: &Arc<vrcx_0_runtime_host::RuntimeHostContext>,
+    runtime_context: &Arc<vrcx_0_composition::RuntimeHostContext>,
     backend_runtime: &vrcx_0_application_core::BackendRuntime,
     detail: impl Into<String>,
 ) {
@@ -1345,7 +1343,7 @@ fn emit_profile_background_error(
 }
 
 fn emit_profile_background_output(
-    runtime_context: &Arc<vrcx_0_runtime_host::RuntimeHostContext>,
+    runtime_context: &Arc<vrcx_0_composition::RuntimeHostContext>,
     backend_runtime: &vrcx_0_application_core::BackendRuntime,
     kind: BackendRuntimeTelemetryKind,
     detail: impl Into<String>,
@@ -1502,8 +1500,8 @@ mod runtime_host_state {
         use crate::{HostFileAccess, Result};
         use std::path::PathBuf;
         use std::sync::Arc;
-        use vrcx_0_host::app_paths::AppPaths;
         use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+        use vrcx_0_platform::app_paths::AppPaths;
 
         struct TestDir {
             path: PathBuf,

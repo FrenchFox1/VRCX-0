@@ -1,5 +1,5 @@
+use vrcx_0_composition::GroupOrderSource;
 use vrcx_0_host_desktop::host_capabilities::{is_host_capability_available, HostCapability};
-use vrcx_0_runtime_host::GroupOrderSource;
 
 pub struct HostGroupOrderSource;
 

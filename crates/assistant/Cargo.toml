@@ -20,4 +20,4 @@ vrcx-0-core = { path = "../core" }
 vrcx-0-integrations = { path = "../integrations" }
 vrcx-0-mcp = { path = "../mcp" }
 vrcx-0-persistence = { path = "../persistence" }
-vrcx-0-runtime-host = { path = "../runtime-host" }
+vrcx-0-composition = { path = "../composition" }

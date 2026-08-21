@@ -6,6 +6,7 @@ use vrcx_0_application_core::{
     InstanceRosterSnapshot, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_composition::RuntimeHostContext;
 use vrcx_0_integration_api::{
     IntegrationApiConfigStore, IntegrationApiController, IntegrationApiError, IntegrationApiInput,
     IntegrationApiInputReceiver, IntegrationApiStartFailedPayload, IntegrationApiStatus,
@@ -13,7 +14,6 @@ use vrcx_0_integration_api::{
 };
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::OwnerId;
-use vrcx_0_runtime_host::RuntimeHostContext;
 
 pub(crate) struct DesktopIntegrationApiConfigStore {
     config: ConfigRepository,

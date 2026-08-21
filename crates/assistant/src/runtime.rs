@@ -6,9 +6,9 @@ use serde::Serialize;
 use specta::Type;
 use tokio_util::sync::CancellationToken;
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
+use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_integrations::llm::{LlmEndpointDetectModelsResult, LlmRequestOptions, ToolDefinition};
 use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpCaller, McpRuntime};
-use vrcx_0_runtime_host::RuntimeHostState;
 
 use crate::agent::{run_turn, TurnContext};
 use crate::config::{should_apply_playbook, PlaybookMode};

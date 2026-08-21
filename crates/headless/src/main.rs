@@ -18,12 +18,12 @@ use vrcx_0_application_core::{
     RuntimeEventPayload, RuntimeEventSink, RuntimeOutputLevel, RuntimeOutputLine,
     RuntimeOutputMode, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
 };
-use vrcx_0_host::app_paths::resolve_app_data_dir;
-use vrcx_0_host::error_log::{
-    append_headless_error_log, default_app_data_dir, ErrorLogWriter, HEADLESS_ERROR_LOG_FILE,
-};
-use vrcx_0_runtime_host::{
+use vrcx_0_composition::{
     CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState,
+};
+use vrcx_0_platform::app_paths::resolve_app_data_dir;
+use vrcx_0_platform::error_log::{
+    append_headless_error_log, default_app_data_dir, ErrorLogWriter, HEADLESS_ERROR_LOG_FILE,
 };
 
 fn main() -> ExitCode {

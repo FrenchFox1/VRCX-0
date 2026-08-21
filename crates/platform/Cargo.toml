@@ -1,9 +1,9 @@
 [package]
-name = "vrcx-0-host"
+name = "vrcx-0-platform"
 version = "0.1.0"
 edition = "2021"
 license.workspace = true
-description = "Shared host capabilities"
+description = "Host-neutral platform primitives"
 
 [dependencies]
 chrono = { workspace = true }

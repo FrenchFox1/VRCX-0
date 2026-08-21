@@ -6,7 +6,7 @@ use crate::bootstrap;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application_core::BackendRuntimeSnapshot;
-use vrcx_0_runtime_host::BackendRuntimeCombinedSnapshot;
+use vrcx_0_composition::BackendRuntimeCombinedSnapshot;
 
 #[tauri::command]
 #[specta::specta]

@@ -10,13 +10,13 @@ use vrcx_0_application_core::{
     BackendRuntimeAuthStatus, BackendRuntimeGameLogStatus, BackendRuntimeMode, BackendRuntimePhase,
     BackendRuntimeProcessStatus, BackendRuntimeSnapshot,
 };
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_persistence::OwnerId;
-use vrcx_0_runtime_host::notification::{
+use vrcx_0_composition::notification::{
     auth_webhook_generic_payload, auth_webhook_is_enabled, auth_webhook_should_recover,
     AuthWebhookEvent, AuthWebhookEventKind,
 };
+use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_persistence::DatabaseService;
+use vrcx_0_persistence::OwnerId;
 use vrcx_0_runtime_host_desktop::notification::{
     decide_notification_plan, DesktopNotificationAction, DesktopNotifier, DesktopNotifierSlot,
     NotificationDeliveryCondition, NotificationDeliveryGameState, NotificationDeliveryPreferences,

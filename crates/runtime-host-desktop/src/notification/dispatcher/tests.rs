@@ -7,9 +7,9 @@ use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivityEntry, OverlayActivityText,
 };
 use vrcx_0_application_core::RuntimeAuthScope;
+use vrcx_0_composition::notification::{render_delivery, OverlayLocale, RenderedNotification};
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_persistence::{memos::memo_save_user, DatabaseService};
-use vrcx_0_runtime_host::notification::{render_delivery, OverlayLocale, RenderedNotification};
 
 use crate::notification::tts::notification_tts_text;
 

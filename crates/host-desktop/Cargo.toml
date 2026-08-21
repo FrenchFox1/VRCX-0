@@ -28,7 +28,7 @@ tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
 tracing = { workspace = true }
 url = { workspace = true }
 vrcx-0-core = { path = "../core" }
-vrcx-0-host = { path = "../host" }
+vrcx-0-platform = { path = "../platform" }
 walkdir = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]

@@ -37,4 +37,4 @@ pub use registry_backup::HostRegistryBackupActions;
 pub use state::{
     DesktopRuntimeBundle, DesktopRuntimeHostOptions, DesktopRuntimeHostState, GameRuntimeBundle,
 };
-pub use vrcx_0_runtime_host::{Error, Result};
+pub use vrcx_0_composition::{Error, Result};

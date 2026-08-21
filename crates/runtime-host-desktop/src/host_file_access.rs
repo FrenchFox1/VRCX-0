@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::{Error, Result};
-use vrcx_0_host::app_paths::AppPaths;
+use vrcx_0_platform::app_paths::AppPaths;
 
 #[derive(Clone, Default)]
 pub struct HostFileAccess {

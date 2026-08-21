@@ -1,9 +1,9 @@
 [package]
-name = "vrcx-0-runtime-host"
+name = "vrcx-0-composition"
 version = "0.1.0"
 edition = "2021"
 license.workspace = true
-description = "Shared runtime composition"
+description = "Host-neutral application composition root"
 
 [features]
 default = []
@@ -30,7 +30,7 @@ vrcx-0-application-activity = { path = "../application-activity" }
 vrcx-0-application-core = { path = "../application-core" }
 vrcx-0-application-realtime = { path = "../application-realtime" }
 vrcx-0-core = { path = "../core" }
-vrcx-0-host = { path = "../host" }
+vrcx-0-platform = { path = "../platform" }
 vrcx-0-integrations = { path = "../integrations" }
 vrcx-0-i18n = { path = "../i18n" }
 vrcx-0-media = { path = "../media" }

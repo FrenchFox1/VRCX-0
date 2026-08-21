@@ -5,9 +5,9 @@ use std::sync::Arc;
 
 use serde_json::json;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_composition::notification::send_json_webhook_with_retry;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_runtime_host::notification::send_json_webhook_with_retry;
 
 struct TestDir(PathBuf);
 

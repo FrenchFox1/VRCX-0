@@ -40,4 +40,4 @@ vrcx-0-application-core = { path = "../application-core" }
 vrcx-0-application-realtime = { path = "../application-realtime" }
 vrcx-0-core = { path = "../core" }
 vrcx-0-persistence = { path = "../persistence" }
-vrcx-0-runtime-host = { path = "../runtime-host" }
+vrcx-0-composition = { path = "../composition" }

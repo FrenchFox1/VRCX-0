@@ -3,9 +3,9 @@ use std::sync::Arc;
 use vrcx_0_application::{FavoriteMutationCoordinator, MutualGraphFetchRuntime};
 use vrcx_0_application_core::{RuntimeAuthScope, TaskSupervisor, WebClient};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_runtime_host::RuntimeHostState;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum McpCaller {

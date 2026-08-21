@@ -11,9 +11,9 @@ use vrcx_0_application_core::{
 use vrcx_0_application_core::{BackendRuntimeGameLogStatus, BackendRuntimeProcessStatus};
 use vrcx_0_application_core::{RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload};
 use vrcx_0_application_realtime::RealtimeTransportStartResult;
+use vrcx_0_composition::Error as RuntimeHostError;
 #[cfg(test)]
 use vrcx_0_core::realtime::RealtimeWsStatus;
-use vrcx_0_runtime_host::Error as RuntimeHostError;
 
 use crate::localization::shell_locale::{
     self, AuthFailureNotificationLabels, BackgroundModeNotificationLabels, TrayLabels,

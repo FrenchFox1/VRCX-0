@@ -13,19 +13,19 @@ use vrcx_0_vr_overlay::{
 };
 
 pub(crate) struct TestOverlayRuntimeServices {
-    data: Arc<vrcx_0_runtime_host::RuntimeHostContext>,
+    data: Arc<vrcx_0_composition::RuntimeHostContext>,
     game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
 }
 
 impl TestOverlayRuntimeServices {
-    fn new(data: Arc<vrcx_0_runtime_host::RuntimeHostContext>) -> Self {
+    fn new(data: Arc<vrcx_0_composition::RuntimeHostContext>) -> Self {
         Self {
             data,
             game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
         }
     }
 
-    pub(crate) fn data(&self) -> &vrcx_0_runtime_host::RuntimeHostContext {
+    pub(crate) fn data(&self) -> &vrcx_0_composition::RuntimeHostContext {
         self.data.as_ref()
     }
 
@@ -35,7 +35,7 @@ impl TestOverlayRuntimeServices {
 }
 
 impl crate::VrOverlayRuntimeServices for TestOverlayRuntimeServices {
-    fn data(&self) -> &vrcx_0_runtime_host::RuntimeHostContext {
+    fn data(&self) -> &vrcx_0_composition::RuntimeHostContext {
         self.data()
     }
 
@@ -157,7 +157,7 @@ pub(crate) fn test_services(
         vrcx_0_application_core::ImageCache::new(dir.path.join("ImageCache"), image_fetcher)
             .unwrap(),
     );
-    let data = Arc::new(vrcx_0_runtime_host::RuntimeHostContext::new(
+    let data = Arc::new(vrcx_0_composition::RuntimeHostContext::new(
         Arc::clone(&db),
         web,
         image_cache,

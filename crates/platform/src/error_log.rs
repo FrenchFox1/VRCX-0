@@ -168,7 +168,7 @@ fn is_panic_plumbing(symbol: &str) -> bool {
     [
         "std::backtrace",
         "backtrace::backtrace",
-        "vrcx_0_host::error_log::append_panic_error_log_with_version",
+        "vrcx_0_platform::error_log::append_panic_error_log_with_version",
         "init_error_logging::{{closure}}",
         "std::panicking",
         "core::panicking",

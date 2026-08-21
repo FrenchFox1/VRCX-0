@@ -10,16 +10,16 @@ use std::{future::Future, pin::Pin};
 use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
 use vrcx_0_application_core::{BackendRuntime, BackendRuntimeMode, TaskStopToken, TaskSupervisor};
-use vrcx_0_host::{
-    error_log::drain_client_error_log,
-    host_capabilities::{current_arch, current_platform},
-};
 use vrcx_0_integrations::telemetry::{
     resolve_endpoint, AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload,
     PageHealthPayload, TelemetryClient, TelemetryConfigSnapshot, TelemetryContext,
     TelemetryRuntimeMode, ToolUsagePayload,
 };
 use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_platform::{
+    error_log::drain_client_error_log,
+    host_capabilities::{current_arch, current_platform},
+};
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
 use super::event::TelemetryClientEvent;

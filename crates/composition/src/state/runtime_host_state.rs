@@ -26,10 +26,6 @@ use vrcx_0_application_realtime::{
     FriendProjectionSink, RealtimeCurrentUserSnapshotSink, RealtimeHostRuntime,
     RealtimeHostRuntimeDeps, RealtimeSessionContext,
 };
-use vrcx_0_host::app_paths::{
-    app_data_paths_match, commit_app_data_dir_pointer, AppDataDirResolution, AppDataDirSource,
-    AppPaths,
-};
 use vrcx_0_persistence::data_dir_migration::{
     cleanup_interrupted_data_dir_migration, complete_data_dir_migration,
     finalize_data_dir_migration, read_pending_data_dir_migration,
@@ -45,6 +41,10 @@ use vrcx_0_persistence::profile_backup::{
 };
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
+use vrcx_0_platform::app_paths::{
+    app_data_paths_match, commit_app_data_dir_pointer, AppDataDirResolution, AppDataDirSource,
+    AppPaths,
+};
 
 #[cfg(test)]
 use std::sync::atomic::Ordering;
@@ -191,7 +191,7 @@ struct SecretStartup<'a> {
 impl SecretStartupActions for SecretStartup<'_> {
     fn initialize(&mut self) {
         vrcx_0_persistence::secrets::init_secrets(
-            vrcx_0_host::machine_key::derive_secrets_key(),
+            vrcx_0_platform::machine_key::derive_secrets_key(),
             self.allow_encrypted_writes,
         );
     }

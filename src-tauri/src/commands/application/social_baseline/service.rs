@@ -26,7 +26,7 @@ fn social_baseline_deps(state: &State<'_, AppState>) -> SocialBaselineDeps {
 #[specta::specta]
 pub async fn app__social_baseline_refresh(
     state: State<'_, AppState>,
-) -> Result<vrcx_0_runtime_host::SocialBaselineRefreshOutput, AppError> {
+) -> Result<vrcx_0_composition::SocialBaselineRefreshOutput, AppError> {
     let command = "app__social_baseline_refresh";
     let diagnostics = state.runtime_context.diagnostics.clone();
     let sync = state.runtime_context.sync.clone();

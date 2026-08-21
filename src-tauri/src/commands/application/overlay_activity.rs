@@ -4,7 +4,7 @@ use tauri::State;
 use vrcx_0_application_activity::{
     overlay_activity_type_definitions, OverlayActivityTypeDefinition,
 };
-use vrcx_0_runtime_host::notification::{
+use vrcx_0_composition::notification::{
     NotificationActivityFiltersSetInput, OverlayActivityPreferenceFilters,
 };
 

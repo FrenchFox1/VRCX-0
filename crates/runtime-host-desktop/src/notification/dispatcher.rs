@@ -8,13 +8,13 @@ use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot,
 };
 use vrcx_0_application_core::{HostSessionRuntime, ImageCache, RuntimeAuthScope, TaskSupervisor};
-use vrcx_0_host_desktop::tts::TtsEngine;
-use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
-use vrcx_0_runtime_host::notification::{
+use vrcx_0_composition::notification::{
     config_bool, extract_file_id, extract_file_version, fallback_file_version,
     load_notification_locale, normalize_avatar_image_url_128, render_delivery, OverlayLocale,
     RealtimeUserImageResolverSlot, RenderedNotification,
 };
+use vrcx_0_host_desktop::tts::TtsEngine;
+use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
 use super::desktop::{send_desktop_notification, DesktopNotificationAction, DesktopNotifier};
 use super::overlay_transport::OverlayNotificationTransport;

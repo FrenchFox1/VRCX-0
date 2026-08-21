@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use vrcx_0_composition::notification::RenderedNotification;
 use vrcx_0_core::vrchat_ids::is_user_id;
-use vrcx_0_runtime_host::notification::RenderedNotification;
 
 use super::NotificationDeliveryPreferences;
 use vrcx_0_persistence::OwnerId;

@@ -8983,8 +8983,8 @@ dependencies = [
  "vrcx-0-application-game",
  "vrcx-0-application-realtime",
  "vrcx-0-assistant",
+ "vrcx-0-composition",
  "vrcx-0-core",
- "vrcx-0-host",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
  "vrcx-0-integration-api",
@@ -8992,7 +8992,7 @@ dependencies = [
  "vrcx-0-mcp",
  "vrcx-0-media",
  "vrcx-0-persistence",
- "vrcx-0-runtime-host",
+ "vrcx-0-platform",
  "vrcx-0-runtime-host-desktop",
  "vrcx-0-vrchat-client",
  "webkit2gtk-nvidia-quirk",
@@ -9129,11 +9129,40 @@ dependencies = [
  "tokio-util",
  "tracing",
  "vrcx-0-application-core",
+ "vrcx-0-composition",
  "vrcx-0-core",
  "vrcx-0-integrations",
  "vrcx-0-mcp",
  "vrcx-0-persistence",
- "vrcx-0-runtime-host",
+]
+
+[[package]]
+name = "vrcx-0-composition"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "iana-time-zone",
+ "moka",
+ "serde",
+ "serde_json",
+ "specta",
+ "sys-locale",
+ "thiserror 2.0.20",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+ "vrcx-0-application",
+ "vrcx-0-application-activity",
+ "vrcx-0-application-core",
+ "vrcx-0-application-realtime",
+ "vrcx-0-core",
+ "vrcx-0-i18n",
+ "vrcx-0-integrations",
+ "vrcx-0-media",
+ "vrcx-0-persistence",
+ "vrcx-0-platform",
+ "vrcx-0-vrchat-client",
 ]
 
 [[package]]
@@ -9159,24 +9188,8 @@ dependencies = [
  "tokio",
  "tracing-subscriber",
  "vrcx-0-application-core",
- "vrcx-0-host",
- "vrcx-0-runtime-host",
-]
-
-[[package]]
-name = "vrcx-0-host"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "dirs 6.0.0",
- "machine-uid",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "specta",
- "thiserror 2.0.20",
- "tracing",
- "vrcx-0-core",
+ "vrcx-0-composition",
+ "vrcx-0-platform",
 ]
 
 [[package]]
@@ -9206,7 +9219,7 @@ dependencies = [
  "tracing",
  "url",
  "vrcx-0-core",
- "vrcx-0-host",
+ "vrcx-0-platform",
  "vrcx-0-vr-overlay",
  "walkdir",
  "windows 0.62.2",
@@ -9285,9 +9298,9 @@ dependencies = [
  "vrcx-0-application",
  "vrcx-0-application-core",
  "vrcx-0-application-realtime",
+ "vrcx-0-composition",
  "vrcx-0-core",
  "vrcx-0-persistence",
- "vrcx-0-runtime-host",
 ]
 
 [[package]]
@@ -9336,11 +9349,11 @@ dependencies = [
  "vrcx-0-application-core",
  "vrcx-0-application-game",
  "vrcx-0-application-realtime",
+ "vrcx-0-composition",
  "vrcx-0-core",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
  "vrcx-0-persistence",
- "vrcx-0-runtime-host",
  "vrcx-0-vr-overlay",
 ]
 
@@ -9368,32 +9381,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "vrcx-0-runtime-host"
+name = "vrcx-0-platform"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "iana-time-zone",
- "moka",
+ "dirs 6.0.0",
+ "machine-uid",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "specta",
- "sys-locale",
  "thiserror 2.0.20",
- "tokio",
  "tracing",
- "url",
- "uuid",
- "vrcx-0-application",
- "vrcx-0-application-activity",
- "vrcx-0-application-core",
- "vrcx-0-application-realtime",
  "vrcx-0-core",
- "vrcx-0-host",
- "vrcx-0-i18n",
- "vrcx-0-integrations",
- "vrcx-0-media",
- "vrcx-0-persistence",
- "vrcx-0-vrchat-client",
 ]
 
 [[package]]
@@ -9411,14 +9411,14 @@ dependencies = [
  "vrcx-0-application-core",
  "vrcx-0-application-game",
  "vrcx-0-application-realtime",
+ "vrcx-0-composition",
  "vrcx-0-core",
- "vrcx-0-host",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
  "vrcx-0-integration-api",
  "vrcx-0-overlay-runtime",
  "vrcx-0-persistence",
- "vrcx-0-runtime-host",
+ "vrcx-0-platform",
  "vrcx-0-vrchat-client",
 ]
 

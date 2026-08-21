@@ -1,5 +1,5 @@
+use vrcx_0_composition::notification::RenderedNotification;
 use vrcx_0_host_desktop::overlay_notifications::OvrToolkit;
-use vrcx_0_runtime_host::notification::RenderedNotification;
 
 use super::NotificationDeliveryPlan;
 

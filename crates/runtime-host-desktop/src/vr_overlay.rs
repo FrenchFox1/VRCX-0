@@ -3,8 +3,8 @@ use std::sync::Arc;
 use vrcx_0_application_core::GameProcessEvent;
 use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
 use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, RealtimeFriendSnapshot};
+use vrcx_0_composition::Result;
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_runtime_host::Result;
 
 use crate::DesktopRuntimeServices;
 
@@ -217,9 +217,9 @@ impl GameLogEventSink for DesktopVrOverlayRuntime {
 }
 
 #[cfg(not(any(windows, target_os = "linux")))]
-fn unsupported_error() -> vrcx_0_runtime_host::Error {
-    vrcx_0_runtime_host::Error::Custom(unsupported_message(
-        vrcx_0_host::host_capabilities::current_platform(),
+fn unsupported_error() -> vrcx_0_composition::Error {
+    vrcx_0_composition::Error::Custom(unsupported_message(
+        vrcx_0_platform::host_capabilities::current_platform(),
     ))
 }
 

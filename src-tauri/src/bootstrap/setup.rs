@@ -32,14 +32,14 @@ fn should_capture_gui_error(level: &Level, target: &str) -> bool {
 }
 
 pub fn init_error_logging(app_data: Option<PathBuf>) {
-    let Some(app_data) = app_data.or_else(vrcx_0_host::error_log::default_app_data_dir) else {
+    let Some(app_data) = app_data.or_else(vrcx_0_platform::error_log::default_app_data_dir) else {
         return;
     };
 
     let default_panic_hook = std::panic::take_hook();
     let panic_app_data = app_data.clone();
     std::panic::set_hook(Box::new(move |panic_info| {
-        vrcx_0_host::error_log::append_panic_error_log_with_version(
+        vrcx_0_platform::error_log::append_panic_error_log_with_version(
             &panic_app_data,
             panic_info,
             APP_VERSION,
@@ -59,7 +59,7 @@ pub fn init_error_logging(app_data: Option<PathBuf>) {
             tracing_subscriber::fmt::layer()
                 .with_ansi(false)
                 .with_writer(move || {
-                    vrcx_0_host::error_log::ErrorLogWriter::new_with_version(
+                    vrcx_0_platform::error_log::ErrorLogWriter::new_with_version(
                         tracing_app_data.clone(),
                         APP_VERSION,
                     )
@@ -141,7 +141,7 @@ fn append_browser_arguments(
 
 fn initialize_app_state(
     app: &tauri::App,
-    app_data_dir: vrcx_0_host::app_paths::AppDataDirResolution,
+    app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
     updater_port: Arc<TauriUpdaterPort>,
 ) -> AppState {
     let error = match AppState::new(app_data_dir.clone(), updater_port.clone()) {
@@ -192,7 +192,8 @@ fn is_database_corruption_error(error: &AppError) -> bool {
 }
 
 fn quarantine_corrupt_database(app_data: &std::path::Path) -> std::io::Result<PathBuf> {
-    let db_file = vrcx_0_host::app_paths::AppPaths::from_app_data(app_data.to_path_buf()).db_file;
+    let db_file =
+        vrcx_0_platform::app_paths::AppPaths::from_app_data(app_data.to_path_buf()).db_file;
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|elapsed| elapsed.as_secs())
@@ -234,7 +235,7 @@ fn show_blocking_dialog(app: &tauri::App, kind: MessageDialogKind, message: &str
 
 pub fn setup_app_with_data_dir(
     app: &mut tauri::App,
-    app_data_dir: vrcx_0_host::app_paths::AppDataDirResolution,
+    app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let updater_port = Arc::new(TauriUpdaterPort::new(app.handle().clone()));
     let app_state = initialize_app_state(app, app_data_dir, updater_port);

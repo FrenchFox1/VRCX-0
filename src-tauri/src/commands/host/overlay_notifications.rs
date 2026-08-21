@@ -2,7 +2,7 @@
 
 use serde_json::{json, Value};
 use tauri::State;
-use vrcx_0_runtime_host::notification::{
+use vrcx_0_composition::notification::{
     discord_webhook_url_with_wait, filter_generic_webhook_payload, parse_webhook_fields,
     send_json_webhook_with_retry, webhook_local_time_string, NotificationWebhookFormat,
     WebhookDeliveryOutcome, WebhookDeliverySnapshot,

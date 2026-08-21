@@ -6,7 +6,7 @@ use crate::state::AppState;
 
 pub fn screenshot_protocol_response(
     request: Request<Vec<u8>>,
-    paths: &vrcx_0_host::app_paths::AppPaths,
+    paths: &vrcx_0_platform::app_paths::AppPaths,
 ) -> Response<Cow<'static, [u8]>> {
     let path = match percent_encoding::percent_decode_str(&request.uri().path()[1..]).decode_utf8()
     {
@@ -53,7 +53,7 @@ pub fn screenshot_protocol_response(
 
 pub fn screenshot_thumbnail_protocol_response(
     request: Request<Vec<u8>>,
-    paths: &vrcx_0_host::app_paths::AppPaths,
+    paths: &vrcx_0_platform::app_paths::AppPaths,
 ) -> Response<Cow<'static, [u8]>> {
     let path = match percent_encoding::percent_decode_str(&request.uri().path()[1..]).decode_utf8()
     {
@@ -74,7 +74,10 @@ pub fn screenshot_thumbnail_protocol_response(
 
     if !is_webp
         || !path_buf.is_file()
-        || !vrcx_0_host::path_utils::is_path_inside_directory(&path_buf, &paths.screenshot_thumbs)
+        || !vrcx_0_platform::path_utils::is_path_inside_directory(
+            &path_buf,
+            &paths.screenshot_thumbs,
+        )
     {
         return Response::builder()
             .status(StatusCode::NOT_FOUND)

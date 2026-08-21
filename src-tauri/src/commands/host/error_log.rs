@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_host::error_log::append_error_log_entry;
+use vrcx_0_platform::error_log::append_error_log_entry;
 
 #[tauri::command]
 #[specta::specta]

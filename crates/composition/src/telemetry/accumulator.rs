@@ -140,11 +140,13 @@ impl TelemetryAccumulator {
                     Some(source),
                     None,
                     None,
-                    Some(vrcx_0_host::error_log::panic_fingerprint_summary(message)),
+                    Some(vrcx_0_platform::error_log::panic_fingerprint_summary(
+                        message,
+                    )),
                     Some(app_version),
                 );
                 detail.summary = Some(sanitize_error_summary(
-                    vrcx_0_host::error_log::panic_summary_for_telemetry(message),
+                    vrcx_0_platform::error_log::panic_summary_for_telemetry(message),
                 ));
                 detail
             }

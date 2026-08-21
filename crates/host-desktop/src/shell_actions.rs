@@ -8,7 +8,7 @@ use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde::Serialize;
 
 use crate::{asset_bundle_cache, process_status, vrchat_paths};
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 static NEXT_ATOMIC_WRITE_ID: AtomicU64 = AtomicU64::new(0);
 

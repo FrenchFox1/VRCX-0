@@ -174,12 +174,12 @@ impl From<vrcx_0_media::Error> for AppError {
     }
 }
 
-impl From<vrcx_0_host::Error> for AppError {
-    fn from(value: vrcx_0_host::Error) -> Self {
+impl From<vrcx_0_platform::Error> for AppError {
+    fn from(value: vrcx_0_platform::Error) -> Self {
         match value {
-            vrcx_0_host::Error::Io(error) => AppError::Io(error),
-            vrcx_0_host::Error::Json(error) => AppError::Json(error),
-            vrcx_0_host::Error::Custom(message) => AppError::Custom(message),
+            vrcx_0_platform::Error::Io(error) => AppError::Io(error),
+            vrcx_0_platform::Error::Json(error) => AppError::Json(error),
+            vrcx_0_platform::Error::Custom(message) => AppError::Custom(message),
         }
     }
 }
@@ -208,27 +208,27 @@ impl From<vrcx_0_application_core::Error> for AppError {
     }
 }
 
-impl From<vrcx_0_runtime_host::Error> for AppError {
-    fn from(value: vrcx_0_runtime_host::Error) -> Self {
+impl From<vrcx_0_composition::Error> for AppError {
+    fn from(value: vrcx_0_composition::Error) -> Self {
         match value {
-            vrcx_0_runtime_host::Error::Database(message) => AppError::database(message, None),
-            vrcx_0_runtime_host::Error::Sqlite { message, category } => {
+            vrcx_0_composition::Error::Database(message) => AppError::database(message, None),
+            vrcx_0_composition::Error::Sqlite { message, category } => {
                 AppError::database(message, category)
             }
-            vrcx_0_runtime_host::Error::Io(error) => AppError::Io(error),
-            vrcx_0_runtime_host::Error::Json(error) => AppError::Json(error),
-            vrcx_0_runtime_host::Error::VrchatApi {
+            vrcx_0_composition::Error::Io(error) => AppError::Io(error),
+            vrcx_0_composition::Error::Json(error) => AppError::Json(error),
+            vrcx_0_composition::Error::VrchatApi {
                 status_code,
                 message,
             } => AppError::VrchatApi {
                 status_code,
                 message,
             },
-            vrcx_0_runtime_host::Error::AuthInteractionRequired(reason)
-            | vrcx_0_runtime_host::Error::AuthSessionInvalidated { reason, .. } => {
+            vrcx_0_composition::Error::AuthInteractionRequired(reason)
+            | vrcx_0_composition::Error::AuthSessionInvalidated { reason, .. } => {
                 AppError::Custom(reason)
             }
-            vrcx_0_runtime_host::Error::Custom(message) => AppError::Custom(message),
+            vrcx_0_composition::Error::Custom(message) => AppError::Custom(message),
         }
     }
 }

@@ -6,7 +6,7 @@ use vrcx_0_application_core::{
     RuntimeBackgroundJobs,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
-use vrcx_0_runtime_host::{AuthenticatedSessionProjection, RuntimeHostContext};
+use vrcx_0_composition::{AuthenticatedSessionProjection, RuntimeHostContext};
 
 mod discord;
 mod presence;

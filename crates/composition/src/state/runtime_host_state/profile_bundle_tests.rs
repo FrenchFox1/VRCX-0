@@ -1,12 +1,12 @@
 use super::*;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicUsize;
-use vrcx_0_host::app_paths::AppDataDirSource;
 use vrcx_0_persistence::data_dir_migration::{
     read_pending_data_dir_migration, take_data_dir_migration_result,
     write_pending_data_dir_migration, DataDirMigrationResultStatus, PendingDataDirMigration,
     StagedDataDirMigration,
 };
+use vrcx_0_platform::app_paths::AppDataDirSource;
 
 #[derive(Default)]
 struct TestProfileExtension {
@@ -30,7 +30,7 @@ impl TestDir {
             .unwrap()
             .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "vrcx-0-runtime-host-{name}-{}-{nonce}",
+            "vrcx-0-composition-{name}-{}-{nonce}",
             std::process::id()
         ));
         std::fs::create_dir_all(&path).unwrap();

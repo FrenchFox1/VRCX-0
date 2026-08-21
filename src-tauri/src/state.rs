@@ -13,8 +13,8 @@ use vrcx_0_application::{
 };
 use vrcx_0_application_core::UpdaterPort;
 use vrcx_0_assistant::AssistantController;
-use vrcx_0_host::app_paths::AppDataDirResolution;
 use vrcx_0_mcp::{McpCaller, McpRuntime, McpServerController};
+use vrcx_0_platform::app_paths::AppDataDirResolution;
 use vrcx_0_runtime_host_desktop::{DesktopRuntimeHostOptions, DesktopRuntimeHostState};
 
 pub const BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY: &str = "VRCX_BackgroundModeResumeRoute";

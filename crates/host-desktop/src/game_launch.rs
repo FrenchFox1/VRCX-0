@@ -3,7 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::vrchat_paths;
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct SteamLaunchCommand {

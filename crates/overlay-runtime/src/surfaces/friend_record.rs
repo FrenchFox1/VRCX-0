@@ -1,5 +1,5 @@
+use vrcx_0_composition::notification::{user_image_url_128, UserImageSources};
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_runtime_host::notification::{user_image_url_128, UserImageSources};
 
 pub(crate) fn friend_record_avatar_url(
     record: &FriendRecord,

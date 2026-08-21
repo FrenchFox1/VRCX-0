@@ -121,7 +121,7 @@ pub fn run() {
         return;
     };
 
-    let app_data_dir = match vrcx_0_host::app_paths::resolve_app_data_dir() {
+    let app_data_dir = match vrcx_0_platform::app_paths::resolve_app_data_dir() {
         Ok(resolution) => {
             bootstrap::init_error_logging(Some(resolution.current_dir.clone()));
             resolution

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use vrcx_0_core::vrchat_log_reader::{
     parse_log_document, LogEntry, LogEntryFilter, ParsedLogDocument,
 };
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 use crate::host_capabilities::{require_host_capability, HostCapability};
 use crate::vrchat_paths;

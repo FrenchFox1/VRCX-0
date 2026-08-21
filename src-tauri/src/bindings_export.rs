@@ -23,12 +23,12 @@ use vrcx_0_assistant::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
     AssistantToolResultEvent, AssistantTurnEntitiesEvent,
 };
+use vrcx_0_composition::{AuthenticatedSessionProjection, RuntimeGroupInstancesProjection};
 use vrcx_0_core::realtime::RealtimeWsStatusPayload;
 use vrcx_0_core::screenshots::ScreenshotLibraryScanStatus;
 use vrcx_0_host_desktop::tts::TtsVoice;
 use vrcx_0_integration_api::{IntegrationApiStartFailedPayload, IntegrationApiStatus};
 use vrcx_0_mcp::McpServerStatus;
-use vrcx_0_runtime_host::{AuthenticatedSessionProjection, RuntimeGroupInstancesProjection};
 use vrcx_0_runtime_host_desktop::AppLauncherSnapshotEvent;
 
 use crate::commands;

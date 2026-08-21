@@ -1,4 +1,4 @@
-use vrcx_0_runtime_host::telemetry::{TelemetryAccumulator, TelemetryClientEvent};
+use vrcx_0_composition::telemetry::{TelemetryAccumulator, TelemetryClientEvent};
 
 #[test]
 fn telemetry_accumulator_keeps_session_totals_without_resetting() {

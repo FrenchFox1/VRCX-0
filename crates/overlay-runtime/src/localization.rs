@@ -1,6 +1,6 @@
 use vrcx_0_i18n::OverlayMessageKey;
 
-pub(crate) use vrcx_0_runtime_host::notification::{OverlayLocale, OverlayLocalizer};
+pub(crate) use vrcx_0_composition::notification::{OverlayLocale, OverlayLocalizer};
 
 pub(crate) trait OverlayPanelLocalizer {
     #[cfg(feature = "friends-panel")]

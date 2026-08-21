@@ -22,5 +22,5 @@ tokio = { workspace = true, features = [
 ] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 vrcx-0-application-core = { path = "../application-core" }
-vrcx-0-host = { path = "../host" }
-vrcx-0-runtime-host = { path = "../runtime-host" }
+vrcx-0-platform = { path = "../platform" }
+vrcx-0-composition = { path = "../composition" }

@@ -12,15 +12,15 @@ use vrcx_0_application_game::{
     GameLogHostActions, GameLogRuntime, GameLogRuntimeDeps, GameLogSideEffectSink,
     RuntimeSnapshotStore,
 };
-use vrcx_0_host::app_paths::AppPaths;
+use vrcx_0_composition::RuntimeHostContext;
 use vrcx_0_host_desktop::{clipboard, game_launch, vrchat_paths};
-use vrcx_0_runtime_host::RuntimeHostContext;
+use vrcx_0_platform::app_paths::AppPaths;
 
-fn host_error(error: vrcx_0_host::Error) -> RuntimeError {
+fn host_error(error: vrcx_0_platform::Error) -> RuntimeError {
     match error {
-        vrcx_0_host::Error::Io(error) => RuntimeError::Io(error),
-        vrcx_0_host::Error::Json(error) => RuntimeError::Json(error),
-        vrcx_0_host::Error::Custom(message) => RuntimeError::Custom(message),
+        vrcx_0_platform::Error::Io(error) => RuntimeError::Io(error),
+        vrcx_0_platform::Error::Json(error) => RuntimeError::Json(error),
+        vrcx_0_platform::Error::Custom(message) => RuntimeError::Custom(message),
     }
 }
 

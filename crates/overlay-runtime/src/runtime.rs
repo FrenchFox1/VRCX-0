@@ -19,6 +19,8 @@ use vrcx_0_application_activity::{
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
 use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
+#[cfg(feature = "friends-panel")]
+use vrcx_0_composition::notification::UserImageCache;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::game_log_parser::GameLogEventKind;
 use vrcx_0_host_desktop::vr_overlay::{
@@ -26,8 +28,6 @@ use vrcx_0_host_desktop::vr_overlay::{
 };
 #[cfg(feature = "friends-panel")]
 use vrcx_0_host_desktop::vr_overlay::{OverlayInputEvent, OverlayInputKind};
-#[cfg(feature = "friends-panel")]
-use vrcx_0_runtime_host::notification::UserImageCache;
 #[cfg(feature = "friends-panel")]
 use vrcx_0_vr_overlay::{
     AvatarBitmap, FavoriteFriendsPanelModel, OverlayTransform, SlintPanelHost,

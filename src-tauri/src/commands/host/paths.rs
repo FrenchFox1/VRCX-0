@@ -9,13 +9,13 @@ use vrcx_0_application::{
     DataDirMigrationActionOutcome, DataDirMigrationMode, DataDirMigrationPlan,
     DataDirMigrationStatus,
 };
-use vrcx_0_host::app_paths::{self, app_data_paths_match, AppDataDirSource};
 use vrcx_0_host_desktop::vrchat_paths;
 use vrcx_0_persistence::data_dir_migration::{
     cleanup_manifest_size, data_dir_available_space, data_dir_migration_required_bytes,
     has_pending_data_dir_migration, inspect_data_dir_migration_target, DataDirCleanupPending,
     DataDirCleanupReport, DataDirMigrationResult,
 };
+use vrcx_0_platform::app_paths::{self, app_data_paths_match, AppDataDirSource};
 
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 
