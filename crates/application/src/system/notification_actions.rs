@@ -50,7 +50,6 @@ pub enum NotificationMarkSeenItemState {
 #[serde(rename_all = "camelCase")]
 pub enum NotificationMarkSeenEffect {
     Seen,
-    Expired,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -203,17 +202,12 @@ async fn mark_notifications_seen_batch_with_delay(
     let mut failed = 0;
     let mut last_error = None;
     for item in items {
-        let effect = if item.version >= 2 {
-            NotificationMarkSeenEffect::Seen
-        } else {
-            NotificationMarkSeenEffect::Expired
-        };
         if item.location == NotificationMarkSeenLocation::Local {
             succeeded += 1;
             results.push(NotificationMarkSeenItemResult {
                 id: item.id,
                 state: NotificationMarkSeenItemState::Succeeded,
-                effect: Some(effect),
+                effect: Some(NotificationMarkSeenEffect::Seen),
                 attempts: 1,
                 message: String::new(),
             });
@@ -226,7 +220,7 @@ async fn mark_notifications_seen_batch_with_delay(
                 results.push(NotificationMarkSeenItemResult {
                     id: item.id,
                     state: NotificationMarkSeenItemState::Succeeded,
-                    effect: Some(effect),
+                    effect: Some(NotificationMarkSeenEffect::Seen),
                     attempts,
                     message: String::new(),
                 });
@@ -435,7 +429,7 @@ mod tests {
         assert_eq!(output.items[1].attempts, 3);
         assert_eq!(
             output.items[2].effect,
-            Some(NotificationMarkSeenEffect::Expired)
+            Some(NotificationMarkSeenEffect::Seen)
         );
     }
 

@@ -29,6 +29,7 @@ pub struct NotificationV1RowOutput {
     pub request_message: String,
     pub response_message: String,
     pub expired: i64,
+    pub seen: i64,
 }
 
 #[derive(Debug, Serialize, specta::Type)]

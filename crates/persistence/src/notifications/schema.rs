@@ -13,6 +13,7 @@ pub(super) const NOTIFICATION_V1_COLUMNS: &[&str] = &[
     "request_message",
     "response_message",
     "expired",
+    "seen",
 ];
 
 pub(super) const NOTIFICATION_V2_COLUMNS: &[&str] = &[

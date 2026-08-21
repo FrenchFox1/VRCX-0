@@ -4753,7 +4753,7 @@ export type NotificationMarkSeenBatchResult = {
     items: NotificationMarkSeenItemResult[];
     lastError: string | null;
 };
-export type NotificationMarkSeenEffect = 'seen' | 'expired';
+export type NotificationMarkSeenEffect = 'seen';
 export type NotificationMarkSeenItemResult = {
     id: string;
     state: NotificationMarkSeenItemState;

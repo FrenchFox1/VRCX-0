@@ -5,6 +5,7 @@ use serde_json::json;
 use crate::common::ParamsBuilder;
 use crate::database::DatabaseService;
 use crate::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
+use crate::realtime::ensure_realtime_tables;
 
 use super::{
     normalize_user_table_prefix, write_realtime_batch, FriendLogDelete, FriendLogUpsert,
@@ -634,6 +635,45 @@ fn rolls_back_friend_log_rows_when_later_feed_entry_fails() -> Result<(), crate:
 }
 
 #[test]
+fn realtime_schema_adds_v1_seen_column_and_backfills_expired_rows() -> Result<(), crate::Error> {
+    let dir = TestDir::new("realtime-notification-v1-seen-upgrade");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    db.execute_non_query(
+        "CREATE TABLE usrself_notifications (id TEXT PRIMARY KEY, created_at TEXT, type TEXT, sender_user_id TEXT, sender_username TEXT, receiver_user_id TEXT, message TEXT, world_id TEXT, world_name TEXT, image_url TEXT, invite_message TEXT, request_message TEXT, response_message TEXT, expired INTEGER)",
+        &Default::default(),
+    )?;
+    db.execute_non_query(
+        "INSERT INTO usrself_notifications (id, created_at, type, expired) VALUES ('active', '2026-08-20T11:00:00Z', 'friendRequest', 0), ('expired', '2026-08-20T10:00:00Z', 'friendRequest', 1)",
+        &Default::default(),
+    )?;
+
+    ensure_realtime_tables(&db, "usrself")?;
+
+    let columns = db.execute(
+        "PRAGMA table_info(usrself_notifications)",
+        &Default::default(),
+    )?;
+    let seen_column = columns
+        .iter()
+        .find(|column| column.get(1) == Some(&json!("seen")))
+        .unwrap();
+    assert_eq!(seen_column[3], json!(1));
+    assert_eq!(seen_column[4], json!("0"));
+    let rows = db.execute(
+        "SELECT id, seen FROM usrself_notifications ORDER BY id",
+        &Default::default(),
+    )?;
+    assert_eq!(
+        rows,
+        vec![
+            vec![json!("active"), json!(0)],
+            vec![json!("expired"), json!(1)]
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn writes_notification_v1_and_v2_schema_columns() -> Result<(), crate::Error> {
     let dir = TestDir::new("realtime-notification-columns");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
@@ -687,7 +727,7 @@ fn writes_notification_v1_and_v2_schema_columns() -> Result<(), crate::Error> {
         concat!(
             "SELECT created_at, type, sender_user_id, sender_username, receiver_user_id, ",
             "message, world_id, world_name, image_url, invite_message, request_message, ",
-            "response_message, expired FROM usrself_notifications WHERE id = @id"
+            "response_message, expired, seen FROM usrself_notifications WHERE id = @id"
         ),
         &ParamsBuilder::new().set("id", "notif_v1").build(),
     )?;
@@ -704,6 +744,7 @@ fn writes_notification_v1_and_v2_schema_columns() -> Result<(), crate::Error> {
     assert_eq!(v1[0][10], json!("Request text"));
     assert_eq!(v1[0][11], json!("Response text"));
     assert_eq!(v1[0][12], json!(1));
+    assert_eq!(v1[0][13], json!(1));
 
     let v2 = db.execute(
         concat!(

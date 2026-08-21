@@ -440,8 +440,11 @@ fn upsert_notification_v1(
         ));
     }
     let details = notification.get("details").unwrap_or(&Value::Null);
+    let expired =
+        bool_field(notification.get("$isExpired")) || bool_field(notification.get("expired"));
+    let seen = bool_field(notification.get("seen")) || expired;
     tx.execute_non_query(
-        &format!("INSERT OR IGNORE INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @expired)"),
+        &format!("INSERT OR IGNORE INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired, seen) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @expired, @seen)"),
         &ParamsBuilder::new()
             .set("id", id)
             .set("created_at", created_at)
@@ -461,16 +464,8 @@ fn upsert_notification_v1(
             .set("invite_message", entry_string(details, "inviteMessage"))
             .set("request_message", entry_string(details, "requestMessage"))
             .set("response_message", entry_string(details, "responseMessage"))
-            .set(
-                "expired",
-                if bool_field(notification.get("$isExpired"))
-                    || bool_field(notification.get("expired"))
-                {
-                    1
-                } else {
-                    0
-                },
-            )
+            .set("expired", if expired { 1 } else { 0 })
+            .set("seen", if seen { 1 } else { 0 })
             .build(),
     )
     .map(affected_count)

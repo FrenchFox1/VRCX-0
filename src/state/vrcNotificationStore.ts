@@ -259,31 +259,19 @@ function applyMarkSeenResults(
     rows: NotificationRow[],
     results: NotificationMarkSeenItemResult[]
 ): NotificationRow[] {
-    const effects = new Map(
+    const seenIds = new Set(
         results.flatMap((result) =>
-            result.state === 'succeeded' && result.effect
-                ? [[result.id, result.effect] as const]
+            result.state === 'succeeded' && result.effect === 'seen'
+                ? [result.id]
                 : []
         )
     );
-    if (!effects.size) {
+    if (!seenIds.size) {
         return rows;
     }
-    return rows.map((row) => {
-        const effect = row.id ? effects.get(row.id) : undefined;
-        if (effect === 'seen') {
-            return { ...row, seen: true };
-        }
-        if (effect === 'expired') {
-            return {
-                ...row,
-                $isExpired: true,
-                expired: true,
-                seen: false
-            };
-        }
-        return row;
-    });
+    return rows.map((row) =>
+        row.id && seenIds.has(row.id) ? { ...row, seen: true } : row
+    );
 }
 
 function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {
