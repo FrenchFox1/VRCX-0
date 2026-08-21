@@ -257,7 +257,7 @@ struct VrOverlayFrameInput {
 #[cfg(feature = "friends-panel")]
 #[derive(Clone, Default)]
 struct FriendsPanelNoteMemoCache {
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     notes_by_user_id: HashMap<String, String>,
     memos_by_user_id: HashMap<String, String>,
     valid: bool,
@@ -1003,7 +1003,7 @@ impl VrOverlayRuntime {
         let Some(services) = &self.services else {
             return current;
         };
-        let owner_user_id = services.data().auth_scope.snapshot().current_user_id;
+        let owner_user_id = OwnerId::new(services.data().auth_scope.snapshot().current_user_id);
         local_favorite_friend_groups_from_db(services.data().db.as_ref(), &owner_user_id)
             .unwrap_or_default()
     }

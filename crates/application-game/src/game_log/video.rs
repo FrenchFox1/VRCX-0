@@ -13,6 +13,7 @@ use crate::{
     NowPlayingPayload, RuntimeEventBus, RuntimeGameLogEventPayload, WebClient,
 };
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct VideoInput {
@@ -50,7 +51,7 @@ pub async fn handle_video_play(
     event_bus: &RuntimeEventBus,
     backend_status: &BackendRuntimeStatusPublisher,
     side_effect_sink: &GameLogSideEffectSink,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     mut input: VideoInput,
 ) -> Result<()> {
     if input.video_url.trim().is_empty() {

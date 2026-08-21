@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use vrcx_0_persistence::OwnerId;
 
 #[test]
 fn notification_cache_hits_enrich_projection_and_persistence() -> Result<()> {
@@ -38,7 +39,7 @@ fn notification_cache_hits_enrich_projection_and_persistence() -> Result<()> {
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id.clone(),
+            owner_user_id: OwnerId::new(active_session.user_id.clone()),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -114,7 +115,7 @@ fn notification_cache_hit_enriches_avatar_image_for_runtime_delivery() -> Result
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id.clone(),
+            owner_user_id: OwnerId::new(active_session.user_id.clone()),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -182,7 +183,7 @@ fn notification_avatar_resolves_from_user_id_when_sender_field_absent() -> Resul
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id.clone(),
+            owner_user_id: OwnerId::new(active_session.user_id.clone()),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -241,7 +242,7 @@ fn notification_avatar_fallback_skips_owner_receiver_when_sender_is_absent() -> 
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id.clone(),
+            owner_user_id: OwnerId::new(active_session.user_id.clone()),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -304,7 +305,7 @@ fn notification_avatar_fallback_skips_current_user_sender() -> Result<()> {
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id,
+            owner_user_id: OwnerId::new(active_session.user_id),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -372,7 +373,7 @@ fn notification_avatar_fallback_respects_vrc_plus_icon_preference() -> Result<()
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id,
+            owner_user_id: OwnerId::new(active_session.user_id),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -436,7 +437,7 @@ fn notification_avatar_fallback_preserves_existing_image_and_skips_group_sender(
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id,
+            owner_user_id: OwnerId::new(active_session.user_id),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![
@@ -507,7 +508,7 @@ fn unresolved_person_location_notification_persists_without_runtime_projection()
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id.clone(),
+            owner_user_id: OwnerId::new(active_session.user_id.clone()),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -586,7 +587,7 @@ fn resolved_sender_does_not_wait_for_world_or_avatar() -> Result<()> {
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id,
+            owner_user_id: OwnerId::new(active_session.user_id),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -708,7 +709,7 @@ fn notification_facts_prefer_the_current_friend_record() -> Result<()> {
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id,
+            owner_user_id: OwnerId::new(active_session.user_id),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -755,7 +756,7 @@ fn notification_v2_update_sanitizes_id_like_names_before_persistence() -> Result
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id.clone(),
+            owner_user_id: OwnerId::new(active_session.user_id.clone()),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
@@ -786,7 +787,7 @@ fn notification_v2_update_sanitizes_id_like_names_before_persistence() -> Result
     runtime
         .runtime()
         .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: active_session.user_id.clone(),
+            owner_user_id: OwnerId::new(active_session.user_id.clone()),
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {

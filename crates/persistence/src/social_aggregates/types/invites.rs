@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::TimeWindow;
+use crate::ownership::OwnerId;
 
 #[derive(
     Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, specta::Type,
@@ -18,7 +19,7 @@ pub enum InviteDirection {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteHistoryInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub time_window: TimeWindow,
     #[serde(default)]
     pub direction: InviteDirection,

@@ -15,6 +15,7 @@ use crate::realtime::{
 use crate::world_enrich::feed_entry_correction_id;
 
 use super::RealtimeHostRuntime;
+use vrcx_0_persistence::OwnerId;
 
 const FEED_LIVE_CACHE_MAX_ENTRIES: usize = 10_000;
 
@@ -26,28 +27,28 @@ struct CachedFeedEntry {
 
 #[derive(Default)]
 pub(super) struct FeedLiveCache {
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     sequence: i64,
     entries: VecDeque<CachedFeedEntry>,
 }
 
 impl FeedLiveCache {
     fn reset(&mut self) {
-        self.owner_user_id.clear();
+        self.owner_user_id = OwnerId::default();
         self.sequence = 0;
         self.entries.clear();
     }
 
-    fn prepare_owner(&mut self, owner_user_id: &str) {
-        if self.owner_user_id != owner_user_id {
+    fn prepare_owner(&mut self, owner_user_id: &OwnerId) {
+        if &self.owner_user_id != owner_user_id {
             self.reset();
-            self.owner_user_id = owner_user_id.to_string();
+            self.owner_user_id = owner_user_id.clone();
         }
     }
 
     fn push_entries(
         &mut self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         entries: Vec<Value>,
     ) -> Vec<RealtimeFeedUpsert> {
         self.prepare_owner(owner_user_id);
@@ -79,11 +80,11 @@ impl FeedLiveCache {
 
     fn patch_entry(
         &mut self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         id: &str,
         fields: &RealtimeEntryCorrectionFields,
     ) -> Option<i64> {
-        if self.owner_user_id != owner_user_id {
+        if &self.owner_user_id != owner_user_id {
             return None;
         }
         let mut changed_indices = Vec::new();
@@ -126,10 +127,10 @@ impl FeedLiveCache {
 
     fn snapshot_matching(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         matcher: &FeedLiveQueryMatcher,
     ) -> (Vec<FeedLiveEntryInput>, i64) {
-        if self.owner_user_id != owner_user_id {
+        if &self.owner_user_id != owner_user_id {
             return (Vec::new(), 0);
         }
         let mut entries = self
@@ -152,7 +153,7 @@ impl RealtimeHostRuntime {
     pub(super) fn emit_feed_entries(
         &self,
         generation: u64,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         entries: Vec<Value>,
     ) {
         if entries.is_empty() {
@@ -164,7 +165,7 @@ impl RealtimeHostRuntime {
             .unwrap_or_else(|error| error.into_inner());
         if self
             .active_feed_scope()
-            .is_none_or(|scope| scope != (generation, owner_user_id.to_string()))
+            .is_none_or(|scope| scope != (generation, owner_user_id.clone()))
         {
             return;
         }
@@ -178,7 +179,7 @@ impl RealtimeHostRuntime {
         }
         self.deps.event_bus.emit(RealtimeFeedProjection {
             generation,
-            owner_user_id: owner_user_id.to_string(),
+            owner_user_id: owner_user_id.clone(),
             upserts,
             patches: Vec::new(),
         });
@@ -214,7 +215,8 @@ impl RealtimeHostRuntime {
 
     pub fn query_feed_latest(&self, query: FeedLatestQueryInput) -> Result<FeedReadModelOutput> {
         let matcher = FeedLiveQueryMatcher::for_latest(&query);
-        let (live_entries, watermark) = self.feed_live_snapshot(&query.user_id, &matcher)?;
+        let (live_entries, watermark) =
+            self.feed_live_snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
         feed_latest_query(
             self.deps.db.as_ref(),
             query,
@@ -227,7 +229,8 @@ impl RealtimeHostRuntime {
 
     pub fn query_feed_search(&self, query: FeedSearchQueryInput) -> Result<Vec<FeedRowOutput>> {
         let matcher = FeedLiveQueryMatcher::for_search(&query);
-        let (live_entries, watermark) = self.feed_live_snapshot(&query.user_id, &matcher)?;
+        let (live_entries, watermark) =
+            self.feed_live_snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
         feed_search_query(
             self.deps.db.as_ref(),
             query,
@@ -252,7 +255,7 @@ impl RealtimeHostRuntime {
 
     fn feed_live_snapshot(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         matcher: &FeedLiveQueryMatcher,
     ) -> Result<(Vec<FeedLiveEntryInput>, i64)> {
         self.feed_live_cache
@@ -261,13 +264,14 @@ impl RealtimeHostRuntime {
             .map_err(|error| Error::Custom(format!("feed live cache lock: {error}")))
     }
 
-    fn active_feed_scope(&self) -> Option<(u64, String)> {
+    fn active_feed_scope(&self) -> Option<(u64, OwnerId)> {
         self.state.lock().ok().and_then(|state| {
-            state
-                .connection
-                .active_context
-                .as_ref()
-                .map(|active| (active.generation, active.session.user_id.trim().to_string()))
+            state.connection.active_context.as_ref().map(|active| {
+                (
+                    active.generation,
+                    OwnerId::new(active.session.user_id.trim()),
+                )
+            })
         })
     }
 }
@@ -276,6 +280,7 @@ impl RealtimeHostRuntime {
 mod tests {
     use serde_json::json;
     use vrcx_0_persistence::feed::{FeedFilter, FeedLatestQueryInput, FeedLiveQueryMatcher};
+    use vrcx_0_persistence::OwnerId;
 
     use super::FeedLiveCache;
     use crate::realtime::RealtimeEntryCorrectionFields;
@@ -300,7 +305,7 @@ mod tests {
     fn cache_owns_sequences_entries_and_corrections() {
         let mut cache = FeedLiveCache::default();
         let upserts = cache.push_entries(
-            "usr_self",
+            &OwnerId::new("usr_self"),
             vec![
                 json!({
                     "id": "first",
@@ -316,7 +321,7 @@ mod tests {
         assert_eq!(upserts[0].entry.as_value()["ownerUserId"], "usr_self");
 
         let correction_sequence = cache.patch_entry(
-            "usr_self",
+            &OwnerId::new("usr_self"),
             "id:first",
             &RealtimeEntryCorrectionFields {
                 display_name: None,
@@ -327,7 +332,7 @@ mod tests {
         assert_eq!(correction_sequence, Some(3));
 
         let matcher = latest_matcher("usr_self", Vec::new(), 10);
-        let (entries, watermark) = cache.snapshot_matching("usr_self", &matcher);
+        let (entries, watermark) = cache.snapshot_matching(&OwnerId::new("usr_self"), &matcher);
         assert_eq!(watermark, 3);
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[0].sequence, 3);
@@ -338,24 +343,33 @@ mod tests {
     #[test]
     fn changing_owner_resets_the_cache_and_sequence() {
         let mut cache = FeedLiveCache::default();
-        cache.push_entries("usr_first", vec![json!({ "id": "old", "type": "GPS" })]);
+        cache.push_entries(
+            &OwnerId::new("usr_first"),
+            vec![json!({ "id": "old", "type": "GPS" })],
+        );
 
-        let upserts = cache.push_entries("usr_second", vec![json!({ "id": "new", "type": "GPS" })]);
+        let upserts = cache.push_entries(
+            &OwnerId::new("usr_second"),
+            vec![json!({ "id": "new", "type": "GPS" })],
+        );
         let matcher = latest_matcher("usr_second", Vec::new(), 10);
-        let (entries, watermark) = cache.snapshot_matching("usr_second", &matcher);
+        let (entries, watermark) = cache.snapshot_matching(&OwnerId::new("usr_second"), &matcher);
 
         assert_eq!(upserts[0].sequence, 1);
         assert_eq!(watermark, 1);
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].entry.as_value()["id"], "new");
-        assert!(cache.snapshot_matching("usr_first", &matcher).0.is_empty());
+        assert!(cache
+            .snapshot_matching(&OwnerId::new("usr_first"), &matcher)
+            .0
+            .is_empty());
     }
 
     #[test]
     fn snapshot_clones_only_the_newest_matching_rows() {
         let mut cache = FeedLiveCache::default();
         cache.push_entries(
-            "usr_self",
+            &OwnerId::new("usr_self"),
             vec![
                 json!({ "id": "gps-old", "type": "GPS" }),
                 json!({ "id": "status", "type": "Status" }),
@@ -365,7 +379,7 @@ mod tests {
         );
         let matcher = latest_matcher("usr_self", vec![FeedFilter::Gps], 2);
 
-        let (entries, watermark) = cache.snapshot_matching("usr_self", &matcher);
+        let (entries, watermark) = cache.snapshot_matching(&OwnerId::new("usr_self"), &matcher);
 
         assert_eq!(watermark, 4);
         assert_eq!(entries.len(), 2);

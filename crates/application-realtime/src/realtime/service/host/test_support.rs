@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
+use vrcx_0_persistence::OwnerId;
 
 pub(super) use std::sync::Arc;
 #[cfg(test)]
@@ -53,7 +54,7 @@ use crate::realtime::{
 impl RealtimeHostRuntime {
     pub fn ingest_notification_ws_message_for_test(
         self: &Arc<Self>,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         endpoint: &str,
         generation: u64,
         payload: &RealtimeWsMessagePayload,

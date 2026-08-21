@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::common::{normalize_text, now_iso, strict_row_i64, strict_row_string, ParamsBuilder};
 use crate::config;
 use crate::database::DatabaseService;
+use crate::ownership::OwnerId;
 use crate::Error;
 
 const RETENTION_CONFIG_KEY: &str = "browseHistoryRetentionDays";
@@ -49,7 +50,7 @@ impl BrowseHistoryEntityKind {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BrowseHistoryRecordInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub entity_kind: BrowseHistoryEntityKind,
     pub entity_id: String,
     #[serde(default)]
@@ -75,7 +76,7 @@ pub struct BrowseHistoryCursor {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BrowseHistoryQueryInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub entity_kind: Option<BrowseHistoryEntityKind>,
     #[serde(default)]
     pub search: String,
@@ -181,7 +182,7 @@ pub fn browse_history_record(
     db: &DatabaseService,
     input: BrowseHistoryRecordInput,
 ) -> Result<(), Error> {
-    let owner_user_id = normalize_text(input.owner_user_id);
+    let owner_user_id = normalize_text(input.owner_user_id.as_str());
     let entity_id = normalize_text(input.entity_id);
     let is_own_profile =
         input.entity_kind == BrowseHistoryEntityKind::User && entity_id == owner_user_id;
@@ -253,7 +254,7 @@ pub fn browse_history_query(
     db: &DatabaseService,
     input: BrowseHistoryQueryInput,
 ) -> Result<BrowseHistoryPageOutput, Error> {
-    let owner_user_id = normalize_text(input.owner_user_id);
+    let owner_user_id = normalize_text(input.owner_user_id.as_str());
     if owner_user_id.is_empty() {
         return Ok(BrowseHistoryPageOutput {
             items: Vec::new(),
@@ -341,7 +342,7 @@ pub fn browse_history_query(
 
 pub fn browse_history_delete(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     entity_kind: BrowseHistoryEntityKind,
     entity_id: String,
 ) -> Result<i64, Error> {
@@ -350,7 +351,7 @@ pub fn browse_history_delete(
         "DELETE FROM browse_history
          WHERE owner_user_id = @owner_user_id AND entity_kind = @entity_kind AND entity_id = @entity_id",
         &ParamsBuilder::new()
-            .set("owner_user_id", normalize_text(owner_user_id))
+            .set("owner_user_id", normalize_text(owner_user_id.as_str()))
             .set("entity_kind", entity_kind.as_str())
             .set("entity_id", normalize_text(entity_id))
             .build(),
@@ -359,11 +360,11 @@ pub fn browse_history_delete(
 
 pub fn browse_history_clear(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     entity_kind: Option<BrowseHistoryEntityKind>,
 ) -> Result<i64, Error> {
     ensure_browse_history_table(db)?;
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     match entity_kind {
         Some(entity_kind) => db.execute_non_query(
             "DELETE FROM browse_history

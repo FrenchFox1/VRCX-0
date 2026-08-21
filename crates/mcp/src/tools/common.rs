@@ -8,6 +8,7 @@ use serde_json::Value;
 use vrcx_0_persistence::social_aggregates;
 
 use crate::runtime::McpRuntime;
+use vrcx_0_persistence::OwnerId;
 
 pub(super) fn deserialize_optional_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
@@ -348,7 +349,7 @@ pub(super) fn resolve_target(
     let rows = social_aggregates::resolve_user_by_name(
         runtime.db.as_ref(),
         social_aggregates::ResolveUserInput {
-            owner_user_id,
+            owner_user_id: owner_user_id.clone(),
             name_query: value.to_string(),
             limit: Some(5),
         },
@@ -488,10 +489,11 @@ pub(super) fn social_aggregates_result<T: Serialize>(
     }
 }
 
-pub(super) fn require_current_user_id(runtime: &McpRuntime) -> Result<String, String> {
+pub(super) fn require_current_user_id(runtime: &McpRuntime) -> Result<OwnerId, String> {
     runtime
         .current_user_id()
         .filter(|value| !value.trim().is_empty())
+        .map(OwnerId::new)
         .ok_or_else(|| {
             "This tool requires an active realtime VRChat session (current user unknown).".into()
         })

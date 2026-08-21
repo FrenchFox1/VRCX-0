@@ -5,6 +5,7 @@ use super::*;
 use crate::realtime::{RealtimeSessionContext, RealtimeTransportLifecycleEvent};
 use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
 use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -641,7 +642,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
     )?;
     write_realtime_batch(
         runtime.runtime().deps.db.as_ref(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),

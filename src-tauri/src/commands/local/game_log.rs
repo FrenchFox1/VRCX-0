@@ -15,6 +15,7 @@ use vrcx_0_persistence::game_log::{
     GameLogEntryDeleteKind, GameLogPreviousInstanceGroupOutput, GameLogPreviousInstanceWorldOutput,
     GameLogQueryInput, GameLogWriteKind,
 };
+use vrcx_0_persistence::OwnerId;
 
 #[tauri::command]
 #[specta::specta]
@@ -37,7 +38,7 @@ pub fn app__game_log_entries_add(
     kind: GameLogWriteKind,
     entries: Vec<Value>,
 ) -> Result<(), AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     let affected_count = vrcx_0_persistence::game_log::game_log_entries_add(
         state.db.as_ref(),
         &owner_user_id,
@@ -56,7 +57,7 @@ pub fn app__game_log_entry_delete(
     kind: GameLogEntryDeleteKind,
     entry: Value,
 ) -> Result<i64, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_persistence::game_log::game_log_entry_delete(
         state.db.as_ref(),
         &owner_user_id,
@@ -73,7 +74,7 @@ pub fn app__game_log_instance_delete(
     location: String,
     event_ids: Vec<i64>,
 ) -> Result<i64, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_persistence::game_log::game_log_instance_delete(
         state.db.as_ref(),
         &owner_user_id,
@@ -89,7 +90,7 @@ pub fn app__game_log_instance_delete_by_location(
     state: State<'_, AppState>,
     location: String,
 ) -> Result<i64, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_persistence::game_log::game_log_instance_delete_by_location(
         state.db.as_ref(),
         &owner_user_id,
@@ -104,7 +105,7 @@ pub fn app__game_log_query(
     state: State<'_, AppState>,
     query: GameLogQueryInput,
 ) -> Result<Value, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_persistence::game_log::game_log_query(state.db.as_ref(), &owner_user_id, query)
         .map_err(AppError::from)
 }
@@ -115,7 +116,7 @@ pub fn app__game_log_previous_instances_by_group_id(
     state: State<'_, AppState>,
     group_id: String,
 ) -> Result<Vec<GameLogPreviousInstanceGroupOutput>, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_persistence::game_log::get_previous_instances_by_group_id(
         state.db.as_ref(),
         &owner_user_id,
@@ -130,7 +131,7 @@ pub fn app__game_log_previous_instances_by_world_id(
     state: State<'_, AppState>,
     world_id: String,
 ) -> Result<Vec<GameLogPreviousInstanceWorldOutput>, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_persistence::game_log::get_previous_instances_by_world_id(
         state.db.as_ref(),
         &owner_user_id,
@@ -145,7 +146,7 @@ pub fn app__game_log_sessions_query(
     state: State<'_, AppState>,
     input: GameLogSessionsQueryInput,
 ) -> Result<Vec<GameLogSessionDto>, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_application_game::game_log_sessions_query(state.db.as_ref(), &owner_user_id, input)
         .map_err(AppError::from)
 }
@@ -156,7 +157,7 @@ pub fn app__instance_history_query(
     state: State<'_, AppState>,
     input: InstanceHistoryQueryInput,
 ) -> Result<Vec<InstanceHistoryEntryOutput>, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_application_game::instance_history_query(state.db.as_ref(), &owner_user_id, input)
         .map_err(AppError::from)
 }

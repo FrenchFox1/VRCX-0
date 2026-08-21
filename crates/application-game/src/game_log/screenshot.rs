@@ -10,6 +10,7 @@ use crate::game_log::runtime_state::world_id_from_location;
 use crate::screenshots as screenshot_domain;
 use crate::{Error, Result};
 use crate::{GameLogSideEffectEvent, GameLogSideEffectSink, ScreenshotProcessedPayload};
+use vrcx_0_persistence::OwnerId;
 
 const FALLBACK_LOCATION_MAX_AGE_MS: i64 = 15 * 60 * 1000;
 
@@ -44,7 +45,9 @@ pub async fn handle_screenshot(
 
     let mut next_path = screenshot_path.clone();
     if screenshot_helper {
-        if let Some(context) = screenshot_context(db, &author.user_id, &input)? {
+        if let Some(context) =
+            screenshot_context(db, &OwnerId::new(author.user_id.clone()), &input)?
+        {
             let world_id = world_id_from_location(&context.location);
             let metadata = build_metadata(author, &context, &world_id);
             let metadata_json = serde_json::to_string(&metadata)?;
@@ -80,7 +83,7 @@ pub async fn handle_screenshot(
 
 fn screenshot_context(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     input: &ScreenshotInput,
 ) -> Result<Option<ScreenshotContext>> {
     if !input.snapshot.location.is_empty() {

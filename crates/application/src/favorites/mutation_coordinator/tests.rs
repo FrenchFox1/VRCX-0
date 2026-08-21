@@ -111,7 +111,7 @@ fn local_mutation_persists_and_emits_one_exact_delta() {
     assert_eq!(
         favorites::favorite_list(
             harness.db.as_ref(),
-            Some("usr_self"),
+            Some(&OwnerId::new("usr_self")),
             FavoriteEntityKind::Friend,
         )
         .unwrap()
@@ -161,7 +161,7 @@ fn tool_dry_run_does_not_persist_or_emit() {
     assert_eq!(output.affected_rows, 0);
     assert!(favorites::favorite_list(
         harness.db.as_ref(),
-        Some("usr_self"),
+        Some(&OwnerId::new("usr_self")),
         FavoriteEntityKind::Friend,
     )
     .unwrap()
@@ -196,7 +196,7 @@ async fn local_transfer_emits_once_with_exact_changed_sides() {
     let harness = harness("local-transfer");
     favorites::favorite_add(
         harness.db.as_ref(),
-        Some("usr_self"),
+        Some(&OwnerId::new("usr_self")),
         FavoriteEntityKind::Friend,
         "usr_friend".into(),
         "Source".into(),
@@ -234,7 +234,7 @@ async fn local_transfer_emits_once_with_exact_changed_sides() {
     assert!(!output.remote_changed);
     let rows = favorites::favorite_list(
         harness.db.as_ref(),
-        Some("usr_self"),
+        Some(&OwnerId::new("usr_self")),
         FavoriteEntityKind::Friend,
     )
     .unwrap();
@@ -248,7 +248,7 @@ async fn local_bulk_remove_emits_once_with_exact_changed_sides() {
     let harness = harness("local-bulk-remove");
     favorites::favorite_add(
         harness.db.as_ref(),
-        Some("usr_self"),
+        Some(&OwnerId::new("usr_self")),
         FavoriteEntityKind::Friend,
         "usr_friend".into(),
         "Close".into(),

@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn invite_history_groups_received_and_sent_notifications() {
@@ -26,7 +27,7 @@ fn invite_history_groups_received_and_sent_notifications() {
     let output = get_invite_history(
         &db,
         InviteHistoryInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             time_window: TimeWindow::all(),
             direction: InviteDirection::Both,
             limit: Some(10),

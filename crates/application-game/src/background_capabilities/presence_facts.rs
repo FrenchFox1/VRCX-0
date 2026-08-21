@@ -11,6 +11,7 @@ use crate::{PlayerState, Result, RuntimeSnapshot};
 
 use super::shared::{non_empty, string_field, BackgroundCapabilitySession};
 use vrcx_0_core::text::first_non_empty;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Debug)]
 pub struct BackgroundPresenceFactsInput<'a> {
@@ -83,7 +84,7 @@ pub fn build_background_presence_facts(
     {
         load_players_from_persistence(
             db,
-            &input.session.current_user_id,
+            &OwnerId::new(input.session.current_user_id.clone()),
             &current_location,
             &game_snapshot.started_at,
         )?
@@ -104,7 +105,7 @@ pub fn build_background_presence_facts(
         .collect();
     let present_favorite_group_keys = collect_present_favorite_group_keys(
         db,
-        &input.session.current_user_id,
+        &OwnerId::new(input.session.current_user_id.clone()),
         &players,
         input.favorite_friend_groups_by_key,
     )?;
@@ -196,7 +197,7 @@ fn normalize_runtime_players(players: &[PlayerState]) -> Vec<PresencePlayer> {
 
 fn load_players_from_persistence(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     location: &str,
     started_at: &str,
 ) -> Result<(Vec<PresencePlayer>, usize)> {
@@ -232,7 +233,7 @@ fn load_players_from_persistence(
 
 fn collect_present_favorite_group_keys(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     players: &[PresencePlayer],
     favorite_friend_groups_by_key: &HashMap<String, Vec<String>>,
 ) -> Result<Vec<String>> {

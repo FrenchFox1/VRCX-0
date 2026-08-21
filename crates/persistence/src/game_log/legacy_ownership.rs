@@ -4,7 +4,7 @@ use crate::common::{normalize_text, row_i64, ParamsBuilder};
 use crate::config::{self, ensure_config_table, resolve_config_key};
 use crate::database::schema::{ensure_assistant_tables, ensure_global_store_tables};
 use crate::database::DatabaseService;
-use crate::ownership::owner_id_get_or_insert;
+use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 
 use super::schema::*;
@@ -15,9 +15,9 @@ const LEGACY_FRIEND_GROUPS_KEY: &str = "localFavoriteFriendGroups";
 
 pub(crate) fn claim_legacy_ownership(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<(), Error> {
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = OwnerId::new(normalize_text(owner_user_id.as_str()));
     if owner_user_id.is_empty() || config::get_string(db, OWNERSHIP_DECIDED_KEY, "0")? == "1" {
         return Ok(());
     }
@@ -31,7 +31,7 @@ pub(crate) fn claim_legacy_ownership(
     let owner_id = if should_claim {
         owner_id_get_or_insert(db, &owner_user_id)?
     } else {
-        0
+        OwnerRowId::UNASSIGNED
     };
     let legacy_groups = should_claim
         .then(|| config::get_raw(db, LEGACY_FRIEND_GROUPS_KEY))
@@ -201,10 +201,10 @@ mod tests {
         )
         .unwrap();
 
-        claim_legacy_ownership(&db, "usr_a").unwrap();
-        claim_legacy_ownership(&db, "usr_b").unwrap();
+        claim_legacy_ownership(&db, &OwnerId::new("usr_a")).unwrap();
+        claim_legacy_ownership(&db, &OwnerId::new("usr_b")).unwrap();
 
-        let owner_id = owner_id_get(&db, "usr_a").unwrap().unwrap();
+        let owner_id = owner_id_get(&db, &OwnerId::new("usr_a")).unwrap().unwrap();
         for table in [
             TABLE_LOCATION,
             TABLE_JOIN_LEAVE,
@@ -219,7 +219,7 @@ mod tests {
             let sql = format!("SELECT owner_id FROM {table} LIMIT 1");
             assert_eq!(
                 row_i64(&db.execute(&sql, &Default::default()).unwrap()[0], 0),
-                owner_id
+                owner_id.value()
             );
         }
         assert_eq!(
@@ -239,7 +239,7 @@ mod tests {
             config::get_string(&db, OWNERSHIP_DECIDED_KEY, "0").unwrap(),
             "1"
         );
-        assert_eq!(owner_id_get(&db, "usr_b").unwrap(), None);
+        assert_eq!(owner_id_get(&db, &OwnerId::new("usr_b")).unwrap(), None);
     }
 
     #[test]
@@ -249,7 +249,7 @@ mod tests {
         create_prefix_marker(&db, "usr_a");
         create_prefix_marker(&db, "usr_b");
 
-        claim_legacy_ownership(&db, "usr_a").unwrap();
+        claim_legacy_ownership(&db, &OwnerId::new("usr_a")).unwrap();
 
         for table in [
             TABLE_LOCATION,
@@ -272,6 +272,6 @@ mod tests {
             config::get_string(&db, OWNERSHIP_DECIDED_KEY, "0").unwrap(),
             "1"
         );
-        assert_eq!(owner_id_get(&db, "usr_a").unwrap(), None);
+        assert_eq!(owner_id_get(&db, &OwnerId::new("usr_a")).unwrap(), None);
     }
 }

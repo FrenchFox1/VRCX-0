@@ -12,6 +12,7 @@ use vrcx_0_integration_api::{
     RoomMemberState, RoomState, DEFAULT_INTEGRATION_API_PORT,
 };
 use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_persistence::OwnerId;
 use vrcx_0_runtime_host::RuntimeHostContext;
 
 pub(crate) struct DesktopIntegrationApiConfigStore {
@@ -268,7 +269,7 @@ async fn run_integration_api_enrichment(
         match tokio::task::spawn_blocking(move || {
             enrich_room_snapshot(
                 db.as_ref(),
-                &owner_user_id,
+                &OwnerId::new(owner_user_id),
                 &enrichment_auth_scope,
                 &realtime_runtime,
                 request.snapshot,
@@ -295,7 +296,7 @@ async fn run_integration_api_enrichment(
 
 fn enrich_room_snapshot(
     db: &vrcx_0_persistence::DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     auth_scope: &RuntimeAuthScopeSnapshot,
     realtime_runtime: &RealtimeHostRuntime,
     snapshot: Arc<InstanceRosterSnapshot>,
@@ -348,7 +349,7 @@ fn enrich_room_snapshot(
                 local_memo
             };
             RoomMemberState {
-                is_self: !owner_user_id.is_empty() && member.user_id == owner_user_id,
+                is_self: !owner_user_id.is_empty() && member.user_id == owner_user_id.as_str(),
                 is_friend: profile.is_some_and(|profile| profile.is_friend),
                 joined_at: member.joined_at_ms.and_then(|joined_at_ms| {
                     chrono::DateTime::from_timestamp_millis(joined_at_ms)

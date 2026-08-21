@@ -28,6 +28,7 @@ use super::types::{
     SocialFriendRequestCancelInput, SocialFriendRequestNotificationAcceptOutput,
     SocialFriendRequestNotificationAcceptStatus, SocialMutationDeps,
 };
+use vrcx_0_persistence::OwnerId;
 
 const SOCIAL_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -66,7 +67,7 @@ pub(super) async fn unfriend_with_expected_scope(
     }
     Ok(apply_unfriend_locally(
         deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id.clone()),
         &auth_scope.endpoint,
         target_user_id,
         target_display_name,
@@ -93,7 +94,7 @@ pub async fn send_friend_request(
 
     Ok(write_friend_request_history(
         &deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id),
         &target_user_id,
         &input.target_display_name,
         "FriendRequest",
@@ -123,7 +124,7 @@ pub async fn cancel_friend_request(
 
     Ok(write_friend_request_history(
         &deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id),
         &target_user_id,
         &input.target_display_name,
         "CancelFriendRequest",
@@ -178,7 +179,7 @@ async fn accept_friend_request_with_expected_scope(
     }
     Ok(apply_friend_request_accept_locally(
         deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id.clone()),
         &auth_scope.endpoint,
         &target_user_id,
         &input.target_display_name,
@@ -221,7 +222,7 @@ fn is_not_found_error(error: &Error) -> bool {
 
 pub(in crate::social) fn apply_unfriend_locally(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -255,7 +256,7 @@ pub(in crate::social) fn apply_unfriend_locally(
 
 fn fallback_unfriend(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -284,7 +285,7 @@ fn fallback_unfriend(
 
 pub(in crate::social) fn apply_friend_request_accept_locally(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -321,7 +322,7 @@ pub(in crate::social) fn apply_friend_request_accept_locally(
 
 fn fallback_accept(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -369,7 +370,7 @@ fn fallback_accept(
 
 fn write_friend_request_history(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     target_display_name: &str,
     history_type: &str,
@@ -572,7 +573,7 @@ fn emit_current_scope_auth_failure(
     }
     deps.realtime
         .emit_runtime_vrchat_auth_failure(RuntimeVrchatAuthFailurePayload {
-            owner_user_id: scope.current_user_id,
+            owner_user_id: OwnerId::new(scope.current_user_id),
             endpoint: scope.endpoint,
             path: path.to_string(),
             reason: reason.to_string(),

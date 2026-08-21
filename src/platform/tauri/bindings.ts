@@ -668,7 +668,7 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__browse_history_query', { input });
     },
     async appBrowseHistoryDelete(
-        ownerUserId: string,
+        ownerUserId: OwnerId,
         entityKind: BrowseHistoryEntityKind,
         entityId: string
     ): Promise<number> {
@@ -679,7 +679,7 @@ const generatedCommands = {
         });
     },
     async appBrowseHistoryClear(
-        ownerUserId: string,
+        ownerUserId: OwnerId,
         entityKind: BrowseHistoryEntityKind | null
     ): Promise<number> {
         return await TAURI_INVOKE('app__browse_history_clear', {
@@ -1024,7 +1024,9 @@ const generatedCommands = {
     async appMemoListUsers(): Promise<UserMemoOutput[]> {
         return await TAURI_INVOKE('app__memo_list_users');
     },
-    async appMemoListUserNotes(ownerUserId: string): Promise<UserNoteOutput[]> {
+    async appMemoListUserNotes(
+        ownerUserId: OwnerId
+    ): Promise<UserNoteOutput[]> {
         return await TAURI_INVOKE('app__memo_list_user_notes', { ownerUserId });
     },
     async appMemoGetWorld(worldId: string): Promise<WorldMemoOutput | null> {
@@ -1123,14 +1125,14 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__notification_expire', { userId, id });
     },
     async appLocalModerationList(
-        ownerUserId: string
+        ownerUserId: OwnerId
     ): Promise<LocalModerationOutput[]> {
         return await TAURI_INVOKE('app__local_moderation_list', {
             ownerUserId
         });
     },
     async appLocalModerationGet(
-        ownerUserId: string,
+        ownerUserId: OwnerId,
         userId: string
     ): Promise<LocalModerationOutput | null> {
         return await TAURI_INVOKE('app__local_moderation_get', {
@@ -2578,7 +2580,7 @@ export const commands: TypedCommands<typeof generatedCommands> =
 
 export type ActiveTurn = { turnId: string; status: TurnStatus };
 export type ActivityOverlapViewBuildInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     currentUserId: string;
     targetUserId: string;
     rangeDays: number;
@@ -2600,7 +2602,7 @@ export type ActivityOverlapViewOutput = {
     builtAt: string;
 };
 export type ActivityViewBuildInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     targetUserId: string;
     isSelf: boolean;
     rangeDays: number;
@@ -2771,19 +2773,19 @@ export type AppUpdateStatusSnapshot = {
     shouldNotify: boolean;
 };
 export type AssistantDeltaEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     text: string;
     replace: boolean;
 };
 export type AssistantDoneEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
 };
 export type AssistantErrorEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     code: string;
@@ -2800,7 +2802,7 @@ export type AssistantRuntimeStatus = {
     lastSelection: AssistantRuntimeSelection;
 };
 export type AssistantToolCallEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     toolCallId: string;
@@ -2808,7 +2810,7 @@ export type AssistantToolCallEvent = {
     args: string;
 };
 export type AssistantToolResultEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     toolCallId: string;
@@ -2817,7 +2819,7 @@ export type AssistantToolResultEvent = {
     entities: Entity[];
 };
 export type AssistantTurnEntitiesEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     entities: Entity[];
@@ -3149,7 +3151,7 @@ export type BrowseHistoryPageOutput = {
     nextCursor: BrowseHistoryCursor | null;
 };
 export type BrowseHistoryQueryInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     entityKind: BrowseHistoryEntityKind | null;
     search?: string;
     cursor: BrowseHistoryCursor | null;
@@ -3158,7 +3160,7 @@ export type BrowseHistoryQueryInput = {
     dateTo?: string;
 };
 export type BrowseHistoryRecordInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     entityKind: BrowseHistoryEntityKind;
     entityId: string;
     title?: string;
@@ -3517,7 +3519,7 @@ export type FavoriteBulkRemoveItemResult = {
 };
 export type FavoriteBulkRemoveItemState = 'removed' | 'failed' | 'notAttempted';
 export type FavoriteBulkRemoveResult = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     kind: FavoriteEntityKind;
     total: number;
     succeeded: number;
@@ -3696,7 +3698,7 @@ export type FavoriteTransferTarget = {
     favoriteType: VrchatFavoriteType | null;
 };
 export type FavoritesChangedPayload = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     kind: FavoriteChangeScope;
     local: boolean;
@@ -4042,7 +4044,7 @@ export type GroupModerationBatchAction =
     | { type: 'addRoles' }
     | { type: 'removeRoles' };
 export type GroupModerationBatchInput = {
-    expectedOwnerUserId: string;
+    expectedOwnerUserId: OwnerId;
     expectedEndpoint: string;
     groupId: string;
     action: GroupModerationBatchAction;
@@ -4062,14 +4064,14 @@ export type GroupModerationBatchItemState =
     | 'failed'
     | 'notAttempted';
 export type GroupModerationBatchProgress = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     groupId: string;
     completed: number;
     total: number;
 };
 export type GroupModerationBatchResult = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     total: number;
     succeeded: number;
@@ -4547,7 +4549,7 @@ export type ModerationSyncMutationInput = {
     enabled: boolean;
 };
 export type ModerationSyncMutationOutput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     targetUserId: string;
     type: string;
     enabled: boolean;
@@ -4561,9 +4563,9 @@ export type ModerationSyncRefreshOutput = {
     localCount: number;
     rows: RemoteModerationRow[];
 };
-export type MutualGraphFetchCancelInput = { ownerUserId?: string };
+export type MutualGraphFetchCancelInput = { ownerUserId?: OwnerId };
 export type MutualGraphFetchStartInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     friendIds?: string[];
 };
@@ -4578,7 +4580,7 @@ export type MutualGraphFetchStatus = {
     runId: number;
     revision: number;
     status: MutualGraphFetchState;
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     totalFriends: number;
     processedFriends: number;
     currentFriendId: string;
@@ -4592,7 +4594,7 @@ export type MutualGraphFetchStatus = {
     lastError: string | null;
 };
 export type MutualGraphFriendRefreshInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     friendId: string;
 };
 export type MutualGraphFriendRefreshOutput = {
@@ -4676,18 +4678,18 @@ export type NotificationActivityFiltersSetInput = {
     filters: OverlayActivityFilterProfile;
 };
 export type NotificationBoopDismissInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     senderUserId: string;
 };
 export type NotificationBoopReplyInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     emojiId?: string;
 };
 export type NotificationHideExpireInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
 };
@@ -4702,7 +4704,7 @@ export type NotificationInstanceInviteInput = {
     rsvp?: boolean | null;
 };
 export type NotificationInviteResponseInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     responseSlot: number;
@@ -4764,14 +4766,14 @@ export type NotificationMarkSeenItemResult = {
 export type NotificationMarkSeenItemState = 'succeeded' | 'failed';
 export type NotificationMarkSeenLocation = 'remote' | 'local';
 export type NotificationRequestInviteAcceptInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     instanceId?: string;
     worldId?: string;
 };
 export type NotificationRespondInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     responseType?: string;
@@ -4847,6 +4849,7 @@ export type OverlayActivityTypeDefinition = {
     hmdDefaultScope: OverlayActivityScope;
     aliases: string[];
 };
+export type OwnerId = string;
 export type ParsedLocation = {
     tag: string;
     isOffline: boolean;
@@ -5112,7 +5115,7 @@ export type RealtimeFeedPatch = {
 };
 export type RealtimeFeedProjection = {
     generation: number;
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     upserts?: RealtimeFeedUpsert[];
     patches?: RealtimeFeedPatch[];
 };
@@ -5250,7 +5253,7 @@ export type RuntimeRealtimeTransportEpoch = {
     sessionGeneration: number;
 };
 export type RuntimeVrchatAuthFailurePayload = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     path: string;
     reason: string;
@@ -5480,7 +5483,7 @@ export type SocialUnfriendBatchItemState =
     | 'failed'
     | 'notAttempted';
 export type SocialUnfriendBatchResult = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     total: number;
     succeeded: number;
     failed: number;

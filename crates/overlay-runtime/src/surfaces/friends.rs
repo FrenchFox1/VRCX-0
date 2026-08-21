@@ -21,6 +21,7 @@ use vrcx_0_vr_overlay::{
 use crate::VrOverlayRuntimeServices;
 
 use super::super::localization::{OverlayLocale, OverlayLocalizer, OverlayPanelLocalizer};
+use vrcx_0_persistence::OwnerId;
 
 pub(crate) const FRIENDS_PANEL_CATEGORY_ALL: &str = "all";
 pub(crate) const FRIENDS_PANEL_CATEGORY_SAME_INSTANCE: &str = "sameInstance";
@@ -130,7 +131,7 @@ pub(crate) fn favorite_friend_groups_snapshot_from_baseline(
 
 pub(crate) fn local_favorite_friend_groups_from_db(
     db: &vrcx_0_persistence::DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> std::result::Result<FavoriteFriendGroupsSnapshot, vrcx_0_persistence::Error> {
     let rows = favorite_list(
         db,
@@ -165,7 +166,7 @@ pub(crate) fn local_favorite_friend_groups_from_db(
 
 pub(crate) fn load_friends_panel_notes(
     services: &dyn VrOverlayRuntimeServices,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
 ) -> HashMap<String, String> {
     memo_list_user_notes(services.data().db.as_ref(), owner_user_id)
         .map(|notes| {

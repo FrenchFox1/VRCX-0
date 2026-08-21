@@ -359,6 +359,8 @@ fn vrchat_favorite_caveats(blocked_by_setting: bool) -> Vec<String> {
 }
 #[cfg(test)]
 mod favorite_kind_tests {
+    use vrcx_0_persistence::OwnerId;
+
     use super::*;
 
     #[test]
@@ -382,7 +384,7 @@ mod favorite_kind_tests {
         assert_eq!(dry_run.affected_rows, 0);
         assert!(persistence_favorites::favorite_list(
             db.as_ref(),
-            Some("usr_self"),
+            Some(&OwnerId::new("usr_self")),
             FavoriteEntityKind::Friend,
         )
         .unwrap()
@@ -403,7 +405,7 @@ mod favorite_kind_tests {
         assert_eq!(
             persistence_favorites::favorite_list(
                 db.as_ref(),
-                Some("usr_self"),
+                Some(&OwnerId::new("usr_self")),
                 FavoriteEntityKind::Friend,
             )
             .unwrap()

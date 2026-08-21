@@ -20,6 +20,7 @@ use super::persistence::{
 };
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY_MS};
 use super::utils::{first_owned, parse_location, EventTime, JsonExt};
+use vrcx_0_persistence::OwnerId;
 
 mod event_split;
 mod patch_builders;
@@ -116,7 +117,8 @@ fn apply_friend_event_with_source(
     let owner_user_id = baseline.current_user_id.clone();
     let generation = baseline.generation;
     let baseline_revision = baseline.baseline_revision;
-    let mut output = RealtimeFriendOutput::new(owner_user_id, generation, baseline_revision);
+    let mut output =
+        RealtimeFriendOutput::new(OwnerId::new(owner_user_id), generation, baseline_revision);
 
     match event_kind {
         FriendEventKind::Add => apply_add(state, &mut output, content, now, source)?,

@@ -1,9 +1,10 @@
+use crate::ownership::OwnerId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FadingFriendsInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub prior_from: String,
     pub pivot: String,
     pub now: String,

@@ -14,6 +14,7 @@ use vrcx_0_persistence::activity::{
 use vrcx_0_persistence::game_log::{write_batch, GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_persistence::realtime::{write_realtime_batch, RealtimePersistenceBatch};
 use vrcx_0_persistence::DatabaseService;
+use vrcx_0_persistence::OwnerId;
 
 struct TestDir {
     path: PathBuf,
@@ -94,7 +95,7 @@ fn add_presence(
 ) {
     write_realtime_batch(
         db,
-        owner_user_id,
+        &OwnerId::new(owner_user_id),
         &RealtimePersistenceBatch {
             feed_entries: vec![json!({
                 "created_at": created_at,
@@ -118,7 +119,7 @@ fn self_activity_warmup_prepares_a_year_without_bucket_cache() {
     let owner = "usr_self";
     write_batch(
         &db,
-        owner,
+        &OwnerId::new(owner),
         &GameLogWriteBatch {
             locations: vec![GameLogLocationEntry {
                 created_at: "2025-01-05T01:00:00Z".to_string(),
@@ -135,7 +136,7 @@ fn self_activity_warmup_prepares_a_year_without_bucket_cache() {
 
     let warmed = activity_self_sessions_warmup(
         &db,
-        owner.to_string(),
+        OwnerId::new(owner),
         365,
         Some(ms("2025-01-06T00:00:00Z")),
     )
@@ -147,7 +148,7 @@ fn self_activity_warmup_prepares_a_year_without_bucket_cache() {
     assert!(activity_bucket_cache_get(
         &db,
         ActivityBucketCacheQueryInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: String::new(),
             range_days: json!(365),
             view_kind: ActivityViewKind::Activity,
@@ -164,7 +165,7 @@ fn concurrent_page_refresh_cannot_downgrade_year_warmup() {
     let owner = "usr_self";
     write_batch(
         &db,
-        owner,
+        &OwnerId::new(owner),
         &GameLogWriteBatch {
             locations: vec![GameLogLocationEntry {
                 created_at: "2025-01-05T01:00:00Z".to_string(),
@@ -186,7 +187,7 @@ fn concurrent_page_refresh_cannot_downgrade_year_warmup() {
         warmup_barrier.wait();
         activity_self_sessions_warmup(
             warmup_db.as_ref(),
-            owner.to_string(),
+            OwnerId::new(owner),
             365,
             Some(ms("2025-01-06T00:00:00Z")),
         )
@@ -199,7 +200,7 @@ fn concurrent_page_refresh_cannot_downgrade_year_warmup() {
         activity_view_build(
             page_db.as_ref(),
             ActivityViewBuildInput {
-                owner_user_id: owner.to_string(),
+                owner_user_id: OwnerId::new(owner),
                 target_user_id: owner.to_string(),
                 is_self: true,
                 range_days: 30,
@@ -230,7 +231,7 @@ fn activity_view_build_returns_matching_cached_self_view() {
     activity_bucket_cache_upsert(
         &db,
         ActivityBucketCacheInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: String::new(),
             range_days: json!(7),
             view_kind: ActivityViewKind::Activity,
@@ -254,7 +255,7 @@ fn activity_view_build_returns_matching_cached_self_view() {
     let view = activity_view_build(
         &db,
         ActivityViewBuildInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: owner.to_string(),
             is_self: true,
             range_days: 7,
@@ -281,7 +282,7 @@ fn build_friend_view(
     activity_view_build(
         db,
         ActivityViewBuildInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             is_self: false,
             range_days,
@@ -314,10 +315,11 @@ fn activity_friend_presence_last_created_at_returns_global_max() {
     add_presence(&db, owner, friend, "2025-01-05T02:00:00Z", "Offline");
     add_presence(&db, owner, friend, "2025-01-04T23:00:00Z", "Online");
 
-    let last = activity_friend_presence_last_created_at(&db, owner, friend).unwrap();
+    let last = activity_friend_presence_last_created_at(&db, &OwnerId::new(owner), friend).unwrap();
     assert_eq!(last, "2025-01-05T02:00:00Z");
 
-    let missing = activity_friend_presence_last_created_at(&db, owner, "usr_nobody").unwrap();
+    let missing =
+        activity_friend_presence_last_created_at(&db, &OwnerId::new(owner), "usr_nobody").unwrap();
     assert_eq!(missing, "");
 }
 
@@ -363,7 +365,7 @@ fn activity_view_build_friend_rebuilds_legacy_cache_without_has_any_data() {
     activity_bucket_cache_upsert(
         &db,
         ActivityBucketCacheInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             range_days: json!(7),
             view_kind: ActivityViewKind::Activity,
@@ -393,7 +395,7 @@ fn activity_view_build_friend_rebuilds_legacy_cache_without_has_any_data() {
     let cached = activity_bucket_cache_get(
         &db,
         ActivityBucketCacheQueryInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             range_days: json!(7),
             view_kind: ActivityViewKind::Activity,
@@ -436,7 +438,7 @@ fn activity_view_build_computes_friend_presence_and_writes_cache() {
     let view = activity_view_build(
         &db,
         ActivityViewBuildInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             is_self: false,
             range_days: 7,
@@ -456,7 +458,7 @@ fn activity_view_build_computes_friend_presence_and_writes_cache() {
     let cached = activity_bucket_cache_get(
         &db,
         ActivityBucketCacheQueryInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             range_days: json!(7),
             view_kind: ActivityViewKind::Activity,
@@ -482,7 +484,7 @@ fn activity_overlap_view_build_uses_pair_cursor_and_exclude_key() {
     let view = activity_overlap_view_build(
         &db,
         ActivityOverlapViewBuildInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             current_user_id: owner.to_string(),
             target_user_id: friend.to_string(),
             range_days: 7,
@@ -507,7 +509,7 @@ fn activity_overlap_view_build_uses_pair_cursor_and_exclude_key() {
     let cached = activity_bucket_cache_get(
         &db,
         ActivityBucketCacheQueryInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             range_days: json!(7),
             view_kind: ActivityViewKind::Overlap,
@@ -531,7 +533,7 @@ fn activity_view_build_all_range_resolves_friend_span_and_uses_sentinel_cache() 
     let view = activity_view_build(
         &db,
         ActivityViewBuildInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             is_self: false,
             range_days: 0,
@@ -548,7 +550,7 @@ fn activity_view_build_all_range_resolves_friend_span_and_uses_sentinel_cache() 
     assert!(activity_bucket_cache_get(
         &db,
         ActivityBucketCacheQueryInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: friend.to_string(),
             range_days: json!(0),
             view_kind: ActivityViewKind::Activity,
@@ -565,7 +567,7 @@ fn activity_view_build_all_range_backfills_old_self_gamelog() {
     let owner = "usr_self";
     write_batch(
         &db,
-        owner,
+        &OwnerId::new(owner),
         &GameLogWriteBatch {
             locations: vec![GameLogLocationEntry {
                 created_at: "2024-06-01T01:00:00Z".to_string(),
@@ -583,7 +585,7 @@ fn activity_view_build_all_range_backfills_old_self_gamelog() {
     let view = activity_view_build(
         &db,
         ActivityViewBuildInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: owner.to_string(),
             is_self: true,
             range_days: 0,
@@ -600,7 +602,7 @@ fn activity_view_build_all_range_backfills_old_self_gamelog() {
     assert!(activity_bucket_cache_get(
         &db,
         ActivityBucketCacheQueryInput {
-            owner_user_id: owner.to_string(),
+            owner_user_id: OwnerId::new(owner),
             target_user_id: String::new(),
             range_days: json!(0),
             view_kind: ActivityViewKind::Activity,

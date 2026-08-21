@@ -25,6 +25,7 @@ use vrcx_0_application_core::{
 };
 
 use super::notification_actions::ensure_scope_matches;
+use vrcx_0_persistence::OwnerId;
 
 const BOOP_DISMISS_QUERY_LIMIT: i64 = 50_000;
 const NOTIFICATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
@@ -75,7 +76,7 @@ impl NotificationActionOutcome {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationHideExpireInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     pub target: NotificationTarget,
@@ -84,7 +85,7 @@ pub struct NotificationHideExpireInput {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationRequestInviteAcceptInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     pub target: NotificationTarget,
@@ -115,7 +116,7 @@ pub struct NotificationInstanceInviteInput {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationInviteResponseInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     pub target: NotificationTarget,
@@ -127,7 +128,7 @@ pub struct NotificationInviteResponseInput {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationBoopDismissInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     pub sender_user_id: String,
@@ -136,7 +137,7 @@ pub struct NotificationBoopDismissInput {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationBoopReplyInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     pub target: NotificationTarget,
@@ -147,7 +148,7 @@ pub struct NotificationBoopReplyInput {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationRespondInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     pub target: NotificationTarget,
@@ -219,7 +220,7 @@ pub struct BoopNotificationRow {
 }
 
 pub trait NotificationChainActions: Send + Sync {
-    fn ensure_scope(&self, owner_user_id: &str, endpoint: &str) -> Result<()>;
+    fn ensure_scope(&self, owner_user_id: &OwnerId, endpoint: &str) -> Result<()>;
     fn ensure_active_scope(&self, endpoint: &str) -> Result<()>;
     fn execute_remote(
         &self,
@@ -247,12 +248,12 @@ pub struct VrchatNotificationChainActions<'a> {
 }
 
 impl NotificationChainActions for VrchatNotificationChainActions<'_> {
-    fn ensure_scope(&self, owner_user_id: &str, endpoint: &str) -> Result<()> {
+    fn ensure_scope(&self, owner_user_id: &OwnerId, endpoint: &str) -> Result<()> {
         ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
         let stale = || {
             Error::Custom("Notification action request is stale for the current auth scope.".into())
         };
-        if self.expected_scope.current_user_id != owner_user_id {
+        if self.expected_scope.current_user_id != owner_user_id.as_str() {
             return Err(stale());
         }
         if !endpoint.is_empty()
@@ -264,7 +265,10 @@ impl NotificationChainActions for VrchatNotificationChainActions<'_> {
     }
 
     fn ensure_active_scope(&self, endpoint: &str) -> Result<()> {
-        self.ensure_scope(&self.expected_scope.current_user_id, endpoint)
+        self.ensure_scope(
+            &OwnerId::new(self.expected_scope.current_user_id.clone()),
+            endpoint,
+        )
     }
 
     fn execute_remote(
@@ -510,7 +514,7 @@ pub async fn hide_and_expire_notification(
 ) -> Result<NotificationActionOutcome> {
     let target = normalize_target(input.target);
     actions.ensure_scope(
-        normalize_text(&input.owner_user_id).as_str(),
+        &OwnerId::new(normalize_text(input.owner_user_id.as_str())),
         &input.endpoint,
     )?;
     let outcome = hide_then_expire(actions, &target).await;
@@ -523,7 +527,7 @@ pub async fn accept_request_invite_notification(
 ) -> Result<NotificationActionOutcome> {
     let target = normalize_target(input.target);
     actions.ensure_scope(
-        normalize_text(&input.owner_user_id).as_str(),
+        &OwnerId::new(normalize_text(input.owner_user_id.as_str())),
         &input.endpoint,
     )?;
     let receiver_user_id = target.sender_user_id.clone();
@@ -619,7 +623,7 @@ pub async fn send_invite_response_notification(
 ) -> Result<NotificationActionOutcome> {
     let target = normalize_target(input.target);
     actions.ensure_scope(
-        normalize_text(&input.owner_user_id).as_str(),
+        &OwnerId::new(normalize_text(input.owner_user_id.as_str())),
         &input.endpoint,
     )?;
     let image_data = normalize_text(&input.image_data);
@@ -683,7 +687,7 @@ pub async fn dismiss_boop_notifications(
 ) -> Result<NotificationActionOutcome> {
     let sender_user_id = normalize_text(&input.sender_user_id);
     actions.ensure_scope(
-        normalize_text(&input.owner_user_id).as_str(),
+        &OwnerId::new(normalize_text(input.owner_user_id.as_str())),
         &input.endpoint,
     )?;
     let mut outcome = NotificationActionOutcome::new(NotificationActionStatus::Applied);
@@ -700,7 +704,7 @@ pub async fn send_boop_reply_notification(
 ) -> Result<NotificationActionOutcome> {
     let target = normalize_target(input.target);
     actions.ensure_scope(
-        normalize_text(&input.owner_user_id).as_str(),
+        &OwnerId::new(normalize_text(input.owner_user_id.as_str())),
         &input.endpoint,
     )?;
     let sender_user_id = target.sender_user_id.clone();
@@ -742,7 +746,7 @@ pub async fn respond_and_expire_notification(
 ) -> Result<NotificationActionOutcome> {
     let target = normalize_target(input.target);
     actions.ensure_scope(
-        normalize_text(&input.owner_user_id).as_str(),
+        &OwnerId::new(normalize_text(input.owner_user_id.as_str())),
         &input.endpoint,
     )?;
     let response_type = normalize_text(&input.response_type);

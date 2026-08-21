@@ -31,6 +31,7 @@ use super::state::{
     ActiveRealtimeContext, RealtimeHostRuntimeMessageSink, RealtimeHostRuntimeState,
 };
 use super::{RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeStopRequest};
+use vrcx_0_persistence::OwnerId;
 
 enum RealtimeFriendBaselineStart {
     Supplied(HashMap<String, FriendRecord>),
@@ -274,12 +275,15 @@ impl RealtimeHostRuntime {
             pending_projection.baseline_revision = baseline_revision;
             self.apply_friend_output_owned(
                 &friend_owner,
-                RealtimeFriendOutput::from_projection(session.user_id.clone(), pending_projection),
+                RealtimeFriendOutput::from_projection(
+                    OwnerId::new(session.user_id.clone()),
+                    pending_projection,
+                ),
             );
         }
         self.apply_reconciled_friend_feed_entries_owned(
             &friend_owner,
-            &session.user_id,
+            &OwnerId::new(session.user_id.clone()),
             generation,
             baseline_revision,
             pending_feed_entries,
@@ -516,7 +520,7 @@ impl RealtimeHostRuntime {
             }],
             ..RealtimePersistenceBatch::default()
         };
-        let result = write_realtime_batch(&self.deps.db, &user_id, &batch)
+        let result = write_realtime_batch(&self.deps.db, &OwnerId::new(user_id), &batch)
             .map_err(|error| Error::Custom(format!("expire realtime notification: {error}")));
         match &result {
             Ok(_) => {

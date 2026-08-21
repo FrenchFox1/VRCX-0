@@ -9,6 +9,7 @@ use vrcx_0_persistence::DatabaseService;
 use crate::config::PlaybookMode;
 use crate::endpoints::AssistantRuntimeSelection;
 use crate::entities::Entity;
+use vrcx_0_persistence::OwnerId;
 
 const SESSION_CONTENT_CACHE_CAPACITY: usize = 8;
 
@@ -73,7 +74,7 @@ pub struct SessionSummary {
 
 #[derive(Clone)]
 struct StoredSession {
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     title: String,
     active_turn: Option<ActiveTurn>,
     endpoint_id: Option<String>,
@@ -194,8 +195,8 @@ impl SessionStore {
         }
     }
 
-    fn ensure_owner_loaded(&self, owner_user_id: &str) {
-        let owner_user_id = owner_user_id.trim();
+    fn ensure_owner_loaded(&self, owner_user_id: &OwnerId) {
+        let owner_user_id = owner_user_id.as_str().trim();
         let mut loaded_owners = self.loaded_owners.lock().unwrap();
         if loaded_owners.contains(owner_user_id) {
             return;
@@ -204,7 +205,7 @@ impl SessionStore {
             loaded_owners.insert(owner_user_id.to_string());
             return;
         };
-        match assistant::assistant_sessions_load(db, owner_user_id) {
+        match assistant::assistant_sessions_load(db, &OwnerId::new(owner_user_id)) {
             Ok(persisted) => {
                 let mut state = self.state.lock().unwrap();
                 for entry in persisted {
@@ -250,7 +251,7 @@ impl SessionStore {
 
     fn persisted_messages(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         session_id: &str,
     ) -> vrcx_0_persistence::Result<Vec<Message>> {
         let Some(db) = self.db.as_ref() else {
@@ -308,7 +309,7 @@ impl SessionStore {
 
     fn upsert_row(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         id: &str,
         title: &str,
         created_at: &str,
@@ -351,7 +352,7 @@ impl SessionStore {
         created_at: &str,
         updated_at: &str,
         message: &Message,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
     ) -> bool {
         let session_persisted = self.upsert_row(owner_user_id, id, title, created_at, updated_at);
         let Some(db) = self.db.as_ref() else {
@@ -383,7 +384,7 @@ impl SessionStore {
 
     fn insert_new(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         id: String,
         runtime: AssistantRuntimeSelection,
     ) -> Session {
@@ -391,7 +392,7 @@ impl SessionStore {
         let _load = load.lock().unwrap();
         let now = now_rfc3339();
         let stored = StoredSession {
-            owner_user_id: owner_user_id.trim().to_string(),
+            owner_user_id: OwnerId::new(owner_user_id.as_str().trim()),
             title: String::new(),
             active_turn: None,
             endpoint_id: normalize_optional(runtime.endpoint_id),
@@ -418,7 +419,7 @@ impl SessionStore {
 
     pub fn create_session_with_runtime(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         runtime: AssistantRuntimeSelection,
     ) -> Session {
         self.ensure_owner_loaded(owner_user_id);
@@ -427,7 +428,7 @@ impl SessionStore {
 
     pub fn ensure_session_with_runtime(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         session_id: Option<String>,
         runtime: AssistantRuntimeSelection,
     ) -> vrcx_0_persistence::Result<Option<Session>> {
@@ -446,7 +447,7 @@ impl SessionStore {
             state
                 .sessions
                 .get(&id)
-                .map(|session| owner_visible(&session.owner_user_id, owner_user_id))
+                .map(|session| owner_visible(session.owner_user_id.as_str(), owner_user_id))
         };
         if visible == Some(false) {
             return Ok(None);
@@ -476,7 +477,7 @@ impl SessionStore {
 
     pub fn get(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         session_id: &str,
     ) -> vrcx_0_persistence::Result<Option<Session>> {
         if !self.is_visible_to(session_id, owner_user_id) {
@@ -491,13 +492,13 @@ impl SessionStore {
         self.state.lock().unwrap().materialize_loaded(session_id)
     }
 
-    pub fn list(&self, owner_user_id: &str) -> Vec<SessionSummary> {
+    pub fn list(&self, owner_user_id: &OwnerId) -> Vec<SessionSummary> {
         self.ensure_owner_loaded(owner_user_id);
         let state = self.state.lock().unwrap();
         let mut summaries: Vec<SessionSummary> = state
             .sessions
             .iter()
-            .filter(|(_, session)| owner_visible(&session.owner_user_id, owner_user_id))
+            .filter(|(_, session)| owner_visible(session.owner_user_id.as_str(), owner_user_id))
             .map(|(id, session)| SessionSummary {
                 id: id.clone(),
                 title: session.title.clone(),
@@ -512,7 +513,7 @@ impl SessionStore {
         summaries
     }
 
-    pub fn delete(&self, owner_user_id: &str, session_id: &str) {
+    pub fn delete(&self, owner_user_id: &OwnerId, session_id: &str) {
         if !self.is_visible_to(session_id, owner_user_id) {
             return;
         }
@@ -659,7 +660,7 @@ impl SessionStore {
 
     pub fn set_runtime(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         session_id: &str,
         runtime: AssistantRuntimeSelection,
     ) -> vrcx_0_persistence::Result<Option<Session>> {
@@ -683,23 +684,23 @@ impl SessionStore {
         Ok(Some(materialized))
     }
 
-    pub fn is_visible_to(&self, session_id: &str, owner_user_id: &str) -> bool {
+    pub fn is_visible_to(&self, session_id: &str, owner_user_id: &OwnerId) -> bool {
         self.ensure_owner_loaded(owner_user_id);
         self.is_loaded_session_visible_to(session_id, owner_user_id)
     }
 
-    fn is_loaded_session_visible_to(&self, session_id: &str, owner_user_id: &str) -> bool {
+    fn is_loaded_session_visible_to(&self, session_id: &str, owner_user_id: &OwnerId) -> bool {
         self.state
             .lock()
             .unwrap()
             .sessions
             .get(session_id)
-            .is_some_and(|session| owner_visible(&session.owner_user_id, owner_user_id))
+            .is_some_and(|session| owner_visible(session.owner_user_id.as_str(), owner_user_id))
     }
 }
 
-fn owner_visible(session_owner: &str, owner_user_id: &str) -> bool {
-    session_owner.is_empty() || session_owner == owner_user_id.trim()
+fn owner_visible(session_owner: &str, owner_user_id: &OwnerId) -> bool {
+    session_owner.is_empty() || session_owner == owner_user_id.as_str().trim()
 }
 
 fn persist_ui_state(

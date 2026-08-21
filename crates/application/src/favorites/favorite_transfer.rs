@@ -19,6 +19,7 @@ use vrcx_0_application_core::vrchat_api::{execute_api_command, normalize_text, V
 use vrcx_0_application_core::RuntimeDiagnostics;
 use vrcx_0_application_core::RuntimeSyncEngine;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_persistence::OwnerId;
 use vrcx_0_vrchat_client::http_api::parse_api_json;
 
 const FAVORITE_RECOVERED_GROUP: &str = "Recovered";
@@ -726,7 +727,7 @@ fn add_local_favorite(
     deps.mutation.ensure_current()?;
     let affected = vrcx_0_persistence::favorites::favorite_add(
         deps.db,
-        Some(&deps.mutation.scope().current_user_id),
+        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
         input.kind,
         normalize_text(&item.entity_id),
         normalize_text(&input.target.group),
@@ -745,13 +746,13 @@ fn add_local_fallback_favorite(
     deps.mutation.ensure_current()?;
     super::local_favorites::create_local_favorite_group(
         deps.db,
-        &deps.mutation.scope().current_user_id,
+        &OwnerId::new(deps.mutation.scope().current_user_id.clone()),
         input.kind,
         FAVORITE_RECOVERED_GROUP.to_string(),
     )?;
     let affected = vrcx_0_persistence::favorites::favorite_add(
         deps.db,
-        Some(&deps.mutation.scope().current_user_id),
+        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
         input.kind,
         normalize_text(&item.entity_id),
         FAVORITE_RECOVERED_GROUP.to_string(),
@@ -770,7 +771,7 @@ fn delete_local_favorite(
     deps.mutation.ensure_current()?;
     Ok(vrcx_0_persistence::favorites::favorite_remove(
         deps.db,
-        Some(&deps.mutation.scope().current_user_id),
+        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
         input.kind,
         normalize_text(&item.entity_id),
         normalize_text(&input.source.group),
@@ -785,7 +786,7 @@ fn move_local_favorite(
     deps.mutation.ensure_current()?;
     let result = vrcx_0_persistence::favorites::favorite_move(
         deps.db,
-        Some(&deps.mutation.scope().current_user_id),
+        Some(&OwnerId::new(deps.mutation.scope().current_user_id.clone())),
         input.kind,
         normalize_text(&item.entity_id),
         normalize_text(&input.source.group),

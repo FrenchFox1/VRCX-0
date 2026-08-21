@@ -6,6 +6,7 @@ use super::*;
 use crate::realtime::RealtimeSessionContext;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_persistence::OwnerId;
 
 #[test]
 fn sync_friend_snapshot_debounces_online_to_offline() -> Result<()> {
@@ -425,7 +426,7 @@ fn causal_sync_returns_canonical_snapshot_after_newer_friend_delete() -> Result<
     )?;
     write_realtime_batch(
         runtime.runtime().deps.db.as_ref(),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -513,7 +514,7 @@ fn causal_watermark_rejects_baseline_after_local_friend_log_mutation() -> Result
     )?;
     write_realtime_batch(
         runtime.runtime().deps.db.as_ref(),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -566,7 +567,7 @@ fn seeded_friend_log(dir: &TestDir, target_user_id: &str) -> Result<DatabaseServ
     config_store::set_bool(&db, "friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: target_user_id.into(),
@@ -751,7 +752,7 @@ fn reconcile_records_display_name_change_for_existing_friend() -> Result<()> {
     config_store::set_bool(&db, "friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -827,7 +828,7 @@ fn reconcile_records_and_projects_trust_only_change_once() -> Result<()> {
     config_store::set_bool(&db, "friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -904,7 +905,7 @@ fn reconcile_skips_placeholder_records() -> Result<()> {
     config_store::set_bool(&db, "friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -1041,7 +1042,7 @@ fn reconcile_updates_legacy_equivalent_trust_without_history_or_feed() -> Result
     config_store::set_bool(&db, "friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -1279,7 +1280,7 @@ fn active_baseline_trust_change_fans_out_after_atomic_persistence() -> Result<()
     )?;
     write_realtime_batch(
         runtime.runtime().deps.db.as_ref(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -1336,7 +1337,7 @@ fn active_baseline_uses_runtime_feed_persistence_state() -> Result<()> {
     )?;
     write_realtime_batch(
         runtime.runtime().deps.db.as_ref(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -1641,7 +1642,7 @@ fn friend_projection_clears_feed_entries_when_persistence_fails() -> Result<()> 
     });
 
     let mut output = RealtimeFriendOutput::from_projection(
-        active_session.user_id,
+        OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
             feed_entries: vec![feed_entry.clone()],
@@ -1687,7 +1688,7 @@ fn disabled_feed_persistence_keeps_projection_and_other_batch_writes() -> Result
         })
         .collect::<Vec<_>>();
     let mut output = RealtimeFriendOutput::from_projection(
-        active_session.user_id.clone(),
+        OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
             feed_entries: feed_entries.clone(),
@@ -1754,7 +1755,7 @@ fn disabled_feed_persistence_keeps_projection_and_other_batch_writes() -> Result
         "displayName": "Friend"
     });
     let mut enabled_output = RealtimeFriendOutput::from_projection(
-        active_session.user_id.clone(),
+        OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
             feed_entries: vec![enabled_entry.clone()],
@@ -1802,7 +1803,7 @@ fn disabled_avatar_feed_persistence_keeps_feed_and_activity_delivery() -> Result
     });
     let feed_entries = vec![avatar_entry, gps_entry];
     let mut output = RealtimeFriendOutput::from_projection(
-        active_session.user_id.clone(),
+        OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
             feed_entries: feed_entries.clone(),
@@ -1873,7 +1874,7 @@ fn changing_avatar_feed_persistence_keeps_existing_live_entries() -> Result<()> 
         runtime_with_active_session("avatar-feed-switch-keeps-live")?;
     runtime.runtime().emit_feed_entries(
         7,
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         vec![json!({
             "created_at": "2026-06-21T00:00:00.000Z",
             "type": "Avatar",

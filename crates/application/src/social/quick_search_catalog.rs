@@ -24,6 +24,7 @@ use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestIn
 
 use crate::{get_my_avatars, MyAvatarsDeps, MyAvatarsInput};
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_persistence::OwnerId;
 
 const WORLD_PAGE_SIZE: i32 = 50;
 const FAVORITE_PAGE_SIZE: i32 = 300;
@@ -214,18 +215,20 @@ impl QuickSearchRuntime {
                     HashMap::new()
                 }
             };
-            let notes =
-                match memo_list_user_notes(self.inner.db.as_ref(), scope.current_user_id.clone()) {
-                    Ok(rows) => rows
-                        .into_iter()
-                        .map(|row| (row.user_id, row.note))
-                        .collect::<HashMap<_, _>>(),
-                    Err(error) => {
-                        failures += 1;
-                        tracing::debug!(error = %error, "quick search user notes failed");
-                        HashMap::new()
-                    }
-                };
+            let notes = match memo_list_user_notes(
+                self.inner.db.as_ref(),
+                OwnerId::new(scope.current_user_id.clone()),
+            ) {
+                Ok(rows) => rows
+                    .into_iter()
+                    .map(|row| (row.user_id, row.note))
+                    .collect::<HashMap<_, _>>(),
+                Err(error) => {
+                    failures += 1;
+                    tracing::debug!(error = %error, "quick search user notes failed");
+                    HashMap::new()
+                }
+            };
             (memos, notes)
         } else {
             (HashMap::new(), HashMap::new())

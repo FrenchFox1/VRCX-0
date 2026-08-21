@@ -1,9 +1,10 @@
+use crate::ownership::OwnerId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolveUserInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub name_query: String,
     #[serde(default)]
     pub limit: Option<i64>,

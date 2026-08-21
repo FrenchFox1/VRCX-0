@@ -1,6 +1,7 @@
 use super::test_support::*;
 use super::*;
 use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardWorldCacheTaskExecutor;
@@ -185,7 +186,7 @@ fn resolved_feed_world_name_patches_the_rust_cache_and_emits_feed_projection() -
         runtime_with_active_session("world-warm-feed-correction")?;
     runtime.runtime().emit_feed_entries(
         7,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         vec![json!({
             "type": "GPS",
             "created_at": "2026-06-21T00:00:00.000Z",

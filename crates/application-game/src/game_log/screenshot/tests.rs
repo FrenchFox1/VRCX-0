@@ -71,7 +71,7 @@ fn write_visited_location(db: &DatabaseService, join_leave: Vec<GameLogJoinLeave
         join_leave,
         ..Default::default()
     };
-    write_batch(db, "", &batch).unwrap();
+    write_batch(db, &OwnerId::new(""), &batch).unwrap();
 }
 
 fn context_at(db: &DatabaseService, created_at: &str) -> Option<ScreenshotContext> {
@@ -80,7 +80,7 @@ fn context_at(db: &DatabaseService, created_at: &str) -> Option<ScreenshotContex
         path: "screenshot.png".to_string(),
         snapshot: RuntimeSnapshot::default(),
     };
-    screenshot_context(db, "", &input).unwrap()
+    screenshot_context(db, &OwnerId::new(""), &input).unwrap()
 }
 
 #[test]
@@ -102,7 +102,9 @@ fn snapshot_location_short_circuits_the_database_lookup() {
         },
     };
 
-    let context = screenshot_context(&db, "", &input).unwrap().unwrap();
+    let context = screenshot_context(&db, &OwnerId::new(""), &input)
+        .unwrap()
+        .unwrap();
     assert_eq!(context.location, LOCATION);
     assert_eq!(context.world_name, "Live World");
     assert_eq!(context.players.len(), 1);

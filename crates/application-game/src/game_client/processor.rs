@@ -18,6 +18,7 @@ use crate::{Error, Result};
 use crate::{HostSessionRuntime, RuntimeAuthScope, TaskSupervisor};
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
 use vrcx_0_core::time::now_iso;
+use vrcx_0_persistence::OwnerId;
 
 const CRASH_RELAUNCH_MESSAGE: &str = "VRChat crashed, attempting to rejoin last instance.";
 
@@ -343,7 +344,7 @@ impl GameClientProcessor {
         let created_at = now_iso();
         let affected_count = write_batch(
             &self.deps.db,
-            &self.deps.auth_scope.snapshot().current_user_id,
+            &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
             &GameLogWriteBatch {
                 events: vec![GameLogEventEntry {
                     created_at: created_at.clone(),

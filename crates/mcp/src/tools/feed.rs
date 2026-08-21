@@ -21,6 +21,7 @@ use super::common::{
     resolve_optional_target_or_result, structured_result, TargetResolutionOutcome,
     TimeWindowParams, WithResolution,
 };
+use vrcx_0_persistence::OwnerId;
 
 const DEFAULT_LIMIT: i64 = 20;
 const MAX_LIMIT: i64 = 50;
@@ -107,7 +108,7 @@ impl VrcxMcpServer {
             search_friend_feed_page(
                 db.as_ref(),
                 FriendFeedSearchQuery {
-                    owner_user_id,
+                    owner_user_id: owner_user_id.clone(),
                     target_user_id,
                     query: query.unwrap_or_default(),
                     filters,
@@ -182,7 +183,7 @@ impl FriendFeedSearchInterruption {
 }
 
 struct FriendFeedSearchQuery {
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     target_user_id: Option<String>,
     query: String,
     filters: Vec<FeedFilter>,
@@ -211,7 +212,7 @@ where
     let mut rows = feed::feed_rows_query_interruptible(
         db,
         FeedRowsQueryInput {
-            user_id: input.owner_user_id,
+            user_id: input.owner_user_id.to_string(),
             mode,
             search: input.query,
             filters: input.filters,

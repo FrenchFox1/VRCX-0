@@ -3,6 +3,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Mutex,
 };
+use vrcx_0_persistence::OwnerId;
 
 #[cfg(test)]
 use std::time::Duration;
@@ -42,7 +43,7 @@ struct MutualGraphFetchInner {
 
 struct MutualGraphFetchJob {
     run_id: u64,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     endpoint: String,
     friend_ids: Vec<String>,
     db: Arc<DatabaseService>,
@@ -108,7 +109,7 @@ impl MutualGraphFetchRuntime {
                 Error::Custom(format!("mutual graph fetch lock poisoned: {error}"))
             })?;
             if inner.status.status.is_active() {
-                if inner.status.owner_user_id == owner_user_id {
+                if inner.status.owner_user_id == OwnerId::new(owner_user_id) {
                     return Ok(inner.status.clone());
                 }
                 return Err(Error::Custom(
@@ -120,7 +121,7 @@ impl MutualGraphFetchRuntime {
                 run_id,
                 revision: 1,
                 status: MutualGraphFetchState::Running,
-                owner_user_id: owner_user_id.clone(),
+                owner_user_id: OwnerId::new(owner_user_id.clone()),
                 total_friends: friend_ids.len(),
                 processed_friends: 0,
                 current_friend_id: String::new(),
@@ -144,7 +145,7 @@ impl MutualGraphFetchRuntime {
             runtime
                 .run_fetch_job(MutualGraphFetchJob {
                     run_id,
-                    owner_user_id,
+                    owner_user_id: OwnerId::new(owner_user_id),
                     endpoint,
                     friend_ids,
                     db,
@@ -160,7 +161,7 @@ impl MutualGraphFetchRuntime {
     }
 
     pub fn cancel(&self, input: MutualGraphFetchCancelInput) -> Result<MutualGraphFetchStatus> {
-        let owner_user_id = normalize_id(&input.owner_user_id);
+        let owner_user_id = normalize_id(input.owner_user_id.as_str());
         let status = {
             let mut inner = self.shared.state.lock().map_err(|error| {
                 Error::Custom(format!("mutual graph fetch lock poisoned: {error}"))
@@ -168,7 +169,9 @@ impl MutualGraphFetchRuntime {
             if !inner.status.status.is_active() {
                 return Ok(inner.status.clone());
             }
-            if !owner_user_id.is_empty() && inner.status.owner_user_id != owner_user_id {
+            if !owner_user_id.is_empty()
+                && inner.status.owner_user_id != OwnerId::new(owner_user_id)
+            {
                 return Ok(inner.status.clone());
             }
             if let Some(cancel_flag) = &inner.cancel_flag {
@@ -186,7 +189,7 @@ impl MutualGraphFetchRuntime {
 
     pub fn cancel_active(&self) -> Result<MutualGraphFetchStatus> {
         self.cancel(MutualGraphFetchCancelInput {
-            owner_user_id: String::new(),
+            owner_user_id: OwnerId::default(),
         })
     }
 
@@ -289,7 +292,7 @@ impl MutualGraphFetchRuntime {
         if !failed_friend_ids.is_empty() {
             match vrcx_0_persistence::mutual_graph::mutual_graph_snapshot_get(
                 db.as_ref(),
-                owner_user_id.clone(),
+                owner_user_id.to_string(),
             ) {
                 Ok(cached) => preserve_failed_friend_cache(
                     &mut entries,
@@ -315,7 +318,7 @@ impl MutualGraphFetchRuntime {
 
         match vrcx_0_persistence::mutual_graph::mutual_graph_snapshot_commit(
             db.as_ref(),
-            owner_user_id,
+            owner_user_id.to_string(),
             entries,
             meta_entries,
         ) {
@@ -415,7 +418,7 @@ fn idle_status() -> MutualGraphFetchStatus {
         run_id: 0,
         revision: 0,
         status: MutualGraphFetchState::Idle,
-        owner_user_id: String::new(),
+        owner_user_id: OwnerId::default(),
         total_friends: 0,
         processed_friends: 0,
         current_friend_id: String::new(),

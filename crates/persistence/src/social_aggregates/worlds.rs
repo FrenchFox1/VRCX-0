@@ -1,7 +1,7 @@
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
 use crate::favorites;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::Error;
 use vrcx_0_core::FavoriteEntityKind;
 
@@ -14,7 +14,7 @@ use super::types::{
 
 pub fn search_worlds_visited(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     input: SearchWorldsVisitedInput,
 ) -> Result<SearchWorldsVisitedOutput, Error> {
     let limit = input.limit.clamp(1, 100);
@@ -70,7 +70,7 @@ fn worlds_visited_summary(rows: &[VisitedWorldRow]) -> String {
 
 pub fn favorite_local(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     input: FavoriteLocalInput,
 ) -> Result<FavoriteOutput, Error> {
     let kind = input.kind;
@@ -110,7 +110,7 @@ impl FavoriteAction {
     fn apply(
         self,
         db: &DatabaseService,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         kind: FavoriteEntityKind,
         entity_id: &str,
         group: &str,

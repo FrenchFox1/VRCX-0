@@ -10,10 +10,11 @@ use super::{
     RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection, RealtimeNotificationOutput,
     RealtimeNotificationProjection, RealtimeNotificationUpsert,
 };
+use vrcx_0_persistence::OwnerId;
 
 #[cfg(any(test, feature = "test-utils"))]
 pub fn apply_notification_ws_message(
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     generation: u64,
     payload: &RealtimeWsMessagePayload,
@@ -23,7 +24,7 @@ pub fn apply_notification_ws_message(
 }
 
 pub(crate) fn apply_notification_ws_event(
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     generation: u64,
     event_kind: &RealtimeWsEventKind,
@@ -35,7 +36,7 @@ pub(crate) fn apply_notification_ws_event(
     let content = payload.json.get("content").unwrap_or(&Value::Null);
     let now = payload.received_at.clone();
     let mut output = RealtimeNotificationOutput {
-        owner_user_id: owner_user_id.trim().to_string(),
+        owner_user_id: OwnerId::new(owner_user_id.as_str().trim()),
         projection: RealtimeNotificationProjection {
             generation,
             ..RealtimeNotificationProjection::default()
@@ -46,7 +47,7 @@ pub(crate) fn apply_notification_ws_event(
     match event_kind {
         RealtimeWsEventKind::Notification => {
             let notification = normalize_v1_notification(content, &now);
-            if should_persist_v1(&notification, owner_user_id) {
+            if should_persist_v1(&notification, owner_user_id.as_str()) {
                 output
                     .persistence
                     .notification_v1_upserts

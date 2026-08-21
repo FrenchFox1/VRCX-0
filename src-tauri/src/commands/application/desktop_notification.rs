@@ -4,6 +4,7 @@ use tauri::State;
 
 use crate::desktop_notification_activation::DesktopNotificationActivation;
 use crate::state::AppState;
+use vrcx_0_persistence::OwnerId;
 
 #[tauri::command]
 #[specta::specta]
@@ -16,5 +17,5 @@ pub fn app__take_pending_desktop_notification_activation(
     }
     state
         .pending_desktop_notification_activations
-        .take_for_owner(&auth_scope.current_user_id)
+        .take_for_owner(&OwnerId::new(auth_scope.current_user_id))
 }

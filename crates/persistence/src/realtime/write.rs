@@ -3,7 +3,7 @@ use serde_json::Value;
 use crate::common::ParamsBuilder;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry, GameLogLocationTimeUpdate};
-use crate::ownership::owner_id_get_or_insert;
+use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 use vrcx_0_core::trust::trust_level_changed;
 
@@ -32,21 +32,21 @@ struct FriendLogHistoryEntry<'a> {
 
 pub fn write_realtime_batch(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     batch: &RealtimePersistenceBatch,
 ) -> Result<RealtimeWriteCounts, Error> {
     if batch.is_empty() {
         return Ok(RealtimeWriteCounts::default());
     }
 
-    let owner_user_id = normalize_user_id(owner_user_id);
+    let owner_user_id = OwnerId::new(normalize_user_id(owner_user_id.as_str()));
     if owner_user_id.is_empty() {
         return Err(Error::Database(
             "Realtime persistence requires a current user id.".into(),
         ));
     }
     validate_friend_log_backed_feed_entries(batch)?;
-    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
     ensure_realtime_tables(db, &user_prefix)?;
     let has_game_log_writes =
         !batch.game_log_locations.is_empty() || !batch.game_log_location_time_updates.is_empty();
@@ -56,7 +56,7 @@ pub fn write_realtime_batch(
     let owner_id = if has_game_log_writes {
         owner_id_get_or_insert(db, &owner_user_id)?
     } else {
-        0
+        OwnerRowId::UNASSIGNED
     };
     db.write_transaction(|tx| {
         let mut counts = RealtimeWriteCounts::default();
@@ -668,7 +668,7 @@ fn upsert_avatar_time_spent(
 
 fn insert_game_log_location(
     tx: &mut DatabaseWriteTransaction<'_>,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogLocationEntry,
 ) -> Result<u64, Error> {
     if entry.location.trim().is_empty() {
@@ -691,7 +691,7 @@ fn insert_game_log_location(
 
 fn update_game_log_location_time(
     tx: &mut DatabaseWriteTransaction<'_>,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     update: &GameLogLocationTimeUpdate,
 ) -> Result<u64, Error> {
     if update.created_at.trim().is_empty() || update.time < 0 {

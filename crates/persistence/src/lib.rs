@@ -49,5 +49,6 @@ pub use database::schema::{
 };
 pub use database::{optimize_database, DatabaseService, DatabaseUpgradeStatus, FrozenDatabase};
 pub use error::{Error, SqliteErrorCategory};
+pub use ownership::OwnerId;
 
 pub type Result<T> = std::result::Result<T, Error>;

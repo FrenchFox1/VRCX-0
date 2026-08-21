@@ -7,6 +7,7 @@ use crate::state::AppState;
 
 use vrcx_0_application::{FavoriteRow, LocalFavoriteSnapshot};
 use vrcx_0_application_core::FavoriteEntityKind;
+use vrcx_0_persistence::OwnerId;
 
 #[tauri::command(async)]
 #[specta::specta]
@@ -14,7 +15,7 @@ pub fn app__favorite_list(
     state: State<'_, AppState>,
     kind: FavoriteEntityKind,
 ) -> Result<Vec<FavoriteRow>, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_application::list_local_favorites(state.db.as_ref(), &owner_user_id, kind)
         .map_err(AppError::from)
 }
@@ -25,7 +26,7 @@ pub fn app__favorite_local_snapshot(
     state: State<'_, AppState>,
     kind: FavoriteEntityKind,
 ) -> Result<LocalFavoriteSnapshot, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let owner_user_id = OwnerId::new(state.runtime_context.auth_scope.snapshot().current_user_id);
     vrcx_0_application::get_local_favorite_snapshot(state.db.as_ref(), &owner_user_id, kind)
         .map_err(AppError::from)
 }

@@ -27,6 +27,7 @@ use super::{
     FavoriteTransferSelectionInput, FavoriteTransferSelectionResult, LocalFavoriteGroupWrite,
 };
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone)]
 pub struct FavoriteMutationCoordinator {
@@ -191,7 +192,7 @@ impl FavoriteMutationCoordinator {
             .map_err(FavoriteLocalMutationError::Application)?;
         let output = social_aggregates::favorite_local(
             self.db.as_ref(),
-            &mutation.scope().current_user_id,
+            &OwnerId::new(mutation.scope().current_user_id.clone()),
             input,
         )?;
         if !dry_run {

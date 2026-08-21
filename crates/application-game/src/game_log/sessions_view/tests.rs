@@ -112,11 +112,11 @@ fn write_rows(
         video_plays,
         ..Default::default()
     };
-    write_batch(db, "", &batch).unwrap();
+    write_batch(db, &OwnerId::new(""), &batch).unwrap();
 }
 
 fn query(db: &DatabaseService, input: GameLogSessionsQueryInput) -> Vec<GameLogSessionDto> {
-    game_log_sessions_query(db, "", input).unwrap()
+    game_log_sessions_query(db, &OwnerId::new(""), input).unwrap()
 }
 
 #[test]

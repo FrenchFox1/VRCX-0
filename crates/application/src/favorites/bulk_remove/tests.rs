@@ -76,7 +76,7 @@ async fn mixed_batch_keeps_per_item_results_and_continues_failures() {
 
     let result = run_favorite_bulk_remove(
         &actions,
-        "usr_self".into(),
+        OwnerId::new("usr_self"),
         FavoriteEntityKind::World,
         vec![
             item("local", FavoriteBulkRemoveSource::Local),
@@ -114,7 +114,7 @@ async fn remote_success_then_scope_change_stops_remaining_items() {
 
     let result = run_favorite_bulk_remove(
         &actions,
-        "usr_self".into(),
+        OwnerId::new("usr_self"),
         FavoriteEntityKind::World,
         vec![
             item("first", FavoriteBulkRemoveSource::Remote),
@@ -170,7 +170,7 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
     let remote_mutation_gate = RemoteMutationGate::default();
     favorites::favorite_add(
         &db,
-        Some("usr_self"),
+        Some(&OwnerId::new("usr_self")),
         FavoriteEntityKind::Friend,
         "usr_target".into(),
         "Friends".into(),
@@ -199,11 +199,13 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
     .unwrap();
 
     assert_eq!(result.succeeded, 1);
-    assert!(
-        favorites::favorite_list(&db, Some("usr_self"), FavoriteEntityKind::Friend,)
-            .unwrap()
-            .is_empty()
-    );
+    assert!(favorites::favorite_list(
+        &db,
+        Some(&OwnerId::new("usr_self")),
+        FavoriteEntityKind::Friend,
+    )
+    .unwrap()
+    .is_empty());
 }
 
 #[tokio::test]
@@ -226,7 +228,7 @@ async fn selection_chunks_more_than_one_protected_batch() {
             let entity_id = format!("usr_{index}");
             favorites::favorite_add(
                 &db,
-                Some("usr_self"),
+                Some(&OwnerId::new("usr_self")),
                 FavoriteEntityKind::Friend,
                 entity_id.clone(),
                 "Friends".into(),
@@ -260,11 +262,13 @@ async fn selection_chunks_more_than_one_protected_batch() {
     assert_eq!(result.total, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
     assert_eq!(result.succeeded, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
     assert_eq!(result.failed, 0);
-    assert!(
-        favorites::favorite_list(&db, Some("usr_self"), FavoriteEntityKind::Friend,)
-            .unwrap()
-            .is_empty()
-    );
+    assert!(favorites::favorite_list(
+        &db,
+        Some(&OwnerId::new("usr_self")),
+        FavoriteEntityKind::Friend,
+    )
+    .unwrap()
+    .is_empty());
 }
 
 #[tokio::test]
@@ -295,7 +299,7 @@ async fn invalid_items_fail_individually_and_valid_items_still_run() {
 
     let result = run_favorite_bulk_remove(
         &actions,
-        "usr_self".into(),
+        OwnerId::new("usr_self"),
         FavoriteEntityKind::World,
         work_items,
     )

@@ -22,6 +22,7 @@ use vrcx_0_application_core::{
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
     WebClient,
 };
+use vrcx_0_persistence::OwnerId;
 
 pub const GROUP_MODERATION_BATCH_MAX_TARGETS: usize = 250;
 pub const GROUP_MODERATION_BATCH_MAX_OPERATIONS: usize = 1_000;
@@ -40,7 +41,7 @@ struct GroupModerationBatchGuard<'a> {
 impl GroupModerationBatchCoordinator {
     fn try_begin(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         group_id: &str,
     ) -> Result<GroupModerationBatchGuard<'_>> {
         let key = (owner_user_id.to_string(), group_id.to_string());
@@ -89,7 +90,7 @@ pub struct GroupModerationBatchTarget {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchInput {
-    pub expected_owner_user_id: String,
+    pub expected_owner_user_id: OwnerId,
     pub expected_endpoint: String,
     pub group_id: String,
     pub action: GroupModerationBatchAction,
@@ -120,7 +121,7 @@ pub struct GroupModerationBatchItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchResult {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub total: usize,
     pub succeeded: usize,
@@ -135,7 +136,7 @@ pub struct GroupModerationBatchResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchProgress {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub group_id: String,
     pub completed: usize,
@@ -352,7 +353,7 @@ pub async fn run_group_moderation_batch(
     actions: &VrchatGroupModerationBatchActions<'_>,
     input: GroupModerationBatchInput,
 ) -> Result<GroupModerationBatchResult> {
-    if input.expected_owner_user_id.trim() != actions.expected_scope.current_user_id
+    if input.expected_owner_user_id.as_str().trim() != actions.expected_scope.current_user_id
         || input.expected_endpoint.trim() != actions.expected_scope.endpoint
     {
         return Err(Error::Custom(
@@ -360,7 +361,7 @@ pub async fn run_group_moderation_batch(
         ));
     }
     let _guard = coordinator.try_begin(
-        &actions.expected_scope.current_user_id,
+        &OwnerId::new(actions.expected_scope.current_user_id.clone()),
         input.group_id.trim(),
     )?;
     run_group_moderation_batch_with_actions(actions, input).await
@@ -399,7 +400,7 @@ async fn run_group_moderation_batch_with_actions(
                 message: "The authenticated user cannot be targeted by this action.".into(),
             };
             actions.report_progress(GroupModerationBatchProgress {
-                owner_user_id: owner_user_id.clone(),
+                owner_user_id: OwnerId::new(owner_user_id.clone()),
                 endpoint: endpoint.clone(),
                 group_id: prepared.group_id.clone(),
                 completed: index + 1,
@@ -445,7 +446,7 @@ async fn run_group_moderation_batch_with_actions(
         }
 
         actions.report_progress(GroupModerationBatchProgress {
-            owner_user_id: owner_user_id.clone(),
+            owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
             completed: index + 1,
@@ -465,7 +466,7 @@ async fn run_group_moderation_batch_with_actions(
     });
     if completed < total {
         actions.report_progress(GroupModerationBatchProgress {
-            owner_user_id: owner_user_id.clone(),
+            owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
             completed: total,
@@ -473,7 +474,7 @@ async fn run_group_moderation_batch_with_actions(
         });
     }
     Ok(summarize(
-        owner_user_id,
+        OwnerId::new(owner_user_id),
         endpoint,
         items,
         scope_error,
@@ -649,7 +650,7 @@ async fn run_role_target(
 }
 
 fn summarize(
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     endpoint: String,
     items: Vec<GroupModerationBatchItemResult>,
     scope_error: Option<String>,

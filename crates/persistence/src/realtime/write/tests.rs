@@ -11,6 +11,7 @@ use super::{
     normalize_user_table_prefix, write_realtime_batch, FriendLogDelete, FriendLogUpsert,
     NotificationV2Update, RealtimePersistenceBatch,
 };
+use crate::ownership::OwnerId;
 
 struct TestDir {
     path: PathBuf,
@@ -67,7 +68,7 @@ fn writes_friend_log_and_feed_rows() -> Result<(), crate::Error> {
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     let counts = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -108,7 +109,7 @@ fn writes_friend_log_and_feed_rows() -> Result<(), crate::Error> {
 
     let location_counts = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             game_log_locations: vec![GameLogLocationEntry {
                 created_at: "2026-05-15T00:00:05Z".into(),
@@ -142,7 +143,7 @@ fn writes_remote_location_intervals_and_allows_same_location_after_closed_interv
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             game_log_locations: vec![first_location.clone()],
             ..RealtimePersistenceBatch::default()
@@ -150,7 +151,7 @@ fn writes_remote_location_intervals_and_allows_same_location_after_closed_interv
     )?;
     let close_counts = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             game_log_location_time_updates: vec![GameLogLocationTimeUpdate {
                 created_at: first_location.created_at,
@@ -161,7 +162,7 @@ fn writes_remote_location_intervals_and_allows_same_location_after_closed_interv
     )?;
     let restart_counts = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             game_log_locations: vec![GameLogLocationEntry {
                 created_at: "2026-05-15T00:03:20Z".into(),
@@ -195,7 +196,7 @@ fn friend_and_unfriend_feed_markers_are_skipped_not_persisted_as_feed_rows(
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -222,7 +223,7 @@ fn friend_and_unfriend_feed_markers_are_skipped_not_persisted_as_feed_rows(
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_deletes: vec![FriendLogDelete {
                 target_user_id: "usr_friend".into(),
@@ -267,8 +268,8 @@ fn force_history_false_skips_friend_history_on_update() -> Result<(), crate::Err
         ..RealtimePersistenceBatch::default()
     };
 
-    write_realtime_batch(&db, "usr_self", &upsert("Friend"))?;
-    write_realtime_batch(&db, "usr_self", &upsert("Friend Renamed"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert("Friend"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert("Friend Renamed"))?;
 
     let history = db.execute(
         "SELECT user_id FROM usrself_friend_log_history WHERE user_id = @user_id AND type = 'Friend'",
@@ -295,8 +296,12 @@ fn display_name_change_on_update_writes_display_name_history() -> Result<(), cra
         ..RealtimePersistenceBatch::default()
     };
 
-    write_realtime_batch(&db, "usr_self", &upsert("Friend", "Known"))?;
-    write_realtime_batch(&db, "usr_self", &upsert("Friend Renamed", ""))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert("Friend", "Known"))?;
+    write_realtime_batch(
+        &db,
+        &OwnerId::new("usr_self"),
+        &upsert("Friend Renamed", ""),
+    )?;
 
     let history = db.execute(
         "SELECT display_name, previous_display_name FROM usrself_friend_log_history WHERE user_id = @user_id AND type = 'DisplayName'",
@@ -333,12 +338,12 @@ fn trust_change_on_update_writes_trust_history() -> Result<(), crate::Error> {
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &upsert("Friend", "Known User", "2026-05-15T00:00:00Z"),
     )?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &upsert("Friend", "Trusted User", "2026-05-15T00:00:01Z"),
     )?;
 
@@ -372,12 +377,12 @@ fn simultaneous_name_and_trust_change_writes_both_histories() -> Result<(), crat
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &batch("Old Name", "Known User", "2026-05-15T00:00:00Z"),
     )?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &batch("New Name", "Trusted User", "2026-05-15T00:00:01Z"),
     )?;
 
@@ -408,10 +413,10 @@ fn empty_same_and_legacy_equivalent_trust_values_skip_history() -> Result<(), cr
         ..RealtimePersistenceBatch::default()
     };
 
-    write_realtime_batch(&db, "usr_self", &batch("Trusted User"))?;
-    write_realtime_batch(&db, "usr_self", &batch(""))?;
-    write_realtime_batch(&db, "usr_self", &batch("Trusted User"))?;
-    write_realtime_batch(&db, "usr_self", &batch("Veteran User"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &batch("Trusted User"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &batch(""))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &batch("Trusted User"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &batch("Veteran User"))?;
 
     let history = db.execute(
         "SELECT trust_level FROM usrself_friend_log_history WHERE user_id = @user_id AND type = 'TrustLevel'",
@@ -432,7 +437,7 @@ fn failed_trust_batch_rolls_back_current_and_history() -> Result<(), crate::Erro
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -448,7 +453,7 @@ fn failed_trust_batch_rolls_back_current_and_history() -> Result<(), crate::Erro
 
     let result = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -497,11 +502,11 @@ fn unchanged_or_unknown_display_name_skips_display_name_history() -> Result<(), 
         ..RealtimePersistenceBatch::default()
     };
 
-    write_realtime_batch(&db, "usr_self", &upsert(""))?;
-    write_realtime_batch(&db, "usr_self", &upsert("First Known Name"))?;
-    write_realtime_batch(&db, "usr_self", &upsert("First Known Name"))?;
-    write_realtime_batch(&db, "usr_self", &upsert(""))?;
-    write_realtime_batch(&db, "usr_self", &upsert("Unknown"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert(""))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert("First Known Name"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert("First Known Name"))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert(""))?;
+    write_realtime_batch(&db, &OwnerId::new("usr_self"), &upsert("Unknown"))?;
 
     let history = db.execute(
         "SELECT display_name FROM usrself_friend_log_history WHERE user_id = @user_id AND type = 'DisplayName'",
@@ -524,7 +529,7 @@ fn blank_display_name_persists_unknown_not_user_id() -> Result<(), crate::Error>
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -553,7 +558,7 @@ fn rejects_invalid_realtime_feed_entry_type() {
 
     let error = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![json!({
                 "created_at": "2026-05-15T00:00:00Z",
@@ -574,7 +579,7 @@ fn rejects_trust_feed_without_matching_friend_log_upsert() {
 
     let error = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![json!({
                 "created_at": "2026-05-15T00:00:00Z",
@@ -600,7 +605,7 @@ fn rolls_back_friend_log_rows_when_later_feed_entry_fails() -> Result<(), crate:
 
     let error = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
@@ -680,7 +685,7 @@ fn writes_notification_v1_and_v2_schema_columns() -> Result<(), crate::Error> {
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             notification_v1_upserts: vec![json!({
                 "id": "notif_v1",
@@ -789,7 +794,7 @@ fn notification_v2_update_falls_back_to_upsert_with_received_timestamp() -> Resu
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             notification_v2_updates: vec![NotificationV2Update {
                 id: "notif_update".into(),
@@ -845,7 +850,7 @@ fn notification_v2_realtime_upsert_does_not_make_seen_rows_unseen() -> Result<()
     for seen in [true, false] {
         write_realtime_batch(
             &db,
-            "usr_self",
+            &OwnerId::new("usr_self"),
             &RealtimePersistenceBatch {
                 notification_v2_upserts: vec![notification(seen)],
                 ..RealtimePersistenceBatch::default()
@@ -868,7 +873,7 @@ fn rejects_notifications_missing_required_fields() {
 
     let v1_error = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             notification_v1_upserts: vec![json!({
                 "id": "not_1",
@@ -882,7 +887,7 @@ fn rejects_notifications_missing_required_fields() {
 
     let v2_error = write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             notification_v2_upserts: vec![json!({
                 "id": "not_2",

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use vrcx_0_persistence::OwnerId;
 
 use serde::Serialize;
 use specta::Type;
@@ -307,8 +308,8 @@ impl AssistantController {
         })
     }
 
-    fn owner_user_id(&self) -> String {
-        self.auth_scope.snapshot().current_user_id
+    fn owner_user_id(&self) -> OwnerId {
+        OwnerId::new(self.auth_scope.snapshot().current_user_id)
     }
 }
 

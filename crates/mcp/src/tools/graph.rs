@@ -15,6 +15,7 @@ use super::common::{
     resolve_target_or_result, social_aggregates_result, structured_result, TargetResolutionOutcome,
     TimeWindowParams, WithResolution,
 };
+use vrcx_0_persistence::OwnerId;
 
 #[tool_router(router = graph_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -26,7 +27,7 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<RefreshMutualGraphParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        structured_result(self.refresh_mutual_graph_output(owner_user_id, input)?)
+        structured_result(self.refresh_mutual_graph_output(owner_user_id.clone(), input)?)
     }
 
     #[tool(
@@ -48,7 +49,7 @@ impl VrcxMcpServer {
         let output = social_aggregates::get_social_graph(
             self.runtime.db.as_ref(),
             social_aggregates::SocialGraphInput {
-                owner_user_id,
+                owner_user_id: owner_user_id.clone(),
                 user_id,
                 depth: input.depth.unwrap_or(1),
                 max_nodes: input.max_nodes,
@@ -73,7 +74,7 @@ impl VrcxMcpServer {
         social_aggregates_result(social_aggregates::get_friend_circles(
             self.runtime.db.as_ref(),
             social_aggregates::FriendCirclesInput {
-                owner_user_id,
+                owner_user_id: owner_user_id.clone(),
                 max_circles: input.max_circles,
                 max_members_per_circle: input.max_members,
             },
@@ -106,7 +107,7 @@ impl VrcxMcpServer {
         let output = social_aggregates::get_companions_of(
             self.runtime.db.as_ref(),
             social_aggregates::CompanionsOfInput {
-                owner_user_id,
+                owner_user_id: owner_user_id.clone(),
                 user_id: target.user_id,
                 time_window: input.time_window.into(),
                 limit: input.limit,
@@ -123,7 +124,7 @@ impl VrcxMcpServer {
 impl VrcxMcpServer {
     fn refresh_mutual_graph_output(
         &self,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         input: RefreshMutualGraphParams,
     ) -> Result<RefreshMutualGraphOutput, String> {
         let status = self.runtime.mutual_graph_fetch.status();
@@ -144,7 +145,7 @@ impl VrcxMcpServer {
             })?;
         let graph = mutual_graph::mutual_graph_snapshot_get(
             self.runtime.db.as_ref(),
-            owner_user_id.clone(),
+            owner_user_id.to_string(),
         )
         .map_err(map_persistence_error)?;
         let freshness = mutual_graph_freshness(&graph.meta);

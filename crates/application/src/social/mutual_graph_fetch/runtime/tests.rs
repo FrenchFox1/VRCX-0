@@ -133,7 +133,7 @@ fn fetch_scope_uses_the_authenticated_owner_and_endpoint() {
     let auth_scope = RuntimeAuthScope::new();
     let expected = auth_scope.set("usr_owner", "https://api.example.test/api/1");
     let input = MutualGraphFetchStartInput {
-        owner_user_id: "usr_owner".into(),
+        owner_user_id: OwnerId::new("usr_owner"),
         endpoint: "https://stale.example.test/api/1".into(),
         friend_ids: vec!["usr_friend".into()],
     };
@@ -150,7 +150,7 @@ fn fetch_scope_rejects_a_different_owner() {
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_owner", "");
     let input = MutualGraphFetchStartInput {
-        owner_user_id: "usr_other".into(),
+        owner_user_id: OwnerId::new("usr_other"),
         endpoint: String::new(),
         friend_ids: vec!["usr_friend".into()],
     };
@@ -176,7 +176,7 @@ fn start_emits_a_running_status_before_the_job_is_spawned() {
     let started = runtime
         .start(
             MutualGraphFetchStartInput {
-                owner_user_id: "usr_owner".into(),
+                owner_user_id: OwnerId::new("usr_owner"),
                 endpoint: String::new(),
                 friend_ids: vec!["usr_friend".into()],
             },
@@ -208,7 +208,7 @@ fn cancel_active_marks_the_running_fetch_as_cancelling() {
             run_id: 7,
             revision: 1,
             status: MutualGraphFetchState::Running,
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             total_friends: 2,
             ..idle_status()
         };
@@ -238,7 +238,7 @@ fn progress_and_terminal_transitions_emit_typed_status_events() {
             run_id: 7,
             revision: 1,
             status: MutualGraphFetchState::Running,
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             total_friends: 2,
             ..idle_status()
         };
@@ -275,7 +275,7 @@ fn delayed_cancelling_event_has_an_older_revision_than_cancelled() {
             run_id: 7,
             revision: 1,
             status: MutualGraphFetchState::Running,
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             total_friends: 1,
             ..idle_status()
         };

@@ -16,6 +16,7 @@ use vrcx_0_persistence::game_log::{game_log_query, GameLogQueryInput};
 use vrcx_0_persistence::DatabaseService;
 
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_persistence::OwnerId;
 
 pub const FRIEND_LOG_NAME_RESOLUTION_MAX_USERS: usize = 100;
 const FRIEND_LOG_REMOTE_LOOKUP_MAX_USERS: usize = 30;
@@ -116,19 +117,22 @@ pub async fn resolve_friend_log_names(
         return Ok(Vec::new());
     }
 
-    let mut names =
-        match friend_display_names(deps.db, expected_scope.current_user_id.clone(), &user_ids) {
-            Ok(rows) => rows
-                .into_iter()
-                .filter_map(|(user_id, display_name)| {
-                    normalize_display_name(&display_name, &user_id).map(|name| (user_id, name))
-                })
-                .collect::<HashMap<_, _>>(),
-            Err(error) => {
-                tracing::debug!(error = %error, "friend log persisted-name lookup failed");
-                HashMap::new()
-            }
-        };
+    let mut names = match friend_display_names(
+        deps.db,
+        OwnerId::new(expected_scope.current_user_id.clone()),
+        &user_ids,
+    ) {
+        Ok(rows) => rows
+            .into_iter()
+            .filter_map(|(user_id, display_name)| {
+                normalize_display_name(&display_name, &user_id).map(|name| (user_id, name))
+            })
+            .collect::<HashMap<_, _>>(),
+        Err(error) => {
+            tracing::debug!(error = %error, "friend log persisted-name lookup failed");
+            HashMap::new()
+        }
+    };
 
     let missing = unresolved_ids(&user_ids, &names);
     if !missing.is_empty() {
@@ -203,7 +207,7 @@ fn merge_game_log_names(
 ) -> Result<()> {
     let value = game_log_query(
         db,
-        &scope.current_user_id,
+        &OwnerId::new(scope.current_user_id.clone()),
         GameLogQueryInput {
             kind: "allUserStats".into(),
             params: RawJson::from(json!({ "userIds": user_ids })),

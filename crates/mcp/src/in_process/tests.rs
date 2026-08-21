@@ -12,6 +12,7 @@ use vrcx_0_persistence::realtime::{
 
 use super::*;
 use crate::test_support::test_runtime;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -99,7 +100,7 @@ async fn friend_feed_search_resolves_target_pages_results_and_guards_global_hist
     let (_dir, runtime) = test_runtime("in-process-friend-feed", "usr_owner").unwrap();
     write_realtime_batch(
         runtime.db.as_ref(),
-        "usr_owner",
+        &OwnerId::new("usr_owner"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_alice".into(),

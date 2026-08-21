@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use super::{ActivityBucket, TimeWindow};
+use crate::ownership::OwnerId;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BestTimeToPlayInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub time_window: TimeWindow,
     #[serde(default)]
     pub bucket: ActivityBucket,

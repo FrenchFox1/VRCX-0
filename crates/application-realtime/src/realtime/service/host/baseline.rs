@@ -20,6 +20,7 @@ use crate::social_baseline::service::{
 
 use super::state::{ActiveRealtimeContext, PendingFriendBaseline, ScopedFriendLogMutation};
 use super::RealtimeHostRuntime;
+use vrcx_0_persistence::OwnerId;
 
 enum FriendBaselineSyncMode {
     Direct {
@@ -364,8 +365,10 @@ impl RealtimeHostRuntime {
             let mut feed_entries = confirmed_feed_entries.clone();
             feed_entries.append(&mut projection.feed_entries);
             projection.feed_entries = feed_entries;
-            let mut output =
-                RealtimeFriendOutput::from_projection(active.session.user_id.clone(), projection);
+            let mut output = RealtimeFriendOutput::from_projection(
+                OwnerId::new(active.session.user_id.clone()),
+                projection,
+            );
             output.persistence.feed_entries = confirmed_feed_entries;
             self.apply_friend_output_owned(&owner, output);
         }
@@ -375,7 +378,7 @@ impl RealtimeHostRuntime {
         } = reconcile_outcome;
         self.apply_reconciled_friend_feed_entries_owned(
             &owner,
-            &active.session.user_id,
+            &OwnerId::new(active.session.user_id),
             result.generation,
             result.baseline_revision,
             feed_entries,

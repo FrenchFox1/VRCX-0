@@ -8,6 +8,7 @@ use vrcx_0_application_core::{
     FavoriteEntityKind, FavoritesChangedPayload, RuntimeEventBus,
 };
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Debug, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -63,7 +64,7 @@ pub(super) fn add_local_favorite_scoped(
     deps.mutation.ensure_current()?;
     let affected = add_local_favorite(
         deps.db,
-        &deps.mutation.scope().current_user_id,
+        &OwnerId::new(deps.mutation.scope().current_user_id.clone()),
         kind,
         entity_id.clone(),
         group_name.clone(),
@@ -90,7 +91,7 @@ pub(super) fn remove_local_favorite_scoped(
     deps.mutation.ensure_current()?;
     let affected = remove_local_favorite(
         deps.db,
-        &deps.mutation.scope().current_user_id,
+        &OwnerId::new(deps.mutation.scope().current_user_id.clone()),
         kind,
         entity_id.clone(),
         group_name.clone(),
@@ -110,7 +111,7 @@ pub(super) fn remove_local_favorite_scoped(
 
 pub fn list_local_favorites(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: FavoriteEntityKind,
 ) -> Result<Vec<FavoriteRow>> {
     favorites::favorite_list(db, Some(owner_user_id), kind).map_err(Error::from)
@@ -118,12 +119,12 @@ pub fn list_local_favorites(
 
 pub fn get_local_favorite_snapshot(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: FavoriteEntityKind,
 ) -> Result<LocalFavoriteSnapshot> {
     let favorites = list_local_favorites(db, owner_user_id, kind)?;
     let mut group_names = read_config_string_array(db, local_group_config_key(kind))?;
-    if kind == FavoriteEntityKind::Friend && !owner_user_id.trim().is_empty() {
+    if kind == FavoriteEntityKind::Friend && !owner_user_id.as_str().trim().is_empty() {
         group_names.extend(read_config_string_array(
             db,
             &writable_group_config_key(kind, owner_user_id),
@@ -139,7 +140,7 @@ pub fn get_local_favorite_snapshot(
 
 pub(crate) fn add_local_favorite(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: FavoriteEntityKind,
     entity_id: String,
     group_name: String,
@@ -150,7 +151,7 @@ pub(crate) fn add_local_favorite(
 
 pub(crate) fn remove_local_favorite(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: FavoriteEntityKind,
     entity_id: String,
     group_name: String,
@@ -178,7 +179,7 @@ fn add_group_value(groups: &mut Vec<String>, group_name: &str) {
 
 pub(crate) fn create_local_favorite_group(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: FavoriteEntityKind,
     group_name: String,
 ) -> Result<LocalFavoriteGroupWrite> {
@@ -201,7 +202,7 @@ pub(super) fn create_local_favorite_group_scoped(
     deps.mutation.ensure_current()?;
     let write = create_local_favorite_group(
         deps.db,
-        &deps.mutation.scope().current_user_id,
+        &OwnerId::new(deps.mutation.scope().current_user_id.clone()),
         kind,
         group_name.clone(),
     )?;
@@ -216,7 +217,7 @@ pub(super) fn create_local_favorite_group_scoped(
 
 pub(crate) fn rename_local_favorite_group(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: FavoriteEntityKind,
     group_name: String,
     new_group_name: String,
@@ -253,7 +254,7 @@ pub(super) fn rename_local_favorite_group_scoped(
     deps.mutation.ensure_current()?;
     let write = rename_local_favorite_group(
         deps.db,
-        &deps.mutation.scope().current_user_id,
+        &OwnerId::new(deps.mutation.scope().current_user_id.clone()),
         kind,
         group_name.clone(),
         new_group_name.clone(),
@@ -273,7 +274,7 @@ pub(super) fn rename_local_favorite_group_scoped(
 
 pub(crate) fn delete_local_favorite_group(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: FavoriteEntityKind,
     group_name: String,
 ) -> Result<LocalFavoriteGroupWrite> {
@@ -306,7 +307,7 @@ pub(super) fn delete_local_favorite_group_scoped(
     deps.mutation.ensure_current()?;
     let write = delete_local_favorite_group(
         deps.db,
-        &deps.mutation.scope().current_user_id,
+        &OwnerId::new(deps.mutation.scope().current_user_id.clone()),
         kind,
         group_name.clone(),
     )?;
@@ -319,10 +320,10 @@ pub(super) fn delete_local_favorite_group_scoped(
     Ok(write)
 }
 
-fn writable_group_config_key(kind: FavoriteEntityKind, owner_user_id: &str) -> String {
+fn writable_group_config_key(kind: FavoriteEntityKind, owner_user_id: &OwnerId) -> String {
     let base_key = local_group_config_key(kind);
-    if kind == FavoriteEntityKind::Friend && !owner_user_id.trim().is_empty() {
-        format!("{base_key}:{}", owner_user_id.trim())
+    if kind == FavoriteEntityKind::Friend && !owner_user_id.as_str().trim().is_empty() {
+        format!("{base_key}:{}", owner_user_id.as_str().trim())
     } else {
         base_key.to_string()
     }
@@ -331,7 +332,7 @@ fn writable_group_config_key(kind: FavoriteEntityKind, owner_user_id: &str) -> S
 fn group_config_realm_key(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     group_name: &str,
 ) -> Result<String> {
     let account_key = writable_group_config_key(kind, owner_user_id);
@@ -383,9 +384,20 @@ mod tests {
         let dir = TestDir::new("group-realms");
         let db = DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap();
 
-        create_local_favorite_group(&db, "usr_a", FavoriteEntityKind::Friend, "account".into())
-            .unwrap();
-        create_local_favorite_group(&db, "", FavoriteEntityKind::Friend, "legacy".into()).unwrap();
+        create_local_favorite_group(
+            &db,
+            &OwnerId::new("usr_a"),
+            FavoriteEntityKind::Friend,
+            "account".into(),
+        )
+        .unwrap();
+        create_local_favorite_group(
+            &db,
+            &OwnerId::new(""),
+            FavoriteEntityKind::Friend,
+            "legacy".into(),
+        )
+        .unwrap();
         assert_eq!(
             read_config_string_array(&db, "localFavoriteFriendGroups:usr_a").unwrap(),
             vec!["account"]
@@ -397,7 +409,7 @@ mod tests {
 
         favorite_add(
             &db,
-            Some("usr_a"),
+            Some(&OwnerId::new("usr_a")),
             FavoriteEntityKind::Friend,
             "usr_account_friend".into(),
             "account".into(),
@@ -414,20 +426,29 @@ mod tests {
 
         rename_local_favorite_group(
             &db,
-            "usr_a",
+            &OwnerId::new("usr_a"),
             FavoriteEntityKind::Friend,
             "account".into(),
             "renamed".into(),
         )
         .unwrap();
-        delete_local_favorite_group(&db, "usr_a", FavoriteEntityKind::Friend, "legacy".into())
-            .unwrap();
+        delete_local_favorite_group(
+            &db,
+            &OwnerId::new("usr_a"),
+            FavoriteEntityKind::Friend,
+            "legacy".into(),
+        )
+        .unwrap();
 
-        let groups = favorite_list(&db, Some("usr_a"), FavoriteEntityKind::Friend)
-            .unwrap()
-            .into_iter()
-            .map(|row| row.group_name)
-            .collect::<Vec<_>>();
+        let groups = favorite_list(
+            &db,
+            Some(&OwnerId::new("usr_a")),
+            FavoriteEntityKind::Friend,
+        )
+        .unwrap()
+        .into_iter()
+        .map(|row| row.group_name)
+        .collect::<Vec<_>>();
         assert_eq!(groups, vec!["renamed"]);
         assert_eq!(
             read_config_string_array(&db, "localFavoriteFriendGroups:usr_a").unwrap(),
@@ -450,7 +471,7 @@ mod tests {
         .unwrap();
         favorite_add(
             &db,
-            Some("usr_a"),
+            Some(&OwnerId::new("usr_a")),
             FavoriteEntityKind::World,
             "wrld_1".into(),
             "Worlds".into(),
@@ -458,7 +479,8 @@ mod tests {
         .unwrap();
 
         let snapshot =
-            get_local_favorite_snapshot(&db, "usr_a", FavoriteEntityKind::World).unwrap();
+            get_local_favorite_snapshot(&db, &OwnerId::new("usr_a"), FavoriteEntityKind::World)
+                .unwrap();
 
         assert_eq!(snapshot.group_names, vec!["Empty", "Worlds"]);
         assert_eq!(snapshot.favorites.len(), 1);
@@ -483,7 +505,7 @@ mod tests {
         .unwrap();
         favorite_add(
             &db,
-            Some("usr_a"),
+            Some(&OwnerId::new("usr_a")),
             FavoriteEntityKind::Friend,
             "usr_account".into(),
             "same".into(),
@@ -492,18 +514,22 @@ mod tests {
 
         rename_local_favorite_group(
             &db,
-            "usr_a",
+            &OwnerId::new("usr_a"),
             FavoriteEntityKind::Friend,
             "same".into(),
             "account-only".into(),
         )
         .unwrap();
 
-        let mut rows = favorite_list(&db, Some("usr_a"), FavoriteEntityKind::Friend)
-            .unwrap()
-            .into_iter()
-            .map(|row| (row.user_id.unwrap_or_default(), row.group_name))
-            .collect::<Vec<_>>();
+        let mut rows = favorite_list(
+            &db,
+            Some(&OwnerId::new("usr_a")),
+            FavoriteEntityKind::Friend,
+        )
+        .unwrap()
+        .into_iter()
+        .map(|row| (row.user_id.unwrap_or_default(), row.group_name))
+        .collect::<Vec<_>>();
         rows.sort();
         assert_eq!(
             rows,

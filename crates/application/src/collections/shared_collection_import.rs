@@ -12,6 +12,7 @@ use vrcx_0_vrchat_client::{
 
 use crate::create_local_favorite_group;
 use vrcx_0_application_core::{Error, Result, WebClient, WorldCache};
+use vrcx_0_persistence::OwnerId;
 
 pub const SHARED_COLLECTION_IMPORT_MAX_WORLDS: usize = 1_000;
 const SHARED_COLLECTION_IMPORT_INTERVAL: Duration = Duration::from_millis(500);
@@ -95,7 +96,7 @@ impl SharedCollectionImportActions for VrchatSharedCollectionImportActions<'_> {
     fn create_group(&self, group_name: &str) -> Result<()> {
         create_local_favorite_group(
             self.db,
-            "",
+            &OwnerId::new(""),
             FavoriteEntityKind::World,
             group_name.to_string(),
         )?;

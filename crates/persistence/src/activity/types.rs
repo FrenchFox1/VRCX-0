@@ -1,3 +1,4 @@
+use crate::ownership::OwnerId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -28,7 +29,7 @@ impl ActivityViewKind {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityFriendPresenceSliceInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub user_id: String,
     pub from_date_iso: String,
     #[serde(default)]
@@ -93,7 +94,7 @@ pub struct ActivitySelfSessionsRefreshOutput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityBucketCacheQueryInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub target_user_id: String,
     pub range_days: Value,
@@ -105,7 +106,7 @@ pub struct ActivityBucketCacheQueryInput {
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityBucketCacheOutput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub target_user_id: String,
     pub range_days: i64,
     pub view_kind: ActivityViewKind,
@@ -151,7 +152,7 @@ pub struct ActivitySessionInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityBucketCacheInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub target_user_id: String,
     pub range_days: Value,
@@ -175,7 +176,7 @@ pub struct ActivityBucketCacheInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityViewBuildInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub target_user_id: String,
     pub is_self: bool,
     pub range_days: i64,
@@ -201,7 +202,7 @@ pub struct ActivityViewOutput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityOverlapViewBuildInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub current_user_id: String,
     pub target_user_id: String,
     pub range_days: i64,

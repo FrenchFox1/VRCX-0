@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use serde_json::json;
 use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, RealtimeWsMessagePayload};
 use vrcx_0_host::app_paths::{AppDataDirResolution, AppDataDirSource};
+use vrcx_0_persistence::OwnerId;
 use vrcx_0_runtime_host::{RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState};
 
 struct TestDir {
@@ -126,7 +127,7 @@ async fn headless_recent_notification_sends_one_webhook_and_deduplicates() {
         assert!(state
             .realtime_runtime
             .ingest_notification_ws_message_for_test(
-                "usr_self",
+                &OwnerId::new("usr_self"),
                 "https://api.vrchat.cloud/api/1",
                 1,
                 &notification,

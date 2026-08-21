@@ -86,7 +86,7 @@ fn write_rows(
         join_leave,
         ..Default::default()
     };
-    write_batch(db, "", &batch).unwrap();
+    write_batch(db, &OwnerId::new(""), &batch).unwrap();
 }
 
 #[test]
@@ -113,7 +113,8 @@ fn excludes_join_rows_from_earlier_visits_to_the_same_instance() {
         ],
     );
 
-    let snapshot = player_list_current_snapshot(&db, "", "", "wrld_live:123", "").unwrap();
+    let snapshot =
+        player_list_current_snapshot(&db, &OwnerId::new(""), "", "wrld_live:123", "").unwrap();
     assert_eq!(snapshot.players.len(), 1);
     assert_eq!(snapshot.players[0].user_id, "usr_current");
     assert_eq!(snapshot.context.player_count, Some(1));
@@ -143,9 +144,14 @@ fn runtime_start_time_overrides_stale_database_location_rows() {
         ],
     );
 
-    let snapshot =
-        player_list_current_snapshot(&db, "", "", "wrld_live:123", "2026-04-30T10:00:00.000Z")
-            .unwrap();
+    let snapshot = player_list_current_snapshot(
+        &db,
+        &OwnerId::new(""),
+        "",
+        "wrld_live:123",
+        "2026-04-30T10:00:00.000Z",
+    )
+    .unwrap();
     assert_eq!(snapshot.context.created_at, "2026-04-30T10:00:00.000Z");
     assert_eq!(snapshot.players.len(), 1);
     assert_eq!(snapshot.players[0].user_id, "usr_current");
@@ -175,7 +181,8 @@ fn leave_with_id_removes_unique_anonymous_join_by_display_name() {
         ],
     );
 
-    let snapshot = player_list_current_snapshot(&db, "", "", "wrld_live:123", "").unwrap();
+    let snapshot =
+        player_list_current_snapshot(&db, &OwnerId::new(""), "", "wrld_live:123", "").unwrap();
     assert!(snapshot.players.is_empty());
 }
 
@@ -211,7 +218,8 @@ fn anonymous_leave_uses_duration_when_display_name_is_ambiguous() {
         ],
     );
 
-    let snapshot = player_list_current_snapshot(&db, "", "", "wrld_live:123", "").unwrap();
+    let snapshot =
+        player_list_current_snapshot(&db, &OwnerId::new(""), "", "wrld_live:123", "").unwrap();
     assert_eq!(snapshot.players.len(), 1);
     assert_eq!(snapshot.players[0].display_name, "Guest");
     assert_eq!(snapshot.players[0].joined_at, "2026-04-30T10:01:30.000Z");
@@ -235,9 +243,14 @@ fn falls_back_to_database_enter_time_when_stale_runtime_start_empties_roster() {
         )],
     );
 
-    let snapshot =
-        player_list_current_snapshot(&db, "", "", "wrld_live:83220", "2026-06-10T19:00:00.000Z")
-            .unwrap();
+    let snapshot = player_list_current_snapshot(
+        &db,
+        &OwnerId::new(""),
+        "",
+        "wrld_live:83220",
+        "2026-06-10T19:00:00.000Z",
+    )
+    .unwrap();
     assert_eq!(snapshot.players.len(), 1);
     assert_eq!(snapshot.players[0].user_id, "usr_cyan");
     assert_eq!(snapshot.context.created_at, "2026-06-09T12:26:31.000Z");
@@ -260,7 +273,8 @@ fn current_user_filter_can_empty_roster_and_trigger_facts_known() {
     );
 
     let snapshot =
-        player_list_current_snapshot(&db, "usr_me", "usr_me", "wrld_live:123", "").unwrap();
+        player_list_current_snapshot(&db, &OwnerId::new("usr_me"), "usr_me", "wrld_live:123", "")
+            .unwrap();
     assert!(snapshot.players.is_empty());
     assert_eq!(snapshot.context.player_count, Some(0));
     assert_eq!(snapshot.context.player_facts_known, Some(true));
@@ -269,7 +283,7 @@ fn current_user_filter_can_empty_roster_and_trigger_facts_known() {
 #[test]
 fn non_live_location_returns_context_without_roster() {
     let (_dir, db) = test_db("snapshot-non-live");
-    let snapshot = player_list_current_snapshot(&db, "", "", "private", "").unwrap();
+    let snapshot = player_list_current_snapshot(&db, &OwnerId::new(""), "", "private", "").unwrap();
     assert_eq!(snapshot.context.source, PlayerListSnapshotSource::Runtime);
     assert_eq!(snapshot.context.location, "private");
     assert!(snapshot.players.is_empty());

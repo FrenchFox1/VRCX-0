@@ -205,7 +205,7 @@ fn apply_unfriend_locally_without_baseline_falls_back_to_direct_persistence_writ
 
     let outcome = apply_unfriend_locally(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
@@ -233,7 +233,7 @@ fn apply_friend_request_accept_locally_without_baseline_falls_back_and_creates_f
 
     let outcome = apply_friend_request_accept_locally(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
@@ -261,7 +261,7 @@ fn apply_unfriend_locally_reports_remote_ok_local_failed_when_persistence_write_
 
     let outcome = apply_unfriend_locally(
         &fixture.deps(),
-        "usr_self;DROP TABLE",
+        &OwnerId::new("usr_self;DROP TABLE"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
@@ -281,7 +281,7 @@ fn apply_friend_request_accept_locally_reports_remote_ok_local_failed_when_persi
 
     let outcome = apply_friend_request_accept_locally(
         &fixture.deps(),
-        "usr_self;DROP TABLE",
+        &OwnerId::new("usr_self;DROP TABLE"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
@@ -301,7 +301,7 @@ fn write_friend_request_history_records_friend_request_type() {
 
     let outcome = write_friend_request_history(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "usr_target",
         "Target",
         "FriendRequest",
@@ -435,7 +435,7 @@ fn write_friend_request_history_records_cancel_friend_request_type() {
 
     let outcome = write_friend_request_history(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "usr_target",
         "Target",
         "CancelFriendRequest",

@@ -3,11 +3,12 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::DatabaseService;
 
 use vrcx_0_application_core::{RuntimeAuthScope, WebClient};
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphFetchStartInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     #[serde(default)]
@@ -18,7 +19,7 @@ pub struct MutualGraphFetchStartInput {
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphFetchCancelInput {
     #[serde(default)]
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -27,7 +28,7 @@ pub struct MutualGraphFetchStatus {
     pub run_id: u64,
     pub revision: u64,
     pub status: MutualGraphFetchState,
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub total_friends: usize,
     pub processed_friends: usize,
     pub current_friend_id: String,
@@ -68,7 +69,7 @@ pub struct MutualGraphRequestDeps<'a> {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphFriendRefreshInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub friend_id: String,
 }
 

@@ -20,6 +20,7 @@ use vrcx_0_persistence::realtime::{
 use crate::social::social_mutation::{apply_friend_request_accept_locally, apply_unfriend_locally};
 use crate::{SocialFriendMutationStatus, SocialMutationDeps};
 use vrcx_0_application_core::RemoteMutationGate;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -56,7 +57,7 @@ fn deps(runtime: &TestRealtimeHostRuntime) -> SocialMutationDeps<'_> {
 fn seed_friend_log_current(runtime: &TestRealtimeHostRuntime, owner: &str, target: &str) {
     write_realtime_batch(
         runtime.database(),
-        owner,
+        &OwnerId::new(owner),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: target.into(),
@@ -139,7 +140,7 @@ fn pending_unfriend_updates_start_baseline_and_emits_projection() -> Result<()> 
 
     let outcome = apply_unfriend_locally(
         &deps(&runtime),
-        &session.user_id,
+        &OwnerId::new(session.user_id.clone()),
         &session.endpoint,
         "usr_friend",
         "Friend",
@@ -183,7 +184,7 @@ fn pending_accept_preserves_trusted_profile_state_on_start() -> Result<()> {
 
     let outcome = apply_friend_request_accept_locally(
         &deps(&runtime),
-        &session.user_id,
+        &OwnerId::new(session.user_id.clone()),
         &session.endpoint,
         "usr_target",
         "Target",
@@ -249,7 +250,7 @@ fn unfriend_locally_applies_via_synthetic_event_when_baseline_present() -> Resul
 
     let outcome = apply_unfriend_locally(
         &deps(&runtime),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &active_session.endpoint,
         "usr_friend",
         "Friend",
@@ -292,7 +293,7 @@ fn unfriend_locally_with_stale_owner_falls_back_without_touching_active_roster()
 
     let outcome = apply_unfriend_locally(
         &deps(&runtime),
-        "usr_previous",
+        &OwnerId::new("usr_previous"),
         &active_session.endpoint,
         "usr_friend",
         "Friend",
@@ -339,7 +340,7 @@ fn synthetic_event_with_stale_endpoint_reports_missing_baseline() -> Result<()> 
     )?;
 
     let outcome = runtime.runtime().apply_synthetic_friend_delete(
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id),
         "https://api.example.test/api/1",
         "usr_friend",
         "2026-05-15T00:00:01Z".into(),
@@ -365,7 +366,7 @@ fn accept_locally_applies_via_synthetic_event_when_baseline_present() -> Result<
 
     let outcome = apply_friend_request_accept_locally(
         &deps(&runtime),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &active_session.endpoint,
         "usr_target",
         "Target",
@@ -416,7 +417,7 @@ fn unfriend_then_later_ws_friend_delete_records_exactly_one_unfriend_history() -
 
     let outcome = apply_unfriend_locally(
         &deps(&runtime),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &active_session.endpoint,
         "usr_friend",
         "Friend",
@@ -453,7 +454,7 @@ fn ws_friend_delete_then_later_unfriend_records_exactly_one_unfriend_history() -
 
     let outcome = apply_unfriend_locally(
         &deps(&runtime),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &active_session.endpoint,
         "usr_friend",
         "Friend",
@@ -477,7 +478,7 @@ fn accept_then_later_ws_friend_add_records_exactly_one_friend_history() -> Resul
 
     let outcome = apply_friend_request_accept_locally(
         &deps(&runtime),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &active_session.endpoint,
         "usr_target",
         "Target",
@@ -506,7 +507,7 @@ fn ws_friend_add_then_later_accept_records_exactly_one_friend_history() -> Resul
 
     let outcome = apply_friend_request_accept_locally(
         &deps(&runtime),
-        &active_session.user_id,
+        &OwnerId::new(active_session.user_id.clone()),
         &active_session.endpoint,
         "usr_target",
         "Target",

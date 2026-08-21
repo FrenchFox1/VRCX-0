@@ -8,6 +8,7 @@ use crate::state::AppState;
 use vrcx_0_persistence::memos::{
     AvatarMemoOutput, MemoSaveResult, UserMemoOutput, UserNoteOutput, WorldMemoOutput,
 };
+use vrcx_0_persistence::OwnerId;
 
 #[tauri::command(async)]
 #[specta::specta]
@@ -40,7 +41,7 @@ pub fn app__memo_get_world(
 #[specta::specta]
 pub fn app__memo_list_user_notes(
     state: State<'_, AppState>,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
 ) -> Result<Vec<UserNoteOutput>, AppError> {
     vrcx_0_persistence::memos::memo_list_user_notes(state.db.as_ref(), owner_user_id)
         .map_err(AppError::from)

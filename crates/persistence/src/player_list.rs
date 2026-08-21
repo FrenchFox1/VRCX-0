@@ -7,7 +7,7 @@ use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::DatabaseService;
 use crate::game_log::ensure_game_log_tables;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::Error;
 
 use crate::worlds::{world_summary_from_row, WorldSummaryOutput};
@@ -48,7 +48,7 @@ pub struct InstanceActivityRowOutput {
 
 pub fn player_list_location_get(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     location: String,
 ) -> Result<Option<PlayerLocationOutput>, Error> {
     ensure_game_log_tables(db)?;
@@ -76,7 +76,7 @@ pub fn player_list_location_get(
 
 pub fn player_list_latest_location_get(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Option<PlayerLocationOutput>, Error> {
     ensure_game_log_tables(db)?;
     let owner_id = owner_id_for_filter(db, owner_user_id)?;
@@ -95,7 +95,7 @@ pub fn player_list_latest_location_get(
 
 pub fn player_list_join_leave_rows(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     location: String,
     started_at: String,
 ) -> Result<Vec<PlayerJoinLeaveOutput>, Error> {
@@ -122,7 +122,7 @@ pub fn player_list_join_leave_rows(
 
 pub fn instance_activity_dates_get(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_id: String,
 ) -> Result<Vec<String>, Error> {
     ensure_game_log_tables(db)?;
@@ -151,7 +151,7 @@ pub fn instance_activity_dates_get(
 
 pub fn instance_activity_rows_get(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     start_date: String,
     end_date: String,
 ) -> Result<Vec<InstanceActivityRowOutput>, Error> {
@@ -196,7 +196,7 @@ fn empty_world_summary(id: String, name: String) -> WorldSummaryOutput {
 
 pub fn world_summaries_get(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     world_ids: Vec<String>,
 ) -> Result<HashMap<String, WorldSummaryOutput>, Error> {
     ensure_global_store_tables(db)?;

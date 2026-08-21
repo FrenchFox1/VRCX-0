@@ -11,6 +11,7 @@ use vrcx_0_vrchat_client::{
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, WebClient,
 };
+use vrcx_0_persistence::OwnerId;
 
 pub const NOTE_EXPORT_MAX_ITEMS: usize = 1_000;
 const NOTE_EXPORT_INTERVAL: Duration = Duration::from_secs(2);
@@ -162,7 +163,7 @@ fn emit_note_export_auth_failure(
         return;
     }
     event_bus.emit_runtime_vrchat_auth_failure(RuntimeVrchatAuthFailurePayload {
-        owner_user_id: scope.current_user_id,
+        owner_user_id: OwnerId::new(scope.current_user_id),
         endpoint: scope.endpoint,
         path: path.to_string(),
         reason: reason.to_string(),

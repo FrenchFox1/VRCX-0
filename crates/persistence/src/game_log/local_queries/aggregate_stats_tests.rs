@@ -5,6 +5,7 @@ use crate::game_log::{
     get_previous_instances_by_group_id, get_previous_instances_by_world_id,
     previous_instance_event_rows_query, write_batch, GameLogLocationEntry, GameLogWriteBatch,
 };
+use crate::ownership::OwnerId;
 use crate::player_list::{instance_activity_dates_get, instance_activity_rows_get};
 
 #[test]
@@ -114,7 +115,8 @@ fn aggregate_and_lookup_queries_cover_group_world_player_and_dates() -> Result<(
     let test_db = test_db("local-query-aggregates")?;
     seed_fixture(&test_db.db)?;
 
-    let group_rows = get_previous_instances_by_group_id(&test_db.db, "usr_test", "grp_alpha")?;
+    let group_rows =
+        get_previous_instances_by_group_id(&test_db.db, &OwnerId::new("usr_test"), "grp_alpha")?;
     assert_eq!(group_rows.len(), 2);
     assert_eq!(group_rows[0].location, "wrld_alpha:inst-c~group(grp_alpha)");
     assert_eq!(group_rows[0].created_at, "2026-05-14T10:00:00Z");
@@ -145,7 +147,7 @@ fn aggregate_and_lookup_queries_cover_group_world_player_and_dates() -> Result<(
 
     let previous_by_user = previous_instance_event_rows_query(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         "usr_vip",
         "2026-05-14T08:00:00Z",
         "2026-05-14T08:10:00Z",
@@ -154,7 +156,8 @@ fn aggregate_and_lookup_queries_cover_group_world_player_and_dates() -> Result<(
     assert_eq!(previous_by_user.len(), 1);
     assert_eq!(previous_by_user[0].world_name, "Alpha World");
 
-    let world_rows = get_previous_instances_by_world_id(&test_db.db, "usr_test", "wrld_alpha")?;
+    let world_rows =
+        get_previous_instances_by_world_id(&test_db.db, &OwnerId::new("usr_test"), "wrld_alpha")?;
     assert_eq!(world_rows.len(), 2);
     assert_eq!(world_rows[0].created_at, "2026-05-14T10:00:00Z");
     assert_eq!(world_rows[0].time, 90_000);
@@ -263,7 +266,7 @@ fn typed_group_previous_instances_preserve_legacy_location_aggregation() -> Resu
     let location = "wrld_alpha:inst-a~group(grp_alpha)";
     write_batch(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         &GameLogWriteBatch {
             locations: vec![
                 GameLogLocationEntry {
@@ -287,7 +290,8 @@ fn typed_group_previous_instances_preserve_legacy_location_aggregation() -> Resu
         },
     )?;
 
-    let rows = get_previous_instances_by_group_id(&test_db.db, "usr_test", "grp_alpha")?;
+    let rows =
+        get_previous_instances_by_group_id(&test_db.db, &OwnerId::new("usr_test"), "grp_alpha")?;
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].created_at, "2026-05-14T08:00:00Z");
     assert_eq!(rows[0].world_name, "Alpha World");
@@ -312,14 +316,14 @@ fn activity_and_session_queries_cover_empty_and_cursor_edges() -> Result<(), cra
 
     let activity = instance_activity_rows_get(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         "2026-05-14T08:00:00Z".into(),
         "2026-05-14T08:10:00Z".into(),
     )?;
     assert_eq!(activity[0].display_name, "Vip Friend");
 
     assert_eq!(
-        instance_activity_dates_get(&test_db.db, "usr_test", "usr_vip".into(),)?,
+        instance_activity_dates_get(&test_db.db, &OwnerId::new("usr_test"), "usr_vip".into(),)?,
         vec![
             "2026-05-14T08:30:00Z".to_string(),
             "2026-05-14T08:01:00Z".to_string()

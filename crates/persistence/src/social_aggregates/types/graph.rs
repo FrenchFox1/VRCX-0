@@ -1,9 +1,10 @@
+use crate::ownership::OwnerId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialGraphInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub user_id: Option<String>,
     pub depth: u8,
@@ -49,7 +50,7 @@ pub struct SocialGraphEdge {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendCirclesInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub max_circles: Option<i64>,
     #[serde(default)]

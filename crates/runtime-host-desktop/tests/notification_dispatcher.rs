@@ -12,6 +12,7 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
+use vrcx_0_persistence::OwnerId;
 use vrcx_0_runtime_host::notification::{
     auth_webhook_generic_payload, auth_webhook_is_enabled, auth_webhook_should_recover,
     AuthWebhookEvent, AuthWebhookEventKind,
@@ -66,7 +67,7 @@ fn desktop_notifier_slot_noops_until_tauri_injects_notifier() {
     let recorder = Arc::new(RecordingDesktopNotifier::default());
     slot.set(recorder.clone());
     let action = DesktopNotificationAction {
-        owner_user_id: "usr_12345678-1234-1234-1234-1234567890ab".into(),
+        owner_user_id: OwnerId::new("usr_12345678-1234-1234-1234-1234567890ab"),
         user_id: "usr_abcdefab-cdef-abcd-efab-cdefabcdefab".into(),
     };
     slot.show(

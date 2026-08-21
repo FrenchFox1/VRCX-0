@@ -28,6 +28,7 @@ use vrcx_0_vrchat_client::auth::current_user_get_input;
 use vrcx_0_vrchat_client::http_api::ApiScope;
 
 use crate::{Error, Result, RuntimeHostFavoritesCallback};
+use vrcx_0_persistence::OwnerId;
 
 const RETRY_DELAYS_SECONDS: [u64; 4] = [5, 15, 30, 60];
 const RETRY_SLEEP_POLL_INTERVAL: Duration = Duration::from_millis(250);
@@ -759,7 +760,7 @@ impl AuthenticatedRuntimeOrchestrator {
         }
         self.event_bus
             .emit_runtime_vrchat_auth_failure(RuntimeVrchatAuthFailurePayload {
-                owner_user_id: scope.current_user_id.clone(),
+                owner_user_id: OwnerId::new(scope.current_user_id.clone()),
                 endpoint: scope.endpoint.clone(),
                 path: path.to_string(),
                 reason,

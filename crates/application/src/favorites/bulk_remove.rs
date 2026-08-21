@@ -12,6 +12,7 @@ use vrcx_0_vrchat_client::{
 use vrcx_0_application_core::{
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
+use vrcx_0_persistence::OwnerId;
 
 pub const FAVORITE_BULK_REMOVE_MAX_ITEMS: usize = 250;
 const FAVORITE_BULK_REMOVE_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
@@ -63,7 +64,7 @@ pub struct FavoriteBulkRemoveItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoriteBulkRemoveResult {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub kind: FavoriteEntityKind,
     pub total: usize,
     pub succeeded: usize,
@@ -160,7 +161,9 @@ impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
         self.ensure_scope()?;
         favorites::favorite_remove(
             self.deps.db,
-            Some(&self.deps.expected_scope.current_user_id),
+            Some(&OwnerId::new(
+                self.deps.expected_scope.current_user_id.clone(),
+            )),
             kind,
             item.entity_id.clone(),
             item.group_name.clone(),
@@ -219,7 +222,7 @@ pub(super) async fn remove_favorites_bulk(
     let kind = input.kind;
     let items = normalize_items(kind, input.items)?;
     let actions = VrchatFavoriteBulkRemoveActions { deps };
-    Ok(run_favorite_bulk_remove(&actions, owner_user_id, kind, items).await)
+    Ok(run_favorite_bulk_remove(&actions, OwnerId::new(owner_user_id), kind, items).await)
 }
 
 pub(super) async fn remove_favorites_selection(
@@ -230,7 +233,7 @@ pub(super) async fn remove_favorites_selection(
         return remove_favorites_bulk(deps, input).await;
     }
     let mut result = FavoriteBulkRemoveResult {
-        owner_user_id: deps.expected_scope.current_user_id.clone(),
+        owner_user_id: OwnerId::new(deps.expected_scope.current_user_id.clone()),
         kind: input.kind,
         total: 0,
         succeeded: 0,
@@ -271,7 +274,7 @@ pub(super) async fn remove_favorites_selection(
 
 async fn run_favorite_bulk_remove(
     actions: &dyn FavoriteBulkRemoveActions,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     kind: FavoriteEntityKind,
     input_items: Vec<FavoriteBulkRemoveWorkItem>,
 ) -> FavoriteBulkRemoveResult {

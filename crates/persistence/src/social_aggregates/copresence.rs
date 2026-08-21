@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -19,12 +19,13 @@ pub fn get_copresence_summary(
     db: &DatabaseService,
     input: CopresenceSummaryInput,
 ) -> Result<CopresenceSummaryOutput, Error> {
-    let owner_user_id = input
-        .owner_user_id
-        .as_deref()
-        .map(str::trim)
-        .unwrap_or_default()
-        .to_string();
+    let owner_user_id = OwnerId::new(
+        input
+            .owner_user_id
+            .as_ref()
+            .map(|owner_user_id| owner_user_id.as_str().trim())
+            .unwrap_or_default(),
+    );
     let owner_id = owner_id_for_filter(db, &owner_user_id)?;
     let limit = clamped_optional_limit(input.limit, 25, 100);
     let min_millis = input.min_minutes.unwrap_or(0).max(0).saturating_mul(60_000);
@@ -75,29 +76,22 @@ pub fn get_copresence_summary(
 
     sql.push_str(" AND (@owner_user_id = '' OR COALESCE(g.user_id, '') <> @owner_user_id)");
 
-    if input.friends_only {
-        if let Some(owner_user_id) = input
-            .owner_user_id
-            .as_deref()
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-        {
-            let user_prefix = normalize_user_table_prefix(owner_user_id)?;
-            let table_name = format!("{user_prefix}_friend_log_current");
-            if table_exists(db, &table_name)? {
-                sql.push_str(&format!(
-                    " AND EXISTS (SELECT 1 FROM {table_name} f WHERE f.user_id = g.user_id)"
-                ));
-            } else {
-                return Ok(CopresenceSummaryOutput {
-                    rows: Vec::new(),
-                    total_rows: 0,
-                    returned_rows: 0,
-                    truncated: false,
-                    summary: copresence_summary(&[]),
-                    caveats: copresence_caveats(),
-                });
-            }
+    if input.friends_only && !owner_user_id.is_empty() {
+        let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
+        let table_name = format!("{user_prefix}_friend_log_current");
+        if table_exists(db, &table_name)? {
+            sql.push_str(&format!(
+                " AND EXISTS (SELECT 1 FROM {table_name} f WHERE f.user_id = g.user_id)"
+            ));
+        } else {
+            return Ok(CopresenceSummaryOutput {
+                rows: Vec::new(),
+                total_rows: 0,
+                returned_rows: 0,
+                truncated: false,
+                summary: copresence_summary(&[]),
+                caveats: copresence_caveats(),
+            });
         }
     }
     sql.push_str(

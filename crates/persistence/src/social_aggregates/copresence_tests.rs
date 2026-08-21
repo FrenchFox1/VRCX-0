@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn copresence_summary_groups_minutes_days_instances_and_access_type() {
@@ -94,7 +95,7 @@ fn copresence_is_account_scoped_and_includes_shared_history() {
     ] {
         crate::game_log::write_batch(
             &db,
-            owner_user_id,
+            &OwnerId::new(owner_user_id),
             &crate::game_log::GameLogWriteBatch {
                 join_leave: vec![crate::game_log::GameLogJoinLeaveEntry {
                     created_at: created_at.into(),
@@ -111,7 +112,7 @@ fn copresence_is_account_scoped_and_includes_shared_history() {
         .unwrap();
     }
 
-    let visible_names = |owner_user_id: &str| {
+    let visible_names = |owner_user_id: &OwnerId| {
         get_copresence_summary(
             &db,
             CopresenceSummaryInput {
@@ -119,7 +120,7 @@ fn copresence_is_account_scoped_and_includes_shared_history() {
                 group_by: CopresenceGroupBy::Friend,
                 min_minutes: None,
                 limit: None,
-                owner_user_id: Some(owner_user_id.into()),
+                owner_user_id: Some(owner_user_id.clone()),
                 friends_only: false,
             },
         )
@@ -130,11 +131,11 @@ fn copresence_is_account_scoped_and_includes_shared_history() {
         .collect::<std::collections::HashSet<_>>()
     };
     assert_eq!(
-        visible_names("usr_a"),
+        visible_names(&OwnerId::new("usr_a")),
         std::collections::HashSet::from(["Shared".into(), "Account A".into()])
     );
     assert_eq!(
-        visible_names("usr_b"),
+        visible_names(&OwnerId::new("usr_b")),
         std::collections::HashSet::from(["Shared".into(), "Account B".into()])
     );
 }
@@ -344,7 +345,7 @@ fn copresence_marks_is_friend_against_current_friends() {
             group_by: CopresenceGroupBy::Friend,
             min_minutes: None,
             limit: None,
-            owner_user_id: Some("usr_self".into()),
+            owner_user_id: Some(OwnerId::new("usr_self")),
             friends_only: false,
         },
     )
@@ -493,7 +494,7 @@ fn copresence_summary_excludes_owner_self_rows() {
             group_by: CopresenceGroupBy::Friend,
             min_minutes: None,
             limit: None,
-            owner_user_id: Some("usr_self".into()),
+            owner_user_id: Some(OwnerId::new("usr_self")),
             friends_only: false,
         },
     )

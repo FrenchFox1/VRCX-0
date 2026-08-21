@@ -15,6 +15,7 @@ use super::{
     SocialFavoritesBaselineRequest, FAVORITES_PAGE_SIZE, FAVORITE_GROUPS_PAGE_SIZE,
 };
 use crate::{FavoriteBaselineSnapshot, FavoriteGroupOutput};
+use vrcx_0_persistence::OwnerId;
 
 const MAX_FAVORITE_GROUPS_KEY: &str = "maxFavoriteGroups";
 const MAX_FAVORITES_PER_GROUP_KEY: &str = "maxFavoritesPerGroup";
@@ -564,7 +565,7 @@ async fn build_favorites_baseline_inner(
     )?;
     let local_friend_favorite_rows = vrcx_0_persistence::favorites::favorite_list(
         deps.db.as_ref(),
-        Some(&user_id),
+        Some(&OwnerId::new(user_id.clone())),
         vrcx_0_core::FavoriteEntityKind::Friend,
     )?;
     let explicit_local_world_groups = get_config_array(&deps, "localFavoriteWorldGroups")?;

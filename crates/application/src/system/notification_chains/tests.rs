@@ -65,7 +65,7 @@ fn call_key(call: &NotificationChainRemoteCall) -> String {
 }
 
 impl NotificationChainActions for FakeActions {
-    fn ensure_scope(&self, _owner_user_id: &str, _endpoint: &str) -> Result<()> {
+    fn ensure_scope(&self, _owner_user_id: &OwnerId, _endpoint: &str) -> Result<()> {
         Ok(())
     }
 
@@ -166,7 +166,7 @@ async fn hide_404_is_already_resolved_and_still_expires() {
     let outcome = hide_and_expire_notification(
         &actions,
         NotificationHideExpireInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
         },
@@ -185,7 +185,7 @@ async fn hide_failure_skips_expire_and_emit() {
     let outcome = hide_and_expire_notification(
         &actions,
         NotificationHideExpireInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
         },
@@ -206,7 +206,7 @@ async fn hide_expire_failure_is_remote_ok_local_failed() {
     let outcome = hide_and_expire_notification(
         &actions,
         NotificationHideExpireInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
         },
@@ -228,7 +228,7 @@ async fn respond_v2_failure_expires_anyway() {
     let outcome = respond_and_expire_notification(
         &actions,
         NotificationRespondInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
             response_type: "accept".into(),
@@ -249,7 +249,7 @@ async fn respond_v1_failure_does_not_expire() {
     let outcome = respond_and_expire_notification(
         &actions,
         NotificationRespondInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 1),
             response_type: "accept".into(),
@@ -270,7 +270,7 @@ async fn respond_404_is_already_resolved_and_expires() {
     let outcome = respond_and_expire_notification(
         &actions,
         NotificationRespondInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 1),
             response_type: "accept".into(),
@@ -293,7 +293,7 @@ async fn boop_reply_dismisses_matching_rows_before_sending() {
     let outcome = send_boop_reply_notification(
         &actions,
         NotificationBoopReplyInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
             emoji_id: "emoji_wave".into(),
@@ -325,7 +325,7 @@ async fn boop_reply_send_failure_keeps_dismiss_expirations() {
     let outcome = send_boop_reply_notification(
         &actions,
         NotificationBoopReplyInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
             emoji_id: String::new(),
@@ -347,7 +347,7 @@ async fn boop_dismiss_hide_failure_still_expires_each_row() {
     let outcome = dismiss_boop_notifications(
         &actions,
         NotificationBoopDismissInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             sender_user_id: "usr_sender".into(),
         },
@@ -365,7 +365,7 @@ async fn boop_reply_requires_sender_user_id() {
     let result = send_boop_reply_notification(
         &actions,
         NotificationBoopReplyInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: NotificationTarget {
                 id: "notif".into(),
@@ -387,7 +387,7 @@ async fn invite_response_photo_reports_sent_photo() {
     let outcome = send_invite_response_notification(
         &actions,
         NotificationInviteResponseInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
             response_slot: 1,
@@ -412,7 +412,7 @@ async fn invite_response_send_failure_skips_hide_and_expire() {
     let outcome = send_invite_response_notification(
         &actions,
         NotificationInviteResponseInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 2),
             response_slot: 0,
@@ -433,7 +433,7 @@ async fn request_invite_accept_sends_invite_with_rsvp_then_cleans_up() {
     let outcome = accept_request_invite_notification(
         &actions,
         NotificationRequestInviteAcceptInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 1),
             instance_id: "wrld_1:1234".into(),
@@ -489,7 +489,7 @@ async fn request_invite_accept_without_location_still_cleans_up() {
     let outcome = accept_request_invite_notification(
         &actions,
         NotificationRequestInviteAcceptInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 1),
             instance_id: String::new(),
@@ -510,7 +510,7 @@ async fn request_invite_send_failure_skips_cleanup() {
     let outcome = accept_request_invite_notification(
         &actions,
         NotificationRequestInviteAcceptInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             endpoint: String::new(),
             target: target("notif", 1),
             instance_id: "wrld_1:1234".into(),

@@ -16,6 +16,7 @@ use super::common::{
     resolve_target_or_result, social_aggregates_result, structured_result, TargetResolutionOutcome,
     TimeWindowParams, WithResolution,
 };
+use vrcx_0_persistence::OwnerId;
 
 #[tool_router(router = friends_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -36,7 +37,7 @@ impl VrcxMcpServer {
                 None => (None, None),
             };
         let output = self.get_friend_log_output(
-            owner_user_id,
+            owner_user_id.clone(),
             FriendLogParams {
                 target: target_user_id,
                 types: input.types,
@@ -62,7 +63,7 @@ impl VrcxMcpServer {
         social_aggregates_result(social_aggregates::resolve_user_by_name(
             self.runtime.db.as_ref(),
             social_aggregates::ResolveUserInput {
-                owner_user_id,
+                owner_user_id: owner_user_id.clone(),
                 name_query: input.name,
                 limit: input.limit,
             },
@@ -117,7 +118,7 @@ impl VrcxMcpServer {
             TargetResolutionOutcome::ToolResult(result) => return Ok(result),
         };
         let output = self.get_friend_profile_output(
-            owner_user_id,
+            owner_user_id.clone(),
             FriendProfileParams {
                 user: target.user_id,
                 time_window: input.time_window,
@@ -147,7 +148,7 @@ impl VrcxMcpServer {
         let output = social_aggregates::get_friend_changes(
             self.runtime.db.as_ref(),
             social_aggregates::FriendChangesInput {
-                owner_user_id,
+                owner_user_id: owner_user_id.clone(),
                 target_user_id,
                 time_window: input.time_window.into(),
                 kind: input.kind.into(),
@@ -165,7 +166,7 @@ impl VrcxMcpServer {
 impl VrcxMcpServer {
     fn get_friend_log_output(
         &self,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         input: FriendLogParams,
     ) -> Result<social_aggregates::FriendLogOutput, String> {
         if let Some(target) = input
@@ -268,7 +269,7 @@ impl VrcxMcpServer {
             .collect::<Vec<_>>();
         let names = persistence_friends::friend_display_names(
             self.runtime.db.as_ref(),
-            owner_user_id,
+            owner_user_id.clone(),
             &user_ids,
         )
         .map_err(map_persistence_error)?;
@@ -314,7 +315,7 @@ impl VrcxMcpServer {
     }
     fn get_friend_profile_output(
         &self,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         input: FriendProfileParams,
     ) -> Result<FriendProfileOutput, String> {
         let user_id = input.user.trim().to_string();
@@ -421,7 +422,7 @@ impl VrcxMcpServer {
     }
     fn friend_relationship_profile(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         user_id: &str,
         time_window: TimeWindowParams,
     ) -> Result<FriendRelationshipProfile, String> {
@@ -433,7 +434,7 @@ impl VrcxMcpServer {
         .into_iter()
         .find(|row| row.user_id == user_id);
         let log = self.get_friend_log_output(
-            owner_user_id.to_string(),
+            owner_user_id.clone(),
             FriendLogParams {
                 target: Some(user_id.to_string()),
                 types: None,
@@ -483,7 +484,7 @@ impl VrcxMcpServer {
 
     fn friend_profile_changes(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         user_id: &str,
         time_window: social_aggregates::TimeWindow,
     ) -> Result<Vec<FriendProfileChangeSummary>, String> {
@@ -496,7 +497,7 @@ impl VrcxMcpServer {
             let output = social_aggregates::get_friend_changes(
                 self.runtime.db.as_ref(),
                 social_aggregates::FriendChangesInput {
-                    owner_user_id: owner_user_id.to_string(),
+                    owner_user_id: owner_user_id.clone(),
                     target_user_id: Some(user_id.to_string()),
                     time_window: time_window.clone(),
                     kind: kind.clone(),

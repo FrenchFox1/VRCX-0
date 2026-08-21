@@ -18,6 +18,7 @@ use vrcx_0_vrchat_client::{
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
+use vrcx_0_persistence::OwnerId;
 
 const NOTIFICATION_SYNC_PAGE_SIZE: i32 = 100;
 const NOTIFICATION_SYNC_MAX_PAGES: usize = 50;
@@ -110,7 +111,7 @@ pub async fn sync_notifications(
     let v2_count = v2_rows.len();
     write_realtime_batch(
         deps.db,
-        &deps.expected_scope.current_user_id,
+        &OwnerId::new(deps.expected_scope.current_user_id.clone()),
         &RealtimePersistenceBatch {
             notification_v1_upserts: regular_v1,
             notification_v2_upserts: v2_rows,

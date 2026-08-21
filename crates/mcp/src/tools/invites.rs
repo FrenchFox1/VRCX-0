@@ -21,7 +21,7 @@ impl VrcxMcpServer {
         social_aggregates_result(social_aggregates::get_invite_history(
             self.runtime.db.as_ref(),
             social_aggregates::InviteHistoryInput {
-                owner_user_id,
+                owner_user_id: owner_user_id.clone(),
                 time_window: input.time_window.into(),
                 direction: input.direction.into(),
                 limit: input.limit,

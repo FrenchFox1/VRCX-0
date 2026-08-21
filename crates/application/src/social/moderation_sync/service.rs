@@ -21,6 +21,7 @@ use super::types::{
 };
 use super::ModerationSyncRuntime;
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_persistence::OwnerId;
 
 const MODERATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -94,8 +95,12 @@ async fn load_player_moderations(
             .iter()
             .map(RemoteModerationRow::to_local_input)
             .collect();
-        local_moderation::local_moderation_sync_snapshot(deps.db, user_id.clone(), local_inputs)?
-            .len()
+        local_moderation::local_moderation_sync_snapshot(
+            deps.db,
+            OwnerId::new(user_id.clone()),
+            local_inputs,
+        )?
+        .len()
     } else {
         0
     };
@@ -152,7 +157,7 @@ pub async fn update_player_moderation(
     {
         let existing = local_moderation::local_moderation_get(
             deps.db,
-            owner_user_id.clone(),
+            OwnerId::new(owner_user_id.clone()),
             target_user_id.clone(),
         )?;
         let (block, mute) = resolve_local_moderation_state(existing.as_ref(), kind, input.enabled);
@@ -160,7 +165,7 @@ pub async fn update_player_moderation(
         if block || mute {
             local_moderation::local_moderation_set(
                 deps.db,
-                owner_user_id.clone(),
+                OwnerId::new(owner_user_id.clone()),
                 LocalModerationInput {
                     user_id: target_user_id.clone(),
                     updated_at: updated_at.clone(),
@@ -179,7 +184,7 @@ pub async fn update_player_moderation(
         } else {
             local_moderation::local_moderation_delete(
                 deps.db,
-                owner_user_id.clone(),
+                OwnerId::new(owner_user_id.clone()),
                 target_user_id.clone(),
             )?;
             Some(LocalModerationOutput {
@@ -195,7 +200,7 @@ pub async fn update_player_moderation(
     };
 
     Ok(ModerationSyncMutationOutput {
-        owner_user_id,
+        owner_user_id: OwnerId::new(owner_user_id),
         target_user_id,
         r#type,
         enabled: input.enabled,

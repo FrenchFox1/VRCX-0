@@ -7,6 +7,7 @@ use crate::common::{
     add_list_params, normalize_text, row_i64, row_string, value_as_i64, ParamsBuilder,
 };
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
+use crate::ownership::OwnerId;
 use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
 
@@ -147,10 +148,10 @@ pub fn friend_log_current_list(
 /// load and materialize the entire friend roster.
 pub fn friend_display_names(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     user_ids: &[String],
 ) -> Result<HashMap<String, String>, Error> {
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     if owner_user_id.is_empty() || user_ids.is_empty() {
         return Ok(HashMap::new());
     }

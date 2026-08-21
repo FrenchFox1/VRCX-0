@@ -9,6 +9,7 @@ use vrcx_0_persistence::browse_history::{
 
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_persistence::OwnerId;
 
 #[tauri::command]
 #[specta::specta]
@@ -34,7 +35,7 @@ pub fn app__browse_history_query(
 #[specta::specta]
 pub fn app__browse_history_delete(
     state: State<'_, AppState>,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     entity_kind: BrowseHistoryEntityKind,
     entity_id: String,
 ) -> Result<i64, AppError> {
@@ -51,7 +52,7 @@ pub fn app__browse_history_delete(
 #[specta::specta]
 pub fn app__browse_history_clear(
     state: State<'_, AppState>,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     entity_kind: Option<BrowseHistoryEntityKind>,
 ) -> Result<i64, AppError> {
     vrcx_0_persistence::browse_history::browse_history_clear(

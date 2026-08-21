@@ -6,6 +6,7 @@ use std::sync::{
 use vrcx_0_application_core::RuntimeAuthScope;
 
 use super::RuntimeHostState;
+use vrcx_0_persistence::OwnerId;
 
 const ACTIVITY_WARMUP_RANGE_DAYS: i64 = 365;
 
@@ -34,7 +35,7 @@ impl RuntimeHostState {
                 }
                 match vrcx_0_persistence::activity::activity_self_sessions_warmup(
                     db.as_ref(),
-                    user_id.clone(),
+                    OwnerId::new(user_id.clone()),
                     ACTIVITY_WARMUP_RANGE_DAYS,
                     None,
                 ) {

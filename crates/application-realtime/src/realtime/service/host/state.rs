@@ -24,6 +24,7 @@ use crate::realtime::{
     RealtimeTransportLifecycleEvent,
 };
 use crate::world_enrich::PendingEntryCorrection;
+use vrcx_0_persistence::OwnerId;
 
 pub(super) struct FriendOwnerGuard<'a> {
     pub(super) _guard: std::sync::MutexGuard<'a, ()>,
@@ -37,15 +38,19 @@ pub(super) enum FriendLogMutation {
 pub(super) type CurrentUserRefreshStatus = Option<std::result::Result<bool, String>>;
 
 pub(super) struct ScopedFriendLogMutation {
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     endpoint: String,
     mutation: FriendLogMutation,
 }
 
 impl ScopedFriendLogMutation {
-    pub(super) fn new(owner_user_id: &str, endpoint: &str, mutation: FriendLogMutation) -> Self {
+    pub(super) fn new(
+        owner_user_id: &OwnerId,
+        endpoint: &str,
+        mutation: FriendLogMutation,
+    ) -> Self {
         Self {
-            owner_user_id: owner_user_id.trim().to_string(),
+            owner_user_id: OwnerId::new(owner_user_id.as_str().trim()),
             endpoint: normalize_vrchat_api_endpoint(Some(endpoint)),
             mutation,
         }
@@ -55,7 +60,7 @@ impl ScopedFriendLogMutation {
         let Some(pending) = baseline.pending.as_mut() else {
             return;
         };
-        if pending.session.user_id.trim() != self.owner_user_id
+        if pending.session.user_id.trim() != self.owner_user_id.as_str()
             || normalize_vrchat_api_endpoint(Some(&pending.session.endpoint)) != self.endpoint
         {
             return;

@@ -17,6 +17,7 @@ use crate::{EmptyEventPayload, GameLogSideEffectEvent, GameLogSideEffectSink};
 use crate::{ImageCache, TaskSupervisor, WebClient};
 
 use super::GameLogProcessorDeps;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone)]
 pub(super) struct GameLogSideEffectDeps {
@@ -74,7 +75,7 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
                     &deps.event_bus,
                     &deps.backend_status,
                     &deps.side_effect_sink,
-                    &deps.auth_identity.user_id,
+                    &OwnerId::new(deps.auth_identity.user_id),
                     input,
                 )
                 .await

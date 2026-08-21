@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn resolve_user_ranks_exact_then_friend_then_seen() {
@@ -34,7 +35,7 @@ fn resolve_user_ranks_exact_then_friend_then_seen() {
     let output = resolve_user_by_name(
         &db,
         ResolveUserInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             name_query: "Alic".into(),
             limit: None,
         },
@@ -90,7 +91,7 @@ fn recall_encounter_excludes_owner_self_rows() {
     let output = recall_encounter(
         &db,
         RecallEncounterInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             name_query: Some("luna".into()),
             world_id: None,
             co_present_with_user_id: None,
@@ -167,7 +168,7 @@ fn recall_encounter_filters_by_name_and_copresence_including_non_friends() {
     let output = recall_encounter(
         &db,
         RecallEncounterInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             name_query: Some("luna".into()),
             world_id: None,
             co_present_with_user_id: Some("usr_anchor".into()),
@@ -191,7 +192,7 @@ fn recall_encounter_filters_by_name_and_copresence_including_non_friends() {
     let anchored = recall_encounter(
         &db,
         RecallEncounterInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             name_query: None,
             world_id: None,
             co_present_with_user_id: Some("usr_anchor".into()),

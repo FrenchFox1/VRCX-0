@@ -21,6 +21,7 @@ use super::state::{
     CURRENT_USER_REFRESH_LOCAL_AUTHORITY_FIELDS,
 };
 use super::utils::{has_remote_current_user_presence, map_from_json, normalize_id, EventTime};
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Debug, Default)]
 pub struct RealtimeCurrentUserRuntime {
@@ -307,7 +308,7 @@ impl RealtimeCurrentUserRuntime {
             (previous_avatar_swap_time > 0).then_some(previous_avatar_swap_time),
         );
         Some(RealtimeCurrentUserOutput {
-            owner_user_id: state.current_user_id.clone(),
+            owner_user_id: OwnerId::new(state.current_user_id.clone()),
             projection: RealtimeCurrentUserProjection {
                 generation: state.generation,
                 patch: map_from_json(json!({ "id": state.current_user_id.clone() })),

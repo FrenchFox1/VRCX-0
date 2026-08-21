@@ -5,6 +5,7 @@ use vrcx_0_persistence::DatabaseService;
 
 use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{RuntimeAuthScope, WebClient};
+use vrcx_0_persistence::OwnerId;
 
 pub struct ModerationSyncDeps<'a> {
     pub db: &'a DatabaseService,
@@ -107,7 +108,7 @@ impl RemoteModerationRow {
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ModerationSyncMutationOutput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub target_user_id: String,
     pub r#type: String,
     pub enabled: bool,

@@ -3,6 +3,7 @@ use serde::Serialize;
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::{ensure_global_store_tables, ensure_user_store_tables};
 use crate::database::DatabaseService;
+use crate::ownership::OwnerId;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -125,9 +126,9 @@ pub fn memo_list_users_page(
 
 pub fn memo_list_user_notes(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
 ) -> Result<Vec<UserNoteOutput>, Error> {
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     if owner_user_id.is_empty() {
         return Ok(Vec::new());
     }

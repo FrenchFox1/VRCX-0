@@ -21,6 +21,7 @@ use super::utils::{
     has_remote_current_user_presence, is_offline_location, normalize_id, resolve_state_bucket,
     EventTime,
 };
+use vrcx_0_persistence::OwnerId;
 
 pub(super) fn apply_user_update(
     state: &mut RealtimeCurrentUserState,
@@ -206,7 +207,7 @@ pub(super) fn apply_current_user_patch(
     state.sequence = state.sequence.saturating_add(1);
     state.snapshot = snapshot;
     Some(RealtimeCurrentUserOutput {
-        owner_user_id: state.current_user_id.clone(),
+        owner_user_id: OwnerId::new(state.current_user_id.clone()),
         projection: RealtimeCurrentUserProjection {
             generation: state.generation,
             patch: projection_patch,

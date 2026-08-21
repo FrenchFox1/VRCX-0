@@ -32,6 +32,7 @@ use super::entry::{
 use super::profile::{
     fetch_all_friends, insert_fetched_friend, normalize_state_bucket, RemoteFriendProfile,
 };
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Debug, Default)]
 pub struct FriendStatusVerdicts(HashMap<String, bool>);
@@ -599,7 +600,7 @@ pub(crate) fn reconcile_friend_roster_records(
 
     if feed_persistence_disabled {
         let feed_entries = std::mem::take(&mut batch.feed_entries);
-        return match write_realtime_batch(db, user_id, &batch) {
+        return match write_realtime_batch(db, &OwnerId::new(user_id), &batch) {
             Ok(counts) => FriendRosterReconcileOutcome {
                 changed: counts.affected_count > 0,
                 feed_entries,
@@ -613,7 +614,7 @@ pub(crate) fn reconcile_friend_roster_records(
             }
         };
     }
-    match write_realtime_batch(db, user_id, &batch) {
+    match write_realtime_batch(db, &OwnerId::new(user_id), &batch) {
         Ok(counts) => FriendRosterReconcileOutcome {
             changed: counts.affected_count > 0,
             feed_entries: batch.feed_entries,

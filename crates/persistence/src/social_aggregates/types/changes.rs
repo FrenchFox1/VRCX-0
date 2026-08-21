@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::TimeWindow;
+use crate::ownership::OwnerId;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -14,7 +15,7 @@ pub enum FriendChangeKind {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendChangesInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub target_user_id: Option<String>,
     pub time_window: TimeWindow,

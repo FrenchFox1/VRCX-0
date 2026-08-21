@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::common::{row_string, ParamsBuilder};
 use crate::database::DatabaseService;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -12,7 +12,7 @@ use super::types::{ActivityBucket, TimeWindow};
 /// log, so aggregations can surface readable world names instead of raw ids.
 pub(crate) fn world_names_for_ids(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     world_ids: &BTreeSet<String>,
 ) -> Result<HashMap<String, String>, Error> {
     if world_ids.is_empty() {
@@ -54,7 +54,7 @@ pub(crate) fn world_names_for_ids(
 /// just the bounded result set instead of carrying names through the fold.
 pub(crate) fn latest_display_names_for_users(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_ids: &[String],
 ) -> Result<HashMap<String, String>, Error> {
     if user_ids.is_empty() {
@@ -95,9 +95,9 @@ pub(crate) fn latest_display_names_for_users(
 /// unknown or the table has not been created yet.
 pub(crate) fn friend_current_table_name(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Option<String>, Error> {
-    let owner = owner_user_id.trim();
+    let owner = owner_user_id.as_str().trim();
     if owner.is_empty() {
         return Ok(None);
     }
@@ -108,7 +108,7 @@ pub(crate) fn friend_current_table_name(
 
 pub(crate) fn current_friend_id_set(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<HashSet<String>, Error> {
     let Some(table_name) = friend_current_table_name(db, owner_user_id)? else {
         return Ok(HashSet::new());

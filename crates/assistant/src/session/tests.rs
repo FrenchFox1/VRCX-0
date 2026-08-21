@@ -8,7 +8,10 @@ fn test_db() -> Arc<DatabaseService> {
 }
 
 fn create_test_session(store: &SessionStore) -> Session {
-    store.create_session_with_runtime(TEST_OWNER, AssistantRuntimeSelection::default())
+    store.create_session_with_runtime(
+        &OwnerId::new(TEST_OWNER),
+        AssistantRuntimeSelection::default(),
+    )
 }
 
 #[test]
@@ -30,7 +33,7 @@ fn reopened_session_keeps_history_for_followups() {
     // hydrate the prior turns so the next question is sent with context.
     let reopened = SessionStore::with_db(db);
     let history = reopened
-        .get(TEST_OWNER, &session.id)
+        .get(&OwnerId::new(TEST_OWNER), &session.id)
         .unwrap()
         .unwrap()
         .messages;
@@ -53,7 +56,7 @@ fn message_load_failure_retries_without_caching_partial_history() {
         session.id
     };
     let reopened = SessionStore::with_db(db.clone());
-    assert_eq!(reopened.list(TEST_OWNER).len(), 1);
+    assert_eq!(reopened.list(&OwnerId::new(TEST_OWNER)).len(), 1);
 
     let _frozen = db.freeze_for_migration().unwrap();
     assert!(reopened
@@ -67,7 +70,10 @@ fn message_load_failure_retries_without_caching_partial_history() {
         .contains_key(&session_id));
 
     db.reopen_after_migration_abort().unwrap();
-    let restored = reopened.get(TEST_OWNER, &session_id).unwrap().unwrap();
+    let restored = reopened
+        .get(&OwnerId::new(TEST_OWNER), &session_id)
+        .unwrap()
+        .unwrap();
     assert_eq!(restored.messages.len(), 1);
     assert_eq!(restored.messages[0].content, "persisted");
     assert!(reopened
@@ -89,7 +95,10 @@ fn session_content_cache_evicts_clean_inactive_histories() {
     );
 
     let oldest = &session_ids[0];
-    assert!(store.get(TEST_OWNER, oldest).unwrap().is_some());
+    assert!(store
+        .get(&OwnerId::new(TEST_OWNER), oldest)
+        .unwrap()
+        .is_some());
     let state = store.state.lock().unwrap();
     assert_eq!(state.contents.len(), SESSION_CONTENT_CACHE_CAPACITY);
     assert!(state.contents.contains_key(oldest));
@@ -131,13 +140,19 @@ fn session_snapshot_keeps_title_and_messages_consistent_during_push() {
     });
 
     while !writer.is_finished() {
-        let snapshot = store.get(TEST_OWNER, &session_id).unwrap().unwrap();
+        let snapshot = store
+            .get(&OwnerId::new(TEST_OWNER), &session_id)
+            .unwrap()
+            .unwrap();
         if !snapshot.messages.is_empty() {
             assert_eq!(snapshot.title, "first message");
         }
     }
     writer.join().unwrap();
-    let snapshot = store.get(TEST_OWNER, &session_id).unwrap().unwrap();
+    let snapshot = store
+        .get(&OwnerId::new(TEST_OWNER), &session_id)
+        .unwrap()
+        .unwrap();
     assert_eq!(snapshot.title, "first message");
     assert_eq!(snapshot.messages.len(), 1);
 }
@@ -161,7 +176,7 @@ fn reopened_session_restores_panel_state() {
 
     // Surfacing entities auto-opens the panel; both must survive a restart.
     let reopened = SessionStore::with_db(db)
-        .get(TEST_OWNER, &session_id)
+        .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
     assert!(reopened.entity_panel_open);
@@ -178,7 +193,7 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
         let session = create_test_session(&store);
         store
             .set_runtime(
-                TEST_OWNER,
+                &OwnerId::new(TEST_OWNER),
                 &session.id,
                 AssistantRuntimeSelection {
                     endpoint_id: Some("ep_1".into()),
@@ -193,7 +208,7 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
     };
 
     let reopened = SessionStore::with_db(db.clone())
-        .get(TEST_OWNER, &session_id)
+        .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
     assert_eq!(reopened.endpoint_id.as_deref(), Some("ep_1"));
@@ -208,7 +223,7 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
     let store = SessionStore::with_db(db);
     let seeded = store
         .ensure_session_with_runtime(
-            TEST_OWNER,
+            &OwnerId::new(TEST_OWNER),
             Some(old_session_id),
             AssistantRuntimeSelection {
                 endpoint_id: Some("ep_seed".into()),
@@ -240,7 +255,7 @@ fn empty_surfaced_entities_clear_prior_references() {
         );
         store.set_surfaced_entities(&session.id, &[]);
         assert!(store
-            .get(TEST_OWNER, &session.id)
+            .get(&OwnerId::new(TEST_OWNER), &session.id)
             .unwrap()
             .unwrap()
             .surfaced_entities
@@ -249,7 +264,7 @@ fn empty_surfaced_entities_clear_prior_references() {
     };
 
     let reopened = SessionStore::with_db(db)
-        .get(TEST_OWNER, &session_id)
+        .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
     assert!(reopened.surfaced_entities.is_empty());
@@ -266,7 +281,7 @@ fn manual_panel_toggle_persists() {
         session.id
     };
     let reopened = SessionStore::with_db(db)
-        .get(TEST_OWNER, &session_id)
+        .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
     assert!(!reopened.entity_panel_open);
@@ -276,14 +291,15 @@ fn manual_panel_toggle_persists() {
 fn owner_switch_hides_other_sessions_and_keeps_shared_legacy_sessions() {
     let db = test_db();
     let store = SessionStore::with_db(db.clone());
-    let session_a =
-        store.create_session_with_runtime("usr_a", AssistantRuntimeSelection::default());
-    let session_b =
-        store.create_session_with_runtime("usr_b", AssistantRuntimeSelection::default());
-    let shared = store.create_session_with_runtime("", AssistantRuntimeSelection::default());
+    let session_a = store
+        .create_session_with_runtime(&OwnerId::new("usr_a"), AssistantRuntimeSelection::default());
+    let session_b = store
+        .create_session_with_runtime(&OwnerId::new("usr_b"), AssistantRuntimeSelection::default());
+    let shared =
+        store.create_session_with_runtime(&OwnerId::new(""), AssistantRuntimeSelection::default());
 
     let visible_to_a = store
-        .list("usr_a")
+        .list(&OwnerId::new("usr_a"))
         .into_iter()
         .map(|session| session.id)
         .collect::<std::collections::HashSet<_>>();
@@ -291,15 +307,22 @@ fn owner_switch_hides_other_sessions_and_keeps_shared_legacy_sessions() {
         visible_to_a,
         std::collections::HashSet::from([session_a.id.clone(), shared.id.clone()])
     );
-    assert!(store.get("usr_a", &session_b.id).unwrap().is_none());
     assert!(store
-        .set_runtime("usr_b", &session_a.id, AssistantRuntimeSelection::default(),)
+        .get(&OwnerId::new("usr_a"), &session_b.id)
+        .unwrap()
+        .is_none());
+    assert!(store
+        .set_runtime(
+            &OwnerId::new("usr_b"),
+            &session_a.id,
+            AssistantRuntimeSelection::default(),
+        )
         .unwrap()
         .is_none());
 
-    store.delete("usr_b", &session_a.id);
+    store.delete(&OwnerId::new("usr_b"), &session_a.id);
     assert!(SessionStore::with_db(db)
-        .get("usr_a", &session_a.id)
+        .get(&OwnerId::new("usr_a"), &session_a.id)
         .unwrap()
         .is_some());
 }
@@ -307,15 +330,18 @@ fn owner_switch_hides_other_sessions_and_keeps_shared_legacy_sessions() {
 #[test]
 fn persisted_sessions_load_only_for_the_requested_owner() {
     let db = test_db();
-    assistant::assistant_session_upsert(&db, "usr_a", "ses_a", "a", "t0", "t0").unwrap();
-    assistant::assistant_session_upsert(&db, "usr_b", "ses_b", "b", "t0", "t0").unwrap();
-    assistant::assistant_session_upsert(&db, "", "ses_shared", "shared", "t0", "t0").unwrap();
+    assistant::assistant_session_upsert(&db, &OwnerId::new("usr_a"), "ses_a", "a", "t0", "t0")
+        .unwrap();
+    assistant::assistant_session_upsert(&db, &OwnerId::new("usr_b"), "ses_b", "b", "t0", "t0")
+        .unwrap();
+    assistant::assistant_session_upsert(&db, &OwnerId::new(""), "ses_shared", "shared", "t0", "t0")
+        .unwrap();
     let store = SessionStore::with_db(db);
 
     assert!(store.state.lock().unwrap().sessions.is_empty());
 
     let visible_to_a = store
-        .list("usr_a")
+        .list(&OwnerId::new("usr_a"))
         .into_iter()
         .map(|session| session.id)
         .collect::<HashSet<_>>();
@@ -327,7 +353,7 @@ fn persisted_sessions_load_only_for_the_requested_owner() {
     assert!(!store.state.lock().unwrap().sessions.contains_key("ses_b"));
 
     let visible_to_b = store
-        .list("usr_b")
+        .list(&OwnerId::new("usr_b"))
         .into_iter()
         .map(|session| session.id)
         .collect::<HashSet<_>>();

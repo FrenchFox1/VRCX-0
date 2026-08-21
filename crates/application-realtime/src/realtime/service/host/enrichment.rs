@@ -14,6 +14,7 @@ use super::{
     RealtimeHostRuntime, RealtimeInstanceQueueProjection, RealtimeNotificationOutput,
     RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimePersistenceBatch, Value,
 };
+use vrcx_0_persistence::OwnerId;
 
 const NOTIFICATION_USERNAME_RESOLVE_BUDGET_MS: u64 = 2_000;
 const NOTIFICATION_USERNAME_RESOLVE_ATTEMPTS: usize = 3;
@@ -64,7 +65,7 @@ impl RealtimeHostRuntime {
     pub(super) fn enrich_notification_images(
         &self,
         projection: &mut RealtimeNotificationProjection,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
     ) {
         let endpoint = self.active_endpoint();
         if endpoint.is_empty() {
@@ -174,7 +175,7 @@ impl RealtimeHostRuntime {
         endpoint: &str,
         value: &mut Value,
         allow_user_icon: bool,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
     ) -> bool {
         if notification_has_direct_image(value) {
             return true;
@@ -573,7 +574,7 @@ fn notification_allows_avatar_resolution(value: &Value) -> bool {
     is_person_notification_type(&object_string(object, "type"))
 }
 
-fn notification_avatar_user_id(value: &Value, owner_user_id: &str) -> Option<String> {
+fn notification_avatar_user_id(value: &Value, owner_user_id: &OwnerId) -> Option<String> {
     if !notification_allows_avatar_resolution(value) {
         return None;
     }
@@ -581,7 +582,7 @@ fn notification_avatar_user_id(value: &Value, owner_user_id: &str) -> Option<Str
     if !user_id.starts_with("usr_") {
         return None;
     }
-    let owner_user_id = owner_user_id.trim();
+    let owner_user_id = owner_user_id.as_str().trim();
     if !owner_user_id.is_empty() && user_id == owner_user_id {
         return None;
     }

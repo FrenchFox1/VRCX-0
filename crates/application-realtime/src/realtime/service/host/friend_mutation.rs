@@ -10,6 +10,7 @@ use crate::realtime::RealtimeFriendApplyResult;
 use super::fanout::FriendOutputApplyOutcome;
 use super::state::{FriendLogMutation, FriendOwnerGuard, ScopedFriendLogMutation};
 use super::RealtimeHostRuntime;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SyntheticFriendEventOutcome {
@@ -28,7 +29,7 @@ impl RealtimeHostRuntime {
 
     pub fn run_scoped_friend_log_removal<T>(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         endpoint: &str,
         target_user_id: &str,
         mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
@@ -47,7 +48,7 @@ impl RealtimeHostRuntime {
 
     pub fn run_scoped_friend_log_upsert<T>(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         endpoint: &str,
         record: FriendRecord,
         mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
@@ -66,7 +67,7 @@ impl RealtimeHostRuntime {
 
     pub fn apply_synthetic_friend_delete(
         self: &Arc<Self>,
-        expected_owner_user_id: &str,
+        expected_owner_user_id: &OwnerId,
         expected_endpoint: &str,
         target_user_id: &str,
         received_at: String,
@@ -85,7 +86,7 @@ impl RealtimeHostRuntime {
 
     pub fn apply_synthetic_trusted_friend_add(
         self: &Arc<Self>,
-        expected_owner_user_id: &str,
+        expected_owner_user_id: &OwnerId,
         expected_endpoint: &str,
         target_user_id: &str,
         profile: Value,
@@ -107,7 +108,7 @@ impl RealtimeHostRuntime {
     fn apply_synthetic_friend_event_with_owner(
         self: &Arc<Self>,
         owner: &FriendOwnerGuard<'_>,
-        expected_owner_user_id: &str,
+        expected_owner_user_id: &OwnerId,
         expected_endpoint: &str,
         event: SyntheticFriendEvent,
         received_at: String,

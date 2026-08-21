@@ -34,6 +34,7 @@ use crate::{RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache};
 use vrcx_0_application_activity::OverlayActivityRuntime;
 
 use self::side_effects::{dispatch_side_effect, GameLogSideEffectDeps};
+use vrcx_0_persistence::OwnerId;
 
 mod side_effects;
 
@@ -306,7 +307,7 @@ impl GameLogProcessor {
     ) -> Result<()> {
         self.enrich_ingest_output_world_names(&mut output);
         let write_outcome = self.write_batch_or_emit_failure_telemetry(
-            &deps.auth_identity.user_id,
+            &OwnerId::new(deps.auth_identity.user_id.clone()),
             &output.batch,
             output.input_count,
         )?;
@@ -388,7 +389,7 @@ impl GameLogProcessor {
 
     fn write_batch_or_emit_failure_telemetry(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         batch: &GameLogWriteBatch,
         attempted_row_count: usize,
     ) -> Result<GameLogWriteOutcome> {
@@ -564,7 +565,7 @@ fn remember_error(first_error: &mut Option<Error>, error: Error) {
 
 fn write_batch_with_retry(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     batch: &GameLogWriteBatch,
 ) -> Result<u64> {
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();

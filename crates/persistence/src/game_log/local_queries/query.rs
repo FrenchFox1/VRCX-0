@@ -1,4 +1,5 @@
 use super::*;
+use crate::ownership::OwnerId;
 
 fn non_negative_query_param_i64(params: &Value, key: &str, default_value: i64) -> i64 {
     query_param_i64(params, key, default_value).max(0)
@@ -47,7 +48,7 @@ fn location_filter_sql(instance_id: &str, db_params: &mut HashMap<String, Value>
 
 pub fn game_log_query(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     query: GameLogQueryInput,
 ) -> Result<Value, Error> {
     let params = query.params.into_value();

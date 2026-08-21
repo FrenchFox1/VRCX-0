@@ -9,6 +9,7 @@ use vrcx_0_persistence::DatabaseService;
 use super::roster::fold_roster;
 use super::runtime_state::{parse_event_time_ms, world_id_from_location};
 use crate::Result;
+use vrcx_0_persistence::OwnerId;
 
 const ROSTER_RANGE_END: &str = "9999-12-31T23:59:59Z";
 
@@ -104,7 +105,7 @@ fn empty_context(location: String, source: PlayerListSnapshotSource) -> PlayerLi
 
 fn resolve_location_context(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     current_location: &str,
 ) -> Result<PlayerListSnapshotContext> {
     let normalized = current_location.trim().to_string();
@@ -138,7 +139,7 @@ fn resolve_location_context(
 
 fn rebuild_roster(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     location: &str,
     started_at: &str,
     current_user_id: &str,
@@ -200,7 +201,7 @@ fn rebuild_roster(
 
 pub fn player_list_current_snapshot(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     current_user_id: &str,
     current_location: &str,
     current_location_started_at: &str,

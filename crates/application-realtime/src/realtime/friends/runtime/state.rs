@@ -25,6 +25,7 @@ use super::persistence::{is_online_state, offline_feed_entry, OfflineFeedPreviou
 use super::utils::EventTime;
 
 pub(super) use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY_MS;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct RecentGps {
@@ -63,7 +64,7 @@ enum FriendEventTrust {
 }
 
 struct ExpectedFriendScope<'a> {
-    owner_user_id: &'a str,
+    owner_user_id: &'a OwnerId,
     endpoint: &'a str,
 }
 
@@ -563,7 +564,7 @@ impl RealtimeFriendsRuntime {
 
     pub(crate) fn apply_scoped_synthetic_event(
         &self,
-        expected_owner_user_id: &str,
+        expected_owner_user_id: &OwnerId,
         expected_endpoint: &str,
         event: SyntheticFriendEvent,
         received_at: &str,
@@ -624,7 +625,7 @@ impl RealtimeFriendsRuntime {
             return RealtimeFriendApplyResult::MissingBaseline;
         };
         if expected_scope.is_some_and(|expected| {
-            baseline.current_user_id != expected.owner_user_id.trim()
+            baseline.current_user_id != expected.owner_user_id.as_str().trim()
                 || normalize_vrchat_api_endpoint(Some(&baseline.endpoint))
                     != normalize_vrchat_api_endpoint(Some(expected.endpoint))
         }) {
@@ -736,7 +737,8 @@ impl RealtimeFriendsRuntime {
         patch.set_pending_offline(false);
         let state_bucket = pending.state_bucket;
         let previous = pending.previous;
-        let mut output = RealtimeFriendOutput::new(owner_user_id, generation, baseline_revision);
+        let mut output =
+            RealtimeFriendOutput::new(OwnerId::new(owner_user_id), generation, baseline_revision);
         apply_record_patch_to_state(
             &mut state,
             &mut output,

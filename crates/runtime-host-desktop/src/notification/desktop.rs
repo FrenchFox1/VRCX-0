@@ -4,20 +4,21 @@ use vrcx_0_core::vrchat_ids::is_user_id;
 use vrcx_0_runtime_host::notification::RenderedNotification;
 
 use super::NotificationDeliveryPreferences;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DesktopNotificationAction {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub user_id: String,
 }
 
 impl DesktopNotificationAction {
-    pub fn open_user_profile(owner_user_id: &str, user_id: &str) -> Option<Self> {
-        if !is_user_id(owner_user_id) || !is_user_id(user_id) {
+    pub fn open_user_profile(owner_user_id: &OwnerId, user_id: &str) -> Option<Self> {
+        if !is_user_id(owner_user_id.as_str()) || !is_user_id(user_id) {
             return None;
         }
         Some(Self {
-            owner_user_id: owner_user_id.to_string(),
+            owner_user_id: owner_user_id.clone(),
             user_id: user_id.to_string(),
         })
     }
@@ -98,24 +99,26 @@ fn non_empty(value: &str) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
+    use vrcx_0_persistence::OwnerId;
+
     use super::DesktopNotificationAction;
 
     #[test]
     fn open_user_profile_action_requires_canonical_owner_and_actor_ids() {
         let action = DesktopNotificationAction::open_user_profile(
-            "usr_12345678-1234-1234-1234-1234567890ab",
+            &OwnerId::new("usr_12345678-1234-1234-1234-1234567890ab"),
             "usr_abcdefab-cdef-abcd-efab-cdefabcdefab",
         );
 
         assert_eq!(
             action,
             Some(DesktopNotificationAction {
-                owner_user_id: "usr_12345678-1234-1234-1234-1234567890ab".into(),
+                owner_user_id: OwnerId::new("usr_12345678-1234-1234-1234-1234567890ab"),
                 user_id: "usr_abcdefab-cdef-abcd-efab-cdefabcdefab".into(),
             })
         );
         assert!(DesktopNotificationAction::open_user_profile(
-            "usr_invalid",
+            &OwnerId::new("usr_invalid"),
             "usr_abcdefab-cdef-abcd-efab-cdefabcdefab"
         )
         .is_none());

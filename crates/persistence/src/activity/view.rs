@@ -22,6 +22,7 @@ use super::types::{
     ActivitySelfSessionsRefreshOutput, ActivityViewBuildInput, ActivityViewKind,
     ActivityViewOutput,
 };
+use crate::ownership::OwnerId;
 
 const BUCKET_COUNT: usize = 168;
 const DEFAULT_MAX_SESSION_MS: i64 = 8 * 60 * 60 * 1000;
@@ -131,7 +132,7 @@ pub fn activity_overlap_view_build(
     input: ActivityOverlapViewBuildInput,
 ) -> Result<ActivityOverlapViewOutput, Error> {
     let owner_user_id = normalize_owner_user_id(&input.owner_user_id, &input.current_user_id);
-    let current_user_id = normalize_text(input.current_user_id);
+    let current_user_id = OwnerId::new(normalize_text(input.current_user_id));
     let target_user_id = normalize_text(input.target_user_id);
     if owner_user_id.is_empty() || current_user_id.is_empty() || target_user_id.is_empty() {
         return Ok(empty_overlap_output(String::new(), input.now_ms));
@@ -218,11 +219,11 @@ pub fn activity_overlap_view_build(
 
 pub fn activity_self_sessions_warmup(
     db: &DatabaseService,
-    user_id: String,
+    owner_user_id: OwnerId,
     range_days: i64,
     now_ms: Option<i64>,
 ) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
-    refresh_self_activity_sessions(db, &user_id, range_days, now_ms, false)
+    refresh_self_activity_sessions(db, &owner_user_id, range_days, now_ms, false)
 }
 
 struct ActivitySource {
@@ -233,13 +234,13 @@ struct ActivitySource {
 
 fn self_activity_source(
     db: &DatabaseService,
-    user_id: &str,
+    owner_user_id: &OwnerId,
     range_days: i64,
     now_ms: i64,
     force_refresh: bool,
 ) -> Result<ActivitySource, Error> {
     let refreshed =
-        refresh_self_activity_sessions(db, user_id, range_days, Some(now_ms), force_refresh)?;
+        refresh_self_activity_sessions(db, owner_user_id, range_days, Some(now_ms), force_refresh)?;
     Ok(ActivitySource {
         has_any_data: !refreshed.sessions.is_empty(),
         cursor: refreshed.sync.source_last_created_at,
@@ -258,17 +259,17 @@ fn self_activity_source(
 
 fn refresh_self_activity_sessions(
     db: &DatabaseService,
-    user_id: &str,
+    owner_user_id: &OwnerId,
     range_days: i64,
     now_ms: Option<i64>,
     force_refresh: bool,
 ) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
-    activity_self_sessions_refresh_auto(db, user_id, range_days, now_ms, force_refresh)
+    activity_self_sessions_refresh_auto(db, owner_user_id, range_days, now_ms, force_refresh)
 }
 
 fn friend_activity_source(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     range_days: i64,
     now_ms: i64,
@@ -277,7 +278,7 @@ fn friend_activity_source(
     let rows = activity_friend_presence_slice(
         db,
         ActivityFriendPresenceSliceInput {
-            owner_user_id: owner_user_id.to_string(),
+            owner_user_id: owner_user_id.clone(),
             user_id: target_user_id.to_string(),
             from_date_iso,
             to_date_iso: String::new(),
@@ -311,7 +312,7 @@ fn friend_activity_source(
 
 fn cached_activity_output(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     range_days: i64,
     cursor: &str,
@@ -353,7 +354,7 @@ fn cached_activity_output(
 
 fn cached_overlap_output(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     range_days: i64,
     exclude_key: &str,
@@ -397,7 +398,7 @@ fn cached_overlap_output(
 
 fn upsert_activity_output_cache(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     range_days: i64,
     output: &ActivityViewOutput,
@@ -405,7 +406,7 @@ fn upsert_activity_output_cache(
     activity_bucket_cache_upsert(
         db,
         ActivityBucketCacheInput {
-            owner_user_id: owner_user_id.to_string(),
+            owner_user_id: owner_user_id.clone(),
             target_user_id: target_user_id.to_string(),
             range_days: json!(range_days),
             view_kind: ActivityViewKind::Activity,
@@ -428,7 +429,7 @@ fn upsert_activity_output_cache(
 
 fn upsert_overlap_output_cache(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     range_days: i64,
     exclude_key: &str,
@@ -437,7 +438,7 @@ fn upsert_overlap_output_cache(
     activity_bucket_cache_upsert(
         db,
         ActivityBucketCacheInput {
-            owner_user_id: owner_user_id.to_string(),
+            owner_user_id: owner_user_id.clone(),
             target_user_id: target_user_id.to_string(),
             range_days: json!(range_days),
             view_kind: ActivityViewKind::Overlap,
@@ -487,7 +488,7 @@ fn empty_overlap_output(cursor: String, now_ms: i64) -> ActivityOverlapViewOutpu
 
 fn matching_cached_bucket(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     range_days: i64,
     view_kind: ActivityViewKind,
@@ -497,7 +498,7 @@ fn matching_cached_bucket(
     let cached = activity_bucket_cache_get(
         db,
         ActivityBucketCacheQueryInput {
-            owner_user_id: owner_user_id.to_string(),
+            owner_user_id: owner_user_id.clone(),
             target_user_id: target_user_id.to_string(),
             range_days: json!(range_days),
             view_kind,
@@ -518,12 +519,12 @@ fn empty_buckets() -> Vec<f64> {
     vec![0.0; BUCKET_COUNT]
 }
 
-fn normalize_owner_user_id(owner_user_id: &str, fallback_user_id: &str) -> String {
-    let owner_user_id = normalize_text(owner_user_id);
+fn normalize_owner_user_id(owner_user_id: &OwnerId, fallback_user_id: &str) -> OwnerId {
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     if owner_user_id.is_empty() {
-        normalize_text(fallback_user_id)
+        OwnerId::new(normalize_text(fallback_user_id))
     } else {
-        owner_user_id
+        OwnerId::new(owner_user_id)
     }
 }
 
@@ -537,7 +538,7 @@ fn cache_range_days(range_days: i64) -> i64 {
 
 fn resolve_activity_effective_days(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     is_self: bool,
     range_days: i64,
@@ -556,8 +557,8 @@ fn resolve_activity_effective_days(
 
 fn resolve_overlap_effective_days(
     db: &DatabaseService,
-    owner_user_id: &str,
-    current_user_id: &str,
+    owner_user_id: &OwnerId,
+    current_user_id: &OwnerId,
     target_user_id: &str,
     range_days: i64,
     now_ms: i64,

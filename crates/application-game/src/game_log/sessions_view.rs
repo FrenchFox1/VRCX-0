@@ -17,6 +17,7 @@ use vrcx_0_persistence::DatabaseService;
 
 use super::runtime_state::parse_event_time_ms;
 use crate::Result;
+use vrcx_0_persistence::OwnerId;
 
 const DAY_MS: i64 = 86_400_000;
 const SESSION_GLOBAL_SEARCH_INITIAL_LOCATIONS: i64 = 500;
@@ -275,7 +276,7 @@ fn build_location_inputs(rows: &[SessionLocationSegmentRow]) -> Vec<SessionLocat
 
 fn load_session_events(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     locations: &[SessionLocationInput],
     favorite_user_ids: &HashSet<String>,
 ) -> Result<Vec<SessionEventInput>> {
@@ -482,7 +483,7 @@ fn filter_sessions(
 
 pub fn game_log_sessions_query(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     input: GameLogSessionsQueryInput,
 ) -> Result<Vec<GameLogSessionDto>> {
     let search = input.search.trim().to_string();

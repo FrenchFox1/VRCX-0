@@ -6,10 +6,11 @@ use super::projection::{
     RealtimeNotificationProjection,
 };
 use super::runtime_types::PendingOfflineTimerAction;
+use vrcx_0_persistence::OwnerId;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RealtimeFriendOutput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub projection: FriendProjection,
     pub persistence: RealtimePersistenceBatch,
     pub timer_action: PendingOfflineTimerAction,
@@ -18,14 +19,14 @@ pub struct RealtimeFriendOutput {
 }
 
 impl RealtimeFriendOutput {
-    pub(crate) fn new(owner_user_id: String, generation: u64, baseline_revision: u64) -> Self {
+    pub(crate) fn new(owner_user_id: OwnerId, generation: u64, baseline_revision: u64) -> Self {
         Self::from_projection(
             owner_user_id,
             FriendProjection::new(generation, baseline_revision),
         )
     }
 
-    pub(crate) fn from_projection(owner_user_id: String, projection: FriendProjection) -> Self {
+    pub(crate) fn from_projection(owner_user_id: OwnerId, projection: FriendProjection) -> Self {
         Self {
             owner_user_id,
             projection,
@@ -39,14 +40,14 @@ impl RealtimeFriendOutput {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RealtimeNotificationOutput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub projection: RealtimeNotificationProjection,
     pub persistence: RealtimePersistenceBatch,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RealtimeCurrentUserOutput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub projection: RealtimeCurrentUserProjection,
     pub persistence: RealtimePersistenceBatch,
     pub timer_action: PendingOfflineTimerAction,

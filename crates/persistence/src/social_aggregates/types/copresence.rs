@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::TimeWindow;
+use crate::ownership::OwnerId;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -23,7 +24,7 @@ pub struct CopresenceSummaryInput {
     #[serde(default)]
     pub limit: Option<i64>,
     #[serde(default)]
-    pub owner_user_id: Option<String>,
+    pub owner_user_id: Option<OwnerId>,
     #[serde(default)]
     pub friends_only: bool,
 }

@@ -11,6 +11,7 @@ use crate::realtime::{RealtimeSessionContext, RealtimeTransportLifecycleEvent, R
 use super::state::RealtimeHostRuntimeMessageSink;
 
 pub(super) use vrcx_0_core::json::trimmed_text_of as json_string_field;
+use vrcx_0_persistence::OwnerId;
 
 impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
     fn handle_realtime_transport_status(
@@ -76,7 +77,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
         }
 
         if let Some(output) = apply_notification_ws_event(
-            &session.user_id,
+            &OwnerId::new(session.user_id.clone()),
             &session.endpoint,
             generation,
             &event_kind,
@@ -142,7 +143,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
 
         if let Some(output) = apply_instance_closed_ws_event(generation, &event_kind, payload) {
             self.runtime
-                .apply_instance_closed_output(&session.user_id, output);
+                .apply_instance_closed_output(&OwnerId::new(session.user_id.clone()), output);
         }
     }
 }

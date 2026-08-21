@@ -35,6 +35,7 @@ use vrcx_0_application_core::{
 
 use super::local_favorites::local_group_config_key;
 use super::FavoriteMutationCoordinator;
+use vrcx_0_persistence::OwnerId;
 
 pub const FAVORITE_IMPORT_MAX_ITEMS: usize = 1_000;
 const FAVORITE_IMPORT_INTERVAL: Duration = Duration::from_millis(500);
@@ -444,7 +445,7 @@ impl FavoriteImportRuntime {
             FavoriteImportLocation::Local => {
                 let affected = favorite_add(
                     self.db.as_ref(),
-                    Some(&scope.current_user_id),
+                    Some(&OwnerId::new(scope.current_user_id.clone())),
                     kind,
                     id.to_string(),
                     target.group.clone(),

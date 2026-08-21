@@ -23,6 +23,7 @@ use super::{
     decide_notification_plan, load_preferences, NotificationDeliveryGameState,
     NotificationDeliveryPlan, NotificationDeliveryPreferences,
 };
+use vrcx_0_persistence::OwnerId;
 
 const NOTIFICATION_IMAGE_FIRST_SEND_BUDGET: Duration = Duration::from_secs(1);
 
@@ -244,7 +245,7 @@ fn prepare_rendered_notification(
     local_image: Option<String>,
 ) -> PreparedNotification {
     let desktop_action = DesktopNotificationAction::open_user_profile(
-        &job.current_user_id,
+        &OwnerId::new(job.current_user_id),
         &job.delivery.entry.actor_user_id,
     );
     PreparedNotification {

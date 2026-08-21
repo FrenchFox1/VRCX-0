@@ -16,6 +16,7 @@ use crate::realtime::{
 };
 
 use super::RealtimeHostRuntime;
+use vrcx_0_persistence::OwnerId;
 
 pub(super) enum FriendOutputApplyOutcome {
     Stale,
@@ -84,7 +85,7 @@ impl RealtimeHostRuntime {
     pub(super) fn apply_reconciled_friend_feed_entries_owned(
         self: &Arc<Self>,
         _owner: &FriendOwnerGuard<'_>,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         generation: u64,
         baseline_revision: u64,
         feed_entries: Vec<Value>,
@@ -123,7 +124,10 @@ impl RealtimeHostRuntime {
                 .clear_baseline_if_revision(projection.generation, projection.baseline_revision);
             return FriendOutputApplyOutcome::Stale;
         }
-        self.retain_current_instance_joining_entries(&mut projection, &output.owner_user_id);
+        self.retain_current_instance_joining_entries(
+            &mut projection,
+            output.owner_user_id.as_str(),
+        );
         let feed_persistence_disabled = self.feed_persistence_disabled.load(Ordering::Relaxed);
         let avatar_feed_persistence_disabled = self
             .avatar_feed_persistence_disabled
@@ -389,7 +393,7 @@ impl RealtimeHostRuntime {
 
     pub(super) fn apply_instance_closed_output(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         output: RealtimeInstanceClosedOutput,
     ) {
         let mut projection = output.projection;

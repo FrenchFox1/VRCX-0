@@ -18,6 +18,7 @@ use super::{
     insert_event, insert_join_leave, insert_location, insert_portal_spawn, insert_resource_load,
     update_location_time, write_batch,
 };
+use crate::ownership::OwnerId;
 
 struct TestDir {
     path: PathBuf,
@@ -235,7 +236,7 @@ fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), Error> 
         data: "event data".into(),
     });
 
-    let affected_count = write_batch(db, "usr_test", &batch)?;
+    let affected_count = write_batch(db, &OwnerId::new("usr_test"), &batch)?;
     assert_eq!(affected_count, 3);
 
     let rows = db.execute("SELECT COUNT(*) FROM gamelog_location", &Default::default())?;
@@ -291,25 +292,25 @@ fn account_scoped_reads_include_shared_rows_and_machine_cursor_stays_global() ->
             time: 1,
             group_name: "".into(),
         });
-        assert_eq!(write_batch(db, owner_user_id, &batch)?, 2);
+        assert_eq!(write_batch(db, &OwnerId::new(owner_user_id), &batch)?, 2);
     }
 
     assert_eq!(
-        get_game_log_events(db, "usr_a")?
+        get_game_log_events(db, &OwnerId::new("usr_a"))?
             .into_iter()
             .map(|entry| entry.data)
             .collect::<Vec<_>>(),
         vec!["shared", "a"]
     );
     assert_eq!(
-        get_game_log_events(db, "usr_b")?
+        get_game_log_events(db, &OwnerId::new("usr_b"))?
             .into_iter()
             .map(|entry| entry.data)
             .collect::<Vec<_>>(),
         vec!["shared", "b"]
     );
     assert_eq!(
-        get_game_log_locations(db, "usr_a")?
+        get_game_log_locations(db, &OwnerId::new("usr_a"))?
             .into_iter()
             .map(|entry| entry.location)
             .collect::<Vec<_>>(),
@@ -325,7 +326,7 @@ fn account_scoped_reads_include_shared_rows_and_machine_cursor_stays_global() ->
 
     let online_sessions = game_log_query(
         db,
-        "usr_a",
+        &OwnerId::new("usr_a"),
         GameLogQueryInput {
             kind: "onlineSessions".into(),
             params: RawJson::from(json!({})),
@@ -356,9 +357,9 @@ fn game_log_uniqueness_remains_machine_global() -> Result<(), Error> {
         data: "duplicate".into(),
     });
 
-    assert_eq!(write_batch(db, "usr_a", &batch)?, 1);
-    assert_eq!(write_batch(db, "usr_b", &batch)?, 0);
-    assert!(get_game_log_events(db, "usr_b")?.is_empty());
+    assert_eq!(write_batch(db, &OwnerId::new("usr_a"), &batch)?, 1);
+    assert_eq!(write_batch(db, &OwnerId::new("usr_b"), &batch)?, 0);
+    assert!(get_game_log_events(db, &OwnerId::new("usr_b"))?.is_empty());
     Ok(())
 }
 
@@ -374,7 +375,7 @@ fn machine_cursor_uses_latest_row_from_any_owner() -> Result<(), Error> {
         created_at: created_at.clone(),
         data: "owner-a-latest".into(),
     });
-    write_batch(db, "usr_a", &batch)?;
+    write_batch(db, &OwnerId::new("usr_a"), &batch)?;
 
     assert_eq!(crate::game_log::get_last_game_log_date(db)?, created_at);
     Ok(())
@@ -408,7 +409,7 @@ fn batch_write_rolls_back_when_one_core_insert_fails() -> Result<(), Error> {
         time: 0,
     });
 
-    assert!(write_batch(&db, "usr_test", &batch).is_err());
+    assert!(write_batch(&db, &OwnerId::new("usr_test"), &batch).is_err());
     let rows = db.execute("SELECT COUNT(*) FROM gamelog_location", &Default::default())?;
     assert_eq!(rows[0][0], serde_json::json!(0));
     Ok(())
@@ -432,7 +433,7 @@ fn local_query_negative_limits_are_clamped_to_zero() -> Result<(), Error> {
 
     let result = game_log_query(
         db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         GameLogQueryInput {
             kind: "recentDatabase".into(),
             params: RawJson::from(json!({
@@ -525,7 +526,14 @@ fn previous_instances_by_user_id_uses_latest_location_metadata() -> Result<(), E
         },
     )?;
 
-    let rows = previous_instance_event_rows_query(db, "usr_test", target_user_id, "", "", 0)?;
+    let rows = previous_instance_event_rows_query(
+        db,
+        &OwnerId::new("usr_test"),
+        target_user_id,
+        "",
+        "",
+        0,
+    )?;
     assert_eq!(rows.len(), 1);
     let row = &rows[0];
     assert_eq!(row.location, matched_location);
@@ -587,7 +595,7 @@ fn previous_instances_by_user_id_filters_by_date_range() -> Result<(), Error> {
 
     let rows = previous_instance_event_rows_query(
         db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         target_user_id,
         "2026-05-14T00:00:00.000Z",
         "2026-05-15T00:00:00.000Z",
@@ -637,7 +645,14 @@ fn previous_instances_limit_keeps_complete_recent_groups() -> Result<(), Error> 
         }
     }
 
-    let rows = previous_instance_event_rows_query(db, "usr_test", target_user_id, "", "", 2)?;
+    let rows = previous_instance_event_rows_query(
+        db,
+        &OwnerId::new("usr_test"),
+        target_user_id,
+        "",
+        "",
+        2,
+    )?;
 
     assert_eq!(rows.len(), 3);
     assert_eq!(
@@ -660,7 +675,7 @@ fn deleting_an_instance_row_is_scoped_by_owner_location_and_event_ids() -> Resul
     ] {
         write_batch(
             db,
-            owner,
+            &OwnerId::new(owner),
             &GameLogWriteBatch {
                 join_leave: vec![GameLogJoinLeaveEntry {
                     created_at: "2026-05-14T10:00:00.000Z".into(),
@@ -687,7 +702,7 @@ fn deleting_an_instance_row_is_scoped_by_owner_location_and_event_ids() -> Resul
     assert_eq!(
         game_log_instance_delete(
             db,
-            "usr_owner",
+            &OwnerId::new("usr_owner"),
             "wrld_target:1".into(),
             vec![target_id, other_location_id, other_owner_id],
         )?,

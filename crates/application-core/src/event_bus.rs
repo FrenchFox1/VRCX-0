@@ -13,6 +13,7 @@ use crate::events::{
 use crate::ports::HostSessionProjection;
 use crate::{FavoriteChangeScope, FavoriteEntityKind, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::json::RawJson;
+use vrcx_0_persistence::OwnerId;
 
 pub trait RuntimeEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);
@@ -21,7 +22,7 @@ pub trait RuntimeEventSink: Send + Sync {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoritesChangedPayload {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub kind: FavoriteChangeScope,
     pub local: bool,
@@ -96,7 +97,7 @@ impl FavoritesChangedPayload {
     ) -> Self {
         let requires_refresh = changes.is_empty();
         Self {
-            owner_user_id: scope.current_user_id.clone(),
+            owner_user_id: OwnerId::new(scope.current_user_id.clone()),
             endpoint: scope.endpoint.clone(),
             kind,
             local,
@@ -131,7 +132,7 @@ pub struct RuntimeRealtimeTransportEpoch {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeVrchatAuthFailurePayload {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub path: String,
     pub reason: String,

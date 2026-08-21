@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use super::TimeWindow;
+use crate::ownership::OwnerId;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CompanionsOfInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub user_id: String,
     pub time_window: TimeWindow,
     #[serde(default)]

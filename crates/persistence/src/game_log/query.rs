@@ -5,7 +5,7 @@ use sea_query::{Expr, ExprTrait, Order, Query, SqliteQueryBuilder};
 
 use crate::common::{ident, row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::Error;
 
 use super::schema::*;
@@ -260,7 +260,7 @@ fn owner_scope_expr() -> sea_query::SimpleExpr {
     Expr::cust(format!("{COL_OWNER_ID} IN (0, @ownerId)"))
 }
 
-fn owner_params(db: &DatabaseService, owner_user_id: &str) -> Result<ParamsBuilder, Error> {
+fn owner_params(db: &DatabaseService, owner_user_id: &OwnerId) -> Result<ParamsBuilder, Error> {
     Ok(ParamsBuilder::new().set("ownerId", owner_id_for_filter(db, owner_user_id)?))
 }
 
@@ -276,7 +276,7 @@ fn game_log_location_table_exists_sql() -> String {
 
 pub fn get_user_id_from_display_name(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     display_name: &str,
 ) -> Result<String, Error> {
     let args = owner_params(db, owner_user_id)?
@@ -293,7 +293,7 @@ pub fn get_user_id_from_display_name(
 
 pub fn get_location_before_or_at(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     created_at: &str,
 ) -> Result<Option<GameLogLocationSnapshot>, Error> {
     let args = owner_params(db, owner_user_id)?
@@ -313,7 +313,7 @@ pub fn get_location_before_or_at(
 
 pub fn get_previous_instances_by_group_id(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     group_id: &str,
 ) -> Result<Vec<GameLogPreviousInstanceGroupOutput>, Error> {
     ensure_game_log_tables(db)?;
@@ -353,7 +353,7 @@ pub fn get_previous_instances_by_group_id(
 
 pub fn get_previous_instances_by_world_id(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     world_id: &str,
 ) -> Result<Vec<GameLogPreviousInstanceWorldOutput>, Error> {
     ensure_game_log_tables(db)?;
@@ -376,7 +376,7 @@ pub fn get_previous_instances_by_world_id(
 
 pub fn get_join_leave_entries_for_location_range(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     location: &str,
     after_date: &str,
     before_date: &str,
@@ -401,7 +401,7 @@ pub fn get_join_leave_entries_for_location_range_unscoped(
 
 fn get_join_leave_entries_for_location_range_inner(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     location: &str,
     after_date: &str,
     before_date: &str,
@@ -446,7 +446,7 @@ fn session_location_segment_from_row(row: &[serde_json::Value]) -> SessionLocati
 
 pub fn get_session_location_segments(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     before_id: Option<i64>,
     limit: i64,
 ) -> Result<Vec<SessionLocationSegmentRow>, Error> {
@@ -467,7 +467,7 @@ pub fn get_session_location_segments(
 
 pub fn get_session_location_segments_by_date_range(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     after_date: &str,
     before_date: &str,
     limit: i64,
@@ -486,7 +486,7 @@ pub fn get_session_location_segments_by_date_range(
 
 pub fn get_session_events_for_range(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     after_date: &str,
     before_date: &str,
 ) -> Result<Vec<SessionEventRow>, Error> {
@@ -528,7 +528,7 @@ pub fn get_session_events_for_range(
 
 pub fn get_session_player_duration_rows(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     locations: &[String],
 ) -> Result<Vec<SessionPlayerDurationRow>, Error> {
     ensure_game_log_tables(db)?;
@@ -574,7 +574,7 @@ pub fn get_session_player_duration_rows(
 
 pub fn get_game_log_events(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Vec<GameLogEventEntry>, Error> {
     ensure_game_log_tables(db)?;
     let args = owner_params(db, owner_user_id)?.build();
@@ -590,7 +590,7 @@ pub fn get_game_log_events(
 
 pub fn get_game_log_locations(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Vec<GameLogLocationEntry>, Error> {
     ensure_game_log_tables(db)?;
     let args = owner_params(db, owner_user_id)?.build();
@@ -634,7 +634,7 @@ pub fn get_last_game_log_location(
 
 pub fn get_game_log_join_leave(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Vec<GameLogJoinLeaveEntry>, Error> {
     ensure_game_log_tables(db)?;
     let args = owner_params(db, owner_user_id)?.build();
@@ -658,7 +658,7 @@ pub fn get_game_log_join_leave(
 
 pub fn get_game_log_externals(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Vec<GameLogExternalEntry>, Error> {
     ensure_game_log_tables(db)?;
     let args = owner_params(db, owner_user_id)?.build();

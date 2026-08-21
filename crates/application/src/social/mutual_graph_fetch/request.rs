@@ -20,6 +20,7 @@ use super::types::{
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
+use vrcx_0_persistence::OwnerId;
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
 const MUTUAL_GRAPH_REQUEST_INTERVAL_MS: u64 = 200;
@@ -117,14 +118,14 @@ pub async fn get_user_mutual_friends_list(
     ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
 
     let backfills_graph = user_id != expected_scope.current_user_id;
-    let owner_user_id = expected_scope.current_user_id;
+    let owner_user_id = OwnerId::new(expected_scope.current_user_id);
 
     match result {
         MutualFriendRowsResult::OptedOut => {
             if backfills_graph {
                 vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
                     deps.db,
-                    owner_user_id,
+                    owner_user_id.to_string(),
                     user_id,
                     None,
                     true,
@@ -141,7 +142,7 @@ pub async fn get_user_mutual_friends_list(
                     normalize_friend_ids(rows.iter().filter_map(mutual_id_from_value).collect());
                 vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
                     deps.db,
-                    owner_user_id,
+                    owner_user_id.to_string(),
                     user_id,
                     Some(mutual_ids),
                     false,
@@ -372,7 +373,7 @@ pub(super) fn resolve_fetch_scope(
     input: &MutualGraphFetchStartInput,
     auth_scope: &RuntimeAuthScope,
 ) -> Result<(String, String, RuntimeAuthScopeSnapshot)> {
-    let owner_user_id = normalize_id(&input.owner_user_id);
+    let owner_user_id = normalize_id(input.owner_user_id.as_str());
     if owner_user_id.is_empty() {
         return Err(Error::Custom(
             "MutualGraphFetchStart requires ownerUserId.".into(),
@@ -393,10 +394,10 @@ pub(super) fn resolve_fetch_scope(
 
 fn require_mutual_scope(
     auth_scope: &RuntimeAuthScope,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<RuntimeAuthScopeSnapshot> {
     let expected_scope = crate::scope_gate::require_active_scope(auth_scope, "Mutual graph")?;
-    if expected_scope.current_user_id == normalize_id(owner_user_id) {
+    if expected_scope.current_user_id == normalize_id(owner_user_id.as_str()) {
         Ok(expected_scope)
     } else {
         Err(Error::Custom(

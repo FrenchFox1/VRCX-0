@@ -87,7 +87,7 @@ fn runtime_auth_failure_matches_scope(
 ) -> bool {
     let scope = state.runtime.runtime_context.auth_scope.snapshot();
     scope.active
-        && scope.current_user_id == failure.owner_user_id
+        && scope.current_user_id == failure.owner_user_id.as_str()
         && scope.endpoint == failure.endpoint
         && scope.generation == failure.auth_scope_generation
 }
@@ -234,6 +234,8 @@ pub(super) fn tray_labels(state: &AppState) -> TrayLabels {
 
 #[cfg(test)]
 mod tests {
+    use vrcx_0_persistence::OwnerId;
+
     use super::*;
 
     fn backend_snapshot(
@@ -263,7 +265,7 @@ mod tests {
         realtime_transport: Option<RuntimeRealtimeTransportEpoch>,
     ) -> RuntimeVrchatAuthFailurePayload {
         RuntimeVrchatAuthFailurePayload {
-            owner_user_id: "usr_1".into(),
+            owner_user_id: OwnerId::new("usr_1"),
             endpoint: "https://api.example.test/api/1".into(),
             path: "runtime/social-baseline/friends".into(),
             reason: "Missing Credentials (401)".into(),
