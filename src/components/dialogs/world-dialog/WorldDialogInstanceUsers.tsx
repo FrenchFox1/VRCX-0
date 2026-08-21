@@ -131,7 +131,6 @@ export function InstanceUserTiles({
     );
     const nowMs = useNowMs();
     const source = record(instance);
-    const instanceLocation = firstText(source.location, source.tag);
     const creatorUser = record(source.creatorUser);
     const creatorUserId = firstText(source.creatorUserId);
     const knownCreatorUser = useKnownUserFact(creatorUserId, {

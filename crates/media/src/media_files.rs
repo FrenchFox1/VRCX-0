@@ -133,7 +133,7 @@ fn md5_digest(input: &[u8]) -> [u8; 16] {
         };
 
         let complete_len = input.len() / 64 * 64;
-        for chunk in input[..complete_len].chunks_exact(64) {
+        for chunk in input[..complete_len].as_chunks::<64>().0 {
             process_chunk(chunk);
         }
 
@@ -144,7 +144,7 @@ fn md5_digest(input: &[u8]) -> [u8; 16] {
         let length_offset = if remaining.len() < 56 { 56 } else { 120 };
         let bit_len = (input.len() as u64).wrapping_mul(8);
         tail[length_offset..length_offset + 8].copy_from_slice(&bit_len.to_le_bytes());
-        for chunk in tail[..length_offset + 8].chunks_exact(64) {
+        for chunk in tail[..length_offset + 8].as_chunks::<64>().0 {
             process_chunk(chunk);
         }
     }
