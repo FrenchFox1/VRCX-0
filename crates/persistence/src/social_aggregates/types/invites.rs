@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::TimeWindow;
 use crate::ownership::OwnerId;
 
-#[derive(
-    Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, specta::Type,
-)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 pub enum InviteDirection {
     Received,
@@ -16,7 +14,7 @@ pub enum InviteDirection {
     Both,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteHistoryInput {
     pub owner_user_id: OwnerId,
@@ -27,7 +25,7 @@ pub struct InviteHistoryInput {
     pub limit: Option<i64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteHistoryOutput {
     pub rows: Vec<InviteHistoryRow>,
@@ -35,7 +33,7 @@ pub struct InviteHistoryOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteHistoryRow {
     pub user_id: String,

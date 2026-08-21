@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::TimeWindow;
 use crate::ownership::OwnerId;
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum CopresenceGroupBy {
     #[default]
@@ -13,7 +13,7 @@ pub enum CopresenceGroupBy {
     FriendWorld,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryInput {
     pub time_window: TimeWindow,
@@ -29,7 +29,7 @@ pub struct CopresenceSummaryInput {
     pub friends_only: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryOutput {
     pub rows: Vec<CopresenceSummaryRow>,
@@ -40,7 +40,7 @@ pub struct CopresenceSummaryOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryRow {
     pub user_id: String,

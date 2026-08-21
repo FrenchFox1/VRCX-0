@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::{ActivityBucket, TimeWindow};
 use crate::ownership::OwnerId;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendActivityPatternInput {
     pub owner_user_id: OwnerId,
@@ -18,14 +18,14 @@ pub struct FriendActivityPatternInput {
     pub utc_offset_minutes: Option<i64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendActivityPatternOutput {
     pub rows: Vec<FriendActivityPatternRow>,
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendActivityPatternRow {
     pub user_id: String,

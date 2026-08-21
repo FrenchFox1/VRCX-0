@@ -9,7 +9,7 @@ use crate::ownership::OwnerId;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalModerationInput {
     #[serde(default)]
@@ -24,7 +24,7 @@ pub struct LocalModerationInput {
     pub mute: bool,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteModerationInput {
     #[serde(default)]

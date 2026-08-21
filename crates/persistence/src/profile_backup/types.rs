@@ -16,7 +16,7 @@ pub enum ProfileBackupKind {
     Manual,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileBackupContent {
     pub path: String,
@@ -24,7 +24,7 @@ pub struct ProfileBackupContent {
     pub bytes: u64,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileBackupManifest {
     pub manifest_version: u32,

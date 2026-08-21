@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogUpsert {
     pub target_user_id: String,
@@ -15,14 +15,14 @@ pub struct FriendLogUpsert {
     pub force_history: bool,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogDelete {
     pub target_user_id: String,
     pub created_at: String,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimePersistenceBatch {
     #[serde(default)]
@@ -85,14 +85,14 @@ impl RealtimeWriteCounts {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationExpiration {
     pub id: String,
     pub expired_at: String,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationV2Update {
     pub id: String,
@@ -101,14 +101,14 @@ pub struct NotificationV2Update {
     pub received_at: String,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AvatarHistoryUpsert {
     pub avatar_id: String,
     pub created_at: String,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AvatarTimeSpentUpsert {
     pub avatar_id: String,

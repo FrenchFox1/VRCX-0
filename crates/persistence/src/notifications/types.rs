@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationRowsQueryInput {
     pub user_id: String,
@@ -12,7 +12,7 @@ pub struct NotificationRowsQueryInput {
     pub include_unseen: bool,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct NotificationV1RowOutput {
     pub id: String,
@@ -32,7 +32,7 @@ pub struct NotificationV1RowOutput {
     pub seen: i64,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct NotificationV2RowOutput {
     pub id: String,
@@ -53,7 +53,7 @@ pub struct NotificationV2RowOutput {
     pub details: String,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationRowsOutput {
     pub v1_rows: Vec<NotificationV1RowOutput>,

@@ -106,7 +106,7 @@ pub struct FeedSearchQueryInput {
     pub max_rows: i64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FeedLiveEntryInput {
     pub sequence: i64,

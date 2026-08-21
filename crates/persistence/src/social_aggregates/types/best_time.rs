@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::{ActivityBucket, TimeWindow};
 use crate::ownership::OwnerId;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BestTimeToPlayInput {
     pub owner_user_id: OwnerId,
@@ -16,14 +16,14 @@ pub struct BestTimeToPlayInput {
     pub utc_offset_minutes: Option<i64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BestTimeToPlayOutput {
     pub rows: Vec<BestTimeBucketRow>,
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BestTimeBucketRow {
     pub bucket: String,
@@ -33,7 +33,7 @@ pub struct BestTimeBucketRow {
     pub top_friends: Vec<BestTimeFriend>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BestTimeFriend {
     pub user_id: String,

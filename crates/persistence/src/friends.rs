@@ -34,7 +34,7 @@ pub struct FriendLogHistoryEntryInput {
     pub friend_number: Value,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogCurrentEntryInput {
     #[serde(default)]
@@ -47,7 +47,7 @@ pub struct FriendLogCurrentEntryInput {
     pub friend_number: Value,
 }
 
-#[derive(Debug, Deserialize, Default, specta::Type)]
+#[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogReplaceOptionsInput {
     #[serde(default)]
@@ -56,14 +56,14 @@ pub struct FriendLogReplaceOptionsInput {
     pub added_history_entries: Vec<FriendLogHistoryEntryInput>,
 }
 
-#[derive(Debug, Deserialize, Default, specta::Type)]
+#[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogDeleteOptionsInput {
     #[serde(default)]
     pub history_entries: Vec<FriendLogHistoryEntryInput>,
 }
 
-#[derive(Debug, Deserialize, Default, specta::Type)]
+#[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogUpsertOptionsInput {
     #[serde(default)]
@@ -72,7 +72,7 @@ pub struct FriendLogUpsertOptionsInput {
     pub force_history: bool,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogMutationResult {
     pub user_id: String,

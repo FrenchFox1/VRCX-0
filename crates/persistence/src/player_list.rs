@@ -12,7 +12,7 @@ use crate::Error;
 
 use crate::worlds::{world_summary_from_row, WorldSummaryOutput};
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerLocationOutput {
     pub created_at: String,
@@ -23,7 +23,7 @@ pub struct PlayerLocationOutput {
     pub group_name: String,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerJoinLeaveOutput {
     pub id: i64,

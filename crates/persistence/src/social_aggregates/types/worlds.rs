@@ -3,14 +3,14 @@ use vrcx_0_core::FavoriteEntityKind;
 
 use super::TimeWindow;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchWorldsVisitedInput {
     pub time_window: TimeWindow,
     pub limit: i64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchWorldsVisitedOutput {
     pub rows: Vec<VisitedWorldRow>,
@@ -18,7 +18,7 @@ pub struct SearchWorldsVisitedOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct VisitedWorldRow {
     pub world_id: String,
@@ -28,7 +28,7 @@ pub struct VisitedWorldRow {
     pub stay_minutes: i64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoriteLocalInput {
     pub kind: FavoriteEntityKind,
@@ -40,7 +40,7 @@ pub struct FavoriteLocalInput {
     pub dry_run: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoriteOutput {
     pub kind: FavoriteEntityKind,
@@ -56,7 +56,7 @@ fn default_true() -> bool {
     true
 }
 
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum FavoriteAction {
     #[default]

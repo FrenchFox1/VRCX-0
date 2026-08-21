@@ -9,7 +9,7 @@ use crate::Error;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphSnapshotEntryInput {
     pub friend_id: String,
@@ -17,7 +17,7 @@ pub struct MutualGraphSnapshotEntryInput {
     pub mutual_ids: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphMetaInput {
     pub friend_id: String,

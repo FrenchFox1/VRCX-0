@@ -16,7 +16,7 @@ pub enum DataDirMigrationTargetState {
     ForeignContent,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum DataDirMigrationJournalPhase {
     Copying,
