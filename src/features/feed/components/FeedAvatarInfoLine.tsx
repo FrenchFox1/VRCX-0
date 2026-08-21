@@ -42,7 +42,6 @@ type AvatarInfoLineProps = {
     compact?: boolean;
     imageUrl?: string | null;
     ownerId?: string | null;
-    resolveFromImage?: boolean;
     showTags?: boolean;
     userId?: string | null;
 };
@@ -149,20 +148,18 @@ function resolveInitialAvatarInfoLineState({
     avatarName,
     imageUrl,
     ownerId,
-    endpoint,
-    resolveFromImage
+    endpoint
 }: {
     avatarName?: string | null;
     imageUrl?: string | null;
     ownerId?: string | null;
     endpoint: string;
-    resolveFromImage: boolean;
 }): AvatarInfoLineState {
     const hintedName = avatarName?.trim() ?? '';
     const hintedOwnerId = normalizeId(ownerId);
     const cacheKey = getAvatarInfoLineCacheKey(imageUrl ?? '', endpoint);
 
-    if (!cacheKey || !resolveFromImage) {
+    if (!cacheKey) {
         return normalizeAvatarInfoLineState({
             avatarName: hintedName,
             ownerId: hintedOwnerId,
@@ -218,7 +215,6 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     compact = false,
     imageUrl,
     ownerId,
-    resolveFromImage = true,
     showTags = true,
     userId
 }: AvatarInfoLineProps) {
@@ -234,8 +230,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             avatarName,
             imageUrl,
             ownerId,
-            endpoint: currentEndpoint,
-            resolveFromImage
+            endpoint: currentEndpoint
         })
     );
 
@@ -248,7 +243,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             currentEndpoint
         );
 
-        if (!cacheKey || !resolveFromImage) {
+        if (!cacheKey) {
             setAvatarInfoLineState(setInfo, {
                 avatarName: hintedName,
                 ownerId: hintedOwnerId,
@@ -316,7 +311,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         return () => {
             active = false;
         };
-    }, [avatarName, currentEndpoint, imageUrl, ownerId, resolveFromImage]);
+    }, [avatarName, currentEndpoint, imageUrl, ownerId]);
 
     const normalizedOwnerId = normalizeId(info.ownerId);
     const normalizedUserId = normalizeId(userId);
@@ -451,7 +446,6 @@ function areAvatarInfoLinePropsEqual(
         previousProps.showTags === nextProps.showTags &&
         previousProps.imageUrl === nextProps.imageUrl &&
         previousProps.ownerId === nextProps.ownerId &&
-        previousProps.resolveFromImage === nextProps.resolveFromImage &&
         previousProps.userId === nextProps.userId &&
         avatarTagsEqual(previousProps.avatarTags, nextProps.avatarTags)
     );

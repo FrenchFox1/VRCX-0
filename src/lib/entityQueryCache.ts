@@ -92,8 +92,8 @@ export const entityQueryPolicies = Object.freeze({
         refetchOnWindowFocus: false
     }),
     fileObject: Object.freeze({
-        staleTime: 60 * SECOND_MS,
-        gcTime: 300 * SECOND_MS,
+        staleTime: 10 * MINUTE_MS,
+        gcTime: 40 * MINUTE_MS,
         retry: 1,
         refetchOnWindowFocus: false
     }),
