@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use tokio::sync::{Notify, Semaphore};
@@ -10,6 +11,8 @@ use super::super::background_image::{
     BackgroundImageService, UnavailableBackgroundImageFileResolver,
 };
 use super::*;
+
+static NEXT_TEST_ID: AtomicU64 = AtomicU64::new(0);
 
 struct DelayedCommunityThemeRemote {
     manifest_started: Notify,
@@ -85,13 +88,10 @@ struct TestDir(PathBuf);
 
 impl TestDir {
     fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "vrcx-0-community-theme-{name}-{}-{nonce}",
-            std::process::id()
+            "vrcx-0-community-theme-{name}-{}-{}",
+            std::process::id(),
+            NEXT_TEST_ID.fetch_add(1, Ordering::Relaxed)
         ));
         std::fs::create_dir_all(&path).unwrap();
         Self(path)

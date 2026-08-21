@@ -197,7 +197,7 @@ fn normalize_existing_or_creatable(path: &Path) -> std::io::Result<PathBuf> {
     Ok(normalized)
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "windows"))]
 mod tests {
     use super::*;
 
@@ -225,7 +225,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os = "windows")]
     fn persisted_launch_exe_path_does_not_require_registered_file_access() {
         let dir = TestDir::new("host-file-access-launch-path");
         let app_data = dir.path.join("app-data");
