@@ -18,6 +18,18 @@ pub enum Error {
     Json(#[from] serde_json::Error),
 
     #[error("{0}")]
+    PersistenceInvalidData(String),
+
+    #[error("{0}")]
+    RegistryPolicyInvalid(String),
+
+    #[error("{0}")]
+    WebClient(String),
+
+    #[error("Update artifact is invalid: {0}")]
+    UpdateArtifactInvalid(String),
+
+    #[error("{0}")]
     Custom(String),
 
     #[error("{message}")]
@@ -42,7 +54,9 @@ impl From<vrcx_0_persistence::Error> for Error {
             }
             vrcx_0_persistence::Error::Io(error) => Error::Io(error),
             vrcx_0_persistence::Error::Json(error) => Error::Json(error),
-            vrcx_0_persistence::Error::InvalidData(message) => Error::Custom(message),
+            vrcx_0_persistence::Error::InvalidData(message) => {
+                Error::PersistenceInvalidData(message)
+            }
             vrcx_0_persistence::Error::Custom(message) => Error::Custom(message),
         }
     }
@@ -62,6 +76,9 @@ impl From<vrcx_0_platform::Error> for Error {
         match value {
             vrcx_0_platform::Error::Io(error) => Error::Io(error),
             vrcx_0_platform::Error::Json(error) => Error::Json(error),
+            vrcx_0_platform::Error::RegistryPolicyInvalid(message) => {
+                Error::RegistryPolicyInvalid(message)
+            }
             vrcx_0_platform::Error::Custom(message) => Error::Custom(message),
         }
     }
@@ -76,8 +93,15 @@ impl From<vrcx_0_application_core::Error> for Error {
             }
             vrcx_0_application_core::Error::Io(error) => Error::Io(error),
             vrcx_0_application_core::Error::Json(error) => Error::Json(error),
+            vrcx_0_application_core::Error::PersistenceInvalidData(message) => {
+                Error::PersistenceInvalidData(message)
+            }
+            vrcx_0_application_core::Error::RegistryPolicyInvalid(message) => {
+                Error::RegistryPolicyInvalid(message)
+            }
+            vrcx_0_application_core::Error::WebClient(message) => Error::WebClient(message),
             vrcx_0_application_core::Error::UpdateArtifactInvalid(message) => {
-                Error::Custom(format!("Update artifact is invalid: {message}"))
+                Error::UpdateArtifactInvalid(message)
             }
             vrcx_0_application_core::Error::VrchatApi {
                 status_code,
@@ -88,5 +112,38 @@ impl From<vrcx_0_application_core::Error> for Error {
             },
             vrcx_0_application_core::Error::Custom(message) => Error::Custom(message),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preserves_application_diagnostic_categories() {
+        assert!(matches!(
+            Error::from(vrcx_0_application_core::Error::PersistenceInvalidData(
+                "invalid snapshot".into()
+            )),
+            Error::PersistenceInvalidData(message) if message == "invalid snapshot"
+        ));
+        assert!(matches!(
+            Error::from(vrcx_0_application_core::Error::RegistryPolicyInvalid(
+                "invalid registry".into()
+            )),
+            Error::RegistryPolicyInvalid(message) if message == "invalid registry"
+        ));
+        assert!(matches!(
+            Error::from(vrcx_0_application_core::Error::WebClient(
+                "request failed".into()
+            )),
+            Error::WebClient(message) if message == "request failed"
+        ));
+        assert!(matches!(
+            Error::from(vrcx_0_application_core::Error::UpdateArtifactInvalid(
+                "signature mismatch".into()
+            )),
+            Error::UpdateArtifactInvalid(message) if message == "signature mismatch"
+        ));
     }
 }

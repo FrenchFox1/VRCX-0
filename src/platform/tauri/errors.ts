@@ -37,7 +37,13 @@ function appErrorCode(value: unknown): AppErrorCode | null {
         case 'database':
         case 'io':
         case 'json':
+        case 'persistence_invalid_data':
+        case 'registry_policy_invalid':
+        case 'web_client':
+        case 'update_artifact_invalid':
         case 'vrchat_api':
+        case 'auth_interaction_required':
+        case 'auth_session_invalidated':
         case 'integration_api_port_in_use':
         case 'integration_api_bind':
         case 'custom':

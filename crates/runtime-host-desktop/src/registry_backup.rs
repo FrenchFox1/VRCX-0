@@ -25,6 +25,9 @@ fn host_error_to_application(error: vrcx_0_platform::Error) -> Error {
     match error {
         vrcx_0_platform::Error::Io(error) => Error::Io(error),
         vrcx_0_platform::Error::Json(error) => Error::Json(error),
+        vrcx_0_platform::Error::RegistryPolicyInvalid(message) => {
+            Error::RegistryPolicyInvalid(message)
+        }
         vrcx_0_platform::Error::Custom(message) => Error::Custom(message),
     }
 }

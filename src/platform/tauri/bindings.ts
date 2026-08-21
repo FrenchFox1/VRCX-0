@@ -2649,7 +2649,13 @@ export type AppErrorCode =
     | 'database'
     | 'io'
     | 'json'
+    | 'persistence_invalid_data'
+    | 'registry_policy_invalid'
+    | 'web_client'
+    | 'update_artifact_invalid'
     | 'vrchat_api'
+    | 'auth_interaction_required'
+    | 'auth_session_invalidated'
     | 'integration_api_port_in_use'
     | 'integration_api_bind'
     | 'custom';

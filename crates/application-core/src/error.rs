@@ -18,6 +18,15 @@ pub enum Error {
     #[error("Update artifact is invalid: {0}")]
     UpdateArtifactInvalid(String),
 
+    #[error("{0}")]
+    PersistenceInvalidData(String),
+
+    #[error("{0}")]
+    RegistryPolicyInvalid(String),
+
+    #[error("{0}")]
+    WebClient(String),
+
     #[error("{message}")]
     VrchatApi { status_code: i32, message: String },
 
@@ -30,7 +39,7 @@ impl From<vrcx_0_core::vrchat_registry_policy::RegistryPolicyError> for Error {
         use vrcx_0_core::vrchat_registry_policy::RegistryPolicyError;
         match value {
             RegistryPolicyError::Json(error) => Self::Json(error),
-            RegistryPolicyError::Invalid(message) => Self::Custom(message),
+            RegistryPolicyError::Invalid(message) => Self::RegistryPolicyInvalid(message),
         }
     }
 }
@@ -44,7 +53,9 @@ impl From<vrcx_0_persistence::Error> for Error {
             }
             vrcx_0_persistence::Error::Io(error) => Self::Io(error),
             vrcx_0_persistence::Error::Json(error) => Self::Json(error),
-            vrcx_0_persistence::Error::InvalidData(message) => Self::Custom(message),
+            vrcx_0_persistence::Error::InvalidData(message) => {
+                Self::PersistenceInvalidData(message)
+            }
             vrcx_0_persistence::Error::Custom(message) => Self::Custom(message),
         }
     }
@@ -62,7 +73,7 @@ impl From<vrcx_0_media::Error> for Error {
 impl From<vrcx_0_vrchat_client::WebClientError> for Error {
     fn from(value: vrcx_0_vrchat_client::WebClientError) -> Self {
         match value {
-            vrcx_0_vrchat_client::WebClientError::Custom(message) => Self::Custom(message),
+            vrcx_0_vrchat_client::WebClientError::Custom(message) => Self::WebClient(message),
             vrcx_0_vrchat_client::WebClientError::Io(error) => Self::Io(error),
         }
     }
@@ -90,5 +101,34 @@ impl From<vrcx_0_vrchat_client::http_api::VrchatApiFailure> for Error {
             status_code: value.status_code,
             message: value.message,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preserves_stable_diagnostic_categories_from_lower_layers() {
+        assert!(matches!(
+            Error::from(vrcx_0_persistence::Error::InvalidData(
+                "invalid snapshot".into()
+            )),
+            Error::PersistenceInvalidData(message) if message == "invalid snapshot"
+        ));
+        assert!(matches!(
+            Error::from(
+                vrcx_0_core::vrchat_registry_policy::RegistryPolicyError::Invalid(
+                    "invalid registry value".into()
+                )
+            ),
+            Error::RegistryPolicyInvalid(message) if message == "invalid registry value"
+        ));
+        assert!(matches!(
+            Error::from(vrcx_0_vrchat_client::WebClientError::Custom(
+                "request setup failed".into()
+            )),
+            Error::WebClient(message) if message == "request setup failed"
+        ));
     }
 }

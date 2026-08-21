@@ -41,7 +41,25 @@ function serializeValue(
     seen: Set<unknown> = new Set<unknown>()
 ): string {
     if (value instanceof Error) {
-        return value.stack || value.message || value.name;
+        const details = value.stack || value.message || value.name;
+        const diagnosticFields: string[] = [];
+        if (isRecord(value)) {
+            for (const key of [
+                'code',
+                'sqliteCategory',
+                'statusCode',
+                'port'
+            ] as const) {
+                const fieldValue = value[key];
+                if (
+                    typeof fieldValue === 'string' ||
+                    typeof fieldValue === 'number'
+                ) {
+                    diagnosticFields.push(`${key}: ${fieldValue}`);
+                }
+            }
+        }
+        return [details, ...diagnosticFields].join('\n');
     }
 
     if (typeof value === 'string') {

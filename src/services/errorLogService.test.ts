@@ -40,4 +40,23 @@ describe('errorLogService', () => {
             expect.stringContaining('unexpected payload shape')
         );
     });
+
+    it('records structured command diagnostics with the local error entry', async () => {
+        const error = Object.assign(new Error('invalid snapshot'), {
+            code: 'persistence_invalid_data',
+            sqliteCategory: 'malformed'
+        });
+
+        await recordErrorLog('rust:command', [
+            'command: app__profile_restore',
+            error
+        ]);
+
+        expect(commandMocks.appAppendErrorLog).toHaveBeenCalledWith(
+            expect.stringContaining('code: persistence_invalid_data')
+        );
+        expect(commandMocks.appAppendErrorLog).toHaveBeenCalledWith(
+            expect.stringContaining('sqliteCategory: malformed')
+        );
+    });
 });

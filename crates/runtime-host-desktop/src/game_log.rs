@@ -20,6 +20,9 @@ fn host_error(error: vrcx_0_platform::Error) -> RuntimeError {
     match error {
         vrcx_0_platform::Error::Io(error) => RuntimeError::Io(error),
         vrcx_0_platform::Error::Json(error) => RuntimeError::Json(error),
+        vrcx_0_platform::Error::RegistryPolicyInvalid(message) => {
+            RuntimeError::RegistryPolicyInvalid(message)
+        }
         vrcx_0_platform::Error::Custom(message) => RuntimeError::Custom(message),
     }
 }

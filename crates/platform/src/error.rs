@@ -7,6 +7,9 @@ pub enum Error {
     Json(#[from] serde_json::Error),
 
     #[error("{0}")]
+    RegistryPolicyInvalid(String),
+
+    #[error("{0}")]
     Custom(String),
 }
 
@@ -15,7 +18,26 @@ impl From<vrcx_0_core::vrchat_registry_policy::RegistryPolicyError> for Error {
         use vrcx_0_core::vrchat_registry_policy::RegistryPolicyError;
         match value {
             RegistryPolicyError::Json(error) => Self::Json(error),
-            RegistryPolicyError::Invalid(message) => Self::Custom(message),
+            RegistryPolicyError::Invalid(message) => Self::RegistryPolicyInvalid(message),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preserves_registry_policy_validation_category() {
+        let error = Error::from(
+            vrcx_0_core::vrchat_registry_policy::RegistryPolicyError::Invalid(
+                "invalid registry value".into(),
+            ),
+        );
+
+        assert!(matches!(
+            error,
+            Error::RegistryPolicyInvalid(message) if message == "invalid registry value"
+        ));
     }
 }
