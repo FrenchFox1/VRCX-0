@@ -123,12 +123,15 @@ export function useFriendListRowActions({
                     snapshot instanceof Map ? snapshot.get(friendId) : [];
                 const metadata =
                     meta instanceof Map ? meta.get(friendId) : null;
+                const linkCount = Array.isArray(mutualIds)
+                    ? mutualIds.length
+                    : 0;
                 applyFriendPatch({
                     userId: friendId,
                     patch: {
-                        $mutualCount: Array.isArray(mutualIds)
-                            ? mutualIds.length
-                            : 0,
+                        $mutualCount: Number.isFinite(metadata?.totalCount)
+                            ? Number(metadata?.totalCount)
+                            : linkCount,
                         $mutualOptedOut: Boolean(metadata?.optedOut)
                     },
                     stateBucketAuthority: 'preserve'

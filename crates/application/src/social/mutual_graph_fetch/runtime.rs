@@ -231,7 +231,10 @@ impl MutualGraphFetchRuntime {
 
             self.update_current_friend(run_id, &friend_id);
             match fetch_friend_mutuals(&mut fetch_context, &friend_id).await {
-                FriendFetchResult::MutualIds(mutual_ids) => {
+                FriendFetchResult::MutualIds {
+                    mutual_ids,
+                    total_count,
+                } => {
                     entries.push(MutualGraphSnapshotEntryInput {
                         friend_id: friend_id.clone(),
                         mutual_ids,
@@ -240,6 +243,7 @@ impl MutualGraphFetchRuntime {
                         friend_id: friend_id.clone(),
                         last_fetched_at: String::new(),
                         opted_out: false,
+                        total_count: Some(total_count),
                     });
                     fetched_friends += 1;
                 }
@@ -248,6 +252,7 @@ impl MutualGraphFetchRuntime {
                         friend_id: friend_id.clone(),
                         last_fetched_at: String::new(),
                         opted_out: true,
+                        total_count: None,
                     });
                     opted_out_friends += 1;
                 }

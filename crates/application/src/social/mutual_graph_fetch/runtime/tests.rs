@@ -309,6 +309,7 @@ fn failed_friends_keep_their_cached_snapshot_entries() {
         friend_id: "usr_ok".into(),
         last_fetched_at: "new".into(),
         opted_out: false,
+        total_count: Some(1),
     }];
     let failed_friend_ids = HashSet::from(["usr_failed".to_string()]);
     let cached = MutualGraphSnapshotOutput {
@@ -328,11 +329,13 @@ fn failed_friends_keep_their_cached_snapshot_entries() {
                 friend_id: "usr_failed".into(),
                 last_fetched_at: "old".into(),
                 opted_out: false,
+                total_count: Some(3),
             },
             MutualGraphMetaOutput {
                 friend_id: "usr_removed".into(),
                 last_fetched_at: "removed".into(),
                 opted_out: false,
+                total_count: Some(4),
             },
         ],
     };
@@ -345,4 +348,5 @@ fn failed_friends_keep_their_cached_snapshot_entries() {
     assert_eq!(meta_entries.len(), 2);
     assert_eq!(meta_entries[1].friend_id, "usr_failed");
     assert_eq!(meta_entries[1].last_fetched_at, "old");
+    assert_eq!(meta_entries[1].total_count, Some(3));
 }

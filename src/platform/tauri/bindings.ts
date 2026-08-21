@@ -4612,6 +4612,7 @@ export type MutualGraphMetaOutput = {
     friendId: string;
     lastFetchedAt: string;
     optedOut: boolean;
+    totalCount: number | null;
 };
 export type MutualGraphSnapshotOutput = {
     friendIds: string[];

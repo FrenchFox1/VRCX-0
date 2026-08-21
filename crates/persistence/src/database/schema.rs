@@ -281,11 +281,17 @@ pub(crate) fn ensure_user_store_tables(
             "CREATE TABLE IF NOT EXISTS {user_prefix}_mutual_graph_links (friend_id TEXT NOT NULL, mutual_id TEXT NOT NULL, PRIMARY KEY(friend_id, mutual_id))"
         ),
         format!(
-            "CREATE TABLE IF NOT EXISTS {user_prefix}_mutual_graph_meta (friend_id TEXT PRIMARY KEY, last_fetched_at TEXT, opted_out INTEGER DEFAULT 0)"
+            "CREATE TABLE IF NOT EXISTS {user_prefix}_mutual_graph_meta (friend_id TEXT PRIMARY KEY, last_fetched_at TEXT, opted_out INTEGER DEFAULT 0, total_count INTEGER)"
         ),
     ] {
         db.execute_non_query(&sql, &Default::default())?;
     }
+    add_column_if_missing(
+        db,
+        &format!("{user_prefix}_mutual_graph_meta"),
+        "total_count",
+        "INTEGER",
+    )?;
     Ok(())
 }
 

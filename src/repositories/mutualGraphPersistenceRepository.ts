@@ -3,6 +3,7 @@ import { commands } from '@/platform/tauri/bindings';
 type MutualGraphMeta = {
     lastFetchedAt: string | null;
     optedOut: boolean;
+    totalCount: number | null;
 };
 
 async function getSnapshot(userId: string): Promise<{
@@ -44,7 +45,8 @@ async function getSnapshot(userId: string): Promise<{
 
         meta.set(friendId, {
             lastFetchedAt: row.lastFetchedAt || null,
-            optedOut: row.optedOut
+            optedOut: row.optedOut,
+            totalCount: row.totalCount
         });
     }
 

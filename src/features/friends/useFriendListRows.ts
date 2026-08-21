@@ -194,6 +194,14 @@ export function useFriendListRows({
                           for (const [friendId, mutualIds] of snapshot) {
                               countMap.set(friendId, mutualIds.length);
                           }
+                          for (const [friendId, metadata] of meta) {
+                              if (Number.isFinite(metadata.totalCount)) {
+                                  countMap.set(
+                                      friendId,
+                                      Number(metadata.totalCount)
+                                  );
+                              }
+                          }
                           return [countMap, meta];
                       })
                 : Promise.resolve([new Map(), new Map()]);

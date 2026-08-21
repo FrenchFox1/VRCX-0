@@ -8,7 +8,14 @@ import {
 import type { MutualFriendGraph } from './mutualFriendsTypes';
 
 function buildNode(id: string, label: string, degree: number) {
-    return { id, label, degree, lastFetchedAt: null, optedOut: false };
+    return {
+        id,
+        label,
+        degree,
+        mutualCount: degree,
+        lastFetchedAt: null,
+        optedOut: false
+    };
 }
 
 const graph: MutualFriendGraph = {

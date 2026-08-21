@@ -39,7 +39,10 @@ pub(super) struct MutualGraphFetchContext<'a> {
 }
 
 pub(super) enum FriendFetchResult {
-    MutualIds(Vec<String>),
+    MutualIds {
+        mutual_ids: Vec<String>,
+        total_count: usize,
+    },
     OptedOut,
     Cancelled,
     Failed(String),
@@ -66,27 +69,34 @@ pub async fn refresh_mutual_graph_friend(
         expected_scope: &expected_scope,
         last_request_at: None,
     };
-    let (status, mutual_ids, opted_out) = match fetch_friend_mutuals(&mut context, &friend_id).await
-    {
-        FriendFetchResult::MutualIds(mutual_ids) => (
-            MutualGraphFriendRefreshStatus::Refreshed,
-            Some(mutual_ids),
-            false,
-        ),
-        FriendFetchResult::OptedOut => (MutualGraphFriendRefreshStatus::OptedOut, None, true),
-        FriendFetchResult::Cancelled => {
-            return Err(Error::Custom(
-                "Mutual graph friend refresh authentication scope changed.".into(),
-            ));
-        }
-        FriendFetchResult::Failed(error) => return Err(Error::Custom(error)),
-    };
+    let (status, mutual_ids, total_count, opted_out) =
+        match fetch_friend_mutuals(&mut context, &friend_id).await {
+            FriendFetchResult::MutualIds {
+                mutual_ids,
+                total_count,
+            } => (
+                MutualGraphFriendRefreshStatus::Refreshed,
+                Some(mutual_ids),
+                Some(total_count),
+                false,
+            ),
+            FriendFetchResult::OptedOut => {
+                (MutualGraphFriendRefreshStatus::OptedOut, None, None, true)
+            }
+            FriendFetchResult::Cancelled => {
+                return Err(Error::Custom(
+                    "Mutual graph friend refresh authentication scope changed.".into(),
+                ));
+            }
+            FriendFetchResult::Failed(error) => return Err(Error::Custom(error)),
+        };
     ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
     vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
         deps.db,
         expected_scope.current_user_id,
         friend_id,
         mutual_ids,
+        total_count,
         opted_out,
     )?;
     Ok(MutualGraphFriendRefreshOutput { status })
@@ -128,6 +138,7 @@ pub async fn get_user_mutual_friends_list(
                     owner_user_id.to_string(),
                     user_id,
                     None,
+                    None,
                     true,
                 )?;
             }
@@ -138,6 +149,7 @@ pub async fn get_user_mutual_friends_list(
         MutualFriendRowsResult::Rows { rows, complete } => {
             let persisted = complete && backfills_graph;
             if persisted {
+                let total_count = rows.len();
                 let mutual_ids =
                     normalize_friend_ids(rows.iter().filter_map(mutual_id_from_value).collect());
                 vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
@@ -145,6 +157,7 @@ pub async fn get_user_mutual_friends_list(
                     owner_user_id.to_string(),
                     user_id,
                     Some(mutual_ids),
+                    Some(total_count),
                     false,
                 )?;
             }
@@ -162,6 +175,7 @@ pub(super) async fn fetch_friend_mutuals(
 ) -> FriendFetchResult {
     let mut collected = Vec::new();
     let mut seen = HashSet::new();
+    let mut total_count = 0usize;
     let mut offset = 0;
 
     loop {
@@ -176,6 +190,7 @@ pub(super) async fn fetch_friend_mutuals(
         match fetch_mutual_page(context, friend_id, offset).await {
             PageFetchResult::Rows(rows) => {
                 let page_len = rows.len();
+                total_count += page_len;
                 for row in rows {
                     if let Some(id) = mutual_id_from_value(&row) {
                         if seen.insert(id.clone()) {
@@ -184,11 +199,17 @@ pub(super) async fn fetch_friend_mutuals(
                     }
                 }
                 if page_len < MUTUAL_GRAPH_PAGE_SIZE as usize {
-                    return FriendFetchResult::MutualIds(collected);
+                    return FriendFetchResult::MutualIds {
+                        mutual_ids: collected,
+                        total_count,
+                    };
                 }
                 offset += page_len as i32;
                 if offset / MUTUAL_GRAPH_PAGE_SIZE >= MUTUAL_GRAPH_MAX_PAGES as i32 {
-                    return FriendFetchResult::MutualIds(collected);
+                    return FriendFetchResult::MutualIds {
+                        mutual_ids: collected,
+                        total_count,
+                    };
                 }
             }
             PageFetchResult::OptedOut => return FriendFetchResult::OptedOut,
@@ -450,6 +471,7 @@ pub(super) fn preserve_failed_friend_cache(
                 friend_id: meta.friend_id,
                 last_fetched_at: meta.last_fetched_at,
                 opted_out: meta.opted_out,
+                total_count: meta.total_count,
             });
         }
     }

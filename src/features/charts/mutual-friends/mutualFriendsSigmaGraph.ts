@@ -47,6 +47,7 @@ type MutualFriendsNodeAttributes = Record<string, unknown> & {
     fullLabel: string;
     label: string;
     lastFetchedAt: string | null;
+    mutualCount: number;
     optedOut: boolean;
     size: number;
     type: string;
@@ -321,6 +322,7 @@ export async function buildSigmaGraph({
             size: baseSize,
             baseSize,
             degree: node.degree,
+            mutualCount: node.mutualCount,
             optedOut: node.optedOut,
             lastFetchedAt: node.lastFetchedAt,
             community: communityIndexById.get(node.id) ?? 0,
@@ -467,9 +469,10 @@ export function renderSigmaGraph({
                     'optedOut' in data && typeof data.optedOut === 'boolean'
                         ? data.optedOut
                         : undefined,
-                degree:
-                    'degree' in data && typeof data.degree === 'number'
-                        ? data.degree
+                mutualCount:
+                    'mutualCount' in data &&
+                    typeof data.mutualCount === 'number'
+                        ? data.mutualCount
                         : undefined
             },
             settings,
