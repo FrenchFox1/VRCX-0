@@ -155,7 +155,7 @@ jobs:
                   components: clippy
                   cache-key: ci-linux-x86_64
             - run: mkdir -p dist && printf '<!doctype html><html><body></body></html>' > dist/index.html
-            - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+            - run: npm run rust:clippy:ci
             - uses: taiki-e/install-action@cargo-deny
             - run: npm run rust:deny
 
@@ -268,7 +268,7 @@ jobs:
               with:
                   cache-key: ${{ matrix.cache_key }}
                   save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-            - run: npm run rust:test -- ${{ matrix.rust_test_args }}
+            - run: npm run rust:test:ci -- ${{ matrix.rust_test_args }}
 
     tauri-bindings:
         name: Tauri Bindings Up-to-date
