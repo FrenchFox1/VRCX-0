@@ -2,13 +2,9 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { FavoriteGroup, FavoriteGroupMap } from '@/domain/favorites/types';
-import {
-    resolveObservedPlayerDwellEpochs,
-    resolveObservedPlayerUserIds
-} from '@/domain/friends/sameInstanceFriends';
+import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
 import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
 import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
-import { applyInstanceDwellEpochs } from '@/domain/instances/instanceRoster';
 import {
     getVisibleKnownSizeRows,
     positionKnownSizeRows
@@ -204,11 +200,6 @@ export function useFriendsLocationsPageDerivedState({
                     currentLocationPlayers,
                     friendsById
                 )
-            ),
-            dwellEpochsByUserId: resolveObservedPlayerDwellEpochs(
-                currentLocationPlayers,
-                friendsById,
-                currentInviteLocation
             )
         }),
         [
@@ -297,34 +288,18 @@ export function useFriendsLocationsPageDerivedState({
     const onlineFriends = useMemo<FriendRecord[]>(
         () =>
             sortFriendsBySidebarPrefs(
-                applyInstanceDwellEpochs(
-                    onlineIds.map((id) => friendsById[id]).filter(isPresent),
-                    currentLocationSnapshot.dwellEpochsByUserId
-                ),
+                onlineIds.map((id) => friendsById[id]).filter(isPresent),
                 sidebarSortMethods
             ),
-        [
-            currentLocationSnapshot.dwellEpochsByUserId,
-            friendsById,
-            onlineIds,
-            sidebarSortMethods
-        ]
+        [friendsById, onlineIds, sidebarSortMethods]
     );
     const activeFriends = useMemo<FriendRecord[]>(
         () =>
             sortActiveFriendsBySidebarPrefs(
-                applyInstanceDwellEpochs(
-                    activeIds.map((id) => friendsById[id]).filter(isPresent),
-                    currentLocationSnapshot.dwellEpochsByUserId
-                ),
+                activeIds.map((id) => friendsById[id]).filter(isPresent),
                 sidebarSortMethods
             ),
-        [
-            activeIds,
-            currentLocationSnapshot.dwellEpochsByUserId,
-            friendsById,
-            sidebarSortMethods
-        ]
+        [activeIds, friendsById, sidebarSortMethods]
     );
     const offlineFriends = useMemo<FriendRecord[]>(
         () =>

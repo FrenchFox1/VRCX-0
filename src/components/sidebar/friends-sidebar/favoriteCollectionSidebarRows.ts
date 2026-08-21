@@ -95,23 +95,16 @@ export function buildFavoriteCollectionFriendIdSet({
 export function buildFavoriteCollectionSameInstanceGroups({
     rows,
     prefs,
-    currentLocationSnapshot,
-    fallbackJoinTimes
+    currentLocationSnapshot
 }: {
     rows: readonly SidebarFriendRecord[];
     prefs: SidebarPreferences;
     currentLocationSnapshot: LastLocationSnapshot;
-    fallbackJoinTimes: Map<string, number>;
 }): SameInstanceGroup[] {
     if (!prefs?.sidebarGroupByInstance) {
         return [];
     }
-    return buildSameInstanceGroups(
-        rows,
-        prefs,
-        currentLocationSnapshot,
-        fallbackJoinTimes
-    );
+    return buildSameInstanceGroups(rows, prefs, currentLocationSnapshot);
 }
 
 export function buildFavoriteCollectionSidebarVirtualRows({

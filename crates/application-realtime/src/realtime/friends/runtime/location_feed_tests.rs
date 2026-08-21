@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn friend_location_with_state_change_does_not_emit_gps_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn duplicate_friend_location_payload_after_repeat_window_does_not_write_gps_again() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn friend_update_status_visibility_changes_emit_private_and_restored_gps() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn friend_location_top_level_offline_overrides_stale_embedded_location() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn entering_traveling_emits_one_ephemeral_player_joining_entry() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -366,7 +366,7 @@ mod tests {
 
     #[test]
     fn persisted_feed_precedes_ephemeral_joining_projection() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

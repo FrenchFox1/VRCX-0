@@ -3,11 +3,7 @@ import type {
     FriendRecordInput,
     FriendRosterBucket
 } from '@/domain/friends/types';
-import {
-    isSameInstanceLocation,
-    resolveInstanceDwellEpoch,
-    type InstanceRosterTimestamp
-} from '@/domain/instances/instanceRoster';
+import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { isRealInstance } from '@/shared/utils/instance';
 import {
@@ -24,7 +20,6 @@ type FriendPresenceRecord = FriendRecordInput &
     };
 
 type SameInstanceLastLocation = {
-    dwellEpochsByUserId?: ReadonlyMap<string, InstanceRosterTimestamp>;
     friendList?: FriendListMembership;
     location?: string | null;
     locationStartedAt?: InstanceRosterTimestamp | null;
@@ -142,29 +137,6 @@ function resolveObservedPlayerUserIds(
     return Array.from(userIds);
 }
 
-function resolveObservedPlayerDwellEpochs(
-    players: unknown,
-    friendsById: Record<string, unknown>,
-    currentLocation: unknown
-): Map<string, InstanceRosterTimestamp> {
-    const dwellEpochsByUserId = new Map<string, InstanceRosterTimestamp>();
-    for (const player of Array.isArray(players) ? players : []) {
-        const userId = resolveObservedPlayerUserId(player, friendsById);
-        const friend = userId ? friendsById[userId] : null;
-        const friendPresenceEpoch = isSameInstanceLocation(
-            resolveSameInstanceFriendLocation(friend, null),
-            currentLocation
-        )
-            ? resolveInstanceDwellEpoch(friend)
-            : '';
-        const epoch = friendPresenceEpoch || resolveInstanceDwellEpoch(player);
-        if (userId && epoch) {
-            dwellEpochsByUserId.set(userId, epoch);
-        }
-    }
-    return dwellEpochsByUserId;
-}
-
 function isOnlineSameInstanceFriend(friend: unknown): boolean {
     const source = friendPresenceSource(friend);
     return normalizeFriendState(source?.state) === 'online';
@@ -245,7 +217,6 @@ export {
     isOnlineSameInstanceFriend,
     resolveObservedPlayerUserId,
     resolveObservedPlayerUserIds,
-    resolveObservedPlayerDwellEpochs,
     resolveSameInstanceFriendLocation
 };
 export type { SameInstanceFriendGroup, SameInstanceLastLocation };

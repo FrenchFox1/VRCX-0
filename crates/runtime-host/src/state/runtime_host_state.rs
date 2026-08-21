@@ -534,6 +534,7 @@ impl RuntimeHostStateBuilder {
             local_game_context,
             activity_sink: Some(Arc::new(self.runtime_context.overlay_activity())),
             world_cache: Arc::clone(&self.runtime_context.world_cache),
+            instance_dwell: Arc::clone(&self.runtime_context.instance_dwell),
             print_cleanup: Arc::new(PrintCleanupQueueSink::new(
                 self.runtime_context.print_cleanup.clone(),
                 self.runtime_context.tasks.clone(),

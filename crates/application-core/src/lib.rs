@@ -10,6 +10,7 @@ mod event_bus;
 pub mod events;
 mod favorite_kind;
 mod image_cache;
+mod instance_dwell;
 mod interruptible_sleep;
 pub mod ports;
 mod proxy;
@@ -59,6 +60,7 @@ pub use events::{
 };
 pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteType};
 pub use image_cache::{save_ugc_image_to_file, ImageCache};
+pub use instance_dwell::{InstanceDwellRegistry, InstanceDwellSource};
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
     BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, GameProcessEvent,

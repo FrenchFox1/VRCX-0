@@ -210,6 +210,12 @@ impl DesktopRuntimeHostState {
             integration_api_publisher_channel();
         let instance_roster_observer: Arc<dyn InstanceRosterObserver> =
             Arc::new(integration_api_publisher);
+        let game_roster_observer: Arc<dyn InstanceRosterObserver> =
+            Arc::new(crate::log_watcher::HostInstanceRosterFanout::new(vec![
+                Arc::clone(&instance_roster_observer),
+                Arc::clone(&builder.runtime_context.instance_dwell)
+                    as Arc<dyn InstanceRosterObserver>,
+            ]));
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             config: builder.runtime_context.config.clone(),
             tasks: builder.runtime_context.tasks.clone(),
@@ -246,7 +252,7 @@ impl DesktopRuntimeHostState {
             app_paths: builder.paths.clone(),
             snapshot: game_log_snapshot.clone(),
             overlay_activity: overlay_activity.clone(),
-            instance_roster_observer: Some(Arc::clone(&instance_roster_observer)),
+            instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
             backend_status: backend_status.clone(),
             side_effect_sink: game_log_side_effect_sink,
         }));
@@ -266,7 +272,7 @@ impl DesktopRuntimeHostState {
             host_file_access.clone(),
             builder.paths.clone(),
             desktop_services.host.clone(),
-            Some(Arc::clone(&instance_roster_observer)),
+            Some(Arc::clone(&game_roster_observer)),
             backend_status.clone(),
         ));
         let session_runtime = Arc::new(SessionHostRuntime::new(

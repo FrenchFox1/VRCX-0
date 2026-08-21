@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
-import { resolveObservedPlayerDwellEpochs } from '@/domain/friends/sameInstanceFriends';
 import { recordKnownUser } from '@/services/domainIngestionService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
@@ -206,23 +205,6 @@ export function UserDialogContent({
         profile,
         reloadToken
     });
-    const currentInstanceDwellEpochsByUserId = useMemo(
-        () =>
-            isSameLocationTag(presenceLocation, gameState?.currentLocation)
-                ? resolveObservedPlayerDwellEpochs(
-                      gameState?.currentLocationPlayers,
-                      friendsById,
-                      presenceLocation
-                  )
-                : new Map<string, number | string>(),
-        [
-            friendsById,
-            gameState?.currentLocation,
-            gameState?.currentLocationPlayers,
-            presenceLocation
-        ]
-    );
-
     const {
         avatarOverrideState,
         extendedModerationState,
@@ -452,7 +434,6 @@ export function UserDialogContent({
                 }}
                 locationPanel={{
                     sameInstanceUsers: activeLocationPanel.users,
-                    dwellEpochsByUserId: currentInstanceDwellEpochsByUserId,
                     locationOwnerUser: activeLocationPanel.ownerUser,
                     locationOwnerGroup: activeLocationPanel.ownerGroup,
                     locationInstance: activeLocationPanel.instance,

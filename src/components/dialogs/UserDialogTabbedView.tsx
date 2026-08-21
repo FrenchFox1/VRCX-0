@@ -3,10 +3,7 @@ import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import type {
-    InstanceRosterRow,
-    InstanceRosterTimestamp
-} from '@/domain/instances/instanceRoster';
+import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { openAvatarDialog, openGroupDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
@@ -111,7 +108,6 @@ interface UserDialogTabbedViewProps {
     };
     locationPanel: {
         sameInstanceUsers?: InstanceRosterRow[];
-        dwellEpochsByUserId?: ReadonlyMap<string, InstanceRosterTimestamp>;
         locationOwnerUser?: Record<string, unknown> | null;
         locationOwnerGroup?: Record<string, unknown> | null;
         locationInstance?: Record<string, unknown> | null;
@@ -152,10 +148,6 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 const SELF_PANELS = ['profile-media', 'profile-decorations'] as const;
-const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<
-    string,
-    InstanceRosterTimestamp
->();
 type SelfPanel = '' | (typeof SELF_PANELS)[number];
 
 function isSelfPanel(value: string): value is Exclude<SelfPanel, ''> {
@@ -256,7 +248,6 @@ export function UserDialogTabbedView({
     } = presence;
     const {
         sameInstanceUsers = [],
-        dwellEpochsByUserId = EMPTY_DWELL_EPOCHS_BY_USER_ID,
         locationOwnerUser = null,
         locationOwnerGroup = null,
         locationInstance = null,
@@ -468,7 +459,6 @@ export function UserDialogTabbedView({
         () =>
             buildUserDialogLocationUsers({
                 currentUserId,
-                dwellEpochsByUserId,
                 friendsById,
                 locationInstance,
                 locationOwnerGroup,
@@ -480,7 +470,6 @@ export function UserDialogTabbedView({
             }),
         [
             currentUserId,
-            dwellEpochsByUserId,
             friendsById,
             locationInstance,
             locationOwnerGroup,

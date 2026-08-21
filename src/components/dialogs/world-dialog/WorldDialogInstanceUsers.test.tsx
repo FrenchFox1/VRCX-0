@@ -4,8 +4,6 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getSharedSameInstanceFallbackJoinTimes } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-
 type QueryOptions = {
     enabled?: boolean;
     queryFn: () => Promise<unknown>;
@@ -157,7 +155,6 @@ describe('InstanceUserTiles', () => {
         vi.clearAllMocks();
         mocks.knownCreatorUser = null;
         mocks.queryData = null;
-        getSharedSameInstanceFallbackJoinTimes().clear();
     });
 
     it('fetches an unresolved non-friend instance creator profile', async () => {
@@ -321,37 +318,12 @@ describe('InstanceUserTiles', () => {
         expect(screen.queryByText('World hopping')).toBeNull();
     });
 
-    it('reuses the sidebar fallback when the roster has no join time', () => {
-        getSharedSameInstanceFallbackJoinTimes().set(
-            'wrld_test:123:usr_friend',
-            1_700_000_000_000
-        );
-
-        render(
-            <InstanceUserTiles
-                instance={{
-                    location: 'wrld_test:123',
-                    users: [{ id: 'usr_friend', displayName: 'Friend' }]
-                }}
-                showInstanceDuration
-            />
-        );
-
-        expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
-            '1700000000000'
-        );
-    });
-
-    it('uses the sidebar fallback for a non-friend creator', () => {
+    it('uses the presence dwell start for a non-friend creator', () => {
         mocks.knownCreatorUser = {
             id: 'usr_non_friend_owner',
             displayName: 'Non-friend Owner',
             $location_at: 1_700_000_030_000
         };
-        getSharedSameInstanceFallbackJoinTimes().set(
-            'wrld_test:123:usr_non_friend_owner',
-            1_700_000_000_000
-        );
 
         render(
             <InstanceUserTiles
@@ -365,7 +337,7 @@ describe('InstanceUserTiles', () => {
         );
 
         expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
-            '1700000000000'
+            '1700000030000'
         );
     });
 });

@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn baseline_causal_watermark_reports_baseline_identity() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         let empty = runtime.baseline_causal_watermark();
         assert_eq!(empty.generation, None);
         assert_eq!(empty.baseline_revision, None);
@@ -18,7 +18,7 @@ mod tests {
 
     #[test]
     fn stores_normalized_friend_baseline() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         let result = runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: " usr_self ".into(),
@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn current_friend_queries_read_only_the_requested_record() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 endpoint: "https://api.example.test".into(),
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn roster_snapshot_builds_current_json_with_stable_order() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn baseline_generation_uses_realtime_transport_generation_after_clear() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.clear();
 
         let result = runtime.set_baseline(FriendRosterBaseline::default(), 1, 0);
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn placeholder_baseline_refresh_uses_official_list_bucket() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn placeholder_baseline_refresh_keeps_existing_trust() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn placeholder_baseline_refresh_follows_official_list_state() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn unwatermarked_baseline_preserves_inflight_ws_state() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -411,7 +411,7 @@ mod tests {
 
     #[test]
     fn in_world_baseline_overrides_stale_active() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -462,7 +462,7 @@ mod tests {
 
     #[test]
     fn placeholder_keeps_existing_display_name_not_id() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -516,7 +516,7 @@ mod tests {
 
     #[test]
     fn rest_online_baseline_cancels_pending_offline_without_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

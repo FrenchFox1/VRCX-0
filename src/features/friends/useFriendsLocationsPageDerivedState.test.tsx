@@ -31,10 +31,10 @@ function friendAt(location: string): FriendRecord {
 }
 
 describe('useFriendsLocationsPageDerivedState', () => {
-    it('carries observed current-instance dwell epochs into searched card rows', () => {
+    it('carries the resolved dwell start into searched card rows', () => {
         const location = 'wrld_test:123';
         const joinedAtMs = 1_700_000_000_000;
-        const friend = friendAt(location);
+        const friend = { ...friendAt(location), $location_at: joinedAtMs };
         const { result } = renderHook(() =>
             useFriendsLocationsPageDerivedState({
                 activeIds: [friend.id],

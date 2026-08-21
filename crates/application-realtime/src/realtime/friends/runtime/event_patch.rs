@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use serde_json::{json, Value};
+use vrcx_0_application_core::InstanceDwellRegistry;
 use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
@@ -30,7 +33,7 @@ use patch_builders::{
     normalize_patch_trust, offline_like_patch, online_patch, resolve_state_bucket,
     state_bucket_changed,
 };
-use record_transition::apply_friend_patch;
+use record_transition::{apply_friend_patch, FriendRecordTransition};
 pub(super) use record_transition::{record_string, record_value, FriendRecordPatch};
 
 const GPS_REPEAT_WINDOW_MS: i64 = 5 * 60 * 1000;
@@ -775,6 +778,40 @@ pub(super) fn apply_patch_to_state_with_authority(
     );
 }
 
+fn normalize_instance_dwell(
+    registry: &InstanceDwellRegistry,
+    user_id: &str,
+    transition: &mut FriendRecordTransition,
+) {
+    let location = transition.next.location.clone();
+    let parsed = parse_location(&location);
+    if parsed.is_traveling {
+        return;
+    }
+    if !parsed.is_real_instance {
+        registry.forget(user_id);
+        return;
+    }
+    let Some(observed) = transition
+        .next
+        .extra
+        .i64_field(derived_keys::LOCATION_UPDATED_AT)
+    else {
+        return;
+    };
+    let canonical = registry.observe_presence_location(user_id, &location, observed);
+    if canonical == observed {
+        return;
+    }
+    for record in [&mut transition.next, &mut transition.projection.patch] {
+        for key in [derived_keys::LOCATION_UPDATED_AT, "locationUpdatedAt"] {
+            if record.extra.contains_key(key) {
+                record.extra.insert(key.to_string(), Value::from(canonical));
+            }
+        }
+    }
+}
+
 pub(super) fn apply_record_patch_to_state(
     state: &mut RealtimeFriendState,
     output: &mut RealtimeFriendOutput,
@@ -789,13 +826,15 @@ pub(super) fn apply_record_patch_to_state(
         .as_ref()
         .and_then(|baseline| baseline.friends_by_id.get(user_id))
         .cloned();
-    let transition = apply_friend_patch(
+    let mut transition = apply_friend_patch(
         previous.as_ref(),
         user_id,
         &patch,
         state_bucket,
         state_bucket_authority,
     );
+    let instance_dwell = Arc::clone(&state.instance_dwell);
+    normalize_instance_dwell(&instance_dwell, user_id, &mut transition);
     if let Some(entry) = player_joining_feed_entry(
         user_id,
         transition.was_traveling,

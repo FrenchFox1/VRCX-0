@@ -10,9 +10,9 @@ use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivityRuntime, OverlayActivitySink, OverlayActivitySnapshot,
 };
 use vrcx_0_application_core::{
-    AvatarCache, HostSessionRuntime, ImageCache, RuntimeAuthScope, RuntimeBackgroundJobs,
-    RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle, RuntimeSyncEngine, TaskSupervisor,
-    WebClient, WorldCache,
+    AvatarCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry, RuntimeAuthScope,
+    RuntimeBackgroundJobs, RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle,
+    RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
@@ -91,6 +91,7 @@ pub struct RuntimeHostContext {
     pub avatar_cache: Arc<AvatarCache>,
     pub avatar_moderation: AvatarModerationRuntime,
     pub world_cache: Arc<WorldCache>,
+    pub instance_dwell: Arc<InstanceDwellRegistry>,
     pub config: ConfigRepository,
     overlay_activity: OverlayActivityRuntime,
     overlay_activity_sinks: OverlayActivityFanoutSink,
@@ -182,6 +183,7 @@ impl RuntimeHostContext {
             avatar_cache,
             avatar_moderation: AvatarModerationRuntime::new(),
             world_cache,
+            instance_dwell: Arc::new(InstanceDwellRegistry::new()),
             config,
             overlay_activity,
             overlay_activity_sinks,

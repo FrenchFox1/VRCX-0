@@ -7,7 +7,6 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import { getEstimatedDwellSince } from '@/services/friendDwellTrackingService';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -160,15 +159,6 @@ export function useUserHoverCardData({
         };
     }, [worldId, instanceId, isRealInstance, endpoint]);
 
-    const instanceEpoch =
-        model.instanceEpoch ||
-        (model.variant === 'in-instance'
-            ? getEstimatedDwellSince(
-                  normalizedUserId,
-                  model.location.effectiveLocation
-              )
-            : 0);
-
     return {
         model,
         worldThumb,
@@ -176,7 +166,7 @@ export function useUserHoverCardData({
         populationLoading,
         memo,
         trustColor,
-        instanceEpoch,
+        instanceEpoch: model.instanceEpoch,
         loading: profileLoading && !profile
     };
 }

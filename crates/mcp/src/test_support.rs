@@ -109,6 +109,7 @@ pub(crate) fn test_runtime_with_event_bus(
         local_game_context: Arc::new(UnavailableLocalGameContextSource),
         activity_sink: None,
         world_cache,
+        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(NoopPrintCleanupInputSink),
         friend_note_change_sink: None,
         current_user_snapshot_sink: None,

@@ -5,9 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import {
-    getSharedSameInstanceFallbackJoinTimes,
     resolveSidebarStatusDotClassName,
-    sameInstanceFallbackKey,
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserDetailTile } from '@/components/UserDetailTile';
@@ -85,9 +83,7 @@ function instanceUserSubtitle(
         timestampFromValue(user.locationAt) ||
         timestampFromValue(user.location_at) ||
         timestampFromValue(user.joinedAt) ||
-        timestampFromValue(user.joined_at) ||
-        timestampFromValue(user.created_at) ||
-        timestampFromValue(user.createdAt);
+        timestampFromValue(user.joined_at);
     if (timestamp) {
         return timeToText(nowMs - timestamp);
     }
@@ -136,7 +132,6 @@ export function InstanceUserTiles({
     const nowMs = useNowMs();
     const source = record(instance);
     const instanceLocation = firstText(source.location, source.tag);
-    const fallbackJoinTimes = getSharedSameInstanceFallbackJoinTimes();
     const creatorUser = record(source.creatorUser);
     const creatorUserId = firstText(source.creatorUserId);
     const knownCreatorUser = useKnownUserFact(creatorUserId, {
@@ -308,18 +303,8 @@ export function InstanceUserTiles({
                 const subtitle = instanceUserSubtitle(user, nowMs, t);
                 const travelingTimestamp = instanceUserTravelingTimestamp(user);
                 const isInstanceCreator = userId === creatorUserId;
-                const sharedFallbackEpoch =
-                    showInstanceDuration && instanceLocation
-                        ? fallbackJoinTimes.get(
-                              sameInstanceFallbackKey(
-                                  instanceLocation,
-                                  statusUser
-                              )
-                          )
-                        : 0;
-                const dwellEpoch = resolveInstanceDwellEpoch(user);
                 const timerEpoch =
-                    travelingTimestamp || sharedFallbackEpoch || dwellEpoch;
+                    travelingTimestamp || resolveInstanceDwellEpoch(user);
                 let subline: ReactNode;
                 if (showInstanceDuration) {
                     subline = (

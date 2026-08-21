@@ -20,7 +20,7 @@ mod tests {
     }
 
     fn runtime_with_online_friend(location: &str) -> RealtimeFriendsRuntime {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn friend_online_writes_online_feed_and_projection() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn friend_add_twice_logs_single_friend_entry() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn friend_add_without_display_name_logs_unknown_not_id() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn friend_update_display_name_change_upserts_friend_log_once() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -302,7 +302,7 @@ mod tests {
         ];
 
         for event in events {
-            let runtime = RealtimeFriendsRuntime::new();
+            let runtime = RealtimeFriendsRuntime::default();
             runtime.set_baseline(
                 FriendRosterBaseline {
                     current_user_id: "usr_self".into(),
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn legacy_equivalent_trust_change_updates_current_without_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         let mut friend = friend_with_trust();
         friend
             .extra
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn friend_online_with_display_name_change_upserts_friend_log() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -457,7 +457,7 @@ mod tests {
 
     #[test]
     fn friend_active_with_display_name_change_upserts_friend_log() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -514,7 +514,7 @@ mod tests {
 
     #[test]
     fn friend_active_rename_while_online_records_friend_log_and_debounces() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn friend_active_trust_change_upserts_and_projects() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -623,7 +623,7 @@ mod tests {
 
     #[test]
     fn friend_location_with_embedded_display_name_change_upserts_friend_log() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -675,7 +675,7 @@ mod tests {
 
     #[test]
     fn friend_delete_generates_unfriend_feed_entry() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -721,7 +721,7 @@ mod tests {
 
     #[test]
     fn websocket_friend_update_does_not_demote_online_friend_to_offline() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -774,7 +774,7 @@ mod tests {
 
     #[test]
     fn friend_active_with_dirty_online_state_fires_active_not_online() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -829,7 +829,7 @@ mod tests {
 
     #[test]
     fn pending_offline_timer_writes_offline_feed_when_it_fires() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -889,7 +889,7 @@ mod tests {
 
     #[test]
     fn friend_active_with_dirty_offline_state_fires_active_not_offline() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -937,7 +937,7 @@ mod tests {
 
     #[test]
     fn repeated_pending_offline_event_does_not_reschedule_timer() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -993,7 +993,7 @@ mod tests {
 
     #[test]
     fn pending_offline_existing_event_does_not_replace_timer_or_target_state() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

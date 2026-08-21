@@ -1990,6 +1990,7 @@ fn friend_note_change_notifies_note_cache_sink() -> Result<()> {
         local_game_context: Arc::new(UnavailableLocalGameContextSource),
         activity_sink: None,
         world_cache,
+        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
         friend_note_change_sink: Some({
             let invalidations = Arc::clone(&invalidations);

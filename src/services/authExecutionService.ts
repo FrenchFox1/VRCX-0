@@ -11,7 +11,6 @@ import authRepository, {
     type SavedCredentialRecord
 } from '@/repositories/authRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
-import { resetFriendDwellTracking } from '@/services/friendDwellTrackingService';
 import { clearUserDialogCaches } from '@/services/userDialogSessionCacheService';
 import { isRecord } from '@/shared/utils/record';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
@@ -165,7 +164,6 @@ export function setAuthenticatingSessionState() {
 function resetCurrentUserRuntimeCaches() {
     clearEntityQueryCache();
     clearUserDialogCaches();
-    resetFriendDwellTracking();
     resetVrchatConfigSnapshot();
     useAssistantChatStore.getState().resetAssistantChatState();
     useFriendRosterStore.getState().resetRoster();

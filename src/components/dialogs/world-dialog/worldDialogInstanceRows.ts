@@ -3,14 +3,12 @@ import type { EntityRecord } from '@/domain/entities/shared';
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import {
     isExplicitlyOfflineFriend,
-    resolveObservedPlayerDwellEpochs,
     resolveObservedPlayerUserId
 } from '@/domain/friends/sameInstanceFriends';
 import type {
     CurrentInstanceRosterContext,
     CurrentInstanceRosterPlayer
 } from '@/domain/instances/currentInstanceRoster';
-import { applyInstanceDwellEpochs } from '@/domain/instances/instanceRoster';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -157,11 +155,6 @@ export function buildWorldDialogDisplayInstanceRows({
         .filter(
             (player) => !isExplicitlyOfflineFriend(friendsById[player.userId])
         );
-    const currentInstanceDwellEpochsByUserId = resolveObservedPlayerDwellEpochs(
-        snapshotPlayers,
-        friendsById,
-        firstText(currentInstanceDetailsForLocation.location, normalizedWorldId)
-    );
     const currentInstanceRow: WorldDialogInstanceRow | null =
         parsedCurrentInstanceLocation?.worldId &&
         parsedCurrentInstanceLocation?.instanceId
@@ -366,20 +359,10 @@ export function buildWorldDialogDisplayInstanceRows({
             instance,
             currentLocation
         );
-        const hasMatchingInstanceDetails = sameInstanceLocation(
-            world,
-            instance,
-            currentInstanceDetailsForLocation.location
-        );
         const instanceWithFriends: WorldDialogInstanceRow = {
             ...instance,
             isCurrentInstance,
-            users: hasMatchingInstanceDetails
-                ? applyInstanceDwellEpochs(
-                      mergedUsers,
-                      currentInstanceDwellEpochsByUserId
-                  )
-                : mergedUsers
+            users: mergedUsers
         };
         return creatorGroupProfile
             ? {

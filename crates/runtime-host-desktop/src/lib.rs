@@ -30,7 +30,7 @@ pub use host_file_access::{ensure_vrchat_launch_path_allowed, is_known_root_path
 pub use integration_api::DesktopIntegrationApiRuntime;
 pub use log_watcher::{
     GameLogEvent, GameLogEventOrigin, GameLogEventSink, HostGameLogEventFanout,
-    HostLogLocationSnapshotScanner, LogLocationSnapshot, LogWatcher,
+    HostInstanceRosterFanout, HostLogLocationSnapshotScanner, LogLocationSnapshot, LogWatcher,
 };
 pub use process_monitor::HostGameProcessMonitorActions;
 pub use registry_backup::HostRegistryBackupActions;

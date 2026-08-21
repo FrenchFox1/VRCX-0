@@ -167,16 +167,6 @@ export function resolveInstanceDwellEpoch(
     );
 }
 
-export function applyInstanceDwellEpochs<TUser extends InstanceRosterRecord>(
-    users: readonly TUser[],
-    dwellEpochsByUserId: ReadonlyMap<string, InstanceRosterTimestamp>
-): TUser[] {
-    return users.map((user) => {
-        const epoch = dwellEpochsByUserId.get(userIdForRosterRow(user));
-        return epoch ? { ...user, $location_at: epoch } : user;
-    });
-}
-
 export function userDisplayName(user: unknown): string {
     if (typeof user === 'string') {
         return firstText(user);

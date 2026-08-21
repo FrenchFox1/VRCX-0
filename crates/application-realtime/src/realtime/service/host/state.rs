@@ -5,9 +5,9 @@ use std::sync::{Arc, Mutex};
 use serde_json::Value;
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{
-    HostSessionRuntime, LocalGameContextSource, OverlayActivityInputSink, PrintCleanupInputSink,
-    RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor,
-    WebClient, WorldCache,
+    HostSessionRuntime, InstanceDwellRegistry, LocalGameContextSource, OverlayActivityInputSink,
+    PrintCleanupInputSink, RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus,
+    RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_persistence::DatabaseService;
@@ -215,6 +215,7 @@ pub struct RealtimeHostRuntimeDeps {
     pub local_game_context: Arc<dyn LocalGameContextSource>,
     pub activity_sink: Option<Arc<dyn OverlayActivityInputSink>>,
     pub world_cache: Arc<WorldCache>,
+    pub instance_dwell: Arc<InstanceDwellRegistry>,
     pub print_cleanup: Arc<dyn PrintCleanupInputSink>,
     pub friend_note_change_sink: Option<Arc<dyn Fn() + Send + Sync>>,
     pub current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,

@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
+use vrcx_0_application_core::InstanceDwellRegistry;
 use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
@@ -82,6 +83,7 @@ pub(super) struct RealtimeFriendState {
     pub(super) friend_user_ids_snapshot: Option<Arc<HashSet<String>>>,
     pub(super) pending_offline: HashMap<String, PendingOffline>,
     pub(super) recent_gps: HashMap<String, RecentGps>,
+    pub(super) instance_dwell: Arc<InstanceDwellRegistry>,
 }
 
 impl RealtimeFriendState {
@@ -96,8 +98,13 @@ pub struct RealtimeFriendsRuntime {
 }
 
 impl RealtimeFriendsRuntime {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(instance_dwell: Arc<InstanceDwellRegistry>) -> Self {
+        Self {
+            state: Mutex::new(RealtimeFriendState {
+                instance_dwell,
+                ..RealtimeFriendState::default()
+            }),
+        }
     }
 
     pub fn baseline_causal_watermark(&self) -> FriendBaselineCausalWatermark {

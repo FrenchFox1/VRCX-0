@@ -103,17 +103,6 @@ export type SameInstanceGroup = {
     isCurrentInstance: boolean;
 };
 
-type SameInstanceObservedJoin = {
-    joinTime: number;
-    locationStartedAt: number;
-};
-
-const sharedSameInstanceFallbackJoinTimes = new Map<string, number>();
-const observedJoinsByFallbackMap = new WeakMap<
-    Map<string, number>,
-    Map<string, SameInstanceObservedJoin>
->();
-
 function locationProjection(value: unknown): Record<string, unknown> | null {
     return isRecord(value) ? value : null;
 }
@@ -465,152 +454,16 @@ export function readFriendInstanceEpoch(
     );
 }
 
-export function sameInstanceFallbackKey(
-    locationTag: string,
-    friend: SidebarFriendRecord
-) {
-    const friendId = normalizeId(friend?.id);
-    return `${locationTag}:${friendId || normalizeId(readFriendRef(friend)?.id)}`;
-}
-
-export function getSharedSameInstanceFallbackJoinTimes(): Map<string, number> {
-    return sharedSameInstanceFallbackJoinTimes;
-}
-
-export function resolveSameInstanceContinuityJoinTime(
-    locationTag: string,
-    friend: SidebarFriendRecord,
-    fallbackJoinTimes: Map<string, number>,
-    observedJoinTime: number,
-    locationStartedAt: number
-): number {
-    const fallbackKey = sameInstanceFallbackKey(locationTag, friend);
-    const existingJoinTime = fallbackJoinTimes.get(fallbackKey);
-    if (!observedJoinTime) {
-        if (existingJoinTime !== undefined) {
-            return existingJoinTime;
-        }
-        const joinTime = Date.now();
-        fallbackJoinTimes.set(fallbackKey, joinTime);
-        return joinTime;
-    }
-    let observedJoins = observedJoinsByFallbackMap.get(fallbackJoinTimes);
-    if (!observedJoins) {
-        observedJoins = new Map();
-        observedJoinsByFallbackMap.set(fallbackJoinTimes, observedJoins);
-    }
-    const previousObservation = observedJoins.get(fallbackKey);
-    observedJoins.set(fallbackKey, {
-        joinTime: observedJoinTime,
-        locationStartedAt
-    });
-    if (
-        existingJoinTime !== undefined &&
-        (!previousObservation ||
-            previousObservation.locationStartedAt !== locationStartedAt)
-    ) {
-        const joinTime = Math.min(existingJoinTime, observedJoinTime);
-        fallbackJoinTimes.set(fallbackKey, joinTime);
-        return joinTime;
-    }
-    if (
-        existingJoinTime !== undefined &&
-        previousObservation?.joinTime === observedJoinTime
-    ) {
-        return existingJoinTime;
-    }
-    fallbackJoinTimes.set(fallbackKey, observedJoinTime);
-    return observedJoinTime;
-}
-
-function observedSameInstanceJoinTime(
-    friend: SidebarFriendRecord,
-    locationTag: string,
-    lastLocation: LastLocationSnapshot | null | undefined
-) {
-    const friendId = normalizeId(friend?.id || readFriendRef(friend)?.id);
-    if (normalizeId(lastLocation?.location) !== locationTag || !friendId) {
-        return 0;
-    }
-    return timestampMsFromValue(
-        lastLocation?.dwellEpochsByUserId?.get(friendId)
-    );
-}
-
-export function withSameInstanceJoinTime(
-    friend: SidebarFriendRecord,
-    locationTag: string,
-    fallbackJoinTimes: Map<string, number>,
-    lastLocation: LastLocationSnapshot | null | undefined
-) {
-    const source = readFriendStatusSource(friend);
-    const friendJoinTime = timestampMsFromValue(
-        readFriendInstanceEpoch(source, false)
-    );
-    if (friendJoinTime) {
-        return friend;
-    }
-    const observedJoinTime = observedSameInstanceJoinTime(
-        friend,
-        locationTag,
-        lastLocation
-    );
-    const joinTime = resolveSameInstanceContinuityJoinTime(
-        locationTag,
-        friend,
-        fallbackJoinTimes,
-        observedJoinTime,
-        timestampMsFromValue(lastLocation?.locationStartedAt)
-    );
-    const ref = readFriendRef(friend);
-    if (ref && ref !== friend) {
-        return {
-            ...friend,
-            ref: { ...ref, $location_at: joinTime }
-        };
-    }
-    return { ...friend, $location_at: joinTime };
-}
-
 export function buildSameInstanceGroups(
     rows: readonly SidebarFriendRecord[],
     prefs: SidebarPreferences,
-    lastLocation: LastLocationSnapshot | null | undefined,
-    fallbackJoinTimes: Map<string, number>
+    lastLocation: LastLocationSnapshot | null | undefined
 ) {
-    const activeFallbackKeys = new Set<string>();
-    const preparedRows = sortRows(rows, prefs).map((friend) => {
-        const location = sameInstanceLocationTag(friend, lastLocation);
-        if (!location) {
-            return friend;
-        }
-        const source = readFriendStatusSource(friend);
-        const needsFallback = !timestampMsFromValue(
-            readFriendInstanceEpoch(source, false)
-        );
-        if (needsFallback) {
-            activeFallbackKeys.add(sameInstanceFallbackKey(location, friend));
-        }
-        return withSameInstanceJoinTime(
-            friend,
-            location,
-            fallbackJoinTimes,
-            lastLocation
-        );
-    });
-    const groups = buildSameInstanceFriendGroups(preparedRows, lastLocation, {
+    return buildSameInstanceFriendGroups(sortRows(rows, prefs), lastLocation, {
         includeCurrentUser: prefs.isShowCurrentUserInSameInstance !== false
     }).map(({ location, friends, isCurrentInstance }): SameInstanceGroup => ({
         location,
         rows: friends,
         isCurrentInstance
     }));
-    const observedJoins = observedJoinsByFallbackMap.get(fallbackJoinTimes);
-    for (const key of fallbackJoinTimes.keys()) {
-        if (!activeFallbackKeys.has(key)) {
-            fallbackJoinTimes.delete(key);
-            observedJoins?.delete(key);
-        }
-    }
-    return groups;
 }

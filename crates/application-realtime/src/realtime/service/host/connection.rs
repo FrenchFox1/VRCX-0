@@ -43,6 +43,7 @@ impl RealtimeHostRuntime {
         let (transport_lifecycle_tx, _) = broadcast::channel(32);
         let (friend_profile_bulk_cancel_tx, _) = watch::channel(0);
         let world_cache = Arc::clone(&deps.world_cache);
+        let instance_dwell = Arc::clone(&deps.instance_dwell);
         let feed_persistence_disabled =
             config_store::get_bool(deps.db.as_ref(), "feedPersistenceDisabled", false)
                 .unwrap_or_else(|error| {
@@ -60,7 +61,7 @@ impl RealtimeHostRuntime {
             state: Mutex::new(RealtimeHostRuntimeState::default()),
             cancel_tx,
             transport_lifecycle_tx,
-            friends: RealtimeFriendsRuntime::new(),
+            friends: RealtimeFriendsRuntime::new(instance_dwell),
             current_user: RealtimeCurrentUserRuntime::new(),
             user_cache: UserCacheRuntime::new(),
             user_query_cache: UserQueryCache::new(),

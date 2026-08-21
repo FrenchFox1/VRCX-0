@@ -240,7 +240,7 @@ mod tests {
         let mut event_index = 0usize;
         let mut first_expect_diff: Option<String> = None;
 
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         let mut latest_token: HashMap<String, u64> = HashMap::new();
 
         let mut baselines = 0usize;
