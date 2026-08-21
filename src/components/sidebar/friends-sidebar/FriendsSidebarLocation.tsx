@@ -44,7 +44,7 @@ import {
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
 
-const FRIEND_INSTANCE_TIMER_FIRST_STEP_MS = 30_000;
+const FRIEND_INSTANCE_TIMER_SUB_MINUTE_STEP_MS = 30_000;
 const FRIEND_INSTANCE_TIMER_STEP_MS = 60_000;
 
 function recordValue(value: unknown): Record<string, unknown> | null {
@@ -62,25 +62,15 @@ export function FriendInstanceTimer({
     const [now, setNow] = useState(() => Date.now());
     const normalizedEpoch = timestampMsFromValue(epoch);
     const elapsedMs = normalizedEpoch ? Math.max(0, now - normalizedEpoch) : 0;
-    const isFirstStep = elapsedMs < FRIEND_INSTANCE_TIMER_FIRST_STEP_MS;
-    const displayedMinutes =
-        Math.floor(
-            Math.max(0, elapsedMs - FRIEND_INSTANCE_TIMER_FIRST_STEP_MS) /
-                FRIEND_INSTANCE_TIMER_STEP_MS
-        ) + 1;
-    const nextStepMs = isFirstStep
-        ? FRIEND_INSTANCE_TIMER_FIRST_STEP_MS
-        : FRIEND_INSTANCE_TIMER_FIRST_STEP_MS +
-          displayedMinutes * FRIEND_INSTANCE_TIMER_STEP_MS;
+    const isSubMinute = elapsedMs < FRIEND_INSTANCE_TIMER_STEP_MS;
+    const stepMs = isSubMinute
+        ? FRIEND_INSTANCE_TIMER_SUB_MINUTE_STEP_MS
+        : FRIEND_INSTANCE_TIMER_STEP_MS;
+    const displayedMs = Math.floor(elapsedMs / stepMs) * stepMs;
+    const nextStepMs = displayedMs + stepMs;
     let text = '-';
     if (normalizedEpoch) {
-        text = isFirstStep
-            ? `<${timeToText(FRIEND_INSTANCE_TIMER_FIRST_STEP_MS, true, timeUnitLabels)}`
-            : timeToText(
-                  displayedMinutes * FRIEND_INSTANCE_TIMER_STEP_MS,
-                  false,
-                  timeUnitLabels
-              );
+        text = timeToText(displayedMs, isSubMinute, timeUnitLabels);
     }
 
     useEffect(() => {
@@ -99,7 +89,14 @@ export function FriendInstanceTimer({
     return (
         <span className="inline-flex min-w-0 items-center">
             {traveling ? <Spinner className="mr-1 size-3 shrink-0" /> : null}
-            <span className="truncate">{text}</span>
+            <span
+                className={cn(
+                    'truncate tabular-nums',
+                    isSubMinute && normalizedEpoch ? 'text-foreground' : null
+                )}
+            >
+                {text}
+            </span>
         </span>
     );
 }
