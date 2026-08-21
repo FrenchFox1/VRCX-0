@@ -254,12 +254,12 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                 ref={ref}
                 data-vrcx-0-surface="statusbar"
                 className={cn(
-                    'vrcx-0-statusbar border-t text-xs backdrop-blur',
+                    'vrcx-0-statusbar @container/statusbar border-t text-xs backdrop-blur',
                     className
                 )}
                 {...props}
             >
-                <div className="flex min-h-7 flex-col gap-1 overflow-hidden lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-h-7 flex-col gap-1 overflow-hidden @2xl/statusbar:flex-row @2xl/statusbar:items-center @2xl/statusbar:justify-between">
                     <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                         <StatusSegment
                             visible={visibility.steamvr}
