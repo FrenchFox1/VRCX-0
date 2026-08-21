@@ -5,6 +5,7 @@ const tauriMock = vi.hoisted(() => ({
         appVrchatGroupGet: vi.fn(),
         appVrchatGroupInstancesGet: vi.fn(),
         appVrchatGroupUserInstancesGet: vi.fn(),
+        appVrchatGroupUserGroupsGet: vi.fn(),
         appVrchatGroupLogsGet: vi.fn()
     }
 }));
@@ -211,6 +212,30 @@ describe('GroupProfileRepository', () => {
         expect(member.acceptedByDisplayName).toBeNull();
         expect(member.lastPostReadAt).toBeNull();
         expect(log.data).toEqual({});
+    });
+
+    it('resolves the real group id from users/{id}/groups rows, not the gmem_ membership id', async () => {
+        // VRChat's users/{id}/groups endpoint returns each row's `id` as the
+        // gmem_ membership record id, not the group id — the real group id is
+        // in `groupId`. getUserGroups must prefer groupId, or every group
+        // shown from this endpoint would carry the wrong id.
+        tauriMock.commands.appVrchatGroupUserGroupsGet.mockResolvedValue({
+            status: 200,
+            data: JSON.stringify([
+                {
+                    id: 'gmem_membership_1',
+                    groupId: 'grp_real_1',
+                    name: 'Real Group'
+                }
+            ])
+        });
+
+        const groups = await groupProfileRepository.getUserGroups({
+            userId: 'usr_gmem_trap'
+        });
+
+        expect(groups).toHaveLength(1);
+        expect(groups[0].id).toBe('grp_real_1');
     });
 
     it('unwraps string error bodies from failed group requests', async () => {

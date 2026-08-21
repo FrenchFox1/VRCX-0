@@ -304,33 +304,6 @@ async function getUserAppearanceProfile({
     });
 }
 
-async function getUserGroups({ userId }: UserEndpointInput) {
-    const normalizedUserId = userId?.trim() ?? '';
-    if (!normalizedUserId) {
-        throw new Error(
-            'UserProfileRepository.getUserGroups requires a user id.'
-        );
-    }
-
-    return fetchCachedData({
-        queryKey: queryKeys.userGroups(
-            normalizedUserId,
-            DEFAULT_VRCHAT_API_ENDPOINT
-        ),
-        policy: entityQueryPolicies.groupCollection,
-        queryFn: async () => {
-            const response = await commands.appVrchatUserGroupsGet({
-                userId: normalizedUserId
-            });
-            const json = unwrapVrchatUserResponse(
-                response,
-                `users/${encodeURIComponent(normalizedUserId)}/groups`
-            ).json;
-            return Array.isArray(json) ? json : [];
-        }
-    });
-}
-
 async function getRepresentedGroup({ userId, force = false }: UserGroupsInput) {
     const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
@@ -497,7 +470,6 @@ const userProfileRepository = Object.freeze({
     getUserProfile,
     getFriendStatus,
     getUserAppearanceProfile,
-    getUserGroups,
     getRepresentedGroup,
     getAllMutualFriends,
     updateCurrentUserProfile,
@@ -512,7 +484,6 @@ export {
     getUserProfile,
     getFriendStatus,
     getUserAppearanceProfile,
-    getUserGroups,
     getRepresentedGroup,
     getAllMutualFriends,
     updateCurrentUserProfile,

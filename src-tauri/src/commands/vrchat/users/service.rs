@@ -3,7 +3,7 @@
 use tauri::State;
 use vrcx_0_application_core::vrchat_api::users::{
     current_user_badge_update_input, current_user_tags_add_input, current_user_tags_remove_input,
-    current_user_update_input, profile_get_input, profile_update_input, user_groups_get_input,
+    current_user_update_input, profile_get_input, profile_update_input,
     user_represented_group_get_input,
 };
 use vrcx_0_application_core::AuthenticatedMutationContext;
@@ -151,23 +151,6 @@ pub async fn app__vrchat_user_get(
         ),
     }
     Ok(result?)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_user_groups_get(
-    state: State<'_, AppState>,
-    input: VrchatUserInput,
-) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) =
-        user_groups_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id)?;
-    execute_user_read_api(
-        state,
-        "app__vrchat_user_groups_get",
-        format!("Getting groups for user {user_id}."),
-        request,
-    )
-    .await
 }
 
 #[tauri::command]

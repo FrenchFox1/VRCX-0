@@ -104,6 +104,12 @@ describe('friends locations section helpers', () => {
                 id: 'usr_private',
                 displayName: 'Private',
                 location: 'private'
+            },
+            {
+                id: 'usr_traveling',
+                displayName: 'Traveling',
+                location: 'traveling',
+                travelingToWorld: 'wrld_next'
             }
         ];
 
@@ -117,10 +123,17 @@ describe('friends locations section helpers', () => {
         expect(sections.map((section) => section.key)).toEqual([
             'instance:wrld_public:123~group(grp_1)',
             'instance:private:private',
+            'instance:traveling:traveling',
             'instance:offline'
         ]);
         expect(sections[0].title).toBe('Club Orion');
         expect(sections[0].description).toContain('Orion Group');
+
+        const travelingSection = sections.find(
+            (section) => section.key === 'instance:traveling:traveling'
+        );
+        expect(travelingSection?.title).toBe('Traveling');
+        expect(travelingSection?.worldId).toBe('wrld_next');
     });
 
     it('sorts friends by sidebar preferences without mutating the input array', () => {

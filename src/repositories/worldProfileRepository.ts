@@ -242,15 +242,6 @@ async function getWorldProfile({
     return normalize(response.json);
 }
 
-async function searchWorlds(query: string): Promise<WorldProfileRecord[]> {
-    const normalizedQuery = query.trim();
-    if (!normalizedQuery) {
-        return [];
-    }
-    const worlds = await commands.appWorldSearch(normalizedQuery);
-    return worlds.map((world) => normalize(world));
-}
-
 async function getWorldsByUser({
     userId,
     n = 50,
@@ -473,7 +464,6 @@ async function getAllWorldsByUser({
 const worldProfileRepository = Object.freeze({
     normalize,
     getWorldProfile,
-    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,
@@ -488,7 +478,6 @@ const worldProfileRepository = Object.freeze({
 export {
     normalize,
     getWorldProfile,
-    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,

@@ -502,6 +502,55 @@ fn failure_cache_is_bounded() {
 }
 
 #[test]
+fn hidden_worlds_are_cached_in_memory_but_never_persisted_to_disk() {
+    let (_dir, db) = test_db("hidden-not-persisted");
+    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let hidden_world = json!({
+        "id": "wrld_hidden",
+        "name": "Hidden World",
+        "imageUrl": "hidden.png",
+        "releaseStatus": "hidden"
+    });
+
+    let name = cache.hydrate_from_payload(&hidden_world);
+
+    assert_eq!(name.as_deref(), Some("Hidden World"));
+    assert_eq!(
+        cache.get_name("wrld_hidden").as_deref(),
+        Some("Hidden World")
+    );
+    assert!(world_cache_get(db.as_ref(), "wrld_hidden".into())
+        .unwrap()
+        .is_none());
+
+    cache.hydrate_favorite_payloads([&hidden_world]);
+
+    assert!(
+        world_cache_get(db.as_ref(), "wrld_hidden".into())
+            .unwrap()
+            .is_none(),
+        "hidden worlds are not favoritable and must stay out of the persistent cache"
+    );
+}
+
+#[test]
+fn unrecognized_release_status_worlds_are_never_persisted() {
+    let (_dir, db) = test_db("unknown-status-not-persisted");
+    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+    cache.hydrate_from_payload(&json!({
+        "id": "wrld_future",
+        "name": "Future World",
+        "imageUrl": "future.png",
+        "releaseStatus": "future"
+    }));
+
+    assert!(world_cache_get(db.as_ref(), "wrld_future".into())
+        .unwrap()
+        .is_none());
+}
+
+#[test]
 fn capacity_bounds_every_hydrated_world() {
     let (_dir, db) = test_db("bounded-summaries");
     let cache = WorldCache::new(Arc::clone(&db), 1, Duration::from_secs(60));

@@ -468,6 +468,50 @@ mod tests {
 }
 
 #[cfg(test)]
+mod state_bucket_tests {
+    use super::*;
+
+    #[test]
+    fn from_exact_matches_only_lowercase_known_values() {
+        assert_eq!(StateBucket::from_exact("online"), Some(StateBucket::Online));
+        assert_eq!(StateBucket::from_exact("active"), Some(StateBucket::Active));
+        assert_eq!(
+            StateBucket::from_exact("offline"),
+            Some(StateBucket::Offline)
+        );
+        assert_eq!(StateBucket::from_exact("Online"), None);
+        assert_eq!(StateBucket::from_exact(""), None);
+    }
+
+    #[test]
+    fn normalize_trims_and_lowercases_before_matching() {
+        assert_eq!(
+            StateBucket::normalize(" Online "),
+            Some(StateBucket::Online)
+        );
+        assert_eq!(StateBucket::normalize("ACTIVE"), Some(StateBucket::Active));
+        assert_eq!(StateBucket::normalize("sleeping"), None);
+    }
+
+    #[test]
+    fn as_str_round_trips_through_normalize() {
+        for bucket in [
+            StateBucket::Online,
+            StateBucket::Active,
+            StateBucket::Offline,
+        ] {
+            assert_eq!(StateBucket::normalize(bucket.as_str()), Some(bucket));
+        }
+    }
+
+    #[test]
+    fn matches_compares_against_the_bucket_string_value() {
+        assert!(StateBucket::Online.matches("online"));
+        assert!(!StateBucket::Online.matches("active"));
+    }
+}
+
+#[cfg(test)]
 mod user_status_tests {
     use super::*;
 

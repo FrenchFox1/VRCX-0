@@ -621,7 +621,7 @@ mod tests {
     fn button_mask_uses_oculus_a_for_grip() {
         assert_eq!(
             overlay_button_mask(OverlayActivationButton::Grip, Some("oculus")),
-            1u64 << (button_id::A as u32)
+            1u64 << button_id::A
         );
     }
 
@@ -629,7 +629,7 @@ mod tests {
     fn button_mask_uses_grip_for_non_oculus_grip() {
         assert_eq!(
             overlay_button_mask(OverlayActivationButton::Grip, Some("lighthouse")),
-            1u64 << (button_id::GRIP as u32)
+            1u64 << button_id::GRIP
         );
     }
 
@@ -637,11 +637,11 @@ mod tests {
     fn button_mask_uses_application_menu_for_menu() {
         assert_eq!(
             overlay_button_mask(OverlayActivationButton::Menu, Some("oculus")),
-            1u64 << (button_id::APPLICATION_MENU as u32)
+            1u64 << button_id::APPLICATION_MENU
         );
         assert_eq!(
             overlay_button_mask(OverlayActivationButton::Menu, Some("lighthouse")),
-            1u64 << (button_id::APPLICATION_MENU as u32)
+            1u64 << button_id::APPLICATION_MENU
         );
     }
 
@@ -682,7 +682,7 @@ mod tests {
     #[test]
     fn grip_pressed_uses_oculus_remap_and_grip_axis() {
         let mut state = controller_state();
-        state.button_pressed = 1u64 << (button_id::A as u32);
+        state.button_pressed = 1u64 << button_id::A;
         assert!(grip_pressed_for_state(&state, Some("oculus")));
 
         let mut axis_state = controller_state();

@@ -542,7 +542,12 @@ async fn fetch_user_groups(
     let (_, request) =
         user_groups_get_input(scope.endpoint.clone(), scope.current_user_id.clone())?;
     let mut rows = execute_rows(runtime, scope, request).await?;
-    for row in &mut rows {
+    remap_group_membership_row_ids(&mut rows);
+    Ok(rows)
+}
+
+fn remap_group_membership_row_ids(rows: &mut [Value]) {
+    for row in rows {
         let Some(object) = row.as_object_mut() else {
             continue;
         };
@@ -556,7 +561,6 @@ async fn fetch_user_groups(
         };
         object.insert("id".into(), Value::String(group_id));
     }
-    Ok(rows)
 }
 
 async fn execute_rows(
@@ -937,6 +941,21 @@ mod tests {
             owner_id: String::new(),
             seed_data: json!({ "id": id, "name": name }),
         }
+    }
+
+    #[test]
+    fn remap_group_membership_row_ids_prefers_group_id_over_membership_record_id() {
+        let mut rows = vec![
+            json!({ "id": "gmem_membership_1", "groupId": "grp_real_1", "name": "Real Group" }),
+            json!({ "id": "gmem_membership_2", "groupId": "", "name": "Missing Group Id" }),
+            json!({ "id": "gmem_membership_3", "name": "No Group Id Field" }),
+        ];
+
+        remap_group_membership_row_ids(&mut rows);
+
+        assert_eq!(rows[0]["id"], json!("grp_real_1"));
+        assert_eq!(rows[1]["id"], json!("gmem_membership_2"));
+        assert_eq!(rows[2]["id"], json!("gmem_membership_3"));
     }
 
     #[test]

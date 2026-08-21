@@ -1004,9 +1004,6 @@ const generatedCommands = {
             input
         });
     },
-    async appWorldSearch(query: string): Promise<WorldSummaryOutput[]> {
-        return await TAURI_INVOKE('app__world_search', { query });
-    },
     async appWorldGet(input: WorldGetInput): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__world_get', { input });
     },
@@ -2019,11 +2016,6 @@ const generatedCommands = {
         input: VrchatUserInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_user_get', { input });
-    },
-    async appVrchatUserGroupsGet(
-        input: VrchatUserInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_user_groups_get', { input });
     },
     async appVrchatUserProfileGet(
         input: VrchatUserProfileInput

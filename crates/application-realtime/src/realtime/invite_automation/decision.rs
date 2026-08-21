@@ -412,6 +412,48 @@ mod tests {
     }
 
     #[test]
+    fn rejects_invite_and_friends_but_invite_plus_follows_last_location_fallback() {
+        let mut invite = base_input();
+        set_current_location(&mut invite, "wrld_a:1~private(usr_other)");
+        invite.location.last_location = "wrld_a:1~private(usr_other)".into();
+        assert_eq!(
+            evaluate_invite_automation(&invite),
+            InviteDecision::Skip {
+                reason: InviteAutomationSkipReason::CurrentLocationNotInvitable,
+            }
+        );
+
+        let mut friends = base_input();
+        set_current_location(&mut friends, "wrld_a:1~friends(usr_other)");
+        friends.location.last_location = "wrld_a:1~friends(usr_other)".into();
+        assert_eq!(
+            evaluate_invite_automation(&friends),
+            InviteDecision::Skip {
+                reason: InviteAutomationSkipReason::CurrentLocationNotInvitable,
+            }
+        );
+
+        let mut invite_plus = base_input();
+        set_current_location(
+            &mut invite_plus,
+            "wrld_a:1~private(usr_other)~canRequestInvite",
+        );
+        invite_plus.location.last_location.clear();
+        assert_eq!(
+            evaluate_invite_automation(&invite_plus),
+            InviteDecision::Skip {
+                reason: InviteAutomationSkipReason::CurrentLocationNotInvitable,
+            }
+        );
+
+        invite_plus.location.last_location = invite_plus.location.current_location().into();
+        assert!(matches!(
+            evaluate_invite_automation(&invite_plus),
+            InviteDecision::Send { .. }
+        ));
+    }
+
+    #[test]
     fn skips_pending_and_sender_cooldown() {
         let mut pending = base_input();
         pending.cooldown.is_pending = true;

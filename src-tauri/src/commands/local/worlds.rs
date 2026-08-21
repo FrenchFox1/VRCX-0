@@ -8,7 +8,6 @@ use crate::state::AppState;
 
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_persistence::worlds::WorldSummaryOutput;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -44,18 +43,5 @@ pub async fn app__world_get(
             input.full,
         )
         .await
-        .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__world_search(
-    state: State<'_, AppState>,
-    query: String,
-) -> Result<Vec<WorldSummaryOutput>, AppError> {
-    state
-        .runtime_context
-        .world_cache
-        .search_summaries(&query, 16)
         .map_err(AppError::from)
 }
