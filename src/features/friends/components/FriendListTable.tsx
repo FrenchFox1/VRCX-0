@@ -1,7 +1,8 @@
 import type { PaginationState } from '@tanstack/react-table';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AppTable } from '@/components/data-table/appTable';
+import type { AppRow, AppTable } from '@/components/data-table/appTable';
 import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
@@ -22,6 +23,54 @@ import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
 
 import type { FriendListRow } from '../friendListRows';
 import { FriendListEmptyState } from './FriendListViewParts';
+
+const FriendListTableRow = memo(
+    function FriendListTableRow({
+        row,
+        table,
+        onOpenUser
+    }: {
+        row: AppRow<FriendListRow>;
+        table: AppTable<FriendListRow>;
+        columns: AppTable<FriendListRow>['options']['columns'];
+        columnLayoutKey: string;
+        onOpenUser: (friend: FriendListRow) => void;
+    }) {
+        const { t } = useTranslation();
+
+        return (
+            <TableRow
+                className="cursor-pointer"
+                tabIndex={0}
+                aria-label={t('view.friend_list.dynamic.open_value', {
+                    value:
+                        row.original?.displayName ||
+                        row.original?.username ||
+                        t('view.friend_list.label.friend')
+                })}
+                onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+                    event.preventDefault();
+                    onOpenUser(row.original);
+                }}
+                onClick={() => onOpenUser(row.original)}
+            >
+                <DataTableColumnSortableContext table={table}>
+                    {row.getVisibleCells().map((cell) => (
+                        <ResizableTableCell key={cell.id} cell={cell} />
+                    ))}
+                </DataTableColumnSortableContext>
+            </TableRow>
+        );
+    },
+    (previous, next) =>
+        previous.row.original === next.row.original &&
+        previous.columns === next.columns &&
+        previous.columnLayoutKey === next.columnLayoutKey &&
+        previous.onOpenUser === next.onOpenUser
+);
 
 export function FriendListTable({
     table,
@@ -53,6 +102,10 @@ export function FriendListTable({
     onOpenUser: (friend: FriendListRow) => void;
 }) {
     const { t } = useTranslation();
+    const columnLayoutKey = table
+        .getVisibleLeafColumns()
+        .map((column) => `${column.id}:${column.getSize()}`)
+        .join('|');
 
     return (
         <PageBody>
@@ -92,50 +145,16 @@ export function FriendListTable({
                                     />
                                     <TableBody>
                                         {table.getRowModel().rows.map((row) => (
-                                            <TableRow
+                                            <FriendListTableRow
                                                 key={row.id}
-                                                className="cursor-pointer"
-                                                tabIndex={0}
-                                                aria-label={t(
-                                                    'view.friend_list.dynamic.open_value',
-                                                    {
-                                                        value:
-                                                            row.original
-                                                                ?.displayName ||
-                                                            row.original
-                                                                ?.username ||
-                                                            t(
-                                                                'view.friend_list.label.friend'
-                                                            )
-                                                    }
-                                                )}
-                                                onKeyDown={(event) => {
-                                                    if (
-                                                        event.key !== 'Enter' &&
-                                                        event.key !== ' '
-                                                    ) {
-                                                        return;
-                                                    }
-                                                    event.preventDefault();
-                                                    onOpenUser(row.original);
-                                                }}
-                                                onClick={() =>
-                                                    onOpenUser(row.original)
+                                                row={row}
+                                                table={table}
+                                                columns={table.options.columns}
+                                                columnLayoutKey={
+                                                    columnLayoutKey
                                                 }
-                                            >
-                                                <DataTableColumnSortableContext
-                                                    table={table}
-                                                >
-                                                    {row
-                                                        .getVisibleCells()
-                                                        .map((cell) => (
-                                                            <ResizableTableCell
-                                                                key={cell.id}
-                                                                cell={cell}
-                                                            />
-                                                        ))}
-                                                </DataTableColumnSortableContext>
-                                            </TableRow>
+                                                onOpenUser={onOpenUser}
+                                            />
                                         ))}
                                     </TableBody>
                                 </Table>

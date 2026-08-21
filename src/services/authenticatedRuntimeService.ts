@@ -15,6 +15,7 @@ import {
     normalizeStringArray
 } from './friendBootstrapModel';
 import { signalFriendLogChanged } from './friendLogMutationService';
+import { flushRealtimeRosterUpdates } from './realtimeRosterUpdateQueue';
 import { syncStartupServicesTask } from './startupServicesStatus';
 
 let latestSnapshot: AuthenticatedRuntimePhaseSnapshot | null = null;
@@ -93,6 +94,7 @@ function applyFriendStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
         return;
     }
 
+    flushRealtimeRosterUpdates();
     useFriendRosterStore.getState().setRosterSnapshot({
         currentUserId: snapshot.userId,
         friendsById: normalizeFriendsById(baseline.friendsById),

@@ -58,6 +58,10 @@ describe('realtimePresenceService projection boundary', () => {
         useFeedLiveStore.getState().resetFeedLive();
         useShellStore.getState().clearAllNotifications();
         useVrcNotificationStore.getState().resetVrcNotificationState();
+
+        const { resetRealtimeRosterUpdates } =
+            await import('./realtimeRosterUpdateQueue');
+        resetRealtimeRosterUpdates();
     });
 
     it('replaces cached user facts from the typed runtime projection', async () => {
@@ -240,6 +244,61 @@ describe('realtimePresenceService projection boundary', () => {
         expect(
             useRuntimeStore.getState().auth.currentUserSnapshot?.friends
         ).toEqual(['usr_friend']);
+    });
+
+    it('keeps a coalesced patch from resurrecting a removed friend', async () => {
+        const { useFriendRosterStore } =
+            await import('@/state/friendRosterStore');
+        const { handleRealtimeFriendProjection } =
+            await import('./realtimePresenceService');
+        const { flushRealtimeRosterUpdates } =
+            await import('./realtimeRosterUpdateQueue');
+
+        useFriendRosterStore.getState().setRosterSnapshot({
+            currentUserId: 'usr_self',
+            friendsById: {
+                usr_friend: {
+                    id: 'usr_friend',
+                    displayName: 'Friend',
+                    state: 'online'
+                }
+            },
+            orderedFriendIds: ['usr_friend'],
+            onlineIds: ['usr_friend'],
+            activeIds: [],
+            offlineIds: []
+        });
+
+        for (const displayName of ['Leading', 'Buffered']) {
+            handleRealtimeFriendProjection({
+                generation: 7,
+                baselineRevision: 1,
+                patches: [
+                    {
+                        userId: 'usr_friend',
+                        patch: { id: 'usr_friend', displayName },
+                        stateBucketAuthority: 'preserve'
+                    }
+                ],
+                removals: [],
+                feedEntries: [],
+                friendLogChanged: false
+            });
+        }
+
+        handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
+            patches: [],
+            removals: ['usr_friend'],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        flushRealtimeRosterUpdates();
+
+        expect(
+            useFriendRosterStore.getState().friendsById.usr_friend
+        ).toBeUndefined();
     });
 
     it('preserves roster bucket for location-only friend projections', async () => {

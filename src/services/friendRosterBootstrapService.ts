@@ -22,6 +22,7 @@ import {
     type FriendLogBootstrapRow
 } from './friendBootstrapModel';
 import { signalFriendLogChanged } from './friendLogMutationService';
+import { flushRealtimeRosterUpdates } from './realtimeRosterUpdateQueue';
 import { syncStartupServicesTask } from './startupServicesStatus';
 
 const activeBootstraps = new Map<string, Promise<FriendBootstrapResult>>();
@@ -204,6 +205,7 @@ async function runFriendBootstrap({
     if (preserveLoadedState) {
         useFriendRosterStore.getState().setRosterReady(detail);
     } else {
+        flushRealtimeRosterUpdates();
         useFriendRosterStore.getState().setRosterSnapshot({
             currentUserId: normalizedUserId,
             friendsById: snapshot.friendsById ?? {},

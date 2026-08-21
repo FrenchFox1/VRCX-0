@@ -542,7 +542,7 @@ export function useFriendListRowActions({
         }
     }
 
-    function openFriendDetails(friend: FriendListRow) {
+    const openFriendDetails = useCallback((friend: FriendListRow) => {
         openUserDialog({
             userId: normalizeId(friend?.id),
             title:
@@ -550,7 +550,7 @@ export function useFriendListRowActions({
                 normalizeId(friend?.username) ||
                 undefined
         });
-    }
+    }, []);
 
     return {
         confirmDeleteFriend,
