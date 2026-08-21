@@ -717,6 +717,28 @@ mod tests {
             output.persistence.feed_entries[0]["displayName"],
             "Removed Friend"
         );
+
+        let RealtimeFriendApplyResult::Output(retry) =
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-delete",
+                    "content": {
+                        "userId": "usr_removed"
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:01Z".into(),
+            })
+        else {
+            panic!("repeated friend-delete should retry persistence");
+        };
+
+        assert_eq!(retry.persistence.friend_log_deletes.len(), 1);
+        assert_eq!(
+            retry.persistence.friend_log_deletes[0].target_user_id,
+            "usr_removed"
+        );
+        assert!(retry.persistence.feed_entries.is_empty());
     }
 
     #[test]
