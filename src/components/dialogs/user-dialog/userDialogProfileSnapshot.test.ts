@@ -31,7 +31,9 @@ describe('mergeActivityTimestampsIntoProfile', () => {
             id: 'usr_1'
         });
 
-        expect(merged.last_activity).toBe('2026-01-01T00:00:00.000Z');
+        expect(merged).toMatchObject({
+            last_activity: '2026-01-01T00:00:00.000Z'
+        });
     });
 
     it('keeps the previously known timestamp when the snapshot reports an explicit null', () => {
@@ -50,7 +52,9 @@ describe('mergeActivityTimestampsIntoProfile', () => {
             last_activity: null
         });
 
-        expect(merged.last_activity).toBe('2026-01-01T00:00:00.000Z');
+        expect(merged).toMatchObject({
+            last_activity: '2026-01-01T00:00:00.000Z'
+        });
     });
 
     it('ignores a snapshot for a different user', () => {
