@@ -43,6 +43,11 @@ pub fn reapply_taskbar_overlay_notification(window_handle: isize) {
 }
 
 #[cfg(target_os = "windows")]
+pub fn forget_taskbar_overlay_notification() {
+    TASKBAR_OVERLAY_NOTIFY.store(false, Ordering::Release);
+}
+
+#[cfg(target_os = "windows")]
 fn apply_overlay(window_handle: isize, notify: bool) {
     use windows::core::PCWSTR;
     use windows::Win32::Foundation::HWND;
@@ -242,6 +247,9 @@ pub fn set_taskbar_overlay_notification(_window_handle: isize, _notify: bool) {}
 
 #[cfg(not(target_os = "windows"))]
 pub fn reapply_taskbar_overlay_notification(_window_handle: isize) {}
+
+#[cfg(not(target_os = "windows"))]
+pub fn forget_taskbar_overlay_notification() {}
 
 #[cfg(all(test, target_os = "windows"))]
 mod tests {

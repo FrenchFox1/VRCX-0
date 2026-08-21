@@ -63,6 +63,7 @@ pub(crate) async fn rebuild_main_window(
     if let Some(window) = app.get_webview_window("main") {
         window.destroy()?;
         wait_for_main_window_destroyed(app).await?;
+        vrcx_0_host_desktop::taskbar_overlay::forget_taskbar_overlay_notification();
     }
 
     create_main_window(app, state.web.proxy_url())?;
@@ -99,6 +100,8 @@ pub fn destroy_main_window_for_background_mode(app: &tauri::AppHandle) {
             tracing::warn!(error = %error, "failed to destroy main window for background mode");
             let _ = window.hide();
             let _ = window.set_skip_taskbar(true);
+        } else {
+            vrcx_0_host_desktop::taskbar_overlay::forget_taskbar_overlay_notification();
         }
     }
 }
