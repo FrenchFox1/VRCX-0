@@ -121,9 +121,23 @@ vi.mock('@/ui/shadcn/tabs', async () => {
     };
 });
 
-import { ChangelogDialog } from './ChangelogDialog';
+import { ChangelogDialog, ChangelogMarkdown } from './ChangelogDialog';
 
 describe('ChangelogDialog', () => {
+    it('renders GitHub-style soft line breaks in release markdown', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(
+                ChangelogMarkdown,
+                null,
+                'v2.24.3\n**新增内容：**'
+            )
+        );
+
+        expect(html).toMatch(
+            /v2\.24\.3<br\s*\/?>\s*<strong>新增内容：<\/strong>/
+        );
+    });
+
     it('orders support actions before the close action in the footer', () => {
         const html = renderToStaticMarkup(
             React.createElement(ChangelogDialog, {
