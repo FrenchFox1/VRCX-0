@@ -18,8 +18,6 @@ import type {
     FriendProfileFields,
     FriendRecordInput
 } from '@/domain/friends/types';
-import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
-import { timestampMsFromValue } from '@/shared/utils/dateTime';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
     locationSentinel,
@@ -58,8 +56,6 @@ export type SidebarFriendRecord = FriendRecordInput &
         pendingOffline?: boolean;
         ref?: SidebarFriendRecord | null;
         travelingToLocation?: string | null;
-        traveling_to_time?: InstanceRosterTimestamp | null;
-        travelingToTime?: InstanceRosterTimestamp | null;
     };
 
 export type SidebarPreferences = {
@@ -76,15 +72,6 @@ export type SidebarPreferences = {
 };
 
 export type LastLocationSnapshot = SameInstanceLastLocation;
-
-type FriendInstanceEpochSource = {
-    $location_at?: InstanceRosterTimestamp | null;
-    $travelingToTime?: InstanceRosterTimestamp | null;
-    locationAt?: InstanceRosterTimestamp | null;
-    location_at?: InstanceRosterTimestamp | null;
-    travelingToTime?: InstanceRosterTimestamp | null;
-    traveling_to_time?: InstanceRosterTimestamp | null;
-};
 
 type SidebarStatusOptions = {
     hideNonFriend?: boolean;
@@ -166,8 +153,6 @@ export function clearStaleOfflineLocation(location: string, state: unknown) {
     }
     return location;
 }
-
-export { timestampMsFromValue };
 
 export function buildFavoriteIdSet(
     remoteFavoriteIds: readonly string[] | null | undefined,
@@ -435,23 +420,6 @@ export function sameInstanceLocationTag(
         return '';
     }
     return resolveSameInstanceFriendLocation(source, lastLocation);
-}
-
-export function readFriendInstanceEpoch(
-    source: FriendInstanceEpochSource | null | undefined,
-    isTraveling: boolean
-) {
-    const locationEpoch =
-        source?.$location_at || source?.locationAt || source?.location_at;
-    if (!isTraveling) {
-        return locationEpoch;
-    }
-    return (
-        source?.$travelingToTime ||
-        source?.travelingToTime ||
-        source?.traveling_to_time ||
-        locationEpoch
-    );
 }
 
 export function buildSameInstanceGroups(

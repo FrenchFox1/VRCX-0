@@ -1,9 +1,14 @@
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    FriendInstanceTimer,
+    FriendLocationTimer
+} from '@/components/friends/FriendInstanceTimer';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserDetailContent } from '@/components/UserDetailTile';
+import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { getNameColour, userImage } from '@/services/entityMediaService';
 import {
@@ -31,7 +36,6 @@ import {
     type StatusPreset
 } from './FriendsSidebarActionItems';
 import {
-    FriendInstanceTimer,
     resolveFriendRowLocationState,
     StaticSidebarLocation
 } from './FriendsSidebarLocation';
@@ -75,6 +79,7 @@ type FriendRowAppearance = {
     locationMetadata?: LocationMetadata | null;
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
+    currentLocationStartedAt?: InstanceRosterTimestamp | null;
 };
 
 type FriendRowProps = {
@@ -121,7 +126,8 @@ export function FriendRow({
         recentActionVersion = 0,
         locationMetadata = null,
         showInstanceIdInLocation = false,
-        ageGatedInstancesVisible = false
+        ageGatedInstancesVisible = false,
+        currentLocationStartedAt = null
     } = appearance || {};
     const displaySource = readFriendRef(friend);
     const imageUrl = userImage(displaySource, true, '64');
@@ -154,7 +160,6 @@ export function FriendRow({
         displayLocation,
         displayTraveling,
         groupByInstanceTimerVisible,
-        groupByInstanceEpoch,
         showLocationSubline,
         metadataHint
     } = resolveFriendRowLocationState({
@@ -162,6 +167,7 @@ export function FriendRow({
         isCurrentUser,
         isGroupByInstance
     });
+    const timerLocation = isTraveling ? displayTraveling || '' : friendLocation;
     const canUseFriendLocation = Boolean(
         canUseFriendInstance &&
         parsedFriendLocation.isRealInstance &&
@@ -192,10 +198,20 @@ export function FriendRow({
                 nameStyle={nameStyle}
                 subline={
                     groupByInstanceTimerVisible ? (
-                        <FriendInstanceTimer
-                            epoch={groupByInstanceEpoch}
-                            traveling={isTraveling}
-                        />
+                        isCurrentUser ? (
+                            <FriendInstanceTimer
+                                epoch={currentLocationStartedAt}
+                                traveling={isTraveling}
+                                className="text-muted-foreground"
+                            />
+                        ) : (
+                            <FriendLocationTimer
+                                userId={friend.id || ''}
+                                location={timerLocation}
+                                traveling={isTraveling}
+                                className="text-muted-foreground"
+                            />
+                        )
                     ) : showLocationSubline ? (
                         <StaticSidebarLocation
                             location={displayLocation}

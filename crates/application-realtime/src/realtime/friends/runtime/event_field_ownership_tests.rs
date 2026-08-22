@@ -437,6 +437,7 @@ mod tests {
         };
 
         assert_eq!(output.projection.removals, vec!["usr_friend"]);
+        assert_eq!(output.projection.location_time_snapshot, Some(vec![]));
         assert_eq!(output.persistence.friend_log_deletes.len(), 1);
         assert!(output
             .persistence

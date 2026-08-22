@@ -112,6 +112,7 @@ pub struct VrchatRequest {
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
+#[specta(rename = "HttpApiExecuteResponse")]
 pub struct VrchatResponse {
     pub status: i32,
     pub data: String,

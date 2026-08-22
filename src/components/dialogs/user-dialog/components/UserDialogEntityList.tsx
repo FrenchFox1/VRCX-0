@@ -7,26 +7,26 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FriendLocationTimer } from '@/components/friends/FriendInstanceTimer';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserDetailTile } from '@/components/UserDetailTile';
 import type { EntityRecord } from '@/domain/entities/shared';
-import { resolveInstanceDwellEpoch } from '@/domain/instances/instanceRoster';
-import { timeToText } from '@/lib/dateTime';
 import { useNowMs } from '@/lib/useNowMs';
 import { cn } from '@/lib/utils';
+import {
+    locationSentinel,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 import {
     isUndisclosedMutualFriendRow,
     summarizeEntityRow,
     userIdForRow,
     userRowSubtitle,
-    userTravelingTimestamp,
     worldOccupantSubtitle
 } from '../userDialogRows';
 import { rowImage, type UserDialogEntityKind } from './userDialogEntityImages';
@@ -107,9 +107,12 @@ export function EntityList({
                     kind === 'user' ? 'rounded-full' : 'rounded-md';
                 const RowFallbackIcon =
                     kind === 'avatar' ? PersonStandingIcon : UserIcon;
-                const travelingTimestamp =
-                    kind === 'user' ? userTravelingTimestamp(row) : 0;
                 const userId = kind === 'user' ? userIdForRow(row) : '';
+                const isTraveling =
+                    kind === 'user' &&
+                    locationSentinel(row.location) === 'traveling';
+                const timerLocation =
+                    kind === 'user' ? resolveFriendPresenceLocation(row) : '';
                 const isCurrentUserRow = Boolean(
                     userId && userId === currentUserSnapshot?.id
                 );
@@ -127,15 +130,11 @@ export function EntityList({
                 const userColour =
                     typeof row.$userColour === 'string' ? row.$userColour : '';
                 const isInstanceCreator = row.$isInstanceCreator === true;
-                const creatorSignature =
+                const timerFallback =
                     typeof row.statusDescription === 'string' &&
                     row.statusDescription.trim()
                         ? row.statusDescription
                         : userStatusLabel(row, t);
-                const creatorSubtitle =
-                    typeof row.$subtitle === 'string' && row.$subtitle.trim()
-                        ? row.$subtitle
-                        : creatorSignature;
                 const rowKey = `${row?.id || row?.userId || label}:${index}`;
 
                 if (kind === 'user') {
@@ -164,23 +163,14 @@ export function EntityList({
                             }
                             subline={
                                 isInstanceCreator ? (
-                                    creatorSubtitle || undefined
-                                ) : showInstanceDuration ? (
-                                    <FriendInstanceTimer
-                                        epoch={
-                                            travelingTimestamp ||
-                                            resolveInstanceDwellEpoch(row)
-                                        }
-                                        traveling={Boolean(travelingTimestamp)}
+                                    t('dialog.user.info.instance_creator')
+                                ) : showInstanceDuration || isTraveling ? (
+                                    <FriendLocationTimer
+                                        userId={userId}
+                                        location={timerLocation}
+                                        traveling={isTraveling}
+                                        fallback={timerFallback || undefined}
                                     />
-                                ) : travelingTimestamp ? (
-                                    <>
-                                        <Spinner
-                                            data-icon="inline-start"
-                                            className="mr-1 inline-block"
-                                        />
-                                        {timeToText(nowMs - travelingTimestamp)}
-                                    </>
                                 ) : (
                                     subtitle || undefined
                                 )

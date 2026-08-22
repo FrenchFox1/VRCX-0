@@ -31,8 +31,6 @@ type UserDialogRow = ComparableRecord & {
     statusDescription?: string;
     subtitle?: string;
     targetUserId?: string;
-    travelingToTime?: number | string | null;
-    traveling_to_time?: number | string | null;
     updatedAt?: string;
     userCount?: number;
     userId?: string;
@@ -40,7 +38,6 @@ type UserDialogRow = ComparableRecord & {
     $favoriteGroup?: string;
     $location_at?: string | number;
     $subtitle?: string;
-    $travelingToTime?: number | string | null;
 };
 
 export type PreviousDisplayNameRow = {
@@ -340,28 +337,11 @@ export function resolveStatusStateText(
     return state || status || '';
 }
 
-export function userTravelingTimestamp(row: UserDialogRow) {
-    if (normalizedText(row?.location).toLowerCase() !== 'traveling') {
-        return 0;
-    }
-    const value =
-        row?.$travelingToTime || row?.travelingToTime || row?.traveling_to_time;
-    const numeric = Number(value);
-    if (Number.isFinite(numeric) && numeric > 0) {
-        return numeric;
-    }
-    const parsed = Date.parse(String(value));
-    return Number.isNaN(parsed) ? 0 : parsed;
-}
-
 export function userRowSubtitle(
     row: UserDialogRow,
     nowMs: number,
     t: TranslateFn
 ) {
-    if (userTravelingTimestamp(row)) {
-        return '';
-    }
     const explicit = row?.$subtitle || row?.subtitle;
     if (explicit) {
         return explicit;

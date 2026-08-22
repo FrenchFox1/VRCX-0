@@ -9,9 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
-import { readFriendInstanceEpoch } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import type { FriendRecord } from '@/domain/friends/types';
-import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
 import { normalizeLocationValue } from '@/shared/utils/location';
@@ -42,15 +40,9 @@ type FriendsLocationsFriend = FriendRecord & {
 
 type FriendLocationSource = Pick<
     FriendLocationRecord,
-    | '$location_at'
-    | '$travelingToLocation'
-    | '$travelingToTime'
-    | 'location'
-    | 'travelingToLocation'
-    | 'travelingToTime'
+    '$travelingToLocation' | 'location' | 'travelingToLocation'
 > & {
     pendingOffline?: boolean;
-    traveling_to_time?: InstanceRosterTimestamp | null;
 };
 
 type FriendsLocationsEmptyStateProps = {
@@ -229,19 +221,15 @@ export function FriendsLocationCardItem({
         normalizeId(currentUserId);
     const friendIsOnline = isOnlineFriend(friend);
     const friendLocationAvailable = canUseFriendLocation(rawLocation);
-    const instanceEpoch =
+    const timerLocation =
         friendIsOnline &&
         !friend.pendingOffline &&
         !source.pendingOffline &&
         (target.parsed.isRealInstance || isTravelingLocation)
-            ? readFriendInstanceEpoch(
-                  {
-                      ...source,
-                      $location_at: friend.$location_at || source.$location_at
-                  },
-                  isTravelingLocation
-              )
-            : 0;
+            ? isTravelingLocation
+                ? travelingLocation
+                : rawLocation
+            : '';
 
     return (
         <FriendLocationCard
@@ -252,7 +240,7 @@ export function FriendsLocationCardItem({
                 raw: rawLocation,
                 traveling: isTravelingLocation,
                 travelingTo: travelingLocation,
-                instanceEpoch
+                timerLocation
             }}
             presentation={{
                 density: densityConfig,

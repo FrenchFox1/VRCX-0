@@ -9,15 +9,14 @@ const NOW = 1_700_000_600_000;
 const REAL_INSTANCE = 'wrld_12345678-1234-1234-1234-123456789012:99999';
 
 describe('buildUserHoverCardModel', () => {
-    it('marks a friend in a real instance and exposes the join epoch', () => {
+    it('marks a friend in a real instance', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_1',
                 displayName: 'Alice',
                 state: 'online',
                 status: 'join me',
-                location: REAL_INSTANCE,
-                $location_at: 1_700_000_000_000
+                location: REAL_INSTANCE
             },
             profile: null,
             nowMs: NOW
@@ -31,7 +30,6 @@ describe('buildUserHoverCardModel', () => {
             'wrld_12345678-1234-1234-1234-123456789012'
         );
         expect(model.location.instanceId).toBe('99999');
-        expect(model.instanceEpoch).toBe(1_700_000_000_000);
     });
 
     it('treats an online friend in a private world as the private variant', () => {
@@ -47,7 +45,6 @@ describe('buildUserHoverCardModel', () => {
         });
 
         expect(model.variant).toBe('private');
-        expect(model.instanceEpoch).toBe(0);
         expect(model.statusKey).toBe('online');
     });
 
@@ -69,7 +66,6 @@ describe('buildUserHoverCardModel', () => {
         expect(model.statusDotClassName).toBe(
             'border-[var(--status-online)] bg-background'
         );
-        expect(model.instanceEpoch).toBe(0);
     });
 
     it('computes last-online for offline friends and hides online duration', () => {

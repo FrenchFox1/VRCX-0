@@ -7,11 +7,12 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { Location } from '@/components/Location';
-import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import type { FriendRecord } from '@/domain/friends/types';
+import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
 import { normalizeUserStatus } from '@/shared/utils/friendStatus';
@@ -308,7 +309,7 @@ export interface FriendLocationCardLocationModel {
     raw?: string | null;
     traveling?: boolean;
     travelingTo?: string | null;
-    instanceEpoch?: number | string | null;
+    timerLocation?: string | null;
 }
 
 export interface FriendLocationCardPresentation {
@@ -358,7 +359,7 @@ export function FriendLocationCard({
         raw: rawLocation = '',
         traveling: isTraveling = false,
         travelingTo: travelingLocation = '',
-        instanceEpoch = 0
+        timerLocation = ''
     } = location;
     const {
         density: densityConfig = DEFAULT_CARD_DENSITY_CONFIG,
@@ -435,6 +436,10 @@ export function FriendLocationCard({
         contentMode !== 'identity' &&
         resolvedDensityConfig.showStatusDescription;
     const hoverUserId = normalizeString(source?.id || friend?.id);
+    const instanceEpoch = useFriendLocationTimeEpoch(
+        hoverUserId,
+        timerLocation || ''
+    );
     const avatarNode = (
         <UserHoverCard userId={hoverUserId} seed={source}>
             <Avatar className="size-[var(--friend-card-avatar-size)]">

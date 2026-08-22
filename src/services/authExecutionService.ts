@@ -18,6 +18,7 @@ import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useNotificationStore } from '@/state/notificationStore';
@@ -167,6 +168,7 @@ function resetCurrentUserRuntimeCaches() {
     resetVrchatConfigSnapshot();
     useAssistantChatStore.getState().resetAssistantChatState();
     useFriendRosterStore.getState().resetRoster();
+    useFriendLocationTimeStore.getState().reset();
     useFavoriteStore.getState().resetFavorites();
     useFavoriteRevisionStore.getState().reset();
     useFeedLiveStore.getState().resetFeedLive();

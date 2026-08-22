@@ -4,6 +4,9 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
+
 type QueryOptions = {
     enabled?: boolean;
     queryFn: () => Promise<unknown>;
@@ -82,12 +85,6 @@ vi.mock('@/components/UserDetailTile', () => ({
     )
 }));
 
-vi.mock('@/components/sidebar/friends-sidebar/FriendsSidebarLocation', () => ({
-    FriendInstanceTimer: ({ epoch }: { epoch?: unknown }) => (
-        <span data-testid="instance-timer" data-epoch={String(epoch)} />
-    )
-}));
-
 vi.mock('@/lib/useKnownUser', () => ({
     useKnownUserFact: () => mocks.knownCreatorUser
 }));
@@ -149,12 +146,16 @@ vi.mock('@/ui/shadcn/spinner', () => ({
 import { InstanceUserTiles } from './WorldDialogInstanceUsers';
 
 describe('InstanceUserTiles', () => {
-    afterEach(cleanup);
+    afterEach(() => {
+        cleanup();
+    });
 
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.knownCreatorUser = null;
         mocks.queryData = null;
+        useFriendRosterStore.getState().resetRoster();
+        useFriendLocationTimeStore.getState().reset();
     });
 
     it('fetches an unresolved non-friend instance creator profile', async () => {
@@ -230,11 +231,9 @@ describe('InstanceUserTiles', () => {
                     tile.getAttribute('data-display-name') ===
                     'usr_non_friend_owner'
             );
-        expect(
-            creatorTile?.querySelector<HTMLElement>(
-                '[data-testid="instance-timer"]'
-            )?.dataset.epoch
-        ).toBe('1700000000000');
+        expect(creatorTile?.textContent).toContain(
+            'dialog.world.instances.instance_creator'
+        );
         expect(screen.queryByText('Owner signature')).toBeNull();
         expect(
             screen.getByLabelText('dialog.world.instances.instance_creator')
@@ -242,6 +241,23 @@ describe('InstanceUserTiles', () => {
     });
 
     it('shows the timer for a friend creator', () => {
+        useFriendRosterStore.getState().applyFriendPatch({
+            userId: 'usr_friend_owner',
+            patch: {
+                id: 'usr_friend_owner',
+                displayName: 'Friend Owner',
+                state: 'online',
+                location: 'wrld_test:123'
+            },
+            stateBucketAuthority: 'explicit'
+        });
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend_owner',
+                location: 'wrld_test:123',
+                sinceMs: Date.now() - 600_000
+            }
+        ]);
         mocks.knownCreatorUser = {
             id: 'usr_friend_owner',
             displayName: 'Friend Owner',
@@ -257,9 +273,8 @@ describe('InstanceUserTiles', () => {
                     users: [
                         {
                             id: 'usr_friend_owner',
-                            ref: {
-                                $location_at: 1_700_000_000_000
-                            }
+                            state: 'online',
+                            location: 'wrld_test:123'
                         }
                     ]
                 }}
@@ -268,9 +283,10 @@ describe('InstanceUserTiles', () => {
             />
         );
 
-        expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
-            '1700000000000'
-        );
+        expect(screen.getByText('10m')).toBeTruthy();
+        expect(
+            screen.queryByText('dialog.world.instances.instance_creator')
+        ).toBeNull();
         const tiles = screen.getAllByTestId('user-detail-tile');
         expect(tiles).toHaveLength(1);
         expect(tiles[0]?.getAttribute('data-display-name')).toBe(
@@ -279,7 +295,7 @@ describe('InstanceUserTiles', () => {
         expect(screen.queryByText('Friend signature')).toBeNull();
     });
 
-    it('shows the timer instead of status for a non-friend creator', () => {
+    it('shows the Creator label instead of a timer for a non-friend creator', () => {
         render(
             <InstanceUserTiles
                 instance={{
@@ -291,11 +307,31 @@ describe('InstanceUserTiles', () => {
             />
         );
 
-        expect(screen.getByTestId('instance-timer')).toBeTruthy();
+        expect(
+            screen.getByText('dialog.world.instances.instance_creator')
+        ).toBeTruthy();
+        expect(screen.queryByText('10m')).toBeNull();
         expect(screen.queryByText('dialog.user.status.active')).toBeNull();
     });
 
     it('shows the instance timer instead of the status signature', () => {
+        useFriendRosterStore.getState().applyFriendPatch({
+            userId: 'usr_friend',
+            patch: {
+                id: 'usr_friend',
+                displayName: 'Friend',
+                state: 'online',
+                location: 'wrld_test:123'
+            },
+            stateBucketAuthority: 'explicit'
+        });
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:123',
+                sinceMs: Date.now() - 600_000
+            }
+        ]);
         render(
             <InstanceUserTiles
                 instance={{
@@ -303,8 +339,9 @@ describe('InstanceUserTiles', () => {
                         {
                             id: 'usr_friend',
                             displayName: 'Friend',
-                            statusDescription: 'World hopping',
-                            $location_at: 1_700_000_000_000
+                            state: 'online',
+                            location: 'wrld_test:123',
+                            statusDescription: 'World hopping'
                         }
                     ]
                 }}
@@ -312,13 +349,11 @@ describe('InstanceUserTiles', () => {
             />
         );
 
-        expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
-            '1700000000000'
-        );
+        expect(screen.getByText('10m')).toBeTruthy();
         expect(screen.queryByText('World hopping')).toBeNull();
     });
 
-    it('uses the presence dwell start for a non-friend creator', () => {
+    it('ignores a legacy presence dwell start for a non-friend creator', () => {
         mocks.knownCreatorUser = {
             id: 'usr_non_friend_owner',
             displayName: 'Non-friend Owner',
@@ -336,8 +371,9 @@ describe('InstanceUserTiles', () => {
             />
         );
 
-        expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
-            '1700000030000'
-        );
+        expect(
+            screen.getByText('dialog.world.instances.instance_creator')
+        ).toBeTruthy();
+        expect(screen.queryByText('10m')).toBeNull();
     });
 });

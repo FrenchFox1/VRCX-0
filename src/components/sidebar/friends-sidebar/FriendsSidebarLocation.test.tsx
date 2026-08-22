@@ -9,7 +9,7 @@ vi.mock('@/state/shellStore', () => ({
     ): T => selector({ timeUnitLabels: { m: 'm', s: 's' } })
 }));
 
-import { FriendInstanceTimer } from './FriendsSidebarLocation';
+import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 
 const NOW_MS = 1_700_000_000_000;
 
@@ -54,5 +54,21 @@ describe('FriendInstanceTimer', () => {
         expect(screen.getByText('1h')).toBeDefined();
         await act(() => vi.advanceTimersByTimeAsync(1));
         expect(screen.getByText('1h 1m')).toBeDefined();
+    });
+
+    it('allows the sidebar to keep sub-minute timers muted', () => {
+        render(
+            <FriendInstanceTimer
+                epoch={NOW_MS}
+                className="text-muted-foreground"
+            />
+        );
+
+        expect(screen.getByText('0s').className).toContain(
+            'text-muted-foreground'
+        );
+        expect(screen.getByText('0s').className).not.toContain(
+            'text-foreground'
+        );
     });
 });

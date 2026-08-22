@@ -862,9 +862,6 @@ mod tests {
                         display_name: "Friend".into(),
                         state: "online".into(),
                         location: "wrld_1:123".into(),
-                        extra: [("$location_at".into(), json!(1_700_000_000_000i64))]
-                            .into_iter()
-                            .collect(),
                         ..FriendRecord::default()
                     },
                 )]

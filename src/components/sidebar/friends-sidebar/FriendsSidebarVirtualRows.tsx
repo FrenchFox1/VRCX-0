@@ -37,7 +37,10 @@ type RuntimeView = {
         | (Record<string, unknown> & { isBoopingEnabled?: unknown })
         | null;
     currentUserId?: string | null;
-    gameState: { isGameRunning?: boolean | null };
+    gameState: {
+        isGameRunning?: boolean | null;
+        currentLocationStartedAt?: string | number | null;
+    };
     onlineIdSet: Set<string>;
     instanceActionGatesByUserId: Map<string, LocalInstanceActionGates>;
 };
@@ -169,6 +172,8 @@ function FriendVirtualRow({
                 trustColor: appearance.trustColor,
                 currentUserSnapshot: runtime.currentUser,
                 isGameRunning: runtime.gameState.isGameRunning,
+                currentLocationStartedAt:
+                    runtime.gameState.currentLocationStartedAt,
                 recentActionVersion: appearance.recentActionVersion,
                 locationMetadata:
                     location.locationMetadataByKey.get(metadataKey),

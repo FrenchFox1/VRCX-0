@@ -2849,7 +2849,7 @@ export type AuthenticatedRuntimeSession = {
     displayName: string;
     endpoint: string;
     websocket: string;
-    currentUser: JsonValue;
+    currentUser: RawJson;
 };
 export type AuthenticatedRuntimeStepSnapshot = {
     status: AuthenticatedRuntimeStepStatus;
@@ -2874,7 +2874,7 @@ export type AuthenticatedSessionSnapshot = {
     displayName: string;
     endpoint: string;
     websocket: string;
-    currentUserSnapshot: JsonValue;
+    currentUserSnapshot: CurrentUserSnapshot;
 };
 export type AuthorDetail = { id?: string; displayName?: string | null };
 export type AutoLoginOutcome = LoginSessionState | AutoLoginTerminalOutcome;
@@ -3272,6 +3272,7 @@ export type CurrentUserProfileUpdateRequest =
       }
     | { backgroundType: 'texture'; backgroundTextureId: string };
 export type CurrentUserRefreshOutcome = { applied: boolean };
+export type CurrentUserSnapshot = JsonValue;
 export type CurrentUserUpdateRequest = {
     homeLocation?: string | null;
     status?: UserStatus | null;
@@ -3787,6 +3788,11 @@ export type FeedSearchQueryInput = {
     dateTo?: string;
     maxRows: number;
 };
+export type FriendLocationTime = {
+    userId: string;
+    location: string;
+    sinceMs: number | null;
+};
 export type FriendLogCurrentOutput = {
     userId: string;
     displayName: string;
@@ -3845,7 +3851,8 @@ export type FriendProjection = {
     baselineRevision: number;
     patches?: FriendProjectionPatch[];
     removals?: string[];
-    feedEntries?: JsonValue[];
+    feedEntries?: RawJson[];
+    locationTimeSnapshot?: FriendLocationTime[] | null;
     friendLogChanged: boolean;
 };
 export type FriendProjectionPatch = {
@@ -4020,10 +4027,10 @@ export type GroupBanImportStatus = {
 };
 export type GroupCalendarInput = { date: string; includeFeatured?: boolean };
 export type GroupCalendarSnapshot = {
-    events: JsonValue[];
+    events: RawJson[];
     followingEventIds: string[];
     groupNames: Partial<{ [key in string]: string }>;
-    groupProfiles: Partial<{ [key in string]: JsonValue }>;
+    groupProfiles: Partial<{ [key in string]: RawJson }>;
 };
 export type GroupJoinRequestAction = 'accept' | 'reject';
 export type GroupMemberPatch = {
@@ -4540,6 +4547,13 @@ export type Message = {
     content: string;
     createdAt: string;
 };
+export type ModerationSyncLocalOutput = {
+    userId: string;
+    updatedAt: string;
+    displayName: string;
+    block: boolean;
+    mute: boolean;
+};
 export type ModerationSyncMutationInput = {
     targetUserId: string;
     targetDisplayName?: string;
@@ -4551,7 +4565,7 @@ export type ModerationSyncMutationOutput = {
     targetUserId: string;
     type: string;
     enabled: boolean;
-    local: LocalModerationOutput | null;
+    local: ModerationSyncLocalOutput | null;
 };
 export type ModerationSyncRefreshInput = { userId: string; endpoint?: string };
 export type ModerationSyncRefreshOutput = {
@@ -4776,7 +4790,7 @@ export type NotificationRespondInput = {
     endpoint?: string;
     target: NotificationTarget;
     responseType?: string;
-    responseData?: JsonValue;
+    responseData?: RawJson;
 };
 export type NotificationSyncOutcome = {
     v1Count: number;
@@ -5083,18 +5097,19 @@ export type QuickSearchResult = {
     name: string;
     subtitle: string;
     imageUrl: string;
-    seedData: JsonValue | null;
+    seedData: RawJson | null;
     memo: string;
     note: string;
     matchedField: QuickSearchMatchedField;
     userColour: string;
 };
 export type RawJson = JsonValue;
+export type RawJsonObject = Partial<{ [key in string]: JsonValue }>;
 export type RealtimeCurrentUserProjection = {
     generation: number;
-    patch: Partial<{ [key in string]: JsonValue }>;
-    snapshot: Partial<{ [key in string]: JsonValue }>;
-    gameStatePatch?: Partial<{ [key in string]: JsonValue }> | null;
+    patch: RawJsonObject;
+    snapshot: RawJsonObject;
+    gameStatePatch?: RawJsonObject | null;
 };
 export type RealtimeEntryCorrection = {
     stream: RealtimeEntryCorrectionStream;
@@ -5121,7 +5136,7 @@ export type RealtimeFeedProjection = {
 export type RealtimeFeedUpsert = { sequence: number; entry: RawJson };
 export type RealtimeInstanceClosedProjection = {
     generation: number;
-    notification: JsonValue;
+    notification: RawJson;
 };
 export type RealtimeInstanceQueueKind = 'update' | 'ready' | 'left';
 export type RealtimeInstanceQueueProjection = {
@@ -5142,8 +5157,8 @@ export type RealtimeNotificationProjection = {
     clearMenuIfNoUnseen: boolean;
 };
 export type RealtimeNotificationUpsert = {
-    notification: JsonValue;
-    insertDefaults?: JsonValue | null;
+    notification: RawJson;
+    insertDefaults?: RawJson | null;
     notifyMenu: boolean;
     deliverRuntime: boolean;
     runAutomation: boolean;
@@ -5154,7 +5169,7 @@ export type RealtimeTransportStartResult = {
     clientRunId: number;
     sessionGeneration: number;
 };
-export type RealtimeUserProjection = { users: JsonValue[] };
+export type RealtimeUserProjection = { users: RawJson[] };
 export type RealtimeWsStatus =
     | 'idle'
     | 'connecting'
@@ -5182,7 +5197,7 @@ export type RegistryBackupSnapshot = {
     key: string;
     name: string;
     date: string;
-    data: JsonValue;
+    data: RawJson;
 };
 export type ReleaseStatusFilter = 'all' | 'hidden' | 'private' | 'public';
 export type RemoteModerationRow = {
@@ -5207,7 +5222,7 @@ export type RuntimeGroupInstancesProjection = {
     endpoint: string;
     fetchedAt?: string | null;
     error?: string | null;
-    instances?: JsonValue[] | null;
+    instances?: RawJson[] | null;
     groupOrder?: string[] | null;
 };
 export type RuntimeGroupInstancesStatus =
@@ -5549,9 +5564,14 @@ export type UpdaterMetadata = {
     date: string | null;
     body: string | null;
 };
+export type UserDialogAvatarReleaseStatus =
+    | 'all'
+    | 'hidden'
+    | 'private'
+    | 'public';
 export type UserDialogTabCountsInput = {
     userId: string;
-    avatarReleaseStatus?: ReleaseStatusFilter;
+    avatarReleaseStatus?: UserDialogAvatarReleaseStatus;
     includeMutualFriends?: boolean;
     force?: boolean;
 };

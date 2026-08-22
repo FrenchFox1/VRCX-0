@@ -87,6 +87,7 @@ import {
     readCachedUserStats
 } from '@/services/userDialogSessionCacheService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useModalStore } from '@/state/modalStore';
 import {
     type CurrentUserSnapshotState,
@@ -208,6 +209,7 @@ describe('authExecutionService characterization', () => {
         useRuntimeStore.getState().resetRuntimeState();
         useSessionStore.getState().resetSessionState();
         useAssistantChatStore.getState().resetAssistantChatState();
+        useFriendLocationTimeStore.getState().reset();
         useModalStore.getState().resetModalState();
         useModalStore.setState({
             confirm: mocks.confirm,
@@ -422,6 +424,13 @@ describe('authExecutionService characterization', () => {
     });
 
     it('records logout and returns to a signed-out session', async () => {
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
         useRuntimeStore.getState().setAuthBootstrap({
             currentUserId: 'usr_self',
             currentUserDisplayName: 'Self'
@@ -437,6 +446,7 @@ describe('authExecutionService characterization', () => {
         );
         expect(useRuntimeStore.getState().auth.currentUserId).toBe(null);
         expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({});
         expect(mocks.resetVrchatConfigSnapshot).toHaveBeenCalled();
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             'message.auth.logout_greeting:Self'

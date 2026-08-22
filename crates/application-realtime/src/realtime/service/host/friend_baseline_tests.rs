@@ -25,7 +25,20 @@ fn sync_friend_snapshot_debounces_online_to_offline() -> Result<()> {
     runtime
         .runtime()
         .sync_friend_snapshot(active_session.clone(), Some(7), initial_friends)?;
-    runtime.runtime().deps.event_bus.take_events_for_test();
+    let initial_events = runtime.runtime().deps.event_bus.take_events_for_test();
+    let initial_projection = initial_events
+        .iter()
+        .find(|event| event.name == "realtimeFriendProjection")
+        .expect("initial baseline should emit a friend projection");
+    assert_eq!(
+        initial_projection.payload["locationTimeSnapshot"][0]["userId"],
+        "usr_friend"
+    );
+    assert_eq!(
+        initial_projection.payload["locationTimeSnapshot"][0]["location"],
+        "wrld_old:123"
+    );
+    assert!(initial_projection.payload["locationTimeSnapshot"][0]["sinceMs"].is_number());
 
     let mut refreshed_friends = HashMap::new();
     refreshed_friends.insert(
@@ -1529,6 +1542,10 @@ fn sync_friend_snapshot_emits_projection_for_active_removals() -> Result<()> {
         projection.payload["removals"].as_array().unwrap(),
         &vec![json!("usr_removed")]
     );
+    assert!(projection.payload["locationTimeSnapshot"]
+        .as_array()
+        .unwrap()
+        .is_empty());
     assert!(runtime
         .runtime()
         .friend_snapshot()

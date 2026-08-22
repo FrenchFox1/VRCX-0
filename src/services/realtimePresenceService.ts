@@ -214,7 +214,11 @@ function handleRealtimeFriendProjection(
             stateBucketAuthority: patchEntry.stateBucketAuthority
         };
     });
-    queueRealtimeFriendRosterUpdate(patchEntries, payload.friendLogChanged);
+    queueRealtimeFriendRosterUpdate(
+        patchEntries,
+        payload.friendLogChanged,
+        payload.locationTimeSnapshot ?? undefined
+    );
 }
 
 export function handleRealtimeUserCacheProjection(

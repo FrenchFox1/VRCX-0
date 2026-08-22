@@ -98,6 +98,7 @@ pub trait UserDialogTabCountsSource: Send + Sync {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[specta(rename = "UserDialogAvatarReleaseStatus")]
 pub enum AvatarReleaseStatus {
     #[serde(rename = "all")]
     All,

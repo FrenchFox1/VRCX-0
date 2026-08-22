@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useUserFactsStore } from '@/state/userFactsStore';
 
@@ -41,6 +42,7 @@ describe('realtimeRosterUpdateQueue', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         useFriendRosterStore.getState().resetRoster();
+        useFriendLocationTimeStore.getState().reset();
         useUserFactsStore.getState().resetUserFacts();
         resetRealtimeRosterUpdates();
         seedRoster('usr_self');
@@ -91,5 +93,53 @@ describe('realtimeRosterUpdateQueue', () => {
         expect(
             useFriendRosterStore.getState().friendsById.usr_friend.displayName
         ).toBe('Friend');
+    });
+
+    it('atomically applies the latest complete location-time snapshot with its patches', () => {
+        queueRealtimeFriendRosterUpdate(friendPatch('First'), false, [
+            {
+                userId: 'usr_friend',
+                location: 'wrld_first:1',
+                sinceMs: 1_700_000_000_000
+            },
+            {
+                userId: 'usr_removed',
+                location: 'wrld_removed:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
+        queueRealtimeFriendRosterUpdate(friendPatch('Second'), false, [
+            {
+                userId: 'usr_friend',
+                location: 'wrld_second:2',
+                sinceMs: 1_700_000_100_000
+            }
+        ]);
+
+        flushRealtimeRosterUpdates();
+
+        expect(
+            useFriendRosterStore.getState().friendsById.usr_friend.displayName
+        ).toBe('Second');
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
+            usr_friend: {
+                location: 'wrld_second:2',
+                sinceMs: 1_700_000_100_000
+            }
+        });
+    });
+
+    it('applies an empty snapshot as an explicit clear', () => {
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_old:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
+
+        queueRealtimeFriendRosterUpdate([], false, []);
+
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({});
     });
 });

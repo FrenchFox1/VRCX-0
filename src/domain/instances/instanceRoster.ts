@@ -18,14 +18,12 @@ export interface MergeInstanceUserOptions {
 const INSTANCE_USER_PRESENCE_FIELDS = [
     'location',
     '$location',
-    'locationUpdatedAt',
     'worldId',
     'instanceId',
     'travelingToLocation',
     'travelingToWorld',
     'travelingToInstance',
     '$travelingToLocation',
-    '$travelingToTime',
     'state',
     'stateBucket',
     'status',
@@ -64,7 +62,6 @@ export interface InstanceRosterRow extends InstanceRosterRecord {
     currentAvatarThumbnailImageUrl: string;
     currentAvatarImageUrl: string;
     $subtitle: string;
-    $location_at: InstanceRosterTimestamp;
     joinedAt: InstanceRosterTimestamp;
 }
 
@@ -143,28 +140,6 @@ function firstTimestamp(...values: unknown[]): InstanceRosterTimestamp {
         }
     }
     return '';
-}
-
-export function resolveInstanceDwellEpoch(
-    user: unknown
-): InstanceRosterTimestamp {
-    const ref = field(user, 'ref');
-    return firstTimestamp(
-        field(user, '$location_at'),
-        field(user, 'locationAt'),
-        field(user, 'location_at'),
-        field(user, 'joinedAtMs'),
-        field(user, 'joinTimeMs'),
-        field(user, 'joinedAt'),
-        field(user, 'joined_at'),
-        field(ref, '$location_at'),
-        field(ref, 'locationAt'),
-        field(ref, 'location_at'),
-        field(ref, 'joinedAtMs'),
-        field(ref, 'joinTimeMs'),
-        field(ref, 'joinedAt'),
-        field(ref, 'joined_at')
-    );
 }
 
 export function userDisplayName(user: unknown): string {
@@ -271,11 +246,6 @@ export function createInstanceUserRow(
             field(fallback, 'subtitle'),
             field(sourceRecord, '$subtitle'),
             field(sourceRecord, 'subtitle')
-        ),
-        $location_at: firstTimestamp(
-            resolveInstanceDwellEpoch(sourceRecord),
-            field(fallback, 'joinedAt'),
-            field(fallback, 'joined_at')
         ),
         joinedAt: firstTimestamp(
             field(sourceRecord, 'joinedAt'),

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { useNowMs } from '@/lib/useNowMs';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -65,6 +66,10 @@ export function useUserHoverCardData({
                 nowMs
             }),
         [effectiveSeed, nowMs, profile]
+    );
+    const instanceEpoch = useFriendLocationTimeEpoch(
+        normalizedUserId,
+        model.location.effectiveLocation
     );
 
     useEffect(() => {
@@ -166,7 +171,7 @@ export function useUserHoverCardData({
         populationLoading,
         memo,
         trustColor,
-        instanceEpoch: model.instanceEpoch,
+        instanceEpoch: model.variant === 'in-instance' ? instanceEpoch : 0,
         loading: profileLoading && !profile
     };
 }

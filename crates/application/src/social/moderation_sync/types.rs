@@ -49,6 +49,7 @@ pub struct LocalModerationInput {
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename = "ModerationSyncLocalOutput")]
 pub struct LocalModerationOutput {
     pub user_id: String,
     pub updated_at: String,

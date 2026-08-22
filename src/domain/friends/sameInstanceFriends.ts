@@ -3,7 +3,6 @@ import type {
     FriendRecordInput,
     FriendRosterBucket
 } from '@/domain/friends/types';
-import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { isRealInstance } from '@/shared/utils/instance';
 import {
@@ -22,7 +21,6 @@ type FriendPresenceRecord = FriendRecordInput &
 type SameInstanceLastLocation = {
     friendList?: FriendListMembership;
     location?: string | null;
-    locationStartedAt?: InstanceRosterTimestamp | null;
 };
 
 type SameInstanceFriendGroup<TFriend> = {

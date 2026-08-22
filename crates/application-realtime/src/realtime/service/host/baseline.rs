@@ -39,6 +39,7 @@ struct FriendBaselineApplyPlan {
     previous_snapshot: Option<RealtimeFriendSnapshot>,
     schedules: Vec<PendingOfflineSchedule>,
     confirmed_feed_entries: Vec<Value>,
+    location_time_snapshot: Option<Vec<vrcx_0_application_core::FriendLocationTime>>,
 }
 
 impl RealtimeHostRuntime {
@@ -141,6 +142,7 @@ impl RealtimeHostRuntime {
             previous_snapshot,
             schedules: baseline_schedules,
             confirmed_feed_entries,
+            location_time_snapshot,
         } = {
             let mut state = self
                 .state
@@ -317,12 +319,14 @@ impl RealtimeHostRuntime {
             let result = baseline_effects.result;
             let baseline_schedules = baseline_effects.schedules;
             let confirmed_feed_entries = baseline_effects.confirmed_feed_entries;
+            let location_time_snapshot = baseline_effects.location_time_snapshot;
             FriendBaselineApplyPlan {
                 result,
                 active,
                 previous_snapshot,
                 schedules: baseline_schedules,
                 confirmed_feed_entries,
+                location_time_snapshot,
             }
         };
 
@@ -333,9 +337,15 @@ impl RealtimeHostRuntime {
         } else {
             None
         };
-        let baseline_projection = canonical_snapshot.as_ref().and_then(|snapshot| {
+        let mut baseline_projection = canonical_snapshot.as_ref().and_then(|snapshot| {
             friend_snapshot_diff_projection(previous_snapshot.as_ref(), snapshot)
         });
+        if let Some(location_time_snapshot) = location_time_snapshot {
+            let projection = baseline_projection.get_or_insert_with(|| {
+                FriendProjection::new(result.generation, result.baseline_revision)
+            });
+            projection.location_time_snapshot = Some(location_time_snapshot);
+        }
         drop(previous_snapshot);
         if let Some(snapshot) = canonical_snapshot.as_ref() {
             self.set_activity_friend_user_ids(snapshot.friends_by_id.keys().cloned().collect());

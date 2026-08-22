@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
-use vrcx_0_application_core::InstanceDwellRegistry;
+use vrcx_0_application_core::{FriendLocationTime, InstanceDwellRegistry};
 use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
@@ -50,6 +50,7 @@ pub(crate) struct FriendBaselineEffects {
     pub(crate) result: FriendBaselineResult,
     pub(crate) schedules: Vec<PendingOfflineSchedule>,
     pub(crate) confirmed_feed_entries: Vec<Value>,
+    pub(crate) location_time_snapshot: Option<Vec<FriendLocationTime>>,
 }
 
 pub(crate) enum SyntheticFriendEvent {
@@ -336,6 +337,10 @@ impl RealtimeFriendsRuntime {
             baseline_revision,
             friends_by_id: baseline.friends_by_id,
         });
+        let instance_dwell = Arc::clone(&state.instance_dwell);
+        let location_time_snapshot = state.baseline.as_ref().and_then(|snapshot| {
+            instance_dwell.sync_friends(&snapshot.friends_by_id, confirmed_at.timestamp_millis())
+        });
         if friend_membership_changed {
             state.invalidate_friend_user_ids_snapshot();
         }
@@ -358,6 +363,7 @@ impl RealtimeFriendsRuntime {
             },
             schedules,
             confirmed_feed_entries,
+            location_time_snapshot,
         }
     }
 
@@ -369,6 +375,7 @@ impl RealtimeFriendsRuntime {
         state.pending_offline.clear();
         state.recent_gps.clear();
         state.friend_state_sequence_by_user.clear();
+        state.instance_dwell.clear();
         state.generation
     }
 
@@ -388,6 +395,7 @@ impl RealtimeFriendsRuntime {
             state.pending_offline.clear();
             state.recent_gps.clear();
             state.friend_state_sequence_by_user.clear();
+            state.instance_dwell.clear();
         }
         should_clear
     }
@@ -885,7 +893,6 @@ fn preserve_fields_over_placeholder(incoming: &mut FriendRecord, existing: &Frie
     for key in [
         "pendingOffline",
         derived_keys::LOCATION_PROJECTION,
-        derived_keys::LOCATION_UPDATED_AT,
         "locationUpdatedAt",
         "instanceId",
         "travelingToWorld",

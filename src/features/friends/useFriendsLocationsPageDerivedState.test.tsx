@@ -31,10 +31,10 @@ function friendAt(location: string): FriendRecord {
 }
 
 describe('useFriendsLocationsPageDerivedState', () => {
-    it('carries the resolved dwell start into searched card rows', () => {
+    it('does not synthesize a friend dwell start from the local roster', () => {
         const location = 'wrld_test:123';
         const joinedAtMs = 1_700_000_000_000;
-        const friend = { ...friendAt(location), $location_at: joinedAtMs };
+        const friend = friendAt(location);
         const { result } = renderHook(() =>
             useFriendsLocationsPageDerivedState({
                 activeIds: [friend.id],
@@ -90,6 +90,6 @@ describe('useFriendsLocationsPageDerivedState', () => {
         if (cardRow?.type !== 'cards') {
             return;
         }
-        expect(cardRow.friends[0]?.$location_at).toBe(joinedAtMs);
+        expect(cardRow.friends[0]?.$location_at).toBeUndefined();
     });
 });

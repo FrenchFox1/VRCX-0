@@ -1,8 +1,6 @@
 import { AlertTriangleIcon, LockIcon } from 'lucide-react';
 import {
-    useEffect,
     useMemo,
-    useState,
     type HTMLAttributes,
     type KeyboardEvent,
     type ReactElement,
@@ -13,9 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
-import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
-import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
@@ -27,78 +23,22 @@ import {
 } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
-import { useShellStore } from '@/state/shellStore';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     clearStaleOfflineLocation,
-    readFriendInstanceEpoch,
     readFriendRef,
     readFriendRefLocation,
     readFriendRefTravelingLocation,
     readFriendStatusSource,
     resolvePresenceLocation,
-    timestampMsFromValue,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
 
-const FRIEND_INSTANCE_TIMER_SUB_MINUTE_STEP_MS = 30_000;
-const FRIEND_INSTANCE_TIMER_STEP_MS = 60_000;
-
 function recordValue(value: unknown): Record<string, unknown> | null {
     return isRecord(value) ? value : null;
-}
-
-export function FriendInstanceTimer({
-    epoch,
-    traveling = false
-}: {
-    epoch?: InstanceRosterTimestamp | null;
-    traveling?: boolean;
-}) {
-    const timeUnitLabels = useShellStore((state) => state.timeUnitLabels);
-    const [now, setNow] = useState(() => Date.now());
-    const normalizedEpoch = timestampMsFromValue(epoch);
-    const elapsedMs = normalizedEpoch ? Math.max(0, now - normalizedEpoch) : 0;
-    const isSubMinute = elapsedMs < FRIEND_INSTANCE_TIMER_STEP_MS;
-    const stepMs = isSubMinute
-        ? FRIEND_INSTANCE_TIMER_SUB_MINUTE_STEP_MS
-        : FRIEND_INSTANCE_TIMER_STEP_MS;
-    const displayedMs = Math.floor(elapsedMs / stepMs) * stepMs;
-    const nextStepMs = displayedMs + stepMs;
-    let text = '-';
-    if (normalizedEpoch) {
-        text = timeToText(displayedMs, isSubMinute, timeUnitLabels);
-    }
-
-    useEffect(() => {
-        if (!normalizedEpoch) {
-            return;
-        }
-        const timeoutId = window.setTimeout(
-            () => {
-                setNow(Date.now());
-            },
-            Math.max(1, nextStepMs - elapsedMs)
-        );
-        return () => window.clearTimeout(timeoutId);
-    }, [elapsedMs, nextStepMs, normalizedEpoch]);
-
-    return (
-        <span className="inline-flex min-w-0 items-center">
-            {traveling ? <Spinner className="mr-1 size-3 shrink-0" /> : null}
-            <span
-                className={cn(
-                    'truncate tabular-nums',
-                    isSubMinute && normalizedEpoch ? 'text-foreground' : null
-                )}
-            >
-                {text}
-            </span>
-        </span>
-    );
 }
 
 function sidebarLocationTarget(location: unknown, traveling: unknown = '') {
@@ -174,10 +114,6 @@ export function resolveFriendRowLocationState({
     const groupByInstanceTimerVisible = Boolean(
         isGroupByInstance && !isActiveOrOffline && !statusSource?.pendingOffline
     );
-    const groupByInstanceEpoch = readFriendInstanceEpoch(
-        statusSource,
-        isTraveling
-    );
     const showLocationSubline = Boolean(
         displayLocation &&
         !statusSource?.pendingOffline &&
@@ -197,7 +133,6 @@ export function resolveFriendRowLocationState({
         displayLocation,
         displayTraveling,
         groupByInstanceTimerVisible,
-        groupByInstanceEpoch,
         showLocationSubline,
         metadataCurrentLocation: sidebarLocationTarget(
             displayLocation,

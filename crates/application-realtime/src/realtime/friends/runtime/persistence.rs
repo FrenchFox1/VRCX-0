@@ -45,11 +45,7 @@ impl OfflineFeedPrevious {
             location: record.location.clone(),
             world_name: record_string(record, "worldName"),
             group_name: record_string(record, "groupName"),
-            location_updated_at: record
-                .extra
-                .i64_field("locationUpdatedAt")
-                .or_else(|| record.extra.i64_field(derived_keys::LOCATION_UPDATED_AT))
-                .unwrap_or(0),
+            location_updated_at: record.extra.i64_field("locationUpdatedAt").unwrap_or(0),
         }
     }
 
@@ -457,18 +453,9 @@ pub(super) fn add_location_metadata(
         }
         let previous_location = previous.map(resolve_previous_location).unwrap_or_default();
         let previous_timestamp = previous
-            .and_then(|previous| {
-                previous
-                    .extra
-                    .i64_field("locationUpdatedAt")
-                    .or_else(|| previous.extra.i64_field(derived_keys::LOCATION_UPDATED_AT))
-            })
+            .and_then(|previous| previous.extra.i64_field("locationUpdatedAt"))
             .unwrap_or(0);
         patch.insert("locationUpdatedAt".into(), Value::from(timestamp_ms));
-        patch.insert(
-            derived_keys::LOCATION_UPDATED_AT.into(),
-            Value::from(timestamp_ms),
-        );
         patch.insert(
             derived_keys::TRAVELING_TO_TIME.into(),
             Value::from(timestamp_ms),
@@ -505,10 +492,6 @@ pub(super) fn add_location_metadata(
         timestamp_ms
     };
     patch.insert("locationUpdatedAt".into(), Value::from(location_timestamp));
-    patch.insert(
-        derived_keys::LOCATION_UPDATED_AT.into(),
-        Value::from(location_timestamp),
-    );
     patch.insert(
         derived_keys::PREVIOUS_LOCATION.into(),
         Value::String(String::new()),
@@ -664,11 +647,7 @@ pub(super) fn resolve_gps_duration(previous: &FriendRecord) -> i64 {
 }
 
 pub(super) fn duration_ms(previous: &FriendRecord, now_ms: i64) -> i64 {
-    let timestamp = previous
-        .extra
-        .i64_field("locationUpdatedAt")
-        .or_else(|| previous.extra.i64_field(derived_keys::LOCATION_UPDATED_AT))
-        .unwrap_or(0);
+    let timestamp = previous.extra.i64_field("locationUpdatedAt").unwrap_or(0);
     if timestamp > 0 {
         now_ms.saturating_sub(timestamp)
     } else {

@@ -515,6 +515,15 @@ impl DesktopRuntimeHostState {
             friend_projection_observer: Some(friend_projection_observer),
             profile_extension: Some(extension.clone()),
         })?;
+        let realtime_runtime = Arc::downgrade(runtime.realtime_runtime());
+        runtime
+            .desktop_assembly()
+            .instance_dwell()
+            .set_roster_change_callback(Arc::new(move || {
+                if let Some(realtime_runtime) = realtime_runtime.upgrade() {
+                    realtime_runtime.emit_friend_location_time_snapshot();
+                }
+            }));
         let current_user_mutations =
             crate::current_user_mutation::build_current_user_mutation_runtime(
                 crate::current_user_mutation::CurrentUserMutationRuntimeDeps {

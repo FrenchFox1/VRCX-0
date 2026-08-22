@@ -225,10 +225,18 @@ mod tests {
             restored.projection.patches[0].patch.extra["$location"]["worldId"],
             "wrld_current"
         );
-        assert_eq!(
-            restored.projection.patches[0].patch.extra["$location_at"],
-            1_778_803_320_000i64
-        );
+        assert!(!restored.projection.patches[0]
+            .patch
+            .extra
+            .contains_key("$location_at"));
+        let location_time = restored
+            .projection
+            .location_time_snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.iter().find(|entry| entry.user_id == "usr_friend"))
+            .expect("restored location time");
+        assert_eq!(location_time.location, "wrld_current:456");
+        assert_eq!(location_time.since_ms, Some(1_778_803_320_000));
     }
 
     #[test]

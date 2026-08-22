@@ -1,5 +1,7 @@
 import type { FriendPatchEntry } from '@/domain/friends/types';
+import type { FriendLocationTime } from '@/platform/tauri/bindings';
 import type { RealtimeUserRecord } from '@/services/runtime-event-bridge/realtimeProjectionTypes';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendLogStore } from '@/state/friendLogStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useShellStore } from '@/state/shellStore';
@@ -10,6 +12,7 @@ const COALESCE_WINDOW_MS = 500;
 let pendingPatches: FriendPatchEntry[] = [];
 let pendingUsers: RealtimeUserRecord[] = [];
 let pendingFriendLogChanged = false;
+let pendingLocationTimeSnapshot: FriendLocationTime[] | undefined;
 let pendingOwnerUserId: string | null = null;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let lastFlushAt = 0;
@@ -22,7 +25,8 @@ function hasPendingRosterUpdates(): boolean {
     return (
         pendingPatches.length > 0 ||
         pendingUsers.length > 0 ||
-        pendingFriendLogChanged
+        pendingFriendLogChanged ||
+        pendingLocationTimeSnapshot !== undefined
     );
 }
 
@@ -38,13 +42,15 @@ function clearPendingRosterUpdates(): void {
     pendingPatches = [];
     pendingUsers = [];
     pendingFriendLogChanged = false;
+    pendingLocationTimeSnapshot = undefined;
     pendingOwnerUserId = null;
 }
 
 function applyRosterUpdates(
     patches: FriendPatchEntry[],
     users: RealtimeUserRecord[],
-    friendLogChanged: boolean
+    friendLogChanged: boolean,
+    locationTimeSnapshot?: FriendLocationTime[]
 ): void {
     lastFlushAt = Date.now();
     if (users.length) {
@@ -52,6 +58,11 @@ function applyRosterUpdates(
     }
     if (patches.length) {
         useFriendRosterStore.getState().applyFriendPatches(patches);
+    }
+    if (locationTimeSnapshot !== undefined) {
+        useFriendLocationTimeStore
+            .getState()
+            .replaceSnapshot(locationTimeSnapshot);
     }
     if (friendLogChanged) {
         useShellStore.getState().notifyMenu('friend-log');
@@ -74,9 +85,15 @@ function scheduleFlush(): void {
 function enqueueRosterUpdate(
     patches: FriendPatchEntry[],
     users: RealtimeUserRecord[],
-    friendLogChanged: boolean
+    friendLogChanged: boolean,
+    locationTimeSnapshot?: FriendLocationTime[]
 ): void {
-    if (!patches.length && !users.length && !friendLogChanged) {
+    if (
+        !patches.length &&
+        !users.length &&
+        !friendLogChanged &&
+        locationTimeSnapshot === undefined
+    ) {
         return;
     }
     const ownerUserId = rosterOwnerUserId();
@@ -84,7 +101,12 @@ function enqueueRosterUpdate(
         !hasPendingRosterUpdates() &&
         Date.now() - lastFlushAt >= COALESCE_WINDOW_MS
     ) {
-        applyRosterUpdates(patches, users, friendLogChanged);
+        applyRosterUpdates(
+            patches,
+            users,
+            friendLogChanged,
+            locationTimeSnapshot
+        );
         return;
     }
     if (hasPendingRosterUpdates() && pendingOwnerUserId !== ownerUserId) {
@@ -94,14 +116,18 @@ function enqueueRosterUpdate(
     pendingPatches.push(...patches);
     pendingUsers.push(...users);
     pendingFriendLogChanged = pendingFriendLogChanged || friendLogChanged;
+    if (locationTimeSnapshot !== undefined) {
+        pendingLocationTimeSnapshot = locationTimeSnapshot;
+    }
     scheduleFlush();
 }
 
 export function queueRealtimeFriendRosterUpdate(
     patches: FriendPatchEntry[],
-    friendLogChanged: boolean
+    friendLogChanged: boolean,
+    locationTimeSnapshot?: FriendLocationTime[]
 ): void {
-    enqueueRosterUpdate(patches, [], friendLogChanged);
+    enqueueRosterUpdate(patches, [], friendLogChanged, locationTimeSnapshot);
 }
 
 export function queueRealtimeUserFactsUpdate(
@@ -118,12 +144,13 @@ export function flushRealtimeRosterUpdates(): void {
     const patches = pendingPatches;
     const users = pendingUsers;
     const friendLogChanged = pendingFriendLogChanged;
+    const locationTimeSnapshot = pendingLocationTimeSnapshot;
     const ownerUserId = pendingOwnerUserId;
     clearPendingRosterUpdates();
     if (ownerUserId !== rosterOwnerUserId()) {
         return;
     }
-    applyRosterUpdates(patches, users, friendLogChanged);
+    applyRosterUpdates(patches, users, friendLogChanged, locationTimeSnapshot);
 }
 
 export function resetRealtimeRosterUpdates(): void {

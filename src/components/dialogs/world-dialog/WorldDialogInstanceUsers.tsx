@@ -3,7 +3,7 @@ import { CrownIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
+import { FriendLocationTimer } from '@/components/friends/FriendInstanceTimer';
 import {
     resolveSidebarStatusDotClassName,
     type SidebarFriendRecord
@@ -16,20 +16,20 @@ import {
     mergeInstanceUserRows,
     mergeInstanceUsers,
     normalizeInstanceUsers,
-    resolveInstanceDwellEpoch,
     type InstanceRosterRow
 } from '@/domain/instances/instanceRoster';
-import { timeToText } from '@/lib/dateTime';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { useKnownUserFact } from '@/lib/useKnownUser';
-import { useNowMs } from '@/lib/useNowMs';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
+import {
+    locationSentinel,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 export { firstText, isGroupId, mergeInstanceUsers, normalizeInstanceUsers };
 
@@ -40,52 +40,9 @@ function record(value: unknown): Record<string, unknown> {
     return isRecord(value) ? value : {};
 }
 
-function timestampFromValue(value: unknown) {
-    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-        return value;
-    }
-    const text = firstText(value);
-    if (!text) {
-        return 0;
-    }
-    const numeric = Number(text);
-    if (Number.isFinite(numeric) && numeric > 0) {
-        return numeric;
-    }
-    const parsed = Date.parse(text);
-    return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function instanceUserTravelingTimestamp(user: InstanceRosterRow) {
-    if (firstText(user.location).toLowerCase() !== 'traveling') {
-        return 0;
-    }
-    return (
-        timestampFromValue(user.$travelingToTime) ||
-        timestampFromValue(user.travelingToTime) ||
-        timestampFromValue(user.traveling_to_time)
-    );
-}
-
-function instanceUserSubtitle(
-    user: InstanceRosterRow,
-    nowMs: number,
-    t: Translate
-) {
+function instanceUserSubtitle(user: InstanceRosterRow, t: Translate) {
     if (user.$subtitle) {
         return user.$subtitle;
-    }
-    if (instanceUserTravelingTimestamp(user)) {
-        return '';
-    }
-    const timestamp =
-        timestampFromValue(user.$location_at) ||
-        timestampFromValue(user.locationAt) ||
-        timestampFromValue(user.location_at) ||
-        timestampFromValue(user.joinedAt) ||
-        timestampFromValue(user.joined_at);
-    if (timestamp) {
-        return timeToText(nowMs - timestamp);
     }
     return firstText(
         user.subtitle,
@@ -129,7 +86,6 @@ export function InstanceUserTiles({
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning === true
     );
-    const nowMs = useNowMs();
     const source = record(instance);
     const creatorUser = record(source.creatorUser);
     const creatorUserId = firstText(source.creatorUserId);
@@ -277,12 +233,6 @@ export function InstanceUserTiles({
                     $userColour:
                         typeof user.$userColour === 'string'
                             ? user.$userColour
-                            : undefined,
-                    $location_at:
-                        typeof user.$location_at === 'string' ||
-                        typeof user.$location_at === 'number' ||
-                        user.$location_at === null
-                            ? user.$location_at
                             : undefined
                 };
                 const dotClassName = resolveSidebarStatusDotClassName(
@@ -299,32 +249,20 @@ export function InstanceUserTiles({
                     userId,
                     'User'
                 );
-                const subtitle = instanceUserSubtitle(user, nowMs, t);
-                const travelingTimestamp = instanceUserTravelingTimestamp(user);
+                const subtitle = instanceUserSubtitle(user, t);
+                const isTraveling =
+                    locationSentinel(user.location) === 'traveling';
+                const timerLocation = resolveFriendPresenceLocation(user);
                 const isInstanceCreator = userId === creatorUserId;
-                const timerEpoch =
-                    travelingTimestamp || resolveInstanceDwellEpoch(user);
                 let subline: ReactNode;
-                if (showInstanceDuration) {
+                if (showInstanceDuration || isTraveling) {
                     subline = (
-                        <FriendInstanceTimer
-                            epoch={timerEpoch}
-                            traveling={Boolean(travelingTimestamp)}
+                        <FriendLocationTimer
+                            userId={userId}
+                            location={timerLocation}
+                            traveling={isTraveling}
+                            fallback={subtitle || undefined}
                         />
-                    );
-                } else if (isInstanceCreator) {
-                    subline = undefined;
-                } else if (travelingTimestamp) {
-                    subline = (
-                        <>
-                            <Spinner
-                                aria-hidden="true"
-                                aria-label={undefined}
-                                role="presentation"
-                                className="mr-1 inline-block size-3"
-                            />
-                            {timeToText(nowMs - travelingTimestamp)}
-                        </>
                     );
                 } else {
                     subline = subtitle || undefined;

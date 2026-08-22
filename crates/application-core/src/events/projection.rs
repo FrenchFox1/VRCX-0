@@ -2,6 +2,8 @@ use serde::Serialize;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::{RawJson, RawJsonObject};
 
+use crate::FriendLocationTime;
+
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeUserProjection {
@@ -34,6 +36,8 @@ pub struct FriendProjection {
     pub removals: Vec<String>,
     #[serde(default)]
     pub feed_entries: Vec<RawJson>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location_time_snapshot: Option<Vec<FriendLocationTime>>,
     pub friend_log_changed: bool,
 }
 
@@ -45,6 +49,7 @@ impl FriendProjection {
             patches: Vec::new(),
             removals: Vec::new(),
             feed_entries: Vec::new(),
+            location_time_snapshot: None,
             friend_log_changed: false,
         }
     }

@@ -1,9 +1,7 @@
 import {
-    readFriendInstanceEpoch,
     readFriendRef,
     readFriendStatusSource,
     resolveSidebarStatusDotClassName,
-    timestampMsFromValue,
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import type {
@@ -12,6 +10,7 @@ import type {
 } from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { userImage } from '@/services/entityMediaService';
+import { timestampMsFromValue } from '@/shared/utils/dateTime';
 import { userStatusFromValue } from '@/shared/utils/friendStatus';
 import {
     locationSentinel,
@@ -203,12 +202,6 @@ export function buildUserHoverCardModel({
         ).trim(),
         note: String(profileRecord?.note || '').trim(),
         onlineForMs: estimatedOnlineMs(state, identity?.last_login, nowMs),
-        instanceEpoch:
-            variant === 'in-instance'
-                ? timestampMsFromValue(
-                      readFriendInstanceEpoch(statusSource, isTraveling)
-                  )
-                : 0,
         lastOnlineAgoMs:
             variant === 'offline'
                 ? (() => {

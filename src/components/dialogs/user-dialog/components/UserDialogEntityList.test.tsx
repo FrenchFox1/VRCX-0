@@ -2,7 +2,10 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 const mocks = vi.hoisted(() => ({
     getGroupProfile: vi.fn(),
@@ -39,12 +42,6 @@ vi.mock('@/components/UserStatusAvatar', () => ({
 
 vi.mock('@/components/sidebar/friends-sidebar/friendsSidebarModel', () => ({
     resolveSidebarStatusDotClassName: () => ''
-}));
-
-vi.mock('@/components/sidebar/friends-sidebar/FriendsSidebarLocation', () => ({
-    FriendInstanceTimer: ({ epoch }: { epoch?: unknown }) => (
-        <span data-testid="instance-timer" data-epoch={String(epoch)} />
-    )
 }));
 
 vi.mock('@/services/entityMediaService', () => ({
@@ -84,9 +81,17 @@ vi.mock('./userDialogEntityNavigation', () => ({
 import { EntityList } from './UserDialogEntityList';
 
 describe('UserDialog EntityList', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(1_700_000_600_000);
+        useFriendRosterStore.getState().resetRoster();
+        useFriendLocationTimeStore.getState().reset();
+    });
+
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+        vi.useRealTimers();
     });
 
     it('replaces internal Tauri command errors with a friendly message', () => {
@@ -138,6 +143,23 @@ describe('UserDialog EntityList', () => {
     });
 
     it('shows the instance timer instead of the status signature', () => {
+        useFriendRosterStore.getState().applyFriendPatch({
+            userId: 'usr_friend',
+            patch: {
+                id: 'usr_friend',
+                displayName: 'Friend',
+                state: 'online',
+                location: 'wrld_test:1'
+            },
+            stateBucketAuthority: 'explicit'
+        });
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
         render(
             <EntityList
                 kind="user"
@@ -145,17 +167,16 @@ describe('UserDialog EntityList', () => {
                     {
                         id: 'usr_friend',
                         displayName: 'Friend',
-                        statusDescription: 'World hopping',
-                        $location_at: 1_700_000_000_000
+                        state: 'online',
+                        location: 'wrld_test:1',
+                        statusDescription: 'World hopping'
                     }
                 ]}
                 showInstanceDuration
             />
         );
 
-        expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
-            '1700000000000'
-        );
+        expect(screen.getByText('10m')).toBeTruthy();
         expect(screen.queryByText('World hopping')).toBeNull();
     });
 
@@ -188,7 +209,7 @@ describe('UserDialog EntityList', () => {
         expect(screen.queryByText('Friend signature')).toBeNull();
     });
 
-    it('shows a creator icon and signature for a non-friend creator', () => {
+    it('shows a creator icon and label for a non-friend creator', () => {
         render(
             <EntityList
                 kind="user"
@@ -209,11 +230,14 @@ describe('UserDialog EntityList', () => {
         expect(
             screen.getByLabelText('dialog.user.info.instance_creator')
         ).toBeTruthy();
-        expect(screen.getByText('Owner signature')).toBeTruthy();
+        expect(
+            screen.getByText('dialog.user.info.instance_creator')
+        ).toBeTruthy();
+        expect(screen.queryByText('Owner signature')).toBeNull();
         expect(screen.queryByTestId('instance-timer')).toBeNull();
     });
 
-    it('shows the localized status when a non-friend creator has no signature', () => {
+    it('keeps the Creator label when a non-friend creator has no signature', () => {
         render(
             <EntityList
                 kind="user"
@@ -231,7 +255,10 @@ describe('UserDialog EntityList', () => {
             />
         );
 
-        expect(screen.getByText('dialog.user.status.offline')).toBeTruthy();
+        expect(
+            screen.getByText('dialog.user.info.instance_creator')
+        ).toBeTruthy();
+        expect(screen.queryByText('dialog.user.status.offline')).toBeNull();
         expect(screen.queryByTestId('instance-timer')).toBeNull();
     });
 
@@ -243,6 +270,7 @@ describe('UserDialog EntityList', () => {
                     {
                         id: 'usr_friend',
                         displayName: 'Friend',
+                        statusDescription: 'No dwell time',
                         locationUpdatedAt: 1_700_000_000_000
                     }
                 ]}
@@ -250,8 +278,8 @@ describe('UserDialog EntityList', () => {
             />
         );
 
-        const timer = screen.getByTestId('instance-timer');
-        expect(timer.dataset.epoch).toBe('');
+        expect(screen.getByText('No dwell time')).toBeTruthy();
+        expect(screen.queryByText('10m')).toBeNull();
     });
 
     it('renders group list data without requesting every group profile', () => {

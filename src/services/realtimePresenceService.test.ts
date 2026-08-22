@@ -35,6 +35,8 @@ describe('realtimePresenceService projection boundary', () => {
 
         const { useFriendRosterStore } =
             await import('@/state/friendRosterStore');
+        const { useFriendLocationTimeStore } =
+            await import('@/state/friendLocationTimeStore');
         const { useRuntimeStore } = await import('@/state/runtimeStore');
         const { useFeedLiveStore } = await import('@/state/feedLiveStore');
         const { useShellStore } = await import('@/state/shellStore');
@@ -42,6 +44,7 @@ describe('realtimePresenceService projection boundary', () => {
             await import('@/state/vrcNotificationStore');
 
         useFriendRosterStore.getState().resetRoster();
+        useFriendLocationTimeStore.getState().reset();
         useRuntimeStore.getState().resetRuntimeState();
         useRuntimeStore.getState().setAuthBootstrap({
             currentUserId: 'usr_self',
@@ -139,6 +142,61 @@ describe('realtimePresenceService projection boundary', () => {
             offlineFriends: ['usr_friend']
         });
         expect(useShellStore.getState().notifiedMenus).toContain('friend-log');
+    });
+
+    it('replaces the location-time snapshot only when the projection includes it', async () => {
+        const { useFriendLocationTimeStore } =
+            await import('@/state/friendLocationTimeStore');
+        const { handleRealtimeFriendProjection } =
+            await import('./realtimePresenceService');
+        const { flushRealtimeRosterUpdates } =
+            await import('./realtimeRosterUpdateQueue');
+
+        handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
+            patches: [],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false,
+            locationTimeSnapshot: [
+                {
+                    userId: 'usr_friend',
+                    location: 'wrld_test:1',
+                    sinceMs: 1_700_000_000_000
+                }
+            ]
+        });
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
+            usr_friend: {
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        });
+
+        handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
+            patches: [],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false
+        });
+        expect(
+            useFriendLocationTimeStore.getState().byUserId.usr_friend
+        ).toBeDefined();
+
+        handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
+            patches: [],
+            removals: [],
+            feedEntries: [],
+            friendLogChanged: false,
+            locationTimeSnapshot: []
+        });
+        flushRealtimeRosterUpdates();
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({});
     });
 
     it('applies the dedicated Rust Feed projection', async () => {
