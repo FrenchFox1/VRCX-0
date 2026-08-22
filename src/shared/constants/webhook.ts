@@ -1,4 +1,4 @@
-import genericWebhookFields from '../../../crates/composition/src/notification/webhook-generic-fields.json';
+import genericWebhookFields from '../../../crates/application-activity/src/notification/webhook-generic-fields.json';
 
 export const GENERIC_WEBHOOK_FIELDS = Object.freeze(
     genericWebhookFields.map((field) => String(field))

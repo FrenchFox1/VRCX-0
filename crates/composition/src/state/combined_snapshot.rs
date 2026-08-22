@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use vrcx_0_application::AuthenticatedRuntimePhaseSnapshot;
+use vrcx_0_application::auth::AuthenticatedRuntimePhaseSnapshot;
 use vrcx_0_application_core::BackendRuntimeSnapshot;
 
 use super::{AuthenticatedSessionProjection, RuntimeHostState};

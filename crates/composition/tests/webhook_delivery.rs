@@ -4,8 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde_json::json;
-use vrcx_0_application_core::WebClient;
-use vrcx_0_composition::notification::send_json_webhook_with_retry;
+use vrcx_0_application_activity::notification::send_json_webhook_with_retry;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
 
@@ -32,18 +31,28 @@ impl Drop for TestDir {
     }
 }
 
-fn test_web(name: &str) -> (TestDir, WebClient) {
+fn test_web(
+    name: &str,
+) -> (
+    TestDir,
+    vrcx_0_outbound_adapters::LocalNotificationWebhookTransport,
+) {
     let dir = TestDir::new(name);
     let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
     let storage = StorageService::new(&dir.0.join("storage.json")).unwrap();
-    let web = WebClient::new(
-        &storage,
-        db.as_ref(),
-        "http://localhost:9000".into(),
-        env!("CARGO_PKG_VERSION"),
+    let web = Arc::new(vrcx_0_application_core::WebClient::new(
+        vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
+            &storage,
+            Arc::clone(&db),
+            "http://localhost:9000".into(),
+            env!("CARGO_PKG_VERSION"),
+        )
+        .unwrap(),
+    ));
+    (
+        dir,
+        vrcx_0_outbound_adapters::LocalNotificationWebhookTransport::new(web),
     )
-    .unwrap();
-    (dir, web)
 }
 
 #[tokio::test]

@@ -26,7 +26,98 @@ pub struct BackgroundCapabilitySession {
     pub current_user_id: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user_snapshot: Arc<Value>,
+    pub current_user_snapshot: CurrentUserSnapshot,
+}
+
+#[derive(Clone, Debug, specta::Type)]
+#[specta(transparent)]
+pub struct CurrentUserSnapshot(Arc<Value>);
+
+impl CurrentUserSnapshot {
+    pub fn from_value(value: Value) -> Self {
+        Self(Arc::new(value))
+    }
+
+    pub fn as_value(&self) -> &Value {
+        self.0.as_ref()
+    }
+
+    pub fn shared_value(&self) -> Arc<Value> {
+        Arc::clone(&self.0)
+    }
+
+    pub fn id(&self) -> &str {
+        self.string_field("id")
+    }
+
+    pub fn display_name(&self) -> &str {
+        let display_name = self.string_field("displayName");
+        if display_name.is_empty() {
+            self.string_field("username")
+        } else {
+            display_name
+        }
+    }
+
+    pub fn location(&self) -> &str {
+        self.string_field(vrcx_0_core::derived_keys::LOCATION_TAG)
+    }
+
+    pub fn raw_location(&self) -> &str {
+        self.string_field("location")
+    }
+
+    pub fn world_id(&self) -> &str {
+        self.string_field("worldId")
+    }
+
+    pub fn with_fallback_id(&self, current_user_id: &str) -> Self {
+        let current_user_id = current_user_id.trim();
+        if current_user_id.is_empty() || !self.id().is_empty() || !self.as_value().is_object() {
+            return self.clone();
+        }
+        let mut value = self.as_value().clone();
+        value
+            .as_object_mut()
+            .expect("current user snapshot was checked as an object")
+            .insert("id".into(), Value::String(current_user_id.to_string()));
+        Self::from_value(value)
+    }
+
+    pub fn shares_storage_with(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    fn string_field(&self, key: &str) -> &str {
+        self.as_value()
+            .get(key)
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+    }
+}
+
+impl Default for CurrentUserSnapshot {
+    fn default() -> Self {
+        Self::from_value(Value::Null)
+    }
+}
+
+impl Serialize for CurrentUserSnapshot {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.as_value().serialize(serializer)
+    }
+}
+
+impl From<Value> for CurrentUserSnapshot {
+    fn from(value: Value) -> Self {
+        Self::from_value(value)
+    }
+}
+
+impl From<Arc<Value>> for CurrentUserSnapshot {
+    fn from(value: Arc<Value>) -> Self {
+        Self(value)
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -78,10 +169,27 @@ mod background_capability_session_tests {
         };
         let second = first.clone();
 
-        assert!(Arc::ptr_eq(
-            &first.current_user_snapshot,
-            &second.current_user_snapshot,
-        ));
+        assert!(first
+            .current_user_snapshot
+            .shares_storage_with(&second.current_user_snapshot));
+    }
+
+    #[test]
+    fn current_user_snapshot_preserves_raw_json_while_exposing_typed_facts() {
+        let snapshot = CurrentUserSnapshot::from_value(json!({
+            "id": "usr_owner",
+            "displayName": "Owner",
+            "location": "wrld_test:1",
+            "unknownFutureField": { "nested": true }
+        }));
+
+        assert_eq!(snapshot.id(), "usr_owner");
+        assert_eq!(snapshot.display_name(), "Owner");
+        assert_eq!(snapshot.raw_location(), "wrld_test:1");
+        assert_eq!(
+            serde_json::to_value(&snapshot).unwrap()["unknownFutureField"]["nested"],
+            true
+        );
     }
 }
 

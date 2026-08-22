@@ -1,5 +1,5 @@
+use super::storage::AuthCredentialStore;
 use vrcx_0_application_core::WebClient;
-use vrcx_0_persistence::config::ConfigRepository;
 
 use super::compat::{
     normalize_text, saved_credential_user_from_value, saved_login_params_from_value,
@@ -13,7 +13,7 @@ use super::types::{LoginSuccessRecordInput, LogoutRecordInput, SavedAuthSnapshot
 use vrcx_0_application_core::{Error, Result};
 
 pub fn delete_saved_credential(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     user_id: String,
 ) -> Result<SavedAuthSnapshot> {
     let user_id = normalize_text(user_id);
@@ -30,11 +30,11 @@ pub fn delete_saved_credential(
 }
 
 pub fn record_login_success(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     input: LoginSuccessRecordInput,
 ) -> Result<SavedAuthSnapshot> {
-    let Some(user) = saved_credential_user_from_value(&input.user, "") else {
+    let Some(user) = saved_credential_user_from_value(input.user.as_value(), "") else {
         return Err(Error::Custom(
             "VrchatAuthLoginSuccessRecord requires a user id.".into(),
         ));
@@ -55,7 +55,7 @@ pub fn record_login_success(
             user_id.clone(),
             super::types::SavedCredential {
                 user,
-                login_params: saved_login_params_from_value(login_params),
+                login_params: saved_login_params_from_value(login_params.as_value()),
                 cookies,
             },
         );
@@ -70,7 +70,7 @@ pub fn record_login_success(
 }
 
 pub fn record_logout(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     input: LogoutRecordInput,
 ) -> Result<SavedAuthSnapshot> {
@@ -85,7 +85,7 @@ pub fn record_logout(
 }
 
 pub(super) fn sync_saved_credential_cookies(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     user_id: &str,
 ) -> Result<()> {

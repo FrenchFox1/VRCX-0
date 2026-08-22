@@ -13,7 +13,7 @@ pub async fn app__vr_overlay_enabled_set(
     enabled: bool,
 ) -> Result<VrOverlayRuntimeSnapshot, AppError> {
     run_vr_overlay_task(app, "VR overlay enabled task", move |state| {
-        Ok(state.set_vr_overlay_enabled(enabled)?)
+        Ok(state.runtime_host().set_vr_overlay_enabled(enabled)?)
     })
     .await
 }
@@ -24,7 +24,7 @@ pub async fn app__vr_overlay_config_reload(
     app: AppHandle,
 ) -> Result<VrOverlayRuntimeSnapshot, AppError> {
     run_vr_overlay_task(app, "VR overlay config reload task", |state| {
-        Ok(state.reload_vr_overlay_config()?)
+        Ok(state.runtime_host().reload_vr_overlay_config()?)
     })
     .await
 }

@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 use serde::Serialize;
 use specta::Type;
 use tokio_util::sync::CancellationToken;
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
-use vrcx_0_composition::RuntimeHostState;
-use vrcx_0_integrations::llm::{LlmEndpointDetectModelsResult, LlmRequestOptions, ToolDefinition};
-use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpCaller, McpRuntime};
+use vrcx_0_contracts::llm::{LlmEndpointDetectModelsResult, LlmRequestOptions, ToolDefinition};
+use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpRuntime};
 
 use crate::agent::{run_turn, TurnContext};
 use crate::config::{should_apply_playbook, PlaybookMode};
@@ -24,6 +23,7 @@ use crate::endpoints::{
 const WRITE_TOOLS: &[&str] = &["favorite_local", "favorite_vrchat", "set_friend_note"];
 use crate::error::AssistantError;
 use crate::events::AssistantEmitter;
+use crate::ports::{AssistantConfig, AssistantLlmClientFactory, AssistantSessionPersistence};
 use crate::session::{
     random_hex, ActiveTurn, Role, Session, SessionStore, SessionSummary, TurnStatus,
 };
@@ -39,6 +39,17 @@ pub struct AssistantController {
     cancels: Arc<Mutex<HashMap<String, (String, CancellationToken)>>>,
 }
 
+pub struct AssistantControllerDeps {
+    pub config: AssistantConfig,
+    pub llm_factory: AssistantLlmClientFactory,
+    pub proxy_url: Option<String>,
+    pub bus: RuntimeEventBus,
+    pub tasks: TaskSupervisor,
+    pub mcp_runtime: McpRuntime,
+    pub session_persistence: AssistantSessionPersistence,
+    pub auth_scope: RuntimeAuthScope,
+}
+
 #[derive(Debug, Clone, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SendResult {
@@ -47,24 +58,18 @@ pub struct SendResult {
 }
 
 impl AssistantController {
-    pub async fn from_host(state: &RuntimeHostState) -> Result<Self, AssistantError> {
-        let config = state.runtime_context.config.clone();
-        let endpoints =
-            EndpointStore::new(config.clone(), state.web.proxy_url().map(str::to_string));
-        let bus = state.runtime_context.event_bus.clone();
-        let tasks = state.runtime_context.tasks.clone();
-        let tools = Arc::new(
-            spawn_in_process_tools(McpRuntime::from_host(state, McpCaller::Assistant)).await?,
-        );
+    pub async fn new(deps: AssistantControllerDeps) -> Result<Self, AssistantError> {
+        let endpoints = EndpointStore::new(deps.config, deps.llm_factory, deps.proxy_url);
+        let tools = Arc::new(spawn_in_process_tools(deps.mcp_runtime).await?);
         let tool_defs = Arc::new(load_tool_defs(&tools).await?);
         Ok(Self {
             endpoints,
-            bus,
-            tasks,
+            bus: deps.bus,
+            tasks: deps.tasks,
             tools,
             tool_defs,
-            sessions: Arc::new(SessionStore::with_db(state.runtime_context.db.clone())),
-            auth_scope: state.runtime_context.auth_scope.clone(),
+            sessions: Arc::new(SessionStore::with_persistence(deps.session_persistence)),
+            auth_scope: deps.auth_scope,
             cancels: Arc::new(Mutex::new(HashMap::new())),
         })
     }

@@ -1,9 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 use super::{
-    AuthenticatedRuntimeOrchestrator, AuthenticatedSessionProjection, BackendRuntime,
-    DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs, RuntimeHostContext, WebClient,
+    AuthenticatedSessionProjection, BackendRuntime, DatabaseService, RealtimeHostRuntime,
+    RuntimeBackgroundJobs, RuntimeHostContext, WebClient,
 };
+use vrcx_0_application::social::AuthenticatedRuntimeOrchestrator;
 
 mod current_user;
 mod group_instances;
@@ -15,10 +16,7 @@ pub(super) use current_user::run_background_current_user_refresh;
 pub(super) use group_instances::run_background_group_instance_refresh;
 pub(super) use maintenance::run_background_print_cleanup;
 pub(super) use moderation::run_background_moderation_refresh;
-pub use social_baseline::SocialBaselineRefreshOutput;
-pub(super) use social_baseline::{
-    run_background_social_baseline_refresh, run_social_baseline_refresh_core,
-};
+pub(super) use social_baseline::run_background_social_baseline_refresh;
 
 pub(super) struct BackgroundTickContext<'a> {
     pub(super) db: &'a Arc<DatabaseService>,

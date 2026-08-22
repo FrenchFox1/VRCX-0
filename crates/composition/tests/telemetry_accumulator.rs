@@ -1,4 +1,4 @@
-use vrcx_0_composition::telemetry::{TelemetryAccumulator, TelemetryClientEvent};
+use vrcx_0_application::telemetry::{TelemetryAccumulator, TelemetryClientEvent};
 
 #[test]
 fn telemetry_accumulator_keeps_session_totals_without_resetting() {
@@ -138,12 +138,9 @@ fn telemetry_accumulator_filters_expected_tool_outcomes() {
 #[test]
 fn telemetry_accumulator_records_rust_error_versions() {
     let mut acc = TelemetryAccumulator::default();
+    let message = "panic in wrld_123 at /home/me/.config/VRCX-0/error-log.txt";
 
-    acc.record_rust_error(
-        "rust:panic",
-        "2.9.2",
-        "panic in wrld_123 at /home/me/.config/VRCX-0/error-log.txt",
-    );
+    acc.record_rust_error("rust:panic", "2.9.2", message, message);
 
     let errors = acc.client_error_entries();
     assert_eq!(errors.len(), 1);
@@ -163,13 +160,10 @@ fn telemetry_accumulator_structures_interrupted_database_upgrades() {
         "2026-06-26T17:20:02.105560800+00:00",
         "2026-07-01T01:02:03.004000000+00:00",
     ] {
-        acc.record_rust_error(
-            "rust:tracing",
-            "2.23.0",
-            &format!(
-                "2026-08-10T04:07:00Z ERROR vrcx_0::commands::database: database upgrade failure [status=interrupted stage=legacySchemaMigration operation=database_maintenance_run:fixNegativeGPS sqliteCategory=none from=17 to=18 appVersion=2.17.0]: Upgrade stopped during 'legacySchemaMigration' (started {started_at}); work database C:\\Users\\example\\VRCX-0.sqlite3"
-            ),
+        let message = format!(
+            "2026-08-10T04:07:00Z ERROR vrcx_0::commands::database: database upgrade failure [status=interrupted stage=legacySchemaMigration operation=database_maintenance_run:fixNegativeGPS sqliteCategory=none from=17 to=18 appVersion=2.17.0]: Upgrade stopped during 'legacySchemaMigration' (started {started_at}); work database C:\\Users\\example\\VRCX-0.sqlite3"
         );
+        acc.record_rust_error("rust:tracing", "2.23.0", &message, &message);
     }
 
     let errors = acc.client_error_entries();
@@ -193,12 +187,9 @@ fn telemetry_accumulator_structures_interrupted_database_upgrades() {
 #[test]
 fn telemetry_accumulator_keeps_sqlite_reason_and_migration_sql() {
     let mut acc = TelemetryAccumulator::default();
+    let message = "database upgrade failure [status=failed stage=legacyPerformanceIndexes operation=database_maintenance_run:addLegacyPerformanceIndexes sqliteCategory=unclassified from=17 to=18 appVersion=2.23.0]: Database error: no such column: created_at in SELECT created_at FROM gamelog_location at offset 7";
 
-    acc.record_rust_error(
-        "rust:tracing",
-        "2.23.0",
-        "database upgrade failure [status=failed stage=legacyPerformanceIndexes operation=database_maintenance_run:addLegacyPerformanceIndexes sqliteCategory=unclassified from=17 to=18 appVersion=2.23.0]: Database error: no such column: created_at in SELECT created_at FROM gamelog_location at offset 7",
-    );
+    acc.record_rust_error("rust:tracing", "2.23.0", message, message);
 
     let error = &acc.client_error_entries()[0];
     assert_eq!(error.code.as_deref(), Some("failed.sqlite_unclassified"));
@@ -215,12 +206,9 @@ fn telemetry_accumulator_keeps_sqlite_reason_and_migration_sql() {
 #[test]
 fn telemetry_accumulator_uses_reporting_version_for_legacy_upgrade_status() {
     let mut acc = TelemetryAccumulator::default();
+    let message = "database upgrade failure [status=interrupted stage=beforeFirstStage from=17 to=18 appVersion=unknown]: previous database upgrade did not finish";
 
-    acc.record_rust_error(
-        "rust:tracing",
-        "2.23.0",
-        "database upgrade failure [status=interrupted stage=beforeFirstStage from=17 to=18 appVersion=unknown]: previous database upgrade did not finish",
-    );
+    acc.record_rust_error("rust:tracing", "2.23.0", message, message);
 
     let error = &acc.client_error_entries()[0];
     assert_eq!(error.app_version.as_deref(), Some("2.23.0"));
@@ -233,11 +221,15 @@ fn telemetry_accumulator_uses_reporting_version_for_legacy_upgrade_status() {
 #[test]
 fn telemetry_accumulator_keeps_only_sanitized_panic_frame_locations() {
     let mut acc = TelemetryAccumulator::default();
+    let fingerprint_message =
+        "panicked at C:\\cargo\\tao\\runner.rs:371:7:\ncannot move state from Destroyed";
+    let telemetry_message = "cannot move state from Destroyed\nframes: tao::EventLoopRunner::advance_state@runner.rs:371:7";
 
     acc.record_rust_error(
         "rust:panic",
         "2.15.0",
-        "panicked at C:\\cargo\\tao\\runner.rs:371:7:\ncannot move state from Destroyed\n[backtrace]\n0: core::panicking::panic_fmt\n at C:\\rust\\panicking.rs:20:3\n1: tao::platform_impl::windows::event_loop::runner::EventLoopRunner::advance_state\n at C:\\cargo\\tao\\runner.rs:371:7",
+        fingerprint_message,
+        telemetry_message,
     );
 
     let summary = acc.client_error_entries()[0].summary.clone().unwrap();

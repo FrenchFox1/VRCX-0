@@ -8,7 +8,7 @@ use super::{
     service::unfriend_with_expected_scope,
     types::{SocialFriendMutationOutcome, SocialFriendMutationStatus, SocialMutationDeps},
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 pub const SOCIAL_UNFRIEND_BATCH_MAX_ITEMS: usize = 250;
 #[derive(Clone, Debug, Deserialize, specta::Type)]

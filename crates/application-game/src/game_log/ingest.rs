@@ -1,10 +1,10 @@
-use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
-use vrcx_0_core::game_process::GameProcessEvent;
-use vrcx_0_persistence::game_log::{
+use vrcx_0_contracts::game_log::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogJoinLeaveSnapshot,
     GameLogLocationEntry, GameLogLocationTimeUpdate, GameLogPortalSpawnEntry,
     GameLogResourceLoadEntry, GameLogWriteBatch,
 };
+use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
+use vrcx_0_core::game_process::GameProcessEvent;
 
 use super::runtime_state::{
     duration_ms, parse_event_time_ms, player_key, world_id_from_location, GameLogProjection,

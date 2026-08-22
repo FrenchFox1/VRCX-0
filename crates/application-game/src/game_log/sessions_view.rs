@@ -3,21 +3,16 @@ use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 
+use vrcx_0_contracts::game_log::{SessionLocationSegmentRow, SessionPlayerDurationRow};
 use vrcx_0_core::game_log_sessions::{
     build_game_log_sessions, SessionEventInput, SessionEventOut, SessionLocationInput,
     SessionMemberOut, SessionSegmentOut,
 };
 use vrcx_0_core::text::contains_lowercase_query_case_insensitive;
-use vrcx_0_persistence::game_log::{
-    get_session_events_for_range, get_session_location_segments,
-    get_session_location_segments_by_date_range, get_session_player_duration_rows,
-    SessionLocationSegmentRow, SessionPlayerDurationRow,
-};
-use vrcx_0_persistence::DatabaseService;
 
 use super::runtime_state::parse_event_time_ms;
 use crate::Result;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const DAY_MS: i64 = 86_400_000;
 const SESSION_GLOBAL_SEARCH_INITIAL_LOCATIONS: i64 = 500;
@@ -275,7 +270,7 @@ fn build_location_inputs(rows: &[SessionLocationSegmentRow]) -> Vec<SessionLocat
 }
 
 fn load_session_events(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     owner_user_id: &OwnerId,
     locations: &[SessionLocationInput],
     favorite_user_ids: &HashSet<String>,
@@ -301,7 +296,7 @@ fn load_session_events(
 
     let after_date = epoch_to_iso(min_epoch - DAY_MS);
     let before_date = epoch_to_iso(max_epoch + DAY_MS);
-    let rows = get_session_events_for_range(db, owner_user_id, &after_date, &before_date)?;
+    let rows = store.session_events_for_range(owner_user_id, &after_date, &before_date)?;
 
     Ok(rows
         .into_iter()
@@ -482,7 +477,7 @@ fn filter_sessions(
 }
 
 pub fn game_log_sessions_query(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     owner_user_id: &OwnerId,
     input: GameLogSessionsQueryInput,
 ) -> Result<Vec<GameLogSessionDto>> {
@@ -521,7 +516,7 @@ pub fn game_log_sessions_query(
         // rows" convergence and must not be flattened into a single build pass.
         // Bounded by `search_limit` (locations scanned) and `limit` (rows kept).
         while has_more && (latest.len() as i64) < limit && accumulated_locations < search_limit {
-            let batch = get_session_location_segments(db, owner_user_id, before_id, fetch_count)?;
+            let batch = store.session_location_segments(owner_user_id, before_id, fetch_count)?;
             if batch.is_empty() {
                 break;
             }
@@ -537,7 +532,7 @@ pub fn game_log_sessions_query(
 
             let location_inputs = build_location_inputs(effective);
             let batch_events =
-                load_session_events(db, owner_user_id, &location_inputs, &favorite_user_ids)?;
+                load_session_events(store, owner_user_id, &location_inputs, &favorite_user_ids)?;
             before_id = effective.last().map(|row| row.id);
             accumulated_locations += effective.len() as i64;
             all_locations.extend(location_inputs);
@@ -561,16 +556,17 @@ pub fn game_log_sessions_query(
             } else {
                 date_to
             };
-            get_session_location_segments_by_date_range(db, owner_user_id, &from, &to, fetch_limit)?
+            store.session_location_segments_by_date_range(owner_user_id, &from, &to, fetch_limit)?
         } else {
-            get_session_location_segments(db, owner_user_id, None, fetch_limit)?
+            store.session_location_segments(owner_user_id, None, fetch_limit)?
         };
         if locations.is_empty() {
             return Ok(Vec::new());
         }
 
         let location_inputs = build_location_inputs(&locations);
-        let events = load_session_events(db, owner_user_id, &location_inputs, &favorite_user_ids)?;
+        let events =
+            load_session_events(store, owner_user_id, &location_inputs, &favorite_user_ids)?;
         let built = build_game_log_sessions(&location_inputs, &events);
         let mut filtered = filter_sessions(built, &filters, &favorite_user_ids, &search);
         filtered.truncate(limit as usize);
@@ -583,7 +579,10 @@ pub fn game_log_sessions_query(
         .collect::<Vec<_>>();
     let mut duration_rows_by_location: HashMap<String, Vec<GameLogSessionPlayerDurationRowDto>> =
         HashMap::new();
-    for row in get_session_player_duration_rows(db, owner_user_id, &locations).unwrap_or_default() {
+    for row in store
+        .session_player_duration_rows(owner_user_id, &locations)
+        .unwrap_or_default()
+    {
         duration_rows_by_location
             .entry(row.location.clone())
             .or_default()

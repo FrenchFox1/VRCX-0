@@ -1,14 +1,11 @@
 use super::test_support::*;
 use super::*;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[test]
 fn notification_cache_hits_enrich_projection_and_persistence() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("notification-cache-hit")?;
-    world_cache_upsert(
-        runtime.runtime().deps.db.as_ref(),
-        cached_world_entry("wrld_cached", "Cached World", "2026-01-01T00:00:00.000Z"),
-    )?;
+    runtime.cache_world_for_test("wrld_cached", "Cached World", "2026-01-01T00:00:00.000Z");
     runtime
         .runtime()
         .world_cache
@@ -43,7 +40,7 @@ fn notification_cache_hits_enrich_projection_and_persistence() -> Result<()> {
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone(),
+                    notification: notification.clone().into(),
                     insert_defaults: None,
                     notify_menu: true,
                     deliver_runtime: true,
@@ -68,7 +65,7 @@ fn notification_cache_hits_enrich_projection_and_persistence() -> Result<()> {
     assert_eq!(projected["details"]["worldName"], "Cached World");
 
     let rows = notification_list_query(
-        runtime.runtime().deps.db.as_ref(),
+        runtime.database(),
         NotificationListQueryInput {
             user_id: active_session.user_id,
             search: String::new(),
@@ -119,7 +116,7 @@ fn notification_cache_hit_enriches_avatar_image_for_runtime_delivery() -> Result
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone(),
+                    notification: notification.clone().into(),
                     insert_defaults: None,
                     notify_menu: true,
                     deliver_runtime: true,
@@ -187,7 +184,7 @@ fn notification_avatar_resolves_from_user_id_when_sender_field_absent() -> Resul
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone(),
+                    notification: notification.clone().into(),
                     insert_defaults: None,
                     notify_menu: true,
                     deliver_runtime: true,
@@ -246,7 +243,7 @@ fn notification_avatar_fallback_skips_owner_receiver_when_sender_is_absent() -> 
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone(),
+                    notification: notification.clone().into(),
                     insert_defaults: None,
                     notify_menu: true,
                     deliver_runtime: true,
@@ -309,7 +306,7 @@ fn notification_avatar_fallback_skips_current_user_sender() -> Result<()> {
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone(),
+                    notification: notification.clone().into(),
                     insert_defaults: None,
                     notify_menu: true,
                     deliver_runtime: true,
@@ -344,11 +341,7 @@ fn notification_avatar_fallback_skips_current_user_sender() -> Result<()> {
 fn notification_avatar_fallback_respects_vrc_plus_icon_preference() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("notification-avatar-vrc-plus-disabled")?;
-    config_store::set_bool(
-        runtime.runtime().deps.db.as_ref(),
-        "displayVRCPlusIconsAsAvatar",
-        false,
-    )?;
+    config_store::set_bool(runtime.database(), "displayVRCPlusIconsAsAvatar", false)?;
     runtime.runtime().ingest_user_facts(vec![json!({
         "user": {
             "id": "usr_sender",
@@ -377,7 +370,7 @@ fn notification_avatar_fallback_respects_vrc_plus_icon_preference() -> Result<()
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone(),
+                    notification: notification.clone().into(),
                     insert_defaults: None,
                     notify_menu: true,
                     deliver_runtime: true,
@@ -442,14 +435,14 @@ fn notification_avatar_fallback_preserves_existing_image_and_skips_group_sender(
                 generation: 7,
                 upserts: vec![
                     RealtimeNotificationUpsert {
-                        notification: existing_image.clone(),
+                        notification: existing_image.clone().into(),
                         insert_defaults: None,
                         notify_menu: true,
                         deliver_runtime: true,
                         run_automation: false,
                     },
                     RealtimeNotificationUpsert {
-                        notification: group_sender.clone(),
+                        notification: group_sender.clone().into(),
                         insert_defaults: None,
                         notify_menu: true,
                         deliver_runtime: true,
@@ -512,7 +505,7 @@ fn unresolved_person_location_notification_persists_without_runtime_projection()
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone(),
+                    notification: notification.clone().into(),
                     insert_defaults: None,
                     notify_menu: true,
                     deliver_runtime: true,
@@ -535,7 +528,7 @@ fn unresolved_person_location_notification_persists_without_runtime_projection()
     );
 
     let rows = notification_list_query(
-        runtime.runtime().deps.db.as_ref(),
+        runtime.database(),
         NotificationListQueryInput {
             user_id: active_session.user_id,
             search: String::new(),
@@ -591,7 +584,7 @@ fn resolved_sender_does_not_wait_for_world_or_avatar() -> Result<()> {
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification,
+                    notification: notification.into(),
                     insert_defaults: None,
                     notify_menu: false,
                     deliver_runtime: true,
@@ -719,7 +712,8 @@ fn notification_facts_prefer_the_current_friend_record() -> Result<()> {
                         "type": "friendRequest",
                         "senderUserId": "usr_target",
                         "senderUsername": "usr_target"
-                    }),
+                    })
+                    .into(),
                     insert_defaults: None,
                     notify_menu: false,
                     deliver_runtime: true,
@@ -760,7 +754,7 @@ fn notification_v2_update_sanitizes_id_like_names_before_persistence() -> Result
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: initial.clone(),
+                    notification: initial.clone().into(),
                     insert_defaults: None,
                     notify_menu: false,
                     deliver_runtime: false,
@@ -791,12 +785,15 @@ fn notification_v2_update_sanitizes_id_like_names_before_persistence() -> Result
             projection: RealtimeNotificationProjection {
                 generation: 7,
                 upserts: vec![RealtimeNotificationUpsert {
-                    notification: update.clone(),
-                    insert_defaults: Some(json!({
-                        "createdAt": "2026-06-21T00:01:00.000Z",
-                        "created_at": "2026-06-21T00:01:00.000Z",
-                        "seen": false
-                    })),
+                    notification: update.clone().into(),
+                    insert_defaults: Some(
+                        json!({
+                            "createdAt": "2026-06-21T00:01:00.000Z",
+                            "created_at": "2026-06-21T00:01:00.000Z",
+                            "seen": false
+                        })
+                        .into(),
+                    ),
                     notify_menu: false,
                     deliver_runtime: false,
                     run_automation: false,
@@ -814,7 +811,7 @@ fn notification_v2_update_sanitizes_id_like_names_before_persistence() -> Result
         });
 
     let rows = notification_list_query(
-        runtime.runtime().deps.db.as_ref(),
+        runtime.database(),
         NotificationListQueryInput {
             user_id: active_session.user_id,
             search: String::new(),

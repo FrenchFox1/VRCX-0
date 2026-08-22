@@ -3,13 +3,11 @@ use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Mutex,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[cfg(test)]
 use std::time::Duration;
 use vrcx_0_core::time::now_iso;
-use vrcx_0_persistence::mutual_graph::{MutualGraphMetaInput, MutualGraphSnapshotEntryInput};
-use vrcx_0_persistence::DatabaseService;
 
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
@@ -22,7 +20,8 @@ use super::request::{
 };
 use super::types::{
     MutualGraphFetchCancelInput, MutualGraphFetchStartInput, MutualGraphFetchState,
-    MutualGraphFetchStatus,
+    MutualGraphFetchStatus, MutualGraphMetaInput, MutualGraphRemoteRequests,
+    MutualGraphSnapshotEntryInput, MutualGraphStore,
 };
 
 #[derive(Clone)]
@@ -46,7 +45,8 @@ struct MutualGraphFetchJob {
     owner_user_id: OwnerId,
     endpoint: String,
     friend_ids: Vec<String>,
-    db: Arc<DatabaseService>,
+    store: Arc<dyn MutualGraphStore>,
+    remote_requests: Arc<dyn MutualGraphRemoteRequests>,
     web: Arc<WebClient>,
     auth_scope: RuntimeAuthScope,
     expected_scope: RuntimeAuthScopeSnapshot,
@@ -88,7 +88,8 @@ impl MutualGraphFetchRuntime {
     pub fn start(
         &self,
         input: MutualGraphFetchStartInput,
-        db: Arc<DatabaseService>,
+        store: Arc<dyn MutualGraphStore>,
+        remote_requests: Arc<dyn MutualGraphRemoteRequests>,
         web: Arc<WebClient>,
         auth_scope: RuntimeAuthScope,
         tasks: TaskSupervisor,
@@ -148,7 +149,8 @@ impl MutualGraphFetchRuntime {
                     owner_user_id: OwnerId::new(owner_user_id),
                     endpoint,
                     friend_ids,
-                    db,
+                    store,
+                    remote_requests,
                     web,
                     auth_scope,
                     expected_scope,
@@ -199,7 +201,8 @@ impl MutualGraphFetchRuntime {
             owner_user_id,
             endpoint,
             friend_ids,
-            db,
+            store,
+            remote_requests,
             web,
             auth_scope,
             expected_scope,
@@ -215,7 +218,7 @@ impl MutualGraphFetchRuntime {
         let mut last_error = None;
         let mut fetch_context = MutualGraphFetchContext {
             web: web.as_ref(),
-            db: db.as_ref(),
+            remote_requests: remote_requests.as_ref(),
             endpoint: &endpoint,
             cancel_flag: &cancel_flag,
             auth_scope: &auth_scope,
@@ -295,10 +298,7 @@ impl MutualGraphFetchRuntime {
         }
 
         if !failed_friend_ids.is_empty() {
-            match vrcx_0_persistence::mutual_graph::mutual_graph_snapshot_get(
-                db.as_ref(),
-                owner_user_id.to_string(),
-            ) {
+            match store.snapshot_get(owner_user_id.to_string()) {
                 Ok(cached) => preserve_failed_friend_cache(
                     &mut entries,
                     &mut meta_entries,
@@ -321,12 +321,7 @@ impl MutualGraphFetchRuntime {
             return;
         }
 
-        match vrcx_0_persistence::mutual_graph::mutual_graph_snapshot_commit(
-            db.as_ref(),
-            owner_user_id.to_string(),
-            entries,
-            meta_entries,
-        ) {
+        match store.snapshot_commit(owner_user_id.to_string(), entries, meta_entries) {
             Ok(()) => {
                 self.finish_run(run_id, MutualGraphFetchState::Completed, last_error);
             }

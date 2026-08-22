@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use serde_json::{json, Value};
 use vrcx_0_application_core::InstanceDwellRegistry;
+use vrcx_0_contracts::realtime::FriendLogDelete;
 use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
-use vrcx_0_persistence::realtime::FriendLogDelete;
 
 use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
@@ -20,7 +20,7 @@ use super::persistence::{
 };
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY_MS};
 use super::utils::{first_owned, parse_location, EventTime, JsonExt};
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 mod event_split;
 mod patch_builders;
@@ -136,7 +136,13 @@ fn apply_friend_event_with_source(
         FriendEventKind::Location => apply_location(state, &mut output, content, now)?,
     }
 
-    let mut feed_entries = output.persistence.feed_entries.clone();
+    let mut feed_entries = output
+        .persistence
+        .feed_entries
+        .iter()
+        .cloned()
+        .map(vrcx_0_core::json::RawJson::from)
+        .collect::<Vec<_>>();
     feed_entries.append(&mut output.projection.feed_entries);
     output.projection.feed_entries = feed_entries;
     if output.projection.patches.is_empty()
@@ -845,7 +851,7 @@ pub(super) fn apply_record_patch_to_state(
         &transition.next,
         created_at,
     ) {
-        output.projection.feed_entries.push(entry);
+        output.projection.feed_entries.push(entry.into());
     }
 
     let friend_was_added = match state.baseline.as_mut() {

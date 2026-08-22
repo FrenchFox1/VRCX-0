@@ -11,17 +11,7 @@ pub use model::{
     FRIENDS_PANEL_LASER_LEFT_SURFACE_ID, FRIENDS_PANEL_LASER_RIGHT_SURFACE_ID,
     FRIENDS_PANEL_SURFACE_ID, LEGACY_DUMMY_PANEL_ID, MAIN_SURFACE_ID,
 };
-#[cfg(all(feature = "slint-ui", feature = "friends-panel"))]
-pub use slint_ui::{
-    default_slint_panel_size, SlintPanelEvent, SlintPanelFrame, SlintPanelHost,
-    SlintPanelPointerEvent, SlintPanelRenderStats,
-};
 #[cfg(feature = "slint-ui")]
 pub use slint_ui::{SlintHmdRenderer, SlintWristRenderer};
-#[cfg(feature = "friends-panel")]
-pub use surfaces::friends_panel::{
-    FavoriteFriendsPanelModel, FriendPanelCategory, FriendPanelRow, FriendPanelRowActions,
-    FriendPanelRowPrimaryAction, FriendPanelStatusTone, FriendPanelStrings,
-};
 pub use surfaces::main::{AvatarBitmap, MainSurfaceModel, ToastCard};
 pub use surfaces::wrist::WristSurfaceModel;

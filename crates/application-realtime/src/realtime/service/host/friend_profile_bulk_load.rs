@@ -8,7 +8,7 @@ use tokio::time::Instant;
 use vrcx_0_application_core::{Error, Result};
 pub use vrcx_0_application_core::{FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload};
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use crate::realtime::{
     RealtimeSessionContext, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,

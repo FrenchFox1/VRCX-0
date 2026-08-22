@@ -7,7 +7,6 @@ description = "VR overlay runtime"
 
 [features]
 default = []
-friends-panel = ["vrcx-0-vr-overlay/friends-panel"]
 steamvr-overlay = ["vrcx-0-host-desktop/steamvr-overlay"]
 openxr-overlay = ["vrcx-0-host-desktop/openxr-overlay"]
 
@@ -29,5 +28,7 @@ vrcx-0-core = { path = "../core" }
 vrcx-0-host-desktop = { path = "../host-desktop" }
 vrcx-0-i18n = { path = "../i18n" }
 vrcx-0-persistence = { path = "../persistence" }
-vrcx-0-composition = { path = "../composition" }
 vrcx-0-vr-overlay = { path = "../vr-overlay", features = ["slint-ui"] }
+
+[dev-dependencies]
+vrcx-0-outbound-adapters = { path = "../outbound-adapters" }

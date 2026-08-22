@@ -5,10 +5,10 @@ use rmcp::model::CallToolResult;
 use rmcp::schemars;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_persistence::social_aggregates;
+use vrcx_0_contracts::social_aggregates;
 
 use crate::runtime::McpRuntime;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 pub(super) fn deserialize_optional_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
@@ -346,16 +346,15 @@ pub(super) fn resolve_target(
         });
     }
     let owner_user_id = require_current_user_id(runtime)?;
-    let rows = social_aggregates::resolve_user_by_name(
-        runtime.db.as_ref(),
-        social_aggregates::ResolveUserInput {
+    let rows = runtime
+        .social_history_queries
+        .resolve_user(social_aggregates::ResolveUserInput {
             owner_user_id: owner_user_id.clone(),
             name_query: value.to_string(),
             limit: Some(5),
-        },
-    )
-    .map_err(map_persistence_error)?
-    .rows;
+        })
+        .map_err(map_application_query_error)?
+        .rows;
     Ok(resolve_target_from_candidates(value, rows))
 }
 
@@ -460,9 +459,9 @@ pub(super) fn not_found_result(query: &str) -> Result<CallToolResult, String> {
     })
 }
 
-pub(super) fn map_persistence_error(error: vrcx_0_persistence::Error) -> String {
+pub(super) fn map_application_query_error(error: vrcx_0_application_core::Error) -> String {
     match error {
-        vrcx_0_persistence::Error::InvalidData(message) => message,
+        vrcx_0_application_core::Error::PersistenceInvalidData(message) => message,
         other => {
             tracing::warn!("MCP persistence query failed: {other}");
             "internal data error while reading local VRCX-0 data".into()
@@ -476,12 +475,12 @@ pub(super) fn structured_result(value: impl Serialize) -> Result<CallToolResult,
         .map_err(|error| format!("serialize MCP tool result: {error}"))
 }
 
-pub(super) fn social_aggregates_result<T: Serialize>(
-    result: Result<T, vrcx_0_persistence::Error>,
+pub(super) fn application_query_result<T: Serialize>(
+    result: vrcx_0_application_core::Result<T>,
 ) -> Result<CallToolResult, String> {
     match result {
         Ok(value) => structured_result(value),
-        Err(vrcx_0_persistence::Error::InvalidData(message)) => Err(message),
+        Err(vrcx_0_application_core::Error::PersistenceInvalidData(message)) => Err(message),
         Err(error) => {
             tracing::warn!("MCP social query failed: {error}");
             Err("internal data error while reading local VRCX-0 data".into())

@@ -15,6 +15,7 @@ pub mod json;
 pub mod location;
 pub mod notification_kind;
 mod open_string_enum;
+pub mod owner;
 pub mod proxy;
 pub mod realtime;
 pub mod release_status;
@@ -39,5 +40,6 @@ pub use group::{
 pub use group_permission::GroupPermission;
 pub use location::{GroupAccessType, InstanceRegion, InstanceType};
 pub use notification_kind::NotificationKind;
+pub use owner::OwnerId;
 pub use release_status::ReleaseStatus;
 pub use two_factor_method::TwoFactorMethod;

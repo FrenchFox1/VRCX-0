@@ -1,6 +1,6 @@
 use serde_json::json;
+use vrcx_0_contracts::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
-use vrcx_0_persistence::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 
 use crate::realtime::{
     PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserGameLogContext,

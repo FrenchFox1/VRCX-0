@@ -1,54 +1,122 @@
-use chrono::Utc;
-use vrcx_0_persistence::{maintenance::avatar_auto_cleanup_run, DatabaseService};
+use std::sync::Arc;
+use std::time::Duration;
 
-pub fn run_authenticated_session_maintenance(db: &DatabaseService, user_id: &str) {
+use chrono::{DateTime, Utc};
+use vrcx_0_application_core::{Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, TaskSupervisor};
+
+const AUTHENTICATED_SESSION_MAINTENANCE_DELAY: Duration = Duration::from_secs(30);
+
+pub trait AuthenticatedSessionMaintenance: Send + Sync {
+    fn run_avatar_cleanup(&self, user_id: &str, now: DateTime<Utc>) -> Result<()>;
+}
+
+pub fn run_authenticated_session_maintenance(
+    maintenance: &dyn AuthenticatedSessionMaintenance,
+    user_id: &str,
+) {
     let user_id = user_id.trim();
     if user_id.is_empty() {
         tracing::warn!("authenticated session maintenance skipped without a user id");
         return;
     }
-    if let Err(error) = avatar_auto_cleanup_run(db, user_id, Utc::now()) {
+    if let Err(error) = maintenance.run_avatar_cleanup(user_id, Utc::now()) {
         tracing::warn!(user_id, error = %error, "avatar auto-cleanup failed");
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::path::PathBuf;
+pub struct AuthenticatedSessionMaintenanceRuntime {
+    auth_scope: RuntimeAuthScope,
+    tasks: TaskSupervisor,
+    maintenance: Arc<dyn AuthenticatedSessionMaintenance>,
+}
 
-    use super::*;
-
-    struct TestDir(PathBuf);
-
-    impl TestDir {
-        fn new() -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!(
-                "vrcx-0-auth-maintenance-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&path).unwrap();
-            Self(path)
+impl AuthenticatedSessionMaintenanceRuntime {
+    pub fn new(
+        auth_scope: RuntimeAuthScope,
+        tasks: TaskSupervisor,
+        maintenance: Arc<dyn AuthenticatedSessionMaintenance>,
+    ) -> Self {
+        Self {
+            auth_scope,
+            tasks,
+            maintenance,
         }
     }
 
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
+    pub fn schedule(&self, expected_scope: RuntimeAuthScopeSnapshot) {
+        let auth_scope = self.auth_scope.clone();
+        let maintenance = Arc::clone(&self.maintenance);
+        self.tasks.spawn_cancellable(move |stop_token| async move {
+            tokio::time::sleep(AUTHENTICATED_SESSION_MAINTENANCE_DELAY).await;
+            if stop_token.is_stop_requested()
+                || !authenticated_session_maintenance_scope_matches(&auth_scope, &expected_scope)
+            {
+                return;
+            }
+            let blocking_auth_scope = auth_scope.clone();
+            if let Err(error) = tokio::task::spawn_blocking(move || {
+                if authenticated_session_maintenance_scope_matches(
+                    &blocking_auth_scope,
+                    &expected_scope,
+                ) {
+                    run_authenticated_session_maintenance(
+                        maintenance.as_ref(),
+                        &expected_scope.current_user_id,
+                    );
+                }
+            })
+            .await
+            {
+                tracing::warn!(error = %error, "authenticated session maintenance task failed");
+            }
+        });
+    }
+}
+
+fn authenticated_session_maintenance_scope_matches(
+    auth_scope: &RuntimeAuthScope,
+    expected: &RuntimeAuthScopeSnapshot,
+) -> bool {
+    auth_scope.snapshot().generation_matches(expected)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct FailingMaintenance;
+
+    impl AuthenticatedSessionMaintenance for FailingMaintenance {
+        fn run_avatar_cleanup(&self, _user_id: &str, _now: DateTime<Utc>) -> Result<()> {
+            Err(vrcx_0_application_core::Error::Custom("frozen".into()))
         }
     }
 
     #[test]
     fn cleanup_failure_does_not_escape_authenticated_session_maintenance() {
-        let dir = TestDir::new();
-        let db = DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap();
-        let _frozen = db.freeze_for_migration().unwrap();
+        run_authenticated_session_maintenance(&FailingMaintenance, "usr_self");
+    }
 
-        run_authenticated_session_maintenance(&db, "usr_self");
+    #[test]
+    fn maintenance_scope_rejects_account_switches_and_logout() {
+        let auth_scope = RuntimeAuthScope::new();
+        let first = auth_scope.set("usr_first", "");
+        assert!(authenticated_session_maintenance_scope_matches(
+            &auth_scope,
+            &first
+        ));
 
-        assert!(!db.is_main_mode());
+        auth_scope.set("usr_second", "");
+        assert!(!authenticated_session_maintenance_scope_matches(
+            &auth_scope,
+            &first
+        ));
+
+        let second = auth_scope.snapshot();
+        auth_scope.set("", "");
+        assert!(!authenticated_session_maintenance_scope_matches(
+            &auth_scope,
+            &second
+        ));
     }
 }

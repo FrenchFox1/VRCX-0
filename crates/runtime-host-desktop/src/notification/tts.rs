@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 
+use vrcx_0_application_activity::notification::{
+    render_delivery, OverlayLocale, RenderedNotification,
+};
 use vrcx_0_application_activity::OverlayActivityDelivery;
-use vrcx_0_composition::notification::{render_delivery, OverlayLocale, RenderedNotification};
 use vrcx_0_host_desktop::tts::TtsEngine;
 use vrcx_0_persistence::DatabaseService;
 

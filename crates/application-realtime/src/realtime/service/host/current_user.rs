@@ -3,8 +3,7 @@ use std::sync::Arc;
 use serde_json::Value;
 use tokio::sync::watch;
 use vrcx_0_application_core::{Error, LocalGameContextSnapshot, Result};
-use vrcx_0_vrchat_client::auth::current_user_get_input;
-use vrcx_0_vrchat_client::http_api::ApiScope;
+use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
 
 use crate::realtime::{
     PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserGameLogContext,
@@ -105,14 +104,21 @@ impl RealtimeHostRuntime {
     ) {
         let runtime = Arc::clone(self);
         self.deps.tasks.spawn(async move {
+            let request = match runtime
+                .deps
+                .remote_requests
+                .current_user(session.endpoint.clone())
+            {
+                Ok(request) => request,
+                Err(error) => {
+                    tracing::warn!("Realtime current user refresh input failed: {error}");
+                    return;
+                }
+            };
             let response = match runtime
                 .deps
                 .web
-                .execute_api(
-                    current_user_get_input(session.endpoint.clone()),
-                    ApiScope::Vrchat,
-                    &runtime.deps.db,
-                )
+                .execute_api(request, ApiScope::Vrchat)
                 .await
             {
                 Ok(result) => result,
@@ -242,9 +248,10 @@ impl RealtimeHostRuntime {
             .deps
             .web
             .execute_api(
-                current_user_get_input(active.session.endpoint.clone()),
+                self.deps
+                    .remote_requests
+                    .current_user(active.session.endpoint.clone())?,
                 ApiScope::Vrchat,
-                &self.deps.db,
             )
             .await?;
         if !(200..300).contains(&response.status) {

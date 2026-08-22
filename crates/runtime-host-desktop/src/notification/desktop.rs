@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use vrcx_0_composition::notification::RenderedNotification;
+use vrcx_0_application_activity::notification::RenderedNotification;
 use vrcx_0_core::vrchat_ids::is_user_id;
 
 use super::NotificationDeliveryPreferences;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DesktopNotificationAction {
@@ -99,7 +99,7 @@ fn non_empty(value: &str) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
-    use vrcx_0_persistence::OwnerId;
+    use vrcx_0_core::OwnerId;
 
     use super::DesktopNotificationAction;
 

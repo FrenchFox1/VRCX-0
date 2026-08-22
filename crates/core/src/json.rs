@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use std::ops::{Deref, DerefMut};
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, specta::Type)]
 #[serde(transparent)]
 pub struct RawJson(pub Value);
 
@@ -15,9 +16,57 @@ impl RawJson {
     }
 }
 
+impl Deref for RawJson {
+    type Target = Value;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_value()
+    }
+}
+
+impl DerefMut for RawJson {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl From<Value> for RawJson {
     fn from(value: Value) -> Self {
         Self(value)
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, specta::Type)]
+#[serde(transparent)]
+pub struct RawJsonObject(pub Map<String, Value>);
+
+impl RawJsonObject {
+    pub fn as_map(&self) -> &Map<String, Value> {
+        &self.0
+    }
+
+    pub fn into_map(self) -> Map<String, Value> {
+        self.0
+    }
+}
+
+impl From<Map<String, Value>> for RawJsonObject {
+    fn from(value: Map<String, Value>) -> Self {
+        Self(value)
+    }
+}
+
+impl Deref for RawJsonObject {
+    type Target = Map<String, Value>;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_map()
+    }
+}
+
+impl DerefMut for RawJsonObject {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

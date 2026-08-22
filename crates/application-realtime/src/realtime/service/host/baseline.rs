@@ -7,6 +7,7 @@ use vrcx_0_core::derived_keys;
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
+use vrcx_0_core::json::RawJson;
 
 use crate::realtime::friends::{player_joining_feed_entry, PendingOfflineSchedule};
 use crate::realtime::{
@@ -20,7 +21,7 @@ use crate::social_baseline::service::{
 
 use super::state::{ActiveRealtimeContext, PendingFriendBaseline, ScopedFriendLogMutation};
 use super::RealtimeHostRuntime;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 enum FriendBaselineSyncMode {
     Direct {
@@ -63,16 +64,16 @@ impl RealtimeHostRuntime {
 
     pub fn run_friend_log_current_mutation<T>(
         &self,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
-    ) -> vrcx_0_persistence::Result<T> {
+        mutation: impl FnOnce() -> Result<T>,
+    ) -> Result<T> {
         self.run_friend_log_current_mutation_with_effect(mutation, None)
     }
 
     pub(super) fn run_friend_log_current_mutation_with_effect<T>(
         &self,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
+        mutation: impl FnOnce() -> Result<T>,
         effect: Option<ScopedFriendLogMutation>,
-    ) -> vrcx_0_persistence::Result<T> {
+    ) -> Result<T> {
         let _owner = self.lock_friend_owner();
         let result = mutation();
         if result.is_ok() {
@@ -212,7 +213,7 @@ impl RealtimeHostRuntime {
                     let roster_order =
                         roster_order_from_friend_records(&pending_snapshot.friends_by_id);
                     reconcile_friend_roster_records(
-                        self.deps.db.as_ref(),
+                        self.deps.store.as_ref(),
                         &pending_snapshot.current_user_id,
                         &pending_snapshot.friends_by_id,
                         roster_order.as_deref(),
@@ -345,7 +346,7 @@ impl RealtimeHostRuntime {
                 .map(|snapshot| {
                     let roster_order = roster_order_from_friend_records(&snapshot.friends_by_id);
                     reconcile_friend_roster_records(
-                        self.deps.db.as_ref(),
+                        self.deps.store.as_ref(),
                         &snapshot.current_user_id,
                         &snapshot.friends_by_id,
                         roster_order.as_deref(),
@@ -362,7 +363,11 @@ impl RealtimeHostRuntime {
             let mut projection = baseline_projection.unwrap_or_else(|| {
                 FriendProjection::new(result.generation, result.baseline_revision)
             });
-            let mut feed_entries = confirmed_feed_entries.clone();
+            let mut feed_entries = confirmed_feed_entries
+                .iter()
+                .cloned()
+                .map(RawJson::from)
+                .collect::<Vec<_>>();
             feed_entries.append(&mut projection.feed_entries);
             projection.feed_entries = feed_entries;
             let mut output = RealtimeFriendOutput::from_projection(
@@ -469,7 +474,7 @@ fn friend_snapshot_diff_projection(
                 state_bucket_authority: FriendStateBucketAuthority::Explicit,
             });
         if let Some(entry) = joining_entry {
-            projection.feed_entries.push(entry);
+            projection.feed_entries.push(entry.into());
         }
     }
 

@@ -2,11 +2,11 @@ use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::Deserialize;
-use vrcx_0_persistence::social_aggregates;
+use vrcx_0_contracts::social_aggregates;
 
 use crate::server::VrcxMcpServer;
 
-use super::common::{require_current_user_id, social_aggregates_result, TimeWindowParams};
+use super::common::{application_query_result, require_current_user_id, TimeWindowParams};
 
 #[tool_router(router = invites_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -18,8 +18,7 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<InviteHistoryParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        social_aggregates_result(social_aggregates::get_invite_history(
-            self.runtime.db.as_ref(),
+        application_query_result(self.runtime.social_history_queries.invite_history(
             social_aggregates::InviteHistoryInput {
                 owner_user_id: owner_user_id.clone(),
                 time_window: input.time_window.into(),

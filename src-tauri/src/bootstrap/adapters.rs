@@ -196,7 +196,7 @@ fn is_gui_background_runtime_hidden(app_handle: &tauri::AppHandle) -> bool {
     let Some(state) = app_handle.try_state::<AppState>() else {
         return false;
     };
-    let snapshot = state.snapshot_backend_runtime();
+    let snapshot = state.runtime_host().backend_runtime_snapshot();
     snapshot.mode == BackendRuntimeMode::Background
         && snapshot.phase == BackendRuntimePhase::Running
 }
@@ -210,7 +210,7 @@ fn log_gui_background_runtime_info(
         let Some(state) = app_handle.try_state::<AppState>() else {
             return;
         };
-        let snapshot = state.snapshot_backend_runtime();
+        let snapshot = state.runtime_host().backend_runtime_snapshot();
         if snapshot.mode != BackendRuntimeMode::Background
             || snapshot.phase != BackendRuntimePhase::Running
         {
@@ -237,7 +237,7 @@ fn log_gui_background_runtime_info(
     let Some(state) = app_handle.try_state::<AppState>() else {
         return;
     };
-    let current_snapshot = state.snapshot_backend_runtime();
+    let current_snapshot = state.runtime_host().backend_runtime_snapshot();
     if current_snapshot.mode != BackendRuntimeMode::Background
         || !matches!(
             current_snapshot.phase,
@@ -353,27 +353,26 @@ impl RuntimeTaskExecutor for TauriRuntimeTaskExecutor {
 }
 
 pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
-    state.set_event_sink(TauriRuntimeEventSink::new(app.clone()));
     state
-        .desktop
-        .services
-        .host
-        .set_actions(TauriRuntimeHostActions::new(app.clone()));
+        .runtime_host()
+        .set_runtime_event_sink(TauriRuntimeEventSink::new(app.clone()));
     state
-        .runtime_context
-        .tasks
-        .set_executor(TauriRuntimeTaskExecutor);
-    state.start_telemetry_runtime();
-    state.start_data_services();
-    state.start_game_services();
-    state.start_desktop_services();
+        .runtime_host()
+        .set_runtime_host_actions(TauriRuntimeHostActions::new(app.clone()));
+    state
+        .runtime_host()
+        .set_runtime_task_executor(TauriRuntimeTaskExecutor);
+    state.runtime_host().start_telemetry_runtime();
+    state.runtime_host().start_data_services();
+    state.runtime_host().start_game_services();
+    state.runtime_host().start_desktop_services();
 
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     if is_host_capability_available(HostCapability::GameLogWatcher) {
-        let game = &state.game;
-        state
-            .log_watcher_compat_bridge
-            .start(app.clone(), game.log_watcher.clone());
+        state.log_watcher_compat_bridge().start(
+            app.clone(),
+            state.runtime_host().log_watcher_for_compatibility(),
+        );
     }
 }
 
@@ -615,10 +614,10 @@ pub(super) fn start_mcp_server_if_enabled(app: &tauri::AppHandle) {
         let Some(state) = app.try_state::<AppState>() else {
             return;
         };
-        match state.mcp_controller.start_from_config().await {
+        match state.mcp_controller().start_from_config().await {
             Ok(status) => {
                 if matches!(status.state, vrcx_0_mcp::McpServerState::Running) {
-                    state.runtime_context.sync.record(
+                    state.runtime_host().record_sync(
                         "mcpServer",
                         RuntimeOperationStatus::Running,
                         format!(
@@ -631,9 +630,8 @@ pub(super) fn start_mcp_server_if_enabled(app: &tauri::AppHandle) {
             }
             Err(error) => {
                 state
-                    .runtime_context
-                    .sync
-                    .record_failure("mcpServer", error.to_string());
+                    .runtime_host()
+                    .record_sync_failure("mcpServer", error.to_string());
             }
         }
     });

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use vrcx_0_application::{PrintCleanupDeps, PrintCleanupTrigger};
+use vrcx_0_application::social::{PrintCleanupDeps, PrintCleanupTrigger};
 
 use super::super::{
     background_capability_session_identity, BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS,
@@ -24,13 +24,13 @@ pub(in crate::state) fn run_background_print_cleanup(context: &BackgroundTickCon
 
     context.runtime_context.print_cleanup.schedule(
         &context.runtime_context.tasks,
-        PrintCleanupDeps {
-            db: Arc::clone(context.db),
-            web: Arc::clone(context.web),
-            event_bus: context.runtime_context.event_bus.clone(),
-            auth_scope: context.runtime_context.auth_scope.clone(),
-            remote_mutations: Arc::clone(&context.runtime_context.remote_mutations),
-        },
+        PrintCleanupDeps::new(
+            context.runtime_context.print_adapter.clone(),
+            context.runtime_context.print_adapter.clone(),
+            context.runtime_context.event_bus.clone(),
+            context.runtime_context.auth_scope.clone(),
+            Arc::clone(&context.runtime_context.remote_mutations),
+        ),
         PrintCleanupTrigger {
             user_id: session.current_user_id,
             endpoint: session.endpoint,

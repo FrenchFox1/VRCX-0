@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use moka::future::Cache;
 use moka::Expiry;
 
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Error;

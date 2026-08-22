@@ -5,15 +5,15 @@ mod game_log;
 mod game_log_parser;
 mod game_log_watcher;
 mod overlay_activity;
+mod ports;
 mod process_monitor;
 mod registry_backup;
-mod screenshots;
 mod worker;
 
 use vrcx_0_application_core::{
-    sleep_interruptibly, Error, HostSessionRuntime, ImageCache, LocalGameContextSnapshot,
+    sleep_interruptibly, Error, HostSessionRuntime, LocalGameContextSnapshot,
     LocalGameContextSource, Result, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine,
-    TaskStopToken, TaskSupervisor, WebClient, WorldCache,
+    TaskSupervisor, WorldCache,
 };
 
 pub use background_capabilities::{
@@ -34,9 +34,9 @@ pub use game_client::{
 pub use game_event_bus::{
     AddGameLogEventPayload, CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent,
     GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, GameLogSideEffectObserver,
-    GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload, RuntimeGameEventBusExt,
-    RuntimeGameLogEventPayload, RuntimeNotificationLevel, RuntimeNotificationPayload,
-    RuntimeWorkerErrorPayload, ScreenshotProcessedPayload,
+    GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload, NowPlayingSnapshot,
+    RuntimeGameEventBusExt, RuntimeGameLogEventPayload, RuntimeNotificationLevel,
+    RuntimeNotificationPayload, RuntimeWorkerErrorPayload, ScreenshotProcessedPayload,
 };
 pub use game_log::{
     duration_ms, game_log_sessions_query, instance_history_query, parse_event_time_ms, player_key,
@@ -55,23 +55,15 @@ pub use game_log_watcher::{
     LogWatcher, NoopLogLocationSnapshotScanner,
 };
 pub use overlay_activity::OverlayActivityGameIngestExt;
+pub use ports::{
+    BackgroundRemoteApi, GameStateStore, InstanceMediaPort, PlayerLocationRecord, VideoMetadataPort,
+};
 pub use process_monitor::{GameProcessMonitorActions, GameProcessStatus, ProcessMonitor};
 pub use registry_backup::{
-    registry_backup_create, registry_backup_delete, registry_backup_export_json,
-    registry_backup_foreground_followup, registry_backup_import_json, registry_backup_list,
-    registry_backup_maintenance_run, registry_backup_restore,
-    registry_backup_restore_prompt_acknowledge, RegistryBackupHostActions,
+    registry_backup_create, registry_backup_delete, registry_backup_foreground_followup,
+    registry_backup_import_json, registry_backup_list, registry_backup_maintenance_run,
+    registry_backup_prepare_export, registry_backup_restore,
+    registry_backup_restore_prompt_acknowledge, RegistryBackupExport, RegistryBackupHostActions,
     RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
-};
-pub use screenshots::{
-    add_screenshot_metadata, can_decode_image, delete_all_screenshot_metadata,
-    delete_text_metadata, ensure_screenshot_thumbnail, extra_screenshot_data,
-    find_screenshot_search_results, find_screenshots, get_screenshot_metadata, has_vrcx_metadata,
-    is_path_inside_directory, is_png_file, is_screenshot_library_file_path,
-    is_vrchat_screenshot_file_path, last_screenshot, list_screenshot_folder_images,
-    list_world_screenshots, read_png_dimensions, screenshot_folder_tree, screenshot_metadata_json,
-    start_screenshot_library_scan, write_vrcx_metadata, MetadataCacheDb, ScreenshotFolderTree,
-    ScreenshotLibraryImage, ScreenshotLibraryScanStatus, ScreenshotMetadata,
-    ScreenshotSearchResult, ScreenshotSearchType,
 };
 pub use worker::{OverflowPolicy, RuntimeJobHandler, RuntimePushReport};

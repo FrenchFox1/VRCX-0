@@ -4,15 +4,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::{mpsc, oneshot};
+use vrcx_0_application_activity::notification::{
+    config_bool, extract_file_id, extract_file_version, fallback_file_version,
+    load_notification_locale, normalize_avatar_image_url_128, render_delivery, NotificationConfig,
+    OverlayLocale, RealtimeUserImageResolverSlot, RenderedNotification,
+};
 use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot,
 };
 use vrcx_0_application_core::{HostSessionRuntime, ImageCache, RuntimeAuthScope, TaskSupervisor};
-use vrcx_0_composition::notification::{
-    config_bool, extract_file_id, extract_file_version, fallback_file_version,
-    load_notification_locale, normalize_avatar_image_url_128, render_delivery, OverlayLocale,
-    RealtimeUserImageResolverSlot, RenderedNotification,
-};
 use vrcx_0_host_desktop::tts::TtsEngine;
 use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
@@ -23,7 +23,7 @@ use super::{
     decide_notification_plan, load_preferences, NotificationDeliveryGameState,
     NotificationDeliveryPlan, NotificationDeliveryPreferences,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const NOTIFICATION_IMAGE_FIRST_SEND_BUDGET: Duration = Duration::from_secs(1);
 
@@ -31,6 +31,7 @@ pub struct NotificationDispatcher {
     session: HostSessionRuntime,
     auth_scope: RuntimeAuthScope,
     config: ConfigRepository,
+    notification_config: Arc<dyn NotificationConfig>,
     image_cache: Arc<ImageCache>,
     realtime_user_image_resolver: RealtimeUserImageResolverSlot,
     output: Arc<NotificationOutputContext>,
@@ -117,6 +118,9 @@ impl<T> OrderedDeliveryBuffer<T> {
 
 impl NotificationDispatcher {
     pub fn new(deps: NotificationDispatcherDeps) -> Self {
+        let notification_config: Arc<dyn NotificationConfig> = Arc::new(
+            vrcx_0_outbound_adapters::LocalNotificationConfig::new(deps.config.clone()),
+        );
         let output = Arc::new(NotificationOutputContext {
             overlay_transport: OverlayNotificationTransport::new(),
             db: deps.db,
@@ -132,6 +136,7 @@ impl NotificationDispatcher {
             session: deps.session,
             auth_scope: deps.auth_scope,
             config: deps.config,
+            notification_config,
             image_cache: deps.image_cache,
             realtime_user_image_resolver: deps.realtime_user_image_resolver,
             output,
@@ -152,7 +157,7 @@ impl OverlayActivitySink for NotificationDispatcher {
         if !plan.has_local_transport() {
             return;
         }
-        let locale = load_notification_locale(&self.config);
+        let locale = load_notification_locale(self.notification_config.as_ref());
         let (endpoint, current_user_id) = notification_session_identity(&self.auth_scope);
         let sequence = self.next_sequence.fetch_add(1, Ordering::Relaxed);
         let priority = delivery.entry.activity_type == "OnPlayerJoining";
@@ -162,7 +167,11 @@ impl OverlayActivitySink for NotificationDispatcher {
                 &mut delivery,
                 &endpoint,
                 &current_user_id,
-                config_bool(&self.config, "displayVRCPlusIconsAsAvatar", true),
+                config_bool(
+                    self.notification_config.as_ref(),
+                    "displayVRCPlusIconsAsAvatar",
+                    true,
+                ),
                 &self.realtime_user_image_resolver,
             );
         }
@@ -326,7 +335,7 @@ fn load_game_state(
     NotificationDeliveryGameState {
         is_game_running: snapshot.is_game_running,
         is_steamvr_running: snapshot.is_steamvr_running,
-        is_game_no_vr: config_bool(config, "isGameNoVR", false),
+        is_game_no_vr: config.get_bool("isGameNoVR", false).unwrap_or(false),
     }
 }
 

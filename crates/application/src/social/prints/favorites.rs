@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 
 use serde_json::Value;
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::DatabaseService;
 
 use super::cleanup::{
     clamp_print_limit, favorite_limit_for_print_limit, CleanupWarning, PRINT_AUTO_DELETE_LIMIT_MAX,
@@ -12,10 +10,14 @@ use vrcx_0_application_core::Result;
 
 pub use super::cleanup::CleanupWarningKind;
 
-pub const AUTO_DELETE_OLD_PRINTS_CONFIG_KEY: &str = "autoDeleteOldPrints";
-pub const AUTO_DELETE_PRINTS_LIMIT_CONFIG_KEY: &str = "autoDeletePrintsLimit";
-pub const AUTO_DELETE_PRINTS_FAVORITE_IDS_CONFIG_KEY: &str = "autoDeletePrintsFavoriteIds";
 pub const DEFAULT_AUTO_DELETE_PRINTS_LIMIT: i64 = 60;
+
+pub trait PrintFavoritesStore: Send + Sync {
+    fn auto_delete_enabled(&self) -> Result<bool>;
+    fn auto_delete_limit(&self) -> Result<String>;
+    fn favorite_ids(&self) -> Result<Value>;
+    fn write_favorite_ids(&self, ids: &Value) -> Result<()>;
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -85,20 +87,12 @@ pub fn favorite_warning(favorite_count: usize, limit: i64) -> Option<CleanupWarn
     None
 }
 
-pub fn read_auto_delete_old_prints_enabled(db: &DatabaseService) -> Result<bool> {
-    Ok(config_store::get_bool(
-        db,
-        AUTO_DELETE_OLD_PRINTS_CONFIG_KEY,
-        false,
-    )?)
+pub fn read_auto_delete_old_prints_enabled(store: &dyn PrintFavoritesStore) -> Result<bool> {
+    store.auto_delete_enabled()
 }
 
-pub fn read_auto_delete_prints_limit(db: &DatabaseService) -> Result<i64> {
-    let raw = config_store::get_string(
-        db,
-        AUTO_DELETE_PRINTS_LIMIT_CONFIG_KEY,
-        &DEFAULT_AUTO_DELETE_PRINTS_LIMIT.to_string(),
-    )?;
+pub fn read_auto_delete_prints_limit(store: &dyn PrintFavoritesStore) -> Result<i64> {
+    let raw = store.auto_delete_limit()?;
     let parsed = raw
         .trim()
         .parse::<i64>()
@@ -106,36 +100,27 @@ pub fn read_auto_delete_prints_limit(db: &DatabaseService) -> Result<i64> {
     Ok(clamp_print_limit(parsed) as i64)
 }
 
-pub fn effective_favorite_limit(db: &DatabaseService) -> Result<i64> {
-    if read_auto_delete_old_prints_enabled(db)? {
-        read_auto_delete_prints_limit(db)
+pub fn effective_favorite_limit(store: &dyn PrintFavoritesStore) -> Result<i64> {
+    if read_auto_delete_old_prints_enabled(store)? {
+        read_auto_delete_prints_limit(store)
     } else {
         Ok(PRINT_AUTO_DELETE_LIMIT_MAX)
     }
 }
 
-pub fn read_favorite_ids(db: &DatabaseService) -> Result<Vec<String>> {
-    let value = config_store::get_json(
-        db,
-        AUTO_DELETE_PRINTS_FAVORITE_IDS_CONFIG_KEY,
-        serde_json::json!([]),
-    )?;
+pub fn read_favorite_ids(store: &dyn PrintFavoritesStore) -> Result<Vec<String>> {
+    let value = store.favorite_ids()?;
     Ok(favorite_ids_from_json(&value))
 }
 
-pub fn write_favorite_ids(db: &DatabaseService, ids: &[String]) -> Result<()> {
+pub fn write_favorite_ids(store: &dyn PrintFavoritesStore, ids: &[String]) -> Result<()> {
     let ids = favorite_ids_from_json(&serde_json::json!(ids));
-    config_store::set_json(
-        db,
-        AUTO_DELETE_PRINTS_FAVORITE_IDS_CONFIG_KEY,
-        &serde_json::json!(ids),
-    )?;
-    Ok(())
+    store.write_favorite_ids(&serde_json::json!(ids))
 }
 
-pub fn favorite_state(db: &DatabaseService) -> Result<PrintFavoriteState> {
-    let favorite_ids = read_favorite_ids(db)?;
-    let limit = effective_favorite_limit(db)?;
+pub fn favorite_state(store: &dyn PrintFavoritesStore) -> Result<PrintFavoriteState> {
+    let favorite_ids = read_favorite_ids(store)?;
+    let limit = effective_favorite_limit(store)?;
     let max_favorites = favorite_limit_for_print_limit(limit);
     Ok(PrintFavoriteState {
         warning: favorite_warning(favorite_ids.len(), limit),
@@ -145,15 +130,15 @@ pub fn favorite_state(db: &DatabaseService) -> Result<PrintFavoriteState> {
 }
 
 pub fn set_print_favorite(
-    db: &DatabaseService,
+    store: &dyn PrintFavoritesStore,
     print_id: &str,
     favorite: bool,
 ) -> Result<PrintFavoriteState> {
-    let current = read_favorite_ids(db)?;
-    let limit = effective_favorite_limit(db)?;
+    let current = read_favorite_ids(store)?;
+    let limit = effective_favorite_limit(store)?;
     let max_favorites = favorite_limit_for_print_limit(limit);
     let next = set_favorite_id(&current, print_id, favorite, max_favorites);
-    write_favorite_ids(db, &next)?;
+    write_favorite_ids(store, &next)?;
     Ok(PrintFavoriteState {
         warning: favorite_warning(next.len(), limit),
         favorite_ids: next,

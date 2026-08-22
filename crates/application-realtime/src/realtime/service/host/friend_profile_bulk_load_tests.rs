@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use super::friend_profile::FriendProfileRefreshExpectation;
 use super::friend_profile_bulk_load::{
@@ -118,22 +119,16 @@ fn initial_progress_counts_preloaded_friends_in_the_full_roster() {
 #[test]
 fn start_requires_active_realtime_session() -> Result<()> {
     let dir = TestDir::new("friend-profile-bulk-load-no-session");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let storage = StorageService::new(&dir.path.join("storage.json"))?;
-    let web = Arc::new(WebClient::new(
-        &storage,
-        db.as_ref(),
-        "wss://pipeline.vrchat.cloud".to_string(),
-        env!("CARGO_PKG_VERSION"),
-    )?);
+    let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
+    let web = Arc::new(WebClient::new(vrcx_0_application_core::NoopWebClientPort));
     let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
-        Arc::clone(&db),
-        512,
-        Duration::from_secs(30 * 60),
+        vrcx_0_application_core::NoopWorldCachePort,
     ));
     let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        db,
+        store: store as Arc<dyn crate::RealtimeStore>,
+        transport: Arc::new(TestRealtimeTransport),
+        remote_requests: Arc::new(TestRealtimeRemoteRequests),
         web,
         event_bus: event_bus.clone(),
         backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(

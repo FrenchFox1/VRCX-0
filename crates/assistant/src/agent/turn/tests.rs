@@ -188,7 +188,7 @@ fn empty_final_answer_can_fall_back_to_tool_error_summary() {
 
 #[test]
 fn llm_api_error_summary_omits_provider_response_body() {
-    let error = LlmError::Api {
+    let error = AssistantLlmError::Api {
         status: 429,
         message: "rate limited for org_TESTPROVIDER123456789 req_TESTREQUEST123 model qwen".into(),
     };

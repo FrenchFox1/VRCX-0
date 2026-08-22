@@ -1,15 +1,9 @@
 use serde::Serialize;
 
-use vrcx_0_persistence::game_log::get_join_leave_entries_for_location_range;
-use vrcx_0_persistence::player_list::{
-    player_list_latest_location_get, player_list_location_get, PlayerLocationOutput,
-};
-use vrcx_0_persistence::DatabaseService;
-
 use super::roster::fold_roster;
 use super::runtime_state::{parse_event_time_ms, world_id_from_location};
 use crate::Result;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const ROSTER_RANGE_END: &str = "9999-12-31T23:59:59Z";
 
@@ -73,7 +67,7 @@ fn is_live_location(location: &str) -> bool {
         && normalized != "traveling"
 }
 
-fn context_from_row(row: PlayerLocationOutput) -> PlayerListSnapshotContext {
+fn context_from_row(row: crate::PlayerLocationRecord) -> PlayerListSnapshotContext {
     PlayerListSnapshotContext {
         created_at: row.created_at,
         location: row.location,
@@ -104,14 +98,14 @@ fn empty_context(location: String, source: PlayerListSnapshotSource) -> PlayerLi
 }
 
 fn resolve_location_context(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     owner_user_id: &OwnerId,
     current_location: &str,
 ) -> Result<PlayerListSnapshotContext> {
     let normalized = current_location.trim().to_string();
 
     if is_live_location(&normalized) {
-        if let Some(row) = player_list_location_get(db, owner_user_id, normalized.clone())? {
+        if let Some(row) = store.player_location(owner_user_id, normalized.clone())? {
             return Ok(context_from_row(row));
         }
         let world_id = world_id_from_location(&normalized);
@@ -130,7 +124,7 @@ fn resolve_location_context(
         return Ok(empty_context(normalized, PlayerListSnapshotSource::Runtime));
     }
 
-    if let Some(row) = player_list_latest_location_get(db, owner_user_id)? {
+    if let Some(row) = store.latest_player_location(owner_user_id)? {
         return Ok(context_from_row(row));
     }
 
@@ -138,7 +132,7 @@ fn resolve_location_context(
 }
 
 fn rebuild_roster(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     owner_user_id: &OwnerId,
     location: &str,
     started_at: &str,
@@ -147,8 +141,7 @@ fn rebuild_roster(
     let started_at = started_at.trim();
     let started_at_ms = parse_date_ms(started_at);
     let range_start = if started_at_ms > 0 { started_at } else { "" };
-    let entries = get_join_leave_entries_for_location_range(
-        db,
+    let entries = store.join_leave_for_location(
         owner_user_id,
         location.trim(),
         range_start,
@@ -200,13 +193,13 @@ fn rebuild_roster(
 }
 
 pub fn player_list_current_snapshot(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     owner_user_id: &OwnerId,
     current_user_id: &str,
     current_location: &str,
     current_location_started_at: &str,
 ) -> Result<PlayerListSnapshotOutput> {
-    let location_context = resolve_location_context(db, owner_user_id, current_location)?;
+    let location_context = resolve_location_context(store, owner_user_id, current_location)?;
 
     let runtime_started_at = current_location_started_at.trim();
     let mut context = location_context.clone();
@@ -223,7 +216,7 @@ pub fn player_list_current_snapshot(
 
     let current_user_id = current_user_id.trim();
     let mut roster = rebuild_roster(
-        db,
+        store,
         owner_user_id,
         &context.location,
         &context.created_at,
@@ -237,7 +230,7 @@ pub fn player_list_current_snapshot(
         && db_started_at_ms < parse_date_ms(&context.created_at)
     {
         let db_roster = rebuild_roster(
-            db,
+            store,
             owner_user_id,
             &location_context.location,
             &location_context.created_at,

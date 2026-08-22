@@ -8,7 +8,7 @@ use compact_str::CompactString;
 use serde_json::{json, Value};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline, StateBucket};
 use vrcx_0_core::realtime::{RealtimeSessionContext, RealtimeWsMessagePayload};
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
@@ -25,7 +25,7 @@ use super::persistence::{is_online_state, offline_feed_entry, OfflineFeedPreviou
 use super::utils::EventTime;
 
 pub(super) use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY_MS;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct RecentGps {
@@ -498,7 +498,7 @@ impl RealtimeFriendsRuntime {
             endpoint: baseline.endpoint.clone(),
             websocket: baseline.websocket.clone(),
             friend_count: baseline.friends_by_id.len(),
-            snapshot,
+            snapshot: snapshot.into(),
         }))
     }
 
@@ -759,7 +759,13 @@ impl RealtimeFriendsRuntime {
             &now_iso,
             Utc::now().timestamp_millis(),
         ));
-        output.projection.feed_entries = output.persistence.feed_entries.clone();
+        output.projection.feed_entries = output
+            .persistence
+            .feed_entries
+            .iter()
+            .cloned()
+            .map(vrcx_0_core::json::RawJson::from)
+            .collect();
         record_output_friend_state_sequence(&mut state, &output);
         Some(output)
     }

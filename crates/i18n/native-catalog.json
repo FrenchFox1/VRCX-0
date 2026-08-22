@@ -169,62 +169,6 @@
                     "source": "overlay.generic_instance_location"
                 },
                 {
-                    "key": "overlay.friends_panel.title",
-                    "source": "overlay.friends_panel.title"
-                },
-                {
-                    "key": "overlay.friends_panel.all",
-                    "source": "overlay.friends_panel.all"
-                },
-                {
-                    "key": "overlay.friends_panel.empty",
-                    "source": "overlay.friends_panel.empty"
-                },
-                {
-                    "key": "overlay.friends_panel.note",
-                    "source": "overlay.friends_panel.note"
-                },
-                {
-                    "key": "overlay.friends_panel.memo",
-                    "source": "overlay.friends_panel.memo"
-                },
-                {
-                    "key": "overlay.friends_panel.open",
-                    "source": "overlay.friends_panel.open"
-                },
-                {
-                    "key": "overlay.friends_panel.request",
-                    "source": "overlay.friends_panel.request"
-                },
-                {
-                    "key": "overlay.friends_panel.invite",
-                    "source": "overlay.friends_panel.invite"
-                },
-                {
-                    "key": "overlay.friends_panel.favorites_online",
-                    "source": "overlay.friends_panel.favorites_online"
-                },
-                {
-                    "key": "overlay.friends_panel.same_instance",
-                    "source": "overlay.friends_panel.same_instance"
-                },
-                {
-                    "key": "overlay.friends_panel.local_favorites",
-                    "source": "overlay.friends_panel.local_favorites"
-                },
-                {
-                    "key": "overlay.friends_panel.traveling",
-                    "source": "overlay.friends_panel.traveling"
-                },
-                {
-                    "key": "overlay.friends_panel.private",
-                    "source": "overlay.friends_panel.private"
-                },
-                {
-                    "key": "overlay.friends_panel.offline",
-                    "source": "overlay.friends_panel.offline"
-                },
-                {
                     "key": "overlay.access.public",
                     "source": "dialog.new_instance.access_type_public"
                 },

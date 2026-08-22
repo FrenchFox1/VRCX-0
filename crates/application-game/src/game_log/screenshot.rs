@@ -1,16 +1,12 @@
 use chrono::{DateTime, Duration, Utc};
 use vrcx_0_application_core::RuntimeAuthIdentity;
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::game_log;
-use vrcx_0_persistence::DatabaseService;
 
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::ingest::ScreenshotInput;
 use crate::game_log::runtime_state::world_id_from_location;
-use crate::screenshots as screenshot_domain;
 use crate::{Error, Result};
 use crate::{GameLogSideEffectEvent, GameLogSideEffectSink, ScreenshotProcessedPayload};
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const FALLBACK_LOCATION_MAX_AGE_MS: i64 = 15 * 60 * 1000;
 
@@ -28,8 +24,8 @@ struct ScreenshotPlayer {
 }
 
 pub async fn handle_screenshot(
-    db: &DatabaseService,
-    host_actions: &dyn GameLogHostActions,
+    store: &dyn crate::GameStateStore,
+    host_actions: std::sync::Arc<dyn GameLogHostActions>,
     side_effect_sink: &GameLogSideEffectSink,
     author: &RuntimeAuthIdentity,
     input: ScreenshotInput,
@@ -39,22 +35,23 @@ pub async fn handle_screenshot(
         return Ok(());
     }
 
-    let screenshot_helper = config_store::get_bool(db, "screenshotHelper", true)?;
-    let modify_filename = config_store::get_bool(db, "screenshotHelperModifyFilename", false)?;
-    let copy_to_clipboard = config_store::get_bool(db, "screenshotHelperCopyToClipboard", false)?;
+    let screenshot_helper = store.get_bool("screenshotHelper", true)?;
+    let modify_filename = store.get_bool("screenshotHelperModifyFilename", false)?;
+    let copy_to_clipboard = store.get_bool("screenshotHelperCopyToClipboard", false)?;
 
     let mut next_path = screenshot_path.clone();
     if screenshot_helper {
         if let Some(context) =
-            screenshot_context(db, &OwnerId::new(author.user_id.clone()), &input)?
+            screenshot_context(store, &OwnerId::new(author.user_id.clone()), &input)?
         {
             let world_id = world_id_from_location(&context.location);
             let metadata = build_metadata(author, &context, &world_id);
             let metadata_json = serde_json::to_string(&metadata)?;
             let path_for_task = screenshot_path.clone();
             let world_id_for_task = world_id.clone();
+            let host_actions_for_task = std::sync::Arc::clone(&host_actions);
             let written = tokio::task::spawn_blocking(move || {
-                screenshot_domain::add_screenshot_metadata(
+                host_actions_for_task.add_screenshot_metadata(
                     &path_for_task,
                     &metadata_json,
                     &world_id_for_task,
@@ -82,7 +79,7 @@ pub async fn handle_screenshot(
 }
 
 fn screenshot_context(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     owner_user_id: &OwnerId,
     input: &ScreenshotInput,
 ) -> Result<Option<ScreenshotContext>> {
@@ -102,9 +99,8 @@ fn screenshot_context(
         }));
     }
 
-    game_log::ensure_game_log_tables(db)?;
-    let Some(location_entry) =
-        game_log::get_location_before_or_at(db, owner_user_id, &input.created_at)?
+    store.ensure_game_log_tables()?;
+    let Some(location_entry) = store.location_before_or_at(owner_user_id, &input.created_at)?
     else {
         return Ok(None);
     };
@@ -124,8 +120,7 @@ fn screenshot_context(
     }
 
     let mut players = Vec::<ScreenshotPlayer>::new();
-    for entry in game_log::get_join_leave_entries_for_location_range(
-        db,
+    for entry in store.join_leave_for_location(
         owner_user_id,
         &location_entry.location,
         &location_entry.created_at,

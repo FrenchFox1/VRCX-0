@@ -5,17 +5,18 @@ use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
-use vrcx_0_application::{MutualGraphFetchStartInput, MutualGraphFetchStatus};
-use vrcx_0_persistence::{mutual_graph, social_aggregates};
+use vrcx_0_application::social::{MutualGraphFetchStartInput, MutualGraphFetchStatus};
+use vrcx_0_contracts::social_aggregates;
 
 use crate::server::VrcxMcpServer;
+use crate::McpMutualGraphMeta;
 
 use super::common::{
-    map_persistence_error, require_current_user_id, resolve_optional_target_or_result,
-    resolve_target_or_result, social_aggregates_result, structured_result, TargetResolutionOutcome,
-    TimeWindowParams, WithResolution,
+    application_query_result, map_application_query_error, require_current_user_id,
+    resolve_optional_target_or_result, resolve_target_or_result, structured_result,
+    TargetResolutionOutcome, TimeWindowParams, WithResolution,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[tool_router(router = graph_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -46,17 +47,17 @@ impl VrcxMcpServer {
                 Some(TargetResolutionOutcome::ToolResult(result)) => return Ok(result),
                 None => (None, None),
             };
-        let output = social_aggregates::get_social_graph(
-            self.runtime.db.as_ref(),
-            social_aggregates::SocialGraphInput {
+        let output = self
+            .runtime
+            .social_history_queries
+            .social_graph(social_aggregates::SocialGraphInput {
                 owner_user_id: owner_user_id.clone(),
                 user_id,
                 depth: input.depth.unwrap_or(1),
                 max_nodes: input.max_nodes,
                 max_edges: input.max_edges,
-            },
-        )
-        .map_err(map_persistence_error)?;
+            })
+            .map_err(map_application_query_error)?;
         structured_result(WithResolution {
             inner: output,
             resolved_user,
@@ -71,8 +72,7 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<FriendCirclesParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        social_aggregates_result(social_aggregates::get_friend_circles(
-            self.runtime.db.as_ref(),
+        application_query_result(self.runtime.social_history_queries.friend_circles(
             social_aggregates::FriendCirclesInput {
                 owner_user_id: owner_user_id.clone(),
                 max_circles: input.max_circles,
@@ -104,16 +104,16 @@ impl VrcxMcpServer {
             TargetResolutionOutcome::Resolved(target) => target,
             TargetResolutionOutcome::ToolResult(result) => return Ok(result),
         };
-        let output = social_aggregates::get_companions_of(
-            self.runtime.db.as_ref(),
-            social_aggregates::CompanionsOfInput {
+        let output = self
+            .runtime
+            .social_history_queries
+            .companions_of(social_aggregates::CompanionsOfInput {
                 owner_user_id: owner_user_id.clone(),
                 user_id: target.user_id,
                 time_window: input.time_window.into(),
                 limit: input.limit,
-            },
-        )
-        .map_err(map_persistence_error)?;
+            })
+            .map_err(map_application_query_error)?;
         structured_result(WithResolution {
             inner: output,
             resolved_user: target.echo,
@@ -127,7 +127,7 @@ impl VrcxMcpServer {
         owner_user_id: OwnerId,
         input: RefreshMutualGraphParams,
     ) -> Result<RefreshMutualGraphOutput, String> {
-        let status = self.runtime.mutual_graph_fetch.status();
+        let status = self.runtime.mutual_graph.status();
         if status.status.is_active() {
             return Ok(RefreshMutualGraphOutput::from_status(
                 false,
@@ -143,14 +143,13 @@ impl VrcxMcpServer {
             .ok_or_else(|| {
                 "refresh_mutual_graph requires a loaded realtime friend snapshot".to_string()
             })?;
-        let graph = mutual_graph::mutual_graph_snapshot_get(
-            self.runtime.db.as_ref(),
-            owner_user_id.to_string(),
-        )
-        .map_err(map_persistence_error)?;
-        let freshness = mutual_graph_freshness(&graph.meta);
-        let meta_by_friend_id = graph
-            .meta
+        let graph_meta = self
+            .runtime
+            .mutual_graph
+            .snapshot_meta(owner_user_id.clone())
+            .map_err(map_application_query_error)?;
+        let freshness = mutual_graph_freshness(&graph_meta);
+        let meta_by_friend_id = graph_meta
             .into_iter()
             .map(|meta| (meta.friend_id.clone(), meta))
             .collect::<HashMap<_, _>>();
@@ -179,7 +178,7 @@ impl VrcxMcpServer {
                 }
                 .into(),
                 selected_friend_count: 0,
-                status: self.runtime.mutual_graph_fetch.status(),
+                status: self.runtime.mutual_graph.status(),
                 fetched_friends: freshness.fetched_friends,
                 opted_out_friends: freshness.opted_out_friends,
                 newest_fetched_at: freshness.newest_fetched_at,
@@ -189,18 +188,12 @@ impl VrcxMcpServer {
         }
         let status = self
             .runtime
-            .mutual_graph_fetch
-            .start(
-                MutualGraphFetchStartInput {
-                    owner_user_id,
-                    endpoint: self.runtime.current_endpoint(),
-                    friend_ids: friend_ids.clone(),
-                },
-                self.runtime.db.clone(),
-                self.runtime.web.clone(),
-                self.runtime.auth_scope.clone(),
-                self.runtime.tasks.clone(),
-            )
+            .mutual_graph
+            .start(MutualGraphFetchStartInput {
+                owner_user_id,
+                endpoint: self.runtime.current_endpoint(),
+                friend_ids: friend_ids.clone(),
+            })
             .map_err(|error| error.to_string())?;
         Ok(RefreshMutualGraphOutput {
             refreshed: true,
@@ -298,7 +291,7 @@ struct MutualGraphFreshness {
     newest_fetched_at: Option<String>,
     oldest_fetched_at: Option<String>,
 }
-fn mutual_graph_freshness(meta: &[mutual_graph::MutualGraphMetaOutput]) -> MutualGraphFreshness {
+fn mutual_graph_freshness(meta: &[McpMutualGraphMeta]) -> MutualGraphFreshness {
     let mut freshness = MutualGraphFreshness {
         fetched_friends: 0,
         opted_out_friends: 0,
@@ -326,10 +319,7 @@ fn mutual_graph_freshness(meta: &[mutual_graph::MutualGraphMetaOutput]) -> Mutua
     freshness
 }
 
-fn is_stale_mutual_meta(
-    meta: &mutual_graph::MutualGraphMetaOutput,
-    stale_after: DateTime<Utc>,
-) -> bool {
+fn is_stale_mutual_meta(meta: &McpMutualGraphMeta, stale_after: DateTime<Utc>) -> bool {
     DateTime::parse_from_rfc3339(&meta.last_fetched_at)
         .map(|value| value.with_timezone(&Utc) < stale_after)
         .unwrap_or(true)

@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::location::parse_location;
-use vrcx_0_persistence::social_aggregates;
 
 use crate::server::VrcxMcpServer;
 
@@ -68,9 +67,8 @@ fn build_online_friends_output(
                 location: include_location.then_some(friend.location),
                 world_id: include_location.then_some(parsed.world_id),
                 world_name: include_location.then_some(world_name),
-                instance_access_type: include_location.then_some(
-                    social_aggregates::normalize_access_bucket(&parsed.access_type),
-                ),
+                instance_access_type: include_location
+                    .then_some(normalize_access_bucket(&parsed.access_type)),
                 status: friend.status,
                 platform: if friend.platform.is_empty() {
                     friend.last_platform
@@ -96,6 +94,15 @@ fn build_online_friends_output(
             "Location visibility still follows VRChat privacy rules; private instances may be redacted."
                 .into(),
         ],
+    }
+}
+
+fn normalize_access_bucket(access_type: &str) -> String {
+    match access_type {
+        "" => "unknown".into(),
+        "invite+" => "invitePlus".into(),
+        "friends+" => "friendsPlus".into(),
+        other => other.to_string(),
     }
 }
 

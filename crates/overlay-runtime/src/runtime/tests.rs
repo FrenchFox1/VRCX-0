@@ -13,19 +13,19 @@ use vrcx_0_vr_overlay::{
 };
 
 pub(crate) struct TestOverlayRuntimeServices {
-    data: Arc<vrcx_0_composition::RuntimeHostContext>,
+    data: Arc<crate::VrOverlayRuntimeData>,
     game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
 }
 
 impl TestOverlayRuntimeServices {
-    fn new(data: Arc<vrcx_0_composition::RuntimeHostContext>) -> Self {
+    fn new(data: Arc<crate::VrOverlayRuntimeData>) -> Self {
         Self {
             data,
             game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
         }
     }
 
-    pub(crate) fn data(&self) -> &vrcx_0_composition::RuntimeHostContext {
+    pub(crate) fn data(&self) -> &crate::VrOverlayRuntimeData {
         self.data.as_ref()
     }
 
@@ -35,7 +35,7 @@ impl TestOverlayRuntimeServices {
 }
 
 impl crate::VrOverlayRuntimeServices for TestOverlayRuntimeServices {
-    fn data(&self) -> &vrcx_0_composition::RuntimeHostContext {
+    fn data(&self) -> &crate::VrOverlayRuntimeData {
         self.data()
     }
 
@@ -143,24 +143,62 @@ pub(crate) fn test_services(
     );
     let storage =
         vrcx_0_persistence::storage::StorageService::new(&dir.path.join("VRCX-0.json")).unwrap();
-    let web = Arc::new(
-        WebClient::new(
+    let web = Arc::new(WebClient::new(
+        vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
             &storage,
-            &db,
+            Arc::clone(&db),
             "https://app.example".into(),
             env!("CARGO_PKG_VERSION"),
         )
         .unwrap(),
-    );
-    let image_fetcher = web.image_fetcher().unwrap();
-    let image_cache = Arc::new(
-        vrcx_0_application_core::ImageCache::new(dir.path.join("ImageCache"), image_fetcher)
-            .unwrap(),
-    );
-    let data = Arc::new(vrcx_0_composition::RuntimeHostContext::new(
-        Arc::clone(&db),
-        web,
-        image_cache,
+    ));
+    let image_cache = Arc::new(vrcx_0_application_core::ImageCache::new(Arc::new(
+        vrcx_0_outbound_adapters::LocalImageCacheAdapter::new(
+            dir.path.join("ImageCache"),
+            Arc::clone(&web),
+        )
+        .unwrap(),
+    )));
+    let config = vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(&db));
+    let notification_config: Arc<
+        dyn vrcx_0_application_activity::notification::NotificationConfig,
+    > = Arc::new(vrcx_0_outbound_adapters::LocalNotificationConfig::new(
+        config.clone(),
+    ));
+    let overlay_activity = vrcx_0_application_activity::OverlayActivityRuntime::new();
+    let overlay_activity_sinks =
+        vrcx_0_application_activity::OverlayActivitySinkRegistry::default();
+    overlay_activity.set_sink(overlay_activity_sinks.clone());
+    let data = Arc::new(crate::VrOverlayRuntimeData::new(
+        crate::VrOverlayRuntimeDataDeps {
+            db: Arc::clone(&db),
+            web: Arc::clone(&web),
+            image_cache,
+            config,
+            notification_config,
+            notification_remote: Arc::new(vrcx_0_outbound_adapters::VrchatNotificationRemote::new(
+                Arc::clone(&web),
+                Arc::new(vrcx_0_application_core::WorldCache::new(
+                    vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
+                        Arc::clone(&db),
+                        64,
+                        std::time::Duration::from_secs(30 * 60),
+                    ),
+                )),
+            )),
+            auth_scope: vrcx_0_application_core::RuntimeAuthScope::new(),
+            session: vrcx_0_application_core::HostSessionRuntime::new(),
+            world_cache: Arc::new(vrcx_0_application_core::WorldCache::new(
+                vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
+                    Arc::clone(&db),
+                    64,
+                    std::time::Duration::from_secs(30 * 60),
+                ),
+            )),
+            tasks: vrcx_0_application_core::TaskSupervisor::new(),
+            overlay_activity,
+            overlay_activity_sinks,
+        },
     ));
     let services = Arc::new(TestOverlayRuntimeServices::new(data));
     (dir, db, services)
@@ -387,9 +425,9 @@ fn changing_all_friends_setting_rebuilds_visible_friends_panel_model() {
                     "usr_favorite".to_string(),
                     FriendRecord {
                         id: "usr_favorite".to_string(),
-                        display_name: "Favorite".to_string(),
-                        state_bucket: "online".to_string(),
-                        location: "wrld_home:123".to_string(),
+                        display_name: "Favorite".into(),
+                        state: "online".to_string().into(),
+                        location: "wrld_home:123".into(),
                         world_id: "wrld_home".to_string(),
                         ..FriendRecord::default()
                     },
@@ -398,9 +436,9 @@ fn changing_all_friends_setting_rebuilds_visible_friends_panel_model() {
                     "usr_other".to_string(),
                     FriendRecord {
                         id: "usr_other".to_string(),
-                        display_name: "Other".to_string(),
-                        state_bucket: "online".to_string(),
-                        location: "wrld_home:123".to_string(),
+                        display_name: "Other".into(),
+                        state: "online".to_string().into(),
+                        location: "wrld_home:123".into(),
                         world_id: "wrld_home".to_string(),
                         ..FriendRecord::default()
                     },
@@ -675,9 +713,9 @@ fn overlay_activity_snapshot_marks_friends_panel_dirty_for_presence_changes() {
     let runtime = Arc::new(VrOverlayRuntime::new_for_test());
     let snapshot_slot = Arc::new(Mutex::new(friends_panel_snapshot(FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state_bucket: "online".to_string(),
-        location: "wrld_home:123".to_string(),
+        display_name: "Friend".into(),
+        state: "online".to_string().into(),
+        location: "wrld_home:123".into(),
         world_id: "wrld_home".to_string(),
         ..FriendRecord::default()
     })));
@@ -695,10 +733,10 @@ fn overlay_activity_snapshot_marks_friends_panel_dirty_for_presence_changes() {
 
     *snapshot_slot.lock().unwrap() = friends_panel_snapshot(FriendRecord {
         id: "usr_friend".to_string(),
-        display_name: "Friend".to_string(),
-        state_bucket: "online".to_string(),
-        location: "traveling".to_string(),
-        traveling_to_location: "wrld_target:456".to_string(),
+        display_name: "Friend".into(),
+        state: "online".to_string().into(),
+        location: "traveling".into(),
+        traveling_to_location: "wrld_target:456".into(),
         ..FriendRecord::default()
     });
     let sink = VrOverlayActivitySink::new(&runtime);
@@ -731,9 +769,9 @@ fn game_log_player_snapshot_marks_same_instance_panel_dirty() {
                     "usr_anchor".to_string(),
                     FriendRecord {
                         id: "usr_anchor".to_string(),
-                        display_name: "Anchor".to_string(),
-                        state_bucket: "online".to_string(),
-                        location: "wrld_live:123".to_string(),
+                        display_name: "Anchor".into(),
+                        state: "online".to_string().into(),
+                        location: "wrld_live:123".into(),
                         world_id: "wrld_live".to_string(),
                         ..FriendRecord::default()
                     },
@@ -742,9 +780,9 @@ fn game_log_player_snapshot_marks_same_instance_panel_dirty() {
                     "usr_fallback".to_string(),
                     FriendRecord {
                         id: "usr_fallback".to_string(),
-                        display_name: "Fallback".to_string(),
-                        state_bucket: "online".to_string(),
-                        location: "private".to_string(),
+                        display_name: "Fallback".into(),
+                        state: "online".to_string().into(),
+                        location: "private".into(),
                         ..FriendRecord::default()
                     },
                 ),
@@ -764,10 +802,10 @@ fn game_log_player_snapshot_marks_same_instance_panel_dirty() {
         .is_empty());
 
     *services.game_log_snapshot_handle().lock().unwrap() = RuntimeSnapshot {
-        location: "wrld_live:123".to_string(),
+        location: "wrld_live:123".into(),
         players: vec![PlayerState {
             user_id: "usr_fallback".to_string(),
-            display_name: "Fallback".to_string(),
+            display_name: "Fallback".into(),
             join_time_ms: None,
         }],
         ..RuntimeSnapshot::default()
@@ -777,7 +815,7 @@ fn game_log_player_snapshot_marks_same_instance_panel_dirty() {
             file_name: "output_log.txt".to_string(),
             created_at: "2026-06-01T12:34:56.000Z".to_string(),
             kind: GameLogEventKind::PlayerJoined {
-                display_name: "Fallback".to_string(),
+                display_name: "Fallback".into(),
                 user_id: "usr_fallback".to_string(),
             },
         })
@@ -827,9 +865,9 @@ fn friends_panel_presence_rebuild_reuses_open_memo_cache() {
     runtime.set_friends_panel_snapshot_provider(|| {
         Some(friends_panel_snapshot(FriendRecord {
             id: "usr_friend".to_string(),
-            display_name: "Friend".to_string(),
-            state_bucket: "online".to_string(),
-            location: "wrld_home:123".to_string(),
+            display_name: "Friend".into(),
+            state: "online".to_string().into(),
+            location: "wrld_home:123".into(),
             world_id: "wrld_home".to_string(),
             ..FriendRecord::default()
         }))

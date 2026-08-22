@@ -1,4 +1,4 @@
-use vrcx_0_composition::notification::RenderedNotification;
+use vrcx_0_application_activity::notification::RenderedNotification;
 use vrcx_0_host_desktop::overlay_notifications::send_xs_notification;
 
 use super::NotificationDeliveryPreferences;

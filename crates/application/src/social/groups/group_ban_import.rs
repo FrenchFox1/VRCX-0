@@ -13,14 +13,10 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::TaskStopToken;
 use vrcx_0_core::vrchat_ids::is_user_id;
-use vrcx_0_vrchat_client::http_api::ApiJsonResponse;
 
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
-
-use super::service::{ban_member, GroupApiDeps};
-use super::types::VrchatGroupUserInput;
 
 const GROUP_BAN_IMPORT_MAX_ITEMS: usize = 1_000;
 const GROUP_BAN_IMPORT_INTERVAL: Duration = Duration::from_secs(1);
@@ -81,32 +77,6 @@ pub type GroupBanImportFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Se
 
 pub trait GroupBanImportActions: Send + Sync {
     fn ban_user<'a>(&'a self, group_id: &'a str, user_id: &'a str) -> GroupBanImportFuture<'a>;
-}
-
-pub struct VrchatGroupBanImportActions {
-    pub deps: GroupApiDeps,
-}
-
-impl GroupBanImportActions for VrchatGroupBanImportActions {
-    fn ban_user<'a>(&'a self, group_id: &'a str, user_id: &'a str) -> GroupBanImportFuture<'a> {
-        Box::pin(async move {
-            let response = ban_member(
-                self.deps.clone(),
-                VrchatGroupUserInput {
-                    group_id: group_id.to_string(),
-                    user_id: user_id.to_string(),
-                },
-            )
-            .await?;
-            let response = ApiJsonResponse::parse(response.status, &response.data);
-            if response.is_failure() {
-                return Err(Error::Custom(
-                    response.error_message_or("VRChat group request failed"),
-                ));
-            }
-            Ok(())
-        })
-    }
 }
 
 #[derive(Clone)]

@@ -1,6 +1,5 @@
 use std::collections::VecDeque;
 use std::future::Future;
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -8,15 +7,9 @@ use chrono::{DateTime, Utc};
 use serde_json::Value;
 use url::Url;
 
-use crate::{ImageCache, Result, WebClient};
-use vrcx_0_application_core::save_ugc_image_to_file;
+use crate::{InstanceMediaPort, Result};
+use vrcx_0_contracts::UgcCategory;
 use vrcx_0_core::text::first_owned;
-use vrcx_0_media::image_processing;
-use vrcx_0_media::ugc_image_files::UgcCategory;
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiRequestInput};
-use vrcx_0_vrchat_client::media::{print_get_input, user_inventory_item_get_input};
 
 use super::host::GameLogHostActions;
 
@@ -35,9 +28,8 @@ struct InstanceMediaQueueInner {
 
 #[derive(Clone)]
 pub struct InstanceMediaDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
-    pub image_cache: Arc<ImageCache>,
+    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) media: Arc<dyn InstanceMediaPort>,
     pub queue: InstanceMediaQueue,
     pub host_actions: Arc<dyn GameLogHostActions>,
 }
@@ -89,7 +81,7 @@ impl Default for InstanceMediaQueue {
 }
 
 pub async fn handle_api_request(deps: InstanceMediaDeps, request_url: &str) -> Result<()> {
-    if config_store::get_bool(&deps.db, "saveInstancePrints", false)? {
+    if deps.store.get_bool("saveInstancePrints", false)? {
         if let Some(print_id) = parse_print_id(request_url) {
             let key = print_id.clone();
             let task_deps = deps.clone();
@@ -101,7 +93,7 @@ pub async fn handle_api_request(deps: InstanceMediaDeps, request_url: &str) -> R
         }
     }
 
-    if config_store::get_bool(&deps.db, "saveInstanceEmoji", false)? {
+    if deps.store.get_bool("saveInstanceEmoji", false)? {
         if let Some((user_id, inventory_id)) = parse_inventory(request_url) {
             let key = inventory_id.clone();
             let task_deps = deps.clone();
@@ -121,7 +113,7 @@ pub async fn handle_sticker_spawn(
     display_name: &str,
     inventory_id: &str,
 ) -> Result<()> {
-    if !config_store::get_bool(&deps.db, "saveInstanceStickers", false)? {
+    if !deps.store.get_bool("saveInstanceStickers", false)? {
         return Ok(());
     }
     let user_id = user_id.to_string();
@@ -142,7 +134,7 @@ async fn save_instance_print(deps: InstanceMediaDeps, print_id: &str) -> Result<
         return Ok(());
     }
 
-    let print = execute_json(&deps, print_get_input(String::new(), print_id.to_string())?).await?;
+    let print = deps.media.get_print(print_id).await?;
     let Some(print) = print else {
         return Ok(());
     };
@@ -157,18 +149,19 @@ async fn save_instance_print(deps: InstanceMediaDeps, print_id: &str) -> Result<
     let file_date = created.format("%Y-%m-%d_%H-%M-%S%.3f").to_string();
     let author_name = text(print.get("authorName"));
     let file_name = format!("{author_name}_{file_date}_{print_id}.png");
-    let file_path = save_ugc_image_to_file(
-        &deps.image_cache,
-        &image_url,
-        &ugc_path,
-        UgcCategory::Prints,
-        &month_folder,
-        &file_name,
-    )
-    .await?;
+    let file_path = deps
+        .media
+        .save_ugc_image(
+            &image_url,
+            &ugc_path,
+            UgcCategory::Prints,
+            &month_folder,
+            &file_name,
+        )
+        .await?;
 
-    if config_store::get_bool(&deps.db, "cropInstancePrints", false)? {
-        if let Err(error) = image_processing::crop_print_file(Path::new(&file_path)) {
+    if deps.store.get_bool("cropInstancePrints", false)? {
+        if let Err(error) = deps.media.crop_print_file(&file_path) {
             tracing::warn!("failed to crop instance print {file_path}: {error}");
         }
     }
@@ -187,15 +180,7 @@ async fn save_inventory_media(
         return Ok(());
     }
 
-    let item = execute_json(
-        &deps,
-        user_inventory_item_get_input(
-            String::new(),
-            user_id.to_string(),
-            inventory_id.to_string(),
-        )?,
-    )
-    .await?;
+    let item = deps.media.get_inventory_item(user_id, inventory_id).await?;
     let Some(item) = item else {
         return Ok(());
     };
@@ -231,34 +216,14 @@ async fn save_inventory_media(
         )
     };
 
-    save_ugc_image_to_file(
-        &deps.image_cache,
-        &image_url,
-        &ugc_path,
-        category,
-        &month_folder,
-        &file_name,
-    )
-    .await?;
+    deps.media
+        .save_ugc_image(&image_url, &ugc_path, category, &month_folder, &file_name)
+        .await?;
     Ok(())
 }
 
-async fn execute_json(
-    deps: &InstanceMediaDeps,
-    request: HttpApiRequestInput,
-) -> Result<Option<Value>> {
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, &deps.db)
-        .await?;
-    if !(200..300).contains(&response.status) {
-        return Ok(None);
-    }
-    Ok(serde_json::from_str(&response.data).ok())
-}
-
 fn ugc_folder_path(deps: &InstanceMediaDeps) -> Result<String> {
-    let configured = config_store::get_string(&deps.db, "userGeneratedContentPath", "")?;
+    let configured = deps.store.get_string("userGeneratedContentPath", "")?;
     Ok(deps.host_actions.ugc_photo_location(Some(configured)))
 }
 

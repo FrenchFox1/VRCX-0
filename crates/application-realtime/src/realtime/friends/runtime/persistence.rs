@@ -5,8 +5,8 @@ use vrcx_0_core::derived_keys;
 use chrono::Utc;
 use compact_str::CompactString;
 use serde_json::{json, Map, Value};
+use vrcx_0_contracts::realtime::FriendLogUpsert;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
-use vrcx_0_persistence::realtime::FriendLogUpsert;
 
 use crate::realtime::location_predicates::is_real_instance;
 use crate::realtime::RealtimeFriendOutput;

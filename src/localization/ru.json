@@ -457,22 +457,6 @@
             "instance_duration": "Инстанс {duration}"
         },
         "generic_instance_location": "инстанс",
-        "friends_panel": {
-            "title": "Избранные друзья",
-            "all": "Все",
-            "empty": "Нет избранных друзей в сети",
-            "note": "Заметка",
-            "memo": "Локальная заметка",
-            "open": "Открыть",
-            "request": "Запросить",
-            "invite": "Пригласить",
-            "favorites_online": "Избранных в сети",
-            "same_instance": "Тот же инстанс",
-            "local_favorites": "Локальное избранное",
-            "traveling": "В пути",
-            "private": "Приватно",
-            "offline": "Не в сети"
-        },
         "discord": {
             "title": {
                 "invite": "Приглашение от {name}",
@@ -2156,13 +2140,6 @@
                     "timeout": "Длительность показа",
                     "opacity": "Непрозрачность",
                     "filters": "Фильтры уведомлений в шлеме"
-                },
-                "interactive_panel": {
-                    "header": "Интерактивная панель друзей",
-                    "enabled": "Включить интерактивную панель друзей",
-                    "all_friends_include_favorites": "Включать избранных в «Все»",
-                    "summon_hint": "Жест вызова",
-                    "openvr_required": "Удерживайте правый grip около 2 секунд, чтобы вызвать панель. Требуется backend оверлея SteamVR/OpenVR; OpenXR сейчас не предоставляет интерактивную панель."
                 },
                 "wrist_overlay": {
                     "header": "Оверливание рейста",

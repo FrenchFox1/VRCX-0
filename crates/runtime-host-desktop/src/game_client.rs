@@ -5,16 +5,17 @@ use crate::{ensure_vrchat_launch_path_allowed, HostFileAccess, RuntimeHost};
 use vrcx_0_application_core::Error as RuntimeError;
 use vrcx_0_application_core::Result as RuntimeResult;
 use vrcx_0_application_core::{
-    BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, InstanceRosterObserver,
+    BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, HostSessionRuntime,
+    InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor,
 };
 use vrcx_0_application_game::{
     GameClientActions, GameClientCacheActions, GameClientDebugLoggingActions,
     GameClientLocationSource, GameClientRuntime, GameClientRuntimeDeps, GameClientWindowActions,
 };
-use vrcx_0_composition::RuntimeHostContext;
 use vrcx_0_core::game_log_parser::LogLocationSnapshot;
 use vrcx_0_host_desktop::vrchat_registry;
 use vrcx_0_host_desktop::{asset_bundle_cache, game_launch, process_status};
+use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
 
 fn host_error(error: vrcx_0_platform::Error) -> RuntimeError {
@@ -115,52 +116,76 @@ pub struct GameClientHostRuntime {
     inner: GameClientRuntime,
 }
 
+pub struct GameClientHostRuntimeDeps {
+    pub db: Arc<DatabaseService>,
+    pub event_bus: RuntimeEventBus,
+    pub tasks: TaskSupervisor,
+    pub session: HostSessionRuntime,
+    pub auth_scope: RuntimeAuthScope,
+    pub log_watcher: LogWatcher,
+    pub file_access: HostFileAccess,
+    pub app_paths: AppPaths,
+    pub host: RuntimeHost,
+    pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
+    pub backend_status: BackendRuntimeStatusPublisher,
+}
+
+struct GameClientRuntimeHostDeps {
+    db: Arc<DatabaseService>,
+    event_bus: RuntimeEventBus,
+    tasks: TaskSupervisor,
+    session: HostSessionRuntime,
+    auth_scope: RuntimeAuthScope,
+    log_watcher: LogWatcher,
+    host: RuntimeHost,
+    instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
+    backend_status: BackendRuntimeStatusPublisher,
+}
+
 impl GameClientHostRuntime {
-    pub fn new(
-        context: Arc<RuntimeHostContext>,
-        log_watcher: LogWatcher,
-        file_access: HostFileAccess,
-        app_paths: AppPaths,
-        host: RuntimeHost,
-        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
-        backend_status: BackendRuntimeStatusPublisher,
-    ) -> Self {
+    pub fn new(deps: GameClientHostRuntimeDeps) -> Self {
+        let actions = Arc::new(SystemGameClientActions {
+            file_access: deps.file_access,
+            app_paths: deps.app_paths,
+        });
         Self::new_with_actions(
-            context,
-            log_watcher,
-            Arc::new(SystemGameClientActions {
-                file_access,
-                app_paths,
-            }),
-            host,
-            instance_roster_observer,
-            backend_status,
+            GameClientRuntimeHostDeps {
+                db: deps.db,
+                event_bus: deps.event_bus,
+                tasks: deps.tasks,
+                session: deps.session,
+                auth_scope: deps.auth_scope,
+                log_watcher: deps.log_watcher,
+                host: deps.host,
+                instance_roster_observer: deps.instance_roster_observer,
+                backend_status: deps.backend_status,
+            },
+            actions,
         )
     }
 
     fn new_with_actions(
-        context: Arc<RuntimeHostContext>,
-        log_watcher: LogWatcher,
+        deps: GameClientRuntimeHostDeps,
         actions: Arc<dyn GameClientActions>,
-        host: RuntimeHost,
-        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
-        backend_status: BackendRuntimeStatusPublisher,
     ) -> Self {
-        let inner = GameClientRuntime::new(GameClientRuntimeDeps {
-            db: Arc::clone(&context.db),
-            config: context.config.clone(),
-            event_bus: context.event_bus.clone(),
-            backend_status,
-            tasks: context.tasks.clone(),
-            session: context.session.clone(),
-            auth_scope: context.auth_scope.clone(),
-            actions: Arc::clone(&actions),
-            cache_actions: Arc::new(SystemGameClientCacheActions),
-            location_source: Arc::new(LogWatcherLocationSource { log_watcher }),
-            window_actions: Arc::new(RuntimeGameClientWindowActions { host }),
-            debug_logging_actions: Arc::new(SystemGameClientDebugLoggingActions),
-            instance_roster_observer,
-        });
+        let inner = GameClientRuntime::new(GameClientRuntimeDeps::new(
+            Arc::new(crate::game_state_store::PersistenceGameStateStore::new(
+                Arc::clone(&deps.db),
+            )),
+            deps.event_bus,
+            deps.backend_status,
+            deps.tasks,
+            deps.session,
+            deps.auth_scope,
+            Arc::clone(&actions),
+            Arc::new(SystemGameClientCacheActions),
+            Arc::new(LogWatcherLocationSource {
+                log_watcher: deps.log_watcher,
+            }),
+            Arc::new(RuntimeGameClientWindowActions { host: deps.host }),
+            Arc::new(SystemGameClientDebugLoggingActions),
+            deps.instance_roster_observer,
+        ));
 
         Self { inner }
     }
@@ -192,7 +217,11 @@ impl GameProcessEventSink for GameClientHostRuntime {
 #[cfg(any(test, feature = "test-utils"))]
 impl GameClientHostRuntime {
     pub fn test_with_actions(
-        context: Arc<RuntimeHostContext>,
+        db: Arc<DatabaseService>,
+        event_bus: RuntimeEventBus,
+        tasks: TaskSupervisor,
+        session: HostSessionRuntime,
+        auth_scope: RuntimeAuthScope,
         log_watcher: LogWatcher,
         actions: Arc<dyn GameClientActions>,
     ) -> Self {
@@ -200,15 +229,21 @@ impl GameClientHostRuntime {
             vrcx_0_application_core::BackendRuntime::new(
                 vrcx_0_application_core::RuntimeHostProfile::Desktop,
             ),
-            context.event_bus.clone(),
+            event_bus.clone(),
         );
         Self::new_with_actions(
-            context,
-            log_watcher,
+            GameClientRuntimeHostDeps {
+                db,
+                event_bus,
+                tasks,
+                session,
+                auth_scope,
+                log_watcher,
+                host: RuntimeHost::new(),
+                instance_roster_observer: None,
+                backend_status,
+            },
             actions,
-            RuntimeHost::new(),
-            None,
-            backend_status,
         )
     }
 }

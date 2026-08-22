@@ -1,10 +1,17 @@
 use super::*;
-use crate::test_support::unique_test_database_path;
+use crate::test_support::{test_session_persistence, unique_test_database_path};
+use vrcx_0_persistence::{assistant, DatabaseService};
 
 const TEST_OWNER: &str = "usr_test";
 
 fn test_db() -> Arc<DatabaseService> {
     Arc::new(DatabaseService::new(&unique_test_database_path("vrcx-0-assistant")).unwrap())
+}
+
+impl SessionStore {
+    fn with_db(db: Arc<DatabaseService>) -> Self {
+        Self::with_persistence(test_session_persistence(db))
+    }
 }
 
 fn create_test_session(store: &SessionStore) -> Session {

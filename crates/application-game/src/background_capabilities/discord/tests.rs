@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use crate::NowPlayingSnapshot;
 use serde_json::{json, Value};
 use vrcx_0_core::location::parse_location;
 
@@ -76,14 +77,14 @@ fn discord_rpc_world_uses_now_playing_details_and_thumbnail() {
         is_steamvr_running: true,
         current_location_started_at: "2026-05-19T00:00:00Z".into(),
         current_user: json!({ "status": "active" }).into(),
-        now_playing: json!({
-            "url": "https://video.example/watch",
-            "name": "Example Movie",
-            "thumbnailUrl": "https://image.example/thumb.jpg",
-            "startedAt": "2026-05-19T01:00:00Z",
-            "length": 120,
-        })
-        .into(),
+        now_playing: std::sync::Arc::new(NowPlayingSnapshot {
+            url: "https://video.example/watch".into(),
+            name: "Example Movie".into(),
+            thumbnail_url: "https://image.example/thumb.jpg".into(),
+            started_at: Some("2026-05-19T01:00:00Z".into()),
+            length: 120,
+            ..Default::default()
+        }),
         ..Default::default()
     };
     let parsed = parse_location("wrld_266523e8-9161-40da-acd0-6bd82e075833:12345");
@@ -307,7 +308,7 @@ fn discord_status_image_accepts_spaceless_status_aliases() {
 fn discord_unchanged_payload_is_not_published_twice() {
     let payload = BackgroundDiscordActivityPayload {
         app_id: DEFAULT_APP_ID.into(),
-        activity: json!({ "details": "VRChat" }),
+        activity: json!({ "details": "VRChat" }).into(),
         detail: "VRChat".into(),
     };
     let mut state = BackgroundDiscordPresenceState::default();

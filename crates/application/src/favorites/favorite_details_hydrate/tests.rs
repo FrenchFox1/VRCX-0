@@ -1,31 +1,6 @@
-use std::path::PathBuf;
-use std::time::Duration;
-
 use super::*;
 use serde_json::json;
-
-struct TestDir(PathBuf);
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-favorite-details-{name}-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+use vrcx_0_application_core::MemoryWorldCachePort;
 
 fn complete(release_status: &str) -> Value {
     json!({
@@ -263,9 +238,7 @@ fn world_probe_classifies_release_status_into_public_or_private() {
 
 #[test]
 fn world_details_hydrate_uses_cache_and_projects_only_requested_card_fields() {
-    let dir = TestDir::new("world-cache-owner");
-    let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-    let world_cache = WorldCache::new(db, 8, Duration::from_secs(60));
+    let world_cache = WorldCache::new(MemoryWorldCachePort::default());
     let details_by_id = HashMap::from([
         (
             "wrld_requested".to_string(),

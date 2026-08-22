@@ -457,22 +457,6 @@
             "instance_duration": "Instance {duration}"
         },
         "generic_instance_location": "an instance",
-        "friends_panel": {
-            "title": "Favorite Friends",
-            "all": "All",
-            "empty": "No favorite friends online",
-            "note": "Note",
-            "memo": "Local Note",
-            "open": "Open",
-            "request": "Request",
-            "invite": "Invite",
-            "favorites_online": "Favorites Online",
-            "same_instance": "Same Instance",
-            "local_favorites": "Local Favorites",
-            "traveling": "Traveling",
-            "private": "Private",
-            "offline": "Offline"
-        },
         "discord": {
             "title": {
                 "invite": "{name}'s invite",
@@ -2154,13 +2138,6 @@
                     "timeout": "Timeout",
                     "opacity": "Opacity",
                     "filters": "HMD Notification Filters"
-                },
-                "interactive_panel": {
-                    "header": "Interactive Friends Panel",
-                    "enabled": "Interactive friends panel",
-                    "all_friends_include_favorites": "Include favorites in All",
-                    "summon_hint": "Summon gesture",
-                    "openvr_required": "Hold the right-hand grip for about 2 seconds to summon it. Requires the SteamVR/OpenVR overlay backend; OpenXR does not provide the interactive panel."
                 },
                 "wrist_overlay": {
                     "header": "Wrist Overlay",

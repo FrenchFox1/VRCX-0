@@ -1,13 +1,56 @@
 use super::*;
+use crate::social::{MutualGraphLinkOutput, MutualGraphMetaOutput, MutualGraphSnapshotOutput};
 use serde_json::{json, Value};
 use std::sync::Condvar;
 use vrcx_0_application_core::{
-    RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
+    NoopWebClientPort, RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
 };
-use vrcx_0_persistence::mutual_graph::{
-    MutualGraphLinkOutput, MutualGraphMetaOutput, MutualGraphSnapshotOutput,
-};
-use vrcx_0_persistence::storage::StorageService;
+
+struct NoopMutualGraphStore;
+
+impl MutualGraphStore for NoopMutualGraphStore {
+    fn friend_refresh_commit(
+        &self,
+        _owner_user_id: String,
+        _friend_id: String,
+        _mutual_ids: Option<Vec<String>>,
+        _total_count: Option<usize>,
+        _opted_out: bool,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    fn snapshot_get(&self, _owner_user_id: String) -> Result<MutualGraphSnapshotOutput> {
+        Ok(MutualGraphSnapshotOutput {
+            friend_ids: Vec::new(),
+            links: Vec::new(),
+            meta: Vec::new(),
+        })
+    }
+
+    fn snapshot_commit(
+        &self,
+        _owner_user_id: String,
+        _entries: Vec<MutualGraphSnapshotEntryInput>,
+        _meta: Vec<MutualGraphMetaInput>,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
+
+struct NoopMutualGraphRemoteRequests;
+
+impl MutualGraphRemoteRequests for NoopMutualGraphRemoteRequests {
+    fn mutual_friends(
+        &self,
+        _endpoint: String,
+        _user_id: String,
+        _n: i32,
+        _offset: i32,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(Default::default())
+    }
+}
 
 #[derive(Clone)]
 struct DropTaskExecutor;
@@ -28,31 +71,6 @@ impl RuntimeTaskHandle for FinishedTaskHandle {
     }
 
     fn join_or_abort(&mut self, _timeout: Duration) {}
-}
-
-struct TestDir {
-    path: std::path::PathBuf,
-}
-
-impl TestDir {
-    fn new() -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-mutual-graph-events-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
 }
 
 #[derive(Default)]
@@ -160,12 +178,7 @@ fn fetch_scope_rejects_a_different_owner() {
 
 #[test]
 fn start_emits_a_running_status_before_the_job_is_spawned() {
-    let dir = TestDir::new();
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-    let storage = StorageService::new(&dir.path.join("VRCX-0.json")).unwrap();
-    let web = Arc::new(
-        WebClient::new(&storage, db.as_ref(), "https://app.example".into(), "test").unwrap(),
-    );
+    let web = Arc::new(WebClient::new(NoopWebClientPort));
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_owner", "https://api.example.test/api/1");
     let event_bus = RuntimeEventBus::new();
@@ -180,7 +193,8 @@ fn start_emits_a_running_status_before_the_job_is_spawned() {
                 endpoint: String::new(),
                 friend_ids: vec!["usr_friend".into()],
             },
-            db,
+            Arc::new(NoopMutualGraphStore),
+            Arc::new(NoopMutualGraphRemoteRequests),
             web,
             auth_scope,
             tasks.clone(),

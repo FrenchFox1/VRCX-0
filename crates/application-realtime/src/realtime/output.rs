@@ -1,12 +1,12 @@
-use serde_json::Value;
-use vrcx_0_persistence::realtime::RealtimePersistenceBatch;
+use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
+use vrcx_0_core::json::RawJson;
 
 use super::projection::{
     FriendProjection, RealtimeCurrentUserProjection, RealtimeInstanceClosedProjection,
     RealtimeNotificationProjection,
 };
 use super::runtime_types::PendingOfflineTimerAction;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RealtimeFriendOutput {
@@ -56,6 +56,6 @@ pub struct RealtimeCurrentUserOutput {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RealtimeInstanceClosedOutput {
     pub projection: RealtimeInstanceClosedProjection,
-    pub feed_entry: Value,
+    pub feed_entry: RawJson,
     pub persistence: RealtimePersistenceBatch,
 }

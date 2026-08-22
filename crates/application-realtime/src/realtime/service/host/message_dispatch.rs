@@ -11,7 +11,7 @@ use crate::realtime::{RealtimeSessionContext, RealtimeTransportLifecycleEvent, R
 use super::state::RealtimeHostRuntimeMessageSink;
 
 pub(super) use vrcx_0_core::json::trimmed_text_of as json_string_field;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
     fn handle_realtime_transport_status(
@@ -135,7 +135,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
                 self.runtime.refresh_current_user_snapshot_after_update(
                     generation,
                     session.clone(),
-                    overlay_patch,
+                    overlay_patch.into_map(),
                 );
             }
             return;

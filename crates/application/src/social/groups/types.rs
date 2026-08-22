@@ -1,189 +1,249 @@
-use serde::Deserialize;
-use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
-use vrcx_0_application_core::vrchat_api::groups::{
-    GroupMemberPatch, GroupMemberSort, GroupPostMutation,
-};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use vrcx_0_core::GroupJoinRequestAction;
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum GroupMemberSort {
+    #[serde(rename = "joinedAt:asc")]
+    JoinedAtAsc,
+    #[default]
+    #[serde(rename = "joinedAt:desc")]
+    JoinedAtDesc,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum GroupPostVisibility {
+    #[serde(rename = "group")]
+    Group,
+    #[serde(rename = "public")]
+    Public,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupPostMutation {
+    pub title: String,
+    pub text: String,
+    pub send_notification: bool,
+    pub visibility: GroupPostVisibility,
+    #[serde(default)]
+    pub role_ids: Vec<String>,
+    pub image_id: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum GroupMemberVisibility {
+    #[serde(rename = "friends")]
+    Friends,
+    #[serde(rename = "hidden")]
+    Hidden,
+    #[serde(rename = "visible")]
+    Visible,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupMemberPatch {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_subscribed_to_announcements: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_subscribed_to_event_announcements: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub manager_notes: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visibility: Option<GroupMemberVisibility>,
+}
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupIdInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupProfileInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default = "default_true")]
-    pub(super) include_roles: bool,
+    pub include_roles: bool,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupUserGroupsInput {
     #[serde(default)]
-    pub(super) user_id: String,
+    pub user_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupPagedInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) n: i32,
+    pub n: i32,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) offset: i32,
+    pub offset: i32,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupMembersInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) n: i32,
+    pub n: i32,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) offset: i32,
+    pub offset: i32,
     #[serde(default)]
-    pub(super) sort: GroupMemberSort,
+    pub sort: GroupMemberSort,
     #[serde(default)]
-    pub(super) role_id: String,
+    pub role_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupMembersSearchInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) n: i32,
+    pub n: i32,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) offset: i32,
+    pub offset: i32,
     #[serde(default)]
-    pub(super) query: String,
+    pub query: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupGalleryInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) gallery_id: String,
+    pub gallery_id: String,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) n: i32,
+    pub n: i32,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) offset: i32,
+    pub offset: i32,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupJoinRequestsInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) n: i32,
+    pub n: i32,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) offset: i32,
+    pub offset: i32,
     #[serde(default)]
-    pub(super) blocked: bool,
+    pub blocked: bool,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupLogsInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) n: i32,
+    pub n: i32,
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
-    pub(super) offset: i32,
+    pub offset: i32,
     #[serde(default)]
-    pub(super) event_types: String,
+    pub event_types: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupPostCreateInput {
     #[serde(default)]
-    pub(super) group_id: String,
-    pub(super) params: GroupPostMutation,
+    pub group_id: String,
+    pub params: GroupPostMutation,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupPostEditInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) post_id: String,
-    pub(super) params: GroupPostMutation,
+    pub post_id: String,
+    pub params: GroupPostMutation,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupPostDeleteInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) post_id: String,
+    pub post_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupUserInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) user_id: String,
+    pub user_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupMemberRoleInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) user_id: String,
+    pub user_id: String,
     #[serde(default)]
-    pub(super) role_id: String,
+    pub role_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupJoinRequestRespondInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) user_id: String,
-    pub(super) action: GroupJoinRequestAction,
+    pub user_id: String,
+    pub action: GroupJoinRequestAction,
     #[serde(default)]
-    pub(super) block: bool,
+    pub block: bool,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupRepresentationInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) is_representing: bool,
+    pub is_representing: bool,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatGroupMemberPropsInput {
     #[serde(default)]
-    pub(super) group_id: String,
+    pub group_id: String,
     #[serde(default)]
-    pub(super) user_id: String,
-    pub(super) params: GroupMemberPatch,
+    pub user_id: String,
+    pub params: GroupMemberPatch,
 }
 
 fn default_true() -> bool {
     true
+}
+
+fn deserialize_nonnegative_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = i32::deserialize(deserializer)?;
+    if value >= 0 {
+        Ok(value)
+    } else {
+        Err(D::Error::custom("value must be non-negative"))
+    }
 }

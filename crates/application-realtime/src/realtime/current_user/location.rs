@@ -1,9 +1,9 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_contracts::game_log::GameLogLocationEntry;
 use vrcx_0_core::derived_keys;
 use vrcx_0_core::json::text_of;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_core::text::first_owned;
-use vrcx_0_persistence::game_log::GameLogLocationEntry;
 
 use super::state::RealtimeCurrentUserStateSnapshot;
 use super::utils::{map_from_json, EventTime};

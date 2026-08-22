@@ -3,11 +3,11 @@ use std::sync::atomic::Ordering;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
-use vrcx_0_core::json::RawJson;
-use vrcx_0_persistence::feed::{
-    feed_latest_query, feed_search_query, FeedLatestQueryInput, FeedLiveEntryInput,
-    FeedLiveQueryMatcher, FeedReadModelOutput, FeedRowOutput, FeedSearchQueryInput,
+use vrcx_0_contracts::feed::{
+    FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryMatcher, FeedReadModelOutput,
+    FeedRowOutput, FeedSearchQueryInput,
 };
+use vrcx_0_core::json::RawJson;
 
 use crate::realtime::{
     RealtimeEntryCorrectionFields, RealtimeFeedPatch, RealtimeFeedProjection, RealtimeFeedUpsert,
@@ -15,14 +15,14 @@ use crate::realtime::{
 use crate::world_enrich::feed_entry_correction_id;
 
 use super::RealtimeHostRuntime;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const FEED_LIVE_CACHE_MAX_ENTRIES: usize = 10_000;
 
 #[derive(Clone, Debug)]
 struct CachedFeedEntry {
     sequence: i64,
-    entry: Value,
+    entry: RawJson,
 }
 
 #[derive(Default)]
@@ -49,7 +49,7 @@ impl FeedLiveCache {
     fn push_entries(
         &mut self,
         owner_user_id: &OwnerId,
-        entries: Vec<Value>,
+        entries: Vec<RawJson>,
     ) -> Vec<RealtimeFeedUpsert> {
         self.prepare_owner(owner_user_id);
         let mut upserts = Vec::new();
@@ -67,10 +67,7 @@ impl FeedLiveCache {
                 sequence,
                 entry: entry.clone(),
             });
-            upserts.push(RealtimeFeedUpsert {
-                sequence,
-                entry: RawJson::from(entry),
-            });
+            upserts.push(RealtimeFeedUpsert { sequence, entry });
         }
         while self.entries.len() > FEED_LIVE_CACHE_MAX_ENTRIES {
             self.entries.pop_front();
@@ -141,7 +138,7 @@ impl FeedLiveCache {
             .take(matcher.max_rows().unwrap_or(usize::MAX))
             .map(|entry| FeedLiveEntryInput {
                 sequence: entry.sequence,
-                entry: RawJson::from(entry.entry.clone()),
+                entry: entry.entry.clone(),
             })
             .collect::<Vec<_>>();
         entries.reverse();
@@ -154,7 +151,7 @@ impl RealtimeHostRuntime {
         &self,
         generation: u64,
         owner_user_id: &OwnerId,
-        entries: Vec<Value>,
+        entries: Vec<RawJson>,
     ) {
         if entries.is_empty() {
             return;
@@ -217,29 +214,27 @@ impl RealtimeHostRuntime {
         let matcher = FeedLiveQueryMatcher::for_latest(&query);
         let (live_entries, watermark) =
             self.feed_live_snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
-        feed_latest_query(
-            self.deps.db.as_ref(),
+        self.deps.store.feed_latest(
             query,
             live_entries,
             watermark,
             !self.feed_persistence_disabled.load(Ordering::Relaxed),
         )
-        .map_err(Error::from)
     }
 
     pub fn query_feed_search(&self, query: FeedSearchQueryInput) -> Result<Vec<FeedRowOutput>> {
         let matcher = FeedLiveQueryMatcher::for_search(&query);
         let (live_entries, watermark) =
             self.feed_live_snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
-        feed_search_query(
-            self.deps.db.as_ref(),
-            query,
-            live_entries,
-            watermark,
-            !self.feed_persistence_disabled.load(Ordering::Relaxed),
-        )
-        .map(|output| output.rows)
-        .map_err(Error::from)
+        self.deps
+            .store
+            .feed_search(
+                query,
+                live_entries,
+                watermark,
+                !self.feed_persistence_disabled.load(Ordering::Relaxed),
+            )
+            .map(|output| output.rows)
     }
 
     pub(super) fn reset_feed_live_cache(&self) {
@@ -279,8 +274,8 @@ impl RealtimeHostRuntime {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vrcx_0_persistence::feed::{FeedFilter, FeedLatestQueryInput, FeedLiveQueryMatcher};
-    use vrcx_0_persistence::OwnerId;
+    use vrcx_0_contracts::feed::{FeedFilter, FeedLatestQueryInput, FeedLiveQueryMatcher};
+    use vrcx_0_core::OwnerId;
 
     use super::FeedLiveCache;
     use crate::realtime::RealtimeEntryCorrectionFields;
@@ -311,8 +306,9 @@ mod tests {
                     "id": "first",
                     "type": "GPS",
                     "worldName": "wrld_1"
-                }),
-                json!({ "id": "second", "type": "Online" }),
+                })
+                .into(),
+                json!({ "id": "second", "type": "Online" }).into(),
             ],
         );
 
@@ -345,12 +341,12 @@ mod tests {
         let mut cache = FeedLiveCache::default();
         cache.push_entries(
             &OwnerId::new("usr_first"),
-            vec![json!({ "id": "old", "type": "GPS" })],
+            vec![json!({ "id": "old", "type": "GPS" }).into()],
         );
 
         let upserts = cache.push_entries(
             &OwnerId::new("usr_second"),
-            vec![json!({ "id": "new", "type": "GPS" })],
+            vec![json!({ "id": "new", "type": "GPS" }).into()],
         );
         let matcher = latest_matcher("usr_second", Vec::new(), 10);
         let (entries, watermark) = cache.snapshot_matching(&OwnerId::new("usr_second"), &matcher);
@@ -371,10 +367,10 @@ mod tests {
         cache.push_entries(
             &OwnerId::new("usr_self"),
             vec![
-                json!({ "id": "gps-old", "type": "GPS" }),
-                json!({ "id": "status", "type": "Status" }),
-                json!({ "id": "gps-middle", "type": "GPS" }),
-                json!({ "id": "gps-new", "type": "GPS" }),
+                json!({ "id": "gps-old", "type": "GPS" }).into(),
+                json!({ "id": "status", "type": "Status" }).into(),
+                json!({ "id": "gps-middle", "type": "GPS" }).into(),
+                json!({ "id": "gps-new", "type": "GPS" }).into(),
             ],
         );
         let matcher = latest_matcher("usr_self", vec![FeedFilter::Gps], 2);

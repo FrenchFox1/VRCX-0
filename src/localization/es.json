@@ -457,22 +457,6 @@
             "instance_duration": "Instancia {duration}"
         },
         "generic_instance_location": "una instancia",
-        "friends_panel": {
-            "title": "Amigos favoritos",
-            "all": "Todos",
-            "empty": "No hay amigos favoritos en línea",
-            "note": "Nota",
-            "memo": "Nota local",
-            "open": "Abrir",
-            "request": "Solicitar",
-            "invite": "Invitar",
-            "favorites_online": "Favoritos en línea",
-            "same_instance": "Misma instancia",
-            "local_favorites": "Favoritos locales",
-            "traveling": "Viajando",
-            "private": "Privado",
-            "offline": "Sin conexión"
-        },
         "discord": {
             "title": {
                 "invite": "Invitación de {name}",
@@ -2154,13 +2138,6 @@
                     "timeout": "Duración",
                     "opacity": "Opacidad",
                     "filters": "Filtros de notificaciones del visor"
-                },
-                "interactive_panel": {
-                    "header": "Panel interactivo de amigos",
-                    "enabled": "Activar el panel interactivo de amigos",
-                    "all_friends_include_favorites": "Incluir favoritos en Todos",
-                    "summon_hint": "Gesto de invocación",
-                    "openvr_required": "Mantén pulsado el grip derecho unos 2 segundos para invocarlo. Requiere el backend de superposición SteamVR/OpenVR; OpenXR todavía no ofrece el panel interactivo."
                 },
                 "wrist_overlay": {
                     "header": "Overlay de muñeca",

@@ -1,33 +1,17 @@
 use super::*;
-use std::path::PathBuf;
+use crate::ports::TestGameStateStore;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-struct TestDir {
-    path: PathBuf,
-}
+struct TestDir;
 
 impl TestDir {
     fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-registry-backup-{name}-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
+        let _ = name;
+        Self
     }
 
-    fn open_db(&self) -> DatabaseService {
-        DatabaseService::new(&self.path.join("VRCX-0.sqlite3")).unwrap()
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
+    fn open_db(&self) -> TestGameStateStore {
+        TestGameStateStore::default()
     }
 }
 
@@ -79,6 +63,50 @@ fn backup(name: &str, date: &str) -> StoredRegistryBackup {
 }
 
 #[test]
+fn export_preparation_preserves_name_normalization_and_json_shape() {
+    for (name, expected_file_name) in [
+        ("Named Backup", "Named Backup.json"),
+        ("  Trimmed Backup  ", "Trimmed Backup.json"),
+        ("", "VRChat Registry Backup.json"),
+        ("   ", "VRChat Registry Backup.json"),
+    ] {
+        let dir = TestDir::new("export");
+        let db = dir.open_db();
+        write_backups(
+            &db,
+            &[StoredRegistryBackup {
+                name: name.into(),
+                date: "2026-08-22T00:00:00.000Z".into(),
+                data: json!({"b": 2, "a": 1}),
+            }],
+        )
+        .unwrap();
+        let key = registry_backup_list(&db).unwrap()[0].key.clone();
+
+        let export = registry_backup_prepare_export(&db, &key).unwrap();
+
+        assert_eq!(export.file_name, expected_file_name);
+        assert_eq!(
+            serde_json::from_str::<Value>(&export.json).unwrap(),
+            json!({"a": 1, "b": 2})
+        );
+    }
+}
+
+#[test]
+fn export_preparation_preserves_the_missing_backup_error() {
+    let dir = TestDir::new("export-missing");
+    let db = dir.open_db();
+
+    assert_eq!(
+        registry_backup_prepare_export(&db, "missing")
+            .unwrap_err()
+            .to_string(),
+        "Registry backup not found."
+    );
+}
+
+#[test]
 fn restore_prompt_acknowledgement_persists_the_shown_backup_date() {
     let dir = TestDir::new("ack");
     let db = dir.open_db();
@@ -89,7 +117,7 @@ fn restore_prompt_acknowledgement_persists_the_shown_backup_date() {
         backup_date
     );
     assert_eq!(
-        config::get_string(&db, CONFIG_LAST_RESTORE_CHECK, "").unwrap(),
+        db.get_string(CONFIG_LAST_RESTORE_CHECK, "").unwrap(),
         backup_date
     );
 }
@@ -98,7 +126,7 @@ fn restore_prompt_acknowledgement_persists_the_shown_backup_date() {
 fn maintenance_run_skips_everything_when_auto_backup_disabled() {
     let dir = TestDir::new("disabled");
     let db = dir.open_db();
-    config::set_bool(&db, CONFIG_AUTO_BACKUP, false).unwrap();
+    db.set_bool(CONFIG_AUTO_BACKUP, false).unwrap();
     let host = StubHost::with_registry(json!({"a": 1}));
 
     let result = registry_backup_maintenance_run(
@@ -119,7 +147,7 @@ fn maintenance_run_skips_everything_when_auto_backup_disabled() {
 fn maintenance_result_does_not_serialize_stored_backup_data() {
     let dir = TestDir::new("lightweight-result");
     let db = dir.open_db();
-    config::set_bool(&db, CONFIG_AUTO_BACKUP, false).unwrap();
+    db.set_bool(CONFIG_AUTO_BACKUP, false).unwrap();
     write_backups(
         &db,
         &[StoredRegistryBackup {
@@ -164,7 +192,8 @@ fn maintenance_run_creates_auto_backup_when_registry_present_and_no_recent_backu
     let backups = registry_backup_list(&db).unwrap();
     assert_eq!(backups.len(), 1);
     assert_eq!(backups[0].name, AUTO_BACKUP_NAME);
-    assert!(!config::get_string(&db, CONFIG_LAST_BACKUP_DATE, "")
+    assert!(!db
+        .get_string(CONFIG_LAST_BACKUP_DATE, "")
         .unwrap()
         .is_empty());
 }
@@ -173,7 +202,8 @@ fn maintenance_run_creates_auto_backup_when_registry_present_and_no_recent_backu
 fn maintenance_run_skips_creation_when_recent_auto_backup_exists() {
     let dir = TestDir::new("recent");
     let db = dir.open_db();
-    config::set_string(&db, CONFIG_LAST_BACKUP_DATE, &iso_millis(Utc::now())).unwrap();
+    db.set_string(CONFIG_LAST_BACKUP_DATE, &iso_millis(Utc::now()))
+        .unwrap();
     let host = StubHost::with_registry(json!({"a": 1}));
 
     let result = registry_backup_maintenance_run(
@@ -221,7 +251,8 @@ fn maintenance_run_falls_back_to_restore_prompt_when_registry_folder_missing() {
     let dir = TestDir::new("missing-folder");
     let db = dir.open_db();
     let last_backup_date = "2026-08-01T00:00:00.000Z";
-    config::set_string(&db, CONFIG_LAST_BACKUP_DATE, last_backup_date).unwrap();
+    db.set_string(CONFIG_LAST_BACKUP_DATE, last_backup_date)
+        .unwrap();
     let host = StubHost::without_registry_folder();
 
     let result = registry_backup_maintenance_run(
@@ -261,7 +292,8 @@ fn maintenance_run_reports_skip_when_registry_data_is_empty() {
         result.detail,
         "Registry auto backup skipped; no registry data was found."
     );
-    assert!(config::get_string(&db, CONFIG_LAST_BACKUP_DATE, "")
+    assert!(db
+        .get_string(CONFIG_LAST_BACKUP_DATE, "")
         .unwrap()
         .is_empty());
 }
@@ -319,8 +351,7 @@ fn recent_auto_backup_exists_is_true_within_interval() {
     let dir = TestDir::new("recent-within");
     let db = dir.open_db();
     let now = Utc::now();
-    config::set_string(
-        &db,
+    db.set_string(
         CONFIG_LAST_BACKUP_DATE,
         &iso_millis(now - Duration::days(1)),
     )
@@ -334,8 +365,7 @@ fn recent_auto_backup_exists_is_false_outside_interval() {
     let dir = TestDir::new("recent-outside");
     let db = dir.open_db();
     let now = Utc::now();
-    config::set_string(
-        &db,
+    db.set_string(
         CONFIG_LAST_BACKUP_DATE,
         &iso_millis(now - Duration::days(AUTO_BACKUP_INTERVAL_DAYS + 1)),
     )
@@ -348,7 +378,8 @@ fn recent_auto_backup_exists_is_false_outside_interval() {
 fn maybe_restore_prompt_is_silent_in_background_mode() {
     let dir = TestDir::new("prompt-silent");
     let db = dir.open_db();
-    config::set_string(&db, CONFIG_LAST_BACKUP_DATE, "2026-08-01T00:00:00.000Z").unwrap();
+    db.set_string(CONFIG_LAST_BACKUP_DATE, "2026-08-01T00:00:00.000Z")
+        .unwrap();
 
     let result = maybe_restore_prompt(&db, RegistryBackupMaintenanceMode::Silent).unwrap();
 
@@ -364,8 +395,9 @@ fn maybe_restore_prompt_is_silent_in_background_mode() {
 fn maybe_restore_prompt_is_disabled_by_config() {
     let dir = TestDir::new("prompt-disabled");
     let db = dir.open_db();
-    config::set_bool(&db, CONFIG_ASK_RESTORE, false).unwrap();
-    config::set_string(&db, CONFIG_LAST_BACKUP_DATE, "2026-08-01T00:00:00.000Z").unwrap();
+    db.set_bool(CONFIG_ASK_RESTORE, false).unwrap();
+    db.set_string(CONFIG_LAST_BACKUP_DATE, "2026-08-01T00:00:00.000Z")
+        .unwrap();
 
     let result = maybe_restore_prompt(&db, RegistryBackupMaintenanceMode::Foreground).unwrap();
 
@@ -395,8 +427,9 @@ fn maybe_restore_prompt_skips_when_already_acknowledged() {
     let dir = TestDir::new("prompt-acked");
     let db = dir.open_db();
     let backup_date = "2026-08-01T00:00:00.000Z";
-    config::set_string(&db, CONFIG_LAST_BACKUP_DATE, backup_date).unwrap();
-    config::set_string(&db, CONFIG_LAST_RESTORE_CHECK, backup_date).unwrap();
+    db.set_string(CONFIG_LAST_BACKUP_DATE, backup_date).unwrap();
+    db.set_string(CONFIG_LAST_RESTORE_CHECK, backup_date)
+        .unwrap();
 
     let result = maybe_restore_prompt(&db, RegistryBackupMaintenanceMode::Foreground).unwrap();
 
@@ -412,8 +445,9 @@ fn maybe_restore_prompt_fires_when_new_backup_is_unacknowledged() {
     let dir = TestDir::new("prompt-due");
     let db = dir.open_db();
     let backup_date = "2026-08-01T00:00:00.000Z";
-    config::set_string(&db, CONFIG_LAST_BACKUP_DATE, backup_date).unwrap();
-    config::set_string(&db, CONFIG_LAST_RESTORE_CHECK, "2026-07-01T00:00:00.000Z").unwrap();
+    db.set_string(CONFIG_LAST_BACKUP_DATE, backup_date).unwrap();
+    db.set_string(CONFIG_LAST_RESTORE_CHECK, "2026-07-01T00:00:00.000Z")
+        .unwrap();
 
     let result = maybe_restore_prompt(&db, RegistryBackupMaintenanceMode::Foreground).unwrap();
 

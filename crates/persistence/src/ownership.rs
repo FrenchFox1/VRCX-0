@@ -1,63 +1,11 @@
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
+pub(crate) use vrcx_0_core::OwnerId;
 
 use crate::common::{normalize_text, row_i64, DbWriteTarget, ParamsBuilder};
 use crate::database::DatabaseService;
 use crate::Error;
 
 pub(crate) const COL_OWNER_ID: &str = "owner_id";
-
-#[derive(
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Deserialize,
-    Serialize,
-    specta::Type,
-)]
-#[serde(transparent)]
-pub struct OwnerId(String);
-
-impl OwnerId {
-    pub fn new(owner_user_id: impl Into<String>) -> Self {
-        Self(owner_user_id.into())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub fn into_inner(self) -> String {
-        self.0
-    }
-}
-
-impl std::fmt::Display for OwnerId {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(&self.0)
-    }
-}
-
-impl From<&OwnerId> for Value {
-    fn from(owner_user_id: &OwnerId) -> Self {
-        Value::String(owner_user_id.0.clone())
-    }
-}
-
-impl From<OwnerId> for Value {
-    fn from(owner_user_id: OwnerId) -> Self {
-        Value::String(owner_user_id.0)
-    }
-}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct OwnerRowId(i64);
@@ -129,7 +77,9 @@ fn owner_row_id_lookup(
     if normalized_owner_user_id.is_empty() {
         return Ok(None);
     }
-    ensure_owner_table(db)?;
+    if !owner_table_exists(db)? {
+        return Ok(None);
+    }
     Ok(db
         .execute(
             "SELECT id FROM owners WHERE user_id = @user_id LIMIT 1",
@@ -139,6 +89,15 @@ fn owner_row_id_lookup(
         )?
         .first()
         .map(|row| OwnerRowId(row_i64(row, 0))))
+}
+
+fn owner_table_exists(db: &DatabaseService) -> Result<bool, Error> {
+    Ok(!db
+        .execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'owners' LIMIT 1",
+            &Default::default(),
+        )?
+        .is_empty())
 }
 
 #[cfg(test)]
@@ -164,6 +123,7 @@ mod tests {
 
         let missing = OwnerId::new("usr_missing");
         assert_eq!(owner_id_get(&db, &missing).unwrap(), None);
+        assert!(!owner_table_exists(&db).unwrap());
         let first = owner_id_get_or_insert(&db, &OwnerId::new(" usr_owner ")).unwrap();
         let second = owner_id_get_or_insert(&db, &OwnerId::new("usr_owner")).unwrap();
 

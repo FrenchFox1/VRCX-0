@@ -54,6 +54,9 @@ pub enum AppError {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
+    #[error("JSON error: {0}")]
+    JsonMessage(String),
+
     #[error("{0}")]
     PersistenceInvalidData(String),
 
@@ -132,7 +135,7 @@ impl AppError {
         match self {
             Self::Database { .. } => AppErrorCode::Database,
             Self::Io(_) => AppErrorCode::Io,
-            Self::Json(_) => AppErrorCode::Json,
+            Self::Json(_) | Self::JsonMessage(_) => AppErrorCode::Json,
             Self::PersistenceInvalidData(_) => AppErrorCode::PersistenceInvalidData,
             Self::RegistryPolicyInvalid(_) => AppErrorCode::RegistryPolicyInvalid,
             Self::WebClient(_) => AppErrorCode::WebClient,
@@ -299,7 +302,6 @@ impl From<vrcx_0_mcp::McpError> for AppError {
     fn from(value: vrcx_0_mcp::McpError) -> Self {
         match value {
             vrcx_0_mcp::McpError::Io(error) => AppError::Io(error),
-            vrcx_0_mcp::McpError::Persistence(error) => AppError::from(error),
             vrcx_0_mcp::McpError::Application(error) => AppError::from(error),
             other => AppError::Custom(other.to_string()),
         }
@@ -327,7 +329,38 @@ impl From<vrcx_0_integration_api::IntegrationApiError> for AppError {
 impl From<vrcx_0_assistant::AssistantError> for AppError {
     fn from(value: vrcx_0_assistant::AssistantError) -> Self {
         match value {
-            vrcx_0_assistant::AssistantError::Persistence(error) => AppError::from(error),
+            vrcx_0_assistant::AssistantError::Persistence(error) => match error {
+                vrcx_0_assistant::AssistantPortError::Database {
+                    message,
+                    sqlite_category,
+                } => AppError::Database {
+                    message,
+                    sqlite_category: sqlite_category.map(|category| match category {
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::Malformed => {
+                            SqliteErrorCategory::Malformed
+                        }
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::DiskFull => {
+                            SqliteErrorCategory::DiskFull
+                        }
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::Locked => {
+                            SqliteErrorCategory::Locked
+                        }
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::IoError => {
+                            SqliteErrorCategory::IoError
+                        }
+                    }),
+                },
+                vrcx_0_assistant::AssistantPortError::Io(message) => {
+                    AppError::Io(std::io::Error::other(message))
+                }
+                vrcx_0_assistant::AssistantPortError::Json(message) => {
+                    AppError::JsonMessage(message)
+                }
+                vrcx_0_assistant::AssistantPortError::InvalidData(message) => {
+                    AppError::PersistenceInvalidData(message)
+                }
+                vrcx_0_assistant::AssistantPortError::Custom(message) => AppError::Custom(message),
+            },
             vrcx_0_assistant::AssistantError::Mcp(error) => AppError::from(error),
             other => AppError::Custom(other.to_string()),
         }

@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 
 use serde::Serialize;
+use vrcx_0_contracts::world_collections::WorldCollectionSnapshotWorld;
 use vrcx_0_core::vrchat_ids::is_world_id;
-use vrcx_0_integrations::world_collections::{
-    fetch_world_collection, WorldCollectionSnapshotWorld,
-};
 
+use super::ports::WorldCollectionRemote;
 use super::share_collection::SHARE_COLLECTION_MAX_WORLDS;
 use vrcx_0_application_core::Error;
 
@@ -16,10 +15,11 @@ pub struct ImportPreview {
     pub world_ids: Vec<String>,
 }
 
-pub async fn preview_shared_collection(id: &str) -> Result<ImportPreview, Error> {
-    let snapshot = fetch_world_collection(id)
-        .await
-        .map_err(|error| Error::Custom(error.to_string()))?;
+pub async fn preview_shared_collection(
+    remote: &dyn WorldCollectionRemote,
+    id: &str,
+) -> Result<ImportPreview, Error> {
+    let snapshot = remote.fetch_collection(id).await?;
     let world_ids = normalize_world_ids(&snapshot.worlds);
 
     Ok(ImportPreview {
@@ -41,7 +41,7 @@ fn normalize_world_ids(worlds: &[WorldCollectionSnapshotWorld]) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use vrcx_0_integrations::world_collections::WorldCollectionSnapshotWorld;
+    use vrcx_0_contracts::world_collections::WorldCollectionSnapshotWorld;
 
     use super::normalize_world_ids;
 

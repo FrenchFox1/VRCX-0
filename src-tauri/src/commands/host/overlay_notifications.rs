@@ -2,10 +2,9 @@
 
 use serde_json::{json, Value};
 use tauri::State;
-use vrcx_0_composition::notification::{
-    discord_webhook_url_with_wait, filter_generic_webhook_payload, parse_webhook_fields,
-    send_json_webhook_with_retry, webhook_local_time_string, NotificationWebhookFormat,
-    WebhookDeliveryOutcome, WebhookDeliverySnapshot,
+use vrcx_0_application_activity::notification::{
+    filter_generic_webhook_payload, parse_webhook_fields, webhook_local_time_string,
+    NotificationWebhookFormat, WebhookDeliveryOutcome, WebhookDeliverySnapshot,
 };
 
 use crate::error::AppError;
@@ -24,14 +23,11 @@ pub async fn app__webhook_send_test(
         return Err(AppError::Custom("Webhook URL is required.".into()));
     }
     let payload = webhook_test_payload(format, &fields);
-    let url = if format == NotificationWebhookFormat::Discord {
-        discord_webhook_url_with_wait(url)
-    } else {
-        url.to_string()
-    };
-    send_json_webhook_with_retry(state.web.as_ref(), &url, payload)
+    state
+        .runtime_host()
+        .send_test_webhook(url.to_string(), format, payload)
         .await
-        .map_err(|error| AppError::Custom(error.to_string()))
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -39,7 +35,7 @@ pub async fn app__webhook_send_test(
 pub fn app__webhook_delivery_snapshot_get(
     state: State<'_, AppState>,
 ) -> Result<WebhookDeliverySnapshot, AppError> {
-    Ok(state.runtime_context.webhook_delivery_snapshot())
+    Ok(state.runtime_host().webhook_delivery_snapshot())
 }
 
 fn webhook_test_payload(format: NotificationWebhookFormat, fields: &str) -> Value {

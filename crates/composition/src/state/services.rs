@@ -1,7 +1,24 @@
 use std::sync::Arc;
-use vrcx_0_application_core::RuntimeOperationStatus;
+use vrcx_0_application_core::{DatabaseMaintenancePort, RuntimeOperationStatus};
+use vrcx_0_persistence::DatabaseService;
 
 use super::RuntimeHostState;
+
+struct RuntimeDatabaseMaintenanceAdapter {
+    db: Arc<DatabaseService>,
+}
+
+impl DatabaseMaintenancePort for RuntimeDatabaseMaintenanceAdapter {
+    fn optimize(&self) -> vrcx_0_application_core::Result<()> {
+        vrcx_0_persistence::optimize_database(self.db.as_ref())
+            .map(|_| ())
+            .map_err(Into::into)
+    }
+
+    fn checkpoint_wal(&self) -> vrcx_0_application_core::Result<()> {
+        self.db.checkpoint_wal().map(|_| ()).map_err(Into::into)
+    }
+}
 
 impl RuntimeHostState {
     pub fn release_profile_lock(&self) {
@@ -33,13 +50,20 @@ impl RuntimeHostState {
             "Rust runtime startup recovery checkpoint recorded; no durable recovery queue is configured.",
             0,
         );
+        let database_maintenance: Arc<dyn DatabaseMaintenancePort> =
+            Arc::new(RuntimeDatabaseMaintenanceAdapter {
+                db: Arc::clone(&self.db),
+            });
         self.runtime_context
             .background_jobs
-            .start_database_optimize_loop(Arc::clone(&self.db), self.runtime_context.tasks.clone());
+            .start_database_optimize_loop(
+                Arc::clone(&database_maintenance),
+                self.runtime_context.tasks.clone(),
+            );
         self.runtime_context
             .background_jobs
             .start_database_checkpoint_loop(
-                Arc::clone(&self.db),
+                database_maintenance,
                 self.runtime_context.tasks.clone(),
             );
         self.runtime_context

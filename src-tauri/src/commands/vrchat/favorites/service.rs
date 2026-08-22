@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::favorites::{
-    favorite_groups_get_input, favorite_worlds_get_input,
-};
 use vrcx_0_application_core::vrchat_api::require_text;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::favorites::{
+    favorite_groups_get_input, favorite_worlds_get_input,
+};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -76,16 +76,12 @@ pub async fn app__vrchat_favorite_add(
     input: VrchatFavoriteAddInput,
 ) -> Result<VrchatApiResponse, AppError> {
     Ok(state
-        .runtime_context
-        .favorite_mutations
-        .add_remote(
-            "Remote favorite mutation",
-            vrcx_0_application::FavoriteRemoteAddInput {
-                kind: input.type_name,
-                entity_id: input.favorite_id,
-                tags: input.tags,
-            },
-        )
+        .runtime_host()
+        .favorite_add_remote(vrcx_0_application::favorites::FavoriteRemoteAddInput {
+            kind: input.type_name,
+            entity_id: input.favorite_id,
+            tags: input.tags,
+        })
         .await?)
 }
 
@@ -96,14 +92,10 @@ pub async fn app__vrchat_favorite_delete(
     input: VrchatFavoriteDeleteInput,
 ) -> Result<VrchatApiResponse, AppError> {
     Ok(state
-        .runtime_context
-        .favorite_mutations
-        .delete_remote(
-            "Remote favorite mutation",
-            vrcx_0_application::FavoriteRemoteDeleteInput {
-                object_id: input.object_id,
-            },
-        )
+        .runtime_host()
+        .favorite_delete_remote(vrcx_0_application::favorites::FavoriteRemoteDeleteInput {
+            object_id: input.object_id,
+        })
         .await?)
 }
 
@@ -114,11 +106,9 @@ pub async fn app__vrchat_favorite_group_save(
     input: VrchatFavoriteGroupSaveInput,
 ) -> Result<VrchatApiResponse, AppError> {
     Ok(state
-        .runtime_context
-        .favorite_mutations
-        .save_remote_group(
-            "Remote favorite mutation",
-            vrcx_0_application::FavoriteRemoteGroupSaveInput {
+        .runtime_host()
+        .favorite_group_save_remote(
+            vrcx_0_application::favorites::FavoriteRemoteGroupSaveInput {
                 kind: input.type_name,
                 group: input.group,
                 display_name: input.display_name,
@@ -135,11 +125,9 @@ pub async fn app__vrchat_favorite_group_clear(
     input: VrchatFavoriteGroupClearInput,
 ) -> Result<VrchatApiResponse, AppError> {
     Ok(state
-        .runtime_context
-        .favorite_mutations
-        .clear_remote_group(
-            "Remote favorite mutation",
-            vrcx_0_application::FavoriteRemoteGroupClearInput {
+        .runtime_host()
+        .favorite_group_clear_remote(
+            vrcx_0_application::favorites::FavoriteRemoteGroupClearInput {
                 kind: input.type_name,
                 group: input.group,
             },
@@ -176,16 +164,15 @@ pub fn app__local_favorite_remove(
 pub fn app__local_favorite_group_create(
     state: State<'_, AppState>,
     input: LocalFavoriteGroupInput,
-) -> Result<vrcx_0_application::LocalFavoriteGroupWrite, AppError> {
+) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite, AppError> {
     let kind = input.kind;
     let group_name = require_text(
         input.group_name,
         "LocalFavoriteGroupCreate requires groupName.",
     )?;
     state
-        .runtime_context
-        .favorite_mutations
-        .create_local_group(kind, group_name)
+        .runtime_host()
+        .favorite_local_group_create(kind, group_name)
         .map_err(AppError::from)
 }
 
@@ -194,7 +181,7 @@ pub fn app__local_favorite_group_create(
 pub fn app__local_favorite_group_rename(
     state: State<'_, AppState>,
     input: LocalFavoriteGroupRenameInput,
-) -> Result<vrcx_0_application::LocalFavoriteGroupWrite, AppError> {
+) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite, AppError> {
     let kind = input.kind;
     let group_name = require_text(
         input.group_name,
@@ -205,9 +192,8 @@ pub fn app__local_favorite_group_rename(
         "LocalFavoriteGroupRename requires newGroupName.",
     )?;
     state
-        .runtime_context
-        .favorite_mutations
-        .rename_local_group(kind, group_name, new_group_name)
+        .runtime_host()
+        .favorite_local_group_rename(kind, group_name, new_group_name)
         .map_err(AppError::from)
 }
 
@@ -216,15 +202,14 @@ pub fn app__local_favorite_group_rename(
 pub fn app__local_favorite_group_delete(
     state: State<'_, AppState>,
     input: LocalFavoriteGroupInput,
-) -> Result<vrcx_0_application::LocalFavoriteGroupWrite, AppError> {
+) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite, AppError> {
     let kind = input.kind;
     let group_name = require_text(
         input.group_name,
         "LocalFavoriteGroupDelete requires groupName.",
     )?;
     state
-        .runtime_context
-        .favorite_mutations
-        .delete_local_group(kind, group_name)
+        .runtime_host()
+        .favorite_local_group_delete(kind, group_name)
         .map_err(AppError::from)
 }

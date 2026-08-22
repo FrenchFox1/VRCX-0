@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use vrcx_0_application::{
+use vrcx_0_application::profile::{
     BackgroundImageCustomSource, BackgroundImageCustomSourceKind, BackgroundImageFileResolver,
 };
 use vrcx_0_application_core::Error;

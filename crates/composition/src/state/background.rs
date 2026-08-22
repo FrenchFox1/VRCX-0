@@ -1,231 +1,118 @@
 use std::collections::HashMap;
-use std::sync::{atomic::Ordering, Arc, Mutex};
-use std::time::{Duration, Instant};
-use vrcx_0_application_core::RuntimeOperationStatus;
+use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use super::{
     run_background_current_user_refresh, run_background_group_instance_refresh,
     run_background_moderation_refresh, run_background_print_cleanup,
-    run_background_social_baseline_refresh, run_social_baseline_refresh_core,
-    AuthenticatedSessionProjection, BackendRuntime, BackendRuntimePhase, BackendRuntimeSnapshot,
-    BackendRuntimeTelemetryKind, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
-    BackgroundTickContext, RuntimeHostContext, RuntimeHostState, SocialBaselineRefreshOutput,
-    BACKGROUND_CURRENT_USER_CADENCE_SECONDS, BACKGROUND_CURRENT_USER_REFRESH_JOB,
-    BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS, BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
-    BACKGROUND_MODERATION_CADENCE_SECONDS, BACKGROUND_MODERATION_REFRESH_JOB,
-    BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS, BACKGROUND_PRINT_CLEANUP_JOB,
-    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS, BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+    run_background_social_baseline_refresh, AuthenticatedSessionProjection, BackendRuntime,
+    BackendRuntimePhase, BackendRuntimeSnapshot, BackendRuntimeTelemetryKind,
+    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, BackgroundTickContext,
+    DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs, RuntimeHostContext,
+    RuntimeHostState, SocialBaselineRefreshOutput, WebClient,
+};
+use crate::GroupOrderSource;
+use vrcx_0_application::social::{
+    AuthenticatedRuntimeOrchestrator, SocialMaintenanceActions, SocialMaintenanceFuture,
 };
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
+pub(super) struct RuntimeHostSocialMaintenanceActions {
+    pub(super) db: Arc<DatabaseService>,
+    pub(super) web: Arc<WebClient>,
+    pub(super) session_slot: Arc<Mutex<AuthenticatedSessionProjection>>,
+    pub(super) realtime_runtime: Arc<RealtimeHostRuntime>,
+    pub(super) runtime_context: Arc<RuntimeHostContext>,
+    pub(super) backend_runtime: BackendRuntime,
+    pub(super) background_jobs: RuntimeBackgroundJobs,
+    pub(super) authenticated_runtime: AuthenticatedRuntimeOrchestrator,
+    pub(super) group_instances_refresh_running: Arc<AtomicBool>,
+    pub(super) group_order_source: Arc<dyn GroupOrderSource>,
+}
+
+impl RuntimeHostSocialMaintenanceActions {
+    fn tick_context(&self) -> BackgroundTickContext<'_> {
+        BackgroundTickContext {
+            db: &self.db,
+            web: &self.web,
+            session_slot: &self.session_slot,
+            realtime_runtime: &self.realtime_runtime,
+            runtime_context: &self.runtime_context,
+            backend_runtime: &self.backend_runtime,
+            background_jobs: &self.background_jobs,
+            authenticated_runtime: &self.authenticated_runtime,
+        }
+    }
+}
+
+impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
+    fn active_scope_key(&self) -> Option<String> {
+        if !is_authenticated_maintenance_active(
+            &self.backend_runtime,
+            &self.runtime_context,
+            &self.session_slot,
+        ) {
+            return None;
+        }
+        background_capability_session_scope_key(&self.session_slot)
+    }
+
+    fn favorite_friend_group_membership(&self) -> Option<HashMap<String, Vec<String>>> {
+        self.authenticated_runtime
+            .favorite_friend_group_membership()
+    }
+
+    fn refresh_current_user(&self) -> SocialMaintenanceFuture<'_> {
+        Box::pin(run_background_current_user_refresh(
+            &self.web,
+            &self.session_slot,
+            &self.realtime_runtime,
+            &self.runtime_context,
+            &self.backend_runtime,
+            &self.background_jobs,
+        ))
+    }
+
+    fn refresh_group_instances(&self) -> SocialMaintenanceFuture<'_> {
+        Box::pin(async move {
+            let context = self.tick_context();
+            run_background_group_instance_refresh(
+                &context,
+                &self.group_instances_refresh_running,
+                self.group_order_source.as_ref(),
+            )
+            .await;
+        })
+    }
+
+    fn refresh_social_baseline<'a>(
+        &'a self,
+        favorite_friend_groups_by_key: &'a mut HashMap<String, Vec<String>>,
+    ) -> SocialMaintenanceFuture<'a> {
+        Box::pin(async move {
+            let context = self.tick_context();
+            run_background_social_baseline_refresh(&context, favorite_friend_groups_by_key).await;
+        })
+    }
+
+    fn refresh_moderation(&self) -> SocialMaintenanceFuture<'_> {
+        Box::pin(run_background_moderation_refresh(
+            &self.db,
+            &self.web,
+            &self.session_slot,
+            &self.runtime_context,
+            &self.backend_runtime,
+            &self.background_jobs,
+        ))
+    }
+
+    fn schedule_print_cleanup(&self) {
+        run_background_print_cleanup(&self.tick_context());
+    }
+}
+
 impl RuntimeHostState {
     pub(super) fn start_social_maintenance_loops(&self) {
-        let current = self.backend_runtime.snapshot();
-        let auth_scope = self.runtime_context.auth_scope.snapshot();
-        let active_runtime = is_authenticated_maintenance_active_snapshot(&current);
-        let active_session = background_session_scope_matches_auth(
-            &self.authenticated_session_projection,
-            &auth_scope,
-        );
-        if !active_runtime || !active_session {
-            return;
-        }
-        if self.social_maintenance_running.swap(true, Ordering::AcqRel) {
-            return;
-        }
-
-        for (name, cadence, detail) in [
-            (
-                BACKGROUND_CURRENT_USER_REFRESH_JOB,
-                BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
-                "Background current user refresh is scheduled.",
-            ),
-            (
-                BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
-                BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
-                "Background group instance refresh is scheduled.",
-            ),
-            (
-                BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
-                BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
-                "Background social baseline refresh is scheduled.",
-            ),
-            (
-                BACKGROUND_MODERATION_REFRESH_JOB,
-                BACKGROUND_MODERATION_CADENCE_SECONDS,
-                "Background moderation refresh is scheduled.",
-            ),
-            (
-                BACKGROUND_PRINT_CLEANUP_JOB,
-                BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS,
-                "Print auto cleanup fallback is scheduled.",
-            ),
-        ] {
-            self.runtime_context.background_jobs.register_job(
-                name,
-                "rust-host",
-                Some(cadence),
-                RuntimeOperationStatus::Scheduled,
-                detail,
-            );
-        }
-
-        let db = Arc::clone(&self.db);
-        let web = Arc::clone(&self.web);
-        let backend_runtime = self.backend_runtime.clone();
-        let background_jobs = self.runtime_context.background_jobs.clone();
-        let running = Arc::clone(&self.social_maintenance_running);
-        let group_instances_refresh_running =
-            Arc::clone(&self.background_group_instances_refresh_running);
-        let session_slot = Arc::clone(&self.authenticated_session_projection);
-        let realtime_runtime = Arc::clone(&self.realtime_runtime);
-        let authenticated_runtime = self.authenticated_runtime.clone();
-        let runtime_context = Arc::clone(&self.runtime_context);
-        let group_order_source = Arc::clone(&self.group_order_source);
-
-        self.runtime_context
-            .tasks
-            .spawn_cancellable(move |stop_token| async move {
-                let mut next_current_user = Instant::now();
-                let mut next_group_instances = Instant::now();
-                let mut next_social = Instant::now()
-                    + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS);
-                let mut next_moderation = Instant::now();
-                let mut next_print_cleanup = Instant::now();
-                let mut favorite_friend_groups_by_key: HashMap<String, Vec<String>> =
-                    HashMap::new();
-                let mut favorite_groups_initialized = false;
-                let mut active_scope_key =
-                    background_capability_session_scope_key(&session_slot).unwrap_or_default();
-                let sleep_chunk = Duration::from_secs(1);
-
-                loop {
-                    if stop_token.is_stop_requested()
-                        || !is_authenticated_maintenance_active(
-                            &backend_runtime,
-                            &runtime_context,
-                            &session_slot,
-                        )
-                    {
-                        break;
-                    }
-
-                    let now = Instant::now();
-                    let scope_key =
-                        background_capability_session_scope_key(&session_slot).unwrap_or_default();
-                    if scope_key != active_scope_key {
-                        active_scope_key = scope_key;
-                        favorite_friend_groups_by_key.clear();
-                        favorite_groups_initialized = false;
-                        next_current_user = now;
-                        next_group_instances = now;
-                        next_social =
-                            now + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS);
-                        next_moderation = now;
-                        next_print_cleanup = now;
-                    }
-
-                    let tick_context = BackgroundTickContext {
-                        db: &db,
-                        web: &web,
-                        session_slot: &session_slot,
-                        realtime_runtime: &realtime_runtime,
-                        runtime_context: &runtime_context,
-                        backend_runtime: &backend_runtime,
-                        background_jobs: &background_jobs,
-                        authenticated_runtime: &authenticated_runtime,
-                    };
-
-                    if now >= next_current_user {
-                        run_background_current_user_refresh(
-                            &db,
-                            &web,
-                            &session_slot,
-                            &realtime_runtime,
-                            &runtime_context,
-                            &backend_runtime,
-                            &background_jobs,
-                        )
-                        .await;
-                        next_current_user =
-                            now + Duration::from_secs(BACKGROUND_CURRENT_USER_CADENCE_SECONDS);
-                    }
-
-                    if now >= next_group_instances {
-                        run_background_group_instance_refresh(
-                            &tick_context,
-                            &group_instances_refresh_running,
-                            group_order_source.as_ref(),
-                        )
-                        .await;
-                        next_group_instances =
-                            now + Duration::from_secs(BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS);
-                    }
-
-                    if !favorite_groups_initialized {
-                        if let Some(groups) =
-                            authenticated_runtime.favorite_friend_group_membership()
-                        {
-                            favorite_friend_groups_by_key = groups;
-                            favorite_groups_initialized = true;
-                        }
-                    }
-
-                    if now >= next_social {
-                        run_background_social_baseline_refresh(
-                            &tick_context,
-                            &mut favorite_friend_groups_by_key,
-                        )
-                        .await;
-                        next_social =
-                            now + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS);
-                    }
-
-                    if now >= next_moderation {
-                        run_background_moderation_refresh(
-                            &db,
-                            &web,
-                            &session_slot,
-                            &runtime_context,
-                            &backend_runtime,
-                            &background_jobs,
-                        )
-                        .await;
-                        next_moderation =
-                            now + Duration::from_secs(BACKGROUND_MODERATION_CADENCE_SECONDS);
-                    }
-
-                    if now >= next_print_cleanup {
-                        run_background_print_cleanup(&tick_context);
-                        next_print_cleanup =
-                            now + Duration::from_secs(BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS);
-                    }
-
-                    tokio::time::sleep(sleep_chunk).await;
-                }
-
-                running.store(false, Ordering::Release);
-                background_jobs.mark_completed(
-                    BACKGROUND_CURRENT_USER_REFRESH_JOB,
-                    "Background current user refresh stopped.",
-                );
-                background_jobs.mark_completed(
-                    BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
-                    "Background group instance refresh stopped.",
-                );
-                background_jobs.mark_completed(
-                    BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
-                    "Background social baseline refresh stopped.",
-                );
-                background_jobs.mark_completed(
-                    BACKGROUND_MODERATION_REFRESH_JOB,
-                    "Background moderation refresh stopped.",
-                );
-                background_jobs.mark_completed(
-                    BACKGROUND_PRINT_CLEANUP_JOB,
-                    "Print auto cleanup fallback stopped.",
-                );
-            });
+        self.social_maintenance.start();
     }
 
     pub async fn refresh_social_baseline_now(
@@ -237,12 +124,15 @@ impl RuntimeHostState {
                 "Social baseline refresh requires an authenticated session.".into(),
             ));
         };
-        let deps = vrcx_0_application_realtime::SocialBaselineDeps {
-            db: Arc::clone(&self.db),
-            web: Arc::clone(&self.web),
-            auth_scope: self.runtime_context.auth_scope.clone(),
-        };
-        let core = run_social_baseline_refresh_core(
+        let deps = vrcx_0_application_realtime::SocialBaselineDeps::new(
+            Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+                Arc::clone(&self.db),
+            )),
+            Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
+            Arc::clone(&self.web),
+            self.runtime_context.auth_scope.clone(),
+        );
+        let core = vrcx_0_application::social::refresh_social_baseline(
             deps,
             &self.realtime_runtime,
             &self.authenticated_runtime,
@@ -305,15 +195,6 @@ pub(super) fn is_authenticated_maintenance_active_snapshot(
 ) -> bool {
     snapshot.phase == BackendRuntimePhase::Running
         && snapshot.auth_status == vrcx_0_application_core::BackendRuntimeAuthStatus::Authenticated
-}
-
-pub(super) fn background_session_scope_matches_auth(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-    auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
-) -> bool {
-    background_capability_session_identity(session_slot)
-        .map(|session| background_session_matches_auth(&session, auth_scope))
-        .unwrap_or(false)
 }
 
 pub(super) fn background_session_matches_auth(
@@ -449,8 +330,8 @@ pub(super) fn background_capability_session_matches(
 #[cfg(test)]
 mod background_capability_session_identity_tests {
     use super::*;
-    use crate::AuthenticatedSessionSnapshot;
     use serde_json::json;
+    use vrcx_0_application::auth::AuthenticatedSessionSnapshot;
 
     #[test]
     fn maintenance_scope_reads_only_session_identity() {

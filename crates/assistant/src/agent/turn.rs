@@ -5,14 +5,13 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
-use vrcx_0_integrations::llm::{
-    ChatMessage, LlmClient, LlmError, LlmRequestOptions, ToolDefinition,
-};
+use vrcx_0_contracts::llm::{ChatMessage, LlmRequestOptions, ToolDefinition};
 use vrcx_0_mcp::{InProcessMcpTools, McpError, ToolCallOutcome};
 
 use crate::entities::{extract_entities, surfaced_entities, Entity};
 use crate::events::AssistantEmitter;
 use crate::playbook;
+use crate::ports::{AssistantLlmClient, AssistantLlmError};
 use crate::session::{ActiveTurn, Role, SessionStore, TurnStatus};
 
 use super::context::{build_context, latest_user_message};
@@ -131,7 +130,7 @@ pub(crate) struct TurnContext {
     pub tools: Arc<InProcessMcpTools>,
     pub sessions: Arc<SessionStore>,
     pub emitter: AssistantEmitter,
-    pub client: LlmClient,
+    pub client: AssistantLlmClient,
     pub tool_defs: Arc<Vec<ToolDefinition>>,
     pub session_id: String,
     pub turn_id: String,
@@ -147,7 +146,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         match playbook::classify_keyword(&user_text) {
             Some(pb) => Some(pb),
             None => tokio::select! {
-                pb = playbook::classify_llm(&ctx.client, &user_text) => pb,
+                pb = playbook::classify_llm(ctx.client.as_ref(), &user_text) => pb,
                 _ = ctx.cancel.cancelled() => return finish_cancelled(&ctx),
             },
         }
@@ -185,11 +184,14 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
         let turn = {
             let emitter = &ctx.emitter;
-            let stream = ctx
-                .client
-                .stream_chat(&working, tool_defs, &ctx.options, |delta| {
+            let stream = ctx.client.stream_chat(
+                &working,
+                tool_defs,
+                &ctx.options,
+                Box::new(|delta| {
                     emitter.delta(delta);
-                });
+                }),
+            );
             tokio::pin!(stream);
             tokio::select! {
                 result = &mut stream => result,
@@ -279,11 +281,14 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         working.push(ChatMessage::user(final_answer_retry_prompt(used_tools)));
         let turn = {
             let emitter = &ctx.emitter;
-            let stream = ctx
-                .client
-                .stream_chat(&working, &[], &ctx.options, |delta| {
+            let stream = ctx.client.stream_chat(
+                &working,
+                &[],
+                &ctx.options,
+                Box::new(|delta| {
                     emitter.delta(delta);
-                });
+                }),
+            );
             tokio::pin!(stream);
             tokio::select! {
                 result = &mut stream => result,
@@ -414,14 +419,14 @@ fn finish_cancelled(ctx: &TurnContext) {
     ctx.emitter.error("cancelled", "Turn cancelled.");
 }
 
-fn finish_llm_error(ctx: &TurnContext, error: &LlmError) {
+fn finish_llm_error(ctx: &TurnContext, error: &AssistantLlmError) {
     let message = llm_error_summary(error);
     finish_error(ctx, "llm", &message);
 }
 
-fn llm_error_summary(error: &LlmError) -> String {
+fn llm_error_summary(error: &AssistantLlmError) -> String {
     match error {
-        LlmError::Api { status, .. } => format!("LLM API error ({status})"),
+        AssistantLlmError::Api { status, .. } => format!("LLM API error ({status})"),
         _ => error.to_string(),
     }
 }

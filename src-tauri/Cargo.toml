@@ -39,7 +39,6 @@ tauri-plugin-notification = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-autostart = "2"
-sys-locale.workspace = true
 tauri-plugin-window-state = "2"
 percent-encoding = { workspace = true }
 url = { workspace = true }
@@ -53,10 +52,12 @@ vrcx-0-host-desktop = { path = "../crates/host-desktop" }
 vrcx-0-i18n = { path = "../crates/i18n" }
 vrcx-0-media = { path = "../crates/media" }
 vrcx-0-application = { path = "../crates/application" }
+vrcx-0-contracts = { path = "../crates/contracts" }
 vrcx-0-application-activity = { path = "../crates/application-activity" }
 vrcx-0-application-core = { path = "../crates/application-core" }
 vrcx-0-application-realtime = { path = "../crates/application-realtime" }
 vrcx-0-application-game = { path = "../crates/application-game" }
+vrcx-0-outbound-adapters = { path = "../crates/outbound-adapters" }
 vrcx-0-mcp = { path = "../crates/mcp" }
 vrcx-0-integration-api = { path = "../crates/integration-api" }
 vrcx-0-assistant = { path = "../crates/assistant" }
@@ -97,6 +98,7 @@ openxr-overlay = [
 tauri-build = { version = "2", features = [] }
 
 [dev-dependencies]
+cargo_metadata = "0.19.2"
 image = { workspace = true }
 vrcx-0-application = { path = "../crates/application", features = [
     "test-utils"

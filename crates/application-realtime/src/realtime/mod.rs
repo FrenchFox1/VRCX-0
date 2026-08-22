@@ -1,10 +1,9 @@
-pub(crate) mod connection;
+pub mod connection;
 pub(crate) mod current_user;
 pub(crate) mod event_kind;
 pub(crate) mod friends;
 pub(crate) mod instance_queue;
 pub(crate) mod invite_automation;
-pub mod lifecycle_log;
 pub(crate) mod location_predicates;
 pub(crate) mod notifications;
 mod output;
@@ -14,8 +13,8 @@ mod runtime_types;
 pub(crate) mod service;
 pub(crate) mod user_cache;
 pub(crate) mod user_query_cache;
-mod ws_event_log;
 
+pub use connection::{RealtimeMessageSink, RealtimeTransport, RealtimeTransportFuture};
 pub use current_user::{
     CURRENT_USER_AVATAR_RESPONSE_AUTHORITY_FIELDS,
     CURRENT_USER_FALLBACK_AVATAR_RESPONSE_AUTHORITY_FIELDS,

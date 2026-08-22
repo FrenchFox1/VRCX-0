@@ -457,22 +457,6 @@
             "instance_duration": "停留 {duration}"
         },
         "generic_instance_location": "一個房間",
-        "friends_panel": {
-            "title": "收藏好友",
-            "all": "全部",
-            "empty": "沒有收藏好友上線",
-            "note": "備註",
-            "memo": "本機備註",
-            "open": "開啟",
-            "request": "請求",
-            "invite": "邀請",
-            "favorites_online": "線上收藏好友",
-            "same_instance": "同一房間",
-            "local_favorites": "本機收藏",
-            "traveling": "旅行",
-            "private": "私人",
-            "offline": "離線"
-        },
         "discord": {
             "title": {
                 "invite": "{name}的邀請",
@@ -2154,13 +2138,6 @@
                     "timeout": "通知時長",
                     "opacity": "不透明度",
                     "filters": "頭顯通知篩選器"
-                },
-                "interactive_panel": {
-                    "header": "互動式好友面板",
-                    "enabled": "互動式好友面板",
-                    "all_friends_include_favorites": "將收藏好友納入「全部」",
-                    "summon_hint": "召喚手勢",
-                    "openvr_required": "按住右手握把約 2 秒即可叫出面板。需要 SteamVR/OpenVR 疊加層後端；OpenXR 不提供互動式面板。"
                 },
                 "wrist_overlay": {
                     "header": "手腕嵌入介面",

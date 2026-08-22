@@ -20,7 +20,7 @@ impl OverlayActivityRuntime {
         projection
             .feed_entries
             .iter()
-            .filter_map(friend_feed_candidate)
+            .filter_map(|entry| friend_feed_candidate(entry.as_value()))
             .filter_map(|candidate| self.ingest_candidate(candidate))
             .collect()
     }
@@ -61,7 +61,8 @@ impl OverlayActivityRuntime {
                 "worldName": projection.world_name,
                 "position": projection.position,
                 "queueSize": projection.queue_size,
-            }),
+            })
+            .into(),
         };
         self.ingest_candidate(candidate).into_iter().collect()
     }
@@ -114,7 +115,7 @@ fn friend_feed_candidate(value: &Value) -> Option<OverlayActivityCandidate> {
         actor_user_id: user_id,
         actor_display_name: value.trimmed_text("displayName"),
         current_instance,
-        payload: value.clone(),
+        payload: value.clone().into(),
     })
 }
 
@@ -151,7 +152,7 @@ fn notification_candidate(value: &Value) -> Option<OverlayActivityCandidate> {
         actor_user_id,
         actor_display_name,
         current_instance: false,
-        payload: value.clone(),
+        payload: value.clone().into(),
     })
 }
 

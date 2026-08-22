@@ -27,6 +27,7 @@ tokio-tungstenite = { version = "0.30", features = ["rustls-tls-native-roots"] }
 tower-service = "0.3"
 url = { workspace = true }
 vrcx-0-core = { path = "../core" }
+vrcx-0-contracts = { path = "../contracts" }
 cookie_store = "0.22.1"
 
 [dev-dependencies]

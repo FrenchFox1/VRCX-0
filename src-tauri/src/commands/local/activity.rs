@@ -5,7 +5,7 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use vrcx_0_persistence::activity::{
+use vrcx_0_runtime_host_desktop::local_data::{
     ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
     ActivityViewOutput,
 };
@@ -16,7 +16,10 @@ pub fn app__activity_overlap_view(
     state: State<'_, AppState>,
     input: ActivityOverlapViewBuildInput,
 ) -> Result<ActivityOverlapViewOutput, AppError> {
-    vrcx_0_persistence::activity::activity_overlap_view_build(state.db.as_ref(), input)
+    state
+        .runtime_host()
+        .local_data()
+        .activity_overlap_view(input)
         .map_err(AppError::from)
 }
 
@@ -26,6 +29,9 @@ pub fn app__activity_view(
     state: State<'_, AppState>,
     input: ActivityViewBuildInput,
 ) -> Result<ActivityViewOutput, AppError> {
-    vrcx_0_persistence::activity::activity_view_build(state.db.as_ref(), input)
+    state
+        .runtime_host()
+        .local_data()
+        .activity_view(input)
         .map_err(AppError::from)
 }

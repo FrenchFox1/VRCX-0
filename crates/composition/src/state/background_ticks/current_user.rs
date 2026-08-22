@@ -1,10 +1,9 @@
 use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
-use vrcx_0_application::refresh_background_current_user;
+use vrcx_0_application::game::refresh_background_current_user;
 use vrcx_0_application_core::{BackendRuntime, RuntimeBackgroundJobs, WebClient};
 use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeSessionContext};
-use vrcx_0_persistence::DatabaseService;
 
 use crate::RuntimeHostContext;
 
@@ -16,7 +15,6 @@ use super::super::{
 };
 
 pub(in crate::state) async fn run_background_current_user_refresh(
-    db: &Arc<DatabaseService>,
     web: &Arc<WebClient>,
     session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
     realtime_runtime: &Arc<RealtimeHostRuntime>,
@@ -36,7 +34,13 @@ pub(in crate::state) async fn run_background_current_user_refresh(
         );
         return;
     };
-    match refresh_background_current_user(web.as_ref(), db.as_ref(), &session).await {
+    match refresh_background_current_user(
+        web.as_ref(),
+        &vrcx_0_outbound_adapters::VrchatBackgroundGroupRequests,
+        &session,
+    )
+    .await
+    {
         Ok(updated_user) => {
             let accepted = realtime_runtime
                 .sync_current_user_snapshot(

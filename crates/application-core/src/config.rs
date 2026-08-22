@@ -1,12 +1,6 @@
 use serde_json::{json, Value};
 
-use vrcx_0_persistence::config::{get_json, set_json};
-use vrcx_0_persistence::DatabaseService;
-
-use crate::Result;
-
-pub fn read_config_string_array(db: &DatabaseService, key: &str) -> Result<Vec<String>> {
-    let parsed = get_json(db, key, Value::Null)?;
+pub fn normalize_config_string_array(parsed: Value) -> Vec<String> {
     let mut values = parsed
         .as_array()
         .map(|items| {
@@ -20,12 +14,11 @@ pub fn read_config_string_array(db: &DatabaseService, key: &str) -> Result<Vec<S
         .unwrap_or_default();
     values.sort();
     values.dedup();
-    Ok(values)
+    values
 }
 
-pub fn write_config_string_array(db: &DatabaseService, key: &str, values: &[String]) -> Result<()> {
-    set_json(db, key, &json!(values))?;
-    Ok(())
+pub fn config_string_array_value(values: &[String]) -> Value {
+    json!(values)
 }
 
 fn config_value_to_string(value: &Value) -> String {

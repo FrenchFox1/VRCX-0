@@ -2,7 +2,7 @@ use super::test_support::*;
 use super::*;
 use vrcx_0_application_core::HostSessionGameProcessStatus as GameProcessStatus;
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 fn joining_output(
     owner_user_id: &OwnerId,
@@ -21,7 +21,8 @@ fn joining_output(
                 "displayName": "Friend",
                 "location": "traveling",
                 "travelingToLocation": destination,
-            })],
+            })
+            .into()],
             ..FriendProjection::new(7, baseline_revision)
         },
     )

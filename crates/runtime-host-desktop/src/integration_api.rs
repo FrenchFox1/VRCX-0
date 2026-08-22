@@ -4,16 +4,17 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 use vrcx_0_application_core::{
     InstanceRosterSnapshot, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
+    TaskSupervisor,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
-use vrcx_0_composition::RuntimeHostContext;
+use vrcx_0_core::OwnerId;
 use vrcx_0_integration_api::{
     IntegrationApiConfigStore, IntegrationApiController, IntegrationApiError, IntegrationApiInput,
     IntegrationApiInputReceiver, IntegrationApiStartFailedPayload, IntegrationApiStatus,
     RoomMemberState, RoomState, DEFAULT_INTEGRATION_API_PORT,
 };
 use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_persistence::DatabaseService;
 
 pub(crate) struct DesktopIntegrationApiConfigStore {
     config: ConfigRepository,
@@ -192,25 +193,25 @@ impl DesktopIntegrationApiRuntime {
 }
 
 pub(crate) fn start_integration_api_input_task(
-    context: Arc<RuntimeHostContext>,
+    db: Arc<DatabaseService>,
+    event_bus: RuntimeEventBus,
+    tasks: TaskSupervisor,
     realtime_runtime: Arc<RealtimeHostRuntime>,
     runtime: Arc<DesktopIntegrationApiRuntime>,
     mut receiver: IntegrationApiInputReceiver,
     enrichment_receiver: broadcast::Receiver<IntegrationApiEnrichmentRequest>,
 ) {
-    let enrichment_context = Arc::clone(&context);
     let enrichment_realtime_runtime = Arc::clone(&realtime_runtime);
     let enrichment_runtime = Arc::clone(&runtime);
-    context.tasks.spawn(run_integration_api_enrichment(
-        enrichment_context,
+    tasks.spawn(run_integration_api_enrichment(
+        db,
         enrichment_realtime_runtime,
         enrichment_runtime,
         enrichment_receiver,
     ));
-    let task_context = Arc::clone(&context);
-    context.tasks.spawn(async move {
+    tasks.spawn(async move {
         if let Err(error) = runtime.controller.start_from_config().await {
-            emit_start_failed(&task_context.event_bus, &runtime.controller, &error).await;
+            emit_start_failed(&event_bus, &runtime.controller, &error).await;
         }
         while let Some(input) = receiver.recv().await {
             match input {
@@ -223,12 +224,7 @@ pub(crate) fn start_integration_api_input_task(
                         Ok(_) => runtime.replay_latest_if_running().await,
                         Err(error) => {
                             if running {
-                                emit_start_failed(
-                                    &task_context.event_bus,
-                                    &runtime.controller,
-                                    &error,
-                                )
-                                .await;
+                                emit_start_failed(&event_bus, &runtime.controller, &error).await;
                             }
                         }
                     }
@@ -245,7 +241,7 @@ pub(crate) fn start_integration_api_input_task(
 }
 
 async fn run_integration_api_enrichment(
-    context: Arc<RuntimeHostContext>,
+    db: Arc<DatabaseService>,
     realtime_runtime: Arc<RealtimeHostRuntime>,
     runtime: Arc<DesktopIntegrationApiRuntime>,
     mut receiver: broadcast::Receiver<IntegrationApiEnrichmentRequest>,
@@ -262,7 +258,7 @@ async fn run_integration_api_enrichment(
         {
             continue;
         }
-        let db = Arc::clone(&context.db);
+        let db = Arc::clone(&db);
         let realtime_runtime = Arc::clone(&realtime_runtime);
         let owner_user_id = request.auth_scope.current_user_id.clone();
         let enrichment_auth_scope = request.auth_scope.clone();

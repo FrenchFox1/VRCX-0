@@ -49,7 +49,7 @@ pub(super) fn sync_autostart_from_db(app: &tauri::App, state: &AppState) {
                 tracing::warn!(error = %error, "failed to synchronize autostart preference");
             }
         }
-        state.runtime_context.runtime.record_phase(
+        state.runtime_host().record_lifecycle_phase(
             "autostart",
             RuntimeOperationStatus::Completed,
             "Autostart preference synchronized.",
@@ -59,7 +59,7 @@ pub(super) fn sync_autostart_from_db(app: &tauri::App, state: &AppState) {
     #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
     {
         let _ = app;
-        state.runtime_context.runtime.record_phase(
+        state.runtime_host().record_lifecycle_phase(
             "autostart",
             RuntimeOperationStatus::Skipped,
             "Autostart synchronization is unavailable on this platform.",
@@ -69,9 +69,17 @@ pub(super) fn sync_autostart_from_db(app: &tauri::App, state: &AppState) {
 
 pub(super) fn apply_autostart_window_state_if_needed(app: &tauri::App, state: &AppState) {
     let action = autostart_window_action(
-        state.launched_from_autostart,
-        state.storage.get("VRCX_StartAsMinimizedState").as_deref() == Some("true"),
-        state.storage.get("VRCX_CloseToTray").as_deref() == Some("true"),
+        state.runtime_host().launched_from_autostart(),
+        state
+            .runtime_host()
+            .storage_get("VRCX_StartAsMinimizedState")
+            .as_deref()
+            == Some("true"),
+        state
+            .runtime_host()
+            .storage_get("VRCX_CloseToTray")
+            .as_deref()
+            == Some("true"),
         db_config_bool(state, "backgroundModeEnabled") == Some(true),
         STARTUP_FOREGROUND_REQUESTED.load(Ordering::Acquire),
     );

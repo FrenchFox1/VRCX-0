@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vrcx_0_application_core::vrchat_api::instances::InstanceCreateRequest;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::instances::InstanceCreateRequest;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

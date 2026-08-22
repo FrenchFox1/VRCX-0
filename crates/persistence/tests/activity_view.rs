@@ -3,6 +3,7 @@ use std::sync::{Arc, Barrier};
 
 use chrono::DateTime;
 use serde_json::json;
+use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::activity::{
     activity_bucket_cache_get, activity_bucket_cache_upsert,
     activity_friend_presence_last_created_at, activity_overlap_view_build,
@@ -14,7 +15,6 @@ use vrcx_0_persistence::activity::{
 use vrcx_0_persistence::game_log::{write_batch, GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_persistence::realtime::{write_realtime_batch, RealtimePersistenceBatch};
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_persistence::OwnerId;
 
 struct TestDir {
     path: PathBuf,

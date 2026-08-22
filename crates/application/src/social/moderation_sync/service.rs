@@ -3,25 +3,19 @@ use std::time::Duration;
 use vrcx_0_core::text::normalize_text;
 
 use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::time::now_iso;
-use vrcx_0_persistence::local_moderation::{
-    self, LocalModerationInput, LocalModerationOutput, RemoteModerationInput,
-};
-use vrcx_0_vrchat_client::http_api::{
-    normalize_vrchat_api_endpoint, ApiJsonResponse, ApiScope, HttpApiRequestInput,
-};
-use vrcx_0_vrchat_client::moderation::{
-    player_moderation_update_input, player_moderations_get_input,
-};
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use super::types::{
-    ModerationMutationType, ModerationSyncDeps, ModerationSyncMutationInput,
-    ModerationSyncMutationOutput, ModerationSyncRefreshInput, ModerationSyncRefreshOutput,
-    RemoteModerationRow,
+    LocalModerationInput, LocalModerationOutput, ModerationMutationType, ModerationSyncDeps,
+    ModerationSyncMutationInput, ModerationSyncMutationOutput, ModerationSyncRefreshInput,
+    ModerationSyncRefreshOutput, RemoteModerationInput, RemoteModerationRow,
 };
 use super::ModerationSyncRuntime;
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const MODERATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -95,12 +89,9 @@ async fn load_player_moderations(
             .iter()
             .map(RemoteModerationRow::to_local_input)
             .collect();
-        local_moderation::local_moderation_sync_snapshot(
-            deps.db,
-            OwnerId::new(user_id.clone()),
-            local_inputs,
-        )?
-        .len()
+        deps.store
+            .sync_snapshot(OwnerId::new(user_id.clone()), local_inputs)?
+            .len()
     } else {
         0
     };
@@ -143,28 +134,25 @@ pub async fn update_player_moderation(
     execute_vrchat_mutation(
         &deps,
         &mutation,
-        player_moderation_update_input(
+        deps.remote_requests.update(
             mutation.scope().endpoint.clone(),
             input.enabled,
             target_user_id.clone(),
             r#type.clone(),
-        ),
+        )?,
     )
     .await?;
     runtime.invalidate();
 
     let local = if let Some(kind) = LocalPlayerModerationKind::from_mutation_type(&moderation_type)
     {
-        let existing = local_moderation::local_moderation_get(
-            deps.db,
-            OwnerId::new(owner_user_id.clone()),
-            target_user_id.clone(),
-        )?;
+        let existing = deps
+            .store
+            .get(OwnerId::new(owner_user_id.clone()), target_user_id.clone())?;
         let (block, mute) = resolve_local_moderation_state(existing.as_ref(), kind, input.enabled);
         let updated_at = now_iso();
         if block || mute {
-            local_moderation::local_moderation_set(
-                deps.db,
+            deps.store.set(
                 OwnerId::new(owner_user_id.clone()),
                 LocalModerationInput {
                     user_id: target_user_id.clone(),
@@ -182,11 +170,8 @@ pub async fn update_player_moderation(
                 mute,
             })
         } else {
-            local_moderation::local_moderation_delete(
-                deps.db,
-                OwnerId::new(owner_user_id.clone()),
-                target_user_id.clone(),
-            )?;
+            deps.store
+                .delete(OwnerId::new(owner_user_id.clone()), target_user_id.clone())?;
             Some(LocalModerationOutput {
                 user_id: target_user_id.clone(),
                 updated_at,
@@ -229,14 +214,11 @@ fn normalize_endpoint(endpoint: &str) -> String {
 
 async fn execute_vrchat_json_request(
     deps: &ModerationSyncDeps<'_>,
-    request: HttpApiRequestInput,
+    request: VrchatApiRequest,
 ) -> Result<Value> {
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db)
-        .await?;
+    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
 
-    let response = ApiJsonResponse::from(&response);
+    let response = VrchatJsonResponse::from(&response);
     if let Some(failure) = response.failure_or("VRChat moderation request failed") {
         return Err(failure.into());
     }
@@ -247,18 +229,16 @@ async fn execute_vrchat_json_request(
 async fn execute_vrchat_mutation(
     deps: &ModerationSyncDeps<'_>,
     mutation: &AuthenticatedMutationContext<'_>,
-    mut request: HttpApiRequestInput,
+    mut request: VrchatApiRequest,
 ) -> Result<Value> {
     mutation.apply_scope_to_request(&mut request);
     let response = mutation
         .run_after_wait(MODERATION_REMOTE_MUTATION_INTERVAL, || async {
-            deps.web
-                .execute_api(request, ApiScope::Vrchat, deps.db)
-                .await
+            deps.web.execute_api(request, VrchatScope::Vrchat).await
         })
         .await?;
 
-    let response = ApiJsonResponse::from(&response);
+    let response = VrchatJsonResponse::from(&response);
     if let Some(failure) = response.failure_or("VRChat moderation request failed") {
         return Err(failure.into());
     }
@@ -304,7 +284,7 @@ async fn fetch_remote_moderations(
 ) -> Result<(usize, Vec<RemoteModerationRow>)> {
     let json = execute_vrchat_json_request(
         deps,
-        player_moderations_get_input(normalize_endpoint(endpoint)),
+        deps.remote_requests.list(normalize_endpoint(endpoint))?,
     )
     .await?;
     let remote_count = json.as_array().map_or(0, Vec::len);
@@ -337,9 +317,10 @@ mod tests {
 
     #[test]
     fn moderation_error_preserves_typed_status() {
-        let failure = ApiJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#)
-            .failure_or("VRChat moderation request failed")
-            .unwrap();
+        let failure =
+            VrchatJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#)
+                .failure_or("VRChat moderation request failed")
+                .unwrap();
         let error = Error::from(failure);
 
         assert!(matches!(

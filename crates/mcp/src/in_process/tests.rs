@@ -12,7 +12,7 @@ use vrcx_0_persistence::realtime::{
 
 use super::*;
 use crate::test_support::test_runtime;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -97,9 +97,11 @@ async fn in_process_bridge_returns_structured_read_only_results() {
 
 #[tokio::test]
 async fn friend_feed_search_resolves_target_pages_results_and_guards_global_history() {
-    let (_dir, runtime) = test_runtime("in-process-friend-feed", "usr_owner").unwrap();
+    let (_dir, runtime, db) =
+        crate::test_support::test_runtime_with_database("in-process-friend-feed", "usr_owner")
+            .unwrap();
     write_realtime_batch(
-        runtime.db.as_ref(),
+        db.as_ref(),
         &OwnerId::new("usr_owner"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {

@@ -38,7 +38,7 @@ struct WindowChromeState {
 pub fn ensure_main_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     if app.get_webview_window("main").is_none() {
         let state = app.state::<AppState>();
-        create_main_window(app, state.web.proxy_url())?;
+        create_main_window(app, state.runtime_host().proxy_url())?;
         configure_windows_webview_settings(app);
     }
     let state = app.state::<AppState>();
@@ -66,7 +66,7 @@ pub(crate) async fn rebuild_main_window(
         vrcx_0_host_desktop::taskbar_overlay::forget_taskbar_overlay_notification();
     }
 
-    create_main_window(app, state.web.proxy_url())?;
+    create_main_window(app, state.runtime_host().proxy_url())?;
     configure_windows_webview_settings(app);
     start_host_services(app, &state);
     present_main_window(app);
@@ -113,7 +113,7 @@ pub fn capture_background_resume_route(app: &tauri::AppHandle, state: &AppState)
         .and_then(|url| normalize_background_resume_route(url.fragment().unwrap_or_default()));
     match route {
         Some(route) => {
-            state.storage.set(
+            state.runtime_host().storage_set(
                 BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY.to_string(),
                 route.clone(),
             );
@@ -121,8 +121,8 @@ pub fn capture_background_resume_route(app: &tauri::AppHandle, state: &AppState)
         }
         None => {
             let _ = state
-                .storage
-                .remove(BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY);
+                .runtime_host()
+                .storage_remove(BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY);
             state.set_background_resume_route(None);
         }
     }
@@ -135,7 +135,8 @@ pub async fn start_background_mode_for_current_session(
     cancel_background_delay(state);
     super::capture_background_resume_route(app, state);
     let snapshot = match state
-        .start_backend_runtime(GuiRuntimeMode::Background, None)
+        .runtime_host()
+        .start_gui_backend_runtime(GuiRuntimeMode::Background)
         .await
     {
         Ok(snapshot) => snapshot,
@@ -145,7 +146,7 @@ pub async fn start_background_mode_for_current_session(
             return Err(error.into());
         }
     };
-    let current = state.snapshot_backend_runtime();
+    let current = state.runtime_host().backend_runtime_snapshot();
     if snapshot.mode == BackendRuntimeMode::Background
         && current.mode == BackendRuntimeMode::Background
         && current.phase == BackendRuntimePhase::Running
@@ -161,13 +162,15 @@ pub fn restore_foreground_window_from_background_mode(
     app: &tauri::AppHandle,
     state: &AppState,
 ) -> Result<BackendRuntimeSnapshot, Box<dyn std::error::Error>> {
-    let current = state.snapshot_backend_runtime();
+    let current = state.runtime_host().backend_runtime_snapshot();
     if current.mode != BackendRuntimeMode::Background {
         ensure_main_window(app)?;
         let _ = refresh_tray_menu(app, state);
         return Ok(current);
     }
-    let snapshot = state.set_gui_backend_runtime_mode(GuiRuntimeMode::Foreground);
+    let snapshot = state
+        .runtime_host()
+        .set_gui_backend_runtime_mode(GuiRuntimeMode::Foreground);
     ensure_main_window(app)?;
     let _ = refresh_tray_menu(app, state);
     Ok(snapshot)
@@ -227,7 +230,11 @@ pub(super) fn create_main_window(
     let state = app.state::<AppState>();
     #[cfg(target_os = "windows")]
     {
-        let system_frame = state.storage.get("VRCX_SystemWindowFrame").as_deref() == Some("true");
+        let system_frame = state
+            .runtime_host()
+            .storage_get("VRCX_SystemWindowFrame")
+            .as_deref()
+            == Some("true");
         if !system_frame {
             builder = builder.transparent(true).shadow(false);
         }

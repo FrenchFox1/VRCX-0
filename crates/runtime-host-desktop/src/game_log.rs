@@ -6,14 +6,16 @@ use vrcx_0_application_activity::OverlayActivityRuntime;
 use vrcx_0_application_core::Error as RuntimeError;
 use vrcx_0_application_core::Result as RuntimeResult;
 use vrcx_0_application_core::{
-    BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, InstanceRosterObserver,
+    BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, HostSessionRuntime,
+    ImageCache, InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine,
+    TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogHostActions, GameLogRuntime, GameLogRuntimeDeps, GameLogSideEffectSink,
     RuntimeSnapshotStore,
 };
-use vrcx_0_composition::RuntimeHostContext;
 use vrcx_0_host_desktop::{clipboard, game_launch, vrchat_paths};
+use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
 
 fn host_error(error: vrcx_0_platform::Error) -> RuntimeError {
@@ -60,15 +62,39 @@ impl GameLogHostActions for HostGameLogActions {
         }
         fallback
     }
+
+    fn add_screenshot_metadata(
+        &self,
+        path: &str,
+        metadata: &str,
+        world_id: &str,
+        modify_filename: bool,
+    ) -> String {
+        vrcx_0_outbound_adapters::screenshots::add_screenshot_metadata(
+            path,
+            metadata,
+            world_id,
+            modify_filename,
+        )
+    }
 }
 
 pub struct GameLogHostRuntime {
-    context: Arc<RuntimeHostContext>,
+    db: Arc<DatabaseService>,
+    session: HostSessionRuntime,
     inner: GameLogRuntime,
 }
 
 pub struct GameLogHostRuntimeDeps {
-    pub context: Arc<RuntimeHostContext>,
+    pub db: Arc<DatabaseService>,
+    pub web: Arc<WebClient>,
+    pub image_cache: Arc<ImageCache>,
+    pub event_bus: RuntimeEventBus,
+    pub tasks: TaskSupervisor,
+    pub sync: RuntimeSyncEngine,
+    pub auth_scope: RuntimeAuthScope,
+    pub session: HostSessionRuntime,
+    pub world_cache: Arc<WorldCache>,
     pub file_access: HostFileAccess,
     pub app_paths: AppPaths,
     pub snapshot: RuntimeSnapshotStore,
@@ -80,47 +106,56 @@ pub struct GameLogHostRuntimeDeps {
 
 impl GameLogHostRuntime {
     pub fn new(deps: GameLogHostRuntimeDeps) -> Self {
-        let inner = GameLogRuntime::new(GameLogRuntimeDeps {
-            db: Arc::clone(&deps.context.db),
-            web: Arc::clone(&deps.context.web),
-            image_cache: Arc::clone(&deps.context.image_cache),
-            event_bus: deps.context.event_bus.clone(),
-            backend_status: deps.backend_status,
-            side_effect_sink: deps.side_effect_sink,
-            tasks: deps.context.tasks.clone(),
-            sync: deps.context.sync.clone(),
-            auth_scope: deps.context.auth_scope.clone(),
-            snapshot: deps.snapshot,
-            session: deps.context.session.clone(),
-            overlay_activity: deps.overlay_activity,
-            world_cache: Arc::clone(&deps.context.world_cache),
-            host_actions: Arc::new(HostGameLogActions {
+        let instance_media: Arc<dyn vrcx_0_application_game::InstanceMediaPort> =
+            Arc::new(crate::game_media::DesktopGameMediaAdapter::new(
+                Arc::clone(&deps.web),
+                Arc::clone(&deps.image_cache),
+            ));
+        let video_metadata: Arc<dyn vrcx_0_application_game::VideoMetadataPort> =
+            Arc::new(crate::game_media::DesktopGameMediaAdapter::new(
+                Arc::clone(&deps.web),
+                Arc::clone(&deps.image_cache),
+            ));
+        let inner = GameLogRuntime::new(GameLogRuntimeDeps::new(
+            Arc::new(crate::game_state_store::PersistenceGameStateStore::new(
+                Arc::clone(&deps.db),
+            )),
+            instance_media,
+            video_metadata,
+            deps.event_bus,
+            deps.backend_status,
+            deps.side_effect_sink,
+            deps.tasks,
+            deps.sync,
+            deps.auth_scope,
+            deps.session.clone(),
+            deps.snapshot,
+            Arc::new(HostGameLogActions {
                 file_access: deps.file_access,
                 app_paths: deps.app_paths,
             }),
-            instance_roster_observer: deps.instance_roster_observer,
-        });
+            deps.overlay_activity,
+            Arc::clone(&deps.world_cache),
+            deps.instance_roster_observer,
+        ));
 
         Self {
-            context: deps.context,
+            db: deps.db,
+            session: deps.session,
             inner,
         }
     }
 
     pub fn prime_log_watcher(&self, log_watcher: &LogWatcher) -> Result<()> {
-        let last_persisted =
-            vrcx_0_persistence::game_log::get_last_game_log_date(&self.context.db)?;
-        let resume_after = vrcx_0_persistence::config::get_string(
-            &self.context.db,
-            "gameLogPersistenceResumeAfter",
-            "",
-        )?;
+        let last_persisted = vrcx_0_persistence::game_log::get_last_game_log_date(&self.db)?;
+        let resume_after =
+            vrcx_0_persistence::config::get_string(&self.db, "gameLogPersistenceResumeAfter", "")?;
         let date_till =
             later_timestamp(&last_persisted, &resume_after).unwrap_or(last_persisted.as_str());
         self.inner.set_persistence_resume_after(&resume_after);
         log_watcher.set_date_till(date_till);
         log_watcher.set_initial_scan_latest_file_only(vrcx_0_persistence::config::get_bool(
-            &self.context.db,
+            &self.db,
             "gameLogDisabled",
             false,
         )?);
@@ -128,7 +163,7 @@ impl GameLogHostRuntime {
     }
 
     pub fn set_persistence_disabled(&self, log_watcher: &LogWatcher, disabled: bool) -> Result<()> {
-        if self.context.session.snapshot().is_game_running {
+        if self.session.snapshot().is_game_running {
             return Err(crate::Error::Custom(
                 "VRChat must be closed before changing GameLog history persistence.".into(),
             ));
@@ -136,7 +171,7 @@ impl GameLogHostRuntime {
 
         if disabled {
             vrcx_0_persistence::config::config_set_values(
-                &self.context.db,
+                &self.db,
                 vec![vrcx_0_persistence::config::ConfigWriteEntry {
                     key: "gameLogDisabled".into(),
                     value: "true".into(),
@@ -149,7 +184,7 @@ impl GameLogHostRuntime {
         let resume_after = vrcx_0_core::time::now_iso();
         self.inner.set_persistence_resume_after(&resume_after);
         vrcx_0_persistence::config::config_set_values(
-            &self.context.db,
+            &self.db,
             vec![
                 vrcx_0_persistence::config::ConfigWriteEntry {
                     key: "gameLogPersistenceResumeAfter".into(),

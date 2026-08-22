@@ -1,11 +1,12 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use super::test_support::*;
 use super::*;
 use crate::realtime::{RealtimeSessionContext, RealtimeTransportLifecycleEvent};
 use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -503,16 +504,13 @@ fn friend_ws_dispatch_fans_out_one_canonical_output() -> Result<()> {
     assert_eq!(friend.display_name, "Friend");
     assert_eq!(friend.state, "offline");
 
-    let current = vrcx_0_persistence::friends::friend_log_current_list(
-        runtime.database(),
-        active_session.user_id.clone(),
-    )?;
+    let current = friend_log_current_list(runtime.database(), active_session.user_id.clone())?;
     assert_eq!(current.len(), 1);
     assert_eq!(current[0].user_id, "usr_friend");
     assert_eq!(current[0].display_name, "Friend");
-    let history = vrcx_0_persistence::friends::friend_log_history_query(
+    let history = friend_log_history_query(
         runtime.database(),
-        vrcx_0_persistence::friends::FriendLogHistoryQueryInput {
+        FriendLogHistoryQueryInput {
             user_id: active_session.user_id.clone(),
             target_user_id: "usr_friend".into(),
             types: vec!["Friend".into()],
@@ -546,7 +544,9 @@ fn friend_ws_dispatch_fans_out_one_canonical_output() -> Result<()> {
     frontend_projection.feed_entries.clear();
     assert_eq!(
         frontend_projections[0].payload,
-        serde_json::to_value(frontend_projection).expect("serialize frontend projection")
+        serde_json::to_value(frontend_projection)
+            .expect("serialize frontend projection")
+            .into()
     );
     let feed_projection = events
         .iter()
@@ -604,11 +604,9 @@ fn friend_ws_without_baseline_has_no_fanout() -> Result<()> {
     );
 
     assert!(runtime.runtime().friend_snapshot().is_none());
-    assert!(vrcx_0_persistence::friends::friend_log_current_list(
-        runtime.database(),
-        active_session.user_id.clone(),
-    )?
-    .is_empty());
+    assert!(
+        friend_log_current_list(runtime.database(), active_session.user_id.clone(),)?.is_empty()
+    );
     assert!(runtime
         .activity_sink_for_test()
         .take_friend_projections()
@@ -636,15 +634,15 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         state.connection.active_context = None;
     }
     config_store::set_bool(
-        runtime.runtime().deps.db.as_ref(),
+        runtime.runtime().deps.store.as_ref(),
         "friendLogInit_usr_self",
         true,
     )?;
     write_realtime_batch(
-        runtime.runtime().deps.db.as_ref(),
+        runtime.runtime().deps.store.as_ref(),
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
-            friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
+            friend_log_upserts: vec![FriendLogUpsert {
                 target_user_id: "usr_friend".into(),
                 display_name: "Friend".into(),
                 trust_level: "Known User".into(),
@@ -680,9 +678,9 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         .take_events_for_test()
         .iter()
         .all(|event| { event.name != "realtimeFeedProjection" }));
-    let history_count_before = vrcx_0_persistence::friends::friend_log_history_query(
-        runtime.runtime().deps.db.as_ref(),
-        vrcx_0_persistence::friends::FriendLogHistoryQueryInput {
+    let history_count_before = friend_log_history_query(
+        runtime.runtime().deps.store.as_ref(),
+        FriendLogHistoryQueryInput {
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec!["TrustLevel".into()],
@@ -712,9 +710,9 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         .filter(|upsert| upsert["entry"]["type"] == "TrustLevel")
         .count();
     assert_eq!(trust_entries, 1);
-    let history_count_after = vrcx_0_persistence::friends::friend_log_history_query(
-        runtime.runtime().deps.db.as_ref(),
-        vrcx_0_persistence::friends::FriendLogHistoryQueryInput {
+    let history_count_after = friend_log_history_query(
+        runtime.runtime().deps.store.as_ref(),
+        FriendLogHistoryQueryInput {
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec!["TrustLevel".into()],

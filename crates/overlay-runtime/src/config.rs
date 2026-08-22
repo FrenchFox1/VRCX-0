@@ -19,15 +19,6 @@ pub const VR_OVERLAY_HIDE_PRIVATE_WORLDS_CONFIG_KEY: &str = "wristOverlayHidePri
 pub const VR_OVERLAY_DARK_BACKGROUND_CONFIG_KEY: &str = "wristOverlayDarkBackground";
 pub const VR_OVERLAY_SHOW_DEVICES_CONFIG_KEY: &str = "wristOverlayShowDevices";
 pub const VR_OVERLAY_SHOW_BATTERY_PERCENT_CONFIG_KEY: &str = "wristOverlayShowBatteryPercent";
-#[cfg(all(test, feature = "friends-panel"))]
-pub const VR_OVERLAY_PANEL_ENABLED_CONFIG_KEY: &str = "vrOverlayPanelEnabled";
-#[cfg(feature = "friends-panel")]
-pub const VR_OVERLAY_PANEL_SELECTED_CATEGORY_CONFIG_KEY: &str = "vrOverlayPanelSelectedCategory";
-#[cfg(all(test, feature = "friends-panel"))]
-pub const VR_OVERLAY_PANEL_ALL_FRIENDS_INCLUDES_FAVORITES_CONFIG_KEY: &str =
-    "vrOverlayPanelAllFriendsIncludesFavorites";
-#[cfg(feature = "friends-panel")]
-pub const VR_OVERLAY_FRIENDS_PANEL_GROUP_CONFIG_KEY: &str = "vrOverlayFriendsPanelGroup";
 pub const HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY: &str = "hmdNotificationsEnabled";
 pub const HMD_NOTIFICATION_START_MODE_CONFIG_KEY: &str = "hmdNotificationStartMode";
 pub const HMD_NOTIFICATION_TIMEOUT_CONFIG_KEY: &str = "hmdNotificationTimeout";
@@ -139,52 +130,5 @@ pub(super) fn load_runtime_config(config: &ConfigRepository) -> VrOverlayRuntime
         locale,
         dt_hour12,
         show_instance_id_in_location,
-    }
-}
-
-#[cfg(all(test, feature = "friends-panel"))]
-mod tests {
-    use super::*;
-    use crate::runtime::tests::{record_process_status, test_services};
-    use crate::runtime::VrOverlayRuntime;
-    use std::sync::Arc;
-
-    #[test]
-    fn persisted_panel_enabled_setting_is_ignored_when_panel_is_hidden() {
-        let (_dir, _db, services) = test_services("vr-panel-hidden-config");
-        services
-            .data()
-            .config()
-            .set_bool(VR_OVERLAY_PANEL_ENABLED_CONFIG_KEY, true)
-            .unwrap();
-        let runtime = VrOverlayRuntime::new(Arc::clone(&services));
-
-        assert!(!runtime.current_runtime_config().panel_enabled);
-
-        record_process_status(&runtime, false, true, false);
-
-        assert!(!runtime.is_running());
-        assert!(
-            !runtime
-                .active_surfaces(runtime.current_runtime_config())
-                .panel_listener
-        );
-    }
-
-    #[test]
-    fn runtime_config_ignores_hidden_interactive_panel_all_friends_setting() {
-        let (_dir, _db, services) = test_services("vr-panel-all-friends-config");
-        services
-            .data()
-            .config()
-            .set_bool(
-                VR_OVERLAY_PANEL_ALL_FRIENDS_INCLUDES_FAVORITES_CONFIG_KEY,
-                false,
-            )
-            .unwrap();
-
-        let config = load_runtime_config(services.data().config());
-
-        assert!(config.panel_all_friends_includes_favorites);
     }
 }

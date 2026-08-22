@@ -5,6 +5,7 @@ use vrcx_0_application_core::{
     FriendProjection, FriendProjectionPatch, FriendStateBucketAuthority, ImageCache, WebClient,
 };
 use vrcx_0_application_game::{EmptyEventPayload, NowPlayingPayload};
+use vrcx_0_composition::RuntimeHostDesktopAssemblyDeps;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_persistence::{storage::StorageService, DatabaseService};
 
@@ -39,20 +40,24 @@ fn test_services(name: &str) -> (TestDir, DesktopRuntimeServices) {
     let dir = TestDir::new(name);
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
     let storage = StorageService::new(&dir.path.join("storage.json")).unwrap();
-    let web = Arc::new(
-        WebClient::new(
+    let web = Arc::new(WebClient::new(
+        vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
             &storage,
-            db.as_ref(),
+            Arc::clone(&db),
             "wss://pipeline.vrchat.cloud".to_string(),
             env!("CARGO_PKG_VERSION"),
         )
         .unwrap(),
-    );
-    let image_cache = Arc::new(
-        ImageCache::new(dir.path.join("ImageCache"), web.image_fetcher().unwrap()).unwrap(),
-    );
-    let data = Arc::new(RuntimeHostContext::new(db, web, image_cache));
-    let services = DesktopRuntimeServices::new(data);
+    ));
+    let image_cache = Arc::new(ImageCache::new(Arc::new(
+        vrcx_0_outbound_adapters::LocalImageCacheAdapter::new(
+            dir.path.join("ImageCache"),
+            Arc::clone(&web),
+        )
+        .unwrap(),
+    )));
+    let context = RuntimeHostDesktopAssemblyDeps::new(db, web, image_cache);
+    let services = DesktopRuntimeServices::new(crate::state::build_overlay_runtime_data(&context));
     (dir, services)
 }
 
@@ -104,9 +109,9 @@ fn game_log_side_effect_observer_merges_and_resets_now_playing() {
 
     services.on_game_log_side_effect(&event);
 
-    assert_eq!(services.now_playing()["name"], "Test Track");
-    assert_eq!(services.now_playing()["position"], 42);
-    assert_eq!(services.now_playing()["url"], "");
+    assert_eq!(services.now_playing().name, "Test Track");
+    assert_eq!(services.now_playing().position, 42);
+    assert_eq!(services.now_playing().url, "");
 
     services.on_game_log_side_effect(&GameLogSideEffectEvent::NowPlayingReset(
         EmptyEventPayload::default(),
@@ -114,6 +119,6 @@ fn game_log_side_effect_observer_merges_and_resets_now_playing() {
 
     assert_eq!(
         services.now_playing().as_ref(),
-        &default_now_playing_value()
+        &NowPlayingSnapshot::default()
     );
 }

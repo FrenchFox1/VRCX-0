@@ -39,10 +39,7 @@ pub fn app__open_discord_profile(discord_id: String) -> Result<(), AppError> {
 #[tauri::command]
 #[specta::specta]
 pub fn app__get_file_base64(state: State<'_, AppState>, path: String) -> Result<String, AppError> {
-    state
-        .desktop
-        .host_file_access
-        .ensure_read_allowed(&path, &state.paths)?;
+    state.runtime_host().ensure_host_read_allowed(&path)?;
     Ok(shell_actions::file_base64(&path)?)
 }
 
@@ -94,7 +91,9 @@ pub fn app__write_config_file_with_cache_cleanup(
 #[tauri::command]
 #[specta::specta]
 pub fn app__open_vrcx_app_data_folder(state: State<'_, AppState>) -> Result<bool, AppError> {
-    Ok(shell_actions::open_existing_folder(&state.paths.app_data)?)
+    Ok(shell_actions::open_existing_folder(
+        state.runtime_host().app_data_path(),
+    )?)
 }
 
 #[tauri::command]
@@ -118,10 +117,7 @@ pub fn app__open_ugc_photos_folder(
     ugc_path: Option<String>,
 ) -> Result<bool, AppError> {
     if let Some(path) = ugc_path.as_deref().filter(|path| !path.is_empty()) {
-        state
-            .desktop
-            .host_file_access
-            .ensure_read_allowed(path, &state.paths)?;
+        state.runtime_host().ensure_host_read_allowed(path)?;
     } else {
         require_host_capability(HostCapability::VrchatPathDiscovery)?;
     }
@@ -149,10 +145,7 @@ pub fn app__open_folder_and_select_item(
     path: String,
     is_folder: Option<bool>,
 ) -> Result<(), AppError> {
-    state
-        .desktop
-        .host_file_access
-        .ensure_read_allowed(&path, &state.paths)?;
+    state.runtime_host().ensure_host_read_allowed(&path)?;
     Ok(shell_actions::open_folder_and_select_item(
         &path,
         is_folder.unwrap_or(false),
@@ -207,7 +200,7 @@ pub async fn app__open_file_selector_dialog(
                 tauri_plugin_dialog::FilePath::Path(p) => p.to_string_lossy().to_string(),
                 other => other.to_string(),
             };
-            state.desktop.host_file_access.register_path(&path_str);
+            state.runtime_host().register_host_file_access(&path_str);
             Ok(path_str)
         }
         None => Ok(String::new()),
@@ -271,7 +264,7 @@ pub async fn app__save_file_selector_dialog(
             };
             let path = with_fixed_extension(path, default_ext.as_deref());
             let path_str = path.to_string_lossy().to_string();
-            state.desktop.host_file_access.register_path(&path_str);
+            state.runtime_host().register_host_file_access(&path_str);
             Ok(path_str)
         }
         None => Ok(String::new()),
@@ -318,7 +311,7 @@ pub async fn app__open_background_image_files_selector_dialog(
             .collect(),
     );
     for file in &files {
-        state.desktop.host_file_access.register_path(file);
+        state.runtime_host().register_host_file_access(file);
     }
     Ok(files)
 }
@@ -353,7 +346,7 @@ pub async fn app__open_folder_selector_dialog(
                 tauri_plugin_dialog::FilePath::Path(p) => p.to_string_lossy().to_string(),
                 other => other.to_string(),
             };
-            state.desktop.host_file_access.register_path(&path_str);
+            state.runtime_host().register_host_file_access(&path_str);
             Ok(path_str)
         }
         None => Ok(String::new()),
@@ -400,7 +393,7 @@ pub async fn app__save_vrc_reg_json_file(
             };
 
             shell_actions::write_string_file(&path, &json)?;
-            state.desktop.host_file_access.register_path(&path);
+            state.runtime_host().register_host_file_access(&path);
             Ok(path.to_string_lossy().to_string())
         }
         None => Ok(String::new()),

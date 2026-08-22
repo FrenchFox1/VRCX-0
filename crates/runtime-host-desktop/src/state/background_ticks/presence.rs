@@ -33,16 +33,20 @@ pub(in crate::state) async fn run_background_presence_tick(
         return;
     };
     let session_identity = session.identity();
-    let host_session = context.runtime_context.session.snapshot();
+    let host_session = context.host_session.snapshot();
+    let game_state_store =
+        crate::game_state_store::PersistenceGameStateStore::new(std::sync::Arc::clone(context.db));
+    let background_remote = crate::background_remote::DesktopBackgroundRemoteApi::new(
+        std::sync::Arc::clone(context.web),
+    );
     let facts = match build_background_presence_facts(
-        context.db.as_ref(),
+        &game_state_store,
         BackgroundPresenceFactsInput {
             session,
             is_game_running: host_session.is_game_running,
             is_steamvr_running: host_session.is_steamvr_running,
             is_game_no_vr: context
-                .runtime_context
-                .config()
+                .config
                 .get_bool("isGameNoVR", false)
                 .unwrap_or(false),
             last_game_started_at: host_session.last_game_started_at,
@@ -57,7 +61,7 @@ pub(in crate::state) async fn run_background_presence_tick(
         Err(error) => {
             tracing::warn!(error = %error, "background presence facts build failed");
             emit_background_error(
-                context.runtime_context,
+                context.event_bus,
                 context.backend_runtime,
                 format!("presence automation facts failed: {error}."),
             );
@@ -68,11 +72,10 @@ pub(in crate::state) async fn run_background_presence_tick(
         }
     };
     let result = match run_background_presence_automation(
-        context.runtime_context.config(),
-        context.web.as_ref(),
-        context.db.as_ref(),
-        &context.runtime_context.auth_scope,
-        context.runtime_context.remote_mutations.as_ref(),
+        &game_state_store,
+        &background_remote,
+        context.auth_scope,
+        context.remote_mutations.as_ref(),
         &facts,
         presence_state,
     )
@@ -82,7 +85,7 @@ pub(in crate::state) async fn run_background_presence_tick(
         Err(error) => {
             tracing::warn!(error = %error, "background presence automation failed");
             emit_background_error(
-                context.runtime_context,
+                context.event_bus,
                 context.backend_runtime,
                 format!("presence automation failed: {error}."),
             );
@@ -104,8 +107,8 @@ pub(in crate::state) async fn run_background_presence_tick(
                 ),
                 session_identity.auth_scope_generation,
                 None,
-                updated_user.clone(),
-                overlay_patch,
+                updated_user.into_value(),
+                overlay_patch.into_value(),
             )
             .unwrap_or(false);
         if !background_capability_session_matches(context.session_slot, &session_identity) {
@@ -116,12 +119,12 @@ pub(in crate::state) async fn run_background_presence_tick(
     }
     if result.applied {
         tracing::info!(
-            patch = %result.patch,
+            patch = %result.patch.as_value(),
             rules = ?result.matched_rule_ids,
             "background presence automation applied"
         );
         emit_background_info(
-            context.runtime_context,
+            context.event_bus,
             context.backend_runtime,
             background_presence_applied_detail(&result.patch, result.matched_rule_ids.len()),
         );

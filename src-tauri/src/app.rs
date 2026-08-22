@@ -9,7 +9,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 use tauri::Emitter;
 use tauri::Manager;
 use tauri::WindowEvent;
-use vrcx_0_application::CommunityThemeConfigureInput;
+use vrcx_0_application::profile::CommunityThemeConfigureInput;
 use vrcx_0_application_core::{
     recommended_tokio_max_blocking_threads, recommended_tokio_worker_threads, BackendRuntimeMode,
     BackendRuntimePhase,
@@ -41,10 +41,8 @@ fn hide_window_to_tray(window: &tauri::Window) {
 
 fn auto_background_mode_on_tray_enabled(state: &AppState) -> bool {
     state
-        .runtime_context
-        .config()
-        .get_bool("backgroundModeEnabled", false)
-        .unwrap_or(false)
+        .runtime_host()
+        .config_bool("backgroundModeEnabled", false)
 }
 
 fn is_background_running(mode: BackendRuntimeMode, phase: BackendRuntimePhase) -> bool {
@@ -52,7 +50,7 @@ fn is_background_running(mode: BackendRuntimeMode, phase: BackendRuntimePhase) -
 }
 
 fn is_background_mode_hidden(app: &tauri::AppHandle, state: &AppState) -> bool {
-    let snapshot = state.snapshot_backend_runtime();
+    let snapshot = state.runtime_host().backend_runtime_snapshot();
     if !is_background_running(snapshot.mode, snapshot.phase) {
         return false;
     }
@@ -69,9 +67,8 @@ fn disable_community_theme_from_tray(app: &tauri::AppHandle) {
             return;
         };
         if let Err(error) = state
-            .desktop
-            .community_theme
-            .configure(CommunityThemeConfigureInput::Disable)
+            .runtime_host()
+            .configure_community_theme(CommunityThemeConfigureInput::Disable)
             .await
         {
             tracing::warn!(error = %error, "failed to disable community theme from tray");
@@ -158,7 +155,7 @@ pub fn run() {
             let app_handle = ctx.app_handle().clone();
             tauri::async_runtime::spawn_blocking(move || {
                 let response = match app_handle.try_state::<AppState>() {
-                    Some(state) => bootstrap::screenshot_protocol_response(request, &state.paths),
+                    Some(state) => bootstrap::screenshot_protocol_response(request, &state),
                     None => tauri::http::Response::builder()
                         .status(tauri::http::StatusCode::SERVICE_UNAVAILABLE)
                         .body(Vec::new().into())
@@ -174,7 +171,7 @@ pub fn run() {
                 tauri::async_runtime::spawn_blocking(move || {
                     let response = match app_handle.try_state::<AppState>() {
                         Some(state) => {
-                            bootstrap::screenshot_thumbnail_protocol_response(request, &state.paths)
+                            bootstrap::screenshot_thumbnail_protocol_response(request, &state)
                         }
                         None => tauri::http::Response::builder()
                             .status(tauri::http::StatusCode::SERVICE_UNAVAILABLE)
@@ -236,12 +233,17 @@ pub fn run() {
 
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let state = window.state::<AppState>();
-                let snapshot = state.snapshot_backend_runtime();
+                let snapshot = state.runtime_host().backend_runtime_snapshot();
                 if is_background_running(snapshot.mode, snapshot.phase) {
                     return;
                 }
 
-                if state.storage.get("VRCX_CloseToTray").as_deref() == Some("true") {
+                if state
+                    .runtime_host()
+                    .storage_get("VRCX_CloseToTray")
+                    .as_deref()
+                    == Some("true")
+                {
                     api.prevent_close();
                     if auto_background_mode_on_tray_enabled(&state) {
                         if bootstrap::arm_background_delay(window.app_handle(), &state) {
@@ -338,7 +340,7 @@ pub fn run() {
                     api.prevent_exit();
                     return;
                 }
-                let snapshot = state.snapshot_backend_runtime();
+                let snapshot = state.runtime_host().backend_runtime_snapshot();
                 if is_background_running(snapshot.mode, snapshot.phase) {
                     api.prevent_exit();
                 }

@@ -1,9 +1,11 @@
 use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
-use vrcx_0_application::refresh_background_group_instances;
+use vrcx_0_application::game::{
+    refresh_background_group_instances, RuntimeGroupInstancesProjection,
+};
 use vrcx_0_application_core::BackgroundCapabilitySessionIdentity;
 
-use crate::{GroupOrderSource, RuntimeGroupInstancesProjection, RuntimeHostContext};
+use crate::{GroupOrderSource, RuntimeHostContext};
 
 use super::super::{
     background_capability_session_identity, background_capability_session_matches,
@@ -45,8 +47,12 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
             session.current_user_id.clone(),
             session.endpoint.clone(),
         ));
-    match refresh_background_group_instances(context.web.as_ref(), context.db.as_ref(), &session)
-        .await
+    match refresh_background_group_instances(
+        context.web.as_ref(),
+        &vrcx_0_outbound_adapters::VrchatBackgroundGroupRequests,
+        &session,
+    )
+    .await
     {
         Ok(refresh) => {
             if !background_capability_session_matches(context.session_slot, &session) {

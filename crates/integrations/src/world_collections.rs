@@ -1,7 +1,11 @@
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
-use vrcx_0_core::ReleaseStatus;
+pub use vrcx_0_contracts::world_collections::{
+    WorldCollectionCreatePayload, WorldCollectionCreateResponse, WorldCollectionPayloadWorld,
+    WorldCollectionSkippedWorld, WorldCollectionSnapshotResponse, WorldCollectionSnapshotWorld,
+    WorldCollectionTokenMintRequest, WorldCollectionTokenMintResponse, WorldOpenRegisterPayload,
+    WorldOpenRegisterWorld,
+};
 
 pub const WORLD_COLLECTIONS_SITE_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 pub const WORLD_COLLECTIONS_API_ENDPOINT: &str = "https://worlds.vrcx-0.dev/api/collections";
@@ -11,106 +15,6 @@ const WORLD_COLLECTIONS_UPLOAD_TIMEOUT: Duration = Duration::from_secs(60);
 const WORLD_COLLECTIONS_FETCH_TIMEOUT: Duration = Duration::from_secs(30);
 const COLLECTION_SHORTCODE_MIN_LEN: usize = 6;
 const COLLECTION_SHORTCODE_MAX_LEN: usize = 12;
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct WorldCollectionCreatePayload {
-    pub schema: i64,
-    pub owner_hint: String,
-    pub title: String,
-    pub listed: bool,
-    pub access: String,
-    pub author_name: String,
-    pub updated_at: i64,
-    pub worlds: Vec<WorldCollectionPayloadWorld>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct WorldCollectionPayloadWorld {
-    pub world_id: String,
-    pub author_id: String,
-    pub name: String,
-    pub author_name: String,
-    pub created_at: String,
-    pub image_url: String,
-    pub description: String,
-    pub release_status: ReleaseStatus,
-    pub thumbnail_image_url: String,
-    pub comment: String,
-    pub updated_at: String,
-    pub version: i64,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WorldCollectionSkippedWorld {
-    pub world_id: String,
-    pub name: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WorldCollectionCreateResponse {
-    pub id: String,
-    #[serde(default)]
-    pub skipped_worlds: Vec<WorldCollectionSkippedWorld>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct WorldCollectionTokenMintRequest {
-    pub owner_hint: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct WorldOpenRegisterPayload {
-    pub schema: i64,
-    pub owner_hint: String,
-    pub world: WorldOpenRegisterWorld,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct WorldOpenRegisterWorld {
-    pub world_id: String,
-    pub author_id: String,
-    pub name: String,
-    pub author_name: String,
-    pub created_at: String,
-    pub image_url: String,
-    pub thumbnail_image_url: String,
-    pub description: String,
-    pub release_status: ReleaseStatus,
-    pub updated_at: String,
-    pub version: i64,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-pub struct WorldCollectionTokenMintResponse {
-    pub token: String,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
-#[serde(default)]
-pub struct WorldCollectionSnapshotWorld {
-    pub world_id: String,
-    pub name: String,
-    pub author_name: String,
-    pub image_url: String,
-    pub description: String,
-    pub comment: String,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
-#[serde(default)]
-pub struct WorldCollectionSnapshotResponse {
-    pub id: String,
-    pub title: String,
-    pub note: Option<String>,
-    pub author_name: String,
-    pub author_profile: Option<String>,
-    pub category: Option<String>,
-    pub listed: bool,
-    pub updated_at: i64,
-    pub worlds: Vec<WorldCollectionSnapshotWorld>,
-}
 
 #[derive(Debug, thiserror::Error)]
 pub enum WorldCollectionShareError {

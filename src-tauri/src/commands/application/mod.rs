@@ -24,7 +24,6 @@ pub mod proxy;
 pub mod quick_search;
 pub mod realtime;
 pub mod registry_backup;
-pub mod scope;
 pub mod share_collection;
 pub mod social_baseline;
 pub mod social_mutation;

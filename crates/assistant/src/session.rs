@@ -3,13 +3,15 @@ use std::sync::{Arc, Mutex, Weak};
 
 use serde::Serialize;
 use specta::Type;
-use vrcx_0_persistence::assistant;
-use vrcx_0_persistence::DatabaseService;
 
 use crate::config::PlaybookMode;
 use crate::endpoints::AssistantRuntimeSelection;
 use crate::entities::Entity;
-use vrcx_0_persistence::OwnerId;
+use crate::ports::{
+    AssistantMessageInsert, AssistantPortResult, AssistantSessionPersistence,
+    AssistantSessionRuntimeUpdate, AssistantSessionUpsert,
+};
+use vrcx_0_core::OwnerId;
 
 const SESSION_CONTENT_CACHE_CAPACITY: usize = 8;
 
@@ -181,17 +183,17 @@ pub struct SessionStore {
     content_loads: Mutex<HashMap<String, Weak<Mutex<()>>>>,
     loaded_owners: Mutex<HashSet<String>>,
     seq: Mutex<u64>,
-    db: Option<Arc<DatabaseService>>,
+    persistence: Option<AssistantSessionPersistence>,
 }
 
 impl SessionStore {
-    pub fn with_db(db: Arc<DatabaseService>) -> Self {
+    pub fn with_persistence(persistence: AssistantSessionPersistence) -> Self {
         Self {
             state: Mutex::new(SessionStoreState::default()),
             content_loads: Mutex::new(HashMap::new()),
             loaded_owners: Mutex::new(HashSet::new()),
             seq: Mutex::new(0),
-            db: Some(db),
+            persistence: Some(persistence),
         }
     }
 
@@ -201,11 +203,11 @@ impl SessionStore {
         if loaded_owners.contains(owner_user_id) {
             return;
         }
-        let Some(db) = self.db.as_ref() else {
+        let Some(persistence) = self.persistence.as_ref() else {
             loaded_owners.insert(owner_user_id.to_string());
             return;
         };
-        match assistant::assistant_sessions_load(db, &OwnerId::new(owner_user_id)) {
+        match persistence.load_sessions(&OwnerId::new(owner_user_id)) {
             Ok(persisted) => {
                 let mut state = self.state.lock().unwrap();
                 for entry in persisted {
@@ -253,11 +255,12 @@ impl SessionStore {
         &self,
         owner_user_id: &OwnerId,
         session_id: &str,
-    ) -> vrcx_0_persistence::Result<Vec<Message>> {
-        let Some(db) = self.db.as_ref() else {
+    ) -> AssistantPortResult<Vec<Message>> {
+        let Some(persistence) = self.persistence.as_ref() else {
             return Ok(Vec::new());
         };
-        let history = assistant::assistant_session_messages_load(db, owner_user_id, session_id)?
+        let history = persistence
+            .load_messages(owner_user_id, session_id)?
             .into_iter()
             .map(|message| Message {
                 id: message.id,
@@ -278,7 +281,7 @@ impl SessionStore {
         &self,
         session_id: &str,
         operation: impl FnOnce(&mut SessionStoreState) -> Option<R>,
-    ) -> vrcx_0_persistence::Result<Option<R>> {
+    ) -> AssistantPortResult<Option<R>> {
         let mut operation = Some(operation);
         let owner_user_id = {
             let mut state = self.state.lock().unwrap();
@@ -288,7 +291,7 @@ impl SessionStore {
             let owner_user_id = session.owner_user_id.clone();
             if state.contents.contains_key(session_id) {
                 let result = operation.take().expect("session operation is available")(&mut state);
-                state.evict_contents(self.db.is_some());
+                state.evict_contents(self.persistence.is_some());
                 return Ok(result);
             }
             owner_user_id
@@ -303,7 +306,7 @@ impl SessionStore {
             .entry(session_id.to_string())
             .or_insert_with(|| SessionContent::loaded(loaded));
         let result = operation.expect("session operation is available")(&mut state);
-        state.evict_contents(self.db.is_some());
+        state.evict_contents(self.persistence.is_some());
         Ok(result)
     }
 
@@ -315,17 +318,16 @@ impl SessionStore {
         created_at: &str,
         updated_at: &str,
     ) -> bool {
-        let Some(db) = self.db.as_ref() else {
+        let Some(persistence) = self.persistence.as_ref() else {
             return false;
         };
-        match assistant::assistant_session_upsert(
-            db,
+        match persistence.upsert_session(AssistantSessionUpsert {
             owner_user_id,
             id,
             title,
             created_at,
             updated_at,
-        ) {
+        }) {
             Ok(()) => true,
             Err(error) => {
                 tracing::warn!(%error, "assistant: failed to persist session");
@@ -342,7 +344,7 @@ impl SessionStore {
             &session.created_at,
             &session.updated_at,
         );
-        persist_runtime(self.db.as_deref(), id, session);
+        persist_runtime(self.persistence.as_deref(), id, session);
     }
 
     fn persist_message(
@@ -355,18 +357,17 @@ impl SessionStore {
         owner_user_id: &OwnerId,
     ) -> bool {
         let session_persisted = self.upsert_row(owner_user_id, id, title, created_at, updated_at);
-        let Some(db) = self.db.as_ref() else {
+        let Some(persistence) = self.persistence.as_ref() else {
             return false;
         };
-        let message_persisted = match assistant::assistant_message_insert(
-            db,
-            &message.id,
-            id,
-            message.seq as i64,
-            role_str(message.role),
-            &message.content,
-            &message.created_at,
-        ) {
+        let message_persisted = match persistence.insert_message(AssistantMessageInsert {
+            id: &message.id,
+            session_id: id,
+            seq: message.seq as i64,
+            role: role_str(message.role),
+            content: &message.content,
+            created_at: &message.created_at,
+        }) {
             Ok(()) => true,
             Err(error) => {
                 tracing::warn!(%error, "assistant: failed to persist message");
@@ -411,7 +412,7 @@ impl SessionStore {
                 .contents
                 .insert(id.clone(), SessionContent::loaded(Vec::new()));
             state.touch_content(&id);
-            state.evict_contents(self.db.is_some());
+            state.evict_contents(self.persistence.is_some());
         }
         self.persist_session(&id, &stored);
         stored.materialize(id, Vec::new())
@@ -431,7 +432,7 @@ impl SessionStore {
         owner_user_id: &OwnerId,
         session_id: Option<String>,
         runtime: AssistantRuntimeSelection,
-    ) -> vrcx_0_persistence::Result<Option<Session>> {
+    ) -> AssistantPortResult<Option<Session>> {
         self.ensure_owner_loaded(owner_user_id);
         let Some(id) = session_id else {
             return Ok(Some(self.insert_new(
@@ -469,7 +470,7 @@ impl SessionStore {
         if seeded {
             let stored = self.state.lock().unwrap().sessions.get(&id).cloned();
             if let Some(stored) = stored {
-                persist_runtime(self.db.as_deref(), &id, &stored);
+                persist_runtime(self.persistence.as_deref(), &id, &stored);
             }
         }
         Ok(session)
@@ -479,7 +480,7 @@ impl SessionStore {
         &self,
         owner_user_id: &OwnerId,
         session_id: &str,
-    ) -> vrcx_0_persistence::Result<Option<Session>> {
+    ) -> AssistantPortResult<Option<Session>> {
         if !self.is_visible_to(session_id, owner_user_id) {
             return Ok(None);
         }
@@ -524,8 +525,8 @@ impl SessionStore {
             state.sessions.remove(session_id);
             state.remove_content(session_id);
         }
-        if let Some(db) = self.db.as_ref() {
-            if let Err(error) = assistant::assistant_session_delete(db, owner_user_id, session_id) {
+        if let Some(persistence) = self.persistence.as_ref() {
+            if let Err(error) = persistence.delete_session(owner_user_id, session_id) {
                 tracing::warn!(%error, "assistant: failed to delete persisted session");
             }
         }
@@ -539,7 +540,7 @@ impl SessionStore {
             if state.contents.contains_key(session_id) {
                 state.touch_content(session_id);
             }
-            state.evict_contents(self.db.is_some());
+            state.evict_contents(self.persistence.is_some());
         }
     }
 
@@ -560,7 +561,7 @@ impl SessionStore {
         session_id: &str,
         role: Role,
         content: String,
-    ) -> vrcx_0_persistence::Result<bool> {
+    ) -> AssistantPortResult<bool> {
         let load = self.content_load(session_id);
         let _load = load.lock().unwrap();
         let row = self.with_loaded_session(session_id, |state| {
@@ -605,7 +606,7 @@ impl SessionStore {
                 cached.write_failed = true;
             }
         }
-        state.evict_contents(self.db.is_some());
+        state.evict_contents(self.persistence.is_some());
         Ok(true)
     }
 
@@ -637,7 +638,7 @@ impl SessionStore {
             session.entity_panel_open = true;
         }
         persist_ui_state(
-            self.db.as_deref(),
+            self.persistence.as_deref(),
             session_id,
             session.entity_panel_open,
             &session.surfaced_entities,
@@ -651,7 +652,7 @@ impl SessionStore {
         };
         session.entity_panel_open = open;
         persist_ui_state(
-            self.db.as_deref(),
+            self.persistence.as_deref(),
             session_id,
             open,
             &session.surfaced_entities,
@@ -663,7 +664,7 @@ impl SessionStore {
         owner_user_id: &OwnerId,
         session_id: &str,
         runtime: AssistantRuntimeSelection,
-    ) -> vrcx_0_persistence::Result<Option<Session>> {
+    ) -> AssistantPortResult<Option<Session>> {
         if !self.is_visible_to(session_id, owner_user_id) {
             return Ok(None);
         }
@@ -680,7 +681,7 @@ impl SessionStore {
         let Some((stored, materialized)) = updated else {
             return Ok(None);
         };
-        persist_runtime(self.db.as_deref(), session_id, &stored);
+        persist_runtime(self.persistence.as_deref(), session_id, &stored);
         Ok(Some(materialized))
     }
 
@@ -704,32 +705,35 @@ fn owner_visible(session_owner: &str, owner_user_id: &OwnerId) -> bool {
 }
 
 fn persist_ui_state(
-    db: Option<&DatabaseService>,
+    persistence: Option<&dyn crate::ports::AssistantSessionPersistencePort>,
     session_id: &str,
     open: bool,
     entities: &[Entity],
 ) {
-    let Some(db) = db else {
+    let Some(persistence) = persistence else {
         return;
     };
     let json = serde_json::to_string(entities).unwrap_or_else(|_| "[]".into());
-    if let Err(error) = assistant::assistant_session_set_ui_state(db, session_id, open, &json) {
+    if let Err(error) = persistence.set_ui_state(session_id, open, &json) {
         tracing::warn!(%error, "assistant: failed to persist panel state");
     }
 }
 
-fn persist_runtime(db: Option<&DatabaseService>, session_id: &str, session: &StoredSession) {
-    let Some(db) = db else {
+fn persist_runtime(
+    persistence: Option<&dyn crate::ports::AssistantSessionPersistencePort>,
+    session_id: &str,
+    session: &StoredSession,
+) {
+    let Some(persistence) = persistence else {
         return;
     };
-    if let Err(error) = assistant::assistant_session_set_runtime(
-        db,
-        session_id,
-        session.endpoint_id.as_deref(),
-        session.model.as_deref(),
-        session.allow_writes,
-        session.playbook_mode.as_config_str(),
-    ) {
+    if let Err(error) = persistence.set_runtime(AssistantSessionRuntimeUpdate {
+        id: session_id,
+        endpoint_id: session.endpoint_id.as_deref(),
+        model: session.model.as_deref(),
+        allow_writes: session.allow_writes,
+        playbook_mode: session.playbook_mode.as_config_str(),
+    }) {
         tracing::warn!(%error, "assistant: failed to persist runtime selection");
     }
 }

@@ -1,9 +1,9 @@
 use serde_json::Value;
-use vrcx_0_core::json::JsonExt;
-use vrcx_0_vrchat_client::auth::{config_get_input, current_user_get_input};
-use vrcx_0_vrchat_client::http_api::{
-    classify_vrchat_auth_failure, ApiScope, HttpApiExecuteResponse, VrchatAuthFailureKind,
+use vrcx_0_application_core::vrchat_api::{
+    VrchatApiResponse as HttpApiExecuteResponse, VrchatScope as ApiScope,
 };
+use vrcx_0_contracts::vrchat_api::{classify_vrchat_auth_failure, VrchatAuthFailureKind};
+use vrcx_0_core::json::JsonExt;
 
 use super::LoginApi;
 use vrcx_0_application_core::{Error, Result};
@@ -36,7 +36,7 @@ pub(super) async fn probe_cookie_session(
     expected_user_id: &str,
 ) -> Result<CookieProbeResult> {
     let config_response = api
-        .execute(config_get_input(endpoint.to_string()), ApiScope::Vrchat)
+        .execute(api.config(endpoint.to_string()), ApiScope::Vrchat)
         .await?;
     if response_is_missing_credentials(&config_response) {
         return Ok(CookieProbeResult::MissingCredentials(config_response));
@@ -49,10 +49,7 @@ pub(super) async fn probe_cookie_session(
     }
 
     let response = api
-        .execute(
-            current_user_get_input(endpoint.to_string()),
-            ApiScope::Vrchat,
-        )
+        .execute(api.current_user(endpoint.to_string()), ApiScope::Vrchat)
         .await?;
     if response_is_missing_credentials(&response) {
         return Ok(CookieProbeResult::MissingCredentials(response));

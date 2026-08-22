@@ -1,18 +1,9 @@
 use std::{future::Future, pin::Pin, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use vrcx_0_application_core::FavoriteEntityKind;
 use vrcx_0_core::vrchat_ids::is_world_id;
-use vrcx_0_persistence::{favorites::favorite_add, DatabaseService};
-use vrcx_0_vrchat_client::{
-    http_api::{normalize_vrchat_api_endpoint, ApiScope},
-    worlds::world_get_input,
-};
 
-use crate::create_local_favorite_group;
-use vrcx_0_application_core::{Error, Result, WebClient, WorldCache};
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_application_core::{Error, Result};
 
 pub const SHARED_COLLECTION_IMPORT_MAX_WORLDS: usize = 1_000;
 const SHARED_COLLECTION_IMPORT_INTERVAL: Duration = Duration::from_millis(500);
@@ -83,74 +74,6 @@ pub trait SharedCollectionImportActions: Send + Sync {
         world_id: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
     fn add_world_favorite(&self, world_id: &str, group_name: &str) -> Result<()>;
-}
-
-pub struct VrchatSharedCollectionImportActions<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
-    pub world_cache: &'a WorldCache,
-    pub endpoint: &'a str,
-}
-
-impl SharedCollectionImportActions for VrchatSharedCollectionImportActions<'_> {
-    fn create_group(&self, group_name: &str) -> Result<()> {
-        create_local_favorite_group(
-            self.db,
-            &OwnerId::new(""),
-            FavoriteEntityKind::World,
-            group_name.to_string(),
-        )?;
-        Ok(())
-    }
-
-    fn fetch_and_cache_world<'a>(
-        &'a self,
-        world_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
-        Box::pin(async move {
-            let (_, request) = world_get_input(
-                normalize_vrchat_api_endpoint(Some(self.endpoint)),
-                world_id.to_string(),
-            )?;
-            let response = self
-                .web
-                .execute_api(request, ApiScope::Vrchat, self.db)
-                .await?;
-            if !(200..=299).contains(&response.status) {
-                return Err(Error::Custom(format!(
-                    "World lookup failed with status {}.",
-                    response.status
-                )));
-            }
-            let world: Value = serde_json::from_str(&response.data)
-                .map_err(|error| Error::Custom(format!("Invalid world payload: {error}")))?;
-            let response_world_id = world
-                .get("id")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .trim();
-            if response_world_id != world_id {
-                return Err(Error::Custom(
-                    "World payload id did not match request.".into(),
-                ));
-            }
-            self.world_cache
-                .hydrate_from_payload(&world)
-                .ok_or_else(|| Error::Custom("World payload could not be cached.".into()))?;
-            Ok(())
-        })
-    }
-
-    fn add_world_favorite(&self, world_id: &str, group_name: &str) -> Result<()> {
-        favorite_add(
-            self.db,
-            None,
-            FavoriteEntityKind::World,
-            world_id.to_string(),
-            group_name.to_string(),
-        )?;
-        Ok(())
-    }
 }
 
 pub fn prepare_shared_collection_import(

@@ -1,5 +1,11 @@
+mod activity_warmup;
+pub mod notification;
 mod overlay_activity;
+mod sink_registry;
 
+pub use activity_warmup::{
+    ActivitySessionWarmupOutput, ActivitySessionWarmupStore, ActivityWarmupRuntime,
+};
 pub use overlay_activity::{
     overlay_activity_type_definitions, OverlayActivityActorRelation, OverlayActivityCandidate,
     OverlayActivityCategory, OverlayActivityContent, OverlayActivityDelivery, OverlayActivityEntry,
@@ -8,3 +14,4 @@ pub use overlay_activity::{
     OverlayActivitySurface, OverlayActivitySurfaceFilters, OverlayActivityText,
     OverlayActivityTypeDefinition, OverlayFavoriteGroups,
 };
+pub use sink_registry::OverlayActivitySinkRegistry;

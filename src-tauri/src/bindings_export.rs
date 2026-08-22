@@ -1,11 +1,17 @@
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
-use vrcx_0_application::{
+use vrcx_0_application::auth::AuthenticatedRuntimePhaseSnapshot;
+use vrcx_0_application::auth::AuthenticatedSessionProjection;
+use vrcx_0_application::collections::SharedCollectionImportStatus;
+use vrcx_0_application::favorites::FavoriteImportStatus;
+use vrcx_0_application::game::RuntimeGroupInstancesProjection;
+use vrcx_0_application::profile::{
     AppUpdateDownloadProgressPayload, AppUpdateInstalledPayload, AppUpdateStatusSnapshot,
-    AuthenticatedRuntimePhaseSnapshot, BackgroundImageProjection, CommunityThemeProjection,
-    DataDirMigrationStatus, FavoriteImportStatus, GroupBanImportStatus,
-    GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus, ProfileBackupStatus,
-    ProfileRestoreProgress, SharedCollectionImportStatus,
+    BackgroundImageProjection, CommunityThemeProjection, DataDirMigrationStatus,
+    ProfileBackupStatus, ProfileRestoreProgress,
+};
+use vrcx_0_application::social::{
+    GroupBanImportStatus, GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus,
 };
 use vrcx_0_application_core::{
     BackendRuntimeTelemetry, FavoritesChangedPayload, FriendProfileLoadStatusPayload,
@@ -23,7 +29,6 @@ use vrcx_0_assistant::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
     AssistantToolResultEvent, AssistantTurnEntitiesEvent,
 };
-use vrcx_0_composition::{AuthenticatedSessionProjection, RuntimeGroupInstancesProjection};
 use vrcx_0_core::realtime::RealtimeWsStatusPayload;
 use vrcx_0_core::screenshots::ScreenshotLibraryScanStatus;
 use vrcx_0_host_desktop::tts::TtsVoice;

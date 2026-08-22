@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_composition::telemetry::TelemetryClientEvent;
+use vrcx_0_application::telemetry::TelemetryClientEvent;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -12,7 +12,7 @@ pub fn app__telemetry_record_event(
     state: State<'_, AppState>,
     event: TelemetryClientEvent,
 ) -> Result<(), AppError> {
-    state.desktop.telemetry.record_event(event);
+    state.runtime_host().record_telemetry_event(event);
     Ok(())
 }
 
@@ -23,9 +23,8 @@ pub async fn app__telemetry_submit_feedback(
     content: String,
 ) -> Result<(), AppError> {
     state
-        .desktop
-        .telemetry
-        .submit_feedback(&content)
+        .runtime_host()
+        .submit_telemetry_feedback(&content)
         .await
-        .map_err(|error| AppError::Custom(error.to_string()))
+        .map_err(AppError::from)
 }

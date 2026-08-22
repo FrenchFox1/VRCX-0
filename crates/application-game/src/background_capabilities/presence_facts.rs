@@ -1,17 +1,15 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use vrcx_0_core::derived_keys;
 
 use serde::Serialize;
-use serde_json::Value;
 use vrcx_0_core::location::{normalize_instance_type, parse_location, ParsedLocation};
-use vrcx_0_persistence::DatabaseService;
 
-use crate::{PlayerState, Result, RuntimeSnapshot};
+use crate::{GameStateStore, NowPlayingSnapshot, PlayerState, Result, RuntimeSnapshot};
 
-use super::shared::{non_empty, string_field, BackgroundCapabilitySession};
+use super::shared::{non_empty, BackgroundCapabilitySession};
+use vrcx_0_application_core::CurrentUserSnapshot;
 use vrcx_0_core::text::first_non_empty;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug)]
 pub struct BackgroundPresenceFactsInput<'a> {
@@ -21,7 +19,7 @@ pub struct BackgroundPresenceFactsInput<'a> {
     pub is_game_no_vr: bool,
     pub last_game_started_at: Option<String>,
     pub game_log_snapshot: Arc<RuntimeSnapshot>,
-    pub now_playing: Arc<Value>,
+    pub now_playing: Arc<NowPlayingSnapshot>,
     pub friend_user_ids: &'a HashSet<String>,
     pub favorite_friend_groups_by_key: &'a HashMap<String, Vec<String>>,
     pub favorite_world_groups_by_key: &'a HashMap<String, Vec<String>>,
@@ -32,7 +30,7 @@ pub struct BackgroundPresenceFacts {
     pub current_user_id: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user: Arc<Value>,
+    pub current_user: CurrentUserSnapshot,
     pub is_game_running: bool,
     pub is_steamvr_running: bool,
     pub is_game_no_vr: bool,
@@ -52,7 +50,7 @@ pub struct BackgroundPresenceFacts {
     pub current_world_favorite_group_keys: Vec<String>,
     pub can_invite_from_current_location: bool,
     pub world_name: String,
-    pub now_playing: Arc<Value>,
+    pub now_playing: Arc<NowPlayingSnapshot>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
@@ -64,7 +62,7 @@ pub struct PresencePlayer {
 }
 
 pub fn build_background_presence_facts(
-    db: &DatabaseService,
+    store: &dyn GameStateStore,
     input: BackgroundPresenceFactsInput<'_>,
 ) -> Result<BackgroundPresenceFacts> {
     let current_user = ensure_current_user_id(
@@ -83,7 +81,7 @@ pub fn build_background_presence_facts(
     let (players, observed_player_event_count) = if has_live_location && runtime_players.is_empty()
     {
         load_players_from_persistence(
-            db,
+            store,
             &OwnerId::new(input.session.current_user_id.clone()),
             &current_location,
             &game_snapshot.started_at,
@@ -104,7 +102,7 @@ pub fn build_background_presence_facts(
         })
         .collect();
     let present_favorite_group_keys = collect_present_favorite_group_keys(
-        db,
+        store,
         &OwnerId::new(input.session.current_user_id.clone()),
         &players,
         input.favorite_friend_groups_by_key,
@@ -146,32 +144,23 @@ pub fn build_background_presence_facts(
         now_playing: input.now_playing,
     })
 }
-fn ensure_current_user_id(current_user: Arc<Value>, current_user_id: &str) -> Arc<Value> {
-    let current_user_id = current_user_id.trim();
-    if current_user_id.is_empty() || !current_user.is_object() || current_user.get("id").is_some() {
-        return current_user;
-    }
-    let mut current_user = Arc::unwrap_or_clone(current_user);
-    current_user
-        .as_object_mut()
-        .expect("current user object was checked")
-        .insert("id".into(), Value::String(current_user_id.to_string()));
-    Arc::new(current_user)
+fn ensure_current_user_id(
+    current_user: CurrentUserSnapshot,
+    current_user_id: &str,
+) -> CurrentUserSnapshot {
+    current_user.with_fallback_id(current_user_id)
 }
 
-fn resolve_current_location(snapshot: &RuntimeSnapshot, current_user: &Value) -> String {
+fn resolve_current_location(
+    snapshot: &RuntimeSnapshot,
+    current_user: &CurrentUserSnapshot,
+) -> String {
     first_non_empty([
         snapshot.location.as_str(),
         snapshot.destination.as_str(),
-        string_field(current_user, derived_keys::LOCATION_TAG)
-            .as_deref()
-            .unwrap_or(""),
-        string_field(current_user, "location")
-            .as_deref()
-            .unwrap_or(""),
-        string_field(current_user, "worldId")
-            .as_deref()
-            .unwrap_or(""),
+        current_user.location(),
+        current_user.raw_location(),
+        current_user.world_id(),
     ])
     .to_string()
 }
@@ -196,17 +185,12 @@ fn normalize_runtime_players(players: &[PlayerState]) -> Vec<PresencePlayer> {
 }
 
 fn load_players_from_persistence(
-    db: &DatabaseService,
+    store: &dyn GameStateStore,
     owner_user_id: &OwnerId,
     location: &str,
     started_at: &str,
 ) -> Result<(Vec<PresencePlayer>, usize)> {
-    let rows = vrcx_0_persistence::player_list::player_list_join_leave_rows(
-        db,
-        owner_user_id,
-        location.to_string(),
-        started_at.to_string(),
-    )?;
+    let rows = store.player_join_leave_for_location(owner_user_id, location, started_at)?;
     let mut players: HashMap<String, PresencePlayer> = HashMap::new();
     let observed = rows.len();
     for (index, row) in rows.into_iter().enumerate() {
@@ -215,7 +199,7 @@ fn load_players_from_persistence(
         } else {
             row.user_id.clone()
         };
-        if row.r#type == "OnPlayerLeft" {
+        if row.event_type == "OnPlayerLeft" {
             players.remove(&key);
         } else {
             players.insert(
@@ -232,7 +216,7 @@ fn load_players_from_persistence(
 }
 
 fn collect_present_favorite_group_keys(
-    db: &DatabaseService,
+    store: &dyn GameStateStore,
     owner_user_id: &OwnerId,
     players: &[PresencePlayer],
     favorite_friend_groups_by_key: &HashMap<String, Vec<String>>,
@@ -259,16 +243,14 @@ fn collect_present_favorite_group_keys(
             keys.insert(group_key.clone());
         }
     }
-    for row in vrcx_0_persistence::favorites::favorite_list(
-        db,
-        Some(owner_user_id),
-        vrcx_0_core::FavoriteEntityKind::Friend,
-    )? {
-        let user_id = row.user_id.unwrap_or_default();
-        let group_name = row.group_name;
-        if !group_name.is_empty() && present_user_ids.contains(user_id.as_str()) {
-            keys.insert(format!("local:{group_name}"));
-        }
+    let present_user_ids = present_user_ids
+        .into_iter()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    for group_name in
+        store.favorite_friend_group_names_for_users(owner_user_id, &present_user_ids)?
+    {
+        keys.insert(format!("local:{group_name}"));
     }
     let mut keys: Vec<String> = keys.into_iter().collect();
     keys.sort();
@@ -325,22 +307,22 @@ mod tests {
 
     #[test]
     fn current_user_id_keeps_an_existing_shared_snapshot() {
-        let snapshot = Arc::new(serde_json::json!({"id": "usr_owner"}));
+        let snapshot = CurrentUserSnapshot::from_value(serde_json::json!({"id": "usr_owner"}));
 
-        let current_user = ensure_current_user_id(Arc::clone(&snapshot), "usr_owner");
+        let current_user = ensure_current_user_id(snapshot.clone(), "usr_owner");
 
-        assert!(Arc::ptr_eq(&current_user, &snapshot));
+        assert!(current_user.shares_storage_with(&snapshot));
     }
 
     #[test]
     fn current_user_id_is_added_without_mutating_the_session_snapshot() {
-        let snapshot = Arc::new(serde_json::json!({"displayName": "Owner"}));
+        let snapshot = CurrentUserSnapshot::from_value(serde_json::json!({"displayName": "Owner"}));
 
-        let current_user = ensure_current_user_id(Arc::clone(&snapshot), "usr_owner");
+        let current_user = ensure_current_user_id(snapshot.clone(), "usr_owner");
 
-        assert_eq!(current_user["id"], "usr_owner");
-        assert!(snapshot.get("id").is_none());
-        assert!(!Arc::ptr_eq(&current_user, &snapshot));
+        assert_eq!(current_user.id(), "usr_owner");
+        assert!(snapshot.as_value().get("id").is_none());
+        assert!(!current_user.shares_storage_with(&snapshot));
     }
 
     #[test]

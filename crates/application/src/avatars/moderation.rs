@@ -5,15 +5,12 @@ use std::time::Duration;
 
 use moka::future::Cache;
 use vrcx_0_application_core::vrchat_api::{
-    avatars::avatar_moderations_get_input, execute_api_command, VrchatApiRequest,
-    VrchatApiResponse, VrchatScope,
+    execute_api_command, VrchatApiRequest, VrchatApiResponse, VrchatScope,
 };
 use vrcx_0_application_core::{
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::{normalize_vrchat_api_endpoint, VRCHAT_API_DEFAULT_ENDPOINT};
 
 use vrcx_0_application_core::{Error, Result};
 
@@ -36,11 +33,29 @@ pub struct AvatarModerationRuntime {
 
 #[derive(Clone, Copy)]
 pub struct AvatarModerationDeps<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) remote_requests: &'a dyn super::AvatarRemoteRequests,
+    pub(crate) web: &'a WebClient,
     pub diagnostics: &'a RuntimeDiagnostics,
     pub sync: &'a RuntimeSyncEngine,
     pub auth_scope: &'a RuntimeAuthScope,
+}
+
+impl<'a> AvatarModerationDeps<'a> {
+    pub fn new(
+        remote_requests: &'a dyn super::AvatarRemoteRequests,
+        web: &'a WebClient,
+        diagnostics: &'a RuntimeDiagnostics,
+        sync: &'a RuntimeSyncEngine,
+        auth_scope: &'a RuntimeAuthScope,
+    ) -> Self {
+        Self {
+            remote_requests,
+            web,
+            diagnostics,
+            sync,
+            auth_scope,
+        }
+    }
 }
 
 impl AvatarModerationRuntime {
@@ -105,11 +120,11 @@ pub async fn get_avatar_moderations(
     if !scope.active || scope.current_user_id.trim().is_empty() {
         return execute_api_command(
             deps.web,
-            deps.db,
             deps.diagnostics,
             deps.sync,
             (command, detail),
-            avatar_moderations_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
+            deps.remote_requests
+                .avatar_moderations(VRCHAT_API_DEFAULT_ENDPOINT.into())?,
             VrchatScope::Vrchat,
         )
         .await;
@@ -120,11 +135,10 @@ pub async fn get_avatar_moderations(
         .resolve(key, move || async move {
             execute_api_command(
                 deps.web,
-                deps.db,
                 deps.diagnostics,
                 deps.sync,
                 (command, detail),
-                avatar_moderations_get_input(request_endpoint),
+                deps.remote_requests.avatar_moderations(request_endpoint)?,
                 VrchatScope::Vrchat,
             )
             .await

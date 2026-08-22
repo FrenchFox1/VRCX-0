@@ -1,29 +1,18 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{
-    self as application, GroupApiDeps, VrchatGroupGalleryInput, VrchatGroupIdInput,
-    VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput, VrchatGroupLogsInput,
-    VrchatGroupMemberPropsInput, VrchatGroupMemberRoleInput, VrchatGroupMembersInput,
-    VrchatGroupMembersSearchInput, VrchatGroupPagedInput, VrchatGroupPostCreateInput,
-    VrchatGroupPostDeleteInput, VrchatGroupPostEditInput, VrchatGroupProfileInput,
-    VrchatGroupRepresentationInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
+use vrcx_0_application::social::{
+    VrchatGroupGalleryInput, VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput,
+    VrchatGroupJoinRequestsInput, VrchatGroupLogsInput, VrchatGroupMemberPropsInput,
+    VrchatGroupMemberRoleInput, VrchatGroupMembersInput, VrchatGroupMembersSearchInput,
+    VrchatGroupPagedInput, VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput,
+    VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
+    VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use crate::error::AppError;
 use crate::state::AppState;
-
-fn deps(state: &State<'_, AppState>) -> GroupApiDeps {
-    GroupApiDeps {
-        db: state.db.clone(),
-        web: state.web.clone(),
-        diagnostics: state.runtime_context.diagnostics.clone(),
-        sync: state.runtime_context.sync.clone(),
-        auth_scope: state.runtime_context.auth_scope.clone(),
-        remote_mutations: state.runtime_context.remote_mutations.clone(),
-    }
-}
 
 #[tauri::command]
 #[specta::specta]
@@ -31,7 +20,10 @@ pub async fn app__vrchat_group_get(
     state: State<'_, AppState>,
     input: VrchatGroupProfileInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_group(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .get(input)
         .await
         .map_err(AppError::from)
 }
@@ -42,7 +34,10 @@ pub async fn app__vrchat_group_user_groups_get(
     state: State<'_, AppState>,
     input: VrchatGroupUserGroupsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_user_groups(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .user_groups(input)
         .await
         .map_err(AppError::from)
 }
@@ -53,7 +48,10 @@ pub async fn app__vrchat_group_posts_get(
     state: State<'_, AppState>,
     input: VrchatGroupPagedInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_posts(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .posts(input)
         .await
         .map_err(AppError::from)
 }
@@ -64,7 +62,10 @@ pub async fn app__vrchat_group_members_get(
     state: State<'_, AppState>,
     input: VrchatGroupMembersInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_members(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .members(input)
         .await
         .map_err(AppError::from)
 }
@@ -75,7 +76,10 @@ pub async fn app__vrchat_group_members_search(
     state: State<'_, AppState>,
     input: VrchatGroupMembersSearchInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::search_members(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .search_members(input)
         .await
         .map_err(AppError::from)
 }
@@ -86,7 +90,10 @@ pub async fn app__vrchat_group_gallery_get(
     state: State<'_, AppState>,
     input: VrchatGroupGalleryInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_gallery(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .gallery(input)
         .await
         .map_err(AppError::from)
 }
@@ -97,7 +104,10 @@ pub async fn app__vrchat_group_instances_get(
     state: State<'_, AppState>,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_group_instances(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .instances(input)
         .await
         .map_err(AppError::from)
 }
@@ -108,7 +118,10 @@ pub async fn app__vrchat_group_bans_get(
     state: State<'_, AppState>,
     input: VrchatGroupPagedInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_bans(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .bans(input)
         .await
         .map_err(AppError::from)
 }
@@ -119,7 +132,10 @@ pub async fn app__vrchat_group_invites_get(
     state: State<'_, AppState>,
     input: VrchatGroupPagedInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_invites(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .invites(input)
         .await
         .map_err(AppError::from)
 }
@@ -130,7 +146,10 @@ pub async fn app__vrchat_group_join_requests_get(
     state: State<'_, AppState>,
     input: VrchatGroupJoinRequestsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_join_requests(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .join_requests(input)
         .await
         .map_err(AppError::from)
 }
@@ -141,7 +160,10 @@ pub async fn app__vrchat_group_audit_log_types_get(
     state: State<'_, AppState>,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_audit_log_types(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .audit_log_types(input)
         .await
         .map_err(AppError::from)
 }
@@ -152,7 +174,10 @@ pub async fn app__vrchat_group_logs_get(
     state: State<'_, AppState>,
     input: VrchatGroupLogsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_logs(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .logs(input)
         .await
         .map_err(AppError::from)
 }
@@ -163,7 +188,10 @@ pub async fn app__vrchat_group_user_instances_get(
     state: State<'_, AppState>,
     input: VrchatGroupUserGroupsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::get_user_instances(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .user_instances(input)
         .await
         .map_err(AppError::from)
 }
@@ -174,7 +202,10 @@ pub async fn app__vrchat_group_post_create(
     state: State<'_, AppState>,
     input: VrchatGroupPostCreateInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::create_post(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .create_post(input)
         .await
         .map_err(AppError::from)
 }
@@ -185,7 +216,10 @@ pub async fn app__vrchat_group_post_edit(
     state: State<'_, AppState>,
     input: VrchatGroupPostEditInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::edit_post(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .edit_post(input)
         .await
         .map_err(AppError::from)
 }
@@ -196,7 +230,10 @@ pub async fn app__vrchat_group_post_delete(
     state: State<'_, AppState>,
     input: VrchatGroupPostDeleteInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::delete_post(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .delete_post(input)
         .await
         .map_err(AppError::from)
 }
@@ -207,7 +244,10 @@ pub async fn app__vrchat_group_join(
     state: State<'_, AppState>,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::join_group(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .join(input)
         .await
         .map_err(AppError::from)
 }
@@ -218,7 +258,10 @@ pub async fn app__vrchat_group_leave(
     state: State<'_, AppState>,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::leave_group(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .leave(input)
         .await
         .map_err(AppError::from)
 }
@@ -229,7 +272,10 @@ pub async fn app__vrchat_group_request_cancel(
     state: State<'_, AppState>,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::cancel_request(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .cancel_request(input)
         .await
         .map_err(AppError::from)
 }
@@ -240,7 +286,10 @@ pub async fn app__vrchat_group_invite_send(
     state: State<'_, AppState>,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::send_invite(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .send_invite(input)
         .await
         .map_err(AppError::from)
 }
@@ -251,7 +300,10 @@ pub async fn app__vrchat_group_member_kick(
     state: State<'_, AppState>,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::kick_member(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .kick_member(input)
         .await
         .map_err(AppError::from)
 }
@@ -262,7 +314,10 @@ pub async fn app__vrchat_group_member_ban(
     state: State<'_, AppState>,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::ban_member(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .ban_member(input)
         .await
         .map_err(AppError::from)
 }
@@ -273,7 +328,10 @@ pub async fn app__vrchat_group_member_unban(
     state: State<'_, AppState>,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::unban_member(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .unban_member(input)
         .await
         .map_err(AppError::from)
 }
@@ -284,7 +342,10 @@ pub async fn app__vrchat_group_member_role_add(
     state: State<'_, AppState>,
     input: VrchatGroupMemberRoleInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::add_member_role(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .add_member_role(input)
         .await
         .map_err(AppError::from)
 }
@@ -295,7 +356,10 @@ pub async fn app__vrchat_group_member_role_remove(
     state: State<'_, AppState>,
     input: VrchatGroupMemberRoleInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::remove_member_role(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .remove_member_role(input)
         .await
         .map_err(AppError::from)
 }
@@ -306,7 +370,10 @@ pub async fn app__vrchat_group_invite_delete(
     state: State<'_, AppState>,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::delete_invite(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .delete_invite(input)
         .await
         .map_err(AppError::from)
 }
@@ -317,7 +384,10 @@ pub async fn app__vrchat_group_join_request_respond(
     state: State<'_, AppState>,
     input: VrchatGroupJoinRequestRespondInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::respond_join_request(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .respond_join_request(input)
         .await
         .map_err(AppError::from)
 }
@@ -328,7 +398,10 @@ pub async fn app__vrchat_group_representation_set(
     state: State<'_, AppState>,
     input: VrchatGroupRepresentationInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::set_representation(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .set_representation(input)
         .await
         .map_err(AppError::from)
 }
@@ -339,7 +412,10 @@ pub async fn app__vrchat_group_member_props_set(
     state: State<'_, AppState>,
     input: VrchatGroupMemberPropsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::set_member_props(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .set_member_props(input)
         .await
         .map_err(AppError::from)
 }
@@ -350,7 +426,10 @@ pub async fn app__vrchat_group_block(
     state: State<'_, AppState>,
     input: VrchatGroupIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::block_group(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .block(input)
         .await
         .map_err(AppError::from)
 }
@@ -361,7 +440,10 @@ pub async fn app__vrchat_group_unblock(
     state: State<'_, AppState>,
     input: VrchatGroupUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    application::unblock_group(deps(&state), input)
+    state
+        .runtime_host()
+        .groups()
+        .unblock(input)
         .await
         .map_err(AppError::from)
 }

@@ -9,19 +9,17 @@ use vrcx_0_application_realtime::test_support::{
     runtime_with_active_session, TestRealtimeHostRuntime,
 };
 use vrcx_0_application_realtime::{
-    RealtimeSessionContext, RealtimeWsMessagePayload, SyntheticFriendEventOutcome,
+    RealtimeSessionContext, RealtimeStore, RealtimeWsMessagePayload, SyntheticFriendEventOutcome,
 };
+use vrcx_0_contracts::friend_log::FriendLogHistoryQueryInput;
+use vrcx_0_contracts::realtime::{FriendLogUpsert, RealtimePersistenceBatch};
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_persistence::friends::{
-    friend_log_current_list, friend_log_history_query, FriendLogHistoryQueryInput,
-};
-use vrcx_0_persistence::realtime::{
-    write_realtime_batch, FriendLogUpsert, RealtimePersistenceBatch,
-};
 
 use crate::social::social_mutation::{apply_friend_request_accept_locally, apply_unfriend_locally};
-use crate::{SocialFriendMutationStatus, SocialMutationDeps};
-use vrcx_0_persistence::OwnerId;
+use crate::social::{
+    SocialFriendMutationStatus, SocialMutationDeps, TestSocialMutationRemoteRequests,
+};
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -46,8 +44,10 @@ impl RuntimeTaskHandle for FinishedTaskHandle {
 
 fn deps(runtime: &TestRealtimeHostRuntime) -> SocialMutationDeps<'_> {
     static REMOTE_MUTATIONS: OnceLock<RemoteMutationGate> = OnceLock::new();
+    static REMOTE_REQUESTS: TestSocialMutationRemoteRequests = TestSocialMutationRemoteRequests;
     SocialMutationDeps {
-        db: runtime.database(),
+        store: runtime.store(),
+        remote_requests: &REMOTE_REQUESTS,
         web: runtime.web_client(),
         auth_scope: runtime.auth_scope(),
         remote_mutations: REMOTE_MUTATIONS.get_or_init(RemoteMutationGate::default),
@@ -56,22 +56,23 @@ fn deps(runtime: &TestRealtimeHostRuntime) -> SocialMutationDeps<'_> {
 }
 
 fn seed_friend_log_current(runtime: &TestRealtimeHostRuntime, owner: &str, target: &str) {
-    write_realtime_batch(
-        runtime.database(),
-        &OwnerId::new(owner),
-        &RealtimePersistenceBatch {
-            friend_log_upserts: vec![FriendLogUpsert {
-                target_user_id: target.into(),
-                display_name: "Friend".into(),
-                trust_level: "Visitor".into(),
-                friend_number: 1,
-                created_at: "2026-05-15T00:00:00Z".into(),
-                force_history: false,
-            }],
-            ..RealtimePersistenceBatch::default()
-        },
-    )
-    .expect("seed friend_log_current");
+    runtime
+        .store()
+        .write_realtime_batch(
+            &OwnerId::new(owner),
+            &RealtimePersistenceBatch {
+                friend_log_upserts: vec![FriendLogUpsert {
+                    target_user_id: target.into(),
+                    display_name: "Friend".into(),
+                    trust_level: "Visitor".into(),
+                    friend_number: 1,
+                    created_at: "2026-05-15T00:00:00Z".into(),
+                    force_history: false,
+                }],
+                ..RealtimePersistenceBatch::default()
+            },
+        )
+        .expect("seed friend_log_current");
 }
 
 fn history_rows(
@@ -80,16 +81,15 @@ fn history_rows(
     target: &str,
     r#type: &str,
 ) -> usize {
-    friend_log_history_query(
-        runtime.database(),
-        FriendLogHistoryQueryInput {
+    runtime
+        .store()
+        .friend_log_history(FriendLogHistoryQueryInput {
             user_id: owner.to_string(),
             target_user_id: target.to_string(),
             types: vec![r#type.to_string()],
-        },
-    )
-    .expect("history query")
-    .len()
+        })
+        .expect("history query")
+        .len()
 }
 
 fn friend_delete_payload(user_id: &str) -> RealtimeWsMessagePayload {
@@ -258,9 +258,10 @@ fn unfriend_locally_applies_via_synthetic_event_when_baseline_present() -> Resul
     );
 
     assert_eq!(outcome.status, SocialFriendMutationStatus::Applied);
-    assert!(
-        friend_log_current_list(runtime.database(), active_session.user_id.clone())?.is_empty()
-    );
+    assert!(runtime
+        .store()
+        .friend_log_current_list(&active_session.user_id)?
+        .is_empty());
     assert_eq!(
         history_rows(&runtime, &active_session.user_id, "usr_friend", "Unfriend"),
         1
@@ -307,12 +308,15 @@ fn unfriend_locally_with_stale_owner_falls_back_without_touching_active_roster()
         .expect("active baseline")
         .friends_by_id
         .contains_key("usr_friend"));
-    assert!(
-        friend_log_current_list(runtime.database(), active_session.user_id.clone())?
-            .iter()
-            .any(|row| row.user_id == "usr_friend")
-    );
-    assert!(friend_log_current_list(runtime.database(), "usr_previous".into())?.is_empty());
+    assert!(runtime
+        .store()
+        .friend_log_current_list(&active_session.user_id)?
+        .iter()
+        .any(|row| row.user_id == "usr_friend"));
+    assert!(runtime
+        .store()
+        .friend_log_current_list("usr_previous")?
+        .is_empty());
     assert_eq!(
         history_rows(&runtime, "usr_previous", "usr_friend", "Unfriend"),
         1
@@ -380,7 +384,9 @@ fn accept_locally_applies_via_synthetic_event_when_baseline_present() -> Result<
     );
 
     assert_eq!(outcome.status, SocialFriendMutationStatus::Applied);
-    let current = friend_log_current_list(runtime.database(), active_session.user_id.clone())?;
+    let current = runtime
+        .store()
+        .friend_log_current_list(&active_session.user_id)?;
     assert!(current.iter().any(|row| row.user_id == "usr_target"));
     assert_eq!(
         history_rows(&runtime, &active_session.user_id, "usr_target", "Friend"),

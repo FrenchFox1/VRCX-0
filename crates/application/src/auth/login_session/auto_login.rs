@@ -2,12 +2,11 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+use crate::auth::AuthCredentialStore;
 use serde::{Deserialize, Serialize};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
 
-use crate::{saved_snapshot, SavedAuthAutoLoginStatus, SavedAuthSnapshot};
+use crate::auth::{saved_snapshot, SavedAuthAutoLoginStatus, SavedAuthSnapshot};
 use vrcx_0_application_core::WebClient;
 
 use super::runtime::{
@@ -104,9 +103,8 @@ impl Default for AutoLoginThrottle {
 
 pub(super) async fn drive_auto_login(
     api: &dyn LoginApi,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
-    db: &DatabaseService,
     throttle: &AutoLoginThrottle,
     operation: &LoginSessionOperation,
     input: AutoLoginStartInput,
@@ -119,7 +117,6 @@ pub(super) async fn drive_auto_login(
         let cleanup_result = operation.run_if_current(|| {
             Ok(apply_failure_cleanup(
                 web,
-                db,
                 config,
                 &user_id,
                 LoginFailureKind::SessionInvalidated,
@@ -159,7 +156,7 @@ pub(super) async fn drive_auto_login(
     }
 
     operation.run_if_current(|| {
-        clear_auth_cookies_and_save(web, db);
+        clear_auth_cookies_and_save(web);
         Ok(())
     })?;
 
@@ -192,7 +189,7 @@ pub(super) async fn drive_auto_login(
 
 fn failure_outcome(
     operation: &LoginSessionOperation,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     reason: String,
     kind: LoginFailureKind,
 ) -> vrcx_0_application_core::Result<AutoLoginOutcome> {
@@ -206,14 +203,12 @@ fn failure_outcome(
 
 fn apply_failure_cleanup(
     web: &WebClient,
-    db: &DatabaseService,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     user_id: &str,
     kind: LoginFailureKind,
 ) -> vrcx_0_application_core::Result<SavedAuthSnapshot> {
     apply_login_failure_cleanup(
         web,
-        db,
         config,
         &LoginAttemptPolicy::SavedCredential {
             user_id: user_id.to_string(),

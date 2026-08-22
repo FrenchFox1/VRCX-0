@@ -7,13 +7,11 @@ use vrcx_0_application_core::{
     InstanceRosterSnapshot, RuntimeOperationStatus,
 };
 
+use vrcx_0_contracts::game_log::{GameLogJoinLeaveEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::GameLogEvent;
 use vrcx_0_core::location::{
     is_meaningful_world_name, world_id_from_location as world_id_from_location_or_id,
 };
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::game_log::{write_batch, GameLogWriteBatch};
-use vrcx_0_persistence::DatabaseService;
 
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::ingest::{
@@ -24,17 +22,16 @@ use crate::game_log::instance_media::InstanceMediaQueue;
 use crate::game_log::runtime_state::{RuntimeSnapshot, RuntimeSnapshotStore};
 use crate::overlay_activity::OverlayActivityGameIngestExt;
 use crate::GameLogEventOrigin;
-use crate::ImageCache;
 use crate::RuntimeAuthScope;
 use crate::RuntimeEventBus;
 use crate::RuntimeGameEventBusExt;
 use crate::{Error, Result};
 use crate::{GameLogPersistenceFallbackPayload, RuntimeGameLogEventPayload};
-use crate::{RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache};
+use crate::{InstanceMediaPort, RuntimeSyncEngine, TaskSupervisor, VideoMetadataPort, WorldCache};
 use vrcx_0_application_activity::OverlayActivityRuntime;
 
 use self::side_effects::{dispatch_side_effect, GameLogSideEffectDeps};
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 mod side_effects;
 
@@ -57,9 +54,9 @@ pub enum GameLogWorkerJob {
 
 #[derive(Clone)]
 pub struct GameLogProcessorDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
-    pub image_cache: Arc<ImageCache>,
+    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
+    pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub side_effect_sink: crate::GameLogSideEffectSink,
@@ -130,23 +127,17 @@ pub struct GameLogProcessor {
 impl GameLogProcessor {
     pub fn new(deps: GameLogProcessorDeps) -> Self {
         let mut engine = GameLogIngestEngine::default();
-        if vrcx_0_persistence::game_log::game_log_location_table_exists(&deps.db).unwrap_or(false) {
-            if let Some(last) = vrcx_0_persistence::game_log::get_last_game_log_location(&deps.db)
-                .ok()
-                .flatten()
-            {
+        if deps.store.game_log_location_table_exists().unwrap_or(false) {
+            if let Some(last) = deps.store.last_game_log_location().ok().flatten() {
                 let location = last.location.clone();
                 let started_at = last.created_at.clone();
                 engine.seed_current_location(last.location, last.world_name, last.created_at);
                 if location.starts_with("wrld_") {
-                    if let Ok(entries) =
-                        vrcx_0_persistence::game_log::get_join_leave_entries_for_location_range_unscoped(
-                            &deps.db,
-                            &location,
-                            &started_at,
-                            "9999-12-31T23:59:59Z",
-                        )
-                    {
+                    if let Ok(entries) = deps.store.join_leave_for_location_unscoped(
+                        &location,
+                        &started_at,
+                        "9999-12-31T23:59:59Z",
+                    ) {
                         engine.seed_current_roster(&entries);
                     }
                 }
@@ -224,8 +215,8 @@ impl GameLogProcessor {
             return Ok(());
         }
 
-        let persistence_disabled = config_store::get_bool(&self.deps.db, "gameLogDisabled", false)?;
-        let log_resource_load = config_store::get_bool(&self.deps.db, "logResourceLoad", false)?;
+        let persistence_disabled = self.deps.store.get_bool("gameLogDisabled", false)?;
+        let log_resource_load = self.deps.store.get_bool("logResourceLoad", false)?;
         let resume_prefix_len = if persistence_disabled {
             0
         } else {
@@ -269,8 +260,7 @@ impl GameLogProcessor {
         })?;
         self.deps
             .set_game_log_snapshot(snapshot, output.instance_roster_changed);
-        if config_store::get_bool(&self.deps.db, "gameLogDisabled", false)? || before_resume_cutoff
-        {
+        if self.deps.store.get_bool("gameLogDisabled", false)? || before_resume_cutoff {
             return self.apply_without_core_persistence(output, GameLogEventOrigin::Live);
         }
         self.apply_ingest_output(self.side_effect_deps(), output)
@@ -393,7 +383,7 @@ impl GameLogProcessor {
         batch: &GameLogWriteBatch,
         attempted_row_count: usize,
     ) -> Result<GameLogWriteOutcome> {
-        match write_batch_with_retry(&self.deps.db, owner_user_id, batch) {
+        match write_batch_with_retry(self.deps.store.as_ref(), owner_user_id, batch) {
             Ok(affected_count) => {
                 self.deps.sync.record(
                     "gameLog",
@@ -505,7 +495,7 @@ impl<'a> OverlayJoinLeaveSuppressionContext<'a> {
 }
 
 fn should_deliver_join_leave_overlay_activity(
-    entry: &vrcx_0_persistence::game_log::GameLogJoinLeaveEntry,
+    entry: &GameLogJoinLeaveEntry,
     context: &OverlayJoinLeaveSuppressionContext<'_>,
     current_user_id: &str,
 ) -> bool {
@@ -564,17 +554,17 @@ fn remember_error(first_error: &mut Option<Error>, error: Error) {
 }
 
 fn write_batch_with_retry(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     owner_user_id: &OwnerId,
     batch: &GameLogWriteBatch,
 ) -> Result<u64> {
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
     loop {
-        match write_batch(db, owner_user_id, batch) {
+        match store.write_game_log(owner_user_id, batch) {
             Ok(affected_count) => return Ok(affected_count),
             Err(error) => {
                 let Some(delay_ms) = delays.next() else {
-                    return Err(error.into());
+                    return Err(error);
                 };
                 tracing::warn!("GameLog batch write failed, retrying in {delay_ms}ms: {error}");
                 std::thread::sleep(Duration::from_millis(*delay_ms));

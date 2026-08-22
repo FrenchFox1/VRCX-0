@@ -6,8 +6,7 @@ use crate::world_enrich::{
     resolved_display_location, PendingEntryCorrection, PendingWorldNameResolution,
 };
 use serde_json::Value;
-use vrcx_0_vrchat_client::http_api::ApiScope;
-use vrcx_0_vrchat_client::worlds::world_get_input;
+use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
 
 use super::RealtimeHostRuntime;
 
@@ -49,15 +48,10 @@ impl RealtimeHostRuntime {
         if world_id.is_empty() {
             return WorldNameFetchOutcome::PermanentFailure;
         }
-        let Ok((_, request)) = world_get_input(endpoint, world_id.clone()) else {
+        let Ok((_, request)) = self.deps.remote_requests.world(endpoint, world_id.clone()) else {
             return WorldNameFetchOutcome::PermanentFailure;
         };
-        let response = match self
-            .deps
-            .web
-            .execute_api(request, ApiScope::Vrchat, self.deps.db.as_ref())
-            .await
-        {
+        let response = match self.deps.web.execute_api(request, ApiScope::Vrchat).await {
             Ok(response) => response,
             Err(error) => {
                 tracing::warn!(world_id = %world_id, "Realtime world lookup failed: {error}");

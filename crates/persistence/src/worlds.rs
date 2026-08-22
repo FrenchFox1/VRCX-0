@@ -1,34 +1,11 @@
-use compact_str::CompactString;
-use serde::Serialize;
 use serde_json::Value;
-use vrcx_0_core::ReleaseStatus;
+pub use vrcx_0_contracts::WorldSummaryOutput;
 
 use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::DatabaseService;
 use crate::Error;
-
-#[derive(Clone, Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct WorldSummaryOutput {
-    pub id: String,
-    pub author_id: String,
-    pub author_name: String,
-    #[serde(rename = "created_at")]
-    #[specta(type = String)]
-    pub created_at: CompactString,
-    pub description: String,
-    pub image_url: String,
-    pub name: String,
-    #[specta(type = String)]
-    pub release_status: ReleaseStatus,
-    pub thumbnail_image_url: String,
-    #[serde(rename = "updated_at")]
-    #[specta(type = String)]
-    pub updated_at: CompactString,
-    pub version: i64,
-}
 
 pub fn world_cache_upsert(db: &DatabaseService, entry: CacheEntityInput) -> Result<i64, Error> {
     upsert_cache_entity(db, "cache_world", entry)

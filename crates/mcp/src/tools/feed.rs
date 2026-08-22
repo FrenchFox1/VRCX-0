@@ -9,19 +9,20 @@ use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Semaphore;
-use vrcx_0_persistence::feed::{
-    self, FeedCursorInput, FeedFilter, FeedQueryMode, FeedRowOutput, FeedRowsQueryInput,
+use vrcx_0_contracts::feed::{
+    FeedCursorInput, FeedFilter, FeedQueryMode, FeedRowOutput, FeedRowsQueryInput,
 };
-use vrcx_0_persistence::social_aggregates;
+use vrcx_0_contracts::social_aggregates;
 
 use crate::server::VrcxMcpServer;
+use crate::{McpFeedQueryPort, McpInterruptCheck};
 
 use super::common::{
-    deserialize_optional_bool, map_persistence_error, require_current_user_id,
+    deserialize_optional_bool, map_application_query_error, require_current_user_id,
     resolve_optional_target_or_result, structured_result, TargetResolutionOutcome,
     TimeWindowParams, WithResolution,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const DEFAULT_LIMIT: i64 = 20;
 const MAX_LIMIT: i64 = 50;
@@ -102,11 +103,11 @@ impl VrcxMcpServer {
         let cancellation_guard = CancelSearchOnDrop(Arc::clone(&cancelled));
         let interruption = FriendFeedSearchInterruption::new(cancelled);
         let query_interruption = interruption.clone();
-        let db = Arc::clone(&self.runtime.db);
+        let feed_queries = Arc::clone(&self.runtime.feed_queries);
         let output = tokio::task::spawn_blocking(move || {
             let _permit = permit;
             search_friend_feed_page(
-                db.as_ref(),
+                feed_queries.as_ref(),
                 FriendFeedSearchQuery {
                     owner_user_id: owner_user_id.clone(),
                     target_user_id,
@@ -117,7 +118,7 @@ impl VrcxMcpServer {
                     limit,
                     cursor,
                 },
-                move || query_interruption.should_interrupt(),
+                Arc::new(move || query_interruption.should_interrupt()),
                 &interruption,
             )
         })
@@ -170,7 +171,7 @@ impl FriendFeedSearchInterruption {
         false
     }
 
-    fn map_query_error(&self, error: vrcx_0_persistence::Error) -> String {
+    fn map_query_error(&self, error: vrcx_0_application_core::Error) -> String {
         if self.timed_out.load(Ordering::Acquire) {
             return "search_friend_feed exceeded 25 seconds; narrow target, eventTypes, or timeWindow"
                 .into();
@@ -178,7 +179,7 @@ impl FriendFeedSearchInterruption {
         if self.cancelled.load(Ordering::Acquire) {
             return "search_friend_feed was cancelled".into();
         }
-        map_persistence_error(error)
+        map_application_query_error(error)
     }
 }
 
@@ -193,15 +194,12 @@ struct FriendFeedSearchQuery {
     cursor: Option<FeedCursorInput>,
 }
 
-fn search_friend_feed_page<F>(
-    db: &vrcx_0_persistence::DatabaseService,
+fn search_friend_feed_page(
+    feed_queries: &dyn McpFeedQueryPort,
     input: FriendFeedSearchQuery,
-    should_interrupt: F,
+    should_interrupt: McpInterruptCheck,
     interruption: &FriendFeedSearchInterruption,
-) -> Result<SearchFriendFeedOutput, String>
-where
-    F: Fn() -> bool + Send + Sync + 'static,
-{
+) -> Result<SearchFriendFeedOutput, String> {
     let page_limit = input.limit.saturating_add(1);
     let query_text = input.query.clone();
     let mode = if query_text.is_empty() {
@@ -209,24 +207,24 @@ where
     } else {
         FeedQueryMode::Search
     };
-    let mut rows = feed::feed_rows_query_interruptible(
-        db,
-        FeedRowsQueryInput {
-            user_id: input.owner_user_id.to_string(),
-            mode,
-            search: input.query,
-            filters: input.filters,
-            vip_list: Vec::new(),
-            scoped_user_ids: input.target_user_id.into_iter().collect(),
-            excluded_user_ids: Vec::new(),
-            max_entries: page_limit,
-            date_from: input.date_from,
-            date_to: input.date_to,
-            cursor: input.cursor,
-        },
-        should_interrupt,
-    )
-    .map_err(|error| interruption.map_query_error(error))?;
+    let mut rows = feed_queries
+        .feed_rows_interruptible(
+            FeedRowsQueryInput {
+                user_id: input.owner_user_id.to_string(),
+                mode,
+                search: input.query,
+                filters: input.filters,
+                vip_list: Vec::new(),
+                scoped_user_ids: input.target_user_id.into_iter().collect(),
+                excluded_user_ids: Vec::new(),
+                max_entries: page_limit,
+                date_from: input.date_from,
+                date_to: input.date_to,
+                cursor: input.cursor,
+            },
+            should_interrupt,
+        )
+        .map_err(|error| interruption.map_query_error(error))?;
     let truncated = rows.len() > input.limit as usize;
     if truncated {
         rows.truncate(input.limit as usize);

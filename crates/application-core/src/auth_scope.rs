@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use vrcx_0_core::text::normalize_text;
 
 use serde::Serialize;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

@@ -21,7 +21,7 @@ use super::utils::{
     has_remote_current_user_presence, is_offline_location, normalize_id, resolve_state_bucket,
     EventTime,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 pub(super) fn apply_user_update(
     state: &mut RealtimeCurrentUserState,
@@ -210,9 +210,9 @@ pub(super) fn apply_current_user_patch(
         owner_user_id: OwnerId::new(state.current_user_id.clone()),
         projection: RealtimeCurrentUserProjection {
             generation: state.generation,
-            patch: projection_patch,
-            snapshot: snapshot_map,
-            game_state_patch,
+            patch: projection_patch.into(),
+            snapshot: snapshot_map.into(),
+            game_state_patch: game_state_patch.map(Into::into),
         },
         persistence,
         timer_action: options.timer_action,

@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use serde::Serialize;
 use specta::Type;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 use vrcx_0_runtime_host_desktop::notification::DesktopNotificationAction;
 
 #[cfg(windows)]
@@ -83,7 +83,7 @@ pub(crate) fn queue_desktop_notification_activation(
         return;
     };
     let generation = state
-        .pending_desktop_notification_activations
+        .pending_desktop_notification_activations()
         .replace(action);
     if generation == 0 {
         tracing::warn!("failed to queue desktop notification activation");
@@ -97,7 +97,7 @@ pub(crate) fn queue_desktop_notification_activation(
             return;
         };
         if !state
-            .pending_desktop_notification_activations
+            .pending_desktop_notification_activations()
             .promote_if_latest(generation)
         {
             return;
@@ -131,7 +131,7 @@ fn show_main_window_for_desktop_notification(app: &tauri::AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use vrcx_0_persistence::OwnerId;
+    use vrcx_0_core::OwnerId;
     use vrcx_0_runtime_host_desktop::notification::DesktopNotificationAction;
 
     use super::PendingDesktopNotificationActivations;

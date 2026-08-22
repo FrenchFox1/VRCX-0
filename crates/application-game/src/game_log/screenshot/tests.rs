@@ -1,40 +1,13 @@
-use std::path::PathBuf;
-
-use vrcx_0_persistence::game_log::{
-    write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogWriteBatch,
-};
+use vrcx_0_contracts::game_log::{GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogWriteBatch};
 
 use crate::game_log::runtime_state::{PlayerState, RuntimeSnapshot};
+use crate::ports::TestGameStateStore;
+use crate::GameStateStore;
 
 use super::*;
 
-struct TestDir {
-    path: PathBuf,
-}
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
-}
-
-fn test_db(name: &str) -> (TestDir, DatabaseService) {
-    let dir = TestDir::new(name);
-    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
-    (dir, db)
+fn test_store(_name: &str) -> TestGameStateStore {
+    TestGameStateStore::default()
 }
 
 const LOCATION: &str = "wrld_live:123";
@@ -58,7 +31,7 @@ fn join_leave_entry(
     }
 }
 
-fn write_visited_location(db: &DatabaseService, join_leave: Vec<GameLogJoinLeaveEntry>) {
+fn write_visited_location(store: &TestGameStateStore, join_leave: Vec<GameLogJoinLeaveEntry>) {
     let batch = GameLogWriteBatch {
         locations: vec![GameLogLocationEntry {
             created_at: LOCATION_AT.to_string(),
@@ -71,21 +44,21 @@ fn write_visited_location(db: &DatabaseService, join_leave: Vec<GameLogJoinLeave
         join_leave,
         ..Default::default()
     };
-    write_batch(db, &OwnerId::new(""), &batch).unwrap();
+    store.write_game_log(&OwnerId::new(""), &batch).unwrap();
 }
 
-fn context_at(db: &DatabaseService, created_at: &str) -> Option<ScreenshotContext> {
+fn context_at(store: &TestGameStateStore, created_at: &str) -> Option<ScreenshotContext> {
     let input = ScreenshotInput {
         created_at: created_at.to_string(),
         path: "screenshot.png".to_string(),
         snapshot: RuntimeSnapshot::default(),
     };
-    screenshot_context(db, &OwnerId::new(""), &input).unwrap()
+    screenshot_context(store, &OwnerId::new(""), &input).unwrap()
 }
 
 #[test]
 fn snapshot_location_short_circuits_the_database_lookup() {
-    let (_dir, db) = test_db("screenshot-snapshot-shortcircuit");
+    let store = test_store("screenshot-snapshot-shortcircuit");
     let input = ScreenshotInput {
         created_at: SHOT_AT.to_string(),
         path: "screenshot.png".to_string(),
@@ -102,7 +75,7 @@ fn snapshot_location_short_circuits_the_database_lookup() {
         },
     };
 
-    let context = screenshot_context(&db, &OwnerId::new(""), &input)
+    let context = screenshot_context(&store, &OwnerId::new(""), &input)
         .unwrap()
         .unwrap();
     assert_eq!(context.location, LOCATION);
@@ -113,17 +86,17 @@ fn snapshot_location_short_circuits_the_database_lookup() {
 
 #[test]
 fn no_location_history_returns_none() {
-    let (_dir, db) = test_db("screenshot-no-history");
+    let store = test_store("screenshot-no-history");
 
-    assert!(context_at(&db, SHOT_AT).is_none());
+    assert!(context_at(&store, SHOT_AT).is_none());
 }
 
 #[test]
 fn location_exactly_at_max_age_boundary_is_still_used() {
-    let (_dir, db) = test_db("screenshot-boundary-included");
-    write_visited_location(&db, vec![]);
+    let store = test_store("screenshot-boundary-included");
+    write_visited_location(&store, vec![]);
 
-    let context = context_at(&db, SHOT_AT).unwrap();
+    let context = context_at(&store, SHOT_AT).unwrap();
 
     assert_eq!(context.location, LOCATION);
     assert!(context.players.is_empty());
@@ -131,17 +104,17 @@ fn location_exactly_at_max_age_boundary_is_still_used() {
 
 #[test]
 fn location_one_ms_past_max_age_boundary_is_rejected() {
-    let (_dir, db) = test_db("screenshot-boundary-excluded");
-    write_visited_location(&db, vec![]);
+    let store = test_store("screenshot-boundary-excluded");
+    write_visited_location(&store, vec![]);
 
-    assert!(context_at(&db, "2026-04-30T10:15:00.001Z").is_none());
+    assert!(context_at(&store, "2026-04-30T10:15:00.001Z").is_none());
 }
 
 #[test]
 fn join_events_dedupe_by_user_id_key() {
-    let (_dir, db) = test_db("screenshot-join-dedupe-id");
+    let store = test_store("screenshot-join-dedupe-id");
     write_visited_location(
-        &db,
+        &store,
         vec![
             join_leave_entry(
                 "2026-04-30T10:01:00.000Z",
@@ -158,7 +131,7 @@ fn join_events_dedupe_by_user_id_key() {
         ],
     );
 
-    let context = context_at(&db, SHOT_AT).unwrap();
+    let context = context_at(&store, SHOT_AT).unwrap();
 
     assert_eq!(context.players.len(), 1);
     assert_eq!(context.players[0].user_id, "usr_a");
@@ -166,16 +139,16 @@ fn join_events_dedupe_by_user_id_key() {
 
 #[test]
 fn join_events_dedupe_by_display_name_when_user_id_missing() {
-    let (_dir, db) = test_db("screenshot-join-dedupe-name");
+    let store = test_store("screenshot-join-dedupe-name");
     write_visited_location(
-        &db,
+        &store,
         vec![
             join_leave_entry("2026-04-30T10:01:00.000Z", "OnPlayerJoined", "NoId", ""),
             join_leave_entry("2026-04-30T10:02:00.000Z", "OnPlayerJoined", "NoId", ""),
         ],
     );
 
-    let context = context_at(&db, SHOT_AT).unwrap();
+    let context = context_at(&store, SHOT_AT).unwrap();
 
     assert_eq!(context.players.len(), 1);
     assert_eq!(context.players[0].display_name, "NoId");
@@ -183,9 +156,9 @@ fn join_events_dedupe_by_display_name_when_user_id_missing() {
 
 #[test]
 fn distinct_user_ids_with_the_same_display_name_are_not_merged() {
-    let (_dir, db) = test_db("screenshot-join-distinct-ids");
+    let store = test_store("screenshot-join-distinct-ids");
     write_visited_location(
-        &db,
+        &store,
         vec![
             join_leave_entry(
                 "2026-04-30T10:01:00.000Z",
@@ -202,16 +175,16 @@ fn distinct_user_ids_with_the_same_display_name_are_not_merged() {
         ],
     );
 
-    let context = context_at(&db, SHOT_AT).unwrap();
+    let context = context_at(&store, SHOT_AT).unwrap();
 
     assert_eq!(context.players.len(), 2);
 }
 
 #[test]
 fn leave_removes_player_by_user_id_key() {
-    let (_dir, db) = test_db("screenshot-leave-by-id");
+    let store = test_store("screenshot-leave-by-id");
     write_visited_location(
-        &db,
+        &store,
         vec![
             join_leave_entry(
                 "2026-04-30T10:01:00.000Z",
@@ -223,23 +196,23 @@ fn leave_removes_player_by_user_id_key() {
         ],
     );
 
-    let context = context_at(&db, SHOT_AT).unwrap();
+    let context = context_at(&store, SHOT_AT).unwrap();
 
     assert!(context.players.is_empty());
 }
 
 #[test]
 fn leave_removes_anonymous_player_by_display_name_key() {
-    let (_dir, db) = test_db("screenshot-leave-by-name");
+    let store = test_store("screenshot-leave-by-name");
     write_visited_location(
-        &db,
+        &store,
         vec![
             join_leave_entry("2026-04-30T10:01:00.000Z", "OnPlayerJoined", "Bob", ""),
             join_leave_entry("2026-04-30T10:02:00.000Z", "OnPlayerLeft", "Bob", ""),
         ],
     );
 
-    let context = context_at(&db, SHOT_AT).unwrap();
+    let context = context_at(&store, SHOT_AT).unwrap();
 
     assert!(context.players.is_empty());
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use vrcx_0_application_contracts::InstanceRosterSnapshot;
+use vrcx_0_contracts::InstanceRosterSnapshot;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum InstanceDwellSource {
@@ -156,7 +156,7 @@ impl InstanceDwellRegistry {
     }
 }
 
-impl vrcx_0_application_contracts::InstanceRosterObserver for InstanceDwellRegistry {
+impl vrcx_0_contracts::InstanceRosterObserver for InstanceDwellRegistry {
     fn on_instance_roster(&self, snapshot: InstanceRosterSnapshot) {
         self.observe_roster(&snapshot);
     }
@@ -171,7 +171,7 @@ impl vrcx_0_application_contracts::InstanceRosterObserver for InstanceDwellRegis
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vrcx_0_application_contracts::InstanceRosterMember;
+    use vrcx_0_contracts::InstanceRosterMember;
 
     fn roster(location: &str, members: &[(&str, i64)]) -> InstanceRosterSnapshot {
         InstanceRosterSnapshot {

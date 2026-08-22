@@ -1,17 +1,8 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use vrcx_0_application_core::BackgroundCapabilitySession;
-use vrcx_0_application_realtime::{
-    build_favorites_baseline_from_friend_ids, build_synced_friend_roster_baseline,
-    FavoriteBaselineSnapshot, RealtimeHostRuntime, SocialBaselineDeps,
-    SocialFavoritesBaselineRequest, SocialFriendRosterBaselineInput,
-};
-use vrcx_0_core::json::RawJson;
-
-use crate::authenticated_runtime::{
-    favorite_group_membership_from_baseline, friend_ids_by_roster_id_from_records,
-};
-use crate::AuthenticatedRuntimeOrchestrator;
+use vrcx_0_application::social::refresh_social_baseline;
+use vrcx_0_application_realtime::SocialBaselineDeps;
 
 use super::super::{
     background_capability_session, emit_background_info, emit_background_warning,
@@ -19,88 +10,6 @@ use super::super::{
     BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
 };
 use super::BackgroundTickContext;
-
-#[derive(Clone, Debug, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SocialBaselineRefreshOutput {
-    pub stale: bool,
-    pub friend_count: usize,
-    pub friend_log_changed: bool,
-    pub favorites_snapshot: Option<FavoriteBaselineSnapshot>,
-}
-
-pub(in crate::state) struct SocialBaselineFavoritesRefresh {
-    pub(in crate::state) snapshot: FavoriteBaselineSnapshot,
-    pub(in crate::state) groups: HashMap<String, Vec<String>>,
-}
-
-pub(in crate::state) struct SocialBaselineRefreshCore {
-    pub(in crate::state) stale: bool,
-    pub(in crate::state) friend_count: usize,
-    pub(in crate::state) friend_log_changed: bool,
-    pub(in crate::state) favorites:
-        Result<Option<SocialBaselineFavoritesRefresh>, vrcx_0_application_core::Error>,
-}
-
-pub(in crate::state) async fn run_social_baseline_refresh_core(
-    deps: SocialBaselineDeps,
-    realtime_runtime: &Arc<RealtimeHostRuntime>,
-    authenticated_runtime: &AuthenticatedRuntimeOrchestrator,
-    session: &BackgroundCapabilitySession,
-) -> vrcx_0_application_core::Result<SocialBaselineRefreshCore> {
-    let baseline = build_synced_friend_roster_baseline(
-        deps.clone(),
-        realtime_runtime,
-        SocialFriendRosterBaselineInput {
-            user_id: session.current_user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-            current_user_snapshot: RawJson::from(session.current_user_snapshot.as_ref().clone()),
-            is_first_load: false,
-        },
-    )
-    .await?;
-    let output = baseline.output;
-    let Some(friends_by_id) = baseline.friends_by_id else {
-        return Ok(SocialBaselineRefreshCore {
-            stale: true,
-            friend_count: output.count,
-            friend_log_changed: output.friend_log_changed,
-            favorites: Ok(None),
-        });
-    };
-    let friend_ids_by_roster_id = friend_ids_by_roster_id_from_records(friends_by_id);
-    if output.friend_log_changed {
-        realtime_runtime.emit_friend_log_changed();
-    }
-    let favorites = match build_favorites_baseline_from_friend_ids(
-        deps,
-        SocialFavoritesBaselineRequest {
-            user_id: session.current_user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            current_user_snapshot: RawJson::from(session.current_user_snapshot.as_ref().clone()),
-        },
-        &friend_ids_by_roster_id,
-    )
-    .await
-    {
-        Ok(favorites_output) => {
-            authenticated_runtime.update_favorites_baseline(favorites_output.clone());
-            Ok(favorites_output.snapshot.map(|snapshot| {
-                let groups = favorite_group_membership_from_baseline(&snapshot);
-                authenticated_runtime.apply_favorites_snapshot(&snapshot);
-                SocialBaselineFavoritesRefresh { snapshot, groups }
-            }))
-        }
-        Err(error) => Err(error),
-    };
-    Ok(SocialBaselineRefreshCore {
-        stale: false,
-        friend_count: output.count,
-        friend_log_changed: output.friend_log_changed,
-        favorites,
-    })
-}
 
 pub(in crate::state) async fn run_background_social_baseline_refresh(
     context: &BackgroundTickContext<'_>,
@@ -118,12 +27,15 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
         );
         return;
     };
-    let deps = SocialBaselineDeps {
-        db: Arc::clone(context.db),
-        web: Arc::clone(context.web),
-        auth_scope: context.runtime_context.auth_scope.clone(),
-    };
-    let core = match run_social_baseline_refresh_core(
+    let deps = SocialBaselineDeps::new(
+        Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+            Arc::clone(context.db),
+        )),
+        Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
+        Arc::clone(context.web),
+        context.runtime_context.auth_scope.clone(),
+    );
+    let core = match refresh_social_baseline(
         deps,
         context.realtime_runtime,
         context.authenticated_runtime,

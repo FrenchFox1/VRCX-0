@@ -1,15 +1,14 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::auth::{
-    config_get_input, current_user_get_input, file_analysis_get_input, visits_get_input,
-};
-use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::auth::{
+    current_user_get_input, file_analysis_get_input, visits_get_input,
+};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::{
+use vrcx_0_application::auth::{
     AutoLoginOutcome, AutoLoginStartInput, LoginSessionCancelInput, LoginSessionEnd,
     LoginSessionRespondInput, LoginSessionStartInput, LoginSessionState, SavedAuthSnapshot,
 };
@@ -32,7 +31,10 @@ async fn execute_auth_api(
 pub fn app__vrchat_auth_saved_snapshot_get(
     state: State<'_, AppState>,
 ) -> Result<SavedAuthSnapshot, AppError> {
-    vrcx_0_application::saved_snapshot(&state.runtime_context.config).map_err(AppError::from)
+    state
+        .runtime_host()
+        .saved_auth_snapshot()
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -41,19 +43,7 @@ pub async fn app__vrchat_auth_session_start(
     state: State<'_, AppState>,
     input: LoginSessionStartInput,
 ) -> Result<LoginSessionState, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(
-        "app__vrchat_auth_session_start",
-        RuntimeOperationStatus::Running,
-        "Starting a VRChat login session.",
-    );
-    let result = state.start_login_session(input).await;
-    diagnostics.record_command(
-        "app__vrchat_auth_session_start",
-        RuntimeOperationStatus::Ok,
-        format!("status={result:?}"),
-    );
-    Ok(result)
+    Ok(state.runtime_host().start_login_session(input).await)
 }
 
 #[tauri::command]
@@ -62,26 +52,11 @@ pub async fn app__vrchat_auth_auto_login_start(
     state: State<'_, AppState>,
     input: AutoLoginStartInput,
 ) -> Result<AutoLoginOutcome, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    diagnostics.record_command(
-        "app__vrchat_auth_auto_login_start",
-        RuntimeOperationStatus::Running,
-        "Starting an automatic VRChat login attempt.",
-    );
-    let result = state.start_auto_login(input).await.map_err(|error| {
-        diagnostics.record_command(
-            "app__vrchat_auth_auto_login_start",
-            RuntimeOperationStatus::Error,
-            error.to_string(),
-        );
-        AppError::from(error)
-    })?;
-    diagnostics.record_command(
-        "app__vrchat_auth_auto_login_start",
-        RuntimeOperationStatus::Ok,
-        format!("status={result:?}"),
-    );
-    Ok(result)
+    state
+        .runtime_host()
+        .start_auto_login(input)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -90,7 +65,7 @@ pub async fn app__vrchat_auth_session_respond(
     state: State<'_, AppState>,
     input: LoginSessionRespondInput,
 ) -> Result<LoginSessionState, AppError> {
-    let result = state.respond_login_session(input).await;
+    let result = state.runtime_host().respond_login_session(input).await;
     Ok(result)
 }
 
@@ -100,7 +75,7 @@ pub async fn app__vrchat_auth_session_cancel(
     state: State<'_, AppState>,
     input: LoginSessionCancelInput,
 ) -> Result<LoginSessionState, AppError> {
-    Ok(state.cancel_login_session(input).await)
+    Ok(state.runtime_host().cancel_login_session(input).await)
 }
 
 #[tauri::command]
@@ -109,7 +84,9 @@ pub fn app__vrchat_auth_saved_credential_delete(
     state: State<'_, AppState>,
     input: VrchatAuthSavedCredentialDeleteInput,
 ) -> Result<SavedAuthSnapshot, AppError> {
-    vrcx_0_application::delete_saved_credential(&state.runtime_context.config, input.user_id)
+    state
+        .runtime_host()
+        .delete_saved_credential(input.user_id)
         .map_err(AppError::from)
 }
 
@@ -119,7 +96,11 @@ pub async fn app__vrchat_auth_session_end(
     state: State<'_, AppState>,
     input: LoginSessionEnd,
 ) -> Result<Option<SavedAuthSnapshot>, AppError> {
-    state.end_login_session(input).await.map_err(AppError::from)
+    state
+        .runtime_host()
+        .end_login_session(input)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -127,13 +108,7 @@ pub async fn app__vrchat_auth_session_end(
 pub async fn app__vrchat_auth_config_get(
     state: State<'_, AppState>,
 ) -> Result<VrchatApiResponse, AppError> {
-    if let Some(response) = state
-        .web
-        .vrchat_config_snapshot(VRCHAT_API_DEFAULT_ENDPOINT)
-    {
-        return Ok(response);
-    }
-    app__vrchat_auth_config_refresh(state).await
+    Ok(state.runtime_host().vrchat_config().get().await?)
 }
 
 #[tauri::command]
@@ -141,14 +116,7 @@ pub async fn app__vrchat_auth_config_get(
 pub async fn app__vrchat_auth_config_refresh(
     state: State<'_, AppState>,
 ) -> Result<VrchatApiResponse, AppError> {
-    state.web.clear_vrchat_config_snapshot();
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_config_refresh",
-        "Refreshing VRChat config.",
-        config_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
-    )
-    .await
+    Ok(state.runtime_host().vrchat_config().refresh().await?)
 }
 
 #[tauri::command]

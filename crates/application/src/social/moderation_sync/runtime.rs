@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use moka::future::Cache;
 use vrcx_0_application_core::RuntimeAuthScopeSnapshot;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use super::ModerationSyncRefreshOutput;
 use vrcx_0_application_core::{Error, Result};

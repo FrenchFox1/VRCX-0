@@ -10,7 +10,7 @@ pub use vrcx_0_application_core::{
 };
 use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 use vrcx_0_core::json::RawJson;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

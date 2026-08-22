@@ -93,7 +93,7 @@ mod macos {
 #[tauri::command]
 #[specta::specta]
 pub fn app__drain_pending_deep_links(state: State<'_, AppState>) -> Vec<DeepLinkAction> {
-    state.pending_deep_links.drain()
+    state.pending_deep_links().drain()
 }
 
 #[tauri::command]

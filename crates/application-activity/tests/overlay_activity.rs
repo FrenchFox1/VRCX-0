@@ -382,7 +382,8 @@ fn activity_content_is_built_from_feed_payload() {
         "location": "wrld_1:123",
         "worldName": "Great World",
         "groupName": "Group A"
-    });
+    })
+    .into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -414,7 +415,7 @@ fn all_activity_types_build_desktop_safe_content() {
     for definition in definitions {
         let mut row = candidate(&definition.key, "usr_actor");
         row.actor_display_name = "Desktop Actor".to_string();
-        row.payload = representative_payload(&definition.key);
+        row.payload = representative_payload(&definition.key).into();
 
         let entry = runtime
             .ingest_candidate(row)
@@ -472,7 +473,8 @@ fn notification_content_uses_invite_details() {
             "worldName": "Invite World",
             "inviteMessage": "come over"
         }
-    });
+    })
+    .into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -546,7 +548,8 @@ fn location_ids_are_not_shown_as_names() {
         "userId": "usr_map",
         "displayName": "Map User",
         "location": "wrld_1234:5678~group(grp_9999)"
-    });
+    })
+    .into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -571,7 +574,7 @@ fn private_location_aligns_with_original_display() {
     })));
     runtime.set_friend_user_ids(["usr_p"]);
     let mut row = candidate("GPS", "usr_p");
-    row.payload = json!({ "type": "GPS", "userId": "usr_p", "location": "private" });
+    row.payload = json!({ "type": "GPS", "userId": "usr_p", "location": "private" }).into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -611,7 +614,7 @@ fn candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {
         actor_user_id: user_id.to_string(),
         actor_display_name: user_id.to_string(),
         current_instance: false,
-        payload: json!({}),
+        payload: json!({}).into(),
     }
 }
 

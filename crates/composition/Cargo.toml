@@ -15,28 +15,22 @@ test-utils = [
 
 [dependencies]
 chrono = { workspace = true }
-iana-time-zone.workspace = true
-moka = { version = "0.12", features = ["sync"] }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 specta.workspace = true
-sys-locale.workspace = true
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["time", "rt", "macros", "sync"] }
 tracing = { workspace = true }
-url = { workspace = true }
 vrcx-0-application = { path = "../application" }
 vrcx-0-application-activity = { path = "../application-activity" }
 vrcx-0-application-core = { path = "../application-core" }
 vrcx-0-application-realtime = { path = "../application-realtime" }
 vrcx-0-core = { path = "../core" }
 vrcx-0-platform = { path = "../platform" }
-vrcx-0-integrations = { path = "../integrations" }
-vrcx-0-i18n = { path = "../i18n" }
 vrcx-0-media = { path = "../media" }
+vrcx-0-outbound-adapters = { path = "../outbound-adapters" }
 vrcx-0-persistence = { path = "../persistence" }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
-uuid.workspace = true
 
 [dev-dependencies]
 vrcx-0-application-realtime = { path = "../application-realtime", features = ["test-utils"] }

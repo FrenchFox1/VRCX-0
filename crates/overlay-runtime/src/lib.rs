@@ -19,7 +19,7 @@ pub use service::{
     HostVrOverlayService, OverlayBackendPreference, OverlayServiceStartError,
     OverlayServiceStartErrorReason, VrOverlayServiceControl,
 };
-pub use services::VrOverlayRuntimeServices;
+pub use services::{VrOverlayRuntimeData, VrOverlayRuntimeDataDeps, VrOverlayRuntimeServices};
 pub use surfaces::wrist::{
     build_wrist_surface_model, WristOverlayFrameInput, WristOverlayRenderOptions,
     WristOverlaySizePreset, WristRuntimeFooter,

@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{AppUpdateDownloadStatusSnapshot, AppUpdateStatusSnapshot};
+use vrcx_0_application::profile::{AppUpdateDownloadStatusSnapshot, AppUpdateStatusSnapshot};
 use vrcx_0_application_core::UpdaterMetadata;
 
 use crate::error::AppError;
@@ -12,7 +12,7 @@ use crate::state::AppState;
 pub async fn app__app_update_check_run(
     state: State<'_, AppState>,
 ) -> Result<AppUpdateStatusSnapshot, AppError> {
-    Ok(state.desktop.app_update.check_now().await)
+    Ok(state.runtime_host().check_for_app_update().await)
 }
 
 #[tauri::command]
@@ -20,7 +20,7 @@ pub async fn app__app_update_check_run(
 pub fn app__app_update_download_status_get(
     state: State<'_, AppState>,
 ) -> AppUpdateDownloadStatusSnapshot {
-    state.desktop.app_update.download_status()
+    state.runtime_host().app_update_download_status()
 }
 
 #[tauri::command]
@@ -30,9 +30,8 @@ pub async fn app__app_update_install_confirm(
     version: String,
 ) -> Result<UpdaterMetadata, AppError> {
     state
-        .desktop
-        .app_update
-        .install(&version)
+        .runtime_host()
+        .install_app_update(&version)
         .await
         .map_err(AppError::from)
 }

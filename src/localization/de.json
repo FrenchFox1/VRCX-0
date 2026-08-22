@@ -457,22 +457,6 @@
             "instance_duration": "Instanz {duration}"
         },
         "generic_instance_location": "einer Instanz",
-        "friends_panel": {
-            "title": "Favoriten-Freunde",
-            "all": "Alle",
-            "empty": "Keine Favoriten-Freunde online",
-            "note": "Notiz",
-            "memo": "Lokale Notiz",
-            "open": "Öffnen",
-            "request": "Anfragen",
-            "invite": "Einladen",
-            "favorites_online": "Favoriten online",
-            "same_instance": "Gleiche Instanz",
-            "local_favorites": "Lokale Favoriten",
-            "traveling": "Unterwegs",
-            "private": "Privat",
-            "offline": "Offline"
-        },
         "discord": {
             "title": {
                 "invite": "Einladung von {name}",
@@ -2154,13 +2138,6 @@
                     "timeout": "Timeout",
                     "opacity": "Deckkraft",
                     "filters": "HMD-Benachrichtigungsfilter"
-                },
-                "interactive_panel": {
-                    "header": "Interaktives Freundes-Panel",
-                    "enabled": "Interaktives Freundes-Panel",
-                    "all_friends_include_favorites": "Favoriten in „Alle“ einbeziehen",
-                    "summon_hint": "Beschwörungsgeste",
-                    "openvr_required": "Halte den rechten Grip-Button etwa 2 Sekunden gedrückt, um es zu beschwören. Erfordert das SteamVR/OpenVR-Overlay-Backend; OpenXR bietet das interaktive Panel nicht."
                 },
                 "wrist_overlay": {
                     "header": "Handgelenk-Overlay",

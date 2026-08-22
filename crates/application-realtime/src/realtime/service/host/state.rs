@@ -10,8 +10,7 @@ use vrcx_0_application_core::{
     RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use super::feed::FeedLiveCache;
 use crate::realtime::current_user::RealtimeCurrentUserRuntime;
@@ -24,7 +23,7 @@ use crate::realtime::{
     RealtimeTransportLifecycleEvent,
 };
 use crate::world_enrich::PendingEntryCorrection;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 pub(super) struct FriendOwnerGuard<'a> {
     pub(super) _guard: std::sync::MutexGuard<'a, ()>,
@@ -207,8 +206,10 @@ impl RealtimeStopRequest {
 
 #[derive(Clone)]
 pub struct RealtimeHostRuntimeDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
+    pub(crate) store: Arc<dyn crate::RealtimeStore>,
+    pub(crate) transport: Arc<dyn crate::realtime::RealtimeTransport>,
+    pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
+    pub(crate) web: Arc<WebClient>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher,
     pub friend_projection_sink: crate::FriendProjectionSink,
@@ -224,6 +225,53 @@ pub struct RealtimeHostRuntimeDeps {
     pub print_cleanup: Arc<dyn PrintCleanupInputSink>,
     pub friend_note_change_sink: Option<Arc<dyn Fn() + Send + Sync>>,
     pub current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
+}
+
+impl RealtimeHostRuntimeDeps {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        store: Arc<dyn crate::RealtimeStore>,
+        transport: Arc<dyn crate::realtime::RealtimeTransport>,
+        remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
+        web: Arc<WebClient>,
+        event_bus: RuntimeEventBus,
+        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher,
+        friend_projection_sink: crate::FriendProjectionSink,
+        sync: RuntimeSyncEngine,
+        tasks: TaskSupervisor,
+        session: HostSessionRuntime,
+        auth_scope: RuntimeAuthScope,
+        remote_mutations: Arc<RemoteMutationGate>,
+        local_game_context: Arc<dyn LocalGameContextSource>,
+        activity_sink: Option<Arc<dyn OverlayActivityInputSink>>,
+        world_cache: Arc<WorldCache>,
+        instance_dwell: Arc<InstanceDwellRegistry>,
+        print_cleanup: Arc<dyn PrintCleanupInputSink>,
+        friend_note_change_sink: Option<Arc<dyn Fn() + Send + Sync>>,
+        current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
+    ) -> Self {
+        Self {
+            store,
+            transport,
+            remote_requests,
+            web,
+            event_bus,
+            backend_status,
+            friend_projection_sink,
+            sync,
+            tasks,
+            session,
+            auth_scope,
+            remote_mutations,
+            local_game_context,
+            activity_sink,
+            world_cache,
+            instance_dwell,
+            print_cleanup,
+            friend_note_change_sink,
+            current_user_snapshot_sink,
+        }
+    }
 }
 
 pub type RealtimeCurrentUserSnapshotSink =

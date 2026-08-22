@@ -1,5 +1,5 @@
-use serde::Serialize;
 use serde_json::json;
+pub use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::FavoriteEntityKind;
 
 use crate::common::{normalize_text, now_iso, row_string, ParamsBuilder};
@@ -16,50 +16,6 @@ const LOCAL_GROUP_CONFIG_UPSERT_SQL: &str =
 pub struct FavoriteMoveResult {
     pub removed: i64,
     pub added: i64,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FavoriteRow {
-    pub created_at: String,
-    pub group_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub user_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatar_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub world_id: Option<String>,
-}
-
-impl FavoriteRow {
-    fn new(
-        kind: FavoriteEntityKind,
-        created_at: String,
-        entity_id: String,
-        group_name: String,
-    ) -> Self {
-        let mut row = Self {
-            created_at,
-            group_name,
-            user_id: None,
-            avatar_id: None,
-            world_id: None,
-        };
-        match kind {
-            FavoriteEntityKind::Friend => row.user_id = Some(entity_id),
-            FavoriteEntityKind::Avatar => row.avatar_id = Some(entity_id),
-            FavoriteEntityKind::World => row.world_id = Some(entity_id),
-        }
-        row
-    }
-
-    pub fn entity_id(&self) -> &str {
-        self.user_id
-            .as_deref()
-            .or(self.avatar_id.as_deref())
-            .or(self.world_id.as_deref())
-            .unwrap_or_default()
-    }
 }
 
 pub fn favorite_list(

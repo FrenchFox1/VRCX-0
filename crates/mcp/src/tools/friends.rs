@@ -3,20 +3,18 @@ use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
+use vrcx_0_contracts::social_aggregates;
 use vrcx_0_core::location::parse_location;
-use vrcx_0_persistence::{
-    favorites as persistence_favorites, friends as persistence_friends, local_moderation, memos,
-    social_aggregates,
-};
 
 use crate::server::VrcxMcpServer;
+use crate::{McpFriendMemo, McpLocalModeration};
 
 use super::common::{
-    map_persistence_error, require_current_user_id, resolve_optional_target_or_result,
-    resolve_target_or_result, social_aggregates_result, structured_result, TargetResolutionOutcome,
-    TimeWindowParams, WithResolution,
+    application_query_result, map_application_query_error, require_current_user_id,
+    resolve_optional_target_or_result, resolve_target_or_result, structured_result,
+    TargetResolutionOutcome, TimeWindowParams, WithResolution,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[tool_router(router = friends_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -60,8 +58,7 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<FindUserParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        social_aggregates_result(social_aggregates::resolve_user_by_name(
-            self.runtime.db.as_ref(),
+        application_query_result(self.runtime.social_history_queries.resolve_user(
             social_aggregates::ResolveUserInput {
                 owner_user_id: owner_user_id.clone(),
                 name_query: input.name,
@@ -145,17 +142,17 @@ impl VrcxMcpServer {
                 Some(TargetResolutionOutcome::ToolResult(result)) => return Ok(result),
                 None => (None, None),
             };
-        let output = social_aggregates::get_friend_changes(
-            self.runtime.db.as_ref(),
-            social_aggregates::FriendChangesInput {
+        let output = self
+            .runtime
+            .social_history_queries
+            .friend_changes(social_aggregates::FriendChangesInput {
                 owner_user_id: owner_user_id.clone(),
                 target_user_id,
                 time_window: input.time_window.into(),
                 kind: input.kind.into(),
                 limit: input.limit,
-            },
-        )
-        .map_err(map_persistence_error)?;
+            })
+            .map_err(map_application_query_error)?;
         structured_result(WithResolution {
             inner: output,
             resolved_user,
@@ -185,24 +182,26 @@ impl VrcxMcpServer {
             .into_iter()
             .map(|kind| kind.as_str().to_string())
             .collect();
-        social_aggregates::get_friend_log(
-            self.runtime.db.as_ref(),
-            social_aggregates::FriendLogInput {
+        self.runtime
+            .social_history_queries
+            .friend_log(social_aggregates::FriendLogInput {
                 owner_user_id,
                 target_user_id: input.target,
                 types,
                 time_window: input.time_window.unwrap_or_default().into(),
                 limit: input.limit,
                 cursor: input.cursor,
-            },
-        )
-        .map_err(map_persistence_error)
+            })
+            .map_err(map_application_query_error)
     }
 
     fn get_friend_note_output(&self, input: FriendNoteParams) -> Result<FriendNoteOutput, String> {
         if let Some(user_id) = normalize_optional_text(input.user) {
-            let mut rows = memos::memo_get_user(self.runtime.db.as_ref(), user_id)
-                .map_err(map_persistence_error)?
+            let mut rows = self
+                .runtime
+                .friend_local_data
+                .memo_get_user(user_id)
+                .map_err(map_application_query_error)?
                 .into_iter()
                 .map(FriendNoteRow::from)
                 .collect::<Vec<_>>();
@@ -228,17 +227,19 @@ impl VrcxMcpServer {
         let cursor_ref = cursor
             .as_ref()
             .map(|(edited_at, user_id)| (edited_at.as_str(), user_id.as_str()));
-        let mut rows = memos::memo_list_users_page(
-            self.runtime.db.as_ref(),
-            i64::try_from(limit + 1).unwrap_or(101),
-            cursor_ref,
-        )
-        .map_err(map_persistence_error)?
-        .into_iter()
-        .map(FriendNoteRow::from)
-        .collect::<Vec<_>>();
-        let total_rows =
-            memos::memo_count_users(self.runtime.db.as_ref()).map_err(map_persistence_error)?;
+        let mut rows = self
+            .runtime
+            .friend_local_data
+            .memo_list_users_page(i64::try_from(limit + 1).unwrap_or(101), cursor_ref)
+            .map_err(map_application_query_error)?
+            .into_iter()
+            .map(FriendNoteRow::from)
+            .collect::<Vec<_>>();
+        let total_rows = self
+            .runtime
+            .friend_local_data
+            .memo_count_users()
+            .map_err(map_application_query_error)?;
         let truncated = rows.len() > limit;
         if truncated {
             rows.truncate(limit);
@@ -267,12 +268,11 @@ impl VrcxMcpServer {
             .iter()
             .map(|row| row.user_id.clone())
             .collect::<Vec<_>>();
-        let names = persistence_friends::friend_display_names(
-            self.runtime.db.as_ref(),
-            owner_user_id.clone(),
-            &user_ids,
-        )
-        .map_err(map_persistence_error)?;
+        let names = self
+            .runtime
+            .friend_local_data
+            .friend_display_names(owner_user_id, &user_ids)
+            .map_err(map_application_query_error)?;
         for row in rows.iter_mut() {
             if let Some(name) = names.get(&row.user_id) {
                 row.display_name = name.clone();
@@ -303,8 +303,11 @@ impl VrcxMcpServer {
                 caveats: friend_note_caveats(),
             });
         }
-        let saved = memos::memo_save_user(self.runtime.db.as_ref(), user_id, note)
-            .map_err(map_persistence_error)?;
+        let saved = self
+            .runtime
+            .friend_local_data
+            .memo_save_user(user_id, note)
+            .map_err(map_application_query_error)?;
         Ok(SetFriendNoteOutput {
             user_id: saved.entity_id,
             memo: saved.memo,
@@ -349,47 +352,49 @@ impl VrcxMcpServer {
                     current_avatar_name: friend.current_avatar_name,
                 }
             });
-        let note = memos::memo_get_user(self.runtime.db.as_ref(), user_id.clone())
-            .map_err(map_persistence_error)?
+        let note = self
+            .runtime
+            .friend_local_data
+            .memo_get_user(user_id.clone())
+            .map_err(map_application_query_error)?
             .map(FriendNoteRow::from);
-        let moderation = local_moderation::local_moderation_get(
-            self.runtime.db.as_ref(),
-            owner_user_id.clone(),
-            user_id.clone(),
-        )
-        .map_err(map_persistence_error)?
-        .map(FriendModerationStatus::from);
+        let moderation = self
+            .runtime
+            .friend_local_data
+            .local_moderation_get(owner_user_id.clone(), user_id.clone())
+            .map_err(map_application_query_error)?
+            .map(FriendModerationStatus::from);
         let relationship =
             self.friend_relationship_profile(&owner_user_id, &user_id, time_window_params.clone())?;
-        let copresence = social_aggregates::get_copresence_summary(
-            self.runtime.db.as_ref(),
-            social_aggregates::CopresenceSummaryInput {
+        let copresence = self
+            .runtime
+            .social_history_queries
+            .copresence_summary(social_aggregates::CopresenceSummaryInput {
                 time_window: time_window.clone(),
                 group_by: social_aggregates::CopresenceGroupBy::Friend,
                 min_minutes: None,
                 limit: Some(100),
                 owner_user_id: Some(owner_user_id.clone()),
                 friends_only: false,
-            },
-        )
-        .map_err(map_persistence_error)?
-        .rows
-        .into_iter()
-        .find(|row| row.user_id == user_id);
-        let activity_pattern = social_aggregates::get_friend_activity_pattern(
-            self.runtime.db.as_ref(),
-            social_aggregates::FriendActivityPatternInput {
+            })
+            .map_err(map_application_query_error)?
+            .rows
+            .into_iter()
+            .find(|row| row.user_id == user_id);
+        let activity_pattern = self
+            .runtime
+            .social_history_queries
+            .friend_activity_pattern(social_aggregates::FriendActivityPatternInput {
                 owner_user_id: owner_user_id.clone(),
                 user_id: Some(user_id.clone()),
                 time_window: time_window.clone(),
                 bucket: social_aggregates::ActivityBucket::HourOfDay,
                 utc_offset_minutes: None,
-            },
-        )
-        .map_err(map_persistence_error)?
-        .rows
-        .into_iter()
-        .next();
+            })
+            .map_err(map_application_query_error)?
+            .rows
+            .into_iter()
+            .next();
         let recent_changes = self.friend_profile_changes(&owner_user_id, &user_id, time_window)?;
         let latest_bio = latest_bio_from_changes(&recent_changes);
         let current = match current {
@@ -426,13 +431,13 @@ impl VrcxMcpServer {
         user_id: &str,
         time_window: TimeWindowParams,
     ) -> Result<FriendRelationshipProfile, String> {
-        let current = persistence_friends::friend_log_current_list(
-            self.runtime.db.as_ref(),
-            owner_user_id.to_string(),
-        )
-        .map_err(map_persistence_error)?
-        .into_iter()
-        .find(|row| row.user_id == user_id);
+        let current = self
+            .runtime
+            .friend_local_data
+            .friend_current_list(owner_user_id.clone())
+            .map_err(map_application_query_error)?
+            .into_iter()
+            .find(|row| row.user_id == user_id);
         let log = self.get_friend_log_output(
             owner_user_id.clone(),
             FriendLogParams {
@@ -443,13 +448,11 @@ impl VrcxMcpServer {
                 cursor: None,
             },
         )?;
-        let friended_at = social_aggregates::get_friend_log_first_created_at(
-            self.runtime.db.as_ref(),
-            owner_user_id,
-            user_id,
-            "Friend",
-        )
-        .map_err(map_persistence_error)?;
+        let friended_at = self
+            .runtime
+            .social_history_queries
+            .friend_log_first_created_at(owner_user_id, user_id, "Friend")
+            .map_err(map_application_query_error)?;
         let display_name_changes = log
             .rows
             .iter()
@@ -494,17 +497,17 @@ impl VrcxMcpServer {
             social_aggregates::FriendChangeKind::Avatar,
             social_aggregates::FriendChangeKind::Bio,
         ] {
-            let output = social_aggregates::get_friend_changes(
-                self.runtime.db.as_ref(),
-                social_aggregates::FriendChangesInput {
+            let output = self
+                .runtime
+                .social_history_queries
+                .friend_changes(social_aggregates::FriendChangesInput {
                     owner_user_id: owner_user_id.clone(),
                     target_user_id: Some(user_id.to_string()),
                     time_window: time_window.clone(),
                     kind: kind.clone(),
                     limit: Some(200),
-                },
-            )
-            .map_err(map_persistence_error)?;
+                })
+                .map_err(map_application_query_error)?;
             if let Some(row) = output.rows.into_iter().find(|row| row.user_id == user_id) {
                 rows.push(FriendProfileChangeSummary {
                     kind: friend_change_kind_name(&kind).into(),
@@ -519,17 +522,19 @@ impl VrcxMcpServer {
 
     fn friend_favorite_groups(&self, user_id: &str) -> Result<Vec<String>, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        let mut groups = persistence_favorites::favorite_list(
-            self.runtime.db.as_ref(),
-            Some(&owner_user_id),
-            vrcx_0_application_core::FavoriteEntityKind::Friend,
-        )
-        .map_err(map_persistence_error)?
-        .into_iter()
-        .filter(|row| row.user_id.as_deref() == Some(user_id))
-        .map(|row| row.group_name)
-        .filter(|group| !group.trim().is_empty())
-        .collect::<Vec<_>>();
+        let mut groups = self
+            .runtime
+            .favorites_queries
+            .favorite_list(
+                &owner_user_id,
+                vrcx_0_application_core::FavoriteEntityKind::Friend,
+            )
+            .map_err(map_application_query_error)?
+            .into_iter()
+            .filter(|row| row.user_id.as_deref() == Some(user_id))
+            .map(|row| row.group_name)
+            .filter(|group| !group.trim().is_empty())
+            .collect::<Vec<_>>();
         groups.sort();
         groups.dedup();
         Ok(groups)
@@ -653,8 +658,8 @@ struct FriendNoteRow {
     edited_at: String,
 }
 
-impl From<memos::UserMemoOutput> for FriendNoteRow {
-    fn from(value: memos::UserMemoOutput) -> Self {
+impl From<McpFriendMemo> for FriendNoteRow {
+    fn from(value: McpFriendMemo) -> Self {
         Self {
             user_id: value.user_id,
             display_name: String::new(),
@@ -726,8 +731,8 @@ struct FriendModerationStatus {
     mute: bool,
 }
 
-impl From<local_moderation::LocalModerationOutput> for FriendModerationStatus {
-    fn from(value: local_moderation::LocalModerationOutput) -> Self {
+impl From<McpLocalModeration> for FriendModerationStatus {
+    fn from(value: McpLocalModeration) -> Self {
         Self {
             user_id: value.user_id,
             updated_at: value.updated_at,

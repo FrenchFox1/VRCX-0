@@ -3,7 +3,7 @@ use specta::Type;
 use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 
 use crate::entities::Entity;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -189,7 +189,7 @@ mod tests {
 
     use serde_json::Value;
     use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventSink};
-    use vrcx_0_persistence::OwnerId;
+    use vrcx_0_core::OwnerId;
 
     use super::AssistantEmitter;
 

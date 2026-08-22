@@ -12,7 +12,7 @@ use rusqlite::{
     types::{ToSql, Value as SqlValue},
     Connection, OpenFlags, OptionalExtension, Statement,
 };
-use serde::{Deserialize, Serialize};
+pub use vrcx_0_contracts::DatabaseUpgradeStatus;
 
 use crate::Error;
 
@@ -23,25 +23,6 @@ mod tests;
 mod upgrade;
 
 const READ_CONNECTION_COUNT: usize = 2;
-
-#[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct DatabaseUpgradeStatus {
-    pub from_version: i64,
-    pub to_version: i64,
-    pub work_db_path: String,
-    pub started_at: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stage: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub operation: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub failed_at: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reason: Option<String>,
-}
 
 struct UpgradeSession {
     conn: Mutex<Connection>,

@@ -1,40 +1,13 @@
-use std::path::PathBuf;
-use std::sync::Arc;
-
-use vrcx_0_persistence::game_log::{
-    write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogVideoPlayEntry,
-    GameLogWriteBatch,
+use crate::ports::TestGameStateStore;
+use crate::GameStateStore;
+use vrcx_0_contracts::game_log::{
+    GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
 };
 
 use super::*;
 
-struct TestDir {
-    path: PathBuf,
-}
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
-}
-
-fn test_db(name: &str) -> (TestDir, Arc<DatabaseService>) {
-    let dir = TestDir::new(name);
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-    (dir, db)
+fn test_store(_name: &str) -> TestGameStateStore {
+    TestGameStateStore::default()
 }
 
 fn location(
@@ -101,7 +74,7 @@ fn video(created_at: &str, url: &str, location: &str) -> GameLogVideoPlayEntry {
 }
 
 fn write_rows(
-    db: &DatabaseService,
+    store: &TestGameStateStore,
     locations: Vec<GameLogLocationEntry>,
     join_leave: Vec<GameLogJoinLeaveEntry>,
     video_plays: Vec<GameLogVideoPlayEntry>,
@@ -112,18 +85,18 @@ fn write_rows(
         video_plays,
         ..Default::default()
     };
-    write_batch(db, &OwnerId::new(""), &batch).unwrap();
+    store.write_game_log(&OwnerId::new(""), &batch).unwrap();
 }
 
-fn query(db: &DatabaseService, input: GameLogSessionsQueryInput) -> Vec<GameLogSessionDto> {
-    game_log_sessions_query(db, &OwnerId::new(""), input).unwrap()
+fn query(store: &TestGameStateStore, input: GameLogSessionsQueryInput) -> Vec<GameLogSessionDto> {
+    game_log_sessions_query(store, &OwnerId::new(""), input).unwrap()
 }
 
 #[test]
 fn returns_sessions_newest_first_with_video_merge() {
-    let (_dir, db) = test_db("sessions-newest-first");
+    let store = test_store("sessions-newest-first");
     write_rows(
-        &db,
+        &store,
         vec![
             location("2026-01-01T10:00:00.000Z", "wrld_old:1", "wrld_old", "Old"),
             location("2026-01-01T11:00:00.000Z", "wrld_new:1", "wrld_new", "New"),
@@ -135,7 +108,7 @@ fn returns_sessions_newest_first_with_video_merge() {
         ],
     );
 
-    let sessions = query(&db, GameLogSessionsQueryInput::default());
+    let sessions = query(&store, GameLogSessionsQueryInput::default());
 
     assert_eq!(
         sessions
@@ -152,10 +125,10 @@ fn returns_sessions_newest_first_with_video_merge() {
 
 #[test]
 fn returns_every_duration_row_for_the_selected_session_location() {
-    let (_dir, db) = test_db("session-player-duration-rows");
+    let store = test_store("session-player-duration-rows");
     let session_location = "wrld_test:1";
     write_rows(
-        &db,
+        &store,
         vec![location(
             "2026-01-01T10:00:00.000Z",
             session_location,
@@ -188,7 +161,7 @@ fn returns_every_duration_row_for_the_selected_session_location() {
         Vec::new(),
     );
 
-    let sessions = query(&db, GameLogSessionsQueryInput::default());
+    let sessions = query(&store, GameLogSessionsQueryInput::default());
 
     assert_eq!(sessions.len(), 1);
     assert_eq!(sessions[0].player_duration_rows.len(), 3);
@@ -201,9 +174,9 @@ fn returns_every_duration_row_for_the_selected_session_location() {
 
 #[test]
 fn filters_sessions_by_favorite_user() {
-    let (_dir, db) = test_db("sessions-favorite");
+    let store = test_store("sessions-favorite");
     write_rows(
-        &db,
+        &store,
         vec![
             location("2026-01-01T10:00:00.000Z", "wrld_a:1", "wrld_a", "A"),
             location("2026-01-01T11:00:00.000Z", "wrld_b:1", "wrld_b", "B"),
@@ -216,7 +189,7 @@ fn filters_sessions_by_favorite_user() {
     );
 
     let sessions = query(
-        &db,
+        &store,
         GameLogSessionsQueryInput {
             favorite_user_ids: vec!["usr_b".to_string()],
             ..Default::default()
@@ -230,9 +203,9 @@ fn filters_sessions_by_favorite_user() {
 
 #[test]
 fn global_search_matches_world_name_header() {
-    let (_dir, db) = test_db("sessions-search");
+    let store = test_store("sessions-search");
     write_rows(
-        &db,
+        &store,
         vec![
             location(
                 "2026-01-01T10:00:00.000Z",
@@ -255,7 +228,7 @@ fn global_search_matches_world_name_header() {
     );
 
     let sessions = query(
-        &db,
+        &store,
         GameLogSessionsQueryInput {
             search: "alpha".to_string(),
             ..Default::default()

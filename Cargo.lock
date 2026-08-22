@@ -8950,6 +8950,7 @@ name = "vrcx-0"
 version = "2.24.3"
 dependencies = [
  "async-trait",
+ "cargo_metadata",
  "chrono",
  "image",
  "percent-encoding",
@@ -8959,7 +8960,6 @@ dependencies = [
  "sha2 0.11.0",
  "specta",
  "specta-typescript",
- "sys-locale",
  "tauri",
  "tauri-build",
  "tauri-plugin-autostart",
@@ -8984,6 +8984,7 @@ dependencies = [
  "vrcx-0-application-realtime",
  "vrcx-0-assistant",
  "vrcx-0-composition",
+ "vrcx-0-contracts",
  "vrcx-0-core",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
@@ -8991,6 +8992,7 @@ dependencies = [
  "vrcx-0-integrations",
  "vrcx-0-mcp",
  "vrcx-0-media",
+ "vrcx-0-outbound-adapters",
  "vrcx-0-persistence",
  "vrcx-0-platform",
  "vrcx-0-runtime-host-desktop",
@@ -9010,22 +9012,22 @@ dependencies = [
  "hex",
  "image",
  "moka",
+ "regex",
  "rusqlite",
  "serde",
  "serde_json",
  "sha2 0.11.0",
  "specta",
+ "thiserror 2.0.20",
  "tokio",
  "tracing",
- "url",
  "uuid",
  "vrcx-0-application-core",
  "vrcx-0-application-realtime",
+ "vrcx-0-contracts",
  "vrcx-0-core",
- "vrcx-0-integrations",
- "vrcx-0-media",
+ "vrcx-0-outbound-adapters",
  "vrcx-0-persistence",
- "vrcx-0-vrchat-client",
 ]
 
 [[package]]
@@ -9033,21 +9035,16 @@ name = "vrcx-0-application-activity"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "moka",
  "serde",
  "serde_json",
  "specta",
+ "tokio",
+ "tracing",
+ "url",
  "vrcx-0-application-core",
  "vrcx-0-core",
  "vrcx-0-i18n",
-]
-
-[[package]]
-name = "vrcx-0-application-contracts"
-version = "0.1.0"
-dependencies = [
- "serde",
- "specta",
- "vrcx-0-core",
 ]
 
 [[package]]
@@ -9056,7 +9053,6 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
- "moka",
  "serde",
  "serde_json",
  "specta",
@@ -9064,22 +9060,17 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
- "vrcx-0-application-contracts",
+ "vrcx-0-contracts",
  "vrcx-0-core",
- "vrcx-0-integrations",
- "vrcx-0-media",
- "vrcx-0-persistence",
- "vrcx-0-vrchat-client",
 ]
 
 [[package]]
 name = "vrcx-0-application-game"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
- "image",
  "percent-encoding",
- "rusqlite",
  "serde",
  "serde_json",
  "specta",
@@ -9088,12 +9079,8 @@ dependencies = [
  "url",
  "vrcx-0-application-activity",
  "vrcx-0-application-core",
+ "vrcx-0-contracts",
  "vrcx-0-core",
- "vrcx-0-integrations",
- "vrcx-0-media",
- "vrcx-0-persistence",
- "vrcx-0-vrchat-client",
- "walkdir",
 ]
 
 [[package]]
@@ -9110,9 +9097,8 @@ dependencies = [
  "tokio",
  "tracing",
  "vrcx-0-application-core",
+ "vrcx-0-contracts",
  "vrcx-0-core",
- "vrcx-0-persistence",
- "vrcx-0-vrchat-client",
 ]
 
 [[package]]
@@ -9129,9 +9115,8 @@ dependencies = [
  "tokio-util",
  "tracing",
  "vrcx-0-application-core",
- "vrcx-0-composition",
+ "vrcx-0-contracts",
  "vrcx-0-core",
- "vrcx-0-integrations",
  "vrcx-0-mcp",
  "vrcx-0-persistence",
 ]
@@ -9141,28 +9126,36 @@ name = "vrcx-0-composition"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "iana-time-zone",
- "moka",
  "serde",
  "serde_json",
  "specta",
- "sys-locale",
  "thiserror 2.0.20",
  "tokio",
  "tracing",
- "url",
- "uuid",
  "vrcx-0-application",
  "vrcx-0-application-activity",
  "vrcx-0-application-core",
  "vrcx-0-application-realtime",
  "vrcx-0-core",
- "vrcx-0-i18n",
- "vrcx-0-integrations",
  "vrcx-0-media",
+ "vrcx-0-outbound-adapters",
  "vrcx-0-persistence",
  "vrcx-0-platform",
  "vrcx-0-vrchat-client",
+]
+
+[[package]]
+name = "vrcx-0-contracts"
+version = "0.1.0"
+dependencies = [
+ "compact_str",
+ "serde",
+ "serde_json",
+ "specta",
+ "thiserror 2.0.20",
+ "url",
+ "vrcx-0-core",
+ "vrcx-0-runtime-event",
 ]
 
 [[package]]
@@ -9254,7 +9247,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "vrcx-0-application-contracts",
+ "vrcx-0-runtime-event",
 ]
 
 [[package]]
@@ -9271,6 +9264,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
+ "vrcx-0-contracts",
  "vrcx-0-core",
 ]
 
@@ -9298,8 +9292,9 @@ dependencies = [
  "vrcx-0-application",
  "vrcx-0-application-core",
  "vrcx-0-application-realtime",
- "vrcx-0-composition",
+ "vrcx-0-contracts",
  "vrcx-0-core",
+ "vrcx-0-outbound-adapters",
  "vrcx-0-persistence",
 ]
 
@@ -9316,9 +9311,42 @@ dependencies = [
  "sha2 0.11.0",
  "thiserror 2.0.20",
  "tokio",
+ "vrcx-0-contracts",
  "vrcx-0-core",
  "walkdir",
  "webp",
+]
+
+[[package]]
+name = "vrcx-0-outbound-adapters"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "base64 0.23.1",
+ "chrono",
+ "futures-util",
+ "iana-time-zone",
+ "image",
+ "moka",
+ "rusqlite",
+ "serde_json",
+ "sys-locale",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+ "vrcx-0-application",
+ "vrcx-0-application-activity",
+ "vrcx-0-application-core",
+ "vrcx-0-application-realtime",
+ "vrcx-0-contracts",
+ "vrcx-0-core",
+ "vrcx-0-integrations",
+ "vrcx-0-media",
+ "vrcx-0-persistence",
+ "vrcx-0-platform",
+ "vrcx-0-vrchat-client",
+ "walkdir",
 ]
 
 [[package]]
@@ -9349,10 +9377,10 @@ dependencies = [
  "vrcx-0-application-core",
  "vrcx-0-application-game",
  "vrcx-0-application-realtime",
- "vrcx-0-composition",
  "vrcx-0-core",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
+ "vrcx-0-outbound-adapters",
  "vrcx-0-persistence",
  "vrcx-0-vr-overlay",
 ]
@@ -9376,6 +9404,7 @@ dependencies = [
  "tar",
  "thiserror 2.0.20",
  "tracing",
+ "vrcx-0-contracts",
  "vrcx-0-core",
  "zstd",
 ]
@@ -9397,13 +9426,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrcx-0-runtime-event"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "specta",
+ "vrcx-0-core",
+]
+
+[[package]]
 name = "vrcx-0-runtime-host-desktop"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "serde",
  "serde_json",
  "specta",
+ "sys-locale",
  "tokio",
  "tracing",
  "vrcx-0-application",
@@ -9412,10 +9452,14 @@ dependencies = [
  "vrcx-0-application-game",
  "vrcx-0-application-realtime",
  "vrcx-0-composition",
+ "vrcx-0-contracts",
  "vrcx-0-core",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
  "vrcx-0-integration-api",
+ "vrcx-0-integrations",
+ "vrcx-0-media",
+ "vrcx-0-outbound-adapters",
  "vrcx-0-overlay-runtime",
  "vrcx-0-persistence",
  "vrcx-0-platform",
@@ -9450,6 +9494,7 @@ dependencies = [
  "tokio-tungstenite 0.30.0",
  "tower-service",
  "url",
+ "vrcx-0-contracts",
  "vrcx-0-core",
 ]
 

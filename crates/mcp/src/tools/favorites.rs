@@ -3,19 +3,17 @@ use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application::{FavoriteLocalMutationError, FavoriteRemoteAddInput};
+use vrcx_0_application::favorites::FavoriteRemoteAddInput;
 use vrcx_0_application_core::{
     vrchat_api::{self},
     FavoriteEntityKind,
 };
-use vrcx_0_persistence::{
-    favorites::{self as persistence_favorites, FavoriteRow as PersistenceFavoriteRow},
-    social_aggregates::{self, FavoriteAction},
-};
+use vrcx_0_contracts::social_aggregates::{self, FavoriteAction};
+use vrcx_0_contracts::FavoriteRow as PersistenceFavoriteRow;
 
 use crate::server::VrcxMcpServer;
 
-use super::common::{map_persistence_error, require_current_user_id, structured_result};
+use super::common::{map_application_query_error, require_current_user_id, structured_result};
 
 #[tool_router(router = favorites_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -75,12 +73,11 @@ impl VrcxMcpServer {
         let owner_user_id = require_current_user_id(&self.runtime)?;
         let mut rows = Vec::new();
         for kind in requested_kind.canonical_kinds() {
-            let values = persistence_favorites::favorite_list(
-                self.runtime.db.as_ref(),
-                Some(&owner_user_id),
-                *kind,
-            )
-            .map_err(map_persistence_error)?;
+            let values = self
+                .runtime
+                .favorites_queries
+                .favorite_list(&owner_user_id, *kind)
+                .map_err(map_application_query_error)?;
             rows.extend(
                 values
                     .iter()
@@ -146,16 +143,17 @@ impl VrcxMcpServer {
     }
 }
 
-fn map_favorite_local_error(error: FavoriteLocalMutationError) -> String {
+fn map_favorite_local_error(error: vrcx_0_application_core::Error) -> String {
     match error {
-        FavoriteLocalMutationError::Persistence(vrcx_0_persistence::Error::InvalidData(
-            message,
-        )) => message,
-        FavoriteLocalMutationError::Persistence(error) => {
+        vrcx_0_application_core::Error::PersistenceInvalidData(message) => message,
+        error @ (vrcx_0_application_core::Error::Database(_)
+        | vrcx_0_application_core::Error::Sqlite { .. }
+        | vrcx_0_application_core::Error::Io(_)
+        | vrcx_0_application_core::Error::Json(_)) => {
             tracing::warn!("MCP social query failed: {error}");
             "internal data error while reading local VRCX-0 data".into()
         }
-        FavoriteLocalMutationError::Application(error) => error.to_string(),
+        error => error.to_string(),
     }
 }
 
@@ -359,7 +357,7 @@ fn vrchat_favorite_caveats(blocked_by_setting: bool) -> Vec<String> {
 }
 #[cfg(test)]
 mod favorite_kind_tests {
-    use vrcx_0_persistence::OwnerId;
+    use vrcx_0_core::OwnerId;
 
     use super::*;
 
@@ -368,7 +366,7 @@ mod favorite_kind_tests {
         let (_dir, runtime, event_bus) =
             crate::test_support::test_runtime_with_event_bus("favorites-local", "usr_self")
                 .expect("test runtime");
-        let db = std::sync::Arc::clone(&runtime.db);
+        let favorites_queries = std::sync::Arc::clone(&runtime.favorites_queries);
         let server = VrcxMcpServer::new(runtime);
 
         let dry_run = server
@@ -382,13 +380,10 @@ mod favorite_kind_tests {
             .unwrap();
         assert!(dry_run.dry_run);
         assert_eq!(dry_run.affected_rows, 0);
-        assert!(persistence_favorites::favorite_list(
-            db.as_ref(),
-            Some(&OwnerId::new("usr_self")),
-            FavoriteEntityKind::Friend,
-        )
-        .unwrap()
-        .is_empty());
+        assert!(favorites_queries
+            .favorite_list(&OwnerId::new("usr_self"), FavoriteEntityKind::Friend)
+            .unwrap()
+            .is_empty());
         assert!(event_bus.take_events_for_test().is_empty());
 
         let written = server
@@ -403,13 +398,10 @@ mod favorite_kind_tests {
         assert!(!written.dry_run);
         assert_eq!(written.affected_rows, 1);
         assert_eq!(
-            persistence_favorites::favorite_list(
-                db.as_ref(),
-                Some(&OwnerId::new("usr_self")),
-                FavoriteEntityKind::Friend,
-            )
-            .unwrap()
-            .len(),
+            favorites_queries
+                .favorite_list(&OwnerId::new("usr_self"), FavoriteEntityKind::Friend)
+                .unwrap()
+                .len(),
             1
         );
         let events = event_bus.take_events_for_test();

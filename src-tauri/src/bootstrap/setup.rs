@@ -244,27 +244,26 @@ pub fn setup_app_with_data_dir(
 
     let state = app.state::<AppState>();
     state
-        .desktop
-        .services
+        .runtime_host()
         .set_notification_desktop_notifier(Arc::new(TauriDesktopNotifier::new(
             app.handle().clone(),
         )));
     let _ = state
-        .storage
-        .remove(BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY);
-    state.runtime_context.runtime.record_phase(
+        .runtime_host()
+        .storage_remove(BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY);
+    state.runtime_host().record_lifecycle_phase(
         "appState",
         RuntimeOperationStatus::Completed,
         "Backend AppState initialized.",
     );
-    state.runtime_context.sync.record(
+    state.runtime_host().record_sync(
         "startup",
         RuntimeOperationStatus::Running,
         "Tauri setup is wiring runtime services.",
         0,
     );
-    create_main_window(app.handle(), state.web.proxy_url())?;
-    state.runtime_context.runtime.record_phase(
+    create_main_window(app.handle(), state.runtime_host().proxy_url())?;
+    state.runtime_host().record_lifecycle_phase(
         "mainWindow",
         RuntimeOperationStatus::Completed,
         "Main webview window created.",
@@ -274,7 +273,7 @@ pub fn setup_app_with_data_dir(
 
     let state = app.state::<AppState>();
     configure_tray(app, &state)?;
-    state.runtime_context.runtime.record_phase(
+    state.runtime_host().record_lifecycle_phase(
         "tray",
         RuntimeOperationStatus::Completed,
         "System tray configured.",
@@ -288,7 +287,7 @@ pub fn setup_app_with_data_dir(
     start_host_services(app.handle(), &state);
     start_mcp_server_if_enabled(app.handle());
     wire_deep_links(app.handle());
-    state.runtime_context.sync.record(
+    state.runtime_host().record_sync(
         "startup",
         RuntimeOperationStatus::Ready,
         "Backend host services are ready.",
@@ -333,7 +332,7 @@ fn queue_deep_link_url(app: &tauri::AppHandle, value: &str) {
         tracing::warn!(url = %value, "ignored deep link before app state was ready");
         return;
     };
-    queue_deep_link_action(&state.pending_deep_links, action, || {
+    queue_deep_link_action(state.pending_deep_links(), action, || {
         let app_handle = app.clone();
         tauri::async_runtime::spawn(async move {
             let main_thread_handle = app_handle.clone();

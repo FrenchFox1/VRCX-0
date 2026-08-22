@@ -1,18 +1,16 @@
+use crate::auth::AuthCredentialStore;
 use serde_json::Value;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_vrchat_client::auth::{
-    config_get_input, current_user_get_input, email_otp_verify_input, login_basic_input,
-    otp_verify_input, totp_verify_input,
+use vrcx_0_application_core::vrchat_api::{
+    VrchatApiRequest as HttpApiRequestInput, VrchatApiResponse as HttpApiExecuteResponse,
+    VrchatScope as ApiScope,
 };
-use vrcx_0_vrchat_client::http_api::{
-    classify_vrchat_auth_failure, ApiScope, HttpApiExecuteResponse, HttpApiRequestInput,
-    VrchatAuthFailureKind,
-};
+use vrcx_0_contracts::vrchat_api::{classify_vrchat_auth_failure, VrchatAuthFailureKind};
 
 use crate::auth::auth_credentials::saved_credential_login_start_with_api;
-use crate::{
-    auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage},
-    auth_response_error_message, AuthenticatedRuntimeSession, SavedCredentialLoginStartInput,
+use crate::auth::{
+    auth_response_error_message,
+    cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage},
+    AuthenticatedRuntimeSession, SavedCredentialLoginStartInput,
 };
 use vrcx_0_application_core::WebClient;
 
@@ -87,18 +85,18 @@ fn interpret_login_response(
 }
 
 fn build_basic_login_request(
+    api: &dyn LoginApi,
     endpoint: &str,
     username: String,
     password: String,
 ) -> std::result::Result<HttpApiRequestInput, Box<LoginSessionState>> {
-    login_basic_input(
+    api.basic_login(
         endpoint.to_string(),
         username,
         password,
         "Username is required.",
         "Password is required.",
     )
-    .map(|(_, request)| request)
     .map_err(|error| {
         Box::new(LoginSessionState::failed(
             error.to_string(),
@@ -127,7 +125,7 @@ pub(super) async fn start_login(
     username: String,
     password: String,
 ) -> LoginSessionState {
-    let request = match build_basic_login_request(endpoint, username, password) {
+    let request = match build_basic_login_request(api, endpoint, username, password) {
         Ok(request) => request,
         Err(state) => return *state,
     };
@@ -141,12 +139,12 @@ pub(super) async fn start_gui_basic_login(
     username: String,
     password: String,
 ) -> LoginSessionState {
-    let request = match build_basic_login_request(endpoint, username, password) {
+    let request = match build_basic_login_request(api, endpoint, username, password) {
         Ok(request) => request,
         Err(state) => return *state,
     };
 
-    let config_response = match execute_or_fail(api, config_get_input(endpoint.to_string())).await {
+    let config_response = match execute_or_fail(api, api.config(endpoint.to_string())).await {
         Ok(response) => response,
         Err(state) => return *state,
     };
@@ -166,7 +164,7 @@ pub(super) async fn start_gui_basic_login(
 
 pub(super) async fn start_saved_credential_login(
     api: &dyn LoginApi,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     endpoint: String,
     user_id: String,
@@ -240,9 +238,9 @@ pub(super) async fn respond_to_challenge(
     code: String,
 ) -> LoginSessionState {
     let verify_request = match method {
-        TwoFactorMethod::Totp => totp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethod::EmailOtp => email_otp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethod::Otp => otp_verify_input(endpoint.to_string(), code),
+        TwoFactorMethod::Totp => api.verify_totp(endpoint.to_string(), code),
+        TwoFactorMethod::EmailOtp => api.verify_email_otp(endpoint.to_string(), code),
+        TwoFactorMethod::Otp => api.verify_otp(endpoint.to_string(), code),
         TwoFactorMethod::Unknown(_) => {
             return LoginSessionState::failed(
                 format!("Unsupported 2FA method: {}", method.as_str()),
@@ -278,7 +276,7 @@ pub(super) async fn respond_to_challenge(
         };
     }
 
-    let user_request = current_user_get_input(endpoint.to_string());
+    let user_request = api.current_user(endpoint.to_string());
     let user_response = match execute_or_fail(api, user_request).await {
         Ok(response) => response,
         Err(state) => return *state,

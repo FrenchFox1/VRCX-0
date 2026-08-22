@@ -1,16 +1,18 @@
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use serde_json::{json, Value};
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::storage::StorageService;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{
-    execute_response, ApiScope, HttpApiExecuteResponse, HttpApiRequestInput,
+use vrcx_0_application_core::vrchat_api::{
+    VrchatApiRequest as HttpApiRequestInput, VrchatApiResponse as HttpApiExecuteResponse,
+    VrchatScope as ApiScope,
 };
+use vrcx_0_contracts::vrchat_api::vrchat_response;
 
-use crate::{record_login_success, LoginSuccessRecordInput};
-use vrcx_0_application_core::{Error, WebClient};
+use crate::auth::test_support::{MemoryAuthCredentialStore, TestAuthRemoteRequests};
+use crate::auth::{
+    record_login_success, AuthCredentialStore, AuthRemoteRequests, LoginSuccessRecordInput,
+};
+use vrcx_0_application_core::{Error, MemoryCookieWebClientPort, Result, WebClient};
 
 use super::types::{LoginApi, LoginApiFuture};
 
@@ -39,7 +41,7 @@ impl FakeLoginApi {
             responses: Mutex::new(
                 responses
                     .into_iter()
-                    .map(|(status, body)| Ok(execute_response(status, body)))
+                    .map(|(status, body)| Ok(vrchat_response(status, body)))
                     .collect(),
             ),
             calls: Mutex::new(Vec::new()),
@@ -89,6 +91,43 @@ impl LoginApi for FakeLoginApi {
             next.map_err(Error::Custom)
         })
     }
+
+    fn config(&self, endpoint: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.config(endpoint)
+    }
+
+    fn current_user(&self, endpoint: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.current_user(endpoint)
+    }
+
+    fn basic_login(
+        &self,
+        endpoint: String,
+        username: String,
+        password: String,
+        username_required: &'static str,
+        password_required: &'static str,
+    ) -> Result<HttpApiRequestInput> {
+        TestAuthRemoteRequests.basic_login(
+            endpoint,
+            username,
+            password,
+            username_required,
+            password_required,
+        )
+    }
+
+    fn verify_totp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.verify_totp(endpoint, code)
+    }
+
+    fn verify_email_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.verify_email_otp(endpoint, code)
+    }
+
+    fn verify_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.verify_otp(endpoint, code)
+    }
 }
 
 pub(super) fn user_json() -> Value {
@@ -120,22 +159,24 @@ impl Drop for TestDir {
     }
 }
 
-pub(super) fn test_env(name: &str) -> (TestDir, ConfigRepository, WebClient, Arc<DatabaseService>) {
+pub(super) fn test_env(name: &str) -> (TestDir, MemoryAuthCredentialStore, WebClient, ()) {
     let dir = TestDir::new(name);
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-    let config = ConfigRepository::new(Arc::clone(&db));
-    let storage = StorageService::new(&dir.path.join("VRCX-0.json")).unwrap();
-    let web = WebClient::new(&storage, db.as_ref(), "https://app.example".into(), "2.9.2").unwrap();
-    (dir, config, web, db)
+    let config = MemoryAuthCredentialStore::default();
+    let web = WebClient::new(MemoryCookieWebClientPort::default());
+    (dir, config, web, ())
 }
 
-pub(super) fn seed_saved_credential(config: &ConfigRepository, web: &WebClient, user_id: &str) {
+pub(super) fn seed_saved_credential(
+    config: &dyn AuthCredentialStore,
+    web: &WebClient,
+    user_id: &str,
+) {
     record_login_success(
         config,
         web,
         LoginSuccessRecordInput {
-            user: json!({ "id": user_id, "displayName": "Saved User" }),
-            login_params: json!({ "username": "saved@example.test", "password": "secret" }),
+            user: json!({ "id": user_id, "displayName": "Saved User" }).into(),
+            login_params: json!({ "username": "saved@example.test", "password": "secret" }).into(),
             stored_login_params: None,
             save_credentials: true,
         },

@@ -1,21 +1,15 @@
 use image::{codecs::png::PngEncoder, ColorType, ImageEncoder, RgbaImage};
 use vrcx_0_vr_overlay::{
-    default_slint_panel_size, FavoriteFriendsPanelModel, MainSurfaceModel, RgbaFrame,
-    SlintHmdRenderer, SlintPanelHost, SlintPanelPointerEvent, SlintPanelRenderStats,
-    SlintWristRenderer, WristSurfaceModel,
+    MainSurfaceModel, RgbaFrame, SlintHmdRenderer, SlintWristRenderer, WristSurfaceModel,
 };
 
 pub struct RenderedPng {
     pub bytes: Vec<u8>,
-    pub stats: Option<SlintPanelRenderStats>,
 }
 
 pub struct DevtoolRenderer {
     wrist: SlintWristRenderer,
     hmd: SlintHmdRenderer,
-    panel: Option<SlintPanelHost>,
-    panel_frame: Option<RgbaFrame>,
-    panel_stats: Option<SlintPanelRenderStats>,
 }
 
 impl DevtoolRenderer {
@@ -23,72 +17,23 @@ impl DevtoolRenderer {
         Self {
             wrist: SlintWristRenderer::new(),
             hmd: SlintHmdRenderer::new(),
-            panel: None,
-            panel_frame: None,
-            panel_stats: None,
         }
-    }
-
-    pub fn friends_png(
-        &mut self,
-        model: &FavoriteFriendsPanelModel,
-    ) -> Result<RenderedPng, String> {
-        self.panel_png(model)
     }
 
     pub fn main_png(&mut self, model: &MainSurfaceModel) -> Result<RenderedPng, String> {
         let frame = self.hmd.render(model)?;
-        frame_png(frame).map(RenderedPng::without_stats)
+        frame_png(frame).map(RenderedPng::new)
     }
 
     pub fn wrist_png(&mut self, model: &WristSurfaceModel) -> Result<RenderedPng, String> {
         let frame = self.wrist.render(model)?;
-        frame_png(frame).map(RenderedPng::without_stats)
-    }
-
-    pub fn dispatch_panel_input(&mut self, event: SlintPanelPointerEvent) -> Result<(), String> {
-        self.panel_host()?.dispatch(event)
-    }
-
-    pub fn reset_panel(&mut self) {
-        self.panel = None;
-        self.panel_frame = None;
-        self.panel_stats = None;
-    }
-
-    fn panel_png(&mut self, model: &FavoriteFriendsPanelModel) -> Result<RenderedPng, String> {
-        let rendered = {
-            let host = self.panel_host()?;
-            host.set_model(model);
-            host.render_if_needed()?
-        };
-        if let Some(rendered) = rendered {
-            self.panel_stats = Some(rendered.stats);
-            self.panel_frame = Some(rendered.frame);
-        }
-        let frame = self
-            .panel_frame
-            .clone()
-            .ok_or_else(|| "Slint panel did not produce a frame".to_string())?;
-        Ok(RenderedPng {
-            bytes: frame_png(frame)?,
-            stats: self.panel_stats,
-        })
-    }
-
-    fn panel_host(&mut self) -> Result<&mut SlintPanelHost, String> {
-        if self.panel.is_none() {
-            self.panel = Some(SlintPanelHost::new(default_slint_panel_size())?);
-        }
-        self.panel
-            .as_mut()
-            .ok_or_else(|| "Slint panel host is unavailable".to_string())
+        frame_png(frame).map(RenderedPng::new)
     }
 }
 
 impl RenderedPng {
-    fn without_stats(bytes: Vec<u8>) -> Self {
-        Self { bytes, stats: None }
+    fn new(bytes: Vec<u8>) -> Self {
+        Self { bytes }
     }
 }
 

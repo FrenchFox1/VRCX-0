@@ -8,7 +8,6 @@ use crate::RuntimeOperationStatus;
 use chrono::{Duration as ChronoDuration, Utc};
 use serde::Serialize;
 use vrcx_0_core::time::{iso_millis, now_iso};
-use vrcx_0_persistence::DatabaseService;
 
 const DATABASE_OPTIMIZE_JOB: &str = "databaseOptimize";
 const DATABASE_OPTIMIZE_INITIAL_DELAY_SECONDS: u64 = 3_600;
@@ -17,6 +16,12 @@ const DATABASE_CHECKPOINT_JOB: &str = "databaseCheckpoint";
 const DATABASE_CHECKPOINT_INITIAL_DELAY_SECONDS: u64 = 600;
 const DATABASE_CHECKPOINT_INTERVAL_SECONDS: u64 = 7_200;
 const CANCELLABLE_SLEEP_CHUNK_SECONDS: u64 = 5;
+
+pub trait DatabaseMaintenancePort: Send + Sync {
+    fn optimize(&self) -> crate::Result<()>;
+
+    fn checkpoint_wal(&self) -> crate::Result<()>;
+}
 
 pub async fn sleep_until_due_or_stopped(total: Duration, stop_token: &TaskStopToken) -> bool {
     let mut remaining = total;
@@ -186,7 +191,11 @@ impl RuntimeBackgroundJobs {
         }
     }
 
-    pub fn start_database_optimize_loop(&self, db: Arc<DatabaseService>, tasks: TaskSupervisor) {
+    pub fn start_database_optimize_loop(
+        &self,
+        database: Arc<dyn DatabaseMaintenancePort>,
+        tasks: TaskSupervisor,
+    ) {
         if !tasks.has_executor() {
             self.register_job(
                 DATABASE_OPTIMIZE_JOB,
@@ -251,12 +260,8 @@ impl RuntimeBackgroundJobs {
                     return;
                 }
                 jobs.mark_running(DATABASE_OPTIMIZE_JOB, "Running PRAGMA optimize.");
-                let db_for_task = Arc::clone(&db);
-                match tokio::task::spawn_blocking(move || {
-                    vrcx_0_persistence::optimize_database(&db_for_task)
-                })
-                .await
-                {
+                let database_for_task = Arc::clone(&database);
+                match tokio::task::spawn_blocking(move || database_for_task.optimize()).await {
                     Ok(Ok(_)) => {
                         jobs.mark_completed(DATABASE_OPTIMIZE_JOB, "PRAGMA optimize finished.")
                     }
@@ -291,7 +296,11 @@ impl RuntimeBackgroundJobs {
         });
     }
 
-    pub fn start_database_checkpoint_loop(&self, db: Arc<DatabaseService>, tasks: TaskSupervisor) {
+    pub fn start_database_checkpoint_loop(
+        &self,
+        database: Arc<dyn DatabaseMaintenancePort>,
+        tasks: TaskSupervisor,
+    ) {
         if !tasks.has_executor() {
             self.register_job(
                 DATABASE_CHECKPOINT_JOB,
@@ -356,8 +365,9 @@ impl RuntimeBackgroundJobs {
                     return;
                 }
                 jobs.mark_running(DATABASE_CHECKPOINT_JOB, "Running WAL checkpoint.");
-                let db_for_task = Arc::clone(&db);
-                match tokio::task::spawn_blocking(move || db_for_task.checkpoint_wal()).await {
+                let database_for_task = Arc::clone(&database);
+                match tokio::task::spawn_blocking(move || database_for_task.checkpoint_wal()).await
+                {
                     Ok(Ok(_)) => {
                         jobs.mark_completed(DATABASE_CHECKPOINT_JOB, "WAL checkpoint finished.")
                     }

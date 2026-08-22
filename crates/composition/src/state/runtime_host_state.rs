@@ -1,26 +1,34 @@
 use std::path::{Path, PathBuf};
-use std::sync::{
-    atomic::{AtomicBool, AtomicU64},
-    Arc, Mutex,
-};
+use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
-use serde::Serialize;
 use serde_json::Value;
 
-use super::{profile_lock::ProfileLock, replace_authenticated_session_user_if_session_matches};
+use super::{
+    profile_lock::ProfileLock, replace_authenticated_session_user_if_session_matches,
+    RuntimeHostSocialMaintenanceActions,
+};
 use crate::{
-    AuthenticatedRuntimeDeps, AuthenticatedRuntimeOrchestrator, GroupOrderSource,
-    NoteExportRuntime, Result, RuntimeHostComposition, RuntimeHostContext, RuntimeHostProfile,
-    RuntimeHostProfileExtension, SharedCollectionImportRuntime, UnavailableGroupOrderSource,
+    GroupOrderSource, Result, RuntimeHostComposition, RuntimeHostContext,
+    RuntimeHostDesktopAssemblyDeps, RuntimeHostProfile, RuntimeHostProfileExtension,
+    UnavailableGroupOrderSource,
 };
-use vrcx_0_application::{
-    DataDirMigrationRuntime, FavoriteImportRuntime, FavoriteImportRuntimeDeps, GroupApiDeps,
-    GroupBanImportRuntime, PrintCleanupDeps, PrintCleanupQueueSink, ProfileBackupRuntime,
-    ProfileBackupRuntimeDeps, VrchatGroupBanImportActions,
+use vrcx_0_application::auth::{
+    AuthenticatedSessionMaintenanceRuntime, AuthenticatedSessionProjection,
+    BackgroundAuthRecoveryOrchestrator,
 };
+use vrcx_0_application::collections::SharedCollectionImportRuntime;
+use vrcx_0_application::favorites::{FavoriteImportRuntime, FavoriteImportRuntimeDeps};
+use vrcx_0_application::profile::{DataDirMigrationRuntime, ProfileBackupRuntime};
+use vrcx_0_application::social::{
+    favorite_group_membership_from_baseline, AuthenticatedRuntimeDeps,
+    AuthenticatedRuntimeFavoritesSink, AuthenticatedRuntimeOrchestrator, GroupApiDeps,
+    GroupBanImportRuntime, NoteExportRuntime, PrintCleanupDeps, PrintCleanupQueueSink,
+    SocialMaintenanceRuntime,
+};
+use vrcx_0_application_activity::ActivityWarmupRuntime;
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimeStatusPublisher, BackgroundCapabilitySession, ImageCache,
-    UnavailableLocalGameContextSource, WebClient,
+    RuntimeTaskExecutor, TaskStopReport, UnavailableLocalGameContextSource, WebClient,
 };
 use vrcx_0_application_realtime::{
     FriendProjectionSink, RealtimeCurrentUserSnapshotSink, RealtimeHostRuntime,
@@ -66,172 +74,59 @@ pub(super) fn web_ua_app_version(app_version: &str, profile: RuntimeHostProfile)
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AuthenticatedSessionSnapshot {
-    pub auth_scope_generation: u64,
-    pub user_id: String,
-    pub display_name: String,
-    pub endpoint: String,
-    pub websocket: String,
-    pub current_user_snapshot: Arc<Value>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AuthenticatedSessionProjection {
-    pub revision: u64,
-    pub session: Option<AuthenticatedSessionSnapshot>,
-}
-
 pub struct RuntimeHostStateBuilder {
     profile: RuntimeHostProfile,
-    pub app_data_dir: AppDataDirResolution,
-    pub app_version: String,
-    pub paths: AppPaths,
-    pub storage: Arc<StorageService>,
-    pub db: Arc<DatabaseService>,
-    pub profile_backup: ProfileBackupRuntime,
-    pub data_dir_migration: DataDirMigrationRuntime,
-    pub runtime_context: Arc<RuntimeHostContext>,
-    pub backend_runtime: BackendRuntime,
-    pub web: Arc<WebClient>,
-    pub image_cache: Arc<ImageCache>,
-    pub legacy_vrcx_available: bool,
-    pub legacy_vrcx_source: Option<LegacyVrcxSource>,
-    pub legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
-    pub launched_from_autostart: bool,
+    app_data_dir: AppDataDirResolution,
+    paths: AppPaths,
+    storage: Arc<StorageService>,
+    db: Arc<DatabaseService>,
+    profile_backup: ProfileBackupRuntime,
+    data_dir_migration: DataDirMigrationRuntime,
+    runtime_context: Arc<RuntimeHostContext>,
+    desktop_assembly: RuntimeHostDesktopAssemblyDeps,
+    backend_runtime: BackendRuntime,
+    web: Arc<WebClient>,
+    image_cache: Arc<ImageCache>,
+    legacy_vrcx_available: bool,
+    legacy_vrcx_source: Option<LegacyVrcxSource>,
+    legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
+    launched_from_autostart: bool,
     profile_lock: ProfileLock,
 }
 
 pub struct RuntimeHostState {
-    pub profile: RuntimeHostProfile,
-    pub app_data_dir: AppDataDirResolution,
-    pub paths: AppPaths,
-    pub storage: Arc<StorageService>,
-    pub db: Arc<DatabaseService>,
-    pub profile_backup: ProfileBackupRuntime,
-    pub data_dir_migration: DataDirMigrationRuntime,
-    pub runtime_context: Arc<RuntimeHostContext>,
-    pub backend_runtime: BackendRuntime,
-    pub realtime_runtime: Arc<RealtimeHostRuntime>,
-    pub web: Arc<WebClient>,
-    pub image_cache: Arc<ImageCache>,
-    pub authenticated_runtime: AuthenticatedRuntimeOrchestrator,
-    pub favorite_import: FavoriteImportRuntime,
-    pub group_ban_import: GroupBanImportRuntime,
-    pub shared_collection_import: SharedCollectionImportRuntime,
-    pub note_export: NoteExportRuntime,
-    pub group_order_source: Arc<dyn GroupOrderSource>,
-    pub legacy_vrcx_available: bool,
-    pub legacy_vrcx_source: Option<LegacyVrcxSource>,
-    pub legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
-    pub launched_from_autostart: bool,
+    pub(crate) profile: RuntimeHostProfile,
+    pub(crate) app_data_dir: AppDataDirResolution,
+    pub(crate) paths: AppPaths,
+    pub(crate) storage: Arc<StorageService>,
+    pub(crate) db: Arc<DatabaseService>,
+    pub(crate) profile_backup: ProfileBackupRuntime,
+    pub(crate) data_dir_migration: DataDirMigrationRuntime,
+    pub(crate) runtime_context: Arc<RuntimeHostContext>,
+    desktop_assembly: RuntimeHostDesktopAssemblyDeps,
+    pub(crate) backend_runtime: BackendRuntime,
+    pub(crate) realtime_runtime: Arc<RealtimeHostRuntime>,
+    pub(crate) web: Arc<WebClient>,
+    pub(crate) image_cache: Arc<ImageCache>,
+    pub(crate) authenticated_runtime: AuthenticatedRuntimeOrchestrator,
+    pub(crate) favorite_import: FavoriteImportRuntime,
+    pub(crate) group_ban_import: GroupBanImportRuntime,
+    pub(crate) shared_collection_import: SharedCollectionImportRuntime,
+    pub(crate) note_export: NoteExportRuntime,
+    pub(crate) group_order_source: Arc<dyn GroupOrderSource>,
+    pub(crate) legacy_vrcx_available: bool,
+    pub(crate) legacy_vrcx_source: Option<LegacyVrcxSource>,
+    pub(crate) legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
+    pub(crate) launched_from_autostart: bool,
     pub(super) profile_extension: Option<Arc<dyn RuntimeHostProfileExtension>>,
     pub(super) backend_starting: AtomicBool,
-    pub(super) background_auth_recovery_running: AtomicBool,
-    pub(super) social_maintenance_running: Arc<AtomicBool>,
-    pub(super) activity_warmup_generation: Arc<AtomicU64>,
+    pub(super) background_auth_recovery: BackgroundAuthRecoveryOrchestrator,
+    pub(super) authenticated_session_maintenance: AuthenticatedSessionMaintenanceRuntime,
+    pub(super) social_maintenance: SocialMaintenanceRuntime,
+    pub(super) activity_warmup: ActivityWarmupRuntime,
     pub(super) background_group_instances_refresh_running: Arc<AtomicBool>,
     pub(super) authenticated_session_projection: Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(super) _profile_lock: ProfileLock,
-}
-
-trait SecretStartupActions {
-    fn initialize(&mut self);
-    fn is_encrypting_writes(&mut self) -> bool;
-    fn migrate_cookies(&mut self) -> Result<()>;
-    fn migrate_saved_credentials(&mut self) -> Result<()>;
-    fn migrate_sensitive_config_values(&mut self) -> Result<()>;
-    fn read_cleanup_completed(&mut self) -> Result<bool>;
-    fn cleanup(&mut self) -> Result<()>;
-    fn record_cleanup_completed(&mut self) -> Result<()>;
-}
-
-fn run_secret_startup(actions: &mut dyn SecretStartupActions) {
-    actions.initialize();
-    let mut migrations_succeeded = true;
-    if let Err(error) = actions.migrate_cookies() {
-        migrations_succeeded = false;
-        tracing::warn!(error = %error, "failed to migrate stored cookies to encrypted form");
-    }
-    if let Err(error) = actions.migrate_saved_credentials() {
-        migrations_succeeded = false;
-        tracing::warn!(error = %error, "failed to migrate saved credentials to encrypted form");
-    }
-    if let Err(error) = actions.migrate_sensitive_config_values() {
-        migrations_succeeded = false;
-        tracing::warn!(error = %error, "failed to migrate sensitive config values to obfuscated form");
-    }
-    let cleanup_completed = match actions.read_cleanup_completed() {
-        Ok(completed) => completed,
-        Err(error) => {
-            tracing::warn!(error = %error, "failed to read secret migration cleanup state");
-            false
-        }
-    };
-    if !actions.is_encrypting_writes() || !migrations_succeeded || cleanup_completed {
-        return;
-    }
-    if let Err(error) = actions.cleanup() {
-        tracing::warn!(error = %error, "failed to remove plaintext remnants after secret migration");
-        return;
-    }
-    if let Err(error) = actions.record_cleanup_completed() {
-        tracing::warn!(error = %error, "failed to record completed secret migration cleanup state");
-    }
-}
-
-struct SecretStartup<'a> {
-    db: &'a Arc<DatabaseService>,
-    config: vrcx_0_persistence::config::ConfigRepository,
-    allow_encrypted_writes: bool,
-}
-
-impl SecretStartupActions for SecretStartup<'_> {
-    fn initialize(&mut self) {
-        vrcx_0_persistence::secrets::init_secrets(
-            vrcx_0_platform::machine_key::derive_secrets_key(),
-            self.allow_encrypted_writes,
-        );
-    }
-
-    fn is_encrypting_writes(&mut self) -> bool {
-        vrcx_0_persistence::secrets::is_encrypting_writes()
-    }
-
-    fn migrate_cookies(&mut self) -> Result<()> {
-        vrcx_0_persistence::cookies::migrate_default_cookies(self.db)?;
-        Ok(())
-    }
-
-    fn migrate_saved_credentials(&mut self) -> Result<()> {
-        vrcx_0_application::migrate_saved_credential_secrets(&self.config)?;
-        Ok(())
-    }
-
-    fn migrate_sensitive_config_values(&mut self) -> Result<()> {
-        vrcx_0_persistence::config::migrate_sensitive_config_obfuscation(self.db)?;
-        Ok(())
-    }
-
-    fn read_cleanup_completed(&mut self) -> Result<bool> {
-        Ok(self.config.get_bool(
-            vrcx_0_persistence::secrets::CLEANUP_COMPLETED_CONFIG_KEY,
-            false,
-        )?)
-    }
-
-    fn cleanup(&mut self) -> Result<()> {
-        Ok(vrcx_0_persistence::maintenance::vacuum_after_secret_migration(self.db)?)
-    }
-
-    fn record_cleanup_completed(&mut self) -> Result<()> {
-        Ok(self.config.set_bool(
-            vrcx_0_persistence::secrets::CLEANUP_COMPLETED_CONFIG_KEY,
-            true,
-        )?)
-    }
 }
 
 fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, profile: RuntimeHostProfile) {
@@ -239,12 +134,9 @@ fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, profile: RuntimeHostProfil
         RuntimeHostProfile::Desktop => true,
         RuntimeHostProfile::HeadlessData => false,
     };
-    let mut startup = SecretStartup {
-        db,
-        config: vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(db)),
-        allow_encrypted_writes,
-    };
-    run_secret_startup(&mut startup);
+    let mut startup =
+        vrcx_0_outbound_adapters::LocalSecretStartup::new(Arc::clone(db), allow_encrypted_writes);
+    vrcx_0_application::profile::run_secret_startup(&mut startup);
 }
 
 struct PreparedDataDirMigration {
@@ -410,51 +302,64 @@ impl RuntimeHostStateBuilder {
         } = opened;
         prepare_secrets_at_rest(&db, profile);
         let web = Arc::new(WebClient::new(
-            &storage,
-            &db,
-            realtime_origin,
-            &web_ua_app_version(&app_version, profile),
-        )?);
-        let image_fetcher = web.image_fetcher()?;
-        let image_cache = Arc::new(ImageCache::new(paths.image_cache.clone(), image_fetcher)?);
+            vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
+                &storage,
+                Arc::clone(&db),
+                realtime_origin,
+                &web_ua_app_version(&app_version, profile),
+            )?,
+        ));
+        let image_cache = Arc::new(ImageCache::new(Arc::new(
+            vrcx_0_outbound_adapters::LocalImageCacheAdapter::new(
+                paths.image_cache.clone(),
+                Arc::clone(&web),
+            )?,
+        )));
         let runtime_context = Arc::new(RuntimeHostContext::new(
             Arc::clone(&db),
             Arc::clone(&web),
             Arc::clone(&image_cache),
         ));
-        let profile_backup = ProfileBackupRuntime::new(ProfileBackupRuntimeDeps {
-            app_data: paths.app_data.clone(),
-            control_dir: app_data_dir.default_dir.clone(),
-            db: Arc::clone(&db),
-            storage: Arc::clone(&storage),
-            event_bus: runtime_context.event_bus.clone(),
-            tasks: runtime_context.tasks.clone(),
-            background_jobs: runtime_context.background_jobs.clone(),
-            app_version: app_version.clone(),
-        });
+        let desktop_assembly =
+            RuntimeHostDesktopAssemblyDeps::from_context(Arc::clone(&runtime_context));
+        let profile_backup_port = Arc::new(vrcx_0_outbound_adapters::LocalProfileBackupPort::new(
+            vrcx_0_outbound_adapters::LocalProfileBackupDeps::new(
+                paths.app_data.clone(),
+                app_data_dir.default_dir.clone(),
+                Arc::clone(&db),
+                Arc::clone(&storage),
+                runtime_context.event_bus.clone(),
+                runtime_context.tasks.clone(),
+                runtime_context.background_jobs.clone(),
+                app_version.clone(),
+            ),
+        ));
+        let profile_backup = ProfileBackupRuntime::new(profile_backup_port);
         let pointer_control_dir = app_data_dir.default_dir.clone();
-        let data_dir_migration = DataDirMigrationRuntime::new(
-            paths.app_data.clone(),
-            app_data_dir.default_dir.clone(),
-            Arc::clone(&db),
-            runtime_context.event_bus.clone(),
-            profile_backup.operation_gate(),
-            Arc::new(move |target| {
-                commit_app_data_dir_pointer(&pointer_control_dir, target)
-                    .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))
-            }),
-        );
+        let data_dir_migration_port =
+            Arc::new(vrcx_0_outbound_adapters::LocalDataDirMigrationPort::new(
+                paths.app_data.clone(),
+                app_data_dir.default_dir.clone(),
+                Arc::clone(&db),
+                runtime_context.event_bus.clone(),
+                profile_backup.operation_gate(),
+                Arc::new(move |target| {
+                    commit_app_data_dir_pointer(&pointer_control_dir, target)
+                        .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))
+                }),
+            ));
+        let data_dir_migration = DataDirMigrationRuntime::new(data_dir_migration_port);
 
         Ok(Self {
             profile,
             app_data_dir,
-            app_version,
             paths,
             storage,
             db,
             profile_backup,
             data_dir_migration,
             runtime_context,
+            desktop_assembly,
             backend_runtime: BackendRuntime::new(profile),
             web,
             image_cache,
@@ -464,6 +369,34 @@ impl RuntimeHostStateBuilder {
             launched_from_autostart,
             profile_lock,
         })
+    }
+
+    pub fn paths(&self) -> &AppPaths {
+        &self.paths
+    }
+
+    pub fn storage(&self) -> &Arc<StorageService> {
+        &self.storage
+    }
+
+    pub fn database(&self) -> &Arc<DatabaseService> {
+        &self.db
+    }
+
+    pub fn profile_backup(&self) -> &ProfileBackupRuntime {
+        &self.profile_backup
+    }
+
+    pub fn desktop_assembly(&self) -> &RuntimeHostDesktopAssemblyDeps {
+        &self.desktop_assembly
+    }
+
+    pub fn backend_runtime(&self) -> &BackendRuntime {
+        &self.backend_runtime
+    }
+
+    pub fn web_client(&self) -> &Arc<WebClient> {
+        &self.web
     }
 
     pub fn finish(self, composition: RuntimeHostComposition) -> Result<RuntimeHostState> {
@@ -504,7 +437,7 @@ impl RuntimeHostStateBuilder {
                         current_user_id: session.user_id.clone(),
                         endpoint: session.endpoint.clone(),
                         websocket: session.websocket.clone(),
-                        current_user_snapshot: Arc::new(Value::Null),
+                        current_user_snapshot: Value::Null.into(),
                     };
                     replace_authenticated_session_user_if_session_matches(
                         &session_slot,
@@ -514,41 +447,56 @@ impl RuntimeHostStateBuilder {
                 },
             ))
         };
-        let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-            db: Arc::clone(&self.runtime_context.db),
-            web: Arc::clone(&self.runtime_context.web),
-            event_bus: self.runtime_context.event_bus.clone(),
-            backend_status: BackendRuntimeStatusPublisher::new(
-                self.backend_runtime.clone(),
-                self.runtime_context.event_bus.clone(),
-            ),
-            friend_projection_sink: FriendProjectionSink::new(
+        let realtime_store: Arc<dyn vrcx_0_application_realtime::RealtimeStore> =
+            Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+                Arc::clone(&self.runtime_context.db),
+            ));
+        let remote_requests: Arc<dyn vrcx_0_application_realtime::RealtimeRemoteRequests> =
+            Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests);
+        let backend_status = BackendRuntimeStatusPublisher::new(
+            self.backend_runtime.clone(),
+            self.runtime_context.event_bus.clone(),
+        );
+        let realtime_transport: Arc<dyn vrcx_0_application_realtime::RealtimeTransport> =
+            Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeTransport::new(
+                Arc::clone(&realtime_store),
+                Arc::clone(&self.runtime_context.web),
+                backend_status.clone(),
+            ));
+        let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
+            realtime_store,
+            realtime_transport,
+            remote_requests,
+            Arc::clone(&self.runtime_context.web),
+            self.runtime_context.event_bus.clone(),
+            backend_status,
+            FriendProjectionSink::new(
                 self.runtime_context.event_bus.clone(),
                 friend_projection_observer,
             ),
-            sync: self.runtime_context.sync.clone(),
-            tasks: self.runtime_context.tasks.clone(),
-            session: self.runtime_context.session.clone(),
-            auth_scope: self.runtime_context.auth_scope.clone(),
-            remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
+            self.runtime_context.sync.clone(),
+            self.runtime_context.tasks.clone(),
+            self.runtime_context.session.clone(),
+            self.runtime_context.auth_scope.clone(),
+            Arc::clone(&self.runtime_context.remote_mutations),
             local_game_context,
-            activity_sink: Some(Arc::new(self.runtime_context.overlay_activity())),
-            world_cache: Arc::clone(&self.runtime_context.world_cache),
-            instance_dwell: Arc::clone(&self.runtime_context.instance_dwell),
-            print_cleanup: Arc::new(PrintCleanupQueueSink::new(
+            Some(Arc::new(self.runtime_context.overlay_activity())),
+            Arc::clone(&self.runtime_context.world_cache),
+            Arc::clone(&self.runtime_context.instance_dwell),
+            Arc::new(PrintCleanupQueueSink::new(
                 self.runtime_context.print_cleanup.clone(),
                 self.runtime_context.tasks.clone(),
-                PrintCleanupDeps {
-                    db: Arc::clone(&self.runtime_context.db),
-                    web: Arc::clone(&self.runtime_context.web),
-                    event_bus: self.runtime_context.event_bus.clone(),
-                    auth_scope: self.runtime_context.auth_scope.clone(),
-                    remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
-                },
+                PrintCleanupDeps::new(
+                    self.runtime_context.print_adapter.clone(),
+                    self.runtime_context.print_adapter.clone(),
+                    self.runtime_context.event_bus.clone(),
+                    self.runtime_context.auth_scope.clone(),
+                    Arc::clone(&self.runtime_context.remote_mutations),
+                ),
             )),
             friend_note_change_sink,
             current_user_snapshot_sink,
-        }));
+        )));
         let favorites_sink = {
             let overlay_activity = self.runtime_context.overlay_activity();
             let profile_sink = favorites_sink;
@@ -556,65 +504,123 @@ impl RuntimeHostStateBuilder {
                 move |snapshot: &vrcx_0_application_realtime::FavoriteBaselineSnapshot| {
                     overlay_activity.set_favorite_groups(
                         vrcx_0_application_activity::OverlayFavoriteGroups::from_map(
-                            crate::favorite_group_membership_from_baseline(snapshot),
+                            favorite_group_membership_from_baseline(snapshot),
                         ),
                     );
                     if let Some(profile_sink) = &profile_sink {
                         profile_sink(snapshot);
                     }
                 },
-            ) as crate::RuntimeHostFavoritesCallback)
+            ) as Arc<dyn AuthenticatedRuntimeFavoritesSink>)
         };
         let authenticated_runtime =
             AuthenticatedRuntimeOrchestrator::new(AuthenticatedRuntimeDeps {
-                db: Arc::clone(&self.db),
-                web: Arc::clone(&self.web),
+                social_baseline: vrcx_0_application_realtime::SocialBaselineDeps::new(
+                    Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+                        Arc::clone(&self.db),
+                    )),
+                    Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
+                    Arc::clone(&self.web),
+                    self.runtime_context.auth_scope.clone(),
+                ),
+                auth_probe: Arc::new(
+                    vrcx_0_outbound_adapters::VrchatAuthenticatedRuntimeAuthProbe::new(Arc::clone(
+                        &self.web,
+                    )),
+                ),
+                lifecycle_trail: Arc::new(
+                    vrcx_0_outbound_adapters::LocalAuthenticatedRuntimeLifecycleTrail::new(
+                        self.db.as_ref(),
+                    ),
+                ),
                 event_bus: self.runtime_context.event_bus.clone(),
                 tasks: self.runtime_context.tasks.clone(),
                 auth_scope: self.runtime_context.auth_scope.clone(),
                 realtime_runtime: Arc::clone(&realtime_runtime),
                 favorites_sink,
             });
-        let favorite_import = FavoriteImportRuntime::new(FavoriteImportRuntimeDeps {
-            db: Arc::clone(&self.db),
-            web: Arc::clone(&self.web),
-            world_cache: Arc::clone(&self.runtime_context.world_cache),
-            event_bus: self.runtime_context.event_bus.clone(),
-            tasks: self.runtime_context.tasks.clone(),
-            auth_scope: self.runtime_context.auth_scope.clone(),
-            remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
-            favorite_mutations: self.runtime_context.favorite_mutations.clone(),
-        });
+        let favorite_import = FavoriteImportRuntime::new(FavoriteImportRuntimeDeps::new(
+            Arc::clone(&self.runtime_context.favorite_store),
+            Arc::clone(&self.runtime_context.favorite_remote_requests),
+            Arc::clone(&self.web),
+            Arc::clone(&self.runtime_context.world_cache),
+            self.runtime_context.event_bus.clone(),
+            self.runtime_context.tasks.clone(),
+            self.runtime_context.auth_scope.clone(),
+            Arc::clone(&self.runtime_context.remote_mutations),
+            self.runtime_context.favorite_mutations.clone(),
+        ));
         let group_ban_import = GroupBanImportRuntime::new(
-            Arc::new(VrchatGroupBanImportActions {
-                deps: GroupApiDeps {
-                    db: Arc::clone(&self.db),
-                    web: Arc::clone(&self.web),
-                    diagnostics: self.runtime_context.diagnostics.clone(),
-                    sync: self.runtime_context.sync.clone(),
-                    auth_scope: self.runtime_context.auth_scope.clone(),
-                    remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
-                },
+            Arc::new(vrcx_0_outbound_adapters::LocalGroupBanImportActions {
+                deps: GroupApiDeps::new(
+                    Arc::clone(&self.web),
+                    Arc::new(vrcx_0_outbound_adapters::VrchatGroupRemoteRequests),
+                    self.runtime_context.diagnostics.clone(),
+                    self.runtime_context.sync.clone(),
+                    self.runtime_context.auth_scope.clone(),
+                    Arc::clone(&self.runtime_context.remote_mutations),
+                ),
             }),
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),
             self.runtime_context.auth_scope.clone(),
         );
         let shared_collection_import = SharedCollectionImportRuntime::new(
-            Arc::clone(&self.db),
-            Arc::clone(&self.web),
-            Arc::clone(&self.runtime_context.world_cache),
+            Arc::new(
+                vrcx_0_outbound_adapters::LocalSharedCollectionImportActionsFactory::new(
+                    Arc::clone(&self.db),
+                    Arc::clone(&self.web),
+                    Arc::clone(&self.runtime_context.world_cache),
+                ),
+            ),
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),
             self.runtime_context.auth_scope.clone(),
-            self.runtime_context.favorite_mutations.clone(),
+            Arc::new(self.runtime_context.favorite_mutations.clone()),
         );
         let note_export = NoteExportRuntime::new(
-            Arc::clone(&self.db),
             Arc::clone(&self.web),
+            Arc::new(vrcx_0_outbound_adapters::VrchatNoteExportRemoteRequests),
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),
             self.runtime_context.auth_scope.clone(),
+        );
+        let activity_warmup = ActivityWarmupRuntime::new(
+            self.runtime_context.auth_scope.clone(),
+            self.runtime_context.tasks.clone(),
+            Arc::new(
+                vrcx_0_outbound_adapters::LocalActivitySessionWarmupStore::new(Arc::clone(
+                    &self.db,
+                )),
+            ),
+        );
+        let authenticated_session_maintenance = AuthenticatedSessionMaintenanceRuntime::new(
+            self.runtime_context.auth_scope.clone(),
+            self.runtime_context.tasks.clone(),
+            Arc::new(
+                vrcx_0_outbound_adapters::LocalAuthenticatedSessionMaintenance::new(Arc::clone(
+                    &self.db,
+                )),
+            ),
+        );
+        let background_group_instances_refresh_running = Arc::new(AtomicBool::new(false));
+        let social_maintenance = SocialMaintenanceRuntime::new(
+            Arc::new(RuntimeHostSocialMaintenanceActions {
+                db: Arc::clone(&self.db),
+                web: Arc::clone(&self.web),
+                session_slot: Arc::clone(&authenticated_session_projection),
+                realtime_runtime: Arc::clone(&realtime_runtime),
+                runtime_context: Arc::clone(&self.runtime_context),
+                backend_runtime: self.backend_runtime.clone(),
+                background_jobs: self.runtime_context.background_jobs.clone(),
+                authenticated_runtime: authenticated_runtime.clone(),
+                group_instances_refresh_running: Arc::clone(
+                    &background_group_instances_refresh_running,
+                ),
+                group_order_source: Arc::clone(&group_order_source),
+            }),
+            self.runtime_context.background_jobs.clone(),
+            self.runtime_context.tasks.clone(),
         );
         Ok(RuntimeHostState {
             profile: self.profile,
@@ -625,6 +631,7 @@ impl RuntimeHostStateBuilder {
             profile_backup: self.profile_backup,
             data_dir_migration: self.data_dir_migration,
             runtime_context: self.runtime_context,
+            desktop_assembly: self.desktop_assembly,
             backend_runtime: self.backend_runtime,
             realtime_runtime,
             web: self.web,
@@ -641,10 +648,11 @@ impl RuntimeHostStateBuilder {
             launched_from_autostart: self.launched_from_autostart,
             profile_extension,
             backend_starting: AtomicBool::new(false),
-            background_auth_recovery_running: AtomicBool::new(false),
-            social_maintenance_running: Arc::new(AtomicBool::new(false)),
-            activity_warmup_generation: Arc::new(AtomicU64::new(0)),
-            background_group_instances_refresh_running: Arc::new(AtomicBool::new(false)),
+            background_auth_recovery: BackgroundAuthRecoveryOrchestrator::new(),
+            authenticated_session_maintenance,
+            social_maintenance,
+            activity_warmup,
+            background_group_instances_refresh_running,
             authenticated_session_projection,
             _profile_lock: self.profile_lock,
         })
@@ -652,6 +660,97 @@ impl RuntimeHostStateBuilder {
 }
 
 impl RuntimeHostState {
+    pub fn set_task_executor<E>(&self, executor: E)
+    where
+        E: RuntimeTaskExecutor + 'static,
+    {
+        self.runtime_context.tasks.set_executor(executor);
+    }
+
+    pub fn stop_runtime_tasks(&self) -> TaskStopReport {
+        self.runtime_context.tasks.stop_all()
+    }
+
+    pub fn app_data_dir(&self) -> &AppDataDirResolution {
+        &self.app_data_dir
+    }
+
+    pub fn paths(&self) -> &AppPaths {
+        &self.paths
+    }
+
+    pub fn storage(&self) -> &Arc<StorageService> {
+        &self.storage
+    }
+
+    pub fn database(&self) -> &Arc<DatabaseService> {
+        &self.db
+    }
+
+    pub fn profile_backup(&self) -> &ProfileBackupRuntime {
+        &self.profile_backup
+    }
+
+    pub fn data_dir_migration(&self) -> &DataDirMigrationRuntime {
+        &self.data_dir_migration
+    }
+
+    pub fn desktop_assembly(&self) -> &RuntimeHostDesktopAssemblyDeps {
+        &self.desktop_assembly
+    }
+
+    pub fn backend_runtime(&self) -> &BackendRuntime {
+        &self.backend_runtime
+    }
+
+    pub fn realtime_runtime(&self) -> &Arc<RealtimeHostRuntime> {
+        &self.realtime_runtime
+    }
+
+    pub fn web_client(&self) -> &Arc<WebClient> {
+        &self.web
+    }
+
+    pub fn image_cache(&self) -> &Arc<ImageCache> {
+        &self.image_cache
+    }
+
+    pub fn authenticated_runtime(&self) -> &AuthenticatedRuntimeOrchestrator {
+        &self.authenticated_runtime
+    }
+
+    pub fn favorite_import(&self) -> &FavoriteImportRuntime {
+        &self.favorite_import
+    }
+
+    pub fn group_ban_import(&self) -> &GroupBanImportRuntime {
+        &self.group_ban_import
+    }
+
+    pub fn shared_collection_import(&self) -> &SharedCollectionImportRuntime {
+        &self.shared_collection_import
+    }
+
+    pub fn note_export(&self) -> &NoteExportRuntime {
+        &self.note_export
+    }
+
+    pub fn legacy_vrcx_available(&self) -> bool {
+        self.legacy_vrcx_available
+    }
+
+    pub fn legacy_vrcx_source(&self) -> &Option<LegacyVrcxSource> {
+        &self.legacy_vrcx_source
+    }
+
+    pub fn legacy_vrcx_migration_status(&self) -> &LegacyVrcxMigrationStatus {
+        &self.legacy_vrcx_migration_status
+    }
+
+    pub fn launched_from_autostart(&self) -> bool {
+        self.launched_from_autostart
+    }
+
     pub fn new(options: RuntimeHostOptions) -> Result<Self> {
         match options.profile {
             RuntimeHostProfile::Desktop => {
@@ -680,5 +779,3 @@ impl RuntimeHostState {
 
 #[cfg(test)]
 mod profile_bundle_tests;
-#[cfg(test)]
-mod secret_startup_tests;

@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use serde_json::json;
 use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, RealtimeWsMessagePayload};
 use vrcx_0_composition::{RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState};
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 use vrcx_0_platform::app_paths::{AppDataDirResolution, AppDataDirSource};
 
 struct TestDir {
@@ -60,23 +60,23 @@ async fn headless_recent_notification_sends_one_webhook_and_deduplicates() {
     })
     .unwrap();
     state
-        .runtime_context
-        .config
+        .desktop_assembly()
+        .config()
         .set_bool("webhookEnabled", true)
         .unwrap();
     state
-        .runtime_context
-        .config
+        .desktop_assembly()
+        .config()
         .set_string("webhookUrl", &webhook_url)
         .unwrap();
     state
-        .runtime_context
-        .config
+        .desktop_assembly()
+        .config()
         .set_string("webhookFormat", "generic")
         .unwrap();
     state
-        .runtime_context
-        .config
+        .desktop_assembly()
+        .config()
         .set_json(
             "webhookActivityFilters",
             &json!({
@@ -90,11 +90,11 @@ async fn headless_recent_notification_sends_one_webhook_and_deduplicates() {
         )
         .unwrap();
 
-    let activity = state.runtime_context.overlay_activity();
-    state.runtime_context.reload_overlay_activity_filters();
+    let activity = state.desktop_assembly().overlay_activity();
+    state.desktop_assembly().reload_overlay_activity_filters();
     activity.set_delivery_armed(true);
     state
-        .authenticated_runtime
+        .authenticated_runtime()
         .apply_favorites_snapshot(&FavoriteBaselineSnapshot {
             grouped_favorite_friend_ids_by_group_key: [(
                 "group-a".to_string(),
@@ -125,7 +125,7 @@ async fn headless_recent_notification_sends_one_webhook_and_deduplicates() {
 
     for _ in 0..2 {
         assert!(state
-            .realtime_runtime
+            .realtime_runtime()
             .ingest_notification_ws_message_for_test(
                 &OwnerId::new("usr_self"),
                 "https://api.vrchat.cloud/api/1",
@@ -149,7 +149,7 @@ async fn headless_recent_notification_sends_one_webhook_and_deduplicates() {
     let payload: serde_json::Value = serde_json::from_str(body).unwrap();
     assert_eq!(payload["event"], "invite");
     assert_eq!(payload["user"]["id"], "usr_sender");
-    let delivery_status = state.runtime_context.webhook_delivery_snapshot();
+    let delivery_status = state.desktop_assembly().webhook_delivery_snapshot();
     let last_success = delivery_status.notification.last_success.unwrap();
     assert_eq!(last_success.event, "invite");
     assert_eq!(last_success.status, Some(204));

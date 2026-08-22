@@ -38,9 +38,8 @@ pub fn app__community_theme_debug_load_local_theme(
         use std::path::PathBuf;
 
         state
-            .desktop
-            .host_file_access
-            .ensure_read_allowed(&folder_path, &state.paths)?;
+            .runtime_host()
+            .ensure_host_read_allowed(&folder_path)?;
 
         let folder = PathBuf::from(&folder_path);
         if !folder.is_dir() {
@@ -60,18 +59,16 @@ pub fn app__community_theme_debug_load_local_theme(
 
         let css_path_string = css_path.to_string_lossy().to_string();
         state
-            .desktop
-            .host_file_access
-            .ensure_read_allowed(&css_path_string, &state.paths)?;
+            .runtime_host()
+            .ensure_host_read_allowed(&css_path_string)?;
         let css = std::fs::read_to_string(&css_path)?;
 
         let manifest_path = folder.join("theme.json");
         let manifest = if manifest_path.is_file() {
             let manifest_path_string = manifest_path.to_string_lossy().to_string();
             state
-                .desktop
-                .host_file_access
-                .ensure_read_allowed(&manifest_path_string, &state.paths)?;
+                .runtime_host()
+                .ensure_host_read_allowed(&manifest_path_string)?;
             let json = std::fs::read_to_string(&manifest_path)?;
             serde_json::from_str::<serde_json::Value>(&json).ok()
         } else {

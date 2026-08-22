@@ -457,22 +457,6 @@
             "instance_duration": "Instância {duration}"
         },
         "generic_instance_location": "uma instância",
-        "friends_panel": {
-            "title": "Amigos Favoritos",
-            "all": "Todos",
-            "empty": "Nenhum amigo favorito online",
-            "note": "Nota",
-            "memo": "Nota Local",
-            "open": "Abrir",
-            "request": "Solicitar",
-            "invite": "Convidar",
-            "favorites_online": "Favoritos Online",
-            "same_instance": "Mesma Instância",
-            "local_favorites": "Favoritos Locais",
-            "traveling": "Viajando",
-            "private": "Privado",
-            "offline": "Offline"
-        },
         "discord": {
             "title": {
                 "invite": "Convite de {name}",
@@ -2154,13 +2138,6 @@
                     "timeout": "Duração",
                     "opacity": "Opacidade",
                     "filters": "Filtros de notificações do headset"
-                },
-                "interactive_panel": {
-                    "header": "Painel interativo de amigos",
-                    "enabled": "Ativar painel interativo de amigos",
-                    "all_friends_include_favorites": "Incluir favoritos em Todos",
-                    "summon_hint": "Gesto de invocação",
-                    "openvr_required": "Segure o grip direito por cerca de 2 segundos para invocar. Requer o backend de sobreposição SteamVR/OpenVR; o OpenXR ainda não oferece o painel interativo."
                 },
                 "wrist_overlay": {
                     "header": "Overlay de Pulso",

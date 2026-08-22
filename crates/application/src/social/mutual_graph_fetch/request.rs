@@ -4,23 +4,19 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tokio::time::{sleep, Instant};
-use vrcx_0_application_core::vrchat_api::users::user_mutual_friends_get_input;
 use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_core::json::RawJson;
-use vrcx_0_persistence::mutual_graph::{
-    MutualGraphMetaInput, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
-};
-use vrcx_0_persistence::DatabaseService;
 
 use super::types::{
     MutualGraphFetchStartInput, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
-    MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
-    UserMutualFriendsListOutput,
+    MutualGraphFriendRefreshStatus, MutualGraphMetaInput, MutualGraphRemoteRequests,
+    MutualGraphRequestDeps, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
+    UserMutualFriendsListInput, UserMutualFriendsListOutput,
 };
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
 const MUTUAL_GRAPH_REQUEST_INTERVAL_MS: u64 = 200;
@@ -30,7 +26,7 @@ const MUTUAL_GRAPH_EMPTY_USER_ID: &str = "usr_00000000-0000-0000-0000-0000000000
 
 pub(super) struct MutualGraphFetchContext<'a> {
     pub(super) web: &'a WebClient,
-    pub(super) db: &'a DatabaseService,
+    pub(super) remote_requests: &'a dyn MutualGraphRemoteRequests,
     pub(super) endpoint: &'a str,
     pub(super) cancel_flag: &'a AtomicBool,
     pub(super) auth_scope: &'a RuntimeAuthScope,
@@ -62,7 +58,7 @@ pub async fn refresh_mutual_graph_friend(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         web: deps.web,
-        db: deps.db,
+        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
@@ -91,8 +87,7 @@ pub async fn refresh_mutual_graph_friend(
             FriendFetchResult::Failed(error) => return Err(Error::Custom(error)),
         };
     ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
-    vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
-        deps.db,
+    deps.store.friend_refresh_commit(
         expected_scope.current_user_id,
         friend_id,
         mutual_ids,
@@ -117,7 +112,7 @@ pub async fn get_user_mutual_friends_list(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         web: deps.web,
-        db: deps.db,
+        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
@@ -133,8 +128,7 @@ pub async fn get_user_mutual_friends_list(
     match result {
         MutualFriendRowsResult::OptedOut => {
             if backfills_graph {
-                vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
-                    deps.db,
+                deps.store.friend_refresh_commit(
                     owner_user_id.to_string(),
                     user_id,
                     None,
@@ -152,8 +146,7 @@ pub async fn get_user_mutual_friends_list(
                 let total_count = rows.len();
                 let mutual_ids =
                     normalize_friend_ids(rows.iter().filter_map(mutual_id_from_value).collect());
-                vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
-                    deps.db,
+                deps.store.friend_refresh_commit(
                     owner_user_id.to_string(),
                     user_id,
                     Some(mutual_ids),
@@ -250,20 +243,16 @@ async fn fetch_mutual_page(
             return PageFetchResult::Cancelled;
         }
 
-        let request = match user_mutual_friends_get_input(
+        let request = match context.remote_requests.mutual_friends(
             context.endpoint.to_string(),
             friend_id.to_string(),
             MUTUAL_GRAPH_PAGE_SIZE,
             offset,
         ) {
-            Ok((_, request)) => request,
+            Ok(request) => request,
             Err(error) => return PageFetchResult::Failed(error.to_string()),
         };
-        let response = match context
-            .web
-            .execute_api(request, VrchatScope::Vrchat, context.db)
-            .await
-        {
+        let response = match context.web.execute_api(request, VrchatScope::Vrchat).await {
             Ok(response) => response,
             Err(error) => {
                 if attempt < MUTUAL_GRAPH_MAX_RETRIES {

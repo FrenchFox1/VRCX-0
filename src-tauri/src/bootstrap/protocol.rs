@@ -6,7 +6,7 @@ use crate::state::AppState;
 
 pub fn screenshot_protocol_response(
     request: Request<Vec<u8>>,
-    paths: &vrcx_0_platform::app_paths::AppPaths,
+    state: &AppState,
 ) -> Response<Cow<'static, [u8]>> {
     let path = match percent_encoding::percent_decode_str(&request.uri().path()[1..]).decode_utf8()
     {
@@ -32,7 +32,7 @@ pub fn screenshot_protocol_response(
             .unwrap();
     }
 
-    if !crate::adapters::host_file_access::is_known_root_path(&path_buf, paths) {
+    if !state.runtime_host().is_known_runtime_root_path(&path_buf) {
         return Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Vec::new().into())
@@ -53,7 +53,7 @@ pub fn screenshot_protocol_response(
 
 pub fn screenshot_thumbnail_protocol_response(
     request: Request<Vec<u8>>,
-    paths: &vrcx_0_platform::app_paths::AppPaths,
+    state: &AppState,
 ) -> Response<Cow<'static, [u8]>> {
     let path = match percent_encoding::percent_decode_str(&request.uri().path()[1..]).decode_utf8()
     {
@@ -74,10 +74,7 @@ pub fn screenshot_thumbnail_protocol_response(
 
     if !is_webp
         || !path_buf.is_file()
-        || !vrcx_0_platform::path_utils::is_path_inside_directory(
-            &path_buf,
-            &paths.screenshot_thumbs,
-        )
+        || !state.runtime_host().is_screenshot_thumbnail_path(&path_buf)
     {
         return Response::builder()
             .status(StatusCode::NOT_FOUND)
@@ -143,9 +140,8 @@ pub fn background_image_protocol_response(
 
     if !path_buf.is_file()
         || state
-            .desktop
-            .host_file_access
-            .ensure_read_allowed(&path_buf, &state.paths)
+            .runtime_host()
+            .ensure_host_read_allowed(&path_buf)
             .is_err()
     {
         return Response::builder()

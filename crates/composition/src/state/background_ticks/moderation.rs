@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use vrcx_0_application::{
+use vrcx_0_application::social::{
     force_refresh_player_moderations, ModerationSyncDeps, ModerationSyncRefreshInput,
 };
 use vrcx_0_application_core::{BackendRuntime, RuntimeBackgroundJobs, WebClient};
@@ -34,12 +34,15 @@ pub(in crate::state) async fn run_background_moderation_refresh(
         );
         return;
     };
-    let deps = ModerationSyncDeps {
-        db: db.as_ref(),
-        web: web.as_ref(),
-        auth_scope: &runtime_context.auth_scope,
-        remote_mutations: runtime_context.remote_mutations.as_ref(),
-    };
+    let store = vrcx_0_outbound_adapters::LocalModerationSyncStore::new(Arc::clone(db));
+    let remote_requests = vrcx_0_outbound_adapters::VrchatModerationSyncRemoteRequests;
+    let deps = ModerationSyncDeps::new(
+        &store,
+        &remote_requests,
+        web.as_ref(),
+        &runtime_context.auth_scope,
+        runtime_context.remote_mutations.as_ref(),
+    );
     match force_refresh_player_moderations(
         &runtime_context.moderation_sync,
         deps,

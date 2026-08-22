@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_contracts::{runtime_event_payload, RuntimeEventPayload};
+use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
 
 use crate::backend_runtime::{BackendRuntimeTelemetry, RealtimeProjectionSync};
 use crate::events::{
@@ -13,7 +13,7 @@ use crate::events::{
 use crate::ports::HostSessionProjection;
 use crate::{FavoriteChangeScope, FavoriteEntityKind, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::json::RawJson;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 pub trait RuntimeEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);
@@ -174,7 +174,7 @@ runtime_event_payload!(FriendProfileLoadStatusPayload, "friendProfileLoadStatus"
 #[derive(Clone, Debug)]
 pub struct RuntimeEventForTest {
     pub name: String,
-    pub payload: Value,
+    pub payload: RawJson,
 }
 
 #[derive(Clone, Default)]
@@ -211,7 +211,7 @@ impl RuntimeEventBus {
         {
             self.events.lock().unwrap().push(RuntimeEventForTest {
                 name: event.to_string(),
-                payload: payload.clone(),
+                payload: payload.clone().into(),
             });
         }
 
@@ -317,6 +317,7 @@ mod tests {
                 }],
                 "requiresRefresh": false
             })
+            .into()
         );
     }
 }

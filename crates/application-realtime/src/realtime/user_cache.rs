@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
 
 use serde_json::{Map, Value};
+use vrcx_0_core::json::RawJsonObject;
 use vrcx_0_core::user_facts::{
     merge_user_fact_owned, normalize_user_id, user_fact_key, UserFact, UserFactMergeOptions,
 };
@@ -11,7 +12,7 @@ pub(crate) struct UserCacheRuntime {
 }
 
 pub(crate) struct UserCacheOutput {
-    pub user: Map<String, Value>,
+    pub user: RawJsonObject,
 }
 
 impl UserCacheRuntime {
@@ -71,7 +72,7 @@ impl UserCacheRuntime {
         let result = merge_user_fact_owned(users.remove(&key), value, options);
         let pinned = is_pinned(&result.fact);
         let output = result.changed.then(|| UserCacheOutput {
-            user: result.fact.to_object(),
+            user: result.fact.to_object().into(),
         });
         if pinned {
             users.insert(key, result.fact);

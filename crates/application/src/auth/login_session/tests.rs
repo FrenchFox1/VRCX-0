@@ -6,9 +6,11 @@ use std::sync::{Arc, Mutex};
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde_json::json;
 use tokio::sync::Notify;
+use vrcx_0_application_core::vrchat_api::{
+    VrchatApiRequest as HttpApiRequestInput, VrchatScope as ApiScope,
+};
 use vrcx_0_application_core::RuntimeRealtimeTransportEpoch;
-use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
-use vrcx_0_vrchat_client::http_api::{execute_response, ApiScope, HttpApiRequestInput};
+use vrcx_0_contracts::vrchat_api::vrchat_response;
 
 use vrcx_0_application_core::WebClient;
 
@@ -17,6 +19,8 @@ use super::service::{
     start_saved_credential_login,
 };
 use super::test_support::{seed_saved_credential, test_env, user_json, FakeLoginApi};
+use crate::auth::test_support::TestAuthRemoteRequests;
+use crate::auth::{AuthCredentialStore, AuthRemoteRequests};
 
 async fn start(api: &dyn LoginApi, username: &str, password: &str) -> LoginSessionState {
     start_login(api, "", username.into(), password.into()).await
@@ -85,8 +89,40 @@ impl LoginApi for PausedLoginApi {
                 self.entered.notify_waiters();
                 self.release.notified().await;
             }
-            Ok(execute_response(status, body.to_string()))
+            Ok(vrchat_response(status, body.to_string()))
         })
+    }
+
+    fn config(&self, endpoint: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.config(endpoint)
+    }
+    fn current_user(&self, endpoint: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.current_user(endpoint)
+    }
+    fn basic_login(
+        &self,
+        endpoint: String,
+        username: String,
+        password: String,
+        username_required: &'static str,
+        password_required: &'static str,
+    ) -> vrcx_0_application_core::Result<HttpApiRequestInput> {
+        TestAuthRemoteRequests.basic_login(
+            endpoint,
+            username,
+            password,
+            username_required,
+            password_required,
+        )
+    }
+    fn verify_totp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.verify_totp(endpoint, code)
+    }
+    fn verify_email_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.verify_email_otp(endpoint, code)
+    }
+    fn verify_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
+        TestAuthRemoteRequests.verify_otp(endpoint, code)
     }
 }
 
@@ -94,8 +130,7 @@ async fn start_runtime_basic(
     runtime: &LoginSessionRuntime,
     api: Arc<dyn LoginApi>,
     web: &WebClient,
-    db: &DatabaseService,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     username: &str,
     save_credentials: bool,
 ) -> LoginSessionState {
@@ -103,7 +138,6 @@ async fn start_runtime_basic(
         .start_with(
             api,
             web,
-            db,
             config,
             LoginSessionStartInput::Basic {
                 username: username.into(),
@@ -566,7 +600,7 @@ async fn saved_credential_falls_through_both_cookie_probes_to_a_successful_passw
 
 #[tokio::test]
 async fn switching_saved_accounts_preserves_the_current_accounts_live_cookies() {
-    let (_dir, config, web, db) = test_env("saved-credential-switch-cookie-sync");
+    let (_dir, config, web, _db) = test_env("saved-credential-switch-cookie-sync");
     seed_saved_credential(&config, &web, "usr_current");
     seed_saved_credential(&config, &web, "usr_target");
     let cookie_payload = B64.encode(
@@ -595,7 +629,6 @@ async fn switching_saved_accounts_preserves_the_current_accounts_live_cookies() 
         .start_with(
             api,
             &web,
-            db.as_ref(),
             &config,
             LoginSessionStartInput::SavedCredential {
                 user_id: "usr_target".into(),
@@ -609,7 +642,7 @@ async fn switching_saved_accounts_preserves_the_current_accounts_live_cookies() 
             if session.user_id == "usr_target"
     ));
     assert_eq!(
-        crate::saved_credential_session_data(&config, "usr_current")
+        crate::auth::saved_credential_session_data(&config, "usr_current")
             .unwrap()
             .unwrap()
             .cookies
@@ -905,7 +938,7 @@ async fn cookie_restore_fails_on_a_network_error() {
 
 #[tokio::test]
 async fn auto_login_challenge_completion_records_login_success() {
-    let (_dir, config, web, db) = test_env("auto-login-challenge-record");
+    let (_dir, config, web, _db) = test_env("auto-login-challenge-record");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let api = Arc::new(FakeLoginApi::new(vec![
@@ -936,7 +969,6 @@ async fn auto_login_challenge_completion_records_login_success() {
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_saved".into(),
             },
@@ -956,7 +988,6 @@ async fn auto_login_challenge_completion_records_login_success() {
                 code: "123456".into(),
             },
             &web,
-            db.as_ref(),
             &config,
         )
         .await;
@@ -976,7 +1007,7 @@ async fn auto_login_challenge_completion_records_login_success() {
 
 #[tokio::test]
 async fn authenticated_state_is_committed_before_it_is_exposed() {
-    let (_dir, config, web, db) = test_env("login-commit-success");
+    let (_dir, config, web, _db) = test_env("login-commit-success");
     let runtime = LoginSessionRuntime::new();
     let api = Arc::new(FakeLoginApi::new(vec![
         (200, json!({})),
@@ -988,7 +1019,6 @@ async fn authenticated_state_is_committed_before_it_is_exposed() {
         .start_with_transition(
             api,
             &web,
-            db.as_ref(),
             &config,
             LoginSessionStartInput::Basic {
                 username: "self@example.test".into(),
@@ -1017,7 +1047,7 @@ async fn authenticated_state_is_committed_before_it_is_exposed() {
 
 #[tokio::test]
 async fn challenge_attempt_id_rejects_stale_responses_and_cancel_clears_auth_cookie() {
-    let (_dir, config, web, db) = test_env("challenge-attempt-id");
+    let (_dir, config, web, _db) = test_env("challenge-attempt-id");
     let runtime = LoginSessionRuntime::new();
     let api = Arc::new(FakeLoginApi::new(vec![
         (200, json!({})),
@@ -1027,7 +1057,6 @@ async fn challenge_attempt_id_rejects_stale_responses_and_cancel_clears_auth_coo
         &runtime,
         Arc::clone(&api) as Arc<dyn LoginApi>,
         &web,
-        db.as_ref(),
         &config,
         "self@example.test",
         false,
@@ -1044,7 +1073,6 @@ async fn challenge_attempt_id_rejects_stale_responses_and_cancel_clears_auth_coo
                 code: "123456".into(),
             },
             &web,
-            db.as_ref(),
             &config,
         )
         .await;
@@ -1052,7 +1080,7 @@ async fn challenge_attempt_id_rejects_stale_responses_and_cancel_clears_auth_coo
     assert_eq!(api.call_paths(), vec!["config", "auth/user"]);
 
     let stale_cancel = runtime
-        .cancel("stale-attempt".into(), &web, db.as_ref(), &|_| Ok(()))
+        .cancel("stale-attempt".into(), &web, &|_| Ok(()))
         .await;
     assert_eq!(challenge_attempt_id(&stale_cancel), attempt_id);
 
@@ -1064,17 +1092,10 @@ async fn challenge_attempt_id_rejects_stale_responses_and_cancel_clears_auth_coo
         .unwrap(),
     );
     web.set_cookies(&cookie_payload).unwrap();
-    let cancelled = runtime
-        .cancel(attempt_id, &web, db.as_ref(), &|_| Ok(()))
-        .await;
+    let cancelled = runtime.cancel(attempt_id, &web, &|_| Ok(())).await;
     assert!(matches!(cancelled, LoginSessionState::Cancelled));
     assert_ne!(web.get_cookies(), cookie_payload);
-    assert_eq!(
-        vrcx_0_persistence::cookies::get_default_cookies(db.as_ref())
-            .unwrap()
-            .as_deref(),
-        Some(web.get_cookies().as_str())
-    );
+    assert!(web.get_cookies().is_empty());
 }
 
 #[test]
@@ -1105,7 +1126,7 @@ fn invalidation_requires_the_current_scope_and_transport_epoch() {
 
 #[tokio::test]
 async fn stale_session_invalidation_is_an_atomic_no_op() {
-    let (_dir, config, web, db) = test_env("stale-session-invalidation");
+    let (_dir, config, web, _db) = test_env("stale-session-invalidation");
     let runtime = LoginSessionRuntime::new();
     let state = start_runtime_basic(
         &runtime,
@@ -1114,7 +1135,6 @@ async fn stale_session_invalidation_is_an_atomic_no_op() {
             (200, json!({ "requiresTwoFactorAuth": ["totp"] })),
         ])),
         &web,
-        db.as_ref(),
         &config,
         "self@example.test",
         false,
@@ -1126,7 +1146,6 @@ async fn stale_session_invalidation_is_an_atomic_no_op() {
     let outcome = runtime
         .end_session(
             &web,
-            db.as_ref(),
             &config,
             LoginSessionEndRequest {
                 user_id: "usr_1".into(),
@@ -1152,7 +1171,7 @@ async fn stale_session_invalidation_is_an_atomic_no_op() {
 
 #[tokio::test]
 async fn a_failed_authenticated_commit_is_not_exposed_as_logged_in() {
-    let (_dir, config, web, db) = test_env("login-commit-failure");
+    let (_dir, config, web, _db) = test_env("login-commit-failure");
     let runtime = LoginSessionRuntime::new();
     let api = Arc::new(FakeLoginApi::new(vec![
         (200, json!({})),
@@ -1163,7 +1182,6 @@ async fn a_failed_authenticated_commit_is_not_exposed_as_logged_in() {
         .start_with_transition(
             api,
             &web,
-            db.as_ref(),
             &config,
             LoginSessionStartInput::Basic {
                 username: "self@example.test".into(),
@@ -1192,7 +1210,7 @@ async fn a_failed_authenticated_commit_is_not_exposed_as_logged_in() {
 async fn a_failed_manual_login_preserves_the_existing_last_user() {
     for status in [401, 403] {
         let test_name = format!("manual-failure-preserves-target-{status}");
-        let (_dir, config, web, db) = test_env(&test_name);
+        let (_dir, config, web, _db) = test_env(&test_name);
         seed_saved_credential(&config, &web, "usr_saved");
         let runtime = LoginSessionRuntime::new();
         let api = Arc::new(FakeLoginApi::new(vec![
@@ -1200,16 +1218,8 @@ async fn a_failed_manual_login_preserves_the_existing_last_user() {
             (status, json!({ "error": { "message": "Login rejected" } })),
         ]));
 
-        let state = start_runtime_basic(
-            &runtime,
-            api,
-            &web,
-            db.as_ref(),
-            &config,
-            "other@example.test",
-            false,
-        )
-        .await;
+        let state =
+            start_runtime_basic(&runtime, api, &web, &config, "other@example.test", false).await;
 
         assert!(matches!(
             &state,
@@ -1219,7 +1229,7 @@ async fn a_failed_manual_login_preserves_the_existing_last_user() {
             } if snapshot.last_user_logged_in.as_deref() == Some("usr_saved")
         ));
         assert_eq!(
-            crate::saved_snapshot(&config)
+            crate::auth::saved_snapshot(&config)
                 .unwrap()
                 .last_user_logged_in
                 .as_deref(),
@@ -1231,7 +1241,7 @@ async fn a_failed_manual_login_preserves_the_existing_last_user() {
 
 #[tokio::test]
 async fn auto_login_returns_the_installed_failure_and_committed_snapshot() {
-    let (_dir, config, web, db) = test_env("auto-login-install-failure");
+    let (_dir, config, web, _db) = test_env("auto-login-install-failure");
     seed_saved_credential(&config, &web, "usr_saved");
     let runtime = LoginSessionRuntime::new();
     let api = Arc::new(FakeLoginApi::new(vec![
@@ -1247,7 +1257,6 @@ async fn auto_login_returns_the_installed_failure_and_committed_snapshot() {
             api,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_saved".into(),
             },
@@ -1276,7 +1285,7 @@ async fn auto_login_returns_the_installed_failure_and_committed_snapshot() {
 
 #[tokio::test]
 async fn a_superseded_start_cannot_clear_the_newer_committed_session() {
-    let (_dir, config, web, db) = test_env("start-transition-generation");
+    let (_dir, config, web, _db) = test_env("start-transition-generation");
     let config = Arc::new(config);
     let web = Arc::new(web);
     let runtime = LoginSessionRuntime::new();
@@ -1295,13 +1304,11 @@ async fn a_superseded_start_cannot_clear_the_newer_committed_session() {
         let old_api = old_api.clone();
         let config = Arc::clone(&config);
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         tokio::spawn(async move {
             runtime
                 .start_with_transition(
                     old_api as Arc<dyn LoginApi>,
                     web.as_ref(),
-                    db.as_ref(),
                     config.as_ref(),
                     LoginSessionStartInput::Basic {
                         username: "old@example.test".into(),
@@ -1327,13 +1334,11 @@ async fn a_superseded_start_cannot_clear_the_newer_committed_session() {
         let events = Arc::clone(&events);
         let config = Arc::clone(&config);
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         tokio::spawn(async move {
             runtime
                 .start_with_transition(
                     new_api,
                     web.as_ref(),
-                    db.as_ref(),
                     config.as_ref(),
                     LoginSessionStartInput::Basic {
                         username: "new@example.test".into(),
@@ -1366,7 +1371,7 @@ async fn a_superseded_start_cannot_clear_the_newer_committed_session() {
 
 #[tokio::test]
 async fn logout_invalidates_a_login_waiting_on_the_network() {
-    let (_dir, config, web, db) = test_env("logout-start-generation");
+    let (_dir, config, web, _db) = test_env("logout-start-generation");
     let config = Arc::new(config);
     let web = Arc::new(web);
     let runtime = LoginSessionRuntime::new();
@@ -1383,13 +1388,11 @@ async fn logout_invalidates_a_login_waiting_on_the_network() {
         let api = api.clone();
         let config = Arc::clone(&config);
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         tokio::spawn(async move {
             runtime
                 .start_with_transition(
                     api as Arc<dyn LoginApi>,
                     web.as_ref(),
-                    db.as_ref(),
                     config.as_ref(),
                     LoginSessionStartInput::Basic {
                         username: "late@example.test".into(),
@@ -1407,14 +1410,12 @@ async fn logout_invalidates_a_login_waiting_on_the_network() {
     let logout_task = {
         let runtime = runtime.clone();
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         let config = Arc::clone(&config);
         let transitions = Arc::clone(&transitions);
         tokio::spawn(async move {
             runtime
                 .end_session(
                     web.as_ref(),
-                    db.as_ref(),
                     config.as_ref(),
                     LoginSessionEndRequest {
                         user_id: String::new(),
@@ -1448,7 +1449,7 @@ async fn logout_invalidates_a_login_waiting_on_the_network() {
 
 #[tokio::test]
 async fn a_stale_respond_cannot_replace_a_newer_session_or_use_its_finalize() {
-    let (_dir, config, web, db) = test_env("respond-generation");
+    let (_dir, config, web, _db) = test_env("respond-generation");
     let config = Arc::new(config);
     let web = Arc::new(web);
     let runtime = LoginSessionRuntime::new();
@@ -1466,7 +1467,6 @@ async fn a_stale_respond_cannot_replace_a_newer_session_or_use_its_finalize() {
         &runtime,
         Arc::clone(&old_api) as Arc<dyn LoginApi>,
         web.as_ref(),
-        db.as_ref(),
         config.as_ref(),
         "old@example.test",
         false,
@@ -1478,7 +1478,6 @@ async fn a_stale_respond_cannot_replace_a_newer_session_or_use_its_finalize() {
     let respond_task = {
         let runtime = runtime.clone();
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         let config = Arc::clone(&config);
         tokio::spawn(async move {
             runtime
@@ -1489,7 +1488,6 @@ async fn a_stale_respond_cannot_replace_a_newer_session_or_use_its_finalize() {
                         code: "123456".into(),
                     },
                     web.as_ref(),
-                    db.as_ref(),
                     config.as_ref(),
                 )
                 .await
@@ -1504,14 +1502,12 @@ async fn a_stale_respond_cannot_replace_a_newer_session_or_use_its_finalize() {
     let newer_task = {
         let runtime = runtime.clone();
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         let config = Arc::clone(&config);
         tokio::spawn(async move {
             start_runtime_basic(
                 &runtime,
                 new_api as Arc<dyn LoginApi>,
                 web.as_ref(),
-                db.as_ref(),
                 config.as_ref(),
                 "new@example.test",
                 true,
@@ -1545,7 +1541,7 @@ async fn a_stale_respond_cannot_replace_a_newer_session_or_use_its_finalize() {
 
 #[tokio::test]
 async fn cancel_invalidates_a_respond_that_is_waiting_on_the_network() {
-    let (_dir, config, web, db) = test_env("respond-cancel-generation");
+    let (_dir, config, web, _db) = test_env("respond-cancel-generation");
     let config = Arc::new(config);
     let web = Arc::new(web);
     let runtime = LoginSessionRuntime::new();
@@ -1563,7 +1559,6 @@ async fn cancel_invalidates_a_respond_that_is_waiting_on_the_network() {
         &runtime,
         Arc::clone(&api) as Arc<dyn LoginApi>,
         web.as_ref(),
-        db.as_ref(),
         config.as_ref(),
         "self@example.test",
         true,
@@ -1576,7 +1571,6 @@ async fn cancel_invalidates_a_respond_that_is_waiting_on_the_network() {
     let respond_task = {
         let runtime = runtime.clone();
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         let config = Arc::clone(&config);
         tokio::spawn(async move {
             runtime
@@ -1587,7 +1581,6 @@ async fn cancel_invalidates_a_respond_that_is_waiting_on_the_network() {
                         code: "123456".into(),
                     },
                     web.as_ref(),
-                    db.as_ref(),
                     config.as_ref(),
                 )
                 .await
@@ -1598,12 +1591,7 @@ async fn cancel_invalidates_a_respond_that_is_waiting_on_the_network() {
     let cancel_task = {
         let runtime = runtime.clone();
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
-        tokio::spawn(async move {
-            runtime
-                .cancel(attempt_id, web.as_ref(), db.as_ref(), &|_| Ok(()))
-                .await
-        })
+        tokio::spawn(async move { runtime.cancel(attempt_id, web.as_ref(), &|_| Ok(())).await })
     };
     tokio::task::yield_now().await;
     api.resume();
@@ -1628,7 +1616,7 @@ async fn cancel_invalidates_a_respond_that_is_waiting_on_the_network() {
 
 #[tokio::test]
 async fn a_manual_start_supersedes_an_auto_login_waiting_on_the_network() {
-    let (_dir, config, web, db) = test_env("auto-login-generation");
+    let (_dir, config, web, _db) = test_env("auto-login-generation");
     let config = Arc::new(config);
     let web = Arc::new(web);
     let runtime = LoginSessionRuntime::new();
@@ -1645,14 +1633,12 @@ async fn a_manual_start_supersedes_an_auto_login_waiting_on_the_network() {
         let auto_api = Arc::clone(&auto_api);
         let config = Arc::clone(&config);
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         tokio::spawn(async move {
             runtime
                 .auto_login_start_with(
                     auto_api as Arc<dyn LoginApi>,
                     config.as_ref(),
                     web.as_ref(),
-                    db.as_ref(),
                     AutoLoginStartInput {
                         user_id: "usr_auto".into(),
                     },
@@ -1669,14 +1655,12 @@ async fn a_manual_start_supersedes_an_auto_login_waiting_on_the_network() {
     let manual_task = {
         let runtime = runtime.clone();
         let web = Arc::clone(&web);
-        let db = Arc::clone(&db);
         let config = Arc::clone(&config);
         tokio::spawn(async move {
             start_runtime_basic(
                 &runtime,
                 manual_api as Arc<dyn LoginApi>,
                 web.as_ref(),
-                db.as_ref(),
                 config.as_ref(),
                 "manual@example.test",
                 true,

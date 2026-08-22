@@ -457,22 +457,6 @@
             "instance_duration": "Instance {duration}"
         },
         "generic_instance_location": "instanci",
-        "friends_panel": {
-            "title": "Oblíbení přátelé",
-            "all": "Vše",
-            "empty": "Žádní oblíbení přátelé online",
-            "note": "Poznámka",
-            "memo": "Lokální poznámka",
-            "open": "Otevřít",
-            "request": "Požádat",
-            "invite": "Pozvat",
-            "favorites_online": "Oblíbení online",
-            "same_instance": "Stejná instance",
-            "local_favorites": "Lokální oblíbení",
-            "traveling": "Cestuje",
-            "private": "Soukromé",
-            "offline": "Offline"
-        },
         "discord": {
             "title": {
                 "invite": "Pozvánka od {name}",
@@ -2156,13 +2140,6 @@
                     "timeout": "Doba zobrazení",
                     "opacity": "Neprůhlednost",
                     "filters": "Filtry oznámení v headsetu"
-                },
-                "interactive_panel": {
-                    "header": "Interaktivní panel přátel",
-                    "enabled": "Povolit interaktivní panel přátel",
-                    "all_friends_include_favorites": "Zahrnout oblíbené do Všichni",
-                    "summon_hint": "Gesto vyvolání",
-                    "openvr_required": "Podržením pravého gripu asi 2 sekundy panel vyvoláte. Vyžaduje backend překryvné vrstvy SteamVR/OpenVR; OpenXR momentálně interaktivní panel neposkytuje."
                 },
                 "wrist_overlay": {
                     "header": "Zápěstní overlay",

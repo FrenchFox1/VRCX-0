@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serde_json::Value;
-use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
+use vrcx_0_application_core::{Result, RuntimeVrchatAuthFailurePayload};
 use vrcx_0_core::friends::FriendRecord;
 
 use crate::realtime::friends::SyntheticFriendEvent;
@@ -10,7 +10,7 @@ use crate::realtime::RealtimeFriendApplyResult;
 use super::fanout::FriendOutputApplyOutcome;
 use super::state::{FriendLogMutation, FriendOwnerGuard, ScopedFriendLogMutation};
 use super::RealtimeHostRuntime;
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SyntheticFriendEventOutcome {
@@ -32,8 +32,8 @@ impl RealtimeHostRuntime {
         owner_user_id: &OwnerId,
         endpoint: &str,
         target_user_id: &str,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
-    ) -> vrcx_0_persistence::Result<T> {
+        mutation: impl FnOnce() -> Result<T>,
+    ) -> Result<T> {
         self.run_friend_log_current_mutation_with_effect(
             mutation,
             Some(ScopedFriendLogMutation::new(
@@ -51,8 +51,8 @@ impl RealtimeHostRuntime {
         owner_user_id: &OwnerId,
         endpoint: &str,
         record: FriendRecord,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
-    ) -> vrcx_0_persistence::Result<T> {
+        mutation: impl FnOnce() -> Result<T>,
+    ) -> Result<T> {
         self.run_friend_log_current_mutation_with_effect(
             mutation,
             Some(ScopedFriendLogMutation::new(

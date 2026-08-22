@@ -8,21 +8,13 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::groups::GroupMemberPatch;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::{
-    groups::{
-        member_ban_input, member_kick_input, member_props_set_input, member_role_add_input,
-        member_role_remove_input, member_unban_input,
-    },
-    http_api::{ApiScope, HttpApiRequestInput},
-};
 
 use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
     WebClient,
 };
-use vrcx_0_persistence::OwnerId;
+use vrcx_0_core::OwnerId;
 
 pub const GROUP_MODERATION_BATCH_MAX_TARGETS: usize = 250;
 pub const GROUP_MODERATION_BATCH_MAX_OPERATIONS: usize = 1_000;
@@ -193,27 +185,70 @@ trait GroupModerationBatchActions: Send + Sync {
     }
 }
 
+pub trait GroupModerationRemoteRequests: Send + Sync {
+    fn kick(&self, endpoint: String, group_id: String, user_id: String)
+        -> Result<VrchatApiRequest>;
+    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn unban(&self, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn save_note(
+        &self,
+        endpoint: String,
+        group_id: String,
+        user_id: String,
+        note: String,
+    ) -> Result<VrchatApiRequest>;
+    fn add_role(
+        &self,
+        group_id: String,
+        user_id: String,
+        role_id: String,
+    ) -> Result<VrchatApiRequest>;
+    fn remove_role(
+        &self,
+        group_id: String,
+        user_id: String,
+        role_id: String,
+    ) -> Result<VrchatApiRequest>;
+}
+
 pub struct VrchatGroupModerationBatchActions<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) web: &'a WebClient,
+    remote_requests: &'a dyn GroupModerationRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
     pub event_bus: RuntimeEventBus,
     pub remote_mutation_gate: &'a RemoteMutationGate,
 }
 
+impl<'a> VrchatGroupModerationBatchActions<'a> {
+    pub fn new(
+        web: &'a WebClient,
+        remote_requests: &'a dyn GroupModerationRemoteRequests,
+        auth_scope: &'a RuntimeAuthScope,
+        expected_scope: RuntimeAuthScopeSnapshot,
+        event_bus: RuntimeEventBus,
+        remote_mutation_gate: &'a RemoteMutationGate,
+    ) -> Self {
+        Self {
+            web,
+            remote_requests,
+            auth_scope,
+            expected_scope,
+            event_bus,
+            remote_mutation_gate,
+        }
+    }
+}
+
 impl VrchatGroupModerationBatchActions<'_> {
     async fn execute_request(
         &self,
-        mut request: HttpApiRequestInput,
+        mut request: VrchatApiRequest,
         action: &str,
     ) -> Result<GroupModerationRemoteOutcome> {
         ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
         request.endpoint = Some(self.expected_scope.endpoint.clone());
-        let response = self
-            .web
-            .execute_api(request, ApiScope::Vrchat, self.db)
-            .await?;
+        let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
         let fallback_payload = Value::String(response.data.clone());
         if !(200..300).contains(&response.status) {
             return Err(Error::Custom(response_error_message(
@@ -256,7 +291,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
         Box::pin(async move {
             let (request, action) = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
-                    let (_, _, request) = member_kick_input(
+                    let request = self.remote_requests.kick(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
@@ -264,7 +299,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     (request, "group member kick")
                 }
                 GroupModerationOperation::Ban { group_id, user_id } => {
-                    let (_, _, request) = member_ban_input(
+                    let request = self.remote_requests.ban(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
@@ -272,8 +307,9 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     (request, "group member ban")
                 }
                 GroupModerationOperation::Unban { group_id, user_id } => {
-                    let (_, _, request) =
-                        member_unban_input(group_id.to_string(), user_id.to_string())?;
+                    let request = self
+                        .remote_requests
+                        .unban(group_id.to_string(), user_id.to_string())?;
                     (request, "group member unban")
                 }
                 GroupModerationOperation::SaveNote {
@@ -281,14 +317,11 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     note,
                 } => {
-                    let (_, _, request) = member_props_set_input(
+                    let request = self.remote_requests.save_note(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                        GroupMemberPatch {
-                            manager_notes: Some(note.to_string()),
-                            ..GroupMemberPatch::default()
-                        },
+                        note.to_string(),
                     )?;
                     (request, "group member note update")
                 }
@@ -297,7 +330,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let (_, _, _, request) = member_role_add_input(
+                    let request = self.remote_requests.add_role(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
@@ -309,7 +342,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let (_, _, _, request) = member_role_remove_input(
+                    let request = self.remote_requests.remove_role(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),

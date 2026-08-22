@@ -8,7 +8,7 @@ use crate::{error::AppError, state::AppState};
 #[tauri::command]
 #[specta::specta]
 pub fn app__vrc_status_get(state: State<'_, AppState>) -> VrcStatusSnapshot {
-    state.runtime_context.vrc_status.snapshot()
+    state.runtime_host().vrc_status_snapshot()
 }
 
 #[tauri::command]
@@ -17,9 +17,8 @@ pub async fn app__vrc_status_refresh(
     state: State<'_, AppState>,
 ) -> Result<VrcStatusSnapshot, AppError> {
     state
-        .runtime_context
-        .vrc_status
-        .refresh()
+        .runtime_host()
+        .refresh_vrc_status()
         .await
         .map_err(AppError::from)
 }

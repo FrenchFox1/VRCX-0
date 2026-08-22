@@ -1,9 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_game::{
-    presence_automation_rules_get, presence_automation_rules_set, PresenceAutomationRuleKind,
-};
+use vrcx_0_application_game::PresenceAutomationRuleKind;
 use vrcx_0_core::json::RawJson;
 
 use crate::error::AppError;
@@ -15,10 +13,7 @@ pub fn app__presence_automation_rules_get(
     state: State<'_, AppState>,
     kind: PresenceAutomationRuleKind,
 ) -> Result<Vec<RawJson>, AppError> {
-    Ok(presence_automation_rules_get(
-        state.runtime_context.config(),
-        kind,
-    )?)
+    Ok(state.runtime_host().presence_automation_rules(kind)?)
 }
 
 #[tauri::command]
@@ -28,9 +23,7 @@ pub fn app__presence_automation_rules_set(
     kind: PresenceAutomationRuleKind,
     rules: Vec<RawJson>,
 ) -> Result<Vec<RawJson>, AppError> {
-    Ok(presence_automation_rules_set(
-        state.runtime_context.config(),
-        kind,
-        rules,
-    )?)
+    Ok(state
+        .runtime_host()
+        .set_presence_automation_rules(kind, rules)?)
 }

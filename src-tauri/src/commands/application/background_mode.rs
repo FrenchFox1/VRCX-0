@@ -22,7 +22,7 @@ pub async fn app__start_background_mode(
 pub fn app__backend_runtime_combined_snapshot_get(
     state: State<'_, AppState>,
 ) -> Result<BackendRuntimeCombinedSnapshot, AppError> {
-    Ok(state.backend_runtime_combined_snapshot())
+    Ok(state.runtime_host().backend_runtime_combined_snapshot())
 }
 
 #[tauri::command]

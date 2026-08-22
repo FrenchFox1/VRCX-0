@@ -14,5 +14,5 @@ pub fn log_watcher__get_current_location(
     state: State<'_, AppState>,
 ) -> Result<Option<LogLocationSnapshot>, AppError> {
     require_host_capability(HostCapability::GameLogWatcher)?;
-    Ok(state.game.log_watcher.current_location_snapshot())
+    Ok(state.runtime_host().current_log_location_snapshot())
 }

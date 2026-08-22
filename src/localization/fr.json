@@ -457,22 +457,6 @@
             "instance_duration": "Instance {duration}"
         },
         "generic_instance_location": "une instance",
-        "friends_panel": {
-            "title": "Amis favoris",
-            "all": "Tous",
-            "empty": "Aucun ami favori en ligne",
-            "note": "Note",
-            "memo": "Note locale",
-            "open": "Ouvrir",
-            "request": "Demande",
-            "invite": "Inviter",
-            "favorites_online": "Favoris en ligne",
-            "same_instance": "Même instance",
-            "local_favorites": "Favoris locaux",
-            "traveling": "En voyage",
-            "private": "Privé",
-            "offline": "Hors ligne"
-        },
         "discord": {
             "title": {
                 "invite": "Invitation de {name}",
@@ -2154,13 +2138,6 @@
                     "timeout": "Durée d'affichage",
                     "opacity": "Opacité",
                     "filters": "Filtres des notifications du casque"
-                },
-                "interactive_panel": {
-                    "header": "Panneau d'amis interactif",
-                    "enabled": "Activer le panneau d'amis interactif",
-                    "all_friends_include_favorites": "Inclure les favoris dans Tous",
-                    "summon_hint": "Geste d'appel",
-                    "openvr_required": "Maintenez le grip droit environ 2 secondes pour l'afficher. Nécessite le backend d'overlay SteamVR/OpenVR; OpenXR ne fournit pas encore le panneau interactif."
                 },
                 "wrist_overlay": {
                     "header": "Overlay au poignet",
