@@ -47,7 +47,9 @@ pub use database::schema::{
     prepare_vrcx0_schema_version, write_database_schema_versions, VRCX0_SCHEMA_VERSION,
     VRCX0_SCHEMA_VERSION_KEY,
 };
-pub use database::{optimize_database, DatabaseService, DatabaseUpgradeStatus, FrozenDatabase};
+pub use database::{
+    optimize_database, DatabaseService, DatabaseUpgradeStatus, FrozenDatabase, WalCheckpointResult,
+};
 pub use error::{Error, SqliteErrorCategory};
 
 pub type Result<T> = std::result::Result<T, Error>;

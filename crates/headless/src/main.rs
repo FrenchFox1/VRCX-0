@@ -73,6 +73,7 @@ async fn async_main() -> ExitCode {
         app_data_dir: app_data_dir.clone(),
         app_version: product_app_version(),
         profile: RuntimeHostProfile::HeadlessData,
+        database_maintenance_cache_dir: None,
     }) {
         Ok(state) => state,
         Err(error) => {

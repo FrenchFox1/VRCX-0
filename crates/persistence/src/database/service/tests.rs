@@ -375,6 +375,69 @@ fn upgrade_backup_continues_when_source_checkpoint_is_busy() -> Result<(), Error
 }
 
 #[test]
+fn passive_checkpoint_reports_partial_progress_and_truncate_reports_busy() -> Result<(), Error> {
+    let dir = TestDir::new("wal-checkpoint-modes");
+    let db_path = dir.path.join("VRCX-0.sqlite3");
+    let db = DatabaseService::new(&db_path)?;
+    let empty = HashMap::new();
+    db.execute_non_query(
+        "CREATE TABLE checkpoint_items (value TEXT NOT NULL)",
+        &empty,
+    )?;
+    db.execute_non_query(
+        "INSERT INTO checkpoint_items (value) VALUES ('before-reader')",
+        &empty,
+    )?;
+
+    let mut reader = Connection::open(&db_path).map_err(Error::sqlite)?;
+    let reader_tx = reader.transaction().map_err(Error::sqlite)?;
+    let _: i64 = reader_tx
+        .query_row("SELECT COUNT(*) FROM checkpoint_items", [], |row| {
+            row.get(0)
+        })
+        .map_err(Error::sqlite)?;
+    db.execute_non_query(
+        "INSERT INTO checkpoint_items (value) VALUES ('after-reader')",
+        &empty,
+    )?;
+
+    let passive = db.checkpoint_wal_passive()?;
+    assert!(!passive.busy);
+    assert!(!passive.is_complete());
+    assert!(passive.log_frames > passive.checkpointed_frames);
+
+    let truncate_started = std::time::Instant::now();
+    let truncate = db.truncate_wal()?;
+    assert!(truncate.busy);
+    assert!(!truncate.is_complete());
+    assert!(truncate_started.elapsed() < Duration::from_secs(1));
+
+    {
+        let inner = db
+            .inner
+            .read()
+            .map_err(|error| Error::Database(error.to_string()))?;
+        let DatabaseMode::Main(main) = &*inner else {
+            unreachable!();
+        };
+        let busy_timeout_millis: i64 = main
+            .writer
+            .lock()
+            .map_err(|error| Error::Database(error.to_string()))?
+            .query_row("PRAGMA busy_timeout", [], |row| row.get(0))
+            .map_err(Error::sqlite)?;
+        assert_eq!(busy_timeout_millis, 5_000);
+    }
+
+    reader_tx.rollback().map_err(Error::sqlite)?;
+    drop(reader);
+
+    assert!(db.checkpoint_wal_passive()?.is_complete());
+    assert!(db.truncate_wal()?.is_complete());
+    Ok(())
+}
+
+#[test]
 fn failed_upgraded_database_reopen_restores_original_and_preserves_work_copy() -> Result<(), Error>
 {
     let dir = TestDir::new("database-upgrade-reopen-rollback");

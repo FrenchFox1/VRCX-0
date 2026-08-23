@@ -65,6 +65,7 @@ pub struct RuntimeHostOptions {
     pub app_data_dir: AppDataDirResolution,
     pub app_version: String,
     pub profile: RuntimeHostProfile,
+    pub database_maintenance_cache_dir: Option<PathBuf>,
 }
 
 pub(super) fn web_ua_app_version(app_version: &str, profile: RuntimeHostProfile) -> String {
@@ -91,6 +92,7 @@ pub struct RuntimeHostStateBuilder {
     legacy_vrcx_source: Option<LegacyVrcxSource>,
     legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
     launched_from_autostart: bool,
+    database_maintenance_cache_dir: Option<PathBuf>,
     profile_lock: ProfileLock,
 }
 
@@ -118,6 +120,7 @@ pub struct RuntimeHostState {
     pub(crate) legacy_vrcx_source: Option<LegacyVrcxSource>,
     pub(crate) legacy_vrcx_migration_status: LegacyVrcxMigrationStatus,
     pub(crate) launched_from_autostart: bool,
+    pub(crate) database_maintenance_cache_dir: Option<PathBuf>,
     pub(super) profile_extension: Option<Arc<dyn RuntimeHostProfileExtension>>,
     pub(super) backend_starting: AtomicBool,
     pub(super) background_auth_recovery: BackgroundAuthRecoveryOrchestrator,
@@ -264,6 +267,7 @@ impl RuntimeHostStateBuilder {
             mut app_data_dir,
             app_version,
             profile,
+            database_maintenance_cache_dir,
         } = options;
         let prepared_migration = prepare_data_dir_migration_startup(&mut app_data_dir)?;
         let mut paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
@@ -367,6 +371,7 @@ impl RuntimeHostStateBuilder {
             legacy_vrcx_source,
             legacy_vrcx_migration_status,
             launched_from_autostart,
+            database_maintenance_cache_dir,
             profile_lock,
         })
     }
@@ -646,6 +651,7 @@ impl RuntimeHostStateBuilder {
             legacy_vrcx_source: self.legacy_vrcx_source,
             legacy_vrcx_migration_status: self.legacy_vrcx_migration_status,
             launched_from_autostart: self.launched_from_autostart,
+            database_maintenance_cache_dir: self.database_maintenance_cache_dir,
             profile_extension,
             backend_starting: AtomicBool::new(false),
             background_auth_recovery: BackgroundAuthRecoveryOrchestrator::new(),

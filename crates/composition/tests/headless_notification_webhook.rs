@@ -57,6 +57,7 @@ async fn headless_recent_notification_sends_one_webhook_and_deduplicates() {
         },
         app_version: "0.0.0-test".into(),
         profile: RuntimeHostProfile::HeadlessData,
+        database_maintenance_cache_dir: None,
     })
     .unwrap();
     state

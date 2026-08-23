@@ -96,6 +96,7 @@ impl AppState {
 
     pub fn new(
         app_data_dir: AppDataDirResolution,
+        database_maintenance_cache_dir: Option<std::path::PathBuf>,
         updater_port: Arc<dyn UpdaterPort>,
     ) -> Result<Self, AppError> {
         let launched_from_autostart = std::env::args().any(|arg| arg == "--autostart");
@@ -108,6 +109,7 @@ impl AppState {
             app_update_build_badge: crate::bootstrap::app_update_build_badge(),
             app_update_check_disabled: crate::bootstrap::app_update_check_disabled(),
             updater_port,
+            database_maintenance_cache_dir,
         })?;
         let favorite_details = runtime.favorite_details_runtime();
         let quick_search = runtime.quick_search_runtime();

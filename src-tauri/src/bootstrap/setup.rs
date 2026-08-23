@@ -144,7 +144,21 @@ fn initialize_app_state(
     app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
     updater_port: Arc<TauriUpdaterPort>,
 ) -> AppState {
-    let error = match AppState::new(app_data_dir.clone(), updater_port.clone()) {
+    let database_maintenance_cache_dir = match app.path().app_cache_dir() {
+        Ok(path) => Some(path),
+        Err(error) => {
+            tracing::warn!(
+                error = %error,
+                "failed to resolve Tauri cache directory for database maintenance"
+            );
+            None
+        }
+    };
+    let error = match AppState::new(
+        app_data_dir.clone(),
+        database_maintenance_cache_dir.clone(),
+        updater_port.clone(),
+    ) {
         Ok(state) => return state,
         Err(error) => error,
     };
@@ -157,7 +171,7 @@ fn initialize_app_state(
                     quarantined = %quarantined.display(),
                     "local database is corrupted; quarantined it to recreate a fresh database"
                 );
-                match AppState::new(app_data_dir, updater_port) {
+                match AppState::new(app_data_dir, database_maintenance_cache_dir, updater_port) {
                     Ok(state) => {
                         show_blocking_dialog(
                             app,

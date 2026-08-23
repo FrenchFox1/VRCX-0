@@ -179,6 +179,7 @@ pub struct DesktopRuntimeHostOptions {
     pub app_update_build_badge: String,
     pub app_update_check_disabled: bool,
     pub updater_port: Arc<dyn vrcx_0_application_core::UpdaterPort>,
+    pub database_maintenance_cache_dir: Option<PathBuf>,
 }
 
 pub struct GameRuntimeBundle {
@@ -276,6 +277,7 @@ impl DesktopRuntimeHostState {
             app_update_build_badge,
             app_update_check_disabled,
             updater_port,
+            database_maintenance_cache_dir,
         } = options;
         let builder = RuntimeHostStateBuilder::new(RuntimeHostOptions {
             realtime_origin,
@@ -283,6 +285,7 @@ impl DesktopRuntimeHostState {
             app_data_dir,
             app_version: app_version.clone(),
             profile: RuntimeHostProfile::Desktop,
+            database_maintenance_cache_dir,
         })?;
         cleanup_legacy_updater_files(&builder.paths().app_data);
         let host_file_access = HostFileAccess::new();

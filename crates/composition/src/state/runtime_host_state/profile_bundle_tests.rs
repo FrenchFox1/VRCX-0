@@ -89,6 +89,7 @@ fn switched_data_dir_migration_finishes_before_profile_startup() -> Result<()> {
         app_data_dir: persisted_resolution(&source),
         app_version: "0.0.0-test".into(),
         profile: RuntimeHostProfile::HeadlessData,
+        database_maintenance_cache_dir: None,
     })?;
 
     assert!(app_data_paths_match(&builder.paths.app_data, &target));
@@ -117,6 +118,7 @@ fn migrated_database_open_failure_rolls_back_to_source() -> Result<()> {
         app_data_dir: persisted_resolution(&source),
         app_version: "0.0.0-test".into(),
         profile: RuntimeHostProfile::HeadlessData,
+        database_maintenance_cache_dir: None,
     })?;
 
     assert!(app_data_paths_match(&builder.paths.app_data, &source));
@@ -205,6 +207,7 @@ fn headless_data_constructs_no_game_or_desktop_bundle_and_stops_idempotently() -
         },
         app_version: "0.0.0-test".into(),
         profile: RuntimeHostProfile::HeadlessData,
+        database_maintenance_cache_dir: None,
     })?;
     assert!(state.profile_extension.is_none());
     assert!(!state.paths.app_data.join("metadataCache.db").exists());
@@ -237,6 +240,7 @@ fn desktop_idle_stop_still_cleans_up_profile_services() -> Result<()> {
         },
         app_version: "0.0.0-test".into(),
         profile: RuntimeHostProfile::Desktop,
+        database_maintenance_cache_dir: None,
     })?
     .finish(RuntimeHostComposition {
         local_game_context: Arc::new(UnavailableLocalGameContextSource),

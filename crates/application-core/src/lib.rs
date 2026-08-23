@@ -41,8 +41,8 @@ pub use backend_runtime::{
     GuiRuntimeMode, RealtimeProjectionSync, RuntimeHostProfile,
 };
 pub use background::{
-    sleep_until_due_or_stopped, DatabaseMaintenancePort, RuntimeBackgroundJobSnapshot,
-    RuntimeBackgroundJobs,
+    sleep_until_due_or_stopped, DatabaseCheckpointKind, DatabaseCheckpointResult,
+    DatabaseMaintenancePort, RuntimeBackgroundJobSnapshot, RuntimeBackgroundJobs,
 };
 pub use config::{config_string_array_value, normalize_config_string_array};
 #[cfg(any(test, feature = "test-utils"))]
