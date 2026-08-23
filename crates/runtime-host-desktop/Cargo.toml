@@ -43,4 +43,6 @@ vrcx-0-persistence = { path = "../persistence" }
 vrcx-0-composition = { path = "../composition" }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
 vrcx-0-outbound-adapters = { path = "../outbound-adapters" }
+
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
 vrcx-0-overlay-runtime = { path = "../overlay-runtime" }

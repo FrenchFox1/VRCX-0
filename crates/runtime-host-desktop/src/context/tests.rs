@@ -57,7 +57,8 @@ fn test_services(name: &str) -> (TestDir, DesktopRuntimeServices) {
         .unwrap(),
     )));
     let context = RuntimeHostDesktopAssemblyDeps::new(db, web, image_cache);
-    let services = DesktopRuntimeServices::new(crate::state::build_overlay_runtime_data(&context));
+    let services =
+        DesktopRuntimeServices::new(crate::state::build_desktop_runtime_services_deps(&context));
     (dir, services)
 }
 

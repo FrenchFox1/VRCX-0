@@ -12,7 +12,8 @@ use crate::DesktopRuntimeServices;
 use vrcx_0_application_core::GameProcessEventSink;
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_overlay_runtime::{
-    VrOverlayActivitySink, VrOverlayRuntime, VR_OVERLAY_ENABLED_CONFIG_KEY,
+    VrOverlayActivitySink, VrOverlayRuntime, VrOverlayRuntimeServices,
+    VR_OVERLAY_ENABLED_CONFIG_KEY,
 };
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_persistence::config::ConfigRepository;
@@ -58,11 +59,11 @@ impl DesktopVrOverlayRuntime {
     pub fn new(services: Arc<DesktopRuntimeServices>) -> Result<Self> {
         #[cfg(any(windows, target_os = "linux"))]
         {
-            let config = services.data().config().clone();
+            let config = services.config().clone();
             let runtime = Arc::new(VrOverlayRuntime::new(Arc::clone(&services)));
             let enabled = config.get_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, false)?;
             runtime.set_enabled(enabled);
-            runtime.start_refresh_loop(services.data().tasks().clone());
+            runtime.start_refresh_loop(services.tasks().clone());
             services
                 .set_overlay_activity_extra_sink(Arc::new(VrOverlayActivitySink::new(&runtime)));
             Ok(Self { config, runtime })

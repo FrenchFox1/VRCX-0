@@ -9,6 +9,7 @@ use vrcx_0_application_core::RuntimeOperationStatus;
 use crate::ancillary_snapshot::{ancillary_runtime_snapshot, AncillaryRuntimeSnapshot};
 use crate::app_launcher::start_app_launcher_snapshot_events;
 use crate::avatar::DesktopAvatarRuntime;
+use crate::context::DesktopRuntimeServicesDeps;
 use crate::data_dir::DesktopDataDirRuntime;
 use crate::external_api::ExternalApiRuntime;
 use crate::group::DesktopGroupRuntime;
@@ -108,28 +109,22 @@ const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS: u64 = 5;
 const DESKTOP_MAINTENANCE_STOP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const SHARE_EDITOR_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 
-pub(crate) fn build_overlay_runtime_data(
+pub(crate) fn build_desktop_runtime_services_deps(
     context: &RuntimeHostDesktopAssemblyDeps,
-) -> Arc<vrcx_0_overlay_runtime::VrOverlayRuntimeData> {
-    Arc::new(vrcx_0_overlay_runtime::VrOverlayRuntimeData::new(
-        vrcx_0_overlay_runtime::VrOverlayRuntimeDataDeps {
-            db: Arc::clone(context.database()),
-            web: Arc::clone(context.web_client()),
-            image_cache: Arc::clone(context.image_cache()),
-            config: context.config().clone(),
-            notification_config: context.notification_config(),
-            notification_remote: Arc::new(vrcx_0_outbound_adapters::VrchatNotificationRemote::new(
-                Arc::clone(context.web_client()),
-                Arc::clone(context.world_cache()),
-            )),
-            auth_scope: context.auth_scope().clone(),
-            session: context.session().clone(),
-            world_cache: Arc::clone(context.world_cache()),
-            tasks: context.tasks().clone(),
-            overlay_activity: context.overlay_activity(),
-            overlay_activity_sinks: context.overlay_activity_sink_registry(),
-        },
-    ))
+) -> DesktopRuntimeServicesDeps {
+    DesktopRuntimeServicesDeps {
+        db: Arc::clone(context.database()),
+        web: Arc::clone(context.web_client()),
+        image_cache: Arc::clone(context.image_cache()),
+        config: context.config().clone(),
+        notification_config: context.notification_config(),
+        auth_scope: context.auth_scope().clone(),
+        session: context.session().clone(),
+        world_cache: Arc::clone(context.world_cache()),
+        tasks: context.tasks().clone(),
+        overlay_activity: context.overlay_activity(),
+        overlay_activity_sinks: context.overlay_activity_sink_registry(),
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, specta::Type)]
@@ -296,9 +291,9 @@ impl DesktopRuntimeHostState {
             builder.profile_backup(),
             builder.desktop_assembly().config(),
         )?;
-        let desktop_services = Arc::new(DesktopRuntimeServices::new(build_overlay_runtime_data(
-            builder.desktop_assembly(),
-        )));
+        let desktop_services = Arc::new(DesktopRuntimeServices::new(
+            build_desktop_runtime_services_deps(builder.desktop_assembly()),
+        ));
         let backend_status = BackendRuntimeStatusPublisher::new(
             builder.backend_runtime().clone(),
             builder.desktop_assembly().event_bus().clone(),

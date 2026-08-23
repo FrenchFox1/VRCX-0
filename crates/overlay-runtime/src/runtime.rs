@@ -314,7 +314,7 @@ impl VrOverlayRuntime {
     where
         S: VrOverlayRuntimeServices + 'static,
     {
-        let config = load_runtime_config(services.data().config());
+        let config = load_runtime_config(services.config());
         let services: Arc<dyn VrOverlayRuntimeServices> = services;
         let producer_services = Arc::clone(&services);
         Self::new_with_frame_producer_factory(
@@ -798,7 +798,7 @@ impl VrOverlayRuntime {
         let Some(services) = &self.services else {
             return None;
         };
-        let next_config = load_runtime_config(services.data().config());
+        let next_config = load_runtime_config(services.config());
         let Ok(current_config) = self.config.lock() else {
             return None;
         };
@@ -1199,9 +1199,9 @@ pub(super) fn build_wrist_frame_input(
 ) -> WristOverlayFrameInput {
     let game_log = services.game_log_snapshot();
     let captured_at_ms = now_ms();
-    let mut activity = services.data().overlay_activity().snapshot();
+    let mut activity = services.overlay_activity().snapshot();
     for entry in &mut activity.entries {
-        refresh_cached_world_name(services.data().world_cache(), entry);
+        refresh_cached_world_name(services.world_cache(), entry);
     }
     WristOverlayFrameInput {
         activity,

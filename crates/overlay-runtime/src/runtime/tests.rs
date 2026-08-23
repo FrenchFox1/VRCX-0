@@ -13,20 +13,31 @@ use vrcx_0_vr_overlay::{
 };
 
 pub(crate) struct TestOverlayRuntimeServices {
-    data: Arc<crate::VrOverlayRuntimeData>,
+    config: vrcx_0_persistence::config::ConfigRepository,
+    web: Arc<WebClient>,
+    auth_scope: vrcx_0_application_core::RuntimeAuthScope,
+    world_cache: Arc<vrcx_0_application_core::WorldCache>,
+    tasks: vrcx_0_application_core::TaskSupervisor,
+    overlay_activity: vrcx_0_application_activity::OverlayActivityRuntime,
     game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
 }
 
 impl TestOverlayRuntimeServices {
-    fn new(data: Arc<crate::VrOverlayRuntimeData>) -> Self {
+    fn new(
+        config: vrcx_0_persistence::config::ConfigRepository,
+        web: Arc<WebClient>,
+        world_cache: Arc<vrcx_0_application_core::WorldCache>,
+        overlay_activity: vrcx_0_application_activity::OverlayActivityRuntime,
+    ) -> Self {
         Self {
-            data,
+            config,
+            web,
+            auth_scope: vrcx_0_application_core::RuntimeAuthScope::new(),
+            world_cache,
+            tasks: vrcx_0_application_core::TaskSupervisor::new(),
+            overlay_activity,
             game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
         }
-    }
-
-    pub(crate) fn data(&self) -> &crate::VrOverlayRuntimeData {
-        self.data.as_ref()
     }
 
     fn game_log_snapshot_handle(&self) -> Arc<Mutex<RuntimeSnapshot>> {
@@ -35,8 +46,28 @@ impl TestOverlayRuntimeServices {
 }
 
 impl crate::VrOverlayRuntimeServices for TestOverlayRuntimeServices {
-    fn data(&self) -> &crate::VrOverlayRuntimeData {
-        self.data()
+    fn config(&self) -> &vrcx_0_persistence::config::ConfigRepository {
+        &self.config
+    }
+
+    fn web_client(&self) -> &Arc<WebClient> {
+        &self.web
+    }
+
+    fn auth_scope(&self) -> &vrcx_0_application_core::RuntimeAuthScope {
+        &self.auth_scope
+    }
+
+    fn world_cache(&self) -> &Arc<vrcx_0_application_core::WorldCache> {
+        &self.world_cache
+    }
+
+    fn tasks(&self) -> &vrcx_0_application_core::TaskSupervisor {
+        &self.tasks
+    }
+
+    fn overlay_activity(&self) -> vrcx_0_application_activity::OverlayActivityRuntime {
+        self.overlay_activity.clone()
     }
 
     fn game_log_snapshot(&self) -> RuntimeSnapshot {
@@ -152,55 +183,23 @@ pub(crate) fn test_services(
         )
         .unwrap(),
     ));
-    let image_cache = Arc::new(vrcx_0_application_core::ImageCache::new(Arc::new(
-        vrcx_0_outbound_adapters::LocalImageCacheAdapter::new(
-            dir.path.join("ImageCache"),
-            Arc::clone(&web),
-        )
-        .unwrap(),
-    )));
     let config = vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(&db));
-    let notification_config: Arc<
-        dyn vrcx_0_application_activity::notification::NotificationConfig,
-    > = Arc::new(vrcx_0_outbound_adapters::LocalNotificationConfig::new(
-        config.clone(),
-    ));
     let overlay_activity = vrcx_0_application_activity::OverlayActivityRuntime::new();
-    let overlay_activity_sinks =
-        vrcx_0_application_activity::OverlayActivitySinkRegistry::default();
-    overlay_activity.set_sink(overlay_activity_sinks.clone());
-    let data = Arc::new(crate::VrOverlayRuntimeData::new(
-        crate::VrOverlayRuntimeDataDeps {
-            db: Arc::clone(&db),
-            web: Arc::clone(&web),
-            image_cache,
-            config,
-            notification_config,
-            notification_remote: Arc::new(vrcx_0_outbound_adapters::VrchatNotificationRemote::new(
-                Arc::clone(&web),
-                Arc::new(vrcx_0_application_core::WorldCache::new(
-                    vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
-                        Arc::clone(&db),
-                        64,
-                        std::time::Duration::from_secs(30 * 60),
-                    ),
-                )),
-            )),
-            auth_scope: vrcx_0_application_core::RuntimeAuthScope::new(),
-            session: vrcx_0_application_core::HostSessionRuntime::new(),
-            world_cache: Arc::new(vrcx_0_application_core::WorldCache::new(
-                vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
-                    Arc::clone(&db),
-                    64,
-                    std::time::Duration::from_secs(30 * 60),
-                ),
-            )),
-            tasks: vrcx_0_application_core::TaskSupervisor::new(),
-            overlay_activity,
-            overlay_activity_sinks,
-        },
+    overlay_activity
+        .set_sink(vrcx_0_application_activity::OverlayActivitySinkRegistry::default());
+    let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
+        vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
+            Arc::clone(&db),
+            64,
+            std::time::Duration::from_secs(30 * 60),
+        ),
     ));
-    let services = Arc::new(TestOverlayRuntimeServices::new(data));
+    let services = Arc::new(TestOverlayRuntimeServices::new(
+        config,
+        web,
+        world_cache,
+        overlay_activity,
+    ));
     (dir, db, services)
 }
 
@@ -223,12 +222,10 @@ pub(crate) fn hmd_enabled_runtime_with_services(
     services: Arc<TestOverlayRuntimeServices>,
 ) -> Arc<VrOverlayRuntime> {
     services
-        .data()
         .config()
         .set_bool(HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY, true)
         .unwrap();
     services
-        .data()
         .config()
         .set_string(HMD_NOTIFICATION_START_MODE_CONFIG_KEY, "steamvr")
         .unwrap();
@@ -753,7 +750,6 @@ fn overlay_activity_snapshot_marks_friends_panel_dirty_for_presence_changes() {
 fn game_log_player_snapshot_marks_same_instance_panel_dirty() {
     let (_dir, _db, services) = test_services("friends-panel-game-log-same-instance");
     services
-        .data()
         .config()
         .set_string(
             VR_OVERLAY_PANEL_SELECTED_CATEGORY_CONFIG_KEY,
@@ -1366,7 +1362,6 @@ fn friends_panel_avatar_url_follows_vrc_plus_icon_config() {
 fn friends_panel_avatar_refetches_when_config_selects_different_url() {
     let (_dir, _db, services) = test_services("friends-panel-avatar-source-change");
     services
-        .data()
         .config()
         .set_bool("displayVRCPlusIconsAsAvatar", false)
         .unwrap();
