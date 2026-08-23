@@ -137,6 +137,9 @@ impl GameLogIngestEngine {
                 }
                 GameLogEventKind::LocationDestination { .. } => {
                     self.finalize_location_session(&mut output.batch, &event.created_at);
+                    self.state.last_video_url.clear();
+                    self.state.now_playing_url.clear();
+                    output.side_effects.push(GameLogSideEffect::NowPlayingReset);
                     self.state.current_location = "traveling".into();
                     self.state.current_world_name.clear();
                     if let GameLogEventKind::LocationDestination { location } = &event.kind {
