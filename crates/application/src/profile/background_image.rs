@@ -21,12 +21,11 @@ mod helpers;
 mod types;
 
 use helpers::{
-    assert_previous_image_available, assert_selected_files_available,
-    community_theme_appearance_active, current_utc_date_key, ensure_provider_status,
-    file_name_from_path, files_source, folder_source, is_snapshot_fresh, mode_as_str,
-    next_custom_image_index, normalize_custom_source, normalize_custom_source_struct,
-    normalize_mode, normalize_provider_snapshot, projection_update_is_current, rotation_delay,
-    DEFAULT_ROTATION_INTERVAL_MINUTES, MAX_ROTATION_INTERVAL_MINUTES,
+    assert_selected_files_available, community_theme_appearance_active, current_utc_date_key,
+    ensure_provider_status, file_name_from_path, files_source, folder_source, is_snapshot_fresh,
+    mode_as_str, normalize_custom_source, normalize_custom_source_struct, normalize_mode,
+    normalize_provider_snapshot, projection_update_is_current, random_custom_image_index,
+    rotation_delay, DEFAULT_ROTATION_INTERVAL_MINUTES, MAX_ROTATION_INTERVAL_MINUTES,
     MIN_ROTATION_INTERVAL_MINUTES,
 };
 pub use types::{
@@ -347,18 +346,13 @@ impl BackgroundImageService {
     ) -> Result<BackgroundImageSnapshot> {
         let files = self.inner.resolver.resolve_files(source)?;
         assert_selected_files_available(source, &files)?;
-        assert_previous_image_available(source, &files, previous)?;
         if files.is_empty() {
             return Err(Error::Custom(
                 "No supported images were found in the selected source.".into(),
             ));
         }
 
-        let index = if files.len() <= 1 {
-            0
-        } else {
-            next_custom_image_index(source, &files, previous)
-        };
+        let index = random_custom_image_index(source, &files, previous);
         let image_path = files[index].clone();
         let title = file_name_from_path(&image_path);
         let resolved_at = now_iso();

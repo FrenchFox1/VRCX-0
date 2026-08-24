@@ -3,7 +3,8 @@ import {
     ImageIcon,
     ImageOffIcon,
     ImagesIcon,
-    RefreshCwIcon
+    RefreshCwIcon,
+    ShuffleIcon
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -139,6 +140,7 @@ function CurrentBackgroundImageSummary({
               : imageCount > 1
                 ? t('view.background_image.settings.source_type_files')
                 : t('view.background_image.settings.source_type_file');
+    const isFolderSource = mode === 'custom' && customSource?.kind === 'folder';
 
     return (
         <div className="border-border/70 bg-muted/20 flex min-w-0 flex-col gap-3 rounded-lg border p-2.5 sm:flex-row">
@@ -178,8 +180,16 @@ function CurrentBackgroundImageSummary({
                             disabled={loading}
                             onClick={onRefresh}
                         >
-                            <RefreshCwIcon data-icon="inline-start" />
-                            {t('view.background_image.action.refresh')}
+                            {isFolderSource ? (
+                                <ShuffleIcon data-icon="inline-start" />
+                            ) : (
+                                <RefreshCwIcon data-icon="inline-start" />
+                            )}
+                            {t(
+                                isFolderSource
+                                    ? 'view.background_image.action.change_image'
+                                    : 'view.background_image.action.refresh'
+                            )}
                         </Button>
                     ) : null}
                 </div>
@@ -304,7 +314,10 @@ export function BackgroundImageSection() {
     async function refreshBackground() {
         try {
             const refreshed = await refreshBackgroundImage();
-            if (!refreshed) {
+            if (
+                !refreshed ||
+                (mode === 'custom' && customSource?.kind === 'folder')
+            ) {
                 return;
             }
             toast.success(t('view.background_image.toast.refreshed'));
@@ -533,7 +546,7 @@ export function BackgroundImageSection() {
                             </span>
                             <span>
                                 {t(
-                                    'view.background_image.settings.folder_first_level_note'
+                                    'view.background_image.settings.folder_recursive_note'
                                 )}
                             </span>
                         </div>

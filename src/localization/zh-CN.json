@@ -3255,7 +3255,7 @@
                 "apod_note": "NASA APOD 只使用没有 copyright 字段的图片。",
                 "custom_source": "本地图片",
                 "custom_source_description": "选择一张图片会固定为背景；选择多张图片或文件夹会启用轮播。",
-                "folder_first_level_note": "文件夹只读取第一层图片，不读取子文件夹。",
+                "folder_recursive_note": "同时读取子文件夹中的图片。",
                 "selected_files": "已选择 {count} 张图片",
                 "current_image": "当前图片",
                 "image_count": "{count} 张图片",
@@ -3278,6 +3278,7 @@
             },
             "action": {
                 "refresh": "刷新",
+                "change_image": "换一张",
                 "select_images": "选择图片",
                 "select_folder": "选择文件夹"
             },

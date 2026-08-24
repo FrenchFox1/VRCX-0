@@ -246,31 +246,6 @@ pub(super) fn assert_selected_files_available(
     Ok(())
 }
 
-pub(super) fn assert_previous_image_available(
-    source: &BackgroundImageCustomSource,
-    files: &[String],
-    previous: Option<&BackgroundImageSnapshot>,
-) -> Result<()> {
-    let Some(previous) = previous else {
-        return Ok(());
-    };
-    let Some(image_path) = previous.image_path.as_deref().filter(|p| !p.is_empty()) else {
-        return Ok(());
-    };
-    if previous.mode != BackgroundImageMode::Custom || previous.source_kind != Some(source.kind) {
-        return Ok(());
-    }
-    if !files
-        .iter()
-        .any(|file| path_key(file) == path_key(image_path))
-    {
-        return Err(Error::Custom(
-            "The current background image is no longer available.".into(),
-        ));
-    }
-    Ok(())
-}
-
 pub(super) fn source_hash_key(source: &BackgroundImageCustomSource) -> String {
     match source.kind {
         BackgroundImageCustomSourceKind::Folder => format!("folder:{}", source.folder_path),
@@ -308,11 +283,14 @@ pub(super) fn current_utc_date_key() -> String {
     Utc::now().format("%Y-%m-%d").to_string()
 }
 
-pub(super) fn next_custom_image_index(
+pub(super) fn random_custom_image_index(
     source: &BackgroundImageCustomSource,
     files: &[String],
     previous: Option<&BackgroundImageSnapshot>,
 ) -> usize {
+    if files.len() <= 1 {
+        return 0;
+    }
     let previous_index = previous
         .and_then(|snapshot| snapshot.image_path.as_deref())
         .and_then(|previous_path| {
@@ -320,9 +298,11 @@ pub(super) fn next_custom_image_index(
                 .iter()
                 .position(|file| path_key(file) == path_key(previous_path))
         });
-    previous_index
-        .map(|index| (index + 1) % files.len())
-        .unwrap_or_else(|| (stable_hash(&source_hash_key(source)) as usize) % files.len())
+    match (previous, previous_index) {
+        (_, Some(index)) => (index + fastrand::usize(1..files.len())) % files.len(),
+        (Some(_), None) => fastrand::usize(..files.len()),
+        (None, None) => (stable_hash(&source_hash_key(source)) as usize) % files.len(),
+    }
 }
 
 pub(super) fn rotation_delay(rotation_interval_minutes: u16) -> Duration {

@@ -3255,7 +3255,7 @@
                 "apod_note": "NASA APOD only uses images without a copyright field.",
                 "custom_source": "Local image",
                 "custom_source_description": "Select one image for a fixed background, or select multiple images or a folder for rotation.",
-                "folder_first_level_note": "Only the top level of a folder is scanned; subfolders are not included.",
+                "folder_recursive_note": "Images in subfolders are included.",
                 "selected_files": "{count} selected image",
                 "current_image": "Current image",
                 "image_count": "{count} image",
@@ -3278,6 +3278,7 @@
             },
             "action": {
                 "refresh": "Refresh",
+                "change_image": "Change image",
                 "select_images": "Select images",
                 "select_folder": "Select folder"
             },

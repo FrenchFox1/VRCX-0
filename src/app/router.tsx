@@ -135,6 +135,10 @@ function AppRouterContent() {
                         : 'h-screen'
                 )}
             >
+                <div
+                    aria-hidden="true"
+                    className="vrcx-0-background-image-transition-layer"
+                />
                 {isMacHost ? <MacOverlayTitleBar /> : <AppTitleBar />}
                 <div
                     data-vrcx-0-surface="route-host"

@@ -3257,7 +3257,7 @@
                 "apod_note": "NASA APOD používá pouze obrázky bez uvedeného autorského práva.",
                 "custom_source": "Místní obrázek",
                 "custom_source_description": "Vyberte jeden obrázek pro pevné pozadí, nebo vyberte více obrázků či složku pro střídání.",
-                "folder_first_level_note": "Prohledává se pouze nejvyšší úroveň složky, podsložky se nezahrnují.",
+                "folder_recursive_note": "Zahrnuty jsou také obrázky v podsložkách.",
                 "selected_files": "Vybráno {count} obrázků",
                 "current_image": "Aktuální obrázek",
                 "image_count": "{count} obrázků",
@@ -3280,6 +3280,7 @@
             },
             "action": {
                 "refresh": "Obnovit",
+                "change_image": "Změnit obrázek",
                 "select_images": "Vybrat obrázky",
                 "select_folder": "Vybrat složku"
             },

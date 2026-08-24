@@ -393,6 +393,23 @@
         background: var(--vrcx-0-app-surface);
     }
 
+    .vrcx-0-background-image-transition-layer {
+        position: absolute;
+        z-index: 0;
+        inset: 0;
+        pointer-events: none;
+        background-position: var(--vrcx-0-wallpaper-position);
+        background-size: var(--vrcx-0-wallpaper-size);
+        background-repeat: var(--vrcx-0-wallpaper-repeat);
+        opacity: 0;
+        filter: var(--vrcx-0-wallpaper-filter);
+        transition: opacity 220ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .vrcx-0-background-image-transition-layer[data-active] {
+        opacity: var(--vrcx-0-wallpaper-opacity);
+    }
+
     .vrcx-0-custom-window-frame {
         border-radius: 1rem;
         corner-shape: superellipse(2);

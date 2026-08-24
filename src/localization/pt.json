@@ -3255,7 +3255,7 @@
                 "apod_note": "O NASA APOD usa apenas imagens sem o campo copyright.",
                 "custom_source": "Imagem local",
                 "custom_source_description": "Selecione uma imagem para um fundo fixo, ou selecione várias imagens ou uma pasta para alternar.",
-                "folder_first_level_note": "As pastas são lidas apenas um nível. Subpastas não são lidas.",
+                "folder_recursive_note": "As imagens em subpastas também são incluídas.",
                 "selected_files": "{count} imagem selecionada",
                 "current_image": "Imagem atual",
                 "image_count": "{count} imagem",
@@ -3278,6 +3278,7 @@
             },
             "action": {
                 "refresh": "Atualizar",
+                "change_image": "Trocar imagem",
                 "select_images": "Selecionar imagens",
                 "select_folder": "Selecionar pasta"
             },

@@ -138,16 +138,17 @@ fn rotation_delay_uses_relative_minutes() {
 }
 
 #[test]
-fn custom_image_rotation_advances_from_the_current_image() {
+fn custom_image_rotation_randomly_excludes_the_current_image() {
     let source = files_custom_source(&["a.png", "b.png", "c.png"]);
     let files = source.paths.clone();
-    assert_eq!(
-        next_custom_image_index(&source, &files, Some(&custom_snapshot("B.PNG"))),
-        2
-    );
-    assert_eq!(
-        next_custom_image_index(&source, &files, Some(&custom_snapshot("c.png"))),
-        0
+    for _ in 0..32 {
+        let index = random_custom_image_index(&source, &files, Some(&custom_snapshot("B.PNG")));
+        assert!(index < files.len());
+        assert_ne!(index, 1);
+    }
+    assert!(
+        random_custom_image_index(&source, &files, Some(&custom_snapshot("deleted.png")))
+            < files.len()
     );
 }
 
