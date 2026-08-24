@@ -24,15 +24,23 @@ Windows · macOS · Linux
 
 </div>
 
-VRCX-0 est une réécriture de VRCX sur une base native Rust (Tauri + React) par l'un de ses anciens mainteneurs, permettant de meilleures performances : Des années de données maintenues, ainsi qu'une utilisation mémoire et taille d'installation bien plus petites que l'originel.
+VRCX-0 est une réécriture de VRCX sur une base native Rust (Tauri + React) par
+l'un de ses anciens mainteneurs, permettant de meilleures performances : Des
+années de données maintenues, ainsi qu'une utilisation mémoire et taille
+d'installation bien plus petites que l'originel.
 
-Au premier lancement, vos données et paramètres VRCX sont automatiquement transférés. Les données originelles ne sont pas modifiées — vous pouvez réutiliser VRCX à tout moment.
+Au premier lancement, vos données et paramètres VRCX sont automatiquement
+transférés. Les données originelles ne sont pas modifiées — vous pouvez
+réutiliser VRCX à tout moment.
 
-Le projet VRCX étant désormais en maintenance, VRCX-0 est l'endroit où les nouvelles fonctionnalités sont créées.
+Le projet VRCX étant désormais en maintenance, VRCX-0 est l'endroit où les
+nouvelles fonctionnalités sont créées.
 
 ## Installation
 
-Récupérez la [dernière version](https://github.com/Map1en/VRCX-0/releases/latest) pour votre plateforme :
+Récupérez la
+[dernière version](https://github.com/Map1en/VRCX-0/releases/latest) pour votre
+plateforme :
 
 | Platforme              | Fichier                                    |
 | --------------------- | ------------------------------------------- |
@@ -45,26 +53,52 @@ L'installation est unique — VRCX-0 se mettra à jour automatiquement.
 
 ## L'important
 
-- **Des années de données ne le ralentiront pas** — Les données qui ralentissaient VRCX n'affectent pas VRCX-0. Celui-ci fonctionne tout aussi bien sur un PC bas de gamme que sur un serveur personnel.
-- **Utilisation mémoire 50% à 70% inférieure à VRCX** lors d'une utilisation normale
-- le **mode arrière-plan** descend l'utilisation mémoire à une dizaine de Mo tout en maintenant les fonctionnalités essentielles.
-- **Plus petit qu'un bundle d'avatar** — Seulement 10 Mo à installer. Prend un peu plus de 30 Mo sur le disque et environ 10 fois plus petit que VRCX
-- **Zero problème de migration** — Votre base de données et paramètres VRCX sont importés automatiquement ; les données originelles ne sont pas modifiées
+- **Des années de données ne le ralentiront pas** — Les données qui
+  ralentissaient VRCX n'affectent pas VRCX-0. Celui-ci fonctionne tout aussi
+  bien sur un PC bas de gamme que sur un serveur personnel.
+- **Utilisation mémoire 50% à 70% inférieure à VRCX** lors d'une utilisation
+  normale
+- le **mode arrière-plan** descend l'utilisation mémoire à une dizaine de Mo
+  tout en maintenant les fonctionnalités essentielles.
+- **Plus petit qu'un bundle d'avatar** — Seulement 10 Mo à installer. Prend un
+  peu plus de 30 Mo sur le disque et environ 10 fois plus petit que VRCX
+- **Zero problème de migration** — Votre base de données et paramètres VRCX
+  sont importés automatiquement ; les données originelles ne sont pas modifiées
 
 De plus :
 
-- **IA Sociale** — Un assistant qui vous conseil sur vos relations VRChat : Demandez avec qui vous jouez le plus, de qui vous éloignez-vous ou bien l'heure idéalle pour jouer avec vos amis. Connectez votre propre IA pour commencer.
-- **Serveur MCP** — Laissez un outil IA accéder à vos données sociales, bien plus flexible que l'assistant fourni ; recommandé pour les utilisateurs expérimentés
-- **Historique local par compte** — les journaux de jeu et l'historique propre à chaque compte sont stockés séparément ; ainsi, lorsque vous utilisez plusieurs comptes, vos activités ne sont plus regroupées dans un seul fil d'actualité.
-- **Sauvegarde et restauration** — Sauvegarde compressée en un clic, avec des sauvegardes automatiques programmées et plusieurs versions ; restaurer grâce à n'importe quelle sauvegarde
-- **Collection de monde partageable** — Transformez vos mondes préférés en une page partageable que d'autres peuvent parcourir, ouvrir ou importer ; permet également de partager des liens vers des mondes et des avatars individuels
-- **Social Automation** — Modifiez automatiquement votre statut et votre biographie en fonction de l'heure, du type d'instance ou de la personne avec laquelle vous êtes ; acceptez automatiquement les demandes d'invitation ; rétablissez votre état précédent lorsque les règles expirent
+- **IA Sociale** — Un assistant qui vous conseil sur vos relations VRChat :
+  Demandez avec qui vous jouez le plus, de qui vous éloignez-vous ou bien
+  l'heure idéalle pour jouer avec vos amis. Connectez votre propre IA pour
+  commencer.
+- **Serveur MCP** — Laissez un outil IA accéder à vos données sociales, bien
+  plus flexible que l'assistant fourni ; recommandé pour les utilisateurs
+  expérimentés
+- **Historique local par compte** — les journaux de jeu et l'historique propre
+  à chaque compte sont stockés séparément ; ainsi, lorsque vous utilisez
+  plusieurs comptes, vos activités ne sont plus regroupées dans un seul fil
+  d'actualité.
+- **Sauvegarde et restauration** — Sauvegarde compressée en un clic, avec des
+  sauvegardes automatiques programmées et plusieurs versions ; restaurer grâce
+  à n'importe quelle sauvegarde
+- **Collection de monde partageable** — Transformez vos mondes préférés en une
+  page partageable que d'autres peuvent parcourir, ouvrir ou importer ; permet
+  également de partager des liens vers des mondes et des avatars individuels
+- **Social Automation** — Modifiez automatiquement votre statut et votre
+  biographie en fonction de l'heure, du type d'instance ou de la personne avec
+  laquelle vous êtes ; acceptez automatiquement les demandes d'invitation ;
+  rétablissez votre état précédent lorsque les règles expirent
 - **Overlay VR de poignée** — Prend en charge OpenVR (SteamVR) et
   **OpenXR sur Linux (testé avec WiVRn)**
-- **Thèmes communautaires** — Parcourez et installez des thèmes à partir d'un catalogue, définissez une image d'arrière-plan personnalisée et superposez votre propre feuille de style CSS
-- **Notifications** — Bureau, synthèse vocale, overlay VR et webhooks : quatre canaux configurables indépendamment selon le type d'événement ; les webhooks utilisent un format compatible avec Discord
+- **Thèmes communautaires** — Parcourez et installez des thèmes à partir d'un
+  catalogue, définissez une image d'arrière-plan personnalisée et superposez
+  votre propre feuille de style CSS
+- **Notifications** — Bureau, synthèse vocale, overlay VR et webhooks : quatre
+  canaux configurables indépendamment selon le type d'événement ; les webhooks
+  utilisent un format compatible avec Discord
 - Compatible avec la navigation par clavier
-- Intégration par API pour des applications tierces — currently room data, expanding over time
+- Intégration par API pour des applications tierces — currently room data,
+  expanding over time
 - Mode "sans tête" pour les configurations avancées — voir `crates/headless`
 
 ## Licence
@@ -75,10 +109,13 @@ VRCX-0 est sous Licence publique générale GNU v3.0 (GPLv3).
 
 ## Contribuer
 
-Suivez ces étapes pour contribuer ou créer VRCX-0 localement. Veuillez lire [CONTRIBUTING.md](CONTRIBUTING.md) avant de contribuer.
+Suivez ces étapes pour contribuer ou créer VRCX-0 localement. Veuillez lire
+[CONTRIBUTING.md](CONTRIBUTING.md) avant de contribuer.
 
-Configuration requise : Node.js ≥ 24.10, npm ≥ 11.5 et une chaîne d'outils Rust stable via rustup.
-Sur Windows, installez **Visual Studio** avec la charge de travail **Développement Desktop en C++**
+Configuration requise : Node.js ≥ 24.10, npm ≥ 11.5 et une chaîne d'outils
+Rust stable via rustup.
+Sur Windows, installez **Visual Studio** avec la charge de travail
+**Développement Desktop en C++**
 
 ```bash
 git clone https://github.com/Map1en/VRCX-0
@@ -91,9 +128,8 @@ Démarrer un serveur test :
 
 ```bash
 npm run tauri:dev
-```
-
 Build pour une release (Ignore la connexion et l'installateur) :
+```
 
 ```bash
 npm run tauri:build -- --no-sign --no-bundle
