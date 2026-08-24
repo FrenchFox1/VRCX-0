@@ -3225,14 +3225,13 @@
                 "hex_label": "Hex color"
             },
             "custom_css": {
+                "status_on": "On",
+                "status_off": "Off",
                 "header": "Custom CSS",
-                "enabled_summary": "Override CSS is enabled ({count} bytes).",
-                "disabled_summary": "Optional final CSS layer. It is currently disabled.",
                 "edit": "Edit",
                 "hide_editor": "Hide editor"
             },
             "developer": {
-                "summary": "Local theme preview tools for theme development builds.",
                 "preview_active": "Previewing {name}.",
                 "show": "Show tools",
                 "hide": "Hide tools"
@@ -3251,16 +3250,11 @@
         "background_image": {
             "settings": {
                 "header": "Background Image",
-                "description": "Use a daily image source or your own local image source.",
                 "apod_note": "NASA APOD only uses images without a copyright field.",
-                "custom_source": "Local image",
-                "custom_source_description": "Select one image for a fixed background, or select multiple images or a folder for rotation.",
                 "folder_recursive_note": "Images in subfolders are included.",
-                "selected_files": "{count} selected images",
                 "current_image": "Current image",
                 "image_count": "{count} images",
                 "rotation": "Rotation",
-                "no_custom_source": "No local image selected",
                 "no_image": "No image loaded",
                 "no_image_description": "Refresh or choose a source to load an image.",
                 "source_type_file": "Local file",
@@ -3411,7 +3405,6 @@
                 "edit_note_memo": "Edit Note and Local Note"
             },
             "group_invite": {
-                "description": "Choose a group to invite {value} to.",
                 "select_group": "Select a group...",
                 "loading": "Loading groups you can send invites for...",
                 "no_groups": "You don't have any groups you can send invites for",

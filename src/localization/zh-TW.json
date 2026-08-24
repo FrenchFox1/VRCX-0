@@ -3225,14 +3225,13 @@
                 "hex_label": "十六進位色碼"
             },
             "custom_css": {
+                "status_on": "開啟",
+                "status_off": "關閉",
                 "header": "自訂 CSS",
-                "enabled_summary": "Override CSS 已啟用（{count} bytes）。",
-                "disabled_summary": "可選的最後一層 CSS，目前未啟用。",
                 "edit": "編輯",
                 "hide_editor": "收合編輯器"
             },
             "developer": {
-                "summary": "用於主題開發版本的本機主題預覽工具。",
                 "preview_active": "正在預覽 {name}。",
                 "show": "顯示工具",
                 "hide": "收合工具"
@@ -3251,16 +3250,11 @@
         "background_image": {
             "settings": {
                 "header": "背景圖案",
-                "description": "使用每日圖片來源，或選擇你自己的本機圖片來源。",
                 "apod_note": "NASA APOD 只使用沒有 copyright 欄位的圖片。",
-                "custom_source": "本機圖片",
-                "custom_source_description": "選擇 1 張圖片會固定為背景；選擇多張圖片或資料夾會啟用輪播。",
                 "folder_recursive_note": "同時讀取子資料夾中的圖片。",
-                "selected_files": "已選擇 {count} 張圖片",
                 "current_image": "目前圖片",
                 "image_count": "{count} 張圖片",
                 "rotation": "輪播",
-                "no_custom_source": "尚未選擇本機圖片",
                 "no_image": "尚未載入圖片",
                 "no_image_description": "重新整理或選擇來源後會載入圖片。",
                 "source_type_file": "本機檔案",

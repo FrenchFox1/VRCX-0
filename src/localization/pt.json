@@ -3225,14 +3225,13 @@
                 "hex_label": "Cor hexadecimal"
             },
             "custom_css": {
+                "status_on": "Ativado",
+                "status_off": "Desativado",
                 "header": "CSS personalizado",
-                "enabled_summary": "O CSS de override está ativado ({count} bytes).",
-                "disabled_summary": "Camada final de CSS opcional. No momento está desativada.",
                 "edit": "Editar",
                 "hide_editor": "Ocultar editor"
             },
             "developer": {
-                "summary": "Ferramentas de prévia de tema local para builds de desenvolvimento de temas.",
                 "preview_active": "Visualizando {name}.",
                 "show": "Mostrar ferramentas",
                 "hide": "Ocultar ferramentas"
@@ -3251,16 +3250,11 @@
         "background_image": {
             "settings": {
                 "header": "Imagem de Fundo",
-                "description": "Use uma origem de imagem diária ou sua própria origem de imagem local.",
                 "apod_note": "O NASA APOD usa apenas imagens sem o campo copyright.",
-                "custom_source": "Imagem local",
-                "custom_source_description": "Selecione uma imagem para um fundo fixo, ou selecione várias imagens ou uma pasta para alternar.",
                 "folder_recursive_note": "As imagens em subpastas também são incluídas.",
-                "selected_files": "{count} imagens selecionadas",
                 "current_image": "Imagem atual",
                 "image_count": "{count} imagens",
                 "rotation": "Alternância",
-                "no_custom_source": "Nenhuma imagem local selecionada",
                 "no_image": "Nenhuma imagem carregada",
                 "no_image_description": "Atualize ou escolha uma fonte para carregar uma imagem.",
                 "source_type_file": "Arquivo local",

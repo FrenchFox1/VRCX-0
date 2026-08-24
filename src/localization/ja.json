@@ -3221,14 +3221,13 @@
                 "hex_label": "16進カラーコード"
             },
             "custom_css": {
+                "status_on": "オン",
+                "status_off": "オフ",
                 "header": "カスタム CSS",
-                "enabled_summary": "Override CSS が有効です（{count} bytes）。",
-                "disabled_summary": "必要に応じて最後に適用される CSS レイヤーです。現在は無効です。",
                 "edit": "編集",
                 "hide_editor": "エディターを閉じる"
             },
             "developer": {
-                "summary": "テーマ開発ビルド用のローカルテーマプレビューツールです。",
                 "preview_active": "{name} をプレビュー中です。",
                 "show": "ツールを表示",
                 "hide": "ツールを隠す"
@@ -3247,16 +3246,11 @@
         "background_image": {
             "settings": {
                 "header": "背景画像",
-                "description": "デイリー画像ソース、またはローカル画像ソースを背景に使用します。",
                 "apod_note": "NASA APOD は著作権情報のない画像のみを使用します。",
-                "custom_source": "ローカル画像",
-                "custom_source_description": "画像 1 枚なら固定背景、複数画像またはフォルダならローテーションになります。",
                 "folder_recursive_note": "サブフォルダ内の画像も読み込みます。",
-                "selected_files": "{count} 枚の画像を選択済み",
                 "current_image": "現在の画像",
                 "image_count": "{count} 枚の画像",
                 "rotation": "ローテーション",
-                "no_custom_source": "ローカル画像は未選択です",
                 "no_image": "画像はまだ読み込まれていません",
                 "no_image_description": "再読み込みするかソースを選択すると画像を読み込みます。",
                 "source_type_file": "ローカルファイル",
@@ -3406,7 +3400,6 @@
                 "edit_note_memo": "ノートとローカルノートを編集"
             },
             "group_invite": {
-                "description": "{value} を招待するグループを選択してください。",
                 "select_group": "グループを選択",
                 "loading": "招待を送信できるグループを読み込み中...",
                 "no_groups": "招待を送信できるグループがありません",

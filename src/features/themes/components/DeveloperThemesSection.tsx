@@ -58,13 +58,13 @@ export function DeveloperThemesSection({
                         <div className="text-sm font-medium">
                             {t('view.community_themes.developer.header')}
                         </div>
-                        <div className="text-muted-foreground text-xs">
-                            {localPreview
-                                ? t('view.themes.developer.preview_active', {
-                                      name: localPreview.themeName
-                                  })
-                                : t('view.themes.developer.summary')}
-                        </div>
+                        {localPreview ? (
+                            <div className="text-muted-foreground truncate text-xs">
+                                {t('view.themes.developer.preview_active', {
+                                    name: localPreview.themeName
+                                })}
+                            </div>
+                        ) : null}
                     </div>
                     <CollapsibleTrigger
                         render={

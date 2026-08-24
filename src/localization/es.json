@@ -3225,14 +3225,13 @@
                 "hex_label": "Color hexadecimal"
             },
             "custom_css": {
+                "status_on": "Encendido",
+                "status_off": "Apagado",
                 "header": "CSS personalizado",
-                "enabled_summary": "El CSS de anulación está activo ({count} bytes).",
-                "disabled_summary": "Capa final de CSS opcional. Actualmente está desactivada.",
                 "edit": "Editar",
                 "hide_editor": "Ocultar editor"
             },
             "developer": {
-                "summary": "Herramientas de vista previa de tema local para compilaciones de desarrollo de temas.",
                 "preview_active": "Previsualizando {name}.",
                 "show": "Mostrar herramientas",
                 "hide": "Ocultar herramientas"
@@ -3251,16 +3250,11 @@
         "background_image": {
             "settings": {
                 "header": "Imagen de fondo",
-                "description": "Usa una fuente de imagen diaria o tu propia fuente de imagen local.",
                 "apod_note": "NASA APOD solo usa imágenes sin campo de copyright.",
-                "custom_source": "Imagen local",
-                "custom_source_description": "Selecciona una imagen para un fondo fijo, o selecciona varias imágenes o una carpeta para la rotación.",
                 "folder_recursive_note": "También se incluyen las imágenes de las subcarpetas.",
-                "selected_files": "{count} imágenes seleccionadas",
                 "current_image": "Imagen actual",
                 "image_count": "{count} imágenes",
                 "rotation": "Rotación",
-                "no_custom_source": "Ninguna imagen local seleccionada",
                 "no_image": "Ninguna imagen cargada",
                 "no_image_description": "Actualiza o elige una fuente para cargar una imagen.",
                 "source_type_file": "Archivo local",
@@ -3411,7 +3405,6 @@
                 "edit_note_memo": "Editar nota y nota local"
             },
             "group_invite": {
-                "description": "Elige el grupo al que quieres invitar a {value}.",
                 "select_group": "Selecciona un grupo...",
                 "loading": "Cargando los grupos para los que puedes enviar invitaciones...",
                 "no_groups": "No tienes ningún grupo para el que puedas enviar invitaciones",

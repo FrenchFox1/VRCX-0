@@ -10,7 +10,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { formatDateFilter } from '@/lib/dateTime';
+import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
 import type {
     BackgroundImageCustomSource,
     BackgroundImageMode,
@@ -44,6 +45,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 const DEFAULT_ROTATION_INTERVAL_MINUTES = 60;
 const MIN_ROTATION_INTERVAL_MINUTES = 1;
@@ -74,6 +76,11 @@ function fileNameFromPath(path?: string | null): string {
     return (
         normalizedPath.split(/[\\/]/).filter(Boolean).pop() || normalizedPath
     );
+}
+
+function directoryFromPath(path: string): string {
+    const separatorAt = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
+    return separatorAt > 0 ? path.slice(0, separatorAt) : path;
 }
 
 function formatResolvedAt(value: string): string {
@@ -110,9 +117,11 @@ function CurrentBackgroundImageSummary({
 }) {
     const { t } = useTranslation();
     const [imageFailed, setImageFailed] = useState(false);
+    const [imageReady, setImageReady] = useState(false);
 
     useEffect(() => {
         setImageFailed(false);
+        setImageReady(false);
     }, [snapshot?.imageUrl]);
 
     const providerName = resolveProviderName(
@@ -128,15 +137,36 @@ function CurrentBackgroundImageSummary({
         snapshot?.mode === 'custom'
             ? snapshot.title || fileNameFromPath(snapshot.imagePath)
             : snapshot?.title;
-    const sourceType =
-        snapshot?.mode === 'daily' || mode === 'daily'
-            ? providerName
-            : customSource?.kind === 'folder'
-              ? t('view.background_image.settings.source_type_folder')
-              : imageCount > 1
-                ? t('view.background_image.settings.source_type_files')
-                : t('view.background_image.settings.source_type_file');
+    const isCustom = snapshot?.mode === 'custom' || mode === 'custom';
+    const sourceType = !isCustom
+        ? providerName
+        : customSource?.kind === 'folder'
+          ? t('view.background_image.settings.source_type_folder')
+          : imageCount > 1
+            ? t('view.background_image.settings.source_type_files')
+            : t('view.background_image.settings.source_type_file');
     const isFolderSource = mode === 'custom' && customSource?.kind === 'folder';
+    const relativeResolvedAt = snapshot
+        ? formatRelativeTime(snapshot.resolvedAt)
+        : '';
+    const metaParts = !snapshot
+        ? []
+        : (isCustom
+              ? [
+                    imageCount > 1
+                        ? t('view.background_image.settings.image_count', {
+                              count: imageCount
+                          })
+                        : '',
+                    relativeResolvedAt
+                ]
+              : [
+                    snapshot.author,
+                    snapshot.license,
+                    snapshot.source,
+                    relativeResolvedAt
+                ]
+          ).filter((part) => part && part !== sourceType);
 
     return (
         <div className="border-border/70 bg-muted/20 flex min-w-0 flex-col gap-3 rounded-lg border p-2.5 sm:flex-row">
@@ -148,22 +178,38 @@ function CurrentBackgroundImageSummary({
                             title ||
                             t('view.background_image.settings.current_image')
                         }
-                        className="size-full object-cover"
+                        className={cn(
+                            'size-full object-cover transition-opacity duration-150 ease-out',
+                            imageReady ? 'opacity-100' : 'opacity-0'
+                        )}
                         loading="lazy"
+                        ref={(node) => {
+                            if (node?.complete) {
+                                setImageReady(true);
+                            }
+                        }}
+                        onLoad={() => setImageReady(true)}
                         onError={() => setImageFailed(true)}
                     />
                 ) : (
                     <ImageOffIcon className="size-6 opacity-70" />
                 )}
             </div>
-            <div className="grid min-w-0 flex-1 gap-1 text-sm">
+            <div className="grid min-w-0 flex-1 content-start gap-1 text-sm">
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <div className="truncate font-medium">
+                        <div className="truncate font-medium" title={title}>
                             {title ||
                                 t('view.background_image.settings.no_image')}
                         </div>
-                        <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
+                        <span
+                            className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs"
+                            title={
+                                isFolderSource
+                                    ? customSource.folderPath
+                                    : undefined
+                            }
+                        >
                             {sourceType}
                         </span>
                     </div>
@@ -191,46 +237,19 @@ function CurrentBackgroundImageSummary({
                 </div>
                 {snapshot ? (
                     <>
-                        <div className="text-muted-foreground truncate text-xs">
-                            {snapshot.author} · {snapshot.license}
-                        </div>
-                        <div className="text-muted-foreground truncate text-xs">
-                            {snapshot.source}
-                        </div>
-                        {snapshot.mode === 'custom' && localPath ? (
+                        {isCustom && localPath ? (
                             <div
-                                className="text-muted-foreground truncate font-mono text-xs"
+                                className="text-muted-foreground truncate text-xs"
                                 title={localPath}
                             >
-                                {localPath}
+                                {directoryFromPath(localPath)}
                             </div>
                         ) : null}
-                        <div className="text-muted-foreground flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-xs">
-                            {snapshot.imageCount && snapshot.imageCount > 1 ? (
-                                <span>
-                                    {t(
-                                        'view.background_image.settings.image_count',
-                                        { count: snapshot.imageCount }
-                                    )}
-                                </span>
-                            ) : null}
-                            {snapshot.mode === 'custom' && customSource ? (
-                                <span>
-                                    {t(
-                                        'view.background_image.settings.rotation'
-                                    )}
-                                    : {customSource.rotationIntervalMinutes}{' '}
-                                    {t(
-                                        'view.background_image.rotation.minutes'
-                                    )}
-                                </span>
-                            ) : null}
-                            <span>
-                                {t(
-                                    'view.background_image.settings.resolved_at'
-                                )}
-                                : {formatResolvedAt(snapshot.resolvedAt)}
-                            </span>
+                        <div
+                            className="text-muted-foreground truncate text-xs"
+                            title={`${t('view.background_image.settings.resolved_at')}: ${formatResolvedAt(snapshot.resolvedAt)}`}
+                        >
+                            {metaParts.join(' · ')}
                         </div>
                     </>
                 ) : (
@@ -385,29 +404,13 @@ export function BackgroundImageSection() {
         }
     }
 
-    const sourceLabel =
-        customSource?.kind === 'folder'
-            ? customSource.folderPath
-            : customSource?.paths?.length === 1
-              ? customSource.paths[0]
-              : customSource?.paths?.length
-                ? t('view.background_image.settings.selected_files', {
-                      count: customSource.paths.length
-                  })
-                : t('view.background_image.settings.no_custom_source');
-
     return (
         <Card>
             <CardContent className="flex flex-col gap-3 p-3">
-                <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="grid min-w-0 gap-1">
-                        <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
-                            <ImageIcon data-icon="inline-start" />
-                            {t('view.background_image.settings.header')}
-                        </div>
-                        <p className="text-muted-foreground text-xs">
-                            {t('view.background_image.settings.description')}
-                        </p>
+                <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                        <ImageIcon data-icon="inline-start" />
+                        {t('view.background_image.settings.header')}
                     </div>
                     <div className="flex min-w-0 flex-wrap gap-2">
                         <Select<BackgroundImageMode>
@@ -487,61 +490,53 @@ export function BackgroundImageSection() {
                         {t('view.background_image.settings.apod_note')}
                     </p>
                 ) : null}
+                <CurrentBackgroundImageSummary
+                    enabled={enabled}
+                    loading={loading}
+                    mode={mode}
+                    providerId={providerId}
+                    customSource={customSource}
+                    snapshot={enabled ? snapshot : null}
+                    onRefresh={refreshBackground}
+                />
                 {mode === 'custom' ? (
-                    <div className="border-border/70 flex min-w-0 flex-col gap-3 border-t pt-3">
-                        <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="grid min-w-0 gap-1">
-                                <div className="text-sm font-medium">
-                                    {t(
-                                        'view.background_image.settings.custom_source'
-                                    )}
-                                </div>
-                                <div className="text-muted-foreground text-xs">
-                                    {t(
-                                        'view.background_image.settings.custom_source_description'
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={loading}
-                                    onClick={selectFiles}
-                                >
-                                    <ImagesIcon data-icon="inline-start" />
-                                    {t(
-                                        'view.background_image.action.select_images'
-                                    )}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={loading}
-                                    onClick={selectFolder}
-                                >
-                                    <FolderOpenIcon data-icon="inline-start" />
-                                    {t(
-                                        'view.background_image.action.select_folder'
-                                    )}
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="text-muted-foreground flex min-w-0 flex-col gap-1 text-xs">
-                            <span className="truncate" title={sourceLabel}>
-                                {sourceLabel}
-                            </span>
-                            <span>
+                    <div className="border-border/70 flex min-w-0 flex-wrap items-center gap-2 border-t pt-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={loading}
+                            onClick={selectFiles}
+                        >
+                            <ImagesIcon data-icon="inline-start" />
+                            {t('view.background_image.action.select_images')}
+                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={loading}
+                                        onClick={selectFolder}
+                                    >
+                                        <FolderOpenIcon data-icon="inline-start" />
+                                        {t(
+                                            'view.background_image.action.select_folder'
+                                        )}
+                                    </Button>
+                                }
+                            />
+                            <TooltipContent>
                                 {t(
                                     'view.background_image.settings.folder_recursive_note'
                                 )}
-                            </span>
-                        </div>
+                            </TooltipContent>
+                        </Tooltip>
                         {showRotation ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm font-medium">
+                            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                                <span className="text-muted-foreground text-xs">
                                     {t(
                                         'view.background_image.settings.rotation'
                                     )}
@@ -640,15 +635,6 @@ export function BackgroundImageSection() {
                         ) : null}
                     </div>
                 ) : null}
-                <CurrentBackgroundImageSummary
-                    enabled={enabled}
-                    loading={loading}
-                    mode={mode}
-                    providerId={providerId}
-                    customSource={customSource}
-                    snapshot={enabled ? snapshot : null}
-                    onRefresh={refreshBackground}
-                />
             </CardContent>
         </Card>
     );

@@ -3227,14 +3227,13 @@
                 "hex_label": "Hexadecimální kód barvy"
             },
             "custom_css": {
+                "status_on": "Zapnuto",
+                "status_off": "Vypnuto",
                 "header": "Vlastní CSS",
-                "enabled_summary": "Upravené CSS je povoleno ({count} bajtů).",
-                "disabled_summary": "Volitelná závěrečná vrstva CSS. Momentálně je zakázána.",
                 "edit": "Upravit",
                 "hide_editor": "Skrýt editor"
             },
             "developer": {
-                "summary": "Nástroje pro náhled lokálního motivu určené pro vývojová sestavení motivů.",
                 "preview_active": "Náhled motivu {name}.",
                 "show": "Zobrazit nástroje",
                 "hide": "Skrýt nástroje"
@@ -3253,16 +3252,11 @@
         "background_image": {
             "settings": {
                 "header": "Obrázek na pozadí",
-                "description": "Použijte denně se měnící zdroj obrázků, nebo vlastní místní zdroj obrázku.",
                 "apod_note": "NASA APOD používá pouze obrázky bez uvedeného autorského práva.",
-                "custom_source": "Místní obrázek",
-                "custom_source_description": "Vyberte jeden obrázek pro pevné pozadí, nebo vyberte více obrázků či složku pro střídání.",
                 "folder_recursive_note": "Zahrnuty jsou také obrázky v podsložkách.",
-                "selected_files": "Vybráno {count} obrázků",
                 "current_image": "Aktuální obrázek",
                 "image_count": "{count} obrázků",
                 "rotation": "Střídání",
-                "no_custom_source": "Není vybrán žádný místní obrázek",
                 "no_image": "Není načten žádný obrázek",
                 "no_image_description": "Obnovte nebo vyberte zdroj pro načtení obrázku.",
                 "source_type_file": "Místní soubor",
@@ -3413,7 +3407,6 @@
                 "edit_note_memo": "Upravit poznámku a lokální poznámku"
             },
             "group_invite": {
-                "description": "Vyberte skupinu, do které chcete pozvat {value}.",
                 "select_group": "Vyberte skupinu...",
                 "loading": "Načítání skupin, do kterých můžete posílat pozvánky...",
                 "no_groups": "Nemáte žádnou skupinu, do které můžete posílat pozvánky",

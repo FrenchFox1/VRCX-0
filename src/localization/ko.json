@@ -3177,14 +3177,13 @@
                 "hex_label": "16진수 색상"
             },
             "custom_css": {
+                "status_on": "켜기",
+                "status_off": "끄기",
                 "edit": "편집",
                 "hide_editor": "편집기 숨기기",
-                "header": "맞춤 CSS",
-                "enabled_summary": "CSS 재정의가 활성화되었습니다({count}바이트).",
-                "disabled_summary": "선택적인 최종 CSS 레이어. 현재는 비활성화되어 있습니다."
+                "header": "맞춤 CSS"
             },
             "developer": {
-                "summary": "테마 개발 빌드를 위한 로컬 테마 미리보기 도구입니다.",
                 "show": "도구 표시",
                 "hide": "도구 숨기기",
                 "preview_active": "{name} 미리보기 중입니다."
@@ -3203,21 +3202,16 @@
         "background_image": {
             "settings": {
                 "header": "배경 이미지",
-                "description": "일일 이미지 소스 또는 자체 로컬 이미지 소스를 사용하세요.",
                 "apod_note": "NASA APOD는 저작권 필드가 없는 이미지만 사용합니다.",
-                "custom_source": "로컬 이미지",
-                "custom_source_description": "고정된 배경으로 하나의 이미지를 선택하거나 회전할 여러 이미지 또는 폴더를 선택합니다.",
                 "folder_recursive_note": "하위 폴더의 이미지도 읽습니다.",
                 "current_image": "현재 이미지",
                 "rotation": "회전",
-                "no_custom_source": "선택한 로컬 이미지가 없습니다.",
                 "no_image": "로드된 이미지가 없습니다.",
                 "no_image_description": "이미지를 로드하려면 소스를 새로 고치거나 선택하세요.",
                 "source_type_file": "로컬 파일",
                 "source_type_files": "선택한 파일",
                 "source_type_folder": "폴더",
                 "resolved_at": "로드됨",
-                "selected_files": "{count} 선택한 이미지",
                 "image_count": "{count} 이미지"
             },
             "mode": {
