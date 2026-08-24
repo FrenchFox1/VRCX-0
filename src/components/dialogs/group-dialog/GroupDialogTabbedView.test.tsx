@@ -22,7 +22,8 @@ import type {
 
 const mocks = vi.hoisted(() => ({
     getFollowingGroupCalendars: vi.fn(),
-    getGroupCalendar: vi.fn()
+    getGroupCalendar: vi.fn(),
+    getAllGroupPosts: vi.fn()
 }));
 
 vi.mock('react-i18next', () => ({
@@ -38,6 +39,12 @@ vi.mock('@/repositories/vrchatToolsRepository', () => ({
         followGroupEvent: vi.fn(),
         getFollowingGroupCalendars: mocks.getFollowingGroupCalendars,
         getGroupCalendar: mocks.getGroupCalendar
+    }
+}));
+
+vi.mock('@/repositories/groupProfileRepository', () => ({
+    default: {
+        getAllGroupPosts: mocks.getAllGroupPosts
     }
 }));
 
@@ -83,11 +90,21 @@ vi.mock('./GroupDialogTabPanels', () => ({
     }) => (
         <div>
             <span>{tabModel.activeTab}</span>
+            <span>{tabModel.announcement?.title}</span>
+            <span data-testid="posts-status">
+                {tabModel.remoteStatus.posts}
+            </span>
             <button
                 type="button"
                 onClick={() => tabCommands.onChangeTab('events')}
             >
                 Open events
+            </button>
+            <button
+                type="button"
+                onClick={() => tabCommands.onChangeTab('posts')}
+            >
+                Open posts
             </button>
         </div>
     )
@@ -180,13 +197,73 @@ const groupControls: GroupDialogControls = {
     onVisibility: vi.fn()
 };
 
-describe('GroupDialogTabbedView calendar loading', () => {
+describe('GroupDialogTabbedView remote loading', () => {
     afterEach(cleanup);
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.getAllGroupPosts.mockResolvedValue([]);
         mocks.getGroupCalendar.mockResolvedValue({ results: [] });
         mocks.getFollowingGroupCalendars.mockResolvedValue({ results: [] });
+    });
+
+    it('loads the latest group post as the announcement from the overview', async () => {
+        mocks.getAllGroupPosts.mockResolvedValue([
+            {
+                id: 'post_announcement',
+                title: 'Weekly meetup',
+                text: 'Meet on Friday.'
+            }
+        ]);
+
+        render(
+            <GroupDialogTabbedView
+                groupControls={groupControls}
+                groupResource={groupResource}
+                groupView={groupView}
+            />
+        );
+
+        await waitFor(() => {
+            expect(mocks.getAllGroupPosts).toHaveBeenCalledWith({
+                groupId: 'grp_test'
+            });
+        });
+        expect(await screen.findByText('Weekly meetup')).not.toBeNull();
+    });
+
+    it('retries posts after the initial announcement load fails', async () => {
+        mocks.getAllGroupPosts
+            .mockRejectedValueOnce(new Error('Failed to load posts.'))
+            .mockResolvedValueOnce([
+                {
+                    id: 'post_retried',
+                    title: 'Recovered announcement',
+                    text: 'Loaded after retry.'
+                }
+            ]);
+
+        render(
+            <GroupDialogTabbedView
+                groupControls={groupControls}
+                groupResource={groupResource}
+                groupView={groupView}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('posts-status').textContent).toBe(
+                'error'
+            );
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Open posts' }));
+
+        await waitFor(() => {
+            expect(mocks.getAllGroupPosts).toHaveBeenCalledTimes(2);
+        });
+        expect(
+            await screen.findByText('Recovered announcement')
+        ).not.toBeNull();
     });
 
     it('loads following calendars only after opening the Events tab', async () => {

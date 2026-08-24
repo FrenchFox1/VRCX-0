@@ -1,13 +1,13 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 
 import type {
+    GroupAnnouncementRecord,
     GroupDialogInstanceRow,
     GroupGalleryPhotoRow,
     GroupMemberRow,
     GroupPostRecord,
     GroupProfileRecord
 } from '@/domain/entities/group';
-import type { UserProfileEntity } from '@/domain/entities/user';
 import type { LoadStatus, RemoteTabStatus } from '@/domain/shared/types';
 import type {
     GroupMemberSort,
@@ -94,6 +94,7 @@ export type GroupDialogControls = {
 export type GroupDialogTabModel = {
     activeInstances: GroupDialogInstanceRow[];
     activeTab: string;
+    announcement?: GroupAnnouncementRecord;
     bannerUrl: string;
     canManagePosts: boolean;
     currentUserId: string | null;
@@ -133,11 +134,6 @@ export type GroupDialogTabCommands = {
     onMemberSortChange: (value: GroupMemberSort) => void;
     onOpenLink: (url: string) => void;
     onOpenOwner: () => void;
-    onOpenUser: (
-        userId: string,
-        title?: string,
-        seedData?: UserProfileEntity | null
-    ) => void;
     onPreviousInstancesChange: Dispatch<
         SetStateAction<GroupPreviousInstanceRow[]>
     >;

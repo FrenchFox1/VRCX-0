@@ -7,7 +7,6 @@ import {
     getEventGroupId,
     getEventId
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
-import type { UserProfileEntity } from '@/domain/entities/user';
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { GroupMemberSort } from '@/platform/tauri/bindings';
@@ -167,6 +166,10 @@ export function GroupDialogTabbedView({
                   group.posts,
                   group.announcement?.id ? [group.announcement] : []
               );
+    const announcement =
+        remoteStatus.posts === 'ready'
+            ? remoteData.posts[0]
+            : (posts[0] ?? group.announcement);
     const members =
         remoteStatus.members === 'ready'
             ? remoteData.members
@@ -483,8 +486,18 @@ export function GroupDialogTabbedView({
         setActiveTab(lastGroupDialogTab);
     }
 
+    const loadPostsForTarget = useEffectEvent(() => {
+        loadTab('posts', { force: true });
+    });
+
+    useEffect(() => {
+        loadPostsForTarget();
+    }, [currentEndpoint, group.id]);
+
     const loadActiveTab = useEffectEvent(() => {
-        loadTab(activeTab);
+        if (activeTab !== 'posts' || remoteStatus.posts === 'error') {
+            loadTab(activeTab);
+        }
     });
 
     useEffect(() => {
@@ -679,16 +692,6 @@ export function GroupDialogTabbedView({
         setMemberRoleId(value === 'all' ? '' : value);
     }
 
-    function handleOpenUser(
-        userId: string,
-        title?: string,
-        seedData: UserProfileEntity | null = null
-    ) {
-        if (!userId) {
-            return;
-        }
-        openUserDialog({ userId, title, seedData });
-    }
     const {
         createGroupPost,
         deleteGroupPost,
@@ -762,6 +765,7 @@ export function GroupDialogTabbedView({
     const tabModel: GroupDialogTabModel = {
         activeInstances,
         activeTab,
+        announcement,
         bannerUrl,
         canManagePosts,
         currentUserId,
@@ -808,7 +812,6 @@ export function GroupDialogTabbedView({
         onMemberSortChange: setMemberSort,
         onOpenLink: openExternalLink,
         onOpenOwner: openGroupOwner,
-        onOpenUser: handleOpenUser,
         onPreviousInstancesChange,
         onPreviewImage: previewImage,
         onPreviewRowImage: previewRowImage,

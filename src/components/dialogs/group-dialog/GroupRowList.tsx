@@ -7,7 +7,7 @@ import {
     TagIcon,
     UserIcon
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
@@ -62,21 +62,32 @@ function text(value: unknown): string {
     return typeof value === 'string' ? value : '';
 }
 
-function PostAuthorButton({ userId }: { userId: string }) {
+export function GroupPostUserButton({
+    userId,
+    displayName: providedDisplayName,
+    label
+}: {
+    userId: string;
+    displayName?: string;
+    label?: ReactNode;
+}) {
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
     const knownUser = useKnownUserFact(userId, {
         endpoint: currentEndpoint
     });
-    const knownDisplayName = text(
-        knownUser?.displayName || knownUser?.username || knownUser?.name
+    const cachedDisplayName = text(
+        providedDisplayName ||
+            knownUser?.displayName ||
+            knownUser?.username ||
+            knownUser?.name
     );
     const userProfileQuery = useQuery({
         queryKey: queryKeys.user(userId, currentEndpoint),
         queryFn: () => userProfileRepository.getUserProfile({ userId }),
         enabled: Boolean(
-            userId && (!knownDisplayName || knownDisplayName === userId)
+            userId && (!cachedDisplayName || cachedDisplayName === userId)
         ),
         staleTime: entityQueryPolicies.userAvatarLookup.staleTime,
         gcTime: entityQueryPolicies.userAvatarLookup.gcTime,
@@ -89,15 +100,18 @@ function PostAuthorButton({ userId }: { userId: string }) {
         queriedUser?.displayName ||
             queriedUser?.username ||
             queriedUser?.name ||
-            knownDisplayName ||
-            userId
+            cachedDisplayName
     );
+
+    if (!displayName || displayName === userId) {
+        return null;
+    }
 
     return (
         <Button
             type="button"
             variant="ghost"
-            className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs"
+            className="hover:text-primary h-auto max-w-full justify-start gap-1 p-0 text-left text-xs"
             onClick={() =>
                 openUserDialog({
                     userId,
@@ -106,7 +120,10 @@ function PostAuthorButton({ userId }: { userId: string }) {
                 })
             }
         >
-            <span className="truncate">{displayName}</span>
+            {label}
+            <span className="text-foreground truncate font-medium">
+                {displayName}
+            </span>
         </Button>
     );
 }
@@ -180,7 +197,9 @@ function PostList({
                                     <span>{post.createdAt}</span>
                                 ) : null}
                                 {post.authorId ? (
-                                    <PostAuthorButton userId={post.authorId} />
+                                    <GroupPostUserButton
+                                        userId={post.authorId}
+                                    />
                                 ) : null}
                             </div>
                         </div>
