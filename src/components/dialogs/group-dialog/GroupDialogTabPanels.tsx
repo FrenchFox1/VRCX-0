@@ -145,9 +145,24 @@ function GroupAnnouncementPanel({
                         />
                     </Button>
                 ) : null}
-                <pre className="text-muted-foreground max-h-40 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
-                    {announcement.text || '\u2014'}
-                </pre>
+                <TranslatableText
+                    source={announcement.text || ''}
+                    entityId={announcement.id || group.id || ''}
+                    density="icon"
+                >
+                    {({ action, meta, error, text }) => (
+                        <div className="min-w-0 flex-1">
+                            {meta}
+                            <div className="flex min-w-0 items-start gap-2">
+                                <pre className="text-muted-foreground max-h-40 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
+                                    {text || '\u2014'}
+                                </pre>
+                                {action}
+                            </div>
+                            {error}
+                        </div>
+                    )}
+                </TranslatableText>
             </div>
             <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                 {roleNames.length ? (
