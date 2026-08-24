@@ -92,8 +92,8 @@
             "group": "Groupes"
         },
         "date": { 
-            "today": "Aujourd’hui", 
-            "yesterday": "Hier" 
+            "today": "Aujourd’hui",
+            "yesterday": "Hier"
         },
         "retention": {
             "label": "Conservation de l’historique",
