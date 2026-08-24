@@ -69,10 +69,6 @@ function rotationChoiceFromMinutes(minutes: number): RotationChoice {
     );
 }
 
-function countKey(baseKey: string, count: number): string {
-    return count === 1 ? baseKey : `${baseKey}_plural`;
-}
-
 function fileNameFromPath(path?: string | null): string {
     const normalizedPath = path ?? '';
     return (
@@ -210,13 +206,10 @@ function CurrentBackgroundImageSummary({
                             </div>
                         ) : null}
                         <div className="text-muted-foreground flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-xs">
-                            {snapshot.imageCount ? (
+                            {snapshot.imageCount && snapshot.imageCount > 1 ? (
                                 <span>
                                     {t(
-                                        countKey(
-                                            'view.background_image.settings.image_count',
-                                            snapshot.imageCount
-                                        ),
+                                        'view.background_image.settings.image_count',
                                         { count: snapshot.imageCount }
                                     )}
                                 </span>
@@ -395,17 +388,13 @@ export function BackgroundImageSection() {
     const sourceLabel =
         customSource?.kind === 'folder'
             ? customSource.folderPath
-            : customSource?.paths?.length
-              ? t(
-                    countKey(
-                        'view.background_image.settings.selected_files',
-                        customSource.paths.length
-                    ),
-                    {
-                        count: customSource.paths.length
-                    }
-                )
-              : t('view.background_image.settings.no_custom_source');
+            : customSource?.paths?.length === 1
+              ? customSource.paths[0]
+              : customSource?.paths?.length
+                ? t('view.background_image.settings.selected_files', {
+                      count: customSource.paths.length
+                  })
+                : t('view.background_image.settings.no_custom_source');
 
     return (
         <Card>
