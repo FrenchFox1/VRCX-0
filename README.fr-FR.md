@@ -4,15 +4,17 @@
 
 ### VRCX, plus léger et plus rapide.
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md) | Français
+[English](README.md) | [简体中文](README.zh-CN.md) |
+[繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) |
+[한국어](README.ko-KR.md) | Français
 
 [![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/version.json&style=flat&color=4340a2&labelColor=1f2328&logo=github&logoColor=white)](https://github.com/Map1en/VRCX-0/releases/latest)
-[![Téléchargements](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/downloads.json&style=flat&color=4340a2&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/releases)
-[![Installer](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/windows-installer-size.json&style=flat&label=installer&color=4340a2&labelColor=1f2328&logo=windows&logoColor=white)](https://github.com/Map1en/VRCX-0/releases/latest)
+[![Téléchargements](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/downloads.json&style=flat&color=4340a2&labelColor=1f2328)](https://github.com/Map1en/VRCX-0)
+[![Installer](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/windows-installer-size.json&style=flat&label=installer&color=4340a2&labelColor=1f2328&logo=github&logoColor=white)](https://github.com/Map1en/VRCX-0/releases/latest)
 [![Discord](https://img.shields.io/discord/1494343220467994644?style=flat&logo=discord&logoColor=white&label=discord&color=5865f2&labelColor=1f2328)](https://discord.gg/fehKP3SVPN)
 <br>
 [![CI](https://img.shields.io/github/actions/workflow/status/Map1en/VRCX-0/ci.yml?branch=master&label=CI&style=flat&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/coverage.json&style=flat&color=brightgreen&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/coverage.json&style=flat&color=brightgreen&labelColor=1f2328)](https://github.com/Map1en/VRCX-0)
 [![License](https://img.shields.io/badge/license-GPL--3.0-4c566a?style=flat&labelColor=1f2328)](LICENSE)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_shield)
 
@@ -39,15 +41,15 @@ nouvelles fonctionnalités sont créées.
 ## Installation
 
 Récupérez la
-[dernière version](https://github.com/Map1en/VRCX-0/releases/latest) pour votre
-plateforme :
+[dernière version](https://github.com/Map1en/VRCX-0/releases/latest) pour
+votre plateforme :
 
 | Platforme              | Fichier                                    |
-| --------------------- | ------------------------------------------- |
-| Windows               | `VRCX-0_<version>_windows_x86_64_setup.exe` |
-| macOS (Apple Silicon) | `VRCX-0_<version>_macos_aarch64.dmg`        |
-| macOS (Intel)         | `VRCX-0_<version>_macos_x86_64.dmg`         |
-| Linux                 | `.AppImage`, `.deb`, or `.rpm`              |
+| ---------------------- | ------------------------------------------ |
+| Windows                | `VRCX-0_<version>_windows_x86_64_setup.exe`|
+| macOS (Apple Silicon)  | `VRCX-0_<version>_macos_aarch64.dmg`       |
+| macOS (Intel)          | `VRCX-0_<version>_macos_x86_64.dmg`        |
+| Linux                  | `.AppImage`, `.deb`, or `.rpm`             |
 
 L'installation est unique — VRCX-0 se mettra à jour automatiquement.
 
@@ -63,7 +65,8 @@ L'installation est unique — VRCX-0 se mettra à jour automatiquement.
 - **Plus petit qu'un bundle d'avatar** — Seulement 10 Mo à installer. Prend un
   peu plus de 30 Mo sur le disque et environ 10 fois plus petit que VRCX
 - **Zero problème de migration** — Votre base de données et paramètres VRCX
-  sont importés automatiquement ; les données originelles ne sont pas modifiées
+  sont importés automatiquement ; les données originelles ne sont pas
+  modifiées
 
 De plus :
 
