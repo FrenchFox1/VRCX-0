@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router';
 
 import { DialogErrorState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { UserActivityPanel } from '@/components/dialogs/UserActivityPanel';
-import type {
-    UserDialogJson,
-    UserModerationState,
-    UserProfileEntity
-} from '@/domain/entities/user';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import { useDialogStore } from '@/state/dialogStore';
 import {
     Select,
@@ -495,32 +491,10 @@ export function UserDialogActivityTab({
     );
 }
 
-export function UserDialogJsonTab({
-    profile,
-    memo,
-    moderationState,
-    isFriend,
-    isFavorite
-}: {
-    profile: UserProfileEntity;
-    memo: string;
-    moderationState: UserModerationState;
-    isFriend: boolean;
-    isFavorite: boolean;
-}) {
+export function UserDialogJsonTab({ profile }: { profile: UserProfileEntity }) {
     return (
         <EntityDialogTabContent value="json">
-            <EntityRawJson
-                value={
-                    {
-                        profile,
-                        memo,
-                        moderationState,
-                        isFriend,
-                        isFavorite
-                    } satisfies UserDialogJson
-                }
-            />
+            <EntityRawJson value={profile} />
         </EntityDialogTabContent>
     );
 }

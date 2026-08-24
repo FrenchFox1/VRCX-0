@@ -10,7 +10,6 @@ import { useTranslation } from 'react-i18next';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type {
     GroupAnnouncementRecord,
-    GroupDialogJson,
     GroupProfileRecord
 } from '@/domain/entities/group';
 import { TranslatableText } from '@/features/translation/components/TranslatableText';
@@ -47,8 +46,7 @@ import {
     announcementRoleNames,
     announcementTimestamp,
     announcementUserId,
-    announcementUserLabel,
-    firstArray
+    announcementUserLabel
 } from './groupDialogUtils';
 import { GroupInstanceRows } from './GroupInstanceRows';
 import { GroupPostUserButton, RowList } from './GroupRowList';
@@ -743,20 +741,7 @@ export function GroupDialogTabPanels({
                 />
             </EntityDialogTabContent>
             <EntityDialogTabContent value="json">
-                <EntityRawJson
-                    value={
-                        {
-                            group,
-                            posts,
-                            events: groupEvents,
-                            instances: activeInstances,
-                            members,
-                            galleries: firstArray(group.galleries),
-                            photos,
-                            activeInstances
-                        } satisfies GroupDialogJson
-                    }
-                />
+                <EntityRawJson value={group} />
             </EntityDialogTabContent>
         </EntityDialogTabs>
     );

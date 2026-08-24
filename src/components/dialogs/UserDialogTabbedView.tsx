@@ -225,7 +225,6 @@ export function UserDialogTabbedView({
         avatarOverrideState = { hideAvatar: false, showAvatar: false },
         isCurrentUser,
         isFriend,
-        isFavorite,
         friendRequestState
     } = relationship;
     const { platform, platformIcon: PlatformIcon } = platformInfo;
@@ -658,6 +657,7 @@ export function UserDialogTabbedView({
             hideUserMemos,
             hideUserNotes,
             isCurrentUser,
+            isFriend,
             lastSeen,
             memo,
             friendedAt,
@@ -724,11 +724,6 @@ export function UserDialogTabbedView({
             previousInstances,
             previousInstancesError,
             previousInstancesStatus
-        },
-        json: {
-            isFavorite,
-            isFriend,
-            moderationState
         }
     };
     const tabsCommands = {

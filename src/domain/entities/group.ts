@@ -255,14 +255,3 @@ export type GroupProfileRecord = EntityRecord & {
     $languages?: string[];
     $memberId?: string;
 };
-
-export type GroupDialogJson = {
-    group: GroupProfileRecord;
-    posts: GroupPostRecord[];
-    events: EntityRecord[];
-    instances: GroupDialogInstanceRow[];
-    members: GroupMemberRow[];
-    galleries: GroupGallerySummary[];
-    photos: GroupGalleryPhotoRow[];
-    activeInstances: GroupDialogInstanceRow[];
-};

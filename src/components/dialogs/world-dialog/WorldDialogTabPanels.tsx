@@ -5,7 +5,6 @@ import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadg
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import { LocationWorld } from '@/components/LocationWorld';
-import type { WorldDialogJson } from '@/domain/entities/world';
 import { ScreenshotThumbnailCard } from '@/features/tools/components/ScreenshotThumbnailGrid';
 import { useScreenshotGalleryGrid } from '@/features/tools/useScreenshotGalleryGrid';
 import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
@@ -619,16 +618,7 @@ export function WorldDialogTabPanels({
                 </EntityInfoGrid>
             </EntityDialogTabContent>
             <EntityDialogTabContent value="json">
-                <EntityRawJson
-                    value={
-                        {
-                            world,
-                            memo,
-                            hasPersistData,
-                            fileAnalysis: world.fileAnalysis || {}
-                        } satisfies WorldDialogJson
-                    }
-                />
+                <EntityRawJson value={world} />
             </EntityDialogTabContent>
         </EntityDialogTabs>
     );

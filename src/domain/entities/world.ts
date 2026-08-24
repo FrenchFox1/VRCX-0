@@ -73,10 +73,3 @@ export type WorldProfileRecord = EntityRecord & {
     $cacheSize?: string;
     $isCached?: boolean;
 };
-
-export type WorldDialogJson = {
-    world: WorldProfileRecord;
-    memo: string;
-    hasPersistData: boolean;
-    fileAnalysis: PlatformFileAnalysis;
-};
