@@ -91,7 +91,10 @@
             "avatar": "Avatars",
             "group": "Groupes"
         },
-        "date": { "today": "Aujourd’hui", "yesterday": "Hier" },
+        "date": { 
+            "today": "Aujourd’hui", 
+            "yesterday": "Hier" 
+        },
         "retention": {
             "label": "Conservation de l’historique",
             "description": "Les entrées plus anciennes sont supprimées automatiquement.",
@@ -2161,6 +2164,12 @@
                     "vr_device_status": "État des appareils VR",
                     "battery_percentage": "Pourcentage de batterie",
                     "wrist_feed_notifications": "Filtres de notifications de l'overlay au poignet"
+                },
+                "test_mode": {
+                    "header": "Overlay test",
+                    "description": "Force l'overlay du poignet et les notifications à afficher un écran de test pour vérifier le placement, la taille et l'opacité lors du port du casque. Cela n'est pas enregistré et est désactivé lorsque VRCX-0 redémarre.",
+                    "force_display": "Forcer l'affichage de l'overlay",
+                    "requires_steamvr": "Nécessite que SteamVR soit en cours d'exécution."
                 }
             },
             "interface": {
@@ -3214,17 +3223,18 @@
                 "community": "Thème de la communauté"
             },
             "accent": {
-                "header": "Couleur d'accentuation"
+                "header": "Couleur d'accentuation",
+                "custom": "Personnalisée",
+                "hex_label": "Couleur hex"
             },
             "custom_css": {
+                "status_on": "Activé",
+                "status_off": "Désactivé",
                 "header": "CSS personnalisé",
-                "enabled_summary": "Le CSS de remplacement est activé ({count} bytes).",
-                "disabled_summary": "Couche CSS finale facultative. Elle est actuellement désactivée.",
                 "edit": "Modifier",
                 "hide_editor": "Masquer l'éditeur"
             },
             "developer": {
-                "summary": "Outils d'aperçu de thème local pour les builds de développement de thèmes.",
                 "preview_active": "Aperçu de {name} en cours.",
                 "show": "Afficher les outils",
                 "hide": "Masquer les outils"
@@ -3243,16 +3253,11 @@
         "background_image": {
             "settings": {
                 "header": "Image de fond",
-                "description": "Utilisez une source d'image quotidienne ou votre propre source d'image locale.",
                 "apod_note": "NASA APOD n'utilise que les images sans champ copyright.",
-                "custom_source": "Image locale",
-                "custom_source_description": "Sélectionnez une seule image pour un fond fixe, ou plusieurs images ou un dossier pour la rotation.",
-                "folder_first_level_note": "Les dossiers ne sont analysés que sur un seul niveau. Les sous-dossiers ne sont pas lus.",
-                "selected_files": "{count} image sélectionnée",
+                "folder_recursive_note": "Les images dans les sous-dossiers sont également incluses.",
                 "current_image": "Image actuelle",
-                "image_count": "{count} image",
+                "image_count": "{count} images",
                 "rotation": "Rotation",
-                "no_custom_source": "Aucune image locale sélectionnée",
                 "no_image": "Aucune image chargée",
                 "no_image_description": "Actualisez ou choisissez une source pour charger une image.",
                 "source_type_file": "Fichier local",
@@ -3265,11 +3270,12 @@
                 "custom": "Image locale"
             },
             "rotation": {
-                "daily": "Chaque jour",
-                "hourly": "Chaque heure"
+                "minutes": "Chaque minute",
+                "custom": "Personnalisé"
             },
             "action": {
                 "refresh": "Actualiser",
+                "change_image": "Changer d'image",
                 "select_images": "Sélectionner des images",
                 "select_folder": "Sélectionner un dossier"
             },
@@ -3286,6 +3292,81 @@
             "contributors_error": "Impossible de charger la liste des contributeurs.",
             "thanks": "Les traductions, les tests, les signalements de bugs et les idées viennent de la communauté. Merci.",
             "license_line": "Libre et open source sous GPL-3.0"
+        },
+        "activity": {
+            "title": "Activité",
+            "description": "Où votre temps s'est écoulé, résumé sur une période",
+            "range": {
+                "all": "Tout le temps",
+                "days": "Les {days} derniers jours"
+            },
+            "stat": {
+                "total_time": "Temps total",
+                "daily_average": "Moyenne quotidienne",
+                "active_days": "Jours de jeu",
+                "longest_session": "Session la plus longue",
+                "change_up": "+{percent}% vs précédent",
+                "change_down": "-{percent}% vs précédent"
+            },
+            "unit": {
+                "hours": "h",
+                "minutes": "minutes"
+            },
+            "section": {
+                "instance_types": "Type d'instance",
+                "daily_time": "Temps par jour",
+                "weekly_time": "Temps par semaine",
+                "when_you_play": "Quand vous jouez",
+                "top_worlds": "Mondes auxquels vous revenez",
+                "companions": "Personnes avec qui vous passez du temps",
+                "highlights": "En vaut la peine"
+            },
+            "access": {
+                "unknown": "Inconnu",
+                "public": "Publique",
+                "friendsPlus": "Amis+",
+                "friends": "Amis",
+                "invitePlus": "Invitation+",
+                "invite": "Invitation",
+                "group": "Groupe"
+            },
+            "empty": {
+                "title": "Aucune activité enregistrée",
+                "description": "Jouez un peu à VRChat et votre activité apparaîtra ici."
+            },
+            "error": {
+                "failed_to_load": "Impossible de charger votre activité"
+            },
+            "caveat": {
+                "recorded_since": "Journal de jeu enregistré depuis {date}."
+            },
+            "worlds": {
+                "visit_count": "{count} visites",
+                "open_ranking": "Détails",
+                "total": "{count} mondes au total"
+            },
+            "people": {
+                "co_days": "{count} jours ensemble",
+                "lead_caption": "{days} jours ensemble · {hours}h",
+                "fading_title": "Moins vu récemment",
+                "fading_caveat": "Moins de similitudes que la période précédente.",
+                "encountered_total": "{count} rencontres au total",
+                "fading_last_seen": "Dernière fois vue {date}"
+            },
+            "hero": {
+                "per_day": "par jour",
+                "days_played": "jours joués",
+                "sessions": "sessions",
+                "longest": "série la plus longue"
+            },
+            "action": {
+                "show_all": "Afficher tout les {count}",
+                "show_less": "Afficher moins"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% entre minuit et 6h",
+                "open_heatmap": "heure par heure, jour par jour"
+            }
         }
     },
     "dialog": {
@@ -3402,7 +3483,6 @@
                 "edit_note_memo": "Modifier la note et la note locale"
             },
             "group_invite": {
-                "description": "Choisissez le groupe dans lequel inviter {value}.",
                 "select_group": "Sélectionner un groupe...",
                 "loading": "Chargement des groupes pour lesquels vous pouvez envoyer des invitations...",
                 "no_groups": "Vous n’avez aucun groupe pour lequel vous pouvez envoyer des invitations",
@@ -3757,7 +3837,7 @@
                 "content_violence": "Violence",
                 "content_adult": "Adulte",
                 "content_sex": "Sexuel",
-                "pedestals": "Socles"
+                "pedestals": "Piédestaux"
             },
             "actions": {
                 "delete_cache_tooltip": "Supprimer le monde du cache",
@@ -3875,6 +3955,7 @@
                 "enable_focus_view": "Activer la vue focale",
                 "enable_debugging": "Activer le débogage",
                 "enable_third_person_view": "Activer la vue à la troisième personne",
+                "allow_props_to_modify_player_movement": "Autoriser les objets à modifier le mouvement de l'utilisateur",
                 "add_domain": "Ajouter un domaine"
             },
             "loading": {
@@ -4324,6 +4405,11 @@
             "group_access_type_members": "Membres",
             "group_access_type_plus": "Groupe+",
             "group_access_type_public": "Public",
+            "minimum_avatar_performance": "Performance minimale de l'avatar",
+            "minimum_avatar_performance_none": "Aucune limite",
+            "minimum_avatar_performance_poor": "Médiocre",
+            "minimum_avatar_performance_medium": "Moyen",
+            "minimum_avatar_performance_good": "Bon",
             "region": "Région",
             "region_usw": "Ouest des États-Unis",
             "region_use": "Est des États-Unis",
