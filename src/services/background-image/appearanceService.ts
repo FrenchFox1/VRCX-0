@@ -23,7 +23,7 @@ const BACKGROUND_IMAGE_LAYER = 'background-image';
 const BACKGROUND_IMAGE_TRANSITION_LAYER_SELECTOR =
     '.vrcx-0-background-image-transition-layer';
 const BACKGROUND_IMAGE_TRANSITION_ACTIVE_ATTR = 'data-active';
-const BACKGROUND_IMAGE_TRANSITION_DURATION_MS = 220;
+const BACKGROUND_IMAGE_TRANSITION_DURATION_MS = 280;
 const BACKGROUND_IMAGE_PRELOAD_TIMEOUT_MS = 3000;
 const COMMUNITY_CSS_LAYERS: VrcxCssLayer[] = [
     'installed-theme',

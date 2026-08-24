@@ -111,7 +111,7 @@ describe('background image appearance', () => {
         );
         expect(mocks.setVrcxCssLayer).not.toHaveBeenCalled();
 
-        await vi.advanceTimersByTimeAsync(220);
+        await vi.advanceTimersByTimeAsync(280);
         await transition;
 
         expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
