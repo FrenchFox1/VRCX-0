@@ -13,12 +13,22 @@ pub enum CopresenceGroupBy {
     FriendWorld,
 }
 
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum CopresenceOrderBy {
+    #[default]
+    TotalMinutes,
+    CoDays,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryInput {
     pub time_window: TimeWindow,
     #[serde(default)]
     pub group_by: CopresenceGroupBy,
+    #[serde(default)]
+    pub order_by: CopresenceOrderBy,
     #[serde(default)]
     pub min_minutes: Option<i64>,
     #[serde(default)]
@@ -27,6 +37,8 @@ pub struct CopresenceSummaryInput {
     pub owner_user_id: Option<OwnerId>,
     #[serde(default)]
     pub friends_only: bool,
+    #[serde(default)]
+    pub utc_offset_minutes: Option<i64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]

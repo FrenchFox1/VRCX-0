@@ -278,10 +278,8 @@ export const ConfigKeys = defineConfigKeys({
     MutualGraphCommunitySeparation: { type: 'float', default: null },
 
     // ── Activity ─────────────────────────────────────
-    activitySelfPeriodDays: { type: 'string', default: null },
+    activityPageRange: { type: 'string', default: null },
     activityFriendPeriodDays: { type: 'string', default: null },
-    activitySelfTopWorldsSortBy: { type: 'string', default: null },
-    activitySelfExcludeHomeWorld: { type: 'bool', default: false },
     overlapExcludeEnabled: { type: 'bool', default: false },
     overlapExcludeStart: { type: 'string', default: '1' },
     overlapExcludeEnd: { type: 'string', default: '6' },
@@ -338,11 +336,12 @@ export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
     })
 });
 
+export const ACTIVITY_PAGE_CONFIG_KEYS = Object.freeze({
+    range: 'activityPageRange'
+});
+
 export const USER_ACTIVITY_CONFIG_KEYS = Object.freeze({
-    selfPeriodDays: 'activitySelfPeriodDays',
     friendPeriodDays: 'activityFriendPeriodDays',
-    selfTopWorldsSortBy: 'activitySelfTopWorldsSortBy',
-    selfExcludeHomeWorld: 'activitySelfExcludeHomeWorld',
     overlapExcludeEnabled: 'overlapExcludeEnabled',
     overlapExcludeStart: 'overlapExcludeStart',
     overlapExcludeEnd: 'overlapExcludeEnd'

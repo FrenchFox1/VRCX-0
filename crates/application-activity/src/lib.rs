@@ -4,7 +4,8 @@ mod overlay_activity;
 mod sink_registry;
 
 pub use activity_warmup::{
-    ActivitySessionWarmupOutput, ActivitySessionWarmupStore, ActivityWarmupRuntime,
+    ActivityPageWarmupStore, ActivitySessionWarmupOutput, ActivitySessionWarmupStore,
+    ActivityWarmupRuntime,
 };
 pub use overlay_activity::{
     overlay_activity_type_definitions, OverlayActivityActorRelation, OverlayActivityCandidate,

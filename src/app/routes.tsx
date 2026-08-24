@@ -215,6 +215,15 @@ export const protectedRoutes: AppRouteDefinition[] = [
         )
     },
     {
+        path: '/activity',
+        titleKey: 'view.activity.title',
+        descriptionKey: 'view.activity.description',
+        element: lazyRouteElement(
+            () => import('@/features/activity/ActivityPage'),
+            'ActivityPage'
+        )
+    },
+    {
         path: '/charts',
         titleKey: 'app.routes.charts',
         descriptionKey: 'app.routes.charts_landing_route',

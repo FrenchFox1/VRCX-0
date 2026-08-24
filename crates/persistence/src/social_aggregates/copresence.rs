@@ -8,11 +8,13 @@ use crate::Error;
 
 use super::caveats::copresence_caveats;
 use super::helpers::{
-    append_time_window_filter, clamped_optional_limit, current_friend_id_set, format_minutes,
-    millis_to_minutes, normalize_access_bucket, table_exists, world_names_for_ids,
+    access_bucket_sql, append_copresence_window_filter, clamped_optional_limit, clipped_millis_sql,
+    current_friend_id_set, format_minutes, millis_to_minutes, normalize_access_bucket,
+    table_exists, tz_offset_modifier, world_id_from_location_sql, world_names_for_ids,
 };
 use super::types::{
-    CopresenceGroupBy, CopresenceSummaryInput, CopresenceSummaryOutput, CopresenceSummaryRow,
+    CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput, CopresenceSummaryOutput,
+    CopresenceSummaryRow,
 };
 
 pub fn get_copresence_summary(
@@ -27,19 +29,12 @@ pub fn get_copresence_summary(
             .unwrap_or_default(),
     );
     let owner_id = owner_id_for_filter(db, &owner_user_id)?;
+    let offset_minutes = input.utc_offset_minutes.unwrap_or(0);
     let limit = clamped_optional_limit(input.limit, 25, 100);
     let min_millis = input.min_minutes.unwrap_or(0).max(0).saturating_mul(60_000);
     let world_id_expr = match input.group_by {
-        CopresenceGroupBy::Friend => "''",
-        CopresenceGroupBy::FriendWorld => {
-            "CASE
-                WHEN substr(g.location, 1, 5) = 'wrld_' AND instr(g.location, ':') > 0
-                    THEN substr(g.location, 1, instr(g.location, ':') - 1)
-                WHEN substr(g.location, 1, 5) = 'wrld_' AND instr(g.location, ':') = 0
-                    THEN g.location
-                ELSE ''
-             END"
-        }
+        CopresenceGroupBy::Friend => "''".to_string(),
+        CopresenceGroupBy::FriendWorld => world_id_from_location_sql("g.location"),
     };
     let mut sql = String::from(
         "WITH base AS (
@@ -52,27 +47,27 @@ pub fn get_copresence_summary(
                 END AS group_key,
                 ",
     );
-    sql.push_str(world_id_expr);
-    sql.push_str(
+    sql.push_str(&world_id_expr);
+    sql.push_str(&format!(
         " AS world_id,
                 COALESCE(g.location, '') AS location,
-                g.time,
+                {} AS time,
                 COALESCE(g.created_at, '') AS created_at,
-                CASE
-                    WHEN g.location LIKE '%~private(%' AND g.location LIKE '%~canRequestInvite%' THEN 'invitePlus'
-                    WHEN g.location LIKE '%~private(%' THEN 'invite'
-                    WHEN g.location LIKE '%~friends(%' THEN 'friends'
-                    WHEN g.location LIKE '%~hidden(%' THEN 'friendsPlus'
-                    WHEN g.location LIKE '%~group(%' THEN 'group'
-                    WHEN substr(g.location, 1, 5) = 'wrld_' AND instr(g.location, ':') > 0 THEN 'public'
-                    ELSE 'unknown'
-                END AS access_bucket
+                substr(datetime(g.created_at, @tz), 1, 10) AS local_day,
+                ",
+        clipped_millis_sql(&input.time_window)
+    ));
+    sql.push_str(&access_bucket_sql("g.location"));
+    sql.push_str(
+        " AS access_bucket
             FROM gamelog_join_leave g
             WHERE g.owner_id IN (0, @owner_id)
               AND g.type = 'OnPlayerLeft'",
     );
-    let mut params = ParamsBuilder::new().set("owner_id", owner_id);
-    append_time_window_filter(&mut sql, &mut params, &input.time_window, "g.created_at");
+    let mut params = ParamsBuilder::new()
+        .set("owner_id", owner_id)
+        .set("tz", tz_offset_modifier(offset_minutes));
+    append_copresence_window_filter(&mut sql, &mut params, &input.time_window);
 
     sql.push_str(" AND (@owner_user_id = '' OR COALESCE(g.user_id, '') <> @owner_user_id)");
 
@@ -118,7 +113,7 @@ pub fn get_copresence_summary(
                 MAX(user_id) AS user_id,
                 world_id,
                 SUM(time) AS total_millis,
-                COUNT(DISTINCT CASE WHEN created_at <> '' THEN substr(created_at, 1, 10) END) AS co_days,
+                COUNT(DISTINCT CASE WHEN local_day <> '' AND time > 0 THEN local_day END) AS co_days,
                 COUNT(DISTINCT CASE WHEN location <> '' THEN location END) AS instances,
                 MAX(created_at) AS last_seen_together
             FROM base
@@ -141,7 +136,14 @@ pub fn get_copresence_summary(
             JOIN latest_name
                 ON latest_name.group_key = grouped.group_key
                 AND latest_name.world_id = grouped.world_id
-            ORDER BY grouped.total_millis DESC, latest_name.display_name ASC, grouped.user_id ASC, grouped.group_key ASC, grouped.world_id ASC
+            ORDER BY ",
+    );
+    sql.push_str(match input.order_by {
+        CopresenceOrderBy::TotalMinutes => "grouped.total_millis DESC, grouped.co_days DESC",
+        CopresenceOrderBy::CoDays => "grouped.co_days DESC, grouped.total_millis DESC",
+    });
+    sql.push_str(
+        ", latest_name.display_name ASC, grouped.user_id ASC, grouped.group_key ASC, grouped.world_id ASC
             LIMIT @limit
         )
         , access AS (
@@ -170,7 +172,14 @@ pub fn get_copresence_summary(
         LEFT JOIN access
             ON access.group_key = ranked.group_key
             AND access.world_id = ranked.world_id
-        ORDER BY ranked.total_millis DESC, ranked.display_name ASC, ranked.user_id ASC, ranked.group_key ASC, ranked.world_id ASC, access.access_bucket ASC",
+        ORDER BY ",
+    );
+    sql.push_str(match input.order_by {
+        CopresenceOrderBy::TotalMinutes => "ranked.total_millis DESC, ranked.co_days DESC",
+        CopresenceOrderBy::CoDays => "ranked.co_days DESC, ranked.total_millis DESC",
+    });
+    sql.push_str(
+        ", ranked.display_name ASC, ranked.user_id ASC, ranked.group_key ASC, ranked.world_id ASC, access.access_bucket ASC",
     );
     params = params
         .set("min_millis", min_millis)

@@ -13,6 +13,7 @@ use super::game_log::{
     close_remote_game_log_interval, game_log_authority_patch, reconcile_remote_game_log_interval,
 };
 use super::location::{build_location_patch, location_game_state_patch};
+use super::self_profile::append_self_profile_log_entries;
 use super::state::{
     CurrentUserPatchOptions, PendingCurrentUserOffline, RealtimeCurrentUserState,
     RealtimeCurrentUserStateSnapshot, CURRENT_USER_REMOTE_PRESENCE_FIELDS,
@@ -174,6 +175,7 @@ pub(super) fn apply_current_user_patch(
         now,
         options.records_current_avatar_history,
     );
+    append_self_profile_log_entries(&previous, &snapshot, now, &mut persistence);
     projection_patch.insert("state".into(), Value::String(snapshot.state_bucket.clone()));
     projection_patch.insert(
         "stateBucket".into(),

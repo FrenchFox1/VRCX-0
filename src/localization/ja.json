@@ -91,7 +91,10 @@
             "avatar": "アバター",
             "group": "グループ"
         },
-        "date": { "today": "今日", "yesterday": "昨日" },
+        "date": {
+            "today": "今日",
+            "yesterday": "昨日"
+        },
         "retention": {
             "label": "閲覧履歴の保存期間",
             "description": "この期間を過ぎた履歴は自動的に削除されます。",
@@ -3285,6 +3288,81 @@
             "contributors_error": "コントリビューター一覧を読み込めませんでした。",
             "thanks": "翻訳、テスト、不具合報告、アイデアの一つひとつがコミュニティから届いています。ありがとうございます。",
             "license_line": "GPL-3.0 のフリー・オープンソースソフトウェア"
+        },
+        "activity": {
+            "title": "アクティビティ",
+            "description": "期間ごとに、時間の使い方をまとめて振り返る",
+            "range": {
+                "all": "全期間",
+                "days": "直近 {days} 日"
+            },
+            "stat": {
+                "total_time": "合計プレイ時間",
+                "daily_average": "1日あたり",
+                "active_days": "プレイした日数",
+                "longest_session": "最長プレイ",
+                "change_up": "前の期間より +{percent}%",
+                "change_down": "前の期間より -{percent}%"
+            },
+            "unit": {
+                "hours": "時間",
+                "minutes": "分"
+            },
+            "section": {
+                "instance_types": "インスタンスの種類",
+                "daily_time": "日ごとのプレイ時間",
+                "weekly_time": "週ごとのプレイ時間",
+                "when_you_play": "よく遊んでいる時間帯",
+                "top_worlds": "よく戻ってくるワールド",
+                "companions": "よく一緒にいる人",
+                "highlights": "ちょっとした発見"
+            },
+            "access": {
+                "unknown": "不明",
+                "public": "パブリック",
+                "friendsPlus": "フレンド+",
+                "friends": "フレンド",
+                "invitePlus": "インバイト+",
+                "invite": "インバイト",
+                "group": "グループ"
+            },
+            "empty": {
+                "title": "まだ記録がありません",
+                "description": "VRChat で少し遊ぶと、ここにアクティビティが表示されます。"
+            },
+            "error": {
+                "failed_to_load": "アクティビティを読み込めませんでした"
+            },
+            "caveat": {
+                "recorded_since": "ゲームログは {date} から記録しています。"
+            },
+            "worlds": {
+                "visit_count": "{count} 回",
+                "open_ranking": "詳細",
+                "total": "合計 {count} ワールド"
+            },
+            "people": {
+                "co_days": "{count} 日一緒",
+                "lead_caption": "{days} 日一緒 · {hours} 時間",
+                "fading_title": "最近あまり会っていない",
+                "fading_caveat": "前の期間より一緒の時間が減りました。生活リズムの違いかもしれません。",
+                "encountered_total": "合計 {count} 人",
+                "fading_last_seen": "最後に一緒 {date}"
+            },
+            "hero": {
+                "per_day": "1日あたり",
+                "days_played": "記録のある日",
+                "sessions": "セッション",
+                "longest": "最長の連続"
+            },
+            "action": {
+                "show_all": "すべて表示（{count}件）",
+                "show_less": "折りたたむ"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% が深夜 0 時から 6 時",
+                "open_heatmap": "曜日と時間帯で見る"
+            }
         }
     },
     "dialog": {

@@ -46,7 +46,6 @@ describe('userDialogViewData', () => {
             'groups',
             'worlds',
             'avatars',
-            'activity',
             'json'
         ]);
     });

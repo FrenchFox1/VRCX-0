@@ -1,5 +1,4 @@
 import { commands } from '@/platform/tauri/bindings';
-import gameLogRepository from '@/repositories/gameLogRepository';
 
 type ActivityBuckets = {
     rawBuckets: number[];
@@ -31,16 +30,6 @@ type LoadOverlapViewOptions = {
     targetUserId: string;
 };
 
-type LoadTopWorldsViewOptions = {
-    excludeWorldId?: string;
-    limit?: number;
-    rangeDays?: number;
-    sortBy?: 'time' | 'count';
-};
-type TopWorldRows = Awaited<
-    ReturnType<typeof gameLogRepository.getMyTopWorlds>
->;
-
 type UserActivityViewService = {
     loadActivityView(options: LoadActivityViewOptions): Promise<
         ActivityBuckets & {
@@ -57,7 +46,6 @@ type UserActivityViewService = {
             overlapPercent?: number;
         }
     >;
-    loadTopWorldsView(options: LoadTopWorldsViewOptions): Promise<TopWorldRows>;
 };
 
 function normalizeNumber(value: number): number {
@@ -180,24 +168,9 @@ async function loadOverlapView({
     };
 }
 
-async function loadTopWorldsView({
-    rangeDays = 30,
-    limit = 5,
-    sortBy = 'time',
-    excludeWorldId = ''
-}: LoadTopWorldsViewOptions) {
-    return gameLogRepository.getMyTopWorlds(
-        rangeDays,
-        limit,
-        sortBy,
-        excludeWorldId
-    );
-}
-
 const userActivityViewService: UserActivityViewService = {
     loadActivityView,
-    loadOverlapView,
-    loadTopWorldsView
+    loadOverlapView
 };
 
 export { userActivityViewService };

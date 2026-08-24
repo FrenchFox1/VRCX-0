@@ -206,7 +206,14 @@ export function buildUserDialogTabs({
               ]
             : []),
         { value: 'avatars', label: translate('dialog.user.avatars.header') },
-        { value: 'activity', label: translate('dialog.user.activity.header') },
+        ...(!isCurrentUser
+            ? [
+                  {
+                      value: 'activity',
+                      label: translate('dialog.user.activity.header')
+                  }
+              ]
+            : []),
         { value: 'json', label: translate('dialog.user.json.header') }
     ];
 }

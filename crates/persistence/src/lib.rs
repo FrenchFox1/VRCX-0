@@ -1,4 +1,5 @@
 pub mod activity;
+pub mod activity_page;
 pub mod assistant;
 pub mod avatars;
 pub mod browse_history;

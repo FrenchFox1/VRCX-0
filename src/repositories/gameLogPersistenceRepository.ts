@@ -156,13 +156,6 @@ type GameLogInstanceTimeRow = {
     time: number;
 };
 
-type GameLogTopWorldRow = {
-    worldId: string;
-    worldName: string;
-    visitCount: number;
-    totalTime: number;
-};
-
 type GameLogInstanceJoinHistoryRow = {
     created_at: string;
     location: string;
@@ -189,7 +182,6 @@ type GameLogQueryResultMap = {
     instanceTimes: GameLogInstanceTimeRow[];
     onlineSessions: GameLogOnlineSessionRow[];
     onlineSessionsAfter: GameLogOnlineSessionRow[];
-    topWorlds: GameLogTopWorldRow[];
     instanceJoinHistory: GameLogInstanceJoinHistoryRow[];
     userIdFromDisplayName: string;
     userStats: GameLogUserStatsQueryResult;
@@ -668,20 +660,6 @@ const gameLog = {
         return queryGameLogRows('onlineSessionsAfter', {
             afterCreatedAt,
             inclusive
-        });
-    },
-
-    async getMyTopWorlds(
-        days: number = 0,
-        limit: number = 5,
-        sortBy: 'time' | 'count' = 'time',
-        excludeWorldId: string = ''
-    ) {
-        return queryGameLogRows('topWorlds', {
-            days,
-            limit,
-            sortBy,
-            excludeWorldId
         });
     },
 

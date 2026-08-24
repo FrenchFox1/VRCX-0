@@ -91,7 +91,10 @@
             "avatar": "模型",
             "group": "群組"
         },
-        "date": { "today": "今天", "yesterday": "昨天" },
+        "date": {
+            "today": "今天",
+            "yesterday": "昨天"
+        },
         "retention": {
             "label": "瀏覽記錄保留時間",
             "description": "超過此時間的記錄會自動刪除。",
@@ -3289,6 +3292,81 @@
             "contributors_error": "無法載入貢獻者清單。",
             "thanks": "每一則翻譯、每一次測試、每一份錯誤回報，以及每一個點子，都來自社群。謝謝你。",
             "license_line": "依據 GPL-3.0 授權的免費及開源軟體"
+        },
+        "activity": {
+            "title": "活動",
+            "description": "依時間區間彙總你的時間都花在哪裡",
+            "range": {
+                "all": "全部",
+                "days": "近 {days} 天"
+            },
+            "stat": {
+                "total_time": "總時長",
+                "daily_average": "日均",
+                "active_days": "遊玩天數",
+                "longest_session": "最長一次",
+                "change_up": "較上期 +{percent}%",
+                "change_down": "較上期 -{percent}%"
+            },
+            "unit": {
+                "hours": "小時",
+                "minutes": "分鐘"
+            },
+            "section": {
+                "instance_types": "房間類型",
+                "daily_time": "每日時長",
+                "weekly_time": "每週時長",
+                "when_you_play": "什麼時候在玩",
+                "top_worlds": "你常回去的世界",
+                "companions": "和誰待在一起",
+                "highlights": "值得一提"
+            },
+            "access": {
+                "unknown": "未知",
+                "public": "公開",
+                "friendsPlus": "好友+",
+                "friends": "好友",
+                "invitePlus": "邀請+",
+                "invite": "邀請",
+                "group": "群組"
+            },
+            "empty": {
+                "title": "還沒有紀錄",
+                "description": "玩一下 VRChat，你的活動就會出現在這裡。"
+            },
+            "error": {
+                "failed_to_load": "無法載入你的活動資料"
+            },
+            "caveat": {
+                "recorded_since": "遊戲日誌自 {date} 起記錄。"
+            },
+            "worlds": {
+                "visit_count": "{count} 次",
+                "open_ranking": "詳細",
+                "total": "共 {count} 個世界"
+            },
+            "people": {
+                "co_days": "一起 {count} 天",
+                "lead_caption": "一起 {days} 天 · {hours} 小時",
+                "fading_title": "最近少見了",
+                "fading_caveat": "比上一段時間見得少了，可能只是作息對不上。",
+                "encountered_total": "遇到過 {count} 人",
+                "fading_last_seen": "上次一起 {date}"
+            },
+            "hero": {
+                "per_day": "每天平均",
+                "days_played": "天有紀錄",
+                "sessions": "次上線",
+                "longest": "最長一次"
+            },
+            "action": {
+                "show_all": "展開全部 {count} 筆",
+                "show_less": "收合"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% 在凌晨 0 點到 6 點",
+                "open_heatmap": "按時段查看"
+            }
         }
     },
     "dialog": {

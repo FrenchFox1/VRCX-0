@@ -31,6 +31,7 @@ pub use vrcx_0_persistence::activity::{
     ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
     ActivityViewOutput,
 };
+pub use vrcx_0_persistence::activity_page::{ActivityPageBuildInput, ActivityPageView};
 pub use vrcx_0_persistence::avatars::{
     AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput, AvatarTimeSpentOutput,
 };
@@ -300,6 +301,13 @@ impl LocalDataRuntime {
 
     pub fn activity_view(&self, input: ActivityViewBuildInput) -> Result<ActivityViewOutput> {
         Ok(vrcx_0_persistence::activity::activity_view_build(
+            self.db.as_ref(),
+            input,
+        )?)
+    }
+
+    pub fn activity_page_view(&self, input: ActivityPageBuildInput) -> Result<ActivityPageView> {
+        Ok(vrcx_0_persistence::activity_page::activity_page_view_build(
             self.db.as_ref(),
             input,
         )?)

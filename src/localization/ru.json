@@ -91,7 +91,10 @@
             "avatar": "Аватары",
             "group": "Группы"
         },
-        "date": { "today": "Сегодня", "yesterday": "Вчера" },
+        "date": {
+            "today": "Сегодня",
+            "yesterday": "Вчера"
+        },
         "retention": {
             "label": "Срок хранения истории",
             "description": "Записи старше этого срока удаляются автоматически.",
@@ -3291,6 +3294,81 @@
             "contributors_error": "Не удалось загрузить список участников.",
             "thanks": "Каждый перевод, тест, отчёт об ошибке и идея — вклад сообщества. Спасибо.",
             "license_line": "Свободное ПО с открытым исходным кодом под GPL-3.0"
+        },
+        "activity": {
+            "title": "Активность",
+            "description": "Куда ушло ваше время — сводка за период",
+            "range": {
+                "all": "Всё время",
+                "days": "Последние {days} дн."
+            },
+            "stat": {
+                "total_time": "Всего времени",
+                "daily_average": "В среднем за день",
+                "active_days": "Дней в игре",
+                "longest_session": "Самая длинная сессия",
+                "change_up": "+{percent}% к прошлому периоду",
+                "change_down": "-{percent}% к прошлому периоду"
+            },
+            "unit": {
+                "hours": "ч",
+                "minutes": "минут"
+            },
+            "section": {
+                "instance_types": "Типы инстансов",
+                "daily_time": "Время по дням",
+                "weekly_time": "Время по неделям",
+                "when_you_play": "Когда вы играете",
+                "top_worlds": "Миры, куда вы возвращаетесь",
+                "companions": "С кем вы проводите время",
+                "highlights": "На что обратить внимание"
+            },
+            "access": {
+                "unknown": "Неизвестно",
+                "public": "Публичный",
+                "friendsPlus": "Друзья+",
+                "friends": "Друзья",
+                "invitePlus": "Инвайт+",
+                "invite": "Инвайт",
+                "group": "Группа"
+            },
+            "empty": {
+                "title": "Пока нет записей",
+                "description": "Поиграйте в VRChat — активность появится здесь."
+            },
+            "error": {
+                "failed_to_load": "Не удалось загрузить активность"
+            },
+            "caveat": {
+                "recorded_since": "Журнал игры ведётся с {date}."
+            },
+            "worlds": {
+                "visit_count": "посещений: {count}",
+                "open_ranking": "Подробнее",
+                "total": "всего миров: {count}"
+            },
+            "people": {
+                "co_days": "дней вместе: {count}",
+                "lead_caption": "{days} дней вместе · {hours} ч",
+                "fading_title": "Стали видеться реже",
+                "fading_caveat": "Меньше совместного времени, чем в прошлый период. Возможно, просто разные графики.",
+                "encountered_total": "всего встречено: {count}",
+                "fading_last_seen": "вместе в последний раз {date}"
+            },
+            "hero": {
+                "per_day": "в день",
+                "days_played": "дней с записями",
+                "sessions": "сессий",
+                "longest": "самая долгая"
+            },
+            "action": {
+                "show_all": "Показать все ({count})",
+                "show_less": "Свернуть"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% между полуночью и 6 утра",
+                "open_heatmap": "По дням и часам"
+            }
         }
     },
     "dialog": {

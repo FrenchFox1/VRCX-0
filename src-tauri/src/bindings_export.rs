@@ -305,6 +305,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::player_list::app__instance_activity_rows_get,
             commands::local::player_list::app__world_summaries_get,
             commands::local::activity::app__activity_view,
+            commands::local::activity::app__activity_page_view,
             commands::local::activity::app__activity_overlap_view,
             commands::local::mutual_graph::app__mutual_graph_snapshot_get,
             commands::local::mutual_graph::app__mutual_graph_fetch_status_get,

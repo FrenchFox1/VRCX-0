@@ -8,5 +8,6 @@ pub use schema::{ensure_realtime_tables, normalize_user_table_prefix};
 pub use types::{
     AvatarHistoryUpsert, AvatarTimeSpentUpsert, FriendLogDelete, FriendLogUpsert,
     NotificationExpiration, NotificationV2Update, RealtimePersistenceBatch, RealtimeWriteCounts,
+    SelfProfileField, SelfProfileLogEntry,
 };
 pub use write::write_realtime_batch;

@@ -49,6 +49,8 @@ fn copresence_summary_groups_minutes_days_instances_and_access_type() {
             limit: None,
             owner_user_id: None,
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -122,6 +124,8 @@ fn copresence_is_account_scoped_and_includes_shared_history() {
                 limit: None,
                 owner_user_id: Some(owner_user_id.clone()),
                 friends_only: false,
+                order_by: CopresenceOrderBy::default(),
+                utc_offset_minutes: None,
             },
         )
         .unwrap()
@@ -170,6 +174,8 @@ fn copresence_summary_applies_limit_after_ranking() {
             limit: Some(2),
             owner_user_id: None,
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -217,6 +223,8 @@ fn copresence_merges_renamed_user_into_one_row() {
             limit: None,
             owner_user_id: None,
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -255,6 +263,8 @@ fn copresence_keeps_distinct_name_only_strangers_separate() {
             limit: None,
             owner_user_id: None,
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -300,6 +310,8 @@ fn copresence_renamed_user_does_not_inflate_total_rows() {
             limit: Some(1),
             owner_user_id: None,
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -347,6 +359,8 @@ fn copresence_marks_is_friend_against_current_friends() {
             limit: None,
             owner_user_id: Some(OwnerId::new("usr_self")),
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -394,6 +408,8 @@ fn copresence_enriches_world_name_from_game_log_location() {
             limit: None,
             owner_user_id: None,
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -439,6 +455,8 @@ fn copresence_friend_world_keeps_tied_worlds_separate() {
             limit: None,
             owner_user_id: None,
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();
@@ -496,6 +514,8 @@ fn copresence_summary_excludes_owner_self_rows() {
             limit: None,
             owner_user_id: Some(OwnerId::new("usr_self")),
             friends_only: false,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
         },
     )
     .unwrap();

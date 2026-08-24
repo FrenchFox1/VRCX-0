@@ -91,7 +91,10 @@
             "avatar": "Avataři",
             "group": "Skupiny"
         },
-        "date": { "today": "Dnes", "yesterday": "Včera" },
+        "date": {
+            "today": "Dnes",
+            "yesterday": "Včera"
+        },
         "retention": {
             "label": "Doba uchování historie",
             "description": "Starší položky se automaticky mažou.",
@@ -3291,6 +3294,81 @@
             "contributors_error": "Seznam přispěvatelů se nepodařilo načíst.",
             "thanks": "Každý překlad, test, hlášení chyby i nápad pochází od komunity. Děkujeme.",
             "license_line": "Svobodný a otevřený software pod licencí GPL-3.0"
+        },
+        "activity": {
+            "title": "Aktivita",
+            "description": "Kam šel váš čas — souhrn za období",
+            "range": {
+                "all": "Vše",
+                "days": "Posledních {days} dní"
+            },
+            "stat": {
+                "total_time": "Celkový čas",
+                "daily_average": "Denní průměr",
+                "active_days": "Odehraných dní",
+                "longest_session": "Nejdelší relace",
+                "change_up": "+{percent} % oproti minulému období",
+                "change_down": "-{percent} % oproti minulému období"
+            },
+            "unit": {
+                "hours": "h",
+                "minutes": "minut"
+            },
+            "section": {
+                "instance_types": "Typy instancí",
+                "daily_time": "Čas po dnech",
+                "weekly_time": "Čas po týdnech",
+                "when_you_play": "Kdy hrajete",
+                "top_worlds": "Světy, kam se vracíte",
+                "companions": "S kým trávíte čas",
+                "highlights": "Stojí za povšimnutí"
+            },
+            "access": {
+                "unknown": "Neznámé",
+                "public": "Veřejná",
+                "friendsPlus": "Přátelé+",
+                "friends": "Přátelé",
+                "invitePlus": "Pozvánka+",
+                "invite": "Pozvánka",
+                "group": "Skupina"
+            },
+            "empty": {
+                "title": "Zatím nic zaznamenáno",
+                "description": "Zahrajte si VRChat a aktivita se objeví tady."
+            },
+            "error": {
+                "failed_to_load": "Aktivitu se nepodařilo načíst"
+            },
+            "caveat": {
+                "recorded_since": "Herní záznam veden od {date}."
+            },
+            "worlds": {
+                "visit_count": "návštěv: {count}",
+                "open_ranking": "Podrobnosti",
+                "total": "celkem {count} světů"
+            },
+            "people": {
+                "co_days": "společných dní: {count}",
+                "lead_caption": "{days} dní spolu · {hours} h",
+                "fading_title": "Poslední dobou méně",
+                "fading_caveat": "Méně společného času než v předchozím období. Může jít jen o rozvrh.",
+                "encountered_total": "celkem {count}",
+                "fading_last_seen": "naposledy spolu {date}"
+            },
+            "hero": {
+                "per_day": "denně",
+                "days_played": "odehraných dní",
+                "sessions": "relací",
+                "longest": "nejdelší relace"
+            },
+            "action": {
+                "show_all": "Zobrazit všech {count}",
+                "show_less": "Zobrazit méně"
+            },
+            "rhythm": {
+                "late_night_share": "{percent} % mezi půlnocí a 6:00",
+                "open_heatmap": "Po dnech a hodinách"
+            }
         }
     },
     "dialog": {

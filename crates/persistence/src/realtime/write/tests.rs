@@ -9,7 +9,7 @@ use crate::realtime::ensure_realtime_tables;
 
 use super::{
     normalize_user_table_prefix, write_realtime_batch, FriendLogDelete, FriendLogUpsert,
-    NotificationV2Update, RealtimePersistenceBatch,
+    NotificationV2Update, RealtimePersistenceBatch, SelfProfileField, SelfProfileLogEntry,
 };
 use crate::ownership::OwnerId;
 
@@ -898,4 +898,76 @@ fn rejects_notifications_missing_required_fields() {
     )
     .unwrap_err();
     assert!(matches!(v2_error, crate::Error::InvalidData(_)));
+}
+
+fn self_profile_log_rows(db: &DatabaseService) -> Vec<Vec<serde_json::Value>> {
+    db.execute(
+        "SELECT field, value, previous_value FROM usrself_self_profile_log ORDER BY id",
+        &Default::default(),
+    )
+    .unwrap()
+}
+
+fn self_profile_entry(
+    field: SelfProfileField,
+    value: &str,
+    previous_value: &str,
+) -> SelfProfileLogEntry {
+    SelfProfileLogEntry {
+        created_at: "2026-05-15T00:00:00Z".to_string(),
+        field,
+        value: value.to_string(),
+        previous_value: previous_value.to_string(),
+    }
+}
+
+fn write_self_profile_log(db: &DatabaseService, entries: Vec<SelfProfileLogEntry>) {
+    write_realtime_batch(
+        db,
+        &OwnerId::new("usr_self"),
+        &RealtimePersistenceBatch {
+            self_profile_log_entries: entries,
+            ..RealtimePersistenceBatch::default()
+        },
+    )
+    .unwrap();
+}
+
+#[test]
+fn writes_one_self_profile_log_row_per_changed_field() {
+    let dir = TestDir::new("self-profile-log-records");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
+
+    write_self_profile_log(
+        &db,
+        vec![
+            self_profile_entry(SelfProfileField::Status, "ask me", "join me"),
+            self_profile_entry(SelfProfileField::StatusDescription, "afk", "come vibe"),
+            self_profile_entry(SelfProfileField::Bio, "new bio", ""),
+        ],
+    );
+
+    let rows = self_profile_log_rows(&db);
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0][0], json!("status"));
+    assert_eq!(rows[0][1], json!("ask me"));
+    assert_eq!(rows[0][2], json!("join me"));
+    assert_eq!(rows[1][0], json!("statusDescription"));
+    assert_eq!(rows[2][0], json!("bio"));
+}
+
+#[test]
+fn skips_self_profile_log_rows_that_did_not_change() {
+    let dir = TestDir::new("self-profile-log-skips");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
+
+    write_self_profile_log(
+        &db,
+        vec![
+            self_profile_entry(SelfProfileField::Status, "join me", "join me"),
+            self_profile_entry(SelfProfileField::Bio, "", ""),
+        ],
+    );
+
+    assert!(self_profile_log_rows(&db).is_empty());
 }

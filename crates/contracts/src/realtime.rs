@@ -22,6 +22,33 @@ pub struct FriendLogDelete {
     pub created_at: String,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SelfProfileField {
+    Status,
+    StatusDescription,
+    Bio,
+}
+
+impl SelfProfileField {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Status => "status",
+            Self::StatusDescription => "statusDescription",
+            Self::Bio => "bio",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelfProfileLogEntry {
+    pub created_at: String,
+    pub field: SelfProfileField,
+    pub value: String,
+    pub previous_value: String,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimePersistenceBatch {
@@ -49,6 +76,8 @@ pub struct RealtimePersistenceBatch {
     pub game_log_locations: Vec<GameLogLocationEntry>,
     #[serde(default)]
     pub game_log_location_time_updates: Vec<GameLogLocationTimeUpdate>,
+    #[serde(default)]
+    pub self_profile_log_entries: Vec<SelfProfileLogEntry>,
 }
 
 impl RealtimePersistenceBatch {
@@ -65,6 +94,7 @@ impl RealtimePersistenceBatch {
             && self.avatar_time_spent_upserts.is_empty()
             && self.game_log_locations.is_empty()
             && self.game_log_location_time_updates.is_empty()
+            && self.self_profile_log_entries.is_empty()
     }
 }
 

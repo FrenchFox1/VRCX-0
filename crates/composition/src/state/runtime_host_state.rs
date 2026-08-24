@@ -598,6 +598,9 @@ impl RuntimeHostStateBuilder {
                     &self.db,
                 )),
             ),
+            Arc::new(vrcx_0_outbound_adapters::LocalActivityPageWarmupStore::new(
+                Arc::clone(&self.db),
+            )),
         );
         let authenticated_session_maintenance = AuthenticatedSessionMaintenanceRuntime::new(
             self.runtime_context.auth_scope.clone(),

@@ -1,5 +1,31 @@
 pub const ONLINE_SESSION_MERGE_GAP_MS: i64 = 5 * 60 * 1000;
 
+pub const MAX_INFERRED_SPAN_MS: i64 = 24 * 60 * 60 * 1000;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpanEnd {
+    NextStart(i64),
+    UnknownNextStart,
+    OpenTail,
+}
+
+pub fn span_duration_ms(
+    start_ms: i64,
+    recorded_duration_ms: i64,
+    end: SpanEnd,
+    now_ms: i64,
+) -> i64 {
+    if recorded_duration_ms != 0 {
+        return recorded_duration_ms;
+    }
+    let inferred = match end {
+        SpanEnd::NextStart(next_start_ms) => next_start_ms - start_ms,
+        SpanEnd::UnknownNextStart => 0,
+        SpanEnd::OpenTail => now_ms - start_ms,
+    };
+    inferred.min(MAX_INFERRED_SPAN_MS)
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ActivitySession {
     pub start: i64,

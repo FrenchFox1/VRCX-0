@@ -42,6 +42,8 @@ impl VrcxMcpServer {
                 limit: input.limit,
                 owner_user_id: Some(owner_user_id.clone()),
                 friends_only: input.friends_only.unwrap_or(true),
+                order_by: social_aggregates::CopresenceOrderBy::default(),
+                utc_offset_minutes: None,
             },
         ))
     }
@@ -319,6 +321,8 @@ impl VrcxMcpServer {
                 limit: Some(5),
                 owner_user_id: Some(owner_user_id.clone()),
                 friends_only: true,
+                order_by: social_aggregates::CopresenceOrderBy::default(),
+                utc_offset_minutes: None,
             })
             .map_err(map_application_query_error)?
             .rows;

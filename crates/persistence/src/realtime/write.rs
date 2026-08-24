@@ -102,6 +102,9 @@ pub fn write_realtime_batch(
         for update in &batch.game_log_location_time_updates {
             counts.add_game_log_rows(update_game_log_location_time(tx, owner_id, update)?);
         }
+        for entry in &batch.self_profile_log_entries {
+            counts.add_realtime_rows(insert_self_profile_log(tx, &user_prefix, entry)?);
+        }
         Ok(counts)
     })
 }
@@ -615,6 +618,29 @@ fn mark_notification_seen(
     tx.execute_non_query(
         &format!("UPDATE {user_prefix}_notifications_v2 SET seen = 1 WHERE id = @id"),
         &ParamsBuilder::new().set("id", id).build(),
+    )
+    .map(affected_count)
+}
+
+fn insert_self_profile_log(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &SelfProfileLogEntry,
+) -> Result<u64, Error> {
+    if entry.value == entry.previous_value {
+        return Ok(0);
+    }
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_self_profile_log (created_at, field, value, previous_value)
+             VALUES (@created_at, @field, @value, @previous_value)"
+        ),
+        &ParamsBuilder::new()
+            .set("created_at", entry.created_at.clone())
+            .set("field", entry.field.as_str())
+            .set("value", entry.value.clone())
+            .set("previous_value", entry.previous_value.clone())
+            .build(),
     )
     .map(affected_count)
 }

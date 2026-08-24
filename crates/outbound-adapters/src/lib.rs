@@ -50,7 +50,7 @@ mod web_client;
 mod world_cache;
 mod ws_event_log;
 
-pub use activity_warmup::LocalActivitySessionWarmupStore;
+pub use activity_warmup::{LocalActivityPageWarmupStore, LocalActivitySessionWarmupStore};
 pub use auth_credentials::LocalAuthCredentialStore;
 pub use auth_requests::VrchatAuthRemoteRequests;
 pub use authenticated_runtime::{

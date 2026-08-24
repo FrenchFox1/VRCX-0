@@ -95,6 +95,7 @@ export const routePathByName = Object.freeze({
     moderation: '/social/moderation',
     notification: '/notification',
     'my-avatars': '/my-avatars',
+    activity: '/activity',
     'charts-mutual': '/charts/mutual',
     tools: '/tools',
     gallery: '/tools/gallery',
@@ -151,6 +152,7 @@ export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
         },
         { type: 'item', key: 'notification' },
         { type: 'item', key: 'my-avatars' },
+        { type: 'item', key: 'activity' },
         { type: 'item', key: 'charts-mutual' },
         { type: 'item', key: 'tools' }
     ];

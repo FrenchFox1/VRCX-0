@@ -1,6 +1,6 @@
 use vrcx_0_core::activity_sessions::{
-    merge_sessions, sessions_from_presence, ActivitySession, PresenceKind,
-    ONLINE_SESSION_MERGE_GAP_MS,
+    merge_sessions, sessions_from_presence, span_duration_ms, ActivitySession, PresenceKind,
+    SpanEnd, MAX_INFERRED_SPAN_MS, ONLINE_SESSION_MERGE_GAP_MS,
 };
 
 const BASE: i64 = 1_700_000_000_000;
@@ -89,4 +89,74 @@ fn activity_sessions_merge_keeps_gap_larger_than_threshold() {
     );
 
     assert_eq!(merged.len(), 2);
+}
+
+#[test]
+fn span_duration_keeps_recorded_value_without_capping() {
+    assert_eq!(
+        span_duration_ms(
+            BASE,
+            3 * MAX_INFERRED_SPAN_MS,
+            SpanEnd::OpenTail,
+            BASE + HOUR
+        ),
+        3 * MAX_INFERRED_SPAN_MS
+    );
+}
+
+#[test]
+fn span_duration_keeps_negative_recorded_value() {
+    assert_eq!(
+        span_duration_ms(BASE, -MINUTE, SpanEnd::NextStart(BASE + HOUR), BASE + HOUR),
+        -MINUTE
+    );
+}
+
+#[test]
+fn span_duration_infers_from_next_start_when_unrecorded() {
+    assert_eq!(
+        span_duration_ms(BASE, 0, SpanEnd::NextStart(BASE + 90 * MINUTE), BASE + HOUR),
+        90 * MINUTE
+    );
+}
+
+#[test]
+fn span_duration_caps_inferred_value() {
+    assert_eq!(
+        span_duration_ms(
+            BASE,
+            0,
+            SpanEnd::NextStart(BASE + 3 * MAX_INFERRED_SPAN_MS),
+            BASE
+        ),
+        MAX_INFERRED_SPAN_MS
+    );
+    assert_eq!(
+        span_duration_ms(BASE, 0, SpanEnd::OpenTail, BASE + 3 * MAX_INFERRED_SPAN_MS),
+        MAX_INFERRED_SPAN_MS
+    );
+}
+
+#[test]
+fn span_duration_runs_to_now_for_open_tail() {
+    assert_eq!(
+        span_duration_ms(BASE, 0, SpanEnd::OpenTail, BASE + 2 * HOUR),
+        2 * HOUR
+    );
+}
+
+#[test]
+fn span_duration_is_zero_when_next_start_is_unusable() {
+    assert_eq!(
+        span_duration_ms(BASE, 0, SpanEnd::UnknownNextStart, BASE + 2 * HOUR),
+        0
+    );
+}
+
+#[test]
+fn span_duration_is_negative_when_next_start_precedes_start() {
+    assert_eq!(
+        span_duration_ms(BASE, 0, SpanEnd::NextStart(BASE - MINUTE), BASE),
+        -MINUTE
+    );
 }

@@ -470,11 +470,9 @@ export function UserDialogInstanceHistoryTab({
 
 export function UserDialogActivityTab({
     profile,
-    isCurrentUser,
     active
 }: {
     profile: UserDialogProfileRecord;
-    isCurrentUser: boolean;
     active: boolean;
 }) {
     return (
@@ -482,11 +480,7 @@ export function UserDialogActivityTab({
             value="activity"
             className="flex flex-col gap-4"
         >
-            <UserActivityPanel
-                profile={profile}
-                isCurrentUser={isCurrentUser}
-                active={active}
-            />
+            <UserActivityPanel profile={profile} active={active} />
         </EntityDialogTabContent>
     );
 }

@@ -376,6 +376,8 @@ impl VrcxMcpServer {
                 limit: Some(100),
                 owner_user_id: Some(owner_user_id.clone()),
                 friends_only: false,
+                order_by: social_aggregates::CopresenceOrderBy::default(),
+                utc_offset_minutes: None,
             })
             .map_err(map_application_query_error)?
             .rows

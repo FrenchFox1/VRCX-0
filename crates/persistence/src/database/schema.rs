@@ -269,6 +269,17 @@ pub(crate) fn ensure_user_store_tables(
             )"
         ),
         format!(
+            "CREATE TABLE IF NOT EXISTS {user_prefix}_activity_page_cache (
+                user_id TEXT NOT NULL,
+                range_days INTEGER NOT NULL,
+                payload_version INTEGER NOT NULL DEFAULT 1,
+                built_from_cursor TEXT NOT NULL DEFAULT '',
+                payload_json TEXT NOT NULL DEFAULT '{{}}',
+                built_at TEXT NOT NULL DEFAULT '',
+                PRIMARY KEY (user_id, range_days)
+            )"
+        ),
+        format!(
             "CREATE TABLE IF NOT EXISTS {user_prefix}_moderation (user_id TEXT PRIMARY KEY, updated_at TEXT, display_name TEXT, block INTEGER, mute INTEGER)"
         ),
         format!(

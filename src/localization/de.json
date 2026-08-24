@@ -91,7 +91,10 @@
             "avatar": "Avatare",
             "group": "Gruppen"
         },
-        "date": { "today": "Heute", "yesterday": "Gestern" },
+        "date": {
+            "today": "Heute",
+            "yesterday": "Gestern"
+        },
         "retention": {
             "label": "Aufbewahrungsdauer des Verlaufs",
             "description": "Ältere Einträge werden automatisch gelöscht.",
@@ -3289,6 +3292,81 @@
             "contributors_error": "Die Liste der Mitwirkenden konnte nicht geladen werden.",
             "thanks": "Jede Übersetzung, jeder Test, jeder Fehlerbericht und jede Idee kommt aus der Community. Vielen Dank.",
             "license_line": "Frei und Open Source unter GPL-3.0"
+        },
+        "activity": {
+            "title": "Aktivität",
+            "description": "Wo deine Zeit geblieben ist, über einen Zeitraum zusammengefasst",
+            "range": {
+                "all": "Gesamt",
+                "days": "Letzte {days} Tage"
+            },
+            "stat": {
+                "total_time": "Gesamtzeit",
+                "daily_average": "Ø pro Tag",
+                "active_days": "Gespielte Tage",
+                "longest_session": "Längste Sitzung",
+                "change_up": "+{percent}% ggü. Vorzeitraum",
+                "change_down": "-{percent}% ggü. Vorzeitraum"
+            },
+            "unit": {
+                "hours": "Std.",
+                "minutes": "Minuten"
+            },
+            "section": {
+                "instance_types": "Instanz-Typen",
+                "daily_time": "Zeit pro Tag",
+                "weekly_time": "Zeit pro Woche",
+                "when_you_play": "Wann du spielst",
+                "top_worlds": "Welten, in die du zurückkehrst",
+                "companions": "Mit wem du Zeit verbringst",
+                "highlights": "Aufgefallen"
+            },
+            "access": {
+                "unknown": "Unbekannt",
+                "public": "Öffentlich",
+                "friendsPlus": "Freunde+",
+                "friends": "Freunde",
+                "invitePlus": "Einladung+",
+                "invite": "Einladung",
+                "group": "Gruppe"
+            },
+            "empty": {
+                "title": "Noch nichts aufgezeichnet",
+                "description": "Spiel etwas VRChat, dann erscheint deine Aktivität hier."
+            },
+            "error": {
+                "failed_to_load": "Aktivität konnte nicht geladen werden"
+            },
+            "caveat": {
+                "recorded_since": "Spielprotokoll seit {date} aufgezeichnet."
+            },
+            "worlds": {
+                "visit_count": "{count} Besuche",
+                "open_ranking": "Details",
+                "total": "{count} Welten insgesamt"
+            },
+            "people": {
+                "co_days": "{count} gemeinsame Tage",
+                "lead_caption": "{days} Tage zusammen · {hours} h",
+                "fading_title": "Zuletzt seltener gesehen",
+                "fading_caveat": "Weniger gemeinsame Zeit als im Zeitraum davor. Vielleicht nur andere Zeitpläne.",
+                "encountered_total": "{count} insgesamt getroffen",
+                "fading_last_seen": "zuletzt zusammen {date}"
+            },
+            "hero": {
+                "per_day": "pro Tag",
+                "days_played": "Tage gespielt",
+                "sessions": "Sitzungen",
+                "longest": "längste Sitzung"
+            },
+            "action": {
+                "show_all": "Alle {count} anzeigen",
+                "show_less": "Weniger"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% zwischen 0 und 6 Uhr",
+                "open_heatmap": "Nach Tag und Stunde"
+            }
         }
     },
     "dialog": {

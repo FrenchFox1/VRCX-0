@@ -389,7 +389,6 @@ export function UserDialogTabsSection({
             />
             <UserDialogActivityTab
                 profile={profile}
-                isCurrentUser={isCurrentUser}
                 active={activeTab === 'activity'}
             />
             <UserDialogJsonTab profile={profile} />

@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use vrcx_0_application_activity::{ActivitySessionWarmupOutput, ActivitySessionWarmupStore};
+use chrono::{Local, Utc};
+use vrcx_0_application_activity::{
+    ActivityPageWarmupStore, ActivitySessionWarmupOutput, ActivitySessionWarmupStore,
+};
 use vrcx_0_application_core::Result;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::DatabaseService;
@@ -14,6 +17,37 @@ pub struct LocalActivitySessionWarmupStore {
 impl LocalActivitySessionWarmupStore {
     pub fn new(db: Arc<DatabaseService>) -> Self {
         Self { db }
+    }
+}
+
+fn local_utc_offset_minutes() -> i64 {
+    i64::from(Local::now().offset().local_minus_utc()) / 60
+}
+
+pub struct LocalActivityPageWarmupStore {
+    db: Arc<DatabaseService>,
+}
+
+impl LocalActivityPageWarmupStore {
+    pub fn new(db: Arc<DatabaseService>) -> Self {
+        Self { db }
+    }
+}
+
+impl ActivityPageWarmupStore for LocalActivityPageWarmupStore {
+    fn warm_activity_page(&self, owner_user_id: OwnerId, range_days: i64) -> Result<()> {
+        vrcx_0_persistence::activity_page::activity_page_view_build(
+            self.db.as_ref(),
+            vrcx_0_persistence::activity_page::ActivityPageBuildInput {
+                owner_user_id,
+                range_days,
+                utc_offset_minutes: local_utc_offset_minutes(),
+                now_ms: Utc::now().timestamp_millis(),
+                force_refresh: false,
+            },
+        )
+        .map_err(map_persistence_error)?;
+        Ok(())
     }
 }
 

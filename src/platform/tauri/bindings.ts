@@ -974,6 +974,11 @@ const generatedCommands = {
     ): Promise<ActivityViewOutput> {
         return await TAURI_INVOKE('app__activity_view', { input });
     },
+    async appActivityPageView(
+        input: ActivityPageBuildInput
+    ): Promise<ActivityPageView> {
+        return await TAURI_INVOKE('app__activity_page_view', { input });
+    },
     async appActivityOverlapView(
         input: ActivityOverlapViewBuildInput
     ): Promise<ActivityOverlapViewOutput> {
@@ -2599,6 +2604,95 @@ export type ActivityOverlapViewOutput = {
     hasOverlapData: boolean;
     builtFromCursor: string;
     builtAt: string;
+};
+export type ActivityPageAccessSlice = { access: string; minutes: number };
+export type ActivityPageBuildInput = {
+    ownerUserId: OwnerId;
+    rangeDays: number;
+    utcOffsetMinutes: number;
+    nowMs: number;
+    forceRefresh: boolean;
+};
+export type ActivityPageCompanionRow = {
+    userId: string;
+    displayName: string;
+    isFriend: boolean;
+    minutes: number;
+    coDays: number;
+    instances: number;
+    lastSeenTogether: string;
+};
+export type ActivityPageCoverage = {
+    from: string;
+    to: string;
+    firstSourceAt: string;
+};
+export type ActivityPageFadingRow = {
+    userId: string;
+    displayName: string;
+    priorMinutes: number;
+    recentMinutes: number;
+    dropPercent: number;
+    lastSeenTogether: string;
+};
+export type ActivityPagePeople = {
+    companions: ActivityPageCompanionRow[];
+    fading: ActivityPageFadingRow[];
+    encounteredCount: number;
+    newFaceCount: number;
+};
+export type ActivityPagePreviousSummary = {
+    totalMinutes: number;
+    activeDays: number;
+    hasData: boolean;
+};
+export type ActivityPageSeries = {
+    bucket: ActivitySeriesBucket;
+    points: ActivitySeriesPoint[];
+};
+export type ActivityPageSummary = {
+    totalMinutes: number;
+    windowDays: number;
+    activeDays: number;
+    sessionCount: number;
+    longestSessionMinutes: number;
+};
+export type ActivityPageView = {
+    rangeDays: number;
+    utcOffsetMinutes: number;
+    windowFromMs: number;
+    windowToMs: number;
+    hasOpenTail: boolean;
+    summary: ActivityPageSummary;
+    previous: ActivityPagePreviousSummary;
+    series: ActivityPageSeries;
+    accessSplit: ActivityPageAccessSlice[];
+    worlds: ActivityPageWorlds;
+    people: ActivityPagePeople;
+    coverage: ActivityPageCoverage;
+    builtFromCursor: string;
+    builtAt: string;
+    stale: boolean;
+};
+export type ActivityPageWorldRow = {
+    worldId: string;
+    worldName: string;
+    minutes: number;
+    visitCount: number;
+    firstSeenAt: string;
+    lastSeenAt: string;
+};
+export type ActivityPageWorlds = {
+    top: ActivityPageWorldRow[];
+    distinctCount: number;
+    newWorldMinutes: number;
+    returningWorldMinutes: number;
+};
+export type ActivitySeriesBucket = 'day' | 'week';
+export type ActivitySeriesPoint = {
+    startDate: string;
+    minutes: number;
+    inferred: boolean;
 };
 export type ActivityViewBuildInput = {
     ownerUserId: OwnerId;

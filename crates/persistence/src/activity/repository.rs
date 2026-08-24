@@ -6,6 +6,7 @@ use std::{
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde_json::{json, Value};
+use vrcx_0_core::activity_sessions::{span_duration_ms, SpanEnd};
 
 use crate::common::{
     normalize_text, parse_json_value, row_i64, row_json, row_string, row_value, value_as_i64,
@@ -62,13 +63,13 @@ fn activity_now_ms(input: Option<i64>) -> i64 {
     input.unwrap_or_else(|| Utc::now().timestamp_millis())
 }
 
-pub(super) fn activity_iso_from_ms(ms: i64) -> String {
+pub(crate) fn activity_iso_from_ms(ms: i64) -> String {
     DateTime::<Utc>::from_timestamp_millis(ms)
         .unwrap_or_else(Utc::now)
         .to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
-pub(super) fn parse_activity_time_ms(value: &str) -> Option<i64> {
+pub(crate) fn parse_activity_time_ms(value: &str) -> Option<i64> {
     DateTime::parse_from_rfc3339(value)
         .map(|value| value.timestamp_millis())
         .ok()
@@ -296,17 +297,14 @@ fn build_sessions_from_gamelog(
         let Some(start) = parse_activity_time_ms(&row.created_at) else {
             continue;
         };
-        let mut duration = row.time;
-        if duration == 0 {
-            duration = if let Some(next) = rows.get(index + 1) {
-                parse_activity_time_ms(&next.created_at)
-                    .map(|next_start| next_start - start)
-                    .unwrap_or(0)
-            } else {
-                now_ms - start
-            };
-            duration = duration.min(ACTIVITY_MAX_INFERRED_SESSION_MS);
-        }
+        let end = match rows.get(index + 1) {
+            Some(next) => match parse_activity_time_ms(&next.created_at) {
+                Some(next_start) => SpanEnd::NextStart(next_start),
+                None => SpanEnd::UnknownNextStart,
+            },
+            None => SpanEnd::OpenTail,
+        };
+        let duration = span_duration_ms(start, row.time, end, now_ms);
         if duration > 0 {
             raw_sessions.push(ActivitySessionRow {
                 start,
@@ -947,7 +945,6 @@ pub(crate) const ACTIVITY_INITIAL_RANGE_DAYS: i64 = 90;
 pub(crate) const ACTIVITY_MAX_RANGE_DAYS: i64 = 3650;
 pub(crate) const ACTIVITY_ONLINE_SESSION_MERGE_GAP_MS: i64 = 5 * 60 * 1000;
 pub(crate) const ACTIVITY_DAY_MS: i64 = 86_400_000;
-pub(crate) const ACTIVITY_MAX_INFERRED_SESSION_MS: i64 = 24 * 60 * 60 * 1000;
 
 fn activity_presence_from_row(row: &[Value]) -> ActivityPresenceOutput {
     ActivityPresenceOutput {

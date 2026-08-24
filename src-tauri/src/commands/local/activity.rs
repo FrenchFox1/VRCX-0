@@ -6,11 +6,11 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use vrcx_0_runtime_host_desktop::local_data::{
-    ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
-    ActivityViewOutput,
+    ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityPageBuildInput,
+    ActivityPageView, ActivityViewBuildInput, ActivityViewOutput,
 };
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__activity_overlap_view(
     state: State<'_, AppState>,
@@ -23,7 +23,7 @@ pub fn app__activity_overlap_view(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__activity_view(
     state: State<'_, AppState>,
@@ -33,5 +33,18 @@ pub fn app__activity_view(
         .runtime_host()
         .local_data()
         .activity_view(input)
+        .map_err(AppError::from)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__activity_page_view(
+    state: State<'_, AppState>,
+    input: ActivityPageBuildInput,
+) -> Result<ActivityPageView, AppError> {
+    state
+        .runtime_host()
+        .local_data()
+        .activity_page_view(input)
         .map_err(AppError::from)
 }

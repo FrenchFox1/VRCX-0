@@ -246,16 +246,6 @@ fn aggregate_and_lookup_queries_cover_group_world_player_and_dates() -> Result<(
         vec!["2026-05-14T10:00:00Z".to_string(),]
     );
 
-    let top = rows(query(
-        &test_db.db,
-        "topWorlds",
-        json!({
-            "limit": 1,
-            "sortBy": "count",
-            "excludeWorldId": "wrld_beta"
-        }),
-    )?);
-    assert_eq!(top[0]["worldId"], "wrld_alpha");
     Ok(())
 }
 

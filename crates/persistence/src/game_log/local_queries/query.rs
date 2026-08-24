@@ -768,69 +768,6 @@ pub fn game_log_query(
                     .collect(),
             ))
         }
-        "topWorlds" => {
-            let days = query_param_i64(&params, "days", 0);
-            let limit = non_negative_query_param_i64(&params, "limit", 5);
-            let sort_by = query_param_string(&params, "sortBy");
-            let exclude_world_id = query_param_string(&params, "excludeWorldId");
-            let where_clause = if days > 0 {
-                "AND created_at >= datetime('now', @days_offset)"
-            } else {
-                ""
-            };
-            let exclude_clause = if exclude_world_id.is_empty() {
-                ""
-            } else {
-                "AND world_id != @exclude_world_id"
-            };
-            let order_by = if sort_by == "count" {
-                "visit_count DESC"
-            } else {
-                "total_time DESC"
-            };
-            let mut db_params = scoped_param_map(owner_id);
-            db_params.insert("@limit".into(), Value::from(limit));
-            if days > 0 {
-                db_params.insert(
-                    "@days_offset".into(),
-                    Value::String(format!("-{days} days")),
-                );
-            }
-            if !exclude_world_id.is_empty() {
-                db_params.insert("@exclude_world_id".into(), Value::String(exclude_world_id));
-            }
-            Ok(Value::Array(
-                db
-                    .execute(
-                        &format!(
-                            "SELECT world_id, world_name, COUNT(*) AS visit_count, SUM(time) AS total_time
-                             FROM gamelog_location
-                             WHERE owner_id IN (0, @owner_id)
-                               AND world_id IS NOT NULL
-                               AND world_id != ''
-                               AND world_id LIKE 'wrld_%'
-                               {where_clause}
-                               {exclude_clause}
-                             GROUP BY world_id
-                             ORDER BY {order_by}
-                             LIMIT @limit"
-                        ),
-                        &db_params,
-                    )?
-                    .into_iter()
-                    .map(|row| {
-                        let world_id = row_string(&row, 0);
-                        let world_name = row_string(&row, 1);
-                        json!({
-                            "worldId": world_id,
-                            "worldName": if world_name.is_empty() { row_json(&row, 0) } else { row_json(&row, 1) },
-                            "visitCount": row_json(&row, 2),
-                            "totalTime": row_i64(&row, 3)
-                        })
-                    })
-                    .collect(),
-            ))
-        }
         "instanceJoinHistory" => {
             let user_id = query_param_string(&params, "userId");
             let created_at = query_param_string(&params, "createdAt");
