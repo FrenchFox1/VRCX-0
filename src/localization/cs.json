@@ -3273,8 +3273,8 @@
                 "custom": "Místní obrázek"
             },
             "rotation": {
-                "daily": "Denně",
-                "hourly": "Hodinově"
+                "minutes": "min",
+                "custom": "Vlastní"
             },
             "action": {
                 "refresh": "Obnovit",

@@ -47,13 +47,6 @@ impl BackgroundImageProviderId {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
-pub enum BackgroundImageRotationInterval {
-    Daily,
-    Hourly,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "lowercase")]
 pub enum BackgroundImageCustomSourceKind {
     Files,
     Folder,
@@ -65,7 +58,7 @@ pub struct BackgroundImageCustomSource {
     pub kind: BackgroundImageCustomSourceKind,
     pub paths: Vec<String>,
     pub folder_path: String,
-    pub rotation_interval: BackgroundImageRotationInterval,
+    pub rotation_interval_minutes: u16,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
@@ -123,8 +116,8 @@ pub enum BackgroundImageConfigureInput {
         folder_path: String,
     },
     #[serde(rename_all = "camelCase")]
-    SetRotationInterval {
-        rotation_interval: BackgroundImageRotationInterval,
+    SetRotationIntervalMinutes {
+        rotation_interval_minutes: u16,
     },
     MigrateLegacyNasaApod,
 }

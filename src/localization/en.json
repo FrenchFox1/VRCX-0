@@ -3271,8 +3271,8 @@
                 "custom": "Local image"
             },
             "rotation": {
-                "daily": "Daily",
-                "hourly": "Hourly"
+                "minutes": "min",
+                "custom": "Custom"
             },
             "action": {
                 "refresh": "Refresh",

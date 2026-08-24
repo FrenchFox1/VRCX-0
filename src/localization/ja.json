@@ -3267,8 +3267,8 @@
                 "custom": "ローカル画像"
             },
             "rotation": {
-                "daily": "毎日",
-                "hourly": "毎時"
+                "minutes": "分",
+                "custom": "カスタム"
             },
             "action": {
                 "refresh": "再読み込み",

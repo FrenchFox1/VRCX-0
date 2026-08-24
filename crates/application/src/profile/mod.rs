@@ -20,8 +20,8 @@ pub use app_update::{
 pub use background_image::{
     BackgroundImageConfigureInput, BackgroundImageCustomSource, BackgroundImageCustomSourceKind,
     BackgroundImageFileResolver, BackgroundImageMode, BackgroundImageProjection,
-    BackgroundImageProviderId, BackgroundImageRotationInterval, BackgroundImageService,
-    BackgroundImageSnapshot, UnavailableBackgroundImageFileResolver,
+    BackgroundImageProviderId, BackgroundImageService, BackgroundImageSnapshot,
+    UnavailableBackgroundImageFileResolver,
 };
 pub use community_theme::{
     CommunityThemeAuthor, CommunityThemeCatalog, CommunityThemeConfigureInput,

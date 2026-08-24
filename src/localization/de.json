@@ -3271,8 +3271,8 @@
                 "custom": "Lokales Bild"
             },
             "rotation": {
-                "daily": "Täglich",
-                "hourly": "Stündlich"
+                "minutes": "Min.",
+                "custom": "Benutzerdefiniert"
             },
             "action": {
                 "refresh": "Aktualisieren",

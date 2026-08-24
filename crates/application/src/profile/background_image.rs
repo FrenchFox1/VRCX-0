@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use chrono::{Local, Utc};
+use chrono::Utc;
 use serde_json::{json, Value};
 use tokio::sync::Notify;
 use vrcx_0_application_core::sleep_until_due_or_stopped;
@@ -22,17 +22,17 @@ mod types;
 
 use helpers::{
     assert_previous_image_available, assert_selected_files_available,
-    community_theme_appearance_active, current_utc_date_key, duration_until_next_rotation,
-    ensure_provider_status, file_name_from_path, files_source, folder_source, is_snapshot_fresh,
-    mode_as_str, normalize_custom_source, normalize_custom_source_struct, normalize_mode,
-    normalize_provider_snapshot, projection_update_is_current, rotation_key, source_hash_key,
-    stable_hash,
+    community_theme_appearance_active, current_utc_date_key, ensure_provider_status,
+    file_name_from_path, files_source, folder_source, is_snapshot_fresh, mode_as_str,
+    next_custom_image_index, normalize_custom_source, normalize_custom_source_struct,
+    normalize_mode, normalize_provider_snapshot, projection_update_is_current, rotation_delay,
+    DEFAULT_ROTATION_INTERVAL_MINUTES, MAX_ROTATION_INTERVAL_MINUTES,
+    MIN_ROTATION_INTERVAL_MINUTES,
 };
 pub use types::{
     BackgroundImageConfigureInput, BackgroundImageCustomSource, BackgroundImageCustomSourceKind,
     BackgroundImageFileResolver, BackgroundImageMode, BackgroundImageProjection,
-    BackgroundImageProviderId, BackgroundImageRotationInterval, BackgroundImageSnapshot,
-    UnavailableBackgroundImageFileResolver,
+    BackgroundImageProviderId, BackgroundImageSnapshot, UnavailableBackgroundImageFileResolver,
 };
 
 #[cfg(test)]
@@ -354,16 +354,14 @@ impl BackgroundImageService {
             ));
         }
 
-        let (key, index) = if files.len() <= 1 {
-            ("static".to_string(), 0)
+        let index = if files.len() <= 1 {
+            0
         } else {
-            let key = rotation_key(source.rotation_interval, Local::now());
-            let index =
-                (stable_hash(&format!("{}:{key}", source_hash_key(source))) as usize) % files.len();
-            (key, index)
+            next_custom_image_index(source, &files, previous)
         };
         let image_path = files[index].clone();
         let title = file_name_from_path(&image_path);
+        let resolved_at = now_iso();
 
         Ok(BackgroundImageSnapshot {
             mode: BackgroundImageMode::Custom,
@@ -385,8 +383,8 @@ impl BackgroundImageService {
                     )
                 }
             },
-            resolved_at: now_iso(),
-            resolved_for_key: key,
+            resolved_at: resolved_at.clone(),
+            resolved_for_key: resolved_at,
         })
     }
 
@@ -467,27 +465,27 @@ impl BackgroundImageService {
             }
             BackgroundImageConfigureInput::EnableCustom => self.enable_custom(None),
             BackgroundImageConfigureInput::SetCustomFiles { paths } => {
-                let rotation_interval = self.current_rotation_interval();
-                let source = files_source(paths, rotation_interval);
+                let rotation_interval_minutes = self.current_rotation_interval_minutes();
+                let source = files_source(paths, rotation_interval_minutes);
                 self.enable_custom(Some(source))
             }
             BackgroundImageConfigureInput::SetCustomFolder { folder_path } => {
-                let rotation_interval = self.current_rotation_interval();
-                let source = folder_source(folder_path, rotation_interval);
+                let rotation_interval_minutes = self.current_rotation_interval_minutes();
+                let source = folder_source(folder_path, rotation_interval_minutes);
                 self.enable_custom(Some(source))
             }
-            BackgroundImageConfigureInput::SetRotationInterval { rotation_interval } => {
-                self.set_rotation_interval(rotation_interval)
-            }
+            BackgroundImageConfigureInput::SetRotationIntervalMinutes {
+                rotation_interval_minutes,
+            } => self.set_rotation_interval_minutes(rotation_interval_minutes),
             BackgroundImageConfigureInput::MigrateLegacyNasaApod => self.migrate_legacy_nasa_apod(),
         }
     }
 
-    fn current_rotation_interval(&self) -> BackgroundImageRotationInterval {
+    fn current_rotation_interval_minutes(&self) -> u16 {
         self.projection()
             .custom_source
-            .map(|source| source.rotation_interval)
-            .unwrap_or(BackgroundImageRotationInterval::Daily)
+            .map(|source| source.rotation_interval_minutes)
+            .unwrap_or(DEFAULT_ROTATION_INTERVAL_MINUTES)
     }
 
     fn disable(&self) -> Result<BackgroundImageProjection> {
@@ -657,18 +655,25 @@ impl BackgroundImageService {
         Ok(())
     }
 
-    fn set_rotation_interval(
+    fn set_rotation_interval_minutes(
         &self,
-        rotation_interval: BackgroundImageRotationInterval,
+        rotation_interval_minutes: u16,
     ) -> Result<BackgroundImageProjection> {
+        if !(MIN_ROTATION_INTERVAL_MINUTES..=MAX_ROTATION_INTERVAL_MINUTES)
+            .contains(&rotation_interval_minutes)
+        {
+            return Err(Error::Custom(format!(
+                "Background image rotation interval must be between {MIN_ROTATION_INTERVAL_MINUTES} and {MAX_ROTATION_INTERVAL_MINUTES} minutes."
+            )));
+        }
         let current = self.projection();
         let Some(mut source) = current.custom_source.clone() else {
             return Ok(current);
         };
-        source.rotation_interval = rotation_interval;
-        if current.enabled && current.mode == BackgroundImageMode::Custom {
-            return self.enable_custom(Some(source));
+        if source.rotation_interval_minutes == rotation_interval_minutes {
+            return Ok(current);
         }
+        source.rotation_interval_minutes = rotation_interval_minutes;
 
         let operation = self.begin_operation();
         let projection = BackgroundImageProjection {
@@ -821,10 +826,7 @@ impl BackgroundImageService {
         if !rotating {
             return None;
         }
-        Some(duration_until_next_rotation(
-            source.rotation_interval,
-            Local::now(),
-        ))
+        Some(rotation_delay(source.rotation_interval_minutes))
     }
 
     pub async fn run_rotation_loop(&self, stop_token: TaskStopToken) {

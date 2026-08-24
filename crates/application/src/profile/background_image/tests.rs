@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use chrono::{Local, TimeZone, Utc};
+use chrono::Utc;
 use serde_json::json;
 
+use super::helpers::stable_hash;
 use super::*;
 
 fn files_custom_source(paths: &[&str]) -> BackgroundImageCustomSource {
@@ -10,12 +11,29 @@ fn files_custom_source(paths: &[&str]) -> BackgroundImageCustomSource {
         kind: BackgroundImageCustomSourceKind::Files,
         paths: paths.iter().map(|p| p.to_string()).collect(),
         folder_path: String::new(),
-        rotation_interval: BackgroundImageRotationInterval::Daily,
+        rotation_interval_minutes: DEFAULT_ROTATION_INTERVAL_MINUTES,
+    }
+}
+
+fn custom_snapshot(image_path: &str) -> BackgroundImageSnapshot {
+    BackgroundImageSnapshot {
+        mode: BackgroundImageMode::Custom,
+        provider_id: None,
+        source_kind: Some(BackgroundImageCustomSourceKind::Files),
+        image_url: String::new(),
+        image_path: Some(image_path.into()),
+        image_count: Some(3),
+        title: String::new(),
+        author: String::new(),
+        license: String::new(),
+        source: String::new(),
+        resolved_at: String::new(),
+        resolved_for_key: String::new(),
     }
 }
 
 #[test]
-fn stable_hash_matches_frontend_fnv1a() {
+fn stable_hash_is_deterministic() {
     assert_eq!(stable_hash(""), 2166136261);
     assert_eq!(stable_hash("a"), 0xe40c292c);
     assert_eq!(stable_hash("files:C:\\img\\a.png:2026-07-30"), {
@@ -35,7 +53,7 @@ fn custom_source_normalization_drops_empty_sources() {
         kind: BackgroundImageCustomSourceKind::Folder,
         paths: Vec::new(),
         folder_path: "  ".into(),
-        rotation_interval: BackgroundImageRotationInterval::Daily,
+        rotation_interval_minutes: DEFAULT_ROTATION_INTERVAL_MINUTES,
     })
     .is_none());
     let normalized =
@@ -50,15 +68,24 @@ fn custom_source_wire_normalization_matches_config_shape() {
         "kind": "folder",
         "paths": ["ignored.png"],
         "folderPath": " C:\\wallpapers ",
-        "rotationInterval": "hourly"
+        "rotationIntervalMinutes": 180
     });
     let source = normalize_custom_source(&value).unwrap();
     assert_eq!(source.kind, BackgroundImageCustomSourceKind::Folder);
     assert!(source.paths.is_empty());
     assert_eq!(source.folder_path, "C:\\wallpapers");
+    assert_eq!(source.rotation_interval_minutes, 180);
+
+    let invalid_interval = json!({
+        "kind": "folder",
+        "folderPath": "C:\\wallpapers",
+        "rotationIntervalMinutes": 1441
+    });
     assert_eq!(
-        source.rotation_interval,
-        BackgroundImageRotationInterval::Hourly
+        normalize_custom_source(&invalid_interval)
+            .unwrap()
+            .rotation_interval_minutes,
+        DEFAULT_ROTATION_INTERVAL_MINUTES
     );
 }
 
@@ -104,27 +131,23 @@ fn snapshot_freshness_uses_24h_ttl() {
 }
 
 #[test]
-fn rotation_boundary_aligns_to_next_hour_and_day() {
-    let now = Local.with_ymd_and_hms(2026, 7, 30, 10, 15, 30).unwrap();
-    let hourly = duration_until_next_rotation(BackgroundImageRotationInterval::Hourly, now);
-    assert_eq!(hourly, Duration::from_millis((44 * 60 + 32) * 1000));
-    let daily = duration_until_next_rotation(BackgroundImageRotationInterval::Daily, now);
-    assert_eq!(
-        daily,
-        Duration::from_millis(((13 * 60 + 44) * 60 + 32) * 1000)
-    );
+fn rotation_delay_uses_relative_minutes() {
+    assert_eq!(rotation_delay(1), Duration::from_secs(60));
+    assert_eq!(rotation_delay(180), Duration::from_secs(3 * 60 * 60));
+    assert_eq!(rotation_delay(1440), Duration::from_secs(24 * 60 * 60));
 }
 
 #[test]
-fn rotation_key_uses_local_date_and_hour() {
-    let now = Local.with_ymd_and_hms(2026, 7, 30, 9, 5, 0).unwrap();
+fn custom_image_rotation_advances_from_the_current_image() {
+    let source = files_custom_source(&["a.png", "b.png", "c.png"]);
+    let files = source.paths.clone();
     assert_eq!(
-        rotation_key(BackgroundImageRotationInterval::Daily, now),
-        "2026-07-30"
+        next_custom_image_index(&source, &files, Some(&custom_snapshot("B.PNG"))),
+        2
     );
     assert_eq!(
-        rotation_key(BackgroundImageRotationInterval::Hourly, now),
-        "2026-07-30T09"
+        next_custom_image_index(&source, &files, Some(&custom_snapshot("c.png"))),
+        0
     );
 }
 

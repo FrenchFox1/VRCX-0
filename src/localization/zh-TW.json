@@ -3271,8 +3271,8 @@
                 "custom": "本機圖片"
             },
             "rotation": {
-                "daily": "每天",
-                "hourly": "每小時"
+                "minutes": "分鐘",
+                "custom": "自訂"
             },
             "action": {
                 "refresh": "重新整理",

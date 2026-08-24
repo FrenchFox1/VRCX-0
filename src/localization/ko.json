@@ -3223,8 +3223,8 @@
                 "custom": "로컬 이미지"
             },
             "rotation": {
-                "daily": "매일",
-                "hourly": "시간별"
+                "minutes": "분",
+                "custom": "사용자 지정"
             },
             "action": {
                 "refresh": "새로고침",

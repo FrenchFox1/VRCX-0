@@ -3271,8 +3271,8 @@
                 "custom": "本地图片"
             },
             "rotation": {
-                "daily": "每天",
-                "hourly": "每小时"
+                "minutes": "分钟",
+                "custom": "自定义"
             },
             "action": {
                 "refresh": "刷新",

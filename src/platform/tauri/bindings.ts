@@ -3068,16 +3068,13 @@ export type BackgroundImageConfigureInput =
     | { kind: 'enableCustom' }
     | { kind: 'setCustomFiles'; paths: string[] }
     | { kind: 'setCustomFolder'; folderPath: string }
-    | {
-          kind: 'setRotationInterval';
-          rotationInterval: BackgroundImageRotationInterval;
-      }
+    | { kind: 'setRotationIntervalMinutes'; rotationIntervalMinutes: number }
     | { kind: 'migrateLegacyNasaApod' };
 export type BackgroundImageCustomSource = {
     kind: BackgroundImageCustomSourceKind;
     paths: string[];
     folderPath: string;
-    rotationInterval: BackgroundImageRotationInterval;
+    rotationIntervalMinutes: number;
 };
 export type BackgroundImageCustomSourceKind = 'files' | 'folder';
 export type BackgroundImageMode = 'off' | 'daily' | 'custom';
@@ -3094,7 +3091,6 @@ export type BackgroundImageProviderId =
     | 'nasa-epic'
     | 'aic-public-domain'
     | 'nasa-apod-safe';
-export type BackgroundImageRotationInterval = 'daily' | 'hourly';
 export type BackgroundImageSnapshot = {
     mode: BackgroundImageMode;
     providerId?: BackgroundImageProviderId | null;

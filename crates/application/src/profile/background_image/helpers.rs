@@ -1,21 +1,23 @@
 use std::path::Path;
 use std::time::Duration;
 
-use chrono::{DateTime, Datelike, Local, TimeZone, Timelike, Utc};
+use chrono::{DateTime, Utc};
 use serde_json::Value;
 use vrcx_0_core::json::text_of;
 
 use super::super::ProfileConfigStore;
 use super::{
     BackgroundImageCustomSource, BackgroundImageCustomSourceKind, BackgroundImageMode,
-    BackgroundImageProviderId, BackgroundImageRotationInterval, BackgroundImageSnapshot,
-    KEY_COMMUNITY_THEME_CSS_SNAPSHOT, KEY_COMMUNITY_THEME_ENABLED,
-    KEY_COMMUNITY_THEME_INSTALLED_THEMES, KEY_COMMUNITY_THEME_INSTALL_METADATA,
+    BackgroundImageProviderId, BackgroundImageSnapshot, KEY_COMMUNITY_THEME_CSS_SNAPSHOT,
+    KEY_COMMUNITY_THEME_ENABLED, KEY_COMMUNITY_THEME_INSTALLED_THEMES,
+    KEY_COMMUNITY_THEME_INSTALL_METADATA,
 };
 use vrcx_0_application_core::{Error, Result};
 
 const SNAPSHOT_TTL_HOURS: i64 = 24;
-const ROTATION_BOUNDARY_GRACE_SECONDS: u32 = 2;
+pub(super) const DEFAULT_ROTATION_INTERVAL_MINUTES: u16 = 60;
+pub(super) const MIN_ROTATION_INTERVAL_MINUTES: u16 = 1;
+pub(super) const MAX_ROTATION_INTERVAL_MINUTES: u16 = 24 * 60;
 
 pub(super) fn community_theme_appearance_active(config: &dyn ProfileConfigStore) -> Result<bool> {
     if !config.get_bool(KEY_COMMUNITY_THEME_ENABLED, false)? {
@@ -149,13 +151,13 @@ pub(super) fn normalize_custom_source_struct(
             kind: BackgroundImageCustomSourceKind::Folder,
             paths: Vec::new(),
             folder_path,
-            rotation_interval: source.rotation_interval,
+            rotation_interval_minutes: source.rotation_interval_minutes,
         }),
         BackgroundImageCustomSourceKind::Files => Some(BackgroundImageCustomSource {
             kind: BackgroundImageCustomSourceKind::Files,
             paths,
             folder_path: String::new(),
-            rotation_interval: source.rotation_interval,
+            rotation_interval_minutes: source.rotation_interval_minutes,
         }),
     }
 }
@@ -179,41 +181,44 @@ pub(super) fn normalize_custom_source(value: &Value) -> Option<BackgroundImageCu
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
-    let rotation_interval = if text_of(value.get("rotationInterval")) == "hourly" {
-        BackgroundImageRotationInterval::Hourly
-    } else {
-        BackgroundImageRotationInterval::Daily
-    };
+    let rotation_interval_minutes = value
+        .get("rotationIntervalMinutes")
+        .and_then(Value::as_u64)
+        .and_then(|value| u16::try_from(value).ok())
+        .filter(|value| {
+            (MIN_ROTATION_INTERVAL_MINUTES..=MAX_ROTATION_INTERVAL_MINUTES).contains(value)
+        })
+        .unwrap_or(DEFAULT_ROTATION_INTERVAL_MINUTES);
 
     normalize_custom_source_struct(BackgroundImageCustomSource {
         kind,
         paths,
         folder_path: text_of(value.get("folderPath")),
-        rotation_interval,
+        rotation_interval_minutes,
     })
 }
 
 pub(super) fn files_source(
     paths: Vec<String>,
-    rotation_interval: BackgroundImageRotationInterval,
+    rotation_interval_minutes: u16,
 ) -> BackgroundImageCustomSource {
     BackgroundImageCustomSource {
         kind: BackgroundImageCustomSourceKind::Files,
         paths: unique_paths(&paths),
         folder_path: String::new(),
-        rotation_interval,
+        rotation_interval_minutes,
     }
 }
 
 pub(super) fn folder_source(
     folder_path: String,
-    rotation_interval: BackgroundImageRotationInterval,
+    rotation_interval_minutes: u16,
 ) -> BackgroundImageCustomSource {
     BackgroundImageCustomSource {
         kind: BackgroundImageCustomSourceKind::Folder,
         paths: Vec::new(),
         folder_path: folder_path.trim().to_string(),
-        rotation_interval,
+        rotation_interval_minutes,
     }
 }
 
@@ -303,51 +308,23 @@ pub(super) fn current_utc_date_key() -> String {
     Utc::now().format("%Y-%m-%d").to_string()
 }
 
-pub(super) fn rotation_key(
-    interval: BackgroundImageRotationInterval,
-    now: DateTime<Local>,
-) -> String {
-    match interval {
-        BackgroundImageRotationInterval::Hourly => now.format("%Y-%m-%dT%H").to_string(),
-        BackgroundImageRotationInterval::Daily => now.format("%Y-%m-%d").to_string(),
-    }
+pub(super) fn next_custom_image_index(
+    source: &BackgroundImageCustomSource,
+    files: &[String],
+    previous: Option<&BackgroundImageSnapshot>,
+) -> usize {
+    let previous_index = previous
+        .and_then(|snapshot| snapshot.image_path.as_deref())
+        .and_then(|previous_path| {
+            files
+                .iter()
+                .position(|file| path_key(file) == path_key(previous_path))
+        });
+    previous_index
+        .map(|index| (index + 1) % files.len())
+        .unwrap_or_else(|| (stable_hash(&source_hash_key(source)) as usize) % files.len())
 }
 
-pub(super) fn duration_until_next_rotation(
-    interval: BackgroundImageRotationInterval,
-    now: DateTime<Local>,
-) -> Duration {
-    let next = match interval {
-        BackgroundImageRotationInterval::Hourly => {
-            let base = now + chrono::Duration::hours(1);
-            Local
-                .with_ymd_and_hms(
-                    base.year(),
-                    base.month(),
-                    base.day(),
-                    base.hour(),
-                    0,
-                    ROTATION_BOUNDARY_GRACE_SECONDS,
-                )
-                .earliest()
-        }
-        BackgroundImageRotationInterval::Daily => {
-            let base = now + chrono::Duration::days(1);
-            Local
-                .with_ymd_and_hms(
-                    base.year(),
-                    base.month(),
-                    base.day(),
-                    0,
-                    0,
-                    ROTATION_BOUNDARY_GRACE_SECONDS,
-                )
-                .earliest()
-        }
-    };
-    let millis = next
-        .map(|next| (next - now).num_milliseconds())
-        .unwrap_or(3_600_000)
-        .max(1_000);
-    Duration::from_millis(millis as u64)
+pub(super) fn rotation_delay(rotation_interval_minutes: u16) -> Duration {
+    Duration::from_secs(u64::from(rotation_interval_minutes) * 60)
 }

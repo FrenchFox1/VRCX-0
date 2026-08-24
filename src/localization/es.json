@@ -3271,8 +3271,8 @@
                 "custom": "Imagen local"
             },
             "rotation": {
-                "daily": "Diaria",
-                "hourly": "Cada hora"
+                "minutes": "min",
+                "custom": "Personalizado"
             },
             "action": {
                 "refresh": "Actualizar",

@@ -14,7 +14,6 @@ import type {
     BackgroundImageCustomSource,
     BackgroundImageMode,
     BackgroundImageProviderId,
-    BackgroundImageRotationInterval,
     BackgroundImageSnapshot
 } from '@/platform/tauri/bindings';
 import {
@@ -23,13 +22,19 @@ import {
     chooseBackgroundImageFolder,
     isBackgroundImageCustomSourceRotating,
     refreshBackgroundImage,
-    setBackgroundImageCustomRotationInterval,
+    setBackgroundImageCustomRotationIntervalMinutes,
     setBackgroundImageMode,
     setBackgroundImageProvider
 } from '@/services/background-image/backgroundImageService';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+    InputGroupText
+} from '@/ui/shadcn/input-group';
 import {
     Select,
     SelectContent,
@@ -38,6 +43,30 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+
+const DEFAULT_ROTATION_INTERVAL_MINUTES = 60;
+const MIN_ROTATION_INTERVAL_MINUTES = 1;
+const MAX_ROTATION_INTERVAL_MINUTES = 24 * 60;
+
+type RotationPresetValue = '15' | '30' | '60' | '180';
+type RotationChoice = RotationPresetValue | 'custom';
+
+const ROTATION_PRESETS: {
+    value: RotationPresetValue;
+    minutes: number;
+}[] = [
+    { value: '15', minutes: 15 },
+    { value: '30', minutes: 30 },
+    { value: '60', minutes: 60 },
+    { value: '180', minutes: 180 }
+];
+
+function rotationChoiceFromMinutes(minutes: number): RotationChoice {
+    return (
+        ROTATION_PRESETS.find((preset) => preset.minutes === minutes)?.value ??
+        'custom'
+    );
+}
 
 function countKey(baseKey: string, count: number): string {
     return count === 1 ? baseKey : `${baseKey}_plural`;
@@ -187,9 +216,9 @@ function CurrentBackgroundImageSummary({
                                     {t(
                                         'view.background_image.settings.rotation'
                                     )}
-                                    :{' '}
+                                    : {customSource.rotationIntervalMinutes}{' '}
                                     {t(
-                                        `view.background_image.rotation.${customSource.rotationInterval}`
+                                        'view.background_image.rotation.minutes'
                                     )}
                                 </span>
                             ) : null}
@@ -221,10 +250,24 @@ export function BackgroundImageSection() {
     const customSource = useBackgroundImageStore((state) => state.customSource);
     const snapshot = useBackgroundImageStore((state) => state.snapshot);
     const loading = useBackgroundImageStore((state) => state.loading);
+    const rotationIntervalMinutes =
+        customSource?.rotationIntervalMinutes ??
+        DEFAULT_ROTATION_INTERVAL_MINUTES;
+    const [rotationChoice, setRotationChoice] = useState<RotationChoice>(() =>
+        rotationChoiceFromMinutes(rotationIntervalMinutes)
+    );
+    const [rotationIntervalDraft, setRotationIntervalDraft] = useState(
+        String(rotationIntervalMinutes)
+    );
     const showRotation = isBackgroundImageCustomSourceRotating(
         customSource,
         snapshot?.imageCount
     );
+
+    useEffect(() => {
+        setRotationChoice(rotationChoiceFromMinutes(rotationIntervalMinutes));
+        setRotationIntervalDraft(String(rotationIntervalMinutes));
+    }, [rotationIntervalMinutes]);
 
     async function updateMode(nextMode: BackgroundImageMode) {
         try {
@@ -304,18 +347,35 @@ export function BackgroundImageSection() {
         }
     }
 
-    async function updateRotationInterval(
-        value: BackgroundImageRotationInterval
-    ) {
+    async function updateRotationIntervalMinutes(value: number) {
         try {
-            await setBackgroundImageCustomRotationInterval(value);
+            await setBackgroundImageCustomRotationIntervalMinutes(value);
             toast.success(t('common.settings_saved'));
         } catch (error) {
+            setRotationChoice(
+                rotationChoiceFromMinutes(rotationIntervalMinutes)
+            );
+            setRotationIntervalDraft(String(rotationIntervalMinutes));
             toast.error(
                 error instanceof Error
                     ? error.message
                     : t('view.background_image.toast.failed')
             );
+        }
+    }
+
+    async function commitRotationIntervalDraft() {
+        const value = Number(rotationIntervalDraft);
+        if (
+            !Number.isInteger(value) ||
+            value < MIN_ROTATION_INTERVAL_MINUTES ||
+            value > MAX_ROTATION_INTERVAL_MINUTES
+        ) {
+            setRotationIntervalDraft(String(rotationIntervalMinutes));
+            return;
+        }
+        if (value !== rotationIntervalMinutes) {
+            await updateRotationIntervalMinutes(value);
         }
     }
 
@@ -484,29 +544,31 @@ export function BackgroundImageSection() {
                                         'view.background_image.settings.rotation'
                                     )}
                                 </span>
-                                <Select<BackgroundImageRotationInterval>
-                                    value={
-                                        customSource?.rotationInterval ||
-                                        'daily'
-                                    }
+                                <Select<RotationChoice>
+                                    value={rotationChoice}
                                     items={[
+                                        ...ROTATION_PRESETS.map((preset) => ({
+                                            value: preset.value,
+                                            label: `${preset.minutes} ${t('view.background_image.rotation.minutes')}`
+                                        })),
                                         {
-                                            value: 'daily',
+                                            value: 'custom',
                                             label: t(
-                                                'view.background_image.rotation.daily'
-                                            )
-                                        },
-                                        {
-                                            value: 'hourly',
-                                            label: t(
-                                                'view.background_image.rotation.hourly'
+                                                'view.background_image.rotation.custom'
                                             )
                                         }
                                     ]}
                                     disabled={loading}
                                     onValueChange={(value) => {
-                                        if (value) {
-                                            updateRotationInterval(value);
+                                        if (!value) {
+                                            return;
+                                        }
+                                        setRotationChoice(value);
+                                        if (value !== 'custom') {
+                                            setRotationIntervalDraft(value);
+                                            void updateRotationIntervalMinutes(
+                                                Number(value)
+                                            );
                                         }
                                     }}
                                 >
@@ -518,19 +580,60 @@ export function BackgroundImageSection() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectItem value="daily">
+                                            {ROTATION_PRESETS.map((preset) => (
+                                                <SelectItem
+                                                    key={preset.value}
+                                                    value={preset.value}
+                                                >
+                                                    {preset.minutes}{' '}
+                                                    {t(
+                                                        'view.background_image.rotation.minutes'
+                                                    )}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem value="custom">
                                                 {t(
-                                                    'view.background_image.rotation.daily'
-                                                )}
-                                            </SelectItem>
-                                            <SelectItem value="hourly">
-                                                {t(
-                                                    'view.background_image.rotation.hourly'
+                                                    'view.background_image.rotation.custom'
                                                 )}
                                             </SelectItem>
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
+                                {rotationChoice === 'custom' ? (
+                                    <InputGroup className="w-32">
+                                        <InputGroupInput
+                                            type="number"
+                                            min={MIN_ROTATION_INTERVAL_MINUTES}
+                                            max={MAX_ROTATION_INTERVAL_MINUTES}
+                                            step={1}
+                                            disabled={loading}
+                                            value={rotationIntervalDraft}
+                                            onChange={(event) =>
+                                                setRotationIntervalDraft(
+                                                    event.currentTarget.value
+                                                )
+                                            }
+                                            onBlur={() => {
+                                                void commitRotationIntervalDraft();
+                                            }}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter') {
+                                                    event.currentTarget.blur();
+                                                }
+                                            }}
+                                            aria-label={t(
+                                                'view.background_image.settings.rotation'
+                                            )}
+                                        />
+                                        <InputGroupAddon align="inline-end">
+                                            <InputGroupText>
+                                                {t(
+                                                    'view.background_image.rotation.minutes'
+                                                )}
+                                            </InputGroupText>
+                                        </InputGroupAddon>
+                                    </InputGroup>
+                                ) : null}
                             </div>
                         ) : null}
                     </div>

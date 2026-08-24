@@ -3273,8 +3273,8 @@
                 "custom": "Местный имидж"
             },
             "rotation": {
-                "daily": "Ежедневно",
-                "hourly": "Час"
+                "minutes": "мин.",
+                "custom": "Другое"
             },
             "action": {
                 "refresh": "Обновить",
