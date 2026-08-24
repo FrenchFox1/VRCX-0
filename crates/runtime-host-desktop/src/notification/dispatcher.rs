@@ -287,6 +287,8 @@ fn dispatch_prepared_notification(
         send_desktop_notification(
             output.desktop.as_ref(),
             &notification.render,
+            &notification.delivery.entry.activity_type,
+            &notification.delivery.entry.content.group_name,
             &notification.preferences,
             local_image,
             notification.desktop_action.as_ref(),

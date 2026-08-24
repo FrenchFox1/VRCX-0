@@ -407,6 +407,34 @@ fn activity_content_is_built_from_feed_payload() {
 }
 
 #[test]
+fn group_announcement_exposes_nested_source_group_name() {
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "desktop": {
+            "types": {
+                "group.announcement": {
+                    "scope": "on",
+                    "favoriteGroupKeys": "all"
+                }
+            }
+        }
+    })));
+    let mut row = candidate("group.announcement", "");
+    row.payload = json!({
+        "type": "group.announcement",
+        "message": "Weekly meetup",
+        "data": {
+            "groupName": "Maple Club"
+        }
+    })
+    .into();
+
+    let entry = runtime.ingest_candidate(row).unwrap();
+
+    assert_eq!(entry.content.group_name, "Maple Club");
+}
+
+#[test]
 fn all_activity_types_build_desktop_safe_content() {
     let definitions = overlay_activity_type_definitions();
     let runtime = OverlayActivityRuntime::with_filters(desktop_filters_for(&definitions));

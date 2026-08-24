@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application_activity::notification::RenderedNotification;
@@ -77,12 +78,15 @@ impl DesktopNotifier for DesktopNotifierSlot {
 pub(super) fn send_desktop_notification(
     notifier: &dyn DesktopNotifier,
     render: &RenderedNotification,
+    activity_type: &str,
+    group_name: &str,
     preferences: &NotificationDeliveryPreferences,
     local_image: Option<&str>,
     action: Option<&DesktopNotificationAction>,
 ) {
+    let title = desktop_notification_title(activity_type, group_name, &render.title);
     if let Err(error) = notifier.show(
-        &render.title,
+        &title,
         non_empty(&render.body),
         local_image,
         preferences.desktop_notification_sound,
@@ -90,6 +94,18 @@ pub(super) fn send_desktop_notification(
     ) {
         tracing::warn!("[Desktop] notification send failed: {error}");
     }
+}
+
+fn desktop_notification_title<'a>(
+    activity_type: &str,
+    group_name: &str,
+    title: &'a str,
+) -> Cow<'a, str> {
+    let group_name = group_name.trim();
+    if activity_type == "group.announcement" && !group_name.is_empty() {
+        return Cow::Owned(format!("{group_name} · {title}"));
+    }
+    Cow::Borrowed(title)
 }
 
 fn non_empty(value: &str) -> Option<&str> {
@@ -101,7 +117,23 @@ fn non_empty(value: &str) -> Option<&str> {
 mod tests {
     use vrcx_0_core::OwnerId;
 
-    use super::DesktopNotificationAction;
+    use super::{desktop_notification_title, DesktopNotificationAction};
+
+    #[test]
+    fn group_announcement_title_includes_source_group() {
+        assert_eq!(
+            desktop_notification_title("group.announcement", "Maple Club", "Group Announcement"),
+            "Maple Club · Group Announcement"
+        );
+        assert_eq!(
+            desktop_notification_title("group.announcement", "", "Group Announcement"),
+            "Group Announcement"
+        );
+        assert_eq!(
+            desktop_notification_title("group.informative", "Maple Club", "Group Information"),
+            "Group Information"
+        );
+    }
 
     #[test]
     fn open_user_profile_action_requires_canonical_owner_and_actor_ids() {

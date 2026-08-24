@@ -39,6 +39,7 @@ pub(super) fn build_activity_content(
     let group_name = first_non_empty_owned([
         payload.trimmed_field("groupName").unwrap_or_default(),
         nested_str(payload, &["details", "groupName"]),
+        nested_str(payload, &["data", "groupName"]),
     ]);
     let parsed_location = parse_location(&location);
     let display_location = first_non_empty([
