@@ -3751,7 +3751,8 @@
                 "content_gore": "過剰なゴア",
                 "content_violence": "写実的な暴力",
                 "content_adult": "成人向けの言葉やテーマ",
-                "content_sex": "性的なものを思わせる"
+                "content_sex": "性的なものを思わせる",
+                "pedestals": "台座"
             },
             "actions": {
                 "delete_cache_tooltip": "キャッシュからワールドを削除",
@@ -3865,7 +3866,10 @@
                 "change_world_image": "ワールド画像を変更",
                 "reset_your_vrchat_home_location": "VRChat ホーム位置をリセット",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "このワールドの管理対象コンテンツ、作者、機能タグを編集します",
+                "enable_avatar_scaling": "アバターのスケーリングを有効化",
+                "enable_focus_view": "フォーカス表示を有効化",
                 "enable_debugging": "デバッグを有効化",
+                "enable_third_person_view": "三人称視点を有効化",
                 "add_domain": "ドメインを追加"
             },
             "loading": {

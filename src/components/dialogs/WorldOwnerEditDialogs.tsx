@@ -30,27 +30,20 @@ import {
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-const CONTENT_TAGS = [
-    ['contentHorror', 'content_horror', 'Horror'],
-    ['contentGore', 'content_gore', 'Gore'],
-    ['contentViolence', 'content_violence', 'Violence'],
-    ['contentAdult', 'content_adult', 'Adult'],
-    ['contentSex', 'content_sex', 'Sex']
-] as const;
+import { CONTENT_TAG_OPTIONS, contentTagsCsv } from './contentTags';
 
 const FEATURE_TAGS = [
-    ['emoji', 'feature_emoji_disabled', 'Emoji'],
-    ['stickers', 'feature_stickers_disabled', 'Stickers'],
-    ['pedestals', 'feature_pedestals_disabled', 'Pedestals'],
-    ['prints', 'feature_prints_disabled', 'Prints'],
-    ['drones', 'feature_drones_disabled', 'Drones'],
-    ['props', 'feature_props_disabled', 'Items'],
-    ['thirdPerson', 'feature_third_person_view_disabled', 'Third Person']
+    ['emoji', 'feature_emoji_disabled', 'dialog.gallery_icons.emoji'],
+    ['stickers', 'feature_stickers_disabled', 'dialog.gallery_icons.stickers'],
+    ['pedestals', 'feature_pedestals_disabled', 'dialog.world.tags.pedestals'],
+    ['prints', 'feature_prints_disabled', 'dialog.gallery_icons.prints'],
+    ['drones', 'feature_drones_disabled', 'dialog.inventory.drones'],
+    ['props', 'feature_props_disabled', 'dialog.inventory.items']
 ] as const;
 
-type ContentTagKey = (typeof CONTENT_TAGS)[number][0];
+const THIRD_PERSON_DISABLED_TAG = 'feature_third_person_view_disabled';
+
 type FeatureTagKey = (typeof FEATURE_TAGS)[number][0];
-type ManagedTagKey = ContentTagKey | FeatureTagKey;
 
 export interface WorldDetailsDraft {
     name: string;
@@ -60,12 +53,13 @@ export interface WorldDetailsDraft {
     previewYoutubeId: string;
 }
 
-export type WorldTagsDraft = Record<ManagedTagKey, boolean> & {
+export type WorldTagsDraft = Record<FeatureTagKey, boolean> & {
     authorTags: string;
     contentTags: string;
     debugAllowed: boolean;
-    avatarScalingDisabled: boolean;
-    focusViewDisabled: boolean;
+    avatarScalingEnabled: boolean;
+    focusViewEnabled: boolean;
+    thirdPersonEnabled: boolean;
 };
 
 interface WorldEditorDialogProps<T> {
@@ -80,7 +74,8 @@ const EXPLICIT_TAGS = new Set([
     'debug_allowed',
     'feature_avatar_scaling_disabled',
     'feature_focus_view_disabled',
-    ...CONTENT_TAGS.map(([, tag]) => tag),
+    THIRD_PERSON_DISABLED_TAG,
+    ...CONTENT_TAG_OPTIONS.map(({ value }) => value),
     ...FEATURE_TAGS.map(([, tag]) => tag)
 ]);
 
@@ -98,41 +93,59 @@ function pushUnique(tags: string[], tag: string) {
     }
 }
 
+function worldContentTagsFromCsv(
+    value: unknown,
+    baseTags: readonly string[] = []
+): string[] {
+    const originalTags = Array.isArray(baseTags) ? baseTags.map(String) : [];
+    return Array.from(
+        new Set(
+            String(value || '')
+                .split(',')
+                .map((entry) => {
+                    const rawTag = entry.trim();
+                    if (!rawTag) {
+                        return '';
+                    }
+                    const originalTag = originalTags.find(
+                        (tag) =>
+                            tag.startsWith('content_') &&
+                            tag.slice('content_'.length) === rawTag
+                    );
+                    if (originalTag) {
+                        return originalTag;
+                    }
+                    const tagName = rawTag.replace(/^content_/, '');
+                    return tagName ? `content_${tagName}` : '';
+                })
+                .filter(Boolean)
+        )
+    );
+}
+
 function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
     const values = Array.isArray(tags) ? tags.map(String) : [];
     const draft: WorldTagsDraft = {
         authorTags: '',
         contentTags: '',
         debugAllowed: values.includes('debug_allowed'),
-        avatarScalingDisabled: values.includes(
+        avatarScalingEnabled: !values.includes(
             'feature_avatar_scaling_disabled'
         ),
-        focusViewDisabled: values.includes('feature_focus_view_disabled'),
-        contentHorror: values.includes('content_horror'),
-        contentGore: values.includes('content_gore'),
-        contentViolence: values.includes('content_violence'),
-        contentAdult: values.includes('content_adult'),
-        contentSex: values.includes('content_sex'),
+        focusViewEnabled: !values.includes('feature_focus_view_disabled'),
+        thirdPersonEnabled: !values.includes(THIRD_PERSON_DISABLED_TAG),
         emoji: !values.includes('feature_emoji_disabled'),
         stickers: !values.includes('feature_stickers_disabled'),
         pedestals: !values.includes('feature_pedestals_disabled'),
         prints: !values.includes('feature_prints_disabled'),
         drones: !values.includes('feature_drones_disabled'),
-        props: !values.includes('feature_props_disabled'),
-        thirdPerson: !values.includes('feature_third_person_view_disabled')
+        props: !values.includes('feature_props_disabled')
     };
     draft.authorTags = values
         .filter((tag) => tag.startsWith('author_tag_'))
         .map((tag) => tag.slice('author_tag_'.length))
         .join(',');
-    draft.contentTags = values
-        .filter(
-            (tag) =>
-                tag.startsWith('content_') &&
-                !CONTENT_TAGS.some(([, fixedTag]) => fixedTag === tag)
-        )
-        .map((tag) => tag.slice('content_'.length))
-        .join(',');
+    draft.contentTags = contentTagsCsv(values);
     return draft;
 }
 
@@ -149,27 +162,20 @@ function buildWorldTags(
         .filter(Boolean)) {
         pushUnique(tags, `author_tag_${tag}`);
     }
-    for (const tag of String(draft.contentTags || '')
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean)) {
-        if (!['horror', 'gore', 'violence', 'adult', 'sex'].includes(tag)) {
-            pushUnique(tags, `content_${tag}`);
-        }
-    }
-    for (const [key, tag] of CONTENT_TAGS) {
-        if (draft[key]) {
-            pushUnique(tags, tag);
-        }
+    for (const tag of worldContentTagsFromCsv(draft.contentTags, baseTags)) {
+        pushUnique(tags, tag);
     }
     if (draft.debugAllowed) {
         pushUnique(tags, 'debug_allowed');
     }
-    if (draft.avatarScalingDisabled) {
+    if (!draft.avatarScalingEnabled) {
         pushUnique(tags, 'feature_avatar_scaling_disabled');
     }
-    if (draft.focusViewDisabled) {
+    if (!draft.focusViewEnabled) {
         pushUnique(tags, 'feature_focus_view_disabled');
+    }
+    if (!draft.thirdPersonEnabled) {
+        pushUnique(tags, THIRD_PERSON_DISABLED_TAG);
     }
     for (const [key, tag] of FEATURE_TAGS) {
         if (!draft[key]) {
@@ -358,6 +364,22 @@ function WorldTagsDialog({
         setDraft((current) => ({ ...current, ...patch }));
     }
 
+    const selectedContentTags = worldContentTagsFromCsv(
+        draft.contentTags,
+        world?.tags
+    );
+    const selectedContentTagsSet = new Set(selectedContentTags);
+
+    function toggleContentTag(tag: string) {
+        const nextTags = new Set(selectedContentTags);
+        if (nextTags.has(tag)) {
+            nextTags.delete(tag);
+        } else {
+            nextTags.add(tag);
+        }
+        updateDraft({ contentTags: contentTagsCsv(Array.from(nextTags)) });
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
@@ -374,32 +396,47 @@ function WorldTagsDialog({
                 <FieldGroup className="gap-3">
                     <Field orientation="horizontal">
                         <Checkbox
-                            id="world-tag-avatar-scaling-disabled"
-                            checked={draft.avatarScalingDisabled}
+                            id="world-tag-avatar-scaling-enabled"
+                            checked={draft.avatarScalingEnabled}
                             disabled={saving}
                             onCheckedChange={(checked) =>
                                 updateDraft({
-                                    avatarScalingDisabled: checked === true
+                                    avatarScalingEnabled: checked === true
                                 })
                             }
                         />
-                        <FieldLabel htmlFor="world-tag-avatar-scaling-disabled">
-                            {t('dialog.world.label.avatar_scaling_disabled')}
+                        <FieldLabel htmlFor="world-tag-avatar-scaling-enabled">
+                            {t('dialog.world.action.enable_avatar_scaling')}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
                         <Checkbox
-                            id="world-tag-focus-view-disabled"
-                            checked={draft.focusViewDisabled}
+                            id="world-tag-focus-view-enabled"
+                            checked={draft.focusViewEnabled}
                             disabled={saving}
                             onCheckedChange={(checked) =>
                                 updateDraft({
-                                    focusViewDisabled: checked === true
+                                    focusViewEnabled: checked === true
                                 })
                             }
                         />
-                        <FieldLabel htmlFor="world-tag-focus-view-disabled">
-                            {t('dialog.world.label.focus_view_disabled')}
+                        <FieldLabel htmlFor="world-tag-focus-view-enabled">
+                            {t('dialog.world.action.enable_focus_view')}
+                        </FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
+                        <Checkbox
+                            id="world-tag-third-person-enabled"
+                            checked={draft.thirdPersonEnabled}
+                            disabled={saving}
+                            onCheckedChange={(checked) =>
+                                updateDraft({
+                                    thirdPersonEnabled: checked === true
+                                })
+                            }
+                        />
+                        <FieldLabel htmlFor="world-tag-third-person-enabled">
+                            {t('dialog.world.action.enable_third_person_view')}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
@@ -438,22 +475,25 @@ function WorldTagsDialog({
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
                         >
-                            {CONTENT_TAGS.map(([key, , label]) => (
-                                <Field key={key} orientation="horizontal">
+                            {CONTENT_TAG_OPTIONS.map((option) => (
+                                <Field
+                                    key={option.value}
+                                    orientation="horizontal"
+                                >
                                     <Checkbox
-                                        id={`world-content-tag-${key}`}
-                                        checked={draft[key]}
+                                        id={`world-content-tag-${option.value}`}
+                                        checked={selectedContentTagsSet.has(
+                                            option.value
+                                        )}
                                         disabled={saving}
-                                        onCheckedChange={(checked) =>
-                                            updateDraft({
-                                                [key]: checked === true
-                                            })
+                                        onCheckedChange={() =>
+                                            toggleContentTag(option.value)
                                         }
                                     />
                                     <FieldLabel
-                                        htmlFor={`world-content-tag-${key}`}
+                                        htmlFor={`world-content-tag-${option.value}`}
                                     >
-                                        {label}
+                                        {t(option.labelKey)}
                                     </FieldLabel>
                                 </Field>
                             ))}
@@ -471,6 +511,7 @@ function WorldTagsDialog({
                                 value={draft.contentTags}
                                 disabled={saving}
                                 className="resize-none"
+                                placeholder="horror,gore,violence,adult,sex"
                                 onChange={(event) =>
                                     updateDraft({
                                         contentTags: event.target.value
@@ -487,7 +528,7 @@ function WorldTagsDialog({
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
                         >
-                            {FEATURE_TAGS.map(([key, , label]) => (
+                            {FEATURE_TAGS.map(([key, , labelKey]) => (
                                 <Field key={key} orientation="horizontal">
                                     <Checkbox
                                         id={`world-feature-tag-${key}`}
@@ -502,7 +543,7 @@ function WorldTagsDialog({
                                     <FieldLabel
                                         htmlFor={`world-feature-tag-${key}`}
                                     >
-                                        {label}
+                                        {t(labelKey)}
                                     </FieldLabel>
                                 </Field>
                             ))}
