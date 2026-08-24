@@ -217,11 +217,11 @@ describe('preferencesStore normalizers', () => {
             favoriteGroupKeys: ['group_future']
         });
         expect(filters.hmd.types.OnPlayerJoined).toEqual({
-            scope: 'friends',
+            scope: 'off',
             favoriteGroupKeys: 'all'
         });
         expect(filters.hmd.types.Online).toEqual({
-            scope: 'allFavorites',
+            scope: 'friends',
             favoriteGroupKeys: 'all'
         });
         expect(filters.hmd.types.VideoPlay).toEqual({
@@ -240,11 +240,11 @@ describe('preferencesStore normalizers', () => {
 
         for (const types of [malformed, empty]) {
             expect(types.OnPlayerJoined).toEqual({
-                scope: 'friends',
+                scope: 'off',
                 favoriteGroupKeys: 'all'
             });
             expect(types.Online).toEqual({
-                scope: 'allFavorites',
+                scope: 'friends',
                 favoriteGroupKeys: 'all'
             });
             expect(types.VideoPlay).toEqual({

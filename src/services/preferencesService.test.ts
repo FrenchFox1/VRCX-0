@@ -468,7 +468,7 @@ describe('preferencesService characterization', () => {
         ).resolves.toMatchObject({
             types: {
                 OnPlayerJoined: {
-                    scope: 'friends',
+                    scope: 'off',
                     favoriteGroupKeys: 'all'
                 },
                 Online: {
@@ -487,7 +487,7 @@ describe('preferencesService characterization', () => {
             filters: expect.objectContaining({
                 types: expect.objectContaining({
                     OnPlayerJoined: {
-                        scope: 'friends',
+                        scope: 'off',
                         favoriteGroupKeys: 'all'
                     },
                     Online: {
@@ -516,7 +516,7 @@ describe('preferencesService characterization', () => {
             usePreferencesStore.getState().hmdNotificationActivityFilters.types
                 .OnPlayerJoined
         ).toEqual({
-            scope: 'friends',
+            scope: 'off',
             favoriteGroupKeys: 'all'
         });
     });
@@ -535,11 +535,11 @@ describe('preferencesService characterization', () => {
             ).resolves.toMatchObject({
                 types: {
                     OnPlayerJoined: {
-                        scope: 'friends',
+                        scope: 'off',
                         favoriteGroupKeys: 'all'
                     },
                     Online: {
-                        scope: 'allFavorites',
+                        scope: 'friends',
                         favoriteGroupKeys: 'all'
                     },
                     VideoPlay: {
@@ -557,11 +557,11 @@ describe('preferencesService characterization', () => {
             filters: expect.objectContaining({
                 types: expect.objectContaining({
                     OnPlayerJoined: {
-                        scope: 'friends',
+                        scope: 'off',
                         favoriteGroupKeys: 'all'
                     },
                     Online: {
-                        scope: 'allFavorites',
+                        scope: 'friends',
                         favoriteGroupKeys: 'all'
                     },
                     VideoPlay: {
