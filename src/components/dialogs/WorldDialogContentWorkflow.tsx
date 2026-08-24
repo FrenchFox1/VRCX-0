@@ -519,9 +519,9 @@ export function WorldDialogContentWorkflow({
                 world={world}
                 saving={actionStatus === 'save-world'}
                 onSave={(
-                    tags: Parameters<WorldTagsDialogProps['onSave']>[0]
+                    update: Parameters<WorldTagsDialogProps['onSave']>[0]
                 ) => {
-                    ownerActions.saveWorldTags(tags);
+                    ownerActions.saveWorldTags(update);
                 }}
             />
             <WorldAllowedDomainsDialog

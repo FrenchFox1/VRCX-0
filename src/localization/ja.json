@@ -3876,6 +3876,7 @@
                 "enable_focus_view": "フォーカス表示を有効化",
                 "enable_debugging": "デバッグを有効化",
                 "enable_third_person_view": "三人称視点を有効化",
+                "allow_props_to_modify_player_movement": "プロップによるプレイヤーの移動変更を許可",
                 "add_domain": "ドメインを追加"
             },
             "loading": {

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
 
-import { WorldTagsDialog } from './WorldOwnerEditDialogs';
+import { type WorldTagsUpdate, WorldTagsDialog } from './WorldOwnerEditDialogs';
 
 vi.mock('react-i18next', async (importOriginal) => {
     const actual = await importOriginal<typeof import('react-i18next')>();
@@ -18,11 +18,15 @@ vi.mock('react-i18next', async (importOriginal) => {
 
 afterEach(cleanup);
 
-function createWorld(tags: string[]): WorldProfileRecord {
+function createWorld(
+    tags: string[],
+    disabledPropAbilities: string[] = []
+): WorldProfileRecord {
     return {
         id: 'wrld_test',
         name: 'Test World',
-        tags
+        tags,
+        disabledPropAbilities
     } as WorldProfileRecord;
 }
 
@@ -50,6 +54,9 @@ describe('WorldTagsDialog', () => {
         const thirdPerson = screen.getByRole('checkbox', {
             name: 'dialog.world.action.enable_third_person_view'
         });
+        const propMovement = screen.getByRole('checkbox', {
+            name: 'dialog.world.action.allow_props_to_modify_player_movement'
+        });
         const debug = screen.getByRole('checkbox', {
             name: 'dialog.world.action.enable_debugging'
         });
@@ -60,8 +67,13 @@ describe('WorldTagsDialog', () => {
         expect(avatarScaling.getAttribute('aria-checked')).toBe('false');
         expect(focusView.getAttribute('aria-checked')).toBe('false');
         expect(thirdPerson.getAttribute('aria-checked')).toBe('false');
+        expect(propMovement.getAttribute('aria-checked')).toBe('true');
         expect(
-            thirdPerson.compareDocumentPosition(debug) &
+            thirdPerson.compareDocumentPosition(propMovement) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+        expect(
+            propMovement.compareDocumentPosition(debug) &
                 Node.DOCUMENT_POSITION_FOLLOWING
         ).toBeTruthy();
         expect(
@@ -102,11 +114,67 @@ describe('WorldTagsDialog', () => {
         await user.click(screen.getByText('common.actions.save'));
 
         expect(onSave).toHaveBeenCalledWith(
-            expect.arrayContaining([
-                'feature_avatar_scaling_disabled',
-                'feature_focus_view_disabled',
-                'feature_third_person_view_disabled'
-            ])
+            expect.objectContaining({
+                tags: expect.arrayContaining([
+                    'feature_avatar_scaling_disabled',
+                    'feature_focus_view_disabled',
+                    'feature_third_person_view_disabled'
+                ])
+            })
+        );
+    });
+
+    it('removes only player movement from disabled prop abilities when enabled', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn();
+
+        render(
+            <WorldTagsDialog
+                open
+                onOpenChange={vi.fn()}
+                world={createWorld([], ['future_ability', 'player_movement'])}
+                onSave={onSave}
+            />
+        );
+
+        const propMovement = screen.getByRole('checkbox', {
+            name: 'dialog.world.action.allow_props_to_modify_player_movement'
+        });
+        expect(propMovement.getAttribute('aria-checked')).toBe('false');
+
+        await user.click(propMovement);
+        await user.click(screen.getByText('common.actions.save'));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                disabledPropAbilities: ['future_ability']
+            })
+        );
+    });
+
+    it('adds player movement without replacing unknown disabled prop abilities', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn();
+
+        render(
+            <WorldTagsDialog
+                open
+                onOpenChange={vi.fn()}
+                world={createWorld([], ['future_ability'])}
+                onSave={onSave}
+            />
+        );
+
+        const propMovement = screen.getByRole('checkbox', {
+            name: 'dialog.world.action.allow_props_to_modify_player_movement'
+        });
+        await user.click(propMovement);
+        await user.click(screen.getByText('common.actions.save'));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                disabledPropAbilities: ['future_ability', 'player_movement']
+            })
         );
     });
 
@@ -185,18 +253,20 @@ describe('WorldTagsDialog', () => {
         await user.click(screen.getByText('common.actions.save'));
 
         expect(onSave).toHaveBeenCalledWith(
-            expect.arrayContaining([
-                'content_violence',
-                'content_custom',
-                'content_horror',
-                'system_approved'
-            ])
+            expect.objectContaining({
+                tags: expect.arrayContaining([
+                    'content_violence',
+                    'content_custom',
+                    'content_horror',
+                    'system_approved'
+                ])
+            })
         );
     });
 
     it('preserves existing custom content tags when managed tags change', async () => {
         const user = userEvent.setup();
-        const onSave = vi.fn<(tags: string[]) => void>();
+        const onSave = vi.fn<(update: WorldTagsUpdate) => void>();
 
         render(
             <WorldTagsDialog
@@ -220,7 +290,7 @@ describe('WorldTagsDialog', () => {
         );
         await user.click(screen.getByText('common.actions.save'));
 
-        const savedTags = onSave.mock.calls[0]?.[0] ?? [];
+        const savedTags = onSave.mock.calls[0]?.[0].tags ?? [];
         expect(savedTags.filter((tag) => tag.startsWith('content_'))).toEqual([
             'content_Custom',
             'content_content_custom',

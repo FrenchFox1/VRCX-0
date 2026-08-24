@@ -3885,6 +3885,7 @@
                 "enable_focus_view": "Включить фокусировку вида",
                 "enable_debugging": "Включить отладку",
                 "enable_third_person_view": "Включить вид от третьего лица",
+                "allow_props_to_modify_player_movement": "Разрешить пропам изменять движение игрока",
                 "add_domain": "Добавить домен"
             },
             "loading": {

@@ -3828,6 +3828,7 @@
                 "enable_focus_view": "포커스 뷰 활성화",
                 "enable_debugging": "디버깅 활성화",
                 "enable_third_person_view": "3인칭 시점 활성화",
+                "allow_props_to_modify_player_movement": "프롭이 플레이어 이동을 변경하도록 허용",
                 "add_domain": "도메인 추가",
                 "reset_your_vrchat_home_location": "VRChat 집 위치 재설정"
             },

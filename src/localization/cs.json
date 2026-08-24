@@ -3885,6 +3885,7 @@
                 "enable_focus_view": "Povolit zaměřený pohled",
                 "enable_debugging": "Povolit ladění",
                 "enable_third_person_view": "Povolit pohled třetí osoby",
+                "allow_props_to_modify_player_movement": "Povolit rekvizitám měnit pohyb hráče",
                 "add_domain": "Přidat doménu"
             },
             "loading": {

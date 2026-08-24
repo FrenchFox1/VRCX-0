@@ -3881,6 +3881,7 @@
                 "enable_focus_view": "Fokusansicht aktivieren",
                 "enable_debugging": "Debugging aktivieren",
                 "enable_third_person_view": "Third-Person-Ansicht aktivieren",
+                "allow_props_to_modify_player_movement": "Props erlauben, die Spielerbewegung zu verändern",
                 "add_domain": "Domain hinzufügen"
             },
             "loading": {

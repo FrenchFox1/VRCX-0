@@ -42,6 +42,7 @@ const FEATURE_TAGS = [
 ] as const;
 
 const THIRD_PERSON_DISABLED_TAG = 'feature_third_person_view_disabled';
+const PLAYER_MOVEMENT_PROP_ABILITY = 'player_movement';
 
 type FeatureTagKey = (typeof FEATURE_TAGS)[number][0];
 
@@ -59,8 +60,14 @@ export type WorldTagsDraft = Record<FeatureTagKey, boolean> & {
     debugAllowed: boolean;
     avatarScalingEnabled: boolean;
     focusViewEnabled: boolean;
+    propMovementEnabled: boolean;
     thirdPersonEnabled: boolean;
 };
+
+export interface WorldTagsUpdate {
+    tags: string[];
+    disabledPropAbilities: string[];
+}
 
 interface WorldEditorDialogProps<T> {
     open: boolean;
@@ -123,8 +130,14 @@ function worldContentTagsFromCsv(
     );
 }
 
-function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
+function createWorldTagsDraft(
+    tags: readonly string[] = [],
+    disabledPropAbilities: readonly string[] = []
+): WorldTagsDraft {
     const values = Array.isArray(tags) ? tags.map(String) : [];
+    const disabledAbilities = Array.isArray(disabledPropAbilities)
+        ? disabledPropAbilities.map(String)
+        : [];
     const draft: WorldTagsDraft = {
         authorTags: '',
         contentTags: '',
@@ -133,6 +146,9 @@ function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
             'feature_avatar_scaling_disabled'
         ),
         focusViewEnabled: !values.includes('feature_focus_view_disabled'),
+        propMovementEnabled: !disabledAbilities.includes(
+            PLAYER_MOVEMENT_PROP_ABILITY
+        ),
         thirdPersonEnabled: !values.includes(THIRD_PERSON_DISABLED_TAG),
         emoji: !values.includes('feature_emoji_disabled'),
         stickers: !values.includes('feature_stickers_disabled'),
@@ -183,6 +199,24 @@ function buildWorldTags(
         }
     }
     return tags;
+}
+
+function buildDisabledPropAbilities(
+    propMovementEnabled: boolean,
+    baseAbilities: readonly string[] = []
+) {
+    const abilities = Array.isArray(baseAbilities)
+        ? baseAbilities.map(String)
+        : [];
+    if (propMovementEnabled) {
+        return abilities.filter(
+            (ability) => ability !== PLAYER_MOVEMENT_PROP_ABILITY
+        );
+    }
+    if (!abilities.includes(PLAYER_MOVEMENT_PROP_ABILITY)) {
+        abilities.push(PLAYER_MOVEMENT_PROP_ABILITY);
+    }
+    return abilities;
 }
 
 function createWorldDetailsDraft(
@@ -349,16 +383,20 @@ function WorldTagsDialog({
     world,
     saving = false,
     onSave
-}: WorldEditorDialogProps<string[]>) {
+}: WorldEditorDialogProps<WorldTagsUpdate>) {
     const { t } = useTranslation();
 
-    const [draft, setDraft] = useState(() => createWorldTagsDraft(world?.tags));
+    const [draft, setDraft] = useState(() =>
+        createWorldTagsDraft(world?.tags, world?.disabledPropAbilities)
+    );
 
     useEffect(() => {
         if (open) {
-            setDraft(createWorldTagsDraft(world?.tags));
+            setDraft(
+                createWorldTagsDraft(world?.tags, world?.disabledPropAbilities)
+            );
         }
-    }, [open, world?.id, world?.tags]);
+    }, [open, world?.disabledPropAbilities, world?.id, world?.tags]);
 
     function updateDraft(patch: Partial<WorldTagsDraft>) {
         setDraft((current) => ({ ...current, ...patch }));
@@ -437,6 +475,23 @@ function WorldTagsDialog({
                         />
                         <FieldLabel htmlFor="world-tag-third-person-enabled">
                             {t('dialog.world.action.enable_third_person_view')}
+                        </FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
+                        <Checkbox
+                            id="world-prop-movement-enabled"
+                            checked={draft.propMovementEnabled}
+                            disabled={saving}
+                            onCheckedChange={(checked) =>
+                                updateDraft({
+                                    propMovementEnabled: checked === true
+                                })
+                            }
+                        />
+                        <FieldLabel htmlFor="world-prop-movement-enabled">
+                            {t(
+                                'dialog.world.action.allow_props_to_modify_player_movement'
+                            )}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
@@ -563,7 +618,14 @@ function WorldTagsDialog({
                         type="button"
                         disabled={saving}
                         onClick={() =>
-                            onSave?.(buildWorldTags(draft, world?.tags))
+                            onSave?.({
+                                tags: buildWorldTags(draft, world?.tags),
+                                disabledPropAbilities:
+                                    buildDisabledPropAbilities(
+                                        draft.propMovementEnabled,
+                                        world?.disabledPropAbilities
+                                    )
+                            })
                         }
                     >
                         {t('common.actions.save')}

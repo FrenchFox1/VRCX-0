@@ -3881,6 +3881,7 @@
                 "enable_focus_view": "Ativar visão em foco",
                 "enable_debugging": "Ativar depuração",
                 "enable_third_person_view": "Ativar visão em terceira pessoa",
+                "allow_props_to_modify_player_movement": "Permitir que objetos alterem o movimento do jogador",
                 "add_domain": "Adicionar domínio"
             },
             "loading": {

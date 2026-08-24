@@ -3881,6 +3881,7 @@
                 "enable_focus_view": "启用聚焦视图",
                 "enable_debugging": "启用调试",
                 "enable_third_person_view": "启用第三人称视角",
+                "allow_props_to_modify_player_movement": "允许道具改变玩家移动方式",
                 "add_domain": "添加域名"
             },
             "loading": {
