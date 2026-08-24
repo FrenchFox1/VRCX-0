@@ -1,4 +1,7 @@
-import type { InstanceCreateGroupAccessType } from '@/platform/tauri/bindings';
+import type {
+    InstanceCreateGroupAccessType,
+    InstanceCreateMinimumAvatarPerformance
+} from '@/platform/tauri/bindings';
 
 import type { buildCreatedInstanceDetails } from './worldInstances';
 
@@ -26,6 +29,7 @@ export interface WorldNewInstanceForm {
     groupId: string;
     groupName?: string;
     groupAccessType: InstanceCreateGroupAccessType;
+    minimumAvatarPerformance: InstanceCreateMinimumAvatarPerformance | '';
     queueEnabled: boolean;
     ageGate: boolean;
     displayName: string;

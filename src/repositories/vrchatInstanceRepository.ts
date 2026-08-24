@@ -8,6 +8,7 @@ import {
     commands,
     type HttpApiExecuteResponse,
     type InstanceCreateGroupAccessType,
+    type InstanceCreateMinimumAvatarPerformance,
     type InstanceCreateRegion,
     type InstanceCreateRequest,
     type InstanceCreateType
@@ -39,6 +40,7 @@ interface CreateInstanceOptions extends InstanceRepositoryOptions {
     region?: InstanceRegion;
     groupId?: string;
     groupAccessType?: InstanceCreateGroupAccessType;
+    minimumAvatarPerformance?: InstanceCreateMinimumAvatarPerformance | '';
     queueEnabled?: boolean;
     roleIds?: string[];
     ageGate?: boolean;
@@ -120,6 +122,7 @@ async function createInstance({
     region = 'US West',
     groupId = '',
     groupAccessType = 'plus',
+    minimumAvatarPerformance = '',
     queueEnabled = true,
     roleIds = [],
     ageGate = false,
@@ -161,6 +164,9 @@ async function createInstance({
         params.queueEnabled = queueEnabled;
         if (groupAccessType === 'members') {
             params.roleIds = roleIds;
+        }
+        if (minimumAvatarPerformance) {
+            params.minimumAvatarPerformance = minimumAvatarPerformance;
         }
         if (ageGate) {
             params.ageGate = true;

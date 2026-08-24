@@ -1,7 +1,10 @@
 import type { TFunction } from 'i18next';
 
 import { defaultWorldCacheInfo } from '@/lib/worldAssetBundle';
-import type { InstanceCreateGroupAccessType } from '@/platform/tauri/bindings';
+import type {
+    InstanceCreateGroupAccessType,
+    InstanceCreateMinimumAvatarPerformance
+} from '@/platform/tauri/bindings';
 import { isRecord } from '@/shared/utils/record';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 
@@ -98,6 +101,20 @@ export function normalizeGroupAccessType(
         accessType === 'public'
     ) {
         return accessType;
+    }
+    return '';
+}
+
+export function normalizeMinimumAvatarPerformance(
+    value: string | null | undefined
+): InstanceCreateMinimumAvatarPerformance | '' {
+    const performance = value?.trim() ?? '';
+    if (
+        performance === 'Poor' ||
+        performance === 'Medium' ||
+        performance === 'Good'
+    ) {
+        return performance;
     }
     return '';
 }

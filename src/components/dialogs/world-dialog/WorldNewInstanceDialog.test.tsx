@@ -370,6 +370,27 @@ describe('WorldNewInstanceDialog', () => {
         ).toBeLessThan(props.onSubmit.mock.invocationCallOrder[0]);
     });
 
+    it('maps the group avatar-performance selection back to an omitted request value', async () => {
+        const props = defaultProps({
+            request: makeRequest({
+                accessType: 'group',
+                groupId: 'grp_test',
+                minimumAvatarPerformance: 'Good'
+            })
+        });
+        render(<WorldNewInstanceDialog {...props} />);
+
+        const performanceSelect = await screen.findByDisplayValue(
+            'dialog.new_instance.minimum_avatar_performance_good'
+        );
+        fireEvent.change(performanceSelect, { target: { value: 'none' } });
+        fireEvent.click(buttonByName('dialog.new_instance.create_instance'));
+
+        expect(props.onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({ minimumAvatarPerformance: '' })
+        );
+    });
+
     it('keeps the normal tab on create-only actions', async () => {
         const props = defaultProps({ request: makeRequest() });
         render(<WorldNewInstanceDialog {...props} />);
