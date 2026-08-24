@@ -111,7 +111,9 @@ describe('useUserHoverCardData', () => {
         const html = renderToStaticMarkup(<Probe userId="usr_friend" />);
 
         expect(html).toContain('data-variant="offline"');
-        expect(html).toContain('data-status-dot="bg-[var(--status-offline)]"');
+        expect(html).toContain(
+            'data-status-dot="user-status-indicator offline bg-[var(--status-offline)]"'
+        );
     });
 
     it('reads an online matching friend time directly from the shared snapshot', () => {

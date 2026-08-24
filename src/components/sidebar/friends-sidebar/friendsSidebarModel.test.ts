@@ -107,7 +107,9 @@ describe('friendsSidebarModel current user status dot', () => {
     it('defaults to the active outline when local game state is unavailable', () => {
         expect(
             resolveSidebarStatusDotClassName(currentUser, currentUser, true)
-        ).toBe('border-[var(--status-online)] bg-background');
+        ).toBe(
+            'user-status-indicator online border-[var(--status-online)] bg-background'
+        );
     });
 
     it('uses the solid status colour while the local game is running', () => {
@@ -115,7 +117,7 @@ describe('friendsSidebarModel current user status dot', () => {
             resolveSidebarStatusDotClassName(currentUser, currentUser, true, {
                 isGameRunning: true
             })
-        ).toBe('bg-[var(--status-online)]');
+        ).toBe('user-status-indicator online bg-[var(--status-online)]');
     });
 
     it('keeps the logged-in current user active when the local game is stopped', () => {
@@ -133,7 +135,9 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: false }
             )
-        ).toBe('border-[var(--status-busy)] bg-background');
+        ).toBe(
+            'user-status-indicator busy border-[var(--status-busy)] bg-background'
+        );
     });
 
     it('keeps local game authority above stale remote presence fields', () => {
@@ -151,7 +155,7 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: true }
             )
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
     });
 
     it('uses the solid account status when the stopped local game has a remote location', () => {
@@ -175,7 +179,7 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: false }
             )
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
     });
 
     it('uses the account status color for remote play', () => {
@@ -193,7 +197,7 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: false }
             )
-        ).toBe('bg-[var(--status-joinme)]');
+        ).toBe('user-status-indicator joinme bg-[var(--status-joinme)]');
     });
 });
 
@@ -244,12 +248,12 @@ describe('friendsSidebarModel ordinary friend status dot', () => {
             resolveSidebarStatusDotClassName(friend, currentUser, false, {
                 isGameRunning: false
             })
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
         expect(
             resolveSidebarStatusDotClassName(friend, currentUser, false, {
                 isGameRunning: true
             })
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
     });
 
     it('keeps an ordinary pending friend offline', () => {
@@ -265,6 +269,6 @@ describe('friendsSidebarModel ordinary friend status dot', () => {
             resolveSidebarStatusDotClassName(friend, currentUser, false, {
                 isGameRunning: false
             })
-        ).toBe('bg-[var(--status-offline)]');
+        ).toBe('user-status-indicator offline bg-[var(--status-offline)]');
     });
 });

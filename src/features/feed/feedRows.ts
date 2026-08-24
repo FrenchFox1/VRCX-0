@@ -6,7 +6,10 @@ import type {
     FavoriteGroupMap,
     FavoriteRecord
 } from '@/domain/favorites/types';
-import { userStatusFromValue } from '@/shared/utils/friendStatus';
+import {
+    SOLID_USER_STATUS_DOT_CLASS_NAMES,
+    userStatusFromValue
+} from '@/shared/utils/friendStatus';
 
 import type { FeedRow } from './feedTypes';
 
@@ -304,13 +307,25 @@ export function resolveFeedStatusMeta(status: string | null | undefined) {
     const normalizedStatus = userStatusFromValue(status);
     switch (normalizedStatus) {
         case 'active':
-            return { label: 'Online', className: 'bg-[var(--status-online)]' };
+            return {
+                label: 'Online',
+                className: SOLID_USER_STATUS_DOT_CLASS_NAMES.active
+            };
         case 'join me':
-            return { label: 'Join Me', className: 'bg-[var(--status-joinme)]' };
+            return {
+                label: 'Join Me',
+                className: SOLID_USER_STATUS_DOT_CLASS_NAMES['join me']
+            };
         case 'ask me':
-            return { label: 'Ask Me', className: 'bg-[var(--status-askme)]' };
+            return {
+                label: 'Ask Me',
+                className: SOLID_USER_STATUS_DOT_CLASS_NAMES['ask me']
+            };
         case 'busy':
-            return { label: 'Busy', className: 'bg-[var(--status-busy)]' };
+            return {
+                label: 'Busy',
+                className: SOLID_USER_STATUS_DOT_CLASS_NAMES.busy
+            };
         default:
             return { label: normalizedStatus || 'Offline', className: '' };
     }

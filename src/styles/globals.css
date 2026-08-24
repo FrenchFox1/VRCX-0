@@ -580,16 +580,19 @@
         background: var(--status-offline-alt);
     }
 
-    .accessible-status-indicators i.x-user-status.joinme {
-        mask-image: url('../assets/masks/joinme.svg');
+    .accessible-status-indicators i.x-user-status.joinme,
+    .accessible-status-indicators .user-status-indicator.joinme {
+        mask: url('../assets/masks/joinme.svg') center / contain no-repeat;
     }
 
-    .accessible-status-indicators i.x-user-status.askme {
-        mask-image: url('../assets/masks/askme.svg');
+    .accessible-status-indicators i.x-user-status.askme,
+    .accessible-status-indicators .user-status-indicator.askme {
+        mask: url('../assets/masks/askme.svg') center / contain no-repeat;
     }
 
-    .accessible-status-indicators i.x-user-status.busy {
-        mask-image: url('../assets/masks/busy.svg');
+    .accessible-status-indicators i.x-user-status.busy,
+    .accessible-status-indicators .user-status-indicator.busy {
+        mask: url('../assets/masks/busy.svg') center / contain no-repeat;
     }
 
     .is-compact-table [data-slot='table'] {

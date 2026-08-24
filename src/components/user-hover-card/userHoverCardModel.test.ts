@@ -64,7 +64,7 @@ describe('buildUserHoverCardModel', () => {
         expect(model.variant).toBe('active');
         expect(model.statusKey).toBe('active');
         expect(model.statusDotClassName).toBe(
-            'border-[var(--status-online)] bg-background'
+            'user-status-indicator online border-[var(--status-online)] bg-background'
         );
     });
 
@@ -82,7 +82,9 @@ describe('buildUserHoverCardModel', () => {
 
         expect(model.variant).toBe('offline');
         expect(model.statusKey).toBe('');
-        expect(model.statusDotClassName).toBe('bg-[var(--status-offline)]');
+        expect(model.statusDotClassName).toBe(
+            'user-status-indicator offline bg-[var(--status-offline)]'
+        );
         expect(model.lastOnlineAgoMs).toBe(NOW - 1_699_999_000_000);
         expect(model.onlineForMs).toBe(0);
     });

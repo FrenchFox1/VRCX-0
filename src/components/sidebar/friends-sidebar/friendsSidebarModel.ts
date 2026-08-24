@@ -18,7 +18,11 @@ import type {
     FriendProfileFields,
     FriendRecordInput
 } from '@/domain/friends/types';
-import { userStatusFromValue } from '@/shared/utils/friendStatus';
+import {
+    SOLID_USER_STATUS_DOT_CLASS_NAMES,
+    USER_STATUS_INDICATOR_CLASS_NAMES,
+    userStatusFromValue
+} from '@/shared/utils/friendStatus';
 import {
     locationSentinel,
     normalizeLocationStatus,
@@ -197,17 +201,8 @@ export function resolveTrustNameColour(
 
 export function legacyStatusDotClassName(status: unknown) {
     const normalizedStatus = userStatusFromValue(status);
-    if (normalizedStatus === 'active') {
-        return 'bg-[var(--status-online)]';
-    }
-    if (normalizedStatus === 'join me') {
-        return 'bg-[var(--status-joinme)]';
-    }
-    if (normalizedStatus === 'ask me') {
-        return 'bg-[var(--status-askme)]';
-    }
-    if (normalizedStatus === 'busy') {
-        return 'bg-[var(--status-busy)]';
+    if (normalizedStatus && normalizedStatus !== 'offline') {
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES[normalizedStatus];
     }
     return '';
 }
@@ -227,15 +222,15 @@ export function resolveCurrentUserStateBucket(
 function activeStatusDotClassName(status: unknown) {
     const normalizedStatus = userStatusFromValue(status);
     if (normalizedStatus === 'join me') {
-        return 'border-[var(--status-joinme)] bg-background';
+        return `${USER_STATUS_INDICATOR_CLASS_NAMES['join me']} border-[var(--status-joinme)] bg-background`;
     }
     if (normalizedStatus === 'ask me') {
-        return 'border-[var(--status-askme)] bg-background';
+        return `${USER_STATUS_INDICATOR_CLASS_NAMES['ask me']} border-[var(--status-askme)] bg-background`;
     }
     if (normalizedStatus === 'busy') {
-        return 'border-[var(--status-busy)] bg-background';
+        return `${USER_STATUS_INDICATOR_CLASS_NAMES.busy} border-[var(--status-busy)] bg-background`;
     }
-    return 'border-[var(--status-online)] bg-background';
+    return `${USER_STATUS_INDICATOR_CLASS_NAMES.active} border-[var(--status-online)] bg-background`;
 }
 
 function activeStatusSortValue(friend: SidebarFriendRecord) {
@@ -309,20 +304,20 @@ export function resolveSidebarStatusDotClassName(
         if (isGameRunning === true) {
             return (
                 legacyStatusDotClassName(currentStatus) ||
-                'bg-[var(--status-online)]'
+                SOLID_USER_STATUS_DOT_CLASS_NAMES.active
             );
         }
         if (currentLocation && currentLocation !== 'offline') {
             return (
                 legacyStatusDotClassName(currentStatus) ||
-                'bg-[var(--status-online)]'
+                SOLID_USER_STATUS_DOT_CLASS_NAMES.active
             );
         }
         return activeStatusDotClassName(currentStatus);
     }
 
     if (source?.pendingOffline) {
-        return 'bg-[var(--status-offline)]';
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES.offline;
     }
 
     if (
@@ -334,7 +329,7 @@ export function resolveSidebarStatusDotClassName(
     }
 
     if (state === 'offline' || stateBucket === 'offline') {
-        return 'bg-[var(--status-offline)]';
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES.offline;
     }
 
     if (
@@ -346,25 +341,25 @@ export function resolveSidebarStatusDotClassName(
     ) {
         return isActiveByCurrentSnapshot
             ? activeStatusDotClassName(status)
-            : 'bg-[var(--status-offline)]';
+            : SOLID_USER_STATUS_DOT_CLASS_NAMES.offline;
     }
     if (state === 'active') {
         return activeStatusDotClassName(status);
     }
     if (location === 'offline' && state !== 'online') {
-        return 'bg-[var(--status-offline)]';
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES.offline;
     }
     if (status === 'active') {
-        return 'bg-[var(--status-online)]';
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES.active;
     }
     if (status === 'join me') {
-        return 'bg-[var(--status-joinme)]';
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES['join me'];
     }
     if (status === 'ask me') {
-        return 'bg-[var(--status-askme)]';
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES['ask me'];
     }
     if (status === 'busy') {
-        return 'bg-[var(--status-busy)]';
+        return SOLID_USER_STATUS_DOT_CLASS_NAMES.busy;
     }
     return '';
 }

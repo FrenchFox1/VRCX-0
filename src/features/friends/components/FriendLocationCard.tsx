@@ -15,7 +15,11 @@ import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
-import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+import {
+    normalizeUserStatus,
+    SOLID_USER_STATUS_DOT_CLASS_NAMES,
+    USER_STATUS_INDICATOR_CLASS_NAMES
+} from '@/shared/utils/friendStatus';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -238,25 +242,25 @@ function resolveStatusTone(
 
     if (status === 'join me') {
         return {
-            dotClassName: 'bg-[var(--status-joinme)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES['join me']
         };
     }
 
     if (status === 'ask me') {
         return {
-            dotClassName: 'bg-[var(--status-askme)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES['ask me']
         };
     }
 
     if (status === 'busy') {
         return {
-            dotClassName: 'bg-[var(--status-busy)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES.busy
         };
     }
 
     if (status === 'online') {
         return {
-            dotClassName: 'bg-[var(--status-online)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES.active
         };
     }
 
@@ -274,14 +278,24 @@ function resolveStatusTone(
                   : status === 'active-busy'
                     ? 'border-[var(--status-busy)]'
                     : 'border-[var(--status-online)]';
+        let statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES.active;
+        if (status === 'active-join') {
+            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES['join me'];
+        } else if (status === 'active-ask') {
+            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES['ask me'];
+        } else if (status === 'active-busy') {
+            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES.busy;
+        }
         return {
-            dotClassName: cn('bg-background', colorClassName)
+            dotClassName: cn(statusClassName, 'bg-background', colorClassName)
         };
     }
 
     return {
         dotClassName:
-            status === 'offline' ? 'bg-[var(--status-offline)]' : 'hidden'
+            status === 'offline'
+                ? SOLID_USER_STATUS_DOT_CLASS_NAMES.offline
+                : 'hidden'
     };
 }
 
