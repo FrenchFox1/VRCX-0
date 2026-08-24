@@ -41,7 +41,10 @@ fn should_traverse_directory(path: &Path, file_type: &fs::FileType) -> bool {
     }
 
     #[cfg(not(windows))]
-    true
+    {
+        let _ = path;
+        true
+    }
 }
 
 fn background_image_files_in_folder(folder: &Path) -> Result<Vec<String>, Error> {
