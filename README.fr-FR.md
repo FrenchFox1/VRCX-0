@@ -128,6 +128,9 @@ Démarrer un serveur test :
 
 ```bash
 npm run tauri:dev
+```
+
+```bash
 Build pour une release (Ignore la connexion et l'installateur) :
 ```
 
