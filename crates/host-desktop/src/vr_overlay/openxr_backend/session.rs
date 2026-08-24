@@ -280,7 +280,8 @@ impl SessionContext {
                     let present = self
                         .input
                         .hand_located(hand, &self.local_space, display_time);
-                    surface.visible = surface.policy.evaluate(now, present);
+                    surface.visible = surface.policy.evaluate(now, present)
+                        || (surface.config.force_visible && present);
                 }
             }
             if surface.visible && surface.pending_frame.is_some() {

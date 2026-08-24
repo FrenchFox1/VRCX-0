@@ -35,6 +35,7 @@ use super::{
     manager::VrOverlayManager,
     service::{HostVrOverlayService, OverlayBackendPreference},
     surfaces::hmd_toast::{refresh_cached_world_name, HmdToastState},
+    test_preview::test_wrist_frame_input,
     WristOverlayFrameInput, WristOverlayRenderOptions, WristOverlaySizePreset, WristRuntimeFooter,
 };
 
@@ -190,6 +191,7 @@ struct WristSurfaceRuntimeConfig {
 struct VrOverlayFrameInput {
     config: VrOverlayRuntimeConfig,
     devices: Vec<VrDeviceSnapshot>,
+    test_mode: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -253,10 +255,12 @@ pub struct VrOverlayRuntimeSnapshot {
     pub running: bool,
     pub steamvr_running: bool,
     pub active_backend: Option<String>,
+    pub test_mode: bool,
 }
 
 pub struct VrOverlayRuntime {
     enabled: AtomicBool,
+    test_mode: AtomicBool,
     game_running: AtomicBool,
     steamvr_running: AtomicBool,
     refresh_loop_started: AtomicBool,
@@ -360,6 +364,7 @@ impl VrOverlayRuntime {
         };
         Self {
             enabled: AtomicBool::new(false),
+            test_mode: AtomicBool::new(false),
             game_running: AtomicBool::new(false),
             steamvr_running: AtomicBool::new(false),
             refresh_loop_started: AtomicBool::new(false),
@@ -394,6 +399,23 @@ impl VrOverlayRuntime {
         if !enabled && !self.current_runtime_config().hmd.enabled {
             self.release_frame_producer();
         }
+    }
+
+    pub fn set_test_mode(&self, test_mode: bool) {
+        if self.test_mode.swap(test_mode, Ordering::AcqRel) == test_mode {
+            return;
+        }
+        if !test_mode {
+            self.clear_hmd_toasts();
+        }
+        self.reconcile_current_with_device_refresh(true);
+        if !test_mode && !self.enabled.load(Ordering::Acquire) {
+            self.release_frame_producer();
+        }
+    }
+
+    pub fn is_test_mode(&self) -> bool {
+        self.test_mode.load(Ordering::Acquire)
     }
 
     pub fn start_refresh_loop(self: &Arc<Self>, tasks: TaskSupervisor) {
@@ -592,6 +614,7 @@ impl VrOverlayRuntime {
             running,
             steamvr_running: self.steamvr_running.load(Ordering::Acquire),
             active_backend,
+            test_mode: self.test_mode.load(Ordering::Acquire),
         }
     }
 
@@ -774,21 +797,25 @@ impl VrOverlayRuntime {
     ) -> ActiveOverlaySurfaces {
         let panel_listener = self.backend_available && steamvr_running && config.panel_enabled;
         let friends_panel = panel_listener && self.friends_panel_visible();
+        let test_mode =
+            self.test_mode.load(Ordering::Acquire) && self.backend_available && steamvr_running;
         ActiveOverlaySurfaces {
-            wrist: surface_active_for_start_mode(
-                self.enabled.load(Ordering::Acquire),
-                config.start_mode,
-                self.backend_available,
-                steamvr_running,
-                game_running,
-            ),
-            hmd: surface_active_for_start_mode(
-                config.hmd.enabled,
-                config.hmd.start_mode,
-                self.backend_available,
-                steamvr_running,
-                game_running,
-            ),
+            wrist: test_mode
+                || surface_active_for_start_mode(
+                    self.enabled.load(Ordering::Acquire),
+                    config.start_mode,
+                    self.backend_available,
+                    steamvr_running,
+                    game_running,
+                ),
+            hmd: test_mode
+                || surface_active_for_start_mode(
+                    config.hmd.enabled,
+                    config.hmd.start_mode,
+                    self.backend_available,
+                    steamvr_running,
+                    game_running,
+                ),
             panel_listener,
             friends_panel,
         }
@@ -889,7 +916,11 @@ impl VrOverlayRuntime {
             .map_err(|_| "wrist frame producer lock poisoned".to_string())
             .and_then(|mut producer| {
                 let producer = producer.get_or_insert_with(|| (self.frame_producer_factory)());
-                producer.next_frame(VrOverlayFrameInput { config, devices })
+                producer.next_frame(VrOverlayFrameInput {
+                    config,
+                    devices,
+                    test_mode: self.is_test_mode(),
+                })
             }) {
             Ok(frame) => frame,
             Err(error) => {
@@ -1052,8 +1083,16 @@ impl RuntimeWristFrameProducer {
 
 impl VrOverlayFrameProducer for RuntimeWristFrameProducer {
     fn next_frame(&mut self, input: VrOverlayFrameInput) -> Result<RgbaFrame, String> {
-        let frame_input =
-            build_wrist_frame_input(self.services.as_ref(), input.config, input.devices);
+        let frame_input = if input.test_mode {
+            test_wrist_frame_input(
+                input.config,
+                input.devices,
+                local_time_text(input.config.dt_hour12),
+                now_ms(),
+            )
+        } else {
+            build_wrist_frame_input(self.services.as_ref(), input.config, input.devices)
+        };
         let model = build_wrist_surface_model(frame_input);
         render_slint_wrist_frame(&model)
     }
@@ -1120,10 +1159,10 @@ fn overlay_surface_configs(
     config: VrOverlayRuntimeConfig,
     runtime: &VrOverlayRuntime,
 ) -> Vec<OverlaySurfaceConfig> {
-    let _ = runtime;
+    let force_visible = runtime.is_test_mode();
     let mut configs = Vec::new();
     if active_surfaces.wrist {
-        configs.extend(wrist_surface_configs(config));
+        configs.extend(wrist_surface_configs(config, force_visible));
     }
     if active_surfaces.hmd {
         configs.push(hmd_surface_config(config.hmd.position));
@@ -1131,7 +1170,10 @@ fn overlay_surface_configs(
     configs
 }
 
-fn wrist_surface_configs(config: VrOverlayRuntimeConfig) -> Vec<OverlaySurfaceConfig> {
+fn wrist_surface_configs(
+    config: VrOverlayRuntimeConfig,
+    force_visible: bool,
+) -> Vec<OverlaySurfaceConfig> {
     wrist_surface_ids(config.hand)
         .into_iter()
         .map(|surface_id| {
@@ -1145,6 +1187,7 @@ fn wrist_surface_configs(config: VrOverlayRuntimeConfig) -> Vec<OverlaySurfaceCo
                 device_hint,
                 config.render.size,
                 config.button,
+                force_visible,
             )
         })
         .collect()
@@ -1166,6 +1209,7 @@ fn wrist_surface_config(
     device_hint: &str,
     size: WristOverlaySizePreset,
     button: OverlayActivationButton,
+    force_visible: bool,
 ) -> OverlaySurfaceConfig {
     OverlaySurfaceConfig {
         surface_id: OverlaySurfaceId::new(surface_id),
@@ -1176,6 +1220,7 @@ fn wrist_surface_config(
         },
         activation_button: button,
         interactive: false,
+        force_visible,
     }
 }
 
@@ -1189,6 +1234,7 @@ fn hmd_surface_config(position: HmdNotificationPosition) -> OverlaySurfaceConfig
         },
         activation_button: OverlayActivationButton::Grip,
         interactive: false,
+        force_visible: false,
     }
 }
 

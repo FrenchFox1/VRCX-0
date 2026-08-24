@@ -2023,6 +2023,10 @@ impl DesktopRuntimeHostState {
         self.desktop.vr_overlay_runtime.set_enabled(enabled)
     }
 
+    pub fn set_vr_overlay_test_mode(&self, test_mode: bool) -> Result<VrOverlayRuntimeSnapshot> {
+        self.desktop.vr_overlay_runtime.set_test_mode(test_mode)
+    }
+
     pub fn reload_vr_overlay_config(&self) -> Result<VrOverlayRuntimeSnapshot> {
         self.desktop.vr_overlay_runtime.reload_config()
     }

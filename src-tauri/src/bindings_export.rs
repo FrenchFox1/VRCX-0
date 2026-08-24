@@ -231,6 +231,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::favorite_transfer::app__favorites_transfer_selection,
             commands::application::favorite_transfer::app__favorites_remove_selection,
             commands::application::vr_overlay::app__vr_overlay_enabled_set,
+            commands::application::vr_overlay::app__vr_overlay_test_mode_set,
             commands::application::vr_overlay::app__vr_overlay_config_reload,
             commands::application::registry_backup::app__registry_backup_list,
             commands::application::registry_backup::app__registry_backup_create,

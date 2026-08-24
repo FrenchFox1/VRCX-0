@@ -4,6 +4,8 @@ import {
     type PreferencesSnapshot,
     usePreferencesStore
 } from '@/state/preferencesStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
+import { useVrOverlayTestStore } from '@/state/vrOverlayTestStore';
 
 import { useSettingsPageSection } from '../SettingsPageStateContext';
 
@@ -55,6 +57,14 @@ export function useSettingsVrTabState() {
             wristOverlayShowDevices: state.wristOverlayShowDevices,
             wristOverlayShowBatteryPercent: state.wristOverlayShowBatteryPercent
         }))
+    );
+    const isSteamVRRunning = useRuntimeStore(
+        (state) => state.gameState.isSteamVRRunning
+    );
+    const overlayTestMode = useVrOverlayTestStore((state) => state.testMode);
+    const overlayTestPending = useVrOverlayTestStore((state) => state.pending);
+    const setOverlayTestMode = useVrOverlayTestStore(
+        (state) => state.setTestMode
     );
     const {
         setHmdNotificationsDialogOpen,
@@ -118,6 +128,13 @@ export function useSettingsVrTabState() {
 
     return {
         prefs,
+        overlayTestMode,
+        overlayTestModeDisabled:
+            overlayTestPending ||
+            (!overlayTestMode && isSteamVRRunning !== true),
+        onOverlayTestModeChange: (enabled: boolean) => {
+            void setOverlayTestMode(enabled);
+        },
         onXsNotificationsChange: (enabled: boolean) => {
             saveBoolPreference('xsNotifications', 'xsNotifications', enabled);
         },

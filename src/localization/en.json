@@ -2161,6 +2161,12 @@
                     "vr_device_status": "VR Device Status",
                     "battery_percentage": "Battery Percentage",
                     "wrist_feed_notifications": "Wrist Overlay Notification Filters"
+                },
+                "test_mode": {
+                    "header": "Overlay Test",
+                    "description": "Forces the wrist overlay and HMD notification to show a test card so you can check placement, size and opacity while wearing the headset. It is never saved and turns off when VRCX-0 restarts.",
+                    "force_display": "Force Overlay Display",
+                    "requires_steamvr": "Requires SteamVR to be running."
                 }
             },
             "interface": {

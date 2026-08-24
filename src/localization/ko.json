@@ -2119,6 +2119,12 @@
                 "wrist_overlay": {
                     "header": "손목 오버레이",
                     "wrist_feed_notifications": "손목 오버레이 알림 필터"
+                },
+                "test_mode": {
+                    "header": "오버레이 테스트",
+                    "description": "손목 오버레이와 헤드셋 알림에 테스트 카드를 강제로 표시합니다. 헤드셋을 쓴 채로 위치, 크기, 불투명도를 확인할 수 있습니다. 이 설정은 저장되지 않으며 VRCX-0을 다시 시작하면 꺼집니다.",
+                    "force_display": "오버레이 강제 표시",
+                    "requires_steamvr": "SteamVR이 실행 중이어야 합니다."
                 }
             },
             "interface": {

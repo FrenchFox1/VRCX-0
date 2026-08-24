@@ -2161,6 +2161,12 @@
                     "vr_device_status": "Status do Dispositivo VR",
                     "battery_percentage": "Porcentagem da Bateria",
                     "wrist_feed_notifications": "Filtros de Notificação do Overlay de Pulso"
+                },
+                "test_mode": {
+                    "header": "Teste de overlay",
+                    "description": "Força o overlay de pulso e a notificação do headset a exibir um cartão de teste para você conferir posição, tamanho e opacidade com o headset na cabeça. Não é salvo e desliga ao reiniciar o VRCX-0.",
+                    "force_display": "Forçar exibição do overlay",
+                    "requires_steamvr": "Requer o SteamVR em execução."
                 }
             },
             "interface": {

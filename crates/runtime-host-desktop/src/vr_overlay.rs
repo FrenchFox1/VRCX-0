@@ -26,6 +26,7 @@ pub struct VrOverlayRuntimeSnapshot {
     pub running: bool,
     pub steamvr_running: bool,
     pub active_backend: Option<String>,
+    pub test_mode: bool,
 }
 
 #[cfg(any(windows, target_os = "linux"))]
@@ -37,6 +38,7 @@ impl From<vrcx_0_overlay_runtime::VrOverlayRuntimeSnapshot> for VrOverlayRuntime
             running,
             steamvr_running,
             active_backend,
+            test_mode,
         } = snapshot;
         Self {
             enabled,
@@ -44,6 +46,7 @@ impl From<vrcx_0_overlay_runtime::VrOverlayRuntimeSnapshot> for VrOverlayRuntime
             running,
             steamvr_running,
             active_backend,
+            test_mode,
         }
     }
 }
@@ -88,6 +91,20 @@ impl DesktopVrOverlayRuntime {
         #[cfg(not(any(windows, target_os = "linux")))]
         {
             let _ = enabled;
+            Err(unsupported_error())
+        }
+    }
+
+    pub fn set_test_mode(&self, test_mode: bool) -> Result<VrOverlayRuntimeSnapshot> {
+        #[cfg(any(windows, target_os = "linux"))]
+        {
+            self.runtime.set_test_mode(test_mode);
+            Ok(self.runtime.snapshot().into())
+        }
+
+        #[cfg(not(any(windows, target_os = "linux")))]
+        {
+            let _ = test_mode;
             Err(unsupported_error())
         }
     }
@@ -260,6 +277,10 @@ mod tests {
         );
         assert_eq!(
             runtime.set_enabled(true).unwrap_err().to_string(),
+            "VR overlay is not supported on macOS"
+        );
+        assert_eq!(
+            runtime.set_test_mode(true).unwrap_err().to_string(),
             "VR overlay is not supported on macOS"
         );
     }

@@ -551,6 +551,13 @@ const generatedCommands = {
     ): Promise<VrOverlayRuntimeSnapshot> {
         return await TAURI_INVOKE('app__vr_overlay_enabled_set', { enabled });
     },
+    async appVrOverlayTestModeSet(
+        testMode: boolean
+    ): Promise<VrOverlayRuntimeSnapshot> {
+        return await TAURI_INVOKE('app__vr_overlay_test_mode_set', {
+            testMode
+        });
+    },
     async appVrOverlayConfigReload(): Promise<VrOverlayRuntimeSnapshot> {
         return await TAURI_INVOKE('app__vr_overlay_config_reload');
     },
@@ -5636,6 +5643,7 @@ export type VrOverlayRuntimeSnapshot = {
     running: boolean;
     steamvrRunning: boolean;
     activeBackend: string | null;
+    testMode: boolean;
 };
 export type VrcStatusSnapshot = {
     status: string;

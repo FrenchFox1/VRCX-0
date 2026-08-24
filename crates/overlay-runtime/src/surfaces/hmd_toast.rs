@@ -14,6 +14,7 @@ use super::super::localization::OverlayLocale;
 use super::super::manager::VrOverlayManager;
 use super::super::runtime::{render_slint_hmd_frame, VrOverlayRuntime, VrOverlayRuntimeConfig};
 use super::super::service::HostVrOverlayService;
+use super::super::test_preview::test_hmd_toast_views;
 use super::friend_record::friend_record_avatar_url;
 use super::main::{build_main_surface_model, HmdToastView, MainOverlayFrameInput};
 
@@ -147,7 +148,11 @@ impl VrOverlayRuntime {
         now: Instant,
     ) {
         let surface_id = OverlaySurfaceId::new(MAIN_SURFACE_ID);
-        let toasts = self.hmd_toast_views(now);
+        let toasts = if self.is_test_mode() {
+            test_hmd_toast_views()
+        } else {
+            self.hmd_toast_views(now)
+        };
         if toasts.is_empty() {
             if let Err(error) = manager.hide_surface(&surface_id) {
                 tracing::warn!(error = %error, "failed to hide HMD overlay surface");

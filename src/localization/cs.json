@@ -2163,6 +2163,12 @@
                     "vr_device_status": "Stav VR zařízení",
                     "battery_percentage": "Procento baterie",
                     "wrist_feed_notifications": "Filtry oznámení zápěstního overlaye"
+                },
+                "test_mode": {
+                    "header": "Test overlaye",
+                    "description": "Vynutí v zápěstním overlayi a v oznámení v headsetu zobrazení testovací karty, abys mohl s nasazeným headsetem zkontrolovat pozici, velikost a průhlednost. Nastavení se neukládá a po restartu VRCX-0 se vypne.",
+                    "force_display": "Vynutit zobrazení overlaye",
+                    "requires_steamvr": "Vyžaduje spuštěný SteamVR."
                 }
             },
             "interface": {

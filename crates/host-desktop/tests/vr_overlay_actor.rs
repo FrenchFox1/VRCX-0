@@ -353,6 +353,7 @@ fn make_wrist_config() -> OverlaySurfaceConfig {
         },
         activation_button: OverlayActivationButton::Grip,
         interactive: false,
+        force_visible: false,
     }
 }
 

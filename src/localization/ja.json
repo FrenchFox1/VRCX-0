@@ -2157,6 +2157,12 @@
                     "vr_device_status": "VR デバイス状態",
                     "battery_percentage": "バッテリー残量を表示",
                     "wrist_feed_notifications": "手首オーバーレイ通知フィルター"
+                },
+                "test_mode": {
+                    "header": "オーバーレイのテスト",
+                    "description": "手首のオーバーレイとヘッドセット通知にテスト用のカードを常時表示します。ヘッドセットをかぶったまま位置・サイズ・不透明度を確認できます。設定は保存されず、VRCX-0 を再起動するとオフに戻ります。",
+                    "force_display": "オーバーレイを強制表示",
+                    "requires_steamvr": "SteamVR が起動している必要があります。"
                 }
             },
             "interface": {

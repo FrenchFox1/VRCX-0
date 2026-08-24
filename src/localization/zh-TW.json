@@ -2161,6 +2161,12 @@
                     "vr_device_status": "VR 裝置狀態",
                     "battery_percentage": "顯示電量百分比",
                     "wrist_feed_notifications": "手腕疊加通知過濾器"
+                },
+                "test_mode": {
+                    "header": "嵌入介面測試",
+                    "description": "強制手腕嵌入介面和頭顯通知顯示一張測試卡片，方便戴著頭顯調整位置、大小和不透明度。這個開關不會儲存，重新啟動 VRCX-0 後會自動關閉。",
+                    "force_display": "強制顯示嵌入介面",
+                    "requires_steamvr": "需要 SteamVR 正在執行。"
                 }
             },
             "interface": {

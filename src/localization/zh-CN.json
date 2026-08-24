@@ -2161,6 +2161,12 @@
                     "vr_device_status": "VR 设备状态",
                     "battery_percentage": "显示电量百分比",
                     "wrist_feed_notifications": "叠加界面通知过滤"
+                },
+                "test_mode": {
+                    "header": "叠加界面测试",
+                    "description": "强制手腕叠加界面和头显通知显示一张测试卡片，方便戴着头显调整位置、大小和不透明度。该开关不会保存，重启 VRCX-0 后自动关闭。",
+                    "force_display": "强制显示叠加界面",
+                    "requires_steamvr": "需要 SteamVR 正在运行。"
                 }
             },
             "interface": {

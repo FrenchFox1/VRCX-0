@@ -2161,6 +2161,12 @@
                     "vr_device_status": "Estado de los dispositivos VR",
                     "battery_percentage": "Porcentaje de batería",
                     "wrist_feed_notifications": "Filtros de notificaciones del overlay de muñeca"
+                },
+                "test_mode": {
+                    "header": "Prueba de overlay",
+                    "description": "Fuerza el overlay de muñeca y la notificación del visor a mostrar una tarjeta de prueba para que puedas comprobar la posición, el tamaño y la opacidad con el visor puesto. No se guarda y se desactiva al reiniciar VRCX-0.",
+                    "force_display": "Forzar la visualización del overlay",
+                    "requires_steamvr": "Requiere que SteamVR esté en ejecución."
                 }
             },
             "interface": {

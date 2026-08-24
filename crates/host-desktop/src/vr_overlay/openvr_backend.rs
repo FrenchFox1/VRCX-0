@@ -592,7 +592,9 @@ impl OpenVrOverlayBackend {
                 }
             }
 
-            let visible = policy.evaluate(now, transform_device.is_some());
+            let device_present = transform_device.is_some();
+            let visible = policy.evaluate(now, device_present)
+                || (candidate.config.force_visible && device_present);
             surface_updates.push((candidate.surface_id.clone(), transform_device, policy));
             visibility_updates.push((candidate.surface_id, visible));
         }

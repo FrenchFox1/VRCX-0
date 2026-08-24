@@ -8,6 +8,7 @@ mod runtime;
 mod service;
 mod services;
 pub mod surfaces;
+mod test_preview;
 
 pub use eligibility::{VrOverlayEligibility, WristOverlayStartMode};
 pub use manager::VrOverlayManager;

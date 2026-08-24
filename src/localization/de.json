@@ -2161,6 +2161,12 @@
                     "vr_device_status": "VR-Gerätestatus",
                     "battery_percentage": "Akkustand in Prozent",
                     "wrist_feed_notifications": "Filter für Handgelenk-Overlay-Benachrichtigungen"
+                },
+                "test_mode": {
+                    "header": "Overlay-Test",
+                    "description": "Erzwingt eine Testkarte im Handgelenk-Overlay und in der HMD-Benachrichtigung, damit du Position, Größe und Deckkraft mit aufgesetzter Brille prüfen kannst. Die Einstellung wird nicht gespeichert und ist nach einem Neustart von VRCX-0 wieder aus.",
+                    "force_display": "Overlay-Anzeige erzwingen",
+                    "requires_steamvr": "Erfordert ein laufendes SteamVR."
                 }
             },
             "interface": {
