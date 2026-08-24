@@ -138,3 +138,4 @@ Build pour une release (Ignore la connexion et l'installateur) :
 ```bash
 npm run tauri:build -- --no-sign --no-bundle
 ```
+
