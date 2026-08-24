@@ -1,4 +1,7 @@
-import type { InstanceCreateGroupAccessType } from '@/platform/tauri/bindings';
+import type {
+    InstanceCreateGroupAccessType,
+    InstanceCreateMinimumAvatarPerformance
+} from '@/platform/tauri/bindings';
 
 import type { buildCreatedInstanceDetails } from './worldInstances';
 
@@ -10,14 +13,23 @@ export type WorldInstanceAccessType =
     | 'invite+'
     | 'group';
 export type WorldInstanceRegion = 'US West' | 'US East' | 'Europe' | 'Japan';
+export const WORLD_NEW_INSTANCE_TABS = ['Normal', 'Legacy'] as const;
+export type WorldNewInstanceTab = (typeof WORLD_NEW_INSTANCE_TABS)[number];
+
+export function isWorldNewInstanceTab(
+    value: string
+): value is WorldNewInstanceTab {
+    return WORLD_NEW_INSTANCE_TABS.some((tab) => tab === value);
+}
 
 export interface WorldNewInstanceForm {
-    selectedTab: string;
+    selectedTab: WorldNewInstanceTab;
     accessType: WorldInstanceAccessType;
     region: WorldInstanceRegion;
     groupId: string;
     groupName?: string;
     groupAccessType: InstanceCreateGroupAccessType;
+    minimumAvatarPerformance: InstanceCreateMinimumAvatarPerformance | '';
     queueEnabled: boolean;
     ageGate: boolean;
     displayName: string;
@@ -46,9 +58,9 @@ export interface WorldInstanceInviteRequest {
     worldName: string;
 }
 
-export interface InstanceGroupOption {
-    displayName?: unknown;
-    groupId?: unknown;
-    id?: unknown;
-    name?: unknown;
-}
+export type InstanceGroupOption = Record<string, unknown> & {
+    displayName?: string;
+    groupId?: string;
+    id?: string;
+    name?: string;
+};

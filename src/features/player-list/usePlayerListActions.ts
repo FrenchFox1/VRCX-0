@@ -4,14 +4,11 @@ import { toast } from 'sonner';
 
 import { openUserDialog } from '@/services/dialogService';
 import { resolveUserByDisplayName } from '@/services/userIdentityService';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 
 import { buildPlayerDialogSeedData } from './playerListRows';
-import type { PlayerListRecord, PlayerListRow } from './playerListTypes';
-
-function isRecord(value: unknown): value is PlayerListRecord {
-    return Boolean(value && typeof value === 'object');
-}
+import type { PlayerListRow } from './playerListTypes';
 
 export function usePlayerListActions({
     currentUserEndpoint

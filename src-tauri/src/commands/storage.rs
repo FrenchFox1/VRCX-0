@@ -14,14 +14,14 @@ pub fn storage__set(
     value: String,
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
-    state.storage.set(key, value);
+    state.runtime_host().storage_set(key, value);
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn storage__flush(state: State<'_, AppState>) -> Result<(), AppError> {
-    Ok(state.storage.save()?)
+    Ok(state.runtime_host().storage_flush()?)
 }
 
 #[tauri::command]
@@ -30,11 +30,11 @@ pub fn storage__remove(
     key: String,
     state: State<'_, AppState>,
 ) -> Result<Option<String>, AppError> {
-    Ok(state.storage.remove(&key))
+    Ok(state.runtime_host().storage_remove(&key))
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn storage__get_all(state: State<'_, AppState>) -> Result<HashMap<String, String>, AppError> {
-    Ok(state.storage.get_all())
+    Ok(state.runtime_host().storage_snapshot())
 }

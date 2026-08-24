@@ -1,3 +1,4 @@
+import type { GroupPostRecord } from '@/domain/entities/group';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -16,7 +17,6 @@ import {
     type GroupPageInput,
     type GroupPostInput,
     type GroupPostMutationInput,
-    type GroupRecord,
     normalizeEntityId,
     responseRows,
     unwrapVrchatGroupResponse
@@ -42,7 +42,7 @@ export async function getGroupPosts({
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/posts`
     );
-    return responseRows<GroupRecord>(response.json, 'posts');
+    return responseRows<GroupPostRecord>(response.json, 'posts');
 }
 
 export async function getAllGroupPosts({ groupId }: GroupIdInput) {

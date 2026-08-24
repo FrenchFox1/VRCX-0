@@ -4,7 +4,9 @@ import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
 import { dateFromUnknown } from '@/shared/utils/dateTime';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 
-function parseTimestampMs(value: unknown) {
+type FeedTimestamp = string | null | undefined;
+
+function parseTimestampMs(value: FeedTimestamp) {
     if (!value) {
         return null;
     }
@@ -13,7 +15,7 @@ function parseTimestampMs(value: unknown) {
 }
 
 export function formatFeedRelativeTime(
-    value: unknown,
+    value: FeedTimestamp,
     nowMs: number,
     _t: TFunction
 ) {
@@ -29,7 +31,7 @@ export function formatFeedRelativeTime(
 }
 
 export function formatFeedExactTime(
-    value: unknown,
+    value: FeedTimestamp,
     format: 'short' | 'long' = 'short'
 ) {
     if (!value) {
@@ -48,7 +50,7 @@ export function resolveFeedColumnTimeDisplay({
     mode: FeedTimeDisplayModePreference;
     nowMs: number;
     t: TFunction;
-    value: unknown;
+    value: FeedTimestamp;
 }) {
     if (mode === 'relative') {
         return {

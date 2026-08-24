@@ -392,7 +392,7 @@ export function ScreenshotMetadataPage() {
             toast.error(t('message.vrcplus.required'));
             return;
         }
-        if (Number(metadata.fileSizeBytes) > 10_000_000) {
+        if (metadata.fileSizeBytes > 10_000_000) {
             toast.error(t('message.file.too_large'));
             return;
         }

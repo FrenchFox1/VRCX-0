@@ -30,14 +30,14 @@ function ExpandedRowShell({ children }: { children: ReactNode }) {
 }
 
 type AvatarColumnProps = {
-    avatarName: unknown;
-    avatarTags: unknown;
+    avatarName: string | null | undefined;
+    avatarTags: string[] | null | undefined;
     imageAlt: string;
     imageUrl: string;
     label: string;
     onOpenPreview(): void;
-    ownerId: unknown;
-    userId: unknown;
+    ownerId: string | null | undefined;
+    userId: string | null | undefined;
 };
 
 function AvatarColumn({
@@ -131,14 +131,14 @@ function FeedExpandedRow({
                     <span className="inline-flex items-center gap-1.5">
                         <FeedStatusBadge status={row.previousStatus} />
                         <span className="bg-destructive/10 text-destructive rounded px-0.5 line-through">
-                            {String(row.previousStatusDescription || '')}
+                            {row.previousStatusDescription || ''}
                         </span>
                     </span>
                     <ArrowRightIcon className="text-muted-foreground size-4 shrink-0" />
                     <span className="inline-flex items-center gap-1.5">
                         <FeedStatusBadge status={row.status} />
                         <span className="bg-primary/10 text-primary rounded px-0.5">
-                            {String(row.statusDescription || '')}
+                            {row.statusDescription || ''}
                         </span>
                     </span>
                 </div>
@@ -166,16 +166,15 @@ function FeedExpandedRow({
                             avatarName={row.previousAvatarName}
                             avatarTags={row.previousCurrentAvatarTags}
                             imageAlt={previousAvatarLabel}
-                            imageUrl={String(previousImage)}
+                            imageUrl={previousImage}
                             label={previousAvatarLabel}
                             onOpenPreview={() =>
                                 openImagePreview({
-                                    url: String(
+                                    url:
                                         row.previousCurrentAvatarImageUrl ||
-                                            previousImage
-                                    ),
+                                        previousImage,
                                     title:
-                                        String(row.previousAvatarName || '') ||
+                                        row.previousAvatarName ||
                                         previousAvatarLabel
                                 })
                             }
@@ -188,21 +187,15 @@ function FeedExpandedRow({
                         <AvatarColumn
                             avatarName={row.avatarName}
                             avatarTags={row.currentAvatarTags}
-                            imageAlt={
-                                String(row.avatarName || '') ||
-                                currentAvatarLabel
-                            }
-                            imageUrl={String(currentImage)}
+                            imageAlt={row.avatarName || currentAvatarLabel}
+                            imageUrl={currentImage}
                             label={currentAvatarLabel}
                             onOpenPreview={() =>
                                 openImagePreview({
-                                    url: String(
+                                    url:
                                         row.currentAvatarImageUrl ||
-                                            currentImage
-                                    ),
-                                    title:
-                                        String(row.avatarName || '') ||
-                                        currentAvatarLabel
+                                        currentImage,
+                                    title: row.avatarName || currentAvatarLabel
                                 })
                             }
                             ownerId={row.ownerId}

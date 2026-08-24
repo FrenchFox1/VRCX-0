@@ -6,19 +6,22 @@ use tauri::{AppHandle, State};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::{save_ugc_image_to_file, UgcCategory};
-use vrcx_0_media::{image_processing, media_files};
+use vrcx_0_application_core::UgcCategory;
 
 #[tauri::command]
 #[specta::specta]
 pub async fn app__save_image_file(
     app_handle: AppHandle,
+    state: State<'_, AppState>,
     default_name: String,
     base64_data: String,
 ) -> Result<String, AppError> {
     use tauri_plugin_dialog::DialogExt;
 
-    let (file_name, bytes) = media_files::decode_image_file(&default_name, &base64_data)?;
+    let (file_name, bytes) = state
+        .runtime_host()
+        .media()
+        .decode_image_file(&default_name, &base64_data)?;
 
     let result = super::dialog::save_file(
         app_handle
@@ -36,7 +39,10 @@ pub async fn app__save_image_file(
                 other => PathBuf::from(other.to_string()),
             };
 
-            Ok(media_files::write_image_file(path, &file_name, &bytes)?)
+            Ok(state
+                .runtime_host()
+                .media()
+                .write_image_file(path, &file_name, &bytes)?)
         }
         None => Ok(String::new()),
     }
@@ -44,13 +50,15 @@ pub async fn app__save_image_file(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn app__resize_image_to_fit_limits(base64data: String) -> Result<String, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        image_processing::resize_image_to_fit_limits_base64(&base64data)
-    })
-    .await
-    .map_err(|error| AppError::Custom(format!("image resize task failed: {error}")))?
-    .map_err(AppError::from)
+pub async fn app__resize_image_to_fit_limits(
+    state: State<'_, AppState>,
+    base64data: String,
+) -> Result<String, AppError> {
+    let media = state.runtime_host().media().clone();
+    tauri::async_runtime::spawn_blocking(move || media.resize_image_to_fit_limits(&base64data))
+        .await
+        .map_err(|error| AppError::Custom(format!("image resize task failed: {error}")))?
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -59,16 +67,11 @@ pub async fn app__crop_all_prints(
     state: State<'_, AppState>,
     ugc_folder_path: String,
 ) -> Result<(), AppError> {
-    state
-        .desktop
-        .host_file_access
-        .ensure_write_allowed(&ugc_folder_path, &state.paths)?;
-    tauri::async_runtime::spawn_blocking(move || {
-        image_processing::crop_all_prints(&ugc_folder_path)
-    })
-    .await
-    .map_err(|error| AppError::Custom(format!("crop all prints task failed: {error}")))?
-    .map_err(AppError::from)
+    let media = state.runtime_host().media().clone();
+    tauri::async_runtime::spawn_blocking(move || media.crop_all_prints(&ugc_folder_path))
+        .await
+        .map_err(|error| AppError::Custom(format!("crop all prints task failed: {error}")))?
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -77,16 +80,11 @@ pub async fn app__crop_print_image(
     state: State<'_, AppState>,
     path: String,
 ) -> Result<bool, AppError> {
-    state
-        .desktop
-        .host_file_access
-        .ensure_write_allowed(&path, &state.paths)?;
-    tauri::async_runtime::spawn_blocking(move || {
-        image_processing::crop_print_file(std::path::Path::new(&path))
-            .map_err(|e| AppError::Custom(format!("{path}: {e}")))
-    })
-    .await
-    .map_err(|error| AppError::Custom(format!("crop print task failed: {error}")))?
+    let media = state.runtime_host().media().clone();
+    tauri::async_runtime::spawn_blocking(move || media.crop_print_image(&path))
+        .await
+        .map_err(|error| AppError::Custom(format!("crop print task failed: {error}")))?
+        .map_err(AppError::from)
 }
 
 async fn save_ugc_category_to_file(
@@ -97,19 +95,11 @@ async fn save_ugc_category_to_file(
     month_folder: String,
     file_name: String,
 ) -> Result<String, AppError> {
-    state
-        .desktop
-        .host_file_access
-        .ensure_write_allowed(&ugc_folder_path, &state.paths)?;
-    Ok(save_ugc_image_to_file(
-        &state.image_cache,
-        &url,
-        &ugc_folder_path,
-        category,
-        &month_folder,
-        &file_name,
-    )
-    .await?)
+    Ok(state
+        .runtime_host()
+        .media()
+        .save_ugc_category(category, url, ugc_folder_path, month_folder, file_name)
+        .await?)
 }
 
 #[tauri::command]

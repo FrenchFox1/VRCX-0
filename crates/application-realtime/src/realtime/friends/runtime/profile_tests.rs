@@ -3,7 +3,7 @@ mod tests {
     use super::super::*;
 
     fn runtime_with_online_status(status: &str) -> RealtimeFriendsRuntime {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -29,7 +29,7 @@ mod tests {
 
     #[test]
     fn refetched_profile_trust_change_upserts_and_projects_once() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn refetched_friend_profile_updates_offline_real_location_to_online() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn refetched_friend_profile_does_not_emit_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn refetched_offline_profile_finalizes_pending_offline_without_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -329,7 +329,7 @@ mod tests {
 
     #[test]
     fn refetched_online_profile_cancels_pending_offline_timer() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -591,7 +591,7 @@ mod tests {
 
     #[test]
     fn refetched_profile_does_not_add_unknown_friend() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

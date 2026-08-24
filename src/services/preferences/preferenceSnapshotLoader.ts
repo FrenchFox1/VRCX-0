@@ -1,3 +1,4 @@
+import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
@@ -63,7 +64,6 @@ import {
     applyTableDensityClass,
     getBoolConfigWithLegacy,
     getIntConfigWithLegacy,
-    normalizeBioLanguage,
     normalizeStringList,
     setDocumentLanguage
 } from './preferencesCore';
@@ -569,7 +569,7 @@ export async function loadPreferenceSnapshot() {
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(feedTimeDisplayMode),
         youtubeAPI: Boolean(youtubeAPI),
         translationAPI: Boolean(translationAPI),
-        bioLanguage: normalizeBioLanguage(bioLanguage),
+        bioLanguage: normalizeLanguageCode(bioLanguage),
         translationAPIType: normalizeTranslationApiType(translationAPIType),
         translationEndpointId: String(translationEndpointId || ''),
         translationAPIEndpoint:

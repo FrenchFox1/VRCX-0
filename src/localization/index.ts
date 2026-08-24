@@ -1,7 +1,7 @@
 import enMessages from './en.json';
 
 type LocalizedStringTable = Record<string, unknown> & {
-    language?: unknown;
+    language?: string;
 };
 
 type LocaleLoader = () => Promise<{ default: LocalizedStringTable }>;
@@ -81,7 +81,7 @@ export function loadLocaleMessages(
 }
 
 function getLanguageName(code: string) {
-    return String(languageNames[code] ?? code).replace(/\s+\([^)]+\)$/, '');
+    return (languageNames[code] ?? code).replace(/\s+\([^)]+\)$/, '');
 }
 
 export * from './locales';

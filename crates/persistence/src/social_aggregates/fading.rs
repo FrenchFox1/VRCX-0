@@ -16,7 +16,7 @@ pub fn get_fading_friends(
     db: &DatabaseService,
     input: FadingFriendsInput,
 ) -> Result<FadingFriendsOutput, Error> {
-    let user_prefix = normalize_user_table_prefix(&input.owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(input.owner_user_id.as_str())?;
     let owner_id = owner_id_for_filter(db, &input.owner_user_id)?;
     let friends_table = format!("{user_prefix}_friend_log_current");
     if !table_exists(db, &friends_table)? {

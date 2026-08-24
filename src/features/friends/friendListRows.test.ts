@@ -13,8 +13,7 @@ describe('friendListRows', () => {
     it('combines remote and local favorite ids for the favorites-only filter', () => {
         expect([
             ...buildFriendListFavoriteIdSet([' usr_remote ', ''], {
-                groupA: ['usr_local'],
-                ignored: 'not-an-array'
+                groupA: ['usr_local']
             })
         ]).toEqual(['usr_remote', 'usr_local']);
     });
@@ -31,12 +30,14 @@ describe('friendListRows', () => {
                 },
                 {
                     displayName: 'Ava',
+                    userId: '',
                     lastSeen: '2026-04-12T00:00:00.000Z',
                     timeSpent: 200,
                     joinCount: 2
                 },
                 {
                     displayName: 'Ben',
+                    userId: '',
                     lastSeen: '2026-04-11T00:00:00.000Z',
                     timeSpent: 50,
                     joinCount: 1

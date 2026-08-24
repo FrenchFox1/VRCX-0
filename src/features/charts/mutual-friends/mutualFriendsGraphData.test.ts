@@ -40,7 +40,8 @@ describe('mutualFriendsGraphData', () => {
                     'usr_c',
                     {
                         lastFetchedAt: '2026-04-01T00:00:00.000Z',
-                        optedOut: true
+                        optedOut: true,
+                        totalCount: 4
                     }
                 ]
             ]),
@@ -70,7 +71,11 @@ describe('mutualFriendsGraphData', () => {
         ]);
         expect(graph.nodes.find((node) => node.id === 'usr_c')).toMatchObject({
             lastFetchedAt: '2026-04-01T00:00:00.000Z',
-            optedOut: true
+            optedOut: true,
+            mutualCount: 4
+        });
+        expect(graph.nodes.find((node) => node.id === 'usr_a')).toMatchObject({
+            mutualCount: 2
         });
     });
 

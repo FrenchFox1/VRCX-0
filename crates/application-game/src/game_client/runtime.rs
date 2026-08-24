@@ -1,9 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
-
 use crate::worker::{RuntimeWorker, RuntimeWorkerOptions};
 use crate::Result;
 use crate::{HostSessionRuntime, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
@@ -19,8 +16,7 @@ use super::processor::{
 
 #[derive(Clone)]
 pub struct GameClientRuntimeDeps {
-    pub db: Arc<DatabaseService>,
-    pub config: ConfigRepository,
+    pub(crate) store: Arc<dyn crate::GameStateStore>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub tasks: TaskSupervisor,
@@ -32,6 +28,39 @@ pub struct GameClientRuntimeDeps {
     pub window_actions: Arc<dyn GameClientWindowActions>,
     pub debug_logging_actions: Arc<dyn GameClientDebugLoggingActions>,
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
+}
+
+impl GameClientRuntimeDeps {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        store: Arc<dyn crate::GameStateStore>,
+        event_bus: RuntimeEventBus,
+        backend_status: BackendRuntimeStatusPublisher,
+        tasks: TaskSupervisor,
+        session: HostSessionRuntime,
+        auth_scope: RuntimeAuthScope,
+        actions: Arc<dyn GameClientActions>,
+        cache_actions: Arc<dyn GameClientCacheActions>,
+        location_source: Arc<dyn GameClientLocationSource>,
+        window_actions: Arc<dyn GameClientWindowActions>,
+        debug_logging_actions: Arc<dyn GameClientDebugLoggingActions>,
+        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
+    ) -> Self {
+        Self {
+            store,
+            event_bus,
+            backend_status,
+            tasks,
+            session,
+            auth_scope,
+            actions,
+            cache_actions,
+            location_source,
+            window_actions,
+            debug_logging_actions,
+            instance_roster_observer,
+        }
+    }
 }
 
 pub struct GameClientRuntime {
@@ -46,8 +75,7 @@ impl GameClientRuntime {
         let state = Arc::new(Mutex::new(GameClientState::default()));
         let processor = GameClientProcessor::new(
             GameClientProcessorDeps {
-                db: deps.db,
-                config: deps.config,
+                store: deps.store,
                 event_bus: deps.event_bus.clone(),
                 backend_status: deps.backend_status,
                 tasks: deps.tasks,

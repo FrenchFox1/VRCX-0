@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn friend_location_with_state_change_does_not_emit_gps_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn duplicate_friend_location_payload_after_repeat_window_does_not_write_gps_again() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn friend_update_status_visibility_changes_emit_private_and_restored_gps() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -225,15 +225,23 @@ mod tests {
             restored.projection.patches[0].patch.extra["$location"]["worldId"],
             "wrld_current"
         );
-        assert_eq!(
-            restored.projection.patches[0].patch.extra["$location_at"],
-            1_778_803_320_000i64
-        );
+        assert!(!restored.projection.patches[0]
+            .patch
+            .extra
+            .contains_key("$location_at"));
+        let location_time = restored
+            .projection
+            .location_time_snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.iter().find(|entry| entry.user_id == "usr_friend"))
+            .expect("restored location time");
+        assert_eq!(location_time.location, "wrld_current:456");
+        assert_eq!(location_time.since_ms, Some(1_778_803_320_000));
     }
 
     #[test]
     fn friend_location_top_level_offline_overrides_stale_embedded_location() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -304,7 +312,7 @@ mod tests {
 
     #[test]
     fn entering_traveling_emits_one_ephemeral_player_joining_entry() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -366,7 +374,7 @@ mod tests {
 
     #[test]
     fn persisted_feed_precedes_ephemeral_joining_projection() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

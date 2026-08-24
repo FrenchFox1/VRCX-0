@@ -24,7 +24,7 @@ export async function getAvatarGallery({
     avatarId,
     force = false
 }: {
-    avatarId?: unknown;
+    avatarId: string;
     force?: boolean;
 }): Promise<AvatarGalleryFile[]> {
     const normalizedAvatarId = normalizeEntityId(avatarId);
@@ -64,8 +64,8 @@ export async function getAvatarGallery({
     });
 }
 
-export async function getAvatarNameFromImageUrl(imageUrl: unknown) {
-    const fileId = extractFileId(String(imageUrl || ''));
+export async function getAvatarNameFromImageUrl(imageUrl: string) {
+    const fileId = extractFileId(imageUrl);
     if (!fileId) {
         return {
             ownerId: '',

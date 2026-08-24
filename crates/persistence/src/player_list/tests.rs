@@ -101,7 +101,7 @@ fn latest_location_uses_id_order() -> Result<(), Error> {
     let test_db = test_db("latest-location")?;
     write_batch(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         &GameLogWriteBatch {
             locations: vec![
                 location(
@@ -121,9 +121,13 @@ fn latest_location_uses_id_order() -> Result<(), Error> {
         },
     )?;
 
-    let by_location =
-        player_list_location_get(&test_db.db, "usr_test", " wrld_a:instance ".into())?.unwrap();
-    let latest = player_list_latest_location_get(&test_db.db, "usr_test")?.unwrap();
+    let by_location = player_list_location_get(
+        &test_db.db,
+        &OwnerId::new("usr_test"),
+        " wrld_a:instance ".into(),
+    )?
+    .unwrap();
+    let latest = player_list_latest_location_get(&test_db.db, &OwnerId::new("usr_test"))?.unwrap();
     assert_eq!(by_location.created_at, "2026-07-01T00:00:00Z");
     assert_eq!(by_location.world_name, "Later Id");
     assert_eq!(latest.created_at, "2026-07-01T00:00:00Z");
@@ -135,7 +139,7 @@ fn join_leave_rows_include_started_at_and_keep_id_order() -> Result<(), Error> {
     let test_db = test_db("join-leave-order")?;
     write_batch(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         &GameLogWriteBatch {
             join_leave: vec![
                 join_leave(
@@ -169,7 +173,7 @@ fn join_leave_rows_include_started_at_and_keep_id_order() -> Result<(), Error> {
 
     let rows = player_list_join_leave_rows(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         "wrld_a:instance".into(),
         "2026-07-01T00:01:00Z".into(),
     )?;
@@ -191,7 +195,7 @@ fn join_leave_rows_are_account_scoped_and_include_shared_history() -> Result<(),
     ] {
         write_batch(
             &test_db.db,
-            owner_user_id,
+            &OwnerId::new(owner_user_id),
             &GameLogWriteBatch {
                 join_leave: vec![join_leave(
                     created_at,
@@ -208,13 +212,13 @@ fn join_leave_rows_are_account_scoped_and_include_shared_history() -> Result<(),
 
     let a = player_list_join_leave_rows(
         &test_db.db,
-        "usr_a",
+        &OwnerId::new("usr_a"),
         "wrld_scope:instance".into(),
         "".into(),
     )?;
     let b = player_list_join_leave_rows(
         &test_db.db,
-        "usr_b",
+        &OwnerId::new("usr_b"),
         "wrld_scope:instance".into(),
         "".into(),
     )?;
@@ -238,7 +242,7 @@ fn activity_includes_duration_start_across_range_and_filters_traveling() -> Resu
     let test_db = test_db("activity-range")?;
     write_batch(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         &GameLogWriteBatch {
             join_leave: vec![
                 join_leave(
@@ -280,7 +284,7 @@ fn activity_includes_duration_start_across_range_and_filters_traveling() -> Resu
 
     let rows = instance_activity_rows_get(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         "2026-07-01T09:49:00Z".into(),
         "2026-07-01T09:55:00Z".into(),
     )?;
@@ -298,7 +302,7 @@ fn world_summaries_prefer_cache_and_fall_back_to_latest_game_log_name() -> Resul
     world_cache_upsert(&test_db.db, cache_world("wrld_empty_cache", ""))?;
     write_batch(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         &GameLogWriteBatch {
             locations: vec![
                 location(
@@ -332,7 +336,7 @@ fn world_summaries_prefer_cache_and_fall_back_to_latest_game_log_name() -> Resul
 
     let summaries = world_summaries_get(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         vec![
             " wrld_cached ".into(),
             "wrld_cached".into(),

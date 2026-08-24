@@ -3,6 +3,7 @@ use vrcx_0_core::game_process::GameProcessEvent;
 
 use super::{
     GameLogIngestEngine, GameLogIngestOptions, GameLogJoinLeaveSnapshot, GameLogProcessEvent,
+    GameLogSideEffect,
 };
 
 fn event(created_at: &str, kind: GameLogEventKind) -> GameLogEvent {
@@ -65,6 +66,63 @@ fn provider_video_vrcx_event_does_not_emit_core_persisted_mirror() {
     assert!(output.batch.is_empty());
     assert_eq!(output.side_effects.len(), 1);
     assert!(output.runtime_persisted_mirrors.is_empty());
+}
+
+#[test]
+fn leaving_room_resets_now_playing_for_world_switch_and_rejoin() {
+    for destination in ["wrld_next:2", "wrld_current:1"] {
+        let mut engine = GameLogIngestEngine::default();
+        engine.ingest_events(
+            &[
+                event(
+                    "2026-05-14T00:00:00.000Z",
+                    GameLogEventKind::Location {
+                        location: "wrld_current:1".into(),
+                        world_name: "Current World".into(),
+                    },
+                ),
+                event(
+                    "2026-05-14T00:01:00.000Z",
+                    GameLogEventKind::VideoPlay {
+                        video_url: "https://example.test/video.mp4".into(),
+                        display_name: "Player".into(),
+                    },
+                ),
+            ],
+            GameLogIngestOptions::default(),
+        );
+
+        let leave_output = engine.ingest_events(
+            &[event(
+                "2026-05-14T00:02:00.000Z",
+                GameLogEventKind::LocationDestination {
+                    location: destination.into(),
+                },
+            )],
+            GameLogIngestOptions::default(),
+        );
+
+        assert_eq!(
+            leave_output.side_effects,
+            vec![GameLogSideEffect::NowPlayingReset]
+        );
+
+        let next_video_output = engine.ingest_events(
+            &[event(
+                "2026-05-14T00:03:00.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "https://example.test/video.mp4".into(),
+                    display_name: "Player".into(),
+                },
+            )],
+            GameLogIngestOptions::default(),
+        );
+
+        assert!(matches!(
+            next_video_output.side_effects.as_slice(),
+            [GameLogSideEffect::Video(_)]
+        ));
+    }
 }
 
 #[test]

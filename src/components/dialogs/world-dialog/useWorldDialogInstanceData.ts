@@ -4,6 +4,7 @@ import type { EntityRecord } from '@/domain/entities/shared';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { recordLocationHintsFromInstances } from '@/services/domainIngestionService';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 export interface WorldDialogInstanceDetailTarget {
     location: string;
@@ -21,10 +22,6 @@ type InstanceDetailResult = {
     instance: EntityRecord;
 };
 
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
-}
-
 function isInstanceDetailResult(
     value: { location: string; instance: EntityRecord | null } | null
 ): value is InstanceDetailResult {
@@ -37,7 +34,7 @@ export function useWorldDialogInstanceData({
     targets
 }: {
     endpoint: string;
-    sourceRevision?: unknown;
+    sourceRevision?: readonly unknown[];
     targets: WorldDialogInstanceDetailTarget[];
 }) {
     const [detailsByLocation, setDetailsByLocation] = useState<

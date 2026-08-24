@@ -86,8 +86,8 @@ export function RegistryBackupDialog({
                 return;
             }
             setBackups(nextBackups);
-            setAutoBackup(Boolean(nextAutoBackup));
-            setAskRestore(Boolean(nextAskRestore));
+            setAutoBackup(nextAutoBackup);
+            setAskRestore(nextAskRestore);
             setSelectedKey((current) =>
                 nextBackups.some((backup) => backup.key === current)
                     ? current
@@ -109,23 +109,21 @@ export function RegistryBackupDialog({
     }
 
     async function handleAutoBackupChange(value: boolean) {
-        const nextValue = Boolean(value);
-        setAutoBackup(nextValue);
+        setAutoBackup(value);
         try {
-            await configRepository.setBool('vrcRegistryAutoBackup', nextValue);
+            await configRepository.setBool('vrcRegistryAutoBackup', value);
         } catch (error) {
-            setAutoBackup(!nextValue);
+            setAutoBackup(!value);
             setDetail(registryRestoreError(error, t));
         }
     }
 
     async function handleAskRestoreChange(value: boolean) {
-        const nextValue = Boolean(value);
-        setAskRestore(nextValue);
+        setAskRestore(value);
         try {
-            await configRepository.setBool('vrcRegistryAskRestore', nextValue);
+            await configRepository.setBool('vrcRegistryAskRestore', value);
         } catch (error) {
-            setAskRestore(!nextValue);
+            setAskRestore(!value);
             setDetail(registryRestoreError(error, t));
         }
     }

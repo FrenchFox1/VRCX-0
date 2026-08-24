@@ -3,17 +3,18 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_persistence::config as config_store;
+use vrcx_0_core::json::RawJson;
 
 use crate::realtime::{UserQueryCachePolicy, UserQueryKind, UserQueryOptions};
 use crate::world_enrich::{self, PendingWorldNameResolution};
 
 use super::message_dispatch::json_string_field;
 use super::{
-    lookup_game_log_world_name, RealtimeCurrentUserOutput, RealtimeEntryCorrectionStream,
-    RealtimeHostRuntime, RealtimeInstanceQueueProjection, RealtimeNotificationOutput,
-    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimePersistenceBatch, Value,
+    RealtimeCurrentUserOutput, RealtimeEntryCorrectionStream, RealtimeHostRuntime,
+    RealtimeInstanceQueueProjection, RealtimeNotificationOutput, RealtimeNotificationProjection,
+    RealtimeNotificationUpsert, RealtimePersistenceBatch, Value,
 };
+use vrcx_0_core::OwnerId;
 
 const NOTIFICATION_USERNAME_RESOLVE_BUDGET_MS: u64 = 2_000;
 const NOTIFICATION_USERNAME_RESOLVE_ATTEMPTS: usize = 3;
@@ -22,7 +23,7 @@ const NOTIFICATION_USERNAME_RESOLVE_RETRY_DELAY_MS: u64 = 100;
 impl RealtimeHostRuntime {
     pub(super) fn enrich_projection_world_names(
         &self,
-        entries: &mut [Value],
+        entries: &mut [RawJson],
     ) -> Vec<PendingWorldNameResolution> {
         let mut unresolved_world_ids = Vec::new();
         for entry in entries {
@@ -64,7 +65,7 @@ impl RealtimeHostRuntime {
     pub(super) fn enrich_notification_images(
         &self,
         projection: &mut RealtimeNotificationProjection,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
     ) {
         let endpoint = self.active_endpoint();
         if endpoint.is_empty() {
@@ -174,7 +175,7 @@ impl RealtimeHostRuntime {
         endpoint: &str,
         value: &mut Value,
         allow_user_icon: bool,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
     ) -> bool {
         if notification_has_direct_image(value) {
             return true;
@@ -191,7 +192,9 @@ impl RealtimeHostRuntime {
     }
 
     fn display_vrc_plus_icons_as_avatar(&self) -> bool {
-        config_store::get_bool(self.deps.db.as_ref(), "displayVRCPlusIconsAsAvatar", true)
+        self.deps
+            .store
+            .get_bool("displayVRCPlusIconsAsAvatar", true)
             .unwrap_or(true)
     }
 
@@ -310,12 +313,12 @@ impl RealtimeHostRuntime {
         }
         for notification in &mut output.persistence.notification_v1_upserts {
             if let Some(resolved) = by_id.get(&notification_id(notification)) {
-                *notification = resolved.clone();
+                *notification = resolved.as_value().clone();
             }
         }
         for notification in &mut output.persistence.notification_v2_upserts {
             if let Some(resolved) = by_id.get(&notification_id(notification)) {
-                *notification = resolved.clone();
+                *notification = resolved.as_value().clone();
             }
         }
     }
@@ -442,7 +445,11 @@ impl RealtimeHostRuntime {
         {
             return;
         }
-        let world_name = match lookup_game_log_world_name(&self.deps.db, &location_entry.world_id) {
+        let world_name = match self
+            .deps
+            .store
+            .lookup_game_log_world_name(&location_entry.world_id)
+        {
             Ok(world_name) => world_name,
             Err(error) => {
                 tracing::warn!("Realtime current user world-name lookup failed: {error}");
@@ -573,7 +580,7 @@ fn notification_allows_avatar_resolution(value: &Value) -> bool {
     is_person_notification_type(&object_string(object, "type"))
 }
 
-fn notification_avatar_user_id(value: &Value, owner_user_id: &str) -> Option<String> {
+fn notification_avatar_user_id(value: &Value, owner_user_id: &OwnerId) -> Option<String> {
     if !notification_allows_avatar_resolution(value) {
         return None;
     }
@@ -581,7 +588,7 @@ fn notification_avatar_user_id(value: &Value, owner_user_id: &str) -> Option<Str
     if !user_id.starts_with("usr_") {
         return None;
     }
-    let owner_user_id = owner_user_id.trim();
+    let owner_user_id = owner_user_id.as_str().trim();
     if !owner_user_id.is_empty() && user_id == owner_user_id {
         return None;
     }

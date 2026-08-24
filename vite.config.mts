@@ -8,8 +8,8 @@ import { browserslistToTargets } from 'lightningcss';
 import { defineConfig, type Plugin } from 'vite';
 
 const webview2BuildTarget = {
-    vite: 'edge140',
-    browserslist: 'Edge 140'
+    vite: 'edge146',
+    browserslist: 'Edge 146'
 };
 const webkitLegacyBuildTarget = {
     vite: 'safari17',

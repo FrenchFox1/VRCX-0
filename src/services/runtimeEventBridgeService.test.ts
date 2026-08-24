@@ -140,6 +140,10 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useUserFactsStore } from '@/state/userFactsStore';
 
+import {
+    flushRealtimeRosterUpdates,
+    resetRealtimeRosterUpdates
+} from './realtimeRosterUpdateQueue';
 import { bindRuntimeEvents } from './runtimeEventBridgeService';
 
 function createBackendRuntimeSnapshot(): BackendRuntimeSnapshot {
@@ -434,6 +438,7 @@ describe('runtimeEventBridgeService', () => {
         useSessionStore.getState().resetSessionState();
         useUserFactsStore.getState().resetUserFacts();
         useProfileBackupStore.getState().resetProfileBackupState();
+        resetRealtimeRosterUpdates();
         vi.useRealTimers();
         mocks.isHostCapabilityAvailable.mockReturnValue(false);
         mocks.subscribe.mockResolvedValue(() => {});
@@ -1380,7 +1385,7 @@ describe('runtimeEventBridgeService', () => {
     });
 
     it.each(['running', 'cancelling'] as const)(
-        'delivers friend profile projections immediately while profile loading is %s',
+        'coalesces friend profile projections into one roster update while profile loading is %s',
         async (status) => {
             const { handlers, cleanup } = await bindCapturedRuntimeEvents();
             setBackendRealtimeOwner({
@@ -1417,6 +1422,7 @@ describe('runtimeEventBridgeService', () => {
                     friendLogChanged: false
                 });
             }
+            flushRealtimeRosterUpdates();
 
             expect(
                 Object.keys(useFriendRosterStore.getState().friendsById)

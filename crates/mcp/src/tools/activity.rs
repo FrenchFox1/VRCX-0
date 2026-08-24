@@ -5,18 +5,21 @@ use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
+use vrcx_0_contracts::social_aggregates;
 use vrcx_0_core::activity_buckets::{
     self, ActivityBucket as CoreActivityBucket, ActivityStreaks, ActivityTimeBucket,
 };
-use vrcx_0_persistence::{activity, social_aggregates};
 
 use crate::server::VrcxMcpServer;
+use crate::McpActivitySession;
 
 use super::common::{
-    deserialize_optional_bool, map_persistence_error, ms_to_rfc3339_z, require_current_user_id,
-    resolve_optional_target_or_result, rfc3339_z, social_aggregates_result, structured_result,
-    time_window_bounds_ms, TargetResolutionOutcome, TimeWindowParams, WithResolution,
+    application_query_result, deserialize_optional_bool, map_application_query_error,
+    ms_to_rfc3339_z, require_current_user_id, resolve_optional_target_or_result, rfc3339_z,
+    structured_result, time_window_bounds_ms, TargetResolutionOutcome, TimeWindowParams,
+    WithResolution,
 };
+use vrcx_0_core::OwnerId;
 
 const ACTIVITY_CACHE_CAVEAT: &str =
     "Activity sessions come from this profile's local VRCX-0 activity cache.";
@@ -31,15 +34,16 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<CopresenceSummaryParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        social_aggregates_result(social_aggregates::get_copresence_summary(
-            self.runtime.db.as_ref(),
+        application_query_result(self.runtime.activity_queries.copresence_summary(
             social_aggregates::CopresenceSummaryInput {
                 time_window: input.time_window.into(),
                 group_by: input.group_by.into(),
                 min_minutes: input.min_minutes,
                 limit: input.limit,
-                owner_user_id: Some(owner_user_id),
+                owner_user_id: Some(owner_user_id.clone()),
                 friends_only: input.friends_only.unwrap_or(true),
+                order_by: social_aggregates::CopresenceOrderBy::default(),
+                utc_offset_minutes: None,
             },
         ))
     }
@@ -60,17 +64,17 @@ impl VrcxMcpServer {
                 Some(TargetResolutionOutcome::ToolResult(result)) => return Ok(result),
                 None => (None, None),
             };
-        let output = social_aggregates::get_friend_activity_pattern(
-            self.runtime.db.as_ref(),
-            social_aggregates::FriendActivityPatternInput {
-                owner_user_id,
+        let output = self
+            .runtime
+            .activity_queries
+            .friend_activity_pattern(social_aggregates::FriendActivityPatternInput {
+                owner_user_id: owner_user_id.clone(),
                 user_id,
                 time_window: input.time_window.into(),
                 bucket: input.bucket.into(),
                 utc_offset_minutes: input.utc_offset_minutes,
-            },
-        )
-        .map_err(map_persistence_error)?;
+            })
+            .map_err(map_application_query_error)?;
         structured_result(WithResolution {
             inner: output,
             resolved_user,
@@ -85,8 +89,7 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<SearchWorldsVisitedParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        social_aggregates_result(social_aggregates::search_worlds_visited(
-            self.runtime.db.as_ref(),
+        application_query_result(self.runtime.activity_queries.search_worlds_visited(
             &owner_user_id,
             social_aggregates::SearchWorldsVisitedInput {
                 time_window: input.time_window.into(),
@@ -102,7 +105,7 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<MyActivityParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        structured_result(self.get_my_activity_output(owner_user_id, input)?)
+        structured_result(self.get_my_activity_output(owner_user_id.clone(), input)?)
     }
 
     #[tool(
@@ -114,7 +117,7 @@ impl VrcxMcpServer {
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
         let now_ms = Utc::now().timestamp_millis();
-        let pairs = self.activity_session_pairs_for_user(owner_user_id, now_ms)?;
+        let pairs = self.activity_session_pairs_for_user(owner_user_id.clone(), now_ms)?;
         let time_window: social_aggregates::TimeWindow = input.time_window.into();
         let bounds = time_window_bounds_ms(&time_window)?;
         let offset_minutes = input.utc_offset_minutes.unwrap_or(0);
@@ -138,7 +141,7 @@ impl VrcxMcpServer {
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
         let now_ms = Utc::now().timestamp_millis();
-        let pairs = self.activity_session_pairs_for_user(owner_user_id, now_ms)?;
+        let pairs = self.activity_session_pairs_for_user(owner_user_id.clone(), now_ms)?;
         let offset_minutes = input.utc_offset_minutes.unwrap_or(0);
         let streaks = activity_buckets::activity_streaks(&pairs, now_ms, offset_minutes);
         structured_result(activity_streaks_output(offset_minutes, streaks))
@@ -151,10 +154,11 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<FadingFriendsParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        social_aggregates_result(social_aggregates::get_fading_friends(
-            self.runtime.db.as_ref(),
-            self.fading_friends_input(owner_user_id, input),
-        ))
+        application_query_result(
+            self.runtime
+                .activity_queries
+                .fading_friends(self.fading_friends_input(owner_user_id.clone(), input)),
+        )
     }
 
     #[tool(
@@ -165,10 +169,9 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<BestTimeToPlayParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        social_aggregates_result(social_aggregates::get_best_time_to_play(
-            self.runtime.db.as_ref(),
+        application_query_result(self.runtime.activity_queries.best_time_to_play(
             social_aggregates::BestTimeToPlayInput {
-                owner_user_id,
+                owner_user_id: owner_user_id.clone(),
                 time_window: input.time_window.into(),
                 bucket: input.bucket.into(),
                 limit: input.limit,
@@ -193,18 +196,18 @@ impl VrcxMcpServer {
             Some(TargetResolutionOutcome::ToolResult(result)) => return Ok(result),
             None => (None, None),
         };
-        let output = social_aggregates::recall_encounter(
-            self.runtime.db.as_ref(),
-            social_aggregates::RecallEncounterInput {
-                owner_user_id,
+        let output = self
+            .runtime
+            .activity_queries
+            .recall_encounter(social_aggregates::RecallEncounterInput {
+                owner_user_id: owner_user_id.clone(),
                 name_query: input.name_query,
                 world_id: input.world_id,
                 co_present_with_user_id,
                 time_window: input.time_window.unwrap_or_default().into(),
                 limit: input.limit,
-            },
-        )
-        .map_err(map_persistence_error)?;
+            })
+            .map_err(map_application_query_error)?;
         structured_result(WithResolution {
             inner: output,
             resolved_user,
@@ -219,20 +222,23 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<SummarizeSocialPeriodParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        structured_result(self.summarize_social_period_output(owner_user_id, input)?)
+        structured_result(self.summarize_social_period_output(owner_user_id.clone(), input)?)
     }
 }
 
 impl VrcxMcpServer {
     fn get_my_activity_output(
         &self,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         input: MyActivityParams,
     ) -> Result<MyActivityOutput, String> {
         let time_window = input.time_window.unwrap_or_default().into();
         let bounds = time_window_bounds_ms(&time_window)?;
-        let sessions = activity::activity_sessions_get(self.runtime.db.as_ref(), owner_user_id)
-            .map_err(map_persistence_error)?;
+        let sessions = self
+            .runtime
+            .activity_queries
+            .activity_sessions(owner_user_id)
+            .map_err(map_application_query_error)?;
         let mut session_count = 0usize;
         let mut total_ms = 0i64;
         let mut longest_ms = 0i64;
@@ -274,7 +280,7 @@ impl VrcxMcpServer {
     }
     fn fading_friends_input(
         &self,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         input: FadingFriendsParams,
     ) -> social_aggregates::FadingFriendsInput {
         let recent_days = input.recent_days.unwrap_or(30).clamp(1, 365);
@@ -293,13 +299,11 @@ impl VrcxMcpServer {
 
     fn summarize_social_period_output(
         &self,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         input: SummarizeSocialPeriodParams,
     ) -> Result<SocialPeriodSummaryOutput, String> {
         let time_window_params = input.time_window.unwrap_or_default();
         let time_window: social_aggregates::TimeWindow = time_window_params.clone().into();
-        let db = self.runtime.db.as_ref();
-
         let activity = self.get_my_activity_output(
             owner_user_id.clone(),
             MyActivityParams {
@@ -307,69 +311,72 @@ impl VrcxMcpServer {
             },
         )?;
 
-        let top_companions = social_aggregates::get_copresence_summary(
-            db,
-            social_aggregates::CopresenceSummaryInput {
+        let top_companions = self
+            .runtime
+            .activity_queries
+            .copresence_summary(social_aggregates::CopresenceSummaryInput {
                 time_window: time_window.clone(),
                 group_by: social_aggregates::CopresenceGroupBy::Friend,
                 min_minutes: None,
                 limit: Some(5),
                 owner_user_id: Some(owner_user_id.clone()),
                 friends_only: true,
-            },
-        )
-        .map_err(map_persistence_error)?
-        .rows;
+                order_by: social_aggregates::CopresenceOrderBy::default(),
+                utc_offset_minutes: None,
+            })
+            .map_err(map_application_query_error)?
+            .rows;
 
-        let new_friends = social_aggregates::get_friend_log(
-            db,
-            social_aggregates::FriendLogInput {
+        let new_friends = self
+            .runtime
+            .activity_queries
+            .friend_log(social_aggregates::FriendLogInput {
                 owner_user_id: owner_user_id.clone(),
                 target_user_id: None,
                 types: vec!["Friend".into()],
                 time_window: time_window.clone(),
                 limit: Some(50),
                 cursor: None,
-            },
-        )
-        .map_err(map_persistence_error)?
-        .rows;
+            })
+            .map_err(map_application_query_error)?
+            .rows;
 
-        let fading_friends = social_aggregates::get_fading_friends(
-            db,
-            self.summary_fading_input(&owner_user_id, &time_window)?,
-        )
-        .map_err(map_persistence_error)?
-        .rows
-        .into_iter()
-        .take(5)
-        .collect();
+        let fading_friends = self
+            .runtime
+            .activity_queries
+            .fading_friends(self.summary_fading_input(&owner_user_id, &time_window)?)
+            .map_err(map_application_query_error)?
+            .rows
+            .into_iter()
+            .take(5)
+            .collect();
 
         let top_worlds = summarize_world_visits(
-            social_aggregates::search_worlds_visited(
-                db,
-                &owner_user_id,
-                social_aggregates::SearchWorldsVisitedInput {
-                    time_window: time_window.clone(),
-                    limit: 100,
-                },
-            )
-            .map_err(map_persistence_error)?
-            .rows,
+            self.runtime
+                .activity_queries
+                .search_worlds_visited(
+                    &owner_user_id,
+                    social_aggregates::SearchWorldsVisitedInput {
+                        time_window: time_window.clone(),
+                        limit: 100,
+                    },
+                )
+                .map_err(map_application_query_error)?
+                .rows,
         );
 
-        let best_times = social_aggregates::get_best_time_to_play(
-            db,
-            social_aggregates::BestTimeToPlayInput {
+        let best_times = self
+            .runtime
+            .activity_queries
+            .best_time_to_play(social_aggregates::BestTimeToPlayInput {
                 owner_user_id,
                 time_window: time_window.clone(),
                 bucket: social_aggregates::ActivityBucket::HourOfDay,
                 limit: Some(3),
                 utc_offset_minutes: None,
-            },
-        )
-        .map_err(map_persistence_error)?
-        .rows;
+            })
+            .map_err(map_application_query_error)?
+            .rows;
 
         Ok(SocialPeriodSummaryOutput {
             period: TimeWindowEcho {
@@ -391,7 +398,7 @@ impl VrcxMcpServer {
 
     fn summary_fading_input(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         time_window: &social_aggregates::TimeWindow,
     ) -> Result<social_aggregates::FadingFriendsInput, String> {
         let bounds = time_window_bounds_ms(time_window)?;
@@ -412,7 +419,7 @@ impl VrcxMcpServer {
             }
         };
         Ok(social_aggregates::FadingFriendsInput {
-            owner_user_id: owner_user_id.to_string(),
+            owner_user_id: owner_user_id.clone(),
             prior_from,
             pivot,
             now,
@@ -423,19 +430,18 @@ impl VrcxMcpServer {
 
     fn activity_session_pairs_for_user(
         &self,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         now_ms: i64,
     ) -> Result<Vec<(i64, i64)>, String> {
-        activity::activity_sessions_get(self.runtime.db.as_ref(), owner_user_id)
+        self.runtime
+            .activity_queries
+            .activity_sessions(owner_user_id)
             .map(|sessions| activity_session_pairs(sessions, now_ms))
-            .map_err(map_persistence_error)
+            .map_err(map_application_query_error)
     }
 }
 
-fn activity_session_pairs(
-    sessions: Vec<activity::ActivitySessionOutput>,
-    now_ms: i64,
-) -> Vec<(i64, i64)> {
+fn activity_session_pairs(sessions: Vec<McpActivitySession>, now_ms: i64) -> Vec<(i64, i64)> {
     sessions
         .into_iter()
         .filter_map(|session| {

@@ -11,12 +11,9 @@ import type {
 } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/vrchatMediaRepository';
 import { printCleanupWarningMessageKey } from '@/shared/utils/printFavoriteMessages';
-import { normalizeString } from '@/shared/utils/string';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
-import {
-    type FavoriteRevisionKind,
-    useFavoriteRevisionStore
-} from '@/state/favoriteRevisionStore';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 import {
@@ -75,20 +72,10 @@ function refreshPrintFavoritesAfterCleanup(): void {
         });
 }
 
-function normalizeFavoritesChangedKind(kind: string): FavoriteRevisionKind {
-    return kind === 'friend' || kind === 'world' || kind === 'avatar'
-        ? kind
-        : 'unknown';
-}
-
 function isStoredLocalFavoriteKind(
     kind: FavoriteKind
 ): kind is StoredLocalFavoriteKind {
     return kind === 'friend' || kind === 'avatar';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function applyFavoriteChange(change: FavoriteChange): void {
@@ -152,8 +139,7 @@ function matchesCurrentFavoriteAuthScope(
 ): boolean {
     const auth = useRuntimeStore.getState().auth;
     return (
-        normalizeString(payload.ownerUserId) ===
-            normalizeString(auth.currentUserId) &&
+        payload.ownerUserId.trim() === (auth.currentUserId ?? '').trim() &&
         normalizeVrchatEndpointDomain(payload.endpoint) ===
             normalizeVrchatEndpointDomain(auth.currentUserEndpoint)
     );
@@ -163,30 +149,27 @@ function isFavoriteMirrorReady(payload: FavoritesChangedEventPayload): boolean {
     const favorites = useFavoriteStore.getState();
     return (
         favorites.loadStatus === 'ready' &&
-        normalizeString(payload.ownerUserId) ===
-            normalizeString(favorites.currentUserId)
+        payload.ownerUserId.trim() === (favorites.currentUserId ?? '').trim()
     );
 }
 
 function applyFavoritesChangedEvent(
     payload: FavoritesChangedEventPayload
 ): void {
-    void commands
-        .appQuickSearchWorkingSetInvalidate()
-        .catch((error: unknown) => {
-            console.warn(
-                'Failed to invalidate the quick search working set:',
-                error
-            );
-        });
+    void commands.appQuickSearchWorkingSetInvalidate().catch((error) => {
+        console.warn(
+            'Failed to invalidate the quick search working set:',
+            error
+        );
+    });
     for (const change of payload.changes) {
         applyFavoriteChange(change);
     }
-    const kind = normalizeFavoritesChangedKind(payload.kind);
+    const kind = payload.kind;
     useFavoriteRevisionStore.getState().bumpRevision({
         kind,
-        local: Boolean(payload.local),
-        remote: Boolean(payload.remote),
+        local: payload.local,
+        remote: payload.remote,
         requiresRefresh: payload.requiresRefresh
     });
     if (!payload.local || !payload.requiresRefresh) {
@@ -285,11 +268,11 @@ export function handleRuntimeGroupInstancesProjection(
 ): void {
     const runtimeStore = useRuntimeStore.getState();
     const status = record.status;
-    const userId = normalizeString(record.userId);
-    const endpoint = normalizeString(record.endpoint);
+    const userId = record.userId.trim();
+    const endpoint = record.endpoint.trim();
     const auth = runtimeStore.auth;
-    const currentUserId = normalizeString(auth.currentUserId);
-    const currentEndpoint = normalizeString(auth.currentUserEndpoint);
+    const currentUserId = (auth.currentUserId ?? '').trim();
+    const currentEndpoint = auth.currentUserEndpoint.trim();
     if (!currentUserId || !userId) {
         if (status === 'idle') {
             runtimeStore.setGroupInstancesState(createGroupInstancesState());
@@ -303,18 +286,14 @@ export function handleRuntimeGroupInstancesProjection(
     ) {
         return;
     }
-    const instances = Array.isArray(record.instances)
-        ? record.instances
-        : undefined;
-    const groupOrder = Array.isArray(record.groupOrder)
-        ? record.groupOrder
-        : undefined;
+    const instances = record.instances ?? undefined;
+    const groupOrder = record.groupOrder ?? undefined;
     const patch: Partial<ReturnType<typeof createGroupInstancesState>> = {
         status,
         userId: currentUserId,
         endpoint: currentEndpoint,
         lastLoadedAt: new Date().toISOString(),
-        error: normalizeString(record.error)
+        error: (record.error ?? '').trim()
     };
     if (instances) {
         patch.instances = instances;

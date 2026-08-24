@@ -41,13 +41,16 @@ const layoutSettingConfig: Record<
     }
 };
 
-const layoutSettingKeys = Object.keys(
-    layoutSettingConfig
-) as MutualFriendsLayoutSettingKey[];
+const layoutSettingKeys = [
+    'layoutIterations',
+    'layoutSpacing',
+    'edgeCurvature',
+    'communitySeparation'
+] satisfies MutualFriendsLayoutSettingKey[];
 
 function normalizeLayoutSetting(
     key: MutualFriendsLayoutSettingKey,
-    value: unknown
+    value: number
 ) {
     const limits = MUTUAL_GRAPH_LAYOUT_LIMITS[key];
     const nextValue = clampMutualGraphNumber(

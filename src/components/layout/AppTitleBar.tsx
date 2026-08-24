@@ -13,7 +13,7 @@ import { AppMenuBar } from './AppMenuBar';
 import { TitleBarButton, useTitleBarActions } from './useTitleBarActions';
 import { useWindowChromeState } from './useWindowChromeState';
 
-async function runWindowAction(action: () => Promise<unknown>) {
+async function runWindowAction(action: () => Promise<void>) {
     try {
         await action();
     } catch (error) {

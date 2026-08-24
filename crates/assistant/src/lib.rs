@@ -5,6 +5,7 @@ mod entities;
 mod error;
 mod events;
 mod playbook;
+mod ports;
 mod runtime;
 mod session;
 #[cfg(test)]
@@ -21,6 +22,14 @@ pub use events::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
     AssistantToolResultEvent, AssistantTurnEntitiesEvent,
 };
-pub use runtime::{AssistantController, SendResult};
+pub use ports::{
+    AssistantConfig, AssistantConfigPort, AssistantLlmClient, AssistantLlmClientFactory,
+    AssistantLlmClientFactoryPort, AssistantLlmClientInput, AssistantLlmClientPort,
+    AssistantLlmError, AssistantLlmFuture, AssistantMessageInsert, AssistantPortError,
+    AssistantPortResult, AssistantSessionPersistence, AssistantSessionPersistencePort,
+    AssistantSessionRuntimeUpdate, AssistantSessionUpsert, AssistantSqliteErrorCategory,
+    PersistedAssistantMessage, PersistedAssistantSession,
+};
+pub use runtime::{AssistantController, AssistantControllerDeps, SendResult};
 pub use session::{ActiveTurn, Message, Role, Session, SessionSummary, TurnStatus};
-pub use vrcx_0_integrations::llm::{LlmEndpointDetectModelsResult, LlmModelReasoning};
+pub use vrcx_0_contracts::llm::{LlmEndpointDetectModelsResult, LlmModelReasoning};

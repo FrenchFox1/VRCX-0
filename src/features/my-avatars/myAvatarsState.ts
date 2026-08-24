@@ -10,13 +10,27 @@ import {
     sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 
-import type { MyAvatarsGridDensity } from './myAvatarsTypes';
+import type {
+    MyAvatarsGridDensity,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter
+} from './myAvatarsTypes';
 
 export const MY_AVATARS_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const MY_AVATARS_DEFAULT_SORTING = [{ id: 'updated_at', desc: true }];
-export const MY_AVATARS_RELEASE_STATUS_OPTIONS = ['all', 'public', 'private'];
-export const MY_AVATARS_PLATFORM_OPTIONS = ['all', 'pc', 'android', 'ios'];
+export const MY_AVATARS_RELEASE_STATUS_OPTIONS = [
+    'all',
+    'public',
+    'private'
+] satisfies readonly MyAvatarsReleaseStatusFilter[];
+export const MY_AVATARS_PLATFORM_OPTIONS = [
+    'all',
+    'pc',
+    'android',
+    'ios'
+] satisfies readonly MyAvatarsPlatformFilter[];
 export const MY_AVATARS_DEFAULT_CARD_SCALE = 0.6;
 export const MY_AVATARS_GRID_DENSITY_CONFIG_KEY = 'VRCX_MyAvatarsGridDensityV2';
 export const MY_AVATARS_LEGACY_GRID_DENSITY_CONFIG_KEY =
@@ -36,6 +50,23 @@ export const MY_AVATARS_GRID_DENSITY_OPTIONS = Object.freeze([
         labelKey: 'view.my_avatars.label.grid_density_dense'
     }
 ]);
+
+export function isMyAvatarsReleaseStatusFilter(
+    value: unknown
+): value is MyAvatarsReleaseStatusFilter {
+    return value === 'all' || value === 'public' || value === 'private';
+}
+
+export function isMyAvatarsPlatformFilter(
+    value: unknown
+): value is MyAvatarsPlatformFilter {
+    return (
+        value === 'all' ||
+        value === 'pc' ||
+        value === 'android' ||
+        value === 'ios'
+    );
+}
 export const MY_AVATARS_COLUMN_IDS = [
     'thumbnail',
     'name',
@@ -96,11 +127,9 @@ export function writePersistedMyAvatarsState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
-function isMyAvatarsGridDensity(value: string): value is MyAvatarsGridDensity {
+export function isMyAvatarsGridDensity(
+    value: string
+): value is MyAvatarsGridDensity {
     return GRID_DENSITY_VALUES.has(value);
 }
 
@@ -121,11 +150,13 @@ export function sanitizeMyAvatarsSorting(value: unknown): SortingState {
     const allowedIds = new Set(SORT_COLUMN_IDS);
     const filtered = value
         .map((entry): SortingState[number] | null =>
-            isRecord(entry) && typeof entry.id === 'string'
-                ? ({
-                      ...entry,
-                      id: normalizeMyAvatarsColumnId(entry.id)
-                  } as SortingState[number])
+            isRecord(entry) &&
+            typeof entry.id === 'string' &&
+            typeof entry.desc === 'boolean'
+                ? {
+                      id: normalizeMyAvatarsColumnId(entry.id),
+                      desc: entry.desc
+                  }
                 : null
         )
         .filter((entry): entry is SortingState[number] =>
@@ -155,14 +186,9 @@ export function sanitizeMyAvatarsPageSizes(value: unknown): number[] {
 
 export function resolveMyAvatarsPageSize(
     candidate: unknown,
-    allowed: unknown,
-    fallback: unknown = MY_AVATARS_DEFAULT_PAGE_SIZES[1]
+    pageSizes: readonly number[],
+    fallback: number = MY_AVATARS_DEFAULT_PAGE_SIZES[1]
 ): number {
-    const pageSizes = Array.isArray(allowed)
-        ? allowed.filter(
-              (size): size is number => Number.isFinite(size) && size > 0
-          )
-        : MY_AVATARS_DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : MY_AVATARS_DEFAULT_PAGE_SIZES[0];
@@ -179,12 +205,11 @@ export function resolveMyAvatarsPageSize(
         return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
 
-    const parsedFallback = Number.parseInt(String(fallback), 10);
-    if (pageSizes.includes(parsedFallback)) {
-        return parsedFallback;
+    if (pageSizes.includes(fallback)) {
+        return fallback;
     }
 
-    return nearestPageSize(Number(fallback) || fallbackPageSize);
+    return nearestPageSize(fallback);
 }
 
 export function sanitizeMyAvatarsGridDensity(
@@ -201,22 +226,20 @@ export function resolveMyAvatarsGridDensity({
     legacyGridDensity,
     legacyCardScale
 }: {
-    persistedDensity?: unknown;
-    legacyGridDensity?: unknown;
-    legacyCardScale?: unknown;
+    persistedDensity?: string;
+    legacyGridDensity?: string;
+    legacyCardScale?: string;
 } = {}): MyAvatarsGridDensity {
-    const normalized =
-        typeof persistedDensity === 'string' ? persistedDensity.trim() : '';
+    const normalized = persistedDensity?.trim() ?? '';
     if (isMyAvatarsGridDensity(normalized)) {
         return normalized;
     }
-    const normalizedLegacyDensity =
-        typeof legacyGridDensity === 'string' ? legacyGridDensity.trim() : '';
+    const normalizedLegacyDensity = legacyGridDensity?.trim() ?? '';
     if (LEGACY_GRID_DENSITY_ALIASES[normalizedLegacyDensity]) {
         return LEGACY_GRID_DENSITY_ALIASES[normalizedLegacyDensity];
     }
 
-    const legacyScale = Number.parseFloat(String(legacyCardScale));
+    const legacyScale = Number.parseFloat(legacyCardScale ?? '');
     if (!Number.isFinite(legacyScale)) {
         return MY_AVATARS_DEFAULT_GRID_DENSITY;
     }

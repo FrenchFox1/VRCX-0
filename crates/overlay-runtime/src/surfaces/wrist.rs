@@ -636,7 +636,7 @@ mod tests {
                 ..OverlayActivityContent::default()
             },
             actor_relation: OverlayActivityActorRelation::None,
-            payload: Value::Null,
+            payload: Value::Null.into(),
         }
     }
 

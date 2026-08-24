@@ -25,10 +25,7 @@ import {
     resolveThemeMode
 } from './themeService';
 
-async function runNonCriticalStartupSync(
-    label: string,
-    task: Promise<unknown> | unknown
-) {
+async function runNonCriticalStartupSync(label: string, task: Promise<void>) {
     try {
         await task;
     } catch (error) {

@@ -3,7 +3,7 @@ use serde_json::Value;
 use crate::common::ParamsBuilder;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry, GameLogLocationTimeUpdate};
-use crate::ownership::owner_id_get_or_insert;
+use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 use vrcx_0_core::trust::trust_level_changed;
 
@@ -32,21 +32,21 @@ struct FriendLogHistoryEntry<'a> {
 
 pub fn write_realtime_batch(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     batch: &RealtimePersistenceBatch,
 ) -> Result<RealtimeWriteCounts, Error> {
     if batch.is_empty() {
         return Ok(RealtimeWriteCounts::default());
     }
 
-    let owner_user_id = normalize_user_id(owner_user_id);
+    let owner_user_id = OwnerId::new(normalize_user_id(owner_user_id.as_str()));
     if owner_user_id.is_empty() {
         return Err(Error::Database(
             "Realtime persistence requires a current user id.".into(),
         ));
     }
     validate_friend_log_backed_feed_entries(batch)?;
-    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
     ensure_realtime_tables(db, &user_prefix)?;
     let has_game_log_writes =
         !batch.game_log_locations.is_empty() || !batch.game_log_location_time_updates.is_empty();
@@ -56,7 +56,7 @@ pub fn write_realtime_batch(
     let owner_id = if has_game_log_writes {
         owner_id_get_or_insert(db, &owner_user_id)?
     } else {
-        0
+        OwnerRowId::UNASSIGNED
     };
     db.write_transaction(|tx| {
         let mut counts = RealtimeWriteCounts::default();
@@ -101,6 +101,9 @@ pub fn write_realtime_batch(
         }
         for update in &batch.game_log_location_time_updates {
             counts.add_game_log_rows(update_game_log_location_time(tx, owner_id, update)?);
+        }
+        for entry in &batch.self_profile_log_entries {
+            counts.add_realtime_rows(insert_self_profile_log(tx, &user_prefix, entry)?);
         }
         Ok(counts)
     })
@@ -440,8 +443,11 @@ fn upsert_notification_v1(
         ));
     }
     let details = notification.get("details").unwrap_or(&Value::Null);
+    let expired =
+        bool_field(notification.get("$isExpired")) || bool_field(notification.get("expired"));
+    let seen = bool_field(notification.get("seen")) || expired;
     tx.execute_non_query(
-        &format!("INSERT OR IGNORE INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @expired)"),
+        &format!("INSERT OR IGNORE INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired, seen) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @expired, @seen)"),
         &ParamsBuilder::new()
             .set("id", id)
             .set("created_at", created_at)
@@ -461,16 +467,8 @@ fn upsert_notification_v1(
             .set("invite_message", entry_string(details, "inviteMessage"))
             .set("request_message", entry_string(details, "requestMessage"))
             .set("response_message", entry_string(details, "responseMessage"))
-            .set(
-                "expired",
-                if bool_field(notification.get("$isExpired"))
-                    || bool_field(notification.get("expired"))
-                {
-                    1
-                } else {
-                    0
-                },
-            )
+            .set("expired", if expired { 1 } else { 0 })
+            .set("seen", if seen { 1 } else { 0 })
             .build(),
     )
     .map(affected_count)
@@ -624,6 +622,29 @@ fn mark_notification_seen(
     .map(affected_count)
 }
 
+fn insert_self_profile_log(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &SelfProfileLogEntry,
+) -> Result<u64, Error> {
+    if entry.value == entry.previous_value {
+        return Ok(0);
+    }
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_self_profile_log (created_at, field, value, previous_value)
+             VALUES (@created_at, @field, @value, @previous_value)"
+        ),
+        &ParamsBuilder::new()
+            .set("created_at", entry.created_at.clone())
+            .set("field", entry.field.as_str())
+            .set("value", entry.value.clone())
+            .set("previous_value", entry.previous_value.clone())
+            .build(),
+    )
+    .map(affected_count)
+}
+
 fn upsert_avatar_history(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,
@@ -673,7 +694,7 @@ fn upsert_avatar_time_spent(
 
 fn insert_game_log_location(
     tx: &mut DatabaseWriteTransaction<'_>,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogLocationEntry,
 ) -> Result<u64, Error> {
     if entry.location.trim().is_empty() {
@@ -696,7 +717,7 @@ fn insert_game_log_location(
 
 fn update_game_log_location_time(
     tx: &mut DatabaseWriteTransaction<'_>,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     update: &GameLogLocationTimeUpdate,
 ) -> Result<u64, Error> {
     if update.created_at.trim().is_empty() || update.time < 0 {

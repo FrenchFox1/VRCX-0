@@ -2,6 +2,9 @@ use std::path::PathBuf;
 
 use crate::notification::{NotificationDeliveryPreferences, NotificationTtsNameMode};
 use serde_json::json;
+use vrcx_0_application_activity::notification::{
+    render_delivery, OverlayLocale, RenderedNotification,
+};
 use vrcx_0_application_activity::{
     OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityContent,
     OverlayActivityDelivery, OverlayActivityEntry, OverlayActivityText,
@@ -9,7 +12,6 @@ use vrcx_0_application_activity::{
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_persistence::{memos::memo_save_user, DatabaseService};
-use vrcx_0_runtime_host::notification::{render_delivery, OverlayLocale, RenderedNotification};
 
 use crate::notification::tts::notification_tts_text;
 
@@ -142,7 +144,7 @@ fn delivery() -> OverlayActivityDelivery {
                 ..OverlayActivityContent::default()
             },
             actor_relation: OverlayActivityActorRelation::None,
-            payload: json!({}),
+            payload: json!({}).into(),
         },
         desktop: false,
         vr: false,

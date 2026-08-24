@@ -1,18 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 use super::TimeWindow;
+use crate::ownership::OwnerId;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompanionsOfInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub user_id: String,
     pub time_window: TimeWindow,
     #[serde(default)]
     pub limit: Option<i64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompanionsOfOutput {
     pub rows: Vec<CompanionOfRow>,
@@ -20,7 +21,7 @@ pub struct CompanionsOfOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompanionOfRow {
     pub user_id: String,
@@ -33,7 +34,7 @@ pub struct CompanionOfRow {
     pub worlds: Vec<CompanionWorldRow>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 pub struct CompanionWorldRow {
     pub location: String,

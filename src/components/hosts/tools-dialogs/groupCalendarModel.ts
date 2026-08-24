@@ -17,14 +17,14 @@ import { getEventId } from './toolsDialogUtils';
 
 export const DATE_KEY_FORMAT = 'yyyy-MM-dd';
 
-export function dateKeyToLocalDate(dateKey: unknown) {
-    const value = String(dateKey || '');
-    const parsed = parse(value, DATE_KEY_FORMAT, new Date());
-    const valid = isValid(parsed) && format(parsed, DATE_KEY_FORMAT) === value;
+export function dateKeyToLocalDate(dateKey: string) {
+    const parsed = parse(dateKey, DATE_KEY_FORMAT, new Date());
+    const valid =
+        isValid(parsed) && format(parsed, DATE_KEY_FORMAT) === dateKey;
     return startOfDay(valid ? parsed : new Date());
 }
 
-export function monthDateFromKey(dateKey: unknown) {
+export function monthDateFromKey(dateKey: string) {
     return startOfMonth(dateKeyToLocalDate(dateKey));
 }
 
@@ -44,10 +44,8 @@ export function formatCalendarRequestDate(value: Date | number | string) {
     return format(value, "yyyy-MM-dd'T'HH:mm:ss'Z'");
 }
 
-export function calendarLocaleForLanguage(language: unknown) {
-    const normalized = String(language || '')
-        .replace('_', '-')
-        .toLowerCase();
+export function calendarLocaleForLanguage(language: string) {
+    const normalized = language.replace('_', '-').toLowerCase();
     if (normalized.startsWith('zh')) {
         return zhCN;
     }

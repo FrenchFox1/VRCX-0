@@ -9,18 +9,12 @@ import type {
     WorldDetailsById
 } from './instanceActivityTypes';
 
-function timestampMs(value: unknown): number {
-    if (value instanceof Date) {
-        return value.getTime();
-    }
-    if (typeof value === 'string' || typeof value === 'number') {
-        return new Date(value).getTime();
-    }
-    return 0;
+function timestampMs(value: string): number {
+    return new Date(value).getTime();
 }
 
 export function parseLocalDayKey(dayKey: string) {
-    const [year, month, day] = String(dayKey || '')
+    const [year, month, day] = dayKey
         .split('-')
         .map((value: string) => Number.parseInt(value, 10) || 0);
     return new Date(year, Math.max(0, month - 1), day || 1, 0, 0, 0, 0);
@@ -38,8 +32,8 @@ export function getLocalDayBounds(dayKey: string) {
     };
 }
 
-export function isValidActivityLocation(location: unknown): boolean {
-    const normalizedLocation = String(location ?? '').trim();
+export function isValidActivityLocation(location: string): boolean {
+    const normalizedLocation = location.trim();
     if (!normalizedLocation) {
         return false;
     }
@@ -52,12 +46,12 @@ export function normalizeInstanceRow(
     currentUserId: string,
     worldDetailsById: WorldDetailsById
 ): InstanceActivityChartRow {
-    const safeDuration = Math.max(0, Number(row.time) || 0);
+    const safeDuration = Math.max(0, row.time || 0);
     const leaveMs = timestampMs(row.created_at);
     const joinMs = Math.max(0, leaveMs - safeDuration);
     const { startMs, endMs } = getLocalDayBounds(selectedDate);
-    const location = String(row.location || '');
-    const userId = String(row.user_id || '');
+    const location = row.location;
+    const userId = row.user_id;
     const parsedLocation = parseLocation(location);
     const worldId = parsedLocation.worldId || '';
     const world = worldId ? worldDetailsById[worldId] : null;
@@ -67,9 +61,12 @@ export function normalizeInstanceRow(
     const visibleDurationMs = Math.max(0, visibleEndMs - visibleStartMs);
 
     return {
-        id: String(row.id || `${location}:${row.created_at}:${row.user_id}`),
+        id:
+            row.id !== 0
+                ? row.id.toString()
+                : `${location}:${row.created_at}:${row.user_id}`,
         currentUserId,
-        displayName: String(row.display_name || ''),
+        displayName: row.display_name,
         location,
         userId,
         parsedLocation,
@@ -108,7 +105,7 @@ export function buildChartRows(
     worldDetailsById: WorldDetailsById
 ): InstanceActivityChartRow[] {
     return rawRows
-        .filter((row) => String(row.user_id || '') === currentUserId)
+        .filter((row) => row.user_id === currentUserId)
         .filter((row) => isValidActivityLocation(row.location))
         .map((row) =>
             normalizeInstanceRow(
@@ -127,16 +124,19 @@ export function normalizeDetailRow(
     friendIdSet: Set<string>,
     favoriteIdSet: Set<string>
 ): InstanceActivityDetailRow {
-    const durationMs = Math.max(0, Number(row.time) || 0);
+    const durationMs = Math.max(0, row.time || 0);
     const leaveMs = timestampMs(row.created_at);
     const joinMs = Math.max(0, leaveMs - durationMs);
-    const userId = String(row.user_id || '');
-    const location = String(row.location || '');
+    const userId = row.user_id;
+    const location = row.location;
 
     return {
         ...row,
-        id: String(row.id || `${location}:${row.created_at}:${userId}`),
-        displayName: String(row.display_name || ''),
+        id:
+            row.id !== 0
+                ? row.id.toString()
+                : `${location}:${row.created_at}:${userId}`,
+        displayName: row.display_name,
         userId,
         location,
         joinMs,
@@ -239,7 +239,7 @@ export function buildDetailGroups(
 
     const groupsByLocation = new Map<string, InstanceActivityDetailRow[]>();
     for (const row of rawRows) {
-        if (!currentLocations.has(String(row.location || ''))) {
+        if (!currentLocations.has(row.location)) {
             continue;
         }
 

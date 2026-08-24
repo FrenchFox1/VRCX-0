@@ -1,10 +1,19 @@
 use std::collections::HashMap;
 
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use serde::Serialize;
 use serde_json::{json, Value};
 use url::Url;
+pub use vrcx_0_contracts::vrchat_api::{
+    classify_vrchat_auth_failure, classify_vrchat_response as classify_api_response,
+    parse_vrchat_json as parse_api_json, vrchat_auth_error_message,
+    vrchat_response as execute_response, VrchatAuthFailureKind, VrchatFailure as VrchatApiFailure,
+    VrchatJsonResponse as ApiJsonResponse, VrchatRequest as HttpApiRequestInput,
+    VrchatRequestBody as HttpApiRequestBody, VrchatResponse as HttpApiExecuteResponse,
+    VrchatResponseClass as ApiResponseClass, VrchatResponsePolicy as ApiResponsePolicy,
+    VrchatScope as ApiScope, VrchatUpload as HttpApiUpload,
+};
 pub use vrcx_0_core::text::normalize_text;
+pub use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 use vrcx_0_core::vrchat_endpoints::{
     VRCHAT_API_DEFAULT_ENDPOINT, VRCHAT_API_HOST, VRCHAT_FILES_HOST, VRCHAT_FILES_S3_HOST,
     VRCHAT_FILES_S3_HOST_PREFIX,
@@ -18,275 +27,12 @@ pub enum HttpApiError {
     Custom(String),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ApiScope {
-    Vrchat,
-    VrchatMedia,
-}
-
-#[derive(Debug, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ApiResponsePolicy {
-    pub class: ApiResponseClass,
-}
-
-#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub enum ApiResponseClass {
-    Ok,
-    Auth,
-    RateLimited,
-    ClientError,
-    ServerError,
-    Unknown,
-}
-
-impl ApiResponseClass {
-    pub const fn as_str(self) -> &'static str {
+impl vrcx_0_contracts::ApplicationErrorSource for HttpApiError {
+    fn into_application_error(self) -> vrcx_0_contracts::ApplicationErrorPayload {
         match self {
-            Self::Ok => "ok",
-            Self::Auth => "auth",
-            Self::RateLimited => "rateLimited",
-            Self::ClientError => "clientError",
-            Self::ServerError => "serverError",
-            Self::Unknown => "unknown",
+            Self::Custom(message) => vrcx_0_contracts::ApplicationErrorPayload::Custom(message),
         }
     }
-}
-
-impl std::fmt::Display for ApiResponseClass {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(self.as_str())
-    }
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub enum HttpApiRequestBody {
-    #[default]
-    Empty,
-    Json(Value),
-    Upload(HttpApiUpload),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum HttpApiUpload {
-    FilePut {
-        file_data: Vec<u8>,
-        file_mime: String,
-        file_md5: Option<String>,
-    },
-    Image {
-        image_data: String,
-        post_data: Option<String>,
-        matching_dimensions: bool,
-    },
-    PrintImage {
-        image_data: String,
-        post_data: Option<String>,
-        crop_white_border: bool,
-    },
-    LegacyImage {
-        image_data: String,
-        post_data: Option<String>,
-    },
-}
-
-impl HttpApiRequestBody {
-    pub fn as_json(&self) -> Option<&Value> {
-        match self {
-            Self::Json(value) => Some(value),
-            Self::Empty | Self::Upload(_) => None,
-        }
-    }
-
-    pub fn as_upload(&self) -> Option<&HttpApiUpload> {
-        match self {
-            Self::Upload(upload) => Some(upload),
-            Self::Empty | Self::Json(_) => None,
-        }
-    }
-
-    pub fn as_upload_mut(&mut self) -> Option<&mut HttpApiUpload> {
-        match self {
-            Self::Upload(upload) => Some(upload),
-            Self::Empty | Self::Json(_) => None,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct HttpApiRequestInput {
-    pub url: Option<String>,
-    pub path: Option<String>,
-    pub endpoint: Option<String>,
-    pub method: Option<String>,
-    pub query_params: Option<HashMap<String, Value>>,
-    pub headers: Option<HashMap<String, String>>,
-    pub body: HttpApiRequestBody,
-    pub skip_empty_query_string: Option<bool>,
-}
-
-#[derive(Clone, Debug, Serialize, specta::Type)]
-pub struct HttpApiExecuteResponse {
-    pub status: i32,
-    pub data: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct ApiJsonResponse {
-    pub status: i32,
-    pub json: Value,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("{message}")]
-pub struct VrchatApiFailure {
-    pub status_code: i32,
-    pub message: String,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum VrchatAuthFailureKind {
-    InvalidCredentials,
-    MissingCredentials,
-    SessionInvalidated,
-    Other,
-}
-
-impl ApiJsonResponse {
-    pub fn parse(status: i32, data: &str) -> Self {
-        Self {
-            status,
-            json: parse_api_json(data),
-        }
-    }
-
-    pub fn has_error_field(&self) -> bool {
-        self.json
-            .as_object()
-            .is_some_and(|object| object.contains_key("error"))
-    }
-
-    pub fn is_failure(&self) -> bool {
-        self.status >= 400 || self.has_error_field()
-    }
-
-    pub fn error_message(&self) -> Option<String> {
-        let object = self.json.as_object();
-        api_message_text(Some(&self.json))
-            .or_else(|| api_message_text(object.and_then(|record| record.get("error"))))
-            .or_else(|| {
-                api_message_text(
-                    object
-                        .and_then(|record| record.get("error"))
-                        .and_then(Value::as_object)
-                        .and_then(|error| error.get("message")),
-                )
-            })
-            .or_else(|| api_message_text(object.and_then(|record| record.get("message"))))
-    }
-
-    pub fn error_message_or(&self, fallback: &str) -> String {
-        self.error_message()
-            .unwrap_or_else(|| format!("{fallback} ({})", self.status))
-    }
-
-    pub fn error_message_with_http_status(&self, fallback: &str) -> String {
-        let message = self.error_message().unwrap_or_else(|| fallback.to_string());
-        format!("{message} (HTTP {})", self.status)
-    }
-
-    pub fn failure_or(&self, fallback: &str) -> Option<VrchatApiFailure> {
-        if !self.is_failure() {
-            return None;
-        }
-        Some(self.to_failure(fallback))
-    }
-
-    pub fn to_failure(&self, fallback: &str) -> VrchatApiFailure {
-        VrchatApiFailure {
-            status_code: self.status,
-            message: self.error_message().unwrap_or_else(|| fallback.to_string()),
-        }
-    }
-}
-
-impl From<&HttpApiExecuteResponse> for ApiJsonResponse {
-    fn from(response: &HttpApiExecuteResponse) -> Self {
-        Self::parse(response.status, &response.data)
-    }
-}
-
-pub fn vrchat_auth_error_message(response: &HttpApiExecuteResponse) -> Option<String> {
-    let json = serde_json::from_str::<Value>(&response.data).ok()?;
-    let object = json.as_object();
-    let error = object.and_then(|record| record.get("error"));
-    json.as_str()
-        .map(ToOwned::to_owned)
-        .or_else(|| auth_scalar_text(object.and_then(|record| record.get("message"))))
-        .or_else(|| {
-            auth_scalar_text(
-                error
-                    .and_then(Value::as_object)
-                    .and_then(|record| record.get("message")),
-            )
-        })
-        .or_else(|| error.and_then(Value::as_str).map(ToOwned::to_owned))
-}
-
-fn auth_scalar_text(value: Option<&Value>) -> Option<String> {
-    match value {
-        Some(Value::String(text)) => Some(text.trim().to_string()),
-        Some(Value::Number(number)) => Some(number.to_string()),
-        Some(Value::Bool(flag)) => Some(flag.to_string()),
-        _ => None,
-    }
-    .filter(|text| !text.is_empty())
-}
-
-pub fn classify_vrchat_auth_failure(response: &HttpApiExecuteResponse) -> VrchatAuthFailureKind {
-    if response.status == 401 {
-        let message = vrchat_auth_error_message(response).unwrap_or_default();
-        if message.contains("Invalid Username/Email or Password") {
-            return VrchatAuthFailureKind::InvalidCredentials;
-        }
-        if message.contains("Missing Credentials") {
-            return VrchatAuthFailureKind::MissingCredentials;
-        }
-        return VrchatAuthFailureKind::SessionInvalidated;
-    }
-    if response.status == 403 {
-        return VrchatAuthFailureKind::SessionInvalidated;
-    }
-    VrchatAuthFailureKind::Other
-}
-
-pub fn parse_api_json(data: &str) -> Value {
-    serde_json::from_str(data).unwrap_or_else(|_| Value::String(data.to_string()))
-}
-
-fn api_message_text(value: Option<&Value>) -> Option<String> {
-    value
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|message| !message.is_empty())
-        .map(|message| message.trim_matches('"').to_string())
-}
-
-pub fn classify_api_response(status: i32) -> ApiResponsePolicy {
-    let class = match status {
-        200..=299 => ApiResponseClass::Ok,
-        401 => ApiResponseClass::Auth,
-        429 => ApiResponseClass::RateLimited,
-        400..=499 => ApiResponseClass::ClientError,
-        500..=599 => ApiResponseClass::ServerError,
-        _ => ApiResponseClass::Unknown,
-    };
-    ApiResponsePolicy { class }
-}
-
-pub fn execute_response(status: i32, data: String) -> HttpApiExecuteResponse {
-    HttpApiExecuteResponse { status, data }
 }
 
 pub fn require_text(value: impl AsRef<str>, message: &str) -> Result<String, HttpApiError> {
@@ -454,15 +200,6 @@ pub fn build_web_execute_request(
     };
 
     Ok(request)
-}
-
-pub fn normalize_vrchat_api_endpoint(endpoint: Option<&str>) -> String {
-    let endpoint = endpoint.unwrap_or("").trim().trim_end_matches('/');
-    if endpoint.is_empty() {
-        VRCHAT_API_DEFAULT_ENDPOINT.to_string()
-    } else {
-        endpoint.to_string()
-    }
 }
 
 fn validated_vrchat_api_endpoint(endpoint: Option<&str>) -> Result<String, HttpApiError> {

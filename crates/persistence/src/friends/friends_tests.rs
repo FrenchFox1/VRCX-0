@@ -109,10 +109,12 @@ fn friend_log_current_list_orders_by_friend_number_then_name_then_id() {
 fn friend_display_names_returns_empty_when_owner_or_ids_are_missing() {
     let (_dir, db) = test_db("display-names-empty");
 
-    assert!(friend_display_names(&db, "".into(), &["usr_a".into()])
-        .unwrap()
-        .is_empty());
-    assert!(friend_display_names(&db, "usr_self".into(), &[])
+    assert!(
+        friend_display_names(&db, OwnerId::new(""), &["usr_a".into()])
+            .unwrap()
+            .is_empty()
+    );
+    assert!(friend_display_names(&db, OwnerId::new("usr_self"), &[])
         .unwrap()
         .is_empty());
 }
@@ -131,7 +133,8 @@ fn friend_display_names_scopes_to_requested_ids_only() {
     )
     .unwrap();
 
-    let names = friend_display_names(&db, "usr_self".into(), &["usr_a".to_string()]).unwrap();
+    let names =
+        friend_display_names(&db, OwnerId::new("usr_self"), &["usr_a".to_string()]).unwrap();
 
     assert_eq!(names.len(), 1);
     assert_eq!(names.get("usr_a").map(String::as_str), Some("Alice"));

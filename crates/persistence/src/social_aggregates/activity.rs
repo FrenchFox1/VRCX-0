@@ -19,7 +19,7 @@ pub fn get_friend_activity_pattern(
     db: &DatabaseService,
     input: FriendActivityPatternInput,
 ) -> Result<FriendActivityPatternOutput, Error> {
-    let user_prefix = normalize_user_table_prefix(&input.owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(input.owner_user_id.as_str())?;
     let table_name = format!("{user_prefix}_feed_online_offline");
     if !table_exists(db, &table_name)? {
         return Ok(FriendActivityPatternOutput {

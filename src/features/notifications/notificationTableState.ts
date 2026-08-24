@@ -61,12 +61,9 @@ export function sanitizeNotificationPageSizes(value: unknown): number[] {
 
 export function resolveNotificationPageSize(
     candidate: unknown,
-    allowed: readonly number[] = NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES,
-    fallback: unknown = 20
+    pageSizes: readonly number[] = NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES,
+    fallback: number = 20
 ) {
-    const pageSizes = Array.isArray(allowed)
-        ? allowed.filter((size) => Number.isFinite(size) && size > 0)
-        : NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : NOTIFICATION_TABLE_DEFAULT_PAGE_SIZES[0];
@@ -82,7 +79,5 @@ export function resolveNotificationPageSize(
     if (Number.isFinite(parsed) && parsed > 0) {
         return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
-    return pageSizes.includes(fallback)
-        ? fallback
-        : nearestPageSize(Number(fallback) || fallbackPageSize);
+    return pageSizes.includes(fallback) ? fallback : nearestPageSize(fallback);
 }

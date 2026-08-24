@@ -13,12 +13,12 @@ import { normalizeString } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 type UseResolvedLocationParams = {
-    location?: unknown;
-    traveling?: unknown;
-    hint?: unknown;
-    grouphint?: unknown;
-    groupHint?: unknown;
-    endpoint?: unknown;
+    location?: string | null;
+    traveling?: string | null;
+    hint?: string | null;
+    grouphint?: string | null;
+    groupHint?: string | null;
+    endpoint?: string;
     link?: boolean;
     showInstanceIdInLocation?: boolean;
 };

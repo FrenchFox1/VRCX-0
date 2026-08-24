@@ -1,6 +1,5 @@
 use serde_json::Value;
-
-use vrcx_0_persistence::realtime::{lookup_game_log_world_name, RealtimePersistenceBatch};
+use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
 
 use crate::realtime::{
     RealtimeCurrentUserOutput, RealtimeEntryCorrectionStream, RealtimeInstanceQueueProjection,
@@ -13,10 +12,6 @@ use crate::social_baseline::service::friend_log_relationship_candidates;
 use vrcx_0_application_core::Result;
 #[cfg(test)]
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
-#[cfg(test)]
-use vrcx_0_persistence::config as config_store;
-#[cfg(test)]
-use vrcx_0_persistence::realtime::write_realtime_batch;
 
 #[cfg(test)]
 use crate::realtime::connection::RealtimeMessageSink;

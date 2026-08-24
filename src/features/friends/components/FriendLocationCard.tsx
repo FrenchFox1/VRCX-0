@@ -7,15 +7,21 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { Location } from '@/components/Location';
-import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import type { FriendRecord } from '@/domain/friends/types';
+import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
-import { normalizeUserStatus } from '@/shared/utils/friendStatus';
+import {
+    normalizeUserStatus,
+    SOLID_USER_STATUS_DOT_CLASS_NAMES,
+    USER_STATUS_INDICATOR_CLASS_NAMES
+} from '@/shared/utils/friendStatus';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
@@ -44,28 +50,28 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 
+import type { FriendLocationRecord } from '../friends-locations-rows/types';
 import type {
     FriendsLocationsCardContentMode,
     getFriendsLocationsDensityConfig
 } from '../friendsLocationsDensity';
 
-type FriendLocationCardSource = Record<string, unknown> & {
-    id?: unknown;
-    userId?: unknown;
-    location?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    status?: unknown;
-    pendingOffline?: unknown;
-    travelingToLocation?: unknown;
-    $travelingToLocation?: unknown;
-};
+type FriendLocationCardSource = Pick<
+    FriendLocationRecord,
+    | 'id'
+    | 'userId'
+    | 'location'
+    | 'state'
+    | 'stateBucket'
+    | 'status'
+    | 'travelingToLocation'
+    | '$travelingToLocation'
+> & { pendingOffline?: boolean };
 
 export type FriendLocationCardFriend = FriendRecord & {
     ref?: FriendLocationCardSource | null;
-    pendingOffline?: unknown;
-    travelingToLocation?: unknown;
-    $travelingToLocation?: unknown;
+    pendingOffline?: boolean;
+    travelingToLocation?: string | null;
 };
 
 export type FriendLocationCardDensity = Pick<
@@ -236,25 +242,25 @@ function resolveStatusTone(
 
     if (status === 'join me') {
         return {
-            dotClassName: 'bg-[var(--status-joinme)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES['join me']
         };
     }
 
     if (status === 'ask me') {
         return {
-            dotClassName: 'bg-[var(--status-askme)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES['ask me']
         };
     }
 
     if (status === 'busy') {
         return {
-            dotClassName: 'bg-[var(--status-busy)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES.busy
         };
     }
 
     if (status === 'online') {
         return {
-            dotClassName: 'bg-[var(--status-online)]'
+            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES.active
         };
     }
 
@@ -272,14 +278,24 @@ function resolveStatusTone(
                   : status === 'active-busy'
                     ? 'border-[var(--status-busy)]'
                     : 'border-[var(--status-online)]';
+        let statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES.active;
+        if (status === 'active-join') {
+            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES['join me'];
+        } else if (status === 'active-ask') {
+            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES['ask me'];
+        } else if (status === 'active-busy') {
+            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES.busy;
+        }
         return {
-            dotClassName: cn('bg-background', colorClassName)
+            dotClassName: cn(statusClassName, 'bg-background', colorClassName)
         };
     }
 
     return {
         dotClassName:
-            status === 'offline' ? 'bg-[var(--status-offline)]' : 'hidden'
+            status === 'offline'
+                ? SOLID_USER_STATUS_DOT_CLASS_NAMES.offline
+                : 'hidden'
     };
 }
 
@@ -304,10 +320,10 @@ function resolveLineClampClass(lineClamp: number) {
 export interface FriendLocationCardLocationModel {
     label?: string;
     groupHint?: string;
-    raw?: unknown;
+    raw?: string | null;
     traveling?: boolean;
-    travelingTo?: unknown;
-    instanceEpoch?: unknown;
+    travelingTo?: string | null;
+    timerLocation?: string | null;
 }
 
 export interface FriendLocationCardPresentation {
@@ -357,7 +373,7 @@ export function FriendLocationCard({
         raw: rawLocation = '',
         traveling: isTraveling = false,
         travelingTo: travelingLocation = '',
-        instanceEpoch = 0
+        timerLocation = ''
     } = location;
     const {
         density: densityConfig = DEFAULT_CARD_DENSITY_CONFIG,
@@ -433,7 +449,11 @@ export function FriendLocationCard({
     const showStatusDescription =
         contentMode !== 'identity' &&
         resolvedDensityConfig.showStatusDescription;
-    const hoverUserId = source?.id || friend?.id;
+    const hoverUserId = normalizeString(source?.id || friend?.id);
+    const instanceEpoch = useFriendLocationTimeEpoch(
+        hoverUserId,
+        timerLocation || ''
+    );
     const avatarNode = (
         <UserHoverCard userId={hoverUserId} seed={source}>
             <Avatar className="size-[var(--friend-card-avatar-size)]">

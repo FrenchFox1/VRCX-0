@@ -1,8 +1,8 @@
 use serde_json::{json, Value};
+use vrcx_0_contracts::realtime::FriendLogDelete;
 use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
-use vrcx_0_persistence::realtime::FriendLogDelete;
 
 use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
@@ -17,6 +17,7 @@ use super::persistence::{
 };
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY_MS};
 use super::utils::{first_owned, parse_location, EventTime, JsonExt};
+use vrcx_0_core::OwnerId;
 
 mod event_split;
 mod patch_builders;
@@ -113,7 +114,8 @@ fn apply_friend_event_with_source(
     let owner_user_id = baseline.current_user_id.clone();
     let generation = baseline.generation;
     let baseline_revision = baseline.baseline_revision;
-    let mut output = RealtimeFriendOutput::new(owner_user_id, generation, baseline_revision);
+    let mut output =
+        RealtimeFriendOutput::new(OwnerId::new(owner_user_id), generation, baseline_revision);
 
     match event_kind {
         FriendEventKind::Add => apply_add(state, &mut output, content, now, source)?,
@@ -131,11 +133,18 @@ fn apply_friend_event_with_source(
         FriendEventKind::Location => apply_location(state, &mut output, content, now)?,
     }
 
-    let mut feed_entries = output.persistence.feed_entries.clone();
+    let mut feed_entries = output
+        .persistence
+        .feed_entries
+        .iter()
+        .cloned()
+        .map(vrcx_0_core::json::RawJson::from)
+        .collect::<Vec<_>>();
     feed_entries.append(&mut output.projection.feed_entries);
     output.projection.feed_entries = feed_entries;
     if output.projection.patches.is_empty()
         && output.projection.removals.is_empty()
+        && output.projection.location_time_snapshot.is_none()
         && output.persistence.is_empty()
     {
         return None;
@@ -206,26 +215,34 @@ fn apply_delete(
     let previous = get_friend_record(state, &user_id);
     state.pending_offline.remove(&user_id);
     state.recent_gps.remove(&user_id);
-    if let Some(baseline) = state.baseline.as_mut() {
-        baseline.friends_by_id.remove(&user_id);
+    let friend_was_removed = state
+        .baseline
+        .as_mut()
+        .and_then(|baseline| baseline.friends_by_id.remove(&user_id))
+        .is_some();
+    if friend_was_removed {
+        state.invalidate_friend_user_ids_snapshot();
     }
     output.projection.removals.push(user_id.clone());
     output.persistence.friend_log_deletes.push(FriendLogDelete {
         target_user_id: user_id.clone(),
         created_at: now.iso.clone(),
     });
-    let patch = json!({ "id": user_id.clone() });
-    output
-        .persistence
-        .feed_entries
-        .push(friend_relationship_feed_entry(
-            FriendRelationshipFeedKind::Unfriend,
-            &user_id,
-            &patch,
-            previous.as_ref(),
-            &now.iso,
-        ));
+    if let Some(previous) = previous.as_ref() {
+        let patch = json!({ "id": user_id.clone() });
+        output
+            .persistence
+            .feed_entries
+            .push(friend_relationship_feed_entry(
+                FriendRelationshipFeedKind::Unfriend,
+                &user_id,
+                &patch,
+                Some(previous),
+                &now.iso,
+            ));
+    }
     output.projection.friend_log_changed = true;
+    output.projection.location_time_snapshot = state.instance_dwell.forget_friend(&user_id);
     Some(())
 }
 
@@ -791,19 +808,32 @@ pub(super) fn apply_record_patch_to_state(
         state_bucket,
         state_bucket_authority,
     );
+    let observed_ms = EventTime::from_received_at(created_at).timestamp_ms;
+    if let Some(snapshot) =
+        state
+            .instance_dwell
+            .observe_friend_record(user_id, &transition.next, observed_ms)
+    {
+        output.projection.location_time_snapshot = Some(snapshot);
+    }
     if let Some(entry) = player_joining_feed_entry(
         user_id,
         transition.was_traveling,
         &transition.next,
         created_at,
     ) {
-        output.projection.feed_entries.push(entry);
+        output.projection.feed_entries.push(entry.into());
     }
 
-    if let Some(baseline) = state.baseline.as_mut() {
-        baseline
+    let friend_was_added = match state.baseline.as_mut() {
+        Some(baseline) => baseline
             .friends_by_id
-            .insert(user_id.to_string(), transition.next);
+            .insert(user_id.to_string(), transition.next)
+            .is_none(),
+        None => false,
+    };
+    if friend_was_added {
+        state.invalidate_friend_user_ids_snapshot();
     }
     output.projection.patches.push(transition.projection);
 }

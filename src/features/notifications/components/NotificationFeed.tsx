@@ -10,6 +10,7 @@ import {
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
 import { formatDateFilter } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { useNowMs } from '@/lib/useNowMs';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
 import { Button } from '@/ui/shadcn/button';
 
@@ -85,8 +86,9 @@ export function NotificationFeed({
 }) {
     const { t } = useTranslation();
     const days = useMemo(() => groupByDay(rows), [rows]);
-    const todayKey = dayKey(Date.now());
-    const yesterdayKey = dayKey(Date.now() - 86_400_000);
+    const nowMs = useNowMs({ intervalMs: 60_000 });
+    const todayKey = dayKey(nowMs);
+    const yesterdayKey = dayKey(nowMs - 86_400_000);
 
     function dayLabel(day: NotificationFeedDay) {
         if (day.key === todayKey) {

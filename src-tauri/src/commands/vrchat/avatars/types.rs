@@ -1,8 +1,8 @@
 use serde::Deserialize;
-use vrcx_0_application_core::vrchat_api::avatars::{
-    AvatarListSort, AvatarUpdateRequest, QueryOrder, ReleaseStatusFilter,
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::avatars::AvatarUpdateRequest;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::query::{
+    deserialize_nonnegative_i32, AvatarListSort, QueryOrder, ReleaseStatusFilter,
 };
-use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarIdInput {

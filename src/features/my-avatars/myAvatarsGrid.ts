@@ -3,7 +3,6 @@ import {
     positionKnownSizeRows
 } from '@/lib/knownSizeVirtualRows';
 
-import { sanitizeMyAvatarsGridDensity } from './myAvatarsState';
 import type {
     MyAvatarRow,
     MyAvatarsGridDensity,
@@ -63,10 +62,9 @@ const MY_AVATARS_GRID_DENSITY_CONFIGS = Object.freeze({
 });
 
 export function getMyAvatarsGridDensityConfig(
-    value: unknown
+    value: MyAvatarsGridDensity
 ): MyAvatarsGridDensityConfig {
-    const density = sanitizeMyAvatarsGridDensity(value);
-    return MY_AVATARS_GRID_DENSITY_CONFIGS[density];
+    return MY_AVATARS_GRID_DENSITY_CONFIGS[value];
 }
 
 type MyAvatarsGridMetricsInput = {
@@ -138,8 +136,8 @@ export function buildMyAvatarsGridRows({
 
 type VisibleMyAvatarsGridRowsInput = {
     gridRows: readonly MyAvatarsGridRow[] | null | undefined;
-    scrollTop: unknown;
-    viewportHeight: unknown;
+    scrollTop: number;
+    viewportHeight: number;
 };
 
 export function getVisibleMyAvatarsGridRows({
@@ -147,7 +145,7 @@ export function getVisibleMyAvatarsGridRows({
     scrollTop,
     viewportHeight
 }: VisibleMyAvatarsGridRowsInput) {
-    const overscan = Math.max(480, Number(viewportHeight) || 0);
+    const overscan = Math.max(480, viewportHeight);
     return getVisibleKnownSizeRows({
         rows: gridRows,
         scrollTop,

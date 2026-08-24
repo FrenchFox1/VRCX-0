@@ -2,6 +2,10 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use serde_json::json;
+use vrcx_0_application_activity::notification::{
+    auth_webhook_generic_payload, auth_webhook_is_enabled, auth_webhook_should_recover,
+    AuthWebhookEvent, AuthWebhookEventKind,
+};
 use vrcx_0_application_activity::{
     OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityContent,
     OverlayActivityDelivery, OverlayActivityEntry,
@@ -10,12 +14,10 @@ use vrcx_0_application_core::{
     BackendRuntimeAuthStatus, BackendRuntimeGameLogStatus, BackendRuntimeMode, BackendRuntimePhase,
     BackendRuntimeProcessStatus, BackendRuntimeSnapshot,
 };
+use vrcx_0_core::OwnerId;
+use vrcx_0_outbound_adapters::LocalNotificationConfig;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_runtime_host::notification::{
-    auth_webhook_generic_payload, auth_webhook_is_enabled, auth_webhook_should_recover,
-    AuthWebhookEvent, AuthWebhookEventKind,
-};
 use vrcx_0_runtime_host_desktop::notification::{
     decide_notification_plan, DesktopNotificationAction, DesktopNotifier, DesktopNotifierSlot,
     NotificationDeliveryCondition, NotificationDeliveryGameState, NotificationDeliveryPreferences,
@@ -66,7 +68,7 @@ fn desktop_notifier_slot_noops_until_tauri_injects_notifier() {
     let recorder = Arc::new(RecordingDesktopNotifier::default());
     slot.set(recorder.clone());
     let action = DesktopNotificationAction {
-        owner_user_id: "usr_12345678-1234-1234-1234-1234567890ab".into(),
+        owner_user_id: OwnerId::new("usr_12345678-1234-1234-1234-1234567890ab"),
         user_id: "usr_abcdefab-cdef-abcd-efab-cdefabcdefab".into(),
     };
     slot.show(
@@ -97,12 +99,13 @@ fn auth_webhook_defaults_to_enabled_when_url_exists() {
     config
         .set_string("webhookUrl", "https://example.com/webhook")
         .unwrap();
+    let notification_config = LocalNotificationConfig::new(config.clone());
 
-    assert!(auth_webhook_is_enabled(&config));
+    assert!(auth_webhook_is_enabled(&notification_config));
 
     config.set_bool("webhookAuthEventsEnabled", false).unwrap();
 
-    assert!(!auth_webhook_is_enabled(&config));
+    assert!(!auth_webhook_is_enabled(&notification_config));
 }
 
 #[test]
@@ -199,7 +202,7 @@ fn delivery(desktop: bool, vr: bool, webhook: bool, tts: bool) -> OverlayActivit
             actor_display_name: "Pizza".into(),
             content: OverlayActivityContent::default(),
             actor_relation: OverlayActivityActorRelation::Friend,
-            payload: json!({}),
+            payload: json!({}).into(),
         },
         desktop,
         vr,

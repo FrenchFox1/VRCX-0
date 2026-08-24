@@ -2,6 +2,7 @@ use serde_json::{json, Value};
 use vrcx_0_application_activity::{
     OverlayActivityCandidate, OverlayActivityEntry, OverlayActivityRuntime,
 };
+use vrcx_0_contracts::game_log::GameLogJoinLeaveEntry;
 use vrcx_0_core::location::world_id_from_location as world_id_from_location_or_id;
 
 use crate::game_log::{GameLogIngestOutput, GameLogSideEffect};
@@ -15,7 +16,7 @@ pub trait OverlayActivityGameIngestExt {
         include_join_leave: F,
     ) -> Vec<OverlayActivityEntry>
     where
-        F: FnMut(&vrcx_0_persistence::game_log::GameLogJoinLeaveEntry) -> bool;
+        F: FnMut(&GameLogJoinLeaveEntry) -> bool;
 }
 
 impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
@@ -29,7 +30,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
         mut include_join_leave: F,
     ) -> Vec<OverlayActivityEntry>
     where
-        F: FnMut(&vrcx_0_persistence::game_log::GameLogJoinLeaveEntry) -> bool,
+        F: FnMut(&GameLogJoinLeaveEntry) -> bool,
     {
         let mut entries = Vec::new();
         for entry in output
@@ -53,7 +54,8 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                     "worldId": world_id_from_location_or_id(&entry.location),
                     "worldName": entry.world_name,
                     "time": entry.time,
-                }),
+                })
+                .into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);
@@ -85,7 +87,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: input.user_id.clone(),
                 actor_display_name: input.display_name.clone(),
                 current_instance: true,
-                payload,
+                payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);
@@ -106,7 +108,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: String::new(),
                 actor_display_name: "Event".to_string(),
                 current_instance: false,
-                payload,
+                payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);
@@ -130,7 +132,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: entry.user_id.clone(),
                 actor_display_name: entry.display_name.clone(),
                 current_instance: false,
-                payload,
+                payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);

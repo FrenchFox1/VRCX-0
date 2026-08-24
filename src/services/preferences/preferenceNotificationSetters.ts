@@ -11,16 +11,14 @@ import { normalizeOverlayActivityFilters } from '@/state/preferencesStore';
 import { patchPreferences, publishPreferenceChanged } from './preferencesCore';
 
 async function loadOverlayActivityTypeDefinitionsForSave() {
-    return commands
-        .appOverlayActivityDefinitionsGet()
-        .catch((error: unknown) => {
-            const fallbackDefinitions: OverlayActivityTypeDefinition[] = [];
-            console.warn(
-                'Failed to load overlay activity definitions for save:',
-                error
-            );
-            return fallbackDefinitions;
-        });
+    return commands.appOverlayActivityDefinitionsGet().catch((error) => {
+        const fallbackDefinitions: OverlayActivityTypeDefinition[] = [];
+        console.warn(
+            'Failed to load overlay activity definitions for save:',
+            error
+        );
+        return fallbackDefinitions;
+    });
 }
 
 export async function setOverlayActivityFiltersPreference(

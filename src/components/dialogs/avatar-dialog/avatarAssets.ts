@@ -5,6 +5,7 @@ import {
     extractFileVersion,
     extractVariantVersion
 } from '@/shared/utils/fileUtils';
+import { isRecord } from '@/shared/utils/record';
 
 import type { AvatarSideData } from './avatarDialogTypes';
 
@@ -20,10 +21,6 @@ export function defaultAvatarSideData(): AvatarSideData {
             cachePath: ''
         }
     };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 export function avatarGalleryImageUrl(file: unknown): string {

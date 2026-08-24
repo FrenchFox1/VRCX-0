@@ -1,3 +1,4 @@
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import removeConfusables from '@/services/confusables';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
@@ -8,30 +9,11 @@ const RESULT_LIMIT = 8;
 export const USER_QUERY_MIN_LENGTH = 1;
 export const DETAIL_QUERY_MIN_LENGTH = 2;
 
-type QuickSearchRecord = Record<string, unknown> & {
-    group?: unknown;
-    groupId?: unknown;
-    groupName?: unknown;
-    iconUrl?: unknown;
-    id?: unknown;
-    name?: unknown;
-    ownerId?: unknown;
-    worldName?: unknown;
-};
-
-function recordValue(value: unknown): QuickSearchRecord | null {
-    return value && typeof value === 'object'
-        ? (value as QuickSearchRecord)
-        : null;
+export function normalizeSearchValue(value: string | null | undefined) {
+    return (value ?? '').trim();
 }
 
-export function normalizeSearchValue(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
-export function normalizeSearchQuery(value: unknown) {
+export function normalizeSearchQuery(value: string | null | undefined) {
     return removeConfusables(normalizeSearchValue(value)).toLocaleLowerCase();
 }
 
@@ -63,9 +45,8 @@ export function filterQuickSearchResults(
         .slice(0, limit);
 }
 
-function resolveGroupInstanceId(value: unknown) {
-    const instance = recordValue(value);
-    const group = recordValue(instance?.group);
+function resolveGroupInstanceId(instance: GroupInstanceRecord) {
+    const group = instance.group;
     const nestedId = normalizeSearchValue(group?.groupId || group?.id);
     if (nestedId) {
         return nestedId;
@@ -82,11 +63,12 @@ function resolveGroupInstanceId(value: unknown) {
     return hasGroupIdPrefix(id) ? id : '';
 }
 
-function buildGroupInstanceResults(groupInstances: unknown) {
+function buildGroupInstanceResults(
+    groupInstances: readonly GroupInstanceRecord[]
+) {
     const groupsById = new Map<string, QuickSearchResult>();
-    for (const value of Array.isArray(groupInstances) ? groupInstances : []) {
-        const instance = recordValue(value);
-        const group = recordValue(instance?.group);
+    for (const instance of groupInstances) {
+        const group = instance.group;
         const groupId = resolveGroupInstanceId(instance);
         if (!groupId || groupsById.has(groupId)) {
             continue;
@@ -116,7 +98,7 @@ function buildGroupInstanceResults(groupInstances: unknown) {
 export function mergeQuickSearchGroupInstances(
     state: QuickSearchState,
     normalizedQuery: string,
-    groupInstances: unknown
+    groupInstances: readonly GroupInstanceRecord[]
 ): QuickSearchState {
     if (normalizedQuery.length < DETAIL_QUERY_MIN_LENGTH) {
         return state;

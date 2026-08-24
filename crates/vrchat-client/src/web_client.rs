@@ -22,6 +22,17 @@ pub enum WebClientError {
     Io(#[from] std::io::Error),
 }
 
+impl vrcx_0_contracts::ApplicationErrorSource for WebClientError {
+    fn into_application_error(self) -> vrcx_0_contracts::ApplicationErrorPayload {
+        use vrcx_0_contracts::ApplicationErrorPayload;
+
+        match self {
+            Self::Custom(message) => ApplicationErrorPayload::WebClient(message),
+            Self::Io(error) => ApplicationErrorPayload::Io(error),
+        }
+    }
+}
+
 use crate::cookies::{CookieEntry, CookieJar};
 use WebClientError as Error;
 

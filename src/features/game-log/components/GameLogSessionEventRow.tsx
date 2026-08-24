@@ -98,7 +98,7 @@ function getGroupCount(
         : 0;
 }
 
-function EventTime({ value }: { value: unknown }) {
+function EventTime({ value }: { value: string }) {
     return (
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
             {formatDateFilter(value, 'time')}
@@ -184,7 +184,7 @@ function PlayerActivityRow({
 }) {
     return (
         <div className="hover:bg-muted/35 grid min-h-7 grid-cols-[4.75rem_1rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm">
-            <EventTime value={item?.created_at} />
+            <EventTime value={item.created_at} />
             <AffinityBadge
                 isFriend={item?.isFriend}
                 isFavorite={item?.isFavorite}
@@ -220,7 +220,7 @@ function SinglePlayerActivityRow({
                 PLAYER_EVENT_GRID_CLASS
             )}
         >
-            <EventTime value={event?.created_at} />
+            <EventTime value={event.created_at} />
             <EventIcon event={event} />
             <AffinityBadge
                 isFriend={item?.isFriend}
@@ -266,7 +266,7 @@ function GroupActivityRow({
                             PLAYER_EVENT_GRID_CLASS
                         )}
                     >
-                        <EventTime value={event?.created_at} />
+                        <EventTime value={event.created_at} />
                         <EventIcon event={event} />
                         <span aria-hidden="true" />
                         <span className="flex min-w-0 items-center gap-2 font-normal">
@@ -326,7 +326,7 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
             <ContextMenuTrigger
                 render={
                     <div className="hover:bg-muted/35 grid min-h-8 grid-cols-[4.75rem_1rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
-                        <EventTime value={event?.created_at} />
+                        <EventTime value={event.created_at} />
                         <VideoIcon className="text-muted-foreground size-3.5 shrink-0" />
                         <div className="flex min-w-0 items-center gap-1.5">
                             {showVideoLink ? (

@@ -399,10 +399,10 @@ describe('preferencesService characterization', () => {
         expect(snapshot.hmdNotificationsEnabled).toBe(false);
     });
 
-    it('normalizes notification layout and syncs shell/store state', async () => {
-        await expect(setNotificationLayoutPreference('unknown')).resolves.toBe(
-            'notification-center'
-        );
+    it('stores notification layout and syncs shell/store state', async () => {
+        await expect(
+            setNotificationLayoutPreference('notification-center')
+        ).resolves.toBe('notification-center');
 
         expect(mocks.setString).toHaveBeenCalledWith(
             'notificationLayout',
@@ -468,7 +468,7 @@ describe('preferencesService characterization', () => {
         ).resolves.toMatchObject({
             types: {
                 OnPlayerJoined: {
-                    scope: 'friends',
+                    scope: 'off',
                     favoriteGroupKeys: 'all'
                 },
                 Online: {
@@ -487,7 +487,7 @@ describe('preferencesService characterization', () => {
             filters: expect.objectContaining({
                 types: expect.objectContaining({
                     OnPlayerJoined: {
-                        scope: 'friends',
+                        scope: 'off',
                         favoriteGroupKeys: 'all'
                     },
                     Online: {
@@ -516,7 +516,7 @@ describe('preferencesService characterization', () => {
             usePreferencesStore.getState().hmdNotificationActivityFilters.types
                 .OnPlayerJoined
         ).toEqual({
-            scope: 'friends',
+            scope: 'off',
             favoriteGroupKeys: 'all'
         });
     });
@@ -535,11 +535,11 @@ describe('preferencesService characterization', () => {
             ).resolves.toMatchObject({
                 types: {
                     OnPlayerJoined: {
-                        scope: 'friends',
+                        scope: 'off',
                         favoriteGroupKeys: 'all'
                     },
                     Online: {
-                        scope: 'allFavorites',
+                        scope: 'friends',
                         favoriteGroupKeys: 'all'
                     },
                     VideoPlay: {
@@ -557,11 +557,11 @@ describe('preferencesService characterization', () => {
             filters: expect.objectContaining({
                 types: expect.objectContaining({
                     OnPlayerJoined: {
-                        scope: 'friends',
+                        scope: 'off',
                         favoriteGroupKeys: 'all'
                     },
                     Online: {
-                        scope: 'allFavorites',
+                        scope: 'friends',
                         favoriteGroupKeys: 'all'
                     },
                     VideoPlay: {

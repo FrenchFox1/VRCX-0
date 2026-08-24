@@ -1,4 +1,5 @@
 import type { HttpApiExecuteResponse } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 
 export type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = Record<string, QueryValue | QueryValue[]>;
@@ -22,10 +23,6 @@ export type VrchatResponseEnvelope = HttpApiExecuteResponse;
 interface UnwrapResponseOptions {
     fallbackMessage?: string;
     responseType?: 'json' | 'text';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 export function isVrchatRequestError(
@@ -122,11 +119,11 @@ export function createRequestError(
     endpoint: string,
     payload: unknown = null
 ): VrchatRequestError {
-    const error = new Error(message) as VrchatRequestError;
-    error.status = status;
-    error.endpoint = endpoint;
-    error.payload = payload;
-    return error;
+    return Object.assign(new Error(message), {
+        status,
+        endpoint,
+        payload
+    });
 }
 
 export function unwrapVrchatResponse<TJson = unknown>(

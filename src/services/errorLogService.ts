@@ -1,4 +1,5 @@
 import { commands } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 
 const HTTP_ERROR_STATUS_MIN = 400;
 const HTTP_ERROR_STATUS_MAX = 599;
@@ -10,11 +11,7 @@ let flushingLogQueue = false;
 let originalConsoleError: ((...data: unknown[]) => void) | null = null;
 const logQueue: string[] = [];
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
-function pad(value: unknown, length: number = 2): string {
+function pad(value: number, length: number = 2): string {
     return String(value).padStart(length, '0');
 }
 
@@ -44,7 +41,25 @@ function serializeValue(
     seen: Set<unknown> = new Set<unknown>()
 ): string {
     if (value instanceof Error) {
-        return value.stack || value.message || value.name;
+        const details = value.stack || value.message || value.name;
+        const diagnosticFields: string[] = [];
+        if (isRecord(value)) {
+            for (const key of [
+                'code',
+                'sqliteCategory',
+                'statusCode',
+                'port'
+            ] as const) {
+                const fieldValue = value[key];
+                if (
+                    typeof fieldValue === 'string' ||
+                    typeof fieldValue === 'number'
+                ) {
+                    diagnosticFields.push(`${key}: ${fieldValue}`);
+                }
+            }
+        }
+        return [details, ...diagnosticFields].join('\n');
     }
 
     if (typeof value === 'string') {
@@ -281,13 +296,15 @@ function handleWindowError(event: Event): void {
         return;
     }
 
-    const errorEvent = event as ErrorEvent;
+    const error = 'error' in event ? event.error : undefined;
+    const message = 'message' in event ? event.message : undefined;
+    const filename = 'filename' in event ? event.filename : undefined;
+    const lineno = 'lineno' in event ? event.lineno : undefined;
+    const colno = 'colno' in event ? event.colno : undefined;
     const values = [
-        errorEvent.error,
-        errorEvent.message,
-        errorEvent.filename
-            ? `${errorEvent.filename}:${errorEvent.lineno || 0}:${errorEvent.colno || 0}`
-            : ''
+        error,
+        message,
+        filename ? `${filename}:${lineno || 0}:${colno || 0}` : ''
     ].filter(Boolean);
 
     recordErrorLog('js:error', values);

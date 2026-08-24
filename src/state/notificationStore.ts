@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
-type NotificationLevel = 'info' | 'success' | 'warning' | 'error' | string;
+import type { RuntimeNotificationLevel } from '@/platform/tauri/bindings';
+
+type NotificationLevel = RuntimeNotificationLevel | 'success';
 
 interface NotificationEntry {
     id: string;

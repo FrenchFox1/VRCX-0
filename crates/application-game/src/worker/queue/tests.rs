@@ -97,6 +97,7 @@ fn continues_after_handler_error() -> Result<()> {
             "worker": "test-error",
             "message": "expected test error"
         })
+        .into()
     );
     worker.stop();
     Ok(())

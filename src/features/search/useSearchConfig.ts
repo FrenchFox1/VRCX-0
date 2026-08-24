@@ -20,8 +20,22 @@ function isWorldCategory(value: unknown): value is SearchWorldCategory {
         value &&
         typeof value === 'object' &&
         'index' in value &&
-        value.index !== null &&
-        value.index !== undefined
+        (typeof value.index === 'string' || typeof value.index === 'number') &&
+        (!('name' in value) ||
+            value.name === undefined ||
+            typeof value.name === 'string') &&
+        (!('sortHeading' in value) ||
+            value.sortHeading === undefined ||
+            typeof value.sortHeading === 'string') &&
+        (!('sortOrder' in value) ||
+            value.sortOrder === undefined ||
+            typeof value.sortOrder === 'string') &&
+        (!('sortOwnership' in value) ||
+            value.sortOwnership === undefined ||
+            typeof value.sortOwnership === 'string') &&
+        (!('tag' in value) ||
+            value.tag === undefined ||
+            typeof value.tag === 'string')
     );
 }
 

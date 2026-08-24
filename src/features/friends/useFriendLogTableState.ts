@@ -181,7 +181,7 @@ export function useFriendLogTableState({
         }
     }, [orderedRowsLength, pagination.pageIndex, pagination.pageSize]);
 
-    function setPageSize(value: unknown) {
+    function setPageSize(value: string) {
         const nextPageSize = resolvePageSize(
             value,
             pageSizes,

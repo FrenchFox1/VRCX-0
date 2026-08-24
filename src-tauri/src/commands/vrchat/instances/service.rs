@@ -1,26 +1,13 @@
 #![allow(non_snake_case)]
 
-use std::sync::Arc;
-use std::time::Duration;
-
 use tauri::State;
-use vrcx_0_application::{
-    join_instance_launch, InstanceLaunchApiFuture, InstanceLaunchDeps, InstanceLaunchHttpClient,
-    InstanceLaunchInput, InstanceLaunchOutcome, InstanceLaunchPipe,
-};
-use vrcx_0_application_core::vrchat_api::instances::{
+use vrcx_0_application::game::{InstanceLaunchInput, InstanceLaunchOutcome};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::instances::{
     instance_close_input, instance_create_input, instance_get_input, instance_self_invite_input,
     instance_short_name_get_input,
 };
-use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
-use vrcx_0_application_core::{
-    is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, RuntimeAuthScope,
-    RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
-};
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::DatabaseService;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -31,8 +18,6 @@ use super::types::{
     VrchatInstanceSelfInviteInput, VrchatInstanceShortNameInput,
 };
 
-const INSTANCE_JOIN_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
-
 async fn execute_instance_api(
     state: State<'_, AppState>,
     command: &str,
@@ -41,128 +26,6 @@ async fn execute_instance_api(
 ) -> Result<VrchatApiResponse, AppError> {
     super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
         .await
-}
-
-struct TauriInstanceLaunchHttpClient {
-    db: Arc<DatabaseService>,
-    web: Arc<WebClient>,
-    diagnostics: RuntimeDiagnostics,
-    sync: RuntimeSyncEngine,
-    auth_scope: RuntimeAuthScope,
-    remote_mutations: Arc<RemoteMutationGate>,
-}
-
-impl TauriInstanceLaunchHttpClient {
-    async fn execute_join_request(
-        &self,
-        command: &'static str,
-        detail: &'static str,
-        mut request: VrchatApiRequest,
-    ) -> vrcx_0_application_core::Result<VrchatApiResponse> {
-        if !is_remote_mutation_request(&request) {
-            return execute_api_command(
-                &self.web,
-                &self.db,
-                &self.diagnostics,
-                &self.sync,
-                (command, detail),
-                request,
-                VrchatScope::Vrchat,
-            )
-            .await;
-        }
-        let mutation = AuthenticatedMutationContext::capture(
-            &self.auth_scope,
-            self.remote_mutations.as_ref(),
-            "Instance launch mutation",
-        )?;
-        mutation.apply_scope_to_request(&mut request);
-        mutation
-            .run_after_wait(INSTANCE_JOIN_REMOTE_MUTATION_INTERVAL, || async {
-                execute_api_command(
-                    &self.web,
-                    &self.db,
-                    &self.diagnostics,
-                    &self.sync,
-                    (command, detail),
-                    request,
-                    VrchatScope::Vrchat,
-                )
-                .await
-            })
-            .await
-    }
-}
-
-impl InstanceLaunchHttpClient for TauriInstanceLaunchHttpClient {
-    fn instance_short_name<'a>(
-        &'a self,
-        endpoint: &'a str,
-        world_id: &'a str,
-        instance_id: &'a str,
-    ) -> InstanceLaunchApiFuture<'a> {
-        Box::pin(async move {
-            let (_, _, request) = instance_short_name_get_input(
-                endpoint.to_string(),
-                world_id.to_string(),
-                instance_id.to_string(),
-                String::new(),
-            )?;
-            self.execute_join_request(
-                "app__vrchat_instance_join.short_name",
-                "Getting a short name for the instance launch.",
-                request,
-            )
-            .await
-        })
-    }
-
-    fn self_invite<'a>(
-        &'a self,
-        endpoint: &'a str,
-        world_id: &'a str,
-        instance_id: &'a str,
-        short_name: &'a str,
-    ) -> InstanceLaunchApiFuture<'a> {
-        Box::pin(async move {
-            let (_, _, request) = instance_self_invite_input(
-                endpoint.to_string(),
-                world_id.to_string(),
-                instance_id.to_string(),
-                short_name.to_string(),
-            )?;
-            self.execute_join_request(
-                "app__vrchat_instance_join.self_invite",
-                "Sending a self invite for the instance launch.",
-                request,
-            )
-            .await
-        })
-    }
-}
-
-struct TauriInstanceLaunchPipe {
-    db: Arc<DatabaseService>,
-}
-
-fn should_focus_game_window(db: &DatabaseService) -> bool {
-    config_store::get_bool(db, "focusVrchatOnJoin", false).unwrap_or(false)
-        && config_store::get_bool(db, "isGameNoVR", false).unwrap_or(false)
-}
-
-impl InstanceLaunchPipe for TauriInstanceLaunchPipe {
-    fn try_open_vrchat_launch_url(
-        &self,
-        launch_url: &str,
-    ) -> vrcx_0_application_core::Result<bool> {
-        require_host_capability(HostCapability::VrchatLaunchPipe)
-            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
-        let result = crate::adapters::ipc::vrcipc_send_with_result(launch_url);
-        if result.accepted && should_focus_game_window(&self.db) {
-            vrcx_0_host_desktop::game_window::request_focus_vrchat_window(result.server_process_id);
-        }
-        Ok(result.accepted)
-    }
 }
 
 #[tauri::command]
@@ -248,26 +111,12 @@ pub async fn app__vrchat_instance_join(
     state: State<'_, AppState>,
     input: InstanceLaunchInput,
 ) -> Result<InstanceLaunchOutcome, AppError> {
-    let context = &state.runtime_context;
-    let api = TauriInstanceLaunchHttpClient {
-        db: Arc::clone(&context.db),
-        web: Arc::clone(&context.web),
-        diagnostics: context.diagnostics.clone(),
-        sync: context.sync.clone(),
-        auth_scope: context.auth_scope.clone(),
-        remote_mutations: Arc::clone(&context.remote_mutations),
-    };
-    let launch_pipe = TauriInstanceLaunchPipe {
-        db: Arc::clone(&context.db),
-    };
-    Ok(join_instance_launch(
-        &InstanceLaunchDeps {
-            api: &api,
-            launch_pipe: &launch_pipe,
-        },
-        input,
-    )
-    .await?)
+    state
+        .runtime_host()
+        .instance_launch()
+        .join(input)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -288,72 +137,4 @@ pub async fn app__vrchat_instance_close(
         request,
     )
     .await
-}
-
-#[cfg(test)]
-mod tests {
-    use std::path::PathBuf;
-
-    use vrcx_0_persistence::config as config_store;
-    use vrcx_0_persistence::DatabaseService;
-
-    use super::should_focus_game_window;
-
-    struct TestDir {
-        path: PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!(
-                "vrcx-0-instance-focus-{name}-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    fn database(dir: &TestDir) -> DatabaseService {
-        DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap()
-    }
-
-    #[test]
-    fn stays_off_until_the_user_enables_it() {
-        let dir = TestDir::new("default-off");
-        let db = database(&dir);
-        config_store::set_bool(&db, "isGameNoVR", true).unwrap();
-
-        assert!(!should_focus_game_window(&db));
-    }
-
-    #[test]
-    fn focuses_when_enabled_and_the_game_runs_in_desktop_mode() {
-        let dir = TestDir::new("desktop-mode");
-        let db = database(&dir);
-        config_store::set_bool(&db, "focusVrchatOnJoin", true).unwrap();
-        config_store::set_bool(&db, "isGameNoVR", true).unwrap();
-
-        assert!(should_focus_game_window(&db));
-    }
-
-    #[test]
-    fn never_steals_focus_while_the_game_runs_in_vr() {
-        let dir = TestDir::new("vr-mode");
-        let db = database(&dir);
-        config_store::set_bool(&db, "focusVrchatOnJoin", true).unwrap();
-        config_store::set_bool(&db, "isGameNoVR", false).unwrap();
-
-        assert!(!should_focus_game_window(&db));
-    }
 }

@@ -38,7 +38,7 @@ export function GalleryEmojiImage({
     alt: string;
     className?: string;
 }) {
-    const frameCount = Number(file?.frames);
+    const frameCount = file?.frames ?? 0;
     const isAnimated =
         imageUrl && Number.isFinite(frameCount) && frameCount > 1;
 
@@ -61,7 +61,7 @@ export function GalleryEmojiImage({
 
     const { frameCount: normalizedFrameCount, framesPerLine } =
         getEmojiFrameLayout(frameCount);
-    const fps = Math.min(64, Math.max(1, Number(file?.framesOverTime) || 15));
+    const fps = Math.min(64, Math.max(1, file?.framesOverTime || 15));
     const durationMs = (1000 / fps) * normalizedFrameCount;
     const animationName = getEmojiAnimationName(normalizedFrameCount);
     const animationDirection =

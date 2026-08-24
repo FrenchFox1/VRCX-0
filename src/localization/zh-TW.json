@@ -91,7 +91,10 @@
             "avatar": "模型",
             "group": "群組"
         },
-        "date": { "today": "今天", "yesterday": "昨天" },
+        "date": {
+            "today": "今天",
+            "yesterday": "昨天"
+        },
         "retention": {
             "label": "瀏覽記錄保留時間",
             "description": "超過此時間的記錄會自動刪除。",
@@ -457,22 +460,6 @@
             "instance_duration": "停留 {duration}"
         },
         "generic_instance_location": "一個房間",
-        "friends_panel": {
-            "title": "收藏好友",
-            "all": "全部",
-            "empty": "沒有收藏好友上線",
-            "note": "備註",
-            "memo": "本機備註",
-            "open": "開啟",
-            "request": "請求",
-            "invite": "邀請",
-            "favorites_online": "線上收藏好友",
-            "same_instance": "同一房間",
-            "local_favorites": "本機收藏",
-            "traveling": "旅行",
-            "private": "私人",
-            "offline": "離線"
-        },
         "discord": {
             "title": {
                 "invite": "{name}的邀請",
@@ -2155,13 +2142,6 @@
                     "opacity": "不透明度",
                     "filters": "頭顯通知篩選器"
                 },
-                "interactive_panel": {
-                    "header": "互動式好友面板",
-                    "enabled": "互動式好友面板",
-                    "all_friends_include_favorites": "將收藏好友納入「全部」",
-                    "summon_hint": "召喚手勢",
-                    "openvr_required": "按住右手握把約 2 秒即可叫出面板。需要 SteamVR/OpenVR 疊加層後端；OpenXR 不提供互動式面板。"
-                },
                 "wrist_overlay": {
                     "header": "手腕嵌入介面",
                     "wrist_feed_overlay": "手腕動態嵌入介面",
@@ -2184,6 +2164,12 @@
                     "vr_device_status": "VR 裝置狀態",
                     "battery_percentage": "顯示電量百分比",
                     "wrist_feed_notifications": "手腕疊加通知過濾器"
+                },
+                "test_mode": {
+                    "header": "嵌入介面測試",
+                    "description": "強制手腕嵌入介面和頭顯通知顯示一張測試卡片，方便戴著頭顯調整位置、大小和不透明度。這個開關不會儲存，重新啟動 VRCX-0 後會自動關閉。",
+                    "force_display": "強制顯示嵌入介面",
+                    "requires_steamvr": "需要 SteamVR 正在執行。"
                 }
             },
             "interface": {
@@ -3237,17 +3223,18 @@
                 "community": "社群主題"
             },
             "accent": {
-                "header": "強調色"
+                "header": "強調色",
+                "custom": "自訂",
+                "hex_label": "十六進位色碼"
             },
             "custom_css": {
+                "status_on": "開啟",
+                "status_off": "關閉",
                 "header": "自訂 CSS",
-                "enabled_summary": "Override CSS 已啟用（{count} bytes）。",
-                "disabled_summary": "可選的最後一層 CSS，目前未啟用。",
                 "edit": "編輯",
                 "hide_editor": "收合編輯器"
             },
             "developer": {
-                "summary": "用於主題開發版本的本機主題預覽工具。",
                 "preview_active": "正在預覽 {name}。",
                 "show": "顯示工具",
                 "hide": "收合工具"
@@ -3266,16 +3253,11 @@
         "background_image": {
             "settings": {
                 "header": "背景圖案",
-                "description": "使用每日圖片來源，或選擇你自己的本機圖片來源。",
                 "apod_note": "NASA APOD 只使用沒有 copyright 欄位的圖片。",
-                "custom_source": "本機圖片",
-                "custom_source_description": "選擇 1 張圖片會固定為背景；選擇多張圖片或資料夾會啟用輪播。",
-                "folder_first_level_note": "僅掃描資料夾的頂層；子資料夾不包含在內。",
-                "selected_files": "已選擇 {count} 張圖片",
+                "folder_recursive_note": "同時讀取子資料夾中的圖片。",
                 "current_image": "目前圖片",
                 "image_count": "{count} 張圖片",
                 "rotation": "輪播",
-                "no_custom_source": "尚未選擇本機圖片",
                 "no_image": "尚未載入圖片",
                 "no_image_description": "重新整理或選擇來源後會載入圖片。",
                 "source_type_file": "本機檔案",
@@ -3288,11 +3270,12 @@
                 "custom": "本機圖片"
             },
             "rotation": {
-                "daily": "每天",
-                "hourly": "每小時"
+                "minutes": "分鐘",
+                "custom": "自訂"
             },
             "action": {
                 "refresh": "重新整理",
+                "change_image": "換一張",
                 "select_images": "選擇圖片",
                 "select_folder": "選擇資料夾"
             },
@@ -3309,6 +3292,81 @@
             "contributors_error": "無法載入貢獻者清單。",
             "thanks": "每一則翻譯、每一次測試、每一份錯誤回報，以及每一個點子，都來自社群。謝謝你。",
             "license_line": "依據 GPL-3.0 授權的免費及開源軟體"
+        },
+        "activity": {
+            "title": "活動",
+            "description": "依時間區間彙總你的時間都花在哪裡",
+            "range": {
+                "all": "全部",
+                "days": "近 {days} 天"
+            },
+            "stat": {
+                "total_time": "總時長",
+                "daily_average": "日均",
+                "active_days": "遊玩天數",
+                "longest_session": "最長一次",
+                "change_up": "較上期 +{percent}%",
+                "change_down": "較上期 -{percent}%"
+            },
+            "unit": {
+                "hours": "小時",
+                "minutes": "分鐘"
+            },
+            "section": {
+                "instance_types": "房間類型",
+                "daily_time": "每日時長",
+                "weekly_time": "每週時長",
+                "when_you_play": "什麼時候在玩",
+                "top_worlds": "你常回去的世界",
+                "companions": "和誰待在一起",
+                "highlights": "值得一提"
+            },
+            "access": {
+                "unknown": "未知",
+                "public": "公開",
+                "friendsPlus": "好友+",
+                "friends": "好友",
+                "invitePlus": "邀請+",
+                "invite": "邀請",
+                "group": "群組"
+            },
+            "empty": {
+                "title": "還沒有紀錄",
+                "description": "玩一下 VRChat，你的活動就會出現在這裡。"
+            },
+            "error": {
+                "failed_to_load": "無法載入你的活動資料"
+            },
+            "caveat": {
+                "recorded_since": "遊戲日誌自 {date} 起記錄。"
+            },
+            "worlds": {
+                "visit_count": "{count} 次",
+                "open_ranking": "詳細",
+                "total": "共 {count} 個世界"
+            },
+            "people": {
+                "co_days": "一起 {count} 天",
+                "lead_caption": "一起 {days} 天 · {hours} 小時",
+                "fading_title": "最近少見了",
+                "fading_caveat": "比上一段時間見得少了，可能只是作息對不上。",
+                "encountered_total": "遇到過 {count} 人",
+                "fading_last_seen": "上次一起 {date}"
+            },
+            "hero": {
+                "per_day": "每天平均",
+                "days_played": "天有紀錄",
+                "sessions": "次上線",
+                "longest": "最長一次"
+            },
+            "action": {
+                "show_all": "展開全部 {count} 筆",
+                "show_less": "收合"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% 在凌晨 0 點到 6 點",
+                "open_heatmap": "按時段查看"
+            }
         }
     },
     "dialog": {
@@ -3779,7 +3837,8 @@
                 "content_gore": "血腥",
                 "content_violence": "暴力",
                 "content_adult": "成人",
-                "content_sex": "色情"
+                "content_sex": "色情",
+                "pedestals": "展示台"
             },
             "actions": {
                 "delete_cache_tooltip": "從快取中刪除世界",
@@ -3893,7 +3952,11 @@
                 "change_world_image": "更換世界圖片",
                 "reset_your_vrchat_home_location": "重設你的 VRChat 主頁位置",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "編輯此世界的托管內容、作者和功能標籤",
+                "enable_avatar_scaling": "啟用角色縮放",
+                "enable_focus_view": "啟用聚焦檢視",
                 "enable_debugging": "啟用調試",
+                "enable_third_person_view": "啟用第三人稱視角",
+                "allow_props_to_modify_player_movement": "允許物件改變玩家移動方式",
                 "add_domain": "新增域名"
             },
             "loading": {
@@ -4343,6 +4406,11 @@
             "group_access_type_members": "成員",
             "group_access_type_plus": "成員+",
             "group_access_type_public": "公開",
+            "minimum_avatar_performance": "角色性能評級限制",
+            "minimum_avatar_performance_none": "無限制",
+            "minimum_avatar_performance_poor": "高負載",
+            "minimum_avatar_performance_medium": "中負載",
+            "minimum_avatar_performance_good": "低負載",
             "region": "地區",
             "region_usw": "美國西部",
             "region_use": "美國東部",

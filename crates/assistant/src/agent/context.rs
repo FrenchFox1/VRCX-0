@@ -1,5 +1,5 @@
 use chrono::{DateTime, Datelike, FixedOffset, Utc};
-use vrcx_0_integrations::llm::ChatMessage;
+use vrcx_0_contracts::llm::ChatMessage;
 
 use crate::entities::Entity;
 use crate::playbook;

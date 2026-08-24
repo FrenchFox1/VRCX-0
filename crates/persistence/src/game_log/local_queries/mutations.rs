@@ -1,8 +1,9 @@
 use super::*;
+use crate::ownership::OwnerId;
 
 pub fn game_log_entries_add(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: GameLogWriteKind,
     entries: Vec<Value>,
 ) -> Result<u64, Error> {
@@ -12,7 +13,7 @@ pub fn game_log_entries_add(
 
 pub fn game_log_instance_delete_by_location(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     location: String,
 ) -> Result<i64, Error> {
     ensure_game_log_tables(db)?;
@@ -27,7 +28,7 @@ pub fn game_log_instance_delete_by_location(
 
 pub fn game_log_instance_delete(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     location: String,
     event_ids: Vec<i64>,
 ) -> Result<i64, Error> {
@@ -58,7 +59,7 @@ pub fn game_log_instance_delete(
 
 pub fn game_log_entry_delete(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     kind: GameLogEntryDeleteKind,
     entry: Value,
 ) -> Result<i64, Error> {

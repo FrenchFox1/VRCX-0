@@ -18,7 +18,7 @@ export type AvatarOverrideType = 'hideAvatar' | 'showAvatar';
 type UserModerationProfile = Record<string, unknown> & {
     $isModerator?: boolean;
     displayName?: string;
-    id?: unknown;
+    id?: string;
 };
 type ConfirmResult = {
     ok: boolean;

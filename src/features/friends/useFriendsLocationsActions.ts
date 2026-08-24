@@ -275,7 +275,7 @@ export function useFriendsLocationsActions({
     ) {
         openWorldDialog({
             worldId: resolveWorldDialogTarget(target),
-            title: location.label || undefined
+            title: normalizeId(location.label) || undefined
         });
     }
 

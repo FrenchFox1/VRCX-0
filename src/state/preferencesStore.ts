@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+import type {
+    NotificationWebhookFormat,
+    TranslationProvider
+} from '@/platform/tauri/bindings';
 import {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
@@ -42,7 +46,7 @@ const DEFAULT_TRANSLATION_ENDPOINT =
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 
 export type FeedTimeDisplayModePreference = 'exact' | 'relative';
-export type TranslationApiType = 'google' | 'openai' | 'deepl';
+export type TranslationApiType = TranslationProvider;
 export type WeekStartsOnPreference = 0 | 1 | 6;
 export type WristOverlayHandPreference = 'left' | 'right' | 'both';
 export type WristOverlaySizePreference = 'compact' | 'normal' | 'large';
@@ -168,6 +172,12 @@ export function normalizeTranslationApiType(
     value: unknown
 ): TranslationApiType {
     return value === 'openai' || value === 'deepl' ? value : 'google';
+}
+
+export function normalizeNotificationWebhookFormat(
+    value: unknown
+): NotificationWebhookFormat {
+    return value === 'discord' ? 'discord' : 'generic';
 }
 
 export function normalizeWristOverlayHand(
@@ -297,7 +307,7 @@ export function normalizeFeedHiddenUsers(value: unknown): string[] {
     return userIds;
 }
 
-export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
+export const DEFAULT_PREFERENCES = Object.freeze({
     notificationLayout: 'notification-center',
     dataTableStriped: false,
     tableDensity: 'standard',
@@ -430,7 +440,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     discordShowPlatform: true,
     discordWorldIntegration: true,
     discordWorldNameAsDiscordStatus: false
-});
+} satisfies PreferenceInputSnapshot);
 
 export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
     const snapshotRecord = asRecord(snapshot);
@@ -552,7 +562,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         webhookEnabled: normalizeBool(next.webhookEnabled),
         webhookAuthEventsEnabled: normalizeBool(next.webhookAuthEventsEnabled),
         webhookUrl: String(next.webhookUrl || ''),
-        webhookFormat: next.webhookFormat === 'discord' ? 'discord' : 'generic',
+        webhookFormat: normalizeNotificationWebhookFormat(next.webhookFormat),
         webhookFields: String(
             next.webhookFields || DEFAULT_GENERIC_WEBHOOK_FIELDS
         ),
@@ -619,7 +629,10 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         localFavoriteFriendsGroups: Array.isArray(
             next.localFavoriteFriendsGroups
         )
-            ? next.localFavoriteFriendsGroups.filter(Boolean)
+            ? next.localFavoriteFriendsGroups.filter(
+                  (groupKey): groupKey is string =>
+                      typeof groupKey === 'string' && Boolean(groupKey)
+              )
             : [],
         feedHiddenUsers: normalizeFeedHiddenUsers(next.feedHiddenUsers),
         overlayActivityFilters: parseOverlayActivityFiltersPreference(

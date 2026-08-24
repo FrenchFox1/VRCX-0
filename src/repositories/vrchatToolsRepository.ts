@@ -149,7 +149,7 @@ async function followGroupEvent({
     const response = await commands.appVrchatToolsGroupEventFollow({
         groupId,
         eventId,
-        isFollowing: Boolean(isFollowing)
+        isFollowing
     });
     invalidateEntityQueries(['calendar']);
     return unwrapVrchatToolsResponse<GroupCalendarEventRecord>(

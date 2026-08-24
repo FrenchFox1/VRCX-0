@@ -7,6 +7,7 @@ import {
     normalizeLanguageOptionsFromConfig,
     normalizeProfileLanguageRows,
     normalizeSelfStatusInput,
+    normalizeSocialStatusPreset,
     normalizeStatusHistoryRows,
     normalizeUserId,
     selfStatusBaseOptions
@@ -31,12 +32,24 @@ describe('userProfileFields', () => {
         expect(normalizeSelfStatusInput('invisible')).toBe('');
     });
 
+    it('normalizes persisted social status presets at the config boundary', () => {
+        expect(
+            normalizeSocialStatusPreset({
+                status: 'AskMe',
+                statusDescription: 'World hopping'
+            })
+        ).toEqual({
+            status: 'ask me',
+            statusDescription: 'World hopping'
+        });
+        expect(normalizeSocialStatusPreset(null)).toEqual({ status: '' });
+    });
+
     it('combines favorite friend ids from cloud and local groups', () => {
         expect(
             Array.from(
                 buildFavoriteIdSet([' usr_remote ', '', 'usr_shared'], {
                     groupA: ['usr_local', 'usr_shared'],
-                    groupB: null,
                     groupC: ['  ', 'usr_other']
                 })
             )

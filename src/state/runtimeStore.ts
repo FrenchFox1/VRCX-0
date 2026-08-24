@@ -11,6 +11,7 @@ import type {
     FriendProfileBulkLoadStatus,
     HostCapabilities,
     MutualGraphFetchStatus,
+    RuntimeOperationStatus,
     SavedAuthAutoLoginStatus,
     RuntimeGroupInstancesStatus,
     VrcStatusSnapshot
@@ -18,7 +19,7 @@ import type {
 import { MINUTE_MS } from '@/shared/constants/time';
 
 type TaskState = {
-    status: string;
+    status: RuntimeOperationStatus;
     detail: string;
     updatedAt: string | null;
 };
@@ -221,7 +222,11 @@ type RuntimeStore = {
         backendRuntimeSnapshotHydrated: boolean;
         backendRuntimeSessionHydrating: boolean;
     };
-    setStartupTask(task: string, status: string, detail?: string): void;
+    setStartupTask(
+        task: string,
+        status: RuntimeOperationStatus,
+        detail?: string
+    ): void;
     setAuthBootstrap(payload: Partial<RuntimeStore['auth']>): void;
     setHostCapabilities(payload?: HostCapabilities | null): void;
     setUpdateLoopState(patch: Partial<RuntimeStore['updateLoop']>): void;
@@ -633,7 +638,11 @@ const initialState: RuntimeStoreState = {
 
 export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
     ...initialState,
-    setStartupTask(task: string, status: string, detail: string = '') {
+    setStartupTask(
+        task: string,
+        status: RuntimeOperationStatus,
+        detail: string = ''
+    ) {
         set((state) => ({
             startup: {
                 ...state.startup,

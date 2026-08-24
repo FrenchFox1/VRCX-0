@@ -9,8 +9,8 @@ const mocks = vi.hoisted(() => ({
     runtime: { auth: { currentUserId: 'usr_self' } },
     session: { isFavoritesLoaded: true },
     favorites: {
-        remoteFavoritesById: {} as Record<string, unknown>,
-        localFriendFavorites: {} as Record<string, unknown>
+        remoteFavoritesById: {} as Record<string, FavoriteRecord>,
+        localFriendFavorites: {} as FavoriteGroupMap
     },
     preferences: {
         feedHiddenUsers: [] as string[],
@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
     }
 }));
 
-vi.mock('@/repositories/feedRepository', () => ({
+vi.mock('@/repositories/feedRepository', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/repositories/feedRepository')>()),
     default: {
         queryFeedLatest: mocks.queryFeedLatest,
         queryFeedPage: mocks.queryFeedPage
@@ -49,6 +50,10 @@ vi.mock('@/state/preferencesStore', () => ({
     )
 }));
 
+import type {
+    FavoriteGroupMap,
+    FavoriteRecord
+} from '@/domain/favorites/types';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 
@@ -91,9 +96,11 @@ describe('feed column rows', () => {
 
     it('normalizes the initial Rust sequence watermark', () => {
         expect(resolveFeedColumnInitialLiveSequence(7)).toBe(7);
-        expect(resolveFeedColumnInitialLiveSequence('9')).toBe(9);
         expect(resolveFeedColumnInitialLiveSequence(-1)).toBe(0);
-        expect(resolveFeedColumnInitialLiveSequence('bad')).toBe(0);
+        expect(resolveFeedColumnInitialLiveSequence(Number.NaN)).toBe(0);
+        expect(
+            resolveFeedColumnInitialLiveSequence(Number.POSITIVE_INFINITY)
+        ).toBe(0);
     });
 
     it('bounds the latest snapshot to one column page', async () => {

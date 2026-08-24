@@ -60,7 +60,7 @@ export type StatusBarWorldCollectionImport = {
 
 export type StatusBarProfileBackup = {
     status: ProfileBackupStatus;
-    onOpenDetails: () => unknown;
+    onOpenDetails: () => void;
 };
 
 export type StatusBarDataDirMigration = {

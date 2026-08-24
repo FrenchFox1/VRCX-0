@@ -1,3 +1,4 @@
+import type { TranslationProvider } from '@/platform/tauri/bindings';
 import { AVATAR_AUTO_CLEANUP_OPTIONS } from '@/shared/constants/settings';
 
 export const notificationLayoutOptions = [
@@ -113,7 +114,11 @@ export const translationProviderOptions = [
         value: 'deepl',
         labelKey: 'dialog.translation_api.mode_deepl'
     }
-];
+] satisfies ReadonlyArray<{
+    value: TranslationProvider;
+    label?: string;
+    labelKey?: string;
+}>;
 
 export const settingsTabs = [
     ['system', 'view.settings.category.system'],

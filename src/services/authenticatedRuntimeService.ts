@@ -3,6 +3,7 @@ import type {
     RealtimeWsStatusPayload,
     RuntimeVrchatAuthFailurePayload
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeVrchatEndpointKey } from '@/shared/vrchatEndpoint';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -14,6 +15,7 @@ import {
     normalizeStringArray
 } from './friendBootstrapModel';
 import { signalFriendLogChanged } from './friendLogMutationService';
+import { flushRealtimeRosterUpdates } from './realtimeRosterUpdateQueue';
 import { syncStartupServicesTask } from './startupServicesStatus';
 
 let latestSnapshot: AuthenticatedRuntimePhaseSnapshot | null = null;
@@ -23,10 +25,6 @@ let initializedTransportKey = '';
 let friendStepKey = '';
 let favoritesStepKey = '';
 let pendingRealtimeStatus: RealtimeWsStatusPayload | null = null;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function matchesCurrentSession(
     snapshot: AuthenticatedRuntimePhaseSnapshot
@@ -96,6 +94,7 @@ function applyFriendStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
         return;
     }
 
+    flushRealtimeRosterUpdates();
     useFriendRosterStore.getState().setRosterSnapshot({
         currentUserId: snapshot.userId,
         friendsById: normalizeFriendsById(baseline.friendsById),
@@ -139,19 +138,13 @@ function applyFavoritesStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
     const baseline = snapshot.favoritesBaseline?.snapshot;
     if (
         snapshot.favorites.status !== 'ready' ||
-        !isRecord(baseline) ||
+        !baseline ||
         appliedFavoritesRunId === snapshot.runId
     ) {
         return;
     }
 
-    useFavoriteStore.getState().setFavoritesSnapshot({
-        ...baseline,
-        detail:
-            typeof baseline.detail === 'string'
-                ? baseline.detail
-                : snapshot.favorites.detail
-    });
+    useFavoriteStore.getState().setFavoritesSnapshot(baseline);
     useSessionStore.getState().setFavoritesLoaded(true);
     appliedFavoritesRunId = snapshot.runId;
 }
@@ -209,9 +202,10 @@ function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
         );
 }
 
-function positiveNumber(value: unknown): number | null {
-    const number = Number(value);
-    return Number.isFinite(number) && number > 0 ? number : null;
+function positiveNumber(value: number | null | undefined): number | null {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0
+        ? value
+        : null;
 }
 
 export function matchesAuthenticatedRuntimeAuthFailure(
@@ -277,10 +271,10 @@ function applyRealtimeStatus(
     }
     const runtimeStore = useRuntimeStore.getState();
     const sessionStore = useSessionStore.getState();
-    const websocketDomain = String(
-        payload.websocketDomain || snapshot.websocket || ''
+    const websocketDomain = (
+        payload.websocketDomain || snapshot.websocket
     ).replace(/\/+$/, '');
-    const at = String(payload.at || new Date().toISOString());
+    const at = payload.at || new Date().toISOString();
 
     switch (payload.status) {
         case 'connecting':

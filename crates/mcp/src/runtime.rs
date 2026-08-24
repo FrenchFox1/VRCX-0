@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
-use vrcx_0_application::{FavoriteMutationCoordinator, MutualGraphFetchRuntime};
-use vrcx_0_application_core::{RuntimeAuthScope, TaskSupervisor, WebClient};
+use vrcx_0_application::favorites::FavoriteMutationCoordinator;
+use vrcx_0_application_core::{RuntimeAuthScope, TaskSupervisor};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_runtime_host::RuntimeHostState;
+
+use crate::ports::{
+    McpActivityQueries, McpConfig, McpFavoritesQueries, McpFeedQueries, McpFriendLocalData,
+    McpMutualGraph, McpSocialHistoryQueries,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum McpCaller {
@@ -15,28 +17,48 @@ pub enum McpCaller {
 
 #[derive(Clone)]
 pub struct McpRuntime {
-    pub(crate) db: Arc<DatabaseService>,
-    pub(crate) web: Arc<WebClient>,
     pub(crate) realtime_runtime: Arc<RealtimeHostRuntime>,
     pub(crate) auth_scope: RuntimeAuthScope,
-    pub(crate) config: ConfigRepository,
-    pub(crate) mutual_graph_fetch: MutualGraphFetchRuntime,
+    pub(crate) config: McpConfig,
+    pub(crate) activity_queries: McpActivityQueries,
+    pub(crate) social_history_queries: McpSocialHistoryQueries,
+    pub(crate) friend_local_data: McpFriendLocalData,
+    pub(crate) favorites_queries: McpFavoritesQueries,
+    pub(crate) feed_queries: McpFeedQueries,
+    pub(crate) mutual_graph: McpMutualGraph,
     pub(crate) favorite_mutations: FavoriteMutationCoordinator,
     pub(crate) tasks: TaskSupervisor,
     pub(crate) caller: McpCaller,
 }
 
+pub struct McpRuntimeDeps {
+    pub realtime_runtime: Arc<RealtimeHostRuntime>,
+    pub auth_scope: RuntimeAuthScope,
+    pub config: McpConfig,
+    pub activity_queries: McpActivityQueries,
+    pub social_history_queries: McpSocialHistoryQueries,
+    pub friend_local_data: McpFriendLocalData,
+    pub favorites_queries: McpFavoritesQueries,
+    pub feed_queries: McpFeedQueries,
+    pub mutual_graph: McpMutualGraph,
+    pub favorite_mutations: FavoriteMutationCoordinator,
+    pub tasks: TaskSupervisor,
+}
+
 impl McpRuntime {
-    pub fn from_host(state: &RuntimeHostState, caller: McpCaller) -> Self {
+    pub fn new(deps: McpRuntimeDeps, caller: McpCaller) -> Self {
         Self {
-            db: Arc::clone(&state.db),
-            web: Arc::clone(&state.web),
-            realtime_runtime: Arc::clone(&state.realtime_runtime),
-            auth_scope: state.runtime_context.auth_scope.clone(),
-            config: state.runtime_context.config.clone(),
-            mutual_graph_fetch: state.runtime_context.mutual_graph_fetch.clone(),
-            favorite_mutations: state.runtime_context.favorite_mutations.clone(),
-            tasks: state.runtime_context.tasks.clone(),
+            realtime_runtime: deps.realtime_runtime,
+            auth_scope: deps.auth_scope,
+            config: deps.config,
+            activity_queries: deps.activity_queries,
+            social_history_queries: deps.social_history_queries,
+            friend_local_data: deps.friend_local_data,
+            favorites_queries: deps.favorites_queries,
+            feed_queries: deps.feed_queries,
+            mutual_graph: deps.mutual_graph,
+            favorite_mutations: deps.favorite_mutations,
+            tasks: deps.tasks,
             caller,
         }
     }

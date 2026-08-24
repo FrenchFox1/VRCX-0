@@ -1,12 +1,12 @@
-use serde::Serialize;
 use serde_json::json;
+pub use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::FavoriteEntityKind;
 
 use crate::common::{normalize_text, now_iso, row_string, ParamsBuilder};
 use crate::config::{ensure_config_table, resolve_config_key};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
-use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert};
+use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 
 const LOCAL_GROUP_CONFIG_UPSERT_SQL: &str =
@@ -18,53 +18,9 @@ pub struct FavoriteMoveResult {
     pub added: i64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FavoriteRow {
-    pub created_at: String,
-    pub group_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub user_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatar_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub world_id: Option<String>,
-}
-
-impl FavoriteRow {
-    fn new(
-        kind: FavoriteEntityKind,
-        created_at: String,
-        entity_id: String,
-        group_name: String,
-    ) -> Self {
-        let mut row = Self {
-            created_at,
-            group_name,
-            user_id: None,
-            avatar_id: None,
-            world_id: None,
-        };
-        match kind {
-            FavoriteEntityKind::Friend => row.user_id = Some(entity_id),
-            FavoriteEntityKind::Avatar => row.avatar_id = Some(entity_id),
-            FavoriteEntityKind::World => row.world_id = Some(entity_id),
-        }
-        row
-    }
-
-    pub fn entity_id(&self) -> &str {
-        self.user_id
-            .as_deref()
-            .or(self.avatar_id.as_deref())
-            .or(self.world_id.as_deref())
-            .unwrap_or_default()
-    }
-}
-
 pub fn favorite_list(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
 ) -> Result<Vec<FavoriteRow>, Error> {
     ensure_global_store_tables(db)?;
@@ -92,7 +48,7 @@ pub fn favorite_list(
 
 pub fn favorite_add(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
     group_name: String,
@@ -120,7 +76,7 @@ pub fn favorite_add(
 
 pub fn favorite_remove(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
     group_name: String,
@@ -143,7 +99,7 @@ pub fn favorite_remove(
 
 pub fn favorite_move(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
     source_group_name: String,
@@ -200,7 +156,7 @@ pub fn favorite_move(
 
 pub fn favorite_group_rename(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     group_name: String,
     new_group_name: String,
@@ -242,7 +198,7 @@ fn delete_rows_already_in_group(
     group_name: &str,
     new_group_name: &str,
     owner_scope: &str,
-    owner_id: i64,
+    owner_id: OwnerRowId,
 ) -> Result<i64, Error> {
     tx.execute_non_query(
         &format!(
@@ -258,7 +214,7 @@ fn delete_rows_already_in_group(
 
 pub fn favorite_group_delete(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     group_name: String,
 ) -> Result<i64, Error> {
@@ -279,7 +235,7 @@ pub fn favorite_group_delete(
 
 pub fn favorite_group_rename_with_config(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     config_key: &str,
     group_name: &str,
@@ -327,7 +283,7 @@ pub fn favorite_group_rename_with_config(
 
 pub fn favorite_group_delete_with_config(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     config_key: &str,
     group_name: &str,
@@ -361,24 +317,26 @@ pub fn favorite_group_delete_with_config(
 fn owner_id_for_kind_read(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
-    owner_user_id: Option<&str>,
-) -> Result<i64, Error> {
-    if kind == FavoriteEntityKind::Friend {
-        owner_id_for_filter(db, owner_user_id.unwrap_or_default())
-    } else {
-        Ok(0)
+    owner_user_id: Option<&OwnerId>,
+) -> Result<OwnerRowId, Error> {
+    match owner_user_id {
+        Some(owner_user_id) if kind == FavoriteEntityKind::Friend => {
+            owner_id_for_filter(db, owner_user_id)
+        }
+        _ => Ok(OwnerRowId::UNASSIGNED),
     }
 }
 
 fn owner_id_for_kind_write(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
-    owner_user_id: Option<&str>,
-) -> Result<i64, Error> {
-    if kind == FavoriteEntityKind::Friend {
-        owner_id_get_or_insert(db, owner_user_id.unwrap_or_default())
-    } else {
-        Ok(0)
+    owner_user_id: Option<&OwnerId>,
+) -> Result<OwnerRowId, Error> {
+    match owner_user_id {
+        Some(owner_user_id) if kind == FavoriteEntityKind::Friend => {
+            owner_id_get_or_insert(db, owner_user_id)
+        }
+        _ => Ok(OwnerRowId::UNASSIGNED),
     }
 }
 
@@ -421,13 +379,13 @@ fn config_realm_owner_scope(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
     config_key: &str,
-    owner_user_id: Option<&str>,
-) -> Result<(&'static str, i64), Error> {
+    owner_user_id: Option<&OwnerId>,
+) -> Result<(&'static str, OwnerRowId), Error> {
     if kind != FavoriteEntityKind::Friend {
-        return Ok(("", 0));
+        return Ok(("", OwnerRowId::UNASSIGNED));
     }
     if config_key == "localFavoriteFriendGroups" {
-        Ok(("AND owner_id = 0", 0))
+        Ok(("AND owner_id = 0", OwnerRowId::UNASSIGNED))
     } else {
         Ok((
             "AND owner_id = @owner_id",

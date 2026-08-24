@@ -145,7 +145,7 @@ export function UserDialogHeaderActions({
             {!isCurrentUser && isFriend ? (
                 <FavoriteActionMenu
                     kind="friend"
-                    entityId={profile.id}
+                    entityId={profile.id ?? ''}
                     entity={profile}
                     iconOnly
                 />

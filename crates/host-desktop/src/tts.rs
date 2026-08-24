@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 #[cfg(windows)]
 use base64::{engine::general_purpose::STANDARD as B64, Engine};

@@ -1,5 +1,6 @@
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
+import { isRecord } from '@/shared/utils/record';
 
 import type {
     UserDialogAvatarRecord,
@@ -12,10 +13,6 @@ type CurrentAvatarDetailsInput = {
     currentUserId: string;
     profile: UserDialogProfileSnapshot;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function hasRefreshValue(value: unknown) {
     return value !== undefined && value !== null && value !== '';

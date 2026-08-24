@@ -60,6 +60,6 @@ fn hmd_entry(source_id: &str) -> OverlayActivityEntry {
             ..vrcx_0_application_activity::OverlayActivityContent::default()
         },
         actor_relation: OverlayActivityActorRelation::Favorite,
-        payload: serde_json::json!({}),
+        payload: serde_json::json!({}).into(),
     }
 }

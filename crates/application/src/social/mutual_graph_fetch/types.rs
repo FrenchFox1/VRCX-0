@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_core::json::RawJson;
 
-use crate::{RuntimeAuthScope, WebClient};
+use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope, WebClient};
+use vrcx_0_core::OwnerId;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphFetchStartInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub endpoint: String,
     #[serde(default)]
@@ -17,7 +18,7 @@ pub struct MutualGraphFetchStartInput {
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphFetchCancelInput {
     #[serde(default)]
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -26,7 +27,7 @@ pub struct MutualGraphFetchStatus {
     pub run_id: u64,
     pub revision: u64,
     pub status: MutualGraphFetchState,
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub total_friends: usize,
     pub processed_friends: usize,
     pub current_friend_id: String,
@@ -59,15 +60,95 @@ impl MutualGraphFetchState {
 
 #[derive(Clone, Copy)]
 pub struct MutualGraphRequestDeps<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) store: &'a dyn MutualGraphStore,
+    pub(crate) remote_requests: &'a dyn MutualGraphRemoteRequests,
+    pub(crate) web: &'a WebClient,
     pub auth_scope: &'a RuntimeAuthScope,
+}
+
+impl<'a> MutualGraphRequestDeps<'a> {
+    pub fn new(
+        store: &'a dyn MutualGraphStore,
+        remote_requests: &'a dyn MutualGraphRemoteRequests,
+        web: &'a WebClient,
+        auth_scope: &'a RuntimeAuthScope,
+    ) -> Self {
+        Self {
+            store,
+            remote_requests,
+            web,
+            auth_scope,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MutualGraphSnapshotEntryInput {
+    pub friend_id: String,
+    pub mutual_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct MutualGraphMetaInput {
+    pub friend_id: String,
+    pub last_fetched_at: String,
+    pub opted_out: bool,
+    pub total_count: Option<usize>,
+}
+
+#[derive(Clone, Debug)]
+pub struct MutualGraphLinkOutput {
+    pub friend_id: String,
+    pub mutual_id: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct MutualGraphMetaOutput {
+    pub friend_id: String,
+    pub last_fetched_at: String,
+    pub opted_out: bool,
+    pub total_count: Option<usize>,
+}
+
+#[derive(Clone, Debug)]
+pub struct MutualGraphSnapshotOutput {
+    pub friend_ids: Vec<String>,
+    pub links: Vec<MutualGraphLinkOutput>,
+    pub meta: Vec<MutualGraphMetaOutput>,
+}
+
+pub trait MutualGraphStore: Send + Sync {
+    fn friend_refresh_commit(
+        &self,
+        owner_user_id: String,
+        friend_id: String,
+        mutual_ids: Option<Vec<String>>,
+        total_count: Option<usize>,
+        opted_out: bool,
+    ) -> Result<()>;
+    fn snapshot_get(&self, owner_user_id: String) -> Result<MutualGraphSnapshotOutput>;
+    fn snapshot_commit(
+        &self,
+        owner_user_id: String,
+        entries: Vec<MutualGraphSnapshotEntryInput>,
+        meta: Vec<MutualGraphMetaInput>,
+    ) -> Result<()>;
+}
+
+pub trait MutualGraphRemoteRequests: Send + Sync {
+    fn mutual_friends(
+        &self,
+        endpoint: String,
+        user_id: String,
+        n: i32,
+        offset: i32,
+    ) -> Result<VrchatApiRequest>;
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphFriendRefreshInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub friend_id: String,
 }
 
@@ -88,4 +169,11 @@ pub struct MutualGraphFriendRefreshOutput {
 #[serde(rename_all = "camelCase")]
 pub struct UserMutualFriendsListInput {
     pub user_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct UserMutualFriendsListOutput {
+    pub rows: Vec<RawJson>,
+    pub persisted: bool,
 }

@@ -1,14 +1,13 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use vrcx_0_core::game_log_parser::GameLogEvent;
-use vrcx_0_persistence::DatabaseService;
 
 use crate::worker::{RuntimeWorker, RuntimeWorkerOptions};
 use crate::Result;
 use crate::RuntimeAuthScope;
 use crate::WorldCache;
-use crate::{GameLogEventOrigin, HostSessionRuntime, RuntimeSyncEngine, TaskSupervisor, WebClient};
-use crate::{ImageCache, RuntimeEventBus};
+use crate::{GameLogEventOrigin, HostSessionRuntime, RuntimeSyncEngine, TaskSupervisor};
+use crate::{InstanceMediaPort, RuntimeEventBus, VideoMetadataPort};
 use vrcx_0_application_activity::OverlayActivityRuntime;
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
 use vrcx_0_application_core::GameProcessEvent;
@@ -17,13 +16,13 @@ use vrcx_0_application_core::InstanceRosterObserver;
 use super::host::GameLogHostActions;
 use super::ingest::GameLogProcessEvent;
 use super::processor::{GameLogProcessor, GameLogProcessorDeps, GameLogWorkerJob};
-use super::runtime_state::RuntimeSnapshot;
+use super::runtime_state::RuntimeSnapshotStore;
 
 #[derive(Clone)]
 pub struct GameLogRuntimeDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
-    pub image_cache: Arc<ImageCache>,
+    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
+    pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub side_effect_sink: crate::GameLogSideEffectSink,
@@ -31,11 +30,50 @@ pub struct GameLogRuntimeDeps {
     pub sync: RuntimeSyncEngine,
     pub auth_scope: RuntimeAuthScope,
     pub session: HostSessionRuntime,
-    pub snapshot: Arc<Mutex<RuntimeSnapshot>>,
+    pub snapshot: RuntimeSnapshotStore,
     pub host_actions: Arc<dyn GameLogHostActions>,
     pub overlay_activity: OverlayActivityRuntime,
     pub world_cache: Arc<WorldCache>,
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
+}
+
+impl GameLogRuntimeDeps {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        store: Arc<dyn crate::GameStateStore>,
+        instance_media: Arc<dyn InstanceMediaPort>,
+        video_metadata: Arc<dyn VideoMetadataPort>,
+        event_bus: RuntimeEventBus,
+        backend_status: BackendRuntimeStatusPublisher,
+        side_effect_sink: crate::GameLogSideEffectSink,
+        tasks: TaskSupervisor,
+        sync: RuntimeSyncEngine,
+        auth_scope: RuntimeAuthScope,
+        session: HostSessionRuntime,
+        snapshot: RuntimeSnapshotStore,
+        host_actions: Arc<dyn GameLogHostActions>,
+        overlay_activity: OverlayActivityRuntime,
+        world_cache: Arc<WorldCache>,
+        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
+    ) -> Self {
+        Self {
+            store,
+            instance_media,
+            video_metadata,
+            event_bus,
+            backend_status,
+            side_effect_sink,
+            tasks,
+            sync,
+            auth_scope,
+            session,
+            snapshot,
+            host_actions,
+            overlay_activity,
+            world_cache,
+            instance_roster_observer,
+        }
+    }
 }
 
 pub struct GameLogRuntime {
@@ -48,9 +86,9 @@ impl GameLogRuntime {
     pub fn new(deps: GameLogRuntimeDeps) -> Self {
         let session = deps.session.clone();
         let processor = GameLogProcessor::new(GameLogProcessorDeps {
-            db: deps.db,
-            web: deps.web,
-            image_cache: deps.image_cache,
+            store: deps.store,
+            instance_media: deps.instance_media,
+            video_metadata: deps.video_metadata,
             event_bus: deps.event_bus.clone(),
             backend_status: deps.backend_status,
             side_effect_sink: deps.side_effect_sink,

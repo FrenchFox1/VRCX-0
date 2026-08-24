@@ -5,7 +5,8 @@ const serviceMocks = vi.hoisted(() => ({
     getFriendLogCurrent: vi.fn(),
     socialFriendRosterBaselineGet: vi.fn(),
     vrchatUserGet: vi.fn(),
-    vrchatFriendStatusGet: vi.fn()
+    vrchatFriendStatusGet: vi.fn(),
+    signalFriendLogChanged: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -25,6 +26,10 @@ vi.mock('@/repositories/friendLogRepository', () => ({
 
 vi.mock('./domainIngestionService', () => ({
     recordFriendPatch: serviceMocks.recordFriendPatch
+}));
+
+vi.mock('./friendLogMutationService', () => ({
+    signalFriendLogChanged: serviceMocks.signalFriendLogChanged
 }));
 
 function deferred<T>() {
@@ -265,6 +270,74 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                 }
             }
         });
+    });
+
+    it('signals the friend log store when the baseline reports a friend-log change', async () => {
+        const { bootstrapFriendRoster } =
+            await import('./friendBootstrapService');
+        serviceMocks.socialFriendRosterBaselineGet.mockResolvedValue({
+            stale: false,
+            count: 1,
+            detail: 'fast roster',
+            friendLogChanged: true,
+            snapshot: {
+                friendsById: {
+                    usr_online: {
+                        id: 'usr_online',
+                        displayName: 'Online Fast',
+                        state: 'online'
+                    }
+                }
+            }
+        });
+
+        await bootstrapFriendRoster({
+            userId: 'usr_self',
+            endpoint: 'https://api.example.test',
+            currentUserSnapshot: {
+                id: 'usr_self',
+                friends: ['usr_online'],
+                offlineFriends: [],
+                activeFriends: [],
+                onlineFriends: ['usr_online']
+            }
+        });
+
+        expect(serviceMocks.signalFriendLogChanged).toHaveBeenCalledOnce();
+    });
+
+    it('does not signal the friend log store when the baseline reports no friend-log change', async () => {
+        const { bootstrapFriendRoster } =
+            await import('./friendBootstrapService');
+        serviceMocks.socialFriendRosterBaselineGet.mockResolvedValue({
+            stale: false,
+            count: 1,
+            detail: 'fast roster',
+            friendLogChanged: false,
+            snapshot: {
+                friendsById: {
+                    usr_online: {
+                        id: 'usr_online',
+                        displayName: 'Online Fast',
+                        state: 'online'
+                    }
+                }
+            }
+        });
+
+        await bootstrapFriendRoster({
+            userId: 'usr_self',
+            endpoint: 'https://api.example.test',
+            currentUserSnapshot: {
+                id: 'usr_self',
+                friends: ['usr_online'],
+                offlineFriends: [],
+                activeFriends: [],
+                onlineFriends: ['usr_online']
+            }
+        });
+
+        expect(serviceMocks.signalFriendLogChanged).not.toHaveBeenCalled();
     });
 
     it('keeps realtime patches authoritative when refreshing a loaded roster', async () => {

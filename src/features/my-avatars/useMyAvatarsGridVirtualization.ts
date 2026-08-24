@@ -10,6 +10,8 @@ import {
 import type {
     MyAvatarRow,
     MyAvatarsGridDensity,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter,
     MyAvatarsViewMode
 } from './myAvatarsTypes';
 
@@ -27,8 +29,8 @@ export function useMyAvatarsGridVirtualization({
     deferredSearchQuery: string;
     filteredAvatars: MyAvatarRow[];
     gridDensity: MyAvatarsGridDensity;
-    platformFilter: string;
-    releaseStatusFilter: string;
+    platformFilter: MyAvatarsPlatformFilter;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
     tagFilters: Set<string>;
     viewMode: MyAvatarsViewMode;
 }) {

@@ -9,7 +9,7 @@ vi.mock('@/state/shellStore', () => ({
     ): T => selector({ timeUnitLabels: { m: 'm', s: 's' } })
 }));
 
-import { FriendInstanceTimer } from './FriendsSidebarLocation';
+import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 
 const NOW_MS = 1_700_000_000_000;
 
@@ -24,19 +24,19 @@ describe('FriendInstanceTimer', () => {
         vi.useRealTimers();
     });
 
-    it('shows the first 30-second bucket, then advances by whole minutes', async () => {
+    it('counts up in 30-second buckets, then in whole minutes', async () => {
         render(<FriendInstanceTimer epoch={NOW_MS} />);
 
-        expect(screen.getByText('<30s')).toBeDefined();
+        expect(screen.getByText('0s')).toBeDefined();
         await act(() => vi.advanceTimersByTimeAsync(29_999));
-        expect(screen.getByText('<30s')).toBeDefined();
+        expect(screen.getByText('0s')).toBeDefined();
+        await act(() => vi.advanceTimersByTimeAsync(1));
+        expect(screen.getByText('30s')).toBeDefined();
+        await act(() => vi.advanceTimersByTimeAsync(29_999));
+        expect(screen.getByText('30s')).toBeDefined();
         await act(() => vi.advanceTimersByTimeAsync(1));
         expect(screen.getByText('1m')).toBeDefined();
-        await act(() => vi.advanceTimersByTimeAsync(29_999));
-        expect(screen.getByText('1m')).toBeDefined();
-        await act(() => vi.advanceTimersByTimeAsync(1));
-        expect(screen.getByText('1m')).toBeDefined();
-        await act(() => vi.advanceTimersByTimeAsync(29_999));
+        await act(() => vi.advanceTimersByTimeAsync(59_999));
         expect(screen.getByText('1m')).toBeDefined();
         await act(() => vi.advanceTimersByTimeAsync(1));
         expect(screen.getByText('2m')).toBeDefined();
@@ -45,7 +45,7 @@ describe('FriendInstanceTimer', () => {
     });
 
     it('continues with whole minutes across the hour boundary', async () => {
-        render(<FriendInstanceTimer epoch={NOW_MS - 59 * 60_000 - 29_999} />);
+        render(<FriendInstanceTimer epoch={NOW_MS - 59 * 60_000 - 59_999} />);
 
         expect(screen.getByText('59m')).toBeDefined();
         await act(() => vi.advanceTimersByTimeAsync(1));
@@ -54,5 +54,21 @@ describe('FriendInstanceTimer', () => {
         expect(screen.getByText('1h')).toBeDefined();
         await act(() => vi.advanceTimersByTimeAsync(1));
         expect(screen.getByText('1h 1m')).toBeDefined();
+    });
+
+    it('allows the sidebar to keep sub-minute timers muted', () => {
+        render(
+            <FriendInstanceTimer
+                epoch={NOW_MS}
+                className="text-muted-foreground"
+            />
+        );
+
+        expect(screen.getByText('0s').className).toContain(
+            'text-muted-foreground'
+        );
+        expect(screen.getByText('0s').className).not.toContain(
+            'text-foreground'
+        );
     });
 });

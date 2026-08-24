@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vrcx_0_application_core::vrchat_api::search::{
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::search::{
     GroupSearchParams, UserSearchParams, WorldSearchParams,
 };
 

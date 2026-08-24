@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use serde_json::json;
 
 use super::{
-    notification_add_v1, notification_add_v2, notification_list_query, NotificationListItemOutput,
+    notification_add_v1, notification_add_v2, notification_friend_requests_sync,
+    notification_list_query, notification_mark_seen, NotificationListItemOutput,
     NotificationListQueryInput,
 };
 use crate::{DatabaseService, Error};
@@ -235,5 +236,35 @@ fn notification_tables_remain_scoped_to_the_requested_account() -> Result<(), Er
 
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].id, "notif_a");
+    Ok(())
+}
+
+#[test]
+fn seen_v1_friend_request_stays_seen_when_remote_sync_keeps_it_active() -> Result<(), Error> {
+    let (_dir, db) = test_db("v1-friend-request-seen-sync")?;
+    let user_id = "usr_owner";
+    let friend_request = json!({
+        "id": "notif_friend_request",
+        "createdAt": "2026-08-20T11:00:00Z",
+        "type": "friendRequest",
+        "senderUserId": "usr_sender",
+        "senderUsername": "Sender"
+    });
+    notification_add_v1(&db, user_id.into(), friend_request.clone())?;
+    notification_mark_seen(&db, user_id.into(), "notif_friend_request".into(), 1)?;
+
+    notification_friend_requests_sync(
+        &db,
+        user_id.into(),
+        vec![friend_request],
+        true,
+        Vec::new(),
+        true,
+    )?;
+
+    let rows = query(&db, user_id, 10, 10, true)?;
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].seen);
+    assert!(!rows[0].expired);
     Ok(())
 }

@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
-import { resolveObservedPlayerDwellEpochs } from '@/domain/friends/sameInstanceFriends';
 import { recordKnownUser } from '@/services/domainIngestionService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
+import { dialogTargetKey } from '@/services/userDialogSessionCacheService';
+import { isRecord } from '@/shared/utils/record';
 import { useDialogStore } from '@/state/dialogStore';
 
 import { UserDialogContentDialogs } from './user-dialog/components/UserDialogContentDialogs';
@@ -13,7 +14,6 @@ import {
     UserDialogEmptyState,
     UserDialogProfileSkeleton
 } from './user-dialog/components/UserDialogContentStates';
-import { dialogTargetKey } from './user-dialog/userDialogCache';
 import {
     isSameLocationTag,
     resolveUserDialogTargetPresenceLocation,
@@ -47,10 +47,6 @@ import { UserDialogTabbedView } from './UserDialogTabbedView';
 
 const userDialogSkeletonDelayMs = 160;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
 function useDelayedUserDialogSkeleton(loading: boolean, identity: string) {
     const [visible, setVisible] = useState(false);
 
@@ -77,19 +73,17 @@ export function UserDialogContent({
     userId,
     seedData = null,
     initialAction = '',
-    openNonce: openNonceValue = 0
+    openNonce = 0
 }: {
-    userId: unknown;
+    userId?: string;
     seedData?: unknown;
     initialAction?: string;
-    openNonce?: unknown;
+    openNonce?: number;
 }) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const closeDialog = useDialogStore((s) => s.closeDialog);
-    const openNonce = typeof openNonceValue === 'number' ? openNonceValue : 0;
-
-    const normalizedUserId = normalizeUserId(userId);
+    const normalizedUserId = userId?.trim() ?? '';
     const {
         confirm,
         currentEndpoint,
@@ -211,23 +205,6 @@ export function UserDialogContent({
         profile,
         reloadToken
     });
-    const currentInstanceDwellEpochsByUserId = useMemo(
-        () =>
-            isSameLocationTag(presenceLocation, gameState?.currentLocation)
-                ? resolveObservedPlayerDwellEpochs(
-                      gameState?.currentLocationPlayers,
-                      friendsById,
-                      presenceLocation
-                  )
-                : new Map<string, unknown>(),
-        [
-            friendsById,
-            gameState?.currentLocation,
-            gameState?.currentLocationPlayers,
-            presenceLocation
-        ]
-    );
-
     const {
         avatarOverrideState,
         extendedModerationState,
@@ -457,7 +434,6 @@ export function UserDialogContent({
                 }}
                 locationPanel={{
                     sameInstanceUsers: activeLocationPanel.users,
-                    dwellEpochsByUserId: currentInstanceDwellEpochsByUserId,
                     locationOwnerUser: activeLocationPanel.ownerUser,
                     locationOwnerGroup: activeLocationPanel.ownerGroup,
                     locationInstance: activeLocationPanel.instance,

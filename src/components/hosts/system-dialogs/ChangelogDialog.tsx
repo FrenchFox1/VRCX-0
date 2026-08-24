@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -113,6 +114,18 @@ const markdownComponents = {
     )
 } satisfies Components;
 
+export function ChangelogMarkdown({ children }: { children: string }) {
+    return (
+        <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkBreaks]}
+            skipHtml
+            components={markdownComponents}
+        >
+            {children}
+        </ReactMarkdown>
+    );
+}
+
 export function ChangelogDialog({
     open,
     onOpenChange,
@@ -218,13 +231,7 @@ export function ChangelogDialog({
                     <div className="space-y-3">
                         {note ? (
                             <div className="bg-muted/40 text-foreground/90 rounded-md border px-3 py-2 text-sm">
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    skipHtml
-                                    components={markdownComponents}
-                                >
-                                    {note}
-                                </ReactMarkdown>
+                                <ChangelogMarkdown>{note}</ChangelogMarkdown>
                             </div>
                         ) : null}
                         <Tabs
@@ -249,15 +256,9 @@ export function ChangelogDialog({
                                     <ScrollArea className="h-[min(58vh,520px)] rounded-md border">
                                         <div className="p-3 text-sm">
                                             {entry.markdown ? (
-                                                <ReactMarkdown
-                                                    remarkPlugins={[remarkGfm]}
-                                                    skipHtml
-                                                    components={
-                                                        markdownComponents
-                                                    }
-                                                >
+                                                <ChangelogMarkdown>
                                                     {entry.markdown}
-                                                </ReactMarkdown>
+                                                </ChangelogMarkdown>
                                             ) : (
                                                 <div className="text-muted-foreground">
                                                     {t(

@@ -3,7 +3,11 @@ import type {
     ConfigReadEntry,
     ConfigWriteEntry
 } from '@/platform/tauri/bindings';
-import { ConfigKeys, type ConfigDefaultValue } from '@/repositories/configKeys';
+import {
+    ConfigKeys,
+    type ConfigDefaultValue,
+    type ConfigKeyDefinition
+} from '@/repositories/configKeys';
 
 import { asString, safeJsonParse, safeJsonStringify } from './baseRepository';
 
@@ -14,6 +18,9 @@ const HIDDEN_VR_PANEL_CONFIG_DB_KEYS = new Set([
     'config:vrcx_vroverlaypanelenabled',
     'config:vrcx_vroverlaypanelallfriendsincludesfavorites'
 ]);
+const CONFIG_KEYS_BY_NAME = new Map<string, ConfigKeyDefinition>(
+    Object.entries(ConfigKeys)
+);
 
 function isHiddenVrPanelConfigDbKey(key: string): boolean {
     return HIDDEN_VR_PANEL_CONFIG_DB_KEYS.has(key);
@@ -37,11 +44,7 @@ class ConfigRepository {
 
     #getSchemaDefault(key: string): ConfigDefaultValue {
         const stripped = key.startsWith('VRCX_') ? key.slice(5) : key;
-        return (
-            (ConfigKeys as Record<string, { default?: ConfigDefaultValue }>)[
-                stripped
-            ]?.default ?? null
-        );
+        return CONFIG_KEYS_BY_NAME.get(stripped)?.default ?? null;
     }
 
     async init(prefetchedRows?: ConfigReadEntry[]): Promise<void> {
@@ -173,7 +176,7 @@ class ConfigRepository {
         defaultValue: T | null = null
     ): Promise<T | null> {
         const value = await this.getString(key, null);
-        return safeJsonParse(value, defaultValue) as T | null;
+        return safeJsonParse(value, defaultValue);
     }
 
     async getArray<T = unknown>(

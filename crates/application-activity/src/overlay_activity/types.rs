@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
+use vrcx_0_core::json::RawJson;
 use vrcx_0_i18n::{render_overlay_message, OverlayMessage};
 
 use super::definitions::{
@@ -231,7 +232,7 @@ pub struct OverlayActivityCandidate {
     pub actor_display_name: String,
     pub current_instance: bool,
     #[serde(default)]
-    pub payload: Value,
+    pub payload: RawJson,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
@@ -313,7 +314,7 @@ pub struct OverlayActivityEntry {
     #[serde(default)]
     pub actor_relation: OverlayActivityActorRelation,
     #[serde(default)]
-    pub payload: Value,
+    pub payload: RawJson,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, specta::Type)]

@@ -130,18 +130,18 @@ describe('gameLogRows', () => {
                 type: 'VideoPlay',
                 created_at: '2026-04-16T00:00:00.000Z',
                 videoUrl: 'https://video.example.test/watch',
-                id: 'row_1'
+                rowId: 1
             })
         ).toBe(
-            'VideoPlay:2026-04-16T00:00:00.000Z:https://video.example.test/watch:row_1'
+            'VideoPlay:2026-04-16T00:00:00.000Z:https://video.example.test/watch:1'
         );
         expect(
             getGameLogSessionKey({
-                id: 'session_1',
+                id: 1,
                 created_at: '2026-04-16T00:00:00.000Z',
                 location: 'wrld_session:1'
             })
-        ).toBe('session_1:2026-04-16T00:00:00.000Z:wrld_session:1');
+        ).toBe('1:2026-04-16T00:00:00.000Z:wrld_session:1');
     });
 
     it('marks session members and normalizes the visible session duration', () => {
@@ -156,12 +156,33 @@ describe('gameLogRows', () => {
         const annotated = annotateGameLogSessionEvent(
             {
                 type: 'JoinGroup',
+                created_at: '2026-04-16T00:00:00.000Z',
                 userId: 'usr_friend',
                 members: [
-                    { userId: 'usr_remote' },
-                    { userId: 'usr_favorite' },
-                    { userId: 'usr_member' },
-                    { userId: '' }
+                    {
+                        created_at: '2026-04-16T00:00:00.000Z',
+                        displayName: 'Remote',
+                        userId: 'usr_remote',
+                        isFavorite: false
+                    },
+                    {
+                        created_at: '2026-04-16T00:00:00.000Z',
+                        displayName: 'Favorite',
+                        userId: 'usr_favorite',
+                        isFavorite: false
+                    },
+                    {
+                        created_at: '2026-04-16T00:00:00.000Z',
+                        displayName: 'Member',
+                        userId: 'usr_member',
+                        isFavorite: false
+                    },
+                    {
+                        created_at: '2026-04-16T00:00:00.000Z',
+                        displayName: '',
+                        userId: '',
+                        isFavorite: false
+                    }
                 ]
             },
             favoriteIds,

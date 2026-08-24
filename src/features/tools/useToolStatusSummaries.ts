@@ -8,16 +8,13 @@ import configRepository from '@/repositories/configRepository';
 import { getCurrentAppLauncherSnapshot } from '@/services/appLauncherSnapshotService';
 import { getProfileBackupSettings } from '@/services/profileBackupService';
 import { TOOLS_STATUS_UPDATED_EVENT } from '@/shared/constants/tools';
+import { isRecord } from '@/shared/utils/record';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 
 export type ToolStatusSummary = {
     label: string;
     tone: 'active' | 'neutral';
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 export function countPresenceRules(rules: readonly unknown[] | null): {
     enabled: number;

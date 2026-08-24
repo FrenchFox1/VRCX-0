@@ -3,8 +3,8 @@ use std::sync::Arc;
 use vrcx_0_application_core::GameProcessEvent;
 use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
 use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, RealtimeFriendSnapshot};
+use vrcx_0_composition::Result;
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_runtime_host::Result;
 
 use crate::DesktopRuntimeServices;
 
@@ -12,7 +12,8 @@ use crate::DesktopRuntimeServices;
 use vrcx_0_application_core::GameProcessEventSink;
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_overlay_runtime::{
-    VrOverlayActivitySink, VrOverlayRuntime, VR_OVERLAY_ENABLED_CONFIG_KEY,
+    VrOverlayActivitySink, VrOverlayRuntime, VrOverlayRuntimeServices,
+    VR_OVERLAY_ENABLED_CONFIG_KEY,
 };
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_persistence::config::ConfigRepository;
@@ -25,6 +26,7 @@ pub struct VrOverlayRuntimeSnapshot {
     pub running: bool,
     pub steamvr_running: bool,
     pub active_backend: Option<String>,
+    pub test_mode: bool,
 }
 
 #[cfg(any(windows, target_os = "linux"))]
@@ -36,6 +38,7 @@ impl From<vrcx_0_overlay_runtime::VrOverlayRuntimeSnapshot> for VrOverlayRuntime
             running,
             steamvr_running,
             active_backend,
+            test_mode,
         } = snapshot;
         Self {
             enabled,
@@ -43,6 +46,7 @@ impl From<vrcx_0_overlay_runtime::VrOverlayRuntimeSnapshot> for VrOverlayRuntime
             running,
             steamvr_running,
             active_backend,
+            test_mode,
         }
     }
 }
@@ -58,11 +62,11 @@ impl DesktopVrOverlayRuntime {
     pub fn new(services: Arc<DesktopRuntimeServices>) -> Result<Self> {
         #[cfg(any(windows, target_os = "linux"))]
         {
-            let config = services.data().config().clone();
+            let config = services.config().clone();
             let runtime = Arc::new(VrOverlayRuntime::new(Arc::clone(&services)));
             let enabled = config.get_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, false)?;
             runtime.set_enabled(enabled);
-            runtime.start_refresh_loop(services.data().tasks.clone());
+            runtime.start_refresh_loop(services.tasks().clone());
             services
                 .set_overlay_activity_extra_sink(Arc::new(VrOverlayActivitySink::new(&runtime)));
             Ok(Self { config, runtime })
@@ -87,6 +91,20 @@ impl DesktopVrOverlayRuntime {
         #[cfg(not(any(windows, target_os = "linux")))]
         {
             let _ = enabled;
+            Err(unsupported_error())
+        }
+    }
+
+    pub fn set_test_mode(&self, test_mode: bool) -> Result<VrOverlayRuntimeSnapshot> {
+        #[cfg(any(windows, target_os = "linux"))]
+        {
+            self.runtime.set_test_mode(test_mode);
+            Ok(self.runtime.snapshot().into())
+        }
+
+        #[cfg(not(any(windows, target_os = "linux")))]
+        {
+            let _ = test_mode;
             Err(unsupported_error())
         }
     }
@@ -217,9 +235,9 @@ impl GameLogEventSink for DesktopVrOverlayRuntime {
 }
 
 #[cfg(not(any(windows, target_os = "linux")))]
-fn unsupported_error() -> vrcx_0_runtime_host::Error {
-    vrcx_0_runtime_host::Error::Custom(unsupported_message(
-        vrcx_0_host::host_capabilities::current_platform(),
+fn unsupported_error() -> vrcx_0_composition::Error {
+    vrcx_0_composition::Error::Custom(unsupported_message(
+        vrcx_0_platform::host_capabilities::current_platform(),
     ))
 }
 
@@ -259,6 +277,10 @@ mod tests {
         );
         assert_eq!(
             runtime.set_enabled(true).unwrap_err().to_string(),
+            "VR overlay is not supported on macOS"
+        );
+        assert_eq!(
+            runtime.set_test_mode(true).unwrap_err().to_string(),
             "VR overlay is not supported on macOS"
         );
     }

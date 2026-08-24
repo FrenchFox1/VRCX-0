@@ -1,7 +1,5 @@
 import { createDensityPreset } from '@/lib/densityPreset';
 
-export const DEFAULT_GALLERY_GRID_DENSITY = 'standard';
-
 export const GALLERY_GRID_DENSITY_OPTIONS = Object.freeze([
     {
         value: 'standard',
@@ -15,7 +13,12 @@ export const GALLERY_GRID_DENSITY_OPTIONS = Object.freeze([
         value: 'dense',
         labelKey: 'dialog.gallery_icons.density_options.dense'
     }
-]);
+] as const);
+
+export type GalleryGridDensity =
+    (typeof GALLERY_GRID_DENSITY_OPTIONS)[number]['value'];
+
+export const DEFAULT_GALLERY_GRID_DENSITY: GalleryGridDensity = 'standard';
 
 const DENSITY_CONFIGS = Object.freeze({
     standard: Object.freeze({
@@ -57,7 +60,7 @@ const DENSITY_CONFIGS = Object.freeze({
         actionsClass: 'flex flex-wrap gap-1',
         actionButtonClass: 'h-7 px-1.5 text-xs'
     })
-});
+}) satisfies Readonly<Record<GalleryGridDensity, unknown>>;
 
 const preset = createDensityPreset(
     DEFAULT_GALLERY_GRID_DENSITY,

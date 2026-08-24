@@ -60,26 +60,32 @@ import {
 const JUST_MOVED_RESET_MS = 260;
 
 type HiddenNavItem = {
-    key: unknown;
+    key: string;
     label: string;
 };
+
+function hasDefinitionKey(
+    definition: CustomNavDefinition
+): definition is CustomNavDefinition & { key: string } {
+    return typeof definition.key === 'string' && definition.key.length > 0;
+}
 
 type CustomNavDialogProps = {
     open: boolean;
     layout: unknown;
-    hiddenKeys?: readonly unknown[];
+    hiddenKeys?: readonly string[];
     defaultLayout: unknown;
-    defaultHiddenKeys?: readonly unknown[];
+    defaultHiddenKeys?: readonly string[];
     definitions?: CustomNavDefinition[];
     onOpenChange: (open: boolean) => void;
     onSave: (
         layout: CustomNavLayout,
-        hiddenKeys: unknown[]
+        hiddenKeys: string[]
     ) => void | Promise<void>;
     onDashboardCreated?: (
         dashboardId: string,
         layout: CustomNavLayout,
-        hiddenKeys: unknown[]
+        hiddenKeys: string[]
     ) => void | Promise<void>;
 };
 
@@ -104,7 +110,7 @@ export function CustomNavDialog({
     const [localLayout, setLocalLayout] = useState<CustomNavLayout>(() =>
         cloneLayout(layout)
     );
-    const [localHiddenKeys, setLocalHiddenKeys] = useState<Set<unknown>>(
+    const [localHiddenKeys, setLocalHiddenKeys] = useState<Set<string>>(
         () => new Set(hiddenKeys || [])
     );
     const [hiddenPlacement, setHiddenPlacement] = useState(() =>
@@ -146,11 +152,11 @@ export function CustomNavDialog({
         };
     }, [justMovedKey]);
 
-    const definitionMap = useMemo<Map<unknown, CustomNavDefinition>>(
+    const definitionMap = useMemo<Map<string, CustomNavDefinition>>(
         () =>
             new Map(
                 (definitions || [])
-                    .filter((definition) => definition?.key)
+                    .filter(hasDefinitionKey)
                     .map((definition) => [definition.key, definition])
             ),
         [definitions]
@@ -159,6 +165,7 @@ export function CustomNavDialog({
     const hiddenItems = useMemo<HiddenNavItem[]>(
         () =>
             (definitions || [])
+                .filter(hasDefinitionKey)
                 .filter(
                     (definition) =>
                         localHiddenKeys.has(definition.key) &&
@@ -197,8 +204,8 @@ export function CustomNavDialog({
 
     function updateEntryIcon(
         index: number,
-        icon: unknown,
-        fallbackIcon: unknown
+        icon: string,
+        fallbackIcon: string
     ) {
         const normalizedIcon = normalizeNavIconKey(icon, fallbackIcon);
         setLocalLayout((current) =>
@@ -216,8 +223,8 @@ export function CustomNavDialog({
     function updateFolderChildIcon(
         folderIndex: number,
         itemIndex: number,
-        icon: unknown,
-        fallbackIcon: unknown
+        icon: string,
+        fallbackIcon: string
     ) {
         const normalizedIcon = normalizeNavIconKey(icon, fallbackIcon);
         updateFolderItems(folderIndex, (items) =>
@@ -382,14 +389,12 @@ export function CustomNavDialog({
         moveItemByDrag(activeNode, targetNode);
     }
 
-    function moveItemToFolder(key: unknown, folderId: unknown) {
+    function moveItemToFolder(key: string, folderId: string) {
         const next = cloneLayout(localLayout);
-        const folder = findFolder(next, String(folderId));
+        const folder = findFolder(next, folderId);
         if (
             !folder ||
-            folder.items.some(
-                (item) => String(getFolderItemKey(item)) === String(key)
-            )
+            folder.items.some((item) => getFolderItemKey(item) === key)
         ) {
             return;
         }
@@ -399,11 +404,11 @@ export function CustomNavDialog({
         }
         folder.items.push(createFolderItem(removed.key, removed.icon || ''));
         setLocalLayout(next);
-        setJustMovedKey(String(key || ''));
+        setJustMovedKey(key);
     }
 
-    function hideItem(key: unknown) {
-        const normalizedKey = String(key || '');
+    function hideItem(key: string) {
+        const normalizedKey = key;
         const result = removeKeyFromLayout(localLayout, key);
         setJustMovedKey(normalizedKey);
         setLocalLayout(result.layout);
@@ -419,19 +424,19 @@ export function CustomNavDialog({
         if (!isToolNavKey(key)) {
             setLocalHiddenKeys((current) => {
                 const next = new Set(current);
-                next.add(key);
+                next.add(normalizedKey);
                 return next;
             });
         }
     }
 
-    function showItem(key: unknown) {
-        const normalizedKey = String(key || '');
+    function showItem(key: string) {
+        const normalizedKey = key;
         const placement = hiddenPlacement.get(normalizedKey) || null;
         setJustMovedKey(normalizedKey);
         setLocalHiddenKeys((current) => {
             const next = new Set(current);
-            next.delete(key);
+            next.delete(normalizedKey);
             return next;
         });
         setHiddenPlacement((current) => {
@@ -553,11 +558,8 @@ export function CustomNavDialog({
         }
     }
 
-    async function editDashboard(key: unknown) {
-        const dashboardId = String(key || '').replace(
-            DASHBOARD_NAV_KEY_PREFIX,
-            ''
-        );
+    async function editDashboard(key: string) {
+        const dashboardId = key.replace(DASHBOARD_NAV_KEY_PREFIX, '');
         const dashboard = getDashboard(dashboardId);
         if (!dashboard) {
             return;
@@ -591,11 +593,8 @@ export function CustomNavDialog({
         }
     }
 
-    async function removeDashboard(key: unknown) {
-        const dashboardId = String(key || '').replace(
-            DASHBOARD_NAV_KEY_PREFIX,
-            ''
-        );
+    async function removeDashboard(key: string) {
+        const dashboardId = key.replace(DASHBOARD_NAV_KEY_PREFIX, '');
         const result = await confirm({
             title: t('dashboard.confirmations.delete_title'),
             description: `${t('dashboard.confirmations.delete_description')} ${t('nav_menu.custom_nav.applies_immediately')}`,
@@ -666,8 +665,8 @@ export function CustomNavDialog({
                     onDragEnd={handleDragEnd}
                     onFolderIconChange={(
                         index: number,
-                        icon: unknown,
-                        fallbackIcon: unknown
+                        icon: string,
+                        fallbackIcon?: string
                     ) =>
                         updateEntryIcon(
                             index,
@@ -682,10 +681,10 @@ export function CustomNavDialog({
                     onFolderChildIconChange={updateFolderChildIcon}
                     onMoveItemToFolder={moveItemToFolder}
                     onHideItem={hideItem}
-                    onEditDashboard={(key: unknown) => {
+                    onEditDashboard={(key: string) => {
                         editDashboard(key);
                     }}
-                    onDeleteDashboard={(key: unknown) => {
+                    onDeleteDashboard={(key: string) => {
                         removeDashboard(key);
                     }}
                     onShowItem={showItem}

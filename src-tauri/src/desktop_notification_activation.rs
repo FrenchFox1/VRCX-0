@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use serde::Serialize;
 use specta::Type;
+use vrcx_0_core::OwnerId;
 use vrcx_0_runtime_host_desktop::notification::DesktopNotificationAction;
 
 #[cfg(windows)]
@@ -61,9 +62,9 @@ impl PendingDesktopNotificationActivations {
         state.ready.is_some()
     }
 
-    pub fn take_for_owner(&self, owner_user_id: &str) -> Option<DesktopNotificationActivation> {
+    pub fn take_for_owner(&self, owner_user_id: &OwnerId) -> Option<DesktopNotificationActivation> {
         let action = self.state.lock().ok()?.ready.take()?;
-        if action.owner_user_id != owner_user_id {
+        if &action.owner_user_id != owner_user_id {
             return None;
         }
         Some(DesktopNotificationActivation {
@@ -82,7 +83,7 @@ pub(crate) fn queue_desktop_notification_activation(
         return;
     };
     let generation = state
-        .pending_desktop_notification_activations
+        .pending_desktop_notification_activations()
         .replace(action);
     if generation == 0 {
         tracing::warn!("failed to queue desktop notification activation");
@@ -96,7 +97,7 @@ pub(crate) fn queue_desktop_notification_activation(
             return;
         };
         if !state
-            .pending_desktop_notification_activations
+            .pending_desktop_notification_activations()
             .promote_if_latest(generation)
         {
             return;
@@ -130,6 +131,7 @@ fn show_main_window_for_desktop_notification(app: &tauri::AppHandle) {
 
 #[cfg(test)]
 mod tests {
+    use vrcx_0_core::OwnerId;
     use vrcx_0_runtime_host_desktop::notification::DesktopNotificationAction;
 
     use super::PendingDesktopNotificationActivations;
@@ -147,10 +149,15 @@ mod tests {
         assert!(!pending.promote_if_latest(first_generation));
         assert!(pending.promote_if_latest(last_generation));
         assert_eq!(
-            pending.take_for_owner(OWNER_USER_ID).unwrap().user_id,
+            pending
+                .take_for_owner(&OwnerId::new(OWNER_USER_ID))
+                .unwrap()
+                .user_id,
             LAST_USER_ID
         );
-        assert!(pending.take_for_owner(OWNER_USER_ID).is_none());
+        assert!(pending
+            .take_for_owner(&OwnerId::new(OWNER_USER_ID))
+            .is_none());
     }
 
     #[test]
@@ -161,7 +168,9 @@ mod tests {
 
         pending.replace(action(LAST_USER_ID));
 
-        assert!(pending.take_for_owner(OWNER_USER_ID).is_none());
+        assert!(pending
+            .take_for_owner(&OwnerId::new(OWNER_USER_ID))
+            .is_none());
     }
 
     #[test]
@@ -171,14 +180,16 @@ mod tests {
         assert!(pending.promote_if_latest(generation));
 
         assert!(pending
-            .take_for_owner("usr_cccccccc-cccc-cccc-cccc-cccccccccccc")
+            .take_for_owner(&OwnerId::new("usr_cccccccc-cccc-cccc-cccc-cccccccccccc"))
             .is_none());
-        assert!(pending.take_for_owner(OWNER_USER_ID).is_none());
+        assert!(pending
+            .take_for_owner(&OwnerId::new(OWNER_USER_ID))
+            .is_none());
     }
 
     fn action(user_id: &str) -> DesktopNotificationAction {
         DesktopNotificationAction {
-            owner_user_id: OWNER_USER_ID.into(),
+            owner_user_id: OwnerId::new(OWNER_USER_ID),
             user_id: user_id.into(),
         }
     }

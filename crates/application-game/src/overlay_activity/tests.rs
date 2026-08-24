@@ -2,7 +2,7 @@ use super::*;
 use crate::game_log::video::VideoInput;
 use crate::GameLogSideEffect;
 use vrcx_0_application_activity::OverlayActivityRuntime;
-use vrcx_0_persistence::game_log::{
+use vrcx_0_contracts::game_log::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogWriteBatch,
 };
 

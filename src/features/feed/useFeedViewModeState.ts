@@ -96,8 +96,8 @@ export function useFeedViewModeState() {
         );
     }, [columns, ready]);
 
-    const setDensity = useCallback((value: unknown) => {
-        setDensityState(sanitizeFeedColumnDensity(value));
+    const setDensity = useCallback((value: FeedColumnDensity) => {
+        setDensityState(value);
     }, []);
 
     const setViewMode = useCallback((value: FeedViewMode) => {

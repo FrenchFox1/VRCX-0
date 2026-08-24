@@ -112,16 +112,13 @@ pub fn user_mutual_friends_get_input(
     user_id: String,
     n: i32,
     offset: i32,
-    include_user_id_param: bool,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatUserMutualFriendsGet requires userId.")?;
-    let mut params = HashMap::from([
+    let params = HashMap::from([
         ("n".to_string(), json!(n)),
         ("offset".to_string(), json!(offset)),
+        ("userId".to_string(), Value::String(user_id.clone())),
     ]);
-    if include_user_id_param {
-        params.insert("userId".to_string(), Value::String(user_id.clone()));
-    }
     Ok((
         user_id.clone(),
         get_input(

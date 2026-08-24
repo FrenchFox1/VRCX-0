@@ -18,7 +18,7 @@ type SettingsEffectsDeps = {
     setAppDataDirState: Dispatch<SetStateAction<AppDataDirState | null>>;
     setTtsVoices: Dispatch<SetStateAction<TtsVoice[]>>;
     setZoomInput: Dispatch<SetStateAction<string>>;
-    zoomLevel: unknown;
+    zoomLevel: number | null;
 };
 
 export function useSettingsEffects({

@@ -9,6 +9,7 @@ import {
 import { useTodayDate } from '@/lib/useTodayDate';
 import {
     FEED_FILTER_TYPES,
+    isFeedFilterType,
     type FeedFilterType
 } from '@/repositories/feedRepository';
 
@@ -22,11 +23,7 @@ function normalizeScopedUserIds(userIds: readonly string[]): string[] {
 }
 
 function normalizeFeedFilters(filters: readonly unknown[]): FeedFilterType[] {
-    const nextFilters = (Array.isArray(filters) ? filters : []).filter(
-        (filter): filter is FeedFilterType =>
-            typeof filter === 'string' &&
-            FEED_FILTER_TYPES.includes(filter as FeedFilterType)
-    );
+    const nextFilters = filters.filter(isFeedFilterType);
     return [...new Set(nextFilters)];
 }
 
@@ -72,7 +69,7 @@ export function useFeedFilters({
         setUserScope(normalizedRouteScopedUserIds);
     }, [normalizedRouteScopedUserIds, setUserScope]);
 
-    const setFeedFilters = useCallback((nextFilters: readonly unknown[]) => {
+    const setFeedFilters = useCallback((nextFilters: FeedFilterType[]) => {
         const nextUniqueFilters = normalizeFeedFilters(nextFilters);
         setActiveFilters(
             nextUniqueFilters.length === FEED_FILTER_TYPES.length

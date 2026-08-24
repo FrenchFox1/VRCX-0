@@ -57,12 +57,3 @@ export type AvatarProfileRecord = EntityRecord & {
     $tags: AvatarLocalTag[];
     $timeSpent: number;
 };
-
-export type AvatarDialogJson = {
-    avatar: AvatarProfileRecord;
-    memo: string;
-    avatarBlocked: boolean;
-    galleryImages: (string | EntityRecord)[];
-    platformInfo: EntityRecord;
-    fileAnalysis: PlatformFileAnalysis;
-};

@@ -5,13 +5,13 @@ use vrcx_0_core::text::normalize_text;
 
 use serde_json::{json, Map, Number, Value};
 use std::sync::Arc;
+use vrcx_0_contracts::vrchat_api::{
+    VrchatJsonResponse as ApiJsonResponse, VrchatRequest as HttpApiRequestInput,
+    VrchatScope as ApiScope,
+};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::{text_of, RawJson};
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{
-    normalize_vrchat_api_endpoint, ApiJsonResponse, ApiScope, HttpApiRequestInput,
-};
-use vrcx_0_vrchat_client::{favorites as remote_favorites, friends as remote_friends};
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use crate::realtime::{FriendBaselineSyncOutcome, RealtimeHostRuntime, RealtimeSessionContext};
 use vrcx_0_application_core::Result;
@@ -29,9 +29,26 @@ const FRIEND_PAGE_SIZE: i32 = 50;
 
 #[derive(Clone)]
 pub struct SocialBaselineDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
+    pub(crate) store: Arc<dyn crate::RealtimeStore>,
+    pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
+    pub(crate) web: Arc<WebClient>,
     pub auth_scope: RuntimeAuthScope,
+}
+
+impl SocialBaselineDeps {
+    pub fn new(
+        store: Arc<dyn crate::RealtimeStore>,
+        remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
+        web: Arc<WebClient>,
+        auth_scope: RuntimeAuthScope,
+    ) -> Self {
+        Self {
+            store,
+            remote_requests,
+            web,
+            auth_scope,
+        }
+    }
 }
 
 fn normalize_endpoint(endpoint: &str) -> String {
@@ -106,7 +123,10 @@ fn unique_values(values: Vec<String>) -> Vec<String> {
 }
 
 fn get_config_array(deps: &SocialBaselineDeps, key: &str) -> Result<Vec<String>> {
-    vrcx_0_application_core::read_config_string_array(deps.db.as_ref(), key)
+    let parsed = deps.store.get_json(key, serde_json::Value::Null)?;
+    Ok(vrcx_0_application_core::normalize_config_string_array(
+        parsed,
+    ))
 }
 
 fn auth_scope_matches(deps: &SocialBaselineDeps, user_id: &str, endpoint: &str) -> bool {

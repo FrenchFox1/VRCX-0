@@ -4,19 +4,19 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tokio::time::{sleep, Instant};
-use vrcx_0_application_core::vrchat_api::users::user_mutual_friends_get_input;
 use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_core::json::RawJson;
-use vrcx_0_persistence::mutual_graph::{
-    MutualGraphMetaInput, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
-};
-use vrcx_0_persistence::DatabaseService;
 
 use super::types::{
     MutualGraphFetchStartInput, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
-    MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
+    MutualGraphFriendRefreshStatus, MutualGraphMetaInput, MutualGraphRemoteRequests,
+    MutualGraphRequestDeps, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
+    UserMutualFriendsListInput, UserMutualFriendsListOutput,
 };
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
+use vrcx_0_application_core::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
+};
+use vrcx_0_core::OwnerId;
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
 const MUTUAL_GRAPH_REQUEST_INTERVAL_MS: u64 = 200;
@@ -26,7 +26,7 @@ const MUTUAL_GRAPH_EMPTY_USER_ID: &str = "usr_00000000-0000-0000-0000-0000000000
 
 pub(super) struct MutualGraphFetchContext<'a> {
     pub(super) web: &'a WebClient,
-    pub(super) db: &'a DatabaseService,
+    pub(super) remote_requests: &'a dyn MutualGraphRemoteRequests,
     pub(super) endpoint: &'a str,
     pub(super) cancel_flag: &'a AtomicBool,
     pub(super) auth_scope: &'a RuntimeAuthScope,
@@ -35,7 +35,10 @@ pub(super) struct MutualGraphFetchContext<'a> {
 }
 
 pub(super) enum FriendFetchResult {
-    MutualIds(Vec<String>),
+    MutualIds {
+        mutual_ids: Vec<String>,
+        total_count: usize,
+    },
     OptedOut,
     Cancelled,
     Failed(String),
@@ -55,34 +58,40 @@ pub async fn refresh_mutual_graph_friend(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         web: deps.web,
-        db: deps.db,
+        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
         expected_scope: &expected_scope,
         last_request_at: None,
     };
-    let (status, mutual_ids, opted_out) = match fetch_friend_mutuals(&mut context, &friend_id).await
-    {
-        FriendFetchResult::MutualIds(mutual_ids) => (
-            MutualGraphFriendRefreshStatus::Refreshed,
-            Some(mutual_ids),
-            false,
-        ),
-        FriendFetchResult::OptedOut => (MutualGraphFriendRefreshStatus::OptedOut, None, true),
-        FriendFetchResult::Cancelled => {
-            return Err(Error::Custom(
-                "Mutual graph friend refresh authentication scope changed.".into(),
-            ));
-        }
-        FriendFetchResult::Failed(error) => return Err(Error::Custom(error)),
-    };
+    let (status, mutual_ids, total_count, opted_out) =
+        match fetch_friend_mutuals(&mut context, &friend_id).await {
+            FriendFetchResult::MutualIds {
+                mutual_ids,
+                total_count,
+            } => (
+                MutualGraphFriendRefreshStatus::Refreshed,
+                Some(mutual_ids),
+                Some(total_count),
+                false,
+            ),
+            FriendFetchResult::OptedOut => {
+                (MutualGraphFriendRefreshStatus::OptedOut, None, None, true)
+            }
+            FriendFetchResult::Cancelled => {
+                return Err(Error::Custom(
+                    "Mutual graph friend refresh authentication scope changed.".into(),
+                ));
+            }
+            FriendFetchResult::Failed(error) => return Err(Error::Custom(error)),
+        };
     ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
-    vrcx_0_persistence::mutual_graph::mutual_graph_friend_refresh_commit(
-        deps.db,
+    deps.store.friend_refresh_commit(
         expected_scope.current_user_id,
         friend_id,
         mutual_ids,
+        total_count,
         opted_out,
     )?;
     Ok(MutualGraphFriendRefreshOutput { status })
@@ -91,7 +100,7 @@ pub async fn refresh_mutual_graph_friend(
 pub async fn get_user_mutual_friends_list(
     deps: MutualGraphRequestDeps<'_>,
     input: UserMutualFriendsListInput,
-) -> Result<Vec<RawJson>> {
+) -> Result<UserMutualFriendsListOutput> {
     let expected_scope =
         crate::scope_gate::require_active_scope(deps.auth_scope, "User mutual friends list")?;
     let user_id = normalize_id(&input.user_id);
@@ -103,16 +112,54 @@ pub async fn get_user_mutual_friends_list(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         web: deps.web,
-        db: deps.db,
+        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
         expected_scope: &expected_scope,
         last_request_at: None,
     };
-    let rows = fetch_mutual_friend_rows(&mut context, &user_id).await?;
+    let result = fetch_mutual_friend_rows(&mut context, &user_id).await?;
     ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
-    Ok(rows.into_iter().map(RawJson::from).collect())
+
+    let backfills_graph = user_id != expected_scope.current_user_id;
+    let owner_user_id = OwnerId::new(expected_scope.current_user_id);
+
+    match result {
+        MutualFriendRowsResult::OptedOut => {
+            if backfills_graph {
+                deps.store.friend_refresh_commit(
+                    owner_user_id.to_string(),
+                    user_id,
+                    None,
+                    None,
+                    true,
+                )?;
+            }
+            Err(Error::Custom(
+                "VRChat mutual friends request is unavailable (403 or 404).".into(),
+            ))
+        }
+        MutualFriendRowsResult::Rows { rows, complete } => {
+            let persisted = complete && backfills_graph;
+            if persisted {
+                let total_count = rows.len();
+                let mutual_ids =
+                    normalize_friend_ids(rows.iter().filter_map(mutual_id_from_value).collect());
+                deps.store.friend_refresh_commit(
+                    owner_user_id.to_string(),
+                    user_id,
+                    Some(mutual_ids),
+                    Some(total_count),
+                    false,
+                )?;
+            }
+            Ok(UserMutualFriendsListOutput {
+                rows: rows.into_iter().map(RawJson::from).collect(),
+                persisted,
+            })
+        }
+    }
 }
 
 pub(super) async fn fetch_friend_mutuals(
@@ -121,6 +168,7 @@ pub(super) async fn fetch_friend_mutuals(
 ) -> FriendFetchResult {
     let mut collected = Vec::new();
     let mut seen = HashSet::new();
+    let mut total_count = 0usize;
     let mut offset = 0;
 
     loop {
@@ -132,9 +180,10 @@ pub(super) async fn fetch_friend_mutuals(
             return FriendFetchResult::Cancelled;
         }
 
-        match fetch_mutual_page(context, friend_id, offset, true).await {
+        match fetch_mutual_page(context, friend_id, offset).await {
             PageFetchResult::Rows(rows) => {
                 let page_len = rows.len();
+                total_count += page_len;
                 for row in rows {
                     if let Some(id) = mutual_id_from_value(&row) {
                         if seen.insert(id.clone()) {
@@ -143,11 +192,17 @@ pub(super) async fn fetch_friend_mutuals(
                     }
                 }
                 if page_len < MUTUAL_GRAPH_PAGE_SIZE as usize {
-                    return FriendFetchResult::MutualIds(collected);
+                    return FriendFetchResult::MutualIds {
+                        mutual_ids: collected,
+                        total_count,
+                    };
                 }
                 offset += page_len as i32;
                 if offset / MUTUAL_GRAPH_PAGE_SIZE >= MUTUAL_GRAPH_MAX_PAGES as i32 {
-                    return FriendFetchResult::MutualIds(collected);
+                    return FriendFetchResult::MutualIds {
+                        mutual_ids: collected,
+                        total_count,
+                    };
                 }
             }
             PageFetchResult::OptedOut => return FriendFetchResult::OptedOut,
@@ -168,7 +223,6 @@ async fn fetch_mutual_page(
     context: &mut MutualGraphFetchContext<'_>,
     friend_id: &str,
     offset: i32,
-    include_user_id_param: bool,
 ) -> PageFetchResult {
     let mut attempt = 0usize;
     loop {
@@ -189,21 +243,16 @@ async fn fetch_mutual_page(
             return PageFetchResult::Cancelled;
         }
 
-        let request = match user_mutual_friends_get_input(
+        let request = match context.remote_requests.mutual_friends(
             context.endpoint.to_string(),
             friend_id.to_string(),
             MUTUAL_GRAPH_PAGE_SIZE,
             offset,
-            include_user_id_param,
         ) {
-            Ok((_, request)) => request,
+            Ok(request) => request,
             Err(error) => return PageFetchResult::Failed(error.to_string()),
         };
-        let response = match context
-            .web
-            .execute_api(request, VrchatScope::Vrchat, context.db)
-            .await
-        {
+        let response = match context.web.execute_api(request, VrchatScope::Vrchat).await {
             Ok(response) => response,
             Err(error) => {
                 if attempt < MUTUAL_GRAPH_MAX_RETRIES {
@@ -244,25 +293,31 @@ async fn fetch_mutual_page(
     }
 }
 
+enum MutualFriendRowsResult {
+    Rows { rows: Vec<Value>, complete: bool },
+    OptedOut,
+}
+
 async fn fetch_mutual_friend_rows(
     context: &mut MutualGraphFetchContext<'_>,
     user_id: &str,
-) -> Result<Vec<Value>> {
+) -> Result<MutualFriendRowsResult> {
     let mut rows = Vec::new();
     for page in 0..MUTUAL_GRAPH_MAX_PAGES {
         let offset = (page as i32) * MUTUAL_GRAPH_PAGE_SIZE;
-        match fetch_mutual_page(context, user_id, offset, false).await {
+        match fetch_mutual_page(context, user_id, offset).await {
             PageFetchResult::Rows(next_rows) => {
                 let page_len = next_rows.len();
                 rows.extend(next_rows);
                 if page_len < MUTUAL_GRAPH_PAGE_SIZE as usize {
-                    return Ok(rows);
+                    return Ok(MutualFriendRowsResult::Rows {
+                        rows,
+                        complete: true,
+                    });
                 }
             }
             PageFetchResult::OptedOut => {
-                return Err(Error::Custom(
-                    "VRChat mutual friends request is unavailable (403 or 404).".into(),
-                ));
+                return Ok(MutualFriendRowsResult::OptedOut);
             }
             PageFetchResult::Cancelled => {
                 return Err(Error::Custom(
@@ -272,7 +327,10 @@ async fn fetch_mutual_friend_rows(
             PageFetchResult::Failed(error) => return Err(Error::Custom(error)),
         }
     }
-    Ok(rows)
+    Ok(MutualFriendRowsResult::Rows {
+        rows,
+        complete: false,
+    })
 }
 
 async fn wait_for_rate_limit(last_request_at: &mut Option<Instant>) {
@@ -325,7 +383,7 @@ pub(super) fn resolve_fetch_scope(
     input: &MutualGraphFetchStartInput,
     auth_scope: &RuntimeAuthScope,
 ) -> Result<(String, String, RuntimeAuthScopeSnapshot)> {
-    let owner_user_id = normalize_id(&input.owner_user_id);
+    let owner_user_id = normalize_id(input.owner_user_id.as_str());
     if owner_user_id.is_empty() {
         return Err(Error::Custom(
             "MutualGraphFetchStart requires ownerUserId.".into(),
@@ -346,10 +404,10 @@ pub(super) fn resolve_fetch_scope(
 
 fn require_mutual_scope(
     auth_scope: &RuntimeAuthScope,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<RuntimeAuthScopeSnapshot> {
     let expected_scope = crate::scope_gate::require_active_scope(auth_scope, "Mutual graph")?;
-    if expected_scope.current_user_id == normalize_id(owner_user_id) {
+    if expected_scope.current_user_id == normalize_id(owner_user_id.as_str()) {
         Ok(expected_scope)
     } else {
         Err(Error::Custom(
@@ -402,6 +460,7 @@ pub(super) fn preserve_failed_friend_cache(
                 friend_id: meta.friend_id,
                 last_fetched_at: meta.last_fetched_at,
                 opted_out: meta.opted_out,
+                total_count: meta.total_count,
             });
         }
     }

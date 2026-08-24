@@ -472,13 +472,22 @@ fn normalize_surface_with_default(
 
 fn hmd_scope_for_definition(definition: &ActivityTypeDefinition) -> OverlayActivityScope {
     match definition.key {
-        "OnPlayerJoined" | "OnPlayerLeft" | "DisplayName" | "TrustLevel" => {
-            OverlayActivityScope::Friends
-        }
-        "Online" | "Offline" | "GPS" | "Status" => OverlayActivityScope::AllFavorites,
-        "Unfriend" | "groupChange" | "group.announcement" | "group.informative"
-        | "group.joinRequest" | "group.transfer" | "Event" | "External" | "Blocked"
-        | "Unblocked" | "Muted" | "Unmuted" | "VideoPlay" => OverlayActivityScope::Off,
+        "requestInviteResponse"
+        | "OnPlayerJoined"
+        | "OnPlayerLeft"
+        | "Unfriend"
+        | "groupChange"
+        | "group.announcement"
+        | "group.informative"
+        | "group.joinRequest"
+        | "group.transfer"
+        | "Event"
+        | "External"
+        | "Blocked"
+        | "Unblocked"
+        | "Muted"
+        | "Unmuted"
+        | "VideoPlay" => OverlayActivityScope::Off,
         "BlockedOnPlayerJoined" => OverlayActivityScope::EveryoneInInstance,
         _ => definition.default_scope,
     }

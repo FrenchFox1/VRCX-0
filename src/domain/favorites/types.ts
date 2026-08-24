@@ -61,14 +61,14 @@ export type FavoriteSnapshot = Partial<
     };
 export type LocalFavoriteGroupAction = {
     kind: StoredLocalFavoriteKind;
-    groupName: unknown;
+    groupName: string;
 };
 export type LocalFavoriteAction = LocalFavoriteGroupAction & {
-    entityId?: unknown;
+    entityId: string;
     entity?: FavoriteEntityDetail | Record<string, unknown> | null;
 };
 export type RenameLocalFavoriteGroupAction = LocalFavoriteGroupAction & {
-    newGroupName?: unknown;
+    newGroupName: string;
 };
 export type LocalFavoritesForKindSnapshot = {
     localFavorites: unknown;
@@ -107,7 +107,7 @@ export type FavoriteStoreState = {
     localFriendFavoritesList: string[];
 };
 export type FavoriteStore = FavoriteStoreState & {
-    setFavoritesLoading(currentUserId: unknown, detail?: string): void;
+    setFavoritesLoading(currentUserId: string | null, detail?: string): void;
     setFavoritesSnapshot(snapshot?: FavoriteSnapshot): void;
     setFavoritesError(detail: string): void;
     resetFavorites(): void;
@@ -120,8 +120,8 @@ export type FavoriteStore = FavoriteStoreState & {
         kind: StoredLocalFavoriteKind,
         snapshot: LocalFavoritesForKindSnapshot
     ): void;
-    removeRemoteFavorite(objectId: unknown): void;
+    removeRemoteFavorite(objectId: string): void;
     addRemoteFavorite(json?: Record<string, unknown> | null): void;
-    getRemoteFavoriteByObjectId(objectId: unknown): FavoriteRecord | null;
-    isInAnyLocalFriendGroup(userId: unknown): boolean;
+    getRemoteFavoriteByObjectId(objectId: string): FavoriteRecord | null;
+    isInAnyLocalFriendGroup(userId: string): boolean;
 };

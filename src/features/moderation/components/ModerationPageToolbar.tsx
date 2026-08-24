@@ -45,7 +45,7 @@ export function ModerationPageToolbar({
     table
 }: ModerationPageToolbarProps) {
     const { t } = useTranslation();
-    const getModerationTypeLabel = (type: unknown) =>
+    const getModerationTypeLabel = (type: string) =>
         resolveModerationTypeLabel(type, t);
 
     return (

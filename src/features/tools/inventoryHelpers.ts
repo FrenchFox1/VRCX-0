@@ -21,7 +21,8 @@ import {
 import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import {
     getGalleryGridDensityConfig,
-    sanitizeGalleryGridDensity
+    sanitizeGalleryGridDensity,
+    type GalleryGridDensity
 } from './galleryDensity';
 
 export { MAX_IMAGE_UPLOAD_BYTES };
@@ -268,7 +269,7 @@ export function readGridDensityPreference() {
     }
 }
 
-export function writeGridDensityPreference(value: string) {
+export function writeGridDensityPreference(value: GalleryGridDensity) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -279,7 +280,7 @@ export function writeGridDensityPreference(value: string) {
     }
 }
 
-export function getInventoryGridDensityConfig(gridDensity: unknown) {
+export function getInventoryGridDensityConfig(gridDensity: GalleryGridDensity) {
     return getGalleryGridDensityConfig(gridDensity);
 }
 
@@ -384,11 +385,10 @@ export function isEquippedProfileDecoration(
 
 export function resolveProfileDecorationMutation(
     item: InventoryItemRecord,
-    currentUserId: unknown
+    currentUserId: string | null
 ): ProfileDecorationMutation | null {
     const inventoryId = item.id?.trim() ?? '';
-    const normalizedCurrentUserId =
-        typeof currentUserId === 'string' ? currentUserId.trim() : '';
+    const normalizedCurrentUserId = currentUserId?.trim() ?? '';
     const holderId = item.holderId?.trim() ?? '';
     if (
         !inventoryId.startsWith('inv_') ||
@@ -471,26 +471,24 @@ export function buildEmojiUploadParams(
     return {
         tag: 'emojianimated',
         ...common,
-        frames: Math.min(64, Math.max(2, Number(settings.frames) || 4)),
-        framesOverTime: Math.min(64, Math.max(1, Number(settings.fps) || 15)),
+        frames: Math.min(64, Math.max(2, settings.frames || 4)),
+        framesOverTime: Math.min(64, Math.max(1, settings.fps || 15)),
         ...(settings.loopPingPong ? { loopStyle: 'pingpong' as const } : {})
     };
 }
 
 export function parseEmojiUploadSettings(
-    fileName: unknown,
+    fileName: string,
     currentSettings: Partial<EmojiUploadSettings> = {}
 ): EmojiUploadSettings {
     const next: EmojiUploadSettings = {
-        isAnimated: Boolean(currentSettings.isAnimated),
+        isAnimated: currentSettings.isAnimated ?? false,
         animationStyle: currentSettings.animationStyle || 'Stop',
-        fps: Number(currentSettings.fps) || 15,
-        frames: Number(currentSettings.frames) || 4,
-        loopPingPong: Boolean(currentSettings.loopPingPong)
+        fps: currentSettings.fps || 15,
+        frames: currentSettings.frames || 4,
+        loopPingPong: currentSettings.loopPingPong ?? false
     };
-    for (const value of String(fileName || '')
-        .replace(/\.[^/.]+$/, '')
-        .split('_')) {
+    for (const value of fileName.replace(/\.[^/.]+$/, '').split('_')) {
         if (value.endsWith('animationStyle')) {
             next.isAnimated = false;
             next.animationStyle = resolveEmojiStyleName(

@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
+import type { LoadStatus } from '@/domain/shared/types';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import {
@@ -11,10 +13,10 @@ import {
 } from './remoteEntityCacheFallbacks';
 
 type WorldDetailFallbackInput = {
-    worldIds?: unknown;
-    kind: unknown;
+    worldIds: string[];
+    kind: FavoriteKind;
     remoteEntityDetailsData?: DetailMap;
-    remoteEntityDetailsStatus?: unknown;
+    remoteEntityDetailsStatus: LoadStatus;
 };
 
 const fetchWorldById = (worldId: string) =>

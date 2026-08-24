@@ -1,4 +1,5 @@
 import type { LoadStatus } from '@/domain/shared/types';
+import type { ReleaseStatusFilter } from '@/platform/tauri/bindings';
 import type { AvatarProfileRecord } from '@/repositories/avatarProfileRepository';
 
 export type MyAvatarsLoadStatus = LoadStatus;
@@ -6,6 +7,13 @@ export type MyAvatarsLoadStatus = LoadStatus;
 export type MyAvatarsViewMode = 'grid' | 'table';
 
 export type MyAvatarsGridDensity = 'standard' | 'compact' | 'dense';
+
+export type MyAvatarsReleaseStatusFilter = Exclude<
+    ReleaseStatusFilter,
+    'hidden'
+>;
+
+export type MyAvatarsPlatformFilter = 'all' | 'pc' | 'android' | 'ios';
 
 export type MyAvatarsAuthTarget = {
     currentUserId: string;

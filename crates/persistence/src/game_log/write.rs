@@ -1,6 +1,6 @@
 use crate::common::{insert_or_ignore_sql, DbWriteTarget, ParamsBuilder};
 use crate::database::DatabaseService;
-use crate::ownership::owner_id_get_or_insert;
+use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 
 use super::schema::*;
@@ -18,12 +18,12 @@ fn update_location_time_sql() -> String {
 
 #[cfg(test)]
 fn insert_location(db: &DatabaseService, entry: &GameLogLocationEntry) -> Result<u64, Error> {
-    insert_location_on(db, 0, entry)
+    insert_location_on(db, OwnerRowId::UNASSIGNED, entry)
 }
 
 fn insert_location_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogLocationEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -56,12 +56,12 @@ fn insert_location_on(
 
 #[cfg(test)]
 fn update_location_time(db: &DatabaseService, created_at: &str, time: i64) -> Result<u64, Error> {
-    update_location_time_on(db, 0, created_at, time)
+    update_location_time_on(db, OwnerRowId::UNASSIGNED, created_at, time)
 }
 
 fn update_location_time_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     created_at: &str,
     time: i64,
 ) -> Result<u64, Error> {
@@ -77,12 +77,12 @@ fn update_location_time_on(
 
 #[cfg(test)]
 fn insert_join_leave(db: &DatabaseService, entry: &GameLogJoinLeaveEntry) -> Result<u64, Error> {
-    insert_join_leave_on(db, 0, entry)
+    insert_join_leave_on(db, OwnerRowId::UNASSIGNED, entry)
 }
 
 fn insert_join_leave_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogJoinLeaveEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -118,12 +118,12 @@ fn insert_portal_spawn(
     db: &DatabaseService,
     entry: &GameLogPortalSpawnEntry,
 ) -> Result<u64, Error> {
-    insert_portal_spawn_on(db, 0, entry)
+    insert_portal_spawn_on(db, OwnerRowId::UNASSIGNED, entry)
 }
 
 fn insert_portal_spawn_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogPortalSpawnEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -156,7 +156,7 @@ fn insert_portal_spawn_on(
 
 fn insert_video_play_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogVideoPlayEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -194,12 +194,12 @@ fn insert_resource_load(
     db: &DatabaseService,
     entry: &GameLogResourceLoadEntry,
 ) -> Result<u64, Error> {
-    insert_resource_load_on(db, 0, entry)
+    insert_resource_load_on(db, OwnerRowId::UNASSIGNED, entry)
 }
 
 fn insert_resource_load_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogResourceLoadEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -228,12 +228,12 @@ fn insert_resource_load_on(
 
 #[cfg(test)]
 fn insert_event(db: &DatabaseService, entry: &GameLogEventEntry) -> Result<u64, Error> {
-    insert_event_on(db, 0, entry)
+    insert_event_on(db, OwnerRowId::UNASSIGNED, entry)
 }
 
 fn insert_event_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogEventEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -251,7 +251,7 @@ fn insert_event_on(
 
 fn insert_external_on(
     target: &impl DbWriteTarget,
-    owner_id: i64,
+    owner_id: OwnerRowId,
     entry: &GameLogExternalEntry,
 ) -> Result<u64, Error> {
     let args = ParamsBuilder::new()
@@ -282,7 +282,7 @@ fn insert_external_on(
 
 pub fn write_batch(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     batch: &GameLogWriteBatch,
 ) -> Result<u64, Error> {
     if batch.is_empty() {

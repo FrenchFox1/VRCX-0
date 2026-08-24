@@ -2,6 +2,7 @@ import {
     DEFAULT_NAV_ICON_KEY,
     normalizeNavIconKey
 } from '@/shared/constants/navIcons';
+import { isRecord } from '@/shared/utils/record';
 
 const SYSTEM_TAB_FRIENDS = 'friends';
 const SYSTEM_TAB_GROUPS = 'groups';
@@ -101,7 +102,7 @@ function parseLayoutValue(value: unknown): unknown {
 
 function normalizeSystemTab(
     systemTab: SidebarSystemTabId,
-    source?: Partial<SidebarSystemTabLayoutItem>
+    source?: Record<string, unknown>
 ): SidebarSystemTabLayoutItem {
     const fallback = DEFAULT_SIDEBAR_TAB_LAYOUT.find(
         (item): item is SidebarSystemTabLayoutItem =>
@@ -146,10 +147,10 @@ export function normalizeSidebarTabLayout(value: unknown): SidebarTabLayout {
     const seenCustomIds = new Set<string>();
 
     for (const rawItem of sourceItems) {
-        if (!rawItem || typeof rawItem !== 'object') {
+        if (!isRecord(rawItem)) {
             continue;
         }
-        const item = rawItem as Record<string, unknown>;
+        const item = rawItem;
         if (item.type === 'system') {
             const systemTab = normalizeText(item.systemTab || item.id);
             if (
@@ -157,12 +158,7 @@ export function normalizeSidebarTabLayout(value: unknown): SidebarTabLayout {
                     systemTab === SYSTEM_TAB_GROUPS) &&
                 !seenSystemTabs.has(systemTab)
             ) {
-                nextLayout.push(
-                    normalizeSystemTab(
-                        systemTab,
-                        item as Partial<SidebarSystemTabLayoutItem>
-                    )
-                );
+                nextLayout.push(normalizeSystemTab(systemTab, item));
                 seenSystemTabs.add(systemTab);
             }
             continue;

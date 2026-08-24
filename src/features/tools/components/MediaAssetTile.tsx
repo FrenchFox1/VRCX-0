@@ -44,8 +44,8 @@ export type MediaPreviewOptions = {
     title: string;
 };
 
-export function shortAssetId(value: unknown) {
-    const text = String(value || '').trim();
+export function shortAssetId(value: string) {
+    const text = value.trim();
     if (!text) {
         return '';
     }
@@ -137,8 +137,8 @@ export function MediaAssetTile({
     contentClassName,
     hideContent = false
 }: {
-    title?: unknown;
-    subtitle?: unknown;
+    title?: string;
+    subtitle?: string;
     meta?: MediaAssetMeta | MediaAssetMeta[];
     badges?: Array<MediaAssetBadge | null>;
     imageUrl?: string;

@@ -1,18 +1,15 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 
 import type {
     PlayerListContext,
     PlayerListCurrentUserSnapshot,
-    PlayerListRecord,
     PlayerListRosterRow,
     PlayerListSourceRow
 } from './playerListTypes';
-
-function isRecord(value: unknown): value is PlayerListRecord {
-    return Boolean(value && typeof value === 'object');
-}
 
 export function normalizePlayerUserId(value: unknown) {
     const normalized = normalizeString(value);
@@ -90,8 +87,8 @@ export function isLiveLocation(location: unknown) {
 }
 
 export function buildFavoriteIdSet(
-    remoteFavoriteIds: Iterable<unknown> | null | undefined,
-    localFriendFavorites: Record<string, unknown> | null | undefined
+    remoteFavoriteIds: Iterable<string> | null | undefined,
+    localFriendFavorites: FavoriteGroupMap | null | undefined
 ) {
     const set = new Set<string>();
 
@@ -103,9 +100,6 @@ export function buildFavoriteIdSet(
     }
 
     for (const values of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(values)) {
-            continue;
-        }
         for (const id of values) {
             const normalized = normalizeString(id);
             if (normalized) {

@@ -6,7 +6,13 @@ import {
     useSensors
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -14,7 +20,8 @@ import { toast } from 'sonner';
 import {
     loadNavMenuModel,
     NAV_LAYOUT_UPDATED_EVENT,
-    saveNavMenuModel
+    saveNavMenuModel,
+    type NavLayoutEntry
 } from '@/components/layout/navMenuModel';
 import configRepository from '@/repositories/configRepository';
 import {
@@ -50,9 +57,6 @@ import {
 import { useToolStatusSummaries } from './useToolStatusSummaries';
 
 type CollapsedByCategory = Record<string, boolean>;
-type QuickAccessKeysUpdater =
-    | string[]
-    | ((current: string[]) => string[] | unknown);
 
 function useToolsCollapsedState() {
     const [collapsed, setCollapsed] = useState<CollapsedByCategory>({
@@ -125,7 +129,7 @@ function useToolsQuickAccessState() {
         };
     }, []);
 
-    function setQuickAccessKeys(updater: QuickAccessKeysUpdater) {
+    function setQuickAccessKeys(updater: SetStateAction<string[]>) {
         setQuickAccessKeysState((current) => {
             const value =
                 typeof updater === 'function' ? updater(current) : updater;
@@ -229,7 +233,7 @@ export function useToolsPageState() {
     const { collapsed, toggleCategoryCollapsed } = useToolsCollapsedState();
     const { quickAccessKeys, setQuickAccessKeys } = useToolsQuickAccessState();
     const [isQuickAccessEditing, setIsQuickAccessEditing] = useState(false);
-    const [navLayout, setNavLayout] = useState<unknown[]>([]);
+    const [navLayout, setNavLayout] = useState<NavLayoutEntry[]>([]);
     const [navHiddenKeys, setNavHiddenKeys] = useState<string[]>([]);
     const pinnedToolKeys = useMemo(() => {
         const keys = collectLayoutKeys(navLayout);
@@ -322,8 +326,8 @@ export function useToolsPageState() {
     ]);
 
     function addQuickAccessToolByKey(
-        toolKey: unknown,
-        beforeToolKey: unknown = ''
+        toolKey: string,
+        beforeToolKey: string = ''
     ) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         const normalizedBeforeToolKey = normalizePinnedToolKey(beforeToolKey);
@@ -342,7 +346,7 @@ export function useToolsPageState() {
         });
     }
 
-    function addQuickAccessToolByKeyWithFeedback(toolKey: unknown) {
+    function addQuickAccessToolByKeyWithFeedback(toolKey: string) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         if (quickAccessKeySet.has(normalizedToolKey)) {
             toast.info(
@@ -353,7 +357,7 @@ export function useToolsPageState() {
         addQuickAccessToolByKey(normalizedToolKey);
     }
 
-    function removeQuickAccessToolByKey(toolKey: unknown) {
+    function removeQuickAccessToolByKey(toolKey: string) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         setQuickAccessKeys((current) =>
             current.filter((key) => key !== normalizedToolKey)
@@ -361,8 +365,8 @@ export function useToolsPageState() {
     }
 
     function reorderQuickAccessTool(
-        activeToolKey: unknown,
-        overToolKey: unknown
+        activeToolKey: string,
+        overToolKey: string
     ) {
         const normalizedActiveToolKey = normalizePinnedToolKey(activeToolKey);
         const normalizedOverToolKey = normalizePinnedToolKey(overToolKey);
@@ -386,6 +390,7 @@ export function useToolsPageState() {
         const activeData = active?.data?.current;
         const overData = over?.data?.current;
         const activeToolKey = normalizePinnedToolKey(activeData?.toolKey);
+        const overToolKey = normalizePinnedToolKey(overData?.toolKey);
         if (!activeToolKey || !knownToolKeys.has(activeToolKey)) {
             return;
         }
@@ -404,11 +409,11 @@ export function useToolsPageState() {
             overData?.target === 'quick-access'
         ) {
             if (activeData?.source === 'catalog') {
-                addQuickAccessToolByKey(activeToolKey, overData?.toolKey);
+                addQuickAccessToolByKey(activeToolKey, overToolKey);
                 return;
             }
             if (activeData?.source === 'quick-access') {
-                reorderQuickAccessTool(activeToolKey, overData?.toolKey);
+                reorderQuickAccessTool(activeToolKey, overToolKey);
             }
         }
     }

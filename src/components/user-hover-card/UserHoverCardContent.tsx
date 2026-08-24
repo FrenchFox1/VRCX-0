@@ -11,9 +11,9 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { timeToText } from '@/lib/dateTime';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
@@ -24,7 +24,7 @@ import { Skeleton } from '@/ui/shadcn/skeleton';
 import { useUserHoverCardData } from './useUserHoverCardData';
 
 type UserHoverCardContentProps = {
-    userId: unknown;
+    userId: string;
     seed?: Parameters<typeof useUserHoverCardData>[0]['seed'];
 };
 

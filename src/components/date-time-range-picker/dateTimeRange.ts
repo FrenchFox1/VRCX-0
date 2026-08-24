@@ -8,8 +8,8 @@ interface DraftDateRange {
     to?: Date | null;
 }
 
-export function normalizeMinuteStep(step: unknown) {
-    const value = Math.floor(Number(step));
+export function normalizeMinuteStep(step: number) {
+    const value = Math.floor(step);
     return Number.isFinite(value) && value >= 1 && value <= 60 ? value : 1;
 }
 
@@ -24,7 +24,7 @@ export function buildMinuteOptions(step: number) {
 
 export function snapMinuteDown(time: string, step: number) {
     const safeStep = normalizeMinuteStep(step);
-    const [hours = '00', minutes = '00'] = String(time || '').split(':');
+    const [hours = '00', minutes = '00'] = time.split(':');
     const minute = Number.parseInt(minutes, 10) || 0;
     const snapped = Math.floor(minute / safeStep) * safeStep;
     return `${hours}:${String(snapped).padStart(2, '0')}`;
@@ -60,7 +60,7 @@ export function combineDateTime(
     time: string,
     endOfMinute: boolean
 ) {
-    const [rawHours, rawMinutes] = String(time || '').split(':');
+    const [rawHours, rawMinutes] = time.split(':');
     const hours = Number.parseInt(rawHours, 10);
     const minutes = Number.parseInt(rawMinutes, 10);
     const next = new Date(date);

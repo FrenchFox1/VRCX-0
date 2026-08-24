@@ -16,6 +16,8 @@ describe('customNavLayout', () => {
             cloneLayout([
                 null,
                 { type: 'unknown', key: 'ignored' },
+                { type: 'item', key: 42 },
+                { type: 'folder', name: 'Missing id', items: [] },
                 { type: 'item', key: 'feed', icon: 'RssIcon' },
                 {
                     type: 'folder',

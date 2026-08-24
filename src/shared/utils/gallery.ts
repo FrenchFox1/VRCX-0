@@ -4,16 +4,10 @@ type EmojiFrameLayout = {
     frameSize: number;
 };
 
-function getEmojiFrameLayout(frameCount: unknown): EmojiFrameLayout {
-    const numericFrameCount = Number(frameCount);
+function getEmojiFrameLayout(frameCount: number): EmojiFrameLayout {
     const normalizedFrameCount = Math.min(
         64,
-        Math.max(
-            1,
-            Number.isFinite(numericFrameCount)
-                ? Math.trunc(numericFrameCount)
-                : 1
-        )
+        Math.max(1, Number.isFinite(frameCount) ? Math.trunc(frameCount) : 1)
     );
     let framesPerLine = 2;
     if (normalizedFrameCount > 4) framesPerLine = 4;
@@ -26,11 +20,11 @@ function getEmojiFrameLayout(frameCount: unknown): EmojiFrameLayout {
     };
 }
 
-function getEmojiAnimationName(frameCount: unknown): string {
+function getEmojiAnimationName(frameCount: number): string {
     return `animated-emoji-${getEmojiFrameLayout(frameCount).frameCount}`;
 }
 
-function buildEmojiKeyframes(frameCount: unknown): string {
+function buildEmojiKeyframes(frameCount: number): string {
     const { frameCount: normalizedFrameCount, framesPerLine } =
         getEmojiFrameLayout(frameCount);
     const maxFrameIndex = framesPerLine - 1;

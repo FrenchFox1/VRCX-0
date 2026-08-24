@@ -71,6 +71,86 @@ pub struct NowPlayingPayload {
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default)]
+pub struct NowPlayingSnapshot {
+    pub url: String,
+    pub name: String,
+    pub source: String,
+    pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location: Option<String>,
+    pub thumbnail_url: String,
+    pub length: i64,
+    pub position: i64,
+    pub started_at: Option<String>,
+    #[serde(rename = "created_at", skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub activity_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_id: Option<String>,
+    pub updated_at: Option<String>,
+}
+
+impl NowPlayingSnapshot {
+    pub fn apply(&mut self, patch: &NowPlayingPayload) {
+        if let Some(value) = &patch.url {
+            self.url.clone_from(value);
+        }
+        if let Some(value) = &patch.name {
+            self.name.clone_from(value);
+        }
+        if let Some(value) = &patch.source {
+            self.source.clone_from(value);
+        }
+        if let Some(value) = &patch.display_name {
+            self.display_name.clone_from(value);
+        }
+        if let Some(value) = &patch.user_id {
+            self.user_id = Some(value.clone());
+        }
+        if let Some(value) = &patch.location {
+            self.location = Some(value.clone());
+        }
+        if let Some(value) = &patch.thumbnail_url {
+            self.thumbnail_url.clone_from(value);
+        }
+        if let Some(value) = patch.length {
+            self.length = value;
+        }
+        self.position = patch.position;
+        self.started_at = Some(patch.started_at.clone());
+        if let Some(value) = &patch.created_at {
+            self.created_at = Some(value.clone());
+        }
+        if let Some(value) = &patch.activity_type {
+            self.activity_type = Some(value.clone());
+        }
+        if let Some(value) = &patch.video_url {
+            self.video_url = Some(value.clone());
+        }
+        if let Some(value) = &patch.video_name {
+            self.video_name = Some(value.clone());
+        }
+        if let Some(value) = &patch.video_id {
+            self.video_id = Some(value.clone());
+        }
+        self.updated_at = Some(patch.updated_at.clone());
+    }
+
+    pub fn has_content(&self) -> bool {
+        !self.url.trim().is_empty() || !self.name.trim().is_empty()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Serialize, specta::Type)]
 #[serde(tag = "kind", content = "payload")]
 pub enum GameLogSideEffectEvent {
     #[serde(rename = "nowPlaying")]
@@ -226,7 +306,7 @@ mod tests {
     use super::{
         CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent,
         GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, GameLogSideEffectObserver,
-        GameLogSideEffectSink, NowPlayingPayload,
+        GameLogSideEffectSink, NowPlayingPayload, NowPlayingSnapshot,
     };
 
     #[test]
@@ -322,6 +402,51 @@ mod tests {
                     "videoId": "source",
                     "updatedAt": "update",
                 },
+            })
+        );
+    }
+
+    #[test]
+    fn now_playing_snapshot_default_preserves_legacy_wire_shape() {
+        assert_eq!(
+            serde_json::to_value(NowPlayingSnapshot::default()).unwrap(),
+            json!({
+                "url": "",
+                "name": "",
+                "source": "",
+                "displayName": "",
+                "thumbnailUrl": "",
+                "length": 0,
+                "position": 0,
+                "startedAt": null,
+                "updatedAt": null,
+            })
+        );
+    }
+
+    #[test]
+    fn now_playing_snapshot_sparse_merge_preserves_legacy_wire_shape() {
+        let mut snapshot = NowPlayingSnapshot::default();
+        snapshot.apply(&NowPlayingPayload {
+            name: Some("Test Track".into()),
+            position: 42,
+            started_at: "start".into(),
+            updated_at: "update".into(),
+            ..Default::default()
+        });
+
+        assert_eq!(
+            serde_json::to_value(snapshot).unwrap(),
+            json!({
+                "url": "",
+                "name": "Test Track",
+                "source": "",
+                "displayName": "",
+                "thumbnailUrl": "",
+                "length": 0,
+                "position": 42,
+                "startedAt": "start",
+                "updatedAt": "update",
             })
         );
     }

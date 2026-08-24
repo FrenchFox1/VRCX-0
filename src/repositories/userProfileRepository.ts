@@ -16,6 +16,7 @@ import {
     type HttpApiExecuteResponse
 } from '@/platform/tauri/bindings';
 import { stripDefaultAvatarImage } from '@/shared/utils/avatar';
+import { isRecord } from '@/shared/utils/record';
 import {
     computeTrustLevel,
     computeUserPlatform,
@@ -168,10 +169,6 @@ function hasOwnField(source: unknown, field: PropertyKey) {
     );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function isUserMutualFriendRow(value: unknown): value is UserMutualFriendRow {
     return isRecord(value) && typeof value.id === 'string' && Boolean(value.id);
 }
@@ -307,33 +304,6 @@ async function getUserAppearanceProfile({
     });
 }
 
-async function getUserGroups({ userId }: UserEndpointInput) {
-    const normalizedUserId = userId?.trim() ?? '';
-    if (!normalizedUserId) {
-        throw new Error(
-            'UserProfileRepository.getUserGroups requires a user id.'
-        );
-    }
-
-    return fetchCachedData({
-        queryKey: queryKeys.userGroups(
-            normalizedUserId,
-            DEFAULT_VRCHAT_API_ENDPOINT
-        ),
-        policy: entityQueryPolicies.groupCollection,
-        queryFn: async () => {
-            const response = await commands.appVrchatUserGroupsGet({
-                userId: normalizedUserId
-            });
-            const json = unwrapVrchatUserResponse(
-                response,
-                `users/${encodeURIComponent(normalizedUserId)}/groups`
-            ).json;
-            return Array.isArray(json) ? json : [];
-        }
-    });
-}
-
 async function getRepresentedGroup({ userId, force = false }: UserGroupsInput) {
     const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
@@ -370,11 +340,14 @@ async function getAllMutualFriends({ userId }: UserEndpointInput) {
         );
     }
 
-    const rows = await commands.appUserMutualFriendsListGet({
+    const { rows, persisted } = await commands.appUserMutualFriendsListGet({
         userId: normalizedUserId
     });
     const candidates: unknown[] = rows;
-    return candidates.filter(isUserMutualFriendRow);
+    return {
+        rows: candidates.filter(isUserMutualFriendRow),
+        persisted
+    };
 }
 
 async function updateCurrentUser({
@@ -497,7 +470,6 @@ const userProfileRepository = Object.freeze({
     getUserProfile,
     getFriendStatus,
     getUserAppearanceProfile,
-    getUserGroups,
     getRepresentedGroup,
     getAllMutualFriends,
     updateCurrentUserProfile,
@@ -512,7 +484,6 @@ export {
     getUserProfile,
     getFriendStatus,
     getUserAppearanceProfile,
-    getUserGroups,
     getRepresentedGroup,
     getAllMutualFriends,
     updateCurrentUserProfile,

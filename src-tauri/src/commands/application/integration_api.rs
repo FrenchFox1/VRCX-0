@@ -12,7 +12,7 @@ pub async fn app__integration_api_status(
     state: State<'_, AppState>,
 ) -> Result<IntegrationApiStatus, AppError> {
     state
-        .runtime
+        .runtime_host()
         .integration_api()
         .status()
         .await
@@ -26,7 +26,7 @@ pub async fn app__integration_api_set_enabled(
     enabled: bool,
 ) -> Result<IntegrationApiStatus, AppError> {
     state
-        .runtime
+        .runtime_host()
         .integration_api()
         .set_enabled(enabled)
         .await
@@ -40,7 +40,7 @@ pub async fn app__integration_api_set_port(
     port: u16,
 ) -> Result<IntegrationApiStatus, AppError> {
     state
-        .runtime
+        .runtime_host()
         .integration_api()
         .set_port(port)
         .await
@@ -54,7 +54,7 @@ pub async fn app__integration_api_set_allow_lan_connections(
     enabled: bool,
 ) -> Result<IntegrationApiStatus, AppError> {
     state
-        .runtime
+        .runtime_host()
         .integration_api()
         .set_allow_lan_connections(enabled)
         .await
@@ -67,7 +67,7 @@ pub async fn app__integration_api_rotate_token(
     state: State<'_, AppState>,
 ) -> Result<IntegrationApiStatus, AppError> {
     state
-        .runtime
+        .runtime_host()
         .integration_api()
         .rotate_token()
         .await

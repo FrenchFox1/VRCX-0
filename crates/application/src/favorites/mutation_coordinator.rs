@@ -5,9 +5,8 @@ use vrcx_0_application_core::{
     RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeEventBus, RuntimeOperationStatus,
     RuntimeSyncEngine, WebClient,
 };
+use vrcx_0_contracts::social_aggregates::{FavoriteLocalInput, FavoriteOutput};
 use vrcx_0_core::FavoriteEntityKind;
-use vrcx_0_persistence::social_aggregates::{self, FavoriteLocalInput, FavoriteOutput};
-use vrcx_0_persistence::DatabaseService;
 
 use super::bulk_remove::{remove_favorites_selection, FavoriteBulkRemoveDeps};
 use super::favorite_transfer::{transfer_favorite_selection, FavoriteTransferDeps};
@@ -26,11 +25,23 @@ use super::{
     FavoriteRemoteDeleteInput, FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
     FavoriteTransferSelectionInput, FavoriteTransferSelectionResult, LocalFavoriteGroupWrite,
 };
-use crate::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Result};
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone)]
 pub struct FavoriteMutationCoordinator {
-    db: Arc<DatabaseService>,
+    store: Arc<dyn super::FavoriteStore>,
+    web: Arc<WebClient>,
+    diagnostics: RuntimeDiagnostics,
+    sync: RuntimeSyncEngine,
+    event_bus: RuntimeEventBus,
+    auth_scope: RuntimeAuthScope,
+    remote_mutations: Arc<RemoteMutationGate>,
+    remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
+}
+
+#[derive(Clone)]
+pub struct FavoriteMutationRuntimeDeps {
     web: Arc<WebClient>,
     diagnostics: RuntimeDiagnostics,
     sync: RuntimeSyncEngine,
@@ -39,21 +50,8 @@ pub struct FavoriteMutationCoordinator {
     remote_mutations: Arc<RemoteMutationGate>,
 }
 
-#[derive(Debug)]
-pub enum FavoriteLocalMutationError {
-    Persistence(vrcx_0_persistence::Error),
-    Application(Error),
-}
-
-impl From<vrcx_0_persistence::Error> for FavoriteLocalMutationError {
-    fn from(error: vrcx_0_persistence::Error) -> Self {
-        Self::Persistence(error)
-    }
-}
-
-impl FavoriteMutationCoordinator {
+impl FavoriteMutationRuntimeDeps {
     pub fn new(
-        db: Arc<DatabaseService>,
         web: Arc<WebClient>,
         diagnostics: RuntimeDiagnostics,
         sync: RuntimeSyncEngine,
@@ -62,13 +60,31 @@ impl FavoriteMutationCoordinator {
         remote_mutations: Arc<RemoteMutationGate>,
     ) -> Self {
         Self {
-            db,
             web,
             diagnostics,
             sync,
             event_bus,
             auth_scope,
             remote_mutations,
+        }
+    }
+}
+
+impl FavoriteMutationCoordinator {
+    pub fn new(
+        store: Arc<dyn super::FavoriteStore>,
+        remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
+        runtime: FavoriteMutationRuntimeDeps,
+    ) -> Self {
+        Self {
+            store,
+            web: runtime.web,
+            diagnostics: runtime.diagnostics,
+            sync: runtime.sync,
+            event_bus: runtime.event_bus,
+            auth_scope: runtime.auth_scope,
+            remote_mutations: runtime.remote_mutations,
+            remote_requests,
         }
     }
 
@@ -78,7 +94,7 @@ impl FavoriteMutationCoordinator {
 
     fn local_deps(&self, label: &'static str) -> Result<LocalFavoriteMutationDeps<'_>> {
         Ok(LocalFavoriteMutationDeps {
-            db: self.db.as_ref(),
+            store: self.store.as_ref(),
             event_bus: &self.event_bus,
             mutation: self.capture(label)?,
         })
@@ -86,8 +102,8 @@ impl FavoriteMutationCoordinator {
 
     fn remote_deps(&self, label: &'static str) -> Result<FavoriteRemoteMutationDeps<'_>> {
         Ok(FavoriteRemoteMutationDeps {
-            db: self.db.as_ref(),
             web: self.web.as_ref(),
+            remote_requests: self.remote_requests.as_ref(),
             diagnostics: &self.diagnostics,
             sync: &self.sync,
             event_bus: &self.event_bus,
@@ -184,20 +200,15 @@ impl FavoriteMutationCoordinator {
         &self,
         label: &'static str,
         input: FavoriteLocalInput,
-    ) -> std::result::Result<FavoriteOutput, FavoriteLocalMutationError> {
+    ) -> Result<FavoriteOutput> {
         let dry_run = input.dry_run;
-        let mutation = self
-            .capture(label)
-            .map_err(FavoriteLocalMutationError::Application)?;
-        let output = social_aggregates::favorite_local(
-            self.db.as_ref(),
-            &mutation.scope().current_user_id,
+        let mutation = self.capture(label)?;
+        let output = self.store.mutate_local(
+            &OwnerId::new(mutation.scope().current_user_id.clone()),
             input,
         )?;
         if !dry_run {
-            mutation
-                .ensure_current()
-                .map_err(FavoriteLocalMutationError::Application)?;
+            mutation.ensure_current()?;
             self.notify_invalidated(mutation.scope(), output.kind.into(), true, false);
         }
         Ok(output)
@@ -269,7 +280,8 @@ impl FavoriteMutationCoordinator {
         let event_scope = mutation.scope().clone();
         let result = transfer_favorite_selection(
             &FavoriteTransferDeps {
-                db: self.db.as_ref(),
+                store: self.store.as_ref(),
+                remote_requests: self.remote_requests.as_ref(),
                 web: self.web.as_ref(),
                 diagnostics: &self.diagnostics,
                 sync: &self.sync,
@@ -327,7 +339,8 @@ impl FavoriteMutationCoordinator {
         let expected_scope = self.capture("Favorite bulk remove")?.scope().clone();
         let result = remove_favorites_selection(
             &FavoriteBulkRemoveDeps {
-                db: self.db.as_ref(),
+                store: self.store.as_ref(),
+                remote_requests: self.remote_requests.as_ref(),
                 web: self.web.as_ref(),
                 auth_scope: &self.auth_scope,
                 expected_scope: expected_scope.clone(),

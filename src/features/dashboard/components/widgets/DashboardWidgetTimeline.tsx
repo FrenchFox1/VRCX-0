@@ -10,7 +10,13 @@ import {
     getWidgetDayKey
 } from './dashboardWidgetUtils';
 
-function DashboardWidgetDayDivider({ value }: { value: unknown }) {
+type DashboardWidgetTimestamp = string | null | undefined;
+
+function DashboardWidgetDayDivider({
+    value
+}: {
+    value: DashboardWidgetTimestamp;
+}) {
     return (
         <div
             className="bg-card sticky top-0 z-[2] flex h-7 items-center gap-2 px-2"
@@ -24,7 +30,7 @@ function DashboardWidgetDayDivider({ value }: { value: unknown }) {
     );
 }
 
-function DashboardWidgetTime({ value }: { value: unknown }) {
+function DashboardWidgetTime({ value }: { value: DashboardWidgetTimestamp }) {
     return (
         <Tooltip>
             <TooltipTrigger
@@ -45,8 +51,8 @@ export function DashboardWidgetTimelineRow({
     isFirst,
     children
 }: {
-    value: unknown;
-    previousValue: unknown;
+    value: DashboardWidgetTimestamp;
+    previousValue: DashboardWidgetTimestamp;
     isFirst: boolean;
     children: ReactNode;
 }) {

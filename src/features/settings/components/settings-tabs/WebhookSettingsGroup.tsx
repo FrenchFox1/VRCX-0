@@ -2,6 +2,7 @@ import { CircleHelpIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type {
+    NotificationWebhookFormat,
     WebhookDeliveryChannelSnapshot,
     WebhookDeliveryRecord,
     WebhookDeliverySnapshot
@@ -83,11 +84,11 @@ const webhookFormatOptions = [
         'view.settings.notifications.notifications.webhook.format_generic'
     ],
     ['discord', 'Discord']
-] as const;
+] satisfies ReadonlyArray<readonly [NotificationWebhookFormat, string]>;
 
 type WebhookPayloadFieldsDialogProps = {
     webhookEnabled: boolean;
-    webhookFormat: string;
+    webhookFormat: NotificationWebhookFormat;
     webhookFields: unknown;
     onWebhookFieldsChange(value: string): void;
 };
@@ -96,7 +97,7 @@ type WebhookSettingsPrefs = Record<string, unknown> & {
     webhookAuthEventsEnabled?: boolean;
     webhookEnabled?: boolean;
     webhookFields?: unknown;
-    webhookFormat?: string;
+    webhookFormat?: NotificationWebhookFormat;
     webhookUrl?: string;
 };
 
@@ -106,7 +107,7 @@ type WebhookSettingsGroupProps = {
     onWebhookAuthEventsEnabledChange(value: boolean): void;
     onWebhookUrlDraftChange(value: string): void;
     onWebhookUrlBlur(value: string): void;
-    onWebhookFormatChange(value: string): void;
+    onWebhookFormatChange(value: NotificationWebhookFormat): void;
     onWebhookFieldsChange(value: string): void;
     onOpenWebhookNotificationFiltersDialog(): void;
     onTestWebhook(): void;
@@ -241,9 +242,11 @@ export function WebhookSettingsGroup({
                         label: value === 'discord' ? 'Discord' : t(labelKey)
                     }))}
                     disabled={!webhookControlsEnabled}
-                    onValueChange={(value) =>
-                        onWebhookFormatChange(value ?? '')
-                    }
+                    onValueChange={(value) => {
+                        if (value) {
+                            onWebhookFormatChange(value);
+                        }
+                    }}
                 >
                     <div className="flex items-center gap-2">
                         <SelectTrigger

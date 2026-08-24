@@ -5,12 +5,12 @@ use super::{
 };
 use serde_json::json;
 use std::collections::HashSet;
-use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
 use std::time::Duration;
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     RemoteMutationGate, RuntimeAuthScope, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
     TaskSupervisor,
@@ -156,8 +156,7 @@ fn cleanup_queue_uses_2500ms_debounce_and_keeps_one_flight_pending() {
     let spawned = Arc::clone(&executor.spawned);
     supervisor.set_executor(executor);
     let queue = PrintCleanupQueue::new();
-    let _dir = TestDir::new("print-cleanup-queue");
-    let deps = test_deps(&_dir.path);
+    let deps = test_deps();
     let trigger = PrintCleanupTrigger {
         user_id: "usr_self".into(),
         endpoint: "https://api.vrchat.cloud/api/1".into(),
@@ -200,46 +199,60 @@ impl RuntimeTaskHandle for CountingTaskHandle {
     }
 }
 
-struct TestDir {
-    path: PathBuf,
-}
+struct NoopPrintAdapter;
 
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
+impl super::super::favorites::PrintFavoritesStore for NoopPrintAdapter {
+    fn auto_delete_enabled(&self) -> vrcx_0_application_core::Result<bool> {
+        Ok(false)
+    }
+
+    fn auto_delete_limit(&self) -> vrcx_0_application_core::Result<String> {
+        Ok("60".into())
+    }
+
+    fn favorite_ids(&self) -> vrcx_0_application_core::Result<serde_json::Value> {
+        Ok(json!([]))
+    }
+
+    fn write_favorite_ids(&self, _ids: &serde_json::Value) -> vrcx_0_application_core::Result<()> {
+        Ok(())
     }
 }
 
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
+impl super::PrintRemote for NoopPrintAdapter {
+    fn list_prints<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        _user_id: &'a str,
+        _count: i32,
+    ) -> super::PrintRemoteFuture<'a> {
+        Box::pin(async {
+            Ok(VrchatApiResponse {
+                status: 200,
+                data: "[]".into(),
+            })
+        })
+    }
+
+    fn delete_print<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        _print_id: &'a str,
+    ) -> super::PrintRemoteFuture<'a> {
+        Box::pin(async {
+            Ok(VrchatApiResponse {
+                status: 200,
+                data: "{}".into(),
+            })
+        })
     }
 }
 
-fn test_deps(path: &std::path::Path) -> PrintCleanupDeps {
-    let db =
-        Arc::new(vrcx_0_persistence::DatabaseService::new(&path.join("VRCX-0.sqlite3")).unwrap());
-    let storage =
-        vrcx_0_persistence::storage::StorageService::new(&path.join("storage.json")).unwrap();
-    let web = Arc::new(
-        crate::WebClient::new(
-            &storage,
-            db.as_ref(),
-            "wss://pipeline.vrchat.cloud".into(),
-            env!("CARGO_PKG_VERSION"),
-        )
-        .unwrap(),
-    );
+fn test_deps() -> PrintCleanupDeps {
+    let adapter = Arc::new(NoopPrintAdapter);
     PrintCleanupDeps {
-        db,
-        web,
+        store: adapter.clone(),
+        remote: adapter,
         event_bus: vrcx_0_application_core::RuntimeEventBus::new(),
         auth_scope: RuntimeAuthScope::new(),
         remote_mutations: Arc::new(RemoteMutationGate::default()),

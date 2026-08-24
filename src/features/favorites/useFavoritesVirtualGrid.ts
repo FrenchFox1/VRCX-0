@@ -76,7 +76,7 @@ export function useFavoritesVirtualGrid({
     const gridMinWidth = densityConfig.gridMinWidth + gridInset;
     const safeWidth = Math.max(
         0,
-        (Number(viewportMetrics.width) || 0) - FAVORITES_GRID_HORIZONTAL_INSET
+        viewportMetrics.width - FAVORITES_GRID_HORIZONTAL_INSET
     );
     const gridColumnCount = Math.max(
         1,

@@ -6,7 +6,6 @@ import {
     readFriendStatusSource,
     resolveCurrentUserStateBucket,
     resolveSidebarStatusDotClassName,
-    sameInstanceFallbackKey,
     toLegacyFriendSortRow
 } from './friendsSidebarModel';
 
@@ -33,8 +32,7 @@ describe('friendsSidebarModel same-instance groups', () => {
             buildSameInstanceGroups(
                 [friendWithCurrentUser, soloElsewhere],
                 { isShowCurrentUserInSameInstance: true },
-                { location: currentLocation },
-                new Map()
+                { location: currentLocation }
             )
         ).toEqual([
             {
@@ -59,202 +57,9 @@ describe('friendsSidebarModel same-instance groups', () => {
             buildSameInstanceGroups(
                 [friend],
                 { isShowCurrentUserInSameInstance: false },
-                { location: currentLocation },
-                new Map()
+                { location: currentLocation }
             )
         ).toEqual([]);
-    });
-
-    it('keeps a fallback join time while a remote instance still has one friend', () => {
-        const location = 'wrld_remote:456';
-        const first = {
-            id: 'usr_1',
-            displayName: 'First',
-            state: 'online',
-            location
-        };
-        const fallbackJoinTimes = new Map<string, number>();
-
-        expect(
-            buildSameInstanceGroups(
-                [first],
-                {},
-                { location: 'wrld_current:123' },
-                fallbackJoinTimes
-            )
-        ).toEqual([]);
-        const firstJoinTime = fallbackJoinTimes.get(`${location}:${first.id}`);
-        expect(firstJoinTime).toBeTypeOf('number');
-
-        const groups = buildSameInstanceGroups(
-            [
-                first,
-                {
-                    id: 'usr_2',
-                    displayName: 'Second',
-                    state: 'online',
-                    location
-                }
-            ],
-            {},
-            { location: 'wrld_current:123' },
-            fallbackJoinTimes
-        );
-
-        expect(groups[0]?.rows[0]?.$location_at).toBe(firstJoinTime);
-    });
-
-    it('uses the observed current-instance join time instead of a sidebar fallback', () => {
-        const location = 'wrld_current:123';
-        const observedJoinTime = 1_700_000_000_000;
-        const groups = buildSameInstanceGroups(
-            [
-                {
-                    id: 'usr_friend',
-                    displayName: 'Friend',
-                    state: 'online',
-                    location
-                }
-            ],
-            { isShowCurrentUserInSameInstance: true },
-            {
-                location,
-                dwellEpochsByUserId: new Map([['usr_friend', observedJoinTime]])
-            },
-            new Map()
-        );
-
-        expect(groups[0]?.rows[0]?.$location_at).toBe(observedJoinTime);
-    });
-
-    it('keeps the earlier join time when the local user re-enters the instance', () => {
-        const location = 'wrld_current:123';
-        const friend = {
-            id: 'usr_friend',
-            displayName: 'Friend',
-            state: 'online',
-            location
-        };
-        const fallbackJoinTimes = new Map<string, number>();
-        const earlierJoinTime = 1_700_000_000_000;
-        buildSameInstanceGroups(
-            [friend],
-            { isShowCurrentUserInSameInstance: true },
-            {
-                location,
-                locationStartedAt: earlierJoinTime - 10_000,
-                dwellEpochsByUserId: new Map([['usr_friend', earlierJoinTime]])
-            },
-            fallbackJoinTimes
-        );
-        const laterObservedJoinTime = earlierJoinTime + 60_000;
-
-        const groups = buildSameInstanceGroups(
-            [friend],
-            { isShowCurrentUserInSameInstance: true },
-            {
-                location,
-                locationStartedAt: laterObservedJoinTime - 10_000,
-                dwellEpochsByUserId: new Map([
-                    ['usr_friend', laterObservedJoinTime]
-                ])
-            },
-            fallbackJoinTimes
-        );
-
-        expect(groups[0]?.rows[0]?.$location_at).toBe(earlierJoinTime);
-        expect(
-            fallbackJoinTimes.get(sameInstanceFallbackKey(location, friend))
-        ).toBe(earlierJoinTime);
-    });
-
-    it('resets the join time when the friend leaves and rejoins the same instance', () => {
-        const location = 'wrld_current:123';
-        const friend = {
-            id: 'usr_friend',
-            displayName: 'Friend',
-            state: 'online',
-            location
-        };
-        const fallbackJoinTimes = new Map<string, number>();
-        const locationStartedAt = 1_700_000_000_000;
-        const firstObservedJoinTime = locationStartedAt + 10_000;
-        const laterObservedJoinTime = firstObservedJoinTime + 60_000;
-
-        buildSameInstanceGroups(
-            [friend],
-            { isShowCurrentUserInSameInstance: true },
-            {
-                location,
-                locationStartedAt,
-                friendList: new Set(['usr_friend']),
-                dwellEpochsByUserId: new Map([
-                    ['usr_friend', firstObservedJoinTime]
-                ])
-            },
-            fallbackJoinTimes
-        );
-        buildSameInstanceGroups(
-            [friend],
-            { isShowCurrentUserInSameInstance: true },
-            {
-                location,
-                locationStartedAt,
-                friendList: new Set(),
-                dwellEpochsByUserId: new Map()
-            },
-            fallbackJoinTimes
-        );
-        const groups = buildSameInstanceGroups(
-            [friend],
-            { isShowCurrentUserInSameInstance: true },
-            {
-                location,
-                locationStartedAt,
-                friendList: new Set(['usr_friend']),
-                dwellEpochsByUserId: new Map([
-                    ['usr_friend', laterObservedJoinTime]
-                ])
-            },
-            fallbackJoinTimes
-        );
-
-        expect(groups[0]?.rows[0]?.$location_at).toBe(laterObservedJoinTime);
-        expect(
-            fallbackJoinTimes.get(sameInstanceFallbackKey(location, friend))
-        ).toBe(laterObservedJoinTime);
-    });
-
-    it('adopts an earlier observed join time than the cached fallback', () => {
-        const location = 'wrld_current:123';
-        const friend = {
-            id: 'usr_friend',
-            displayName: 'Friend',
-            state: 'online',
-            location
-        };
-        const fallbackJoinTimes = new Map<string, number>();
-        const laterJoinTime = 1_700_000_000_000;
-        fallbackJoinTimes.set(
-            sameInstanceFallbackKey(location, friend),
-            laterJoinTime
-        );
-        const earlierObservedJoinTime = laterJoinTime - 60_000;
-
-        const groups = buildSameInstanceGroups(
-            [friend],
-            { isShowCurrentUserInSameInstance: true },
-            {
-                location,
-                locationStartedAt: laterJoinTime - 10_000,
-                dwellEpochsByUserId: new Map([
-                    ['usr_friend', earlierObservedJoinTime]
-                ])
-            },
-            fallbackJoinTimes
-        );
-
-        expect(groups[0]?.rows[0]?.$location_at).toBe(earlierObservedJoinTime);
     });
 });
 
@@ -302,7 +107,9 @@ describe('friendsSidebarModel current user status dot', () => {
     it('defaults to the active outline when local game state is unavailable', () => {
         expect(
             resolveSidebarStatusDotClassName(currentUser, currentUser, true)
-        ).toBe('border-[var(--status-online)] bg-background');
+        ).toBe(
+            'user-status-indicator online border-[var(--status-online)] bg-background'
+        );
     });
 
     it('uses the solid status colour while the local game is running', () => {
@@ -310,7 +117,7 @@ describe('friendsSidebarModel current user status dot', () => {
             resolveSidebarStatusDotClassName(currentUser, currentUser, true, {
                 isGameRunning: true
             })
-        ).toBe('bg-[var(--status-online)]');
+        ).toBe('user-status-indicator online bg-[var(--status-online)]');
     });
 
     it('keeps the logged-in current user active when the local game is stopped', () => {
@@ -328,7 +135,9 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: false }
             )
-        ).toBe('border-[var(--status-busy)] bg-background');
+        ).toBe(
+            'user-status-indicator busy border-[var(--status-busy)] bg-background'
+        );
     });
 
     it('keeps local game authority above stale remote presence fields', () => {
@@ -346,7 +155,7 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: true }
             )
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
     });
 
     it('uses the solid account status when the stopped local game has a remote location', () => {
@@ -370,7 +179,7 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: false }
             )
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
     });
 
     it('uses the account status color for remote play', () => {
@@ -388,7 +197,7 @@ describe('friendsSidebarModel current user status dot', () => {
                 true,
                 { isGameRunning: false }
             )
-        ).toBe('bg-[var(--status-joinme)]');
+        ).toBe('user-status-indicator joinme bg-[var(--status-joinme)]');
     });
 });
 
@@ -439,12 +248,12 @@ describe('friendsSidebarModel ordinary friend status dot', () => {
             resolveSidebarStatusDotClassName(friend, currentUser, false, {
                 isGameRunning: false
             })
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
         expect(
             resolveSidebarStatusDotClassName(friend, currentUser, false, {
                 isGameRunning: true
             })
-        ).toBe('bg-[var(--status-busy)]');
+        ).toBe('user-status-indicator busy bg-[var(--status-busy)]');
     });
 
     it('keeps an ordinary pending friend offline', () => {
@@ -460,6 +269,6 @@ describe('friendsSidebarModel ordinary friend status dot', () => {
             resolveSidebarStatusDotClassName(friend, currentUser, false, {
                 isGameRunning: false
             })
-        ).toBe('bg-[var(--status-offline)]');
+        ).toBe('user-status-indicator offline bg-[var(--status-offline)]');
     });
 });

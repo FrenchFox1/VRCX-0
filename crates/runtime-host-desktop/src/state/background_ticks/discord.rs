@@ -21,11 +21,38 @@ use super::{
 };
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
-fn discord_presence_labels(config: &ConfigRepository) -> DiscordPresenceLabels {
-    let language = config
-        .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
-        .unwrap_or_else(|_| "en".into());
-    let localized = |key| text(&language, key);
+#[derive(Default)]
+pub(in crate::state) struct DiscordPresenceLabelCache {
+    language: String,
+    labels: Option<Arc<DiscordPresenceLabels>>,
+}
+
+impl DiscordPresenceLabelCache {
+    pub(in crate::state) fn get(
+        &mut self,
+        config: &ConfigRepository,
+    ) -> Arc<DiscordPresenceLabels> {
+        let language = config
+            .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
+            .unwrap_or_else(|_| "en".into());
+        self.get_for_language(&language)
+    }
+
+    fn get_for_language(&mut self, language: &str) -> Arc<DiscordPresenceLabels> {
+        if self.labels.is_none() || self.language != language {
+            self.labels = Some(Arc::new(discord_presence_labels(language)));
+            self.language = language.to_string();
+        }
+        Arc::clone(
+            self.labels
+                .as_ref()
+                .expect("Discord presence labels were initialized"),
+        )
+    }
+}
+
+fn discord_presence_labels(language: &str) -> DiscordPresenceLabels {
+    let localized = |key| text(language, key);
     DiscordPresenceLabels {
         access_public: localized(DiscordPresenceKey::DiscordAccessPublic),
         access_invite_plus: localized(DiscordPresenceKey::DiscordAccessInvitePlus),
@@ -52,6 +79,7 @@ pub(in crate::state) async fn run_background_discord_tick(
     discord_rpc: &Arc<DiscordRpc>,
     discord_state: &mut BackgroundDiscordPresenceState,
     last_discord_output: &mut Option<String>,
+    labels: &DiscordPresenceLabels,
     friend_user_ids: &HashSet<String>,
     favorite_friend_groups_by_key: &HashMap<String, Vec<String>>,
 ) {
@@ -67,17 +95,20 @@ pub(in crate::state) async fn run_background_discord_tick(
         );
         return;
     };
-    let host_session = context.runtime_context.session.snapshot();
+    let host_session = context.host_session.snapshot();
     let favorite_world_groups_by_key = HashMap::new();
+    let game_state_store =
+        crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(context.db));
+    let background_remote =
+        crate::background_remote::DesktopBackgroundRemoteApi::new(Arc::clone(context.web));
     let facts = match build_background_presence_facts(
-        context.db.as_ref(),
+        &game_state_store,
         BackgroundPresenceFactsInput {
             session,
             is_game_running: host_session.is_game_running,
             is_steamvr_running: host_session.is_steamvr_running,
             is_game_no_vr: context
-                .runtime_context
-                .config()
+                .config
                 .get_bool("isGameNoVR", false)
                 .unwrap_or(false),
             last_game_started_at: host_session.last_game_started_at,
@@ -93,7 +124,7 @@ pub(in crate::state) async fn run_background_discord_tick(
             let detail = format!("Discord presence facts failed: {error}.");
             if remember_background_output_if_changed(last_discord_output, &detail) {
                 tracing::warn!(error = %error, "background Discord facts build failed");
-                emit_background_error(context.runtime_context, context.backend_runtime, detail);
+                emit_background_error(context.event_bus, context.backend_runtime, detail);
             }
             context
                 .background_jobs
@@ -102,11 +133,10 @@ pub(in crate::state) async fn run_background_discord_tick(
         }
     };
     let command = match build_background_discord_presence_command(
-        context.runtime_context.config(),
-        context.web.as_ref(),
-        context.db.as_ref(),
+        &game_state_store,
+        &background_remote,
         &facts,
-        &discord_presence_labels(context.runtime_context.config()),
+        labels,
         discord_state,
         false,
     )
@@ -117,7 +147,7 @@ pub(in crate::state) async fn run_background_discord_tick(
             let detail = format!("Discord presence compose failed: {error}.");
             if remember_background_output_if_changed(last_discord_output, &detail) {
                 tracing::warn!(error = %error, "background Discord presence compose failed");
-                emit_background_error(context.runtime_context, context.backend_runtime, detail);
+                emit_background_error(context.event_bus, context.backend_runtime, detail);
             }
             context
                 .background_jobs
@@ -134,7 +164,7 @@ pub(in crate::state) async fn run_background_discord_tick(
                 Ok(Ok(())) => {
                     discord_state.apply_clear_result();
                     emit_background_info_if_changed(
-                        context.runtime_context,
+                        context.event_bus,
                         context.backend_runtime,
                         last_discord_output,
                         format!("Discord presence cleared: {detail}"),
@@ -146,11 +176,7 @@ pub(in crate::state) async fn run_background_discord_tick(
                     let detail = format!("Discord clear failed: {error}.");
                     if remember_background_output_if_changed(last_discord_output, &detail) {
                         tracing::warn!(error = %error, "background Discord clear failed");
-                        emit_background_warning(
-                            context.runtime_context,
-                            context.backend_runtime,
-                            detail,
-                        );
+                        emit_background_warning(context.event_bus, context.backend_runtime, detail);
                     }
                     context
                         .background_jobs
@@ -162,11 +188,7 @@ pub(in crate::state) async fn run_background_discord_tick(
                     let detail = format!("Discord clear task failed: {error}.");
                     if remember_background_output_if_changed(last_discord_output, &detail) {
                         tracing::warn!(error = %error, "background Discord clear task failed");
-                        emit_background_error(
-                            context.runtime_context,
-                            context.backend_runtime,
-                            detail,
-                        );
+                        emit_background_error(context.event_bus, context.backend_runtime, detail);
                     }
                     context
                         .background_jobs
@@ -186,7 +208,7 @@ pub(in crate::state) async fn run_background_discord_tick(
                 Ok(Ok(result)) => {
                     discord_state.apply_set_assets_result(&payload, result);
                     emit_background_info_if_changed(
-                        context.runtime_context,
+                        context.event_bus,
                         context.backend_runtime,
                         last_discord_output,
                         format!("Discord activity sent: {detail}"),
@@ -198,11 +220,7 @@ pub(in crate::state) async fn run_background_discord_tick(
                     let detail = format!("Discord SetAssets failed: {error}.");
                     if remember_background_output_if_changed(last_discord_output, &detail) {
                         tracing::warn!(error = %error, "background Discord SetAssets failed");
-                        emit_background_warning(
-                            context.runtime_context,
-                            context.backend_runtime,
-                            detail,
-                        );
+                        emit_background_warning(context.event_bus, context.backend_runtime, detail);
                     }
                     context
                         .background_jobs
@@ -214,11 +232,7 @@ pub(in crate::state) async fn run_background_discord_tick(
                     let detail = format!("Discord SetAssets task failed: {error}.");
                     if remember_background_output_if_changed(last_discord_output, &detail) {
                         tracing::warn!(error = %error, "background Discord SetAssets task failed");
-                        emit_background_error(
-                            context.runtime_context,
-                            context.backend_runtime,
-                            detail,
-                        );
+                        emit_background_error(context.event_bus, context.backend_runtime, detail);
                     }
                     context
                         .background_jobs
@@ -240,7 +254,22 @@ pub(in crate::state) async fn run_background_discord_tick(
 
 #[cfg(test)]
 mod tests {
-    use super::remember_background_output_if_changed;
+    use std::sync::Arc;
+
+    use super::{remember_background_output_if_changed, DiscordPresenceLabelCache};
+
+    #[test]
+    fn discord_presence_labels_are_reused_until_the_language_changes() {
+        let mut cache = DiscordPresenceLabelCache::default();
+
+        let first = cache.get_for_language("en");
+        let second = cache.get_for_language("en");
+        let japanese = cache.get_for_language("ja");
+
+        assert!(Arc::ptr_eq(&first, &second));
+        assert!(!Arc::ptr_eq(&second, &japanese));
+        assert_ne!(first.private_world, japanese.private_world);
+    }
 
     #[test]
     fn repeated_discord_failure_is_suppressed_until_output_changes() {

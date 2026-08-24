@@ -16,7 +16,10 @@ import { FeedPersistenceDisabledIndicator } from '@/features/feed/components/Fee
 import { mergeFeedRowsWithSnapshot } from '@/features/feed/feedLiveMerge';
 import type { FeedRow } from '@/features/feed/feedTypes';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
+import {
+    FEED_FILTER_TYPES,
+    isFeedFilterType
+} from '@/repositories/feedRepository';
 import type { FeedFilterType } from '@/repositories/feedRepository';
 import feedRepository from '@/repositories/feedRepository';
 import { normalizeString } from '@/shared/utils/string';
@@ -100,9 +103,7 @@ export function DashboardFeedWidget({
     const activeFilters = useMemo<FeedFilterType[]>(
         () =>
             (Array.isArray(config.filters) ? config.filters : []).filter(
-                (filter): filter is FeedFilterType =>
-                    typeof filter === 'string' &&
-                    FEED_FILTER_TYPES.includes(filter as FeedFilterType)
+                isFeedFilterType
             ),
         [config.filters]
     );
@@ -153,7 +154,7 @@ export function DashboardFeedWidget({
                 result = mergeFeedRowsWithSnapshot({
                     buildMergeOptions: ({ rows }) => ({
                         rows,
-                        userId: currentUserId,
+                        userId: currentUserId || '',
                         filters: activeFilters,
                         maxRows: FEED_WIDGET_MAX_ROWS
                     }),

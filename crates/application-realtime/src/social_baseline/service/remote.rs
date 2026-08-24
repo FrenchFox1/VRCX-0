@@ -6,12 +6,8 @@ use futures_util::stream::{FuturesUnordered, StreamExt};
 use serde_json::Value;
 use tokio::time::{sleep, timeout_at, Instant};
 use vrcx_0_application_core::{Error, Result};
-use vrcx_0_vrchat_client::users::user_get_input;
 
-use super::{
-    object_field, remote_friends, ApiJsonResponse, ApiScope, HttpApiRequestInput,
-    SocialBaselineDeps,
-};
+use super::{object_field, ApiJsonResponse, ApiScope, HttpApiRequestInput, SocialBaselineDeps};
 
 #[cfg(test)]
 use std::sync::Arc;
@@ -59,10 +55,7 @@ pub(crate) async fn execute_vrchat_json_request(
     deps: &SocialBaselineDeps,
     request: HttpApiRequestInput,
 ) -> Result<Value> {
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
-        .await?;
+    let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
 
     let response = ApiJsonResponse::from(&response);
     if response.is_failure() {
@@ -83,12 +76,13 @@ pub(super) async fn fetch_paged_array<F>(
     build_request: F,
 ) -> Result<Vec<Value>>
 where
-    F: Fn(i32, i32) -> HttpApiRequestInput + Clone,
+    F: Fn(i32, i32) -> Result<HttpApiRequestInput> + Clone,
 {
     fetch_paged_array_with_page_fetcher(page_size, max_offset, |n, offset| {
         let build_request = build_request.clone();
         async move {
-            let json = execute_vrchat_json_page_request(deps, build_request(n, offset)).await?;
+            let request = build_request(n, offset).map_err(RemoteFetchError::from)?;
+            let json = execute_vrchat_json_page_request(deps, request).await?;
             Ok(match json {
                 Value::Array(rows) => rows,
                 _ => Vec::new(),
@@ -103,10 +97,7 @@ async fn execute_vrchat_json_page_request(
     deps: &SocialBaselineDeps,
     request: HttpApiRequestInput,
 ) -> RemoteFetchResult<Value> {
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
-        .await?;
+    let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
 
     let response = ApiJsonResponse::from(&response);
     if response.is_failure() {
@@ -216,7 +207,8 @@ pub(crate) async fn refetch_users_concurrent(
     user_ids: Vec<String>,
 ) -> HashMap<String, Value> {
     fetch_per_user_concurrent(deps, user_ids, |user_id| {
-        user_get_input(endpoint.to_string(), user_id.to_string())
+        deps.remote_requests
+            .user(endpoint.to_string(), user_id.to_string())
             .ok()
             .map(|(_, request)| request)
     })
@@ -233,7 +225,8 @@ pub(crate) async fn fetch_friend_statuses_concurrent(
         deps,
         user_ids,
         |user_id| {
-            remote_friends::friend_status_get_input(endpoint.to_string(), user_id.to_string())
+            deps.remote_requests
+                .friend_status(endpoint.to_string(), user_id.to_string())
                 .ok()
                 .map(|(_, request)| request)
         },

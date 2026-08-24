@@ -1,21 +1,19 @@
+import { ChevronRightIcon, CopyIcon, MoreHorizontalIcon } from 'lucide-react';
 import {
-    ChevronRightIcon,
-    MoreHorizontalIcon,
-    RefreshCwIcon
-} from 'lucide-react';
-import {
-    useEffect,
-    useState,
     type ComponentProps,
     type ComponentType,
     type CSSProperties,
-    type ReactNode
+    type ReactNode,
+    useEffect,
+    useState
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { collapseAllNested, JsonView } from 'react-json-view-lite';
 import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader } from '@/ui/shadcn/card';
 import {
@@ -377,22 +375,35 @@ function EntityActionSub({
     );
 }
 
-type EntityRawJsonProps<TValue> = {
-    value: TValue;
+type EntityRawJsonProps = {
+    value: Record<string, unknown>;
 };
 
-function EntityRawJson<TValue>({ value }: EntityRawJsonProps<TValue>) {
+const entityJsonViewStyles = {
+    container: 'entity-json-view',
+    childFieldsContainer: 'entity-json-view-fields',
+    basicChildStyle: 'entity-json-view-row',
+    collapseIcon: 'entity-json-view-collapse',
+    expandIcon: 'entity-json-view-expand',
+    collapsedContent: 'entity-json-view-collapsed',
+    label: 'entity-json-view-label',
+    clickableLabel: 'entity-json-view-clickable-label',
+    nullValue: 'entity-json-view-null',
+    undefinedValue: 'entity-json-view-null',
+    numberValue: 'entity-json-view-number',
+    stringValue: 'entity-json-view-string',
+    booleanValue: 'entity-json-view-boolean',
+    otherValue: 'entity-json-view-value',
+    punctuation: 'entity-json-view-punctuation',
+    quotesForFieldNames: true,
+    stringifyStringValues: true
+};
+
+function EntityRawJson({ value }: EntityRawJsonProps) {
     const { t } = useTranslation();
-
-    const [snapshot, setSnapshot] = useState(value);
-
-    useEffect(() => {
-        setSnapshot(value);
-    }, [value]);
-
-    function refreshJson() {
-        setSnapshot(value);
-    }
+    const rawValue = Object.fromEntries(
+        Object.entries(value).filter(([key]) => !key.startsWith('$'))
+    );
 
     return (
         <div className="flex flex-col gap-2">
@@ -401,17 +412,24 @@ function EntityRawJson<TValue>({ value }: EntityRawJsonProps<TValue>) {
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                        refreshJson();
+                    onClick={async () => {
+                        await copyTextToClipboard(
+                            JSON.stringify(rawValue, null, 2)
+                        );
                     }}
                 >
-                    <RefreshCwIcon data-icon="inline-start" />
-                    {t('common.actions.refresh')}
+                    <CopyIcon data-icon="inline-start" />
+                    {t('common.actions.copy')}
                 </Button>
             </div>
-            <pre className="bg-muted/20 max-h-[55vh] overflow-auto rounded-md border p-3 text-xs">
-                {JSON.stringify(snapshot ?? null, null, 2)}
-            </pre>
+            <div className="bg-muted/20 max-h-[55vh] overflow-auto rounded-md border p-3 text-xs">
+                <JsonView
+                    data={rawValue}
+                    style={entityJsonViewStyles}
+                    shouldExpandNode={collapseAllNested}
+                    clickToExpandNode
+                />
+            </div>
         </div>
     );
 }

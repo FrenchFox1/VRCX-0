@@ -200,11 +200,3 @@ export type UserProfileRecord = UserProfileEntity & {
     $isProbableTroll: boolean;
     $platform: string;
 };
-
-export type UserDialogJson = {
-    profile: UserProfileEntity;
-    memo: string;
-    moderationState: UserModerationState;
-    isFriend: boolean;
-    isFavorite: boolean;
-};

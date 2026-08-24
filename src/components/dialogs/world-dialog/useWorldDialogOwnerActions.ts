@@ -7,7 +7,10 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { WorldUpdateRequest } from '@/platform/tauri/bindings';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
-import type { WorldDetailsDraft } from '../WorldOwnerEditDialogs';
+import type {
+    WorldDetailsDraft,
+    WorldTagsUpdate
+} from '../WorldOwnerEditDialogs';
 import type { useWorldDialogRuntimeState } from './useWorldDialogRuntimeState';
 
 type RuntimeState = ReturnType<typeof useWorldDialogRuntimeState>;
@@ -26,7 +29,7 @@ interface UseWorldDialogOwnerActionsInput {
     confirm: RuntimeState['confirm'];
     currentEndpoint: string;
     currentUserId: string | null;
-    isCurrentWorldTarget: (worldId: unknown, endpoint: string) => boolean;
+    isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
     prompt: RuntimeState['prompt'];
     setActionStatus: Dispatch<SetStateAction<string>>;
     setHasPersistData: Dispatch<SetStateAction<boolean>>;
@@ -326,9 +329,12 @@ export function useWorldDialogOwnerActions({
         setOwnerEditor('tags');
     }
 
-    async function saveWorldTags(tags: string[]) {
+    async function saveWorldTags(update: WorldTagsUpdate) {
         const saved = await saveWorldPatch(
-            { tags },
+            {
+                tags: update.tags,
+                disabledPropAbilities: update.disabledPropAbilities
+            },
             {
                 successMessage: t('dialog.world.success.world_tags_updated'),
                 errorMessage: t(

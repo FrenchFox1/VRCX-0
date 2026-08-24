@@ -13,6 +13,7 @@ use super::game_log::{
     close_remote_game_log_interval, game_log_authority_patch, reconcile_remote_game_log_interval,
 };
 use super::location::{build_location_patch, location_game_state_patch};
+use super::self_profile::append_self_profile_log_entries;
 use super::state::{
     CurrentUserPatchOptions, PendingCurrentUserOffline, RealtimeCurrentUserState,
     RealtimeCurrentUserStateSnapshot, CURRENT_USER_REMOTE_PRESENCE_FIELDS,
@@ -21,6 +22,7 @@ use super::utils::{
     has_remote_current_user_presence, is_offline_location, normalize_id, resolve_state_bucket,
     EventTime,
 };
+use vrcx_0_core::OwnerId;
 
 pub(super) fn apply_user_update(
     state: &mut RealtimeCurrentUserState,
@@ -118,6 +120,7 @@ pub(super) fn apply_user_location(
         CurrentUserPatchOptions {
             applies_local_game_authority: true,
             reconciles_remote_location: true,
+            records_remote_game_log: true,
             ..CurrentUserPatchOptions::default()
         },
     )
@@ -172,6 +175,7 @@ pub(super) fn apply_current_user_patch(
         now,
         options.records_current_avatar_history,
     );
+    append_self_profile_log_entries(&previous, &snapshot, now, &mut persistence);
     projection_patch.insert("state".into(), Value::String(snapshot.state_bucket.clone()));
     projection_patch.insert(
         "stateBucket".into(),
@@ -183,7 +187,7 @@ pub(super) fn apply_current_user_patch(
 
     if authority.is_game_running() {
         close_remote_game_log_interval(state, now, &mut persistence);
-    } else if options.reconciles_remote_location {
+    } else if options.records_remote_game_log {
         reconcile_remote_game_log_interval(
             state,
             &snapshot,
@@ -206,12 +210,12 @@ pub(super) fn apply_current_user_patch(
     state.sequence = state.sequence.saturating_add(1);
     state.snapshot = snapshot;
     Some(RealtimeCurrentUserOutput {
-        owner_user_id: state.current_user_id.clone(),
+        owner_user_id: OwnerId::new(state.current_user_id.clone()),
         projection: RealtimeCurrentUserProjection {
             generation: state.generation,
-            patch: projection_patch,
-            snapshot: snapshot_map,
-            game_state_patch,
+            patch: projection_patch.into(),
+            snapshot: snapshot_map.into(),
+            game_state_patch: game_state_patch.map(Into::into),
         },
         persistence,
         timer_action: options.timer_action,

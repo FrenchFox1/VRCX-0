@@ -6,11 +6,11 @@ interface HoverCardNodeData {
     x: number;
     y: number;
     size: number;
-    label?: string;
+    label?: string | null;
     fullLabel?: string;
     lastFetchedAt?: string | null;
     optedOut?: boolean;
-    degree?: number;
+    mutualCount?: number;
 }
 
 interface HoverCardSettings {
@@ -61,8 +61,8 @@ export function drawMutualFriendHoverCard(
     const lineGap = 3;
 
     const subLines: string[] = [];
-    if (Number.isFinite(data.degree)) {
-        subLines.push(`${data.degree} ${strings.connections}`);
+    if (Number.isFinite(data.mutualCount)) {
+        subLines.push(`${data.mutualCount} ${strings.connections}`);
     }
     if (data.optedOut) {
         subLines.push(strings.unavailable);

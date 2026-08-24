@@ -1,8 +1,8 @@
 use serde::Deserialize;
-use vrcx_0_application_core::vrchat_api::deserialize_nonnegative_i32;
-use vrcx_0_application_core::vrchat_api::worlds::{
-    QueryOrder, ReleaseStatusFilter, WorldSearchSort, WorldUpdateRequest,
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::query::{
+    deserialize_nonnegative_i32, QueryOrder, ReleaseStatusFilter, WorldSearchSort,
 };
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::worlds::WorldUpdateRequest;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

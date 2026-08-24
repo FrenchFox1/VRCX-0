@@ -98,7 +98,7 @@ export function getDiscIcon(
 
 export function getResponseIcon(
     response: NotificationResponse | null | undefined,
-    notificationType: unknown
+    notificationType: string | undefined
 ): LucideIcon {
     if (response?.type === 'link') {
         return LinkIcon;
@@ -119,7 +119,9 @@ export function getResponseIcon(
     }
 }
 
-export function getNotificationLinkIcon(link: unknown): LucideIcon {
+export function getNotificationLinkIcon(
+    link: string | null | undefined
+): LucideIcon {
     switch (getNotificationLinkScheme(link)) {
         case 'user':
             return UserIcon;

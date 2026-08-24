@@ -1,4 +1,14 @@
-import type { FavoriteKind } from '@/domain/favorites/types';
+import type {
+    FavoriteEntityDetail,
+    FavoriteGroup,
+    FavoriteGroupMap,
+    FavoriteKind,
+    FavoriteRecord
+} from '@/domain/favorites/types';
+import type {
+    FriendProfileFields,
+    FriendRecordInput
+} from '@/domain/friends/types';
 import { userImage } from '@/services/entityMediaService';
 import { resolveFriendPresenceLocation } from '@/shared/utils/location';
 
@@ -8,7 +18,8 @@ import {
     normalizeFavoriteEntityId as normalizeEntityId,
     resolveFavoriteImage,
     shrinkFavoriteImage as shrinkImage,
-    sortFavoriteItems as sortItems
+    sortFavoriteItems as sortItems,
+    type FavoriteSortValue
 } from './favoritesItems';
 import type {
     FavoriteGroupView,
@@ -18,50 +29,32 @@ import type {
 
 type FavoriteItemsByGroup = Record<string, FavoriteItem[]>;
 type TranslateFn = (key: string) => string;
-type FavoriteGroupRecord = Record<string, unknown> & {
-    capacity?: unknown;
-    count?: unknown;
-    displayName?: unknown;
-    key?: unknown;
-    name?: unknown;
-    type?: unknown;
-    visibility?: unknown;
-};
+type FavoriteGroupRecord = FavoriteGroup;
 type FavoriteGroupInput = Record<string, unknown> & {
     key: string;
     label: string;
 };
-export type FavoritePageEntityDetail = Record<string, unknown> & {
-    authorName?: unknown;
-    description?: unknown;
-    imageUrl?: unknown;
-    name?: unknown;
-    occupants?: unknown;
-    releaseStatus?: unknown;
-    tags?: unknown;
-    thumbnailImageUrl?: unknown;
+export type FavoritePageEntityDetail = FavoriteEntityDetail & {
+    displayName?: string;
+    groupName?: string;
+    occupants?: number;
+    state?: string;
+    stateBucket?: string;
+    status?: string | null;
+    travelingToWorld?: string;
+    worldName?: string;
 };
-type FavoriteRecord = Record<string, unknown> & {
-    $groupKey?: unknown;
-    favoriteId?: unknown;
-    type?: unknown;
-};
-type FavoriteProfileRecord = Record<string, unknown> & {
-    $userColour?: unknown;
-    displayName?: unknown;
-    isFriend?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    statusDescription?: unknown;
-    travelingToLocation?: unknown;
-    username?: unknown;
-};
-type FavoriteGroupSourceMap = Record<string, unknown[]>;
+type FavoriteProfileRecord = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        $userColour?: string;
+        isFriend?: boolean;
+        stateBucket?: string;
+        travelingToLocation?: string;
+    };
+type FavoriteGroupSourceMap = FavoriteGroupMap;
 type FavoriteDetailMap = Record<string, FavoritePageEntityDetail | undefined>;
 type FavoriteProfileMap = Record<string, FavoriteProfileRecord | undefined>;
 type FavoriteSortIndex = Record<string, number | undefined>;
-type FavoriteSortValue = unknown;
-
 function textValue(value: unknown) {
     return typeof value === 'string'
         ? value
@@ -77,7 +70,7 @@ function favoritePlayerCount(
 }
 
 function favoriteSeedData(
-    value: Record<string, unknown> | null | undefined
+    value: FavoritePageEntityDetail | null | undefined
 ): FavoriteSeedData | null {
     if (!value) {
         return null;
@@ -101,10 +94,12 @@ function stringArray(value: unknown): string[] {
     return Array.isArray(value) ? value.map(textValue).filter(Boolean) : [];
 }
 
-function firstDisplayableDetail(candidates: unknown[]) {
+function firstDisplayableDetail(
+    candidates: unknown[]
+): FavoritePageEntityDetail | undefined {
     return candidates.find((candidate) =>
         hasDisplayableEntityDetail(candidate)
-    ) as FavoritePageEntityDetail | undefined;
+    );
 }
 
 function favoriteImagePair(
@@ -156,8 +151,12 @@ function buildLocalFavoriteGroups(
     }));
 }
 
+function isTranslateFn(value: unknown): value is TranslateFn {
+    return typeof value === 'function';
+}
+
 function resolveTranslator(t: unknown): TranslateFn {
-    return typeof t === 'function' ? (t as TranslateFn) : (key) => key;
+    return isTranslateFn(t) ? t : (key) => key;
 }
 
 function defaultFavoriteEntityTitle(kind: FavoriteKind, t: unknown) {
@@ -216,7 +215,7 @@ function buildFriendFavoriteItem({
     source: 'remote' | 'local';
     groupKey: string;
     groupLabel: string;
-    friendId: unknown;
+    friendId: string;
     friend?: FavoriteProfileRecord | null;
     knownUser?: FavoriteProfileRecord | null;
     index: number;
@@ -398,7 +397,7 @@ export function buildFavoriteRemoteItemsByGroup({
     friendsById,
     knownUsersById = {},
     favoritesSortIndex,
-    sortValue,
+    sortValue = 'name',
     remoteFavoritesById,
     remoteEntityDetailsData,
     remoteEntityDetailsStatus,
@@ -410,7 +409,7 @@ export function buildFavoriteRemoteItemsByGroup({
 }: {
     kind: FavoriteKind;
     remoteGroups: readonly FavoriteGroupInput[];
-    groupedFavoriteFriendIdsByGroupKey?: Record<string, unknown[]>;
+    groupedFavoriteFriendIdsByGroupKey?: FavoriteGroupMap;
     friendsById?: FavoriteProfileMap;
     knownUsersById?: FavoriteProfileMap;
     favoritesSortIndex?: FavoriteSortIndex;
@@ -453,15 +452,16 @@ export function buildFavoriteRemoteItemsByGroup({
         return itemsByGroup;
     }
 
-    const remoteFavorites = Object.values(remoteFavoritesById || {})
-        .filter((favorite): favorite is Record<string, unknown> =>
-            Boolean(favorite && typeof favorite === 'object')
-        )
-        .filter((favorite) =>
-            kind === 'avatar'
+    const remoteFavorites = Object.values(remoteFavoritesById || {}).filter(
+        (favorite): favorite is FavoriteRecord => {
+            if (!favorite) {
+                return false;
+            }
+            return kind === 'avatar'
                 ? favorite.type === 'avatar'
-                : favorite.type === 'world' || favorite.type === 'vrcPlusWorld'
-        );
+                : favorite.type === 'world' || favorite.type === 'vrcPlusWorld';
+        }
+    );
 
     for (const favorite of remoteFavorites) {
         const favoriteId = normalizeEntityId(favorite.favoriteId);
@@ -570,7 +570,7 @@ export function buildFavoriteLocalItemsByGroup({
     worldDetailFallbacksById = {},
     friendsById,
     knownUsersById = {},
-    sortValue,
+    sortValue = 'name',
     t
 }: {
     kind: FavoriteKind;
@@ -590,9 +590,7 @@ export function buildFavoriteLocalItemsByGroup({
 
     if (kind === 'friend') {
         for (const group of localGroups) {
-            const ids = Array.isArray(localFriendFavorites?.[group.key])
-                ? localFriendFavorites[group.key]
-                : [];
+            const ids = localFriendFavorites?.[group.key] ?? [];
             const items = ids.map((friendId, index) =>
                 buildFriendFavoriteItem({
                     kind,
@@ -620,9 +618,7 @@ export function buildFavoriteLocalItemsByGroup({
             : worldDetailFallbacksById;
 
     for (const group of localGroups) {
-        const ids = Array.isArray(localFavorites?.[group.key])
-            ? localFavorites[group.key]
-            : [];
+        const ids = localFavorites?.[group.key] ?? [];
         const items: FavoriteItem[] = ids.map((entityId, index) => {
             const normalizedId = normalizeEntityId(entityId);
             const detail = localDetailsById?.[normalizedId] || {

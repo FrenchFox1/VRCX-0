@@ -2,13 +2,14 @@
 
 use tauri::State;
 
-use vrcx_0_persistence::browse_history::{
+use vrcx_0_runtime_host_desktop::local_data::{
     BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
     BrowseHistoryRecordInput,
 };
 
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_runtime_host_desktop::local_data::OwnerId;
 
 #[tauri::command]
 #[specta::specta]
@@ -16,17 +17,23 @@ pub fn app__browse_history_record(
     state: State<'_, AppState>,
     input: BrowseHistoryRecordInput,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::browse_history::browse_history_record(state.db.as_ref(), input)
+    state
+        .runtime_host()
+        .local_data()
+        .browse_history_record(input)
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__browse_history_query(
     state: State<'_, AppState>,
     input: BrowseHistoryQueryInput,
 ) -> Result<BrowseHistoryPageOutput, AppError> {
-    vrcx_0_persistence::browse_history::browse_history_query(state.db.as_ref(), input)
+    state
+        .runtime_host()
+        .local_data()
+        .browse_history_query(input)
         .map_err(AppError::from)
 }
 
@@ -34,38 +41,38 @@ pub fn app__browse_history_query(
 #[specta::specta]
 pub fn app__browse_history_delete(
     state: State<'_, AppState>,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     entity_kind: BrowseHistoryEntityKind,
     entity_id: String,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::browse_history::browse_history_delete(
-        state.db.as_ref(),
-        owner_user_id,
-        entity_kind,
-        entity_id,
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .browse_history_delete(owner_user_id, entity_kind, entity_id)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__browse_history_clear(
     state: State<'_, AppState>,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     entity_kind: Option<BrowseHistoryEntityKind>,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::browse_history::browse_history_clear(
-        state.db.as_ref(),
-        owner_user_id,
-        entity_kind,
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .browse_history_clear(owner_user_id, entity_kind)
+        .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__browse_history_retention_days_get(state: State<'_, AppState>) -> Result<i64, AppError> {
-    vrcx_0_persistence::browse_history::browse_history_retention_days_get(state.db.as_ref())
+    state
+        .runtime_host()
+        .local_data()
+        .browse_history_retention_days_get()
         .map_err(AppError::from)
 }
 
@@ -75,9 +82,9 @@ pub fn app__browse_history_retention_days_set(
     state: State<'_, AppState>,
     retention_days: i64,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::browse_history::browse_history_retention_days_set(
-        state.db.as_ref(),
-        retention_days,
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .browse_history_retention_days_set(retention_days)
+        .map_err(AppError::from)
 }

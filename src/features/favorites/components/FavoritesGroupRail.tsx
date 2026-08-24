@@ -312,7 +312,7 @@ type GroupRailSectionProps = {
     newGroupName?: string;
     newGroupLabel?: string;
     showNewGroup?: boolean;
-    onRefresh?(): void | Promise<unknown>;
+    onRefresh?(): void;
     onSelect: FavoriteGroupHandler;
     onStartCreate?(): void;
     onNewGroupNameChange?(value: string): void;

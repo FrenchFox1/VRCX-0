@@ -1,5 +1,5 @@
 export type DateTimeFormatterOptions = {
-    locale?: unknown;
+    locale?: string | null;
     fallback?: string;
     hour12?: boolean;
 };
@@ -44,14 +44,14 @@ export function getRelativeTimeFormatter(
 }
 
 export function normalizeDateLocale(
-    locale: unknown,
+    locale: string | null | undefined,
     fallback = 'en-gb'
 ): string {
     if (!locale) {
         return fallback;
     }
 
-    const dateLocale = String(locale).replace(/_/g, '-').trim();
+    const dateLocale = locale.replace(/_/g, '-').trim();
     return dateLocale || fallback;
 }
 
@@ -60,11 +60,20 @@ export function toValidDate(value: unknown): Date | null {
         return null;
     }
 
-    const date = value instanceof Date ? value : new Date(value as never);
+    let date: Date;
+    if (value instanceof Date) {
+        date = value;
+    } else if (typeof value === 'string') {
+        date = new Date(value);
+    } else if (typeof value === 'number') {
+        date = new Date(value);
+    } else {
+        return null;
+    }
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function padDatePart(value: unknown): string {
+function padDatePart(value: number): string {
     return String(value).padStart(2, '0');
 }
 

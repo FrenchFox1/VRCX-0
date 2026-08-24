@@ -12,7 +12,7 @@ const USER_STATE_BUCKETS = ['online', 'active', 'offline'] as const;
 
 type UserStateBucket = (typeof USER_STATE_BUCKETS)[number] | '';
 
-interface UserFactLocation {
+interface UserFactLocation extends Record<string, unknown> {
     tag?: string;
     worldId?: string;
     instanceId?: string;
@@ -20,9 +20,8 @@ interface UserFactLocation {
 }
 
 interface UserFactMergeOptions {
-    endpoint?: unknown;
+    endpoint?: string;
     source?: UserFactSource;
-    receivedAt?: unknown;
     isCurrentUser?: boolean;
     isFriend?: boolean;
 }
@@ -46,14 +45,14 @@ interface UserFact {
     state?: string;
     location?: string;
     travelingToLocation?: string;
-    locationAt?: unknown;
-    travelingToTime?: unknown;
+    locationAt?: number | string | null;
+    travelingToTime?: number | string | null;
     friendNumber?: number;
     isCurrentUser?: boolean;
     isFriend?: boolean;
     isBoopingEnabled?: boolean;
     hasSharedConnectionsOptOut?: boolean;
-    tags?: unknown[];
+    tags?: string[];
     platform?: string;
     last_platform?: string;
     developerType?: string;
@@ -65,8 +64,10 @@ interface UserFact {
     $isProbableTroll?: boolean;
     $platform?: string;
     pendingOffline?: boolean;
+    stateBucket?: UserStateBucket;
     $location?: UserFactLocation;
     $travelingToLocation?: UserFactLocation;
+    $travelingToTime?: number | string | null;
     memo?: string;
     note?: string;
     updatedAt: string;
@@ -94,7 +95,7 @@ function userFactKey(endpoint: unknown, userId: unknown): string {
 }
 
 function isUserStateBucket(value: string): value is UserStateBucket {
-    return (USER_STATE_BUCKETS as readonly string[]).includes(value);
+    return USER_STATE_BUCKETS.some((bucket) => bucket === value);
 }
 
 function normalizeStateBucket(value: unknown): UserStateBucket {

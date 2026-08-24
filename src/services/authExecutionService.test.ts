@@ -73,22 +73,26 @@ vi.mock('./sessionBootstrapService', () => ({
     bootstrapAuthenticatedSession: mocks.bootstrapAuthenticatedSession
 }));
 
-import {
-    cachePreviousInstances,
-    cacheUserStats,
-    dialogTargetKey,
-    readCachedPreviousInstances,
-    readCachedUserStats
-} from '@/components/dialogs/user-dialog/userDialogCache';
 import type {
     LoginFailureKind,
     LoginSessionState,
     SavedAuthSnapshot,
     SavedCredentialSnapshot
 } from '@/platform/tauri/bindings';
+import {
+    cachePreviousInstances,
+    cacheUserStats,
+    dialogTargetKey,
+    readCachedPreviousInstances,
+    readCachedUserStats
+} from '@/services/userDialogSessionCacheService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useModalStore } from '@/state/modalStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
+import {
+    type CurrentUserSnapshotState,
+    useRuntimeStore
+} from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import {
@@ -205,6 +209,7 @@ describe('authExecutionService characterization', () => {
         useRuntimeStore.getState().resetRuntimeState();
         useSessionStore.getState().resetSessionState();
         useAssistantChatStore.getState().resetAssistantChatState();
+        useFriendLocationTimeStore.getState().reset();
         useModalStore.getState().resetModalState();
         useModalStore.setState({
             confirm: mocks.confirm,
@@ -218,16 +223,17 @@ describe('authExecutionService characterization', () => {
         mocks.respondLoginSession.mockResolvedValue(authenticatedState());
         mocks.cancelLoginSession.mockResolvedValue({ status: 'cancelled' });
         mocks.applySavedAuthSnapshot.mockImplementation(
-            (snapshot: unknown) => snapshot
+            (snapshot: SavedAuthSnapshot) => snapshot
         );
         mocks.buildAvatarWearSnapshotUpdate.mockImplementation(
-            ({ nextSnapshot }: { nextSnapshot: unknown }) => ({
-                snapshot: nextSnapshot
-            })
+            ({
+                nextSnapshot
+            }: {
+                nextSnapshot: CurrentUserSnapshotState | null;
+            }) => ({ snapshot: nextSnapshot })
         );
-        mocks.t.mockImplementation(
-            (key: string, values?: Record<string, unknown>) =>
-                Promise.resolve(values?.name ? `${key}:${values.name}` : key)
+        mocks.t.mockImplementation((key: string, values?: { name?: string }) =>
+            Promise.resolve(values?.name ? `${key}:${values.name}` : key)
         );
         mocks.bootstrapAuthenticatedSession.mockResolvedValue(undefined);
         mocks.loadVrchatConfigSnapshot.mockResolvedValue({});
@@ -418,6 +424,13 @@ describe('authExecutionService characterization', () => {
     });
 
     it('records logout and returns to a signed-out session', async () => {
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
         useRuntimeStore.getState().setAuthBootstrap({
             currentUserId: 'usr_self',
             currentUserDisplayName: 'Self'
@@ -433,6 +446,7 @@ describe('authExecutionService characterization', () => {
         );
         expect(useRuntimeStore.getState().auth.currentUserId).toBe(null);
         expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({});
         expect(mocks.resetVrchatConfigSnapshot).toHaveBeenCalled();
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             'message.auth.logout_greeting:Self'

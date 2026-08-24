@@ -1,11 +1,14 @@
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::collections::{HashMap, VecDeque};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+use futures_util::future::join_all;
+use tokio::time::Instant;
 
 use vrcx_0_application_core::{Error, Result};
 pub use vrcx_0_application_core::{FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload};
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use crate::realtime::{
     RealtimeSessionContext, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,
@@ -17,6 +20,39 @@ use super::{RealtimeHostRuntime, RealtimeStopRequest};
 const FRIEND_PROFILE_BULK_LOAD_MAX_RETRIES: u32 = 4;
 const FRIEND_PROFILE_BULK_LOAD_BASE_DELAY_MS: u64 = 500;
 pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS: u64 = 1_000;
+pub(super) const FRIEND_PROFILE_BULK_LOAD_CONCURRENCY: usize = 3;
+pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS: u64 =
+    FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS / FRIEND_PROFILE_BULK_LOAD_CONCURRENCY as u64;
+
+pub(super) struct FriendProfileBulkLoadPacer {
+    next_slot: tokio::sync::Mutex<Option<Instant>>,
+}
+
+impl FriendProfileBulkLoadPacer {
+    pub(super) fn new() -> Self {
+        Self {
+            next_slot: tokio::sync::Mutex::new(None),
+        }
+    }
+
+    pub(super) async fn acquire_slot(&self) {
+        let slot = {
+            let mut next_slot = self.next_slot.lock().await;
+            let now = Instant::now();
+            let slot = next_slot.map(|at| at.max(now)).unwrap_or(now);
+            *next_slot =
+                Some(slot + Duration::from_millis(FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS));
+            slot
+        };
+        tokio::time::sleep_until(slot).await;
+    }
+
+    pub(super) async fn delay_next_slots(&self, delay: Duration) {
+        let mut next_slot = self.next_slot.lock().await;
+        let resume_at = Instant::now() + delay;
+        *next_slot = Some(next_slot.map(|at| at.max(resume_at)).unwrap_or(resume_at));
+    }
+}
 
 pub(super) struct FriendProfileBulkLoadInitialProgress {
     pub(super) total: u32,
@@ -407,6 +443,7 @@ impl RealtimeHostRuntime {
         run_id: u64,
         owner: &FriendProfileBulkLoadOwner,
         user_id: &str,
+        pacer: &FriendProfileBulkLoadPacer,
         cancel_rx: &mut tokio::sync::watch::Receiver<u64>,
         transport_rx: &mut tokio::sync::watch::Receiver<u64>,
     ) -> Option<FriendProfileBulkLoadItemOutcome> {
@@ -415,6 +452,14 @@ impl RealtimeHostRuntime {
             let active = self
                 .wait_for_friend_profile_bulk_load_transport(run_id, owner, cancel_rx, transport_rx)
                 .await?;
+            tokio::select! {
+                biased;
+                _ = wait_for_friend_profile_bulk_load_cancel(run_id, cancel_rx) => return None,
+                _ = pacer.acquire_slot() => {}
+            }
+            if !self.friend_profile_bulk_load_is_current(run_id, owner) {
+                return None;
+            }
             let response = tokio::select! {
                 biased;
                 _ = wait_for_friend_profile_bulk_load_cancel(run_id, cancel_rx) => return None,
@@ -444,6 +489,9 @@ impl RealtimeHostRuntime {
                 {
                     let delay_ms = friend_profile_bulk_load_backoff_delay_ms(attempt);
                     attempt += 1;
+                    pacer
+                        .delay_next_slots(Duration::from_millis(delay_ms))
+                        .await;
                     tokio::select! {
                         biased;
                         _ = wait_for_friend_profile_bulk_load_cancel(run_id, cancel_rx) => return None,
@@ -495,42 +543,52 @@ impl RealtimeHostRuntime {
         owner: FriendProfileBulkLoadOwner,
         targets: Vec<String>,
     ) {
+        let queue = Mutex::new(VecDeque::from(targets));
+        let pacer = FriendProfileBulkLoadPacer::new();
+        let workers = (0..FRIEND_PROFILE_BULK_LOAD_CONCURRENCY)
+            .map(|_| self.run_friend_profile_bulk_load_worker(run_id, &owner, &queue, &pacer));
+        join_all(workers).await;
+
+        self.finish_friend_profile_bulk_load(run_id, &owner);
+    }
+
+    async fn run_friend_profile_bulk_load_worker(
+        self: &Arc<Self>,
+        run_id: u64,
+        owner: &FriendProfileBulkLoadOwner,
+        queue: &Mutex<VecDeque<String>>,
+        pacer: &FriendProfileBulkLoadPacer,
+    ) {
         let mut cancel_rx = self.friend_profile_bulk_cancel_tx.subscribe();
         let mut transport_rx = self.cancel_tx.subscribe();
-        for (index, user_id) in targets.iter().enumerate() {
-            if !self.friend_profile_bulk_load_is_current(run_id, &owner) {
-                break;
+        loop {
+            if !self.friend_profile_bulk_load_is_current(run_id, owner) {
+                return;
             }
-            if index > 0 {
-                tokio::select! {
-                    biased;
-                    _ = wait_for_friend_profile_bulk_load_cancel(run_id, &mut cancel_rx) => break,
-                    _ = tokio::time::sleep(Duration::from_millis(
-                        FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS,
-                    )) => {}
-                }
-                if !self.friend_profile_bulk_load_is_current(run_id, &owner) {
-                    break;
-                }
-            }
+            let Some(user_id) = queue
+                .lock()
+                .ok()
+                .and_then(|mut targets| targets.pop_front())
+            else {
+                return;
+            };
             let Some(outcome) = self
                 .load_friend_profile_bulk_item(
                     run_id,
-                    &owner,
-                    user_id,
+                    owner,
+                    &user_id,
+                    pacer,
                     &mut cancel_rx,
                     &mut transport_rx,
                 )
                 .await
             else {
-                break;
+                return;
             };
-            if !self.friend_profile_bulk_load_record_progress(run_id, &owner, outcome) {
-                break;
+            if !self.friend_profile_bulk_load_record_progress(run_id, owner, outcome) {
+                return;
             }
         }
-
-        self.finish_friend_profile_bulk_load(run_id, &owner);
     }
 
     fn finish_friend_profile_bulk_load(&self, run_id: u64, owner: &FriendProfileBulkLoadOwner) {

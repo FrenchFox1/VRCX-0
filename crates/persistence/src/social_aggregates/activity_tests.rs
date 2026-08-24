@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn friend_activity_pattern_counts_online_events_by_hour() {
@@ -27,7 +28,7 @@ fn friend_activity_pattern_counts_online_events_by_hour() {
     let output = get_friend_activity_pattern(
         &db,
         FriendActivityPatternInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: Some("usr_alice".into()),
             time_window: TimeWindow::all(),
             bucket: ActivityBucket::HourOfDay,
@@ -58,7 +59,7 @@ fn friend_activity_pattern_buckets_in_local_time_with_offset() {
     let output = get_friend_activity_pattern(
         &db,
         FriendActivityPatternInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: Some("usr_alice".into()),
             time_window: TimeWindow::all(),
             bucket: ActivityBucket::HourOfDay,
@@ -99,7 +100,7 @@ fn friend_activity_pattern_merges_renamed_user_buckets() {
     let output = get_friend_activity_pattern(
         &db,
         FriendActivityPatternInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: Some("usr_alice".into()),
             time_window: TimeWindow::all(),
             bucket: ActivityBucket::HourOfDay,
@@ -142,7 +143,7 @@ fn best_time_to_play_ranks_buckets_by_distinct_friends() {
     let output = get_best_time_to_play(
         &db,
         BestTimeToPlayInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             time_window: TimeWindow::all(),
             bucket: ActivityBucket::HourOfDay,
             limit: None,
@@ -184,7 +185,7 @@ fn best_time_renamed_user_shows_latest_name() {
     let output = get_best_time_to_play(
         &db,
         BestTimeToPlayInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             time_window: TimeWindow::all(),
             bucket: ActivityBucket::HourOfDay,
             limit: None,
@@ -227,7 +228,7 @@ fn best_time_renamed_user_shows_latest_name_across_buckets() {
     let output = get_best_time_to_play(
         &db,
         BestTimeToPlayInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             time_window: TimeWindow::all(),
             bucket: ActivityBucket::HourOfDay,
             limit: None,

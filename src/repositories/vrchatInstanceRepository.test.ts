@@ -136,6 +136,7 @@ describe('InstanceRepository', () => {
             accessType: 'group',
             groupId: ' grp_team ',
             groupAccessType: 'plus',
+            minimumAvatarPerformance: 'Medium',
             queueEnabled: false,
             roleIds: ['grol_hidden'],
             ageGate: true,
@@ -152,6 +153,7 @@ describe('InstanceRepository', () => {
             ownerId: 'grp_team',
             region: 'jp',
             groupAccessType: 'plus',
+            minimumAvatarPerformance: 'Medium',
             queueEnabled: false,
             ageGate: true,
             displayName: 'Raid Night'
@@ -173,6 +175,9 @@ describe('InstanceRepository', () => {
             groupAccessType: 'members',
             roleIds: ['grol_a', 'grol_b']
         });
+        expect(
+            tauriApp.appVrchatInstanceCreate.mock.calls[0][0].params
+        ).not.toHaveProperty('minimumAvatarPerformance');
     });
 
     it('rejects private instance creation before sending an ownerless request', async () => {

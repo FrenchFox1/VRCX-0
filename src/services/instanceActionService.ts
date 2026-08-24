@@ -16,9 +16,9 @@ async function runJoinAction({
     mode,
     shortName = ''
 }: {
-    location: unknown;
+    location: string;
     mode: InstanceLaunchMode;
-    shortName?: unknown;
+    shortName?: string;
 }): Promise<InstanceLaunchOutcome> {
     return commands.appVrchatInstanceJoin({
         location: normalizeString(location),
@@ -28,8 +28,8 @@ async function runJoinAction({
 }
 
 async function openInstanceInGame(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName: string = ''
 ): Promise<boolean> {
     try {
         const outcome = await runJoinAction({
@@ -45,8 +45,8 @@ async function openInstanceInGame(
 }
 
 async function sendSelfInviteToInstance(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName: string = ''
 ): Promise<void> {
     const outcome = await runJoinAction({
         location,
@@ -59,8 +59,8 @@ async function sendSelfInviteToInstance(
 }
 
 async function joinInstanceWithFallback(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName: string = ''
 ): Promise<InstanceLaunchOutcome> {
     return runJoinAction({
         location,

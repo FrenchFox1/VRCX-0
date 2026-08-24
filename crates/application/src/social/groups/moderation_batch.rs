@@ -8,20 +8,13 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::groups::GroupMemberPatch;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::{
-    groups::{
-        member_ban_input, member_kick_input, member_props_set_input, member_role_add_input,
-        member_role_remove_input, member_unban_input,
-    },
-    http_api::{ApiScope, HttpApiRequestInput},
-};
 
-use crate::{
+use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
     WebClient,
 };
+use vrcx_0_core::OwnerId;
 
 pub const GROUP_MODERATION_BATCH_MAX_TARGETS: usize = 250;
 pub const GROUP_MODERATION_BATCH_MAX_OPERATIONS: usize = 1_000;
@@ -40,7 +33,7 @@ struct GroupModerationBatchGuard<'a> {
 impl GroupModerationBatchCoordinator {
     fn try_begin(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         group_id: &str,
     ) -> Result<GroupModerationBatchGuard<'_>> {
         let key = (owner_user_id.to_string(), group_id.to_string());
@@ -89,7 +82,7 @@ pub struct GroupModerationBatchTarget {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchInput {
-    pub expected_owner_user_id: String,
+    pub expected_owner_user_id: OwnerId,
     pub expected_endpoint: String,
     pub group_id: String,
     pub action: GroupModerationBatchAction,
@@ -120,7 +113,7 @@ pub struct GroupModerationBatchItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchResult {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub total: usize,
     pub succeeded: usize,
@@ -135,7 +128,7 @@ pub struct GroupModerationBatchResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchProgress {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub group_id: String,
     pub completed: usize,
@@ -192,27 +185,70 @@ trait GroupModerationBatchActions: Send + Sync {
     }
 }
 
+pub trait GroupModerationRemoteRequests: Send + Sync {
+    fn kick(&self, endpoint: String, group_id: String, user_id: String)
+        -> Result<VrchatApiRequest>;
+    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn unban(&self, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn save_note(
+        &self,
+        endpoint: String,
+        group_id: String,
+        user_id: String,
+        note: String,
+    ) -> Result<VrchatApiRequest>;
+    fn add_role(
+        &self,
+        group_id: String,
+        user_id: String,
+        role_id: String,
+    ) -> Result<VrchatApiRequest>;
+    fn remove_role(
+        &self,
+        group_id: String,
+        user_id: String,
+        role_id: String,
+    ) -> Result<VrchatApiRequest>;
+}
+
 pub struct VrchatGroupModerationBatchActions<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) web: &'a WebClient,
+    remote_requests: &'a dyn GroupModerationRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
     pub event_bus: RuntimeEventBus,
     pub remote_mutation_gate: &'a RemoteMutationGate,
 }
 
+impl<'a> VrchatGroupModerationBatchActions<'a> {
+    pub fn new(
+        web: &'a WebClient,
+        remote_requests: &'a dyn GroupModerationRemoteRequests,
+        auth_scope: &'a RuntimeAuthScope,
+        expected_scope: RuntimeAuthScopeSnapshot,
+        event_bus: RuntimeEventBus,
+        remote_mutation_gate: &'a RemoteMutationGate,
+    ) -> Self {
+        Self {
+            web,
+            remote_requests,
+            auth_scope,
+            expected_scope,
+            event_bus,
+            remote_mutation_gate,
+        }
+    }
+}
+
 impl VrchatGroupModerationBatchActions<'_> {
     async fn execute_request(
         &self,
-        mut request: HttpApiRequestInput,
+        mut request: VrchatApiRequest,
         action: &str,
     ) -> Result<GroupModerationRemoteOutcome> {
         ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
         request.endpoint = Some(self.expected_scope.endpoint.clone());
-        let response = self
-            .web
-            .execute_api(request, ApiScope::Vrchat, self.db)
-            .await?;
+        let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
         let fallback_payload = Value::String(response.data.clone());
         if !(200..300).contains(&response.status) {
             return Err(Error::Custom(response_error_message(
@@ -255,7 +291,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
         Box::pin(async move {
             let (request, action) = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
-                    let (_, _, request) = member_kick_input(
+                    let request = self.remote_requests.kick(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
@@ -263,7 +299,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     (request, "group member kick")
                 }
                 GroupModerationOperation::Ban { group_id, user_id } => {
-                    let (_, _, request) = member_ban_input(
+                    let request = self.remote_requests.ban(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
@@ -271,8 +307,9 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     (request, "group member ban")
                 }
                 GroupModerationOperation::Unban { group_id, user_id } => {
-                    let (_, _, request) =
-                        member_unban_input(group_id.to_string(), user_id.to_string())?;
+                    let request = self
+                        .remote_requests
+                        .unban(group_id.to_string(), user_id.to_string())?;
                     (request, "group member unban")
                 }
                 GroupModerationOperation::SaveNote {
@@ -280,14 +317,11 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     note,
                 } => {
-                    let (_, _, request) = member_props_set_input(
+                    let request = self.remote_requests.save_note(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                        GroupMemberPatch {
-                            manager_notes: Some(note.to_string()),
-                            ..GroupMemberPatch::default()
-                        },
+                        note.to_string(),
                     )?;
                     (request, "group member note update")
                 }
@@ -296,7 +330,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let (_, _, _, request) = member_role_add_input(
+                    let request = self.remote_requests.add_role(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
@@ -308,7 +342,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let (_, _, _, request) = member_role_remove_input(
+                    let request = self.remote_requests.remove_role(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
@@ -352,7 +386,7 @@ pub async fn run_group_moderation_batch(
     actions: &VrchatGroupModerationBatchActions<'_>,
     input: GroupModerationBatchInput,
 ) -> Result<GroupModerationBatchResult> {
-    if input.expected_owner_user_id.trim() != actions.expected_scope.current_user_id
+    if input.expected_owner_user_id.as_str().trim() != actions.expected_scope.current_user_id
         || input.expected_endpoint.trim() != actions.expected_scope.endpoint
     {
         return Err(Error::Custom(
@@ -360,7 +394,7 @@ pub async fn run_group_moderation_batch(
         ));
     }
     let _guard = coordinator.try_begin(
-        &actions.expected_scope.current_user_id,
+        &OwnerId::new(actions.expected_scope.current_user_id.clone()),
         input.group_id.trim(),
     )?;
     run_group_moderation_batch_with_actions(actions, input).await
@@ -399,7 +433,7 @@ async fn run_group_moderation_batch_with_actions(
                 message: "The authenticated user cannot be targeted by this action.".into(),
             };
             actions.report_progress(GroupModerationBatchProgress {
-                owner_user_id: owner_user_id.clone(),
+                owner_user_id: OwnerId::new(owner_user_id.clone()),
                 endpoint: endpoint.clone(),
                 group_id: prepared.group_id.clone(),
                 completed: index + 1,
@@ -445,7 +479,7 @@ async fn run_group_moderation_batch_with_actions(
         }
 
         actions.report_progress(GroupModerationBatchProgress {
-            owner_user_id: owner_user_id.clone(),
+            owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
             completed: index + 1,
@@ -465,7 +499,7 @@ async fn run_group_moderation_batch_with_actions(
     });
     if completed < total {
         actions.report_progress(GroupModerationBatchProgress {
-            owner_user_id: owner_user_id.clone(),
+            owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
             completed: total,
@@ -473,7 +507,7 @@ async fn run_group_moderation_batch_with_actions(
         });
     }
     Ok(summarize(
-        owner_user_id,
+        OwnerId::new(owner_user_id),
         endpoint,
         items,
         scope_error,
@@ -649,7 +683,7 @@ async fn run_role_target(
 }
 
 fn summarize(
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     endpoint: String,
     items: Vec<GroupModerationBatchItemResult>,
     scope_error: Option<String>,

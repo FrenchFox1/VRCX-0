@@ -14,7 +14,7 @@ pub use local_game_context::{
 pub use print_cleanup::{NoopPrintCleanupInputSink, PrintCleanupInputSink, PrintCleanupTrigger};
 pub use process_monitor::{GameProcessEvent, GameProcessEventSink};
 pub use session::{
-    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
+    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, CurrentUserSnapshot,
     GameProcessStatus as HostSessionGameProcessStatus, HostRealtimeSessionContext,
     HostSessionProjection, HostSessionRuntime, SessionHostRuntime,
 };
@@ -25,5 +25,6 @@ pub use updater::{
 
 pub use crate::event_bus::{RuntimeEventBus, RuntimeEventSink};
 pub use crate::task_supervisor::{
-    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskStopToken, TaskSupervisor,
+    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSpawnOutcome, TaskStopReport,
+    TaskStopToken, TaskSupervisor,
 };

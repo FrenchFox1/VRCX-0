@@ -1,5 +1,6 @@
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { isAvatarSearchQueryLongEnough } from '@/shared/utils/avatarSearchQuery';
+import { isRecord } from '@/shared/utils/record';
 
 import avatarProfileRepository from './avatarProfileRepository';
 import type { AvatarProfileRecord } from './avatarProfileRepository';
@@ -25,13 +26,13 @@ export type AvatarSearchProviderResult = {
 
 interface SaveConfigInput {
     enabled: boolean;
-    providerList: unknown;
-    selectedProvider?: unknown;
+    providerList: string[];
+    selectedProvider?: string;
 }
 
 interface SearchInput {
-    provider: unknown;
-    query: unknown;
+    provider: string;
+    query: string;
 }
 
 const DEFAULT_PROVIDER = 'https://api.avtrdb.com/v3/avatar/search/vrcx';
@@ -48,10 +49,6 @@ const LEGACY_PROVIDER_URLS = new Map<string, string | null>([
 
 function normalizeString(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function pick(value: unknown, ...keys: string[]): unknown {
@@ -243,7 +240,7 @@ async function saveConfig({
     return savedConfig;
 }
 
-async function saveSelectedProvider(provider: unknown): Promise<string> {
+async function saveSelectedProvider(provider: string): Promise<string> {
     const normalizedProvider = normalizeString(provider);
     if (!normalizedProvider) {
         return '';

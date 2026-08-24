@@ -4,8 +4,8 @@ async function loadWebviewApi({
     currentWindow = null,
     currentWebviewWindow = null
 }: {
-    currentWindow?: unknown;
-    currentWebviewWindow?: unknown;
+    currentWindow?: object | null;
+    currentWebviewWindow?: object | null;
 } = {}) {
     vi.resetModules();
     vi.doMock('@tauri-apps/api/window', () => ({

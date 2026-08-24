@@ -114,6 +114,7 @@ fn test_main_surface(frame: RgbaFrame, last_uploaded_at: Instant) -> OpenVrSurfa
             },
             activation_button: OverlayActivationButton::Grip,
             interactive: false,
+            force_visible: false,
         },
         transform_device: None,
         policy: WristVisibilityPolicy::default(),

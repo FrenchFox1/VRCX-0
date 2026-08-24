@@ -122,9 +122,8 @@ describe('useUserDialogProfileDecorations', () => {
         await waitFor(() => expect(result.current.isReady).toBe(true));
 
         expect(mediaMocks.collectInventoryItems).toHaveBeenCalledWith({
-            order: 'newest',
-            types: 'iconFrame,profileEffect,nameplateEffect',
-            notFlags: 'ugc',
+            types: ['iconFrame', 'profileEffect', 'nameplateEffect'],
+            notFlags: ['ugc'],
             archived: false
         });
         expect(result.current.itemsBySlot.iconFrame).toHaveLength(1);

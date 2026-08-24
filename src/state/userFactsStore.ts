@@ -9,10 +9,10 @@ import { evictOverflow } from '@/state/storeEviction';
 
 type UserFactInput = Omit<Partial<UserFact>, 'endpoint' | 'id' | 'updatedAt'> &
     Record<string, unknown> & {
-        endpoint?: unknown;
-        id?: unknown;
-        updatedAt?: unknown;
-        userId?: unknown;
+        endpoint?: string;
+        id?: string;
+        updatedAt?: string;
+        userId?: string;
     };
 
 interface UserFactsStoreState {
@@ -36,10 +36,8 @@ const initialState: Pick<
     order: []
 };
 
-function text(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function text(value: string | undefined): string {
+    return value?.trim() ?? '';
 }
 
 function endpointFromKey(key: string): string {
@@ -47,7 +45,23 @@ function endpointFromKey(key: string): string {
 }
 
 function isUserFactInput(value: unknown): value is UserFactInput {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+    return Boolean(
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        (!('endpoint' in value) ||
+            value.endpoint === undefined ||
+            typeof value.endpoint === 'string') &&
+        (!('id' in value) ||
+            value.id === undefined ||
+            typeof value.id === 'string') &&
+        (!('updatedAt' in value) ||
+            value.updatedAt === undefined ||
+            typeof value.updatedAt === 'string') &&
+        (!('userId' in value) ||
+            value.userId === undefined ||
+            typeof value.userId === 'string')
+    );
 }
 
 function isNormalizedStateBucket(

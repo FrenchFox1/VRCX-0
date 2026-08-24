@@ -399,7 +399,7 @@ export function InstanceHistoryPage({
 
     function selectSort(nextKey: InstanceHistorySortKey, nextDesc: boolean) {
         setSortKey(nextKey);
-        setSortDesc(Boolean(nextDesc));
+        setSortDesc(nextDesc);
     }
 
     function commitSearchParams({

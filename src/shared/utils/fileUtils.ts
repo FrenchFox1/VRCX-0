@@ -1,5 +1,5 @@
 function extractFileId(s: string): string {
-    const match = String(s).match(/file_[0-9A-Za-z-]+/);
+    const match = s.match(/file_[0-9A-Za-z-]+/);
     return match ? match[0] : '';
 }
 

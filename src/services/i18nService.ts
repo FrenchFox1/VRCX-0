@@ -9,6 +9,7 @@ import {
 } from '@/localization/index';
 import { normalizeLanguageCode } from '@/localization/locales';
 import type { TimeUnitLabels } from '@/shared/utils/dateTime';
+import { isRecord } from '@/shared/utils/record';
 
 const TIME_UNIT_KEYS = ['y', 'd', 'h', 'm', 's'] as const;
 const i18nResources = {
@@ -35,10 +36,6 @@ const i18nReady = i18n.use(initReactI18next).init({
 
 export default i18n;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function resolveMessage(messages: unknown, key: string): unknown {
     return key
         .split('.')
@@ -49,11 +46,11 @@ function resolveMessage(messages: unknown, key: string): unknown {
         );
 }
 
-function normalizeLocale(locale: unknown): string {
+function normalizeLocale(locale: string): string {
     return normalizeLanguageCode(locale);
 }
 
-export async function setI18nLanguage(locale: unknown): Promise<string> {
+export async function setI18nLanguage(locale: string): Promise<string> {
     const normalizedLocale = normalizeLocale(locale);
     await i18nReady;
     if (!i18n.hasResourceBundle(normalizedLocale, 'translation')) {
@@ -65,7 +62,7 @@ export async function setI18nLanguage(locale: unknown): Promise<string> {
 }
 
 export function getTimeUnitLabels(
-    locale: unknown,
+    locale: string,
     defaultLabels: TimeUnitLabels
 ): TimeUnitLabels {
     const localizedMessages =

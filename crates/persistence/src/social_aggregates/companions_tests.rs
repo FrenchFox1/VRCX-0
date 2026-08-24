@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn companions_of_uses_gamelog_overlap_and_excludes_owner_and_non_overlap() {
@@ -65,7 +66,7 @@ fn companions_of_uses_gamelog_overlap_and_excludes_owner_and_non_overlap() {
     let output = get_companions_of(
         &db,
         CompanionsOfInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: "usr_target".into(),
             time_window: TimeWindow::all(),
             limit: Some(10),
@@ -109,7 +110,7 @@ fn companions_of_renamed_user_shows_latest_name() {
     let output = get_companions_of(
         &db,
         CompanionsOfInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: "usr_target".into(),
             time_window: TimeWindow::all(),
             limit: Some(10),
@@ -168,7 +169,7 @@ fn companions_of_reports_world_count_and_truncates_world_samples() {
     let output = get_companions_of(
         &db,
         CompanionsOfInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: "usr_target".into(),
             time_window: TimeWindow::all(),
             limit: Some(10),
@@ -254,7 +255,7 @@ fn fading_friends_ranks_dropped_copresence_for_current_friends() {
     let output = get_fading_friends(
         &db,
         FadingFriendsInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             prior_from: "2026-05-01T00:00:00Z".into(),
             pivot: "2026-06-01T00:00:00Z".into(),
             now: "2026-07-01T00:00:00Z".into(),
@@ -308,7 +309,7 @@ fn fading_friends_renamed_user_shows_latest_name() {
     let output = get_fading_friends(
         &db,
         FadingFriendsInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             prior_from: "2026-05-01T00:00:00Z".into(),
             pivot: "2026-06-01T00:00:00Z".into(),
             now: "2026-07-01T00:00:00Z".into(),

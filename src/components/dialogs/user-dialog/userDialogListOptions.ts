@@ -65,7 +65,7 @@ export type UserDialogAvatarSort =
     (typeof userDialogAvatarSortingOptions)[number]['value'];
 
 export function isUserDialogAvatarSort(
-    value: unknown
+    value: string
 ): value is UserDialogAvatarSort {
     return userDialogAvatarSortingOptions.some(
         (option) => option.value === value

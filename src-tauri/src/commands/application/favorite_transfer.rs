@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{
+use vrcx_0_application::favorites::{
     FavoriteBulkRemoveInput, FavoriteBulkRemoveResult, FavoriteTransferSelectionInput,
     FavoriteTransferSelectionResult,
 };
@@ -16,9 +16,8 @@ pub async fn app__favorites_transfer_selection(
     input: FavoriteTransferSelectionInput,
 ) -> Result<FavoriteTransferSelectionResult, AppError> {
     state
-        .runtime_context
-        .favorite_mutations
-        .transfer_selection(input)
+        .runtime_host()
+        .transfer_favorite_selection(input)
         .await
         .map_err(AppError::from)
 }
@@ -30,9 +29,8 @@ pub async fn app__favorites_remove_selection(
     input: FavoriteBulkRemoveInput,
 ) -> Result<FavoriteBulkRemoveResult, AppError> {
     state
-        .runtime_context
-        .favorite_mutations
-        .remove_selection(input)
+        .runtime_host()
+        .remove_favorite_selection(input)
         .await
         .map_err(AppError::from)
 }

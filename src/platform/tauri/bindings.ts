@@ -2,7 +2,7 @@
 
 /** user-defined commands **/
 
-export const commands = {
+const generatedCommands = {
     async storageSet(key: string, value: string): Promise<null> {
         return await TAURI_INVOKE('storage__set', { key, value });
     },
@@ -551,6 +551,13 @@ export const commands = {
     ): Promise<VrOverlayRuntimeSnapshot> {
         return await TAURI_INVOKE('app__vr_overlay_enabled_set', { enabled });
     },
+    async appVrOverlayTestModeSet(
+        testMode: boolean
+    ): Promise<VrOverlayRuntimeSnapshot> {
+        return await TAURI_INVOKE('app__vr_overlay_test_mode_set', {
+            testMode
+        });
+    },
     async appVrOverlayConfigReload(): Promise<VrOverlayRuntimeSnapshot> {
         return await TAURI_INVOKE('app__vr_overlay_config_reload');
     },
@@ -668,7 +675,7 @@ export const commands = {
         return await TAURI_INVOKE('app__browse_history_query', { input });
     },
     async appBrowseHistoryDelete(
-        ownerUserId: string,
+        ownerUserId: OwnerId,
         entityKind: BrowseHistoryEntityKind,
         entityId: string
     ): Promise<number> {
@@ -679,7 +686,7 @@ export const commands = {
         });
     },
     async appBrowseHistoryClear(
-        ownerUserId: string,
+        ownerUserId: OwnerId,
         entityKind: BrowseHistoryEntityKind | null
     ): Promise<number> {
         return await TAURI_INVOKE('app__browse_history_clear', {
@@ -962,67 +969,15 @@ export const commands = {
     ): Promise<Partial<{ [key in string]: WorldSummaryOutput }>> {
         return await TAURI_INVOKE('app__world_summaries_get', { worldIds });
     },
-    async appActivitySelfSourceBounds(): Promise<ActivitySelfSourceBoundsOutput> {
-        return await TAURI_INVOKE('app__activity_self_source_bounds');
-    },
-    async appActivitySelfSessionsRefresh(
-        input: ActivitySelfSessionsRefreshInput
-    ): Promise<ActivitySelfSessionsRefreshOutput> {
-        return await TAURI_INVOKE('app__activity_self_sessions_refresh', {
-            input
-        });
-    },
-    async appActivitySyncStateGet(
-        userId: string
-    ): Promise<ActivitySyncStateOutput | null> {
-        return await TAURI_INVOKE('app__activity_sync_state_get', { userId });
-    },
-    async appActivitySyncStateUpsert(
-        entry: ActivitySyncStateInput
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_sync_state_upsert', { entry });
-    },
-    async appActivitySessionsGet(
-        userId: string
-    ): Promise<ActivitySessionOutput[]> {
-        return await TAURI_INVOKE('app__activity_sessions_get', { userId });
-    },
-    async appActivitySessionsReplace(
-        userId: string,
-        sessions: ActivitySessionInput[]
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_sessions_replace', {
-            userId,
-            sessions
-        });
-    },
-    async appActivitySessionsAppend(
-        userId: string,
-        sessions: ActivitySessionInput[],
-        replaceFromStartAt: number | null
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_sessions_append', {
-            userId,
-            sessions,
-            replaceFromStartAt
-        });
-    },
-    async appActivityBucketCacheGet(
-        query: ActivityBucketCacheQueryInput
-    ): Promise<ActivityBucketCacheOutput | null> {
-        return await TAURI_INVOKE('app__activity_bucket_cache_get', { query });
-    },
-    async appActivityBucketCacheUpsert(
-        entry: ActivityBucketCacheInput
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__activity_bucket_cache_upsert', {
-            entry
-        });
-    },
     async appActivityView(
         input: ActivityViewBuildInput
     ): Promise<ActivityViewOutput> {
         return await TAURI_INVOKE('app__activity_view', { input });
+    },
+    async appActivityPageView(
+        input: ActivityPageBuildInput
+    ): Promise<ActivityPageView> {
+        return await TAURI_INVOKE('app__activity_page_view', { input });
     },
     async appActivityOverlapView(
         input: ActivityOverlapViewBuildInput
@@ -1056,13 +1011,10 @@ export const commands = {
     },
     async appUserMutualFriendsListGet(
         input: UserMutualFriendsListInput
-    ): Promise<RawJson[]> {
+    ): Promise<UserMutualFriendsListOutput> {
         return await TAURI_INVOKE('app__user_mutual_friends_list_get', {
             input
         });
-    },
-    async appWorldSearch(query: string): Promise<WorldSummaryOutput[]> {
-        return await TAURI_INVOKE('app__world_search', { query });
     },
     async appWorldGet(input: WorldGetInput): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__world_get', { input });
@@ -1081,7 +1033,9 @@ export const commands = {
     async appMemoListUsers(): Promise<UserMemoOutput[]> {
         return await TAURI_INVOKE('app__memo_list_users');
     },
-    async appMemoListUserNotes(ownerUserId: string): Promise<UserNoteOutput[]> {
+    async appMemoListUserNotes(
+        ownerUserId: OwnerId
+    ): Promise<UserNoteOutput[]> {
         return await TAURI_INVOKE('app__memo_list_user_notes', { ownerUserId });
     },
     async appMemoGetWorld(worldId: string): Promise<WorldMemoOutput | null> {
@@ -1180,14 +1134,14 @@ export const commands = {
         return await TAURI_INVOKE('app__notification_expire', { userId, id });
     },
     async appLocalModerationList(
-        ownerUserId: string
+        ownerUserId: OwnerId
     ): Promise<LocalModerationOutput[]> {
         return await TAURI_INVOKE('app__local_moderation_list', {
             ownerUserId
         });
     },
     async appLocalModerationGet(
-        ownerUserId: string,
+        ownerUserId: OwnerId,
         userId: string
     ): Promise<LocalModerationOutput | null> {
         return await TAURI_INVOKE('app__local_moderation_get', {
@@ -2075,11 +2029,6 @@ export const commands = {
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_user_get', { input });
     },
-    async appVrchatUserGroupsGet(
-        input: VrchatUserInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_user_groups_get', { input });
-    },
     async appVrchatUserProfileGet(
         input: VrchatUserProfileInput
     ): Promise<HttpApiExecuteResponse> {
@@ -2616,6 +2565,17 @@ export const commands = {
     }
 };
 
+type TypedCommands<TCommands> = {
+    [TName in keyof TCommands]: TCommands[TName] extends (
+        ...args: infer TArgs
+    ) => Promise<infer TResult>
+        ? (...args: TArgs) => CommandPromise<TResult>
+        : TCommands[TName];
+};
+
+export const commands: TypedCommands<typeof generatedCommands> =
+    generatedCommands;
+
 /** user-defined events **/
 
 /** user-defined constants **/
@@ -2623,41 +2583,8 @@ export const commands = {
 /** user-defined types **/
 
 export type ActiveTurn = { turnId: string; status: TurnStatus };
-export type ActivityBucketCacheInput = {
-    ownerUserId: string;
-    targetUserId?: string;
-    rangeDays: JsonValue;
-    viewKind: ActivityViewKind;
-    excludeKey?: string;
-    bucketVersion?: JsonValue;
-    builtFromCursor?: string;
-    rawBuckets?: JsonValue;
-    normalizedBuckets?: JsonValue;
-    summary?: JsonValue;
-    builtAt?: string;
-};
-export type ActivityBucketCacheOutput = {
-    ownerUserId: string;
-    targetUserId: string;
-    rangeDays: number;
-    viewKind: ActivityViewKind;
-    excludeKey: string;
-    bucketVersion: number;
-    builtFromCursor: string;
-    rawBuckets: JsonValue;
-    normalizedBuckets: JsonValue;
-    summary: JsonValue;
-    builtAt: string;
-};
-export type ActivityBucketCacheQueryInput = {
-    ownerUserId: string;
-    targetUserId?: string;
-    rangeDays: JsonValue;
-    viewKind: ActivityViewKind;
-    excludeKey?: string;
-};
 export type ActivityOverlapViewBuildInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     currentUserId: string;
     targetUserId: string;
     rangeDays: number;
@@ -2678,53 +2605,97 @@ export type ActivityOverlapViewOutput = {
     builtFromCursor: string;
     builtAt: string;
 };
-export type ActivityRefreshMode = 'full' | 'incremental' | 'expand';
-export type ActivitySelfSessionsRefreshInput = {
+export type ActivityPageAccessSlice = { access: string; minutes: number };
+export type ActivityPageBuildInput = {
+    ownerUserId: OwnerId;
+    rangeDays: number;
+    utcOffsetMinutes: number;
+    nowMs: number;
+    forceRefresh: boolean;
+};
+export type ActivityPageCompanionRow = {
     userId: string;
-    mode: ActivityRefreshMode;
-    rangeDays?: JsonValue;
-    nowMs?: number | null;
+    displayName: string;
+    isFriend: boolean;
+    minutes: number;
+    coDays: number;
+    instances: number;
+    lastSeenTogether: string;
 };
-export type ActivitySelfSessionsRefreshOutput = {
-    sync: ActivitySyncStateOutput;
-    sessions: ActivitySessionOutput[];
-    sourceCount: number;
+export type ActivityPageCoverage = {
+    from: string;
+    to: string;
+    firstSourceAt: string;
 };
-export type ActivitySelfSourceBoundsOutput = {
-    firstCreatedAt: string;
-    lastCreatedAt: string;
-    count: number;
-};
-export type ActivitySessionInput = {
-    start?: JsonValue;
-    end?: JsonValue;
-    isOpenTail?: boolean;
-    sourceRevision?: string;
-};
-export type ActivitySessionOutput = {
-    start: number;
-    end: number;
-    isOpenTail: boolean;
-    sourceRevision: string;
-};
-export type ActivitySyncStateInput = {
-    userId?: string;
-    updatedAt?: string;
-    isSelf?: boolean;
-    sourceLastCreatedAt?: string;
-    pendingSessionStartAt?: JsonValue | null;
-    cachedRangeDays?: JsonValue;
-};
-export type ActivitySyncStateOutput = {
+export type ActivityPageFadingRow = {
     userId: string;
-    updatedAt: string;
-    isSelf: boolean;
-    sourceLastCreatedAt: string;
-    pendingSessionStartAt: JsonValue;
-    cachedRangeDays: number;
+    displayName: string;
+    priorMinutes: number;
+    recentMinutes: number;
+    dropPercent: number;
+    lastSeenTogether: string;
+};
+export type ActivityPagePeople = {
+    companions: ActivityPageCompanionRow[];
+    fading: ActivityPageFadingRow[];
+    encounteredCount: number;
+    newFaceCount: number;
+};
+export type ActivityPagePreviousSummary = {
+    totalMinutes: number;
+    activeDays: number;
+    hasData: boolean;
+};
+export type ActivityPageSeries = {
+    bucket: ActivitySeriesBucket;
+    points: ActivitySeriesPoint[];
+};
+export type ActivityPageSummary = {
+    totalMinutes: number;
+    windowDays: number;
+    activeDays: number;
+    sessionCount: number;
+    longestSessionMinutes: number;
+};
+export type ActivityPageView = {
+    rangeDays: number;
+    utcOffsetMinutes: number;
+    windowFromMs: number;
+    windowToMs: number;
+    hasOpenTail: boolean;
+    summary: ActivityPageSummary;
+    previous: ActivityPagePreviousSummary;
+    series: ActivityPageSeries;
+    accessSplit: ActivityPageAccessSlice[];
+    worlds: ActivityPageWorlds;
+    people: ActivityPagePeople;
+    coverage: ActivityPageCoverage;
+    builtFromCursor: string;
+    builtAt: string;
+    stale: boolean;
+};
+export type ActivityPageWorldRow = {
+    worldId: string;
+    worldName: string;
+    minutes: number;
+    visitCount: number;
+    firstSeenAt: string;
+    lastSeenAt: string;
+};
+export type ActivityPageWorlds = {
+    top: ActivityPageWorldRow[];
+    distinctCount: number;
+    newWorldMinutes: number;
+    returningWorldMinutes: number;
+};
+export type ActivitySeriesBucket = 'day' | 'week';
+export type ActivitySeriesPoint = {
+    startDate: string;
+    minutes: number;
+    inferred: boolean;
 };
 export type ActivityViewBuildInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     targetUserId: string;
     isSelf: boolean;
     rangeDays: number;
@@ -2732,7 +2703,6 @@ export type ActivityViewBuildInput = {
     nowMs: number;
     forceRefresh: boolean;
 };
-export type ActivityViewKind = 'activity' | 'overlap';
 export type ActivityViewOutput = {
     rawBuckets: number[];
     normalizedBuckets: number[];
@@ -2772,7 +2742,13 @@ export type AppErrorCode =
     | 'database'
     | 'io'
     | 'json'
+    | 'persistence_invalid_data'
+    | 'registry_policy_invalid'
+    | 'web_client'
+    | 'update_artifact_invalid'
     | 'vrchat_api'
+    | 'auth_interaction_required'
+    | 'auth_session_invalidated'
     | 'integration_api_port_in_use'
     | 'integration_api_bind'
     | 'custom';
@@ -2896,19 +2872,19 @@ export type AppUpdateStatusSnapshot = {
     shouldNotify: boolean;
 };
 export type AssistantDeltaEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     text: string;
     replace: boolean;
 };
 export type AssistantDoneEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
 };
 export type AssistantErrorEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     code: string;
@@ -2925,7 +2901,7 @@ export type AssistantRuntimeStatus = {
     lastSelection: AssistantRuntimeSelection;
 };
 export type AssistantToolCallEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     toolCallId: string;
@@ -2933,7 +2909,7 @@ export type AssistantToolCallEvent = {
     args: string;
 };
 export type AssistantToolResultEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     toolCallId: string;
@@ -2942,7 +2918,7 @@ export type AssistantToolResultEvent = {
     entities: Entity[];
 };
 export type AssistantTurnEntitiesEvent = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     sessionId: string;
     turnId: string;
     entities: Entity[];
@@ -2974,7 +2950,7 @@ export type AuthenticatedRuntimeSession = {
     displayName: string;
     endpoint: string;
     websocket: string;
-    currentUser: JsonValue;
+    currentUser: RawJson;
 };
 export type AuthenticatedRuntimeStepSnapshot = {
     status: AuthenticatedRuntimeStepStatus;
@@ -2999,7 +2975,7 @@ export type AuthenticatedSessionSnapshot = {
     displayName: string;
     endpoint: string;
     websocket: string;
-    currentUserSnapshot: JsonValue;
+    currentUserSnapshot: CurrentUserSnapshot;
 };
 export type AuthorDetail = { id?: string; displayName?: string | null };
 export type AutoLoginOutcome = LoginSessionState | AutoLoginTerminalOutcome;
@@ -3186,16 +3162,13 @@ export type BackgroundImageConfigureInput =
     | { kind: 'enableCustom' }
     | { kind: 'setCustomFiles'; paths: string[] }
     | { kind: 'setCustomFolder'; folderPath: string }
-    | {
-          kind: 'setRotationInterval';
-          rotationInterval: BackgroundImageRotationInterval;
-      }
+    | { kind: 'setRotationIntervalMinutes'; rotationIntervalMinutes: number }
     | { kind: 'migrateLegacyNasaApod' };
 export type BackgroundImageCustomSource = {
     kind: BackgroundImageCustomSourceKind;
     paths: string[];
     folderPath: string;
-    rotationInterval: BackgroundImageRotationInterval;
+    rotationIntervalMinutes: number;
 };
 export type BackgroundImageCustomSourceKind = 'files' | 'folder';
 export type BackgroundImageMode = 'off' | 'daily' | 'custom';
@@ -3212,7 +3185,6 @@ export type BackgroundImageProviderId =
     | 'nasa-epic'
     | 'aic-public-domain'
     | 'nasa-apod-safe';
-export type BackgroundImageRotationInterval = 'daily' | 'hourly';
 export type BackgroundImageSnapshot = {
     mode: BackgroundImageMode;
     providerId?: BackgroundImageProviderId | null;
@@ -3274,7 +3246,7 @@ export type BrowseHistoryPageOutput = {
     nextCursor: BrowseHistoryCursor | null;
 };
 export type BrowseHistoryQueryInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     entityKind: BrowseHistoryEntityKind | null;
     search?: string;
     cursor: BrowseHistoryCursor | null;
@@ -3283,7 +3255,7 @@ export type BrowseHistoryQueryInput = {
     dateTo?: string;
 };
 export type BrowseHistoryRecordInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     entityKind: BrowseHistoryEntityKind;
     entityId: string;
     title?: string;
@@ -3397,6 +3369,7 @@ export type CurrentUserProfileUpdateRequest =
       }
     | { backgroundType: 'texture'; backgroundTextureId: string };
 export type CurrentUserRefreshOutcome = { applied: boolean };
+export type CurrentUserSnapshot = JsonValue;
 export type CurrentUserUpdateRequest = {
     homeLocation?: string | null;
     status?: UserStatus | null;
@@ -3642,7 +3615,7 @@ export type FavoriteBulkRemoveItemResult = {
 };
 export type FavoriteBulkRemoveItemState = 'removed' | 'failed' | 'notAttempted';
 export type FavoriteBulkRemoveResult = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     kind: FavoriteEntityKind;
     total: number;
     succeeded: number;
@@ -3821,7 +3794,7 @@ export type FavoriteTransferTarget = {
     favoriteType: VrchatFavoriteType | null;
 };
 export type FavoritesChangedPayload = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     kind: FavoriteChangeScope;
     local: boolean;
@@ -3912,6 +3885,11 @@ export type FeedSearchQueryInput = {
     dateTo?: string;
     maxRows: number;
 };
+export type FriendLocationTime = {
+    userId: string;
+    location: string;
+    sinceMs: number | null;
+};
 export type FriendLogCurrentOutput = {
     userId: string;
     displayName: string;
@@ -3970,7 +3948,8 @@ export type FriendProjection = {
     baselineRevision: number;
     patches?: FriendProjectionPatch[];
     removals?: string[];
-    feedEntries?: JsonValue[];
+    feedEntries?: RawJson[];
+    locationTimeSnapshot?: FriendLocationTime[] | null;
     friendLogChanged: boolean;
 };
 export type FriendProjectionPatch = {
@@ -4145,10 +4124,10 @@ export type GroupBanImportStatus = {
 };
 export type GroupCalendarInput = { date: string; includeFeatured?: boolean };
 export type GroupCalendarSnapshot = {
-    events: JsonValue[];
+    events: RawJson[];
     followingEventIds: string[];
     groupNames: Partial<{ [key in string]: string }>;
-    groupProfiles: Partial<{ [key in string]: JsonValue }>;
+    groupProfiles: Partial<{ [key in string]: RawJson }>;
 };
 export type GroupJoinRequestAction = 'accept' | 'reject';
 export type GroupMemberPatch = {
@@ -4167,7 +4146,7 @@ export type GroupModerationBatchAction =
     | { type: 'addRoles' }
     | { type: 'removeRoles' };
 export type GroupModerationBatchInput = {
-    expectedOwnerUserId: string;
+    expectedOwnerUserId: OwnerId;
     expectedEndpoint: string;
     groupId: string;
     action: GroupModerationBatchAction;
@@ -4187,14 +4166,14 @@ export type GroupModerationBatchItemState =
     | 'failed'
     | 'notAttempted';
 export type GroupModerationBatchProgress = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     groupId: string;
     completed: number;
     total: number;
 };
 export type GroupModerationBatchResult = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     total: number;
     succeeded: number;
@@ -4665,6 +4644,13 @@ export type Message = {
     content: string;
     createdAt: string;
 };
+export type ModerationSyncLocalOutput = {
+    userId: string;
+    updatedAt: string;
+    displayName: string;
+    block: boolean;
+    mute: boolean;
+};
 export type ModerationSyncMutationInput = {
     targetUserId: string;
     targetDisplayName?: string;
@@ -4672,11 +4658,11 @@ export type ModerationSyncMutationInput = {
     enabled: boolean;
 };
 export type ModerationSyncMutationOutput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     targetUserId: string;
     type: string;
     enabled: boolean;
-    local: LocalModerationOutput | null;
+    local: ModerationSyncLocalOutput | null;
 };
 export type ModerationSyncRefreshInput = { userId: string; endpoint?: string };
 export type ModerationSyncRefreshOutput = {
@@ -4686,9 +4672,9 @@ export type ModerationSyncRefreshOutput = {
     localCount: number;
     rows: RemoteModerationRow[];
 };
-export type MutualGraphFetchCancelInput = { ownerUserId?: string };
+export type MutualGraphFetchCancelInput = { ownerUserId?: OwnerId };
 export type MutualGraphFetchStartInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     friendIds?: string[];
 };
@@ -4703,7 +4689,7 @@ export type MutualGraphFetchStatus = {
     runId: number;
     revision: number;
     status: MutualGraphFetchState;
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     totalFriends: number;
     processedFriends: number;
     currentFriendId: string;
@@ -4717,7 +4703,7 @@ export type MutualGraphFetchStatus = {
     lastError: string | null;
 };
 export type MutualGraphFriendRefreshInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     friendId: string;
 };
 export type MutualGraphFriendRefreshOutput = {
@@ -4729,6 +4715,7 @@ export type MutualGraphMetaOutput = {
     friendId: string;
     lastFetchedAt: string;
     optedOut: boolean;
+    totalCount: number | null;
 };
 export type MutualGraphSnapshotOutput = {
     friendIds: string[];
@@ -4801,18 +4788,18 @@ export type NotificationActivityFiltersSetInput = {
     filters: OverlayActivityFilterProfile;
 };
 export type NotificationBoopDismissInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     senderUserId: string;
 };
 export type NotificationBoopReplyInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     emojiId?: string;
 };
 export type NotificationHideExpireInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
 };
@@ -4827,7 +4814,7 @@ export type NotificationInstanceInviteInput = {
     rsvp?: boolean | null;
 };
 export type NotificationInviteResponseInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     responseSlot: number;
@@ -4878,7 +4865,7 @@ export type NotificationMarkSeenBatchResult = {
     items: NotificationMarkSeenItemResult[];
     lastError: string | null;
 };
-export type NotificationMarkSeenEffect = 'seen' | 'expired';
+export type NotificationMarkSeenEffect = 'seen';
 export type NotificationMarkSeenItemResult = {
     id: string;
     state: NotificationMarkSeenItemState;
@@ -4889,18 +4876,18 @@ export type NotificationMarkSeenItemResult = {
 export type NotificationMarkSeenItemState = 'succeeded' | 'failed';
 export type NotificationMarkSeenLocation = 'remote' | 'local';
 export type NotificationRequestInviteAcceptInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     instanceId?: string;
     worldId?: string;
 };
 export type NotificationRespondInput = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint?: string;
     target: NotificationTarget;
     responseType?: string;
-    responseData?: JsonValue;
+    responseData?: RawJson;
 };
 export type NotificationSyncOutcome = {
     v1Count: number;
@@ -4972,6 +4959,7 @@ export type OverlayActivityTypeDefinition = {
     hmdDefaultScope: OverlayActivityScope;
     aliases: string[];
 };
+export type OwnerId = string;
 export type ParsedLocation = {
     tag: string;
     isOffline: boolean;
@@ -5206,18 +5194,19 @@ export type QuickSearchResult = {
     name: string;
     subtitle: string;
     imageUrl: string;
-    seedData: JsonValue | null;
+    seedData: RawJson | null;
     memo: string;
     note: string;
     matchedField: QuickSearchMatchedField;
     userColour: string;
 };
 export type RawJson = JsonValue;
+export type RawJsonObject = Partial<{ [key in string]: JsonValue }>;
 export type RealtimeCurrentUserProjection = {
     generation: number;
-    patch: Partial<{ [key in string]: JsonValue }>;
-    snapshot: Partial<{ [key in string]: JsonValue }>;
-    gameStatePatch?: Partial<{ [key in string]: JsonValue }> | null;
+    patch: RawJsonObject;
+    snapshot: RawJsonObject;
+    gameStatePatch?: RawJsonObject | null;
 };
 export type RealtimeEntryCorrection = {
     stream: RealtimeEntryCorrectionStream;
@@ -5237,14 +5226,14 @@ export type RealtimeFeedPatch = {
 };
 export type RealtimeFeedProjection = {
     generation: number;
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     upserts?: RealtimeFeedUpsert[];
     patches?: RealtimeFeedPatch[];
 };
 export type RealtimeFeedUpsert = { sequence: number; entry: RawJson };
 export type RealtimeInstanceClosedProjection = {
     generation: number;
-    notification: JsonValue;
+    notification: RawJson;
 };
 export type RealtimeInstanceQueueKind = 'update' | 'ready' | 'left';
 export type RealtimeInstanceQueueProjection = {
@@ -5265,8 +5254,8 @@ export type RealtimeNotificationProjection = {
     clearMenuIfNoUnseen: boolean;
 };
 export type RealtimeNotificationUpsert = {
-    notification: JsonValue;
-    insertDefaults?: JsonValue | null;
+    notification: RawJson;
+    insertDefaults?: RawJson | null;
     notifyMenu: boolean;
     deliverRuntime: boolean;
     runAutomation: boolean;
@@ -5277,7 +5266,7 @@ export type RealtimeTransportStartResult = {
     clientRunId: number;
     sessionGeneration: number;
 };
-export type RealtimeUserProjection = { users: JsonValue[] };
+export type RealtimeUserProjection = { users: RawJson[] };
 export type RealtimeWsStatus =
     | 'idle'
     | 'connecting'
@@ -5305,7 +5294,7 @@ export type RegistryBackupSnapshot = {
     key: string;
     name: string;
     date: string;
-    data: JsonValue;
+    data: RawJson;
 };
 export type ReleaseStatusFilter = 'all' | 'hidden' | 'private' | 'public';
 export type RemoteModerationRow = {
@@ -5330,7 +5319,7 @@ export type RuntimeGroupInstancesProjection = {
     endpoint: string;
     fetchedAt?: string | null;
     error?: string | null;
-    instances?: JsonValue[] | null;
+    instances?: RawJson[] | null;
     groupOrder?: string[] | null;
 };
 export type RuntimeGroupInstancesStatus =
@@ -5375,7 +5364,7 @@ export type RuntimeRealtimeTransportEpoch = {
     sessionGeneration: number;
 };
 export type RuntimeVrchatAuthFailurePayload = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     endpoint: string;
     path: string;
     reason: string;
@@ -5535,7 +5524,7 @@ export type SocialBaselineRefreshOutput = {
     stale: boolean;
     friendCount: number;
     friendLogChanged: boolean;
-    favoritesSnapshot: JsonValue | null;
+    favoritesSnapshot: FavoriteBaselineSnapshot | null;
 };
 export type SocialFavoritesBaselineInput = {
     userId?: string;
@@ -5605,7 +5594,7 @@ export type SocialUnfriendBatchItemState =
     | 'failed'
     | 'notAttempted';
 export type SocialUnfriendBatchResult = {
-    ownerUserId: string;
+    ownerUserId: OwnerId;
     total: number;
     succeeded: number;
     failed: number;
@@ -5672,9 +5661,14 @@ export type UpdaterMetadata = {
     date: string | null;
     body: string | null;
 };
+export type UserDialogAvatarReleaseStatus =
+    | 'all'
+    | 'hidden'
+    | 'private'
+    | 'public';
 export type UserDialogTabCountsInput = {
     userId: string;
-    avatarReleaseStatus?: ReleaseStatusFilter;
+    avatarReleaseStatus?: UserDialogAvatarReleaseStatus;
     includeMutualFriends?: boolean;
     force?: boolean;
 };
@@ -5704,6 +5698,10 @@ export type UserGroupsOverviewOutput = {
 };
 export type UserMemoOutput = { userId: string; editedAt: string; memo: string };
 export type UserMutualFriendsListInput = { userId: string };
+export type UserMutualFriendsListOutput = {
+    rows: RawJson[];
+    persisted: boolean;
+};
 export type UserNoteOutput = {
     userId: string;
     displayName: string;
@@ -5735,6 +5733,7 @@ export type VrOverlayRuntimeSnapshot = {
     running: boolean;
     steamvrRunning: boolean;
     activeBackend: string | null;
+    testMode: boolean;
 };
 export type VrcStatusSnapshot = {
     status: string;
@@ -6164,7 +6163,7 @@ import {} from '@tauri-apps/api/core';
 import * as TAURI_API_EVENT from '@tauri-apps/api/event';
 import { type WebviewWindow as __WebviewWindow__ } from '@tauri-apps/api/webviewWindow';
 
-import { invoke as TAURI_INVOKE } from './generatedInvoke';
+import { type CommandPromise, invoke as TAURI_INVOKE } from './generatedInvoke';
 
 type __EventObj__<T> = {
     listen: (

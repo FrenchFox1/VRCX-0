@@ -33,7 +33,6 @@ type FavoriteWorldsTabProps = ComponentProps<
 >;
 type AvatarsTabProps = ComponentProps<typeof UserDialogAvatarsTab>;
 type HistoryTabProps = ComponentProps<typeof UserDialogInstanceHistoryTab>;
-type JsonTabProps = ComponentProps<typeof UserDialogJsonTab>;
 
 type UserDialogTabsSectionProps = {
     tabsModel: {
@@ -47,10 +46,7 @@ type UserDialogTabsSectionProps = {
             UserDialogBioSectionProps &
             Omit<
                 UserDialogActivitySummarySectionProps,
-                | 'isFriend'
-                | 'onOpenFeed'
-                | 'onOpenInstanceHistory'
-                | 'previousInstances'
+                'onOpenFeed' | 'onOpenInstanceHistory' | 'previousInstances'
             >;
         presence: Omit<
             UserDialogPresenceSectionProps['presence'],
@@ -106,7 +102,6 @@ type UserDialogTabsSectionProps = {
             | 'previousInstancesError'
             | 'previousInstancesStatus'
         >;
-        json: Pick<JsonTabProps, 'isFavorite' | 'isFriend' | 'moderationState'>;
     };
     tabsCommands: Pick<MutualTabProps, 'setMutualSort' | 'setSearch'> &
         Pick<GroupsTabProps, 'setGroupSort'> &
@@ -139,8 +134,7 @@ export function UserDialogTabsSection({
         worlds,
         favoriteWorlds,
         avatars,
-        history,
-        json
+        history
     } = model;
     const { activeTab, tabCounts = {}, tabs = [] } = root;
     const {
@@ -149,6 +143,7 @@ export function UserDialogTabsSection({
         hideUserMemos,
         hideUserNotes,
         isCurrentUser,
+        isFriend,
         lastSeen,
         memo,
         friendedAt,
@@ -192,7 +187,6 @@ export function UserDialogTabsSection({
         previousInstancesError = '',
         previousInstancesStatus = 'idle'
     } = history;
-    const { isFavorite, isFriend, moderationState } = json;
     const {
         changeAvatarReleaseStatus,
         changeAvatarSort,
@@ -395,16 +389,9 @@ export function UserDialogTabsSection({
             />
             <UserDialogActivityTab
                 profile={profile}
-                isCurrentUser={isCurrentUser}
                 active={activeTab === 'activity'}
             />
-            <UserDialogJsonTab
-                profile={profile}
-                memo={memo}
-                moderationState={moderationState}
-                isFriend={isFriend}
-                isFavorite={isFavorite}
-            />
+            <UserDialogJsonTab profile={profile} />
         </EntityDialogTabs>
     );
 }

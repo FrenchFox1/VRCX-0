@@ -57,7 +57,7 @@ export function useModerationColumns({
                 meta: {
                     label: t('table.moderation.date')
                 },
-                accessorFn: (row) => row?.created || '',
+                accessorFn: (row) => row.created,
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -65,8 +65,8 @@ export function useModerationColumns({
                     />
                 ),
                 sortFn: (rowA, rowB) => {
-                    const leftTs = Date.parse(rowA.original?.created ?? '');
-                    const rightTs = Date.parse(rowB.original?.created ?? '');
+                    const leftTs = Date.parse(rowA.original.created);
+                    const rightTs = Date.parse(rowB.original.created);
                     if (
                         Number.isFinite(leftTs) &&
                         Number.isFinite(rightTs) &&
@@ -74,12 +74,10 @@ export function useModerationColumns({
                     ) {
                         return leftTs - rightTs;
                     }
-                    return String(rowA.original?.id || '').localeCompare(
-                        String(rowB.original?.id || '')
-                    );
+                    return rowA.original.id.localeCompare(rowB.original.id);
                 },
                 cell: ({ row }) => {
-                    const createdAt = row.original?.created || '';
+                    const createdAt = row.original.created;
                     return (
                         <Tooltip>
                             <TooltipTrigger
@@ -102,7 +100,7 @@ export function useModerationColumns({
                 meta: {
                     label: t('table.moderation.type')
                 },
-                accessorFn: (row) => row?.type || '',
+                accessorFn: (row) => row.type,
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -111,7 +109,7 @@ export function useModerationColumns({
                 ),
                 cell: ({ row }) => (
                     <Badge variant="outline" className="text-muted-foreground">
-                        {resolveModerationTypeLabel(row.original?.type, t)}
+                        {resolveModerationTypeLabel(row.original.type, t)}
                     </Badge>
                 )
             },
@@ -122,8 +120,7 @@ export function useModerationColumns({
                 meta: {
                     label: t('table.moderation.source')
                 },
-                accessorFn: (row) =>
-                    row?.sourceDisplayName || row?.sourceUserId || '',
+                accessorFn: (row) => row.sourceDisplayName || row.sourceUserId,
                 header: () => (
                     <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                         {t('table.moderation.source')}
@@ -134,19 +131,18 @@ export function useModerationColumns({
                         type="button"
                         variant="ghost"
                         className="hover:text-primary block h-auto w-full min-w-0 truncate p-0 pr-2.5 text-left text-sm font-normal"
-                        disabled={!row.original?.sourceUserId}
+                        disabled={!row.original.sourceUserId}
                         onClick={() =>
                             onOpenUser({
-                                userId: row.original?.sourceUserId,
+                                userId: row.original.sourceUserId,
                                 title:
-                                    row.original?.sourceDisplayName ||
-                                    row.original?.sourceUserId
+                                    row.original.sourceDisplayName ||
+                                    row.original.sourceUserId
                             })
                         }
                     >
-                        {row.original?.sourceDisplayName ||
-                            row.original?.sourceUserId ||
-                            ''}
+                        {row.original.sourceDisplayName ||
+                            row.original.sourceUserId}
                     </Button>
                 )
             },
@@ -159,8 +155,7 @@ export function useModerationColumns({
                     label: t('table.moderation.target'),
                     stretch: true
                 },
-                accessorFn: (row) =>
-                    row?.targetDisplayName || row?.targetUserId || '',
+                accessorFn: (row) => row.targetDisplayName || row.targetUserId,
                 header: () => (
                     <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                         {t('table.moderation.target')}
@@ -171,19 +166,18 @@ export function useModerationColumns({
                         type="button"
                         variant="ghost"
                         className="hover:text-primary block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-normal break-words whitespace-normal"
-                        disabled={!row.original?.targetUserId}
+                        disabled={!row.original.targetUserId}
                         onClick={() =>
                             onOpenUser({
-                                userId: row.original?.targetUserId,
+                                userId: row.original.targetUserId,
                                 title:
-                                    row.original?.targetDisplayName ||
-                                    row.original?.targetUserId
+                                    row.original.targetDisplayName ||
+                                    row.original.targetUserId
                             })
                         }
                     >
-                        {row.original?.targetDisplayName ||
-                            row.original?.targetUserId ||
-                            ''}
+                        {row.original.targetDisplayName ||
+                            row.original.targetUserId}
                     </Button>
                 )
             },
@@ -207,7 +201,7 @@ export function useModerationColumns({
                     const rowKey = getModerationRowKey(original);
                     const canDelete =
                         Boolean(currentUserId) &&
-                        original?.sourceUserId === currentUserId;
+                        original.sourceUserId === currentUserId;
                     const isDeleting = deletingModerationKey === rowKey;
                     if (!canDelete) {
                         return null;

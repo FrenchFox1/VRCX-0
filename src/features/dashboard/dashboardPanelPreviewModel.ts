@@ -38,7 +38,7 @@ export function createDashboardPanelPreviewProps({
 }): DashboardPanelPreviewProps {
     const panelKey = resolveDashboardPanelKey(panel);
     const definition = getDashboardPanelDefinition(panelKey);
-    const config = getDashboardPanelConfig(panel) as Record<string, unknown>;
+    const config = getDashboardPanelConfig(panel);
     const onConfigChange =
         definition?.category === 'widget' && onPanelChange
             ? (nextConfig: Record<string, unknown>) =>

@@ -278,7 +278,7 @@ fn hmd_avatar_cache_hit_requires_current_friend_context() {
         &runtime,
         FriendRecord {
             id: "usr_actor".to_string(),
-            display_name: "Friend".to_string(),
+            display_name: "Friend".into(),
             current_avatar_thumbnail_image_url: url.to_string(),
             ..FriendRecord::default()
         },
@@ -349,7 +349,7 @@ fn hmd_membership_gap_does_not_drop_loaded_toast_avatar() {
             (
                 FriendRecord {
                     id: "usr_actor".to_string(),
-                    display_name: "Friend".to_string(),
+                    display_name: "Friend".into(),
                     current_avatar_thumbnail_image_url: "https://images.example/avatar/128"
                         .to_string(),
                     ..FriendRecord::default()
@@ -447,7 +447,7 @@ fn hmd_avatar_uses_friend_record_url_before_direct_notification_image() {
         &runtime,
         FriendRecord {
             id: "usr_actor".to_string(),
-            display_name: "Friend".to_string(),
+            display_name: "Friend".into(),
             extra: serde_json::json!({
                 "profilePicOverrideThumbnail": "https://images.example/profile/256",
             })
@@ -562,6 +562,6 @@ fn hmd_entry(
             ..vrcx_0_application_activity::OverlayActivityContent::default()
         },
         actor_relation: relation,
-        payload: serde_json::json!({}),
+        payload: serde_json::json!({}).into(),
     }
 }

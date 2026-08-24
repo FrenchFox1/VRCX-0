@@ -25,9 +25,9 @@ import { useFavoritesViewData } from './useFavoritesViewData';
 const FAVORITES_REVISION_DEBOUNCE_MS = 400;
 
 type FavoriteSeedRecord = Record<string, unknown> & {
-    state?: unknown;
-    stateBucket?: unknown;
-    status?: unknown;
+    state?: string;
+    stateBucket?: string;
+    status?: string | null;
 };
 
 function textValue(value: unknown): string {

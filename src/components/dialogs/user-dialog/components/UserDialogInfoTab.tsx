@@ -16,6 +16,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCacheService';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -50,7 +51,7 @@ type PresenceModel = {
     currentEndpoint?: string;
     locationWorldTitle?: string;
     locationFriendCount?: number;
-    previousInstances?: unknown[];
+    previousInstances?: UserDialogPreviousInstance[];
     locationInstanceUsers?: EntityRecord[];
 };
 type RepresentedGroup = NonNullable<
@@ -76,7 +77,7 @@ type RepresentedGroup = NonNullable<
 export type UserDialogPresenceSectionProps = {
     presence: PresenceModel;
     actions: {
-        onRefreshLocation?: (requestLocation: unknown) => unknown;
+        onRefreshLocation?: (requestLocation: string) => void;
         onShowInstanceHistory?: () => void;
     };
     profile: UserDialogInfoProfile;

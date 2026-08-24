@@ -22,6 +22,7 @@ import {
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
 import { vrcxWorldDeepLink } from '@/shared/constants/vrcxDeepLinks';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
 
 import {
@@ -180,10 +181,6 @@ type WorldDialogTabbedViewProps = {
         >;
     };
 };
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
-}
 
 function record(value: unknown): EntityRecord {
     return isRecord(value) ? value : {};

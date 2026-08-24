@@ -10,6 +10,7 @@ use super::{
     FeedRowsQueryInput,
 };
 use crate::database::DatabaseService;
+use crate::ownership::OwnerId;
 use crate::realtime::{write_realtime_batch, RealtimePersistenceBatch};
 
 struct TestDir {
@@ -417,7 +418,7 @@ fn latest_query_keeps_the_persisted_cursor_when_live_rows_fill_the_result(
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![json!({
                 "created_at": "2026-05-15T00:00:00Z",
@@ -473,7 +474,7 @@ fn lookup_feed_pagination_uses_the_same_date_order_as_its_cursor() -> Result<(),
 
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![
                 json!({
@@ -558,7 +559,7 @@ fn world_id_search_honors_the_date_window() -> Result<(), crate::Error> {
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![
                 json!({
@@ -611,7 +612,7 @@ fn private_avatar_search_applies_dates_to_every_match_branch() -> Result<(), cra
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![
                 json!({
@@ -664,7 +665,7 @@ fn date_window_preserves_millisecond_boundaries() -> Result<(), crate::Error> {
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![
                 json!({
@@ -750,7 +751,7 @@ fn search_matches_previous_values_and_escapes_like_wildcards() -> Result<(), cra
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     write_realtime_batch(
         &db,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![
                 json!({

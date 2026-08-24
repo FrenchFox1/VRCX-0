@@ -26,11 +26,11 @@ type ProxySettingsEditorProps = {
     saving?: boolean;
     server: string;
     testing?: boolean;
-    onEnabledChange: (enabled: boolean) => unknown;
-    onSave: () => unknown;
-    onSaveAndRestart: () => unknown;
-    onServerChange: (server: string) => unknown;
-    onTest: () => unknown;
+    onEnabledChange: (enabled: boolean) => void;
+    onSave: () => void;
+    onSaveAndRestart: () => void;
+    onServerChange: (server: string) => void;
+    onTest: () => void;
 };
 
 export function ProxySettingsEditor({

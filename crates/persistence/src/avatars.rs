@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::Value;
-use vrcx_0_core::ReleaseStatus;
+pub use vrcx_0_contracts::{AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput};
 
 use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
@@ -18,40 +18,6 @@ pub struct AvatarTagInput {
     #[serde(default)]
     pub tag: String,
     #[serde(default)]
-    pub color: Value,
-}
-
-#[derive(Clone, Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarCacheOutput {
-    pub id: String,
-    pub author_id: String,
-    pub author_name: String,
-    #[serde(rename = "created_at")]
-    pub created_at: String,
-    pub description: String,
-    pub image_url: String,
-    pub name: String,
-    #[specta(type = String)]
-    pub release_status: ReleaseStatus,
-    pub thumbnail_image_url: String,
-    #[serde(rename = "updated_at")]
-    pub updated_at: String,
-    pub version: i64,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTimeSpentOutput {
-    pub avatar_id: String,
-    pub time_spent: i64,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTagOutput {
-    pub avatar_id: String,
-    pub tag: String,
     pub color: Value,
 }
 

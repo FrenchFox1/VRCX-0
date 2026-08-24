@@ -6,7 +6,9 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use serde_json::Value;
-use vrcx_0_persistence::notifications::{NotificationListItemOutput, NotificationListQueryInput};
+use vrcx_0_runtime_host_desktop::local_data::{
+    NotificationListItemOutput, NotificationListQueryInput,
+};
 
 #[tauri::command]
 #[specta::specta]
@@ -15,7 +17,10 @@ pub fn app__notification_add_v1(
     user_id: String,
     notification: Value,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::notifications::notification_add_v1(state.db.as_ref(), user_id, notification)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_add_v1(user_id, notification)
         .map_err(AppError::from)
 }
 
@@ -26,7 +31,10 @@ pub fn app__notification_add_v2(
     user_id: String,
     notification: Value,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::notifications::notification_add_v2(state.db.as_ref(), user_id, notification)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_add_v2(user_id, notification)
         .map_err(AppError::from)
 }
 
@@ -37,7 +45,10 @@ pub fn app__notification_delete(
     user_id: String,
     id: String,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::notifications::notification_delete(state.db.as_ref(), user_id, id)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_delete(user_id, id)
         .map_err(AppError::from)
 }
 
@@ -48,7 +59,10 @@ pub fn app__notification_expire(
     user_id: String,
     id: String,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::notifications::notification_expire(state.db.as_ref(), user_id, id)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_expire(user_id, id)
         .map_err(AppError::from)
 }
 
@@ -58,7 +72,10 @@ pub fn app__notification_list_query(
     state: State<'_, AppState>,
     query: NotificationListQueryInput,
 ) -> Result<Vec<NotificationListItemOutput>, AppError> {
-    vrcx_0_persistence::notifications::notification_list_query(state.db.as_ref(), query)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_list_query(query)
         .map_err(AppError::from)
 }
 
@@ -70,13 +87,11 @@ pub fn app__notification_update_expired(
     id: String,
     expired: bool,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::notifications::notification_update_expired(
-        state.db.as_ref(),
-        user_id,
-        id,
-        expired,
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_update_expired(user_id, id, expired)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -86,7 +101,10 @@ pub fn app__notification_v2_expire(
     user_id: String,
     id: String,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::notifications::notification_v2_expire(state.db.as_ref(), user_id, id)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_v2_expire(user_id, id)
         .map_err(AppError::from)
 }
 
@@ -97,6 +115,9 @@ pub fn app__notification_v2_mark_seen(
     user_id: String,
     id: String,
 ) -> Result<(), AppError> {
-    vrcx_0_persistence::notifications::notification_v2_mark_seen(state.db.as_ref(), user_id, id)
+    state
+        .runtime_host()
+        .local_data()
+        .notification_v2_mark_seen(user_id, id)
         .map_err(AppError::from)
 }

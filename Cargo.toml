@@ -7,16 +7,18 @@ members = [
     "crates/integrations",
     "crates/vrchat-client",
     "crates/vr-overlay",
-    "crates/host",
+    "crates/platform",
     "crates/host-desktop",
     "crates/media",
-    "crates/application-contracts",
+    "crates/runtime-event",
+    "crates/contracts",
     "crates/application-core",
+    "crates/outbound-adapters",
     "crates/application-activity",
     "crates/application-realtime",
     "crates/application",
     "crates/application-game",
-    "crates/runtime-host",
+    "crates/composition",
     "crates/runtime-host-desktop",
     "crates/overlay-runtime",
     "crates/overlay-devtool",
@@ -33,16 +35,18 @@ default-members = [
     "crates/integrations",
     "crates/vrchat-client",
     "crates/vr-overlay",
-    "crates/host",
+    "crates/platform",
     "crates/host-desktop",
     "crates/media",
-    "crates/application-contracts",
+    "crates/runtime-event",
+    "crates/contracts",
     "crates/application-core",
+    "crates/outbound-adapters",
     "crates/application-activity",
     "crates/application-realtime",
     "crates/application",
     "crates/application-game",
-    "crates/runtime-host",
+    "crates/composition",
     "crates/runtime-host-desktop",
     "crates/overlay-runtime",
     "crates/headless",
@@ -103,7 +107,7 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
-opt-level = 2
+opt-level = 1
 
 [profile.test]
 debug = false

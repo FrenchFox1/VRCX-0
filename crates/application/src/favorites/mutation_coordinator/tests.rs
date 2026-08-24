@@ -1,77 +1,167 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use serde_json::json;
-use vrcx_0_persistence::{
-    favorites,
-    social_aggregates::{FavoriteAction, FavoriteLocalInput},
-    storage::StorageService,
-};
+use vrcx_0_application_core::NoopWebClientPort;
+use vrcx_0_contracts::social_aggregates::{FavoriteAction, FavoriteLocalInput};
 
 use super::*;
-use crate::{
-    FavoriteBulkRemoveItem, FavoriteBulkRemoveSource, FavoriteTransferInput, FavoriteTransferItem,
-    FavoriteTransferLocation, FavoriteTransferMode, FavoriteTransferSource, FavoriteTransferTarget,
+use crate::favorites::test_support::TestFavoriteStore;
+use crate::favorites::{
+    FavoriteBulkRemoveItem, FavoriteBulkRemoveSource, FavoriteRemoteRequests, FavoriteStore,
+    FavoriteTransferInput, FavoriteTransferItem, FavoriteTransferLocation, FavoriteTransferMode,
+    FavoriteTransferSource, FavoriteTransferTarget,
 };
 
-struct TestDir(PathBuf);
+struct TestFavoriteRemoteRequests;
 
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-favorite-mutations-{name}-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
+impl FavoriteRemoteRequests for TestFavoriteRemoteRequests {
+    fn list(
+        &self,
+        _endpoint: String,
+        _n: i32,
+        _offset: i32,
+    ) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+        Default::default()
     }
-}
 
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+    fn limits(&self, _endpoint: String) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+        Default::default()
+    }
+
+    fn favorite_worlds(
+        &self,
+        _endpoint: String,
+        _n: i32,
+        _offset: i32,
+        _owner_id: String,
+        _user_id: String,
+        _tag: String,
+    ) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+        Default::default()
+    }
+
+    fn favorite_avatars(
+        &self,
+        _endpoint: String,
+        _n: i32,
+        _offset: i32,
+        _tag: String,
+    ) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+        Default::default()
+    }
+
+    fn world(
+        &self,
+        _endpoint: String,
+        world_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((world_id, Default::default()))
+    }
+
+    fn avatar(
+        &self,
+        _endpoint: String,
+        avatar_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((avatar_id, Default::default()))
+    }
+
+    fn user(
+        &self,
+        _endpoint: String,
+        user_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((user_id, Default::default()))
+    }
+
+    fn add(
+        &self,
+        _endpoint: String,
+        input: FavoriteRemoteAddInput,
+    ) -> Result<(
+        String,
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((
+            input.kind.as_str().to_string(),
+            input.entity_id,
+            Default::default(),
+        ))
+    }
+
+    fn delete(
+        &self,
+        _endpoint: String,
+        object_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((object_id, Default::default()))
+    }
+
+    fn save_group(
+        &self,
+        _endpoint: String,
+        _current_user_id: String,
+        input: FavoriteRemoteGroupSaveInput,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((input.group, Default::default()))
+    }
+
+    fn clear_group(
+        &self,
+        _endpoint: String,
+        _current_user_id: String,
+        input: FavoriteRemoteGroupClearInput,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((input.group, Default::default()))
     }
 }
 
 struct Harness {
-    _dir: TestDir,
     coordinator: FavoriteMutationCoordinator,
-    db: Arc<DatabaseService>,
+    store: Arc<TestFavoriteStore>,
     event_bus: RuntimeEventBus,
 }
 
-fn harness(name: &str) -> Harness {
-    let dir = TestDir::new(name);
-    let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-    let storage = StorageService::new(&dir.0.join("storage.json")).unwrap();
-    let web = Arc::new(
-        WebClient::new(
-            &storage,
-            db.as_ref(),
-            "wss://pipeline.vrchat.cloud".into(),
-            env!("CARGO_PKG_VERSION"),
-        )
-        .unwrap(),
-    );
+fn harness(_name: &str) -> Harness {
+    let store = Arc::new(TestFavoriteStore::default());
+    let web = Arc::new(WebClient::new(NoopWebClientPort));
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
     let event_bus = RuntimeEventBus::new();
     let coordinator = FavoriteMutationCoordinator::new(
-        Arc::clone(&db),
-        web,
-        RuntimeDiagnostics::new(),
-        RuntimeSyncEngine::new(),
-        event_bus.clone(),
-        auth_scope,
-        Arc::new(RemoteMutationGate::default()),
+        Arc::clone(&store) as Arc<dyn FavoriteStore>,
+        Arc::new(TestFavoriteRemoteRequests),
+        FavoriteMutationRuntimeDeps::new(
+            web,
+            RuntimeDiagnostics::new(),
+            RuntimeSyncEngine::new(),
+            event_bus.clone(),
+            auth_scope,
+            Arc::new(RemoteMutationGate::default()),
+        ),
     );
     Harness {
-        _dir: dir,
         coordinator,
-        db,
+        store,
         event_bus,
     }
 }
@@ -91,6 +181,7 @@ fn assert_single_local_invalidation(event_bus: &RuntimeEventBus) {
             "changes": [],
             "requiresRefresh": true
         })
+        .into()
     );
 }
 
@@ -109,13 +200,11 @@ fn local_mutation_persists_and_emits_one_exact_delta() {
 
     assert_eq!(affected, 1);
     assert_eq!(
-        favorites::favorite_list(
-            harness.db.as_ref(),
-            Some("usr_self"),
-            FavoriteEntityKind::Friend,
-        )
-        .unwrap()
-        .len(),
+        harness
+            .store
+            .list(Some(&OwnerId::new("usr_self")), FavoriteEntityKind::Friend,)
+            .unwrap()
+            .len(),
         1
     );
     let events = harness.event_bus.take_events_for_test();
@@ -137,6 +226,7 @@ fn local_mutation_persists_and_emits_one_exact_delta() {
             }],
             "requiresRefresh": false
         })
+        .into()
     );
 }
 
@@ -159,13 +249,11 @@ fn tool_dry_run_does_not_persist_or_emit() {
         .unwrap();
 
     assert_eq!(output.affected_rows, 0);
-    assert!(favorites::favorite_list(
-        harness.db.as_ref(),
-        Some("usr_self"),
-        FavoriteEntityKind::Friend,
-    )
-    .unwrap()
-    .is_empty());
+    assert!(harness
+        .store
+        .list(Some(&OwnerId::new("usr_self")), FavoriteEntityKind::Friend,)
+        .unwrap()
+        .is_empty());
     assert!(harness.event_bus.take_events_for_test().is_empty());
 }
 
@@ -194,14 +282,15 @@ fn tool_write_persists_and_emits_one_invalidation() {
 #[tokio::test]
 async fn local_transfer_emits_once_with_exact_changed_sides() {
     let harness = harness("local-transfer");
-    favorites::favorite_add(
-        harness.db.as_ref(),
-        Some("usr_self"),
-        FavoriteEntityKind::Friend,
-        "usr_friend".into(),
-        "Source".into(),
-    )
-    .unwrap();
+    harness
+        .store
+        .add(
+            Some(&OwnerId::new("usr_self")),
+            FavoriteEntityKind::Friend,
+            "usr_friend".into(),
+            "Source".into(),
+        )
+        .unwrap();
 
     let output = harness
         .coordinator
@@ -232,12 +321,10 @@ async fn local_transfer_emits_once_with_exact_changed_sides() {
     assert_eq!(output.failed, 0);
     assert!(output.local_changed);
     assert!(!output.remote_changed);
-    let rows = favorites::favorite_list(
-        harness.db.as_ref(),
-        Some("usr_self"),
-        FavoriteEntityKind::Friend,
-    )
-    .unwrap();
+    let rows = harness
+        .store
+        .list(Some(&OwnerId::new("usr_self")), FavoriteEntityKind::Friend)
+        .unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].group_name, "Target");
     assert_single_local_invalidation(&harness.event_bus);
@@ -246,14 +333,15 @@ async fn local_transfer_emits_once_with_exact_changed_sides() {
 #[tokio::test]
 async fn local_bulk_remove_emits_once_with_exact_changed_sides() {
     let harness = harness("local-bulk-remove");
-    favorites::favorite_add(
-        harness.db.as_ref(),
-        Some("usr_self"),
-        FavoriteEntityKind::Friend,
-        "usr_friend".into(),
-        "Close".into(),
-    )
-    .unwrap();
+    harness
+        .store
+        .add(
+            Some(&OwnerId::new("usr_self")),
+            FavoriteEntityKind::Friend,
+            "usr_friend".into(),
+            "Close".into(),
+        )
+        .unwrap();
 
     let output = harness
         .coordinator

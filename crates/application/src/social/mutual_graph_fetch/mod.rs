@@ -7,5 +7,8 @@ pub use runtime::MutualGraphFetchRuntime;
 pub use types::{
     MutualGraphFetchCancelInput, MutualGraphFetchStartInput, MutualGraphFetchState,
     MutualGraphFetchStatus, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
-    MutualGraphFriendRefreshStatus, MutualGraphRequestDeps, UserMutualFriendsListInput,
+    MutualGraphFriendRefreshStatus, MutualGraphLinkOutput, MutualGraphMetaInput,
+    MutualGraphMetaOutput, MutualGraphRemoteRequests, MutualGraphRequestDeps,
+    MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput, MutualGraphStore,
+    UserMutualFriendsListInput, UserMutualFriendsListOutput,
 };

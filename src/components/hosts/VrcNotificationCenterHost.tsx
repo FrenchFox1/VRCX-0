@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { BoopReplyDialog } from '@/features/notifications/components/NotificationViewParts';
 import { NotificationDrawerList } from '@/features/notifications/drawer/NotificationDrawerList';
 import type {
@@ -43,7 +44,7 @@ type InviteResponseSlotPayload = {
     };
 };
 
-const EMPTY_GROUP_INSTANCES: unknown[] = [];
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
 
 export function VrcNotificationCenterHost() {
     const { t } = useTranslation();

@@ -8,7 +8,7 @@ type LocalModerationRow = Awaited<
     ReturnType<typeof vrchatModerationRepository.getAllLocalModerations>
 >[number];
 
-export function usePlayerListModeration(currentUserId: unknown) {
+export function usePlayerListModeration(currentUserId: string | null) {
     const [moderationByUserId, setModerationByUserId] = useState<
         Record<string, LocalModerationRow>
     >({});

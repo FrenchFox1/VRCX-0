@@ -1,3 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
+
 import type {
     AppErrorCode,
     AppErrorPayload,
@@ -30,16 +32,18 @@ export class PlatformCommandError extends Error {
     }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-}
-
 function appErrorCode(value: unknown): AppErrorCode | null {
     switch (value) {
         case 'database':
         case 'io':
         case 'json':
+        case 'persistence_invalid_data':
+        case 'registry_policy_invalid':
+        case 'web_client':
+        case 'update_artifact_invalid':
         case 'vrchat_api':
+        case 'auth_interaction_required':
+        case 'auth_session_invalidated':
         case 'integration_api_port_in_use':
         case 'integration_api_bind':
         case 'custom':

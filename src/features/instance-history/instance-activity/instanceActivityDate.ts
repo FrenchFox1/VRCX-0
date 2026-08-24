@@ -13,7 +13,7 @@ export function toLocalDayKey(value: Date | string | number) {
 }
 
 export function parseLocalDayKey(dayKey: string) {
-    const [year, month, day] = String(dayKey || '')
+    const [year, month, day] = dayKey
         .split('-')
         .map((value: string) => Number.parseInt(value, 10) || 0);
     return new Date(year, Math.max(0, month - 1), day || 1, 0, 0, 0, 0);
@@ -28,7 +28,7 @@ export function formatDateLabel(dayKey: string) {
             day: 'numeric',
             weekday: 'short'
         },
-        { fallback: String(dayKey || '') }
+        { fallback: dayKey }
     );
-    return formatted || String(dayKey || '');
+    return formatted || dayKey;
 }

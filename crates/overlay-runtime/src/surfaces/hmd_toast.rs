@@ -14,6 +14,7 @@ use super::super::localization::OverlayLocale;
 use super::super::manager::VrOverlayManager;
 use super::super::runtime::{render_slint_hmd_frame, VrOverlayRuntime, VrOverlayRuntimeConfig};
 use super::super::service::HostVrOverlayService;
+use super::super::test_preview::test_hmd_toast_views;
 use super::friend_record::friend_record_avatar_url;
 use super::main::{build_main_surface_model, HmdToastView, MainOverlayFrameInput};
 
@@ -56,13 +57,13 @@ impl VrOverlayRuntime {
             return;
         };
         let runtime = Arc::clone(self);
-        let tasks = services.data().tasks.clone();
+        let tasks = services.tasks().clone();
         tasks.spawn(async move {
             let mut entry = entry;
-            let endpoint = services.data().auth_scope.snapshot().endpoint;
+            let endpoint = services.auth_scope().snapshot().endpoint;
             if !endpoint.trim().is_empty() {
-                let resolve = services.data().world_cache.resolve_name(
-                    services.data().web.as_ref(),
+                let resolve = services.world_cache().resolve_name(
+                    services.web_client().as_ref(),
                     &endpoint,
                     &world_id,
                 );
@@ -147,7 +148,11 @@ impl VrOverlayRuntime {
         now: Instant,
     ) {
         let surface_id = OverlaySurfaceId::new(MAIN_SURFACE_ID);
-        let toasts = self.hmd_toast_views(now);
+        let toasts = if self.is_test_mode() {
+            test_hmd_toast_views()
+        } else {
+            self.hmd_toast_views(now)
+        };
         if toasts.is_empty() {
             if let Err(error) = manager.hide_surface(&surface_id) {
                 tracing::warn!(error = %error, "failed to hide HMD overlay surface");
@@ -194,7 +199,7 @@ impl VrOverlayRuntime {
             .enumerate()
             .map(|(index, toast)| {
                 if let Some(services) = &self.services {
-                    refresh_cached_world_name(&services.data().world_cache, &mut toast.entry);
+                    refresh_cached_world_name(services.world_cache(), &mut toast.entry);
                 }
                 advance_hmd_toast_slide(toast, index, now);
                 let show_avatar = self.is_current_hmd_friend(&toast.entry.actor_user_id);
@@ -279,14 +284,13 @@ impl VrOverlayRuntime {
             );
             return;
         };
-        let auth = services.data().auth_scope.snapshot();
+        let auth = services.auth_scope().snapshot();
         let endpoint = if snapshot_endpoint.trim().is_empty() {
             auth.endpoint.clone()
         } else {
             snapshot_endpoint
         };
         let allow_user_icon = services
-            .data()
             .config()
             .get_bool("displayVRCPlusIconsAsAvatar", true)
             .unwrap_or(true);
@@ -307,11 +311,11 @@ impl VrOverlayRuntime {
         let avatar_cache = Arc::clone(&self.avatar_bitmap_cache);
         let runtime = Arc::clone(self);
         let avatar_cache_generation = avatar_cache.generation();
-        let tasks = services.data().tasks.clone();
+        let tasks = services.tasks().clone();
         tasks.spawn(async move {
             let Some(bitmap) = avatar_cache
                 .resolve(
-                    services.data().web.as_ref(),
+                    services.web_client().as_ref(),
                     initial_image_url.trim(),
                     &actor_user_id,
                 )
@@ -453,5 +457,3 @@ pub(crate) fn refresh_cached_world_name(
 
 #[cfg(test)]
 mod animation_tests;
-#[cfg(all(test, feature = "friends-panel"))]
-mod tests;

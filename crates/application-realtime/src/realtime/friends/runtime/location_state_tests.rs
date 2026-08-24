@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn friend_location_with_embedded_user_without_online_location_preserves_previous_bucket() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn friend_location_missing_embedded_user_preserves_previous_state() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn friend_location_missing_embedded_user_without_previous_is_ignored() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn friend_location_missing_embedded_user_preserves_pending_offline() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

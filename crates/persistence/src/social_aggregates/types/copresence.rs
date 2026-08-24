@@ -3,8 +3,9 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::TimeWindow;
+use crate::ownership::OwnerId;
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum CopresenceGroupBy {
     #[default]
@@ -12,7 +13,7 @@ pub enum CopresenceGroupBy {
     FriendWorld,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryInput {
     pub time_window: TimeWindow,
@@ -23,12 +24,12 @@ pub struct CopresenceSummaryInput {
     #[serde(default)]
     pub limit: Option<i64>,
     #[serde(default)]
-    pub owner_user_id: Option<String>,
+    pub owner_user_id: Option<OwnerId>,
     #[serde(default)]
     pub friends_only: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryOutput {
     pub rows: Vec<CopresenceSummaryRow>,
@@ -39,7 +40,7 @@ pub struct CopresenceSummaryOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryRow {
     pub user_id: String,

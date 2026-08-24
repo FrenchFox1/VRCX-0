@@ -1,11 +1,9 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 
+use crate::auth::test_support::MemoryAuthCredentialStore;
+use crate::auth::AuthCredentialStore;
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde_json::json;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::storage::StorageService;
-use vrcx_0_persistence::DatabaseService;
 
 use super::super::snapshot::saved_snapshot;
 use super::super::storage::{
@@ -13,7 +11,7 @@ use super::super::storage::{
 };
 use super::super::types::LoginSuccessRecordInput;
 use super::record_login_success;
-use vrcx_0_application_core::WebClient;
+use vrcx_0_application_core::{MemoryCookieWebClientPort, WebClient};
 
 struct TestDir {
     path: PathBuf,
@@ -49,10 +47,9 @@ fn contains_secret_key(value: &serde_json::Value) -> bool {
 }
 
 #[test]
-fn saved_snapshot_redacts_passwords_and_cookies() -> crate::Result<()> {
-    let dir = TestDir::new("auth-snapshot-redacted");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let config = ConfigRepository::new(db);
+fn saved_snapshot_redacts_passwords_and_cookies() -> vrcx_0_application_core::Result<()> {
+    let _dir = TestDir::new("auth-snapshot-redacted");
+    let config = MemoryAuthCredentialStore::default();
     config.set_string(
         SAVED_CREDENTIALS_KEY,
         &json!({
@@ -102,17 +99,16 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> crate::Result<()> {
     Ok(())
 }
 
-fn test_web_client(dir: &TestDir, db: &Arc<DatabaseService>) -> crate::Result<WebClient> {
-    let storage = StorageService::new(&dir.path.join("VRCX-0.json"))?;
-    WebClient::new(&storage, db.as_ref(), "https://app.example".into(), "2.9.2")
+fn test_web_client(_dir: &TestDir) -> vrcx_0_application_core::Result<WebClient> {
+    Ok(WebClient::new(MemoryCookieWebClientPort::default()))
 }
 
 #[test]
-fn record_login_success_with_save_credentials_captures_live_cookies() -> crate::Result<()> {
+fn record_login_success_with_save_credentials_captures_live_cookies(
+) -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("login-success-save-live-cookies");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let config = ConfigRepository::new(Arc::clone(&db));
-    let web = test_web_client(&dir, &db)?;
+    let config = MemoryAuthCredentialStore::default();
+    let web = test_web_client(&dir)?;
     let cookie_payload = B64.encode(
         serde_json::to_vec(&json!([
             {"Name": "auth", "Value": "new-account", "Domain": ".vrchat.cloud", "Path": "/"},
@@ -126,11 +122,12 @@ fn record_login_success_with_save_credentials_captures_live_cookies() -> crate::
         &config,
         &web,
         LoginSuccessRecordInput {
-            user: json!({ "id": "usr_new", "displayName": "New User" }),
+            user: json!({ "id": "usr_new", "displayName": "New User" }).into(),
             login_params: json!({
                 "username": "new@example.test",
                 "password": "secret"
-            }),
+            })
+            .into(),
             stored_login_params: None,
             save_credentials: true,
         },
@@ -146,22 +143,22 @@ fn record_login_success_with_save_credentials_captures_live_cookies() -> crate::
 }
 
 #[test]
-fn record_login_success_without_save_credentials_does_not_persist_a_new_entry() -> crate::Result<()>
-{
+fn record_login_success_without_save_credentials_does_not_persist_a_new_entry(
+) -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("login-success-no-save");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let config = ConfigRepository::new(Arc::clone(&db));
-    let web = test_web_client(&dir, &db)?;
+    let config = MemoryAuthCredentialStore::default();
+    let web = test_web_client(&dir)?;
 
     record_login_success(
         &config,
         &web,
         LoginSuccessRecordInput {
-            user: json!({ "id": "usr_new", "displayName": "New User" }),
+            user: json!({ "id": "usr_new", "displayName": "New User" }).into(),
             login_params: json!({
                 "username": "new@example.test",
                 "password": "secret"
-            }),
+            })
+            .into(),
             stored_login_params: None,
             save_credentials: false,
         },
@@ -178,11 +175,10 @@ fn record_login_success_without_save_credentials_does_not_persist_a_new_entry() 
 
 #[test]
 fn record_login_success_without_save_credentials_refreshes_an_existing_record_in_place(
-) -> crate::Result<()> {
+) -> vrcx_0_application_core::Result<()> {
     let dir = TestDir::new("login-success-refresh-existing");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let config = ConfigRepository::new(Arc::clone(&db));
-    let web = test_web_client(&dir, &db)?;
+    let config = MemoryAuthCredentialStore::default();
+    let web = test_web_client(&dir)?;
 
     config.set_string(
         SAVED_CREDENTIALS_KEY,
@@ -203,11 +199,12 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
         &config,
         &web,
         LoginSuccessRecordInput {
-            user: json!({ "id": "usr_1", "displayName": "New Name" }),
+            user: json!({ "id": "usr_1", "displayName": "New Name" }).into(),
             login_params: json!({
                 "username": "login@example.com",
                 "password": "ignored-because-save-credentials-is-false"
-            }),
+            })
+            .into(),
             stored_login_params: None,
             save_credentials: false,
         },
@@ -231,10 +228,10 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
 }
 
 #[test]
-fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering() -> crate::Result<()> {
-    let dir = TestDir::new("auth-typed-legacy-decode");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let config = ConfigRepository::new(db);
+fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
+) -> vrcx_0_application_core::Result<()> {
+    let _dir = TestDir::new("auth-typed-legacy-decode");
+    let config = MemoryAuthCredentialStore::default();
     config.set_string(
         SAVED_CREDENTIALS_KEY,
         &json!({

@@ -97,16 +97,50 @@ fn hmd_defaults_match_interruptive_notification_profile() {
 }
 
 #[test]
+fn hmd_friend_defaults_match_the_recommended_activity_set() {
+    let friend_types = hmd_default_scope_contract()
+        .into_iter()
+        .filter_map(|(activity_type, scope)| {
+            (scope == OverlayActivityScope::Friends).then_some(activity_type)
+        })
+        .collect::<BTreeSet<_>>();
+
+    assert_eq!(
+        friend_types,
+        [
+            "DisplayName",
+            "GPS",
+            "Offline",
+            "OnPlayerJoining",
+            "Online",
+            "Status",
+            "TrustLevel",
+            "boop",
+            "invite",
+            "inviteResponse",
+            "requestInvite",
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect()
+    );
+}
+
+#[test]
 fn hmd_delivery_is_live_only_and_independent_from_wrist_snapshot() {
-    let runtime = OverlayActivityRuntime::default();
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "wrist": { "types": { "Online": { "scope": "off" } } },
+        "desktop": { "types": { "Online": { "scope": "off" } } },
+        "vr": { "types": { "Online": { "scope": "off" } } },
+        "webhook": { "types": { "Online": { "scope": "off" } } },
+        "tts": { "types": { "Online": { "scope": "off" } } }
+    })));
     let sink = RecordingSink::default();
     let deliveries = sink.deliveries.clone();
     let snapshots = sink.snapshots.clone();
     runtime.set_sink(sink);
-    runtime.set_favorite_groups(OverlayFavoriteGroups::from_pairs([(
-        "fav-a",
-        ["usr_friend"].as_slice(),
-    )]));
+    runtime.set_friend_user_ids(["usr_friend"]);
     runtime.set_delivery_armed(true);
 
     let mut row = candidate("Online", "usr_friend");
@@ -382,7 +416,8 @@ fn activity_content_is_built_from_feed_payload() {
         "location": "wrld_1:123",
         "worldName": "Great World",
         "groupName": "Group A"
-    });
+    })
+    .into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -406,6 +441,34 @@ fn activity_content_is_built_from_feed_payload() {
 }
 
 #[test]
+fn group_announcement_exposes_nested_source_group_name() {
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "desktop": {
+            "types": {
+                "group.announcement": {
+                    "scope": "on",
+                    "favoriteGroupKeys": "all"
+                }
+            }
+        }
+    })));
+    let mut row = candidate("group.announcement", "");
+    row.payload = json!({
+        "type": "group.announcement",
+        "message": "Weekly meetup",
+        "data": {
+            "groupName": "Maple Club"
+        }
+    })
+    .into();
+
+    let entry = runtime.ingest_candidate(row).unwrap();
+
+    assert_eq!(entry.content.group_name, "Maple Club");
+}
+
+#[test]
 fn all_activity_types_build_desktop_safe_content() {
     let definitions = overlay_activity_type_definitions();
     let runtime = OverlayActivityRuntime::with_filters(desktop_filters_for(&definitions));
@@ -414,7 +477,7 @@ fn all_activity_types_build_desktop_safe_content() {
     for definition in definitions {
         let mut row = candidate(&definition.key, "usr_actor");
         row.actor_display_name = "Desktop Actor".to_string();
-        row.payload = representative_payload(&definition.key);
+        row.payload = representative_payload(&definition.key).into();
 
         let entry = runtime
             .ingest_candidate(row)
@@ -472,7 +535,8 @@ fn notification_content_uses_invite_details() {
             "worldName": "Invite World",
             "inviteMessage": "come over"
         }
-    });
+    })
+    .into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -546,7 +610,8 @@ fn location_ids_are_not_shown_as_names() {
         "userId": "usr_map",
         "displayName": "Map User",
         "location": "wrld_1234:5678~group(grp_9999)"
-    });
+    })
+    .into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -571,7 +636,7 @@ fn private_location_aligns_with_original_display() {
     })));
     runtime.set_friend_user_ids(["usr_p"]);
     let mut row = candidate("GPS", "usr_p");
-    row.payload = json!({ "type": "GPS", "userId": "usr_p", "location": "private" });
+    row.payload = json!({ "type": "GPS", "userId": "usr_p", "location": "private" }).into();
 
     let entry = runtime.ingest_candidate(row).unwrap();
 
@@ -611,7 +676,7 @@ fn candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {
         actor_user_id: user_id.to_string(),
         actor_display_name: user_id.to_string(),
         current_instance: false,
-        payload: json!({}),
+        payload: json!({}).into(),
     }
 }
 

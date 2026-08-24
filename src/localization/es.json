@@ -91,7 +91,10 @@
             "avatar": "Avatares",
             "group": "Grupos"
         },
-        "date": { "today": "Hoy", "yesterday": "Ayer" },
+        "date": {
+            "today": "Hoy",
+            "yesterday": "Ayer"
+        },
         "retention": {
             "label": "Conservación del historial",
             "description": "Las entradas más antiguas se eliminan automáticamente.",
@@ -457,22 +460,6 @@
             "instance_duration": "Instancia {duration}"
         },
         "generic_instance_location": "una instancia",
-        "friends_panel": {
-            "title": "Amigos favoritos",
-            "all": "Todos",
-            "empty": "No hay amigos favoritos en línea",
-            "note": "Nota",
-            "memo": "Nota local",
-            "open": "Abrir",
-            "request": "Solicitar",
-            "invite": "Invitar",
-            "favorites_online": "Favoritos en línea",
-            "same_instance": "Misma instancia",
-            "local_favorites": "Favoritos locales",
-            "traveling": "Viajando",
-            "private": "Privado",
-            "offline": "Sin conexión"
-        },
         "discord": {
             "title": {
                 "invite": "Invitación de {name}",
@@ -2155,13 +2142,6 @@
                     "opacity": "Opacidad",
                     "filters": "Filtros de notificaciones del visor"
                 },
-                "interactive_panel": {
-                    "header": "Panel interactivo de amigos",
-                    "enabled": "Activar el panel interactivo de amigos",
-                    "all_friends_include_favorites": "Incluir favoritos en Todos",
-                    "summon_hint": "Gesto de invocación",
-                    "openvr_required": "Mantén pulsado el grip derecho unos 2 segundos para invocarlo. Requiere el backend de superposición SteamVR/OpenVR; OpenXR todavía no ofrece el panel interactivo."
-                },
                 "wrist_overlay": {
                     "header": "Overlay de muñeca",
                     "wrist_feed_overlay": "Overlay de feed de muñeca",
@@ -2184,6 +2164,12 @@
                     "vr_device_status": "Estado de los dispositivos VR",
                     "battery_percentage": "Porcentaje de batería",
                     "wrist_feed_notifications": "Filtros de notificaciones del overlay de muñeca"
+                },
+                "test_mode": {
+                    "header": "Prueba de overlay",
+                    "description": "Fuerza el overlay de muñeca y la notificación del visor a mostrar una tarjeta de prueba para que puedas comprobar la posición, el tamaño y la opacidad con el visor puesto. No se guarda y se desactiva al reiniciar VRCX-0.",
+                    "force_display": "Forzar la visualización del overlay",
+                    "requires_steamvr": "Requiere que SteamVR esté en ejecución."
                 }
             },
             "interface": {
@@ -3237,17 +3223,18 @@
                 "community": "Tema de la comunidad"
             },
             "accent": {
-                "header": "Color de acento"
+                "header": "Color de acento",
+                "custom": "Personalizado",
+                "hex_label": "Color hexadecimal"
             },
             "custom_css": {
+                "status_on": "Encendido",
+                "status_off": "Apagado",
                 "header": "CSS personalizado",
-                "enabled_summary": "El CSS de anulación está activo ({count} bytes).",
-                "disabled_summary": "Capa final de CSS opcional. Actualmente está desactivada.",
                 "edit": "Editar",
                 "hide_editor": "Ocultar editor"
             },
             "developer": {
-                "summary": "Herramientas de vista previa de tema local para compilaciones de desarrollo de temas.",
                 "preview_active": "Previsualizando {name}.",
                 "show": "Mostrar herramientas",
                 "hide": "Ocultar herramientas"
@@ -3266,16 +3253,11 @@
         "background_image": {
             "settings": {
                 "header": "Imagen de fondo",
-                "description": "Usa una fuente de imagen diaria o tu propia fuente de imagen local.",
                 "apod_note": "NASA APOD solo usa imágenes sin campo de copyright.",
-                "custom_source": "Imagen local",
-                "custom_source_description": "Selecciona una imagen para un fondo fijo, o selecciona varias imágenes o una carpeta para la rotación.",
-                "folder_first_level_note": "Las carpetas se analizan solo en un nivel. No se leen las subcarpetas.",
-                "selected_files": "{count} imagen seleccionada",
+                "folder_recursive_note": "También se incluyen las imágenes de las subcarpetas.",
                 "current_image": "Imagen actual",
-                "image_count": "{count} imagen",
+                "image_count": "{count} imágenes",
                 "rotation": "Rotación",
-                "no_custom_source": "Ninguna imagen local seleccionada",
                 "no_image": "Ninguna imagen cargada",
                 "no_image_description": "Actualiza o elige una fuente para cargar una imagen.",
                 "source_type_file": "Archivo local",
@@ -3288,11 +3270,12 @@
                 "custom": "Imagen local"
             },
             "rotation": {
-                "daily": "Diaria",
-                "hourly": "Cada hora"
+                "minutes": "min",
+                "custom": "Personalizado"
             },
             "action": {
                 "refresh": "Actualizar",
+                "change_image": "Cambiar imagen",
                 "select_images": "Seleccionar imágenes",
                 "select_folder": "Seleccionar carpeta"
             },
@@ -3309,6 +3292,81 @@
             "contributors_error": "No se pudo cargar la lista de colaboradores.",
             "thanks": "Cada traducción, prueba, informe de error e idea viene de la comunidad. Gracias.",
             "license_line": "Libre y de código abierto bajo GPL-3.0"
+        },
+        "activity": {
+            "title": "Actividad",
+            "description": "En qué se fue tu tiempo, resumido por periodo",
+            "range": {
+                "all": "Todo",
+                "days": "Últimos {days} días"
+            },
+            "stat": {
+                "total_time": "Tiempo total",
+                "daily_average": "Media diaria",
+                "active_days": "Días jugados",
+                "longest_session": "Sesión más larga",
+                "change_up": "+{percent}% respecto al anterior",
+                "change_down": "-{percent}% respecto al anterior"
+            },
+            "unit": {
+                "hours": "h",
+                "minutes": "minutos"
+            },
+            "section": {
+                "instance_types": "Tipos de instancia",
+                "daily_time": "Tiempo por día",
+                "weekly_time": "Tiempo por semana",
+                "when_you_play": "Cuándo juegas",
+                "top_worlds": "Mundos a los que vuelves",
+                "companions": "Con quién pasas el tiempo",
+                "highlights": "Para destacar"
+            },
+            "access": {
+                "unknown": "Desconocido",
+                "public": "Público",
+                "friendsPlus": "Amigos+",
+                "friends": "Amigos",
+                "invitePlus": "Invitación+",
+                "invite": "Invitación",
+                "group": "Grupo"
+            },
+            "empty": {
+                "title": "Aún no hay registros",
+                "description": "Juega un rato a VRChat y tu actividad aparecerá aquí."
+            },
+            "error": {
+                "failed_to_load": "No se pudo cargar tu actividad"
+            },
+            "caveat": {
+                "recorded_since": "Registro de juego desde {date}."
+            },
+            "worlds": {
+                "visit_count": "{count} visitas",
+                "open_ranking": "Detalles",
+                "total": "{count} mundos en total"
+            },
+            "people": {
+                "co_days": "{count} días juntos",
+                "lead_caption": "{days} días juntos · {hours} h",
+                "fading_title": "Vistos menos últimamente",
+                "fading_caveat": "Menos coincidencia que en el periodo anterior. Puede ser cuestión de horarios.",
+                "encountered_total": "{count} en total",
+                "fading_last_seen": "juntos por última vez {date}"
+            },
+            "hero": {
+                "per_day": "al día",
+                "days_played": "días jugados",
+                "sessions": "sesiones",
+                "longest": "sesión más larga"
+            },
+            "action": {
+                "show_all": "Ver los {count}",
+                "show_less": "Ver menos"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% entre medianoche y las 6",
+                "open_heatmap": "Por día y por hora"
+            }
         }
     },
     "dialog": {
@@ -3425,7 +3483,6 @@
                 "edit_note_memo": "Editar nota y nota local"
             },
             "group_invite": {
-                "description": "Elige el grupo al que quieres invitar a {value}.",
                 "select_group": "Selecciona un grupo...",
                 "loading": "Cargando los grupos para los que puedes enviar invitaciones...",
                 "no_groups": "No tienes ningún grupo para el que puedas enviar invitaciones",
@@ -3779,7 +3836,8 @@
                 "content_gore": "Sangriento",
                 "content_violence": "Violencia",
                 "content_adult": "Adulto",
-                "content_sex": "Sexual"
+                "content_sex": "Sexual",
+                "pedestals": "Pedestales"
             },
             "actions": {
                 "delete_cache_tooltip": "Eliminar mundo del caché",
@@ -3893,7 +3951,11 @@
                 "change_world_image": "Cambiar la imagen del mundo",
                 "reset_your_vrchat_home_location": "Restablecer tu ubicación de inicio de VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Editar las etiquetas de contenido gestionado, autor y funciones de este mundo",
+                "enable_avatar_scaling": "Activar escalado de avatar",
+                "enable_focus_view": "Activar vista de enfoque",
                 "enable_debugging": "Activar depuración",
+                "enable_third_person_view": "Activar vista en tercera persona",
+                "allow_props_to_modify_player_movement": "Permitir que los objetos modifiquen el movimiento del jugador",
                 "add_domain": "Añadir dominio"
             },
             "loading": {
@@ -4343,6 +4405,11 @@
             "group_access_type_members": "Miembros",
             "group_access_type_plus": "Plus",
             "group_access_type_public": "Público",
+            "minimum_avatar_performance": "Rendimiento mínimo del avatar",
+            "minimum_avatar_performance_none": "Sin restricciones",
+            "minimum_avatar_performance_poor": "Bajo",
+            "minimum_avatar_performance_medium": "Medio",
+            "minimum_avatar_performance_good": "Bueno",
             "region": "Región",
             "region_usw": "Oeste de EE. UU.",
             "region_use": "Este de EE. UU.",

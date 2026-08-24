@@ -234,6 +234,6 @@ fn activity_entry_with_relation(
             ..OverlayActivityContent::default()
         },
         actor_relation,
-        payload: json!({}),
+        payload: json!({}).into(),
     }
 }

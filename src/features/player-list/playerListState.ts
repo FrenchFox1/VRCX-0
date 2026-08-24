@@ -11,6 +11,7 @@ import {
     sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 
 export { safeJsonParse };
 
@@ -65,15 +66,14 @@ export function sanitizePlayerListColumnVisibility(
     value: unknown
 ): ColumnVisibilityState {
     const visibility: ColumnVisibilityState = {};
-    if (value && typeof value === 'object') {
-        const source = value as Record<string, unknown>;
-        for (const columnId of PLAYER_LIST_COLUMN_IDS) {
-            if (typeof source[columnId] === 'boolean') {
-                visibility[columnId] = source[columnId];
-            }
+    if (!isRecord(value)) {
+        return visibility;
+    }
+    for (const columnId of PLAYER_LIST_COLUMN_IDS) {
+        if (typeof value[columnId] === 'boolean') {
+            visibility[columnId] = value[columnId];
         }
     }
-
     return visibility;
 }
 

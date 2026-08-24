@@ -10,7 +10,6 @@ import { FadeInImage } from '@/components/media/FadeInImage';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 import { parseLocation } from '@/shared/utils/location';
-import { normalizeString } from '@/shared/utils/string';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -19,28 +18,17 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { formatScreenshotDateTime } from '../screenshotMetadataValues';
 import { requestScreenshotThumbnail } from '../screenshotThumbnailQueue';
 
-function firstText(...values: unknown[]) {
-    return values.map((value) => String(value || '').trim()).find(Boolean);
+function firstText(...values: Array<string | null | undefined>) {
+    return values.map((value) => (value ?? '').trim()).find(Boolean);
 }
 
 type ScreenshotThumbnailItem = ScreenshotLibraryImage;
 
-function isScreenshotThumbnailItem(
-    value: unknown
-): value is ScreenshotThumbnailItem {
-    return Boolean(
-        value &&
-        typeof value === 'object' &&
-        typeof (value as { path?: unknown }).path === 'string' &&
-        typeof (value as { fileName?: unknown }).fileName === 'string'
-    );
-}
-
 const WORLD_REFERENCE_PATTERN =
     /(?:^|\b)wrld_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::|$|\s)/i;
 
-function normalizeThumbnailWorldName(value: unknown) {
-    const normalizedValue = normalizeString(value);
+function normalizeThumbnailWorldName(value: string | null | undefined) {
+    const normalizedValue = (value ?? '').trim();
     if (!normalizedValue || WORLD_REFERENCE_PATTERN.test(normalizedValue)) {
         return '';
     }
@@ -57,7 +45,7 @@ function resolveThumbnailLocation(item: ScreenshotThumbnailItem) {
 
 function resolveDirectThumbnailTitle(
     item: ScreenshotThumbnailItem,
-    worldNameHint: unknown = ''
+    worldNameHint = ''
 ) {
     const metadataWorld = item.metadata?.world || {};
     return firstText(
@@ -95,30 +83,25 @@ function buildThumbnailLocationEntry(
 }
 
 export function useScreenshotThumbnailTitleMap(
-    items: unknown,
-    { worldNameHint = '' }: { worldNameHint?: unknown } = {}
+    items: readonly ScreenshotThumbnailItem[],
+    { worldNameHint = '' }: { worldNameHint?: string } = {}
 ) {
-    const safeItems = useMemo(
-        () =>
-            Array.isArray(items) ? items.filter(isScreenshotThumbnailItem) : [],
-        [items]
-    );
     const entries = useMemo(
         () =>
-            safeItems
+            items
                 .map((item) =>
                     resolveDirectThumbnailTitle(item, worldNameHint)
                         ? null
                         : buildThumbnailLocationEntry(item)
                 )
                 .filter(Boolean),
-        [safeItems, worldNameHint]
+        [items, worldNameHint]
     );
     const metadataByKey = useLocationMetadataBatch(entries);
 
     return useMemo(() => {
         const titleMap = new Map<string, string>();
-        for (const item of safeItems) {
+        for (const item of items) {
             const metadata = metadataByKey.get(item.path);
             titleMap.set(
                 item.path,
@@ -131,7 +114,7 @@ export function useScreenshotThumbnailTitleMap(
             );
         }
         return titleMap;
-    }, [metadataByKey, safeItems, worldNameHint]);
+    }, [items, metadataByKey, worldNameHint]);
 }
 
 export function ScreenshotThumbnailCard({
@@ -145,7 +128,7 @@ export function ScreenshotThumbnailCard({
     item: ScreenshotThumbnailItem;
     onOpen: (path: string) => void;
     title?: string;
-    worldNameHint?: unknown;
+    worldNameHint?: string;
 }) {
     const { i18n, t } = useTranslation();
     const [thumbnailUrl, setThumbnailUrl] = useState('');
@@ -263,17 +246,12 @@ export function ScreenshotThumbnailGrid({
 }: {
     compact?: boolean;
     count?: number;
-    items: unknown;
+    items: readonly ScreenshotThumbnailItem[];
     onOpen: (path: string) => void;
-    worldNameHint?: unknown;
+    worldNameHint?: string;
 }) {
     const { t } = useTranslation();
-    const safeItems = useMemo(
-        () =>
-            Array.isArray(items) ? items.filter(isScreenshotThumbnailItem) : [],
-        [items]
-    );
-    const titleMap = useScreenshotThumbnailTitleMap(safeItems, {
+    const titleMap = useScreenshotThumbnailTitleMap(items, {
         worldNameHint
     });
 
@@ -291,7 +269,7 @@ export function ScreenshotThumbnailGrid({
                         : 'grid grid-cols-[repeat(auto-fill,minmax(208px,1fr))] gap-3'
                 }
             >
-                {safeItems.map((item) => (
+                {items.map((item) => (
                     <ScreenshotThumbnailCard
                         key={item.path}
                         compact={compact}

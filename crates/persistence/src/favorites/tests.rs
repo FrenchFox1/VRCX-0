@@ -258,7 +258,7 @@ fn friend_favorites_are_owner_scoped_with_shared_legacy_rows() {
     assert_eq!(
         favorite_add(
             &db,
-            Some("usr_a"),
+            Some(&OwnerId::new("usr_a")),
             FavoriteEntityKind::Friend,
             "usr_same".into(),
             "group".into(),
@@ -269,7 +269,7 @@ fn friend_favorites_are_owner_scoped_with_shared_legacy_rows() {
     assert_eq!(
         favorite_add(
             &db,
-            Some("usr_b"),
+            Some(&OwnerId::new("usr_b")),
             FavoriteEntityKind::Friend,
             "usr_same".into(),
             "group".into(),
@@ -280,7 +280,7 @@ fn friend_favorites_are_owner_scoped_with_shared_legacy_rows() {
     assert_eq!(
         favorite_add(
             &db,
-            Some("usr_a"),
+            Some(&OwnerId::new("usr_a")),
             FavoriteEntityKind::Friend,
             "usr_same".into(),
             "group".into(),
@@ -297,14 +297,24 @@ fn friend_favorites_are_owner_scoped_with_shared_legacy_rows() {
     )
     .unwrap();
 
-    let a = favorite_list(&db, Some("usr_a"), FavoriteEntityKind::Friend).unwrap();
-    let b = favorite_list(&db, Some("usr_b"), FavoriteEntityKind::Friend).unwrap();
+    let a = favorite_list(
+        &db,
+        Some(&OwnerId::new("usr_a")),
+        FavoriteEntityKind::Friend,
+    )
+    .unwrap();
+    let b = favorite_list(
+        &db,
+        Some(&OwnerId::new("usr_b")),
+        FavoriteEntityKind::Friend,
+    )
+    .unwrap();
     assert_eq!(a.len(), 2);
     assert_eq!(b.len(), 2);
 
     let first_world = favorite_add(
         &db,
-        Some("usr_a"),
+        Some(&OwnerId::new("usr_a")),
         FavoriteEntityKind::World,
         "wrld_1".into(),
         "group".into(),
@@ -312,7 +322,7 @@ fn friend_favorites_are_owner_scoped_with_shared_legacy_rows() {
     .unwrap();
     let duplicate_world = favorite_add(
         &db,
-        Some("usr_b"),
+        Some(&OwnerId::new("usr_b")),
         FavoriteEntityKind::World,
         "wrld_1".into(),
         "group".into(),
@@ -340,7 +350,12 @@ fn favorite_list_upgrades_legacy_friend_table_before_owner_scoped_read() {
     )
     .unwrap();
 
-    let rows = favorite_list(&db, Some("usr_owner"), FavoriteEntityKind::Friend).unwrap();
+    let rows = favorite_list(
+        &db,
+        Some(&OwnerId::new("usr_owner")),
+        FavoriteEntityKind::Friend,
+    )
+    .unwrap();
 
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].user_id.as_deref(), Some("usr_legacy"));

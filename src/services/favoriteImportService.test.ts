@@ -189,7 +189,9 @@ describe('favoriteImportService typed worker adapter', () => {
         });
     });
 
-    it('keeps type parsing and unsupported dialog validation on the frontend', async () => {
+    it('provides config for each supported favorite import type', async () => {
+        const { useFavoriteImportStore } =
+            await import('@/state/favoriteImportStore');
         const { getFavoriteImportTypeConfig, openFavoriteImportDialog } =
             await import('./favoriteImportService');
 
@@ -202,10 +204,8 @@ describe('favoriteImportService typed worker adapter', () => {
         expect(getFavoriteImportTypeConfig('friend')).toMatchObject({
             label: 'Friend'
         });
-        expect(getFavoriteImportTypeConfig('bad')).toBeNull();
-        expect(() =>
-            openFavoriteImportDialog({ type: 'bad', input: AVATAR_ID })
-        ).toThrow('Unsupported favorite import type: bad');
+        openFavoriteImportDialog({ type: 'avatar' });
+        expect(useFavoriteImportStore.getState().type).toBe('avatar');
     });
 
     it('shows backend local duplicate failures without removing the preview row', async () => {

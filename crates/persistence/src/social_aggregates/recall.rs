@@ -30,7 +30,7 @@ pub fn recall_encounter(
         .set("scan_limit", SCAN_LIMIT)
         .set("owner_id", owner_id);
 
-    let owner_user_id = input.owner_user_id.trim();
+    let owner_user_id = input.owner_user_id.as_str().trim();
     if !owner_user_id.is_empty() {
         sql.push_str(" AND COALESCE(g.user_id, '') <> @owner_user_id");
         params = params.set("owner_user_id", owner_user_id.to_string());

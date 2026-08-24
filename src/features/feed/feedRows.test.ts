@@ -161,11 +161,11 @@ describe('feed row helpers', () => {
         expect(toDateInputValue(null)).toBe('');
         expect(resolveFeedStatusMeta('active')).toEqual({
             label: 'Online',
-            className: 'bg-[var(--status-online)]'
+            className: 'user-status-indicator online bg-[var(--status-online)]'
         });
         expect(resolveFeedStatusMeta('joinme')).toEqual({
             label: 'Join Me',
-            className: 'bg-[var(--status-joinme)]'
+            className: 'user-status-indicator joinme bg-[var(--status-joinme)]'
         });
         expect(resolveFeedStatusMeta('')).toEqual({
             label: 'Offline',

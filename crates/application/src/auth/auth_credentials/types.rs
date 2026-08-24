@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde::Serialize;
-use serde_json::Value;
+use vrcx_0_core::json::RawJson;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -78,9 +78,9 @@ pub struct SavedAuthSnapshot {
 }
 
 pub struct LoginSuccessRecordInput {
-    pub user: Value,
-    pub login_params: Value,
-    pub stored_login_params: Option<Value>,
+    pub user: RawJson,
+    pub login_params: RawJson,
+    pub stored_login_params: Option<RawJson>,
     pub save_credentials: bool,
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
 import {
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
@@ -43,6 +44,7 @@ function createMaintenanceActions({
     setPurgeDialogOpen?: (open: boolean) => void;
     toastWarning?: (message: string) => void;
 }) {
+    const prefs = createDefaultSettingsPrefs();
     return createSettingsMaintenanceActions({
         alert: async () => ({ ok: true, reason: 'ok' }),
         avatarFeedHistoryRepository: {
@@ -54,33 +56,22 @@ function createMaintenanceActions({
             isGameRunning
         },
         mediaRepository: {
-            cropAllPrints: async () => undefined,
+            cropAllPrints: async () => null,
             getUgcPhotoLocation: async () => ''
         },
         prefs: {
-            appCjkFontPack: null,
-            appFontFamily: null,
-            autoLoginDelaySeconds: 0,
-            customFontFamily: null,
-            customFontOverride: null,
-            customFontPrimary: null,
-            customFontSecondary: null,
+            ...prefs,
             desktopNotificationActivityFilters:
                 DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
             hmdNotificationActivityFilters:
                 DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
             notificationTTS: 'Never',
-            notificationTTSNameMode: '',
-            notificationTTSVoiceNative: '',
             overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
-            proxyServer: '',
             ttsNotificationActivityFilters:
                 DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
-            userGeneratedContentPath: '',
             vrNotificationActivityFilters:
                 DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
-            webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
-            wristOverlayEnabled: false
+            webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS
         },
         prompt: async () => ({ ok: false }),
         purgePeriod: '180',
@@ -94,7 +85,7 @@ function createMaintenanceActions({
         setGameLogPersistenceDisabledPreference,
         setFeedPersistenceDisabledPreference,
         setAvatarFeedPersistenceDisabledPreference,
-        setIntConfigPreference: async () => undefined,
+        setIntConfigPreference: async () => 0,
         setPrefs: () => undefined,
         setPurgeDialogOpen,
         setPurgeInProgress: () => undefined,
@@ -102,7 +93,6 @@ function createMaintenanceActions({
         speakNotificationTts: async () => undefined,
         t: (key) => key,
         toast: {
-            dismiss: () => undefined,
             error: () => undefined,
             success: () => undefined,
             warning: toastWarning

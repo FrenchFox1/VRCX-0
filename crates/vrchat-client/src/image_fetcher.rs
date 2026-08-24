@@ -18,6 +18,14 @@ pub enum ImageFetchError {
     Custom(String),
 }
 
+impl vrcx_0_contracts::ApplicationErrorSource for ImageFetchError {
+    fn into_application_error(self) -> vrcx_0_contracts::ApplicationErrorPayload {
+        match self {
+            Self::Custom(message) => vrcx_0_contracts::ApplicationErrorPayload::Custom(message),
+        }
+    }
+}
+
 pub struct ImageFetcher {
     client: Client,
     allowed_hosts: Mutex<HashSet<String>>,

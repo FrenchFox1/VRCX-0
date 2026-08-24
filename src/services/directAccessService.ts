@@ -15,14 +15,11 @@ import {
 } from '@/shared/constants/vrchatIds';
 import { VRCHAT_WEB_BASE } from '@/shared/constants/vrchatWebUrls';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 
 type LooseRecord = Record<string, unknown>;
 type ParsedLocation = ReturnType<typeof parseLocation>;
-
-function isRecord(value: unknown): value is LooseRecord {
-    return Boolean(value && typeof value === 'object');
-}
 
 function emptyRecordArray(value: unknown): LooseRecord[] {
     return Array.isArray(value) ? value : [];
@@ -35,12 +32,12 @@ function openWorldLocation(location: unknown, title: unknown = '') {
             ? parsedLocation.tag
             : parsedLocation.worldId || location;
     openWorldDialog({
-        worldId: worldDialogTarget,
-        title: title || undefined
+        worldId: normalizeString(worldDialogTarget),
+        title: normalizeString(title) || undefined
     });
 }
 
-export function buildVrcLaunchUrl(location: unknown, shortName: unknown = '') {
+export function buildVrcLaunchUrl(location: string, shortName = '') {
     const normalizedLocation = normalizeString(location);
     const normalizedShortName = normalizeString(shortName);
     let launchUrl = `vrchat://launch?id=${normalizedLocation}`;
@@ -50,7 +47,7 @@ export function buildVrcLaunchUrl(location: unknown, shortName: unknown = '') {
     return launchUrl;
 }
 
-function normalizeLaunchLocation(location: unknown) {
+function normalizeLaunchLocation(location: string) {
     const normalizedLocation = normalizeString(location);
     const parsed = parseLocation(normalizedLocation);
     if (parsed.worldId && parsed.instanceId) {
@@ -77,8 +74,8 @@ function shouldUseProvidedLaunchToken(
 }
 
 export async function resolveInstanceLaunchToken(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName = ''
 ) {
     const { parsed } = normalizeLaunchLocation(location);
     let launchToken = normalizeString(shortName || parsed.shortName);
@@ -108,10 +105,7 @@ export async function resolveInstanceLaunchToken(
     return launchToken;
 }
 
-export async function resolveVrcLaunchUrl(
-    location: unknown,
-    shortName: unknown = ''
-) {
+export async function resolveVrcLaunchUrl(location: string, shortName = '') {
     const { location: normalizedLocation, parsed } =
         normalizeLaunchLocation(location);
     const launchToken = await resolveInstanceLaunchToken(
@@ -121,10 +115,7 @@ export async function resolveVrcLaunchUrl(
     return buildVrcLaunchUrl(normalizedLocation, launchToken);
 }
 
-export async function tryOpenLaunchLocation(
-    location: unknown,
-    shortName: unknown = ''
-) {
+export async function tryOpenLaunchLocation(location: string, shortName = '') {
     const { location: normalizedLocation, parsed } =
         normalizeLaunchLocation(location);
     if (!normalizedLocation || !normalizedLocation.includes(':')) {
@@ -147,7 +138,10 @@ async function verifyShortName(location: unknown, shortName: string) {
     }
 
     if (
-        await tryOpenLaunchLocation(nextLocation, json?.shortName || shortName)
+        await tryOpenLaunchLocation(
+            normalizeString(nextLocation),
+            normalizeString(json?.shortName || shortName)
+        )
     ) {
         return true;
     }
@@ -174,8 +168,8 @@ async function openGroupByShortCode(shortCode: string) {
     }
 
     openGroupDialog({
-        groupId: group.id,
-        title: group.name || undefined,
+        groupId: normalizeString(group.id),
+        title: normalizeString(group.name) || undefined,
         seedData: group
     });
     return true;

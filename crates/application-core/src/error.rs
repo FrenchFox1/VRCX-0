@@ -6,17 +6,26 @@ pub enum Error {
     #[error("Database error: {message}")]
     Sqlite {
         message: String,
-        category: Option<vrcx_0_persistence::SqliteErrorCategory>,
+        category: Option<vrcx_0_contracts::SqliteErrorCategory>,
     },
 
     #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(std::io::Error),
 
     #[error("JSON error: {0}")]
-    Json(#[from] serde_json::Error),
+    Json(serde_json::Error),
 
     #[error("Update artifact is invalid: {0}")]
     UpdateArtifactInvalid(String),
+
+    #[error("{0}")]
+    PersistenceInvalidData(String),
+
+    #[error("{0}")]
+    RegistryPolicyInvalid(String),
+
+    #[error("{0}")]
+    WebClient(String),
 
     #[error("{message}")]
     VrchatApi { status_code: i32, message: String },
@@ -25,70 +34,32 @@ pub enum Error {
     Custom(String),
 }
 
-impl From<vrcx_0_core::vrchat_registry_policy::RegistryPolicyError> for Error {
-    fn from(value: vrcx_0_core::vrchat_registry_policy::RegistryPolicyError) -> Self {
-        use vrcx_0_core::vrchat_registry_policy::RegistryPolicyError;
-        match value {
-            RegistryPolicyError::Json(error) => Self::Json(error),
-            RegistryPolicyError::Invalid(message) => Self::Custom(message),
-        }
-    }
-}
+impl<T> From<T> for Error
+where
+    T: vrcx_0_contracts::ApplicationErrorSource,
+{
+    fn from(value: T) -> Self {
+        use vrcx_0_contracts::ApplicationErrorPayload;
 
-impl From<vrcx_0_persistence::Error> for Error {
-    fn from(value: vrcx_0_persistence::Error) -> Self {
-        match value {
-            vrcx_0_persistence::Error::Database(message) => Self::Database(message),
-            vrcx_0_persistence::Error::Sqlite { message, category } => {
+        match value.into_application_error() {
+            ApplicationErrorPayload::Database(message) => Self::Database(message),
+            ApplicationErrorPayload::Sqlite { message, category } => {
                 Self::Sqlite { message, category }
             }
-            vrcx_0_persistence::Error::Io(error) => Self::Io(error),
-            vrcx_0_persistence::Error::Json(error) => Self::Json(error),
-            vrcx_0_persistence::Error::InvalidData(message) => Self::Custom(message),
-            vrcx_0_persistence::Error::Custom(message) => Self::Custom(message),
-        }
-    }
-}
-
-impl From<vrcx_0_media::Error> for Error {
-    fn from(value: vrcx_0_media::Error) -> Self {
-        match value {
-            vrcx_0_media::Error::Io(error) => Self::Io(error),
-            vrcx_0_media::Error::Custom(message) => Self::Custom(message),
-        }
-    }
-}
-
-impl From<vrcx_0_vrchat_client::WebClientError> for Error {
-    fn from(value: vrcx_0_vrchat_client::WebClientError) -> Self {
-        match value {
-            vrcx_0_vrchat_client::WebClientError::Custom(message) => Self::Custom(message),
-            vrcx_0_vrchat_client::WebClientError::Io(error) => Self::Io(error),
-        }
-    }
-}
-
-impl From<vrcx_0_vrchat_client::ImageFetchError> for Error {
-    fn from(value: vrcx_0_vrchat_client::ImageFetchError) -> Self {
-        match value {
-            vrcx_0_vrchat_client::ImageFetchError::Custom(message) => Self::Custom(message),
-        }
-    }
-}
-
-impl From<vrcx_0_vrchat_client::HttpApiError> for Error {
-    fn from(value: vrcx_0_vrchat_client::HttpApiError) -> Self {
-        match value {
-            vrcx_0_vrchat_client::HttpApiError::Custom(message) => Self::Custom(message),
-        }
-    }
-}
-
-impl From<vrcx_0_vrchat_client::http_api::VrchatApiFailure> for Error {
-    fn from(value: vrcx_0_vrchat_client::http_api::VrchatApiFailure) -> Self {
-        Self::VrchatApi {
-            status_code: value.status_code,
-            message: value.message,
+            ApplicationErrorPayload::Io(error) => Self::Io(error),
+            ApplicationErrorPayload::Json(error) => Self::Json(error),
+            ApplicationErrorPayload::PersistenceInvalidData(message) => {
+                Self::PersistenceInvalidData(message)
+            }
+            ApplicationErrorPayload::WebClient(message) => Self::WebClient(message),
+            ApplicationErrorPayload::VrchatApi {
+                status_code,
+                message,
+            } => Self::VrchatApi {
+                status_code,
+                message,
+            },
+            ApplicationErrorPayload::Custom(message) => Self::Custom(message),
         }
     }
 }

@@ -17,8 +17,8 @@ async function fetchYoutubeVideoMetadata({
     videoId,
     apiKey
 }: {
-    videoId: unknown;
-    apiKey: unknown;
+    videoId: string;
+    apiKey: string;
 }) {
     const normalizedVideoId = normalizeString(videoId);
     const normalizedApiKey = normalizeString(apiKey);

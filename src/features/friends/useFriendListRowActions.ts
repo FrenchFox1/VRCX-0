@@ -18,6 +18,7 @@ import friendRelationshipService from '@/services/friendRelationshipService';
 import { startMutualGraphFetch } from '@/services/mutualGraphFetchService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
+import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -33,7 +34,7 @@ type MutualProgress = {
 type MutualGraphSnapshotScope = {
     endpoint: string;
     ownerUserId: string;
-    runId: number;
+    runId?: number;
 };
 
 export function useFriendListRowActions({
@@ -85,6 +86,9 @@ export function useFriendListRowActions({
     const friendProfileLoadStatus = useRuntimeStore(
         (state) => state.friendProfileLoad.status
     );
+    const backfillRevision = useMutualGraphRevisionStore((state) =>
+        state.ownerUserId === currentUserId ? state.revision : 0
+    );
     const handledMutualGraphRunRef = useRef('');
     const bulkUnfriendRunRef = useRef(0);
     const isMutualFetching =
@@ -101,10 +105,15 @@ export function useFriendListRowActions({
             const runtimeState = useRuntimeStore.getState();
             if (
                 runtimeState.auth.currentUserId !== ownerUserId ||
-                runtimeState.auth.currentUserEndpoint !== endpoint ||
-                runtimeState.mutualGraph.ownerUserId !== ownerUserId ||
-                runtimeState.mutualGraph.runId !== runId ||
-                runtimeState.mutualGraph.status !== 'completed'
+                runtimeState.auth.currentUserEndpoint !== endpoint
+            ) {
+                return;
+            }
+            if (
+                runId !== undefined &&
+                (runtimeState.mutualGraph.ownerUserId !== ownerUserId ||
+                    runtimeState.mutualGraph.runId !== runId ||
+                    runtimeState.mutualGraph.status !== 'completed')
             ) {
                 return;
             }
@@ -114,12 +123,15 @@ export function useFriendListRowActions({
                     snapshot instanceof Map ? snapshot.get(friendId) : [];
                 const metadata =
                     meta instanceof Map ? meta.get(friendId) : null;
+                const linkCount = Array.isArray(mutualIds)
+                    ? mutualIds.length
+                    : 0;
                 applyFriendPatch({
                     userId: friendId,
                     patch: {
-                        $mutualCount: Array.isArray(mutualIds)
-                            ? mutualIds.length
-                            : 0,
+                        $mutualCount: Number.isFinite(metadata?.totalCount)
+                            ? Number(metadata?.totalCount)
+                            : linkCount,
                         $mutualOptedOut: Boolean(metadata?.optedOut)
                     },
                     stateBucketAuthority: 'preserve'
@@ -128,6 +140,26 @@ export function useFriendListRowActions({
         },
         [applyFriendPatch]
     );
+
+    useEffect(() => {
+        if (!currentUserId || !backfillRevision) {
+            return;
+        }
+        applyCachedMutualFriendStats({
+            endpoint: currentEndpoint,
+            ownerUserId: currentUserId
+        }).catch((error) => {
+            console.warn(
+                '[FriendListPage] Failed to apply mutual graph backfill',
+                error
+            );
+        });
+    }, [
+        applyCachedMutualFriendStats,
+        backfillRevision,
+        currentEndpoint,
+        currentUserId
+    ]);
 
     useEffect(() => {
         if (!isMutualFetching) {
@@ -183,7 +215,7 @@ export function useFriendListRowActions({
     ]);
 
     const setFriendDeleting = useCallback(
-        (userId: unknown, isDeleting: boolean) => {
+        (userId: string, isDeleting: boolean) => {
             const normalizedUserId = normalizeId(userId);
             if (!normalizedUserId) {
                 return;
@@ -202,7 +234,7 @@ export function useFriendListRowActions({
     );
 
     const toggleSelectedFriend = useCallback(
-        (userId: unknown) => {
+        (userId: string) => {
             const normalizedUserId = normalizeId(userId);
             if (!normalizedUserId) {
                 return;
@@ -221,7 +253,7 @@ export function useFriendListRowActions({
     );
 
     const deleteFriendById = useCallback(
-        async (userId: unknown) => {
+        async (userId: string) => {
             const normalizedUserId = normalizeId(userId);
             const friend =
                 useFriendRosterStore.getState().friendsById[normalizedUserId];
@@ -510,12 +542,15 @@ export function useFriendListRowActions({
         }
     }
 
-    function openFriendDetails(friend: FriendListRow) {
+    const openFriendDetails = useCallback((friend: FriendListRow) => {
         openUserDialog({
-            userId: friend?.id,
-            title: friend?.displayName || friend?.username || undefined
+            userId: normalizeId(friend?.id),
+            title:
+                normalizeId(friend?.displayName) ||
+                normalizeId(friend?.username) ||
+                undefined
         });
-    }
+    }, []);
 
     return {
         confirmDeleteFriend,

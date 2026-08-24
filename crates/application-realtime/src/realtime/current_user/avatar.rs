@@ -1,7 +1,7 @@
-use vrcx_0_core::derived_keys;
-use vrcx_0_persistence::realtime::{
+use vrcx_0_contracts::realtime::{
     AvatarHistoryUpsert, AvatarTimeSpentUpsert, RealtimePersistenceBatch,
 };
+use vrcx_0_core::derived_keys;
 
 use crate::realtime::RealtimeCurrentUserAuthority;
 

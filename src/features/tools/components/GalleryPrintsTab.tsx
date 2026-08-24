@@ -42,10 +42,10 @@ export type GalleryPrintsTabState = {
     isVrcPlusSupporter: boolean;
     loading: boolean;
     mutatingKey?: string;
-    onBeginUpload: (tab: 'prints') => unknown;
-    onDeletePrint: (printId: string) => unknown;
-    onPreview: (preview: { id: string; title: string; url: string }) => unknown;
-    onRefresh: (tab: 'prints') => unknown;
+    onBeginUpload: (tab: 'prints') => void;
+    onDeletePrint: (printId: string) => void;
+    onPreview: (preview: { id: string; title: string; url: string }) => void;
+    onRefresh: (tab: 'prints') => void;
     prints: GalleryPrint[];
     uploadingTab?: string;
 };

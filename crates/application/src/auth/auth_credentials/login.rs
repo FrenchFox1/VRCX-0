@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
+use super::storage::AuthCredentialStore;
+use vrcx_0_application_core::vrchat_api::{
+    VrchatApiResponse as HttpApiExecuteResponse, VrchatScope as ApiScope,
+};
 use vrcx_0_application_core::WebClient;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::auth::{config_get_input, login_basic_input};
-use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse};
 
 use super::compat::normalize_text;
 use super::service::sync_saved_credential_cookies;
@@ -12,20 +12,20 @@ use super::storage::read_saved_credentials;
 use super::types::SavedCredentialLoginStartInput;
 use crate::auth::cookie_session::{probe_cookie_session, CookieProbeResult};
 use crate::auth::{LoginApi, WebClientLoginApi};
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub async fn saved_credential_login_start(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: Arc<WebClient>,
-    db: Arc<DatabaseService>,
+    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
     input: SavedCredentialLoginStartInput,
 ) -> Result<HttpApiExecuteResponse> {
-    let api = WebClientLoginApi::new(Arc::clone(&web), db);
+    let api = WebClientLoginApi::new(Arc::clone(&web), requests);
     saved_credential_login_start_with_api(config, web.as_ref(), &api, input).await
 }
 
 pub(crate) async fn saved_credential_login_start_with_api(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     api: &dyn LoginApi,
     input: SavedCredentialLoginStartInput,
@@ -85,12 +85,12 @@ pub(crate) async fn saved_credential_login_start_with_api(
     }
 
     let config_response = api
-        .execute(config_get_input(endpoint.clone()), ApiScope::Vrchat)
+        .execute(api.config(endpoint.clone()), ApiScope::Vrchat)
         .await?;
     if config_response.status != 200 {
         return Ok(config_response);
     }
-    let (_, request) = login_basic_input(
+    let request = api.basic_login(
         endpoint,
         username,
         password,

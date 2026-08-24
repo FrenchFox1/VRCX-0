@@ -769,12 +769,6 @@ fn feed_entry_value<'a>(entry: &'a Value, keys: &[&str]) -> Option<&'a Value> {
         .find_map(|key| object.get(*key).filter(|value| !value.is_null()))
 }
 
-fn feed_entry_string(entry: &Value, keys: &[&str]) -> String {
-    feed_entry_value(entry, keys)
-        .map(value_as_string)
-        .unwrap_or_default()
-}
-
 fn feed_row_key(row: &FeedRowOutput) -> String {
     let entry_type = row.r#type.as_deref().unwrap_or_default();
     if let Some(row_id) = row.row_id {
@@ -802,172 +796,6 @@ fn feed_row_content_key(row: &FeedRowOutput) -> String {
     )
 }
 
-fn feed_search_matches(row: &Value, search: &str) -> bool {
-    let query = search.trim().to_uppercase();
-    if query.is_empty() {
-        return true;
-    }
-
-    if feed_entry_string(row, &["type"]) == "Avatar" {
-        let user_id = feed_entry_string(row, &["userId", "user_id"]);
-        let owner_id = feed_entry_string(row, &["ownerId", "owner_id"]);
-        if !user_id.is_empty()
-            && !owner_id.is_empty()
-            && ((query == "PRIVATE" && user_id == owner_id)
-                || (query == "PUBLIC" && user_id != owner_id))
-        {
-            return true;
-        }
-    }
-
-    if (query.starts_with("WRLD_") || query.starts_with("GRP_"))
-        && feed_entry_string(row, &["location"])
-            .to_uppercase()
-            .contains(&query)
-    {
-        return true;
-    }
-
-    [
-        feed_entry_string(row, &["displayName", "display_name"]),
-        feed_entry_string(row, &["worldName", "world_name"]),
-        feed_entry_string(row, &["groupName", "group_name"]),
-        feed_entry_string(row, &["status"]),
-        feed_entry_string(row, &["statusDescription", "status_description"]),
-        feed_entry_string(row, &["previousStatus", "previous_status"]),
-        feed_entry_string(
-            row,
-            &["previousStatusDescription", "previous_status_description"],
-        ),
-        feed_entry_string(row, &["bio"]),
-        feed_entry_string(row, &["previousBio", "previous_bio"]),
-        feed_entry_string(row, &["avatarName", "avatar_name"]),
-        feed_entry_string(row, &["message"]),
-    ]
-    .iter()
-    .any(|value| value.to_uppercase().contains(&query))
-}
-
-pub struct FeedLiveQueryMatcher {
-    current_user_id: String,
-    filters: Vec<FeedFilter>,
-    search: String,
-    date_from: String,
-    date_to: String,
-    favorites_only: bool,
-    favorite_user_ids: HashSet<String>,
-    scoped_user_ids: HashSet<String>,
-    excluded_user_ids: HashSet<String>,
-    max_rows: Option<usize>,
-}
-
-impl FeedLiveQueryMatcher {
-    pub fn for_latest(query: &FeedLatestQueryInput) -> Self {
-        Self {
-            current_user_id: query.user_id.clone(),
-            filters: query.filters.clone(),
-            search: String::new(),
-            date_from: String::new(),
-            date_to: String::new(),
-            favorites_only: query.favorites_only,
-            favorite_user_ids: normalize_user_ids(&query.favorite_user_ids),
-            scoped_user_ids: normalize_user_ids(&query.scoped_user_ids),
-            excluded_user_ids: normalize_user_ids(&query.excluded_user_ids),
-            max_rows: (query.max_rows > 0).then_some(query.max_rows as usize),
-        }
-    }
-
-    pub fn for_search(query: &FeedSearchQueryInput) -> Self {
-        Self {
-            current_user_id: query.user_id.clone(),
-            filters: query.filters.clone(),
-            search: query.search.clone(),
-            date_from: query.date_from.clone(),
-            date_to: query.date_to.clone(),
-            favorites_only: query.favorites_only,
-            favorite_user_ids: normalize_user_ids(&query.favorite_user_ids),
-            scoped_user_ids: normalize_user_ids(&query.scoped_user_ids),
-            excluded_user_ids: normalize_user_ids(&query.excluded_user_ids),
-            max_rows: (query.max_rows > 0).then_some(query.max_rows as usize),
-        }
-    }
-
-    fn from_merge_context(context: &FeedLiveRowsMergeContext<'_>) -> Self {
-        Self {
-            current_user_id: context.current_user_id.to_string(),
-            filters: context.filters.to_vec(),
-            search: context.search.to_string(),
-            date_from: context.date_from.to_string(),
-            date_to: context.date_to.to_string(),
-            favorites_only: context.favorites_only,
-            favorite_user_ids: normalize_user_ids(context.favorite_user_ids),
-            scoped_user_ids: normalize_user_ids(context.scoped_user_ids),
-            excluded_user_ids: normalize_user_ids(context.excluded_user_ids),
-            max_rows: (context.max_rows > 0).then_some(context.max_rows as usize),
-        }
-    }
-
-    pub fn matches(&self, row: &Value) -> bool {
-        if !row.is_object() {
-            return false;
-        }
-
-        let entry_type = feed_entry_string(row, &["type"]);
-        let Some(entry_filter) = FeedFilter::from_event_type(&entry_type) else {
-            return false;
-        };
-
-        let owner_user_id = feed_entry_string(row, &["ownerUserId", "owner_user_id"]);
-        if !owner_user_id.is_empty() && owner_user_id != self.current_user_id {
-            return false;
-        }
-
-        if !self.filters.is_empty() && !self.filters.contains(&entry_filter) {
-            return false;
-        }
-
-        let user_id = feed_entry_string(row, &["userId", "user_id"]);
-        if self.favorites_only && (user_id.is_empty() || !self.favorite_user_ids.contains(&user_id))
-        {
-            return false;
-        }
-        if !self.scoped_user_ids.is_empty() && !self.scoped_user_ids.contains(&user_id) {
-            return false;
-        }
-        if !user_id.is_empty() && self.excluded_user_ids.contains(&user_id) {
-            return false;
-        }
-
-        let created_at = feed_entry_string(row, &["created_at", "createdAt"]);
-        if !self.date_from.trim().is_empty()
-            && !created_at.is_empty()
-            && created_at.as_str() < self.date_from.as_str()
-        {
-            return false;
-        }
-        if !self.date_to.trim().is_empty()
-            && !created_at.is_empty()
-            && created_at.as_str() > self.date_to.as_str()
-        {
-            return false;
-        }
-
-        feed_search_matches(row, &self.search)
-    }
-
-    pub fn max_rows(&self) -> Option<usize> {
-        self.max_rows
-    }
-}
-
-fn normalize_user_ids(user_ids: &[String]) -> HashSet<String> {
-    user_ids
-        .iter()
-        .map(normalize_text)
-        .filter(|value| !value.is_empty())
-        .collect()
-}
-
 pub(crate) struct FeedLiveRowsMergeContext<'a> {
     pub(crate) current_user_id: &'a str,
     pub(crate) filters: &'a [FeedFilter],
@@ -987,7 +815,18 @@ fn merge_feed_rows_with_live(
     min_live_sequence: i64,
     context: FeedLiveRowsMergeContext<'_>,
 ) -> FeedReadModelOutput {
-    let matcher = FeedLiveQueryMatcher::from_merge_context(&context);
+    let matcher = FeedLiveQueryMatcher::from_parts(
+        context.current_user_id,
+        context.filters,
+        context.search,
+        context.date_from,
+        context.date_to,
+        context.favorites_only,
+        context.favorite_user_ids,
+        context.scoped_user_ids,
+        context.excluded_user_ids,
+        context.max_rows,
+    );
     let mut max_sequence = min_live_sequence;
     let mut matching_entries = Vec::new();
 
@@ -1017,10 +856,7 @@ fn merge_feed_rows_with_live(
     }
     for row in rows {
         if let Some(user_id) = row.user_id.as_ref() {
-            if !matcher.scoped_user_ids.is_empty() && !matcher.scoped_user_ids.contains(user_id) {
-                continue;
-            }
-            if !user_id.is_empty() && matcher.excluded_user_ids.contains(user_id) {
+            if !matcher.matches_user_scope(user_id) {
                 continue;
             }
         }

@@ -72,7 +72,7 @@ export function useScreenshotGalleryGrid({
 
     const safeWidth = Math.max(
         0,
-        (Number(viewportMetrics.width) || 0) - GALLERY_GRID_HORIZONTAL_INSET
+        viewportMetrics.width - GALLERY_GRID_HORIZONTAL_INSET
     );
     const gridColumnCount = Math.max(
         1,

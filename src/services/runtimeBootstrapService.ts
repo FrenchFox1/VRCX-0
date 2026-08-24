@@ -1,4 +1,5 @@
 import { normalizeLanguageCode } from '@/localization/locales';
+import type { RuntimeNotificationLevel } from '@/platform/tauri/bindings';
 import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
@@ -14,7 +15,7 @@ import { hydrateVrcStatus } from './vrcStatusService';
 type ShellState = ReturnType<typeof useShellStore.getState>;
 type CleanupFn = () => void;
 type RuntimeNotificationOptions = {
-    level: string;
+    level: RuntimeNotificationLevel;
     title: string;
     error: unknown;
 };
@@ -150,7 +151,7 @@ export function startThemeModeSync() {
 }
 
 export function startI18nLanguageSync() {
-    const syncLanguage = (locale: unknown) => {
+    const syncLanguage = (locale: string) => {
         const nextLocale = normalizeLanguageCode(locale);
         if (typeof document !== 'undefined') {
             document.documentElement.setAttribute('lang', nextLocale);

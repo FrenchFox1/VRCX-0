@@ -1,9 +1,12 @@
-import type { MutableRefObject } from 'react';
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
-import type { FavoriteGroupVisibility } from '@/platform/tauri/bindings';
+import type {
+    AvatarCacheOutput,
+    FavoriteGroupVisibility
+} from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
@@ -42,14 +45,12 @@ export function useFavoritesCollectionActions({
     currentUserSnapshot: CurrentUserSnapshotState | null;
     kind: FavoriteKind;
     localGroups: FavoriteGroupView[];
-    reloadLocalWorldFavorites(): Promise<unknown>;
+    reloadLocalWorldFavorites(): Promise<boolean>;
     refreshing: boolean;
     removingFavoriteKeyRef: MutableRefObject<string>;
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    setAvatarHistory(
-        value: unknown[] | ((current: unknown[]) => unknown[])
-    ): void;
+    setAvatarHistory: Dispatch<SetStateAction<AvatarCacheOutput[]>>;
     setExportDialogOpen(value: boolean): void;
     setRefreshing(value: boolean): void;
     setRemovingFavoriteKey(value: string | ((current: string) => string)): void;
@@ -88,7 +89,7 @@ export function useFavoritesCollectionActions({
                     currentUserId,
                     100
                 );
-                setAvatarHistory(Array.isArray(rows) ? rows : []);
+                setAvatarHistory(rows);
             }
             if (!silent) {
                 toast.success(t('view.favorite.success.favorites_refreshed'));

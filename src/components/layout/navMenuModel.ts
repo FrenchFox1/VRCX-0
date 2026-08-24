@@ -17,6 +17,7 @@ import {
     publishNavCustomizeRequested,
     publishNavLayoutUpdated
 } from '@/shared/events/navLayoutEvents';
+import { isRecord } from '@/shared/utils/record';
 
 type TranslateKey = (key: string) => string;
 
@@ -71,10 +72,6 @@ export type NavMenuModel = {
     menuItems: NavMenuItem[];
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 export const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
 export {
     NAV_CUSTOMIZE_REQUESTED_EVENT,
@@ -98,6 +95,7 @@ export const routePathByName = Object.freeze({
     moderation: '/social/moderation',
     notification: '/notification',
     'my-avatars': '/my-avatars',
+    activity: '/activity',
     'charts-mutual': '/charts/mutual',
     tools: '/tools',
     gallery: '/tools/gallery',
@@ -154,6 +152,7 @@ export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
         },
         { type: 'item', key: 'notification' },
         { type: 'item', key: 'my-avatars' },
+        { type: 'item', key: 'activity' },
         { type: 'item', key: 'charts-mutual' },
         { type: 'item', key: 'tools' }
     ];
@@ -497,7 +496,7 @@ export async function loadNavMenuModel({
 
     if (storedValue) {
         try {
-            const parsed = JSON.parse(storedValue) as unknown;
+            const parsed: unknown = JSON.parse(storedValue);
             if (Array.isArray(parsed)) {
                 layout = insertDashboardEntries(parsed, dashboardDefinitions);
             } else if (isRecord(parsed) && Array.isArray(parsed.layout)) {
@@ -648,8 +647,12 @@ export function getPathForNavEntry(entry: NavDefinition | MenuItem | null) {
     if (entry.routeName === 'dashboard' && entry.routeParams?.id) {
         return `/dashboard/${entry.routeParams.id}`;
     }
-    if (entry.routeName && entry.routeName in routePathByName) {
-        return routePathByName[entry.routeName as keyof typeof routePathByName];
+    if (entry.routeName) {
+        const routePaths: Record<string, string> = routePathByName;
+        const routePath = routePaths[entry.routeName];
+        if (routePath) {
+            return routePath;
+        }
     }
     return entry.path || '';
 }

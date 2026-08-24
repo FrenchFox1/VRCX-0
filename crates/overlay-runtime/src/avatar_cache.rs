@@ -70,8 +70,7 @@ impl AvatarBitmapCache {
     }
 
     async fn fetch_and_decode(&self, web: &WebClient, url: &str) -> Option<AvatarBitmap> {
-        let fetcher = web.image_fetcher().ok()?;
-        let bytes = tokio::time::timeout(HMD_AVATAR_FETCH_TIMEOUT, fetcher.fetch_image(url))
+        let bytes = tokio::time::timeout(HMD_AVATAR_FETCH_TIMEOUT, web.fetch_image(url))
             .await
             .ok()?
             .ok()?;
@@ -367,15 +366,6 @@ pub(crate) mod tests {
             width: 1,
             height: 1,
             rgba: Arc::<[u8]>::from([255, 255, 255, 255]),
-        }
-    }
-
-    #[cfg(feature = "friends-panel")]
-    pub(crate) fn test_avatar_bitmap_with_red(red: u8) -> AvatarBitmap {
-        AvatarBitmap {
-            width: 1,
-            height: 1,
-            rgba: Arc::<[u8]>::from([red, 0, 0, 255]),
         }
     }
 }

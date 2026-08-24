@@ -6,8 +6,10 @@ mod favorite_transfer;
 mod local_favorites;
 mod mutation_coordinator;
 mod remote_favorites;
+#[cfg(test)]
+mod test_support;
 
-pub use vrcx_0_persistence::favorites::FavoriteRow;
+pub use vrcx_0_contracts::FavoriteRow;
 
 pub use bulk_remove::{
     FavoriteBulkRemoveInput, FavoriteBulkRemoveItem, FavoriteBulkRemoveItemResult,
@@ -34,13 +36,12 @@ pub use favorite_transfer::{
     FavoriteTransferSelectionResult, FavoriteTransferSource, FavoriteTransferStage,
     FavoriteTransferTarget,
 };
-pub(crate) use local_favorites::create_local_favorite_group;
 pub use local_favorites::{
-    get_local_favorite_snapshot, list_local_favorites, LocalFavoriteGroupWrite,
-    LocalFavoriteSnapshot,
+    get_local_favorite_snapshot, list_local_favorites, FavoriteMoveResult, FavoriteStore,
+    LocalFavoriteGroupWrite, LocalFavoriteSnapshot,
 };
-pub use mutation_coordinator::{FavoriteLocalMutationError, FavoriteMutationCoordinator};
+pub use mutation_coordinator::{FavoriteMutationCoordinator, FavoriteMutationRuntimeDeps};
 pub use remote_favorites::{
     FavoriteRemoteAddInput, FavoriteRemoteDeleteInput, FavoriteRemoteGroupClearInput,
-    FavoriteRemoteGroupSaveInput,
+    FavoriteRemoteGroupSaveInput, FavoriteRemoteRequests,
 };

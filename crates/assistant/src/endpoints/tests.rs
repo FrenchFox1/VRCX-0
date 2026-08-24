@@ -1,18 +1,18 @@
 use std::sync::{Arc, Barrier};
 
-use vrcx_0_persistence::DatabaseService;
-
 use crate::config::{
     ASSISTANT_API_KEY_CONFIG_KEY, ASSISTANT_BASE_URL_CONFIG_KEY, ASSISTANT_MODEL_CONFIG_KEY,
 };
-use crate::test_support::unique_test_database_path;
+use crate::test_support::{test_config_port, test_llm_factory};
 
 use super::*;
 
-fn test_config() -> ConfigRepository {
-    ConfigRepository::new(Arc::new(
-        DatabaseService::new(&unique_test_database_path("vrcx-0-llm-endpoints")).unwrap(),
-    ))
+fn test_config() -> AssistantConfig {
+    test_config_port("vrcx-0-llm-endpoints")
+}
+
+fn test_endpoint_store(config: AssistantConfig, proxy_url: Option<String>) -> EndpointStore {
+    EndpointStore::new(config, test_llm_factory(), proxy_url)
 }
 
 #[test]
@@ -57,21 +57,21 @@ fn translation_prompt_substitutes_target_lang_in_default_and_custom_prompts() {
 fn custom_proxy_following_defaults_on_and_persists_globally() {
     let config = test_config();
     let proxy_url = "http://127.0.0.1:7890";
-    let store = EndpointStore::new(config.clone(), Some(proxy_url.into()));
+    let store = test_endpoint_store(config.clone(), Some(proxy_url.into()));
 
     assert!(store.follow_custom_proxy().unwrap());
     assert_eq!(store.explicit_proxy_url().unwrap(), Some(proxy_url));
     assert!(!store.set_follow_custom_proxy(false).unwrap());
     assert_eq!(store.explicit_proxy_url().unwrap(), None);
 
-    let reloaded = EndpointStore::new(config, Some(proxy_url.into()));
+    let reloaded = test_endpoint_store(config, Some(proxy_url.into()));
     assert!(!reloaded.follow_custom_proxy().unwrap());
     assert_eq!(reloaded.explicit_proxy_url().unwrap(), None);
 }
 
 #[test]
 fn custom_proxy_following_without_active_proxy_uses_system_behavior() {
-    let store = EndpointStore::new(test_config(), None);
+    let store = test_endpoint_store(test_config(), None);
 
     assert!(store.follow_custom_proxy().unwrap());
     assert_eq!(store.explicit_proxy_url().unwrap(), None);
@@ -79,7 +79,7 @@ fn custom_proxy_following_without_active_proxy_uses_system_behavior() {
 
 #[test]
 fn reasoning_preferences_round_trip_without_changing_api_values() {
-    let store = EndpointStore::new(test_config(), None);
+    let store = test_endpoint_store(test_config(), None);
 
     assert_eq!(
         store.set_assistant_reasoning_effort(" xhigh ").unwrap(),
@@ -155,7 +155,7 @@ fn endpoint_json_without_model_reasoning_remains_compatible() {
         )
         .unwrap();
 
-    let endpoints = EndpointStore::new(config, None).list().unwrap();
+    let endpoints = test_endpoint_store(config, None).list().unwrap();
 
     assert_eq!(endpoints.len(), 1);
     assert!(endpoints[0].model_reasoning.is_empty());
@@ -189,7 +189,7 @@ fn endpoint_upsert_retains_only_current_models_and_clears_reasoning_on_url_chang
             }]),
         )
         .unwrap();
-    let store = EndpointStore::new(config, None);
+    let store = test_endpoint_store(config, None);
 
     let filtered = store
         .upsert(LlmEndpointUpsertInput {
@@ -253,7 +253,7 @@ fn detected_metadata_only_matches_the_original_url_and_key() {
 
 #[test]
 fn endpoint_upsert_persists_provided_reasoning_for_new_endpoints() {
-    let store = EndpointStore::new(test_config(), None);
+    let store = test_endpoint_store(test_config(), None);
 
     let saved = store
         .upsert(LlmEndpointUpsertInput {
@@ -287,7 +287,7 @@ fn endpoint_upsert_persists_provided_reasoning_for_new_endpoints() {
 
 #[test]
 fn upsert_preserves_clears_and_drops_keys_on_provider_change() {
-    let store = EndpointStore::new(test_config(), None);
+    let store = test_endpoint_store(test_config(), None);
     let saved = store
         .upsert(LlmEndpointUpsertInput {
             id: None,
@@ -373,7 +373,7 @@ fn legacy_assistant_and_translation_configs_migrate_and_dedupe() {
         .set_string(TRANSLATION_API_MODEL_CONFIG_KEY, "gpt-4o-mini")
         .unwrap();
 
-    let store = EndpointStore::new(config.clone(), None);
+    let store = test_endpoint_store(config.clone(), None);
     let endpoints = store.list().unwrap();
     assert_eq!(endpoints.len(), 1);
     assert_eq!(endpoints[0].base_url, "https://api.openai.com/v1");
@@ -400,7 +400,7 @@ fn deleting_migrated_endpoint_does_not_resurrect_it() {
         .set_string(ASSISTANT_MODEL_CONFIG_KEY, "gpt-4o-mini")
         .unwrap();
 
-    let store = EndpointStore::new(config, None);
+    let store = test_endpoint_store(config, None);
     let migrated = store.list().unwrap();
     assert_eq!(migrated.len(), 1);
 
@@ -412,7 +412,7 @@ fn deleting_migrated_endpoint_does_not_resurrect_it() {
 #[test]
 fn delete_clears_last_selection_and_falls_back_translation_endpoint() {
     let config = test_config();
-    let store = EndpointStore::new(config.clone(), None);
+    let store = test_endpoint_store(config.clone(), None);
     let first = store
         .upsert(LlmEndpointUpsertInput {
             id: None,

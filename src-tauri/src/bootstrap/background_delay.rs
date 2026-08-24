@@ -110,7 +110,7 @@ fn background_delay_ready(app: &tauri::AppHandle, state: &AppState) -> bool {
     if !main_window_hidden(app) {
         return false;
     }
-    let snapshot = state.snapshot_backend_runtime();
+    let snapshot = state.runtime_host().backend_runtime_snapshot();
     snapshot.mode == BackendRuntimeMode::Foreground
         && snapshot.phase == BackendRuntimePhase::Running
         && !state.is_main_window_rebuild_in_progress()
@@ -122,7 +122,8 @@ async fn start_background_mode_after_delay(
 ) -> Result<(), AppError> {
     super::capture_background_resume_route(app, state);
     let snapshot = match state
-        .start_backend_runtime(GuiRuntimeMode::Background, None)
+        .runtime_host()
+        .start_gui_backend_runtime(GuiRuntimeMode::Background)
         .await
     {
         Ok(snapshot) => snapshot,
@@ -133,7 +134,7 @@ async fn start_background_mode_after_delay(
         }
     };
 
-    let current = state.snapshot_backend_runtime();
+    let current = state.runtime_host().backend_runtime_snapshot();
     if snapshot.mode == BackendRuntimeMode::Background
         && current.mode == BackendRuntimeMode::Background
         && current.phase == BackendRuntimePhase::Running
@@ -154,18 +155,16 @@ async fn start_background_mode_after_delay(
 
 fn delay_minutes_setting(state: &AppState) -> Option<u64> {
     let enabled = state
-        .runtime_context
-        .config()
-        .get_bool("backgroundModeDelayEnabled", false)
-        .unwrap_or(false);
+        .runtime_host()
+        .config_bool("backgroundModeDelayEnabled", false);
     if !enabled {
         return None;
     }
-    let raw = state
-        .runtime_context
-        .config()
-        .get_string("backgroundModeDelayMinutes", "60")
-        .ok();
+    let raw = Some(
+        state
+            .runtime_host()
+            .config_string("backgroundModeDelayMinutes", "60"),
+    );
     resolve_delay_minutes(true, raw.as_deref())
 }
 

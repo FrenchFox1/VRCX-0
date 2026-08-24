@@ -17,6 +17,7 @@ import {
     type WorldUpdateRequest,
     type WorldSearchSort
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { collectPages } from './pagination';
@@ -50,10 +51,6 @@ interface WorldSaveInput extends WorldIdInput {
 
 interface WorldPersistentDataInput extends WorldIdInput {
     userId?: string;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function unwrapVrchatWorldResponse<TJson = unknown>(
@@ -243,15 +240,6 @@ async function getWorldProfile({
         `worlds/${encodeURIComponent(normalizedWorldId)}`
     );
     return normalize(response.json);
-}
-
-async function searchWorlds(query: string): Promise<WorldProfileRecord[]> {
-    const normalizedQuery = query.trim();
-    if (!normalizedQuery) {
-        return [];
-    }
-    const worlds = await commands.appWorldSearch(normalizedQuery);
-    return worlds.map((world) => normalize(world));
 }
 
 async function getWorldsByUser({
@@ -476,7 +464,6 @@ async function getAllWorldsByUser({
 const worldProfileRepository = Object.freeze({
     normalize,
     getWorldProfile,
-    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,
@@ -491,7 +478,6 @@ const worldProfileRepository = Object.freeze({
 export {
     normalize,
     getWorldProfile,
-    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,

@@ -58,6 +58,8 @@ pub struct OverlaySurfaceConfig {
     pub activation_button: OverlayActivationButton,
     #[serde(default)]
     pub interactive: bool,
+    #[serde(default)]
+    pub force_visible: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]

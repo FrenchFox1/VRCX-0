@@ -91,7 +91,10 @@
             "avatar": "Аватары",
             "group": "Группы"
         },
-        "date": { "today": "Сегодня", "yesterday": "Вчера" },
+        "date": {
+            "today": "Сегодня",
+            "yesterday": "Вчера"
+        },
         "retention": {
             "label": "Срок хранения истории",
             "description": "Записи старше этого срока удаляются автоматически.",
@@ -457,22 +460,6 @@
             "instance_duration": "Инстанс {duration}"
         },
         "generic_instance_location": "инстанс",
-        "friends_panel": {
-            "title": "Избранные друзья",
-            "all": "Все",
-            "empty": "Нет избранных друзей в сети",
-            "note": "Заметка",
-            "memo": "Локальная заметка",
-            "open": "Открыть",
-            "request": "Запросить",
-            "invite": "Пригласить",
-            "favorites_online": "Избранных в сети",
-            "same_instance": "Тот же инстанс",
-            "local_favorites": "Локальное избранное",
-            "traveling": "В пути",
-            "private": "Приватно",
-            "offline": "Не в сети"
-        },
         "discord": {
             "title": {
                 "invite": "Приглашение от {name}",
@@ -2157,13 +2144,6 @@
                     "opacity": "Непрозрачность",
                     "filters": "Фильтры уведомлений в шлеме"
                 },
-                "interactive_panel": {
-                    "header": "Интерактивная панель друзей",
-                    "enabled": "Включить интерактивную панель друзей",
-                    "all_friends_include_favorites": "Включать избранных в «Все»",
-                    "summon_hint": "Жест вызова",
-                    "openvr_required": "Удерживайте правый grip около 2 секунд, чтобы вызвать панель. Требуется backend оверлея SteamVR/OpenVR; OpenXR сейчас не предоставляет интерактивную панель."
-                },
                 "wrist_overlay": {
                     "header": "Оверливание рейста",
                     "wrist_feed_overlay": "Накладка на рейст-корм",
@@ -2186,6 +2166,12 @@
                     "vr_device_status": "Статус устройства VR",
                     "battery_percentage": "Аккумуляторная батарея (в процентах)",
                     "wrist_feed_notifications": "Фильтры уведомления Wrist"
+                },
+                "test_mode": {
+                    "header": "Тест оверлея",
+                    "description": "Принудительно показывает тестовую карточку в наручном оверлее и в уведомлении в шлеме, чтобы можно было проверить положение, размер и непрозрачность прямо в шлеме. Настройка не сохраняется и выключается при перезапуске VRCX-0.",
+                    "force_display": "Принудительно показывать оверлей",
+                    "requires_steamvr": "Требуется запущенный SteamVR."
                 }
             },
             "interface": {
@@ -3239,17 +3225,18 @@
                 "community": "Тема Сообщества"
             },
             "accent": {
-                "header": "Цвет акцента"
+                "header": "Цвет акцента",
+                "custom": "Пользовательский",
+                "hex_label": "HEX-код цвета"
             },
             "custom_css": {
+                "status_on": "Вкл",
+                "status_off": "Выкл",
                 "header": "Обычный CSS",
-                "enabled_summary": "Пользовательский CSS включён ({count} байт).",
-                "disabled_summary": "Необязательный финальный слой CSS. Сейчас отключён.",
                 "edit": "Изменить",
                 "hide_editor": "Скрыть редактор"
             },
             "developer": {
-                "summary": "Инструменты предварительного просмотра локальных тем для разработки тем.",
                 "preview_active": "Просмотр {name}.",
                 "show": "Показать инструменты",
                 "hide": "Скрыть инструменты"
@@ -3268,16 +3255,11 @@
         "background_image": {
             "settings": {
                 "header": "Фон",
-                "description": "Используйте источник ежедневных изображений или собственный локальный источник.",
                 "apod_note": "NASA APOD использует только изображения без поля авторских прав.",
-                "custom_source": "Местный имидж",
-                "custom_source_description": "Выберите одно изображение для фиксированного фона или несколько изображений или папку для вращения.",
-                "folder_first_level_note": "Сканируется только верхний уровень папки; вложенные папки не учитываются.",
-                "selected_files": "Выбрано изображений: {count}",
+                "folder_recursive_note": "Изображения во вложенных папках также учитываются.",
                 "current_image": "Текущее изображение",
-                "image_count": "{count} изображение",
+                "image_count": "{count} изображений",
                 "rotation": "Вращение",
-                "no_custom_source": "Нет выбранного местного изображения",
                 "no_image": "Нет загруженного изображения",
                 "no_image_description": "Обновить или выбрать источник для загрузки изображения.",
                 "source_type_file": "Местный файл",
@@ -3290,11 +3272,12 @@
                 "custom": "Местный имидж"
             },
             "rotation": {
-                "daily": "Ежедневно",
-                "hourly": "Час"
+                "minutes": "мин.",
+                "custom": "Другое"
             },
             "action": {
                 "refresh": "Обновить",
+                "change_image": "Сменить изображение",
                 "select_images": "Выбрать изображения",
                 "select_folder": "Выбрать папку"
             },
@@ -3311,6 +3294,81 @@
             "contributors_error": "Не удалось загрузить список участников.",
             "thanks": "Каждый перевод, тест, отчёт об ошибке и идея — вклад сообщества. Спасибо.",
             "license_line": "Свободное ПО с открытым исходным кодом под GPL-3.0"
+        },
+        "activity": {
+            "title": "Активность",
+            "description": "Куда ушло ваше время — сводка за период",
+            "range": {
+                "all": "Всё время",
+                "days": "Последние {days} дн."
+            },
+            "stat": {
+                "total_time": "Всего времени",
+                "daily_average": "В среднем за день",
+                "active_days": "Дней в игре",
+                "longest_session": "Самая длинная сессия",
+                "change_up": "+{percent}% к прошлому периоду",
+                "change_down": "-{percent}% к прошлому периоду"
+            },
+            "unit": {
+                "hours": "ч",
+                "minutes": "минут"
+            },
+            "section": {
+                "instance_types": "Типы инстансов",
+                "daily_time": "Время по дням",
+                "weekly_time": "Время по неделям",
+                "when_you_play": "Когда вы играете",
+                "top_worlds": "Миры, куда вы возвращаетесь",
+                "companions": "С кем вы проводите время",
+                "highlights": "На что обратить внимание"
+            },
+            "access": {
+                "unknown": "Неизвестно",
+                "public": "Публичный",
+                "friendsPlus": "Друзья+",
+                "friends": "Друзья",
+                "invitePlus": "Инвайт+",
+                "invite": "Инвайт",
+                "group": "Группа"
+            },
+            "empty": {
+                "title": "Пока нет записей",
+                "description": "Поиграйте в VRChat — активность появится здесь."
+            },
+            "error": {
+                "failed_to_load": "Не удалось загрузить активность"
+            },
+            "caveat": {
+                "recorded_since": "Журнал игры ведётся с {date}."
+            },
+            "worlds": {
+                "visit_count": "посещений: {count}",
+                "open_ranking": "Подробнее",
+                "total": "всего миров: {count}"
+            },
+            "people": {
+                "co_days": "дней вместе: {count}",
+                "lead_caption": "{days} дней вместе · {hours} ч",
+                "fading_title": "Стали видеться реже",
+                "fading_caveat": "Меньше совместного времени, чем в прошлый период. Возможно, просто разные графики.",
+                "encountered_total": "всего встречено: {count}",
+                "fading_last_seen": "вместе в последний раз {date}"
+            },
+            "hero": {
+                "per_day": "в день",
+                "days_played": "дней с записями",
+                "sessions": "сессий",
+                "longest": "самая долгая"
+            },
+            "action": {
+                "show_all": "Показать все ({count})",
+                "show_less": "Свернуть"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% между полуночью и 6 утра",
+                "open_heatmap": "По дням и часам"
+            }
         }
     },
     "dialog": {
@@ -3783,7 +3841,8 @@
                 "content_gore": "Жестокость",
                 "content_violence": "Насилие",
                 "content_adult": "Для взрослых",
-                "content_sex": "Сексуальные"
+                "content_sex": "Сексуальные",
+                "pedestals": "Пьедесталы"
             },
             "actions": {
                 "delete_cache_tooltip": "Удалить мир из кэша",
@@ -3897,7 +3956,11 @@
                 "change_world_image": "Редактировать изображение мира",
                 "reset_your_vrchat_home_location": "Сбросить домашнее местоположение VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Редактировать управляемый контент, автора и теги функций этого мира",
+                "enable_avatar_scaling": "Включить масштабирование аватара",
+                "enable_focus_view": "Включить фокусировку вида",
                 "enable_debugging": "Включить отладку",
+                "enable_third_person_view": "Включить вид от третьего лица",
+                "allow_props_to_modify_player_movement": "Разрешить пропам изменять движение игрока",
                 "add_domain": "Добавить домен"
             },
             "loading": {
@@ -4347,6 +4410,11 @@
             "group_access_type_members": "Участники",
             "group_access_type_plus": "Плюс",
             "group_access_type_public": "Публичная",
+            "minimum_avatar_performance": "Минимальная производительность аватара",
+            "minimum_avatar_performance_none": "Без ограничений",
+            "minimum_avatar_performance_poor": "Низкая",
+            "minimum_avatar_performance_medium": "Средняя",
+            "minimum_avatar_performance_good": "Хорошая",
             "region": "Регион",
             "region_usw": "США Запад",
             "region_use": "США Восток",

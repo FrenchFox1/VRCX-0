@@ -8,11 +8,13 @@ import {
     commands,
     type HttpApiExecuteResponse,
     type InstanceCreateGroupAccessType,
+    type InstanceCreateMinimumAvatarPerformance,
     type InstanceCreateRegion,
     type InstanceCreateRequest,
     type InstanceCreateType
 } from '@/platform/tauri/bindings';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
@@ -38,6 +40,7 @@ interface CreateInstanceOptions extends InstanceRepositoryOptions {
     region?: InstanceRegion;
     groupId?: string;
     groupAccessType?: InstanceCreateGroupAccessType;
+    minimumAvatarPerformance?: InstanceCreateMinimumAvatarPerformance | '';
     queueEnabled?: boolean;
     roleIds?: string[];
     ageGate?: boolean;
@@ -99,10 +102,6 @@ function toRegionCode(region: InstanceRegion): InstanceCreateRegion {
     return 'us';
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function unwrapVrchatInstanceResponse(
     response: VrchatApiResult,
     path: string,
@@ -123,6 +122,7 @@ async function createInstance({
     region = 'US West',
     groupId = '',
     groupAccessType = 'plus',
+    minimumAvatarPerformance = '',
     queueEnabled = true,
     roleIds = [],
     ageGate = false,
@@ -164,6 +164,9 @@ async function createInstance({
         params.queueEnabled = queueEnabled;
         if (groupAccessType === 'members') {
             params.roleIds = roleIds;
+        }
+        if (minimumAvatarPerformance) {
+            params.minimumAvatarPerformance = minimumAvatarPerformance;
         }
         if (ageGate) {
             params.ageGate = true;

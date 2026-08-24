@@ -1,6 +1,6 @@
 use serde_json::json;
+use vrcx_0_contracts::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
-use vrcx_0_persistence::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 
 use crate::realtime::{
     PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserGameLogContext,
@@ -602,6 +602,47 @@ fn local_game_start_invalidates_remote_offline_timer_and_keeps_local_authority()
     assert!(runtime
         .fire_pending_offline(7, token, "2026-05-15T00:03:00Z".into(), local_authority,)
         .is_none());
+}
+
+#[test]
+fn stopping_local_game_does_not_start_remote_gamelog_from_stale_snapshot() {
+    let runtime = RealtimeCurrentUserRuntime::new();
+    runtime.set_snapshot(
+        "usr_self".into(),
+        7,
+        json!({
+            "id": "usr_self",
+            "location": "wrld_for_two:94665",
+            "worldId": "wrld_for_two",
+            "instanceId": "94665",
+            "state": "online",
+            "stateBucket": "online"
+        }),
+    );
+    runtime
+        .apply_game_running_state(7, local_authority("wrld_for_two:94665", "For Two"))
+        .expect("local game state output");
+
+    let stopped = runtime
+        .apply_game_running_state(
+            7,
+            RealtimeCurrentUserAuthority::Available {
+                is_game_running: false,
+                game_log: Some(RealtimeCurrentUserGameLogContext {
+                    location: "wrld_for_two:94665".into(),
+                    destination: String::new(),
+                    world_name: "For Two".into(),
+                }),
+            },
+        )
+        .expect("stopped game state output");
+
+    assert_eq!(
+        stopped.projection.snapshot["location"],
+        json!("wrld_for_two:94665")
+    );
+    assert!(stopped.projection.game_state_patch.is_some());
+    assert!(stopped.persistence.game_log_locations.is_empty());
 }
 
 #[test]

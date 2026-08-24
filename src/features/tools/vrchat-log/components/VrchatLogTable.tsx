@@ -88,9 +88,9 @@ export function VrchatLogTable({
                                             transform: `translateY(${row.start + LOG_HEADER_HEIGHT}px)`
                                         }}
                                         onClick={(event) => {
-                                            const target =
-                                                event.target as HTMLElement;
+                                            const target = event.target;
                                             if (
+                                                target instanceof Element &&
                                                 target.closest(
                                                     '[data-log-select-control]'
                                                 )

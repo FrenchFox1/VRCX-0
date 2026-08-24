@@ -172,7 +172,6 @@ export function useInstanceHistoryRowsController({
         }
         try {
             await gameLogRepository.deleteGameLogInstance({
-                id: activeUserId,
                 location,
                 events: row.events
             });

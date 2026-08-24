@@ -12,6 +12,7 @@ import {
     sanitizeTableColumnVisibility,
     usePersistedDataTableLayout
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 const GROUP_MODERATION_DEFAULT_PAGE_SIZE = 25;
@@ -25,8 +26,8 @@ function sanitizeSorting(
         return [];
     }
     return value.reduce<SortingState>((result, entry) => {
-        const id = (entry as { id?: unknown })?.id;
-        const desc = (entry as { desc?: unknown })?.desc;
+        const id = isRecord(entry) ? entry.id : undefined;
+        const desc = isRecord(entry) ? entry.desc : undefined;
         if (
             typeof id === 'string' &&
             typeof desc === 'boolean' &&

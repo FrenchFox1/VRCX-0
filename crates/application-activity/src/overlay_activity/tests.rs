@@ -83,7 +83,8 @@ fn friend_projection_feed_entries_are_ingested_with_canonical_activity_types() {
             "created_at": "2026-05-31T00:01:00.000Z",
             "userId": "usr_avatar",
             "displayName": "Avatar User"
-        })],
+        })
+        .into()],
         ..FriendProjection::new(0, 0)
     };
 
@@ -118,7 +119,8 @@ fn trust_level_friend_projection_preserves_new_level_in_overlay_content() {
             "trustLevel": "Trusted User",
             "previousTrustLevel": "Known User",
             "friendNumber": 7
-        })],
+        })
+        .into()],
         ..FriendProjection::new(0, 0)
     });
 
@@ -161,7 +163,8 @@ fn player_joining_friend_feed_matches_everyone_in_instance_scope() {
             "displayName": "Joining User",
             "location": "traveling",
             "travelingToLocation": "wrld_current:456"
-        })],
+        })
+        .into()],
         ..FriendProjection::new(0, 0)
     };
 
@@ -198,13 +201,15 @@ fn friend_projection_feed_entries_do_not_restore_removed_friend_membership() {
                 "created_at": "2026-05-31T00:01:30.000Z",
                 "userId": "usr_removed",
                 "displayName": "Removed User"
-            }),
+            })
+            .into(),
             json!({
                 "type": "DisplayName",
                 "created_at": "2026-05-31T00:01:31.000Z",
                 "userId": "usr_removed",
                 "displayName": "Removed User"
-            }),
+            })
+            .into(),
         ],
         ..FriendProjection::new(0, 0)
     };
@@ -241,7 +246,8 @@ fn notification_projection_uses_sender_as_actor() {
                 "createdAt": "2026-05-31T00:02:00.000Z",
                 "senderUserId": "usr_sender",
                 "senderUsername": "Sender"
-            }),
+            })
+            .into(),
             insert_defaults: None,
             notify_menu: true,
             deliver_runtime: true,
@@ -280,7 +286,8 @@ fn notification_projection_does_not_use_receiver_as_actor() {
                 "receiverUserId": "usr_self",
                 "userId": "usr_self",
                 "message": "Group announcement"
-            }),
+            })
+            .into(),
             insert_defaults: None,
             notify_menu: true,
             deliver_runtime: true,
@@ -307,7 +314,8 @@ fn notification_projection_keeps_unresolved_direct_actor_with_user_id_title() {
                 "type": "invite",
                 "createdAt": chrono::Utc::now().to_rfc3339(),
                 "senderUserId": "usr_sender"
-            }),
+            })
+            .into(),
             insert_defaults: None,
             notify_menu: true,
             deliver_runtime: true,
@@ -346,7 +354,8 @@ fn notification_projection_uses_nested_sender_display_name() {
                 "details": {
                     "senderDisplayName": "Sender"
                 }
-            }),
+            })
+            .into(),
             insert_defaults: None,
             notify_menu: true,
             deliver_runtime: true,
@@ -388,7 +397,8 @@ fn friend_projection_location_content_exposes_raw_and_display_location() {
             "location": "wrld_world:12345",
             "worldName": "World Name",
             "groupName": "Group Name"
-        })],
+        })
+        .into()],
         ..FriendProjection::new(0, 0)
     };
 
@@ -465,7 +475,8 @@ fn notification_projection_without_ids_uses_stable_fallback_source_ids() {
                     "senderUserId": "usr_sender",
                     "senderUsername": "Sender",
                     "message": "first"
-                }),
+                })
+                .into(),
                 insert_defaults: None,
                 notify_menu: true,
                 deliver_runtime: true,
@@ -478,7 +489,8 @@ fn notification_projection_without_ids_uses_stable_fallback_source_ids() {
                     "senderUserId": "usr_sender",
                     "senderUsername": "Sender",
                     "message": "second"
-                }),
+                })
+                .into(),
                 insert_defaults: None,
                 notify_menu: true,
                 deliver_runtime: true,
@@ -856,7 +868,7 @@ fn candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {
         actor_user_id: user_id.to_string(),
         actor_display_name: user_id.to_string(),
         current_instance: false,
-        payload: json!({}),
+        payload: json!({}).into(),
     }
 }
 
@@ -909,7 +921,8 @@ fn current_instance_join_candidate() -> OverlayActivityCandidate {
     row.payload = json!({
         "location": "wrld_current:123",
         "worldId": "wrld_current"
-    });
+    })
+    .into();
     row
 }
 
@@ -919,7 +932,8 @@ fn current_instance_gps_candidate(location: &str) -> OverlayActivityCandidate {
         "type": "GPS",
         "userId": "usr_selected",
         "location": location
-    });
+    })
+    .into();
     row
 }
 

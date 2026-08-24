@@ -9,6 +9,7 @@ import {
     convertFileUrlToImageUrl,
     userImage
 } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 export function firstArray<T>(...values: (T[] | null | undefined)[]): T[];
@@ -240,10 +241,6 @@ export function resolveGroupDialogTab(
     fallback = 'overview'
 ) {
     return tabs.some((tab) => tab.value === preferred) ? preferred : fallback;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function eventRows(value: unknown): GroupCalendarEventRecord[] {

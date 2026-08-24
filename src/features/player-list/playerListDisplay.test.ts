@@ -146,11 +146,6 @@ describe('playerListDisplay', () => {
             label: 'custom',
             icon: null
         });
-        expect(resolvePlatformBadge(42)).toEqual({
-            key: 42,
-            label: 42,
-            icon: null
-        });
         expect(
             fileAnalysisSizeForPlatform(
                 {

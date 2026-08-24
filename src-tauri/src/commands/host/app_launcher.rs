@@ -27,7 +27,7 @@ pub fn app__app_launcher_snapshot_get(
     state: State<'_, AppState>,
 ) -> Result<AppLauncherSnapshot, AppError> {
     require_app_launcher_supported()?;
-    Ok(state.app_launcher_snapshot())
+    Ok(state.runtime_host().app_launcher_snapshot())
 }
 
 #[tauri::command]
@@ -37,7 +37,7 @@ pub fn app__app_launcher_enabled_set(
     enabled: bool,
 ) -> Result<AppLauncherSnapshot, AppError> {
     require_app_launcher_supported()?;
-    Ok(state.set_app_launcher_enabled(enabled)?)
+    Ok(state.runtime_host().set_app_launcher_enabled(enabled)?)
 }
 
 #[tauri::command]
@@ -47,7 +47,7 @@ pub fn app__app_launcher_entries_set(
     entries: Vec<AppLauncherEntry>,
 ) -> Result<AppLauncherSnapshot, AppError> {
     require_app_launcher_supported()?;
-    Ok(state.set_app_launcher_entries(entries)?)
+    Ok(state.runtime_host().set_app_launcher_entries(entries)?)
 }
 
 #[tauri::command]
@@ -57,7 +57,7 @@ pub fn app__app_launcher_entry_test(
     entry_id: String,
 ) -> Result<AppLauncherSnapshot, AppError> {
     require_host_capability(HostCapability::GameLaunch)?;
-    Ok(state.test_app_launcher_entry(&entry_id)?)
+    Ok(state.runtime_host().test_app_launcher_entry(&entry_id)?)
 }
 
 #[tauri::command]
@@ -67,7 +67,7 @@ pub fn app__app_launcher_test_run_stop(
     run_id: String,
 ) -> Result<AppLauncherSnapshot, AppError> {
     require_app_launcher_supported()?;
-    Ok(state.stop_app_launcher_test_run(&run_id)?)
+    Ok(state.runtime_host().stop_app_launcher_test_run(&run_id)?)
 }
 
 #[tauri::command]
@@ -95,9 +95,8 @@ pub async fn app__app_launcher_target_pick(
     let picked = picked_app_launcher_target(path).map_err(AppError::Custom)?;
     if matches!(picked.kind, AppLauncherEntryKind::LocalApp) {
         state
-            .desktop
-            .host_file_access
-            .register_path(PathBuf::from(&picked.target));
+            .runtime_host()
+            .register_host_file_access(PathBuf::from(&picked.target));
     }
     Ok(Some(picked))
 }

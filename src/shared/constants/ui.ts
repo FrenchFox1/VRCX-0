@@ -107,6 +107,13 @@ const navDefinitions = [
         routeName: 'my-avatars'
     },
     {
+        key: 'activity',
+        icon: 'lucide:Activity',
+        tooltip: 'view.activity.title',
+        labelKey: 'view.activity.title',
+        routeName: 'activity'
+    },
+    {
         key: 'charts-mutual',
         icon: 'lucide:Users',
         tooltip: 'view.charts.mutual_friend.tab_label',

@@ -7,15 +7,14 @@ use super::super::types::TwoFactorMethod;
 
 async fn drive_test_auto_login(
     api: Arc<dyn LoginApi>,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
-    db: &DatabaseService,
     throttle: &AutoLoginThrottle,
     input: AutoLoginStartInput,
 ) -> AutoLoginDrive {
-    let runtime = crate::LoginSessionRuntime::new();
+    let runtime = crate::auth::LoginSessionRuntime::new();
     let operation = runtime.begin_operation(&|_| Ok(())).unwrap();
-    drive_auto_login(api.as_ref(), config, web, db, throttle, &operation, input)
+    drive_auto_login(api.as_ref(), config, web, throttle, &operation, input)
         .await
         .unwrap()
 }
@@ -92,7 +91,7 @@ fn throttle_reset_all_clears_every_account() {
 
 #[tokio::test]
 async fn cookie_restore_success_never_attempts_saved_credential() {
-    let (_dir, config, web, db) = test_env("cookie-success");
+    let (_dir, config, web, _db) = test_env("cookie-success");
     seed_saved_credential(&config, &web, "usr_saved");
     let api = Arc::new(FakeLoginApi::new(vec![
         (200, json!({})),
@@ -102,13 +101,12 @@ async fn cookie_restore_success_never_attempts_saved_credential() {
         ),
     ]));
 
-    let runtime = crate::LoginSessionRuntime::new();
+    let runtime = crate::auth::LoginSessionRuntime::new();
     let outcome = runtime
         .auto_login_start_with(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_saved".into(),
             },
@@ -125,7 +123,7 @@ async fn cookie_restore_success_never_attempts_saved_credential() {
 
 #[tokio::test]
 async fn cookie_restore_for_another_user_falls_back_to_the_target_account() {
-    let (_dir, config, web, db) = test_env("cookie-user-mismatch");
+    let (_dir, config, web, _db) = test_env("cookie-user-mismatch");
     seed_saved_credential(&config, &web, "usr_saved");
     let throttle = AutoLoginThrottle::new();
     let api = Arc::new(FakeLoginApi::new(vec![
@@ -142,7 +140,6 @@ async fn cookie_restore_for_another_user_falls_back_to_the_target_account() {
         api.clone() as Arc<dyn LoginApi>,
         &config,
         &web,
-        db.as_ref(),
         &throttle,
         AutoLoginStartInput {
             user_id: "usr_saved".into(),
@@ -163,7 +160,7 @@ async fn cookie_restore_for_another_user_falls_back_to_the_target_account() {
 
 #[tokio::test]
 async fn missing_credentials_falls_back_to_saved_credential_and_records_login_success() {
-    let (_dir, config, web, db) = test_env("missing-creds-fallback");
+    let (_dir, config, web, _db) = test_env("missing-creds-fallback");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let api = Arc::new(FakeLoginApi::new(vec![
@@ -186,13 +183,12 @@ async fn missing_credentials_falls_back_to_saved_credential_and_records_login_su
         (200, user_json()),
     ]));
 
-    let runtime = crate::LoginSessionRuntime::new();
+    let runtime = crate::auth::LoginSessionRuntime::new();
     let outcome = runtime
         .auto_login_start_with(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_saved".into(),
             },
@@ -216,7 +212,7 @@ async fn missing_credentials_falls_back_to_saved_credential_and_records_login_su
 
 #[tokio::test]
 async fn config_missing_credentials_also_falls_back_to_the_saved_account() {
-    let (_dir, config, web, db) = test_env("config-missing-creds-fallback");
+    let (_dir, config, web, _db) = test_env("config-missing-creds-fallback");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let api = Arc::new(FakeLoginApi::new(vec![
@@ -238,12 +234,11 @@ async fn config_missing_credentials_also_falls_back_to_the_saved_account() {
         (200, user_json()),
     ]));
 
-    let outcome = crate::LoginSessionRuntime::new()
+    let outcome = crate::auth::LoginSessionRuntime::new()
         .auto_login_start_with(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_saved".into(),
             },
@@ -265,7 +260,7 @@ async fn config_missing_credentials_also_falls_back_to_the_saved_account() {
 
 #[tokio::test]
 async fn missing_credentials_fallback_can_surface_a_two_factor_challenge() {
-    let (_dir, config, web, db) = test_env("missing-creds-challenge");
+    let (_dir, config, web, _db) = test_env("missing-creds-challenge");
     seed_saved_credential(&config, &web, "usr_saved");
     let throttle = AutoLoginThrottle::new();
 
@@ -293,7 +288,6 @@ async fn missing_credentials_fallback_can_surface_a_two_factor_challenge() {
         Arc::clone(&api) as Arc<dyn LoginApi>,
         &config,
         &web,
-        db.as_ref(),
         &throttle,
         AutoLoginStartInput {
             user_id: "usr_saved".into(),
@@ -312,7 +306,7 @@ async fn missing_credentials_fallback_can_surface_a_two_factor_challenge() {
 
 #[tokio::test]
 async fn missing_credentials_without_fallback_available_reports_expired() {
-    let (_dir, config, web, db) = test_env("missing-creds-no-fallback");
+    let (_dir, config, web, _db) = test_env("missing-creds-no-fallback");
 
     let api = Arc::new(FakeLoginApi::new(vec![
         (200, json!({})),
@@ -322,12 +316,11 @@ async fn missing_credentials_without_fallback_available_reports_expired() {
         ),
     ]));
 
-    let outcome = crate::LoginSessionRuntime::new()
+    let outcome = crate::auth::LoginSessionRuntime::new()
         .auto_login_start_with(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_unknown".into(),
             },
@@ -343,18 +336,17 @@ async fn missing_credentials_without_fallback_available_reports_expired() {
 
 #[tokio::test]
 async fn config_missing_credentials_without_a_saved_login_reports_expired() {
-    let (_dir, config, web, db) = test_env("config-missing-creds-no-fallback");
+    let (_dir, config, web, _db) = test_env("config-missing-creds-no-fallback");
     let api = Arc::new(FakeLoginApi::new(vec![(
         401,
         json!({ "error": { "message": "Missing Credentials" } }),
     )]));
 
-    let outcome = crate::LoginSessionRuntime::new()
+    let outcome = crate::auth::LoginSessionRuntime::new()
         .auto_login_start_with(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_unknown".into(),
             },
@@ -371,7 +363,7 @@ async fn config_missing_credentials_without_a_saved_login_reports_expired() {
 
 #[tokio::test]
 async fn a_non_missing_credentials_cookie_failure_never_attempts_a_fallback() {
-    let (_dir, config, web, db) = test_env("cookie-network-failure");
+    let (_dir, config, web, _db) = test_env("cookie-network-failure");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let api = Arc::new(FakeLoginApi::new(vec![(
@@ -379,12 +371,11 @@ async fn a_non_missing_credentials_cookie_failure_never_attempts_a_fallback() {
         json!({ "error": { "message": "Forbidden" } }),
     )]));
 
-    let outcome = crate::LoginSessionRuntime::new()
+    let outcome = crate::auth::LoginSessionRuntime::new()
         .auto_login_start_with(
             Arc::clone(&api) as Arc<dyn LoginApi>,
             &config,
             &web,
-            db.as_ref(),
             AutoLoginStartInput {
                 user_id: "usr_saved".into(),
             },
@@ -403,7 +394,7 @@ async fn a_non_missing_credentials_cookie_failure_never_attempts_a_fallback() {
 
 #[tokio::test]
 async fn throttled_attempt_clears_auth_cookies_and_last_user() {
-    let (_dir, config, web, db) = test_env("throttled");
+    let (_dir, config, web, _db) = test_env("throttled");
     seed_saved_credential(&config, &web, "usr_saved");
     let throttle = AutoLoginThrottle::new();
     let now = Instant::now();
@@ -417,7 +408,6 @@ async fn throttled_attempt_clears_auth_cookies_and_last_user() {
         Arc::clone(&api) as Arc<dyn LoginApi>,
         &config,
         &web,
-        db.as_ref(),
         &throttle,
         AutoLoginStartInput {
             user_id: "usr_saved".into(),
@@ -444,12 +434,11 @@ async fn throttled_attempt_clears_auth_cookies_and_last_user() {
 
 #[test]
 fn invalid_credentials_failure_deletes_the_saved_credential() {
-    let (_dir, config, web, db) = test_env("cleanup-invalid-credentials");
+    let (_dir, config, web, _db) = test_env("cleanup-invalid-credentials");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let snapshot = apply_failure_cleanup(
         &web,
-        db.as_ref(),
         &config,
         "usr_saved",
         LoginFailureKind::InvalidCredentials,
@@ -462,12 +451,11 @@ fn invalid_credentials_failure_deletes_the_saved_credential() {
 
 #[test]
 fn session_invalidated_failure_clears_auth_cookies_and_last_user() {
-    let (_dir, config, web, db) = test_env("cleanup-session-invalidated");
+    let (_dir, config, web, _db) = test_env("cleanup-session-invalidated");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let snapshot = apply_failure_cleanup(
         &web,
-        db.as_ref(),
         &config,
         "usr_saved",
         LoginFailureKind::SessionInvalidated,
@@ -480,12 +468,11 @@ fn session_invalidated_failure_clears_auth_cookies_and_last_user() {
 
 #[test]
 fn missing_credentials_failure_clears_auth_cookies_and_last_user() {
-    let (_dir, config, web, db) = test_env("cleanup-missing-credentials");
+    let (_dir, config, web, _db) = test_env("cleanup-missing-credentials");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let snapshot = apply_failure_cleanup(
         &web,
-        db.as_ref(),
         &config,
         "usr_saved",
         LoginFailureKind::MissingCredentials,
@@ -497,12 +484,11 @@ fn missing_credentials_failure_clears_auth_cookies_and_last_user() {
 
 #[test]
 fn two_factor_unavailable_failure_keeps_the_last_user() {
-    let (_dir, config, web, db) = test_env("cleanup-two-factor-unavailable");
+    let (_dir, config, web, _db) = test_env("cleanup-two-factor-unavailable");
     seed_saved_credential(&config, &web, "usr_saved");
 
     let snapshot = apply_failure_cleanup(
         &web,
-        db.as_ref(),
         &config,
         "usr_saved",
         LoginFailureKind::TwoFactorUnavailable,
@@ -514,17 +500,11 @@ fn two_factor_unavailable_failure_keeps_the_last_user() {
 
 #[test]
 fn network_failure_keeps_the_last_user() {
-    let (_dir, config, web, db) = test_env("cleanup-network");
+    let (_dir, config, web, _db) = test_env("cleanup-network");
     seed_saved_credential(&config, &web, "usr_saved");
 
-    let snapshot = apply_failure_cleanup(
-        &web,
-        db.as_ref(),
-        &config,
-        "usr_saved",
-        LoginFailureKind::Network,
-    )
-    .unwrap();
+    let snapshot =
+        apply_failure_cleanup(&web, &config, "usr_saved", LoginFailureKind::Network).unwrap();
 
     assert_eq!(snapshot.last_user_logged_in.as_deref(), Some("usr_saved"));
 }

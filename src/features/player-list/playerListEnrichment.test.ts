@@ -93,10 +93,12 @@ describe('enrichPlayerListRows', () => {
             moderationByUserId: {
                 usr_blocked: {
                     userId: 'usr_blocked',
-                    block: true
+                    block: true,
+                    mute: false
                 },
                 usr_muted: {
                     userId: 'usr_muted',
+                    block: false,
                     mute: true
                 },
                 usr_both: {

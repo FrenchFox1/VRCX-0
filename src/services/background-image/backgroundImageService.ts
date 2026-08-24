@@ -6,7 +6,6 @@ import {
     type BackgroundImageMode,
     type BackgroundImageProjection,
     type BackgroundImageProviderId,
-    type BackgroundImageRotationInterval,
     type BackgroundImageSnapshot
 } from '@/platform/tauri/bindings';
 import {
@@ -209,15 +208,15 @@ export async function chooseBackgroundImageFolder(): Promise<boolean> {
     return setBackgroundImageCustomFolder(folderPath);
 }
 
-export async function setBackgroundImageCustomRotationInterval(
-    rotationInterval: BackgroundImageRotationInterval
+export async function setBackgroundImageCustomRotationIntervalMinutes(
+    rotationIntervalMinutes: number
 ): Promise<boolean> {
     if (!useBackgroundImageStore.getState().customSource) {
         return false;
     }
     await configureBackgroundImage({
-        kind: 'setRotationInterval',
-        rotationInterval
+        kind: 'setRotationIntervalMinutes',
+        rotationIntervalMinutes
     });
     return true;
 }

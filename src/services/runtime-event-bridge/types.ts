@@ -40,7 +40,7 @@ export type RuntimeEventPayloadMap = Omit<
     keyof RuntimePayloadOverrides
 > &
     RuntimePayloadOverrides & {
-        browserFocus: unknown;
+        browserFocus: null;
     };
 
 export type RuntimeEventName = keyof RuntimeEventPayloadMap;

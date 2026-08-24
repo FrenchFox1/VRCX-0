@@ -12,7 +12,7 @@ use crate::Error;
 use super::{
     checkpoint, checkpoint_status, ensure_upgrade_version_written, open_configured_connection,
     open_main_database, DatabaseMode, DatabaseService, DatabaseUpgradeStatus, EnsuredSchemas,
-    MainDatabase, UpgradeSession,
+    MainDatabase, UpgradeSession, WalCheckpointMode,
 };
 
 impl DatabaseService {
@@ -53,8 +53,8 @@ impl DatabaseService {
                 .writer
                 .lock()
                 .map_err(|e| Error::Database(e.to_string()))?;
-            let status = checkpoint_status(&writer)?;
-            if status.busy != 0 {
+            let status = checkpoint_status(&writer, WalCheckpointMode::Truncate)?;
+            if status.busy {
                 tracing::warn!(
                     log_frames = status.log_frames,
                     checkpointed_frames = status.checkpointed_frames,

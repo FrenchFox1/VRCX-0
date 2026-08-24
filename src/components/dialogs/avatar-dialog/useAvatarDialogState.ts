@@ -40,7 +40,7 @@ export function useAvatarDialogState({
         String(state.snapshot?.sdkUnityVersion || '')
     );
 
-    const normalizedAvatarId = normalizeEntityId(avatarId);
+    const normalizedAvatarId = avatarId?.trim() ?? '';
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );

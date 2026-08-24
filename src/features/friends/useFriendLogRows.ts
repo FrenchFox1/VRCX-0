@@ -29,7 +29,7 @@ export function useFriendLogRows({
     const [detail, setDetail] = useState('');
     const rowsOwnerUserIdRef = useRef('');
 
-    function updateRowsOwnerUserId(ownerUserId: unknown) {
+    function updateRowsOwnerUserId(ownerUserId: string) {
         const normalizedOwnerUserId = normalizeUserId(ownerUserId);
         rowsOwnerUserIdRef.current = normalizedOwnerUserId;
         setRowsOwnerUserId(normalizedOwnerUserId);

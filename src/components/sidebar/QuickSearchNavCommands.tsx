@@ -12,7 +12,7 @@ const NAV_RESULT_LIMIT = 6;
 export type QuickSearchNavCommand = {
     key: string;
     label: string;
-    icon: unknown;
+    icon: string;
     keywords: string;
     target: { type: 'path'; path: string } | { type: 'tool'; toolKey: string };
 };

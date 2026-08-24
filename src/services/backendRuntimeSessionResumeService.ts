@@ -2,6 +2,7 @@ import type {
     AuthenticatedSessionProjection,
     AuthenticatedSessionSnapshot
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -16,10 +17,6 @@ import { bootstrapAuthenticatedSession } from './sessionBootstrapService';
 import { loadVrchatConfigSnapshot } from './vrchatConfigService';
 
 type CurrentUserSnapshot = Record<string, unknown>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function isCurrentAuthenticatedSessionProjection(
     projection: AuthenticatedSessionProjection

@@ -51,6 +51,9 @@ type WristOverlayStartMode = SettingsVrPrefs['wristOverlayStartMode'];
 
 type SettingsVrTabContentProps = {
     prefs: SettingsVrPrefs;
+    overlayTestMode: boolean;
+    overlayTestModeDisabled: boolean;
+    onOverlayTestModeChange: (checked: boolean) => void;
     onImageNotificationsChange: (checked: boolean) => void;
     onHmdNotificationOpacityChange: (value: number) => void;
     onHmdNotificationPositionChange: (value: HmdNotificationPosition) => void;
@@ -120,6 +123,9 @@ export function SettingsVrTab() {
 
 export function SettingsVrTabContent({
     prefs,
+    overlayTestMode,
+    overlayTestModeDisabled,
+    onOverlayTestModeChange,
     onXsNotificationsChange,
     onOvrtHudNotificationsChange,
     onOvrtWristNotificationsChange,
@@ -656,6 +662,27 @@ export function SettingsVrTabContent({
                     >
                         {t('common.actions.configure')}
                     </Button>
+                </Field>
+            </SettingsGroup>
+
+            <SettingsGroup
+                title={t('view.settings.vr.test_mode.header')}
+                description={t('view.settings.vr.test_mode.description')}
+            >
+                <Field
+                    label={t('view.settings.vr.test_mode.force_display')}
+                    description={
+                        overlayTestModeDisabled && !overlayTestMode
+                            ? t('view.settings.vr.test_mode.requires_steamvr')
+                            : undefined
+                    }
+                    disabled={overlayTestModeDisabled}
+                >
+                    <Switch
+                        checked={overlayTestMode}
+                        disabled={overlayTestModeDisabled}
+                        onCheckedChange={onOverlayTestModeChange}
+                    />
                 </Field>
             </SettingsGroup>
         </SettingsTabContent>

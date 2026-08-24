@@ -1,4 +1,9 @@
 use serde::{Deserialize, Serialize};
+pub use vrcx_0_contracts::{
+    DataDirCleanupPending, DataDirCleanupReport, DataDirMigrationResult,
+    DataDirMigrationResultStatus, DataDirMigrationTargetState, DataDirMigrationWarning,
+    DATA_DIR_MIGRATION_SPACE_MARGIN_BYTES,
+};
 
 pub const DATA_DIR_MIGRATION_JOURNAL_FILE_NAME: &str = "pending-data-dir-migration.json";
 pub const DATA_DIR_MIGRATION_RESULT_FILE_NAME: &str = "last-data-dir-migration-result.json";
@@ -6,17 +11,8 @@ pub const DATA_DIR_CLEANUP_PENDING_FILE_NAME: &str = "data-dir-cleanup-pending.j
 pub const DATA_DIR_MIGRATION_STAGING_DIRECTORY: &str = ".migrate-staging";
 pub const DATA_DIR_MIGRATION_REPLACED_PREFIX: &str = ".migrate-replaced-";
 pub const DATA_DIR_MIGRATION_JOURNAL_VERSION: u32 = 1;
-pub const DATA_DIR_MIGRATION_SPACE_MARGIN_BYTES: u64 = 512 * 1024 * 1024;
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum DataDirMigrationTargetState {
-    Empty,
-    ExistingProfile,
-    ForeignContent,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum DataDirMigrationJournalPhase {
     Copying,
@@ -102,53 +98,8 @@ pub struct StagedDataDirMigration {
     pub wal_bytes: Option<u64>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum DataDirMigrationResultStatus {
-    Succeeded,
-    Interrupted,
-    DatabaseOpenFailed,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum DataDirMigrationWarning {
-    ConfigCopyFailed,
-    GalleryCopyFailed,
-    CacheCleanupFailed,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct DataDirMigrationResult {
-    pub status: DataDirMigrationResultStatus,
-    pub source_dir: String,
-    pub target_dir: String,
-    pub warnings: Vec<DataDirMigrationWarning>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct DataDirCleanupPending {
-    pub old_dir: String,
-    pub bytes: u64,
-    pub migrated_at: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub last_prompted_at: Option<String>,
-    pub dismissed: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub replaced_dir: Option<String>,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DataDirMigrationFinalizeOutcome {
     pub cleanup_pending: DataDirCleanupPending,
     pub warnings: Vec<DataDirMigrationWarning>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct DataDirCleanupReport {
-    pub freed_bytes: u64,
-    pub skipped: Vec<String>,
 }

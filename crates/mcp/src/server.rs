@@ -8,7 +8,6 @@ use rmcp::model::{
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{tool_handler, ErrorData as RmcpError, ServerHandler};
-use vrcx_0_persistence::social_aggregates;
 
 use crate::runtime::McpRuntime;
 
@@ -95,12 +94,22 @@ impl ServerHandler for VrcxMcpServer {
             )));
         }
         future::ready(Ok(ReadResourceResult::new(vec![ResourceContents::text(
-            social_aggregates::data_caveats_resource(),
+            data_caveats_resource(),
             DATA_CAVEATS_URI,
         )
         .with_mime_type("text/plain")])
         .into()))
     }
+}
+
+fn data_caveats_resource() -> String {
+    [
+        "VRCX-0 data is observer-centered and not a global VRChat record.",
+        "Missing rows mean this VRCX-0 profile did not observe the event, not that the event did not happen.",
+        "Co-presence minutes are useful for relative sorting; join/leave pairing can undercount absolute duration.",
+        "Private instances that the owner cannot see may only appear as private and cannot be separated by instance.",
+    ]
+    .join("\n")
 }
 
 #[cfg(test)]

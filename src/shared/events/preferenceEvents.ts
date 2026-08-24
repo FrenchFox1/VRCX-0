@@ -1,13 +1,22 @@
+import { isRecord } from '@/shared/utils/record';
 export const PREFERENCE_CHANGED_EVENT = 'vrcx:preference-changed';
 
+type PreferenceChangedValue =
+    | string
+    | number
+    | boolean
+    | object
+    | null
+    | undefined;
+
 type PreferenceChangedDetail = {
-    key?: unknown;
-    normalizedKey?: unknown;
-    value?: unknown;
+    key?: string;
+    normalizedKey?: string;
+    value?: PreferenceChangedValue;
 };
 
 type PreferenceChangedCallback = (
-    value: unknown,
+    value: PreferenceChangedValue,
     detail: PreferenceChangedDetail
 ) => void;
 
@@ -16,7 +25,10 @@ export function normalizePreferenceKey(key: unknown): string {
     return normalized.startsWith('VRCX_') ? normalized.slice(5) : normalized;
 }
 
-export function publishPreferenceChanged(key: unknown, value: unknown) {
+export function publishPreferenceChanged(
+    key: string,
+    value: PreferenceChangedValue
+) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -31,8 +43,19 @@ export function publishPreferenceChanged(key: unknown, value: unknown) {
     );
 }
 
+function preferenceChangedValue(value: unknown): PreferenceChangedValue {
+    return value === null ||
+        typeof value === 'undefined' ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        typeof value === 'object'
+        ? value
+        : undefined;
+}
+
 export function onPreferenceChanged(
-    keys: unknown | readonly unknown[],
+    keys: string | readonly string[],
     callback: PreferenceChangedCallback
 ) {
     if (typeof window === 'undefined') {
@@ -42,8 +65,20 @@ export function onPreferenceChanged(
         (Array.isArray(keys) ? keys : [keys]).map(normalizePreferenceKey)
     );
     const handler = (event: Event) => {
-        const detail =
-            (event as CustomEvent<PreferenceChangedDetail>).detail || {};
+        const detailValue = 'detail' in event ? event.detail : undefined;
+        const detail: PreferenceChangedDetail = isRecord(detailValue)
+            ? {
+                  key:
+                      typeof detailValue.key === 'string'
+                          ? detailValue.key
+                          : undefined,
+                  normalizedKey:
+                      typeof detailValue.normalizedKey === 'string'
+                          ? detailValue.normalizedKey
+                          : undefined,
+                  value: preferenceChangedValue(detailValue.value)
+              }
+            : {};
         const normalizedKey = normalizePreferenceKey(
             detail.normalizedKey || detail.key
         );

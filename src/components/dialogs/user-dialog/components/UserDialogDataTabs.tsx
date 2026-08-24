@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router';
 
 import { DialogErrorState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { UserActivityPanel } from '@/components/dialogs/UserActivityPanel';
-import type {
-    UserDialogJson,
-    UserModerationState,
-    UserProfileEntity
-} from '@/domain/entities/user';
+import type { UserProfileEntity } from '@/domain/entities/user';
 import { useDialogStore } from '@/state/dialogStore';
 import {
     Select,
@@ -281,7 +277,7 @@ export function UserDialogFavoriteWorldsTab({
                 search={search.favoriteWorlds}
                 filteredRows={filteredFavoriteWorlds}
                 loading={remoteStatus['favorite-worlds'] === 'running'}
-                error={remoteErrors['favorite-worlds']}
+                error={remoteErrors['favorite-worlds'] || ''}
             />
         </EntityDialogTabContent>
     );
@@ -474,11 +470,9 @@ export function UserDialogInstanceHistoryTab({
 
 export function UserDialogActivityTab({
     profile,
-    isCurrentUser,
     active
 }: {
     profile: UserDialogProfileRecord;
-    isCurrentUser: boolean;
     active: boolean;
 }) {
     return (
@@ -486,41 +480,15 @@ export function UserDialogActivityTab({
             value="activity"
             className="flex flex-col gap-4"
         >
-            <UserActivityPanel
-                profile={profile}
-                isCurrentUser={isCurrentUser}
-                active={active}
-            />
+            <UserActivityPanel profile={profile} active={active} />
         </EntityDialogTabContent>
     );
 }
 
-export function UserDialogJsonTab({
-    profile,
-    memo,
-    moderationState,
-    isFriend,
-    isFavorite
-}: {
-    profile: UserProfileEntity;
-    memo: string;
-    moderationState: UserModerationState;
-    isFriend: boolean;
-    isFavorite: boolean;
-}) {
+export function UserDialogJsonTab({ profile }: { profile: UserProfileEntity }) {
     return (
         <EntityDialogTabContent value="json">
-            <EntityRawJson
-                value={
-                    {
-                        profile,
-                        memo,
-                        moderationState,
-                        isFriend,
-                        isFavorite
-                    } satisfies UserDialogJson
-                }
-            />
+            <EntityRawJson value={profile} />
         </EntityDialogTabContent>
     );
 }

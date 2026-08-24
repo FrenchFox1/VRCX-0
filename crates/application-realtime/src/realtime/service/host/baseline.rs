@@ -7,6 +7,7 @@ use vrcx_0_core::derived_keys;
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
+use vrcx_0_core::json::RawJson;
 
 use crate::realtime::friends::{player_joining_feed_entry, PendingOfflineSchedule};
 use crate::realtime::{
@@ -20,6 +21,7 @@ use crate::social_baseline::service::{
 
 use super::state::{ActiveRealtimeContext, PendingFriendBaseline, ScopedFriendLogMutation};
 use super::RealtimeHostRuntime;
+use vrcx_0_core::OwnerId;
 
 enum FriendBaselineSyncMode {
     Direct {
@@ -37,6 +39,7 @@ struct FriendBaselineApplyPlan {
     previous_snapshot: Option<RealtimeFriendSnapshot>,
     schedules: Vec<PendingOfflineSchedule>,
     confirmed_feed_entries: Vec<Value>,
+    location_time_snapshot: Option<Vec<vrcx_0_application_core::FriendLocationTime>>,
 }
 
 impl RealtimeHostRuntime {
@@ -62,16 +65,16 @@ impl RealtimeHostRuntime {
 
     pub fn run_friend_log_current_mutation<T>(
         &self,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
-    ) -> vrcx_0_persistence::Result<T> {
+        mutation: impl FnOnce() -> Result<T>,
+    ) -> Result<T> {
         self.run_friend_log_current_mutation_with_effect(mutation, None)
     }
 
     pub(super) fn run_friend_log_current_mutation_with_effect<T>(
         &self,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
+        mutation: impl FnOnce() -> Result<T>,
         effect: Option<ScopedFriendLogMutation>,
-    ) -> vrcx_0_persistence::Result<T> {
+    ) -> Result<T> {
         let _owner = self.lock_friend_owner();
         let result = mutation();
         if result.is_ok() {
@@ -139,6 +142,7 @@ impl RealtimeHostRuntime {
             previous_snapshot,
             schedules: baseline_schedules,
             confirmed_feed_entries,
+            location_time_snapshot,
         } = {
             let mut state = self
                 .state
@@ -211,7 +215,7 @@ impl RealtimeHostRuntime {
                     let roster_order =
                         roster_order_from_friend_records(&pending_snapshot.friends_by_id);
                     reconcile_friend_roster_records(
-                        self.deps.db.as_ref(),
+                        self.deps.store.as_ref(),
                         &pending_snapshot.current_user_id,
                         &pending_snapshot.friends_by_id,
                         roster_order.as_deref(),
@@ -315,12 +319,14 @@ impl RealtimeHostRuntime {
             let result = baseline_effects.result;
             let baseline_schedules = baseline_effects.schedules;
             let confirmed_feed_entries = baseline_effects.confirmed_feed_entries;
+            let location_time_snapshot = baseline_effects.location_time_snapshot;
             FriendBaselineApplyPlan {
                 result,
                 active,
                 previous_snapshot,
                 schedules: baseline_schedules,
                 confirmed_feed_entries,
+                location_time_snapshot,
             }
         };
 
@@ -331,9 +337,15 @@ impl RealtimeHostRuntime {
         } else {
             None
         };
-        let baseline_projection = canonical_snapshot.as_ref().and_then(|snapshot| {
+        let mut baseline_projection = canonical_snapshot.as_ref().and_then(|snapshot| {
             friend_snapshot_diff_projection(previous_snapshot.as_ref(), snapshot)
         });
+        if let Some(location_time_snapshot) = location_time_snapshot {
+            let projection = baseline_projection.get_or_insert_with(|| {
+                FriendProjection::new(result.generation, result.baseline_revision)
+            });
+            projection.location_time_snapshot = Some(location_time_snapshot);
+        }
         drop(previous_snapshot);
         if let Some(snapshot) = canonical_snapshot.as_ref() {
             self.set_activity_friend_user_ids(snapshot.friends_by_id.keys().cloned().collect());
@@ -344,7 +356,7 @@ impl RealtimeHostRuntime {
                 .map(|snapshot| {
                     let roster_order = roster_order_from_friend_records(&snapshot.friends_by_id);
                     reconcile_friend_roster_records(
-                        self.deps.db.as_ref(),
+                        self.deps.store.as_ref(),
                         &snapshot.current_user_id,
                         &snapshot.friends_by_id,
                         roster_order.as_deref(),
@@ -361,11 +373,17 @@ impl RealtimeHostRuntime {
             let mut projection = baseline_projection.unwrap_or_else(|| {
                 FriendProjection::new(result.generation, result.baseline_revision)
             });
-            let mut feed_entries = confirmed_feed_entries.clone();
+            let mut feed_entries = confirmed_feed_entries
+                .iter()
+                .cloned()
+                .map(RawJson::from)
+                .collect::<Vec<_>>();
             feed_entries.append(&mut projection.feed_entries);
             projection.feed_entries = feed_entries;
-            let mut output =
-                RealtimeFriendOutput::from_projection(active.session.user_id.clone(), projection);
+            let mut output = RealtimeFriendOutput::from_projection(
+                OwnerId::new(active.session.user_id.clone()),
+                projection,
+            );
             output.persistence.feed_entries = confirmed_feed_entries;
             self.apply_friend_output_owned(&owner, output);
         }
@@ -375,7 +393,7 @@ impl RealtimeHostRuntime {
         } = reconcile_outcome;
         self.apply_reconciled_friend_feed_entries_owned(
             &owner,
-            &active.session.user_id,
+            &OwnerId::new(active.session.user_id),
             result.generation,
             result.baseline_revision,
             feed_entries,
@@ -466,7 +484,7 @@ fn friend_snapshot_diff_projection(
                 state_bucket_authority: FriendStateBucketAuthority::Explicit,
             });
         if let Some(entry) = joining_entry {
-            projection.feed_entries.push(entry);
+            projection.feed_entries.push(entry.into());
         }
     }
 

@@ -8,6 +8,7 @@ import {
     styleName,
     tagsKey
 } from '@/components/dialogs/avatarDetailsModel';
+import type { LoadStatus } from '@/domain/shared/types';
 import type { AvatarUpdateRequest } from '@/platform/tauri/bindings';
 import avatarProfileRepository, {
     type AvatarProfileRecord,
@@ -82,7 +83,7 @@ export function AvatarDetailsDialog({
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [saving, setSaving] = useState(false);
-    const [loadStatus, setLoadStatus] = useState('idle');
+    const [loadStatus, setLoadStatus] = useState<LoadStatus>('idle');
     const [styles, setStyles] = useState<AvatarStyleRecord[]>([]);
     const [primaryStyle, setPrimaryStyle] = useState('');
     const [secondaryStyle, setSecondaryStyle] = useState('');

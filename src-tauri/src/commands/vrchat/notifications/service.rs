@@ -1,12 +1,11 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application as media_upload;
-use vrcx_0_application_core::vrchat_api::notifications::{
-    boop_send_input, request_invite_photo_input, request_invite_send_input,
-};
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::notifications::{
+    boop_send_input, request_invite_photo_input, request_invite_send_input,
+};
 
 use super::types::{
     VrchatBoopInput, VrchatRequestInvitePhotoSendInput, VrchatRequestInviteSendInput,
@@ -72,11 +71,15 @@ pub async fn app__vrchat_request_invite_photo_send(
         input.params,
         input.image_data,
     )?;
+    let request = state
+        .runtime_host()
+        .media()
+        .prepare_media_upload_request(request)?;
     execute_media_api(
         state,
         "app__vrchat_request_invite_photo_send",
         format!("Sending invite request photo to {receiver_user_id}."),
-        media_upload::prepare_media_upload_request(request)?,
+        request,
     )
     .await
 }

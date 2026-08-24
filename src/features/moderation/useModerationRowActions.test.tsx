@@ -31,14 +31,14 @@ vi.mock('@/services/moderationSyncService', () => ({
 }));
 
 vi.mock('@/state/modalStore', () => ({
-    useModalStore: (
-        selector: (state: { confirm: typeof mocks.confirm }) => unknown
-    ) => selector({ confirm: mocks.confirm })
+    useModalStore: <T,>(
+        selector: (state: { confirm: typeof mocks.confirm }) => T
+    ): T => selector({ confirm: mocks.confirm })
 }));
 
 vi.mock('@/state/runtimeStore', () => ({
     useRuntimeStore: Object.assign(
-        (selector: (state: typeof runtimeState) => unknown) =>
+        <T,>(selector: (state: typeof runtimeState) => T): T =>
             selector(runtimeState),
         { getState: () => runtimeState }
     )
@@ -74,10 +74,13 @@ describe('useModerationRowActions', () => {
 
         await act(async () => {
             const action = result.current.handleDeleteModeration({
+                id: 'pmod_block',
                 sourceUserId: 'usr_self',
+                sourceDisplayName: 'Current User',
                 targetUserId: 'usr_target',
                 targetDisplayName: 'Target User',
-                type: 'block'
+                type: 'block',
+                created: '2026-07-08T02:07:00.000Z'
             });
             runtimeState.auth.currentUserEndpoint =
                 'https://api.other.test/api/1';

@@ -18,7 +18,7 @@ import {
 } from '@/shared/constants/tools';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-type Navigate = (to: string) => unknown;
+type Navigate = (to: string) => void;
 type Translate = (key: string) => string;
 type TriggerToolOptions = {
     navigate: Navigate;

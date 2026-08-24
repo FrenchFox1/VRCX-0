@@ -1,10 +1,10 @@
 use serde::Serialize;
 
-pub use vrcx_0_host::host_capabilities::{
+pub use vrcx_0_platform::host_capabilities::{
     current_arch, current_host_architecture, current_host_platform, current_platform,
     HostArchitecture, HostPlatform,
 };
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

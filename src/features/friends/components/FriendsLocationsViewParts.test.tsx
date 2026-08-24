@@ -18,7 +18,7 @@ vi.mock('./FriendLocationCard', () => ({
         location,
         capabilities
     }: {
-        location?: { instanceEpoch?: unknown };
+        location?: { timerLocation?: string | null };
         capabilities?: {
             useLocation?: boolean;
             sendInvite?: boolean;
@@ -27,7 +27,7 @@ vi.mock('./FriendLocationCard', () => ({
         };
     }) => (
         <span
-            data-instance-epoch={String(location?.instanceEpoch ?? '')}
+            data-timer-location={String(location?.timerLocation ?? '')}
             data-can-use-location={String(Boolean(capabilities?.useLocation))}
             data-can-send-invite={String(Boolean(capabilities?.sendInvite))}
             data-can-request-invite={String(
@@ -61,7 +61,7 @@ function friendAt(location: string): FriendRecord {
 }
 
 describe('FriendsLocationCardItem', () => {
-    it('passes the room dwell epoch to the shared card timer', () => {
+    it('passes the resolved room to the shared card timer', () => {
         const location = 'wrld_test:123';
         const friend = friendAt(location);
         const html = renderToStaticMarkup(
@@ -91,7 +91,7 @@ describe('FriendsLocationCardItem', () => {
             />
         );
 
-        expect(html).toContain('data-instance-epoch="1700000000000"');
+        expect(html).toContain('data-timer-location="wrld_test:123"');
         expect(html).toContain('data-can-use-location="true"');
         expect(html).toContain('data-can-send-invite="true"');
         expect(html).toContain('data-can-request-invite="true"');

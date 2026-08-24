@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type FavoriteRevisionKind = 'friend' | 'world' | 'avatar' | 'unknown';
+import type { FavoriteChangeScope } from '@/platform/tauri/bindings';
 
 interface FavoritePendingRevision {
     revision: number;
@@ -16,7 +16,7 @@ interface FavoriteRevisionStoreState {
     pendingRemote: boolean;
     pendingUnknown: boolean;
     bumpRevision(change: {
-        kind: FavoriteRevisionKind;
+        kind: FavoriteChangeScope;
         local: boolean;
         remote: boolean;
         requiresRefresh: boolean;
@@ -113,4 +113,7 @@ export const useFavoriteRevisionStore = create<FavoriteRevisionStoreState>(
     })
 );
 
-export type { FavoritePendingRevision };
+export type {
+    FavoriteChangeScope as FavoriteRevisionKind,
+    FavoritePendingRevision
+};

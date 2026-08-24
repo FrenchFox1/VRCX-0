@@ -31,12 +31,10 @@ type Snapshot = Awaited<
 
 function deferred<T>() {
     let resolve!: (value: T) => void;
-    let reject!: (reason?: unknown) => void;
-    const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    const promise = new Promise<T>((promiseResolve) => {
         resolve = promiseResolve;
-        reject = promiseReject;
     });
-    return { promise, reject, resolve };
+    return { promise, resolve };
 }
 
 function snapshot(
@@ -100,7 +98,7 @@ describe('useCurrentInstanceRoster', () => {
             useCurrentInstanceRoster({
                 ...props('wrld_test:1'),
                 refreshRevision: 0,
-                tailSyncRevision: 0
+                tailSyncRevision: '0'
             })
         );
 
@@ -139,7 +137,7 @@ describe('useCurrentInstanceRoster', () => {
                 useCurrentInstanceRoster({
                     ...props('wrld_test:1'),
                     refreshRevision: eventCount,
-                    tailSyncRevision: 0
+                    tailSyncRevision: '0'
                 }),
             { initialProps: { eventCount: 0 } }
         );
@@ -170,7 +168,7 @@ describe('useCurrentInstanceRoster', () => {
                 useCurrentInstanceRoster({
                     ...props(location),
                     refreshRevision: 0,
-                    tailSyncRevision: 0
+                    tailSyncRevision: '0'
                 }),
             { initialProps: { location: 'wrld_test:old' } }
         );
@@ -219,7 +217,7 @@ describe('useCurrentInstanceRoster', () => {
             useCurrentInstanceRoster({
                 ...props('private'),
                 refreshRevision: 0,
-                tailSyncRevision: 0
+                tailSyncRevision: '0'
             })
         );
 

@@ -2,16 +2,12 @@ use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::FavoriteEntityKind;
-use vrcx_0_persistence::{favorites, DatabaseService};
-use vrcx_0_vrchat_client::{
-    favorites::favorite_delete_input,
-    http_api::{ApiScope, HttpApiRequestInput},
+use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
+    Error, FavoriteEntityKind, RemoteMutationGate, Result, RuntimeAuthScope,
+    RuntimeAuthScopeSnapshot, WebClient,
 };
-
-use crate::{
-    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
-};
+use vrcx_0_core::OwnerId;
 
 pub const FAVORITE_BULK_REMOVE_MAX_ITEMS: usize = 250;
 const FAVORITE_BULK_REMOVE_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
@@ -63,7 +59,7 @@ pub struct FavoriteBulkRemoveItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoriteBulkRemoveResult {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub kind: FavoriteEntityKind,
     pub total: usize,
     pub succeeded: usize,
@@ -75,8 +71,9 @@ pub struct FavoriteBulkRemoveResult {
 }
 
 pub(super) struct FavoriteBulkRemoveDeps<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub store: &'a dyn super::FavoriteStore,
+    pub remote_requests: &'a dyn super::FavoriteRemoteRequests,
+    pub(crate) web: &'a WebClient,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
     pub remote_mutation_gate: &'a RemoteMutationGate,
@@ -118,12 +115,12 @@ impl VrchatFavoriteBulkRemoveActions<'_> {
         )
     }
 
-    async fn execute_remote(&self, request: HttpApiRequestInput) -> Result<RemoteRemoveOutcome> {
+    async fn execute_remote(&self, request: VrchatApiRequest) -> Result<RemoteRemoveOutcome> {
         self.ensure_scope()?;
         let response = self
             .deps
             .web
-            .execute_api(request, ApiScope::Vrchat, self.deps.db)
+            .execute_api(request, VrchatScope::Vrchat)
             .await?;
         let fallback_payload = Value::String(response.data.clone());
         if !(200..300).contains(&response.status) {
@@ -158,14 +155,14 @@ impl VrchatFavoriteBulkRemoveActions<'_> {
 impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
     fn remove_local(&self, kind: FavoriteEntityKind, item: &FavoriteBulkRemoveItem) -> Result<i64> {
         self.ensure_scope()?;
-        favorites::favorite_remove(
-            self.deps.db,
-            Some(&self.deps.expected_scope.current_user_id),
+        self.deps.store.remove(
+            Some(&OwnerId::new(
+                self.deps.expected_scope.current_user_id.clone(),
+            )),
             kind,
             item.entity_id.clone(),
             item.group_name.clone(),
         )
-        .map_err(Error::from)
     }
 
     fn remove_remote<'a>(
@@ -173,7 +170,7 @@ impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
         item: &'a FavoriteBulkRemoveItem,
     ) -> Pin<Box<dyn Future<Output = Result<RemoteRemoveOutcome>> + Send + 'a>> {
         Box::pin(async move {
-            let (_, request) = favorite_delete_input(
+            let (_, request) = self.deps.remote_requests.delete(
                 self.deps.expected_scope.endpoint.clone(),
                 item.entity_id.clone(),
             )?;
@@ -219,7 +216,7 @@ pub(super) async fn remove_favorites_bulk(
     let kind = input.kind;
     let items = normalize_items(kind, input.items)?;
     let actions = VrchatFavoriteBulkRemoveActions { deps };
-    Ok(run_favorite_bulk_remove(&actions, owner_user_id, kind, items).await)
+    Ok(run_favorite_bulk_remove(&actions, OwnerId::new(owner_user_id), kind, items).await)
 }
 
 pub(super) async fn remove_favorites_selection(
@@ -230,7 +227,7 @@ pub(super) async fn remove_favorites_selection(
         return remove_favorites_bulk(deps, input).await;
     }
     let mut result = FavoriteBulkRemoveResult {
-        owner_user_id: deps.expected_scope.current_user_id.clone(),
+        owner_user_id: OwnerId::new(deps.expected_scope.current_user_id.clone()),
         kind: input.kind,
         total: 0,
         succeeded: 0,
@@ -271,7 +268,7 @@ pub(super) async fn remove_favorites_selection(
 
 async fn run_favorite_bulk_remove(
     actions: &dyn FavoriteBulkRemoveActions,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     kind: FavoriteEntityKind,
     input_items: Vec<FavoriteBulkRemoveWorkItem>,
 ) -> FavoriteBulkRemoveResult {

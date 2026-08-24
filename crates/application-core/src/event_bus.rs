@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_contracts::{runtime_event_payload, RuntimeEventPayload};
+use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
 
 use crate::backend_runtime::{BackendRuntimeTelemetry, RealtimeProjectionSync};
 use crate::events::{
@@ -13,6 +13,7 @@ use crate::events::{
 use crate::ports::HostSessionProjection;
 use crate::{FavoriteChangeScope, FavoriteEntityKind, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::json::RawJson;
+use vrcx_0_core::OwnerId;
 
 pub trait RuntimeEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);
@@ -21,7 +22,7 @@ pub trait RuntimeEventSink: Send + Sync {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoritesChangedPayload {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub kind: FavoriteChangeScope,
     pub local: bool,
@@ -96,7 +97,7 @@ impl FavoritesChangedPayload {
     ) -> Self {
         let requires_refresh = changes.is_empty();
         Self {
-            owner_user_id: scope.current_user_id.clone(),
+            owner_user_id: OwnerId::new(scope.current_user_id.clone()),
             endpoint: scope.endpoint.clone(),
             kind,
             local,
@@ -131,7 +132,7 @@ pub struct RuntimeRealtimeTransportEpoch {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeVrchatAuthFailurePayload {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub path: String,
     pub reason: String,
@@ -173,7 +174,7 @@ runtime_event_payload!(FriendProfileLoadStatusPayload, "friendProfileLoadStatus"
 #[derive(Clone, Debug)]
 pub struct RuntimeEventForTest {
     pub name: String,
-    pub payload: Value,
+    pub payload: RawJson,
 }
 
 #[derive(Clone, Default)]
@@ -210,7 +211,7 @@ impl RuntimeEventBus {
         {
             self.events.lock().unwrap().push(RuntimeEventForTest {
                 name: event.to_string(),
-                payload: payload.clone(),
+                payload: payload.clone().into(),
             });
         }
 
@@ -316,6 +317,7 @@ mod tests {
                 }],
                 "requiresRefresh": false
             })
+            .into()
         );
     }
 }

@@ -1,5 +1,6 @@
 import { ChevronDownIcon } from 'lucide-react';
 
+import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -102,10 +103,10 @@ export function InstanceHeaderRow({
     showInstanceIdInLocation = false,
     ageGatedInstancesVisible = false
 }: {
-    location?: unknown;
+    location?: string | null;
     count?: number;
     isCurrentInstance?: boolean;
-    metadata?: Record<string, unknown> | null;
+    metadata?: LocationMetadata | null;
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
 }) {

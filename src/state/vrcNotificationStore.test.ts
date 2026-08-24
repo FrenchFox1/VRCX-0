@@ -64,7 +64,7 @@ describe('vrcNotificationStore', () => {
                 items: items.map((item) => ({
                     id: item.id,
                     state: 'succeeded',
-                    effect: item.version >= 2 ? 'seen' : 'expired',
+                    effect: 'seen',
                     attempts: 1,
                     message: ''
                 })),
@@ -242,7 +242,7 @@ describe('vrcNotificationStore', () => {
         ).not.toHaveBeenCalled();
     });
 
-    it('expires old v1 friend requests after mark-all-seen', async () => {
+    it('marks old v1 friend requests seen after mark-all-seen', async () => {
         const friendRequest = {
             id: 'notif_friend_request',
             type: 'friendRequest',
@@ -257,7 +257,7 @@ describe('vrcNotificationStore', () => {
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
             id: 'notif_friend_request',
-            expired: true
+            seen: true
         });
         expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(0);
         expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
@@ -274,7 +274,7 @@ describe('vrcNotificationStore', () => {
         ).not.toHaveBeenCalled();
     });
 
-    it('expires a v1 friend request after marking it seen', async () => {
+    it('marks a v1 friend request seen', async () => {
         const friendRequest = {
             id: 'notif_friend_request',
             type: 'friendRequest',
@@ -300,7 +300,7 @@ describe('vrcNotificationStore', () => {
         expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
             id: 'notif_friend_request',
-            expired: true
+            seen: true
         });
         expect(
             notificationRepositoryMock.queryNotifications
@@ -356,7 +356,7 @@ describe('vrcNotificationStore', () => {
         expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(1);
     });
 
-    it('reconciles partial failures without overriding a persisted v1 expiration', async () => {
+    it('reconciles partial failures without overriding persisted v1 seen state', async () => {
         const friendRequest = {
             id: 'notif_friend_request',
             type: 'friendRequest',
@@ -379,7 +379,7 @@ describe('vrcNotificationStore', () => {
                 {
                     id: friendRequest.id,
                     state: 'succeeded',
-                    effect: 'expired',
+                    effect: 'seen',
                     attempts: 1,
                     message: ''
                 },
@@ -394,7 +394,7 @@ describe('vrcNotificationStore', () => {
             lastError: 'Too many requests'
         });
         notificationRepositoryMock.queryNotifications.mockResolvedValue([
-            { ...friendRequest, expired: true },
+            { ...friendRequest, seen: true },
             failedNotification
         ]);
         useVrcNotificationStore.getState().upsertNotification(friendRequest);
@@ -410,7 +410,7 @@ describe('vrcNotificationStore', () => {
             useVrcNotificationStore
                 .getState()
                 .rows.find((row) => row.id === friendRequest.id)
-        ).toMatchObject({ seen: false, expired: true });
+        ).toMatchObject({ seen: true });
         expect(
             useVrcNotificationStore
                 .getState()
