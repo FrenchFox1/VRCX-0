@@ -35,6 +35,7 @@ pub(super) struct RemoteGameLogInterval {
 pub(super) struct CurrentUserPatchOptions {
     pub(super) applies_local_game_authority: bool,
     pub(super) reconciles_remote_location: bool,
+    pub(super) records_remote_game_log: bool,
     pub(super) records_current_avatar_history: bool,
     pub(super) timer_action: PendingOfflineTimerAction,
 }

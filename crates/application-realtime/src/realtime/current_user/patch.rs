@@ -119,6 +119,7 @@ pub(super) fn apply_user_location(
         CurrentUserPatchOptions {
             applies_local_game_authority: true,
             reconciles_remote_location: true,
+            records_remote_game_log: true,
             ..CurrentUserPatchOptions::default()
         },
     )
@@ -184,7 +185,7 @@ pub(super) fn apply_current_user_patch(
 
     if authority.is_game_running() {
         close_remote_game_log_interval(state, now, &mut persistence);
-    } else if options.reconciles_remote_location {
+    } else if options.records_remote_game_log {
         reconcile_remote_game_log_interval(
             state,
             &snapshot,

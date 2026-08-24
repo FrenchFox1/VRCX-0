@@ -207,6 +207,46 @@ fn keeps_events_just_before_next_location_in_earlier_session() {
 }
 
 #[test]
+fn keeps_same_timestamp_leave_in_matching_previous_session() {
+    let locations = [
+        location(
+            4_488,
+            "2026-08-23T16:46:10.000Z",
+            "wrld_home:04507",
+            "wrld_home",
+            None,
+        ),
+        location(
+            4_489,
+            "2026-08-23T16:47:01.000Z",
+            "wrld_for_two:94665",
+            "wrld_for_two",
+            None,
+        ),
+    ];
+    let events = [
+        left(
+            Some(113_942),
+            "2026-08-23T16:47:01.000Z",
+            "usr_self",
+            "wrld_home:04507",
+        ),
+        join(
+            Some(113_943),
+            "2026-08-23T16:47:09.000Z",
+            "usr_friend",
+            "wrld_for_two:94665",
+        ),
+    ];
+
+    let segments = build_game_log_sessions(&locations, &events);
+
+    assert_eq!(world_ids(&segments), vec!["wrld_for_two", "wrld_home"]);
+    assert_eq!(event_user_ids(&segments[0]), vec!["usr_friend".to_string()]);
+    assert_eq!(event_user_ids(&segments[1]), vec!["usr_self".to_string()]);
+}
+
+#[test]
 fn brackets_events_by_stream_order_ignoring_stale_event_locations() {
     let locations = [
         location(

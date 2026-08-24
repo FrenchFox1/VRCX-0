@@ -417,7 +417,18 @@ pub fn build_game_log_sessions(
             next_index += 1;
         }
         if active_index >= 0 {
-            segments[active_index as usize]
+            let active_index = active_index as usize;
+            let target_index = if active_index > 0
+                && segments[active_index].epoch == event.epoch
+                && !event.location.is_empty()
+                && segments[active_index].location != event.location
+                && segments[active_index - 1].location == event.location
+            {
+                active_index - 1
+            } else {
+                active_index
+            };
+            segments[target_index]
                 .events
                 .push(Node::Single(single_node(event)));
         }

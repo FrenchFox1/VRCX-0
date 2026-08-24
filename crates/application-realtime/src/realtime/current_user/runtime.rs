@@ -254,6 +254,7 @@ impl RealtimeCurrentUserRuntime {
             &authority,
             CurrentUserPatchOptions {
                 reconciles_remote_location: true,
+                records_remote_game_log: true,
                 ..CurrentUserPatchOptions::default()
             },
         )
