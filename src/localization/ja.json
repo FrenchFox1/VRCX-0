@@ -3216,7 +3216,9 @@
                 "community": "コミュニティテーマ"
             },
             "accent": {
-                "header": "アクセントカラー"
+                "header": "アクセントカラー",
+                "custom": "カスタム",
+                "hex_label": "16進カラーコード"
             },
             "custom_css": {
                 "header": "カスタム CSS",

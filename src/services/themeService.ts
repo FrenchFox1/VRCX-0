@@ -5,9 +5,12 @@ import { tauriClient } from '@/platform/tauri/client';
 import { setWindowTheme, type WindowTheme } from '@/platform/tauri/webview';
 import {
     DEFAULT_THEME_COLOR_KEY,
-    THEME_COLOR_CONFIG,
     THEME_COLOR_STYLE_PROPERTIES
 } from '@/shared/constants/themes';
+import {
+    normalizeThemeColor,
+    resolveThemeColorConfig
+} from '@/shared/utils/themeColor';
 import { useShellStore, type ThemeMode } from '@/state/shellStore';
 
 type ResolvedThemeMode = 'light' | 'dark';
@@ -27,7 +30,6 @@ const NATIVE_THEME_VALUES: Readonly<Record<ThemeMode, WindowTheme | null>> =
     });
 let nativeThemeSyncQueue: Promise<void> = Promise.resolve();
 let themeApplySequence = 0;
-const VALID_THEME_COLORS = new Set<string>(Object.keys(THEME_COLOR_CONFIG));
 export const DEFAULT_ZOOM_LEVEL = 100;
 export const MIN_ZOOM_LEVEL = 30;
 export const MAX_ZOOM_LEVEL = 300;
@@ -167,10 +169,7 @@ const THEME_COLOR_STYLE_ENTRIES: Array<[ThemeColorStyleToken, string]> = [
 ];
 
 export function resolveThemeColor(value: string): string {
-    const normalized = value.trim().toLowerCase();
-    return VALID_THEME_COLORS.has(normalized)
-        ? normalized
-        : DEFAULT_THEME_COLOR_KEY;
+    return normalizeThemeColor(value);
 }
 
 export function resolveThemeMode(value: string): ThemeMode {
@@ -288,7 +287,7 @@ export function clearThemeColorInlineProperties(): void {
 
 export function applyThemeColor(themeColor: string): string {
     const normalized = resolveThemeColor(themeColor);
-    const theme = THEME_COLOR_CONFIG[normalized];
+    const theme = resolveThemeColorConfig(normalized);
 
     if (typeof document === 'undefined') {
         useShellStore.getState().setThemeColor(normalized);

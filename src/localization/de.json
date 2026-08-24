@@ -3220,7 +3220,9 @@
                 "community": "Community-Theme"
             },
             "accent": {
-                "header": "Akzentfarbe"
+                "header": "Akzentfarbe",
+                "custom": "Benutzerdefiniert",
+                "hex_label": "Hex-Farbwert"
             },
             "custom_css": {
                 "header": "Benutzerdefiniertes CSS",

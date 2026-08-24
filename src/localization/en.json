@@ -3220,7 +3220,9 @@
                 "community": "Community theme"
             },
             "accent": {
-                "header": "Accent color"
+                "header": "Accent color",
+                "custom": "Custom",
+                "hex_label": "Hex color"
             },
             "custom_css": {
                 "header": "Custom CSS",

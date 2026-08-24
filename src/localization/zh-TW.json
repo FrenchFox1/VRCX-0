@@ -3220,7 +3220,9 @@
                 "community": "社群主題"
             },
             "accent": {
-                "header": "強調色"
+                "header": "強調色",
+                "custom": "自訂",
+                "hex_label": "十六進位色碼"
             },
             "custom_css": {
                 "header": "自訂 CSS",

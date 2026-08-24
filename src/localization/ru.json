@@ -3222,7 +3222,9 @@
                 "community": "Тема Сообщества"
             },
             "accent": {
-                "header": "Цвет акцента"
+                "header": "Цвет акцента",
+                "custom": "Пользовательский",
+                "hex_label": "HEX-код цвета"
             },
             "custom_css": {
                 "header": "Обычный CSS",

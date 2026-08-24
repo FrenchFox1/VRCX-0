@@ -3220,7 +3220,9 @@
                 "community": "Tema da comunidade"
             },
             "accent": {
-                "header": "Cor de destaque"
+                "header": "Cor de destaque",
+                "custom": "Personalizado",
+                "hex_label": "Cor hexadecimal"
             },
             "custom_css": {
                 "header": "CSS personalizado",

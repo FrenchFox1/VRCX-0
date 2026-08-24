@@ -3172,7 +3172,9 @@
                 "built_in_description": "VRCX-0의 기본 밝은 테마와 어두운 테마를 사용하세요."
             },
             "accent": {
-                "header": "악센트 색상"
+                "header": "악센트 색상",
+                "custom": "사용자 지정",
+                "hex_label": "16진수 색상"
             },
             "custom_css": {
                 "edit": "편집",

@@ -3222,7 +3222,9 @@
                 "community": "Komunitní motiv"
             },
             "accent": {
-                "header": "Zvýrazňující barva"
+                "header": "Zvýrazňující barva",
+                "custom": "Vlastní",
+                "hex_label": "Hexadecimální kód barvy"
             },
             "custom_css": {
                 "header": "Vlastní CSS",
