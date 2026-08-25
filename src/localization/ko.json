@@ -3269,7 +3269,7 @@
                 "daily_time": "일별 플레이 시간",
                 "weekly_time": "주별 플레이 시간",
                 "when_you_play": "주로 플레이하는 시간대",
-                "top_worlds": "자주 돌아가는 월드",
+                "top_worlds": "오래 머문 월드",
                 "companions": "자주 함께한 사람",
                 "highlights": "눈에 띄는 점"
             },
@@ -3290,26 +3290,29 @@
                 "failed_to_load": "활동을 불러오지 못했습니다"
             },
             "caveat": {
-                "recorded_since": "게임 로그는 {date}부터 기록됩니다."
+                "recorded_since": "{date}부터의 데이터입니다."
             },
             "worlds": {
                 "visit_count": "{count}회",
                 "open_ranking": "자세히",
-                "total": "총 {count}개 월드"
+                "total": "총 {count}개 월드",
+                "show_home": "홈 월드 포함"
             },
             "people": {
-                "co_days": "{count}일 함께",
-                "lead_caption": "{days}일 함께 · {hours}시간",
-                "fading_title": "요즘 뜸해진 사람",
+                "co_days": "{count}일",
+                "lead_caption": "{days}일 · {hours}시간",
+                "fading_title": "만남이 줄어든 사람",
                 "fading_caveat": "이전 기간보다 함께한 시간이 줄었어요. 단순히 생활 패턴 차이일 수 있어요.",
                 "encountered_total": "총 {count}명",
-                "fading_last_seen": "마지막 함께 {date}"
+                "fading_last_seen": "마지막으로 만난 {date}",
+                "order_minutes": "시간순",
+                "order_days": "일수순"
             },
             "hero": {
                 "per_day": "하루 평균",
                 "days_played": "기록된 날",
                 "sessions": "세션",
-                "longest": "최장 연속"
+                "longest": "최장 세션"
             },
             "action": {
                 "show_all": "전체 {count}개 보기",

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use chrono::DateTime;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::activity_page::{
-    activity_page_view_build, ActivityPageBuildInput, ActivitySeriesBucket,
+    activity_page_view_build, ActivityCompanionOrder, ActivityPageBuildInput, ActivitySeriesBucket,
 };
 use vrcx_0_persistence::game_log::{
     write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogLocationTimeUpdate,
@@ -113,6 +113,7 @@ fn build(range_days: i64, now: &str) -> ActivityPageBuildInput {
         range_days,
         utc_offset_minutes: 0,
         now_ms: ms(now),
+        companion_order: ActivityCompanionOrder::Days,
         force_refresh: false,
     }
 }
@@ -332,6 +333,47 @@ fn activity_page_ranks_companions_by_shared_days_not_minutes() {
     assert_eq!(view.people.companions[0].co_days, 3);
     assert_eq!(view.people.companions[1].user_id, "usr_marathon");
     assert!(view.people.companions[1].minutes > view.people.companions[0].minutes);
+}
+
+#[test]
+fn activity_page_reranks_companions_when_the_order_changes() {
+    let (_dir, db) = test_db("activity-page-companion-order");
+    write_locations(
+        &db,
+        vec![location(
+            "2025-01-05T01:00:00Z",
+            "wrld_1:1",
+            "wrld_1",
+            HOUR_MS,
+        )],
+    );
+    write_join_leave(
+        &db,
+        vec![
+            left(
+                "2025-01-05T02:00:00Z",
+                "usr_marathon",
+                "wrld_1:1",
+                8 * HOUR_MS,
+            ),
+            left("2025-01-05T02:00:00Z", "usr_regular", "wrld_1:1", HOUR_MS),
+            left("2025-01-06T02:00:00Z", "usr_regular", "wrld_1:1", HOUR_MS),
+            left("2025-01-07T02:00:00Z", "usr_regular", "wrld_1:1", HOUR_MS),
+        ],
+    );
+
+    let mut input = build(30, "2025-01-08T00:00:00Z");
+    input.companion_order = ActivityCompanionOrder::Minutes;
+    let by_minutes = activity_page_view_build(db.as_ref(), input).unwrap();
+
+    let mut input = build(30, "2025-01-08T00:00:00Z");
+    input.companion_order = ActivityCompanionOrder::Days;
+    let by_days = activity_page_view_build(db.as_ref(), input).unwrap();
+
+    assert_eq!(by_minutes.people.order, ActivityCompanionOrder::Minutes);
+    assert_eq!(by_minutes.people.companions[0].user_id, "usr_marathon");
+    assert_eq!(by_days.people.order, ActivityCompanionOrder::Days);
+    assert_eq!(by_days.people.companions[0].user_id, "usr_regular");
 }
 
 #[test]

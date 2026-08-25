@@ -11,7 +11,9 @@ use crate::social_aggregates::{
 };
 use crate::Error;
 
-use super::types::{ActivityPageCompanionRow, ActivityPageFadingRow, ActivityPagePeople};
+use super::types::{
+    ActivityCompanionOrder, ActivityPageCompanionRow, ActivityPageFadingRow, ActivityPagePeople,
+};
 
 const COMPANION_LIMIT: i64 = 10;
 const FADING_LIMIT: i64 = 10;
@@ -22,6 +24,7 @@ pub(super) fn people(
     from_ms: Option<i64>,
     to_ms: i64,
     utc_offset_minutes: i64,
+    order: ActivityCompanionOrder,
 ) -> Result<ActivityPagePeople, Error> {
     let window = TimeWindow {
         from: from_ms.map(activity_iso_from_ms),
@@ -39,7 +42,8 @@ pub(super) fn people(
         .count();
 
     Ok(ActivityPagePeople {
-        companions: companions(db, owner_user_id, &window, utc_offset_minutes)?,
+        order,
+        companions: companions(db, owner_user_id, &window, utc_offset_minutes, order)?,
         fading: fading(db, owner_user_id, from_ms, to_ms)?,
         encountered_count: i64::try_from(encountered.len()).unwrap_or(i64::MAX),
         new_face_count: i64::try_from(new_face_count).unwrap_or(i64::MAX),
@@ -51,13 +55,17 @@ fn companions(
     owner_user_id: &OwnerId,
     window: &TimeWindow,
     utc_offset_minutes: i64,
+    order: ActivityCompanionOrder,
 ) -> Result<Vec<ActivityPageCompanionRow>, Error> {
     let summary = get_copresence_summary(
         db,
         CopresenceSummaryInput {
             time_window: window.clone(),
             group_by: CopresenceGroupBy::Friend,
-            order_by: CopresenceOrderBy::CoDays,
+            order_by: match order {
+                ActivityCompanionOrder::Minutes => CopresenceOrderBy::TotalMinutes,
+                ActivityCompanionOrder::Days => CopresenceOrderBy::CoDays,
+            },
             min_minutes: None,
             limit: Some(COMPANION_LIMIT),
             owner_user_id: Some(owner_user_id.clone()),

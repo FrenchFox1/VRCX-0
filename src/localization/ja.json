@@ -3313,7 +3313,7 @@
                 "daily_time": "日ごとのプレイ時間",
                 "weekly_time": "週ごとのプレイ時間",
                 "when_you_play": "よく遊んでいる時間帯",
-                "top_worlds": "よく戻ってくるワールド",
+                "top_worlds": "長く過ごしたワールド",
                 "companions": "よく一緒にいる人",
                 "highlights": "ちょっとした発見"
             },
@@ -3334,26 +3334,29 @@
                 "failed_to_load": "アクティビティを読み込めませんでした"
             },
             "caveat": {
-                "recorded_since": "ゲームログは {date} から記録しています。"
+                "recorded_since": "{date} からのデータです。"
             },
             "worlds": {
                 "visit_count": "{count} 回",
                 "open_ranking": "詳細",
-                "total": "合計 {count} ワールド"
+                "total": "合計 {count} ワールド",
+                "show_home": "ホームワールドを含む"
             },
             "people": {
-                "co_days": "{count} 日一緒",
-                "lead_caption": "{days} 日一緒 · {hours} 時間",
-                "fading_title": "最近あまり会っていない",
-                "fading_caveat": "前の期間より一緒の時間が減りました。生活リズムの違いかもしれません。",
+                "co_days": "{count} 日",
+                "lead_caption": "{days} 日 · {hours} 時間",
+                "fading_title": "会う頻度が減った人",
+                "fading_caveat": "前の期間より会う時間が減っています。生活リズムの違いかもしれません。",
                 "encountered_total": "合計 {count} 人",
-                "fading_last_seen": "最後に一緒 {date}"
+                "fading_last_seen": "最後に会った {date}",
+                "order_minutes": "時間順",
+                "order_days": "日数順"
             },
             "hero": {
                 "per_day": "1日あたり",
                 "days_played": "記録のある日",
                 "sessions": "セッション",
-                "longest": "最長の連続"
+                "longest": "最長セッション"
             },
             "action": {
                 "show_all": "すべて表示（{count}件）",

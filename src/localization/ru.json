@@ -3319,7 +3319,7 @@
                 "daily_time": "Время по дням",
                 "weekly_time": "Время по неделям",
                 "when_you_play": "Когда вы играете",
-                "top_worlds": "Миры, куда вы возвращаетесь",
+                "top_worlds": "Где вы проводите больше всего времени",
                 "companions": "С кем вы проводите время",
                 "highlights": "На что обратить внимание"
             },
@@ -3340,20 +3340,23 @@
                 "failed_to_load": "Не удалось загрузить активность"
             },
             "caveat": {
-                "recorded_since": "Журнал игры ведётся с {date}."
+                "recorded_since": "Данные с {date}."
             },
             "worlds": {
                 "visit_count": "посещений: {count}",
                 "open_ranking": "Подробнее",
-                "total": "всего миров: {count}"
+                "total": "всего миров: {count}",
+                "show_home": "Включить домашний мир"
             },
             "people": {
-                "co_days": "дней вместе: {count}",
-                "lead_caption": "{days} дней вместе · {hours} ч",
-                "fading_title": "Стали видеться реже",
+                "co_days": "{count} дн.",
+                "lead_caption": "{days} дн. · {hours} ч",
+                "fading_title": "Реже пересекаетесь",
                 "fading_caveat": "Меньше совместного времени, чем в прошлый период. Возможно, просто разные графики.",
                 "encountered_total": "всего встречено: {count}",
-                "fading_last_seen": "вместе в последний раз {date}"
+                "fading_last_seen": "последняя встреча {date}",
+                "order_minutes": "По времени",
+                "order_days": "По дням"
             },
             "hero": {
                 "per_day": "в день",

@@ -5,6 +5,7 @@ import {
 } from '@/platform/tauri/bindings';
 
 export type {
+    ActivityCompanionOrder,
     ActivityPageAccessSlice,
     ActivityPageBuildInput,
     ActivityPageCompanionRow,

@@ -3316,9 +3316,9 @@
                 "instance_types": "房間類型",
                 "daily_time": "每日時長",
                 "weekly_time": "每週時長",
-                "when_you_play": "什麼時候在玩",
-                "top_worlds": "你常回去的世界",
-                "companions": "和誰待在一起",
+                "when_you_play": "活躍時段",
+                "top_worlds": "待最久的世界",
+                "companions": "相處最久的人",
                 "highlights": "值得一提"
             },
             "access": {
@@ -3338,26 +3338,29 @@
                 "failed_to_load": "無法載入你的活動資料"
             },
             "caveat": {
-                "recorded_since": "遊戲日誌自 {date} 起記錄。"
+                "recorded_since": "資料從 {date} 開始。"
             },
             "worlds": {
                 "visit_count": "{count} 次",
                 "open_ranking": "詳細",
-                "total": "共 {count} 個世界"
+                "total": "共 {count} 個世界",
+                "show_home": "包含預設世界"
             },
             "people": {
-                "co_days": "一起 {count} 天",
-                "lead_caption": "一起 {days} 天 · {hours} 小時",
-                "fading_title": "最近少見了",
+                "co_days": "{count} 天",
+                "lead_caption": "{days} 天 · {hours} 小時",
+                "fading_title": "相處變少的人",
                 "fading_caveat": "比上一段時間見得少了，可能只是作息對不上。",
                 "encountered_total": "遇到過 {count} 人",
-                "fading_last_seen": "上次一起 {date}"
+                "fading_last_seen": "上次見面 {date}",
+                "order_minutes": "依時長",
+                "order_days": "依天數"
             },
             "hero": {
                 "per_day": "每天平均",
                 "days_played": "天有紀錄",
                 "sessions": "次上線",
-                "longest": "最長一次"
+                "longest": "最久一次"
             },
             "action": {
                 "show_all": "展開全部 {count} 筆",

@@ -2583,6 +2583,7 @@ export const commands: TypedCommands<typeof generatedCommands> =
 /** user-defined types **/
 
 export type ActiveTurn = { turnId: string; status: TurnStatus };
+export type ActivityCompanionOrder = 'minutes' | 'days';
 export type ActivityOverlapViewBuildInput = {
     ownerUserId: OwnerId;
     currentUserId: string;
@@ -2611,6 +2612,7 @@ export type ActivityPageBuildInput = {
     rangeDays: number;
     utcOffsetMinutes: number;
     nowMs: number;
+    companionOrder: ActivityCompanionOrder;
     forceRefresh: boolean;
 };
 export type ActivityPageCompanionRow = {
@@ -2636,6 +2638,7 @@ export type ActivityPageFadingRow = {
     lastSeenTogether: string;
 };
 export type ActivityPagePeople = {
+    order: ActivityCompanionOrder;
     companions: ActivityPageCompanionRow[];
     fading: ActivityPageFadingRow[];
     encounteredCount: number;

@@ -3319,7 +3319,7 @@
                 "daily_time": "Čas po dnech",
                 "weekly_time": "Čas po týdnech",
                 "when_you_play": "Kdy hrajete",
-                "top_worlds": "Světy, kam se vracíte",
+                "top_worlds": "Kde trávíte nejvíc času",
                 "companions": "S kým trávíte čas",
                 "highlights": "Stojí za povšimnutí"
             },
@@ -3340,20 +3340,23 @@
                 "failed_to_load": "Aktivitu se nepodařilo načíst"
             },
             "caveat": {
-                "recorded_since": "Herní záznam veden od {date}."
+                "recorded_since": "Data od {date}."
             },
             "worlds": {
                 "visit_count": "návštěv: {count}",
                 "open_ranking": "Podrobnosti",
-                "total": "celkem {count} světů"
+                "total": "celkem {count} světů",
+                "show_home": "Zahrnout domovský svět"
             },
             "people": {
-                "co_days": "společných dní: {count}",
-                "lead_caption": "{days} dní spolu · {hours} h",
-                "fading_title": "Poslední dobou méně",
+                "co_days": "{count} dní",
+                "lead_caption": "{days} dní · {hours} h",
+                "fading_title": "Méně častý kontakt",
                 "fading_caveat": "Méně společného času než v předchozím období. Může jít jen o rozvrh.",
                 "encountered_total": "celkem {count}",
-                "fading_last_seen": "naposledy spolu {date}"
+                "fading_last_seen": "naposledy viděn/a {date}",
+                "order_minutes": "Podle času",
+                "order_days": "Podle dní"
             },
             "hero": {
                 "per_day": "denně",

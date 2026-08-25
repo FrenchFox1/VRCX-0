@@ -3317,7 +3317,7 @@
                 "daily_time": "Tiempo por día",
                 "weekly_time": "Tiempo por semana",
                 "when_you_play": "Cuándo juegas",
-                "top_worlds": "Mundos a los que vuelves",
+                "top_worlds": "Donde pasas más tiempo",
                 "companions": "Con quién pasas el tiempo",
                 "highlights": "Para destacar"
             },
@@ -3338,20 +3338,23 @@
                 "failed_to_load": "No se pudo cargar tu actividad"
             },
             "caveat": {
-                "recorded_since": "Registro de juego desde {date}."
+                "recorded_since": "Datos desde {date}."
             },
             "worlds": {
                 "visit_count": "{count} visitas",
                 "open_ranking": "Detalles",
-                "total": "{count} mundos en total"
+                "total": "{count} mundos en total",
+                "show_home": "Incluir Mundo de Inicio"
             },
             "people": {
-                "co_days": "{count} días juntos",
-                "lead_caption": "{days} días juntos · {hours} h",
-                "fading_title": "Vistos menos últimamente",
+                "co_days": "{count} días",
+                "lead_caption": "{days} días · {hours} h",
+                "fading_title": "Se ven menos",
                 "fading_caveat": "Menos coincidencia que en el periodo anterior. Puede ser cuestión de horarios.",
                 "encountered_total": "{count} en total",
-                "fading_last_seen": "juntos por última vez {date}"
+                "fading_last_seen": "visto por última vez {date}",
+                "order_minutes": "Por tiempo",
+                "order_days": "Por días"
             },
             "hero": {
                 "per_day": "al día",

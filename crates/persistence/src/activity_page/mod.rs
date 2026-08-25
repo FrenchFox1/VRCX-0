@@ -8,8 +8,8 @@ mod types;
 
 pub use build::activity_page_view_build;
 pub use types::{
-    ActivityPageAccessSlice, ActivityPageBuildInput, ActivityPageCompanionRow,
-    ActivityPageCoverage, ActivityPageFadingRow, ActivityPagePeople, ActivityPagePreviousSummary,
-    ActivityPageSeries, ActivityPageSummary, ActivityPageView, ActivityPageWorldRow,
-    ActivityPageWorlds, ActivitySeriesBucket, ActivitySeriesPoint,
+    ActivityCompanionOrder, ActivityPageAccessSlice, ActivityPageBuildInput,
+    ActivityPageCompanionRow, ActivityPageCoverage, ActivityPageFadingRow, ActivityPagePeople,
+    ActivityPagePreviousSummary, ActivityPageSeries, ActivityPageSummary, ActivityPageView,
+    ActivityPageWorldRow, ActivityPageWorlds, ActivitySeriesBucket, ActivitySeriesPoint,
 };

@@ -3317,7 +3317,7 @@
                 "daily_time": "Zeit pro Tag",
                 "weekly_time": "Zeit pro Woche",
                 "when_you_play": "Wann du spielst",
-                "top_worlds": "Welten, in die du zurückkehrst",
+                "top_worlds": "Wo du die meiste Zeit verbringst",
                 "companions": "Mit wem du Zeit verbringst",
                 "highlights": "Aufgefallen"
             },
@@ -3338,20 +3338,23 @@
                 "failed_to_load": "Aktivität konnte nicht geladen werden"
             },
             "caveat": {
-                "recorded_since": "Spielprotokoll seit {date} aufgezeichnet."
+                "recorded_since": "Daten seit {date}."
             },
             "worlds": {
                 "visit_count": "{count} Besuche",
                 "open_ranking": "Details",
-                "total": "{count} Welten insgesamt"
+                "total": "{count} Welten insgesamt",
+                "show_home": "Heimwelt einbeziehen"
             },
             "people": {
-                "co_days": "{count} gemeinsame Tage",
-                "lead_caption": "{days} Tage zusammen · {hours} h",
-                "fading_title": "Zuletzt seltener gesehen",
+                "co_days": "{count} Tage",
+                "lead_caption": "{days} Tage · {hours} h",
+                "fading_title": "Seltener geworden",
                 "fading_caveat": "Weniger gemeinsame Zeit als im Zeitraum davor. Vielleicht nur andere Zeitpläne.",
                 "encountered_total": "{count} insgesamt getroffen",
-                "fading_last_seen": "zuletzt zusammen {date}"
+                "fading_last_seen": "zuletzt gesehen {date}",
+                "order_minutes": "Nach Zeit",
+                "order_days": "Nach Tagen"
             },
             "hero": {
                 "per_day": "pro Tag",

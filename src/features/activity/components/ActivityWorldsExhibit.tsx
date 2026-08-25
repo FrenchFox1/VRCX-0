@@ -15,6 +15,7 @@ import { useActivityWorldNames } from '../useActivityWorldNames';
 import type { ActivityWorldSummary } from '../useActivityWorldNames';
 import { Exhibit } from './ActivityExhibit';
 import { RankRow } from './ActivityRankRow';
+import { OptionToggle } from './ActivityViewOption';
 
 const GRID_THUMBS = 8;
 
@@ -46,9 +47,15 @@ function Thumb({ url, className }: { url: string; className: string }) {
 }
 
 export function ActivityWorldsExhibit({
-    worlds
+    worlds,
+    homeWorldId,
+    showHomeWorld,
+    onShowHomeWorldChange
 }: {
     worlds: ActivityPageWorlds;
+    homeWorldId: string;
+    showHomeWorld: boolean;
+    onShowHomeWorldChange: (next: boolean) => void;
 }) {
     const { t } = useTranslation();
     const worldIds = useMemo(
@@ -57,7 +64,11 @@ export function ActivityWorldsExhibit({
     );
     const summaries = useActivityWorldNames(worldIds);
     const hoursUnit = t('view.activity.unit.hours');
-    const [lead, ...rest] = worlds.top;
+    const ranked =
+        homeWorldId && !showHomeWorld
+            ? worlds.top.filter((row) => row.worldId !== homeWorldId)
+            : worlds.top;
+    const [lead, ...rest] = ranked;
 
     if (!lead) {
         return null;
@@ -84,12 +95,17 @@ export function ActivityWorldsExhibit({
     return (
         <Exhibit
             label={t('view.activity.section.top_worlds')}
+            caption={t('view.activity.worlds.total', {
+                count: worlds.distinctCount
+            })}
             aside={
-                <span className="text-muted-foreground text-xs tabular-nums">
-                    {t('view.activity.worlds.total', {
-                        count: worlds.distinctCount
-                    })}
-                </span>
+                homeWorldId ? (
+                    <OptionToggle
+                        label={t('view.activity.worlds.show_home')}
+                        active={showHomeWorld}
+                        onToggle={onShowHomeWorldChange}
+                    />
+                ) : undefined
             }
             detailLabel={t('view.activity.worlds.open_ranking')}
             detail={

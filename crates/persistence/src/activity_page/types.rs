@@ -9,7 +9,16 @@ pub struct ActivityPageBuildInput {
     pub range_days: i64,
     pub utc_offset_minutes: i64,
     pub now_ms: i64,
+    pub companion_order: ActivityCompanionOrder,
     pub force_refresh: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ActivityCompanionOrder {
+    #[default]
+    Minutes,
+    Days,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
@@ -106,6 +115,7 @@ pub struct ActivityPageFadingRow {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityPagePeople {
+    pub order: ActivityCompanionOrder,
     pub companions: Vec<ActivityPageCompanionRow>,
     pub fading: Vec<ActivityPageFadingRow>,
     pub encountered_count: i64,

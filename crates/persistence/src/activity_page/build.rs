@@ -77,6 +77,7 @@ fn is_reusable(
     cached.payload_version == PAYLOAD_VERSION
         && cached.built_from_cursor == cursor
         && cached.view.utc_offset_minutes == input.utc_offset_minutes
+        && cached.view.people.order == input.companion_order
         && cached.view.window_from_ms == window.from_ms.unwrap_or(0)
         && cached.view.window_to_ms == window.to_ms
         && !cached.view.has_open_tail
@@ -165,6 +166,7 @@ fn build_fresh(
             from_ms,
             to_ms,
             input.utc_offset_minutes,
+            input.companion_order,
         )?,
         coverage: coverage(db, &input.owner_user_id, from_ms, to_ms)?,
         built_from_cursor: cursor.to_string(),

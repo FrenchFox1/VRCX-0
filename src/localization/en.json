@@ -3317,7 +3317,7 @@
                 "daily_time": "Time per day",
                 "weekly_time": "Time per week",
                 "when_you_play": "When you play",
-                "top_worlds": "Worlds you go back to",
+                "top_worlds": "Where you spend your time",
                 "companions": "Who you spend time with",
                 "highlights": "Worth noticing"
             },
@@ -3338,26 +3338,29 @@
                 "failed_to_load": "Could not load your activity"
             },
             "caveat": {
-                "recorded_since": "Game log recorded since {date}."
+                "recorded_since": "Data from {date} onward."
             },
             "worlds": {
                 "visit_count": "{count} visits",
                 "open_ranking": "Details",
-                "total": "{count} worlds in total"
+                "total": "{count} worlds in total",
+                "show_home": "Include Home World"
             },
             "people": {
-                "co_days": "{count} days together",
-                "lead_caption": "{days} days together · {hours}h",
-                "fading_title": "Seen less lately",
+                "co_days": "{count} days",
+                "lead_caption": "{days} days · {hours}h",
+                "fading_title": "Fading out",
                 "fading_caveat": "Less overlap than the period before. Could be schedules, not intent.",
                 "encountered_total": "{count} met in total",
-                "fading_last_seen": "last together {date}"
+                "fading_last_seen": "last seen {date}",
+                "order_minutes": "By time",
+                "order_days": "By days"
             },
             "hero": {
                 "per_day": "a day",
                 "days_played": "days played",
                 "sessions": "sessions",
-                "longest": "longest stretch"
+                "longest": "longest session"
             },
             "action": {
                 "show_all": "Show all {count}",

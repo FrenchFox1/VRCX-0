@@ -1,4 +1,5 @@
 import type {
+    ActivityCompanionOrder,
     ActivityPageAccessSlice,
     ActivityPageSummary,
     ActivityPageView
@@ -6,6 +7,25 @@ import type {
 import { ACTIVITY_PAGE_CONFIG_KEYS } from '@/repositories/configKeys';
 
 export const ACTIVITY_PAGE_RANGE_KEY = ACTIVITY_PAGE_CONFIG_KEYS.range;
+export const ACTIVITY_PAGE_SHOW_HOME_KEY =
+    ACTIVITY_PAGE_CONFIG_KEYS.showHomeWorld;
+export const ACTIVITY_PAGE_COMPANION_ORDER_KEY =
+    ACTIVITY_PAGE_CONFIG_KEYS.companionOrder;
+
+export const DEFAULT_COMPANION_ORDER: ActivityCompanionOrder = 'minutes';
+
+export function normalizeCompanionOrder(
+    value: string | null
+): ActivityCompanionOrder {
+    return value === 'days' || value === 'minutes'
+        ? value
+        : DEFAULT_COMPANION_ORDER;
+}
+
+export function homeWorldIdFrom(homeLocation: unknown): string {
+    const value = typeof homeLocation === 'string' ? homeLocation.trim() : '';
+    return value.startsWith('wrld_') ? value.split(':')[0] : '';
+}
 
 const ACTIVITY_RANGES = ['30', '90', '180', '365', 'all'] as const;
 
