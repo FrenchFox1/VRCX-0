@@ -625,10 +625,11 @@ impl From<ActivityBucketParam> for social_aggregates::ActivityBucket {
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct CopresenceSummaryParams {
-    /// Time window to search. Accepts {from, to} RFC3339, or a relative string
-    /// ("today", "yesterday", "this week", "last week", "this month",
-    /// "last month", or a rolling window like "7d", "2w", "3mo"). Resolved in
-    /// UTC; weeks start Monday. Omit only for all history ("ever", "so far").
+    /// Time window to search. Accepts {from, to} RFC3339, a four-digit calendar
+    /// year, or a relative string ("today", "yesterday", "this week",
+    /// "last week", "this month", "last month", or a rolling window like
+    /// "7d", "2w", "3mo"). Resolved in UTC; weeks start Monday. Omit only for
+    /// all history ("ever", "so far").
     #[serde(default)]
     time_window: TimeWindowParams,
     /// friend (default) ranks total time per person; friend_world breaks one

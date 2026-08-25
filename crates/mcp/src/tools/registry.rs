@@ -147,6 +147,7 @@ mod router_tests {
         let time_window_schema = tool.input_schema["properties"]["timeWindow"].to_string();
         assert!(time_window_schema.contains("\"oneOf\""));
         assert!(time_window_schema.contains("\"string\""));
+        assert!(time_window_schema.contains("\"integer\""));
         assert!(time_window_schema.contains("\"object\""));
     }
 }

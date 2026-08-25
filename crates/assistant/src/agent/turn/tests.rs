@@ -47,6 +47,7 @@ fn system_prompt_keeps_core_boundaries_and_schema_field_names() {
         "caveats",
         "needsDisambiguation",
         "`timeWindow`",
+        "calendar year",
     ] {
         assert!(SYSTEM_PROMPT.contains(phrase), "missing phrase: {phrase}");
     }
