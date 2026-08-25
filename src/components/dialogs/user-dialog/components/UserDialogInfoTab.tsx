@@ -403,6 +403,7 @@ function UserDialogPresenceSection({
                     <EntityList
                         rows={locationInstanceUsers}
                         kind="user"
+                        instanceLocation={visiblePresenceLocation}
                         showInstanceDuration
                     />
                 </div>

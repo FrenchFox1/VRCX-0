@@ -117,6 +117,7 @@ function FriendVirtualRow({
     metadataKey = '',
     isCurrentUser = false,
     isGroupByInstance = false,
+    instanceLocation,
     friendCommands,
     location,
     runtime,
@@ -127,6 +128,7 @@ function FriendVirtualRow({
     metadataKey?: string;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
+    instanceLocation?: string;
     friendCommands: FriendCommandsView;
     location: LocationView;
     runtime: RuntimeView;
@@ -146,6 +148,7 @@ function FriendVirtualRow({
             rowModel={{
                 isCurrentUser,
                 isGroupByInstance,
+                instanceLocation,
                 canSendInvite: Boolean(instanceActionGates?.canInvite),
                 canRequestInvite: !isCurrentUser,
                 canBoop: Boolean(runtime.currentUser?.isBoopingEnabled),
@@ -252,6 +255,7 @@ function FriendsSidebarVirtualRow({
                     friend={row.friend}
                     isCurrentUser={row.isCurrentUser}
                     isGroupByInstance={row.isGroupByInstance}
+                    instanceLocation={row.instanceLocation}
                     metadataKey={row.key}
                     friendCommands={friendCommands}
                     location={location}

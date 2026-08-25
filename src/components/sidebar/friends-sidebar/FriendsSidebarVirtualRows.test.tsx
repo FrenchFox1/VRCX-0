@@ -8,13 +8,17 @@ vi.mock('./FriendsSidebarFriendRow', () => ({
         rowModel
     }: {
         appearance: { currentLocationStartedAt?: string | number | null };
-        rowModel: { canRequestInvite?: boolean };
+        rowModel: {
+            canRequestInvite?: boolean;
+            instanceLocation?: string;
+        };
     }) => (
         <button
             disabled={!rowModel.canRequestInvite}
             data-current-location-started-at={String(
                 appearance.currentLocationStartedAt ?? ''
             )}
+            data-instance-location={rowModel.instanceLocation || ''}
         >
             Request invite
         </button>
@@ -27,10 +31,12 @@ type VirtualRowProps = ComponentProps<typeof FriendsSidebarVirtualRow>;
 
 function renderFriendRow({
     currentLocationStartedAt = null,
+    instanceLocation,
     isCurrentUser = false,
     state = 'offline'
 }: {
     currentLocationStartedAt?: string | number | null;
+    instanceLocation?: string;
     isCurrentUser?: boolean;
     state?: string;
 }) {
@@ -45,7 +51,8 @@ function renderFriendRow({
             type: 'friend',
             key: 'friend:test',
             friend: { id: 'usr_friend', state },
-            isCurrentUser
+            isCurrentUser,
+            instanceLocation
         },
         runtime: {
             currentUser: null,
@@ -93,5 +100,11 @@ describe('FriendsSidebarVirtualRow request invite action', () => {
                 currentLocationStartedAt: 1_700_000_000_000
             })
         ).toContain('data-current-location-started-at="1700000000000"');
+    });
+
+    it('passes the same-instance room through for a friend row', () => {
+        expect(renderFriendRow({ instanceLocation: 'wrld_live:1' })).toContain(
+            'data-instance-location="wrld_live:1"'
+        );
     });
 });

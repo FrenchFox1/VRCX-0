@@ -180,6 +180,45 @@ describe('UserDialog EntityList', () => {
         expect(screen.queryByText('World hopping')).toBeNull();
     });
 
+    it('uses the displayed instance for an online friend with a hidden presence location', () => {
+        useFriendRosterStore.getState().applyFriendPatch({
+            userId: 'usr_friend',
+            patch: {
+                id: 'usr_friend',
+                displayName: 'Friend',
+                state: 'online',
+                location: 'private'
+            },
+            stateBucketAuthority: 'explicit'
+        });
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
+        render(
+            <EntityList
+                kind="user"
+                rows={[
+                    {
+                        id: 'usr_friend',
+                        displayName: 'Friend',
+                        state: 'online',
+                        location: 'private',
+                        statusDescription: 'Do not disturb'
+                    }
+                ]}
+                instanceLocation="wrld_test:1"
+                showInstanceDuration
+            />
+        );
+
+        expect(screen.getByText('10m')).toBeTruthy();
+        expect(screen.queryByText('Do not disturb')).toBeNull();
+    });
+
     it('shows a creator icon and label without a timer for a friend creator', () => {
         render(
             <EntityList

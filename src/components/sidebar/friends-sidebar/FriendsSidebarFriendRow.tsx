@@ -49,6 +49,7 @@ import {
 type FriendRowModel = {
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
+    instanceLocation?: string;
     canSendInvite?: boolean;
     canRequestInvite?: boolean;
     canBoop?: boolean;
@@ -99,6 +100,7 @@ export function FriendRow({
     const {
         isCurrentUser,
         isGroupByInstance = false,
+        instanceLocation,
         canSendInvite,
         canRequestInvite,
         canBoop,
@@ -167,7 +169,9 @@ export function FriendRow({
         isCurrentUser,
         isGroupByInstance
     });
-    const timerLocation = isTraveling ? displayTraveling || '' : friendLocation;
+    const timerLocation = isTraveling
+        ? displayTraveling || ''
+        : instanceLocation || friendLocation;
     const canUseFriendLocation = Boolean(
         canUseFriendInstance &&
         parsedFriendLocation.isRealInstance &&

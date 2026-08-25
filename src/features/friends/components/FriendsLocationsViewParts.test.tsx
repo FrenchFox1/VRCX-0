@@ -98,6 +98,40 @@ describe('FriendsLocationCardItem', () => {
         expect(html).toContain('data-can-boop="true"');
     });
 
+    it('uses the section room for an online friend with a hidden presence location', () => {
+        const location = 'wrld_test:123';
+        const friend = friendAt('private');
+        const html = renderToStaticMarkup(
+            <FriendsLocationCardItem
+                section={{
+                    key: `instance:${location}`,
+                    title: 'World',
+                    description: '',
+                    friends: [friend],
+                    worldId: 'wrld_test',
+                    groupId: '',
+                    rawLocation: location
+                }}
+                friend={friend}
+                currentUserId="usr_self"
+                densityConfig={getFriendsLocationsDensityConfig('compact')}
+                canUseFriendLocation={() => false}
+                canSendInvite
+                canBoop
+                onOpenUser={vi.fn()}
+                onOpenWorld={vi.fn()}
+                onLaunchLocation={vi.fn()}
+                onSelfInviteLocation={vi.fn()}
+                onSendInvite={vi.fn()}
+                onRequestInvite={vi.fn()}
+                onSendBoop={vi.fn()}
+            />
+        );
+
+        expect(html).toContain('data-timer-location="wrld_test:123"');
+        expect(html).toContain('data-can-use-location="false"');
+    });
+
     it('disables every social and location action for the current user', () => {
         const location = 'wrld_test:123';
         const friend = friendAt(location);

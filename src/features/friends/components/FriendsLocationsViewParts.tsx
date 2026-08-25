@@ -12,7 +12,7 @@ import { Location } from '@/components/Location';
 import type { FriendRecord } from '@/domain/friends/types';
 import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
-import { normalizeLocationValue } from '@/shared/utils/location';
+import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
@@ -221,14 +221,21 @@ export function FriendsLocationCardItem({
         normalizeId(currentUserId);
     const friendIsOnline = isOnlineFriend(friend);
     const friendLocationAvailable = canUseFriendLocation(rawLocation);
+    const sectionLocation = normalizeLocationValue(section.rawLocation);
+    const sectionInstanceLocation = parseLocation(sectionLocation)
+        .isRealInstance
+        ? sectionLocation
+        : '';
     const timerLocation =
         friendIsOnline &&
         !friend.pendingOffline &&
         !source.pendingOffline &&
-        (target.parsed.isRealInstance || isTravelingLocation)
+        (sectionInstanceLocation ||
+            target.parsed.isRealInstance ||
+            isTravelingLocation)
             ? isTravelingLocation
                 ? travelingLocation
-                : rawLocation
+                : sectionInstanceLocation || rawLocation
             : '';
 
     return (

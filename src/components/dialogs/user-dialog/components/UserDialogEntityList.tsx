@@ -39,12 +39,14 @@ export function EntityList({
     kind,
     loading = false,
     error = '',
+    instanceLocation = '',
     showInstanceDuration = false
 }: {
     rows: readonly EntityRecord[];
     kind: UserDialogEntityKind;
     loading?: boolean;
     error?: string;
+    instanceLocation?: string;
     showInstanceDuration?: boolean;
 }) {
     const { t } = useTranslation();
@@ -112,7 +114,12 @@ export function EntityList({
                     kind === 'user' &&
                     locationSentinel(row.location) === 'traveling';
                 const timerLocation =
-                    kind === 'user' ? resolveFriendPresenceLocation(row) : '';
+                    kind === 'user'
+                        ? isTraveling
+                            ? resolveFriendPresenceLocation(row)
+                            : instanceLocation.trim() ||
+                              resolveFriendPresenceLocation(row)
+                        : '';
                 const isCurrentUserRow = Boolean(
                     userId && userId === currentUserSnapshot?.id
                 );
