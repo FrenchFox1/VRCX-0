@@ -15,7 +15,7 @@ use super::cache::{
 };
 use super::lock::with_activity_page_build_lock;
 use super::people::people;
-use super::spans::{read_location_spans, LocationSpan};
+use super::spans::{read_instance_spans, LocationSpan};
 use super::types::{ActivityPageBuildInput, ActivityPageCoverage, ActivityPageView};
 
 const DAY_MS: i64 = 86_400_000;
@@ -118,18 +118,13 @@ fn build_fresh(
     let to_ms = window.to_ms;
     let from_ms = window.from_ms;
     let previous_from_ms = from_ms.map(|from_ms| from_ms - range_days * DAY_MS);
-    let window_spans = read_location_spans(db, &input.owner_user_id, from_ms, to_ms, input.now_ms)?;
+    let window_spans = read_instance_spans(db, &input.owner_user_id, from_ms, to_ms)?;
     let spans = window_spans.spans;
 
     let previous = match (previous_from_ms, from_ms) {
         (Some(previous_from_ms), Some(from_ms)) => {
-            let previous_spans = read_location_spans(
-                db,
-                &input.owner_user_id,
-                Some(previous_from_ms),
-                from_ms,
-                input.now_ms,
-            )?;
+            let previous_spans =
+                read_instance_spans(db, &input.owner_user_id, Some(previous_from_ms), from_ms)?;
             summarize_previous(&previous_spans.spans, input.utc_offset_minutes)
         }
         _ => Default::default(),

@@ -1,14 +1,13 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use chrono::DateTime;
+use chrono::{DateTime, Duration, SecondsFormat};
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::activity_page::{
     activity_page_view_build, ActivityCompanionOrder, ActivityPageBuildInput, ActivitySeriesBucket,
 };
 use vrcx_0_persistence::game_log::{
-    write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogLocationTimeUpdate,
-    GameLogWriteBatch,
+    write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogWriteBatch,
 };
 use vrcx_0_persistence::DatabaseService;
 
@@ -72,11 +71,27 @@ fn named_location(
 }
 
 fn write_locations(db: &DatabaseService, locations: Vec<GameLogLocationEntry>) {
+    let join_leave = locations
+        .iter()
+        .filter(|location| location.time > 0)
+        .map(|location| GameLogJoinLeaveEntry {
+            created_at: (DateTime::parse_from_rfc3339(&location.created_at).unwrap()
+                + Duration::milliseconds(location.time))
+            .to_rfc3339_opts(SecondsFormat::Millis, true),
+            event_type: "OnPlayerLeft".to_string(),
+            display_name: USER_ID.to_string(),
+            location: location.location.clone(),
+            user_id: USER_ID.to_string(),
+            world_name: location.world_name.clone(),
+            time: location.time,
+        })
+        .collect();
     write_batch(
         db,
         &OwnerId::new(USER_ID),
         &GameLogWriteBatch {
             locations,
+            join_leave,
             ..Default::default()
         },
     )
@@ -169,7 +184,7 @@ fn activity_page_splits_minutes_by_access_bucket() {
 }
 
 #[test]
-fn activity_page_counts_unrecorded_time_from_the_next_row() {
+fn activity_page_ignores_an_unclosed_instance() {
     let (_dir, db) = test_db("activity-page-inferred");
     write_locations(
         &db,
@@ -181,18 +196,39 @@ fn activity_page_counts_unrecorded_time_from_the_next_row() {
 
     let view = activity_page_view_build(db.as_ref(), build(30, "2025-01-06T00:00:00Z")).unwrap();
 
-    let first = view
-        .worlds
-        .top
-        .iter()
-        .find(|row| row.world_id == "wrld_1")
-        .expect("first world is present");
-    assert_eq!(first.minutes, 120);
-    assert_eq!(view.summary.total_minutes, 180);
+    assert_eq!(view.summary.total_minutes, 60);
+    assert!(view.worlds.top.iter().all(|row| row.world_id != "wrld_1"));
 }
 
 #[test]
-fn activity_page_carries_the_game_log_world_name_and_marks_inferred_time() {
+fn activity_page_uses_the_current_users_closed_instance_intervals() {
+    let (_dir, db) = test_db("activity-page-closed-self-intervals");
+    write_locations(
+        &db,
+        vec![
+            location("2025-01-05T01:00:00Z", "wrld_1:1", "wrld_1", 0),
+            location("2025-01-06T01:00:00Z", "wrld_2:1", "wrld_2", 0),
+        ],
+    );
+    write_join_leave(
+        &db,
+        vec![left(
+            "2025-01-05T03:00:00Z",
+            USER_ID,
+            "wrld_1:1",
+            2 * HOUR_MS,
+        )],
+    );
+
+    let view = activity_page_view_build(db.as_ref(), build(30, "2025-01-06T03:00:00Z")).unwrap();
+
+    assert_eq!(view.summary.total_minutes, 120);
+    assert_eq!(view.worlds.top.len(), 1);
+    assert_eq!(view.worlds.top[0].world_id, "wrld_1");
+}
+
+#[test]
+fn activity_page_carries_the_closed_instance_world_name() {
     let (_dir, db) = test_db("activity-page-name-inferred");
     write_locations(
         &db,
@@ -217,8 +253,8 @@ fn activity_page_carries_the_game_log_world_name_and_marks_inferred_time() {
     let view = activity_page_view_build(db.as_ref(), build(30, "2025-01-06T00:00:00Z")).unwrap();
 
     assert_eq!(view.worlds.top[0].world_name, "Newest Name");
-    assert_eq!(view.summary.longest_session_minutes, 0);
-    assert!(view.series.points.iter().any(|point| point.inferred));
+    assert_eq!(view.summary.longest_session_minutes, 60);
+    assert!(view.series.points.iter().all(|point| !point.inferred));
 }
 
 #[test]
@@ -432,7 +468,7 @@ fn activity_page_rebuilds_when_the_requested_offset_differs_from_the_cache() {
 }
 
 #[test]
-fn activity_page_tracks_an_open_tail_as_time_passes() {
+fn activity_page_waits_for_the_current_instance_to_close() {
     let (_dir, db) = test_db("activity-page-open-tail");
     write_locations(
         &db,
@@ -442,13 +478,13 @@ fn activity_page_tracks_an_open_tail_as_time_passes() {
     let early = activity_page_view_build(db.as_ref(), build(30, "2025-01-05T03:00:00Z")).unwrap();
     let later = activity_page_view_build(db.as_ref(), build(30, "2025-01-05T09:00:00Z")).unwrap();
 
-    assert!(early.has_open_tail);
-    assert_eq!(early.summary.total_minutes, 120);
-    assert_eq!(later.summary.total_minutes, 480);
+    assert!(!early.has_open_tail);
+    assert_eq!(early.summary.total_minutes, 0);
+    assert_eq!(later.summary.total_minutes, 0);
 }
 
 #[test]
-fn activity_page_sees_the_duration_written_back_on_world_leave() {
+fn activity_page_sees_the_current_users_closed_instance() {
     let (_dir, db) = test_db("activity-page-leave-writeback");
     write_locations(
         &db,
@@ -456,20 +492,17 @@ fn activity_page_sees_the_duration_written_back_on_world_leave() {
     );
 
     let open = activity_page_view_build(db.as_ref(), build(30, "2025-01-05T03:00:00Z")).unwrap();
-    assert_eq!(open.summary.total_minutes, 120);
+    assert_eq!(open.summary.total_minutes, 0);
 
-    write_batch(
+    write_join_leave(
         db.as_ref(),
-        &OwnerId::new(USER_ID),
-        &GameLogWriteBatch {
-            location_time_updates: vec![GameLogLocationTimeUpdate {
-                created_at: "2025-01-05T01:00:00Z".to_string(),
-                time: 30 * 60 * 1000,
-            }],
-            ..Default::default()
-        },
-    )
-    .unwrap();
+        vec![left(
+            "2025-01-05T01:30:00Z",
+            USER_ID,
+            "wrld_1:1",
+            30 * 60 * 1000,
+        )],
+    );
 
     let closed = activity_page_view_build(db.as_ref(), build(30, "2025-01-05T03:00:00Z")).unwrap();
 
@@ -617,4 +650,36 @@ fn activity_page_serves_cache_until_the_source_cursor_moves() {
     assert_ne!(rebuilt.built_from_cursor, first.built_from_cursor);
     assert_eq!(rebuilt.summary.total_minutes, 120);
     assert!(!rebuilt.stale);
+}
+
+#[test]
+fn activity_page_rebuilds_a_version_one_cache() {
+    let (_dir, db) = test_db("activity-page-cache-version");
+    write_locations(
+        &db,
+        vec![location(
+            "2025-01-05T01:00:00Z",
+            "wrld_1:1",
+            "wrld_1",
+            HOUR_MS,
+        )],
+    );
+
+    let first = activity_page_view_build(db.as_ref(), build(30, "2025-01-06T00:00:00Z")).unwrap();
+    let mut obsolete = first.clone();
+    obsolete.summary.total_minutes = 999;
+    rusqlite::Connection::open(db.db_path())
+        .unwrap()
+        .execute(
+            "UPDATE usrpage_activity_page_cache
+             SET payload_version = 1, payload_json = ?1
+             WHERE user_id = ?2 AND range_days = 30",
+            rusqlite::params![serde_json::to_string(&obsolete).unwrap(), USER_ID],
+        )
+        .unwrap();
+
+    let rebuilt = activity_page_view_build(db.as_ref(), build(30, "2025-01-06T12:00:00Z")).unwrap();
+
+    assert_eq!(rebuilt.summary.total_minutes, 60);
+    assert_ne!(rebuilt.built_at, first.built_at);
 }
