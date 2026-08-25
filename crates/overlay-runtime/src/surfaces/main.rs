@@ -16,8 +16,6 @@ pub(crate) struct HmdToastView {
     pub avatar: Option<AvatarBitmap>,
     pub show_avatar: bool,
     pub merge_count: u32,
-    pub opacity: f32,
-    pub slide_offset: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -51,8 +49,6 @@ fn toast_card_from_activity(toast: HmdToastView, localizer: &OverlayLocalizer) -
         severity: feed_severity(&entry),
         avatar: toast.avatar,
         show_avatar: toast.show_avatar,
-        opacity: toast.opacity,
-        slide_offset: toast.slide_offset,
     }
 }
 

@@ -92,23 +92,6 @@ fn slint_hmd_renderer_hides_avatar_placeholder_when_avatar_slot_is_disabled() {
 }
 
 #[test]
-fn slint_hmd_card_alpha_tracks_toast_opacity_from_an_opaque_baseline() {
-    let mut renderer = SlintHmdRenderer::new();
-    let mut model = sample_main_model();
-    let pixel_alpha = |frame: &RgbaFrame| {
-        let index = ((440 * frame.size.width + 800) * 4 + 3) as usize;
-        frame.data[index]
-    };
-
-    let opaque = renderer.render(&model).unwrap();
-    assert_eq!(pixel_alpha(&opaque), 255);
-
-    model.toasts[0].opacity = 0.5;
-    let fading = renderer.render(&model).unwrap();
-    assert!((126..=129).contains(&pixel_alpha(&fading)));
-}
-
-#[test]
 fn wrist_panel_stops_painting_below_the_last_feed_row() {
     let mut renderer = SlintWristRenderer::new();
     let mut model = sample_wrist_model();
@@ -461,8 +444,6 @@ fn sample_main_model() -> MainSurfaceModel {
                 ]),
             }),
             show_avatar: true,
-            opacity: 1.0,
-            slide_offset: 0.0,
         }],
     }
 }

@@ -58,7 +58,6 @@ thread_local! {
 
 const WRIST_DEVICE_REFRESH_INTERVAL: Duration = Duration::from_secs(5);
 const WRIST_FRAME_REFRESH_INTERVAL: Duration = Duration::from_secs(1);
-const HMD_TOAST_ANIMATION_REFRESH_INTERVAL: Duration = Duration::from_millis(16);
 const INTERACTIVE_INPUT_DRAIN_INTERVAL: Duration = Duration::from_millis(30);
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -561,7 +560,7 @@ impl VrOverlayRuntime {
     fn refresh_interval(&self) -> Duration {
         let base = self.friends_panel_refresh_interval();
         match self.hmd_toast_refresh_hint(Instant::now()) {
-            Some(hint) => base.min(hint.max(HMD_TOAST_ANIMATION_REFRESH_INTERVAL)),
+            Some(hint) => base.min(hint),
             None => base,
         }
     }
