@@ -69,6 +69,47 @@ fn provider_video_vrcx_event_does_not_emit_core_persisted_mirror() {
 }
 
 #[test]
+fn pypy_dance_provider_event_enriches_video_after_generic_playback_log() {
+    let mut engine = GameLogIngestEngine::default();
+    let video_url = "http://api.pypy.dance/video?id=1234";
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-05-14T00:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_f20326da-f1ac-45fc-a062-609723b097b1:1".into(),
+                    world_name: "PyPyDance".into(),
+                },
+            ),
+            event(
+                "2026-05-14T00:00:01.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: video_url.into(),
+                    display_name: String::new(),
+                },
+            ),
+            event(
+                "2026-05-14T00:00:02.000Z",
+                GameLogEventKind::Vrcx {
+                    data: format!(
+                        "VideoPlay(PyPyDance) \"{video_url}\",0,180,\"1234 : Song Title (Alpha)\""
+                    ),
+                },
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input)] = output.side_effects.as_slice() else {
+        panic!("expected one enriched video side effect");
+    };
+    assert_eq!(input.video_url, video_url);
+    assert_eq!(input.video_id, "1234");
+    assert_eq!(input.video_name, "Song Title");
+    assert_eq!(input.display_name, "Alpha");
+}
+
+#[test]
 fn leaving_room_resets_now_playing_for_world_switch_and_rejoin() {
     for destination in ["wrld_next:2", "wrld_current:1"] {
         let mut engine = GameLogIngestEngine::default();
