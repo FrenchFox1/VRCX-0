@@ -14,6 +14,7 @@
         "security": {
             "csp": {
                 "img-src": [
+                    "'self'",
                     "https:",
                     "http://localhost:*",
                     "http://vrcx-0-img.localhost",
