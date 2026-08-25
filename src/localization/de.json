@@ -3313,7 +3313,7 @@
                 "minutes": "Minuten"
             },
             "section": {
-                "instance_types": "Instanz-Typen",
+                "instance_types": "Instanz-Vorlieben",
                 "daily_time": "Zeit pro Tag",
                 "weekly_time": "Zeit pro Woche",
                 "when_you_play": "Wann du spielst",
@@ -3338,7 +3338,7 @@
                 "failed_to_load": "Aktivität konnte nicht geladen werden"
             },
             "caveat": {
-                "recorded_since": "Daten seit {date}."
+                "recorded_since": "Nur bei laufender App erfasst."
             },
             "worlds": {
                 "visit_count": "{count} Besuche",

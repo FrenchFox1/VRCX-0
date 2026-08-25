@@ -3313,7 +3313,7 @@
                 "minutes": "minutes"
             },
             "section": {
-                "instance_types": "Instance types",
+                "instance_types": "Instance preferences",
                 "daily_time": "Time per day",
                 "weekly_time": "Time per week",
                 "when_you_play": "When you play",
@@ -3338,7 +3338,7 @@
                 "failed_to_load": "Could not load your activity"
             },
             "caveat": {
-                "recorded_since": "Data from {date} onward."
+                "recorded_since": "Only recorded while running."
             },
             "worlds": {
                 "visit_count": "{count} visits",

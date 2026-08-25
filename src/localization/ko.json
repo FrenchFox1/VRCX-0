@@ -3265,7 +3265,7 @@
                 "minutes": "분"
             },
             "section": {
-                "instance_types": "인스턴스 유형",
+                "instance_types": "인스턴스 성향",
                 "daily_time": "일별 플레이 시간",
                 "weekly_time": "주별 플레이 시간",
                 "when_you_play": "주로 플레이하는 시간대",
@@ -3290,7 +3290,7 @@
                 "failed_to_load": "활동을 불러오지 못했습니다"
             },
             "caveat": {
-                "recorded_since": "{date}부터의 데이터입니다."
+                "recorded_since": "실행 중에만 기록됩니다."
             },
             "worlds": {
                 "visit_count": "{count}회",

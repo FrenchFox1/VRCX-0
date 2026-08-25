@@ -38,7 +38,7 @@ import {
     normalizeCompanionOrder,
     type ActivityRange
 } from './activityPageModel';
-import { ActivityAccessSplit } from './components/ActivityAccessSplit';
+import { ActivityAccessExhibit } from './components/ActivityAccessExhibit';
 import { ActivityPeopleExhibit } from './components/ActivityPeopleExhibit';
 import { ActivityRhythmExhibit } from './components/ActivityRhythmExhibit';
 import { ActivityTimeExhibit } from './components/ActivityTimeExhibit';
@@ -231,11 +231,9 @@ export function ActivityPageImpl() {
                                 />
                             </Staggered>
                             <Staggered index={4}>
-                                <section className="activity-card p-6">
-                                    <ActivityAccessSplit
-                                        slices={view.accessSplit}
-                                    />
-                                </section>
+                                <ActivityAccessExhibit
+                                    slices={view.accessSplit}
+                                />
                             </Staggered>
                             <p className="text-muted-foreground break-inside-avoid px-1 pt-1 text-xs">
                                 {t('view.activity.caveat.recorded_since', {

@@ -3315,7 +3315,7 @@
                 "minutes": "минут"
             },
             "section": {
-                "instance_types": "Типы инстансов",
+                "instance_types": "Предпочтения инстансов",
                 "daily_time": "Время по дням",
                 "weekly_time": "Время по неделям",
                 "when_you_play": "Когда вы играете",
@@ -3340,7 +3340,7 @@
                 "failed_to_load": "Не удалось загрузить активность"
             },
             "caveat": {
-                "recorded_since": "Данные с {date}."
+                "recorded_since": "Записывается только при запуске."
             },
             "worlds": {
                 "visit_count": "посещений: {count}",

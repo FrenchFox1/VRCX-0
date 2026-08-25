@@ -3313,7 +3313,7 @@
                 "minutes": "分钟"
             },
             "section": {
-                "instance_types": "房间类型",
+                "instance_types": "房间偏好",
                 "daily_time": "每日时长",
                 "weekly_time": "每周时长",
                 "when_you_play": "活跃时段",
@@ -3338,7 +3338,7 @@
                 "failed_to_load": "无法加载你的活动数据"
             },
             "caveat": {
-                "recorded_since": "数据从 {date} 开始。"
+                "recorded_since": "仅在运行时记录。"
             },
             "worlds": {
                 "visit_count": "{count} 次",

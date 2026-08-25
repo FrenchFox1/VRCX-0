@@ -3309,7 +3309,7 @@
                 "minutes": "分"
             },
             "section": {
-                "instance_types": "インスタンスの種類",
+                "instance_types": "インスタンスの傾向",
                 "daily_time": "日ごとのプレイ時間",
                 "weekly_time": "週ごとのプレイ時間",
                 "when_you_play": "よく遊んでいる時間帯",
@@ -3334,7 +3334,7 @@
                 "failed_to_load": "アクティビティを読み込めませんでした"
             },
             "caveat": {
-                "recorded_since": "{date} からのデータです。"
+                "recorded_since": "起動中のみ記録されます。"
             },
             "worlds": {
                 "visit_count": "{count} 回",
