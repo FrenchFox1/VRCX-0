@@ -1,9 +1,12 @@
+use std::collections::BTreeMap;
+
 use serde::Deserialize;
 use serde_json::Value;
 pub use vrcx_0_contracts::{
     AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow,
 };
 
+use crate::activity::{activity_iso_from_ms, parse_activity_time_ms};
 use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::{ensure_global_store_tables, ensure_user_store_tables};
@@ -186,6 +189,66 @@ pub fn avatar_history_list(
         .into_iter()
         .map(|row| cache_entity_from_row(&row))
         .collect())
+}
+
+pub fn avatar_usage_ranking_windowed(
+    db: &DatabaseService,
+    user_id: String,
+    from_ms: i64,
+    to_ms: i64,
+    limit: i64,
+) -> Result<Vec<AvatarUsageRow>, Error> {
+    let user_prefix = normalize_user_table_prefix(&normalize_text(user_id))?;
+    ensure_user_store_tables(db, &user_prefix)?;
+    ensure_global_store_tables(db)?;
+
+    let rows = db.execute(
+        &format!(
+            "SELECT log.avatar_id, log.started_at, log.ended_at, COALESCE(cache_avatar.name, ''), COALESCE(cache_avatar.thumbnail_image_url, ''), COALESCE(cache_avatar.image_url, '')
+             FROM {user_prefix}_avatar_wear_log AS log
+             LEFT JOIN cache_avatar ON cache_avatar.id = log.avatar_id
+             WHERE log.started_at < @to_iso AND log.ended_at > @from_iso"
+        ),
+        &ParamsBuilder::new()
+            .set("from_iso", activity_iso_from_ms(from_ms))
+            .set("to_iso", activity_iso_from_ms(to_ms))
+            .build(),
+    )?;
+
+    let mut totals: BTreeMap<String, AvatarUsageRow> = BTreeMap::new();
+    for row in rows {
+        let avatar_id = row_string(&row, 0);
+        let Some(started_ms) = parse_activity_time_ms(&row_string(&row, 1)) else {
+            continue;
+        };
+        let Some(ended_ms) = parse_activity_time_ms(&row_string(&row, 2)) else {
+            continue;
+        };
+        let clipped = ended_ms.min(to_ms) - started_ms.max(from_ms);
+        if clipped <= 0 {
+            continue;
+        }
+        let entry = totals
+            .entry(avatar_id.clone())
+            .or_insert_with(|| AvatarUsageRow {
+                avatar_id,
+                name: row_string(&row, 3),
+                thumbnail_image_url: row_string(&row, 4),
+                image_url: row_string(&row, 5),
+                time_spent: 0,
+            });
+        entry.time_spent += clipped;
+    }
+
+    let mut ranked: Vec<AvatarUsageRow> = totals.into_values().collect();
+    ranked.sort_by(|left, right| {
+        right
+            .time_spent
+            .cmp(&left.time_spent)
+            .then_with(|| left.avatar_id.cmp(&right.avatar_id))
+    });
+    ranked.truncate(if limit > 0 { limit as usize } else { 10 });
+    Ok(ranked)
 }
 
 pub fn avatar_usage_ranking(

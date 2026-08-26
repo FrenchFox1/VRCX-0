@@ -144,4 +144,6 @@ pub struct AvatarTimeSpentUpsert {
     pub avatar_id: String,
     pub created_at: String,
     pub time_spent: i64,
+    pub started_at_ms: i64,
+    pub ended_at_ms: i64,
 }

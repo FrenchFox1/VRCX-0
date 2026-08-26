@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+use crate::activity::activity_iso_from_ms;
 use crate::common::ParamsBuilder;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry, GameLogLocationTimeUpdate};
@@ -684,8 +685,20 @@ fn upsert_avatar_time_spent(
              ON CONFLICT(avatar_id) DO UPDATE SET time = time + @time_spent"
         ),
         &ParamsBuilder::new()
-            .set("avatar_id", avatar_id)
+            .set("avatar_id", avatar_id.clone())
             .set("created_at", entry.created_at.clone())
+            .set("time_spent", entry.time_spent)
+            .build(),
+    )?;
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_avatar_wear_log (avatar_id, started_at, ended_at, time)
+             VALUES (@avatar_id, @started_at, @ended_at, @time_spent)"
+        ),
+        &ParamsBuilder::new()
+            .set("avatar_id", avatar_id)
+            .set("started_at", activity_iso_from_ms(entry.started_at_ms))
+            .set("ended_at", activity_iso_from_ms(entry.ended_at_ms))
             .set("time_spent", entry.time_spent)
             .build(),
     )
