@@ -224,12 +224,12 @@ impl RealtimeHostRuntime {
         if let PendingOfflineTimerAction::Schedule {
             user_id,
             token,
-            delay_ms,
+            delay,
         } = timer_action
         {
             let runtime = Arc::clone(self);
             self.deps.tasks.spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                tokio::time::sleep(delay).await;
                 let now = chrono::Utc::now().to_rfc3339();
                 runtime.fire_pending_offline(&user_id, token, now);
             });

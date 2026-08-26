@@ -15,7 +15,7 @@ use super::persistence::{
     online_feed_entry, player_joining_feed_entry, trust_level_feed_entry, value_equal_for_diff,
     FriendChangedProps, FriendRelationshipFeedKind, OfflineFeedPrevious,
 };
-use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY_MS};
+use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY};
 use super::utils::{first_owned, parse_location, EventTime, JsonExt};
 use vrcx_0_core::OwnerId;
 
@@ -443,7 +443,7 @@ fn apply_active_offline(
         output.timer_action = PendingOfflineTimerAction::Schedule {
             user_id,
             token,
-            delay_ms: PENDING_OFFLINE_DELAY_MS,
+            delay: PENDING_OFFLINE_DELAY,
         };
     } else {
         state.recent_gps.remove(&user_id);
@@ -524,7 +524,7 @@ fn apply_location(
         output.timer_action = PendingOfflineTimerAction::Schedule {
             user_id: user_id.clone(),
             token,
-            delay_ms: PENDING_OFFLINE_DELAY_MS,
+            delay: PENDING_OFFLINE_DELAY,
         };
     } else if preserve_pending_offline {
         if let Some(patch_object) = patch.as_object_mut() {

@@ -29,7 +29,7 @@ const FAVORITE_WORLD_PAGE_SIZE: usize = 300;
 const FAVORITE_WORLD_MAX_OFFSET: i32 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i32;
 const MY_AVATAR_PAGE_SIZE: usize = 50;
 const MY_AVATAR_MAX_OFFSET: i32 = 5_000;
-const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
+pub const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
 
 #[derive(Clone)]
 pub struct UserDialogTabCountsDeps {

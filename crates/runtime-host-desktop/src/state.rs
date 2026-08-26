@@ -105,7 +105,7 @@ const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";
 const REGISTRY_BACKUP_MAINTENANCE_JOB: &str = "registryBackupMaintenance";
 const REGISTRY_BACKUP_MAINTENANCE_CADENCE_SECONDS: u64 = 3 * 60 * 60;
 const REGISTRY_BACKUP_FOREGROUND_REUSE_WINDOW: Duration = Duration::from_secs(60);
-const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS: u64 = 5;
+const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE: Duration = Duration::from_secs(5);
 const DESKTOP_MAINTENANCE_STOP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const SHARE_EDITOR_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 
@@ -2683,10 +2683,8 @@ impl DesktopRuntimeProfileExtension {
                     }
                     if now >= next_overlay_activity_config {
                         desktop_services.reload_overlay_activity_filters();
-                        next_overlay_activity_config = now
-                            + Duration::from_secs(
-                                BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS,
-                            );
+                        next_overlay_activity_config =
+                            now + BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE;
                     }
                     let tick_context = BackgroundTickContext {
                         db: &db,

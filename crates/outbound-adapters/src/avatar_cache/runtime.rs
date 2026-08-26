@@ -15,7 +15,7 @@ use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
 
 use vrcx_0_application_core::WebClient;
 
-const AVATAR_RESOLVE_FETCH_TIMEOUT_MS: u64 = 5_000;
+const AVATAR_RESOLVE_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub struct AvatarCache {
     working: Cache<AvatarCacheKey, Arc<AvatarCacheEntry>>,
@@ -175,7 +175,7 @@ impl AvatarCache {
         let (_, request) = avatar_get_input(key.endpoint.clone(), key.avatar_id.clone())
             .map_err(crate::map_http_api_error)?;
         let response = tokio::time::timeout(
-            Duration::from_millis(AVATAR_RESOLVE_FETCH_TIMEOUT_MS),
+            AVATAR_RESOLVE_FETCH_TIMEOUT,
             web.execute_api(request, ApiScope::Vrchat),
         )
         .await

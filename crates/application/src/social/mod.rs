@@ -129,7 +129,7 @@ pub use prints::{
     run_print_auto_cleanup, set_print_favorite, set_print_favorites, CleanupWarningKind,
     PrintAutoCleanupEvent, PrintCleanupDeps, PrintCleanupQueue, PrintCleanupQueueSink,
     PrintCleanupTrigger, PrintFavoriteBulkResult, PrintFavoriteState, PrintFavoritesStore,
-    PrintRemote, PrintRemoteFuture,
+    PrintRemote, PrintRemoteFuture, DEFAULT_AUTO_DELETE_PRINTS_LIMIT,
 };
 pub use quick_search_catalog::{
     QuickSearchDetailStore, QuickSearchEntityType, QuickSearchMatchedField, QuickSearchQueryInput,
@@ -165,6 +165,7 @@ pub use user_dialog_tab_counts::{
     get_user_dialog_tab_counts, AvatarProviderConfig, AvatarReleaseStatus,
     UserDialogExternalFuture, UserDialogTabCountsDeps, UserDialogTabCountsInput,
     UserDialogTabCountsOutput, UserDialogTabCountsRuntime, UserDialogTabCountsSource,
+    DEFAULT_AVATAR_PROVIDER,
 };
 mod batch_mutation;
 mod instance_invite_batch;

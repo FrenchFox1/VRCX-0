@@ -14,7 +14,7 @@ use super::repository::{
     activity_bucket_cache_get, activity_bucket_cache_upsert,
     activity_friend_presence_first_created_at, activity_friend_presence_last_created_at,
     activity_friend_presence_slice, activity_iso_from_ms, activity_self_sessions_refresh_auto,
-    activity_self_source_first_created_at, parse_activity_time_ms,
+    activity_self_source_first_created_at, parse_activity_time_ms, ACTIVITY_MAX_RANGE_DAYS,
 };
 use super::types::{
     ActivityBucketCacheInput, ActivityBucketCacheOutput, ActivityBucketCacheQueryInput,
@@ -27,7 +27,6 @@ use crate::ownership::OwnerId;
 const BUCKET_COUNT: usize = 168;
 const DEFAULT_MAX_SESSION_MS: i64 = 8 * 60 * 60 * 1000;
 const DAY_MS: i64 = 86_400_000;
-const ACTIVITY_MAX_RANGE_DAYS: i64 = 3650;
 const ACTIVITY_ALL_FALLBACK_RANGE_DAYS: i64 = 30;
 
 pub fn activity_view_build(

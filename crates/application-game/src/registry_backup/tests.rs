@@ -228,7 +228,7 @@ fn maintenance_run_prunes_expired_auto_backups_before_checking_recent_backup() {
     let dir = TestDir::new("prune");
     let db = dir.open_db();
     let now = Utc::now();
-    let expired_date = iso_millis(now - Duration::days(AUTO_BACKUP_RETENTION_DAYS + 1));
+    let expired_date = iso_millis(now - AUTO_BACKUP_RETENTION - Duration::days(1));
     write_backups(&db, &[backup(AUTO_BACKUP_NAME, &expired_date)]).unwrap();
     let host = StubHost::with_registry(json!({"a": 1}));
 
@@ -302,7 +302,7 @@ fn maintenance_run_reports_skip_when_registry_data_is_empty() {
 fn prune_old_auto_backups_removes_only_expired_auto_backups() {
     let now = Utc::now();
     let fresh_date = iso_millis(now - Duration::days(1));
-    let expired_date = iso_millis(now - Duration::days(AUTO_BACKUP_RETENTION_DAYS + 1));
+    let expired_date = iso_millis(now - AUTO_BACKUP_RETENTION - Duration::days(1));
     let mut backups = vec![
         backup(AUTO_BACKUP_NAME, &fresh_date),
         backup(AUTO_BACKUP_NAME, &expired_date),
@@ -318,7 +318,7 @@ fn prune_old_auto_backups_removes_only_expired_auto_backups() {
 #[test]
 fn prune_old_auto_backups_keeps_manual_backups_regardless_of_age() {
     let now = Utc::now();
-    let expired_date = iso_millis(now - Duration::days(AUTO_BACKUP_RETENTION_DAYS + 1));
+    let expired_date = iso_millis(now - AUTO_BACKUP_RETENTION - Duration::days(1));
     let mut backups = vec![backup(MANUAL_BACKUP_NAME, &expired_date)];
 
     let pruned = prune_old_auto_backups(&mut backups, now);
@@ -367,7 +367,7 @@ fn recent_auto_backup_exists_is_false_outside_interval() {
     let now = Utc::now();
     db.set_string(
         CONFIG_LAST_BACKUP_DATE,
-        &iso_millis(now - Duration::days(AUTO_BACKUP_INTERVAL_DAYS + 1)),
+        &iso_millis(now - AUTO_BACKUP_INTERVAL - Duration::days(1)),
     )
     .unwrap();
 

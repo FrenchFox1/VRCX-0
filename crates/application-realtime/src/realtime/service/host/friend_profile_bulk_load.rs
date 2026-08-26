@@ -18,11 +18,11 @@ use super::state::ActiveRealtimeContext;
 use super::{RealtimeHostRuntime, RealtimeStopRequest};
 
 const FRIEND_PROFILE_BULK_LOAD_MAX_RETRIES: u32 = 4;
-const FRIEND_PROFILE_BULK_LOAD_BASE_DELAY_MS: u64 = 500;
-pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS: u64 = 1_000;
+const FRIEND_PROFILE_BULK_LOAD_BASE_DELAY: Duration = Duration::from_millis(500);
+#[cfg(test)]
+pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL: Duration = Duration::from_secs(1);
 pub(super) const FRIEND_PROFILE_BULK_LOAD_CONCURRENCY: usize = 3;
-pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS: u64 =
-    FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS / FRIEND_PROFILE_BULK_LOAD_CONCURRENCY as u64;
+pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING: Duration = Duration::from_millis(333);
 
 pub(super) struct FriendProfileBulkLoadPacer {
     next_slot: tokio::sync::Mutex<Option<Instant>>,
@@ -40,8 +40,7 @@ impl FriendProfileBulkLoadPacer {
             let mut next_slot = self.next_slot.lock().await;
             let now = Instant::now();
             let slot = next_slot.map(|at| at.max(now)).unwrap_or(now);
-            *next_slot =
-                Some(slot + Duration::from_millis(FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS));
+            *next_slot = Some(slot + FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING);
             slot
         };
         tokio::time::sleep_until(slot).await;
@@ -170,8 +169,8 @@ fn friend_missing_date_joined(friend: &FriendRecord) -> bool {
         .is_none_or(|value| value.trim().is_empty())
 }
 
-pub(super) fn friend_profile_bulk_load_backoff_delay_ms(attempt: u32) -> u64 {
-    FRIEND_PROFILE_BULK_LOAD_BASE_DELAY_MS.saturating_mul(1u64 << attempt.min(16))
+pub(super) fn friend_profile_bulk_load_backoff_delay(attempt: u32) -> Duration {
+    FRIEND_PROFILE_BULK_LOAD_BASE_DELAY.saturating_mul(1u32 << attempt.min(16))
 }
 
 impl RealtimeHostRuntime {
@@ -487,16 +486,14 @@ impl RealtimeHostRuntime {
                 Ok(response)
                     if response.status == 429 && attempt < FRIEND_PROFILE_BULK_LOAD_MAX_RETRIES =>
                 {
-                    let delay_ms = friend_profile_bulk_load_backoff_delay_ms(attempt);
+                    let delay = friend_profile_bulk_load_backoff_delay(attempt);
                     attempt += 1;
-                    pacer
-                        .delay_next_slots(Duration::from_millis(delay_ms))
-                        .await;
+                    pacer.delay_next_slots(delay).await;
                     tokio::select! {
                         biased;
                         _ = wait_for_friend_profile_bulk_load_cancel(run_id, cancel_rx) => return None,
                         _ = transport_rx.changed() => continue,
-                        _ = tokio::time::sleep(Duration::from_millis(delay_ms)) => {}
+                        _ = tokio::time::sleep(delay) => {}
                     }
                     if !self.friend_profile_bulk_load_is_current(run_id, owner) {
                         return None;

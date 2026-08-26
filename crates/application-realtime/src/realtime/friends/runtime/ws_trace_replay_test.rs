@@ -98,12 +98,12 @@ mod tests {
             PendingOfflineTimerAction::Schedule {
                 user_id,
                 token,
-                delay_ms,
+                delay,
             } => json!({
                 "kind": "schedule",
                 "userId": user_id,
                 "token": token,
-                "delayMs": delay_ms,
+                "delayMs": delay.as_millis(),
             }),
         }
     }

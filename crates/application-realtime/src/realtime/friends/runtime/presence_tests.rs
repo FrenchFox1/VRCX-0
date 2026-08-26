@@ -884,13 +884,10 @@ mod tests {
         else {
             panic!("friend-offline should produce an output");
         };
-        let PendingOfflineTimerAction::Schedule {
-            token, delay_ms, ..
-        } = output.timer_action
-        else {
+        let PendingOfflineTimerAction::Schedule { token, delay, .. } = output.timer_action else {
             panic!("offline should schedule pending timer");
         };
-        assert_eq!(delay_ms, 170_000);
+        assert_eq!(delay, std::time::Duration::from_secs(170));
         assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.location, "wrld_1:123");
         assert_eq!(

@@ -401,7 +401,7 @@ impl RealtimeHostRuntime {
         for schedule in baseline_schedules {
             let runtime = Arc::clone(self);
             self.deps.tasks.spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(schedule.delay_ms)).await;
+                tokio::time::sleep(schedule.delay).await;
                 let now = chrono::Utc::now().to_rfc3339();
                 runtime.fire_pending_offline(&schedule.user_id, schedule.token, now);
             });

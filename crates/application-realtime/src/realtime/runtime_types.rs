@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use serde::Serialize;
 use vrcx_0_core::friends::FriendRecord;
@@ -9,7 +10,7 @@ pub use vrcx_0_core::realtime::{
 
 use super::output::RealtimeFriendOutput;
 
-pub(crate) const PENDING_OFFLINE_DELAY_MS: u64 = 170_000;
+pub(crate) const PENDING_OFFLINE_DELAY: Duration = Duration::from_secs(170);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RealtimeCachedUserProfile {
@@ -194,6 +195,6 @@ pub enum PendingOfflineTimerAction {
     Schedule {
         user_id: String,
         token: u64,
-        delay_ms: u64,
+        delay: Duration,
     },
 }

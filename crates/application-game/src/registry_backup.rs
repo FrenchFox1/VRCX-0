@@ -14,8 +14,8 @@ const CONFIG_LAST_RESTORE_CHECK: &str = "VRChatRegistryLastRestoreCheck";
 
 const AUTO_BACKUP_NAME: &str = "Auto Backup";
 const MANUAL_BACKUP_NAME: &str = "Manual Backup";
-const AUTO_BACKUP_INTERVAL_DAYS: i64 = 3;
-const AUTO_BACKUP_RETENTION_DAYS: i64 = 14;
+const AUTO_BACKUP_INTERVAL: Duration = Duration::days(3);
+const AUTO_BACKUP_RETENTION: Duration = Duration::days(14);
 
 pub trait RegistryBackupHostActions: Send + Sync {
     fn has_registry_folder(&self) -> Result<bool>;
@@ -304,7 +304,7 @@ fn prune_old_auto_backups(
     now: chrono::DateTime<Utc>,
 ) -> bool {
     let before = backups.len();
-    let cutoff = now - Duration::days(AUTO_BACKUP_RETENTION_DAYS);
+    let cutoff = now - AUTO_BACKUP_RETENTION;
     backups.retain(|backup| {
         if backup.name != AUTO_BACKUP_NAME {
             return true;
@@ -322,7 +322,7 @@ fn recent_auto_backup_exists(
     let Some(last_backup_date) = parse_backup_date(&last_backup_date) else {
         return Ok(false);
     };
-    Ok(now - last_backup_date < Duration::days(AUTO_BACKUP_INTERVAL_DAYS))
+    Ok(now - last_backup_date < AUTO_BACKUP_INTERVAL)
 }
 
 fn maybe_restore_prompt(

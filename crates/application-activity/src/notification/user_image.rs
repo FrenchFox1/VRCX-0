@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use super::NotificationRemote;
 
-const FETCH_TIMEOUT_MS: u64 = 5_000;
+const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const SUCCESS_TTL: Duration = Duration::from_secs(15 * 60);
 const FAILURE_TTL: Duration = Duration::from_secs(60);
 const SUCCESS_CAPACITY: u64 = 128;
@@ -137,12 +137,9 @@ async fn fetch_user_image(
     user_id: &str,
     allow_user_icon: bool,
 ) -> Option<String> {
-    let user = tokio::time::timeout(
-        Duration::from_millis(FETCH_TIMEOUT_MS),
-        remote.user(endpoint, user_id),
-    )
-    .await
-    .ok()??;
+    let user = tokio::time::timeout(FETCH_TIMEOUT, remote.user(endpoint, user_id))
+        .await
+        .ok()??;
     image_url_from_user(&user, allow_user_icon, endpoint)
 }
 

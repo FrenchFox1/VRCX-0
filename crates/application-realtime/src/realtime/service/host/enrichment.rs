@@ -16,9 +16,9 @@ use super::{
 };
 use vrcx_0_core::OwnerId;
 
-const NOTIFICATION_USERNAME_RESOLVE_BUDGET_MS: u64 = 2_000;
+const NOTIFICATION_USERNAME_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
 const NOTIFICATION_USERNAME_RESOLVE_ATTEMPTS: usize = 3;
-const NOTIFICATION_USERNAME_RESOLVE_RETRY_DELAY_MS: u64 = 100;
+const NOTIFICATION_USERNAME_RESOLVE_RETRY_DELAY: Duration = Duration::from_millis(100);
 
 impl RealtimeHostRuntime {
     pub(super) fn enrich_projection_world_names(
@@ -225,8 +225,7 @@ impl RealtimeHostRuntime {
         if endpoint.is_empty() {
             return;
         }
-        let deadline =
-            Instant::now() + Duration::from_millis(NOTIFICATION_USERNAME_RESOLVE_BUDGET_MS);
+        let deadline = Instant::now() + NOTIFICATION_USERNAME_RESOLVE_BUDGET;
         for upsert in &mut output.projection.upserts {
             if !notification_upsert_needs_remote_resolution(upsert) {
                 continue;
@@ -502,7 +501,7 @@ async fn sleep_before_retry(deadline: Instant) {
     let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
         return;
     };
-    let delay = Duration::from_millis(NOTIFICATION_USERNAME_RESOLVE_RETRY_DELAY_MS).min(remaining);
+    let delay = NOTIFICATION_USERNAME_RESOLVE_RETRY_DELAY.min(remaining);
     if delay > Duration::ZERO {
         tokio::time::sleep(delay).await;
     }

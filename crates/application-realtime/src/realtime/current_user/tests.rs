@@ -456,14 +456,14 @@ fn false_remote_offline_keeps_location_until_same_location_cancels_pending() {
     let PendingOfflineTimerAction::Schedule {
         user_id,
         token,
-        delay_ms,
+        delay,
     } = pending.timer_action
     else {
         panic!("remote offline should schedule pending timer");
     };
 
     assert_eq!(user_id, "usr_self");
-    assert_eq!(delay_ms, 170_000);
+    assert_eq!(delay, std::time::Duration::from_secs(170));
     assert_eq!(
         pending.projection.snapshot["location"],
         json!("wrld_remote:456")

@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use vrcx_0_application::social::{PrintFavoritesStore, PrintRemote, PrintRemoteFuture};
+use vrcx_0_application::social::{
+    PrintFavoritesStore, PrintRemote, PrintRemoteFuture, DEFAULT_AUTO_DELETE_PRINTS_LIMIT,
+};
 use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
 use vrcx_0_persistence::DatabaseService;
@@ -9,8 +11,6 @@ use vrcx_0_persistence::DatabaseService;
 const AUTO_DELETE_OLD_PRINTS_CONFIG_KEY: &str = "autoDeleteOldPrints";
 const AUTO_DELETE_PRINTS_LIMIT_CONFIG_KEY: &str = "autoDeletePrintsLimit";
 const AUTO_DELETE_PRINTS_FAVORITE_IDS_CONFIG_KEY: &str = "autoDeletePrintsFavoriteIds";
-const DEFAULT_AUTO_DELETE_PRINTS_LIMIT: i64 = 60;
-
 #[derive(Clone)]
 pub struct LocalPrintAdapter {
     db: Arc<DatabaseService>,

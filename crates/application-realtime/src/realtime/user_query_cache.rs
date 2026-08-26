@@ -13,11 +13,11 @@ use vrcx_0_application_core::Error;
 const QUERY_CAPACITY: u64 = 128;
 const NEGATIVE_ENTRY_WEIGHT: u32 = 4;
 
-const TTL_DIALOG_SECS: u64 = 60;
-const TTL_LIVE_FRIEND_SECS: u64 = 300;
-const TTL_LIVE_NONFRIEND_SECS: u64 = 120;
-const TTL_NEGATIVE_NOT_FOUND_SECS: u64 = 900;
-const TTL_NEGATIVE_FORBIDDEN_SECS: u64 = 60;
+const TTL_DIALOG: Duration = Duration::from_secs(60);
+const TTL_LIVE_FRIEND: Duration = Duration::from_secs(300);
+const TTL_LIVE_NONFRIEND: Duration = Duration::from_secs(120);
+const TTL_NEGATIVE_NOT_FOUND: Duration = Duration::from_secs(900);
+const TTL_NEGATIVE_FORBIDDEN: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UserQueryKind {
@@ -53,9 +53,9 @@ impl UserQueryKind {
 
     fn positive_ttl(self) -> Duration {
         match self {
-            Self::Dialog => Duration::from_secs(TTL_DIALOG_SECS),
-            Self::LiveFriend => Duration::from_secs(TTL_LIVE_FRIEND_SECS),
-            Self::LiveNonFriend => Duration::from_secs(TTL_LIVE_NONFRIEND_SECS),
+            Self::Dialog => TTL_DIALOG,
+            Self::LiveFriend => TTL_LIVE_FRIEND,
+            Self::LiveNonFriend => TTL_LIVE_NONFRIEND,
         }
     }
 }
@@ -80,8 +80,8 @@ fn kind_from_key(key: &str) -> Option<UserQueryKind> {
 
 fn negative_ttl(status: i32) -> Option<Duration> {
     match status {
-        404 => Some(Duration::from_secs(TTL_NEGATIVE_NOT_FOUND_SECS)),
-        403 => Some(Duration::from_secs(TTL_NEGATIVE_FORBIDDEN_SECS)),
+        404 => Some(TTL_NEGATIVE_NOT_FOUND),
+        403 => Some(TTL_NEGATIVE_FORBIDDEN),
         _ => None,
     }
 }
