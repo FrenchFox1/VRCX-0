@@ -1,4 +1,9 @@
-import { ChevronsUpDownIcon, ChevronUpIcon, UserRoundIcon } from 'lucide-react';
+import {
+    CalendarRangeIcon,
+    ChevronsUpDownIcon,
+    ChevronUpIcon,
+    UserRoundIcon
+} from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +21,6 @@ import {
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import {
-    toolbarDateRangeTrigger,
     ToolbarActions,
     ToolbarRefreshButton,
     ToolbarSearch,
@@ -79,6 +83,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Separator } from '@/ui/shadcn/separator';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 
@@ -105,6 +110,26 @@ const CHART_LOADING_INDICATOR_DELAY_MS = 150;
 
 function knownUserName(user: Partial<KnownUserOption> | null | undefined) {
     return user?.displayName || user?.username || user?.name || '';
+}
+
+function instanceHistoryDateRangeTrigger({
+    active,
+    label
+}: {
+    active: boolean;
+    label: string;
+}) {
+    return (
+        <Button
+            type="button"
+            variant={active ? 'secondary' : 'outline'}
+            aria-label={label}
+            className="max-w-56 shrink-0"
+        >
+            <CalendarRangeIcon data-icon="inline-start" />
+            <span className="truncate">{label}</span>
+        </Button>
+    );
 }
 
 export function InstanceHistoryPage({
@@ -200,7 +225,8 @@ export function InstanceHistoryPage({
 
     const targetOptions = useMemo(() => {
         const query = targetSearch.trim().toLowerCase();
-        return knownUsers
+        const selfId = normalizeUserId(currentUserId);
+        const options = knownUsers
             .map((user): TargetOption => ({
                 value: normalizeUserId(user?.id),
                 label:
@@ -222,6 +248,15 @@ export function InstanceHistoryPage({
                     option.value.toLowerCase().includes(query)
                 );
             });
+
+        const selfIndex = options.findIndex(
+            (option) => option.value === selfId
+        );
+        if (selfIndex > 0) {
+            const [selfOption] = options.splice(selfIndex, 1);
+            options.unshift(selfOption);
+        }
+        return options;
     }, [currentUserId, knownUsers, targetSearch, t]);
 
     const reloadDayData = useCallback(() => {
@@ -428,6 +463,14 @@ export function InstanceHistoryPage({
         if (!nextUserId) {
             return;
         }
+        const nextIsSelfScope = nextUserId === normalizeUserId(currentUserId);
+        setDateRangeState((currentState) =>
+            resolveScopedInstanceHistoryDateRange({
+                isDayMode,
+                isSelfScope: nextIsSelfScope,
+                state: currentState
+            })
+        );
         commitSearchParams({ nextUserId });
     }
 
@@ -489,14 +532,7 @@ export function InstanceHistoryPage({
         selectedDate: resolvedSelectedDay
     });
 
-    const dateActive = Boolean(dateRange.from || dateRange.to);
-
-    const dateRangeLabel = dateActive
-        ? [
-              dateRange.from ? formatCompactDateTime(dateRange.from) : '...',
-              dateRange.to ? formatCompactDateTime(dateRange.to) : '...'
-          ].join(' - ')
-        : t('view.instance_history.label.date_range');
+    const dateRangeUserSet = dateRangeState.source === 'user';
 
     const sortItems: { value: InstanceHistorySortKey; label: string }[] = [
         { value: 'date', label: t('table.previous_instances.date') },
@@ -512,7 +548,12 @@ export function InstanceHistoryPage({
             value={dateRange}
             onChange={handleDateRangeChange}
             align="start"
-            renderTrigger={toolbarDateRangeTrigger}
+            renderTrigger={({ label }) =>
+                instanceHistoryDateRangeTrigger({
+                    active: dateRangeUserSet,
+                    label
+                })
+            }
             placeholder={t('view.instance_history.label.date_range')}
             startLabel={t('view.instance_history.label.start')}
             endLabel={t('view.instance_history.label.end')}
@@ -542,8 +583,7 @@ export function InstanceHistoryPage({
         sortKey,
         onOpenDetails: setDetailRow,
         onDeleteRow: historyRows.deleteRow,
-        dateActive,
-        dateRangeLabel,
+        dateActive: dateRangeUserSet,
         onClearDate: clearDateRange
     };
 
@@ -624,7 +664,7 @@ export function InstanceHistoryPage({
                                             {!targetOptions.length ? (
                                                 <div className="text-muted-foreground p-3 text-xs">
                                                     {t(
-                                                        'common.search_no_results'
+                                                        'empty_state.search_no_results'
                                                     )}
                                                 </div>
                                             ) : null}
@@ -633,17 +673,7 @@ export function InstanceHistoryPage({
                                 </div>
                             </PopoverContent>
                         </Popover>
-                        {!isSelfScope ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={!currentUserId}
-                                onClick={() => applyTarget(currentUserId)}
-                            >
-                                <UserRoundIcon data-icon="inline-start" />
-                                {t('view.instance_history.action.current_user')}
-                            </Button>
-                        ) : null}
+                        <Separator orientation="vertical" />
                         <ToolbarSegmented
                             value={mode}
                             onValueChange={changeMode}
@@ -660,18 +690,26 @@ export function InstanceHistoryPage({
                                 }
                             ]}
                         />
-                        {isDayMode ? null : dateRangeControl}
+                        {isDayMode ? (
+                            <InstanceActivityDateControls
+                                selectedDate={resolvedSelectedDay}
+                                onSelectedDateChange={setSelectedDay}
+                                availableDates={availableDays}
+                                dataStatus={dayStatus}
+                            />
+                        ) : (
+                            <>
+                                {dateRangeControl}
+                                <ToolbarSearch
+                                    value={search}
+                                    onValueChange={setSearch}
+                                    placeholder={t(
+                                        'dialog.previous_instances.search_placeholder'
+                                    )}
+                                />
+                            </>
+                        )}
                     </ToolbarViews>
-
-                    {isDayMode ? null : (
-                        <ToolbarSearch
-                            value={search}
-                            onValueChange={setSearch}
-                            placeholder={t(
-                                'dialog.previous_instances.search_placeholder'
-                            )}
-                        />
-                    )}
 
                     <ToolbarActions>
                         <ToolbarRefreshButton
@@ -750,26 +788,15 @@ export function InstanceHistoryPage({
                     {isDayMode ? (
                         <div className="flex shrink-0 flex-col gap-3 rounded-md border p-3">
                             <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <InstanceActivityDateControls
-                                        selectedDate={resolvedSelectedDay}
-                                        onSelectedDateChange={setSelectedDay}
-                                        availableDates={availableDays}
-                                        dataStatus={dayStatus}
-                                    />
-                                    <div className="flex items-baseline gap-2 text-sm">
-                                        <span className="text-muted-foreground">
-                                            {t(
-                                                'view.charts.instance_activity.online_time'
-                                            )}
-                                        </span>
-                                        <span className="font-medium tabular-nums">
-                                            {timeToText(
-                                                displayedOnlineTime,
-                                                true
-                                            )}
-                                        </span>
-                                    </div>
+                                <div className="flex items-baseline gap-2 text-sm">
+                                    <span className="text-muted-foreground">
+                                        {t(
+                                            'view.charts.instance_activity.online_time'
+                                        )}
+                                    </span>
+                                    <span className="font-medium tabular-nums">
+                                        {timeToText(displayedOnlineTime, true)}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <InstanceActivitySettingsPopover

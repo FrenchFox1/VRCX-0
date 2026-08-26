@@ -111,23 +111,24 @@ export function resolveScopedInstanceHistoryDateRange({
     state: InstanceHistoryDateRangeState;
     now?: Date;
 }): InstanceHistoryDateRangeState {
-    const { range, source } = state;
-    if (isDayMode) {
+    const { source } = state;
+    if (isDayMode || source === 'user') {
         return state;
     }
-    if (source === 'none' && isEmptyInstanceHistoryDateRange(range)) {
-        return {
-            range: buildDefaultInstanceHistoryDateRange(now),
-            source: 'default'
-        };
+    if (isSelfScope) {
+        return source === 'default'
+            ? state
+            : {
+                  range: buildDefaultInstanceHistoryDateRange(now),
+                  source: 'default'
+              };
     }
-    if (isSelfScope && source === 'unbounded') {
-        return {
-            range: buildDefaultInstanceHistoryDateRange(now),
-            source: 'default'
-        };
-    }
-    return state;
+    return source === 'unbounded'
+        ? state
+        : {
+              range: emptyInstanceHistoryDateRange(),
+              source: 'unbounded'
+          };
 }
 
 export function refreshDefaultInstanceHistoryDateRange(

@@ -4908,6 +4908,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "인스턴스 ID 복사",
+                "copy_world_name": "월드 이름 복사",
                 "more_actions": "추가 작업"
             },
             "header": "인스턴스 기록",

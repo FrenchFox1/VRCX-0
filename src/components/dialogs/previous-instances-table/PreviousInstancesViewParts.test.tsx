@@ -142,7 +142,7 @@ describe('CopyInstanceWorldNameButton', () => {
 
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'common.actions.copy: Test World'
+                name: 'dialog.previous_instances.action.copy_world_name: Test World'
             })
         );
 

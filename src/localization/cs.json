@@ -1123,7 +1123,6 @@
                 "end": "Konec"
             },
             "action": {
-                "current_user": "Já",
                 "open_full": "Otevřít celou historii instancí"
             },
             "toast": {
@@ -4963,6 +4962,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Kopírovat ID instance",
+                "copy_world_name": "Kopírovat název světa",
                 "more_actions": "Další akce"
             },
             "header": "Historie instancí",

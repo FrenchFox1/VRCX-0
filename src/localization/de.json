@@ -1123,7 +1123,6 @@
                 "end": "Ende"
             },
             "action": {
-                "current_user": "Ich",
                 "open_full": "Vollständigen Instanzverlauf öffnen"
             },
             "toast": {
@@ -4959,6 +4958,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Instanz-ID kopieren",
+                "copy_world_name": "Weltnamen kopieren",
                 "more_actions": "Weitere Aktionen"
             },
             "header": "Instanzverlauf",

@@ -87,26 +87,26 @@ export function InstanceActivityDateControls({
 
     return (
         <>
-            <div className="mr-2 flex items-center">
+            <div className="flex items-center">
                 <Button
                     type="button"
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon"
                     aria-label={t('view.charts.instance_activity.previous_day')}
                     disabled={isPrevDayDisabled}
                     onClick={() => handleDateStep(false)}
                 >
-                    <ChevronLeftIcon data-icon="inline-start" />
+                    <ChevronLeftIcon data-icon="icon" />
                 </Button>
                 <Button
                     type="button"
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon"
                     aria-label={t('view.charts.instance_activity.next_day')}
                     disabled={isNextDayDisabled}
                     onClick={() => handleDateStep(true)}
                 >
-                    <ChevronRightIcon data-icon="inline-start" />
+                    <ChevronRightIcon data-icon="icon" />
                 </Button>
             </div>
             <Popover open={open} onOpenChange={setOpen}>

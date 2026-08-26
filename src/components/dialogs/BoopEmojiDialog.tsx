@@ -389,7 +389,7 @@ export function BoopEmojiDialog({
                                     </div>
                                 ) : (
                                     <div className="text-muted-foreground flex h-28 items-center justify-center text-sm">
-                                        {t('common.search_no_results')}
+                                        {t('empty_state.search_no_results')}
                                     </div>
                                 )}
                             </TabsContent>
