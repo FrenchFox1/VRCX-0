@@ -33,7 +33,8 @@ pub use vrcx_0_persistence::activity::{
 };
 pub use vrcx_0_persistence::activity_page::{ActivityPageBuildInput, ActivityPageView};
 pub use vrcx_0_persistence::avatars::{
-    AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput, AvatarTimeSpentOutput,
+    AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
+    AvatarTimeSpentOutput, AvatarUsageRow,
 };
 pub use vrcx_0_persistence::browse_history::{
     BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
@@ -326,6 +327,14 @@ impl LocalDataRuntime {
         limit: i64,
     ) -> Result<Vec<AvatarCacheOutput>> {
         Ok(vrcx_0_persistence::avatars::avatar_history_list(
+            self.db.as_ref(),
+            user_id,
+            limit,
+        )?)
+    }
+
+    pub fn avatar_usage_ranking(&self, user_id: String, limit: i64) -> Result<Vec<AvatarUsageRow>> {
+        Ok(vrcx_0_persistence::avatars::avatar_usage_ranking(
             self.db.as_ref(),
             user_id,
             limit,

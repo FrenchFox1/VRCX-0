@@ -3319,7 +3319,8 @@
                 "when_you_play": "When you play",
                 "top_worlds": "Where you spend your time",
                 "companions": "Who you spend time with",
-                "highlights": "Worth noticing"
+                "highlights": "Worth noticing",
+                "avatars": "Avatars you use most"
             },
             "access": {
                 "unknown": "Unknown",
@@ -3369,6 +3370,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% between midnight and 6am",
                 "open_heatmap": "Hour by hour, day by day"
+            },
+            "avatars": {
+                "all_time": "All time"
             }
         }
     },

@@ -39,10 +39,12 @@ import {
     type ActivityRange
 } from './activityPageModel';
 import { ActivityAccessExhibit } from './components/ActivityAccessExhibit';
+import { ActivityAvatarsExhibit } from './components/ActivityAvatarsExhibit';
 import { ActivityPeopleExhibit } from './components/ActivityPeopleExhibit';
 import { ActivityRhythmExhibit } from './components/ActivityRhythmExhibit';
 import { ActivityTimeExhibit } from './components/ActivityTimeExhibit';
 import { ActivityWorldsExhibit } from './components/ActivityWorldsExhibit';
+import { useActivityAvatarUsage } from './useActivityAvatarUsage';
 import { useActivityHeatmap } from './useActivityHeatmap';
 import { useActivityPageResource } from './useActivityPageResource';
 import { useActivityPalette } from './useActivityPalette';
@@ -105,6 +107,10 @@ export function ActivityPageImpl() {
         companionOrder
     );
     const heatmap = useActivityHeatmap(ownerUserId ?? '', range);
+    const avatarUsage = useActivityAvatarUsage(
+        ownerUserId ?? '',
+        range === 'all'
+    );
 
     const rangeOptions = useMemo<ToolbarSegmentOption<ActivityRange>[]>(
         () =>
@@ -235,6 +241,13 @@ export function ActivityPageImpl() {
                                     slices={view.accessSplit}
                                 />
                             </Staggered>
+                            {range === 'all' ? (
+                                <Staggered index={5}>
+                                    <ActivityAvatarsExhibit
+                                        rows={avatarUsage}
+                                    />
+                                </Staggered>
+                            ) : null}
                             <p className="text-muted-foreground break-inside-avoid px-1 pt-1 text-xs">
                                 {t('view.activity.caveat.recorded_since', {
                                     date: view.coverage.firstSourceAt.slice(

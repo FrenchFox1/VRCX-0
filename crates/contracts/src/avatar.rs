@@ -15,3 +15,13 @@ pub struct AvatarTagOutput {
     pub tag: String,
     pub color: Value,
 }
+
+#[derive(Clone, Debug, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AvatarUsageRow {
+    pub avatar_id: String,
+    pub name: String,
+    pub thumbnail_image_url: String,
+    pub image_url: String,
+    pub time_spent: i64,
+}

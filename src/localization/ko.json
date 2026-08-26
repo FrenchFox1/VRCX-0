@@ -3271,7 +3271,8 @@
                 "when_you_play": "주로 플레이하는 시간대",
                 "top_worlds": "오래 머문 월드",
                 "companions": "자주 함께한 사람",
-                "highlights": "눈에 띄는 점"
+                "highlights": "눈에 띄는 점",
+                "avatars": "자주 쓰는 아바타"
             },
             "access": {
                 "unknown": "알 수 없음",
@@ -3321,6 +3322,9 @@
             "rhythm": {
                 "late_night_share": "{percent}%가 자정부터 오전 6시 사이",
                 "open_heatmap": "요일별 시간대"
+            },
+            "avatars": {
+                "all_time": "전체 기간"
             }
         }
     },

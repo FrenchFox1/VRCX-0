@@ -25,7 +25,7 @@ pub mod vrchat_api;
 mod web;
 pub mod world_collections;
 
-pub use avatar::{AvatarTagOutput, AvatarTimeSpentOutput};
+pub use avatar::{AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow};
 pub use community_theme::{
     CommunityThemeAuthor, CommunityThemeCatalog, CommunityThemeManifest, CommunityThemeStatsById,
     CommunityThemeStatsEntry,

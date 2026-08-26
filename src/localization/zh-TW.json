@@ -3319,7 +3319,8 @@
                 "when_you_play": "活躍時段",
                 "top_worlds": "待最久的世界",
                 "companions": "相處最久的人",
-                "highlights": "值得一提"
+                "highlights": "值得一提",
+                "avatars": "常用的模型"
             },
             "access": {
                 "unknown": "未知",
@@ -3369,6 +3370,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% 在凌晨 0 點到 6 點",
                 "open_heatmap": "按時段查看"
+            },
+            "avatars": {
+                "all_time": "全部時間"
             }
         }
     },

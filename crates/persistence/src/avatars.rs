@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use serde_json::Value;
-pub use vrcx_0_contracts::{AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput};
+pub use vrcx_0_contracts::{
+    AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow,
+};
 
 use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
@@ -183,6 +185,39 @@ pub fn avatar_history_list(
         )?
         .into_iter()
         .map(|row| cache_entity_from_row(&row))
+        .collect())
+}
+
+pub fn avatar_usage_ranking(
+    db: &DatabaseService,
+    user_id: String,
+    limit: i64,
+) -> Result<Vec<AvatarUsageRow>, Error> {
+    let user_prefix = normalize_user_table_prefix(&normalize_text(user_id))?;
+    ensure_user_store_tables(db, &user_prefix)?;
+    ensure_global_store_tables(db)?;
+    Ok(db
+        .execute(
+            &format!(
+                "SELECT history.avatar_id, COALESCE(cache_avatar.name, ''), COALESCE(cache_avatar.thumbnail_image_url, ''), COALESCE(cache_avatar.image_url, ''), history.time
+                 FROM {user_prefix}_avatar_history AS history
+                 LEFT JOIN cache_avatar ON cache_avatar.id = history.avatar_id
+                 WHERE history.time > 0
+                 ORDER BY history.time DESC
+                 LIMIT @limit"
+            ),
+            &ParamsBuilder::new()
+                .set("limit", if limit > 0 { limit } else { 10 })
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| AvatarUsageRow {
+            avatar_id: row_string(&row, 0),
+            name: row_string(&row, 1),
+            thumbnail_image_url: row_string(&row, 2),
+            image_url: row_string(&row, 3),
+            time_spent: row_i64(&row, 4),
+        })
         .collect())
 }
 

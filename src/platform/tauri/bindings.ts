@@ -751,6 +751,15 @@ const generatedCommands = {
             limit
         });
     },
+    async appAvatarUsageRanking(
+        userId: string,
+        limit: number
+    ): Promise<AvatarUsageRow[]> {
+        return await TAURI_INVOKE('app__avatar_usage_ranking', {
+            userId,
+            limit
+        });
+    },
     async appAvatarTimeSpentAdd(
         userId: string,
         avatarId: string,
@@ -3049,6 +3058,13 @@ export type AvatarUpdateRequest = {
     secondaryStyle?: string | null;
     tags?: string[] | null;
     releaseStatus?: AvatarReleaseStatus | null;
+};
+export type AvatarUsageRow = {
+    avatarId: string;
+    name: string;
+    thumbnailImageUrl: string;
+    imageUrl: string;
+    timeSpent: number;
 };
 export type BackendRuntimeAuthStatus =
     | 'unknown'
