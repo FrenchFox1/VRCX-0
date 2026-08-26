@@ -11,8 +11,7 @@ use vrcx_0_application_core::{Error, Result};
 
 use super::types::{CommunityThemeCatalog, CommunityThemeManifest, CommunityThemeStatsById};
 
-pub(super) type CommunityThemeRemoteFuture<'a, T> =
-    BoxFuture<'a, Result<T>>;
+pub(super) type CommunityThemeRemoteFuture<'a, T> = BoxFuture<'a, Result<T>>;
 
 pub(super) trait CommunityThemeRemote: Send + Sync {
     fn load_catalog(&self) -> CommunityThemeRemoteFuture<'_, CommunityThemeCatalog>;

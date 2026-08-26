@@ -220,10 +220,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
         })
     }
 
-    fn resolve_world_name<'a>(
-        &'a self,
-        world_id: &'a str,
-    ) -> BoxFuture<'a, Option<String>> {
+    fn resolve_world_name<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, Option<String>> {
         Box::pin(async move {
             if self.ensure_generation().is_err() {
                 return None;

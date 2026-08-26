@@ -26,8 +26,7 @@ pub struct LegacyMediaUploadResult {
     pub file_version: i64,
 }
 
-pub type LegacyMediaUploadFuture<'a> =
-    BoxFuture<'a, Result<LegacyMediaUploadResult>>;
+pub type LegacyMediaUploadFuture<'a> = BoxFuture<'a, Result<LegacyMediaUploadResult>>;
 
 pub type LegacyMediaUploadGateFuture<'a> = BoxFuture<'a, Result<()>>;
 

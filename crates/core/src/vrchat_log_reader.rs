@@ -104,9 +104,7 @@ pub fn parse_log_entries(file_name: &str, content: &str) -> Vec<LogEntry> {
     let mut current: Option<LogEntry> = None;
 
     for (index, line) in content.lines().enumerate() {
-        let line_number = u32::try_from(index)
-            .unwrap_or(u32::MAX)
-            .saturating_add(1);
+        let line_number = u32::try_from(index).unwrap_or(u32::MAX).saturating_add(1);
         if let Some((timestamp, level, message)) = parse_log_header(line) {
             if let Some(entry) = current.take() {
                 entries.push(entry);

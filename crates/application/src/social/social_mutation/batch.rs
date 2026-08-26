@@ -338,8 +338,7 @@ mod tests {
         fn unfriend<'a>(
             &'a self,
             target: &'a SocialUnfriendBatchTarget,
-        ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>>
-        {
+        ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>> {
             Box::pin(async move {
                 let outcome = self
                     .outcomes

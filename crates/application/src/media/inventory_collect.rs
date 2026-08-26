@@ -21,8 +21,7 @@ pub struct InventoryPageRequest {
     pub archived: Option<bool>,
 }
 
-pub type InventoryPageFuture<'a> =
-    BoxFuture<'a, Result<VrchatResponse>>;
+pub type InventoryPageFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait InventoryRemoteRequests: Send + Sync {
     fn inventory_page(

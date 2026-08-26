@@ -13,8 +13,7 @@ use super::{
     RealtimeWsStatus,
 };
 
-pub type RealtimeTransportFuture =
-    BoxFuture<'static, RealtimeTransportTermination>;
+pub type RealtimeTransportFuture = BoxFuture<'static, RealtimeTransportTermination>;
 
 pub trait RealtimeMessageSink: Send + Sync {
     fn handle_realtime_transport_status(

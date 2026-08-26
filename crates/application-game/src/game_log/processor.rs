@@ -398,8 +398,7 @@ impl GameLogProcessor {
                 self.deps.sync.record_failure("gameLog", &message);
                 self.deps.event_bus.emit_game_log_persistence_fallback(
                     GameLogPersistenceFallbackPayload {
-                        attempted_row_count: u32::try_from(attempted_row_count)
-                            .unwrap_or(u32::MAX),
+                        attempted_row_count: u32::try_from(attempted_row_count).unwrap_or(u32::MAX),
                         error: message.clone(),
                     },
                 );

@@ -198,10 +198,7 @@ pub trait NotificationChainActions: Send + Sync {
         &self,
         call: NotificationChainRemoteCall,
     ) -> BoxFuture<'_, std::result::Result<(), NotificationChainRemoteError>>;
-    fn resolve_world_name<'a>(
-        &'a self,
-        world_id: &'a str,
-    ) -> BoxFuture<'a, Option<String>>;
+    fn resolve_world_name<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, Option<String>>;
     fn expire_local(&self, id: String) -> Result<()>;
     fn query_boop_rows(&self) -> Result<Vec<BoopNotificationRow>>;
     fn emit_expired(&self, expired_ids: Vec<String>);

@@ -29,8 +29,7 @@ const PRINT_CLEANUP_DEBOUNCE: Duration = Duration::from_millis(2500);
 const PRINT_CLEANUP_LIST_COUNT: i32 = 100;
 const PRINT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type PrintRemoteFuture<'a> =
-    BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type PrintRemoteFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait PrintRemote: Send + Sync {
     fn list_prints<'a>(

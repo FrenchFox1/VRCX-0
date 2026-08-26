@@ -16,8 +16,7 @@ use crate::auth::{
 
 pub type NonInteractiveAuthProbeFuture<'a> =
     BoxFuture<'a, std::result::Result<CookieSessionProbe, NonInteractiveAuthError>>;
-pub type NonInteractiveAuthResponseFuture<'a> =
-    BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type NonInteractiveAuthResponseFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait NonInteractiveAuthActions: Send + Sync {
     fn clear_vrchat_config_snapshot(&self);

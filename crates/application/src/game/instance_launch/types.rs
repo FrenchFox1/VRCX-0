@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
 
-pub type InstanceLaunchApiFuture<'a> =
-    BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type InstanceLaunchApiFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait InstanceLaunchHttpClient: Send + Sync {
     fn instance_short_name<'a>(

@@ -30,8 +30,7 @@ pub struct NotificationSyncWrite {
     pub notification_v2_upserts: Vec<RawJson>,
 }
 
-pub type NotificationSyncFuture<'a> =
-    BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type NotificationSyncFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait NotificationSyncPort: Send + Sync {
     fn fetch_page<'a>(

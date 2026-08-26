@@ -12,8 +12,7 @@ pub use vrcx_0_core::TwoFactorMethod;
 use crate::auth::{AuthenticatedRuntimeSession, SavedAuthSnapshot};
 use vrcx_0_application_core::{Result, WebClient};
 
-pub(crate) type LoginApiFuture<'a> =
-    BoxFuture<'a, Result<HttpApiExecuteResponse>>;
+pub(crate) type LoginApiFuture<'a> = BoxFuture<'a, Result<HttpApiExecuteResponse>>;
 
 pub(crate) trait LoginApi: Send + Sync {
     fn execute<'a>(&'a self, input: HttpApiRequestInput, scope: ApiScope) -> LoginApiFuture<'a>;

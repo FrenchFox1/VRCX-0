@@ -40,7 +40,8 @@ type TestImportRunner = Arc<
     dyn Fn(
             PreparedSharedCollectionImport,
             Arc<AtomicBool>,
-        ) -> BoxFuture<'static, Result<SharedCollectionImportResult>> + Send
+        ) -> BoxFuture<'static, Result<SharedCollectionImportResult>>
+        + Send
         + Sync,
 >;
 

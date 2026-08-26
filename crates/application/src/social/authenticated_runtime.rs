@@ -36,8 +36,7 @@ enum RuntimeStep {
     Realtime,
 }
 
-pub type AuthenticatedRuntimeProbeFuture<'a> =
-    BoxFuture<'a, Result<i32>>;
+pub type AuthenticatedRuntimeProbeFuture<'a> = BoxFuture<'a, Result<i32>>;
 
 pub trait AuthenticatedRuntimeAuthProbe: Send + Sync {
     fn probe<'a>(&'a self, endpoint: &'a str) -> AuthenticatedRuntimeProbeFuture<'a>;

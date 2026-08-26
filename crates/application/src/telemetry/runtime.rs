@@ -47,8 +47,7 @@ pub enum FeedbackSubmitError {
     RequestFailed,
 }
 
-pub type TelemetryPostFuture<'a> =
-    BoxFuture<'a, std::result::Result<(), String>>;
+pub type TelemetryPostFuture<'a> = BoxFuture<'a, std::result::Result<(), String>>;
 
 pub trait TelemetryTransport: Send + Sync {
     fn is_enabled(&self) -> bool;

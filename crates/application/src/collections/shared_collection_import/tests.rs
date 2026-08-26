@@ -26,10 +26,7 @@ impl SharedCollectionImportActions for FakeActions {
         Ok(())
     }
 
-    fn fetch_and_cache_world<'a>(
-        &'a self,
-        world_id: &'a str,
-    ) -> BoxFuture<'a, Result<()>> {
+    fn fetch_and_cache_world<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
             self.fetched.lock().unwrap().push(world_id.to_string());
             if let Some(cancel) = &self.cancel_on_fetch {

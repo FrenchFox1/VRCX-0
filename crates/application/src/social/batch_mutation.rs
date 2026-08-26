@@ -82,27 +82,19 @@ pub struct BatchMutationResult {
 }
 
 pub trait BatchMutationActions: Send + Sync {
-    fn fetch_avatar<'a>(
-        &'a self,
-        avatar_id: &'a str,
-    ) -> BoxFuture<'a, Result<Value>>;
+    fn fetch_avatar<'a>(&'a self, avatar_id: &'a str) -> BoxFuture<'a, Result<Value>>;
     fn save_avatar_tags<'a>(
         &'a self,
         avatar_id: &'a str,
         tags: &'a [String],
     ) -> BoxFuture<'a, Result<Value>>;
-    fn fetch_current_user_groups(
-        &self,
-    ) -> BoxFuture<'_, Result<Vec<Value>>>;
+    fn fetch_current_user_groups(&self) -> BoxFuture<'_, Result<Vec<Value>>>;
     fn set_group_visibility<'a>(
         &'a self,
         group_id: &'a str,
         visibility: GroupVisibility,
     ) -> BoxFuture<'a, Result<()>>;
-    fn leave_group<'a>(
-        &'a self,
-        group_id: &'a str,
-    ) -> BoxFuture<'a, Result<()>>;
+    fn leave_group<'a>(&'a self, group_id: &'a str) -> BoxFuture<'a, Result<()>>;
     fn current_user_id(&self) -> &str;
 }
 
@@ -177,10 +169,7 @@ impl VrchatBatchMutationActions<'_> {
 }
 
 impl BatchMutationActions for VrchatBatchMutationActions<'_> {
-    fn fetch_avatar<'a>(
-        &'a self,
-        avatar_id: &'a str,
-    ) -> BoxFuture<'a, Result<Value>> {
+    fn fetch_avatar<'a>(&'a self, avatar_id: &'a str) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
             let request = self
                 .remote_requests
@@ -205,9 +194,7 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
         })
     }
 
-    fn fetch_current_user_groups(
-        &self,
-    ) -> BoxFuture<'_, Result<Vec<Value>>> {
+    fn fetch_current_user_groups(&self) -> BoxFuture<'_, Result<Vec<Value>>> {
         Box::pin(async move {
             let request = self.remote_requests.user_groups(
                 self.expected_scope.endpoint.clone(),
@@ -238,10 +225,7 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
         })
     }
 
-    fn leave_group<'a>(
-        &'a self,
-        group_id: &'a str,
-    ) -> BoxFuture<'a, Result<()>> {
+    fn leave_group<'a>(&'a self, group_id: &'a str) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
             let request = self
                 .remote_requests

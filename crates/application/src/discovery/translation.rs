@@ -27,8 +27,7 @@ pub struct StandardTranslationOutcome {
     pub detected_source_language: Option<String>,
 }
 
-pub type StandardTranslationFuture<'a> =
-    BoxFuture<'a, Result<StandardTranslationOutcome>>;
+pub type StandardTranslationFuture<'a> = BoxFuture<'a, Result<StandardTranslationOutcome>>;
 
 pub trait StandardTranslationPort: Send + Sync {
     fn translate(
@@ -94,9 +93,7 @@ pub type OpenAiTranslationFuture<'a, E> = BoxFuture<'a, std::result::Result<Stri
 pub trait OpenAiTranslationPort: Send + Sync {
     type Error;
 
-    fn resolve_default_endpoint_id(
-        &self,
-    ) -> OpenAiTranslationFuture<'_, Self::Error>;
+    fn resolve_default_endpoint_id(&self) -> OpenAiTranslationFuture<'_, Self::Error>;
 
     fn translate(
         &self,
@@ -264,10 +261,7 @@ mod completion_tests {
     impl OpenAiTranslationPort for FakeOpenAiTranslationPort {
         type Error = String;
 
-        fn resolve_default_endpoint_id(
-            &self,
-        ) -> OpenAiTranslationFuture<'_, Self::Error>
-        {
+        fn resolve_default_endpoint_id(&self) -> OpenAiTranslationFuture<'_, Self::Error> {
             self.resolves.fetch_add(1, Ordering::AcqRel);
             Box::pin(async { Ok(self.endpoint_id.clone()) })
         }
@@ -275,8 +269,7 @@ mod completion_tests {
         fn translate(
             &self,
             request: OpenAiTranslationRequest,
-        ) -> OpenAiTranslationFuture<'_, Self::Error>
-        {
+        ) -> OpenAiTranslationFuture<'_, Self::Error> {
             self.translations.fetch_add(1, Ordering::AcqRel);
             Box::pin(async move { Ok(format!("{}:{}", request.endpoint_id, request.text)) })
         }

@@ -102,10 +102,7 @@ impl NotificationChainActions for FakeActions {
         Ok(())
     }
 
-    fn resolve_world_name<'a>(
-        &'a self,
-        _world_id: &'a str,
-    ) -> BoxFuture<'a, Option<String>> {
+    fn resolve_world_name<'a>(&'a self, _world_id: &'a str) -> BoxFuture<'a, Option<String>> {
         Box::pin(async move { self.resolved_world_name.clone() })
     }
 

@@ -5,8 +5,7 @@ use std::sync::Arc;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
 
-pub type VrchatConfigFuture<'a> =
-    BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type VrchatConfigFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait VrchatConfigPort: Send + Sync {
     fn cached(&self, endpoint: &str) -> Option<VrchatApiResponse>;

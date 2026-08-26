@@ -206,8 +206,7 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
         &'a self,
         context: &'a InstanceInviteContext,
         target: &'a InstanceInviteTarget,
-    ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>>
-    {
+    ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>> {
         Box::pin(async move {
             self.remote_mutation_gate
                 .wait(&self.expected_scope, INSTANCE_INVITE_REMOTE_INTERVAL)

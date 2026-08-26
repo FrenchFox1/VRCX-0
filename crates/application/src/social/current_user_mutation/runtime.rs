@@ -16,8 +16,7 @@ use super::types::{
 
 const CURRENT_USER_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type CurrentUserMutationFuture<'a> =
-    BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type CurrentUserMutationFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 pub type CurrentUserQueryInvalidationFuture<'a> = BoxFuture<'a, ()>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

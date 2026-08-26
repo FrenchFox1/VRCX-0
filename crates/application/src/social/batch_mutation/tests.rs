@@ -20,10 +20,7 @@ impl FakeActions {
 }
 
 impl BatchMutationActions for FakeActions {
-    fn fetch_avatar<'a>(
-        &'a self,
-        avatar_id: &'a str,
-    ) -> BoxFuture<'a, Result<Value>> {
+    fn fetch_avatar<'a>(&'a self, avatar_id: &'a str) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
             Ok(json!({
                 "id": avatar_id,
@@ -55,9 +52,7 @@ impl BatchMutationActions for FakeActions {
         })
     }
 
-    fn fetch_current_user_groups(
-        &self,
-    ) -> BoxFuture<'_, Result<Vec<Value>>> {
+    fn fetch_current_user_groups(&self) -> BoxFuture<'_, Result<Vec<Value>>> {
         Box::pin(async move { Ok(self.groups.clone()) })
     }
 
@@ -79,10 +74,7 @@ impl BatchMutationActions for FakeActions {
         })
     }
 
-    fn leave_group<'a>(
-        &'a self,
-        group_id: &'a str,
-    ) -> BoxFuture<'a, Result<()>> {
+    fn leave_group<'a>(&'a self, group_id: &'a str) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
             self.calls.lock().unwrap().push(format!("leave:{group_id}"));
             if self.fail_update_id.as_deref() == Some(group_id) {

@@ -134,8 +134,7 @@ pub fn build_background_presence_facts(
         player_count: u32::try_from(players.len()).unwrap_or(u32::MAX),
         players,
         player_facts_known,
-        observed_player_event_count: u32::try_from(observed_player_event_count)
-            .unwrap_or(u32::MAX),
+        observed_player_event_count: u32::try_from(observed_player_event_count).unwrap_or(u32::MAX),
         friend_count: u32::try_from(friend_ids.len()).unwrap_or(u32::MAX),
         present_friend_ids: friend_ids,
         present_favorite_group_keys,
