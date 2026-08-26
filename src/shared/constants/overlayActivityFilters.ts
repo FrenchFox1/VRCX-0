@@ -94,6 +94,11 @@ const INSTANCE_ACTOR_SCOPES: OverlayActivityScope[] = [
     'allFavorites',
     'everyoneInInstance'
 ];
+const GROUP_FAVORITE_SCOPES: OverlayActivityScope[] = [
+    'off',
+    'allFavorites',
+    'selectedFavorites'
+];
 const REMOVED_OVERLAY_ACTIVITY_TYPE_KEYS = new Set([
     'PortalSpawn',
     'ChatBoxMessage'
@@ -222,6 +227,12 @@ export const OVERLAY_ACTIVITY_TYPE_DEFINITIONS: OverlayActivityTypeDefinition[] 
         defineType('profileChange', 'Bio', FRIEND_ACTOR_SCOPES, 'off'),
 
         defineType('groupSocial', 'groupChange', BOOLEAN_SCOPES, 'on'),
+        defineType(
+            'groupSocial',
+            'group.instanceOpened',
+            GROUP_FAVORITE_SCOPES,
+            'off'
+        ),
         defineType('groupSocial', 'group.announcement', BOOLEAN_SCOPES, 'on'),
         defineType('groupSocial', 'group.informative', BOOLEAN_SCOPES, 'on'),
         defineType('groupSocial', 'group.invite', BOOLEAN_SCOPES, 'on'),

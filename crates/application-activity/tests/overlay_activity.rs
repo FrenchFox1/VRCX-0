@@ -558,11 +558,19 @@ fn all_activity_types_build_desktop_safe_content() {
     let definitions = overlay_activity_type_definitions();
     let runtime = OverlayActivityRuntime::with_filters(desktop_filters_for(&definitions));
     runtime.set_friend_user_ids(["usr_actor"]);
+    runtime.set_group_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "group:desktop",
+        ["grp_desktop"].as_slice(),
+    )]));
 
     for definition in definitions {
         let mut row = candidate(&definition.key, "usr_actor");
         row.actor_display_name = "Desktop Actor".to_string();
         row.payload = representative_payload(&definition.key).into();
+        if definition.key == "group.instanceOpened" {
+            row.favorite_subject =
+                OverlayActivityFavoriteSubject::GroupId("grp_desktop".to_string());
+        }
 
         let entry = runtime
             .ingest_candidate(row)
@@ -774,8 +782,18 @@ fn desktop_filters_for(definitions: &[OverlayActivityTypeDefinition]) -> Overlay
             .contains(&OverlayActivityScope::On)
         {
             "on"
-        } else {
+        } else if definition
+            .allowed_scopes
+            .contains(&OverlayActivityScope::Friends)
+        {
             "friends"
+        } else if definition
+            .allowed_scopes
+            .contains(&OverlayActivityScope::AllFavorites)
+        {
+            "allFavorites"
+        } else {
+            panic!("{} has no ingestible desktop scope", definition.key)
         };
         types.insert(
             definition.key.clone(),
