@@ -84,7 +84,7 @@ impl McpMutualGraphPort for TestMcpMutualGraphAdapter {
                     friend_id: meta.friend_id,
                     last_fetched_at: meta.last_fetched_at,
                     opted_out: meta.opted_out,
-                    total_count: meta.total_count,
+                    total_count: meta.total_count.map(|value| value as usize),
                 })
                 .collect()
         })

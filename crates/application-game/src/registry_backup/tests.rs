@@ -299,6 +299,18 @@ fn maintenance_run_reports_skip_when_registry_data_is_empty() {
 }
 
 #[test]
+fn manual_backup_preserves_the_no_registry_data_error_contract() {
+    let dir = TestDir::new("manual-empty-data");
+    let db = dir.open_db();
+    let host = StubHost::with_registry(json!({}));
+
+    assert!(matches!(
+        registry_backup_create(&db, &host, "Manual Backup"),
+        Err(Error::Custom(message)) if message == NO_REGISTRY_DATA_MESSAGE
+    ));
+}
+
+#[test]
 fn prune_old_auto_backups_removes_only_expired_auto_backups() {
     let now = Utc::now();
     let fresh_date = iso_millis(now - Duration::days(1));

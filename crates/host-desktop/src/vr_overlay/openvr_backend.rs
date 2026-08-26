@@ -35,6 +35,38 @@ const OPENVR_CONTEXT_IN_USE_MESSAGE: &str =
     "OpenVR context is still owned by another overlay actor";
 static OPENVR_CONTEXT_OWNED: AtomicBool = AtomicBool::new(false);
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TrackedDeviceResolutionError {
+    UnknownHint {
+        device_hint: String,
+    },
+    Unavailable {
+        device_hint: String,
+        left: String,
+        right: String,
+        connected: String,
+    },
+}
+
+impl std::fmt::Display for TrackedDeviceResolutionError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnknownHint { device_hint } => {
+                write!(formatter, "unknown tracked device hint '{device_hint}'")
+            }
+            Self::Unavailable {
+                device_hint,
+                left,
+                right,
+                connected,
+            } => write!(
+                formatter,
+                "tracked device '{device_hint}' is unavailable; controller_roles={{left:{left}, right:{right}}}; connected_devices=[{connected}]"
+            ),
+        }
+    }
+}
+
 type PollNextOverlayEvent =
     unsafe extern "C" fn(openvr_sys::VROverlayHandle_t, *mut openvr_sys::VREvent_t, u32) -> bool;
 
@@ -561,7 +593,7 @@ impl OpenVrOverlayBackend {
                     .map_err(|error| format!("set overlay transform failed: {error:?}"))?;
                 Some(device)
             }
-            Err(error) if is_tracked_device_unavailable(&error) => {
+            Err(error @ TrackedDeviceResolutionError::Unavailable { .. }) => {
                 tracing::warn!(
                     error = %error,
                     surface_id = config.surface_id.as_str(),
@@ -569,7 +601,7 @@ impl OpenVrOverlayBackend {
                 );
                 None
             }
-            Err(error) => return Err(error),
+            Err(error) => return Err(error.to_string()),
         };
         if let Some(surface) = self.surfaces.get_mut(&config.surface_id) {
             surface.transform_device = transform_device;
@@ -834,7 +866,7 @@ fn device_button_pressed(
 fn resolve_device(
     system: &openvr::System,
     placement: &OverlayPlacement,
-) -> Result<TrackedDeviceIndex, String> {
+) -> Result<TrackedDeviceIndex, TrackedDeviceResolutionError> {
     match placement {
         OverlayPlacement::TrackedDeviceRelative { device_hint } => {
             let role = match device_hint.as_str() {
@@ -842,7 +874,11 @@ fn resolve_device(
                 "left-hand" => Some(TrackedControllerRole::LeftHand),
                 "hmd" | "head" => return Ok(tracked_device_index::HMD),
                 value if value.starts_with("hmd:") => return Ok(tracked_device_index::HMD),
-                _ => return Err(format!("unknown tracked device hint '{device_hint}'")),
+                _ => {
+                    return Err(TrackedDeviceResolutionError::UnknownHint {
+                        device_hint: device_hint.clone(),
+                    })
+                }
             };
             resolve_controller_device(system, role.unwrap())
                 .ok_or_else(|| tracked_device_unavailable_error(system, device_hint))
@@ -907,17 +943,19 @@ fn controller_role_hint(
     }
 }
 
-fn is_tracked_device_unavailable(error: &str) -> bool {
-    error.starts_with("tracked device '")
-}
-
-fn tracked_device_unavailable_error(system: &openvr::System, device_hint: &str) -> String {
+fn tracked_device_unavailable_error(
+    system: &openvr::System,
+    device_hint: &str,
+) -> TrackedDeviceResolutionError {
     let left = controller_role_index(system, TrackedControllerRole::LeftHand);
     let right = controller_role_index(system, TrackedControllerRole::RightHand);
     let connected = tracked_device_diagnostics(system);
-    format!(
-        "tracked device '{device_hint}' is unavailable; controller_roles={{left:{left}, right:{right}}}; connected_devices=[{connected}]"
-    )
+    TrackedDeviceResolutionError::Unavailable {
+        device_hint: device_hint.to_string(),
+        left,
+        right,
+        connected,
+    }
 }
 
 fn controller_role_index(system: &openvr::System, role: TrackedControllerRole) -> String {

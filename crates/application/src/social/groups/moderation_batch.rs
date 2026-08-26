@@ -115,12 +115,12 @@ pub struct GroupModerationBatchItemResult {
 pub struct GroupModerationBatchResult {
     pub owner_user_id: OwnerId,
     pub endpoint: String,
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
-    pub skipped: usize,
-    pub applied_operations: usize,
-    pub failed_operations: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
+    pub skipped: u32,
+    pub applied_operations: u32,
+    pub failed_operations: u32,
     pub items: Vec<GroupModerationBatchItemResult>,
     pub last_error: Option<String>,
 }
@@ -131,8 +131,8 @@ pub struct GroupModerationBatchProgress {
     pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub group_id: String,
-    pub completed: usize,
-    pub total: usize,
+    pub completed: u32,
+    pub total: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -436,8 +436,8 @@ async fn run_group_moderation_batch_with_actions(
                 owner_user_id: OwnerId::new(owner_user_id.clone()),
                 endpoint: endpoint.clone(),
                 group_id: prepared.group_id.clone(),
-                completed: index + 1,
-                total,
+                completed: crate::wire_count(index + 1),
+                total: crate::wire_count(total),
             });
             completed = index + 1;
             continue;
@@ -482,8 +482,8 @@ async fn run_group_moderation_batch_with_actions(
             owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
-            completed: index + 1,
-            total,
+            completed: crate::wire_count(index + 1),
+            total: crate::wire_count(total),
         });
         completed = index + 1;
         if stop_after.is_some() {
@@ -502,8 +502,8 @@ async fn run_group_moderation_batch_with_actions(
             owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
-            completed: total,
-            total,
+            completed: crate::wire_count(total),
+            total: crate::wire_count(total),
         });
     }
     Ok(summarize(
@@ -720,12 +720,12 @@ fn summarize(
     GroupModerationBatchResult {
         owner_user_id,
         endpoint,
-        total: items.len(),
-        succeeded,
-        failed: items.len() - succeeded - skipped,
-        skipped,
-        applied_operations,
-        failed_operations,
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(succeeded),
+        failed: crate::wire_count(items.len() - succeeded - skipped),
+        skipped: crate::wire_count(skipped),
+        applied_operations: crate::wire_count(applied_operations),
+        failed_operations: crate::wire_count(failed_operations),
         items,
         last_error,
     }

@@ -13,7 +13,7 @@ use super::*;
 struct FakeActions {
     calls: Mutex<Vec<String>>,
     outcomes: Mutex<VecDeque<Result<GroupModerationRemoteOutcome>>>,
-    progress: Mutex<Vec<(usize, usize)>>,
+    progress: Mutex<Vec<(u32, u32)>>,
     scope_current: AtomicBool,
 }
 

@@ -110,8 +110,8 @@ mod tests {
         ModerationSyncRefreshOutput {
             accepted: true,
             user_id: "usr_self".into(),
-            remote_count,
-            local_count: remote_count,
+            remote_count: crate::wire_count(remote_count),
+            local_count: crate::wire_count(remote_count),
             rows: Vec::new(),
         }
     }

@@ -360,7 +360,7 @@ impl RealtimeFriendsRuntime {
                 accepted: true,
                 generation,
                 baseline_revision,
-                friend_count,
+                friend_count: u32::try_from(friend_count).unwrap_or(u32::MAX),
             },
             schedules,
             confirmed_feed_entries,

@@ -67,9 +67,9 @@ impl<'a> NotificationSyncDeps<'a> {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationSyncOutcome {
-    pub v1_count: usize,
-    pub v2_count: usize,
-    pub hidden_friend_request_count: usize,
+    pub v1_count: u32,
+    pub v2_count: u32,
+    pub hidden_friend_request_count: u32,
     pub truncated: bool,
 }
 
@@ -140,9 +140,9 @@ pub async fn sync_notifications(
     })?;
 
     Ok(NotificationSyncOutcome {
-        v1_count,
-        v2_count,
-        hidden_friend_request_count,
+        v1_count: crate::wire_count(v1_count),
+        v2_count: crate::wire_count(v2_count),
+        hidden_friend_request_count: crate::wire_count(hidden_friend_request_count),
         truncated: !v1_pages.complete || !v2_pages.complete || !hidden_pages.complete,
     })
 }

@@ -51,16 +51,16 @@ pub struct NotificationMarkSeenItemResult {
     pub id: String,
     pub state: NotificationMarkSeenItemState,
     pub effect: Option<NotificationMarkSeenEffect>,
-    pub attempts: usize,
+    pub attempts: u32,
     pub message: String,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationMarkSeenBatchResult {
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub items: Vec<NotificationMarkSeenItemResult>,
     pub last_error: Option<String>,
 }
@@ -141,7 +141,7 @@ async fn mark_notifications_seen_batch_with_delay(
                     id: item.id,
                     state: NotificationMarkSeenItemState::Succeeded,
                     effect: Some(NotificationMarkSeenEffect::Seen),
-                    attempts,
+                    attempts: crate::wire_count(attempts),
                     message: String::new(),
                 });
             }
@@ -152,14 +152,14 @@ async fn mark_notifications_seen_batch_with_delay(
                     id: item.id,
                     state: NotificationMarkSeenItemState::Failed,
                     effect: None,
-                    attempts,
+                    attempts: crate::wire_count(attempts),
                     message: error.message,
                 });
             }
         }
     }
     Ok(NotificationMarkSeenBatchResult {
-        total: results.len(),
+        total: crate::wire_count(results.len()),
         succeeded,
         failed,
         items: results,

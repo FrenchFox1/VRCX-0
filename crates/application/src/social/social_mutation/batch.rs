@@ -49,10 +49,10 @@ pub struct SocialUnfriendBatchItemResult {
 #[serde(rename_all = "camelCase")]
 pub struct SocialUnfriendBatchResult {
     pub owner_user_id: OwnerId,
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
-    pub local_failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
+    pub local_failed: u32,
     pub scope_changed: bool,
     pub items: Vec<SocialUnfriendBatchItemResult>,
     pub last_error: Option<String>,
@@ -258,10 +258,10 @@ async fn run_social_unfriend_batch(
     }
     SocialUnfriendBatchResult {
         owner_user_id,
-        total: items.len(),
-        succeeded,
-        failed: items.len() - succeeded,
-        local_failed,
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(succeeded),
+        failed: crate::wire_count(items.len() - succeeded),
+        local_failed: crate::wire_count(local_failed),
         scope_changed,
         items,
         last_error,

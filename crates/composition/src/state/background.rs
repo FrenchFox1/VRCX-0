@@ -203,7 +203,7 @@ impl RuntimeHostState {
         let favorites_snapshot = core.favorites?.map(|favorites| favorites.snapshot);
         Ok(SocialBaselineRefreshOutput {
             stale: core.stale,
-            friend_count: core.friend_count,
+            friend_count: u32::try_from(core.friend_count).unwrap_or(u32::MAX),
             friend_log_changed: core.friend_log_changed,
             favorites_snapshot,
         })

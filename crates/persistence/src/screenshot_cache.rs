@@ -458,8 +458,16 @@ impl MetadataCacheDb {
                 };
                 ScreenshotFolderInfo {
                     latest_modified_at: latest_modified_by_folder.get(&folder).copied(),
-                    image_count: direct_counts.get(&folder).copied().unwrap_or(0),
-                    total_image_count: total_count(&folder, &direct_counts, &children_by_parent),
+                    image_count: u32::try_from(
+                        direct_counts.get(&folder).copied().unwrap_or(0),
+                    )
+                    .unwrap_or(u32::MAX),
+                    total_image_count: u32::try_from(total_count(
+                        &folder,
+                        &direct_counts,
+                        &children_by_parent,
+                    ))
+                    .unwrap_or(u32::MAX),
                     path: folder,
                     parent_path,
                     name,

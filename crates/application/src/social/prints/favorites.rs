@@ -23,7 +23,7 @@ pub trait PrintFavoritesStore: Send + Sync {
 #[serde(rename_all = "camelCase")]
 pub struct PrintFavoriteState {
     pub favorite_ids: Vec<String>,
-    pub max_favorites: usize,
+    pub max_favorites: u32,
     pub warning: Option<CleanupWarning>,
 }
 
@@ -79,9 +79,9 @@ pub fn favorite_warning(favorite_count: usize, limit: i64) -> Option<CleanupWarn
     if favorite_count > max_favorites {
         return Some(CleanupWarning {
             kind: CleanupWarningKind::TooManyFavorites,
-            favorites: favorite_count,
-            max: max_favorites,
-            over: favorite_count - max_favorites,
+            favorites: crate::wire_count(favorite_count),
+            max: crate::wire_count(max_favorites),
+            over: crate::wire_count(favorite_count - max_favorites),
         });
     }
     None
@@ -125,7 +125,7 @@ pub fn favorite_state(store: &dyn PrintFavoritesStore) -> Result<PrintFavoriteSt
     Ok(PrintFavoriteState {
         warning: favorite_warning(favorite_ids.len(), limit),
         favorite_ids,
-        max_favorites,
+        max_favorites: crate::wire_count(max_favorites),
     })
 }
 
@@ -142,7 +142,7 @@ pub fn set_print_favorite(
     Ok(PrintFavoriteState {
         warning: favorite_warning(next.len(), limit),
         favorite_ids: next,
-        max_favorites,
+        max_favorites: crate::wire_count(max_favorites),
     })
 }
 
@@ -150,8 +150,8 @@ pub fn set_print_favorite(
 #[serde(rename_all = "camelCase")]
 pub struct PrintFavoriteBulkResult {
     pub state: PrintFavoriteState,
-    pub applied: usize,
-    pub skipped: usize,
+    pub applied: u32,
+    pub skipped: u32,
 }
 
 pub fn set_print_favorites(
@@ -190,7 +190,7 @@ pub fn set_print_favorites(
         state: PrintFavoriteState {
             warning: favorite_warning(next.len(), limit),
             favorite_ids: next,
-            max_favorites,
+            max_favorites: crate::wire_count(max_favorites),
         },
         applied,
         skipped,

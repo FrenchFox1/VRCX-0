@@ -69,10 +69,10 @@ pub struct NoteExportItemStatus {
 pub struct NoteExportStatus {
     pub run_id: String,
     pub status: NoteExportState,
-    pub total: usize,
-    pub processed: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub processed: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub items: Vec<NoteExportItemStatus>,
     pub started_at: Option<String>,
     pub finished_at: Option<String>,
@@ -452,7 +452,7 @@ impl NoteExportRuntime {
             let status = NoteExportStatus {
                 run_id: format!("note-export-{}-{generation}", Utc::now().timestamp_millis()),
                 status: NoteExportState::Running,
-                total: items.len(),
+                total: crate::wire_count(items.len()),
                 items: items
                     .iter()
                     .map(|item| NoteExportItemStatus {
@@ -543,9 +543,9 @@ impl NoteExportRuntime {
             if inner.status.run_id != run_id || !is_active_status(inner.status.status) {
                 return;
             }
-            inner.status.processed = progress.processed;
-            inner.status.succeeded = progress.succeeded;
-            inner.status.failed = progress.failed;
+            inner.status.processed = crate::wire_count(progress.processed);
+            inner.status.succeeded = crate::wire_count(progress.succeeded);
+            inner.status.failed = crate::wire_count(progress.failed);
             inner.status.items = progress.items;
             inner.status.last_error = progress.last_error;
             inner.status.clone()
@@ -559,9 +559,9 @@ impl NoteExportRuntime {
             if inner.status.run_id != run_id || !is_active_status(inner.status.status) {
                 return;
             }
-            inner.status.processed = result.processed;
-            inner.status.succeeded = result.succeeded;
-            inner.status.failed = result.failed;
+            inner.status.processed = crate::wire_count(result.processed);
+            inner.status.succeeded = crate::wire_count(result.succeeded);
+            inner.status.failed = crate::wire_count(result.failed);
             inner.status.items = result.items;
             inner.status.last_error = result.last_error;
             inner.status.status = if result.cancelled {

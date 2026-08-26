@@ -556,15 +556,15 @@ fn default_avatar_release_status() -> AvatarReleaseStatus {
 #[serde(rename_all = "camelCase")]
 pub struct UserDialogTabCountsOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub mutual_friends: Option<usize>,
+    pub mutual_friends: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub groups: Option<usize>,
+    pub groups: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub worlds: Option<usize>,
+    pub worlds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub favorite_worlds: Option<usize>,
+    pub favorite_worlds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatars: Option<usize>,
+    pub avatars: Option<u32>,
 }
 
 impl UserDialogTabCountsOutput {
@@ -593,9 +593,9 @@ fn counts_from_results(
     }
 }
 
-fn resolved_count(source: &str, result: Result<usize>) -> Option<usize> {
+fn resolved_count(source: &str, result: Result<usize>) -> Option<u32> {
     match result {
-        Ok(count) => Some(count),
+        Ok(count) => Some(crate::wire_count(count)),
         Err(error) => {
             tracing::debug!(%error, source, "user dialog tab count source failed");
             None

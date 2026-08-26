@@ -668,7 +668,7 @@ async fn build_favorites_baseline_inner(
     Ok(SocialFavoritesBaselineOutput {
         user_id,
         stale: false,
-        count,
+        count: u32::try_from(count).unwrap_or(u32::MAX),
         snapshot: Some(snapshot),
     })
 }

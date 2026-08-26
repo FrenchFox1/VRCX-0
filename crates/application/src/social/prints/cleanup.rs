@@ -58,9 +58,9 @@ pub enum CleanupWarningKind {
 #[serde(rename_all = "camelCase")]
 pub struct CleanupWarning {
     pub kind: CleanupWarningKind,
-    pub favorites: usize,
-    pub max: usize,
-    pub over: usize,
+    pub favorites: u32,
+    pub max: u32,
+    pub over: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -289,8 +289,8 @@ pub async fn run_print_auto_cleanup(
     }
 
     let event = PrintAutoCleanupEvent {
-        deleted,
-        remaining: prints.len().saturating_sub(deleted),
+        deleted: crate::wire_count(deleted),
+        remaining: crate::wire_count(prints.len().saturating_sub(deleted)),
         warning: selection
             .warning
             .as_ref()
@@ -305,9 +305,9 @@ fn cleanup_warning(limit: usize, favorite_count: usize) -> Option<CleanupWarning
     if favorite_count > favorite_limit {
         return Some(CleanupWarning {
             kind: CleanupWarningKind::TooManyFavorites,
-            favorites: favorite_count,
-            max: favorite_limit,
-            over: favorite_count - favorite_limit,
+            favorites: crate::wire_count(favorite_count),
+            max: crate::wire_count(favorite_limit),
+            over: crate::wire_count(favorite_count - favorite_limit),
         });
     }
 

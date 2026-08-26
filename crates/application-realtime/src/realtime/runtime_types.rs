@@ -50,7 +50,7 @@ pub struct FriendBaselineResult {
     pub accepted: bool,
     pub generation: u64,
     pub baseline_revision: u64,
-    pub friend_count: usize,
+    pub friend_count: u32,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

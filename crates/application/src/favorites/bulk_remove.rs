@@ -63,9 +63,9 @@ pub struct FavoriteBulkRemoveItemResult {
 pub struct FavoriteBulkRemoveResult {
     pub owner_user_id: OwnerId,
     pub kind: FavoriteEntityKind,
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub local_changed: bool,
     pub remote_changed: bool,
     pub items: Vec<FavoriteBulkRemoveItemResult>,
@@ -357,9 +357,9 @@ async fn run_favorite_bulk_remove(
     FavoriteBulkRemoveResult {
         owner_user_id,
         kind,
-        total: items.len(),
-        succeeded,
-        failed: items.len() - succeeded,
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(succeeded),
+        failed: crate::wire_count(items.len() - succeeded),
         local_changed: items.iter().any(|item| {
             item.source == FavoriteBulkRemoveSource::Local
                 && item.state == FavoriteBulkRemoveItemState::Removed

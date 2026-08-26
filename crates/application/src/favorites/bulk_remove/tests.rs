@@ -224,8 +224,14 @@ async fn selection_chunks_more_than_one_protected_batch() {
     .await
     .unwrap();
 
-    assert_eq!(result.total, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
-    assert_eq!(result.succeeded, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
+    assert_eq!(
+        result.total,
+        crate::wire_count(FAVORITE_BULK_REMOVE_MAX_ITEMS + 1)
+    );
+    assert_eq!(
+        result.succeeded,
+        crate::wire_count(FAVORITE_BULK_REMOVE_MAX_ITEMS + 1)
+    );
     assert_eq!(result.failed, 0);
     assert!(store
         .list(Some(&OwnerId::new("usr_self")), FavoriteEntityKind::Friend,)

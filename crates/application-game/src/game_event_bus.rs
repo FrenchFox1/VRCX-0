@@ -237,7 +237,7 @@ pub enum AddGameLogEventPayload {
 #[derive(Clone, Debug, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GameLogPersistenceFallbackPayload {
-    pub attempted_row_count: usize,
+    pub attempted_row_count: u32,
     pub error: String,
 }
 

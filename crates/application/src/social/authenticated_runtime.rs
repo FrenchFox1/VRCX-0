@@ -1013,7 +1013,7 @@ fn current_friend_baseline_output(
     SocialFriendRosterBaselineOutput {
         user_id: metadata.user_id,
         stale: metadata.stale,
-        count: current.friend_count,
+        count: crate::wire_count(current.friend_count),
         detail: metadata.detail,
         snapshot: Some(current.snapshot),
         friend_log_changed: false,

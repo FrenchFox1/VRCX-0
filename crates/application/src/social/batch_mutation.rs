@@ -71,12 +71,12 @@ pub struct BatchMutationItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchMutationResult {
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
-    pub applied_before_failure: usize,
-    pub rolled_back: usize,
-    pub rollback_failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
+    pub applied_before_failure: u32,
+    pub rolled_back: u32,
+    pub rollback_failed: u32,
     pub items: Vec<BatchMutationItemResult>,
     pub last_error: Option<String>,
 }
@@ -355,10 +355,10 @@ pub async fn run_avatar_content_tags_batch(
             }
         }
         return Ok(BatchMutationResult {
-            total: items.len(),
+            total: crate::wire_count(items.len()),
             succeeded: 0,
-            failed: items.len(),
-            applied_before_failure,
+            failed: crate::wire_count(items.len()),
+            applied_before_failure: crate::wire_count(applied_before_failure),
             rolled_back,
             rollback_failed,
             items,
@@ -367,10 +367,10 @@ pub async fn run_avatar_content_tags_batch(
     }
 
     Ok(BatchMutationResult {
-        total: items.len(),
-        succeeded: items.len(),
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(items.len()),
         failed: 0,
-        applied_before_failure: items.len(),
+        applied_before_failure: crate::wire_count(items.len()),
         rolled_back: 0,
         rollback_failed: 0,
         items,
@@ -452,10 +452,10 @@ pub async fn run_group_visibility_batch(
             }
         }
         return Ok(BatchMutationResult {
-            total: items.len(),
+            total: crate::wire_count(items.len()),
             succeeded: 0,
-            failed: items.len(),
-            applied_before_failure,
+            failed: crate::wire_count(items.len()),
+            applied_before_failure: crate::wire_count(applied_before_failure),
             rolled_back,
             rollback_failed,
             items,
@@ -464,10 +464,10 @@ pub async fn run_group_visibility_batch(
     }
 
     Ok(BatchMutationResult {
-        total: items.len(),
-        succeeded: items.len(),
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(items.len()),
         failed: 0,
-        applied_before_failure: items.len(),
+        applied_before_failure: crate::wire_count(items.len()),
         rolled_back: 0,
         rollback_failed: 0,
         items,
@@ -489,7 +489,7 @@ pub async fn run_group_leave_batch(
         .map(group_id_from_value)
         .filter(|id| !id.is_empty())
         .collect::<HashSet<_>>();
-    let mut succeeded = 0;
+    let mut succeeded = 0usize;
     let mut items = Vec::with_capacity(group_ids.len());
     let mut last_error = None;
     for group_id in &group_ids {
@@ -513,10 +513,10 @@ pub async fn run_group_leave_batch(
         }
     }
     Ok(BatchMutationResult {
-        total: items.len(),
-        succeeded,
-        failed: items.len() - succeeded,
-        applied_before_failure: succeeded,
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(succeeded),
+        failed: crate::wire_count(items.len() - succeeded),
+        applied_before_failure: crate::wire_count(succeeded),
         rolled_back: 0,
         rollback_failed: 0,
         items,
@@ -658,9 +658,9 @@ fn preflight_failure(ids: &[String], failed_index: usize, message: String) -> Ba
     let mut items = ids.iter().map(|id| not_attempted(id)).collect::<Vec<_>>();
     items[failed_index] = failed_item(&ids[failed_index], message.clone());
     BatchMutationResult {
-        total: items.len(),
+        total: crate::wire_count(items.len()),
         succeeded: 0,
-        failed: items.len(),
+        failed: crate::wire_count(items.len()),
         applied_before_failure: 0,
         rolled_back: 0,
         rollback_failed: 0,
