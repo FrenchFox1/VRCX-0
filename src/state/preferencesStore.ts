@@ -349,6 +349,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     notificationTTSNameMode: 'username',
     notificationTTSNickName: false,
     notificationTTSVoiceNative: '',
+    notificationTTSVolume: 100,
     xsNotifications: false,
     ovrtHudNotifications: false,
     ovrtWristNotifications: false,
@@ -365,8 +366,6 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     webhookUrl: '',
     webhookFormat: 'generic',
     webhookFields: DEFAULT_GENERIC_WEBHOOK_FIELDS,
-    vrOverlayPanelEnabled: false,
-    vrOverlayPanelAllFriendsIncludesFavorites: false,
     wristOverlayEnabled: false,
     wristOverlayStartMode: 'vrchatVrMode',
     wristOverlayButton: 'grip',
@@ -522,6 +521,11 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         notificationTTSVoiceNative: String(
             next.notificationTTSVoiceNative ?? ''
         ),
+        notificationTTSVolume: normalizeBoundedInt(next.notificationTTSVolume, {
+            min: 0,
+            max: 100,
+            fallback: 100
+        }),
         xsNotifications: normalizeBool(next.xsNotifications),
         ovrtHudNotifications: normalizeBool(next.ovrtHudNotifications),
         ovrtWristNotifications: normalizeBool(next.ovrtWristNotifications),
@@ -566,8 +570,6 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         webhookFields: String(
             next.webhookFields || DEFAULT_GENERIC_WEBHOOK_FIELDS
         ),
-        vrOverlayPanelEnabled: false,
-        vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: normalizeBool(next.wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             next.wristOverlayStartMode

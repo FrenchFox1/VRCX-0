@@ -16,7 +16,7 @@ const DATABASE_CHECKPOINT_JOB: &str = "databaseCheckpoint";
 const DATABASE_CHECKPOINT_INTERVAL_SECONDS: u64 = 86_400;
 const DATABASE_WAL_TRUNCATE_JOB: &str = "databaseWalTruncate";
 const DATABASE_WAL_TRUNCATE_INTERVAL_SECONDS: u64 = 30 * DATABASE_CHECKPOINT_INTERVAL_SECONDS;
-const CANCELLABLE_SLEEP_CHUNK_SECONDS: u64 = 5;
+const CANCELLABLE_SLEEP_CHUNK: Duration = Duration::from_secs(5);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DatabaseCheckpointResult {
@@ -77,7 +77,7 @@ pub async fn sleep_until_due_or_stopped(total: Duration, stop_token: &TaskStopTo
         if stop_token.is_stop_requested() {
             return false;
         }
-        let chunk = remaining.min(Duration::from_secs(CANCELLABLE_SLEEP_CHUNK_SECONDS));
+        let chunk = remaining.min(CANCELLABLE_SLEEP_CHUNK);
         tokio::time::sleep(chunk).await;
         remaining = remaining.saturating_sub(chunk);
     }

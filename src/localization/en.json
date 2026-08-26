@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "Auto-delete could not get below the configured limit because favorite prints are filling the list. {remaining} print(s) remain."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} selected",
+                "select_all": "Select all",
+                "deselect_all": "Deselect all",
+                "confirm_delete_title": "Delete {count} item(s)?",
+                "confirm_delete_locked": "{count} locked item(s) will be skipped. This action cannot be undone.",
+                "deleting_progress": "Deleting {done}/{total}",
+                "deleted_toast": "Deleted {count} item(s).",
+                "delete_partial_toast": "Deleted {succeeded} item(s), {failed} failed. {reason}",
+                "delete_cancelled_toast": "Cancelled. Deleted {count} item(s).",
+                "delete_unlocked": "Delete {count}",
+                "delete_locked": "Every selected item is locked.",
+                "delete_locked_favorite": "Favorited - unfavorite to delete",
+                "delete_locked_in_use": "In use - cannot delete",
+                "favorited_toast": "Favorited {count} print(s).",
+                "unfavorited_toast": "Unfavorited {count} print(s).",
+                "favorite_skipped_toast": "{count} print(s) were not favorited. The limit is {max}."
+            },
+            "prints_filter": {
+                "all": "All",
+                "favorites": "Favorites",
+                "others": "Not favorited"
+            },
             "llm_endpoints": {
                 "title": "LLM Endpoints",
                 "description": "Shared OpenAI-compatible connections for Social AI and translation.",
@@ -2544,6 +2567,7 @@
                         "header": "Text-To-Speech",
                         "when_to_play": "Notification TTS",
                         "tts_voice": "TTS Voice",
+                        "tts_volume": "TTS Volume",
                         "system_default_voice": "System default",
                         "notification_filters": "TTS Notification Filters",
                         "name_mode": "Spoken Name",
@@ -3276,6 +3300,7 @@
             "action": {
                 "refresh": "Refresh",
                 "change_image": "Change image",
+                "show_in_folder": "Show in folder",
                 "select_images": "Select images",
                 "select_folder": "Select folder"
             },
@@ -3283,6 +3308,7 @@
                 "enabled": "Background Image enabled.",
                 "refreshed": "Background Image refreshed.",
                 "failed": "Failed to update Background Image.",
+                "failed_to_open_folder": "Failed to show the image in its folder.",
                 "no_images": "No supported images were found."
             }
         },
@@ -3313,13 +3339,14 @@
                 "minutes": "minutes"
             },
             "section": {
-                "instance_types": "Instance types",
+                "instance_types": "Instance preferences",
                 "daily_time": "Time per day",
                 "weekly_time": "Time per week",
                 "when_you_play": "When you play",
-                "top_worlds": "Worlds you go back to",
+                "top_worlds": "Where you spend your time",
                 "companions": "Who you spend time with",
-                "highlights": "Worth noticing"
+                "highlights": "Worth noticing",
+                "avatars": "Avatars you use most"
             },
             "access": {
                 "unknown": "Unknown",
@@ -3338,26 +3365,29 @@
                 "failed_to_load": "Could not load your activity"
             },
             "caveat": {
-                "recorded_since": "Game log recorded since {date}."
+                "recorded_since": "Only recorded while running."
             },
             "worlds": {
                 "visit_count": "{count} visits",
                 "open_ranking": "Details",
-                "total": "{count} worlds in total"
+                "total": "{count} worlds in total",
+                "show_home": "Include Home World"
             },
             "people": {
-                "co_days": "{count} days together",
-                "lead_caption": "{days} days together · {hours}h",
-                "fading_title": "Seen less lately",
+                "co_days": "{count} days",
+                "lead_caption": "{days} days · {hours}h",
+                "fading_title": "Fading out",
                 "fading_caveat": "Less overlap than the period before. Could be schedules, not intent.",
                 "encountered_total": "{count} met in total",
-                "fading_last_seen": "last together {date}"
+                "fading_last_seen": "last seen {date}",
+                "order_minutes": "By time",
+                "order_days": "By days"
             },
             "hero": {
                 "per_day": "a day",
                 "days_played": "days played",
                 "sessions": "sessions",
-                "longest": "longest stretch"
+                "longest": "longest session"
             },
             "action": {
                 "show_all": "Show all {count}",
@@ -3366,6 +3396,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% between midnight and 6am",
                 "open_heatmap": "Hour by hour, day by day"
+            },
+            "avatars": {
+                "all_time": "All time"
             }
         }
     },
@@ -5547,6 +5580,9 @@
         "group_join_request_title": "Group Join Request",
         "group_transfer_request_title": "Group Transfer Request",
         "group_queue_ready_title": "Instance Queue Ready",
+        "group_instance_opened": "Created a new instance",
+        "group_instance_opened_location": "Created a new instance: {location}",
+        "group_instances_opened": "Created {count} new instances",
         "instance_closed_title": "Instance Closed",
         "event_title": "Event",
         "external_title": "External App",
@@ -6026,6 +6062,27 @@
         "error_generic": "Translation failed",
         "error_network": "Network error, please try again",
         "error_unsupported": "Translation is not configured"
+    },
+    "saved_group_favorites": {
+        "title": "Favorite Groups",
+        "description": "Save frequently used groups in local collections and use them for new-instance notifications.",
+        "new_collection": "New collection",
+        "empty_collections": "Create a collection to start saving groups.",
+        "empty_group": "No groups are saved in this collection.",
+        "delete_title": "Delete this collection?",
+        "delete_description": "Deleting {name} also removes its {count} saved groups.",
+        "choose_collection": "Save to collection",
+        "remove": "Remove from saved groups",
+        "toggle": "Save group",
+        "sidebar_saved": "Favorite Groups",
+        "sidebar_none": "No saved groups yet",
+        "sidebar_other": "Other active groups",
+        "sidebar_failed": "Failed to load group instances",
+        "sidebar_no_active": "No other active group instances",
+        "scope_all": "All saved groups",
+        "scope_selected": "Selected saved-group collections",
+        "notification_type": "New group instance",
+        "notification_empty": "No saved-group collections are available."
     },
     "app": {
         "routes": {

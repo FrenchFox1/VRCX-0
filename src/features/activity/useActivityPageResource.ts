@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
     activityPageRepository,
+    type ActivityCompanionOrder,
     type ActivityPageView
 } from '@/repositories/activityPageRepository';
 
@@ -20,7 +21,8 @@ type ActivityPageResource = {
 
 export function useActivityPageResource(
     ownerUserId: string,
-    range: ActivityRange
+    range: ActivityRange,
+    companionOrder: ActivityCompanionOrder
 ): ActivityPageResource {
     const [view, setView] = useState<ActivityPageView | null>(null);
     const [loading, setLoading] = useState(false);
@@ -43,6 +45,7 @@ export function useActivityPageResource(
                     rangeDays: rangeDaysFor(range),
                     utcOffsetMinutes: utcOffsetMinutes(),
                     nowMs: Date.now(),
+                    companionOrder,
                     forceRefresh
                 });
                 if (requestIdRef.current === requestId) {
@@ -58,7 +61,7 @@ export function useActivityPageResource(
                 }
             }
         },
-        [ownerUserId, range]
+        [companionOrder, ownerUserId, range]
     );
 
     useEffect(() => {

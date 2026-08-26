@@ -13,10 +13,7 @@ use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot,
 };
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
-use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
-use vrcx_0_application_realtime::RealtimeFriendSnapshot;
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_core::game_log_parser::GameLogEventKind;
 use vrcx_0_host_desktop::vr_overlay::{
     OverlayActivationButton, OverlayPlacement, OverlaySurfaceConfig, VrDeviceSnapshot,
 };
@@ -39,15 +36,14 @@ use super::{
     WristOverlayFrameInput, WristOverlayRenderOptions, WristOverlaySizePreset, WristRuntimeFooter,
 };
 
+pub(crate) use super::config::load_runtime_config;
 pub use super::config::VR_OVERLAY_ENABLED_CONFIG_KEY;
-pub(crate) use super::config::{load_runtime_config, FRIENDS_PANEL_RUNTIME_ENABLED};
 
 trait VrOverlayFrameProducer: Send {
     fn next_frame(&mut self, input: VrOverlayFrameInput) -> Result<RgbaFrame, String>;
 }
 
 type VrOverlayFrameProducerFactory = Box<dyn Fn() -> Box<dyn VrOverlayFrameProducer> + Send + Sync>;
-type FriendsPanelSnapshotProvider = Arc<dyn Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync>;
 type HmdFriendMembershipProvider = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 type HmdFriendContextProvider = Arc<dyn Fn(&str) -> Option<(FriendRecord, String)> + Send + Sync>;
 
@@ -58,8 +54,6 @@ thread_local! {
 
 const WRIST_DEVICE_REFRESH_INTERVAL: Duration = Duration::from_secs(5);
 const WRIST_FRAME_REFRESH_INTERVAL: Duration = Duration::from_secs(1);
-const HMD_TOAST_ANIMATION_REFRESH_INTERVAL: Duration = Duration::from_millis(16);
-const INTERACTIVE_INPUT_DRAIN_INTERVAL: Duration = Duration::from_millis(30);
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum WristOverlayHand {
@@ -135,8 +129,6 @@ pub(super) struct VrOverlayRuntimeConfig {
     pub(crate) backend: OverlayBackendPreference,
     pub(crate) button: OverlayActivationButton,
     pub(crate) hand: WristOverlayHand,
-    pub(crate) panel_enabled: bool,
-    pub(crate) panel_all_friends_includes_favorites: bool,
     pub(crate) hmd: HmdNotificationConfig,
     pub(crate) render: WristOverlayRenderOptions,
     pub(crate) locale: OverlayLocale,
@@ -151,8 +143,6 @@ impl Default for VrOverlayRuntimeConfig {
             backend: OverlayBackendPreference::Auto,
             button: OverlayActivationButton::Grip,
             hand: WristOverlayHand::Left,
-            panel_enabled: FRIENDS_PANEL_RUNTIME_ENABLED,
-            panel_all_friends_includes_favorites: true,
             hmd: HmdNotificationConfig::default(),
             render: WristOverlayRenderOptions::default(),
             locale: OverlayLocale::default(),
@@ -198,20 +188,12 @@ struct VrOverlayFrameInput {
 pub(crate) struct ActiveOverlaySurfaces {
     wrist: bool,
     hmd: bool,
-    pub(crate) panel_listener: bool,
-    friends_panel: bool,
 }
 
 impl ActiveOverlaySurfaces {
     fn any(self) -> bool {
-        self.wrist || self.hmd || self.panel_listener || self.friends_panel
+        self.wrist || self.hmd
     }
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct OverlayInputProcessOutcome {
-    surface_config_changed: bool,
-    frame_changed: bool,
 }
 
 #[derive(Default)]
@@ -270,7 +252,6 @@ pub struct VrOverlayRuntime {
     backend_available: bool,
     pub(crate) services: Option<Arc<dyn VrOverlayRuntimeServices>>,
     config: Mutex<VrOverlayRuntimeConfig>,
-    friends_panel_snapshot_provider: Mutex<Option<FriendsPanelSnapshotProvider>>,
     hmd_friend_membership_provider: Mutex<Option<HmdFriendMembershipProvider>>,
     hmd_friend_context_provider: Mutex<Option<HmdFriendContextProvider>>,
     refresh_wake: Arc<RefreshWake>,
@@ -301,7 +282,6 @@ impl VrOverlayActivitySink {
 impl OverlayActivitySink for VrOverlayActivitySink {
     fn emit_overlay_activity_snapshot(&self, _snapshot: OverlayActivitySnapshot) {
         if let Some(runtime) = self.runtime.upgrade() {
-            runtime.mark_friends_panel_model_dirty();
             runtime.reconcile_current();
         }
     }
@@ -338,14 +318,10 @@ impl VrOverlayRuntime {
     }
 
     pub fn new_for_test_with_backend_available(backend_available: bool) -> Self {
-        let config = VrOverlayRuntimeConfig {
-            panel_enabled: true,
-            ..VrOverlayRuntimeConfig::default()
-        };
         Self::new_with_frame_producer_factory(
             backend_available,
             None,
-            config,
+            VrOverlayRuntimeConfig::default(),
             Box::new(|| Box::<StaticWristFrameProducer>::default()),
         )
     }
@@ -378,7 +354,6 @@ impl VrOverlayRuntime {
             active_backend_mirror: Mutex::new(None),
             refresh_thread_id: Mutex::new(None),
             config: Mutex::new(config),
-            friends_panel_snapshot_provider: Mutex::new(None),
             hmd_friend_membership_provider: Mutex::new(None),
             hmd_friend_context_provider: Mutex::new(None),
             refresh_wake: Arc::new(RefreshWake::new()),
@@ -448,14 +423,6 @@ impl VrOverlayRuntime {
             }
             runtime.clear_refresh_thread_id();
         });
-
-        let input_runtime = Arc::clone(self);
-        tasks.spawn_cancellable_thread("vr-overlay-input", move |stop_token| {
-            while !stop_token.is_stop_requested() {
-                std::thread::sleep(input_runtime.input_drain_interval());
-                input_runtime.drain_overlay_input_events();
-            }
-        });
     }
 
     fn set_refresh_thread_id(&self, thread_id: ThreadId) {
@@ -504,15 +471,6 @@ impl VrOverlayRuntime {
         self.active_surfaces(self.current_runtime_config()).any()
     }
 
-    pub fn set_friends_panel_snapshot_provider<F>(&self, provider: F)
-    where
-        F: Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync + 'static,
-    {
-        if let Ok(mut current) = self.friends_panel_snapshot_provider.lock() {
-            *current = Some(Arc::new(provider));
-        }
-    }
-
     pub fn set_hmd_friend_membership_provider<F>(&self, provider: F)
     where
         F: Fn(&str) -> bool + Send + Sync + 'static,
@@ -559,41 +517,10 @@ impl VrOverlayRuntime {
 
 impl VrOverlayRuntime {
     fn refresh_interval(&self) -> Duration {
-        let base = self.friends_panel_refresh_interval();
         match self.hmd_toast_refresh_hint(Instant::now()) {
-            Some(hint) => base.min(hint.max(HMD_TOAST_ANIMATION_REFRESH_INTERVAL)),
-            None => base,
+            Some(hint) => WRIST_FRAME_REFRESH_INTERVAL.min(hint),
+            None => WRIST_FRAME_REFRESH_INTERVAL,
         }
-    }
-
-    fn input_drain_interval(&self) -> Duration {
-        if !self.current_runtime_config().panel_enabled {
-            return WRIST_FRAME_REFRESH_INTERVAL;
-        }
-        if self.panel_listener_available() || self.interactive_panel_interaction_active() {
-            INTERACTIVE_INPUT_DRAIN_INTERVAL
-        } else {
-            WRIST_FRAME_REFRESH_INTERVAL
-        }
-    }
-
-    fn panel_listener_available(&self) -> bool {
-        self.active_surfaces(self.current_runtime_config())
-            .panel_listener
-    }
-
-    fn interactive_panel_interaction_active(&self) -> bool {
-        false
-    }
-
-    fn friends_panel_visible(&self) -> bool {
-        false
-    }
-
-    pub(crate) fn mark_friends_panel_model_dirty(&self) {}
-
-    fn friends_panel_refresh_interval(&self) -> Duration {
-        WRIST_FRAME_REFRESH_INTERVAL
     }
 
     pub fn snapshot(&self) -> VrOverlayRuntimeSnapshot {
@@ -648,9 +575,6 @@ impl VrOverlayRuntime {
         if previous_game_running && !game_running {
             self.avatar_bitmap_cache.clear();
         }
-        if previous_game_running != game_running {
-            self.mark_friends_panel_model_dirty();
-        }
         self.steamvr_running
             .store(steamvr_running, Ordering::Release);
         self.reconcile_current_with_device_refresh(true);
@@ -698,25 +622,7 @@ impl VrOverlayRuntime {
                 start_mode: WristOverlayStartMode::SteamVr,
             };
             manager.reconcile(eligibility);
-            self.log_interactive_backend_degradation(&manager, active_surfaces);
             if eligibility.can_run() && manager.is_running() {
-                let input_outcome = self.process_overlay_input_events(&mut manager);
-                if input_outcome.surface_config_changed {
-                    let refreshed_surfaces =
-                        self.active_surfaces_for_state(config, game_running, steamvr_running);
-                    let configs = overlay_surface_configs(refreshed_surfaces, config, self);
-                    if let Err(error) = manager.set_surface_configs(configs) {
-                        tracing::warn!(
-                            error = %error,
-                            "failed to apply VR overlay interactive surface config"
-                        );
-                    }
-                }
-                if let Err(error) =
-                    manager.set_interaction_active(self.interactive_panel_interaction_active())
-                {
-                    tracing::warn!(error = %error, "failed to set VR overlay interaction mode");
-                }
                 if active_surfaces.wrist {
                     if self.should_defer_slint_render_to_refresh_thread() {
                         self.defer_refresh_to_refresh_thread(refresh_devices);
@@ -740,7 +646,6 @@ impl VrOverlayRuntime {
                 } else {
                     self.clear_hmd_toasts();
                 }
-                self.push_friends_panel_frame(&mut manager);
             } else {
                 self.release_frame_producer();
             }
@@ -757,24 +662,6 @@ impl VrOverlayRuntime {
 
     fn consume_device_refresh_request(&self) -> bool {
         self.device_refresh_requested.swap(false, Ordering::AcqRel)
-    }
-
-    fn drain_overlay_input_events(&self) {
-        if !self.panel_listener_available() && !self.interactive_panel_interaction_active() {
-            return;
-        }
-        let Ok(mut manager) = self.manager.try_lock() else {
-            return;
-        };
-        let input_outcome = self.process_overlay_input_events(&mut manager);
-        self.handle_overlay_input_drain_outcome(input_outcome);
-        self.refresh_manager_mirror(&manager);
-    }
-
-    fn handle_overlay_input_drain_outcome(&self, input_outcome: OverlayInputProcessOutcome) {
-        if input_outcome.surface_config_changed || input_outcome.frame_changed {
-            self.refresh_wake.notify();
-        }
     }
 
     pub(crate) fn is_hmd_surface_active(&self, config: VrOverlayRuntimeConfig) -> bool {
@@ -795,8 +682,6 @@ impl VrOverlayRuntime {
         game_running: bool,
         steamvr_running: bool,
     ) -> ActiveOverlaySurfaces {
-        let panel_listener = self.backend_available && steamvr_running && config.panel_enabled;
-        let friends_panel = panel_listener && self.friends_panel_visible();
         let test_mode =
             self.test_mode.load(Ordering::Acquire) && self.backend_available && steamvr_running;
         ActiveOverlaySurfaces {
@@ -816,8 +701,6 @@ impl VrOverlayRuntime {
                     steamvr_running,
                     game_running,
                 ),
-            panel_listener,
-            friends_panel,
         }
     }
 
@@ -836,31 +719,17 @@ impl VrOverlayRuntime {
     }
 
     fn commit_runtime_config(&self, next_config: VrOverlayRuntimeConfig, clear_devices: bool) {
-        let (close_panel, rebuild_friends_panel_model) = {
-            let Ok(mut current_config) = self.config.lock() else {
-                return;
-            };
-            if *current_config == next_config {
-                (!next_config.panel_enabled, false)
-            } else {
-                let previous_config = *current_config;
-                let close_panel = current_config.panel_enabled && !next_config.panel_enabled;
-                let rebuild_friends_panel_model = previous_config.locale != next_config.locale
-                    || previous_config.panel_all_friends_includes_favorites
-                        != next_config.panel_all_friends_includes_favorites;
-                *current_config = next_config;
-                if clear_devices {
-                    if let Ok(mut devices) = self.devices.lock() {
-                        devices.clear();
-                    }
-                }
-                (close_panel, rebuild_friends_panel_model)
-            }
+        let Ok(mut current_config) = self.config.lock() else {
+            return;
         };
-        if close_panel {
-            self.close_friends_panel();
-        } else if rebuild_friends_panel_model {
-            self.mark_friends_panel_model_dirty();
+        if *current_config == next_config {
+            return;
+        }
+        *current_config = next_config;
+        if clear_devices {
+            if let Ok(mut devices) = self.devices.lock() {
+                devices.clear();
+            }
         }
     }
 
@@ -1007,38 +876,6 @@ impl VrOverlayRuntime {
     }
 }
 
-impl VrOverlayRuntime {
-    pub fn update_friends_panel_favorite_groups_from_baseline(
-        &self,
-        _snapshot: &vrcx_0_application_realtime::FavoriteBaselineSnapshot,
-    ) {
-    }
-
-    pub fn clear_friends_panel_session_state(&self) {}
-
-    pub fn invalidate_friends_panel_note_memo_cache(&self) {}
-
-    fn close_friends_panel(&self) -> bool {
-        false
-    }
-
-    fn process_overlay_input_events(
-        &self,
-        _manager: &mut VrOverlayManager<HostVrOverlayService>,
-    ) -> OverlayInputProcessOutcome {
-        OverlayInputProcessOutcome::default()
-    }
-
-    fn push_friends_panel_frame(&self, _manager: &mut VrOverlayManager<HostVrOverlayService>) {}
-
-    fn log_interactive_backend_degradation(
-        &self,
-        _manager: &VrOverlayManager<HostVrOverlayService>,
-        _active_surfaces: ActiveOverlaySurfaces,
-    ) {
-    }
-}
-
 impl Default for VrOverlayRuntime {
     fn default() -> Self {
         Self::new_for_test()
@@ -1051,22 +888,6 @@ impl GameProcessEventSink for VrOverlayRuntime {
         event: GameProcessEvent,
     ) -> vrcx_0_application_core::Result<()> {
         self.update_process_status(event.is_game_running, event.is_steamvr_running);
-        Ok(())
-    }
-}
-
-impl GameLogEventSink for VrOverlayRuntime {
-    fn ingest_game_log_event(&self, event: &GameLogEvent) -> vrcx_0_application_core::Result<()> {
-        match event.kind {
-            GameLogEventKind::VrcQuit
-            | GameLogEventKind::Location { .. }
-            | GameLogEventKind::LocationDestination { .. }
-            | GameLogEventKind::PlayerJoined { .. }
-            | GameLogEventKind::PlayerLeft { .. } => {
-                self.mark_friends_panel_model_dirty();
-            }
-            _ => {}
-        }
         Ok(())
     }
 }
@@ -1219,7 +1040,6 @@ fn wrist_surface_config(
             device_hint: device_hint.to_string(),
         },
         activation_button: button,
-        interactive: false,
         force_visible,
     }
 }
@@ -1233,7 +1053,6 @@ fn hmd_surface_config(position: HmdNotificationPosition) -> OverlaySurfaceConfig
             device_hint: position.as_device_hint().to_string(),
         },
         activation_button: OverlayActivationButton::Grip,
-        interactive: false,
         force_visible: false,
     }
 }

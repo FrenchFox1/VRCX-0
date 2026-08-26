@@ -253,7 +253,7 @@ pub(super) fn scan_screenshot_library_in(
         }
     }
 
-    status.indexed = changed_entries.len();
+    status.indexed = u32::try_from(changed_entries.len()).unwrap_or(u32::MAX);
     let prune_missing = traversal_error_count == 0 && file_error_count == 0;
     let deleted_source_paths = if prune_missing {
         existing
@@ -267,7 +267,7 @@ pub(super) fn scan_screenshot_library_in(
     let mut errors = Vec::new();
     match cache.replace_library_entries(&root_string, &seen, &changed_entries, prune_missing) {
         Ok(deleted) => {
-            status.deleted = deleted;
+            status.deleted = u32::try_from(deleted).unwrap_or(u32::MAX);
             if deleted > 0 {
                 if let Some(cache_dir) = thumbnail_cache_dir {
                     delete_thumbnail_cache_for_source_paths(

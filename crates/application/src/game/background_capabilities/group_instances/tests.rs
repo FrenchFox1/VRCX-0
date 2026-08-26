@@ -1,6 +1,50 @@
 use super::*;
 
 #[test]
+fn notification_scan_parser_rejects_invalid_json_and_accepts_empty_rows() {
+    assert!(parse_group_instance_rows("not-json").is_err());
+    assert_eq!(
+        parse_group_instance_rows("[]").unwrap(),
+        Vec::<Value>::new()
+    );
+    assert_eq!(
+        parse_group_instance_rows(r#"{"instances": []}"#).unwrap(),
+        Vec::<Value>::new()
+    );
+    assert!(parse_group_instance_rows(r#"{"error": "temporary"}"#).is_err());
+}
+
+#[test]
+fn notification_scan_parser_preserves_full_locations_for_comparison() {
+    let rows = parse_group_instance_rows(
+        r#"{
+            "instances": [
+                {
+                    "location": "wrld_alpha:instance-a~group(grp_saved)~groupAccessType(plus)",
+                    "group": { "id": "grp_saved", "name": "Saved Group" },
+                    "world": { "name": "Alpha World" }
+                },
+                {
+                    "instance": {
+                        "location": "wrld_beta:instance-b~group(grp_saved)~groupAccessType(members)"
+                    }
+                }
+            ]
+        }"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        rows[0]["location"],
+        json!("wrld_alpha:instance-a~group(grp_saved)~groupAccessType(plus)")
+    );
+    assert_eq!(
+        rows[1]["instance"]["location"],
+        json!("wrld_beta:instance-b~group(grp_saved)~groupAccessType(members)")
+    );
+}
+
+#[test]
 fn group_id_uses_nested_group_before_top_level_owner_and_location() {
     let instance = json!({
         "group": { "groupId": " grp_nested " },

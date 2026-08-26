@@ -12,3 +12,7 @@ pub mod telemetry;
 
 mod event_payloads;
 mod scope_gate;
+
+pub(crate) fn wire_count(value: usize) -> u32 {
+    u32::try_from(value).unwrap_or(u32::MAX)
+}

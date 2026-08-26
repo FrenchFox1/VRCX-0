@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
 use vrcx_0_application_core::GameProcessEvent;
-use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
-use vrcx_0_application_realtime::{FavoriteBaselineSnapshot, RealtimeFriendSnapshot};
 use vrcx_0_composition::Result;
 use vrcx_0_core::friends::FriendRecord;
 
@@ -150,39 +148,6 @@ impl DesktopVrOverlayRuntime {
         self.runtime.stop_detached();
     }
 
-    pub fn clear_friends_panel_session_state(&self) {
-        #[cfg(any(windows, target_os = "linux"))]
-        self.runtime.clear_friends_panel_session_state();
-    }
-
-    pub fn invalidate_friends_panel_note_memo_cache(&self) {
-        #[cfg(any(windows, target_os = "linux"))]
-        self.runtime.invalidate_friends_panel_note_memo_cache();
-    }
-
-    pub fn update_friends_panel_favorite_groups_from_baseline(
-        &self,
-        snapshot: &FavoriteBaselineSnapshot,
-    ) {
-        #[cfg(any(windows, target_os = "linux"))]
-        self.runtime
-            .update_friends_panel_favorite_groups_from_baseline(snapshot);
-
-        #[cfg(not(any(windows, target_os = "linux")))]
-        let _ = snapshot;
-    }
-
-    pub fn set_friends_panel_snapshot_provider<F>(&self, provider: F)
-    where
-        F: Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync + 'static,
-    {
-        #[cfg(any(windows, target_os = "linux"))]
-        self.runtime.set_friends_panel_snapshot_provider(provider);
-
-        #[cfg(not(any(windows, target_os = "linux")))]
-        let _ = provider;
-    }
-
     pub fn set_hmd_friend_membership_provider<F>(&self, provider: F)
     where
         F: Fn(&str) -> bool + Send + Sync + 'static,
@@ -216,21 +181,6 @@ impl DesktopVrOverlayRuntime {
         let _ = event;
 
         Ok(())
-    }
-}
-
-impl GameLogEventSink for DesktopVrOverlayRuntime {
-    fn ingest_game_log_event(&self, event: &GameLogEvent) -> vrcx_0_application_core::Result<()> {
-        #[cfg(any(windows, target_os = "linux"))]
-        {
-            self.runtime.ingest_game_log_event(event)
-        }
-
-        #[cfg(not(any(windows, target_os = "linux")))]
-        {
-            let _ = event;
-            Ok(())
-        }
     }
 }
 

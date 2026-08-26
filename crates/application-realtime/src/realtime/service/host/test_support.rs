@@ -608,7 +608,6 @@ fn runtime_with_active_session_game_context(
         world_cache,
         instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(NoopPrintCleanupInputSink),
-        friend_note_change_sink: None,
         current_user_snapshot_sink: None,
     }));
     let active_session = RealtimeSessionContext::new(

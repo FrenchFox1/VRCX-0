@@ -3,7 +3,9 @@ use std::sync::Mutex;
 use serde::Serialize;
 use specta::Type;
 use vrcx_0_core::OwnerId;
-use vrcx_0_runtime_host_desktop::notification::DesktopNotificationAction;
+use vrcx_0_runtime_host_desktop::notification::{
+    DesktopNotificationAction, DesktopNotificationTarget,
+};
 
 #[cfg(windows)]
 use std::time::Duration;
@@ -21,7 +23,7 @@ const DESKTOP_NOTIFICATION_ACTIVATION_DELAY: Duration = Duration::from_millis(30
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct DesktopNotificationActivation {
-    pub user_id: String,
+    pub target: DesktopNotificationTarget,
 }
 
 #[derive(Default)]
@@ -68,7 +70,7 @@ impl PendingDesktopNotificationActivations {
             return None;
         }
         Some(DesktopNotificationActivation {
-            user_id: action.user_id,
+            target: action.target,
         })
     }
 }
@@ -132,7 +134,9 @@ fn show_main_window_for_desktop_notification(app: &tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use vrcx_0_core::OwnerId;
-    use vrcx_0_runtime_host_desktop::notification::DesktopNotificationAction;
+    use vrcx_0_runtime_host_desktop::notification::{
+        DesktopNotificationAction, DesktopNotificationTarget,
+    };
 
     use super::PendingDesktopNotificationActivations;
 
@@ -152,8 +156,10 @@ mod tests {
             pending
                 .take_for_owner(&OwnerId::new(OWNER_USER_ID))
                 .unwrap()
-                .user_id,
-            LAST_USER_ID
+                .target,
+            DesktopNotificationTarget::OpenUserProfile {
+                user_id: LAST_USER_ID.into(),
+            }
         );
         assert!(pending
             .take_for_owner(&OwnerId::new(OWNER_USER_ID))
@@ -188,9 +194,6 @@ mod tests {
     }
 
     fn action(user_id: &str) -> DesktopNotificationAction {
-        DesktopNotificationAction {
-            owner_user_id: OwnerId::new(OWNER_USER_ID),
-            user_id: user_id.into(),
-        }
+        DesktopNotificationAction::open_user_profile(&OwnerId::new(OWNER_USER_ID), user_id).unwrap()
     }
 }

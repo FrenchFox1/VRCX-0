@@ -67,7 +67,7 @@ pub struct GroupQuickModerationOutput {
     pub stale: bool,
     pub kick_groups: Vec<GroupQuickModerationGroup>,
     pub ban_groups: Vec<GroupQuickModerationGroup>,
-    pub membership_error_count: usize,
+    pub membership_error_count: u32,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, specta::Type)]

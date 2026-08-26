@@ -1,7 +1,8 @@
+use futures_util::future::BoxFuture;
+
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::Value;
-use std::{future::Future, pin::Pin};
 use vrcx_0_application_realtime::{normalize_v1_notification, normalize_v2_notification};
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::NotificationKind;
@@ -29,8 +30,7 @@ pub struct NotificationSyncWrite {
     pub notification_v2_upserts: Vec<RawJson>,
 }
 
-pub type NotificationSyncFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;
+pub type NotificationSyncFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait NotificationSyncPort: Send + Sync {
     fn fetch_page<'a>(
@@ -66,9 +66,9 @@ impl<'a> NotificationSyncDeps<'a> {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationSyncOutcome {
-    pub v1_count: usize,
-    pub v2_count: usize,
-    pub hidden_friend_request_count: usize,
+    pub v1_count: u32,
+    pub v2_count: u32,
+    pub hidden_friend_request_count: u32,
     pub truncated: bool,
 }
 
@@ -139,9 +139,9 @@ pub async fn sync_notifications(
     })?;
 
     Ok(NotificationSyncOutcome {
-        v1_count,
-        v2_count,
-        hidden_friend_request_count,
+        v1_count: crate::wire_count(v1_count),
+        v2_count: crate::wire_count(v2_count),
+        hidden_friend_request_count: crate::wire_count(hidden_friend_request_count),
         truncated: !v1_pages.complete || !v2_pages.complete || !hidden_pages.complete,
     })
 }

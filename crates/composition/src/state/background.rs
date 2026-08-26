@@ -2,18 +2,19 @@ use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use super::{
-    run_background_current_user_refresh, run_background_group_instance_refresh,
-    run_background_moderation_refresh, run_background_print_cleanup,
-    run_background_social_baseline_refresh, AuthenticatedSessionProjection, BackendRuntime,
-    BackendRuntimePhase, BackendRuntimeSnapshot, BackendRuntimeTelemetryKind,
-    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, BackgroundTickContext,
-    DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs, RuntimeHostContext,
-    RuntimeHostState, SocialBaselineRefreshOutput, WebClient,
+    run_background_current_user_refresh, run_background_group_instance_notification_refresh,
+    run_background_group_instance_refresh, run_background_moderation_refresh,
+    run_background_print_cleanup, run_background_social_baseline_refresh,
+    AuthenticatedSessionProjection, BackendRuntime, BackendRuntimePhase, BackendRuntimeSnapshot,
+    BackendRuntimeTelemetryKind, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
+    BackgroundTickContext, DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs,
+    RuntimeHostContext, RuntimeHostState, SocialBaselineRefreshOutput, WebClient,
 };
 use crate::GroupOrderSource;
-use vrcx_0_application::social::{
-    AuthenticatedRuntimeOrchestrator, SocialMaintenanceActions, SocialMaintenanceFuture,
-};
+use futures_util::future::BoxFuture;
+use vrcx_0_application::social::{AuthenticatedRuntimeOrchestrator, SocialMaintenanceActions};
+use vrcx_0_application_activity::OverlayFavoriteGroups;
+use vrcx_0_core::OwnerId;
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 pub(super) struct RuntimeHostSocialMaintenanceActions {
@@ -61,7 +62,52 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
             .favorite_friend_group_membership()
     }
 
-    fn refresh_current_user(&self) -> SocialMaintenanceFuture<'_> {
+    fn group_instance_notification_group_ids(&self) -> Vec<String> {
+        let Some(session) = background_capability_session_identity(&self.session_slot) else {
+            return Vec::new();
+        };
+        let snapshot = match vrcx_0_persistence::saved_group_favorites::snapshot(
+            self.db.as_ref(),
+            &OwnerId::new(&session.current_user_id),
+        ) {
+            Ok(snapshot) => snapshot,
+            Err(error) => {
+                tracing::warn!(error = %error, "failed to read saved group notification membership");
+                return Vec::new();
+            }
+        };
+        let memberships = snapshot
+            .collections
+            .iter()
+            .map(|collection| {
+                (
+                    format!("group:{}", collection.id),
+                    collection.group_ids.clone(),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+        let favorite_groups = OverlayFavoriteGroups::from_map(memberships);
+        let runtime = self.runtime_context.overlay_activity();
+        let group_ids = favorite_groups.group_instance_notification_group_ids(&runtime.filters());
+        runtime.set_group_favorite_groups(favorite_groups);
+        let config_key = format!(
+            "groupInstanceNotificationGroupIds:{}",
+            session.current_user_id
+        );
+        let value = serde_json::json!(group_ids);
+        let config = self.runtime_context.config();
+        if config
+            .get_json(config_key.as_str(), serde_json::json!([]))
+            .map_or(true, |current| current != value)
+        {
+            if let Err(error) = config.set_json(config_key.as_str(), &value) {
+                tracing::warn!(error = %error, "failed to persist group instance notification IDs");
+            }
+        }
+        group_ids
+    }
+
+    fn refresh_current_user(&self) -> BoxFuture<'_, ()> {
         Box::pin(run_background_current_user_refresh(
             &self.web,
             &self.session_slot,
@@ -72,13 +118,28 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
         ))
     }
 
-    fn refresh_group_instances(&self) -> SocialMaintenanceFuture<'_> {
+    fn refresh_group_instances(&self) -> BoxFuture<'_, ()> {
         Box::pin(async move {
             let context = self.tick_context();
             run_background_group_instance_refresh(
                 &context,
                 &self.group_instances_refresh_running,
                 self.group_order_source.as_ref(),
+            )
+            .await
+        })
+    }
+
+    fn refresh_group_instance_notifications<'a>(
+        &'a self,
+        group_ids: &'a [String],
+    ) -> BoxFuture<'a, ()> {
+        Box::pin(async move {
+            let context = self.tick_context();
+            run_background_group_instance_notification_refresh(
+                &context,
+                &self.group_instances_refresh_running,
+                group_ids,
             )
             .await;
         })
@@ -87,14 +148,14 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
     fn refresh_social_baseline<'a>(
         &'a self,
         favorite_friend_groups_by_key: &'a mut HashMap<String, Vec<String>>,
-    ) -> SocialMaintenanceFuture<'a> {
+    ) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             let context = self.tick_context();
             run_background_social_baseline_refresh(&context, favorite_friend_groups_by_key).await;
         })
     }
 
-    fn refresh_moderation(&self) -> SocialMaintenanceFuture<'_> {
+    fn refresh_moderation(&self) -> BoxFuture<'_, ()> {
         Box::pin(run_background_moderation_refresh(
             &self.db,
             &self.web,
@@ -142,7 +203,7 @@ impl RuntimeHostState {
         let favorites_snapshot = core.favorites?.map(|favorites| favorites.snapshot);
         Ok(SocialBaselineRefreshOutput {
             stale: core.stale,
-            friend_count: core.friend_count,
+            friend_count: u32::try_from(core.friend_count).unwrap_or(u32::MAX),
             friend_log_changed: core.friend_log_changed,
             favorites_snapshot,
         })
@@ -353,5 +414,63 @@ mod background_capability_session_identity_tests {
         assert_eq!(identity.current_user_id, "usr_owner");
         assert_eq!(identity.endpoint, "https://api.example.test/api/1");
         assert_eq!(identity.websocket, "wss://pipeline.example.test");
+    }
+
+    #[test]
+    fn notification_scan_ids_follow_enabled_saved_group_scopes() {
+        let favorite_groups = OverlayFavoriteGroups::from_map(HashMap::from([
+            (
+                "group:collection-a".to_string(),
+                vec!["grp_alpha".to_string(), "grp_shared".to_string()],
+            ),
+            (
+                "group:collection-b".to_string(),
+                vec!["grp_beta".to_string(), "grp_shared".to_string()],
+            ),
+            (
+                "group:collection-c".to_string(),
+                vec!["grp_not_selected".to_string()],
+            ),
+        ]));
+        let selected = vrcx_0_application_activity::OverlayActivityFilters::from_json(json!({
+            "version": 1,
+            "desktop": {
+                "types": {
+                    "group.instanceOpened": {
+                        "scope": "selectedFavorites",
+                        "favoriteGroupKeys": [
+                            "group:collection-a",
+                            "group:deleted-collection"
+                        ]
+                    }
+                }
+            }
+        }));
+
+        assert_eq!(
+            favorite_groups.group_instance_notification_group_ids(&selected),
+            vec!["grp_alpha", "grp_shared"]
+        );
+        assert!(favorite_groups
+            .group_instance_notification_group_ids(
+                &vrcx_0_application_activity::OverlayActivityFilters::default()
+            )
+            .is_empty());
+
+        let all_favorites = vrcx_0_application_activity::OverlayActivityFilters::from_json(json!({
+            "version": 1,
+            "tts": {
+                "types": {
+                    "group.instanceOpened": {
+                        "scope": "allFavorites",
+                        "favoriteGroupKeys": "all"
+                    }
+                }
+            }
+        }));
+        assert_eq!(
+            favorite_groups.group_instance_notification_group_ids(&all_favorites),
+            vec!["grp_alpha", "grp_beta", "grp_not_selected", "grp_shared"]
+        );
     }
 }

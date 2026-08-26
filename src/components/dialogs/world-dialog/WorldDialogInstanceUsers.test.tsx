@@ -353,6 +353,46 @@ describe('InstanceUserTiles', () => {
         expect(screen.queryByText('World hopping')).toBeNull();
     });
 
+    it('uses the displayed instance for an online friend with a hidden presence location', () => {
+        useFriendRosterStore.getState().applyFriendPatch({
+            userId: 'usr_friend',
+            patch: {
+                id: 'usr_friend',
+                displayName: 'Friend',
+                state: 'online',
+                location: 'private'
+            },
+            stateBucketAuthority: 'explicit'
+        });
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:123',
+                sinceMs: Date.now() - 600_000
+            }
+        ]);
+        render(
+            <InstanceUserTiles
+                instance={{
+                    users: [
+                        {
+                            id: 'usr_friend',
+                            displayName: 'Friend',
+                            state: 'online',
+                            location: 'private',
+                            statusDescription: 'Do not disturb'
+                        }
+                    ]
+                }}
+                instanceLocation="wrld_test:123"
+                showInstanceDuration
+            />
+        );
+
+        expect(screen.getByText('10m')).toBeTruthy();
+        expect(screen.queryByText('Do not disturb')).toBeNull();
+    });
+
     it('ignores a legacy presence dwell start for a non-friend creator', () => {
         mocks.knownCreatorUser = {
             id: 'usr_non_friend_owner',

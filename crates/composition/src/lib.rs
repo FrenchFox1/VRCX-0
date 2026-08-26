@@ -6,10 +6,7 @@ mod group_order;
 mod profile;
 mod state;
 
-pub use composition::{
-    RuntimeHostCallback, RuntimeHostComposition, RuntimeHostFavoritesCallback,
-    RuntimeHostProfileExtension,
-};
+pub use composition::{RuntimeHostComposition, RuntimeHostProfileExtension};
 pub(crate) use context::RuntimeHostContext;
 pub use context::RuntimeHostDesktopAssemblyDeps;
 pub use error::{Error, Result};

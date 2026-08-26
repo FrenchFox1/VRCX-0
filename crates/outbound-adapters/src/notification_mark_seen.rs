@@ -1,4 +1,6 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::time::Duration;
 
 use serde_json::Value;
 use vrcx_0_application::social::{
@@ -66,7 +68,7 @@ impl NotificationMarkSeenActions for LocalNotificationMarkSeenActions<'_> {
     fn mark_remote<'a>(
         &'a self,
         item: &'a NotificationMarkSeenBatchItem,
-    ) -> Pin<Box<dyn Future<Output = Result<(), NotificationRemoteActionError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<(), NotificationRemoteActionError>> {
         Box::pin(async move {
             self.ensure_generation()
                 .map_err(NotificationRemoteActionError::terminal)?;

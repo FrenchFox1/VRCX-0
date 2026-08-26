@@ -192,7 +192,7 @@ async fn load_group_quick_moderation(
         stale: false,
         kick_groups,
         ban_groups,
-        membership_error_count,
+        membership_error_count: crate::wire_count(membership_error_count),
     })
 }
 

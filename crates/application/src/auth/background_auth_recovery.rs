@@ -1,5 +1,5 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
+
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use vrcx_0_application_core::{
@@ -11,14 +11,8 @@ use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use super::{AuthenticatedRuntimeSession, AuthenticatedSessionSnapshot, NonInteractiveAuthError};
 
-pub type BackgroundAuthRecoveryFuture<'a> = Pin<
-    Box<
-        dyn Future<
-                Output = std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError>,
-            > + Send
-            + 'a,
-    >,
->;
+pub type BackgroundAuthRecoveryFuture<'a> =
+    BoxFuture<'a, std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError>>;
 
 pub trait BackgroundAuthRecoveryActions {
     fn runtime_snapshot(&self) -> BackendRuntimeSnapshot;

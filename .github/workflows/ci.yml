@@ -314,24 +314,12 @@ jobs:
                   const tsPct = ts.total.lines.pct;
                   const rustPct = rust.data[0].totals.lines.percent;
 
-                  const thresholds = [
-                      [80, 'brightgreen'],
-                      [70, 'green'],
-                      [60, 'yellowgreen'],
-                      [50, 'yellow'],
-                      [40, 'orange']
-                  ];
-                  const lowest = Math.min(tsPct, rustPct);
-                  const matched = thresholds.find(([minimum]) => lowest >= minimum);
-                  const color = matched === undefined ? 'red' : matched[1];
-
                   fs.writeFileSync(
                       'coverage.json',
                       JSON.stringify({
                           schemaVersion: 1,
                           label: 'coverage',
-                          message: `TS ${tsPct.toFixed(1)}% · Rust ${rustPct.toFixed(1)}%`,
-                          color
+                          message: `TS ${tsPct.toFixed(1)}% · Rust ${rustPct.toFixed(1)}%`
                       }) + '\n'
                   );
                   NODE

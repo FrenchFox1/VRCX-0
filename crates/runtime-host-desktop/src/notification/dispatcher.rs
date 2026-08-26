@@ -23,6 +23,7 @@ use super::{
     decide_notification_plan, load_preferences, NotificationDeliveryGameState,
     NotificationDeliveryPlan, NotificationDeliveryPreferences,
 };
+use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::OwnerId;
 
 const NOTIFICATION_IMAGE_FIRST_SEND_BUDGET: Duration = Duration::from_secs(1);
@@ -253,10 +254,18 @@ fn prepare_rendered_notification(
     render: RenderedNotification,
     local_image: Option<String>,
 ) -> PreparedNotification {
-    let desktop_action = DesktopNotificationAction::open_user_profile(
-        &OwnerId::new(job.current_user_id),
-        &job.delivery.entry.actor_user_id,
-    );
+    let owner_user_id = OwnerId::new(job.current_user_id);
+    let desktop_action = if job.delivery.entry.activity_type == "group.instanceOpened" {
+        DesktopNotificationAction::open_group_profile(
+            &owner_user_id,
+            &job.delivery.entry.payload.trimmed_text("groupId"),
+        )
+    } else {
+        DesktopNotificationAction::open_user_profile(
+            &owner_user_id,
+            &job.delivery.entry.actor_user_id,
+        )
+    };
     PreparedNotification {
         delivery: job.delivery,
         preferences: job.preferences,

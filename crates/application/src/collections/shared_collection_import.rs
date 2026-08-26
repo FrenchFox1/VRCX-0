@@ -1,4 +1,6 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use vrcx_0_core::vrchat_ids::is_world_id;
@@ -33,10 +35,10 @@ pub enum SharedCollectionImportState {
 pub struct SharedCollectionImportStatus {
     pub run_id: String,
     pub status: SharedCollectionImportState,
-    pub total: usize,
-    pub processed: usize,
-    pub imported: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub processed: u32,
+    pub imported: u32,
+    pub failed: u32,
     pub group_name: String,
     pub started_at: Option<String>,
     pub finished_at: Option<String>,
@@ -69,10 +71,7 @@ pub struct SharedCollectionImportResult {
 
 pub trait SharedCollectionImportActions: Send + Sync {
     fn create_group(&self, group_name: &str) -> Result<()>;
-    fn fetch_and_cache_world<'a>(
-        &'a self,
-        world_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+    fn fetch_and_cache_world<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, Result<()>>;
     fn add_world_favorite(&self, world_id: &str, group_name: &str) -> Result<()>;
 }
 

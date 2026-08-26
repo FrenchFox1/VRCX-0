@@ -1,10 +1,16 @@
-import type { GalleryCommands, GalleryModel } from '../galleryTypes';
+import type {
+    GalleryBulkCommands,
+    GalleryCommands,
+    GalleryModel
+} from '../galleryTypes';
 import { GalleryTabs } from './GalleryTabs';
 
 export function GalleryTabsSection({
+    galleryBulkCommands,
     galleryCommands,
     galleryModel
 }: {
+    galleryBulkCommands: GalleryBulkCommands;
     galleryCommands: GalleryCommands;
     galleryModel: GalleryModel;
 }) {
@@ -38,6 +44,8 @@ export function GalleryTabsSection({
             onActiveTabChange={onActiveTabChange}
             tabCounts={tabCounts}
             fileTab={{
+                ...galleryBulkCommands,
+                activeTab,
                 assets,
                 loadingByTab,
                 uploadingTab,
@@ -54,6 +62,8 @@ export function GalleryTabsSection({
                 onDeleteFile
             }}
             printsTab={{
+                ...galleryBulkCommands,
+                activeTab,
                 prints: assets.prints,
                 loading: loadingByTab.prints,
                 uploadingTab,

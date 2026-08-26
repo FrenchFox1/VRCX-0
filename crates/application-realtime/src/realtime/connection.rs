@@ -1,7 +1,8 @@
+use futures_util::future::BoxFuture;
+
 use std::any::Any;
 use std::future::Future;
 use std::panic::AssertUnwindSafe;
-use std::pin::Pin;
 use std::sync::Arc;
 
 use futures_util::FutureExt;
@@ -12,8 +13,7 @@ use super::{
     RealtimeWsStatus,
 };
 
-pub type RealtimeTransportFuture =
-    Pin<Box<dyn Future<Output = RealtimeTransportTermination> + Send + 'static>>;
+pub type RealtimeTransportFuture = BoxFuture<'static, RealtimeTransportTermination>;
 
 pub trait RealtimeMessageSink: Send + Sync {
     fn handle_realtime_transport_status(

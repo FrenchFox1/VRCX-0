@@ -19,7 +19,7 @@ use vrcx_0_application_core::{
 use vrcx_0_core::OwnerId;
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
-const MUTUAL_GRAPH_REQUEST_INTERVAL_MS: u64 = 200;
+const MUTUAL_GRAPH_REQUEST_INTERVAL: Duration = Duration::from_millis(200);
 const MUTUAL_GRAPH_MAX_RETRIES: usize = 4;
 const MUTUAL_GRAPH_MAX_PAGES: usize = 50;
 const MUTUAL_GRAPH_EMPTY_USER_ID: &str = "usr_00000000-0000-0000-0000-000000000000";
@@ -335,7 +335,7 @@ async fn fetch_mutual_friend_rows(
 
 async fn wait_for_rate_limit(last_request_at: &mut Option<Instant>) {
     if let Some(last_request_at) = last_request_at {
-        let interval = Duration::from_millis(MUTUAL_GRAPH_REQUEST_INTERVAL_MS);
+        let interval = MUTUAL_GRAPH_REQUEST_INTERVAL;
         let elapsed = last_request_at.elapsed();
         if elapsed < interval {
             sleep(interval - elapsed).await;

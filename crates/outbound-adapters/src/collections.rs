@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::sync::Arc;
 
 use serde_json::{json, Value};
@@ -176,10 +178,7 @@ impl SharedCollectionImportActions for LocalSharedCollectionImportActions {
         .map_err(crate::map_persistence_error)
     }
 
-    fn fetch_and_cache_world<'a>(
-        &'a self,
-        world_id: &'a str,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = crate::Result<()>> + Send + 'a>> {
+    fn fetch_and_cache_world<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, crate::Result<()>> {
         Box::pin(async move {
             let (_, request) = vrcx_0_vrchat_client::worlds::world_get_input(
                 vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(&self.endpoint)),

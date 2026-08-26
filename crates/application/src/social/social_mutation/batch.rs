@@ -1,4 +1,6 @@
-use std::{collections::HashSet, future::Future, pin::Pin};
+use futures_util::future::BoxFuture;
+
+use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
@@ -47,10 +49,10 @@ pub struct SocialUnfriendBatchItemResult {
 #[serde(rename_all = "camelCase")]
 pub struct SocialUnfriendBatchResult {
     pub owner_user_id: OwnerId,
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
-    pub local_failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
+    pub local_failed: u32,
     pub scope_changed: bool,
     pub items: Vec<SocialUnfriendBatchItemResult>,
     pub last_error: Option<String>,
@@ -60,7 +62,7 @@ trait SocialUnfriendBatchActions: Send + Sync {
     fn unfriend<'a>(
         &'a self,
         target: &'a SocialUnfriendBatchTarget,
-    ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>>;
     fn scope_matches(&self) -> bool;
 }
 
@@ -73,7 +75,7 @@ impl SocialUnfriendBatchActions for VrchatSocialUnfriendBatchActions<'_> {
     fn unfriend<'a>(
         &'a self,
         target: &'a SocialUnfriendBatchTarget,
-    ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>> {
         Box::pin(async move {
             unfriend_with_expected_scope(
                 &self.deps,
@@ -256,10 +258,10 @@ async fn run_social_unfriend_batch(
     }
     SocialUnfriendBatchResult {
         owner_user_id,
-        total: items.len(),
-        succeeded,
-        failed: items.len() - succeeded,
-        local_failed,
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(succeeded),
+        failed: crate::wire_count(items.len() - succeeded),
+        local_failed: crate::wire_count(local_failed),
         scope_changed,
         items,
         last_error,
@@ -336,8 +338,7 @@ mod tests {
         fn unfriend<'a>(
             &'a self,
             target: &'a SocialUnfriendBatchTarget,
-        ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>>
-        {
+        ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>> {
             Box::pin(async move {
                 let outcome = self
                     .outcomes

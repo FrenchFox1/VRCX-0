@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::sync::Mutex;
 
 use serde_json::json;
@@ -18,10 +20,7 @@ impl FakeActions {
 }
 
 impl BatchMutationActions for FakeActions {
-    fn fetch_avatar<'a>(
-        &'a self,
-        avatar_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
+    fn fetch_avatar<'a>(&'a self, avatar_id: &'a str) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
             Ok(json!({
                 "id": avatar_id,
@@ -35,7 +34,7 @@ impl BatchMutationActions for FakeActions {
         &'a self,
         avatar_id: &'a str,
         tags: &'a [String],
-    ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
             let rollback = tags
                 .iter()
@@ -53,9 +52,7 @@ impl BatchMutationActions for FakeActions {
         })
     }
 
-    fn fetch_current_user_groups(
-        &self,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<Value>>> + Send + '_>> {
+    fn fetch_current_user_groups(&self) -> BoxFuture<'_, Result<Vec<Value>>> {
         Box::pin(async move { Ok(self.groups.clone()) })
     }
 
@@ -63,7 +60,7 @@ impl BatchMutationActions for FakeActions {
         &'a self,
         group_id: &'a str,
         visibility: GroupVisibility,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
             self.calls.lock().unwrap().push(format!(
                 "visibility:{group_id}:{}",
@@ -77,10 +74,7 @@ impl BatchMutationActions for FakeActions {
         })
     }
 
-    fn leave_group<'a>(
-        &'a self,
-        group_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
+    fn leave_group<'a>(&'a self, group_id: &'a str) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
             self.calls.lock().unwrap().push(format!("leave:{group_id}"));
             if self.fail_update_id.as_deref() == Some(group_id) {

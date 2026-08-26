@@ -552,8 +552,8 @@
         "instance_history": "房间历史",
         "player_list": "房内玩家",
         "search": "搜索",
-        "favorites": "收藏&分组",
-        "favorite_friends": "好友分组",
+        "favorites": "收藏",
+        "favorite_friends": "好友收藏",
         "favorite_worlds": "世界收藏",
         "favorite_avatars": "模型收藏",
         "favorite_import": "收藏导入",
@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "已收藏 Print 占满列表，自动删除无法降到配置上限以下。当前剩余 {remaining} 个 Print。"
                 }
             },
+            "gallery_selection": {
+                "count": "已选 {count} 项",
+                "select_all": "全选",
+                "deselect_all": "取消全选",
+                "confirm_delete_title": "删除选中的 {count} 项？",
+                "confirm_delete_locked": "其中 {count} 项已锁定，将被跳过。此操作无法撤销。",
+                "deleting_progress": "正在删除 {done}/{total}",
+                "deleted_toast": "已删除 {count} 项。",
+                "delete_partial_toast": "已删除 {succeeded} 项，{failed} 项失败。{reason}",
+                "delete_cancelled_toast": "已中止，已删除 {count} 项。",
+                "delete_unlocked": "删除 {count} 项",
+                "delete_locked": "选中的项目均已锁定。",
+                "delete_locked_favorite": "已收藏，取消收藏后才能删除",
+                "delete_locked_in_use": "使用中，无法删除",
+                "favorited_toast": "已收藏 {count} 个 Print。",
+                "unfavorited_toast": "已取消收藏 {count} 个 Print。",
+                "favorite_skipped_toast": "有 {count} 个 Print 未能收藏，上限为 {max} 个。"
+            },
+            "prints_filter": {
+                "all": "全部",
+                "favorites": "已收藏",
+                "others": "未收藏"
+            },
             "llm_endpoints": {
                 "title": "LLM 端点",
                 "description": "供 Social AI 和翻译共用的 OpenAI 兼容连接。",
@@ -2544,6 +2567,7 @@
                         "header": "文字转语音选项",
                         "when_to_play": "何时使用文字转语音",
                         "tts_voice": "TTS 语音样式",
+                        "tts_volume": "TTS 音量",
                         "system_default_voice": "系统默认",
                         "notification_filters": "TTS 通知过滤器",
                         "name_mode": "朗读名称",
@@ -3276,6 +3300,7 @@
             "action": {
                 "refresh": "刷新",
                 "change_image": "换一张",
+                "show_in_folder": "在文件夹中显示",
                 "select_images": "选择图片",
                 "select_folder": "选择文件夹"
             },
@@ -3283,6 +3308,7 @@
                 "enabled": "背景图片已启用。",
                 "refreshed": "背景图片已刷新。",
                 "failed": "更新背景图片失败。",
+                "failed_to_open_folder": "无法在文件夹中显示图片。",
                 "no_images": "没有找到支持的图片。"
             }
         },
@@ -3313,13 +3339,14 @@
                 "minutes": "分钟"
             },
             "section": {
-                "instance_types": "房间类型",
+                "instance_types": "房间偏好",
                 "daily_time": "每日时长",
                 "weekly_time": "每周时长",
-                "when_you_play": "什么时候在玩",
-                "top_worlds": "你常回去的世界",
-                "companions": "和谁待在一起",
-                "highlights": "值得一提"
+                "when_you_play": "活跃时段",
+                "top_worlds": "待最久的世界",
+                "companions": "相处最久的人",
+                "highlights": "值得一提",
+                "avatars": "常用的模型"
             },
             "access": {
                 "unknown": "未知",
@@ -3338,26 +3365,29 @@
                 "failed_to_load": "无法加载你的活动数据"
             },
             "caveat": {
-                "recorded_since": "游戏日志自 {date} 起记录。"
+                "recorded_since": "仅在运行时记录。"
             },
             "worlds": {
                 "visit_count": "{count} 次",
                 "open_ranking": "详细",
-                "total": "共 {count} 个世界"
+                "total": "共 {count} 个世界",
+                "show_home": "包含出生点"
             },
             "people": {
-                "co_days": "一起 {count} 天",
-                "lead_caption": "一起 {days} 天 · {hours} 小时",
-                "fading_title": "最近少见了",
+                "co_days": "{count} 天",
+                "lead_caption": "{days} 天 · {hours} 小时",
+                "fading_title": "相处变少的人",
                 "fading_caveat": "比上一段时间见得少了，可能只是作息对不上。",
                 "encountered_total": "遇到过 {count} 人",
-                "fading_last_seen": "上次一起 {date}"
+                "fading_last_seen": "上次见面 {date}",
+                "order_minutes": "按时长",
+                "order_days": "按天数"
             },
             "hero": {
                 "per_day": "每天平均",
                 "days_played": "天有记录",
                 "sessions": "次上线",
-                "longest": "最长一次"
+                "longest": "最久一次"
             },
             "action": {
                 "show_all": "展开全部 {count} 条",
@@ -3366,6 +3396,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% 在凌晨 0 点到 6 点",
                 "open_heatmap": "按时段查看"
+            },
+            "avatars": {
+                "all_time": "全部时间"
             }
         }
     },
@@ -5548,6 +5581,9 @@
         "group_join_request_title": "群组加入请求",
         "group_transfer_request_title": "群组转让请求",
         "group_queue_ready_title": "房间队列准备就绪",
+        "group_instance_opened": "创建了一个新实例",
+        "group_instance_opened_location": "创建了一个新实例：{location}",
+        "group_instances_opened": "创建了 {count} 个新实例",
         "instance_closed_title": "房间已关闭",
         "event_title": "事件",
         "external_title": "外部事件",
@@ -6027,6 +6063,27 @@
         "error_generic": "翻译失败",
         "error_network": "网络错误,请重试",
         "error_unsupported": "翻译功能未配置"
+    },
+    "saved_group_favorites": {
+        "title": "群组收藏",
+        "description": "将常用群组保存到本地分组，并接收新实例通知。",
+        "new_collection": "新建分组",
+        "empty_collections": "新建分组后即可收藏群组。",
+        "empty_group": "这个分组里还没有收藏群组。",
+        "delete_title": "删除这个收藏分组？",
+        "delete_description": "删除“{name}”会同时取消其中 {count} 个群组的收藏。",
+        "choose_collection": "收藏到分组",
+        "remove": "取消收藏",
+        "toggle": "收藏群组",
+        "sidebar_saved": "群组收藏",
+        "sidebar_none": "还没有收藏群组",
+        "sidebar_other": "其他活动群组",
+        "sidebar_failed": "群组实例加载失败",
+        "sidebar_no_active": "没有其他活动群组实例",
+        "scope_all": "全部收藏群组",
+        "scope_selected": "指定收藏分组",
+        "notification_type": "群组开启新实例",
+        "notification_empty": "暂无群组收藏分组。"
     },
     "app": {
         "routes": {

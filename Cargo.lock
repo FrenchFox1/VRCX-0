@@ -859,13 +859,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-platform"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd0061da739915fae12ea00e16397555ed4371a6bb285431aab930f61b0aa4ba"
+dependencies = [
+ "serde",
+ "serde_core",
+]
+
+[[package]]
 name = "cargo_metadata"
 version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd5eb614ed4c27c5d706420e4320fbe3216ab31fa1c33cd8246ac36dae4479ba"
 dependencies = [
  "camino",
- "cargo-platform",
+ "cargo-platform 0.1.9",
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef987d17b0a113becdd19d3d0022d04d7ef41f9efe4f3fb63ac44ba61df3ade9"
+dependencies = [
+ "camino",
+ "cargo-platform 0.3.3",
  "semver",
  "serde",
  "serde_json",
@@ -4702,6 +4726,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-avf-audio"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13a380031deed8e99db00065c45937da434ca987c034e13b87e4441f9e4090be"
+dependencies = [
+ "bitflags 2.13.1",
+ "objc2 0.6.4",
+ "objc2-foundation 0.3.2",
+]
+
+[[package]]
 name = "objc2-cloud-kit"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8001,7 +8036,7 @@ checksum = "3e176a18e67764923c4f1ce66f25ae4abe5f688384d5eb1a0fa6c77f3d90f887"
 dependencies = [
  "anyhow",
  "brotli",
- "cargo_metadata",
+ "cargo_metadata 0.19.2",
  "ctor",
  "dom_query",
  "dunce",
@@ -8947,10 +8982,10 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vrcx-0"
-version = "2.25.0"
+version = "2.26.0"
 dependencies = [
  "async-trait",
- "cargo_metadata",
+ "cargo_metadata 0.23.1",
  "chrono",
  "image",
  "percent-encoding",
@@ -9127,6 +9162,7 @@ name = "vrcx-0-composition"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "futures-util",
  "serde",
  "serde_json",
  "specta",
@@ -9198,6 +9234,9 @@ dependencies = [
  "fontdb 0.24.0",
  "futures-util",
  "hex",
+ "objc2 0.6.4",
+ "objc2-avf-audio",
+ "objc2-foundation 0.3.2",
  "open",
  "openvr",
  "openvr_sys",
@@ -9447,6 +9486,7 @@ dependencies = [
  "sys-locale",
  "tokio",
  "tracing",
+ "uuid",
  "vrcx-0-application",
  "vrcx-0-application-activity",
  "vrcx-0-application-core",
@@ -9727,9 +9767,9 @@ dependencies = [
 
 [[package]]
 name = "webkit2gtk-nvidia-quirk"
-version = "1.4.3"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "346ca51979f591fd90693a1cd548c3ac482e665b1f736ea5bba6f2e7f2e6d18c"
+checksum = "4ba30b6aaad4fca046da97ca4052b68bda5d20cd4b790d1de3a4aa83f2dc2629"
 
 [[package]]
 name = "webkit2gtk-sys"

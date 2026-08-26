@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "由於已收藏的拍立得已占滿清單，自動刪除無法將拍立得數量降至設定的上限。目前仍有 {remaining} 張拍立得。"
                 }
             },
+            "gallery_selection": {
+                "count": "已選 {count} 項",
+                "select_all": "全選",
+                "deselect_all": "取消全選",
+                "confirm_delete_title": "刪除選取的 {count} 項？",
+                "confirm_delete_locked": "其中 {count} 項已鎖定，將略過。此操作無法復原。",
+                "deleting_progress": "正在刪除 {done}/{total}",
+                "deleted_toast": "已刪除 {count} 項。",
+                "delete_partial_toast": "已刪除 {succeeded} 項，{failed} 項失敗。{reason}",
+                "delete_cancelled_toast": "已中止，已刪除 {count} 項。",
+                "delete_unlocked": "刪除 {count} 項",
+                "delete_locked": "選取的項目皆已鎖定。",
+                "delete_locked_favorite": "已收藏，取消收藏後才能刪除",
+                "delete_locked_in_use": "使用中，無法刪除",
+                "favorited_toast": "已收藏 {count} 張拍立得。",
+                "unfavorited_toast": "已取消收藏 {count} 張拍立得。",
+                "favorite_skipped_toast": "有 {count} 張拍立得未能收藏，上限為 {max} 張。"
+            },
+            "prints_filter": {
+                "all": "全部",
+                "favorites": "已收藏",
+                "others": "未收藏"
+            },
             "llm_endpoints": {
                 "title": "LLM 端點",
                 "description": "適用於社交 AI 和翻譯的共享 OpenAI 相容連線。",
@@ -2544,6 +2567,7 @@
                         "header": "文字轉語音",
                         "when_to_play": "通知文字轉語音播放時機",
                         "tts_voice": "語音樣式",
+                        "tts_volume": "TTS 音量",
                         "system_default_voice": "系統預設值",
                         "notification_filters": "TTS 通知篩選器",
                         "name_mode": "口語名稱",
@@ -3276,6 +3300,7 @@
             "action": {
                 "refresh": "重新整理",
                 "change_image": "換一張",
+                "show_in_folder": "在資料夾中顯示",
                 "select_images": "選擇圖片",
                 "select_folder": "選擇資料夾"
             },
@@ -3283,6 +3308,7 @@
                 "enabled": "背景圖案已啟用。",
                 "refreshed": "背景圖案已重新整理。",
                 "failed": "更新背景圖案失敗。",
+                "failed_to_open_folder": "無法在資料夾中顯示圖片。",
                 "no_images": "沒有找到支援的圖片。"
             }
         },
@@ -3313,13 +3339,14 @@
                 "minutes": "分鐘"
             },
             "section": {
-                "instance_types": "房間類型",
+                "instance_types": "房間偏好",
                 "daily_time": "每日時長",
                 "weekly_time": "每週時長",
-                "when_you_play": "什麼時候在玩",
-                "top_worlds": "你常回去的世界",
-                "companions": "和誰待在一起",
-                "highlights": "值得一提"
+                "when_you_play": "活躍時段",
+                "top_worlds": "待最久的世界",
+                "companions": "相處最久的人",
+                "highlights": "值得一提",
+                "avatars": "常用的模型"
             },
             "access": {
                 "unknown": "未知",
@@ -3338,26 +3365,29 @@
                 "failed_to_load": "無法載入你的活動資料"
             },
             "caveat": {
-                "recorded_since": "遊戲日誌自 {date} 起記錄。"
+                "recorded_since": "僅在運行時記錄。"
             },
             "worlds": {
                 "visit_count": "{count} 次",
                 "open_ranking": "詳細",
-                "total": "共 {count} 個世界"
+                "total": "共 {count} 個世界",
+                "show_home": "包含預設世界"
             },
             "people": {
-                "co_days": "一起 {count} 天",
-                "lead_caption": "一起 {days} 天 · {hours} 小時",
-                "fading_title": "最近少見了",
+                "co_days": "{count} 天",
+                "lead_caption": "{days} 天 · {hours} 小時",
+                "fading_title": "相處變少的人",
                 "fading_caveat": "比上一段時間見得少了，可能只是作息對不上。",
                 "encountered_total": "遇到過 {count} 人",
-                "fading_last_seen": "上次一起 {date}"
+                "fading_last_seen": "上次見面 {date}",
+                "order_minutes": "依時長",
+                "order_days": "依天數"
             },
             "hero": {
                 "per_day": "每天平均",
                 "days_played": "天有紀錄",
                 "sessions": "次上線",
-                "longest": "最長一次"
+                "longest": "最久一次"
             },
             "action": {
                 "show_all": "展開全部 {count} 筆",
@@ -3366,6 +3396,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% 在凌晨 0 點到 6 點",
                 "open_heatmap": "按時段查看"
+            },
+            "avatars": {
+                "all_time": "全部時間"
             }
         }
     },
@@ -5548,6 +5581,9 @@
         "group_join_request_title": "群組加入請求",
         "group_transfer_request_title": "群主轉讓請求",
         "group_queue_ready_title": "房間排隊已準備完成",
+        "group_instance_opened": "建立了一個新實例",
+        "group_instance_opened_location": "建立了一個新實例：{location}",
+        "group_instances_opened": "建立了 {count} 個新實例",
         "instance_closed_title": "房間已關閉",
         "event_title": "活動",
         "external_title": "外部應用程式",
@@ -6027,6 +6063,27 @@
         "error_generic": "翻譯失敗",
         "error_network": "網路錯誤，請重試",
         "error_unsupported": "尚未設定翻譯"
+    },
+    "saved_group_favorites": {
+        "title": "收藏群組",
+        "description": "將常用群組儲存到本機分組，並接收新實例通知。",
+        "new_collection": "新增分組",
+        "empty_collections": "新增分組後即可收藏群組。",
+        "empty_group": "這個分組裡還沒有收藏群組。",
+        "delete_title": "刪除這個收藏分組？",
+        "delete_description": "刪除「{name}」也會取消其中 {count} 個群組的收藏。",
+        "choose_collection": "收藏到分組",
+        "remove": "取消收藏",
+        "toggle": "收藏群組",
+        "sidebar_saved": "收藏群組",
+        "sidebar_none": "還沒有收藏群組",
+        "sidebar_other": "其他活動群組",
+        "sidebar_failed": "無法載入群組實例",
+        "sidebar_no_active": "沒有其他活動群組實例",
+        "scope_all": "全部收藏群組",
+        "scope_selected": "指定收藏分組",
+        "notification_type": "群組開啟新實例",
+        "notification_empty": "目前沒有群組收藏分組。"
     },
     "app": {
         "routes": {

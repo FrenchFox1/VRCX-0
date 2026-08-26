@@ -32,6 +32,7 @@ export interface SidebarVirtualRow {
     isCurrentUser?: boolean;
     isCurrentInstance?: boolean;
     isGroupByInstance?: boolean;
+    instanceLocation?: string;
     className?: string;
     text?: string;
 }
@@ -47,6 +48,7 @@ type SidebarFriendRowsOptions = {
     currentUserId?: string | null;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
+    instanceLocation?: string;
 };
 
 type FavoriteGroupSection = {
@@ -98,7 +100,8 @@ function pushFriendRows(
     {
         currentUserId,
         isCurrentUser = false,
-        isGroupByInstance = false
+        isGroupByInstance = false,
+        instanceLocation
     }: SidebarFriendRowsOptions = {}
 ) {
     for (const friend of sectionRows) {
@@ -110,7 +113,8 @@ function pushFriendRows(
             isCurrentUser: Boolean(
                 isCurrentUser || friendId === normalizeId(currentUserId)
             ),
-            isGroupByInstance: Boolean(isGroupByInstance)
+            isGroupByInstance: Boolean(isGroupByInstance),
+            instanceLocation
         });
     }
 }
@@ -335,7 +339,8 @@ export function buildFriendsSidebarVirtualRows({
                 nextRows.push(...entry.currentUserRows);
                 pushFriendRows(nextRows, entry.sectionKey, entry.group.rows, {
                     currentUserId,
-                    isGroupByInstance: true
+                    isGroupByInstance: true,
+                    instanceLocation: entry.group.location
                 });
             });
         }

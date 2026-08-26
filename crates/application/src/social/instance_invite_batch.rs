@@ -1,4 +1,6 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 #[cfg(test)]
@@ -43,16 +45,16 @@ pub enum InstanceInviteItemState {
 pub struct InstanceInviteItemResult {
     pub receiver_user_id: String,
     pub state: InstanceInviteItemState,
-    pub attempts: usize,
+    pub attempts: u32,
     pub message: String,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceInviteBatchResult {
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub items: Vec<InstanceInviteItemResult>,
 }
 
@@ -103,7 +105,7 @@ trait InstanceInviteBatchActions: Send + Sync {
         &'a self,
         context: &'a InstanceInviteContext,
         target: &'a InstanceInviteTarget,
-    ) -> Pin<Box<dyn Future<Output = std::result::Result<(), InstanceInviteRemoteError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>>;
     fn scope_matches(&self) -> bool;
 }
 
@@ -204,8 +206,7 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
         &'a self,
         context: &'a InstanceInviteContext,
         target: &'a InstanceInviteTarget,
-    ) -> Pin<Box<dyn Future<Output = std::result::Result<(), InstanceInviteRemoteError>> + Send + 'a>>
-    {
+    ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>> {
         Box::pin(async move {
             self.remote_mutation_gate
                 .wait(&self.expected_scope, INSTANCE_INVITE_REMOTE_INTERVAL)
@@ -297,7 +298,7 @@ async fn run_instance_invite_batch(
                 items.push(InstanceInviteItemResult {
                     receiver_user_id: target.receiver_user_id.clone(),
                     state: InstanceInviteItemState::Succeeded,
-                    attempts,
+                    attempts: crate::wire_count(attempts),
                     message: String::new(),
                 });
             }
@@ -305,7 +306,7 @@ async fn run_instance_invite_batch(
                 items.push(InstanceInviteItemResult {
                     receiver_user_id: target.receiver_user_id.clone(),
                     state: InstanceInviteItemState::Failed,
-                    attempts,
+                    attempts: crate::wire_count(attempts),
                     message: error.message,
                 });
             }
@@ -319,9 +320,9 @@ async fn run_instance_invite_batch(
     }
 
     InstanceInviteBatchResult {
-        total,
+        total: crate::wire_count(total),
         succeeded,
-        failed: total - succeeded,
+        failed: crate::wire_count(total).saturating_sub(succeeded),
         items,
     }
 }
@@ -495,11 +496,7 @@ mod tests {
             &'a self,
             _context: &'a InstanceInviteContext,
             target: &'a InstanceInviteTarget,
-        ) -> Pin<
-            Box<
-                dyn Future<Output = std::result::Result<(), InstanceInviteRemoteError>> + Send + 'a,
-            >,
-        > {
+        ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>> {
             Box::pin(async move {
                 self.calls
                     .lock()

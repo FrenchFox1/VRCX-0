@@ -117,7 +117,8 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             isGroupByInstance: true
         });
         expect(rows[5]).toMatchObject({
-            isGroupByInstance: true
+            isGroupByInstance: true,
+            instanceLocation: 'wrld_live:1'
         });
     });
 

@@ -188,6 +188,30 @@ describe('UpdaterDialog', () => {
         ).toBeNull();
     });
 
+    it('shows the checked version as up to date when no newer release exists', async () => {
+        mocks.toNormalizedReleaseFromSnapshot.mockReturnValue({
+            canonicalVersion: '2.6.0',
+            displayVersion: '2.6.0',
+            updaterType: 'tauri'
+        });
+        mocks.appAppUpdateCheckRun.mockResolvedValue({
+            hasAvailableUpdate: false,
+            error: null,
+            release: {}
+        });
+
+        render(<UpdaterDialog open onOpenChange={vi.fn()} />);
+
+        expect(
+            await screen.findByText('dialog.vrcx_updater.latest_version')
+        ).toBeTruthy();
+        expect(
+            screen.getByText('message.vrcx_updater.current_version')
+        ).toBeTruthy();
+        expect(screen.getByText('2.6.0')).toBeTruthy();
+        expect(screen.queryByText('2.6.0 -> 2.6.0')).toBeNull();
+    });
+
     it('shows matching background download progress when opened mid-download', async () => {
         const release = {
             displayName: 'VRCX-0 2.7.0',

@@ -424,8 +424,6 @@ impl RuntimeHostStateBuilder {
         let RuntimeHostComposition {
             local_game_context,
             group_order_source,
-            friend_note_change_sink,
-            favorites_sink,
             friend_projection_observer,
             profile_extension,
         } = composition;
@@ -499,12 +497,10 @@ impl RuntimeHostStateBuilder {
                     Arc::clone(&self.runtime_context.remote_mutations),
                 ),
             )),
-            friend_note_change_sink,
             current_user_snapshot_sink,
         )));
         let favorites_sink = {
             let overlay_activity = self.runtime_context.overlay_activity();
-            let profile_sink = favorites_sink;
             Some(Arc::new(
                 move |snapshot: &vrcx_0_application_realtime::FavoriteBaselineSnapshot| {
                     overlay_activity.set_favorite_groups(
@@ -512,9 +508,6 @@ impl RuntimeHostStateBuilder {
                             favorite_group_membership_from_baseline(snapshot),
                         ),
                     );
-                    if let Some(profile_sink) = &profile_sink {
-                        profile_sink(snapshot);
-                    }
                 },
             ) as Arc<dyn AuthenticatedRuntimeFavoritesSink>)
         };
@@ -772,8 +765,6 @@ impl RuntimeHostState {
         RuntimeHostStateBuilder::new(options)?.finish(RuntimeHostComposition {
             local_game_context: Arc::new(UnavailableLocalGameContextSource),
             group_order_source: Arc::new(UnavailableGroupOrderSource),
-            friend_note_change_sink: None,
-            favorites_sink: None,
             friend_projection_observer: None,
             profile_extension: None,
         })

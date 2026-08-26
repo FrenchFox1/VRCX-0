@@ -149,7 +149,6 @@ fn test_server(
         Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         Arc::new(NoopPrintCleanupInputSink),
         None,
-        None,
     )));
     let runtime = crate::runtime::McpRuntime {
         realtime_runtime,

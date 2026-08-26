@@ -65,6 +65,32 @@ vi.mock('@/ui/shadcn/switch', () => ({
     )
 }));
 
+vi.mock('@/ui/shadcn/slider', () => ({
+    Slider: ({
+        id,
+        onValueChange,
+        onValueCommitted,
+        value
+    }: {
+        id?: string;
+        onValueChange(value: number[]): void;
+        onValueCommitted(value: number[]): void;
+        value: number[];
+    }) => (
+        <input
+            id={id}
+            type="range"
+            value={value[0]}
+            onChange={(event) =>
+                onValueChange([Number(event.currentTarget.value)])
+            }
+            onMouseUp={(event) =>
+                onValueCommitted([Number(event.currentTarget.value)])
+            }
+        />
+    )
+}));
+
 vi.mock('../SettingsField', () => ({
     Field: ({
         children,
@@ -109,6 +135,7 @@ function createProps(overrides: Partial<TabProps> = {}): TabProps {
         onNotificationTtsTestChange: vi.fn(),
         onNotificationTtsTestVisibleChange: vi.fn(),
         onNotificationTtsVoiceChange: vi.fn(),
+        onNotificationTtsVolumeChange: vi.fn(),
         onOpenDesktopNotificationFiltersDialog: vi.fn(),
         onOpenTtsNotificationFiltersDialog: vi.fn(),
         onSpeakNotificationTts: vi.fn(),
@@ -119,7 +146,8 @@ function createProps(overrides: Partial<TabProps> = {}): TabProps {
             notificationTTS: 'Never',
             notificationTTSNameMode: 'username',
             notificationTTSNickName: false,
-            notificationTTSVoiceNative: ''
+            notificationTTSVoiceNative: '',
+            notificationTTSVolume: 100
         },
         ttsVoices: [{ id: 'voice-1', name: 'Test Voice', language: 'en-US' }],
         ...overrides
@@ -192,6 +220,25 @@ describe('SettingsNotificationsTab', () => {
         expect(selectDisabled('settings-notification-tts-name-mode')).toBe(
             'false'
         );
+    });
+
+    it('keeps TTS volume adjustable while automatic delivery is disabled and saves on commit', () => {
+        const props = createProps();
+        render(<SettingsNotificationsTab {...props} />);
+
+        const slider = document.getElementById(
+            'settings-notification-tts-volume'
+        ) as HTMLInputElement;
+        expect(slider).toBeInstanceOf(HTMLInputElement);
+        expect(slider.disabled).toBe(false);
+        expect(screen.getByText('100%')).toBeTruthy();
+
+        fireEvent.change(slider, { target: { value: '42' } });
+        expect(screen.getByText('42%')).toBeTruthy();
+        expect(props.onNotificationTtsVolumeChange).not.toHaveBeenCalled();
+
+        fireEvent.mouseUp(slider, { target: { value: '42' } });
+        expect(props.onNotificationTtsVolumeChange).toHaveBeenCalledWith(42);
     });
 
     it('renders preview input and play action only when the preview is visible', () => {

@@ -1,5 +1,4 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
 
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::{Error, Result};
@@ -28,8 +27,7 @@ pub struct StandardTranslationOutcome {
     pub detected_source_language: Option<String>,
 }
 
-pub type StandardTranslationFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<StandardTranslationOutcome>> + Send + 'a>>;
+pub type StandardTranslationFuture<'a> = BoxFuture<'a, Result<StandardTranslationOutcome>>;
 
 pub trait StandardTranslationPort: Send + Sync {
     fn translate(
@@ -90,17 +88,17 @@ pub enum TranslationDispatch {
     OpenAi(OpenAiTranslationRequest),
 }
 
+pub type OpenAiTranslationFuture<'a, E> = BoxFuture<'a, std::result::Result<String, E>>;
+
 pub trait OpenAiTranslationPort: Send + Sync {
     type Error;
 
-    fn resolve_default_endpoint_id(
-        &self,
-    ) -> Pin<Box<dyn Future<Output = std::result::Result<String, Self::Error>> + Send + '_>>;
+    fn resolve_default_endpoint_id(&self) -> OpenAiTranslationFuture<'_, Self::Error>;
 
     fn translate(
         &self,
         request: OpenAiTranslationRequest,
-    ) -> Pin<Box<dyn Future<Output = std::result::Result<String, Self::Error>> + Send + '_>>;
+    ) -> OpenAiTranslationFuture<'_, Self::Error>;
 }
 
 #[derive(Debug)]
@@ -263,10 +261,7 @@ mod completion_tests {
     impl OpenAiTranslationPort for FakeOpenAiTranslationPort {
         type Error = String;
 
-        fn resolve_default_endpoint_id(
-            &self,
-        ) -> Pin<Box<dyn Future<Output = std::result::Result<String, Self::Error>> + Send + '_>>
-        {
+        fn resolve_default_endpoint_id(&self) -> OpenAiTranslationFuture<'_, Self::Error> {
             self.resolves.fetch_add(1, Ordering::AcqRel);
             Box::pin(async { Ok(self.endpoint_id.clone()) })
         }
@@ -274,8 +269,7 @@ mod completion_tests {
         fn translate(
             &self,
             request: OpenAiTranslationRequest,
-        ) -> Pin<Box<dyn Future<Output = std::result::Result<String, Self::Error>> + Send + '_>>
-        {
+        ) -> OpenAiTranslationFuture<'_, Self::Error> {
             self.translations.fetch_add(1, Ordering::AcqRel);
             Box::pin(async move { Ok(format!("{}:{}", request.endpoint_id, request.text)) })
         }

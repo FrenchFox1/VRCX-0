@@ -115,9 +115,9 @@ pub struct FavoriteTransferItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoriteTransferResult {
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub local_changed: bool,
     pub remote_changed: bool,
     pub items: Vec<FavoriteTransferItemResult>,
@@ -133,9 +133,9 @@ pub struct FavoriteTransferSelectionInput {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoriteTransferSelectionResult {
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub local_changed: bool,
     pub remote_changed: bool,
     pub items: Vec<FavoriteTransferItemResult>,
@@ -234,7 +234,7 @@ pub(super) async fn transfer_favorites(
     }
 
     Ok(FavoriteTransferResult {
-        total: item_results.len(),
+        total: crate::wire_count(item_results.len()),
         succeeded,
         failed,
         local_changed,
@@ -273,8 +273,8 @@ pub(super) async fn transfer_favorite_selection(
                 output.items.extend(result.items);
             }
             Err(error) => {
-                output.total += batch_size;
-                output.failed += batch_size;
+                output.total = output.total.saturating_add(crate::wire_count(batch_size));
+                output.failed = output.failed.saturating_add(crate::wire_count(batch_size));
                 if output.last_error.is_none() {
                     output.last_error = Some(error.to_string());
                 }

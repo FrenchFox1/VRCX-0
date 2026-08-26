@@ -1,10 +1,5 @@
-use std::collections::HashMap;
-
-use serde_json::Value;
-use vrcx_0_core::activity_sessions::{span_duration_ms, SpanEnd};
-
 use crate::activity::parse_activity_time_ms;
-use crate::common::{row_i64, row_string};
+use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
 use crate::game_log::ensure_game_log_tables;
 use crate::ownership::{owner_id_for_filter, OwnerId};
@@ -28,7 +23,7 @@ impl LocationSpan {
 }
 
 struct SourceRow {
-    created_at: String,
+    left_at: String,
     time: i64,
     world_id: String,
     world_name: String,
@@ -40,18 +35,16 @@ pub(super) struct WindowSpans {
     pub(super) has_open_tail: bool,
 }
 
-pub(super) fn read_location_spans(
+pub(super) fn read_instance_spans(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
     from_ms: Option<i64>,
     to_ms: i64,
-    now_ms: i64,
 ) -> Result<WindowSpans, Error> {
-    let rows = read_source_rows(db, owner_user_id, from_ms)?;
-    let has_open_tail = rows.last().is_some_and(|row| row.time == 0);
+    let rows = read_source_rows(db, owner_user_id, from_ms, to_ms)?;
     Ok(WindowSpans {
-        spans: clip_spans(&spans_from_rows(&rows, now_ms), from_ms, to_ms),
-        has_open_tail,
+        spans: clip_spans(&spans_from_rows(&rows), from_ms, to_ms),
+        has_open_tail: false,
     })
 }
 
@@ -59,54 +52,56 @@ fn read_source_rows(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
     from_ms: Option<i64>,
+    to_ms: i64,
 ) -> Result<Vec<SourceRow>, Error> {
     ensure_game_log_tables(db)?;
     let owner_id = owner_id_for_filter(db, owner_user_id)?;
-    let world_id_expr = world_id_from_location_sql("location");
-    let access_expr = access_bucket_sql("location");
-    let mut params: HashMap<String, Value> = HashMap::new();
-    params.insert("@owner_id".into(), Value::from(owner_id));
-
-    let sql = match from_ms {
-        Some(from_ms) => {
-            params.insert(
-                "@from_iso".into(),
-                Value::String(crate::activity::activity_iso_from_ms(from_ms)),
-            );
-            format!(
-                "SELECT created_at, time, CASE WHEN world_id LIKE 'wrld_%' THEN world_id ELSE {world_id_expr} END AS world_id, world_name, {access_expr} AS access_bucket, sort_group, id
-                 FROM (
-                     SELECT created_at, time, location, world_id, world_name, id, 0 AS sort_group
-                     FROM (
-                         SELECT created_at, time, location, world_id, world_name, id
-                         FROM gamelog_location
-                         WHERE owner_id IN (0, @owner_id)
-                           AND created_at < @from_iso
-                         ORDER BY created_at DESC, id DESC
-                         LIMIT 1
-                     )
-                     UNION ALL
-                     SELECT created_at, time, location, world_id, world_name, id, 1 AS sort_group
-                     FROM gamelog_location
-                     WHERE owner_id IN (0, @owner_id)
-                       AND created_at >= @from_iso
-                 )
-                 ORDER BY created_at ASC, sort_group ASC, id ASC"
-            )
-        }
-        None => format!(
-            "SELECT created_at, time, CASE WHEN world_id LIKE 'wrld_%' THEN world_id ELSE {world_id_expr} END AS world_id, world_name, {access_expr} AS access_bucket
-             FROM gamelog_location
-             WHERE owner_id IN (0, @owner_id)
-             ORDER BY created_at ASC, id ASC"
-        ),
+    let world_id_expr = world_id_from_location_sql("jl.location");
+    let access_expr = access_bucket_sql("jl.location");
+    let from_filter = if from_ms.is_some() {
+        "AND julianday(jl.created_at) >= julianday(@from_iso)"
+    } else {
+        ""
     };
+    let params = ParamsBuilder::new()
+        .set("owner_id", owner_id)
+        .set("user_id", owner_user_id.as_str())
+        .set(
+            "from_iso",
+            from_ms
+                .map(crate::activity::activity_iso_from_ms)
+                .unwrap_or_default(),
+        )
+        .set("to_iso", crate::activity::activity_iso_from_ms(to_ms))
+        .build();
+    let sql = format!(
+        "SELECT jl.created_at,
+                jl.time,
+                {world_id_expr} AS world_id,
+                COALESCE((
+                    SELECT gl.world_name
+                    FROM gamelog_location gl
+                    WHERE gl.owner_id IN (0, @owner_id)
+                      AND gl.location = jl.location
+                    ORDER BY gl.id DESC
+                    LIMIT 1
+                ), '') AS world_name,
+                {access_expr} AS access_bucket
+         FROM gamelog_join_leave jl
+         WHERE jl.owner_id IN (0, @owner_id)
+           AND jl.user_id = @user_id
+           AND jl.type = 'OnPlayerLeft'
+           AND jl.time > 0
+           {from_filter}
+           AND julianday(jl.created_at, '-' || (jl.time * 1.0 / 1000) || ' seconds') <= julianday(@to_iso)
+         ORDER BY jl.created_at ASC, jl.id ASC"
+    );
 
     Ok(db
         .execute(&sql, &params)?
         .into_iter()
         .map(|row| SourceRow {
-            created_at: row_string(&row, 0),
+            left_at: row_string(&row, 0),
             time: row_i64(&row, 1),
             world_id: row_string(&row, 2),
             world_name: row_string(&row, 3),
@@ -115,30 +110,25 @@ fn read_source_rows(
         .collect())
 }
 
-fn spans_from_rows(rows: &[SourceRow], now_ms: i64) -> Vec<LocationSpan> {
+fn spans_from_rows(rows: &[SourceRow]) -> Vec<LocationSpan> {
     let mut spans = Vec::with_capacity(rows.len());
-    for (index, row) in rows.iter().enumerate() {
-        let Some(start_ms) = parse_activity_time_ms(&row.created_at) else {
-            continue;
-        };
-        let end = match rows.get(index + 1) {
-            Some(next) => match parse_activity_time_ms(&next.created_at) {
-                Some(next_start_ms) => SpanEnd::NextStart(next_start_ms),
-                None => SpanEnd::UnknownNextStart,
-            },
-            None => SpanEnd::OpenTail,
-        };
-        let duration_ms = span_duration_ms(start_ms, row.time, end, now_ms);
-        if duration_ms <= 0 {
+    for row in rows {
+        if row.time <= 0 {
             continue;
         }
+        let Some(end_ms) = parse_activity_time_ms(&row.left_at) else {
+            continue;
+        };
+        let Some(start_ms) = end_ms.checked_sub(row.time) else {
+            continue;
+        };
         spans.push(LocationSpan {
             start_ms,
-            end_ms: start_ms + duration_ms,
+            end_ms,
             world_id: row.world_id.clone(),
             world_name: row.world_name.clone(),
             access_bucket: row.access_bucket.clone(),
-            inferred: row.time == 0,
+            inferred: false,
         });
     }
     spans
@@ -174,9 +164,9 @@ mod tests {
     const BASE: i64 = 1_700_000_000_000;
     const HOUR: i64 = 3_600_000;
 
-    fn source_row(offset_ms: i64, time: i64) -> SourceRow {
+    fn source_row(left_offset_ms: i64, time: i64) -> SourceRow {
         SourceRow {
-            created_at: crate::activity::activity_iso_from_ms(BASE + offset_ms),
+            left_at: crate::activity::activity_iso_from_ms(BASE + left_offset_ms),
             time,
             world_id: "wrld_a".into(),
             world_name: "Alpha".into(),
@@ -185,31 +175,21 @@ mod tests {
     }
 
     #[test]
-    fn spans_use_recorded_time_when_present() {
-        let spans = spans_from_rows(&[source_row(0, HOUR)], BASE + 10 * HOUR);
+    fn spans_use_the_closed_instance_end_and_duration() {
+        let spans = spans_from_rows(&[source_row(3 * HOUR, HOUR)]);
 
         assert_eq!(spans.len(), 1);
         assert_eq!(spans[0].duration_ms(), HOUR);
+        assert_eq!(spans[0].start_ms, BASE + 2 * HOUR);
+        assert_eq!(spans[0].end_ms, BASE + 3 * HOUR);
+        assert!(!spans[0].inferred);
     }
 
     #[test]
-    fn spans_infer_missing_time_from_next_row() {
-        let spans = spans_from_rows(
-            &[source_row(0, 0), source_row(2 * HOUR, HOUR)],
-            BASE + 10 * HOUR,
-        );
+    fn spans_drop_unclosed_instance_rows() {
+        let spans = spans_from_rows(&[source_row(3 * HOUR, 0)]);
 
-        assert_eq!(spans.len(), 2);
-        assert_eq!(spans[0].duration_ms(), 2 * HOUR);
-        assert_eq!(spans[1].duration_ms(), HOUR);
-    }
-
-    #[test]
-    fn spans_infer_open_tail_from_now() {
-        let spans = spans_from_rows(&[source_row(0, 0)], BASE + 3 * HOUR);
-
-        assert_eq!(spans.len(), 1);
-        assert_eq!(spans[0].duration_ms(), 3 * HOUR);
+        assert!(spans.is_empty());
     }
 
     #[test]

@@ -3,8 +3,6 @@ use std::collections::HashMap;
 use super::friend_profile::FriendProfileRefreshExpectation;
 use super::test_support::*;
 use super::*;
-use crate::realtime::RealtimeSessionContext;
-use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::OwnerId;
 
@@ -2010,109 +2008,6 @@ fn feed_lookup_input(user_id: String) -> FeedRowsQueryInput {
         date_to: String::new(),
         cursor: None,
     }
-}
-
-#[test]
-fn friend_note_change_notifies_note_cache_sink() -> Result<()> {
-    let dir = TestDir::new("friend-note-cache-sink");
-    let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
-    let web = Arc::new(WebClient::new(vrcx_0_application_core::NoopWebClientPort));
-    let session = HostSessionRuntime::new();
-    let host_session_generation =
-        session.set_realtime_context(vrcx_0_application_core::HostRealtimeSessionContext::new(
-            "usr_self".into(),
-            "https://api.vrchat.cloud/api/1".into(),
-            "wss://pipeline.vrchat.cloud".into(),
-        ));
-    let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
-        vrcx_0_application_core::MemoryWorldCachePort::default(),
-    ));
-    let invalidations = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let event_bus = RuntimeEventBus::new();
-    let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        store: store as Arc<dyn crate::RealtimeStore>,
-        transport: Arc::new(TestRealtimeTransport),
-        remote_requests: Arc::new(TestRealtimeRemoteRequests),
-        web,
-        event_bus: event_bus.clone(),
-        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
-            vrcx_0_application_core::BackendRuntime::new(
-                vrcx_0_application_core::RuntimeHostProfile::Desktop,
-            ),
-            event_bus.clone(),
-        ),
-        friend_projection_sink: crate::FriendProjectionSink::new(event_bus.clone(), None),
-        sync: RuntimeSyncEngine::new(),
-        tasks: TaskSupervisor::new(),
-        session,
-        auth_scope: RuntimeAuthScope::new(),
-        remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
-        local_game_context: Arc::new(UnavailableLocalGameContextSource),
-        activity_sink: None,
-        world_cache,
-        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
-        print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
-        friend_note_change_sink: Some({
-            let invalidations = Arc::clone(&invalidations);
-            Arc::new(move || {
-                invalidations.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            })
-        }),
-        current_user_snapshot_sink: None,
-    }));
-    let active_session = RealtimeSessionContext::new(
-        "usr_self".into(),
-        "https://api.vrchat.cloud/api/1".into(),
-        "wss://pipeline.vrchat.cloud".into(),
-    );
-    {
-        let mut state = runtime.state.lock().unwrap();
-        *state = RealtimeHostRuntimeState::default();
-        state.connection.generation = 7;
-        state.connection.active_context = Some(ActiveRealtimeContext {
-            session: active_session.clone(),
-            auth_scope_generation: 1,
-            generation: 7,
-            client_run_id: 1,
-            session_generation: host_session_generation,
-        });
-    }
-    let mut friend = FriendRecord {
-        id: "usr_friend".to_string(),
-        display_name: "Friend".into(),
-        state: "online".into(),
-        ..FriendRecord::default()
-    };
-    friend.extra.insert("note".into(), json!("old note"));
-    runtime.sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
-        [("usr_friend".to_string(), friend)].into_iter().collect(),
-    )?;
-    assert_eq!(invalidations.load(std::sync::atomic::Ordering::SeqCst), 0);
-
-    let output = runtime.friends.apply_ws_message(&RealtimeWsMessagePayload {
-        json: json!({
-            "type": "friend-update",
-            "content": {
-                "userId": "usr_friend",
-                "user": {
-                    "id": "usr_friend",
-                    "displayName": "Friend",
-                    "note": "new note"
-                }
-            }
-        }),
-        raw: String::new(),
-        received_at: "2026-07-05T00:00:00.000Z".to_string(),
-    });
-    let RealtimeFriendApplyResult::Output(output) = output else {
-        panic!("friend note update should emit output");
-    };
-    runtime.apply_friend_output(*output);
-
-    assert_eq!(invalidations.load(std::sync::atomic::Ordering::SeqCst), 1);
-    Ok(())
 }
 
 #[test]

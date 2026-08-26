@@ -151,7 +151,6 @@ impl RealtimeHostRuntime {
                 .feed_entries
                 .retain(|entry| entry.get("type").and_then(Value::as_str) != Some("Avatar"));
         }
-        let friend_note_changed = output.friend_note_changed;
         let mut world_name_fetch_ids =
             self.enrich_projection_world_names(&mut projection.feed_entries);
         world_name_fetch_ids.extend(self.enrich_persistence_world_names(&mut output.persistence));
@@ -193,11 +192,6 @@ impl RealtimeHostRuntime {
             .feed_entries
             .retain(|entry| !is_player_joining_entry(entry));
         let feed_entries = std::mem::take(&mut projection.feed_entries);
-        if friend_note_changed {
-            if let Some(sink) = &self.deps.friend_note_change_sink {
-                sink();
-            }
-        }
         if !projection.patches.is_empty() || !projection.removals.is_empty() {
             let endpoint = self.active_endpoint();
             if !projection.removals.is_empty() {
@@ -224,12 +218,12 @@ impl RealtimeHostRuntime {
         if let PendingOfflineTimerAction::Schedule {
             user_id,
             token,
-            delay_ms,
+            delay,
         } = timer_action
         {
             let runtime = Arc::clone(self);
             self.deps.tasks.spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                tokio::time::sleep(delay).await;
                 let now = chrono::Utc::now().to_rfc3339();
                 runtime.fire_pending_offline(&user_id, token, now);
             });

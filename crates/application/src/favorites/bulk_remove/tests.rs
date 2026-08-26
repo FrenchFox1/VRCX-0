@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::VecDeque,
     sync::{
@@ -34,7 +36,7 @@ impl FavoriteBulkRemoveActions for FakeActions {
     fn remove_remote<'a>(
         &'a self,
         _item: &'a FavoriteBulkRemoveItem,
-    ) -> Pin<Box<dyn Future<Output = Result<RemoteRemoveOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>> {
         Box::pin(async move {
             self.remote_outcomes
                 .lock()
@@ -222,8 +224,14 @@ async fn selection_chunks_more_than_one_protected_batch() {
     .await
     .unwrap();
 
-    assert_eq!(result.total, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
-    assert_eq!(result.succeeded, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
+    assert_eq!(
+        result.total,
+        crate::wire_count(FAVORITE_BULK_REMOVE_MAX_ITEMS + 1)
+    );
+    assert_eq!(
+        result.succeeded,
+        crate::wire_count(FAVORITE_BULK_REMOVE_MAX_ITEMS + 1)
+    );
     assert_eq!(result.failed, 0);
     assert!(store
         .list(Some(&OwnerId::new("usr_self")), FavoriteEntityKind::Friend,)

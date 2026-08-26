@@ -3,7 +3,7 @@ import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 export function resolveFriendLocationTimeEpoch(
-    friend: { state?: string; pendingOffline?: boolean } | null | undefined,
+    friend: { state?: string } | null | undefined,
     entry: FriendLocationTimeEntry | null | undefined,
     location: string
 ): number {
@@ -11,7 +11,6 @@ export function resolveFriendLocationTimeEpoch(
     if (
         !friend ||
         friend.state !== 'online' ||
-        friend.pendingOffline === true ||
         !entry ||
         entry.location !== expectedLocation ||
         !entry.sinceMs

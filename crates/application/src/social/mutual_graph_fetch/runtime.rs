@@ -123,7 +123,7 @@ impl MutualGraphFetchRuntime {
                 revision: 1,
                 status: MutualGraphFetchState::Running,
                 owner_user_id: OwnerId::new(owner_user_id.clone()),
-                total_friends: friend_ids.len(),
+                total_friends: crate::wire_count(friend_ids.len()),
                 processed_friends: 0,
                 current_friend_id: String::new(),
                 fetched_friends: 0,
@@ -351,10 +351,10 @@ impl MutualGraphFetchRuntime {
         last_error: Option<String>,
     ) {
         self.update_status(run_id, |status| {
-            status.processed_friends = processed_friends;
-            status.fetched_friends = fetched_friends;
-            status.opted_out_friends = opted_out_friends;
-            status.failed_friends = failed_friends;
+            status.processed_friends = crate::wire_count(processed_friends);
+            status.fetched_friends = crate::wire_count(fetched_friends);
+            status.opted_out_friends = crate::wire_count(opted_out_friends);
+            status.failed_friends = crate::wire_count(failed_friends);
             status.last_error = last_error;
         });
     }

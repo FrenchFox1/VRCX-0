@@ -16,46 +16,6 @@ impl LogLocationSnapshotScanner for HostLogLocationSnapshotScanner {
     }
 }
 
-pub struct HostGameLogEventFanout {
-    sinks: Vec<Arc<dyn GameLogEventSink>>,
-}
-
-impl HostGameLogEventFanout {
-    pub fn new(sinks: Vec<Arc<dyn GameLogEventSink>>) -> Self {
-        Self { sinks }
-    }
-}
-
-impl GameLogEventSink for HostGameLogEventFanout {
-    fn ingest_game_log_event(&self, event: &GameLogEvent) -> vrcx_0_application_core::Result<()> {
-        for sink in &self.sinks {
-            sink.ingest_game_log_event(event)?;
-        }
-        Ok(())
-    }
-
-    fn ingest_game_log_events(
-        &self,
-        events: &[GameLogEvent],
-    ) -> vrcx_0_application_core::Result<()> {
-        for sink in &self.sinks {
-            sink.ingest_game_log_events(events)?;
-        }
-        Ok(())
-    }
-
-    fn ingest_game_log_events_with_origin(
-        &self,
-        events: &[GameLogEvent],
-        origin: GameLogEventOrigin,
-    ) -> vrcx_0_application_core::Result<()> {
-        for sink in &self.sinks {
-            sink.ingest_game_log_events_with_origin(events, origin)?;
-        }
-        Ok(())
-    }
-}
-
 pub struct HostInstanceRosterFanout {
     observers: Vec<Arc<dyn InstanceRosterObserver>>,
 }

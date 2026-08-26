@@ -69,10 +69,12 @@ function firstDisplayName(userId: unknown, ...sources: unknown[]) {
 
 export function InstanceUserTiles({
     instance,
+    instanceLocation = '',
     visibleUserIds,
     showInstanceDuration = false
 }: {
     instance: unknown;
+    instanceLocation?: string;
     visibleUserIds?: ReadonlySet<string>;
     showInstanceDuration?: boolean;
 }) {
@@ -252,7 +254,10 @@ export function InstanceUserTiles({
                 const subtitle = instanceUserSubtitle(user, t);
                 const isTraveling =
                     locationSentinel(user.location) === 'traveling';
-                const timerLocation = resolveFriendPresenceLocation(user);
+                const timerLocation = isTraveling
+                    ? resolveFriendPresenceLocation(user)
+                    : instanceLocation.trim() ||
+                      resolveFriendPresenceLocation(user);
                 const isInstanceCreator = userId === creatorUserId;
                 let subline: ReactNode;
                 if (showInstanceDuration || isTraveling) {

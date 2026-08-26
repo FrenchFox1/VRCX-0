@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin};
+use futures_util::future::BoxFuture;
 
 use vrcx_0_core::text::normalize_text;
 use vrcx_0_core::NotificationKind;
@@ -197,13 +197,8 @@ pub trait NotificationChainActions: Send + Sync {
     fn execute_remote(
         &self,
         call: NotificationChainRemoteCall,
-    ) -> Pin<
-        Box<dyn Future<Output = std::result::Result<(), NotificationChainRemoteError>> + Send + '_>,
-    >;
-    fn resolve_world_name<'a>(
-        &'a self,
-        world_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Option<String>> + Send + 'a>>;
+    ) -> BoxFuture<'_, std::result::Result<(), NotificationChainRemoteError>>;
+    fn resolve_world_name<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, Option<String>>;
     fn expire_local(&self, id: String) -> Result<()>;
     fn query_boop_rows(&self) -> Result<Vec<BoopNotificationRow>>;
     fn emit_expired(&self, expired_ids: Vec<String>);

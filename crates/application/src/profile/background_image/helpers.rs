@@ -14,7 +14,7 @@ use super::{
 };
 use vrcx_0_application_core::{Error, Result};
 
-const SNAPSHOT_TTL_HOURS: i64 = 24;
+const SNAPSHOT_TTL: chrono::Duration = chrono::Duration::hours(24);
 pub(super) const DEFAULT_ROTATION_INTERVAL_MINUTES: u16 = 60;
 pub(super) const MIN_ROTATION_INTERVAL_MINUTES: u16 = 1;
 pub(super) const MAX_ROTATION_INTERVAL_MINUTES: u16 = 24 * 60;
@@ -122,7 +122,7 @@ pub(super) fn is_snapshot_fresh(snapshot: Option<&BackgroundImageSnapshot>) -> b
         return false;
     };
     let age = Utc::now().signed_duration_since(resolved_at.with_timezone(&Utc));
-    age >= chrono::Duration::zero() && age < chrono::Duration::hours(SNAPSHOT_TTL_HOURS)
+    age >= chrono::Duration::zero() && age < SNAPSHOT_TTL
 }
 
 pub(super) fn unique_paths(paths: &[String]) -> Vec<String> {

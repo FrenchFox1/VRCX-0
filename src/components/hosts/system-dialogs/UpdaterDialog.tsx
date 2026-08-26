@@ -68,11 +68,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
             ? formatReleaseDisplayVersion(latestRelease.canonicalVersion)
             : '') ||
         '-';
-    const visibleDetail =
-        detail ||
-        (latestRelease && !hasNewerRelease
-            ? t('dialog.vrcx_updater.latest_version')
-            : '');
+    const isUpToDate = Boolean(latestRelease && !hasNewerRelease);
 
     useEffect(() => {
         if (!open || updateCheckDisabled) {
@@ -218,19 +214,25 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                         {t('dialog.system.label.vrcx_0_update')}
                     </DialogTitle>
                     <DialogDescription>
-                        {t('dialog.system.dynamic.version_summary', {
-                            current: currentVersionText,
-                            latest: latestVersionText
-                        })}
+                        {isUpToDate
+                            ? t('dialog.vrcx_updater.latest_version')
+                            : t('dialog.system.dynamic.version_summary', {
+                                  current: currentVersionText,
+                                  latest: latestVersionText
+                              })}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <div className="border-input bg-background flex w-full flex-col gap-1 rounded-md border px-3 py-2 text-sm">
                         <div className="text-muted-foreground text-xs">
-                            {t('dialog.system.action.update_path')}
+                            {isUpToDate
+                                ? t('message.vrcx_updater.current_version')
+                                : t('dialog.system.action.update_path')}
                         </div>
                         <div className="text-foreground truncate font-medium tabular-nums">
-                            {currentVersionText} -&gt; {latestVersionText}
+                            {isUpToDate
+                                ? currentVersionText
+                                : `${currentVersionText} -> ${latestVersionText}`}
                         </div>
                     </div>
                     {showDownloadProgress ? (
@@ -251,10 +253,10 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                             </div>
                         </div>
                     ) : null}
-                    {visibleDetail ? (
+                    {detail ? (
                         <div className="text-muted-foreground text-sm">
                             {userFacingErrorMessage(
-                                visibleDetail,
+                                detail,
                                 t('message.vrcx_updater.failed_install')
                             )}
                         </div>

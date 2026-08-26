@@ -208,13 +208,25 @@ pub fn user_group_instances_get_input(
     group_id: String,
     user_id: String,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+    user_group_instances_get_input_for_endpoint(
+        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+        group_id,
+        user_id,
+    )
+}
+
+pub fn user_group_instances_get_input_for_endpoint(
+    endpoint: String,
+    group_id: String,
+    user_id: String,
+) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupInstancesGet requires groupId.")?;
     let user_id = require_text(user_id, "VrchatGroupInstancesGet requires userId.")?;
     Ok((
         group_id.clone(),
         user_id.clone(),
         get_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            endpoint,
             format!(
                 "users/{}/instances/groups/{}",
                 encode_path_segment(&user_id),

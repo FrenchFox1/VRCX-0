@@ -1,5 +1,6 @@
 import {
     FolderOpenIcon,
+    FolderSearchIcon,
     ImageIcon,
     ImageOffIcon,
     ImagesIcon,
@@ -28,6 +29,7 @@ import {
     setBackgroundImageMode,
     setBackgroundImageProvider
 } from '@/services/background-image/backgroundImageService';
+import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
@@ -124,6 +126,17 @@ function CurrentBackgroundImageSummary({
         setImageReady(false);
     }, [snapshot?.imageUrl]);
 
+    async function showCurrentImageInFolder() {
+        if (!snapshot?.imagePath) {
+            return;
+        }
+        try {
+            await openFolderAndSelectItem(snapshot.imagePath, false);
+        } catch {
+            toast.error(t('view.background_image.toast.failed_to_open_folder'));
+        }
+    }
+
     const providerName = resolveProviderName(
         snapshot?.providerId || providerId
     );
@@ -214,25 +227,42 @@ function CurrentBackgroundImageSummary({
                         </span>
                     </div>
                     {enabled ? (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 shrink-0 self-start"
-                            disabled={loading}
-                            onClick={onRefresh}
-                        >
-                            {isFolderSource ? (
-                                <ShuffleIcon data-icon="inline-start" />
-                            ) : (
-                                <RefreshCwIcon data-icon="inline-start" />
-                            )}
-                            {t(
-                                isFolderSource
-                                    ? 'view.background_image.action.change_image'
-                                    : 'view.background_image.action.refresh'
-                            )}
-                        </Button>
+                        <div className="flex shrink-0 flex-wrap gap-2 self-start">
+                            {isFolderSource && snapshot?.imagePath ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7"
+                                    disabled={loading}
+                                    onClick={showCurrentImageInFolder}
+                                >
+                                    <FolderSearchIcon data-icon="inline-start" />
+                                    {t(
+                                        'view.background_image.action.show_in_folder'
+                                    )}
+                                </Button>
+                            ) : null}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-7"
+                                disabled={loading}
+                                onClick={onRefresh}
+                            >
+                                {isFolderSource ? (
+                                    <ShuffleIcon data-icon="inline-start" />
+                                ) : (
+                                    <RefreshCwIcon data-icon="inline-start" />
+                                )}
+                                {t(
+                                    isFolderSource
+                                        ? 'view.background_image.action.change_image'
+                                        : 'view.background_image.action.refresh'
+                                )}
+                            </Button>
+                        </div>
                     ) : null}
                 </div>
                 {snapshot ? (

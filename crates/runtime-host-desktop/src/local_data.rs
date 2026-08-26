@@ -22,8 +22,13 @@ use vrcx_0_application_game::{
     InstanceHistoryQueryInput, PlayerListSnapshotOutput,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::{
+    SavedGroupCollectionCreateInput, SavedGroupCollectionDeleteInput, SavedGroupFavoriteAddInput,
+    SavedGroupFavoriteRemoveInput, SavedGroupFavoritesSnapshot,
+};
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_core::vrchat_ids::is_group_id;
 use vrcx_0_persistence::DatabaseService;
 
 pub use vrcx_0_core::OwnerId;
@@ -33,7 +38,8 @@ pub use vrcx_0_persistence::activity::{
 };
 pub use vrcx_0_persistence::activity_page::{ActivityPageBuildInput, ActivityPageView};
 pub use vrcx_0_persistence::avatars::{
-    AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput, AvatarTimeSpentOutput,
+    AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
+    AvatarTimeSpentOutput, AvatarUsageRow,
 };
 pub use vrcx_0_persistence::browse_history::{
     BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
@@ -142,6 +148,16 @@ impl LocalDataRuntime {
         OwnerId::new(self.auth_scope.snapshot().current_user_id)
     }
 
+    fn saved_group_owner(&self) -> Result<OwnerId> {
+        let scope = self.auth_scope.snapshot();
+        if !scope.active {
+            return Err(vrcx_0_application_core::Error::Custom(
+                "Saved group favorites require an authenticated session.".into(),
+            ));
+        }
+        Ok(OwnerId::new(scope.current_user_id))
+    }
+
     fn game_state_store(&self) -> crate::game_state_store::PersistenceGameStateStore {
         crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(&self.db))
     }
@@ -230,6 +246,73 @@ impl LocalDataRuntime {
     ) -> Result<i64> {
         self.favorite_mutations
             .remove_local(kind, entity_id, group_name)
+    }
+
+    pub fn saved_group_favorites_snapshot(&self) -> Result<SavedGroupFavoritesSnapshot> {
+        Ok(vrcx_0_persistence::saved_group_favorites::snapshot(
+            self.db.as_ref(),
+            &self.saved_group_owner()?,
+        )?)
+    }
+
+    pub fn saved_group_collection_create(
+        &self,
+        input: SavedGroupCollectionCreateInput,
+    ) -> Result<i64> {
+        let name = input.name.trim();
+        if name.is_empty() {
+            return Err(vrcx_0_application_core::Error::Custom(
+                "Saved group collection name is required.".into(),
+            ));
+        }
+        Ok(
+            vrcx_0_persistence::saved_group_favorites::create_collection(
+                self.db.as_ref(),
+                &self.saved_group_owner()?,
+                &uuid::Uuid::new_v4().to_string(),
+                name,
+            )?,
+        )
+    }
+
+    pub fn saved_group_collection_delete(
+        &self,
+        input: SavedGroupCollectionDeleteInput,
+    ) -> Result<i64> {
+        Ok(
+            vrcx_0_persistence::saved_group_favorites::delete_collection(
+                self.db.as_ref(),
+                &self.saved_group_owner()?,
+                &input.collection_id,
+            )?,
+        )
+    }
+
+    pub fn saved_group_favorite_add(&self, input: SavedGroupFavoriteAddInput) -> Result<i64> {
+        if !is_group_id(input.group_id.trim()) {
+            return Err(vrcx_0_application_core::Error::Custom(
+                "Saved group favorite requires a canonical group ID.".into(),
+            ));
+        }
+        Ok(vrcx_0_persistence::saved_group_favorites::add_group(
+            self.db.as_ref(),
+            &self.saved_group_owner()?,
+            &input.collection_id,
+            &input.group_id,
+        )?)
+    }
+
+    pub fn saved_group_favorite_remove(&self, input: SavedGroupFavoriteRemoveInput) -> Result<i64> {
+        if !is_group_id(input.group_id.trim()) {
+            return Err(vrcx_0_application_core::Error::Custom(
+                "Saved group favorite requires a canonical group ID.".into(),
+            ));
+        }
+        Ok(vrcx_0_persistence::saved_group_favorites::remove_group(
+            self.db.as_ref(),
+            &self.saved_group_owner()?,
+            &input.group_id,
+        )?)
     }
 
     pub fn mutual_graph_fetch_status(&self) -> MutualGraphFetchStatus {
@@ -326,6 +409,14 @@ impl LocalDataRuntime {
         limit: i64,
     ) -> Result<Vec<AvatarCacheOutput>> {
         Ok(vrcx_0_persistence::avatars::avatar_history_list(
+            self.db.as_ref(),
+            user_id,
+            limit,
+        )?)
+    }
+
+    pub fn avatar_usage_ranking(&self, user_id: String, limit: i64) -> Result<Vec<AvatarUsageRow>> {
+        Ok(vrcx_0_persistence::avatars::avatar_usage_ranking(
             self.db.as_ref(),
             user_id,
             limit,

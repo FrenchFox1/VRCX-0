@@ -21,6 +21,7 @@
     "AvatarChange": "off",
     "Bio": "off",
     "groupChange": "off",
+    "group.instanceOpened": "off",
     "group.announcement": "off",
     "group.informative": "off",
     "group.invite": "on",

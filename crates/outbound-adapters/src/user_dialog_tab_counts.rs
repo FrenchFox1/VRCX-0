@@ -4,6 +4,7 @@ use url::Url;
 use uuid::Uuid;
 use vrcx_0_application::social::{
     AvatarProviderConfig, AvatarReleaseStatus, UserDialogExternalFuture, UserDialogTabCountsSource,
+    DEFAULT_AVATAR_PROVIDER,
 };
 use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, WebClient};
 use vrcx_0_integrations::external_api::{self, ExternalApiScope};
@@ -17,7 +18,6 @@ use vrcx_0_vrchat_client::{
     worlds::world_list_by_user_get_input,
 };
 
-const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
 const AVATAR_PROVIDER_ENABLED_KEY: &str = "avatarRemoteDatabase";
 const AVATAR_PROVIDER_LIST_KEY: &str = "VRCX_avatarRemoteDatabaseProviderList";
 const AVATAR_PROVIDER_SELECTED_KEY: &str = "VRCX_avatarRemoteDatabaseProvider";

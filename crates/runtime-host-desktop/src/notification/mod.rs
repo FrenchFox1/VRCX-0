@@ -13,7 +13,9 @@ pub use delivery::{
     decide_notification_plan, NotificationDeliveryCondition, NotificationDeliveryGameState,
     NotificationDeliveryPlan, NotificationDeliveryPreferences, NotificationTtsNameMode,
 };
-pub use desktop::{DesktopNotificationAction, DesktopNotifier, DesktopNotifierSlot};
+pub use desktop::{
+    DesktopNotificationAction, DesktopNotificationTarget, DesktopNotifier, DesktopNotifierSlot,
+};
 pub use dispatcher::{NotificationDispatcher, NotificationDispatcherDeps};
 pub use preferences::{
     config_tts_name_mode, load_preferences, notification_tts_name_mode,

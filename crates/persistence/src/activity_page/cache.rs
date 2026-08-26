@@ -12,7 +12,7 @@ use crate::Error;
 
 use super::types::ActivityPageView;
 
-pub(super) const PAYLOAD_VERSION: i64 = 1;
+pub(super) const PAYLOAD_VERSION: i64 = 2;
 
 pub(super) struct CachedPage {
     pub(super) view: ActivityPageView,

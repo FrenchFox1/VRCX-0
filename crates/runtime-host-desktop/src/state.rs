@@ -27,7 +27,7 @@ use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
 use crate::{
     DesktopDatabaseUpgradeRuntime, DesktopLegacyMigrationRuntime, DesktopRuntimeServices,
     GameClientHostRuntime, GameClientHostRuntimeDeps, GameLogEventSink, GameLogHostRuntime,
-    GameLogHostRuntimeDeps, HostFileAccess, HostGameLogEventFanout, HostGameProcessMonitorActions,
+    GameLogHostRuntimeDeps, HostFileAccess, HostGameProcessMonitorActions,
     HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher,
 };
 use serde_json::{json, Value};
@@ -68,13 +68,11 @@ use vrcx_0_application_game::{
     PresenceAutomationRuleKind, ProcessMonitor, RegistryBackupExport,
     RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
 };
-use vrcx_0_application_realtime::{
-    FavoriteBaselineSnapshot, FriendProjectionObserver, RealtimeTransportStartResult,
-};
+use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeTransportStartResult};
 use vrcx_0_composition::{
-    BackendRuntimeCombinedSnapshot, Result, RuntimeHostCallback, RuntimeHostComposition,
-    RuntimeHostDesktopAssemblyDeps, RuntimeHostFavoritesCallback, RuntimeHostOptions,
-    RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState, RuntimeHostStateBuilder,
+    BackendRuntimeCombinedSnapshot, Result, RuntimeHostComposition, RuntimeHostDesktopAssemblyDeps,
+    RuntimeHostOptions, RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState,
+    RuntimeHostStateBuilder,
 };
 use vrcx_0_core::json::RawJson;
 use vrcx_0_host_desktop::auto_launch::{
@@ -105,7 +103,7 @@ const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";
 const REGISTRY_BACKUP_MAINTENANCE_JOB: &str = "registryBackupMaintenance";
 const REGISTRY_BACKUP_MAINTENANCE_CADENCE_SECONDS: u64 = 3 * 60 * 60;
 const REGISTRY_BACKUP_FOREGROUND_REUSE_WINDOW: Duration = Duration::from_secs(60);
-const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS: u64 = 5;
+const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE: Duration = Duration::from_secs(5);
 const DESKTOP_MAINTENANCE_STOP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const SHARE_EDITOR_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 
@@ -388,10 +386,7 @@ impl DesktopRuntimeHostState {
         }));
         let vr_overlay_runtime =
             Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&desktop_services))?);
-        let game_log_sink: Arc<dyn GameLogEventSink> = Arc::new(HostGameLogEventFanout::new(vec![
-            game_log_runtime.clone(),
-            vr_overlay_runtime.clone(),
-        ]));
+        let game_log_sink: Arc<dyn GameLogEventSink> = game_log_runtime.clone();
         let log_watcher = LogWatcher::new_with_location_snapshot_scanner(
             Some(game_log_sink),
             Arc::new(HostLogLocationSnapshotScanner),
@@ -481,18 +476,6 @@ impl DesktopRuntimeHostState {
             builder.desktop_assembly().session().clone(),
             game_log_snapshot,
         ));
-        let friend_note_change_sink: RuntimeHostCallback = {
-            let vr_overlay_runtime = Arc::clone(&desktop.vr_overlay_runtime);
-            Arc::new(move || {
-                vr_overlay_runtime.invalidate_friends_panel_note_memo_cache();
-            })
-        };
-        let favorites_sink: RuntimeHostFavoritesCallback = {
-            let vr_overlay_runtime = Arc::clone(&desktop.vr_overlay_runtime);
-            Arc::new(move |snapshot: &FavoriteBaselineSnapshot| {
-                vr_overlay_runtime.update_friends_panel_favorite_groups_from_baseline(snapshot);
-            })
-        };
         let friend_projection_observer: Arc<dyn FriendProjectionObserver> =
             desktop_services.clone();
         let instance_launch = crate::instance_launch::build_instance_launch_runtime(
@@ -508,8 +491,6 @@ impl DesktopRuntimeHostState {
         let runtime = builder.finish(RuntimeHostComposition {
             local_game_context,
             group_order_source: Arc::new(HostGroupOrderSource),
-            friend_note_change_sink: Some(friend_note_change_sink),
-            favorites_sink: Some(favorites_sink),
             friend_projection_observer: Some(friend_projection_observer),
             profile_extension: Some(extension.clone()),
         })?;
@@ -650,8 +631,7 @@ impl DesktopRuntimeHostState {
             Arc::clone(runtime.database()),
             Arc::clone(runtime.web_client()),
         );
-        let realtime_runtime = Arc::downgrade(runtime.realtime_runtime());
-        let hmd_membership_runtime = realtime_runtime.clone();
+        let hmd_membership_runtime = Arc::downgrade(runtime.realtime_runtime());
         desktop
             .vr_overlay_runtime
             .set_hmd_friend_membership_provider(move |user_id| {
@@ -659,7 +639,7 @@ impl DesktopRuntimeHostState {
                     .upgrade()
                     .is_some_and(|runtime| runtime.is_current_friend(user_id))
             });
-        let hmd_context_runtime = realtime_runtime.clone();
+        let hmd_context_runtime = Arc::downgrade(runtime.realtime_runtime());
         desktop
             .vr_overlay_runtime
             .set_hmd_friend_context_provider(move |user_id| {
@@ -667,11 +647,6 @@ impl DesktopRuntimeHostState {
                     .upgrade()?
                     .current_friend_record(user_id)?;
                 Some((snapshot.record, snapshot.endpoint))
-            });
-        desktop
-            .vr_overlay_runtime
-            .set_friends_panel_snapshot_provider(move || {
-                realtime_runtime.upgrade()?.friend_snapshot()
             });
         desktop
             .services
@@ -765,12 +740,6 @@ impl DesktopRuntimeHostState {
 
     pub fn tts_engine(&self) -> Arc<dyn vrcx_0_host_desktop::tts::TtsEngine> {
         self.desktop.services.tts()
-    }
-
-    pub fn invalidate_friends_panel_note_memo_cache(&self) {
-        self.desktop
-            .vr_overlay_runtime
-            .invalidate_friends_panel_note_memo_cache();
     }
 
     pub fn background_image_projection(
@@ -2240,12 +2209,6 @@ impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
         self.start_desktop_maintenance_loops(state);
     }
 
-    fn clear_profile_session(&self) {
-        self.desktop
-            .vr_overlay_runtime
-            .clear_friends_panel_session_state();
-    }
-
     fn wait_for_profile_maintenance_stopped(&self, timeout: Duration) -> bool {
         let deadline = Instant::now() + timeout;
         while self
@@ -2683,10 +2646,8 @@ impl DesktopRuntimeProfileExtension {
                     }
                     if now >= next_overlay_activity_config {
                         desktop_services.reload_overlay_activity_filters();
-                        next_overlay_activity_config = now
-                            + Duration::from_secs(
-                                BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE_SECONDS,
-                            );
+                        next_overlay_activity_config =
+                            now + BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE;
                     }
                     let tick_context = BackgroundTickContext {
                         db: &db,

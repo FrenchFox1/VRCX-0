@@ -1,20 +1,22 @@
 use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 use std::time::{Duration, Instant};
 
+use futures_util::future::BoxFuture;
 use vrcx_0_application_core::{RuntimeBackgroundJobs, RuntimeOperationStatus, TaskSupervisor};
 
 pub const BACKGROUND_CURRENT_USER_REFRESH_JOB: &str = "backgroundCurrentUserRefresh";
 pub const BACKGROUND_GROUP_INSTANCE_REFRESH_JOB: &str = "backgroundGroupInstanceRefresh";
+pub const BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB: &str =
+    "backgroundGroupInstanceNotificationRefresh";
 pub const BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB: &str = "backgroundSocialBaselineRefresh";
 pub const BACKGROUND_MODERATION_REFRESH_JOB: &str = "backgroundModerationRefresh";
 pub const BACKGROUND_PRINT_CLEANUP_JOB: &str = "printAutoCleanup";
 pub const BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS: u64 = 300;
+pub const BACKGROUND_GROUP_INSTANCE_NOTIFICATION_CADENCE_SECONDS: u64 = 120;
 pub const BACKGROUND_CURRENT_USER_CADENCE_SECONDS: u64 = 300;
 pub const BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS: u64 = 3_600;
 pub const BACKGROUND_MODERATION_CADENCE_SECONDS: u64 = 30 * 60;
@@ -23,23 +25,28 @@ pub const BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS: u64 = 30 * 60;
 const SOCIAL_MAINTENANCE_SLEEP_CHUNK: Duration = Duration::from_secs(1);
 const SOCIAL_MAINTENANCE_STOP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
-pub type SocialMaintenanceFuture<'a> = Pin<Box<dyn Future<Output = ()> + Send + 'a>>;
-
 pub trait SocialMaintenanceActions: Send + Sync {
     fn active_scope_key(&self) -> Option<String>;
 
     fn favorite_friend_group_membership(&self) -> Option<HashMap<String, Vec<String>>>;
 
-    fn refresh_current_user(&self) -> SocialMaintenanceFuture<'_>;
+    fn group_instance_notification_group_ids(&self) -> Vec<String>;
 
-    fn refresh_group_instances(&self) -> SocialMaintenanceFuture<'_>;
+    fn refresh_current_user(&self) -> BoxFuture<'_, ()>;
+
+    fn refresh_group_instances(&self) -> BoxFuture<'_, ()>;
+
+    fn refresh_group_instance_notifications<'a>(
+        &'a self,
+        group_ids: &'a [String],
+    ) -> BoxFuture<'a, ()>;
 
     fn refresh_social_baseline<'a>(
         &'a self,
         favorite_friend_groups_by_key: &'a mut HashMap<String, Vec<String>>,
-    ) -> SocialMaintenanceFuture<'a>;
+    ) -> BoxFuture<'a, ()>;
 
-    fn refresh_moderation(&self) -> SocialMaintenanceFuture<'_>;
+    fn refresh_moderation(&self) -> BoxFuture<'_, ()>;
 
     fn schedule_print_cleanup(&self);
 }
@@ -50,6 +57,7 @@ struct SocialMaintenanceTickPlan {
     initialize_favorite_groups: bool,
     refresh_current_user: bool,
     refresh_group_instances: bool,
+    refresh_group_instance_notifications: bool,
     refresh_social_baseline: bool,
     refresh_moderation: bool,
     schedule_print_cleanup: bool,
@@ -60,35 +68,54 @@ struct SocialMaintenanceSchedule {
     favorite_groups_initialized: bool,
     next_current_user: Instant,
     next_group_instances: Instant,
+    group_instance_notification_group_ids: Vec<String>,
+    next_group_instance_notifications: Instant,
     next_social: Instant,
     next_moderation: Instant,
     next_print_cleanup: Instant,
 }
 
 impl SocialMaintenanceSchedule {
-    fn new(now: Instant, active_scope_key: String) -> Self {
+    fn new(
+        now: Instant,
+        active_scope_key: String,
+        group_instance_notification_group_ids: Vec<String>,
+    ) -> Self {
         Self {
             active_scope_key,
             favorite_groups_initialized: false,
             next_current_user: now,
             next_group_instances: now,
+            group_instance_notification_group_ids,
+            next_group_instance_notifications: now,
             next_social: now + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS),
             next_moderation: now,
             next_print_cleanup: now,
         }
     }
 
-    fn plan(&mut self, now: Instant, scope_key: String) -> SocialMaintenanceTickPlan {
+    fn plan(
+        &mut self,
+        now: Instant,
+        scope_key: String,
+        group_instance_notification_group_ids: Vec<String>,
+    ) -> SocialMaintenanceTickPlan {
         let reset_scope_state = scope_key != self.active_scope_key;
         if reset_scope_state {
             self.active_scope_key = scope_key;
             self.favorite_groups_initialized = false;
             self.next_current_user = now;
             self.next_group_instances = now;
+            self.next_group_instance_notifications = now;
             self.next_social =
                 now + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS);
             self.next_moderation = now;
             self.next_print_cleanup = now;
+        }
+
+        if self.group_instance_notification_group_ids != group_instance_notification_group_ids {
+            self.group_instance_notification_group_ids = group_instance_notification_group_ids;
+            self.next_group_instance_notifications = now;
         }
 
         let refresh_current_user = now >= self.next_current_user;
@@ -100,6 +127,13 @@ impl SocialMaintenanceSchedule {
         if refresh_group_instances {
             self.next_group_instances =
                 now + Duration::from_secs(BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS);
+        }
+        let refresh_group_instance_notifications =
+            !self.group_instance_notification_group_ids.is_empty()
+                && now >= self.next_group_instance_notifications;
+        if refresh_group_instance_notifications {
+            self.next_group_instance_notifications =
+                now + Duration::from_secs(BACKGROUND_GROUP_INSTANCE_NOTIFICATION_CADENCE_SECONDS);
         }
         let refresh_social_baseline = now >= self.next_social;
         if refresh_social_baseline {
@@ -121,6 +155,7 @@ impl SocialMaintenanceSchedule {
             initialize_favorite_groups: !self.favorite_groups_initialized,
             refresh_current_user,
             refresh_group_instances,
+            refresh_group_instance_notifications,
             refresh_social_baseline,
             refresh_moderation,
             schedule_print_cleanup,
@@ -168,14 +203,19 @@ impl SocialMaintenanceRuntime {
         let running = Arc::clone(&self.running);
         self.tasks.spawn_cancellable(move |stop_token| async move {
             let mut favorite_friend_groups_by_key = HashMap::new();
-            let mut schedule = SocialMaintenanceSchedule::new(Instant::now(), active_scope_key);
+            let mut schedule = SocialMaintenanceSchedule::new(
+                Instant::now(),
+                active_scope_key,
+                actions.group_instance_notification_group_ids(),
+            );
 
             while !stop_token.is_stop_requested() {
                 let Some(scope_key) = actions.active_scope_key() else {
                     break;
                 };
 
-                let plan = schedule.plan(Instant::now(), scope_key);
+                let notification_group_ids = actions.group_instance_notification_group_ids();
+                let plan = schedule.plan(Instant::now(), scope_key, notification_group_ids.clone());
                 if plan.reset_scope_state {
                     favorite_friend_groups_by_key.clear();
                 }
@@ -184,6 +224,11 @@ impl SocialMaintenanceRuntime {
                 }
                 if plan.refresh_group_instances {
                     actions.refresh_group_instances().await;
+                }
+                if plan.refresh_group_instance_notifications {
+                    actions
+                        .refresh_group_instance_notifications(&notification_group_ids)
+                        .await;
                 }
                 if plan.initialize_favorite_groups {
                     if let Some(groups) = actions.favorite_friend_group_membership() {
@@ -236,6 +281,11 @@ fn register_social_maintenance_jobs(background_jobs: &RuntimeBackgroundJobs) {
             "Background group instance refresh is scheduled.",
         ),
         (
+            BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB,
+            BACKGROUND_GROUP_INSTANCE_NOTIFICATION_CADENCE_SECONDS,
+            "Saved group instance notification refresh is scheduled.",
+        ),
+        (
             BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
             BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS,
             "Background social baseline refresh is scheduled.",
@@ -272,6 +322,10 @@ fn mark_social_maintenance_jobs_stopped(background_jobs: &RuntimeBackgroundJobs)
             "Background group instance refresh stopped.",
         ),
         (
+            BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB,
+            "Saved group instance notification refresh stopped.",
+        ),
+        (
             BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
             "Background social baseline refresh stopped.",
         ),
@@ -295,9 +349,9 @@ mod tests {
     #[test]
     fn initial_schedule_runs_fast_refreshes_and_delays_social_baseline() {
         let now = Instant::now();
-        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into());
+        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into(), Vec::new());
 
-        let plan = schedule.plan(now, "scope-a".into());
+        let plan = schedule.plan(now, "scope-a".into(), Vec::new());
 
         assert_eq!(
             plan,
@@ -315,17 +369,22 @@ mod tests {
     #[test]
     fn each_refresh_keeps_its_existing_independent_cadence() {
         let now = Instant::now();
-        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into());
-        let _ = schedule.plan(now, "scope-a".into());
+        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into(), Vec::new());
+        let _ = schedule.plan(now, "scope-a".into(), Vec::new());
 
-        let five_minutes = schedule.plan(now + Duration::from_secs(300), "scope-a".into());
+        let five_minutes =
+            schedule.plan(now + Duration::from_secs(300), "scope-a".into(), Vec::new());
         assert!(five_minutes.refresh_current_user);
         assert!(five_minutes.refresh_group_instances);
         assert!(!five_minutes.refresh_social_baseline);
         assert!(!five_minutes.refresh_moderation);
         assert!(!five_minutes.schedule_print_cleanup);
 
-        let one_hour = schedule.plan(now + Duration::from_secs(3_600), "scope-a".into());
+        let one_hour = schedule.plan(
+            now + Duration::from_secs(3_600),
+            "scope-a".into(),
+            Vec::new(),
+        );
         assert!(one_hour.refresh_social_baseline);
         assert!(one_hour.refresh_moderation);
         assert!(one_hour.schedule_print_cleanup);
@@ -334,11 +393,11 @@ mod tests {
     #[test]
     fn scope_switch_resets_cached_membership_and_fast_refreshes() {
         let now = Instant::now();
-        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into());
-        let _ = schedule.plan(now, "scope-a".into());
+        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into(), Vec::new());
+        let _ = schedule.plan(now, "scope-a".into(), Vec::new());
         schedule.mark_favorite_groups_initialized();
 
-        let switched = schedule.plan(now + Duration::from_secs(10), "scope-b".into());
+        let switched = schedule.plan(now + Duration::from_secs(10), "scope-b".into(), Vec::new());
 
         assert!(switched.reset_scope_state);
         assert!(switched.initialize_favorite_groups);
@@ -352,18 +411,72 @@ mod tests {
     #[test]
     fn favorite_membership_initialization_is_not_repeated_until_scope_changes() {
         let now = Instant::now();
-        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into());
+        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into(), Vec::new());
         assert!(
             schedule
-                .plan(now, "scope-a".into())
+                .plan(now, "scope-a".into(), Vec::new())
                 .initialize_favorite_groups
         );
         schedule.mark_favorite_groups_initialized();
 
         assert!(
             !schedule
-                .plan(now + Duration::from_secs(1), "scope-a".into())
+                .plan(now + Duration::from_secs(1), "scope-a".into(), Vec::new())
                 .initialize_favorite_groups
+        );
+    }
+
+    #[test]
+    fn saved_groups_have_a_separate_two_minute_notification_cadence() {
+        let now = Instant::now();
+        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into(), Vec::new());
+        let initial = schedule.plan(now, "scope-a".into(), Vec::new());
+        assert!(initial.refresh_group_instances);
+        assert!(!initial.refresh_group_instance_notifications);
+
+        let enabled = schedule.plan(
+            now + Duration::from_secs(1),
+            "scope-a".into(),
+            vec!["grp_saved".into()],
+        );
+        assert!(!enabled.refresh_group_instances);
+        assert!(enabled.refresh_group_instance_notifications);
+
+        assert!(
+            !schedule
+                .plan(
+                    now + Duration::from_secs(120),
+                    "scope-a".into(),
+                    vec!["grp_saved".into()]
+                )
+                .refresh_group_instance_notifications
+        );
+        assert!(
+            schedule
+                .plan(
+                    now + Duration::from_secs(121),
+                    "scope-a".into(),
+                    vec!["grp_saved".into()]
+                )
+                .refresh_group_instance_notifications
+        );
+    }
+
+    #[test]
+    fn changing_the_notification_group_ids_triggers_an_immediate_scan() {
+        let now = Instant::now();
+        let mut schedule =
+            SocialMaintenanceSchedule::new(now, "scope-a".into(), vec!["grp_one".into()]);
+        let _ = schedule.plan(now, "scope-a".into(), vec!["grp_one".into()]);
+
+        assert!(
+            schedule
+                .plan(
+                    now + Duration::from_secs(10),
+                    "scope-a".into(),
+                    vec!["grp_two".into()]
+                )
+                .refresh_group_instance_notifications
         );
     }
 }

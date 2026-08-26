@@ -125,10 +125,11 @@ pub use notification_sync::{
     NotificationSyncPort, NotificationSyncSource, NotificationSyncWrite,
 };
 pub use prints::{
-    favorite_state, is_print_created_content_refresh, run_print_auto_cleanup, set_print_favorite,
-    CleanupWarningKind, PrintAutoCleanupEvent, PrintCleanupDeps, PrintCleanupQueue,
-    PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState, PrintFavoritesStore,
-    PrintRemote, PrintRemoteFuture,
+    ensure_print_deletable, favorite_state, is_print_created_content_refresh,
+    run_print_auto_cleanup, set_print_favorite, set_print_favorites, CleanupWarningKind,
+    PrintAutoCleanupEvent, PrintCleanupDeps, PrintCleanupQueue, PrintCleanupQueueSink,
+    PrintCleanupTrigger, PrintFavoriteBulkResult, PrintFavoriteState, PrintFavoritesStore,
+    PrintRemote, PrintRemoteFuture, DEFAULT_AUTO_DELETE_PRINTS_LIMIT,
 };
 pub use quick_search_catalog::{
     QuickSearchDetailStore, QuickSearchEntityType, QuickSearchMatchedField, QuickSearchQueryInput,
@@ -140,9 +141,10 @@ pub use social_baseline_refresh::{
     SocialBaselineRefreshOutput,
 };
 pub use social_maintenance::{
-    SocialMaintenanceActions, SocialMaintenanceFuture, SocialMaintenanceRuntime,
-    BACKGROUND_CURRENT_USER_CADENCE_SECONDS, BACKGROUND_CURRENT_USER_REFRESH_JOB,
-    BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS, BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
+    SocialMaintenanceActions, SocialMaintenanceRuntime, BACKGROUND_CURRENT_USER_CADENCE_SECONDS,
+    BACKGROUND_CURRENT_USER_REFRESH_JOB, BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+    BACKGROUND_GROUP_INSTANCE_NOTIFICATION_CADENCE_SECONDS,
+    BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB, BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
     BACKGROUND_MODERATION_CADENCE_SECONDS, BACKGROUND_MODERATION_REFRESH_JOB,
     BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS, BACKGROUND_PRINT_CLEANUP_JOB,
     BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS, BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
@@ -163,6 +165,7 @@ pub use user_dialog_tab_counts::{
     get_user_dialog_tab_counts, AvatarProviderConfig, AvatarReleaseStatus,
     UserDialogExternalFuture, UserDialogTabCountsDeps, UserDialogTabCountsInput,
     UserDialogTabCountsOutput, UserDialogTabCountsRuntime, UserDialogTabCountsSource,
+    DEFAULT_AVATAR_PROVIDER,
 };
 mod batch_mutation;
 mod instance_invite_batch;

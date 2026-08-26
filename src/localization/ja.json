@@ -2022,6 +2022,29 @@
                     "too_many_favorites_event": "お気に入りのプリントがリストを占めているため、自動削除で設定上限以下にできませんでした。残りは {remaining} 件です。"
                 }
             },
+            "gallery_selection": {
+                "count": "{count} 件選択中",
+                "select_all": "すべて選択",
+                "deselect_all": "選択を解除",
+                "confirm_delete_title": "{count} 件を削除しますか？",
+                "confirm_delete_locked": "ロック中の {count} 件はスキップされます。この操作は取り消せません。",
+                "deleting_progress": "削除中 {done}/{total}",
+                "deleted_toast": "{count} 件を削除しました。",
+                "delete_partial_toast": "{succeeded} 件を削除しましたが、{failed} 件は失敗しました。{reason}",
+                "delete_cancelled_toast": "中止しました。{count} 件を削除済みです。",
+                "delete_unlocked": "{count} 件を削除",
+                "delete_locked": "選択した項目はすべてロックされています。",
+                "delete_locked_favorite": "お気に入りを解除すると削除できます",
+                "delete_locked_in_use": "使用中のため削除できません",
+                "favorited_toast": "{count} 件のプリントをお気に入りに追加しました。",
+                "unfavorited_toast": "{count} 件のプリントのお気に入りを解除しました。",
+                "favorite_skipped_toast": "{count} 件はお気に入りにできませんでした。上限は {max} 件です。"
+            },
+            "prints_filter": {
+                "all": "すべて",
+                "favorites": "お気に入り",
+                "others": "お気に入り以外"
+            },
             "llm_endpoints": {
                 "title": "LLM エンドポイント",
                 "description": "Social AI と翻訳で共有する OpenAI 互換の接続です。",
@@ -2540,6 +2563,7 @@
                         "header": "テキスト読み上げ",
                         "when_to_play": "読み上げタイミング",
                         "tts_voice": "読み上げボイス",
+                        "tts_volume": "読み上げ音量",
                         "system_default_voice": "システム既定",
                         "notification_filters": "TTS 通知フィルター",
                         "name_mode": "読み上げる名前",
@@ -3272,6 +3296,7 @@
             "action": {
                 "refresh": "再読み込み",
                 "change_image": "画像を変更",
+                "show_in_folder": "フォルダーで表示",
                 "select_images": "画像を選択",
                 "select_folder": "フォルダを選択"
             },
@@ -3279,6 +3304,7 @@
                 "enabled": "背景画像を有効化しました。",
                 "refreshed": "背景画像を再読み込みしました。",
                 "failed": "背景画像の更新に失敗しました。",
+                "failed_to_open_folder": "画像をフォルダーで表示できませんでした。",
                 "no_images": "対応している画像が見つかりません。"
             }
         },
@@ -3309,13 +3335,14 @@
                 "minutes": "分"
             },
             "section": {
-                "instance_types": "インスタンスの種類",
+                "instance_types": "インスタンスの傾向",
                 "daily_time": "日ごとのプレイ時間",
                 "weekly_time": "週ごとのプレイ時間",
                 "when_you_play": "よく遊んでいる時間帯",
-                "top_worlds": "よく戻ってくるワールド",
+                "top_worlds": "長く過ごしたワールド",
                 "companions": "よく一緒にいる人",
-                "highlights": "ちょっとした発見"
+                "highlights": "ちょっとした発見",
+                "avatars": "よく使うアバター"
             },
             "access": {
                 "unknown": "不明",
@@ -3334,26 +3361,29 @@
                 "failed_to_load": "アクティビティを読み込めませんでした"
             },
             "caveat": {
-                "recorded_since": "ゲームログは {date} から記録しています。"
+                "recorded_since": "起動中のみ記録されます。"
             },
             "worlds": {
                 "visit_count": "{count} 回",
                 "open_ranking": "詳細",
-                "total": "合計 {count} ワールド"
+                "total": "合計 {count} ワールド",
+                "show_home": "ホームワールドを含む"
             },
             "people": {
-                "co_days": "{count} 日一緒",
-                "lead_caption": "{days} 日一緒 · {hours} 時間",
-                "fading_title": "最近あまり会っていない",
-                "fading_caveat": "前の期間より一緒の時間が減りました。生活リズムの違いかもしれません。",
+                "co_days": "{count} 日",
+                "lead_caption": "{days} 日 · {hours} 時間",
+                "fading_title": "会う頻度が減った人",
+                "fading_caveat": "前の期間より会う時間が減っています。生活リズムの違いかもしれません。",
                 "encountered_total": "合計 {count} 人",
-                "fading_last_seen": "最後に一緒 {date}"
+                "fading_last_seen": "最後に会った {date}",
+                "order_minutes": "時間順",
+                "order_days": "日数順"
             },
             "hero": {
                 "per_day": "1日あたり",
                 "days_played": "記録のある日",
                 "sessions": "セッション",
-                "longest": "最長の連続"
+                "longest": "最長セッション"
             },
             "action": {
                 "show_all": "すべて表示（{count}件）",
@@ -3362,6 +3392,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% が深夜 0 時から 6 時",
                 "open_heatmap": "曜日と時間帯で見る"
+            },
+            "avatars": {
+                "all_time": "全期間"
             }
         }
     },
@@ -5540,6 +5573,9 @@
         "group_join_request_title": "グループ参加リクエスト",
         "group_transfer_request_title": "グループ管理者の移譲",
         "group_queue_ready_title": "グループキューが準備完了",
+        "group_instance_opened": "新しいインスタンスを作成しました",
+        "group_instance_opened_location": "新しいインスタンスを作成しました：{location}",
+        "group_instances_opened": "新しいインスタンスを {count} 件作成しました",
         "instance_closed_title": "インスタンスが閉じられました",
         "event_title": "イベント",
         "external_title": "外部アプリ",
@@ -6019,6 +6055,27 @@
         "error_generic": "翻訳に失敗しました",
         "error_network": "ネットワークエラーです。もう一度お試しください",
         "error_unsupported": "翻訳が設定されていません"
+    },
+    "saved_group_favorites": {
+        "title": "お気に入りグループ",
+        "description": "よく使うグループをローカルのコレクションに保存し、新しいインスタンスの通知に利用できます。",
+        "new_collection": "新しいコレクション",
+        "empty_collections": "コレクションを作成するとグループを保存できます。",
+        "empty_group": "このコレクションに保存されたグループはありません。",
+        "delete_title": "このコレクションを削除しますか？",
+        "delete_description": "「{name}」を削除すると、保存されている{count}件のグループもお気に入りから外れます。",
+        "choose_collection": "保存先を選択",
+        "remove": "お気に入りから削除",
+        "toggle": "グループをお気に入りに追加",
+        "sidebar_saved": "お気に入りグループ",
+        "sidebar_none": "お気に入りグループはまだありません",
+        "sidebar_other": "その他のアクティブなグループ",
+        "sidebar_failed": "グループインスタンスを読み込めませんでした",
+        "sidebar_no_active": "その他のアクティブなグループインスタンスはありません",
+        "scope_all": "すべてのお気に入りグループ",
+        "scope_selected": "選択したお気に入りコレクション",
+        "notification_type": "グループの新規インスタンス",
+        "notification_empty": "お気に入りグループのコレクションがありません。"
     },
     "app": {
         "routes": {

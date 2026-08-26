@@ -98,12 +98,12 @@ mod tests {
             PendingOfflineTimerAction::Schedule {
                 user_id,
                 token,
-                delay_ms,
+                delay,
             } => json!({
                 "kind": "schedule",
                 "userId": user_id,
                 "token": token,
-                "delayMs": delay_ms,
+                "delayMs": delay.as_millis(),
             }),
         }
     }
@@ -137,7 +137,6 @@ mod tests {
             "persistence": persistence,
             "timer": timer_summary(&output.timer_action),
             "profileRefetchUserIds": output.profile_refetch_user_ids,
-            "friendNoteChanged": output.friend_note_changed,
         })
     }
 

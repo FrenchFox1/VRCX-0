@@ -15,7 +15,7 @@ use super::cache::{
 };
 use super::lock::with_activity_page_build_lock;
 use super::people::people;
-use super::spans::{read_location_spans, LocationSpan};
+use super::spans::{read_instance_spans, LocationSpan};
 use super::types::{ActivityPageBuildInput, ActivityPageCoverage, ActivityPageView};
 
 const DAY_MS: i64 = 86_400_000;
@@ -77,6 +77,7 @@ fn is_reusable(
     cached.payload_version == PAYLOAD_VERSION
         && cached.built_from_cursor == cursor
         && cached.view.utc_offset_minutes == input.utc_offset_minutes
+        && cached.view.people.order == input.companion_order
         && cached.view.window_from_ms == window.from_ms.unwrap_or(0)
         && cached.view.window_to_ms == window.to_ms
         && !cached.view.has_open_tail
@@ -117,18 +118,13 @@ fn build_fresh(
     let to_ms = window.to_ms;
     let from_ms = window.from_ms;
     let previous_from_ms = from_ms.map(|from_ms| from_ms - range_days * DAY_MS);
-    let window_spans = read_location_spans(db, &input.owner_user_id, from_ms, to_ms, input.now_ms)?;
+    let window_spans = read_instance_spans(db, &input.owner_user_id, from_ms, to_ms)?;
     let spans = window_spans.spans;
 
     let previous = match (previous_from_ms, from_ms) {
         (Some(previous_from_ms), Some(from_ms)) => {
-            let previous_spans = read_location_spans(
-                db,
-                &input.owner_user_id,
-                Some(previous_from_ms),
-                from_ms,
-                input.now_ms,
-            )?;
+            let previous_spans =
+                read_instance_spans(db, &input.owner_user_id, Some(previous_from_ms), from_ms)?;
             summarize_previous(&previous_spans.spans, input.utc_offset_minutes)
         }
         _ => Default::default(),
@@ -165,6 +161,7 @@ fn build_fresh(
             from_ms,
             to_ms,
             input.utc_offset_minutes,
+            input.companion_order,
         )?,
         coverage: coverage(db, &input.owner_user_id, from_ms, to_ms)?,
         built_from_cursor: cursor.to_string(),

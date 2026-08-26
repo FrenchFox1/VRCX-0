@@ -2,7 +2,7 @@ use serde_json::{Map, Value};
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::text::first_owned;
 
-use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY_MS;
+use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY;
 use crate::realtime::{
     PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserOutput,
     RealtimeCurrentUserProjection,
@@ -105,7 +105,7 @@ pub(super) fn apply_user_location(
                 timer_action: PendingOfflineTimerAction::Schedule {
                     user_id: state.current_user_id.clone(),
                     token,
-                    delay_ms: PENDING_OFFLINE_DELAY_MS,
+                    delay: PENDING_OFFLINE_DELAY,
                 },
                 ..CurrentUserPatchOptions::default()
             },

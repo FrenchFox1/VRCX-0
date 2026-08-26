@@ -1,13 +1,11 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
 
 use serde::{Deserialize, Serialize};
 
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
 
-pub type InstanceLaunchApiFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;
+pub type InstanceLaunchApiFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait InstanceLaunchHttpClient: Send + Sync {
     fn instance_short_name<'a>(

@@ -1,7 +1,9 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashSet;
+use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
-use std::{future::Future, pin::Pin};
 
 use futures_util::stream::{self, StreamExt};
 use moka::future::Cache;
@@ -29,7 +31,7 @@ const FAVORITE_WORLD_PAGE_SIZE: usize = 300;
 const FAVORITE_WORLD_MAX_OFFSET: i32 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i32;
 const MY_AVATAR_PAGE_SIZE: usize = 50;
 const MY_AVATAR_MAX_OFFSET: i32 = 5_000;
-const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
+pub const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
 
 #[derive(Clone)]
 pub struct UserDialogTabCountsDeps {
@@ -59,8 +61,7 @@ pub struct AvatarProviderConfig {
     pub selected: String,
 }
 
-pub type UserDialogExternalFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<(i32, String)>> + Send + 'a>>;
+pub type UserDialogExternalFuture<'a> = BoxFuture<'a, Result<(i32, String)>>;
 
 pub trait UserDialogTabCountsSource: Send + Sync {
     fn avatar_provider_config(&self) -> Result<AvatarProviderConfig>;
@@ -554,15 +555,15 @@ fn default_avatar_release_status() -> AvatarReleaseStatus {
 #[serde(rename_all = "camelCase")]
 pub struct UserDialogTabCountsOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub mutual_friends: Option<usize>,
+    pub mutual_friends: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub groups: Option<usize>,
+    pub groups: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub worlds: Option<usize>,
+    pub worlds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub favorite_worlds: Option<usize>,
+    pub favorite_worlds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatars: Option<usize>,
+    pub avatars: Option<u32>,
 }
 
 impl UserDialogTabCountsOutput {
@@ -591,9 +592,9 @@ fn counts_from_results(
     }
 }
 
-fn resolved_count(source: &str, result: Result<usize>) -> Option<usize> {
+fn resolved_count(source: &str, result: Result<usize>) -> Option<u32> {
     match result {
-        Ok(count) => Some(count),
+        Ok(count) => Some(crate::wire_count(count)),
         Err(error) => {
             tracing::debug!(%error, source, "user dialog tab count source failed");
             None

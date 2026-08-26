@@ -1,6 +1,6 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashSet;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -29,8 +29,7 @@ const PRINT_CLEANUP_DEBOUNCE: Duration = Duration::from_millis(2500);
 const PRINT_CLEANUP_LIST_COUNT: i32 = 100;
 const PRINT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type PrintRemoteFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;
+pub type PrintRemoteFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait PrintRemote: Send + Sync {
     fn list_prints<'a>(
@@ -58,9 +57,9 @@ pub enum CleanupWarningKind {
 #[serde(rename_all = "camelCase")]
 pub struct CleanupWarning {
     pub kind: CleanupWarningKind,
-    pub favorites: usize,
-    pub max: usize,
-    pub over: usize,
+    pub favorites: u32,
+    pub max: u32,
+    pub over: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -289,8 +288,8 @@ pub async fn run_print_auto_cleanup(
     }
 
     let event = PrintAutoCleanupEvent {
-        deleted,
-        remaining: prints.len().saturating_sub(deleted),
+        deleted: crate::wire_count(deleted),
+        remaining: crate::wire_count(prints.len().saturating_sub(deleted)),
         warning: selection
             .warning
             .as_ref()
@@ -305,9 +304,9 @@ fn cleanup_warning(limit: usize, favorite_count: usize) -> Option<CleanupWarning
     if favorite_count > favorite_limit {
         return Some(CleanupWarning {
             kind: CleanupWarningKind::TooManyFavorites,
-            favorites: favorite_count,
-            max: favorite_limit,
-            over: favorite_count - favorite_limit,
+            favorites: crate::wire_count(favorite_count),
+            max: crate::wire_count(favorite_limit),
+            over: crate::wire_count(favorite_count - favorite_limit),
         });
     }
 

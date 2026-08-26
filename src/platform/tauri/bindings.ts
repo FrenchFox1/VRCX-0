@@ -110,8 +110,16 @@ const generatedCommands = {
     async appHostTtsVoices(): Promise<TtsVoice[]> {
         return await TAURI_INVOKE('app__host_tts_voices');
     },
-    async appHostTtsSpeak(text: string, voiceId: string | null): Promise<null> {
-        return await TAURI_INVOKE('app__host_tts_speak', { text, voiceId });
+    async appHostTtsSpeak(
+        text: string,
+        voiceId: string | null,
+        volume: number
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__host_tts_speak', {
+            text,
+            voiceId,
+            volume
+        });
     },
     async appCurrentUserRefresh(): Promise<CurrentUserRefreshOutcome> {
         return await TAURI_INVOKE('app__current_user_refresh');
@@ -751,6 +759,15 @@ const generatedCommands = {
             limit
         });
     },
+    async appAvatarUsageRanking(
+        userId: string,
+        limit: number
+    ): Promise<AvatarUsageRow[]> {
+        return await TAURI_INVOKE('app__avatar_usage_ranking', {
+            userId,
+            limit
+        });
+    },
     async appAvatarTimeSpentAdd(
         userId: string,
         avatarId: string,
@@ -1026,6 +1043,35 @@ const generatedCommands = {
         kind: FavoriteEntityKind
     ): Promise<LocalFavoriteSnapshot> {
         return await TAURI_INVOKE('app__favorite_local_snapshot', { kind });
+    },
+    async appSavedGroupFavoritesGet(): Promise<SavedGroupFavoritesSnapshot> {
+        return await TAURI_INVOKE('app__saved_group_favorites_get');
+    },
+    async appSavedGroupCollectionCreate(
+        input: SavedGroupCollectionCreateInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_collection_create', {
+            input
+        });
+    },
+    async appSavedGroupCollectionDelete(
+        input: SavedGroupCollectionDeleteInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_collection_delete', {
+            input
+        });
+    },
+    async appSavedGroupFavoriteAdd(
+        input: SavedGroupFavoriteAddInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_favorite_add', { input });
+    },
+    async appSavedGroupFavoriteRemove(
+        input: SavedGroupFavoriteRemoveInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_favorite_remove', {
+            input
+        });
     },
     async appMemoGetUser(userId: string): Promise<UserMemoOutput | null> {
         return await TAURI_INVOKE('app__memo_get_user', { userId });
@@ -1774,6 +1820,13 @@ const generatedCommands = {
         input: VrchatPrintFavoriteSetInput
     ): Promise<PrintFavoriteState> {
         return await TAURI_INVOKE('app__vrchat_prints_favorite_set', { input });
+    },
+    async appVrchatPrintsFavoritesSet(
+        input: VrchatPrintFavoritesSetInput
+    ): Promise<PrintFavoriteBulkResult> {
+        return await TAURI_INVOKE('app__vrchat_prints_favorites_set', {
+            input
+        });
     },
     async appVrchatMediaRewardRedeem(
         input: VrchatMediaRewardRedeemInput
@@ -2583,6 +2636,7 @@ export const commands: TypedCommands<typeof generatedCommands> =
 /** user-defined types **/
 
 export type ActiveTurn = { turnId: string; status: TurnStatus };
+export type ActivityCompanionOrder = 'minutes' | 'days';
 export type ActivityOverlapViewBuildInput = {
     ownerUserId: OwnerId;
     currentUserId: string;
@@ -2611,6 +2665,7 @@ export type ActivityPageBuildInput = {
     rangeDays: number;
     utcOffsetMinutes: number;
     nowMs: number;
+    companionOrder: ActivityCompanionOrder;
     forceRefresh: boolean;
 };
 export type ActivityPageCompanionRow = {
@@ -2636,6 +2691,7 @@ export type ActivityPageFadingRow = {
     lastSeenTogether: string;
 };
 export type ActivityPagePeople = {
+    order: ActivityCompanionOrder;
     companions: ActivityPageCompanionRow[];
     fading: ActivityPageFadingRow[];
     encounteredCount: number;
@@ -3046,6 +3102,13 @@ export type AvatarUpdateRequest = {
     secondaryStyle?: string | null;
     tags?: string[] | null;
     releaseStatus?: AvatarReleaseStatus | null;
+};
+export type AvatarUsageRow = {
+    avatarId: string;
+    name: string;
+    thumbnailImageUrl: string;
+    imageUrl: string;
+    timeSpent: number;
 };
 export type BackendRuntimeAuthStatus =
     | 'unknown'
@@ -3539,7 +3602,12 @@ export type DeepLinkAction =
     | { type: 'openWorld'; worldId: string }
     | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
-export type DesktopNotificationActivation = { userId: string };
+export type DesktopNotificationActivation = {
+    target: DesktopNotificationTarget;
+};
+export type DesktopNotificationTarget =
+    | { kind: 'openUserProfile'; userId: string }
+    | { kind: 'openGroupProfile'; groupId: string };
 export type EmojiLoopStyle = 'pingpong';
 export type EmojiUploadParams =
     | {
@@ -5024,6 +5092,11 @@ export type PrintAutoCleanupEvent = {
     remaining: number;
     warning: string | null;
 };
+export type PrintFavoriteBulkResult = {
+    state: PrintFavoriteState;
+    applied: number;
+    skipped: number;
+};
 export type PrintFavoriteState = {
     favoriteIds: string[];
     maxFavorites: number;
@@ -5402,6 +5475,22 @@ export type SavedCredentialUser = {
     thumbnailUrl?: string | null;
     currentAvatarThumbnailImageUrl?: string | null;
     currentAvatarImageUrl?: string | null;
+};
+export type SavedGroupCollection = {
+    id: string;
+    name: string;
+    groupIds: string[];
+    createdAt: string;
+};
+export type SavedGroupCollectionCreateInput = { name: string };
+export type SavedGroupCollectionDeleteInput = { collectionId: string };
+export type SavedGroupFavoriteAddInput = {
+    collectionId: string;
+    groupId: string;
+};
+export type SavedGroupFavoriteRemoveInput = { groupId: string };
+export type SavedGroupFavoritesSnapshot = {
+    collections: SavedGroupCollection[];
 };
 export type SavedLoginParamsSnapshot = { username: string };
 export type ScreenshotFolderInfo = {
@@ -5994,6 +6083,10 @@ export type VrchatMediaUserInventoryItemInput = {
 };
 export type VrchatPrintFavoriteSetInput = {
     printId?: string;
+    favorite?: boolean;
+};
+export type VrchatPrintFavoritesSetInput = {
+    printIds?: string[];
     favorite?: boolean;
 };
 export type VrchatRequestInvitePhotoSendInput = {

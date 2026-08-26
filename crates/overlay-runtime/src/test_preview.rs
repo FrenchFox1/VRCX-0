@@ -61,7 +61,5 @@ pub(crate) fn test_hmd_toast_views() -> Vec<HmdToastView> {
         avatar: None,
         show_avatar: false,
         merge_count: 1,
-        opacity: 1.0,
-        slide_offset: 0.0,
     }]
 }

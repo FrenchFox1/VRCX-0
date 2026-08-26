@@ -6,7 +6,10 @@ use vrcx_0_application::media::{
     InventoryItemsCollectOutput, LegacyEntityImageKind, LegacyEntityImageUploadInput,
     LegacyMediaUploadDeps,
 };
-use vrcx_0_application::social::{favorite_state, set_print_favorite, PrintFavoriteState};
+use vrcx_0_application::social::{
+    ensure_print_deletable, favorite_state, set_print_favorite, set_print_favorites,
+    PrintFavoriteBulkResult, PrintFavoriteState,
+};
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::{
     save_ugc_image_to_file, AuthenticatedMutationContext, ImageCache, RemoteMutationGate,
@@ -170,6 +173,22 @@ impl DesktopMediaRuntime {
 
     pub fn set_print_favorite(&self, print_id: &str, favorite: bool) -> Result<PrintFavoriteState> {
         Ok(set_print_favorite(&self.print_adapter, print_id, favorite)?)
+    }
+
+    pub fn set_print_favorites(
+        &self,
+        print_ids: &[String],
+        favorite: bool,
+    ) -> Result<PrintFavoriteBulkResult> {
+        Ok(set_print_favorites(
+            &self.print_adapter,
+            print_ids,
+            favorite,
+        )?)
+    }
+
+    pub fn ensure_print_deletable(&self, print_id: &str) -> Result<()> {
+        Ok(ensure_print_deletable(&self.print_adapter, print_id)?)
     }
 
     pub async fn collect_inventory_items(

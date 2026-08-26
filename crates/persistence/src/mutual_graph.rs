@@ -42,7 +42,7 @@ pub struct MutualGraphMetaOutput {
     pub friend_id: String,
     pub last_fetched_at: String,
     pub opted_out: bool,
-    pub total_count: Option<usize>,
+    pub total_count: Option<u32>,
 }
 
 #[derive(Debug, Serialize, specta::Type)]
@@ -108,7 +108,7 @@ pub fn mutual_graph_snapshot_get(
                     opted_out: row_i64(&row, 2) == 1,
                     total_count: row_value(&row, 3)
                         .as_i64()
-                        .and_then(|count| usize::try_from(count).ok()),
+                        .and_then(|count| u32::try_from(count).ok()),
                 })
             }
         })

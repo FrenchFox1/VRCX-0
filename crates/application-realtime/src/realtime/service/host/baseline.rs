@@ -135,7 +135,7 @@ impl RealtimeHostRuntime {
         };
         let owner = self.lock_friend_owner();
         let feed_persistence_disabled = self.feed_persistence_disabled.load(Ordering::Relaxed);
-        let friend_count = friends_by_id.len();
+        let friend_count = u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX);
         let FriendBaselineApplyPlan {
             result,
             active,
@@ -274,7 +274,7 @@ impl RealtimeHostRuntime {
                         .baseline_causal_watermark()
                         .baseline_revision
                         .unwrap_or(0),
-                    friend_count: friends_by_id.len(),
+                    friend_count: u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX),
                 }));
             }
 
@@ -401,7 +401,7 @@ impl RealtimeHostRuntime {
         for schedule in baseline_schedules {
             let runtime = Arc::clone(self);
             self.deps.tasks.spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(schedule.delay_ms)).await;
+                tokio::time::sleep(schedule.delay).await;
                 let now = chrono::Utc::now().to_rfc3339();
                 runtime.fire_pending_offline(&schedule.user_id, schedule.token, now);
             });

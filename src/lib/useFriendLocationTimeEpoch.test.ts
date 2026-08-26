@@ -28,7 +28,18 @@ describe('resolveFriendLocationTimeEpoch', () => {
         ).toBe(0);
     });
 
-    it('rejects offline, active, pending, and removed friends', () => {
+    it('keeps the backend time while an offline transition is pending', () => {
+        const pendingFriend = {
+            state: 'online',
+            pendingOffline: true
+        };
+
+        expect(
+            resolveFriendLocationTimeEpoch(pendingFriend, entry, entry.location)
+        ).toBe(entry.sinceMs);
+    });
+
+    it('rejects offline, active, and removed friends', () => {
         expect(
             resolveFriendLocationTimeEpoch(
                 { state: 'offline' },
@@ -39,16 +50,6 @@ describe('resolveFriendLocationTimeEpoch', () => {
         expect(
             resolveFriendLocationTimeEpoch(
                 { state: 'active' },
-                entry,
-                entry.location
-            )
-        ).toBe(0);
-        expect(
-            resolveFriendLocationTimeEpoch(
-                {
-                    state: 'online',
-                    pendingOffline: true
-                },
                 entry,
                 entry.location
             )

@@ -3,10 +3,10 @@ use std::time::Duration;
 
 use super::friend_profile::FriendProfileRefreshExpectation;
 use super::friend_profile_bulk_load::{
-    friend_profile_bulk_load_backoff_delay_ms, select_friend_profile_bulk_load_targets,
+    friend_profile_bulk_load_backoff_delay, select_friend_profile_bulk_load_targets,
     FriendProfileBulkLoadInitialProgress, FriendProfileBulkLoadItemOutcome,
     FriendProfileBulkLoadPacer, FriendProfileBulkLoadStatus, FRIEND_PROFILE_BULK_LOAD_CONCURRENCY,
-    FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS, FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS,
+    FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL, FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING,
 };
 use super::test_support::*;
 use super::*;
@@ -76,10 +76,22 @@ fn select_targets_excludes_fully_loaded_roster() {
 
 #[test]
 fn backoff_delay_grows_exponentially_from_base() {
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(0), 500);
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(1), 1_000);
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(2), 2_000);
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(3), 4_000);
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(0),
+        Duration::from_millis(500)
+    );
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(1),
+        Duration::from_secs(1)
+    );
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(2),
+        Duration::from_secs(2)
+    );
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(3),
+        Duration::from_secs(4)
+    );
 }
 
 #[tokio::test(start_paused = true)]
@@ -89,12 +101,12 @@ async fn pacer_releases_concurrency_slots_within_one_interval() {
     for _ in 0..FRIEND_PROFILE_BULK_LOAD_CONCURRENCY {
         pacer.acquire_slot().await;
     }
-    assert!(start.elapsed() < Duration::from_millis(FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS));
+    assert!(start.elapsed() < FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL);
 
     pacer.acquire_slot().await;
     assert_eq!(
         start.elapsed(),
-        Duration::from_millis(FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING_MS * 3)
+        FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING * 3
     );
 }
 
@@ -148,7 +160,6 @@ fn start_requires_active_realtime_session() -> Result<()> {
         world_cache,
         instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
-        friend_note_change_sink: None,
         current_user_snapshot_sink: None,
     }));
 
@@ -210,9 +221,10 @@ async fn wait_for_bulk_load_processed(runtime: &Arc<RealtimeHostRuntime>, proces
 }
 
 async fn park_bulk_worker_on_the_transport_gate() {
-    tokio::time::sleep(Duration::from_millis(
-        super::friend_profile_bulk_load::FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS + 500,
-    ))
+    tokio::time::sleep(
+        super::friend_profile_bulk_load::FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL
+            + Duration::from_millis(500),
+    )
     .await;
 }
 

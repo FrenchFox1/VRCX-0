@@ -21,7 +21,7 @@ use vrcx_0_vrchat_client::worlds::world_get_input;
 use vrcx_0_application_core::WebClient;
 use vrcx_0_core::location::is_meaningful_world_name;
 
-const WORLD_RESOLVE_FETCH_TIMEOUT_MS: u64 = 5_000;
+const WORLD_RESOLVE_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const WORLD_RESOLVE_FAILURE_TTL: Duration = Duration::from_secs(60);
 const WORLD_RESOLVE_FAILURE_CAPACITY: u64 = 32;
 
@@ -292,7 +292,7 @@ impl WorldCache {
         }
         let key = resolve_key(endpoint, &world_id);
         match tokio::time::timeout(
-            Duration::from_millis(WORLD_RESOLVE_FETCH_TIMEOUT_MS),
+            WORLD_RESOLVE_FETCH_TIMEOUT,
             self.get(web, endpoint, &world_id, false, false),
         )
         .await
@@ -357,7 +357,7 @@ impl WorldCache {
         }
 
         let response = match tokio::time::timeout(
-            Duration::from_millis(WORLD_RESOLVE_FETCH_TIMEOUT_MS),
+            WORLD_RESOLVE_FETCH_TIMEOUT,
             fetch(key.endpoint.clone(), key.world_id.clone()),
         )
         .await

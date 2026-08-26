@@ -2028,6 +2028,29 @@
                     "too_many_favorites_event": "Automatické mazání se nepodařilo dostat pod nastavený limit, protože seznam zaplňují oblíbené tisky. Zbývá {remaining} tisků."
                 }
             },
+            "gallery_selection": {
+                "count": "Vybráno: {count}",
+                "select_all": "Vybrat vše",
+                "deselect_all": "Zrušit výběr",
+                "confirm_delete_title": "Smazat {count} položek?",
+                "confirm_delete_locked": "{count} zamčených položek bude přeskočeno. Tuto akci nelze vrátit zpět.",
+                "deleting_progress": "Mazání {done}/{total}",
+                "deleted_toast": "Smazáno {count} položek.",
+                "delete_partial_toast": "Smazáno {succeeded} položek, {failed} se nezdařilo. {reason}",
+                "delete_cancelled_toast": "Zrušeno. Smazáno {count} položek.",
+                "delete_unlocked": "Smazat {count}",
+                "delete_locked": "Všechny vybrané položky jsou zamčené.",
+                "delete_locked_favorite": "V oblíbených - nejprve odeberte z oblíbených",
+                "delete_locked_in_use": "Používá se - nelze smazat",
+                "favorited_toast": "{count} tisků přidáno do oblíbených.",
+                "unfavorited_toast": "{count} tisků odebráno z oblíbených.",
+                "favorite_skipped_toast": "{count} tisků se nepodařilo přidat do oblíbených. Limit je {max}."
+            },
+            "prints_filter": {
+                "all": "Vše",
+                "favorites": "Oblíbené",
+                "others": "Neoblíbené"
+            },
             "llm_endpoints": {
                 "title": "LLM endpointy",
                 "description": "Sdílená připojení kompatibilní s OpenAI pro Social AI a překlad.",
@@ -2546,6 +2569,7 @@
                         "header": "Převod textu na řeč",
                         "when_to_play": "Notification TTS. When to play",
                         "tts_voice": "Hlas TTS",
+                        "tts_volume": "Hlasitost TTS",
                         "system_default_voice": "Výchozí systémový hlas",
                         "notification_filters": "Filtry oznámení TTS",
                         "name_mode": "Čtené jméno",
@@ -3278,6 +3302,7 @@
             "action": {
                 "refresh": "Obnovit",
                 "change_image": "Změnit obrázek",
+                "show_in_folder": "Zobrazit ve složce",
                 "select_images": "Vybrat obrázky",
                 "select_folder": "Vybrat složku"
             },
@@ -3285,6 +3310,7 @@
                 "enabled": "Obrázek na pozadí byl povolen.",
                 "refreshed": "Obrázek na pozadí byl obnoven.",
                 "failed": "Aktualizace obrázku na pozadí se nezdařila.",
+                "failed_to_open_folder": "Obrázek se nepodařilo zobrazit ve složce.",
                 "no_images": "Nebyly nalezeny žádné podporované obrázky."
             }
         },
@@ -3315,13 +3341,14 @@
                 "minutes": "minut"
             },
             "section": {
-                "instance_types": "Typy instancí",
+                "instance_types": "Preference instancí",
                 "daily_time": "Čas po dnech",
                 "weekly_time": "Čas po týdnech",
                 "when_you_play": "Kdy hrajete",
-                "top_worlds": "Světy, kam se vracíte",
+                "top_worlds": "Kde trávíte nejvíc času",
                 "companions": "S kým trávíte čas",
-                "highlights": "Stojí za povšimnutí"
+                "highlights": "Stojí za povšimnutí",
+                "avatars": "Nejpoužívanější avataři"
             },
             "access": {
                 "unknown": "Neznámé",
@@ -3340,20 +3367,23 @@
                 "failed_to_load": "Aktivitu se nepodařilo načíst"
             },
             "caveat": {
-                "recorded_since": "Herní záznam veden od {date}."
+                "recorded_since": "Zaznamenáváno jen za běhu aplikace."
             },
             "worlds": {
                 "visit_count": "návštěv: {count}",
                 "open_ranking": "Podrobnosti",
-                "total": "celkem {count} světů"
+                "total": "celkem {count} světů",
+                "show_home": "Zahrnout domovský svět"
             },
             "people": {
-                "co_days": "společných dní: {count}",
-                "lead_caption": "{days} dní spolu · {hours} h",
-                "fading_title": "Poslední dobou méně",
+                "co_days": "{count} dní",
+                "lead_caption": "{days} dní · {hours} h",
+                "fading_title": "Méně častý kontakt",
                 "fading_caveat": "Méně společného času než v předchozím období. Může jít jen o rozvrh.",
                 "encountered_total": "celkem {count}",
-                "fading_last_seen": "naposledy spolu {date}"
+                "fading_last_seen": "naposledy viděn/a {date}",
+                "order_minutes": "Podle času",
+                "order_days": "Podle dní"
             },
             "hero": {
                 "per_day": "denně",
@@ -3368,6 +3398,9 @@
             "rhythm": {
                 "late_night_share": "{percent} % mezi půlnocí a 6:00",
                 "open_heatmap": "Po dnech a hodinách"
+            },
+            "avatars": {
+                "all_time": "Celé období"
             }
         }
     },
@@ -5525,6 +5558,9 @@
         "update_success": "Aktualizace úspěšná"
     },
     "notifications": {
+        "group_instance_opened": "Vytvořena nová instance",
+        "group_instance_opened_location": "Vytvořena nová instance: {location}",
+        "group_instances_opened": "Vytvořeno nových instancí: {count}",
         "has_joined": "se připojil(a)",
         "has_left": "odešel(odešla)",
         "joined_with_others": "a {count} dalších se připojilo",
@@ -6026,6 +6062,27 @@
         "error_generic": "Překlad se nezdařil",
         "error_network": "Chyba sítě, zkuste to znovu",
         "error_unsupported": "Překlad není nakonfigurován"
+    },
+    "saved_group_favorites": {
+        "title": "Oblíbené skupiny",
+        "description": "Uložte často používané skupiny do místních kolekcí a používejte je pro upozornění na nové instance.",
+        "new_collection": "Nová kolekce",
+        "empty_collections": "Vytvořte kolekci a začněte ukládat skupiny.",
+        "empty_group": "V této kolekci nejsou uloženy žádné skupiny.",
+        "delete_title": "Odstranit tuto kolekci?",
+        "delete_description": "Odstraněním kolekce {name} se odebere také jejích {count} uložených skupin.",
+        "choose_collection": "Uložit do kolekce",
+        "remove": "Odebrat z uložených skupin",
+        "toggle": "Uložit skupinu",
+        "sidebar_saved": "Oblíbené skupiny",
+        "sidebar_none": "Zatím nejsou uloženy žádné skupiny",
+        "sidebar_other": "Další aktivní skupiny",
+        "sidebar_failed": "Instance skupin se nepodařilo načíst",
+        "sidebar_no_active": "Žádné další aktivní instance skupin",
+        "scope_all": "Všechny uložené skupiny",
+        "scope_selected": "Vybrané kolekce skupin",
+        "notification_type": "Nová instance skupiny",
+        "notification_empty": "Nejsou dostupné žádné kolekce uložených skupin."
     },
     "app": {
         "routes": {

@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "Auto-Löschen konnte das konfigurierte Limit nicht unterschreiten, da favorisierte Prints die Liste füllen. {remaining} Print(s) verbleiben."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} ausgewählt",
+                "select_all": "Alle auswählen",
+                "deselect_all": "Auswahl aufheben",
+                "confirm_delete_title": "{count} Element(e) löschen?",
+                "confirm_delete_locked": "{count} gesperrte Element(e) werden übersprungen. Diese Aktion kann nicht rückgängig gemacht werden.",
+                "deleting_progress": "Lösche {done}/{total}",
+                "deleted_toast": "{count} Element(e) gelöscht.",
+                "delete_partial_toast": "{succeeded} Element(e) gelöscht, {failed} fehlgeschlagen. {reason}",
+                "delete_cancelled_toast": "Abgebrochen. {count} Element(e) gelöscht.",
+                "delete_unlocked": "{count} löschen",
+                "delete_locked": "Alle ausgewählten Elemente sind gesperrt.",
+                "delete_locked_favorite": "Favorit - zum Löschen zuerst entfernen",
+                "delete_locked_in_use": "In Verwendung - kann nicht gelöscht werden",
+                "favorited_toast": "{count} Print(s) favorisiert.",
+                "unfavorited_toast": "Favorit von {count} Print(s) entfernt.",
+                "favorite_skipped_toast": "{count} Print(s) konnten nicht favorisiert werden. Das Limit ist {max}."
+            },
+            "prints_filter": {
+                "all": "Alle",
+                "favorites": "Favoriten",
+                "others": "Nicht favorisiert"
+            },
             "llm_endpoints": {
                 "title": "LLM-Endpunkte",
                 "description": "Gemeinsame OpenAI-kompatible Verbindungen für Social AI und Übersetzung.",
@@ -2544,6 +2567,7 @@
                         "header": "Text-zu-Sprache",
                         "when_to_play": "Benachrichtigungs-TTS",
                         "tts_voice": "TTS-Stimme",
+                        "tts_volume": "TTS-Lautstärke",
                         "system_default_voice": "Systemstandard",
                         "notification_filters": "TTS-Benachrichtigungsfilter",
                         "name_mode": "Gesprochener Name",
@@ -3276,6 +3300,7 @@
             "action": {
                 "refresh": "Aktualisieren",
                 "change_image": "Anderes Bild",
+                "show_in_folder": "Im Ordner anzeigen",
                 "select_images": "Bilder auswählen",
                 "select_folder": "Ordner auswählen"
             },
@@ -3283,6 +3308,7 @@
                 "enabled": "Hintergrundbild aktiviert.",
                 "refreshed": "Hintergrundbild aktualisiert.",
                 "failed": "Hintergrundbild konnte nicht aktualisiert werden.",
+                "failed_to_open_folder": "Das Bild konnte nicht im Ordner angezeigt werden.",
                 "no_images": "Es wurden keine unterstützten Bilder gefunden."
             }
         },
@@ -3313,13 +3339,14 @@
                 "minutes": "Minuten"
             },
             "section": {
-                "instance_types": "Instanz-Typen",
+                "instance_types": "Instanz-Vorlieben",
                 "daily_time": "Zeit pro Tag",
                 "weekly_time": "Zeit pro Woche",
                 "when_you_play": "Wann du spielst",
-                "top_worlds": "Welten, in die du zurückkehrst",
+                "top_worlds": "Wo du die meiste Zeit verbringst",
                 "companions": "Mit wem du Zeit verbringst",
-                "highlights": "Aufgefallen"
+                "highlights": "Aufgefallen",
+                "avatars": "Am häufigsten genutzte Avatare"
             },
             "access": {
                 "unknown": "Unbekannt",
@@ -3338,20 +3365,23 @@
                 "failed_to_load": "Aktivität konnte nicht geladen werden"
             },
             "caveat": {
-                "recorded_since": "Spielprotokoll seit {date} aufgezeichnet."
+                "recorded_since": "Nur bei laufender App erfasst."
             },
             "worlds": {
                 "visit_count": "{count} Besuche",
                 "open_ranking": "Details",
-                "total": "{count} Welten insgesamt"
+                "total": "{count} Welten insgesamt",
+                "show_home": "Heimwelt einbeziehen"
             },
             "people": {
-                "co_days": "{count} gemeinsame Tage",
-                "lead_caption": "{days} Tage zusammen · {hours} h",
-                "fading_title": "Zuletzt seltener gesehen",
+                "co_days": "{count} Tage",
+                "lead_caption": "{days} Tage · {hours} h",
+                "fading_title": "Seltener geworden",
                 "fading_caveat": "Weniger gemeinsame Zeit als im Zeitraum davor. Vielleicht nur andere Zeitpläne.",
                 "encountered_total": "{count} insgesamt getroffen",
-                "fading_last_seen": "zuletzt zusammen {date}"
+                "fading_last_seen": "zuletzt gesehen {date}",
+                "order_minutes": "Nach Zeit",
+                "order_days": "Nach Tagen"
             },
             "hero": {
                 "per_day": "pro Tag",
@@ -3366,6 +3396,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% zwischen 0 und 6 Uhr",
                 "open_heatmap": "Nach Tag und Stunde"
+            },
+            "avatars": {
+                "all_time": "Gesamter Zeitraum"
             }
         }
     },
@@ -5521,6 +5554,9 @@
         "update_success": "Update erfolgreich"
     },
     "notifications": {
+        "group_instance_opened": "Hat eine neue Instanz erstellt",
+        "group_instance_opened_location": "Hat eine neue Instanz erstellt: {location}",
+        "group_instances_opened": "Hat {count} neue Instanzen erstellt",
         "has_joined": "ist beigetreten",
         "has_left": "hat verlassen",
         "joined_with_others": "und {count} weitere sind beigetreten",
@@ -6022,6 +6058,27 @@
         "error_generic": "Übersetzung fehlgeschlagen",
         "error_network": "Netzwerkfehler, bitte erneut versuchen",
         "error_unsupported": "Übersetzung ist nicht konfiguriert"
+    },
+    "saved_group_favorites": {
+        "title": "Favoriten-Gruppen",
+        "description": "Speichere häufig verwendete Gruppen in lokalen Sammlungen und nutze sie für Benachrichtigungen über neue Instanzen.",
+        "new_collection": "Neue Sammlung",
+        "empty_collections": "Erstelle eine Sammlung, um Gruppen zu speichern.",
+        "empty_group": "In dieser Sammlung sind keine Gruppen gespeichert.",
+        "delete_title": "Diese Sammlung löschen?",
+        "delete_description": "Beim Löschen von {name} werden auch die {count} gespeicherten Gruppen entfernt.",
+        "choose_collection": "In Sammlung speichern",
+        "remove": "Aus gespeicherten Gruppen entfernen",
+        "toggle": "Gruppe speichern",
+        "sidebar_saved": "Favoriten-Gruppen",
+        "sidebar_none": "Noch keine Gruppen gespeichert",
+        "sidebar_other": "Andere aktive Gruppen",
+        "sidebar_failed": "Gruppeninstanzen konnten nicht geladen werden",
+        "sidebar_no_active": "Keine weiteren aktiven Gruppeninstanzen",
+        "scope_all": "Alle gespeicherten Gruppen",
+        "scope_selected": "Ausgewählte Gruppensammlungen",
+        "notification_type": "Neue Gruppeninstanz",
+        "notification_empty": "Keine Gruppensammlungen verfügbar."
     },
     "app": {
         "routes": {

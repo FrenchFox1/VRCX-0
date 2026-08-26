@@ -15,6 +15,7 @@ export function useSettingsNotificationsTabState() {
             desktopNotificationSound: state.desktopNotificationSound,
             notificationTTS: state.notificationTTS,
             notificationTTSVoiceNative: state.notificationTTSVoiceNative,
+            notificationTTSVolume: state.notificationTTSVolume,
             notificationTTSNameMode: state.notificationTTSNameMode,
             notificationTTSNickName: state.notificationTTSNickName
         }))
@@ -30,6 +31,8 @@ export function useSettingsNotificationsTabState() {
         setTtsNotificationsDialogOpen,
         saveStringPreference,
         saveBoolPreference,
+        savePreferenceValue,
+        setIntConfigPreference,
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
         setNotificationTtsTestVisible,
@@ -67,6 +70,16 @@ export function useSettingsNotificationsTabState() {
         },
         onNotificationTtsVoiceChange: (value: string) => {
             saveNotificationTtsVoice(value);
+        },
+        onNotificationTtsVolumeChange: (value: number) => {
+            const volume = Math.min(100, Math.max(0, Math.round(value)));
+            savePreferenceValue('notificationTTSVolume', volume, () =>
+                setIntConfigPreference('notificationTTSVolume', volume, {
+                    min: 0,
+                    max: 100,
+                    fallback: 100
+                })
+            );
         },
         onNotificationTtsNameModeChange: (value: string) => {
             saveStringPreference(

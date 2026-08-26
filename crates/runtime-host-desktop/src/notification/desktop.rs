@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application_activity::notification::RenderedNotification;
-use vrcx_0_core::vrchat_ids::is_user_id;
+use vrcx_0_core::vrchat_ids::{is_group_id, is_user_id};
 
 use super::NotificationDeliveryPreferences;
 use vrcx_0_core::OwnerId;
@@ -10,7 +10,24 @@ use vrcx_0_core::OwnerId;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DesktopNotificationAction {
     pub owner_user_id: OwnerId,
-    pub user_id: String,
+    pub target: DesktopNotificationTarget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum DesktopNotificationTarget {
+    OpenUserProfile {
+        #[serde(rename = "userId")]
+        user_id: String,
+    },
+    OpenGroupProfile {
+        #[serde(rename = "groupId")]
+        group_id: String,
+    },
 }
 
 impl DesktopNotificationAction {
@@ -20,7 +37,21 @@ impl DesktopNotificationAction {
         }
         Some(Self {
             owner_user_id: owner_user_id.clone(),
-            user_id: user_id.to_string(),
+            target: DesktopNotificationTarget::OpenUserProfile {
+                user_id: user_id.to_string(),
+            },
+        })
+    }
+
+    pub fn open_group_profile(owner_user_id: &OwnerId, group_id: &str) -> Option<Self> {
+        if !is_user_id(owner_user_id.as_str()) || !is_group_id(group_id) {
+            return None;
+        }
+        Some(Self {
+            owner_user_id: owner_user_id.clone(),
+            target: DesktopNotificationTarget::OpenGroupProfile {
+                group_id: group_id.to_string(),
+            },
         })
     }
 }
@@ -146,7 +177,9 @@ mod tests {
             action,
             Some(DesktopNotificationAction {
                 owner_user_id: OwnerId::new("usr_12345678-1234-1234-1234-1234567890ab"),
-                user_id: "usr_abcdefab-cdef-abcd-efab-cdefabcdefab".into(),
+                target: super::DesktopNotificationTarget::OpenUserProfile {
+                    user_id: "usr_abcdefab-cdef-abcd-efab-cdefabcdefab".into(),
+                },
             })
         );
         assert!(DesktopNotificationAction::open_user_profile(

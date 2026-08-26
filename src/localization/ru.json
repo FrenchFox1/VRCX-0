@@ -2028,6 +2028,29 @@
                     "too_many_favorites_event": "Автоудаление не смогло опуститься ниже заданного лимита, потому что список заполнен избранными принтами. Осталось принтов: {remaining}."
                 }
             },
+            "gallery_selection": {
+                "count": "Выбрано: {count}",
+                "select_all": "Выбрать все",
+                "deselect_all": "Снять выделение",
+                "confirm_delete_title": "Удалить выбранное ({count})?",
+                "confirm_delete_locked": "Заблокированные элементы будут пропущены: {count}. Это действие нельзя отменить.",
+                "deleting_progress": "Удаление {done}/{total}",
+                "deleted_toast": "Удалено элементов: {count}.",
+                "delete_partial_toast": "Удалено: {succeeded}, не удалось: {failed}. {reason}",
+                "delete_cancelled_toast": "Отменено. Удалено элементов: {count}.",
+                "delete_unlocked": "Удалить {count}",
+                "delete_locked": "Все выбранные элементы заблокированы.",
+                "delete_locked_favorite": "В избранном - сначала уберите из избранного",
+                "delete_locked_in_use": "Используется - удалить нельзя",
+                "favorited_toast": "Добавлено в избранное принтов: {count}.",
+                "unfavorited_toast": "Убрано из избранного принтов: {count}.",
+                "favorite_skipped_toast": "Не удалось добавить в избранное: {count}. Лимит - {max}."
+            },
+            "prints_filter": {
+                "all": "Все",
+                "favorites": "Избранные",
+                "others": "Не в избранном"
+            },
             "llm_endpoints": {
                 "title": "LLM Эндпоинты",
                 "description": "Общие OpenAI-совместимые подключения для Social AI и перевода.",
@@ -2546,6 +2569,7 @@
                         "header": "Преобразование текста в речь",
                         "when_to_play": "TTS уведомления во время игры",
                         "tts_voice": "Синтезатор голоса",
+                        "tts_volume": "Громкость TTS",
                         "system_default_voice": "Системный голос по умолчанию",
                         "notification_filters": "Фильтры TTS-уведомлений",
                         "name_mode": "Озвучиваемое имя",
@@ -3278,6 +3302,7 @@
             "action": {
                 "refresh": "Обновить",
                 "change_image": "Сменить изображение",
+                "show_in_folder": "Показать в папке",
                 "select_images": "Выбрать изображения",
                 "select_folder": "Выбрать папку"
             },
@@ -3285,6 +3310,7 @@
                 "enabled": "Фон включён.",
                 "refreshed": "Фоновое изображение обновлено.",
                 "failed": "Не удалось обновить фоновое изображение.",
+                "failed_to_open_folder": "Не удалось показать изображение в папке.",
                 "no_images": "Поддерживаемые изображения не найдены."
             }
         },
@@ -3315,13 +3341,14 @@
                 "minutes": "минут"
             },
             "section": {
-                "instance_types": "Типы инстансов",
+                "instance_types": "Предпочтения инстансов",
                 "daily_time": "Время по дням",
                 "weekly_time": "Время по неделям",
                 "when_you_play": "Когда вы играете",
-                "top_worlds": "Миры, куда вы возвращаетесь",
+                "top_worlds": "Где вы проводите больше всего времени",
                 "companions": "С кем вы проводите время",
-                "highlights": "На что обратить внимание"
+                "highlights": "На что обратить внимание",
+                "avatars": "Часто используемые аватары"
             },
             "access": {
                 "unknown": "Неизвестно",
@@ -3340,20 +3367,23 @@
                 "failed_to_load": "Не удалось загрузить активность"
             },
             "caveat": {
-                "recorded_since": "Журнал игры ведётся с {date}."
+                "recorded_since": "Записывается только при запуске."
             },
             "worlds": {
                 "visit_count": "посещений: {count}",
                 "open_ranking": "Подробнее",
-                "total": "всего миров: {count}"
+                "total": "всего миров: {count}",
+                "show_home": "Включить домашний мир"
             },
             "people": {
-                "co_days": "дней вместе: {count}",
-                "lead_caption": "{days} дней вместе · {hours} ч",
-                "fading_title": "Стали видеться реже",
+                "co_days": "{count} дн.",
+                "lead_caption": "{days} дн. · {hours} ч",
+                "fading_title": "Реже пересекаетесь",
                 "fading_caveat": "Меньше совместного времени, чем в прошлый период. Возможно, просто разные графики.",
                 "encountered_total": "всего встречено: {count}",
-                "fading_last_seen": "вместе в последний раз {date}"
+                "fading_last_seen": "последняя встреча {date}",
+                "order_minutes": "По времени",
+                "order_days": "По дням"
             },
             "hero": {
                 "per_day": "в день",
@@ -3368,6 +3398,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% между полуночью и 6 утра",
                 "open_heatmap": "По дням и часам"
+            },
+            "avatars": {
+                "all_time": "За всё время"
             }
         }
     },
@@ -5526,6 +5559,9 @@
         "update_success": "Успешное обновление"
     },
     "notifications": {
+        "group_instance_opened": "Создан новый инстанс",
+        "group_instance_opened_location": "Создан новый инстанс: {location}",
+        "group_instances_opened": "Создано новых инстансов: {count}",
         "has_joined": "Присоединился",
         "has_left": "ушёл.",
         "joined_with_others": "и ещё {count} присоединились",
@@ -6027,6 +6063,27 @@
         "error_generic": "Не удалось перевести",
         "error_network": "Ошибка сети, попробуйте ещё раз",
         "error_unsupported": "Перевод не настроен"
+    },
+    "saved_group_favorites": {
+        "title": "Избранные группы",
+        "description": "Сохраняйте часто используемые группы в локальных подборках и получайте уведомления о новых инстансах.",
+        "new_collection": "Новая подборка",
+        "empty_collections": "Создайте подборку, чтобы сохранять группы.",
+        "empty_group": "В этой подборке нет сохранённых групп.",
+        "delete_title": "Удалить эту подборку?",
+        "delete_description": "При удалении {name} из избранного также будут удалены {count} групп.",
+        "choose_collection": "Сохранить в подборку",
+        "remove": "Удалить из сохранённых",
+        "toggle": "Сохранить группу",
+        "sidebar_saved": "Избранные группы",
+        "sidebar_none": "Сохранённых групп пока нет",
+        "sidebar_other": "Другие активные группы",
+        "sidebar_failed": "Не удалось загрузить инстансы групп",
+        "sidebar_no_active": "Других активных инстансов групп нет",
+        "scope_all": "Все сохранённые группы",
+        "scope_selected": "Выбранные подборки групп",
+        "notification_type": "Новый инстанс группы",
+        "notification_empty": "Нет доступных подборок сохранённых групп."
     },
     "app": {
         "routes": {

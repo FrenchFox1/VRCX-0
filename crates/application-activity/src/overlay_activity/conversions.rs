@@ -6,7 +6,9 @@ use vrcx_0_application_core::{
 
 use super::content::nested_str;
 use super::definitions::known_definition_for_type;
-use super::types::{OverlayActivityCandidate, OverlayActivityEntry};
+use super::types::{
+    OverlayActivityCandidate, OverlayActivityEntry, OverlayActivityFavoriteSubject,
+};
 use super::OverlayActivityRuntime;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::text::first_non_empty_owned;
@@ -55,6 +57,7 @@ impl OverlayActivityRuntime {
             actor_user_id: String::new(),
             actor_display_name: String::new(),
             current_instance: false,
+            favorite_subject: OverlayActivityFavoriteSubject::None,
             payload: json!({
                 "instanceLocation": projection.instance_location,
                 "worldId": projection.world_id,
@@ -84,6 +87,7 @@ impl OverlayActivityRuntime {
             actor_user_id: String::new(),
             actor_display_name: String::new(),
             current_instance: false,
+            favorite_subject: OverlayActivityFavoriteSubject::None,
             payload: notification.clone(),
         };
         self.ingest_candidate(candidate).into_iter().collect()
@@ -112,9 +116,10 @@ fn friend_feed_candidate(value: &Value) -> Option<OverlayActivityCandidate> {
         source_id: format!("friend-feed:{activity_type}:{user_id}:{created_at}"),
         activity_type,
         created_at,
-        actor_user_id: user_id,
+        actor_user_id: user_id.clone(),
         actor_display_name: value.trimmed_text("displayName"),
         current_instance,
+        favorite_subject: OverlayActivityFavoriteSubject::UserId(user_id.clone()),
         payload: value.clone().into(),
     })
 }
@@ -149,9 +154,14 @@ fn notification_candidate(value: &Value) -> Option<OverlayActivityCandidate> {
         source_id,
         activity_type,
         created_at,
-        actor_user_id,
+        actor_user_id: actor_user_id.clone(),
         actor_display_name,
         current_instance: false,
+        favorite_subject: if actor_user_id.is_empty() {
+            OverlayActivityFavoriteSubject::None
+        } else {
+            OverlayActivityFavoriteSubject::UserId(actor_user_id.clone())
+        },
         payload: value.clone().into(),
     })
 }

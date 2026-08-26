@@ -113,7 +113,6 @@ fn test_main_surface(frame: RgbaFrame, last_uploaded_at: Instant) -> OpenVrSurfa
                 device_hint: "hmd".to_string(),
             },
             activation_button: OverlayActivationButton::Grip,
-            interactive: false,
             force_visible: false,
         },
         transform_device: None,
@@ -151,18 +150,6 @@ fn openvr_context_lease_blocks_concurrent_owners_until_release() {
 }
 
 #[test]
-fn panel_summon_uses_fixed_right_hand_friends_grip_hold() {
-    assert_eq!(PANEL_SUMMON_HAND, OverlayHand::Right);
-    assert_eq!(PANEL_SUMMON_PANEL_ID, FRIENDS_PANEL_ID);
-    assert_eq!(SUMMON_HOLD_DURATION, Duration::from_secs(2));
-}
-
-#[test]
-fn friends_panel_input_path_is_disabled_by_default() {
-    const { assert!(!FRIENDS_PANEL_INPUT_ENABLED) };
-}
-
-#[test]
 fn validate_frame_rejects_mismatched_rgba_length() {
     let frame = RgbaFrame::new(OverlaySize::new(2, 2), vec![0; 15]);
 
@@ -170,38 +157,25 @@ fn validate_frame_rejects_mismatched_rgba_length() {
 }
 
 #[test]
-fn panel_summon_hold_emits_once_and_resets_after_release() {
-    let started = Instant::now();
-    let mut state = PanelSummonGestureState::default();
+fn tracked_device_resolution_errors_keep_typed_classification_and_diagnostics() {
+    let unavailable = TrackedDeviceResolutionError::Unavailable {
+        device_hint: "left-hand".into(),
+        left: "none".into(),
+        right: "2".into(),
+        connected: "index=2".into(),
+    };
 
-    assert!(!update_panel_summon_hold(&mut state, false, started));
-    assert!(!update_panel_summon_hold(&mut state, true, started));
-    assert!(!update_panel_summon_hold(
-        &mut state,
-        true,
-        started + SUMMON_HOLD_DURATION - Duration::from_millis(1)
+    assert!(matches!(
+        &unavailable,
+        TrackedDeviceResolutionError::Unavailable { .. }
     ));
-    assert!(update_panel_summon_hold(
-        &mut state,
-        true,
-        started + SUMMON_HOLD_DURATION
-    ));
-    assert!(!update_panel_summon_hold(
-        &mut state,
-        true,
-        started + SUMMON_HOLD_DURATION + Duration::from_secs(1)
-    ));
+    assert_eq!(
+        unavailable.to_string(),
+        "tracked device 'left-hand' is unavailable; controller_roles={left:none, right:2}; connected_devices=[index=2]"
+    );
 
-    assert!(!update_panel_summon_hold(
-        &mut state,
-        false,
-        started + SUMMON_HOLD_DURATION + Duration::from_secs(2)
-    ));
-    let restarted = started + SUMMON_HOLD_DURATION + Duration::from_secs(3);
-    assert!(!update_panel_summon_hold(&mut state, true, restarted));
-    assert!(update_panel_summon_hold(
-        &mut state,
-        true,
-        restarted + SUMMON_HOLD_DURATION
-    ));
+    let unknown = TrackedDeviceResolutionError::UnknownHint {
+        device_hint: "waist".into(),
+    };
+    assert_eq!(unknown.to_string(), "unknown tracked device hint 'waist'");
 }

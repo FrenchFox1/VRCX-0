@@ -13,8 +13,8 @@ pub struct LogEntry {
     pub category: Option<String>,
     pub message: String,
     pub raw: String,
-    pub line_number: usize,
-    pub end_line_number: usize,
+    pub line_number: u32,
+    pub end_line_number: u32,
     pub file_name: String,
     pub continuation_lines: Vec<String>,
 }
@@ -104,7 +104,7 @@ pub fn parse_log_entries(file_name: &str, content: &str) -> Vec<LogEntry> {
     let mut current: Option<LogEntry> = None;
 
     for (index, line) in content.lines().enumerate() {
-        let line_number = index + 1;
+        let line_number = u32::try_from(index).unwrap_or(u32::MAX).saturating_add(1);
         if let Some((timestamp, level, message)) = parse_log_header(line) {
             if let Some(entry) = current.take() {
                 entries.push(entry);

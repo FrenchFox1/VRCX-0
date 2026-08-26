@@ -18,7 +18,7 @@ use super::{
 #[serde(rename_all = "camelCase")]
 pub struct SocialBaselineRefreshOutput {
     pub stale: bool,
-    pub friend_count: usize,
+    pub friend_count: u32,
     pub friend_log_changed: bool,
     pub favorites_snapshot: Option<FavoriteBaselineSnapshot>,
 }
@@ -57,7 +57,7 @@ pub async fn refresh_social_baseline(
     let Some(friends_by_id) = baseline.friends_by_id else {
         return Ok(SocialBaselineRefreshCore {
             stale: true,
-            friend_count: output.count,
+            friend_count: output.count as usize,
             friend_log_changed: output.friend_log_changed,
             favorites: Ok(None),
         });
@@ -89,7 +89,7 @@ pub async fn refresh_social_baseline(
     };
     Ok(SocialBaselineRefreshCore {
         stale: false,
-        friend_count: output.count,
+        friend_count: output.count as usize,
         friend_log_changed: output.friend_log_changed,
         favorites,
     })

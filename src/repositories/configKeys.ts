@@ -153,6 +153,7 @@ export const ConfigKeys = defineConfigKeys({
     notificationLayout: { type: 'string', default: null },
     notificationTTS: { type: 'string', default: 'Never' },
     notificationTTSVoiceNative: { type: 'string', default: '' },
+    notificationTTSVolume: { type: 'int', default: 100 },
     notificationTTSNameMode: { type: 'string', default: 'username' },
     notificationTTSNickName: { type: 'bool', default: false },
     notificationIconDot: { type: 'bool', default: true },
@@ -279,6 +280,8 @@ export const ConfigKeys = defineConfigKeys({
 
     // ── Activity ─────────────────────────────────────
     activityPageRange: { type: 'string', default: null },
+    activityPageShowHomeWorld: { type: 'bool', default: false },
+    activityPageCompanionOrder: { type: 'string', default: null },
     activityFriendPeriodDays: { type: 'string', default: null },
     overlapExcludeEnabled: { type: 'bool', default: false },
     overlapExcludeStart: { type: 'string', default: '1' },
@@ -337,7 +340,9 @@ export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
 });
 
 export const ACTIVITY_PAGE_CONFIG_KEYS = Object.freeze({
-    range: 'activityPageRange'
+    range: 'activityPageRange',
+    showHomeWorld: 'activityPageShowHomeWorld',
+    companionOrder: 'activityPageCompanionOrder'
 });
 
 export const USER_ACTIVITY_CONFIG_KEYS = Object.freeze({

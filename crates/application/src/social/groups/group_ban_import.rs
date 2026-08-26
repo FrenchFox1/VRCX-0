@@ -1,7 +1,7 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::HashSet,
-    future::Future,
-    pin::Pin,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -62,10 +62,10 @@ pub struct GroupBanImportStatus {
     pub run_id: String,
     pub status: GroupBanImportState,
     pub group_id: String,
-    pub total: usize,
-    pub processed: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub processed: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub cancel_requested: bool,
     pub items: Vec<GroupBanImportItemResult>,
     pub started_at: Option<String>,
@@ -73,7 +73,7 @@ pub struct GroupBanImportStatus {
     pub last_error: Option<String>,
 }
 
-pub type GroupBanImportFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+pub type GroupBanImportFuture<'a> = BoxFuture<'a, Result<()>>;
 
 pub trait GroupBanImportActions: Send + Sync {
     fn ban_user<'a>(&'a self, group_id: &'a str, user_id: &'a str) -> GroupBanImportFuture<'a>;
@@ -160,7 +160,7 @@ impl GroupBanImportRuntime {
                 run_id: format!("group-ban-{}-{generation}", Utc::now().timestamp_millis()),
                 status: GroupBanImportState::Running,
                 group_id: prepared.group_id.clone(),
-                total: prepared.user_ids.len(),
+                total: crate::wire_count(prepared.user_ids.len()),
                 started_at: Some(Utc::now().to_rfc3339()),
                 ..Default::default()
             };

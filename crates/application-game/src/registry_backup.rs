@@ -14,8 +14,15 @@ const CONFIG_LAST_RESTORE_CHECK: &str = "VRChatRegistryLastRestoreCheck";
 
 const AUTO_BACKUP_NAME: &str = "Auto Backup";
 const MANUAL_BACKUP_NAME: &str = "Manual Backup";
-const AUTO_BACKUP_INTERVAL_DAYS: i64 = 3;
-const AUTO_BACKUP_RETENTION_DAYS: i64 = 14;
+const NO_REGISTRY_DATA_MESSAGE: &str = "No VRChat registry data was found to back up.";
+const AUTO_BACKUP_INTERVAL: Duration = Duration::days(3);
+const AUTO_BACKUP_RETENTION: Duration = Duration::days(14);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CreateBackupOutcome {
+    Created,
+    NoRegistryData,
+}
 
 pub trait RegistryBackupHostActions: Send + Sync {
     fn has_registry_folder(&self) -> Result<bool>;
@@ -79,8 +86,10 @@ pub fn registry_backup_create(
     host: &dyn RegistryBackupHostActions,
     name: &str,
 ) -> Result<Vec<RegistryBackupSnapshot>> {
-    create_backup(store, host, normalized_backup_name(name), Utc::now())?;
-    registry_backup_list(store)
+    match create_backup(store, host, normalized_backup_name(name), Utc::now())? {
+        CreateBackupOutcome::Created => registry_backup_list(store),
+        CreateBackupOutcome::NoRegistryData => Err(Error::Custom(NO_REGISTRY_DATA_MESSAGE.into())),
+    }
 }
 
 pub fn registry_backup_restore(
@@ -211,22 +220,18 @@ pub fn registry_backup_maintenance_run(
     }
 
     match create_backup_with_backups(store, host, AUTO_BACKUP_NAME.into(), now, &mut backups) {
-        Ok(()) => {
+        Ok(CreateBackupOutcome::Created) => {
             store.set_string(CONFIG_LAST_BACKUP_DATE, &iso_millis(now))?;
             let detail = format!("Registry auto backup created ({reason}).");
             maintenance_result(true, false, None, false, detail)
         }
-        Err(Error::Custom(message))
-            if message == "No VRChat registry data was found to back up." =>
-        {
-            maintenance_result(
-                false,
-                false,
-                None,
-                false,
-                "Registry auto backup skipped; no registry data was found.",
-            )
-        }
+        Ok(CreateBackupOutcome::NoRegistryData) => maintenance_result(
+            false,
+            false,
+            None,
+            false,
+            "Registry auto backup skipped; no registry data was found.",
+        ),
         Err(error) => Err(error),
     }
 }
@@ -271,7 +276,7 @@ fn create_backup(
     host: &dyn RegistryBackupHostActions,
     name: String,
     now: chrono::DateTime<Utc>,
-) -> Result<()> {
+) -> Result<CreateBackupOutcome> {
     let mut backups = read_backups(store)?;
     create_backup_with_backups(store, host, name, now, &mut backups)
 }
@@ -282,12 +287,10 @@ fn create_backup_with_backups(
     name: String,
     now: chrono::DateTime<Utc>,
     backups: &mut Vec<StoredRegistryBackup>,
-) -> Result<()> {
+) -> Result<CreateBackupOutcome> {
     let data = host.get_registry()?;
     if data.as_object().is_none_or(|object| object.is_empty()) {
-        return Err(Error::Custom(
-            "No VRChat registry data was found to back up.".into(),
-        ));
+        return Ok(CreateBackupOutcome::NoRegistryData);
     }
 
     backups.push(StoredRegistryBackup {
@@ -296,7 +299,7 @@ fn create_backup_with_backups(
         data,
     });
     write_backups(store, backups)?;
-    Ok(())
+    Ok(CreateBackupOutcome::Created)
 }
 
 fn prune_old_auto_backups(
@@ -304,7 +307,7 @@ fn prune_old_auto_backups(
     now: chrono::DateTime<Utc>,
 ) -> bool {
     let before = backups.len();
-    let cutoff = now - Duration::days(AUTO_BACKUP_RETENTION_DAYS);
+    let cutoff = now - AUTO_BACKUP_RETENTION;
     backups.retain(|backup| {
         if backup.name != AUTO_BACKUP_NAME {
             return true;
@@ -322,7 +325,7 @@ fn recent_auto_backup_exists(
     let Some(last_backup_date) = parse_backup_date(&last_backup_date) else {
         return Ok(false);
     };
-    Ok(now - last_backup_date < Duration::days(AUTO_BACKUP_INTERVAL_DAYS))
+    Ok(now - last_backup_date < AUTO_BACKUP_INTERVAL)
 }
 
 fn maybe_restore_prompt(

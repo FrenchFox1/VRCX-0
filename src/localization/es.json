@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "La autoeliminación no pudo bajar del límite configurado porque los prints favoritos están llenando la lista. Quedan {remaining} print(s)."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} seleccionado(s)",
+                "select_all": "Seleccionar todo",
+                "deselect_all": "Deseleccionar todo",
+                "confirm_delete_title": "¿Eliminar {count} elemento(s)?",
+                "confirm_delete_locked": "Se omitirán {count} elemento(s) bloqueado(s). Esta acción no se puede deshacer.",
+                "deleting_progress": "Eliminando {done}/{total}",
+                "deleted_toast": "Se eliminaron {count} elemento(s).",
+                "delete_partial_toast": "Se eliminaron {succeeded} elemento(s); {failed} fallaron. {reason}",
+                "delete_cancelled_toast": "Cancelado. Se eliminaron {count} elemento(s).",
+                "delete_unlocked": "Eliminar {count}",
+                "delete_locked": "Todos los elementos seleccionados están bloqueados.",
+                "delete_locked_favorite": "Favorito: quítalo de favoritos para eliminar",
+                "delete_locked_in_use": "En uso: no se puede eliminar",
+                "favorited_toast": "{count} print(s) marcados como favoritos.",
+                "unfavorited_toast": "{count} print(s) eliminados de favoritos.",
+                "favorite_skipped_toast": "No se pudieron marcar {count} print(s) como favoritos. El límite es {max}."
+            },
+            "prints_filter": {
+                "all": "Todos",
+                "favorites": "Favoritos",
+                "others": "No favoritos"
+            },
             "llm_endpoints": {
                 "title": "Endpoints LLM",
                 "description": "Conexiones compartidas compatibles con OpenAI para Social AI y la traducción.",
@@ -2544,6 +2567,7 @@
                         "header": "Texto a Voz",
                         "when_to_play": "TTS de notificaciones",
                         "tts_voice": "Voz de TTS",
+                        "tts_volume": "Volumen de TTS",
                         "system_default_voice": "Voz del sistema predeterminada",
                         "notification_filters": "Filtros de notificaciones TTS",
                         "name_mode": "Nombre leído",
@@ -3276,6 +3300,7 @@
             "action": {
                 "refresh": "Actualizar",
                 "change_image": "Cambiar imagen",
+                "show_in_folder": "Mostrar en la carpeta",
                 "select_images": "Seleccionar imágenes",
                 "select_folder": "Seleccionar carpeta"
             },
@@ -3283,6 +3308,7 @@
                 "enabled": "Imagen de fondo activada.",
                 "refreshed": "Imagen de fondo actualizada.",
                 "failed": "No se pudo actualizar la imagen de fondo.",
+                "failed_to_open_folder": "No se pudo mostrar la imagen en la carpeta.",
                 "no_images": "No se encontraron imágenes compatibles."
             }
         },
@@ -3313,13 +3339,14 @@
                 "minutes": "minutos"
             },
             "section": {
-                "instance_types": "Tipos de instancia",
+                "instance_types": "Preferencias de instancia",
                 "daily_time": "Tiempo por día",
                 "weekly_time": "Tiempo por semana",
                 "when_you_play": "Cuándo juegas",
-                "top_worlds": "Mundos a los que vuelves",
+                "top_worlds": "Donde pasas más tiempo",
                 "companions": "Con quién pasas el tiempo",
-                "highlights": "Para destacar"
+                "highlights": "Para destacar",
+                "avatars": "Avatares que más usas"
             },
             "access": {
                 "unknown": "Desconocido",
@@ -3338,20 +3365,23 @@
                 "failed_to_load": "No se pudo cargar tu actividad"
             },
             "caveat": {
-                "recorded_since": "Registro de juego desde {date}."
+                "recorded_since": "Solo se registra mientras la app está abierta."
             },
             "worlds": {
                 "visit_count": "{count} visitas",
                 "open_ranking": "Detalles",
-                "total": "{count} mundos en total"
+                "total": "{count} mundos en total",
+                "show_home": "Incluir Mundo de Inicio"
             },
             "people": {
-                "co_days": "{count} días juntos",
-                "lead_caption": "{days} días juntos · {hours} h",
-                "fading_title": "Vistos menos últimamente",
+                "co_days": "{count} días",
+                "lead_caption": "{days} días · {hours} h",
+                "fading_title": "Se ven menos",
                 "fading_caveat": "Menos coincidencia que en el periodo anterior. Puede ser cuestión de horarios.",
                 "encountered_total": "{count} en total",
-                "fading_last_seen": "juntos por última vez {date}"
+                "fading_last_seen": "visto por última vez {date}",
+                "order_minutes": "Por tiempo",
+                "order_days": "Por días"
             },
             "hero": {
                 "per_day": "al día",
@@ -3366,6 +3396,9 @@
             "rhythm": {
                 "late_night_share": "{percent}% entre medianoche y las 6",
                 "open_heatmap": "Por día y por hora"
+            },
+            "avatars": {
+                "all_time": "Todo el tiempo"
             }
         }
     },
@@ -5521,6 +5554,9 @@
         "update_success": "Actualización correcta"
     },
     "notifications": {
+        "group_instance_opened": "Ha creado una nueva instancia",
+        "group_instance_opened_location": "Ha creado una nueva instancia: {location}",
+        "group_instances_opened": "Ha creado {count} instancias nuevas",
         "has_joined": "se ha unido",
         "has_left": "se ha ido",
         "joined_with_others": "y {count} más se han unido",
@@ -6022,6 +6058,27 @@
         "error_generic": "La traducción falló",
         "error_network": "Error de red, inténtalo de nuevo",
         "error_unsupported": "La traducción no está configurada"
+    },
+    "saved_group_favorites": {
+        "title": "Grupos favoritos",
+        "description": "Guarda los grupos que usas con frecuencia en colecciones locales y úsalos para recibir avisos de nuevas instancias.",
+        "new_collection": "Nueva colección",
+        "empty_collections": "Crea una colección para empezar a guardar grupos.",
+        "empty_group": "No hay grupos guardados en esta colección.",
+        "delete_title": "¿Eliminar esta colección?",
+        "delete_description": "Al eliminar {name} también se quitarán sus {count} grupos guardados.",
+        "choose_collection": "Guardar en una colección",
+        "remove": "Quitar de grupos guardados",
+        "toggle": "Guardar grupo",
+        "sidebar_saved": "Grupos favoritos",
+        "sidebar_none": "Aún no hay grupos guardados",
+        "sidebar_other": "Otros grupos activos",
+        "sidebar_failed": "No se pudieron cargar las instancias de grupos",
+        "sidebar_no_active": "No hay otras instancias de grupos activas",
+        "scope_all": "Todos los grupos guardados",
+        "scope_selected": "Colecciones de grupos seleccionadas",
+        "notification_type": "Nueva instancia de grupo",
+        "notification_empty": "No hay colecciones de grupos guardados disponibles."
     },
     "app": {
         "routes": {

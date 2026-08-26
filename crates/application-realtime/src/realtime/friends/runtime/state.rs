@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::Duration;
 use vrcx_0_application_core::{FriendLocationTime, InstanceDwellRegistry};
 use vrcx_0_core::derived_keys;
 
@@ -24,7 +25,7 @@ use super::event_patch::{
 use super::persistence::{is_online_state, offline_feed_entry, OfflineFeedPrevious};
 use super::utils::EventTime;
 
-pub(super) use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY_MS;
+pub(super) use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY;
 use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Default)]
@@ -43,7 +44,7 @@ pub(super) struct PendingOffline {
 pub(crate) struct PendingOfflineSchedule {
     pub(crate) user_id: String,
     pub(crate) token: u64,
-    pub(crate) delay_ms: u64,
+    pub(crate) delay: Duration,
 }
 
 pub(crate) struct FriendBaselineEffects {
@@ -276,7 +277,7 @@ impl RealtimeFriendsRuntime {
             schedules.push(PendingOfflineSchedule {
                 user_id: transition.user_id,
                 token,
-                delay_ms: PENDING_OFFLINE_DELAY_MS,
+                delay: PENDING_OFFLINE_DELAY,
             });
         }
         if same_generation {
@@ -359,7 +360,7 @@ impl RealtimeFriendsRuntime {
                 accepted: true,
                 generation,
                 baseline_revision,
-                friend_count,
+                friend_count: u32::try_from(friend_count).unwrap_or(u32::MAX),
             },
             schedules,
             confirmed_feed_entries,

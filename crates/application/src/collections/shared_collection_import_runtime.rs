@@ -1,3 +1,6 @@
+#[cfg(test)]
+use futures_util::future::BoxFuture;
+
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Mutex,
@@ -37,9 +40,8 @@ type TestImportRunner = Arc<
     dyn Fn(
             PreparedSharedCollectionImport,
             Arc<AtomicBool>,
-        ) -> std::pin::Pin<
-            Box<dyn std::future::Future<Output = Result<SharedCollectionImportResult>> + Send>,
-        > + Send
+        ) -> BoxFuture<'static, Result<SharedCollectionImportResult>>
+        + Send
         + Sync,
 >;
 
@@ -124,7 +126,7 @@ impl SharedCollectionImportRuntime {
             let status = SharedCollectionImportStatus {
                 run_id: format!("shared-{}-{generation}", Utc::now().timestamp_millis()),
                 status: SharedCollectionImportState::Running,
-                total: prepared.world_ids.len(),
+                total: crate::wire_count(prepared.world_ids.len()),
                 processed: 0,
                 imported: 0,
                 failed: 0,
@@ -211,9 +213,9 @@ impl SharedCollectionImportRuntime {
             if inner.status.run_id != run_id || !is_active_status(inner.status.status) {
                 return;
             }
-            inner.status.processed = progress.processed;
-            inner.status.imported = progress.imported;
-            inner.status.failed = progress.failed;
+            inner.status.processed = crate::wire_count(progress.processed);
+            inner.status.imported = crate::wire_count(progress.imported);
+            inner.status.failed = crate::wire_count(progress.failed);
             inner.status.last_error = progress.last_error;
             inner.status.clone()
         };
@@ -233,7 +235,8 @@ impl SharedCollectionImportRuntime {
             };
             terminal
         };
-        self.completion.complete(scope, terminal.status.imported);
+        self.completion
+            .complete(scope, terminal.status.imported as usize);
         let status = {
             let mut inner = self.lock_inner();
             if !commit_terminal_status(&mut inner, run_id, terminal.status) {
@@ -288,9 +291,9 @@ fn prepare_terminal_result(
     let mut status = inner.status.clone();
     match result {
         Ok(result) => {
-            status.processed = result.processed;
-            status.imported = result.imported;
-            status.failed = result.failed;
+            status.processed = crate::wire_count(result.processed);
+            status.imported = crate::wire_count(result.imported);
+            status.failed = crate::wire_count(result.failed);
             status.last_error = result.last_error;
             status.status = if result.cancelled {
                 SharedCollectionImportState::Cancelled

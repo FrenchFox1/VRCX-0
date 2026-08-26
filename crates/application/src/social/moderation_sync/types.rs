@@ -143,8 +143,8 @@ pub struct ModerationSyncMutationInput {
 pub struct ModerationSyncRefreshOutput {
     pub accepted: bool,
     pub user_id: String,
-    pub remote_count: usize,
-    pub local_count: usize,
+    pub remote_count: u32,
+    pub local_count: u32,
     pub rows: Vec<RemoteModerationRow>,
 }
 

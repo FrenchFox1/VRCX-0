@@ -1,6 +1,6 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -36,8 +36,7 @@ enum RuntimeStep {
     Realtime,
 }
 
-pub type AuthenticatedRuntimeProbeFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<i32>> + Send + 'a>>;
+pub type AuthenticatedRuntimeProbeFuture<'a> = BoxFuture<'a, Result<i32>>;
 
 pub trait AuthenticatedRuntimeAuthProbe: Send + Sync {
     fn probe<'a>(&'a self, endpoint: &'a str) -> AuthenticatedRuntimeProbeFuture<'a>;
@@ -1013,7 +1012,7 @@ fn current_friend_baseline_output(
     SocialFriendRosterBaselineOutput {
         user_id: metadata.user_id,
         stale: metadata.stale,
-        count: current.friend_count,
+        count: crate::wire_count(current.friend_count),
         detail: metadata.detail,
         snapshot: Some(current.snapshot),
         friend_log_changed: false,

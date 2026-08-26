@@ -12,7 +12,9 @@ import {
     isValidElement,
     type ComponentType,
     type CSSProperties,
-    type ReactNode
+    type ReactNode,
+    useLayoutEffect,
+    useRef
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -73,6 +75,57 @@ import {
 } from './UserDialogHeaderBadges';
 import { UserDialogHeaderMedia } from './UserDialogHeaderMedia';
 import { UserDialogProfileDecorationImage } from './UserDialogProfileDecorationImage';
+
+const displayNameMaxFontSizePx = 18;
+const displayNameMinFontSizePx = 12;
+
+function AutoFitDisplayName({ text }: { text: string }) {
+    const textRef = useRef<HTMLSpanElement>(null);
+
+    useLayoutEffect(() => {
+        const element = textRef.current;
+        if (!element) {
+            return undefined;
+        }
+
+        const updateFontSize = () => {
+            element.style.fontSize = `${displayNameMaxFontSizePx}px`;
+            const availableWidth = element.clientWidth;
+            const requiredWidth = element.scrollWidth;
+            if (
+                !availableWidth ||
+                !requiredWidth ||
+                requiredWidth <= availableWidth
+            ) {
+                return;
+            }
+
+            const fontSize = Math.max(
+                displayNameMinFontSizePx,
+                Math.floor(
+                    (displayNameMaxFontSizePx * availableWidth) / requiredWidth
+                )
+            );
+            element.style.fontSize = `${fontSize}px`;
+        };
+
+        updateFontSize();
+        if (typeof ResizeObserver === 'function') {
+            const resizeObserver = new ResizeObserver(updateFontSize);
+            resizeObserver.observe(element);
+            return () => resizeObserver.disconnect();
+        }
+
+        window.addEventListener('resize', updateFontSize);
+        return () => window.removeEventListener('resize', updateFontSize);
+    }, [text]);
+
+    return (
+        <span ref={textRef} className="min-w-0 flex-1 truncate">
+            {text}
+        </span>
+    );
+}
 
 function linearGradientStyle(
     angle: number,
@@ -677,17 +730,16 @@ export function UserDialogHeaderSection({
                                             <Button
                                                 type="button"
                                                 variant="ghost"
-                                                className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg leading-tight font-semibold"
-                                                title={profileTitle}
+                                                className="h-auto min-w-0 flex-1 shrink justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold shadow-none hover:bg-transparent hover:text-inherit hover:shadow-none dark:hover:bg-transparent"
                                                 onClick={() =>
                                                     onCopyDisplayName(
                                                         copyableDisplayName
                                                     )
                                                 }
                                             >
-                                                <span className="min-w-0 truncate">
-                                                    {profileTitle}
-                                                </span>
+                                                <AutoFitDisplayName
+                                                    text={profileTitle}
+                                                />
                                             </Button>
                                         }
                                     />

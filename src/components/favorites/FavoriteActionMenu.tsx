@@ -1,4 +1,4 @@
-import { HeartIcon } from 'lucide-react';
+import { HeartIcon, PlusIcon } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -190,6 +190,7 @@ export function FavoriteActionMenu({
     const normalizedEntityId = entityId.trim();
     const entityLabel = resolveFavoriteEntityLabel(entity, normalizedEntityId);
     const confirm = useModalStore((state) => state.confirm);
+    const prompt = useModalStore((state) => state.prompt);
     const groups = useFavoriteStore((state) => resolveGroups(kind, state));
     const localWorldFavorites = useLocalWorldFavorites(
         kind === 'world' && Boolean(normalizedEntityId)
@@ -374,6 +375,68 @@ export function FavoriteActionMenu({
         }
     }
 
+    async function createLocalFavoriteGroupAndAdd() {
+        if (!normalizedEntityId || actionStatusRef.current !== 'idle') {
+            return;
+        }
+        const result = await prompt({
+            title: t('view.favorite.worlds.new_group'),
+            description: t(
+                'view.favorites.modal.enter_the_new_local_group_name'
+            ),
+            inputValue: '',
+            pattern: /\S+/,
+            confirmText: t('common.actions.confirm'),
+            cancelText: t('common.actions.cancel')
+        });
+        if (!result.ok || typeof result.value !== 'string') {
+            return;
+        }
+        const groupName = result.value.trim();
+        if (!groupName) {
+            return;
+        }
+        if (localGroups.includes(groupName)) {
+            toast.error(
+                t('view.favorites.dynamic.local_group_value_already_exists', {
+                    value: groupName
+                })
+            );
+            return;
+        }
+
+        actionStatusRef.current = 'local-favorite';
+        setActionStatus('local-favorite');
+        try {
+            if (kind === 'world' && isRecord(entity)) {
+                persistWorldDetails(entity, normalizedEntityId);
+            } else if (kind === 'avatar' && isRecord(entity)) {
+                persistAvatarDetails(entity, normalizedEntityId);
+            }
+            await favoritePersistenceRepository.createLocalFavoriteGroup({
+                kind,
+                groupName
+            });
+            await favoritePersistenceRepository.addLocalFavorite({
+                kind,
+                entityId: normalizedEntityId,
+                groupName
+            });
+            toast.success(t('view.favorite.label.local_favorite_added'));
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t(
+                          'view.favorites.toast.failed_to_create_local_favorite_group'
+                      )
+            );
+        } finally {
+            actionStatusRef.current = 'idle';
+            setActionStatus('idle');
+        }
+    }
+
     if (!normalizedEntityId) {
         return null;
     }
@@ -506,6 +569,15 @@ export function FavoriteActionMenu({
                             )}
                         </DropdownMenuItem>
                     )}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                    <DropdownMenuItem
+                        onClick={() => void createLocalFavoriteGroupAndAdd()}
+                    >
+                        <PlusIcon data-icon="inline-start" />
+                        {t('view.favorite.worlds.new_group')}
+                    </DropdownMenuItem>
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>

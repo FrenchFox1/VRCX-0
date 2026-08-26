@@ -462,6 +462,10 @@ impl GameLogIngestEngine {
         video_url: &str,
         display_name: &str,
     ) -> Option<VideoInput> {
+        if video::uses_provider_video_events(&self.state.current_location) {
+            return None;
+        }
+
         let video_url = decode_video_url(video_url);
         if !self.accept_video_url(&video_url) {
             return None;

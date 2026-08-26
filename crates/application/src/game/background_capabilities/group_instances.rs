@@ -21,6 +21,12 @@ pub trait BackgroundGroupRequests: Send + Sync {
         endpoint: String,
         current_user_id: String,
     ) -> Result<VrchatApiRequest>;
+    fn current_user_group_instances_for_group(
+        &self,
+        endpoint: String,
+        current_user_id: String,
+        group_id: String,
+    ) -> Result<VrchatApiRequest>;
     fn group_profile(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest>;
 }
 #[derive(Clone, Debug, Default)]
@@ -170,6 +176,50 @@ pub async fn refresh_background_group_instances(
         instances: instances.into_iter().map(RawJson::from).collect(),
         fetched_at,
     })
+}
+
+pub async fn refresh_background_group_instances_for_group(
+    web: &WebClient,
+    requests: &dyn BackgroundGroupRequests,
+    session: &BackgroundCapabilitySessionIdentity,
+    group_id: &str,
+) -> Result<BackgroundGroupInstancesRefresh> {
+    let response = web
+        .execute_api(
+            requests.current_user_group_instances_for_group(
+                normalize_vrchat_api_endpoint(Some(&session.endpoint)),
+                session.current_user_id.clone(),
+                group_id.to_string(),
+            )?,
+            VrchatScope::Vrchat,
+        )
+        .await?;
+    if !(200..=299).contains(&response.status) {
+        return Err(Error::Custom(format!(
+            "saved group instance refresh returned HTTP {}",
+            response.status
+        )));
+    }
+    Ok(BackgroundGroupInstancesRefresh {
+        instances: parse_group_instance_rows(&response.data)?
+            .into_iter()
+            .map(RawJson::from)
+            .collect(),
+        fetched_at: Utc::now().to_rfc3339(),
+    })
+}
+
+fn parse_group_instance_rows(data: &str) -> Result<Vec<Value>> {
+    let value = parse_response_json(data)
+        .ok_or_else(|| Error::Custom("group instance refresh returned invalid JSON".into()))?;
+    if let Some(instances) = value.as_array() {
+        return Ok(instances.clone());
+    }
+    value
+        .get("instances")
+        .and_then(Value::as_array)
+        .cloned()
+        .ok_or_else(|| Error::Custom("group instance refresh returned unexpected JSON".into()))
 }
 
 async fn hydrate_background_group_instances(

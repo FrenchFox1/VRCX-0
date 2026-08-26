@@ -18,7 +18,11 @@ pub(super) fn send_tts_notification(
     locale: OverlayLocale,
 ) {
     let text = notification_tts_text(db, delivery, render, preferences, locale);
-    if let Err(error) = tts.speak(&text, non_empty(&preferences.notification_tts_voice_native)) {
+    if let Err(error) = tts.speak(
+        &text,
+        non_empty(&preferences.notification_tts_voice_native),
+        preferences.notification_tts_volume,
+    ) {
         tracing::warn!("[TTS] notification speak failed: {error}");
     }
 }

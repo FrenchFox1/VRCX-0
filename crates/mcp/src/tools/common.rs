@@ -48,7 +48,13 @@ impl schemars::JsonSchema for TimeWindowParams {
             "oneOf": [
                 {
                     "type": "string",
-                    "description": "Relative window such as 90d, this week, or all history."
+                    "description": "Relative window such as 90d or this week, a four-digit calendar year such as 2026, or all history."
+                },
+                {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "maximum": 9998,
+                    "description": "Four-digit UTC calendar year such as 2026."
                 },
                 {
                     "type": "object",
@@ -85,6 +91,10 @@ impl From<TimeWindowParams> for social_aggregates::TimeWindow {
 fn time_window_from_value(value: &Value) -> Result<TimeWindowParams, String> {
     match value {
         Value::String(text) => parse_relative_window(text),
+        Value::Number(year) => year
+            .as_i64()
+            .ok_or_else(|| "timeWindow calendar year must be an integer".to_string())
+            .and_then(calendar_year_window),
         Value::Object(map) => {
             if let Some(field) = map.keys().find(|field| *field != "from" && *field != "to") {
                 return Err(format!("unknown timeWindow field '{field}'"));
@@ -94,7 +104,10 @@ fn time_window_from_value(value: &Value) -> Result<TimeWindowParams, String> {
                 to: time_window_bound(map.get("to"), "to")?,
             })
         }
-        _ => Err("timeWindow must be a relative string or an object with from/to bounds".into()),
+        _ => Err(
+            "timeWindow must be a relative string, calendar year integer, or an object with from/to bounds"
+                .into(),
+        ),
     }
 }
 
@@ -135,6 +148,12 @@ fn normalize_time_bound(raw: &str) -> Result<Option<String>, String> {
 
 fn parse_relative_window(text: &str) -> Result<TimeWindowParams, String> {
     let normalized = text.trim().to_ascii_lowercase();
+    if normalized.len() == 4 && normalized.chars().all(|ch| ch.is_ascii_digit()) {
+        return normalized
+            .parse::<i64>()
+            .map_err(|_| format!("unrecognized timeWindow string '{text}'"))
+            .and_then(calendar_year_window);
+    }
     let now = Utc::now();
     let rfc = |dt: DateTime<Utc>| Some(dt.to_rfc3339());
     let window = |from, to| TimeWindowParams { from, to };
@@ -172,6 +191,25 @@ fn parse_relative_window(text: &str) -> Result<TimeWindowParams, String> {
     }
 
     Err(format!("unrecognized timeWindow string '{text}'"))
+}
+
+fn calendar_year_window(year: i64) -> Result<TimeWindowParams, String> {
+    let year = i32::try_from(year)
+        .ok()
+        .filter(|year| (1000..=9998).contains(year))
+        .ok_or_else(|| "timeWindow calendar year must be between 1000 and 9998".to_string())?;
+    let from = Utc
+        .with_ymd_and_hms(year, 1, 1, 0, 0, 0)
+        .single()
+        .ok_or_else(|| "timeWindow calendar year is out of range".to_string())?;
+    let to = Utc
+        .with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0)
+        .single()
+        .ok_or_else(|| "timeWindow calendar year is out of range".to_string())?;
+    Ok(TimeWindowParams {
+        from: Some(from.to_rfc3339()),
+        to: Some(to.to_rfc3339()),
+    })
 }
 
 fn parse_rolling_window(text: &str, now: DateTime<Utc>) -> Option<TimeWindowParams> {
@@ -537,6 +575,27 @@ mod time_window_tests {
         ] {
             let window = time_window_from_value(&serde_json::json!(phrase)).unwrap();
             assert!(window.from.is_some(), "{phrase} should set a lower bound");
+        }
+    }
+
+    #[test]
+    fn calendar_year_forms_produce_exact_bounds() {
+        for value in [serde_json::json!("2026"), serde_json::json!(2026)] {
+            let window = time_window_from_value(&value).unwrap();
+            assert_eq!(window.from.as_deref(), Some("2026-01-01T00:00:00+00:00"));
+            assert_eq!(window.to.as_deref(), Some("2027-01-01T00:00:00+00:00"));
+        }
+    }
+
+    #[test]
+    fn invalid_calendar_year_forms_fail_closed() {
+        for value in [
+            serde_json::json!(9999),
+            serde_json::json!("9999"),
+            serde_json::json!(2026.5),
+        ] {
+            let error = time_window_from_value(&value).unwrap_err();
+            assert!(error.contains("calendar year"));
         }
     }
 

@@ -232,7 +232,18 @@ pub struct OverlayActivityCandidate {
     pub actor_display_name: String,
     pub current_instance: bool,
     #[serde(default)]
+    pub favorite_subject: OverlayActivityFavoriteSubject,
+    #[serde(default)]
     pub payload: RawJson,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", content = "value", rename_all = "camelCase")]
+pub enum OverlayActivityFavoriteSubject {
+    #[default]
+    None,
+    UserId(String),
+    GroupId(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]

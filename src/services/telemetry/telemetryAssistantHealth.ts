@@ -89,7 +89,10 @@ function classifyToolResult(summary?: string): string | undefined {
         /\b(invalid|malformed|bad request|schema|argument|arguments|args)\b/.test(
             normalized
         ) ||
-        /\b(missing field|invalid type|unknown variant)\b/.test(normalized)
+        /\b(missing field|invalid type|unknown variant)\b/.test(normalized) ||
+        /\b(unrecognized timewindow|timewindow(?:\.[a-z]+| calendar year)? must be)\b/.test(
+            normalized
+        )
     ) {
         return 'invalid_args';
     }

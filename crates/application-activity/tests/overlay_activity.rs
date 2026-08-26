@@ -5,9 +5,9 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use vrcx_0_application_activity::{
     overlay_activity_type_definitions, OverlayActivityCandidate, OverlayActivityCategory,
-    OverlayActivityDelivery, OverlayActivityFavoriteGroupKeys, OverlayActivityFilters,
-    OverlayActivityRule, OverlayActivityRuntime, OverlayActivityScope, OverlayActivitySink,
-    OverlayActivitySnapshot, OverlayActivitySurface, OverlayActivityText,
+    OverlayActivityDelivery, OverlayActivityFavoriteGroupKeys, OverlayActivityFavoriteSubject,
+    OverlayActivityFilters, OverlayActivityRule, OverlayActivityRuntime, OverlayActivityScope,
+    OverlayActivitySink, OverlayActivitySnapshot, OverlayActivitySurface, OverlayActivityText,
     OverlayActivityTypeDefinition, OverlayFavoriteGroups,
 };
 use vrcx_0_i18n::OverlayMessageKey;
@@ -27,6 +27,10 @@ fn activity_type_definitions_are_exported_from_backend() {
         .iter()
         .find(|definition| definition.key == "AvatarChange")
         .expect("avatar definition");
+    let group_instance_opened = definitions
+        .iter()
+        .find(|definition| definition.key == "group.instanceOpened")
+        .expect("group instance definition");
 
     assert_eq!(invite.category, OverlayActivityCategory::ActionRequired);
     assert!(invite
@@ -37,6 +41,18 @@ fn activity_type_definitions_are_exported_from_backend() {
         [OverlayActivityScope::Off, OverlayActivityScope::On]
     );
     assert_eq!(avatar_change.aliases, ["Avatar"]);
+    assert_eq!(
+        group_instance_opened.allowed_scopes,
+        [
+            OverlayActivityScope::Off,
+            OverlayActivityScope::AllFavorites,
+            OverlayActivityScope::SelectedFavorites,
+        ]
+    );
+    assert_eq!(
+        group_instance_opened.default_scope,
+        OverlayActivityScope::Off
+    );
     assert!(definitions
         .iter()
         .all(|definition| definition.key != "PortalSpawn"));
@@ -267,6 +283,145 @@ fn unsupported_scopes_normalize_to_type_defaults() {
 }
 
 #[test]
+fn group_instance_rules_reject_global_and_unselected_scopes() {
+    let filters = OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "wrist": {
+            "types": {
+                "group.instanceOpened": {
+                    "scope": "on",
+                    "favoriteGroupKeys": "all"
+                }
+            }
+        },
+        "desktop": {
+            "types": {
+                "group.instanceOpened": {
+                    "scope": "selectedFavorites",
+                    "favoriteGroupKeys": "all"
+                }
+            }
+        }
+    }));
+
+    assert_eq!(
+        filters
+            .rule_for(OverlayActivitySurface::Wrist, "group.instanceOpened")
+            .scope,
+        OverlayActivityScope::Off
+    );
+    assert_eq!(
+        filters
+            .rule_for(OverlayActivitySurface::Desktop, "group.instanceOpened")
+            .scope,
+        OverlayActivityScope::Off
+    );
+}
+
+#[test]
+fn group_instance_favorites_use_group_membership_not_friend_membership() {
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "wrist": {
+            "types": {
+                "group.instanceOpened": {
+                    "scope": "selectedFavorites",
+                    "favoriteGroupKeys": ["group:collection-a"]
+                }
+            }
+        }
+    })));
+    runtime.set_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "group:collection-a",
+        ["grp_friend_map"].as_slice(),
+    )]));
+    runtime.set_group_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "group:collection-a",
+        ["grp_saved"].as_slice(),
+    )]));
+
+    let mut saved = candidate("group.instanceOpened", "");
+    saved.source_id = "saved-group-instance".into();
+    saved.favorite_subject = OverlayActivityFavoriteSubject::GroupId("grp_saved".into());
+    let mut friend_only = candidate("group.instanceOpened", "");
+    friend_only.source_id = "friend-map-group-instance".into();
+    friend_only.favorite_subject = OverlayActivityFavoriteSubject::GroupId("grp_friend_map".into());
+
+    assert!(runtime.ingest_candidate(saved).is_some());
+    assert!(runtime.ingest_candidate(friend_only).is_none());
+}
+
+#[test]
+fn saved_group_instance_scan_seeds_then_delivers_the_new_parsed_location() {
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "desktop": {
+            "types": {
+                "group.instanceOpened": {
+                    "scope": "selectedFavorites",
+                    "favoriteGroupKeys": ["group:collection-a"]
+                }
+            }
+        }
+    })));
+    runtime.set_group_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "group:collection-a",
+        ["grp_saved"].as_slice(),
+    )]));
+    let sink = RecordingSink::default();
+    runtime.set_sink(sink.clone());
+    runtime.set_delivery_armed(true);
+    let fetched_at = chrono::Utc::now().to_rfc3339();
+    let existing: vrcx_0_core::json::RawJson = json!({
+        "location": "wrld_test:existing~group(grp_saved)~groupAccessType(plus)",
+        "group": { "id": "grp_saved", "name": "Test Group" },
+        "world": { "name": "Test World" }
+    })
+    .into();
+
+    assert!(runtime
+        .ingest_group_instance_scan(
+            "usr_owner\u{1f}https://api.example.test\u{1f}7",
+            "grp_saved",
+            &fetched_at,
+            std::slice::from_ref(&existing),
+        )
+        .is_empty());
+    assert!(sink.deliveries.lock().unwrap().is_empty());
+
+    let entries = runtime.ingest_group_instance_scan(
+        "usr_owner\u{1f}https://api.example.test\u{1f}7",
+        "grp_saved",
+        &fetched_at,
+        &[
+            existing,
+            json!({
+                "location": "wrld_test:new~group(grp_saved)~groupAccessType(plus)",
+                "group": { "id": "grp_saved", "name": "Test Group" },
+                "world": { "name": "Test World" }
+            })
+            .into(),
+        ],
+    );
+
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].payload["groupId"], json!("grp_saved"));
+    assert_eq!(entries[0].payload["count"], json!(1));
+    assert_eq!(entries[0].content.title.source_text(), "Test Group");
+    assert_eq!(
+        entries[0].content.body.source_text(),
+        "Created a new instance: Test World groupPlus(Test Group)"
+    );
+    let deliveries = sink.deliveries.lock().unwrap();
+    assert_eq!(deliveries.len(), 1);
+    assert!(deliveries[0].desktop);
+    assert!(!deliveries[0].vr);
+    assert!(!deliveries[0].hmd);
+    assert!(!deliveries[0].webhook);
+    assert!(!deliveries[0].tts);
+}
+
+#[test]
 fn legacy_category_filters_normalize_to_type_rules() {
     let filters = OverlayActivityFilters::from_json(json!({
         "version": 1,
@@ -473,11 +628,19 @@ fn all_activity_types_build_desktop_safe_content() {
     let definitions = overlay_activity_type_definitions();
     let runtime = OverlayActivityRuntime::with_filters(desktop_filters_for(&definitions));
     runtime.set_friend_user_ids(["usr_actor"]);
+    runtime.set_group_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "group:desktop",
+        ["grp_desktop"].as_slice(),
+    )]));
 
     for definition in definitions {
         let mut row = candidate(&definition.key, "usr_actor");
         row.actor_display_name = "Desktop Actor".to_string();
         row.payload = representative_payload(&definition.key).into();
+        if definition.key == "group.instanceOpened" {
+            row.favorite_subject =
+                OverlayActivityFavoriteSubject::GroupId("grp_desktop".to_string());
+        }
 
         let entry = runtime
             .ingest_candidate(row)
@@ -676,6 +839,7 @@ fn candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {
         actor_user_id: user_id.to_string(),
         actor_display_name: user_id.to_string(),
         current_instance: false,
+        favorite_subject: OverlayActivityFavoriteSubject::UserId(user_id.to_string()),
         payload: json!({}).into(),
     }
 }
@@ -688,8 +852,18 @@ fn desktop_filters_for(definitions: &[OverlayActivityTypeDefinition]) -> Overlay
             .contains(&OverlayActivityScope::On)
         {
             "on"
-        } else {
+        } else if definition
+            .allowed_scopes
+            .contains(&OverlayActivityScope::Friends)
+        {
             "friends"
+        } else if definition
+            .allowed_scopes
+            .contains(&OverlayActivityScope::AllFavorites)
+        {
+            "allFavorites"
+        } else {
+            panic!("{} has no ingestible desktop scope", definition.key)
         };
         types.insert(
             definition.key.clone(),

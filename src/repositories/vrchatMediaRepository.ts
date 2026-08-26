@@ -13,6 +13,7 @@ import type {
     MediaAssetUploadRequest,
     MediaFileListParams,
     PrintUploadParams,
+    PrintFavoriteBulkResult,
     PrintFavoriteState,
     ProfileDecorationEquipSlot
 } from '@/platform/tauri/bindings';
@@ -519,6 +520,20 @@ async function setPrintFavorite(
     });
 }
 
+async function setPrintFavorites(
+    printIds: string[],
+    favoriteValue: boolean
+): Promise<PrintFavoriteBulkResult> {
+    const normalizedPrintIds = printIds
+        .map((printId) => printId.trim())
+        .filter((printId) => printId.length > 0);
+
+    return commands.appVrchatPrintsFavoritesSet({
+        printIds: normalizedPrintIds,
+        favorite: favoriteValue
+    });
+}
+
 async function getInventoryItems(
     params: InventoryListParams = {}
 ): Promise<VrchatRequestResponse<InventoryItemsResponse>> {
@@ -831,6 +846,7 @@ const vrchatMediaRepository = Object.freeze({
     deletePrint,
     getPrintFavorites,
     setPrintFavorite,
+    setPrintFavorites,
     getInventoryItems,
     collectInventoryItems,
     getInventoryTemplate,
@@ -860,6 +876,7 @@ export {
     deletePrint,
     getPrintFavorites,
     setPrintFavorite,
+    setPrintFavorites,
     getInventoryItems,
     collectInventoryItems,
     getInventoryTemplate,

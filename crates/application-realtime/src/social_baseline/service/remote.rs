@@ -19,9 +19,9 @@ const PAGED_ARRAY_CONCURRENCY: usize = 5;
 const PAGED_ARRAY_MAX_RETRIES: usize = 5;
 const FRIEND_STATUS_VERIFICATION_BUDGET: Duration = Duration::from_secs(2);
 #[cfg(not(test))]
-const PAGED_ARRAY_RETRY_BASE_DELAY_MS: u64 = 1_000;
+const PAGED_ARRAY_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);
 #[cfg(test)]
-const PAGED_ARRAY_RETRY_BASE_DELAY_MS: u64 = 1;
+const PAGED_ARRAY_RETRY_BASE_DELAY: Duration = Duration::from_millis(1);
 
 #[derive(Debug)]
 struct PageFetch {
@@ -198,7 +198,7 @@ fn offset_allowed(offset: i32, max_offset: Option<i32>) -> bool {
 }
 
 fn backoff_delay(attempt: usize) -> Duration {
-    Duration::from_millis(PAGED_ARRAY_RETRY_BASE_DELAY_MS * 2u64.saturating_pow(attempt as u32))
+    PAGED_ARRAY_RETRY_BASE_DELAY.saturating_mul(2u32.saturating_pow(attempt as u32))
 }
 
 pub(crate) async fn refetch_users_concurrent(

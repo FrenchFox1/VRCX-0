@@ -1,7 +1,12 @@
 use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use vrcx_0_application::game::{
-    refresh_background_group_instances, RuntimeGroupInstancesProjection,
+    refresh_background_group_instances, refresh_background_group_instances_for_group,
+    RuntimeGroupInstancesProjection,
+};
+use vrcx_0_application::social::{
+    BACKGROUND_GROUP_INSTANCE_NOTIFICATION_CADENCE_SECONDS,
+    BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB,
 };
 use vrcx_0_application_core::BackgroundCapabilitySessionIdentity;
 
@@ -132,6 +137,73 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
         BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
         "Next background group instance facts refresh is waiting.",
         BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS,
+    );
+}
+
+pub(in crate::state) async fn run_background_group_instance_notification_refresh(
+    context: &BackgroundTickContext<'_>,
+    refresh_running: &Arc<AtomicBool>,
+    group_ids: &[String],
+) {
+    let Some(_refresh_guard) = SharedAtomicFlagGuard::try_acquire(refresh_running) else {
+        return;
+    };
+    let Some(session) = background_capability_session_identity(context.session_slot) else {
+        return;
+    };
+    context.background_jobs.mark_running(
+        BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB,
+        "Checking saved groups for new instances.",
+    );
+    let scope_key = format!(
+        "{}\u{1f}{}\u{1f}{}",
+        session.current_user_id, session.endpoint, session.auth_scope_generation
+    );
+    let mut failed = 0usize;
+    for group_id in group_ids {
+        match refresh_background_group_instances_for_group(
+            context.web.as_ref(),
+            &vrcx_0_outbound_adapters::VrchatBackgroundGroupRequests,
+            &session,
+            group_id,
+        )
+        .await
+        {
+            Ok(refresh) => {
+                if !background_capability_session_matches(context.session_slot, &session) {
+                    return;
+                }
+                context
+                    .runtime_context
+                    .overlay_activity()
+                    .ingest_group_instance_scan(
+                        &scope_key,
+                        group_id,
+                        &refresh.fetched_at,
+                        &refresh.instances,
+                    );
+            }
+            Err(error) => {
+                failed = failed.saturating_add(1);
+                tracing::warn!(group_id, error = %error, "saved group instance refresh failed");
+            }
+        }
+    }
+    if failed == 0 {
+        context.background_jobs.mark_completed(
+            BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB,
+            format!("checked {} saved groups for new instances", group_ids.len()),
+        );
+    } else {
+        context.background_jobs.mark_failed(
+            BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB,
+            format!("failed to check {failed} saved groups for new instances"),
+        );
+    }
+    context.background_jobs.mark_scheduled(
+        BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB,
+        "Next saved group instance notification check is waiting.",
+        BACKGROUND_GROUP_INSTANCE_NOTIFICATION_CADENCE_SECONDS,
     );
 }
 

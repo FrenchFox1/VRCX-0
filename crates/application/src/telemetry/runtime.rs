@@ -1,9 +1,10 @@
+use futures_util::future::BoxFuture;
+
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
 use std::time::{Duration, Instant};
-use std::{future::Future, pin::Pin};
 
 use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
@@ -46,8 +47,7 @@ pub enum FeedbackSubmitError {
     RequestFailed,
 }
 
-pub type TelemetryPostFuture<'a> =
-    Pin<Box<dyn Future<Output = std::result::Result<(), String>> + Send + 'a>>;
+pub type TelemetryPostFuture<'a> = BoxFuture<'a, std::result::Result<(), String>>;
 
 pub trait TelemetryTransport: Send + Sync {
     fn is_enabled(&self) -> bool;

@@ -33,9 +33,9 @@ use background::{
     gui_maintenance_runtime_mode, RuntimeHostSocialMaintenanceActions,
 };
 use background_ticks::{
-    run_background_current_user_refresh, run_background_group_instance_refresh,
-    run_background_moderation_refresh, run_background_print_cleanup,
-    run_background_social_baseline_refresh, BackgroundTickContext,
+    run_background_current_user_refresh, run_background_group_instance_notification_refresh,
+    run_background_group_instance_refresh, run_background_moderation_refresh,
+    run_background_print_cleanup, run_background_social_baseline_refresh, BackgroundTickContext,
 };
 pub use combined_snapshot::BackendRuntimeCombinedSnapshot;
 use profile_lock::{AtomicFlagGuard, SharedAtomicFlagGuard};

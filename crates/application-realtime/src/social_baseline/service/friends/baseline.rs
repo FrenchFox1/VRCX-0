@@ -315,7 +315,7 @@ async fn build_friend_roster_baseline_inner(
     let mut output = SocialFriendRosterBaselineOutput {
         user_id,
         stale: false,
-        count,
+        count: u32::try_from(count).unwrap_or(u32::MAX),
         detail,
         snapshot,
         friend_log_changed: false,
@@ -372,7 +372,7 @@ fn replace_friend_roster_baseline_snapshot(
     output: &mut SocialFriendRosterBaselineOutput,
     friends_by_id: &HashMap<String, FriendRecord>,
 ) -> Result<()> {
-    output.count = friends_by_id.len();
+    output.count = u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX);
     output.snapshot = Some(RawJson::from(build_roster_snapshot_from_records(
         &output.user_id,
         friends_by_id,

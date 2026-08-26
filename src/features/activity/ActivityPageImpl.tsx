@@ -18,6 +18,7 @@ import {
     ToolbarSegmented,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
+import type { ActivityCompanionOrder } from '@/repositories/activityPageRepository';
 import configRepository from '@/repositories/configRepository';
 import { getResolvedThemeMode } from '@/services/themeService';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -25,18 +26,25 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
 import {
+    ACTIVITY_PAGE_COMPANION_ORDER_KEY,
+    ACTIVITY_PAGE_SHOW_HOME_KEY,
     ACTIVITY_PAGE_RANGE_KEY,
     ACTIVITY_RANGE_OPTIONS,
     DEFAULT_ACTIVITY_RANGE,
+    DEFAULT_COMPANION_ORDER,
     hasAnyActivity,
+    homeWorldIdFrom,
     normalizeActivityRange,
+    normalizeCompanionOrder,
     type ActivityRange
 } from './activityPageModel';
-import { ActivityAccessSplit } from './components/ActivityAccessSplit';
+import { ActivityAccessExhibit } from './components/ActivityAccessExhibit';
+import { ActivityAvatarsExhibit } from './components/ActivityAvatarsExhibit';
 import { ActivityPeopleExhibit } from './components/ActivityPeopleExhibit';
 import { ActivityRhythmExhibit } from './components/ActivityRhythmExhibit';
 import { ActivityTimeExhibit } from './components/ActivityTimeExhibit';
 import { ActivityWorldsExhibit } from './components/ActivityWorldsExhibit';
+import { useActivityAvatarUsage } from './useActivityAvatarUsage';
 import { useActivityHeatmap } from './useActivityHeatmap';
 import { useActivityPageResource } from './useActivityPageResource';
 import { useActivityPalette } from './useActivityPalette';
@@ -65,18 +73,29 @@ export function ActivityPageImpl() {
     const themeMode = useShellStore((state) => state.themeMode);
     const isDarkMode = getResolvedThemeMode(themeMode) === 'dark';
     const [range, setRange] = useState<ActivityRange>(DEFAULT_ACTIVITY_RANGE);
+    const [companionOrder, setCompanionOrder] =
+        useState<ActivityCompanionOrder>(DEFAULT_COMPANION_ORDER);
+    const [showHomeWorld, setShowHomeWorld] = useState(false);
     const [skinElement, setSkinElement] = useState<HTMLDivElement | null>(null);
+    const homeWorldId = useRuntimeStore((state) =>
+        homeWorldIdFrom(state.auth.currentUserSnapshot?.homeLocation)
+    );
     const palette = useActivityPalette(skinElement, isDarkMode);
 
     useEffect(() => {
         let active = true;
-        void configRepository
-            .getString(ACTIVITY_PAGE_RANGE_KEY, null)
-            .then((stored) => {
-                if (active) {
-                    setRange(normalizeActivityRange(stored));
-                }
-            });
+        void Promise.all([
+            configRepository.getString(ACTIVITY_PAGE_RANGE_KEY, null),
+            configRepository.getString(ACTIVITY_PAGE_COMPANION_ORDER_KEY, null),
+            configRepository.getBool(ACTIVITY_PAGE_SHOW_HOME_KEY, false)
+        ]).then(([storedRange, storedOrder, storedShowHome]) => {
+            if (!active) {
+                return;
+            }
+            setRange(normalizeActivityRange(storedRange));
+            setCompanionOrder(normalizeCompanionOrder(storedOrder));
+            setShowHomeWorld(Boolean(storedShowHome));
+        });
         return () => {
             active = false;
         };
@@ -84,9 +103,14 @@ export function ActivityPageImpl() {
 
     const { view, loading, error, refresh } = useActivityPageResource(
         ownerUserId ?? '',
-        range
+        range,
+        companionOrder
     );
     const heatmap = useActivityHeatmap(ownerUserId ?? '', range);
+    const avatarUsage = useActivityAvatarUsage(
+        ownerUserId ?? '',
+        range === 'all'
+    );
 
     const rangeOptions = useMemo<ToolbarSegmentOption<ActivityRange>[]>(
         () =>
@@ -120,6 +144,19 @@ export function ActivityPageImpl() {
     function onRangeChange(next: ActivityRange) {
         setRange(next);
         void configRepository.setString(ACTIVITY_PAGE_RANGE_KEY, next);
+    }
+
+    function onCompanionOrderChange(next: ActivityCompanionOrder) {
+        setCompanionOrder(next);
+        void configRepository.setString(
+            ACTIVITY_PAGE_COMPANION_ORDER_KEY,
+            next
+        );
+    }
+
+    function onShowHomeWorldChange(next: boolean) {
+        setShowHomeWorld(next);
+        void configRepository.setBool(ACTIVITY_PAGE_SHOW_HOME_KEY, next);
     }
 
     return (
@@ -180,18 +217,37 @@ export function ActivityPageImpl() {
                                 />
                             </Staggered>
                             <Staggered index={2}>
-                                <ActivityWorldsExhibit worlds={view.worlds} />
+                                <ActivityWorldsExhibit
+                                    worlds={view.worlds}
+                                    homeWorldId={homeWorldId}
+                                    showHomeWorld={showHomeWorld}
+                                    onShowHomeWorldChange={
+                                        onShowHomeWorldChange
+                                    }
+                                />
                             </Staggered>
                             <Staggered index={3}>
-                                <ActivityPeopleExhibit people={view.people} />
+                                <ActivityPeopleExhibit
+                                    people={view.people}
+                                    order={companionOrder}
+                                    pending={
+                                        view.people.order !== companionOrder
+                                    }
+                                    onOrderChange={onCompanionOrderChange}
+                                />
                             </Staggered>
                             <Staggered index={4}>
-                                <section className="activity-card p-6">
-                                    <ActivityAccessSplit
-                                        slices={view.accessSplit}
-                                    />
-                                </section>
+                                <ActivityAccessExhibit
+                                    slices={view.accessSplit}
+                                />
                             </Staggered>
+                            {range === 'all' ? (
+                                <Staggered index={5}>
+                                    <ActivityAvatarsExhibit
+                                        rows={avatarUsage}
+                                    />
+                                </Staggered>
+                            ) : null}
                             <p className="text-muted-foreground break-inside-avoid px-1 pt-1 text-xs">
                                 {t('view.activity.caveat.recorded_since', {
                                     date: view.coverage.firstSourceAt.slice(

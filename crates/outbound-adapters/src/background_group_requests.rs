@@ -23,6 +23,22 @@ impl BackgroundGroupRequests for VrchatBackgroundGroupRequests {
         )
     }
 
+    fn current_user_group_instances_for_group(
+        &self,
+        endpoint: String,
+        current_user_id: String,
+        group_id: String,
+    ) -> crate::Result<VrchatApiRequest> {
+        Ok(
+            vrcx_0_vrchat_client::groups::user_group_instances_get_input_for_endpoint(
+                endpoint,
+                group_id,
+                current_user_id,
+            )?
+            .2,
+        )
+    }
+
     fn group_profile(&self, endpoint: String, group_id: String) -> crate::Result<VrchatApiRequest> {
         Ok(vrcx_0_vrchat_client::groups::profile_get_input(endpoint, group_id, false)?.1)
     }

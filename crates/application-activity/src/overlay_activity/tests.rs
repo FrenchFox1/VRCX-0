@@ -868,6 +868,7 @@ fn candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandidate {
         actor_user_id: user_id.to_string(),
         actor_display_name: user_id.to_string(),
         current_instance: false,
+        favorite_subject: OverlayActivityFavoriteSubject::UserId(user_id.to_string()),
         payload: json!({}).into(),
     }
 }

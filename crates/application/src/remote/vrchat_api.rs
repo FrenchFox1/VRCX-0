@@ -1,5 +1,5 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -11,7 +11,7 @@ use vrcx_0_application_core::{
 
 const VRCHAT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type VrchatApiFuture<'a> = Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;
+pub type VrchatApiFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait VrchatApiPort: Send + Sync {
     fn execute(

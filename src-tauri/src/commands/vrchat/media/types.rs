@@ -86,6 +86,15 @@ pub struct VrchatPrintFavoriteSetInput {
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatPrintFavoritesSetInput {
+    #[serde(default)]
+    pub(crate) print_ids: Vec<String>,
+    #[serde(default)]
+    pub(crate) favorite: bool,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaUserInventoryItemInput {
     #[serde(default)]
     pub(crate) user_id: String,

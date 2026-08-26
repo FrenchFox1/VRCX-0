@@ -100,3 +100,43 @@ impl FavoriteRow {
             .unwrap_or_default()
     }
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedGroupCollection {
+    pub id: String,
+    pub name: String,
+    pub group_ids: Vec<String>,
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedGroupFavoritesSnapshot {
+    pub collections: Vec<SavedGroupCollection>,
+}
+
+#[derive(Clone, Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedGroupCollectionCreateInput {
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedGroupCollectionDeleteInput {
+    pub collection_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedGroupFavoriteAddInput {
+    pub collection_id: String,
+    pub group_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedGroupFavoriteRemoveInput {
+    pub group_id: String,
+}

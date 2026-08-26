@@ -16,7 +16,7 @@ export function RankRow({
     leading?: ReactNode;
     title: ReactNode;
     primary: ReactNode;
-    secondary: ReactNode;
+    secondary?: ReactNode;
 }) {
     return (
         <Button
@@ -40,9 +40,11 @@ export function RankRow({
                 <span className="text-foreground block truncate text-sm font-medium">
                     {title}
                 </span>
-                <span className="text-muted-foreground block truncate text-xs">
-                    {secondary}
-                </span>
+                {secondary ? (
+                    <span className="text-muted-foreground block truncate text-xs">
+                        {secondary}
+                    </span>
+                ) : null}
             </span>
             <span className="text-foreground shrink-0 text-sm tabular-nums">
                 {primary}

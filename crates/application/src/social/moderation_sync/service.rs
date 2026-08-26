@@ -99,8 +99,8 @@ async fn load_player_moderations(
     Ok(ModerationSyncRefreshOutput {
         accepted,
         user_id,
-        remote_count,
-        local_count,
+        remote_count: crate::wire_count(remote_count),
+        local_count: crate::wire_count(local_count),
         rows,
     })
 }

@@ -88,6 +88,7 @@ export const routePathByName = Object.freeze({
     search: '/search',
     'browse-history': '/browse-history',
     'favorite-friends': '/favorites/friends',
+    'favorite-groups': '/favorites/groups',
     'favorite-worlds': '/favorites/worlds',
     'favorite-avatars': '/favorites/avatars',
     'friend-log': '/social/friend-log',
@@ -140,7 +141,12 @@ export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
             nameKey: 'nav_tooltip.favorites',
             name: t('nav_tooltip.favorites'),
             icon: 'lucide:Star',
-            items: ['favorite-friends', 'favorite-worlds', 'favorite-avatars']
+            items: [
+                'favorite-friends',
+                'favorite-groups',
+                'favorite-worlds',
+                'favorite-avatars'
+            ]
         },
         {
             type: 'folder',

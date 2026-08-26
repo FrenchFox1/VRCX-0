@@ -107,10 +107,10 @@ pub struct FavoriteImportStatus {
     pub operation: FavoriteImportOperation,
     pub kind: FavoriteImportKind,
     pub auth_scope_generation: u64,
-    pub total: usize,
-    pub processed: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub processed: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub cancel_requested: bool,
     pub items: Vec<FavoriteImportItemResult>,
     pub started_at: Option<String>,
@@ -253,7 +253,7 @@ impl FavoriteImportRuntime {
                 operation: prepared.operation,
                 kind: prepared.kind,
                 auth_scope_generation: scope.generation,
-                total: prepared.ids.len(),
+                total: crate::wire_count(prepared.ids.len()),
                 started_at: Some(Utc::now().to_rfc3339()),
                 ..Default::default()
             };

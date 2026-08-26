@@ -40,8 +40,13 @@ function pushFriendRows(
     sectionRows: readonly SidebarFriendRecord[],
     {
         currentUserId,
-        isGroupByInstance = false
-    }: { currentUserId?: string; isGroupByInstance?: boolean } = {}
+        isGroupByInstance = false,
+        instanceLocation
+    }: {
+        currentUserId?: string;
+        isGroupByInstance?: boolean;
+        instanceLocation?: string;
+    } = {}
 ) {
     for (const friend of sectionRows) {
         const friendId = normalizeId(friend?.id);
@@ -50,7 +55,8 @@ function pushFriendRows(
             key: `friend:${sectionKey}:${friendId}`,
             friend,
             isCurrentUser: friendId === normalizeId(currentUserId),
-            isGroupByInstance: Boolean(isGroupByInstance)
+            isGroupByInstance: Boolean(isGroupByInstance),
+            instanceLocation
         });
     }
 }
@@ -158,7 +164,11 @@ export function buildFavoriteCollectionSidebarVirtualRows({
                     nextRows,
                     `favoriteCollection:sameInstance:${group.location}:${index}`,
                     group.rows,
-                    { currentUserId, isGroupByInstance: true }
+                    {
+                        currentUserId,
+                        isGroupByInstance: true,
+                        instanceLocation: group.location
+                    }
                 );
             });
         }
