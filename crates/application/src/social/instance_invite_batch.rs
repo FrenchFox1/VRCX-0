@@ -1,4 +1,6 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 #[cfg(test)]
@@ -103,7 +105,7 @@ trait InstanceInviteBatchActions: Send + Sync {
         &'a self,
         context: &'a InstanceInviteContext,
         target: &'a InstanceInviteTarget,
-    ) -> Pin<Box<dyn Future<Output = std::result::Result<(), InstanceInviteRemoteError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>>;
     fn scope_matches(&self) -> bool;
 }
 
@@ -204,7 +206,7 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
         &'a self,
         context: &'a InstanceInviteContext,
         target: &'a InstanceInviteTarget,
-    ) -> Pin<Box<dyn Future<Output = std::result::Result<(), InstanceInviteRemoteError>> + Send + 'a>>
+    ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>>
     {
         Box::pin(async move {
             self.remote_mutation_gate
@@ -495,11 +497,7 @@ mod tests {
             &'a self,
             _context: &'a InstanceInviteContext,
             target: &'a InstanceInviteTarget,
-        ) -> Pin<
-            Box<
-                dyn Future<Output = std::result::Result<(), InstanceInviteRemoteError>> + Send + 'a,
-            >,
-        > {
+        ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>> {
             Box::pin(async move {
                 self.calls
                     .lock()

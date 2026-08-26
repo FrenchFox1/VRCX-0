@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin};
+use futures_util::future::BoxFuture;
 
 use serde_json::Value;
 use vrcx_0_application_core::Result;
@@ -22,7 +22,7 @@ pub trait WorldCollectionStore: Send + Sync {
     fn write_owner_tokens(&self, owner_tokens: &Value) -> Result<()>;
 }
 
-pub type WorldCollectionFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T>> + Send + 'a>>;
+pub type WorldCollectionFuture<'a, T> = BoxFuture<'a, Result<T>>;
 
 pub trait WorldCollectionRemote: Send + Sync {
     fn mint_token<'a>(

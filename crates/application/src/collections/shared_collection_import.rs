@@ -1,4 +1,6 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use vrcx_0_core::vrchat_ids::is_world_id;
@@ -72,7 +74,7 @@ pub trait SharedCollectionImportActions: Send + Sync {
     fn fetch_and_cache_world<'a>(
         &'a self,
         world_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<()>>;
     fn add_world_favorite(&self, world_id: &str, group_name: &str) -> Result<()>;
 }
 

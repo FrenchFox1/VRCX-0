@@ -1,4 +1,6 @@
-use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::{collections::HashSet, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -95,9 +97,9 @@ trait FavoriteBulkRemoveActions: Send + Sync {
     fn remove_remote<'a>(
         &'a self,
         item: &'a FavoriteBulkRemoveItem,
-    ) -> Pin<Box<dyn Future<Output = Result<RemoteRemoveOutcome>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>>;
     fn scope_matches(&self) -> bool;
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+    fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async {})
     }
 }
@@ -168,7 +170,7 @@ impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
     fn remove_remote<'a>(
         &'a self,
         item: &'a FavoriteBulkRemoveItem,
-    ) -> Pin<Box<dyn Future<Output = Result<RemoteRemoveOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>> {
         Box::pin(async move {
             let (_, request) = self.deps.remote_requests.delete(
                 self.deps.expected_scope.endpoint.clone(),
@@ -185,7 +187,7 @@ impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
             .generation_matches(&self.deps.expected_scope)
     }
 
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+    fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             self.deps
                 .remote_mutation_gate

@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::HashSet,
     sync::{
@@ -27,7 +29,7 @@ impl SharedCollectionImportActions for FakeActions {
     fn fetch_and_cache_world<'a>(
         &'a self,
         world_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
             self.fetched.lock().unwrap().push(world_id.to_string());
             if let Some(cancel) = &self.cancel_on_fetch {

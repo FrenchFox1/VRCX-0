@@ -1,6 +1,6 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashSet;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -30,7 +30,7 @@ const PRINT_CLEANUP_LIST_COUNT: i32 = 100;
 const PRINT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 pub type PrintRemoteFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;
+    BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait PrintRemote: Send + Sync {
     fn list_prints<'a>(

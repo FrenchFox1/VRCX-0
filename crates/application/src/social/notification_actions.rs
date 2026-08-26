@@ -1,4 +1,6 @@
-use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::{collections::HashSet, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -89,11 +91,7 @@ pub trait NotificationMarkSeenActions: Send + Sync {
     fn mark_remote<'a>(
         &'a self,
         item: &'a NotificationMarkSeenBatchItem,
-    ) -> Pin<
-        Box<
-            dyn Future<Output = std::result::Result<(), NotificationRemoteActionError>> + Send + 'a,
-        >,
-    >;
+    ) -> BoxFuture<'a, std::result::Result<(), NotificationRemoteActionError>>;
 }
 
 pub async fn mark_notifications_seen_batch(
@@ -260,13 +258,7 @@ mod tests {
         fn mark_remote<'a>(
             &'a self,
             item: &'a NotificationMarkSeenBatchItem,
-        ) -> Pin<
-            Box<
-                dyn Future<Output = std::result::Result<(), NotificationRemoteActionError>>
-                    + Send
-                    + 'a,
-            >,
-        > {
+        ) -> BoxFuture<'a, std::result::Result<(), NotificationRemoteActionError>> {
             Box::pin(async move {
                 let mut calls = self.calls.lock().unwrap();
                 calls.push(item.id.clone());

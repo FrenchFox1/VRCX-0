@@ -1,7 +1,7 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::{HashMap, HashSet},
-    future::Future,
-    pin::Pin,
     sync::Mutex,
     time::Duration,
 };
@@ -175,12 +175,12 @@ trait GroupModerationBatchActions: Send + Sync {
     fn execute<'a>(
         &'a self,
         operation: GroupModerationOperation<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<GroupModerationRemoteOutcome>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<GroupModerationRemoteOutcome>>;
     fn scope_matches(&self) -> bool;
     fn current_user_id(&self) -> &str;
     fn current_endpoint(&self) -> &str;
     fn report_progress(&self, _progress: GroupModerationBatchProgress) {}
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+    fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async {})
     }
 }
@@ -287,7 +287,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
     fn execute<'a>(
         &'a self,
         operation: GroupModerationOperation<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<GroupModerationRemoteOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<GroupModerationRemoteOutcome>> {
         Box::pin(async move {
             let (request, action) = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
@@ -372,7 +372,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
         self.event_bus.emit(progress);
     }
 
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+    fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             self.remote_mutation_gate
                 .wait(&self.expected_scope, GROUP_MODERATION_REMOTE_INTERVAL)

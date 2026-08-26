@@ -1,6 +1,6 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -37,7 +37,7 @@ enum RuntimeStep {
 }
 
 pub type AuthenticatedRuntimeProbeFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<i32>> + Send + 'a>>;
+    BoxFuture<'a, Result<i32>>;
 
 pub trait AuthenticatedRuntimeAuthProbe: Send + Sync {
     fn probe<'a>(&'a self, endpoint: &'a str) -> AuthenticatedRuntimeProbeFuture<'a>;

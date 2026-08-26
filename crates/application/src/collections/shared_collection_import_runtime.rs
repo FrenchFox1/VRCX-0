@@ -1,3 +1,6 @@
+#[cfg(test)]
+use futures_util::future::BoxFuture;
+
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Mutex,
@@ -37,9 +40,7 @@ type TestImportRunner = Arc<
     dyn Fn(
             PreparedSharedCollectionImport,
             Arc<AtomicBool>,
-        ) -> std::pin::Pin<
-            Box<dyn std::future::Future<Output = Result<SharedCollectionImportResult>> + Send>,
-        > + Send
+        ) -> BoxFuture<'static, Result<SharedCollectionImportResult>> + Send
         + Sync,
 >;
 

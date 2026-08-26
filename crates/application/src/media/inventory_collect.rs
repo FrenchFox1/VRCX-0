@@ -1,5 +1,6 @@
+use futures_util::future::BoxFuture;
+
 use std::future::Future;
-use std::pin::Pin;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -21,7 +22,7 @@ pub struct InventoryPageRequest {
 }
 
 pub type InventoryPageFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<VrchatResponse>> + Send + 'a>>;
+    BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait InventoryRemoteRequests: Send + Sync {
     fn inventory_page(

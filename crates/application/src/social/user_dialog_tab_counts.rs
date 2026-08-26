@@ -1,7 +1,9 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
-use std::{future::Future, pin::Pin};
+use std::future::Future;
 
 use futures_util::stream::{self, StreamExt};
 use moka::future::Cache;
@@ -60,7 +62,7 @@ pub struct AvatarProviderConfig {
 }
 
 pub type UserDialogExternalFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<(i32, String)>> + Send + 'a>>;
+    BoxFuture<'a, Result<(i32, String)>>;
 
 pub trait UserDialogTabCountsSource: Send + Sync {
     fn avatar_provider_config(&self) -> Result<AvatarProviderConfig>;

@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::sync::Mutex;
 
 use super::*;
@@ -76,9 +78,7 @@ impl NotificationChainActions for FakeActions {
     fn execute_remote(
         &self,
         call: NotificationChainRemoteCall,
-    ) -> Pin<
-        Box<dyn Future<Output = std::result::Result<(), NotificationChainRemoteError>> + Send + '_>,
-    > {
+    ) -> BoxFuture<'_, std::result::Result<(), NotificationChainRemoteError>> {
         Box::pin(async move {
             let key = call_key(&call);
             self.state.lock().unwrap().remote_calls.push(key.clone());
@@ -105,7 +105,7 @@ impl NotificationChainActions for FakeActions {
     fn resolve_world_name<'a>(
         &'a self,
         _world_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Option<String>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Option<String>> {
         Box::pin(async move { self.resolved_world_name.clone() })
     }
 

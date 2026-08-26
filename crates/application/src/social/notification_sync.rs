@@ -1,7 +1,8 @@
+use futures_util::future::BoxFuture;
+
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::Value;
-use std::{future::Future, pin::Pin};
 use vrcx_0_application_realtime::{normalize_v1_notification, normalize_v2_notification};
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::NotificationKind;
@@ -30,7 +31,7 @@ pub struct NotificationSyncWrite {
 }
 
 pub type NotificationSyncFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;
+    BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait NotificationSyncPort: Send + Sync {
     fn fetch_page<'a>(

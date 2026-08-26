@@ -1,5 +1,5 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
+
 use std::sync::Arc;
 
 use serde::Serialize;
@@ -13,7 +13,7 @@ use crate::auth::{AuthenticatedRuntimeSession, SavedAuthSnapshot};
 use vrcx_0_application_core::{Result, WebClient};
 
 pub(crate) type LoginApiFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<HttpApiExecuteResponse>> + Send + 'a>>;
+    BoxFuture<'a, Result<HttpApiExecuteResponse>>;
 
 pub(crate) trait LoginApi: Send + Sync {
     fn execute<'a>(&'a self, input: HttpApiRequestInput, scope: ApiScope) -> LoginApiFuture<'a>;

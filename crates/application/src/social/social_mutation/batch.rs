@@ -1,4 +1,6 @@
-use std::{collections::HashSet, future::Future, pin::Pin};
+use futures_util::future::BoxFuture;
+
+use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
@@ -60,7 +62,7 @@ trait SocialUnfriendBatchActions: Send + Sync {
     fn unfriend<'a>(
         &'a self,
         target: &'a SocialUnfriendBatchTarget,
-    ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>>;
     fn scope_matches(&self) -> bool;
 }
 
@@ -73,7 +75,7 @@ impl SocialUnfriendBatchActions for VrchatSocialUnfriendBatchActions<'_> {
     fn unfriend<'a>(
         &'a self,
         target: &'a SocialUnfriendBatchTarget,
-    ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>> {
         Box::pin(async move {
             unfriend_with_expected_scope(
                 &self.deps,
@@ -336,7 +338,7 @@ mod tests {
         fn unfriend<'a>(
             &'a self,
             target: &'a SocialUnfriendBatchTarget,
-        ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>>
+        ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>>
         {
             Box::pin(async move {
                 let outcome = self

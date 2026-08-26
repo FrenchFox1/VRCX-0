@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::VecDeque,
     sync::{
@@ -39,7 +41,7 @@ impl GroupModerationBatchActions for FakeActions {
     fn execute<'a>(
         &'a self,
         operation: GroupModerationOperation<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<GroupModerationRemoteOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<GroupModerationRemoteOutcome>> {
         Box::pin(async move {
             let call = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {

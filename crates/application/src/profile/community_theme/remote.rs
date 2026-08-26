@@ -1,5 +1,5 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
+
 use std::sync::Arc;
 
 use futures_util::stream::{self, StreamExt, TryStreamExt};
@@ -12,7 +12,7 @@ use vrcx_0_application_core::{Error, Result};
 use super::types::{CommunityThemeCatalog, CommunityThemeManifest, CommunityThemeStatsById};
 
 pub(super) type CommunityThemeRemoteFuture<'a, T> =
-    Pin<Box<dyn Future<Output = Result<T>> + Send + 'a>>;
+    BoxFuture<'a, Result<T>>;
 
 pub(super) trait CommunityThemeRemote: Send + Sync {
     fn load_catalog(&self) -> CommunityThemeRemoteFuture<'_, CommunityThemeCatalog>;

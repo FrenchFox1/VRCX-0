@@ -1,7 +1,7 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::HashSet,
-    future::Future,
-    pin::Pin,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -73,7 +73,7 @@ pub struct GroupBanImportStatus {
     pub last_error: Option<String>,
 }
 
-pub type GroupBanImportFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+pub type GroupBanImportFuture<'a> = BoxFuture<'a, Result<()>>;
 
 pub trait GroupBanImportActions: Send + Sync {
     fn ban_user<'a>(&'a self, group_id: &'a str, user_id: &'a str) -> GroupBanImportFuture<'a>;

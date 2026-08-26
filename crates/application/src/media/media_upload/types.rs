@@ -1,5 +1,4 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
 
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::Result;
@@ -28,9 +27,9 @@ pub struct LegacyMediaUploadResult {
 }
 
 pub type LegacyMediaUploadFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<LegacyMediaUploadResult>> + Send + 'a>>;
+    BoxFuture<'a, Result<LegacyMediaUploadResult>>;
 
-pub type LegacyMediaUploadGateFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+pub type LegacyMediaUploadGateFuture<'a> = BoxFuture<'a, Result<()>>;
 
 pub trait LegacyMediaUploadGate: Send + Sync {
     fn before_request(&self) -> LegacyMediaUploadGateFuture<'_>;

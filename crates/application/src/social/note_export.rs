@@ -1,6 +1,6 @@
+use futures_util::future::BoxFuture;
+
 use std::{
-    future::Future,
-    pin::Pin,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -105,7 +105,7 @@ pub struct NoteExportResult {
     pub last_error: Option<String>,
 }
 
-pub type NoteExportFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+pub type NoteExportFuture<'a> = BoxFuture<'a, Result<()>>;
 
 pub trait NoteExportActions: Send + Sync {
     fn save_note<'a>(&'a self, user_id: &'a str, note: &'a str) -> NoteExportFuture<'a>;

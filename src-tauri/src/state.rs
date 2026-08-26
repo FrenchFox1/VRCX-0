@@ -16,8 +16,9 @@ use crate::deep_link::PendingDeepLinks;
 use crate::desktop_notification_activation::PendingDesktopNotificationActivations;
 use crate::error::AppError;
 use vrcx_0_application::discovery::{
-    complete_translation, OpenAiTranslationPort, OpenAiTranslationRequest,
-    TranslationCompletionError, TranslationResult, TranslationTranslateInput,
+    complete_translation, OpenAiTranslationFuture, OpenAiTranslationPort,
+    OpenAiTranslationRequest, TranslationCompletionError, TranslationResult,
+    TranslationTranslateInput,
 };
 use vrcx_0_application::favorites::FavoriteDetailsRuntime;
 use vrcx_0_application::social::{
@@ -298,7 +299,7 @@ impl OpenAiTranslationPort for TauriOpenAiTranslationPort<'_> {
 
     fn resolve_default_endpoint_id(
         &self,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, Self::Error>> + Send + '_>>
+    ) -> OpenAiTranslationFuture<'_, Self::Error>
     {
         Box::pin(async {
             self.state
@@ -316,7 +317,7 @@ impl OpenAiTranslationPort for TauriOpenAiTranslationPort<'_> {
     fn translate(
         &self,
         request: OpenAiTranslationRequest,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, Self::Error>> + Send + '_>>
+    ) -> OpenAiTranslationFuture<'_, Self::Error>
     {
         Box::pin(async move {
             self.state

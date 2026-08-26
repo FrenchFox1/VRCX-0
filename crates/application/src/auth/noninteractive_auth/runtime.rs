@@ -1,5 +1,5 @@
-use std::future::Future;
-use std::pin::Pin;
+use futures_util::future::BoxFuture;
+
 use std::sync::Arc;
 
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
@@ -14,15 +14,10 @@ use crate::auth::{
     SavedCredentialLoginStartInput, SavedCredentialSessionData,
 };
 
-pub type NonInteractiveAuthProbeFuture<'a> = Pin<
-    Box<
-        dyn Future<Output = std::result::Result<CookieSessionProbe, NonInteractiveAuthError>>
-            + Send
-            + 'a,
-    >,
->;
+pub type NonInteractiveAuthProbeFuture<'a> =
+    BoxFuture<'a, std::result::Result<CookieSessionProbe, NonInteractiveAuthError>>;
 pub type NonInteractiveAuthResponseFuture<'a> =
-    Pin<Box<dyn Future<Output = Result<VrchatApiResponse>> + Send + 'a>>;
+    BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait NonInteractiveAuthActions: Send + Sync {
     fn clear_vrchat_config_snapshot(&self);

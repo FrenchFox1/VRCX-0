@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::VecDeque,
     sync::{
@@ -34,7 +36,7 @@ impl FavoriteBulkRemoveActions for FakeActions {
     fn remove_remote<'a>(
         &'a self,
         _item: &'a FavoriteBulkRemoveItem,
-    ) -> Pin<Box<dyn Future<Output = Result<RemoteRemoveOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>> {
         Box::pin(async move {
             self.remote_outcomes
                 .lock()

@@ -1,4 +1,6 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::time::Duration;
 
 use vrcx_0_application::media::{prepare_media_upload_request, MediaUploadPreprocessor};
 use vrcx_0_application::social::{
@@ -96,7 +98,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
     fn execute_remote(
         &self,
         call: NotificationChainRemoteCall,
-    ) -> Pin<Box<dyn Future<Output = Result<(), NotificationChainRemoteError>> + Send + '_>> {
+    ) -> BoxFuture<'_, Result<(), NotificationChainRemoteError>> {
         Box::pin(async move {
             let terminal = |error: &dyn ToString| NotificationChainRemoteError {
                 message: error.to_string(),
@@ -221,7 +223,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
     fn resolve_world_name<'a>(
         &'a self,
         world_id: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Option<String>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Option<String>> {
         Box::pin(async move {
             if self.ensure_generation().is_err() {
                 return None;
