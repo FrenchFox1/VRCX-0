@@ -627,14 +627,16 @@ export function useSettingsPreferenceActions({
         text: string,
         voiceId: string = prefs.notificationTTSVoiceNative
     ) {
-        commands.appHostTtsSpeak(text, voiceId || null).catch((error) => {
-            console.warn('Failed to play notification TTS', error);
-            toast.warning(
-                t(
-                    'view.settings.notifications.notifications.text_to_speech.tts_test_failed'
-                )
-            );
-        });
+        commands
+            .appHostTtsSpeak(text, voiceId || null, prefs.notificationTTSVolume)
+            .catch((error) => {
+                console.warn('Failed to play notification TTS', error);
+                toast.warning(
+                    t(
+                        'view.settings.notifications.notifications.text_to_speech.tts_test_failed'
+                    )
+                );
+            });
     }
     return {
         commit,

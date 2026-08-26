@@ -2544,6 +2544,7 @@
                         "header": "Text-To-Speech",
                         "when_to_play": "Notification TTS",
                         "tts_voice": "TTS Voice",
+                        "tts_volume": "TTS Volume",
                         "system_default_voice": "System default",
                         "notification_filters": "TTS Notification Filters",
                         "name_mode": "Spoken Name",

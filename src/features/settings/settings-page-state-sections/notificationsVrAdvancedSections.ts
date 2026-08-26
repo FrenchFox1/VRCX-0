@@ -15,6 +15,8 @@ type NotificationsSectionInput = SettingsSectionInput<
     | 'setTtsNotificationsDialogOpen'
     | 'saveStringPreference'
     | 'saveBoolPreference'
+    | 'savePreferenceValue'
+    | 'setIntConfigPreference'
     | 'saveNotificationTtsMode'
     | 'saveNotificationTtsVoice'
     | 'setNotificationTtsTestVisible'
@@ -63,6 +65,8 @@ export function buildNotificationsSection({
     setTtsNotificationsDialogOpen,
     saveStringPreference,
     saveBoolPreference,
+    savePreferenceValue,
+    setIntConfigPreference,
     saveNotificationTtsMode,
     saveNotificationTtsVoice,
     setNotificationTtsTestVisible,
@@ -80,6 +84,8 @@ export function buildNotificationsSection({
         setTtsNotificationsDialogOpen,
         saveStringPreference,
         saveBoolPreference,
+        savePreferenceValue,
+        setIntConfigPreference,
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
         setNotificationTtsTestVisible,

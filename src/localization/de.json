@@ -2544,6 +2544,7 @@
                         "header": "Text-zu-Sprache",
                         "when_to_play": "Benachrichtigungs-TTS",
                         "tts_voice": "TTS-Stimme",
+                        "tts_volume": "TTS-Lautstärke",
                         "system_default_voice": "Systemstandard",
                         "notification_filters": "TTS-Benachrichtigungsfilter",
                         "name_mode": "Gesprochener Name",

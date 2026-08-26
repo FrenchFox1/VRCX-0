@@ -2540,6 +2540,7 @@
                         "header": "テキスト読み上げ",
                         "when_to_play": "読み上げタイミング",
                         "tts_voice": "読み上げボイス",
+                        "tts_volume": "読み上げ音量",
                         "system_default_voice": "システム既定",
                         "notification_filters": "TTS 通知フィルター",
                         "name_mode": "読み上げる名前",

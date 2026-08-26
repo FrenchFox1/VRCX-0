@@ -21,8 +21,9 @@ pub fn app__host_tts_speak(
     state: State<'_, AppState>,
     text: String,
     voice_id: Option<String>,
+    volume: u8,
 ) -> Result<(), AppError> {
     let tts = state.runtime_host().tts_engine();
-    tts.speak(&text, voice_id.as_deref())
+    tts.speak(&text, voice_id.as_deref(), volume)
         .map_err(AppError::from)
 }

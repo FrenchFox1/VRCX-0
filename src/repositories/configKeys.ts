@@ -153,6 +153,7 @@ export const ConfigKeys = defineConfigKeys({
     notificationLayout: { type: 'string', default: null },
     notificationTTS: { type: 'string', default: 'Never' },
     notificationTTSVoiceNative: { type: 'string', default: '' },
+    notificationTTSVolume: { type: 'int', default: 100 },
     notificationTTSNameMode: { type: 'string', default: 'username' },
     notificationTTSNickName: { type: 'bool', default: false },
     notificationIconDot: { type: 'bool', default: true },

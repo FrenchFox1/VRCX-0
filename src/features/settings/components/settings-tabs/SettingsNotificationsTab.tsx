@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { TtsVoice } from '@/platform/tauri/bindings';
@@ -15,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SettingsGroup } from '../SettingsField';
@@ -32,6 +34,7 @@ type SettingsNotificationsPrefs = Pick<
     | 'notificationTTSNameMode'
     | 'notificationTTSNickName'
     | 'notificationTTSVoiceNative'
+    | 'notificationTTSVolume'
 >;
 
 type SettingsNotificationsTabContentProps = {
@@ -48,6 +51,7 @@ type SettingsNotificationsTabContentProps = {
     onNotificationTtsTestChange: (value: string) => void;
     onNotificationTtsTestVisibleChange: (visible: boolean) => void;
     onNotificationTtsVoiceChange: (value: string) => void;
+    onNotificationTtsVolumeChange: (value: number) => void;
     onOpenDesktopNotificationFiltersDialog: () => void;
     onOpenTtsNotificationFiltersDialog: () => void;
     onSpeakNotificationTts: (message: string) => void;
@@ -75,6 +79,7 @@ export function SettingsNotificationsTabContent({
     onDesktopNotificationSoundChange,
     onNotificationTtsModeChange,
     onNotificationTtsVoiceChange,
+    onNotificationTtsVolumeChange,
     onNotificationTtsNameModeChange,
     onNotificationTtsTestVisibleChange,
     onNotificationTtsTestChange,
@@ -85,6 +90,12 @@ export function SettingsNotificationsTabContent({
         prefs.notificationTTSNameMode,
         prefs.notificationTTSNickName
     );
+    const savedTtsVolume = Math.min(
+        100,
+        Math.max(0, Math.round(prefs.notificationTTSVolume))
+    );
+    const [draftTtsVolume, setDraftTtsVolume] = useState<number | null>(null);
+    const ttsVolume = draftTtsVolume ?? savedTtsVolume;
 
     return (
         <SettingsTabContent value="notifications">
@@ -270,6 +281,38 @@ export function SettingsNotificationsTabContent({
                             </SelectGroup>
                         </SelectContent>
                     </Select>
+                </Field>
+
+                <Field
+                    label={t(
+                        'view.settings.notifications.notifications.text_to_speech.tts_volume'
+                    )}
+                    controlId="settings-notification-tts-volume"
+                >
+                    <div className="flex w-72 max-w-full items-center justify-end gap-3">
+                        <Slider
+                            id="settings-notification-tts-volume"
+                            value={[ttsVolume]}
+                            min={0}
+                            max={100}
+                            step={1}
+                            onValueChange={(value) =>
+                                setDraftTtsVolume(
+                                    Array.isArray(value) ? value[0] : value
+                                )
+                            }
+                            onValueCommitted={(value) => {
+                                const nextVolume = Array.isArray(value)
+                                    ? value[0]
+                                    : value;
+                                setDraftTtsVolume(null);
+                                onNotificationTtsVolumeChange(nextVolume);
+                            }}
+                        />
+                        <span className="text-muted-foreground w-10 text-right text-sm tabular-nums">
+                            {ttsVolume}%
+                        </span>
+                    </div>
                 </Field>
 
                 <Field

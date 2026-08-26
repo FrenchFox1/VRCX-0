@@ -2546,6 +2546,7 @@
                         "header": "Преобразование текста в речь",
                         "when_to_play": "TTS уведомления во время игры",
                         "tts_voice": "Синтезатор голоса",
+                        "tts_volume": "Громкость TTS",
                         "system_default_voice": "Системный голос по умолчанию",
                         "notification_filters": "Фильтры TTS-уведомлений",
                         "name_mode": "Озвучиваемое имя",

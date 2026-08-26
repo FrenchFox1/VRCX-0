@@ -19,6 +19,8 @@ pub fn load_preferences(config: &ConfigRepository) -> NotificationDeliveryPrefer
         )),
         notification_tts_name_mode: config_tts_name_mode(config),
         notification_tts_voice_native: config_string(config, "notificationTTSVoiceNative", ""),
+        notification_tts_volume: config_int_with_legacy(config, "notificationTTSVolume", 100)
+            .clamp(0, 100) as u8,
         xs_notifications: config_bool_with_legacy(config, "xsNotifications", false),
         ovrt_hud_notifications: config_bool_with_legacy(config, "ovrtHudNotifications", false),
         ovrt_wrist_notifications: config_bool_with_legacy(config, "ovrtWristNotifications", false),
@@ -191,6 +193,28 @@ mod tests {
         assert_eq!(
             super::config_tts_name_mode(&config),
             super::NotificationTtsNameMode::UsernameAndNote
+        );
+    }
+
+    #[test]
+    fn tts_volume_defaults_and_clamps_persisted_values() {
+        let (_dir, config) = test_config("tts-volume");
+
+        assert_eq!(
+            super::load_preferences(&config).notification_tts_volume,
+            100
+        );
+
+        config.set_string("notificationTTSVolume", "42").unwrap();
+        assert_eq!(super::load_preferences(&config).notification_tts_volume, 42);
+
+        config.set_string("notificationTTSVolume", "-1").unwrap();
+        assert_eq!(super::load_preferences(&config).notification_tts_volume, 0);
+
+        config.set_string("notificationTTSVolume", "101").unwrap();
+        assert_eq!(
+            super::load_preferences(&config).notification_tts_volume,
+            100
         );
     }
 }

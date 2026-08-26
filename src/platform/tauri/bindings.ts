@@ -110,8 +110,16 @@ const generatedCommands = {
     async appHostTtsVoices(): Promise<TtsVoice[]> {
         return await TAURI_INVOKE('app__host_tts_voices');
     },
-    async appHostTtsSpeak(text: string, voiceId: string | null): Promise<null> {
-        return await TAURI_INVOKE('app__host_tts_speak', { text, voiceId });
+    async appHostTtsSpeak(
+        text: string,
+        voiceId: string | null,
+        volume: number
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__host_tts_speak', {
+            text,
+            voiceId,
+            volume
+        });
     },
     async appCurrentUserRefresh(): Promise<CurrentUserRefreshOutcome> {
         return await TAURI_INVOKE('app__current_user_refresh');

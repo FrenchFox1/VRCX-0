@@ -349,6 +349,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     notificationTTSNameMode: 'username',
     notificationTTSNickName: false,
     notificationTTSVoiceNative: '',
+    notificationTTSVolume: 100,
     xsNotifications: false,
     ovrtHudNotifications: false,
     ovrtWristNotifications: false,
@@ -522,6 +523,11 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         notificationTTSVoiceNative: String(
             next.notificationTTSVoiceNative ?? ''
         ),
+        notificationTTSVolume: normalizeBoundedInt(next.notificationTTSVolume, {
+            min: 0,
+            max: 100,
+            fallback: 100
+        }),
         xsNotifications: normalizeBool(next.xsNotifications),
         ovrtHudNotifications: normalizeBool(next.ovrtHudNotifications),
         ovrtWristNotifications: normalizeBool(next.ovrtWristNotifications),

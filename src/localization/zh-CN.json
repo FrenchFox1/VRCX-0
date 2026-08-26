@@ -2544,6 +2544,7 @@
                         "header": "文字转语音选项",
                         "when_to_play": "何时使用文字转语音",
                         "tts_voice": "TTS 语音样式",
+                        "tts_volume": "TTS 音量",
                         "system_default_voice": "系统默认",
                         "notification_filters": "TTS 通知过滤器",
                         "name_mode": "朗读名称",

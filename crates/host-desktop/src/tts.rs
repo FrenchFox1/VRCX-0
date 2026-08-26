@@ -1,9 +1,13 @@
-use std::io;
-use std::process::{Child, Command, Stdio};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Mutex};
 use std::thread;
 use std::time::Duration;
+
+#[cfg(not(target_os = "macos"))]
+use std::io;
+#[cfg(not(target_os = "macos"))]
+use std::process::{Child, Command, Stdio};
+#[cfg(not(target_os = "macos"))]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +15,8 @@ use vrcx_0_platform::Error;
 
 #[cfg(windows)]
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
+
+pub const DEFAULT_TTS_VOLUME: u8 = 100;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -23,13 +29,14 @@ pub struct TtsVoice {
 pub trait TtsEngine: Send + Sync {
     fn voices(&self) -> Vec<TtsVoice>;
 
-    fn speak(&self, text: &str, voice_id: Option<&str>) -> Result<(), Error>;
+    fn speak(&self, text: &str, voice_id: Option<&str>, volume: u8) -> Result<(), Error>;
 }
 
 #[derive(Debug)]
 struct TtsRequest {
     text: String,
     voice_id: Option<String>,
+    volume: u8,
 }
 
 pub struct SystemTtsEngine {
@@ -62,13 +69,14 @@ impl TtsEngine for SystemTtsEngine {
         platform_voices()
     }
 
-    fn speak(&self, text: &str, voice_id: Option<&str>) -> Result<(), Error> {
+    fn speak(&self, text: &str, voice_id: Option<&str>, volume: u8) -> Result<(), Error> {
         let request = TtsRequest {
             text: text.to_string(),
             voice_id: voice_id
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
                 .map(ToString::to_string),
+            volume: volume.min(DEFAULT_TTS_VOLUME),
         };
         let sender = self
             .sender
@@ -80,6 +88,7 @@ impl TtsEngine for SystemTtsEngine {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 fn run_tts_worker(receiver: mpsc::Receiver<TtsRequest>) {
     let mut child = None;
     loop {
@@ -98,8 +107,8 @@ fn run_tts_worker(receiver: mpsc::Receiver<TtsRequest>) {
 
         if let Some(request) = request {
             stop_child(&mut child);
-            if !request.text.trim().is_empty() {
-                match spawn_tts_child(&request.text, request.voice_id.as_deref()) {
+            if !request.text.trim().is_empty() && request.volume > 0 {
+                match spawn_tts_child(&request.text, request.voice_id.as_deref(), request.volume) {
                     Ok(next) => child = Some(next),
                     Err(error) => warn_tts_spawn_once(&error),
                 }
@@ -120,6 +129,62 @@ fn run_tts_worker(receiver: mpsc::Receiver<TtsRequest>) {
     stop_child(&mut child);
 }
 
+#[cfg(target_os = "macos")]
+fn run_tts_worker(receiver: mpsc::Receiver<TtsRequest>) {
+    use objc2::rc::autoreleasepool;
+    use objc2_avf_audio::{
+        AVSpeechBoundary, AVSpeechSynthesisVoice, AVSpeechSynthesizer, AVSpeechUtterance,
+    };
+    use objc2_foundation::NSString;
+
+    let synthesizer = autoreleasepool(|_| unsafe { AVSpeechSynthesizer::new() });
+    loop {
+        let request = if unsafe { synthesizer.isSpeaking() } {
+            match receiver.try_recv() {
+                Ok(request) => Some(request),
+                Err(mpsc::TryRecvError::Empty) => None,
+                Err(mpsc::TryRecvError::Disconnected) => break,
+            }
+        } else {
+            match receiver.recv() {
+                Ok(request) => Some(request),
+                Err(_) => break,
+            }
+        };
+
+        if let Some(request) = request {
+            unsafe {
+                synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary::Immediate);
+            }
+            if !request.text.trim().is_empty() && request.volume > 0 {
+                autoreleasepool(|_| unsafe {
+                    let text = NSString::from_str(&request.text);
+                    let utterance = AVSpeechUtterance::speechUtteranceWithString(&text);
+                    utterance.setVolume(f32::from(request.volume) / 100.0);
+                    if let Some(voice_id) = request.voice_id.as_deref() {
+                        let voices = AVSpeechSynthesisVoice::speechVoices();
+                        if let Some(voice) = voices
+                            .iter()
+                            .find(|voice| voice.name().to_string() == voice_id)
+                        {
+                            utterance.setVoice(Some(&voice));
+                        }
+                    }
+                    synthesizer.speakUtterance(&utterance);
+                });
+            }
+        }
+
+        if unsafe { synthesizer.isSpeaking() } {
+            thread::sleep(Duration::from_millis(50));
+        }
+    }
+    unsafe {
+        synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary::Immediate);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
 fn stop_child(child: &mut Option<Child>) {
     if let Some(mut current) = child.take() {
         let _ = current.kill();
@@ -127,6 +192,7 @@ fn stop_child(child: &mut Option<Child>) {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 fn warn_tts_spawn_once(error: &io::Error) {
     static WARNED: AtomicBool = AtomicBool::new(false);
     if !WARNED.swap(true, Ordering::SeqCst) {
@@ -135,7 +201,7 @@ fn warn_tts_spawn_once(error: &io::Error) {
 }
 
 #[cfg(windows)]
-fn spawn_tts_child(text: &str, voice_id: Option<&str>) -> io::Result<Child> {
+fn spawn_tts_child(text: &str, voice_id: Option<&str>, volume: u8) -> io::Result<Child> {
     let text_b64 = B64.encode(text.as_bytes());
     let voice_b64 = B64.encode(voice_id.unwrap_or_default().as_bytes());
     let script = format!(
@@ -148,6 +214,7 @@ try {{
     if ($voice.Trim().Length -gt 0) {{
         try {{ $speaker.SelectVoice($voice) }} catch {{ }}
     }}
+    $speaker.Volume = {volume}
     $speaker.Speak($text) | Out-Null
 }} finally {{
     $speaker.Dispose()
@@ -157,13 +224,10 @@ try {{
     spawn_powershell_script(&script)
 }
 
-#[cfg(target_os = "macos")]
-fn spawn_tts_child(text: &str, voice_id: Option<&str>) -> io::Result<Child> {
-    let mut command = Command::new("say");
-    if let Some(voice_id) = voice_id.map(str::trim).filter(|value| !value.is_empty()) {
-        command.args(["-v", voice_id]);
-    }
-    command
+#[cfg(all(not(windows), not(target_os = "macos")))]
+fn spawn_tts_child(text: &str, _voice_id: Option<&str>, volume: u8) -> io::Result<Child> {
+    Command::new("spd-say")
+        .args(["--volume", &speech_dispatcher_volume(volume).to_string()])
         .arg("--")
         .arg(text)
         .stdin(Stdio::null())
@@ -172,15 +236,9 @@ fn spawn_tts_child(text: &str, voice_id: Option<&str>) -> io::Result<Child> {
         .spawn()
 }
 
-#[cfg(all(not(windows), not(target_os = "macos")))]
-fn spawn_tts_child(text: &str, _voice_id: Option<&str>) -> io::Result<Child> {
-    Command::new("spd-say")
-        .arg("--")
-        .arg(text)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
+#[cfg(any(all(not(windows), not(target_os = "macos")), test))]
+fn speech_dispatcher_volume(volume: u8) -> i16 {
+    i16::from(volume.min(DEFAULT_TTS_VOLUME)) * 2 - 100
 }
 
 #[cfg(windows)]
@@ -212,17 +270,19 @@ try {
 
 #[cfg(target_os = "macos")]
 fn platform_voices() -> Vec<TtsVoice> {
-    match Command::new("say").args(["-v", "?"]).output() {
-        Ok(output) if output.status.success() => parse_macos_voices(&output.stdout),
-        Ok(output) => {
-            tracing::debug!("failed to list macOS TTS voices: status={}", output.status);
-            Vec::new()
-        }
-        Err(error) => {
-            tracing::debug!("failed to list macOS TTS voices: {error}");
-            Vec::new()
-        }
-    }
+    use objc2::rc::autoreleasepool;
+    use objc2_avf_audio::AVSpeechSynthesisVoice;
+
+    autoreleasepool(|_| unsafe {
+        AVSpeechSynthesisVoice::speechVoices()
+            .iter()
+            .map(|voice| TtsVoice {
+                id: voice.name().to_string(),
+                name: voice.name().to_string(),
+                language: voice.language().to_string(),
+            })
+            .collect()
+    })
 }
 
 #[cfg(all(not(windows), not(target_os = "macos")))]
@@ -287,69 +347,6 @@ fn parse_windows_voices_json(value: &[u8]) -> Result<Vec<TtsVoice>, serde_json::
     serde_json::from_value::<TtsVoice>(value).map(|voice| vec![voice])
 }
 
-#[cfg(any(target_os = "macos", test))]
-fn parse_macos_voices(value: &[u8]) -> Vec<TtsVoice> {
-    String::from_utf8_lossy(value)
-        .lines()
-        .filter_map(|line| {
-            let (id, language) = parse_macos_voice_line(line)?;
-            let name = id.clone();
-            Some(TtsVoice { id, name, language })
-        })
-        .collect()
-}
-
-#[cfg(any(target_os = "macos", test))]
-fn parse_macos_voice_line(line: &str) -> Option<(String, String)> {
-    let mut token_start = None;
-    for (index, value) in line
-        .char_indices()
-        .chain(std::iter::once((line.len(), ' ')))
-    {
-        if value.is_whitespace() {
-            let Some(start) = token_start.take() else {
-                continue;
-            };
-            let token = &line[start..index];
-            if !is_macos_locale_token(token) {
-                continue;
-            }
-            let id = line[..start].trim();
-            if id.is_empty() {
-                return None;
-            }
-            return Some((id.to_string(), token.to_string()));
-        } else if token_start.is_none() {
-            token_start = Some(index);
-        }
-    }
-    None
-}
-
-#[cfg(any(target_os = "macos", test))]
-fn is_macos_locale_token(value: &str) -> bool {
-    let mut chars = value.chars();
-    if !chars.next().is_some_and(|value| value.is_ascii_lowercase())
-        || !chars.next().is_some_and(|value| value.is_ascii_lowercase())
-    {
-        return false;
-    }
-    if !chars
-        .next()
-        .is_some_and(|value| value == '_' || value == '-')
-    {
-        return false;
-    }
-    let mut region_len = 0;
-    for value in chars {
-        if !value.is_ascii_alphanumeric() && value != '_' && value != '-' {
-            return false;
-        }
-        region_len += 1;
-    }
-    region_len >= 2
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -373,35 +370,10 @@ mod tests {
     }
 
     #[test]
-    fn macos_voice_list_preserves_multi_word_voice_name() {
-        let voices = parse_macos_voices(
-            b"Alex                en_US    # Hello\nBad News            en_US    # The light\nPipe Organ          en-US    # Chord\n",
-        );
-
-        assert_eq!(
-            voices,
-            vec![
-                TtsVoice {
-                    id: "Alex".into(),
-                    name: "Alex".into(),
-                    language: "en_US".into(),
-                },
-                TtsVoice {
-                    id: "Bad News".into(),
-                    name: "Bad News".into(),
-                    language: "en_US".into(),
-                },
-                TtsVoice {
-                    id: "Pipe Organ".into(),
-                    name: "Pipe Organ".into(),
-                    language: "en-US".into(),
-                }
-            ]
-        );
-    }
-
-    #[test]
-    fn macos_voice_list_ignores_lines_without_locale() {
-        assert!(parse_macos_voices(b"Good News           # missing locale\n").is_empty());
+    fn speech_dispatcher_volume_maps_ui_range() {
+        assert_eq!(speech_dispatcher_volume(0), -100);
+        assert_eq!(speech_dispatcher_volume(50), 0);
+        assert_eq!(speech_dispatcher_volume(100), 100);
+        assert_eq!(speech_dispatcher_volume(255), 100);
     }
 }

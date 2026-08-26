@@ -2496,6 +2496,7 @@
                         "header": "텍스트 음성 변환",
                         "when_to_play": "알림 TTS 재생 조건",
                         "tts_voice": "TTS 목소리",
+                        "tts_volume": "TTS 음량",
                         "system_default_voice": "시스템 기본값",
                         "notification_filters": "TTS 알림 필터",
                         "name_mode": "읽을 이름",

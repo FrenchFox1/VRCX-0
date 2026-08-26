@@ -124,6 +124,7 @@ export async function loadPreferenceSnapshot() {
         notificationTTSNickName,
         notificationTTSNameMode,
         notificationTTSVoiceNative,
+        notificationTTSVolume,
         xsNotifications,
         ovrtHudNotifications,
         ovrtWristNotifications,
@@ -258,6 +259,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('notificationTTSNickName', false),
         configRepository.getString('notificationTTSNameMode', ''),
         configRepository.getString('notificationTTSVoiceNative', ''),
+        configRepository.getInt('notificationTTSVolume', 100),
         getBoolConfigWithLegacy('xsNotifications', false),
         getBoolConfigWithLegacy('ovrtHudNotifications', false),
         getBoolConfigWithLegacy('ovrtWristNotifications', false),
@@ -467,6 +469,9 @@ export async function loadPreferenceSnapshot() {
             notificationTTSNickName
         ),
         notificationTTSVoiceNative: String(notificationTTSVoiceNative || ''),
+        notificationTTSVolume: Number.isFinite(notificationTTSVolume)
+            ? Math.min(100, Math.max(0, notificationTTSVolume))
+            : 100,
         xsNotifications: Boolean(xsNotifications),
         ovrtHudNotifications: Boolean(ovrtHudNotifications),
         ovrtWristNotifications: Boolean(ovrtWristNotifications),

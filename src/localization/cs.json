@@ -2546,6 +2546,7 @@
                         "header": "Převod textu na řeč",
                         "when_to_play": "Notification TTS. When to play",
                         "tts_voice": "Hlas TTS",
+                        "tts_volume": "Hlasitost TTS",
                         "system_default_voice": "Výchozí systémový hlas",
                         "notification_filters": "Filtry oznámení TTS",
                         "name_mode": "Čtené jméno",

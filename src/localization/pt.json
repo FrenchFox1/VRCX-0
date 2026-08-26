@@ -2544,6 +2544,7 @@
                         "header": "Texto para Voz",
                         "when_to_play": "TTS de Notificação. Quando Reproduzir",
                         "tts_voice": "Voz TTS",
+                        "tts_volume": "Volume do TTS",
                         "system_default_voice": "Voz padrão do sistema",
                         "notification_filters": "Filtros de Notificação TTS",
                         "name_mode": "Nome lido",
