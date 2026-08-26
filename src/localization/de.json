@@ -3300,6 +3300,7 @@
             "action": {
                 "refresh": "Aktualisieren",
                 "change_image": "Anderes Bild",
+                "show_in_folder": "Im Ordner anzeigen",
                 "select_images": "Bilder auswählen",
                 "select_folder": "Ordner auswählen"
             },
@@ -3307,6 +3308,7 @@
                 "enabled": "Hintergrundbild aktiviert.",
                 "refreshed": "Hintergrundbild aktualisiert.",
                 "failed": "Hintergrundbild konnte nicht aktualisiert werden.",
+                "failed_to_open_folder": "Das Bild konnte nicht im Ordner angezeigt werden.",
                 "no_images": "Es wurden keine unterstützten Bilder gefunden."
             }
         },

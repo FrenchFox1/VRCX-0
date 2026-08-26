@@ -3296,6 +3296,7 @@
             "action": {
                 "refresh": "再読み込み",
                 "change_image": "画像を変更",
+                "show_in_folder": "フォルダーで表示",
                 "select_images": "画像を選択",
                 "select_folder": "フォルダを選択"
             },
@@ -3303,6 +3304,7 @@
                 "enabled": "背景画像を有効化しました。",
                 "refreshed": "背景画像を再読み込みしました。",
                 "failed": "背景画像の更新に失敗しました。",
+                "failed_to_open_folder": "画像をフォルダーで表示できませんでした。",
                 "no_images": "対応している画像が見つかりません。"
             }
         },

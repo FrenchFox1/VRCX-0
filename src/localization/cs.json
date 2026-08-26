@@ -3302,6 +3302,7 @@
             "action": {
                 "refresh": "Obnovit",
                 "change_image": "Změnit obrázek",
+                "show_in_folder": "Zobrazit ve složce",
                 "select_images": "Vybrat obrázky",
                 "select_folder": "Vybrat složku"
             },
@@ -3309,6 +3310,7 @@
                 "enabled": "Obrázek na pozadí byl povolen.",
                 "refreshed": "Obrázek na pozadí byl obnoven.",
                 "failed": "Aktualizace obrázku na pozadí se nezdařila.",
+                "failed_to_open_folder": "Obrázek se nepodařilo zobrazit ve složce.",
                 "no_images": "Nebyly nalezeny žádné podporované obrázky."
             }
         },

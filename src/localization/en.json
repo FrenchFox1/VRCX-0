@@ -3300,6 +3300,7 @@
             "action": {
                 "refresh": "Refresh",
                 "change_image": "Change image",
+                "show_in_folder": "Show in folder",
                 "select_images": "Select images",
                 "select_folder": "Select folder"
             },
@@ -3307,6 +3308,7 @@
                 "enabled": "Background Image enabled.",
                 "refreshed": "Background Image refreshed.",
                 "failed": "Failed to update Background Image.",
+                "failed_to_open_folder": "Failed to show the image in its folder.",
                 "no_images": "No supported images were found."
             }
         },

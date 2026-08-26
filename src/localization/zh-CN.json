@@ -3300,6 +3300,7 @@
             "action": {
                 "refresh": "刷新",
                 "change_image": "换一张",
+                "show_in_folder": "在文件夹中显示",
                 "select_images": "选择图片",
                 "select_folder": "选择文件夹"
             },
@@ -3307,6 +3308,7 @@
                 "enabled": "背景图片已启用。",
                 "refreshed": "背景图片已刷新。",
                 "failed": "更新背景图片失败。",
+                "failed_to_open_folder": "无法在文件夹中显示图片。",
                 "no_images": "没有找到支持的图片。"
             }
         },

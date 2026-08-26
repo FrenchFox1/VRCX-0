@@ -3300,6 +3300,7 @@
             "action": {
                 "refresh": "重新整理",
                 "change_image": "換一張",
+                "show_in_folder": "在資料夾中顯示",
                 "select_images": "選擇圖片",
                 "select_folder": "選擇資料夾"
             },
@@ -3307,6 +3308,7 @@
                 "enabled": "背景圖案已啟用。",
                 "refreshed": "背景圖案已重新整理。",
                 "failed": "更新背景圖案失敗。",
+                "failed_to_open_folder": "無法在資料夾中顯示圖片。",
                 "no_images": "沒有找到支援的圖片。"
             }
         },

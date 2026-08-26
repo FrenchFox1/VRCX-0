@@ -3300,6 +3300,7 @@
             "action": {
                 "refresh": "Actualizar",
                 "change_image": "Cambiar imagen",
+                "show_in_folder": "Mostrar en la carpeta",
                 "select_images": "Seleccionar imágenes",
                 "select_folder": "Seleccionar carpeta"
             },
@@ -3307,6 +3308,7 @@
                 "enabled": "Imagen de fondo activada.",
                 "refreshed": "Imagen de fondo actualizada.",
                 "failed": "No se pudo actualizar la imagen de fondo.",
+                "failed_to_open_folder": "No se pudo mostrar la imagen en la carpeta.",
                 "no_images": "No se encontraron imágenes compatibles."
             }
         },
