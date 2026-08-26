@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render,
+    screen
+} from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { InventoryItemRecord } from '@/repositories/vrchatMediaRepository';
@@ -15,6 +21,20 @@ vi.mock('react-i18next', async (importOriginal) => ({
     ...(await importOriginal<typeof import('react-i18next')>()),
     useTranslation: () => ({ t: (key: string) => key })
 }));
+
+let notifyResize: (() => void) | null = null;
+
+class ResizeObserverMock {
+    constructor(callback: ResizeObserverCallback) {
+        notifyResize = () => callback([], this as unknown as ResizeObserver);
+    }
+
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}
+
+vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
 afterEach(cleanup);
 
@@ -144,12 +164,61 @@ describe('UserDialogHeaderSection nameplate', () => {
             />
         );
 
-        fireEvent.click(screen.getByTitle('Map1en_'));
+        const displayNameButton = screen.getByText('Map1en_').closest('button');
+        expect(displayNameButton).not.toBeNull();
+        fireEvent.click(displayNameButton as HTMLButtonElement);
 
         expect(headerCommands.onCopyDisplayName).toHaveBeenCalledOnce();
         expect(headerCommands.onCopyDisplayName).toHaveBeenCalledWith(
             'Map1en_'
         );
+    });
+
+    it('keeps only the tooltip hover treatment on the display name', () => {
+        render(
+            <UserDialogHeaderSection
+                headerModel={createHeaderModel()}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        const displayNameButton = screen.getByText('Map1en_').closest('button');
+        expect(displayNameButton).not.toBeNull();
+
+        expect(
+            displayNameButton?.classList.contains('hover:bg-transparent')
+        ).toBe(true);
+        expect(displayNameButton?.classList.contains('hover:bg-muted')).toBe(
+            false
+        );
+        expect(displayNameButton?.getAttribute('title')).toBeNull();
+    });
+
+    it('shrinks a long display name to the available width', () => {
+        const headerModel = createHeaderModel();
+        headerModel.profile.displayName = 'A very long display name';
+        headerModel.profileTitle = 'A very long display name';
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        const displayName = screen.getByText('A very long display name');
+        Object.defineProperty(displayName, 'clientWidth', {
+            configurable: true,
+            value: 150
+        });
+        Object.defineProperty(displayName, 'scrollWidth', {
+            configurable: true,
+            value: 180
+        });
+
+        act(() => notifyResize?.());
+
+        expect(displayName.style.fontSize).toBe('15px');
     });
 
     it('aligns a decorated nameplate with the action button', () => {
