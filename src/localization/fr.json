@@ -6065,7 +6065,7 @@
     },
     "saved_group_favorites": {
         "title": "Groupes favoris",
-        "description": "Save frequently used groups in local collections and use them for new-instance notifications.",
+        "description": "Enregistrer les groupes souvent rejoint afin de reçevoir des notifications lors de nouvelles instances.",
         "new_collection": "Nouvelle collection",
         "empty_collections": "Créez une nouvelle collection pour enregistrer des groupes.",
         "empty_group": "Aucun groupe n'est enregistré dans cette collection.",
@@ -6078,7 +6078,7 @@
         "sidebar_none": "Aucun groupe enregistré",
         "sidebar_other": "Autres groupes actifs",
         "sidebar_failed": "Échec du chargement des instances de groupe",
-        "sidebar_no_active": "No other active group instances",
+        "sidebar_no_active": "Aucune instance de groupe active",
         "scope_all": "Tous les groups enregistrés",
         "scope_selected": "Collections de groupes sélectionnées",
         "notification_type": "Nouvelle instance de groupe",
