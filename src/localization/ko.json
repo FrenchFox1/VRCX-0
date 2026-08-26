@@ -5501,6 +5501,9 @@
         "group_join_request_title": "그룹 가입 요청",
         "group_transfer_request_title": "그룹 이전 요청",
         "group_queue_ready_title": "인스턴스 대기열 준비",
+        "group_instance_opened": "새 인스턴스를 생성했습니다",
+        "group_instance_opened_location": "새 인스턴스를 생성했습니다: {location}",
+        "group_instances_opened": "새 인스턴스 {count}개를 생성했습니다",
         "instance_closed_title": "인스턴스가 닫혔습니다.",
         "portal_spawn": "사용자가 포털을 생성했습니다.",
         "blocked_player_joined": "차단된 사용자가 가입했습니다",
@@ -5990,6 +5993,27 @@
         "error_generic": "번역 실패",
         "error_network": "네트워크 오류, 다시 시도해 주세요",
         "error_unsupported": "번역이 설정되지 않았습니다"
+    },
+    "saved_group_favorites": {
+        "title": "즐겨찾는 그룹",
+        "description": "자주 이용하는 그룹을 로컬 모음에 저장하고 새 인스턴스 알림에 사용할 수 있습니다.",
+        "new_collection": "새 모음",
+        "empty_collections": "모음을 만들면 그룹을 저장할 수 있습니다.",
+        "empty_group": "이 모음에 저장된 그룹이 없습니다.",
+        "delete_title": "이 모음을 삭제할까요?",
+        "delete_description": "{name} 모음을 삭제하면 저장된 그룹 {count}개도 즐겨찾기에서 제거됩니다.",
+        "choose_collection": "저장할 모음 선택",
+        "remove": "즐겨찾기에서 제거",
+        "toggle": "그룹 즐겨찾기",
+        "sidebar_saved": "즐겨찾는 그룹",
+        "sidebar_none": "즐겨찾는 그룹이 없습니다",
+        "sidebar_other": "기타 활성 그룹",
+        "sidebar_failed": "그룹 인스턴스를 불러오지 못했습니다",
+        "sidebar_no_active": "다른 활성 그룹 인스턴스가 없습니다",
+        "scope_all": "모든 즐겨찾는 그룹",
+        "scope_selected": "선택한 즐겨찾기 모음",
+        "notification_type": "새 그룹 인스턴스",
+        "notification_empty": "사용 가능한 그룹 즐겨찾기 모음이 없습니다."
     },
     "app": {
         "routes": {

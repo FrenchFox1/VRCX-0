@@ -13,7 +13,9 @@ mod moderation;
 mod social_baseline;
 
 pub(super) use current_user::run_background_current_user_refresh;
-pub(super) use group_instances::run_background_group_instance_refresh;
+pub(super) use group_instances::{
+    run_background_group_instance_notification_refresh, run_background_group_instance_refresh,
+};
 pub(super) use maintenance::run_background_print_cleanup;
 pub(super) use moderation::run_background_moderation_refresh;
 pub(super) use social_baseline::run_background_social_baseline_refresh;

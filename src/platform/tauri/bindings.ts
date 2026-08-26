@@ -1044,6 +1044,35 @@ const generatedCommands = {
     ): Promise<LocalFavoriteSnapshot> {
         return await TAURI_INVOKE('app__favorite_local_snapshot', { kind });
     },
+    async appSavedGroupFavoritesGet(): Promise<SavedGroupFavoritesSnapshot> {
+        return await TAURI_INVOKE('app__saved_group_favorites_get');
+    },
+    async appSavedGroupCollectionCreate(
+        input: SavedGroupCollectionCreateInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_collection_create', {
+            input
+        });
+    },
+    async appSavedGroupCollectionDelete(
+        input: SavedGroupCollectionDeleteInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_collection_delete', {
+            input
+        });
+    },
+    async appSavedGroupFavoriteAdd(
+        input: SavedGroupFavoriteAddInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_favorite_add', { input });
+    },
+    async appSavedGroupFavoriteRemove(
+        input: SavedGroupFavoriteRemoveInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__saved_group_favorite_remove', {
+            input
+        });
+    },
     async appMemoGetUser(userId: string): Promise<UserMemoOutput | null> {
         return await TAURI_INVOKE('app__memo_get_user', { userId });
     },
@@ -3573,7 +3602,12 @@ export type DeepLinkAction =
     | { type: 'openWorld'; worldId: string }
     | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
-export type DesktopNotificationActivation = { userId: string };
+export type DesktopNotificationActivation = {
+    target: DesktopNotificationTarget;
+};
+export type DesktopNotificationTarget =
+    | { kind: 'openUserProfile'; userId: string }
+    | { kind: 'openGroupProfile'; groupId: string };
 export type EmojiLoopStyle = 'pingpong';
 export type EmojiUploadParams =
     | {
@@ -5441,6 +5475,22 @@ export type SavedCredentialUser = {
     thumbnailUrl?: string | null;
     currentAvatarThumbnailImageUrl?: string | null;
     currentAvatarImageUrl?: string | null;
+};
+export type SavedGroupCollection = {
+    id: string;
+    name: string;
+    groupIds: string[];
+    createdAt: string;
+};
+export type SavedGroupCollectionCreateInput = { name: string };
+export type SavedGroupCollectionDeleteInput = { collectionId: string };
+export type SavedGroupFavoriteAddInput = {
+    collectionId: string;
+    groupId: string;
+};
+export type SavedGroupFavoriteRemoveInput = { groupId: string };
+export type SavedGroupFavoritesSnapshot = {
+    collections: SavedGroupCollection[];
 };
 export type SavedLoginParamsSnapshot = { username: string };
 export type ScreenshotFolderInfo = {

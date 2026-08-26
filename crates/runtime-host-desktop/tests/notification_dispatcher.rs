@@ -67,10 +67,11 @@ fn desktop_notifier_slot_noops_until_tauri_injects_notifier() {
 
     let recorder = Arc::new(RecordingDesktopNotifier::default());
     slot.set(recorder.clone());
-    let action = DesktopNotificationAction {
-        owner_user_id: OwnerId::new("usr_12345678-1234-1234-1234-1234567890ab"),
-        user_id: "usr_abcdefab-cdef-abcd-efab-cdefabcdefab".into(),
-    };
+    let action = DesktopNotificationAction::open_user_profile(
+        &OwnerId::new("usr_12345678-1234-1234-1234-1234567890ab"),
+        "usr_abcdefab-cdef-abcd-efab-cdefabcdefab",
+    )
+    .unwrap();
     slot.show(
         "Title",
         Some("Body"),

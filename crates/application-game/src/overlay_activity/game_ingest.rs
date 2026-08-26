@@ -1,6 +1,7 @@
 use serde_json::{json, Value};
 use vrcx_0_application_activity::{
-    OverlayActivityCandidate, OverlayActivityEntry, OverlayActivityRuntime,
+    OverlayActivityCandidate, OverlayActivityEntry, OverlayActivityFavoriteSubject,
+    OverlayActivityRuntime,
 };
 use vrcx_0_contracts::game_log::GameLogJoinLeaveEntry;
 use vrcx_0_core::location::world_id_from_location as world_id_from_location_or_id;
@@ -49,6 +50,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: entry.user_id.clone(),
                 actor_display_name: entry.display_name.clone(),
                 current_instance: true,
+                favorite_subject: OverlayActivityFavoriteSubject::UserId(entry.user_id.clone()),
                 payload: json!({
                     "location": entry.location,
                     "worldId": world_id_from_location_or_id(&entry.location),
@@ -87,6 +89,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: input.user_id.clone(),
                 actor_display_name: input.display_name.clone(),
                 current_instance: true,
+                favorite_subject: OverlayActivityFavoriteSubject::UserId(input.user_id.clone()),
                 payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
@@ -108,6 +111,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: String::new(),
                 actor_display_name: "Event".to_string(),
                 current_instance: false,
+                favorite_subject: OverlayActivityFavoriteSubject::None,
                 payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
@@ -132,6 +136,7 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: entry.user_id.clone(),
                 actor_display_name: entry.display_name.clone(),
                 current_instance: false,
+                favorite_subject: OverlayActivityFavoriteSubject::UserId(entry.user_id.clone()),
                 payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {

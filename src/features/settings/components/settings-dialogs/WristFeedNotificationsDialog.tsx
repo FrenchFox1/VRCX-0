@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildFeedFavoriteGroupOptions } from '@/domain/feed/feedFavoriteGroups';
-import { commands } from '@/platform/tauri/bindings';
+import { commands, type SavedGroupCollection } from '@/platform/tauri/bindings';
 import {
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE,
@@ -274,7 +274,7 @@ function OverlayActivityFilterDialog({
     const localFriendFavoriteGroups = useFavoriteStore(
         (state) => state.localFriendFavoriteGroups
     );
-    const favoriteGroupOptions = useMemo(
+    const friendFavoriteGroupOptions = useMemo(
         () =>
             buildFeedFavoriteGroupOptions({
                 favoriteFriendGroups,
@@ -282,6 +282,23 @@ function OverlayActivityFilterDialog({
             }),
         [favoriteFriendGroups, localFriendFavoriteGroups]
     );
+    const [savedGroupCollections, setSavedGroupCollections] = useState<
+        SavedGroupCollection[]
+    >([]);
+    const groupFavoriteGroupOptions = useMemo(
+        () =>
+            savedGroupCollections.map((collection) => ({
+                key: `group:${collection.id}`,
+                label: collection.name
+            })),
+        [savedGroupCollections]
+    );
+
+    function favoriteGroupOptionsForType(type: string) {
+        return type === 'group.instanceOpened'
+            ? groupFavoriteGroupOptions
+            : friendFavoriteGroupOptions;
+    }
     const activityCategories = useMemo(
         () => overlayActivityCategoriesFromDefinitions(activityDefinitions),
         [activityDefinitions]
@@ -322,6 +339,16 @@ function OverlayActivityFilterDialog({
                     'Failed to load notification activity definitions:',
                     error
                 );
+            });
+        commands
+            .appSavedGroupFavoritesGet()
+            .then((snapshot) => {
+                if (!cancelled) {
+                    setSavedGroupCollections(snapshot.collections);
+                }
+            })
+            .catch((error) => {
+                console.warn('Failed to load saved group collections:', error);
             });
         return () => {
             cancelled = true;
@@ -365,6 +392,16 @@ function OverlayActivityFilterDialog({
                 : currentSelectedGroups.includes(groupKey)
                   ? currentSelectedGroups.filter((entry) => entry !== groupKey)
                   : [...currentSelectedGroups, groupKey];
+        if (
+            type === 'group.instanceOpened' &&
+            nextSelectedGroups.length === 0
+        ) {
+            updateTypeRule(type, {
+                scope: 'off',
+                favoriteGroupKeys: 'all'
+            });
+            return;
+        }
         updateTypeRule(type, {
             favoriteGroupKeys: nextSelectedGroups.length
                 ? nextSelectedGroups
@@ -373,6 +410,7 @@ function OverlayActivityFilterDialog({
     }
 
     function toggleAllFavoriteGroups(type: string, checked: boolean) {
+        const favoriteGroupOptions = favoriteGroupOptionsForType(type);
         updateTypeRule(type, {
             favoriteGroupKeys:
                 checked || !favoriteGroupOptions.length
@@ -381,9 +419,15 @@ function OverlayActivityFilterDialog({
         });
     }
 
-    function favoriteGroupSummary(groupKeys: OverlayActivityFavoriteGroupKeys) {
+    function favoriteGroupSummary(
+        type: string,
+        groupKeys: OverlayActivityFavoriteGroupKeys
+    ) {
+        const favoriteGroupOptions = favoriteGroupOptionsForType(type);
         if (!favoriteGroupOptions.length) {
-            return t('dialog.wrist_feed_notifications.favorite_groups.empty');
+            return type === 'group.instanceOpened'
+                ? t('saved_group_favorites.notification_empty')
+                : t('dialog.wrist_feed_notifications.favorite_groups.empty');
         }
         if (groupKeys === 'all') {
             return t(
@@ -510,6 +554,34 @@ function OverlayActivityFilterDialog({
                                     const selectedGroups = selectedGroupKeys(
                                         rule.favoriteGroupKeys
                                     );
+                                    const groupInstanceType =
+                                        type === 'group.instanceOpened';
+                                    const favoriteGroupOptions =
+                                        favoriteGroupOptionsForType(type);
+                                    const scopeLabel = (
+                                        scope: OverlayActivityScope
+                                    ) =>
+                                        groupInstanceType &&
+                                        scope === 'allFavorites'
+                                            ? t(
+                                                  'saved_group_favorites.scope_all',
+                                                  {
+                                                      defaultValue:
+                                                          '全部收藏群组'
+                                                  }
+                                              )
+                                            : groupInstanceType &&
+                                                scope === 'selectedFavorites'
+                                              ? t(
+                                                    'saved_group_favorites.scope_selected',
+                                                    {
+                                                        defaultValue:
+                                                            '指定收藏分组'
+                                                    }
+                                                )
+                                              : t(
+                                                    `dialog.wrist_feed_notifications.scopes.${scope}`
+                                                );
                                     return (
                                         <Field
                                             key={type}
@@ -518,12 +590,17 @@ function OverlayActivityFilterDialog({
                                         >
                                             <FieldContent className="min-w-0">
                                                 <FieldLabel className="truncate">
-                                                    {t(
-                                                        `dialog.wrist_feed_notifications.types.${overlayActivityTypeLabelKey(type)}`,
-                                                        {
-                                                            defaultValue: type
-                                                        }
-                                                    )}
+                                                    {groupInstanceType
+                                                        ? t(
+                                                              'saved_group_favorites.notification_type'
+                                                          )
+                                                        : t(
+                                                              `dialog.wrist_feed_notifications.types.${overlayActivityTypeLabelKey(type)}`,
+                                                              {
+                                                                  defaultValue:
+                                                                      type
+                                                              }
+                                                          )}
                                                 </FieldLabel>
                                             </FieldContent>
 
@@ -533,13 +610,39 @@ function OverlayActivityFilterDialog({
                                                     items={definition.allowedScopes.map(
                                                         (scope) => ({
                                                             value: scope,
-                                                            label: t(
-                                                                `dialog.wrist_feed_notifications.scopes.${scope}`
+                                                            label: scopeLabel(
+                                                                scope
                                                             )
                                                         })
                                                     )}
                                                     onValueChange={(scope) => {
                                                         if (scope) {
+                                                            if (
+                                                                groupInstanceType &&
+                                                                scope ===
+                                                                    'selectedFavorites'
+                                                            ) {
+                                                                const firstKey =
+                                                                    favoriteGroupOptions[0]
+                                                                        ?.key;
+                                                                updateTypeRule(
+                                                                    type,
+                                                                    firstKey
+                                                                        ? {
+                                                                              scope,
+                                                                              favoriteGroupKeys:
+                                                                                  [
+                                                                                      firstKey
+                                                                                  ]
+                                                                          }
+                                                                        : {
+                                                                              scope: 'off',
+                                                                              favoriteGroupKeys:
+                                                                                  'all'
+                                                                          }
+                                                                );
+                                                                return;
+                                                            }
                                                             updateTypeRule(
                                                                 type,
                                                                 { scope }
@@ -562,8 +665,8 @@ function OverlayActivityFilterDialog({
                                                                             scope
                                                                         }
                                                                     >
-                                                                        {t(
-                                                                            `dialog.wrist_feed_notifications.scopes.${scope}`
+                                                                        {scopeLabel(
+                                                                            scope
                                                                         )}
                                                                     </SelectItem>
                                                                 )
@@ -571,7 +674,10 @@ function OverlayActivityFilterDialog({
                                                         </SelectGroup>
                                                     </SelectContent>
                                                 </Select>
-                                                {usesFavoriteGroups ? (
+                                                {usesFavoriteGroups &&
+                                                (!groupInstanceType ||
+                                                    rule.scope ===
+                                                        'selectedFavorites') ? (
                                                     <FavoriteGroupMenu
                                                         disabled={
                                                             !favoriteGroupOptions.length
@@ -583,10 +689,15 @@ function OverlayActivityFilterDialog({
                                                             selectedGroups
                                                         }
                                                         allFavoriteGroups={
+                                                            !groupInstanceType &&
                                                             rule.favoriteGroupKeys ===
-                                                            'all'
+                                                                'all'
+                                                        }
+                                                        allowAllFavoriteGroups={
+                                                            !groupInstanceType
                                                         }
                                                         summary={favoriteGroupSummary(
+                                                            type,
                                                             rule.favoriteGroupKeys
                                                         )}
                                                         onToggleAll={(
@@ -653,6 +764,7 @@ type FavoriteGroupMenuProps = {
     favoriteGroupOptions: Array<{ key: string; label: string }>;
     selectedGroups: string[];
     allFavoriteGroups: boolean;
+    allowAllFavoriteGroups: boolean;
     summary: string;
     onToggleAll(checked: boolean): void;
     onToggleGroup(groupKey: string): void;
@@ -663,6 +775,7 @@ function FavoriteGroupMenu({
     favoriteGroupOptions,
     selectedGroups,
     allFavoriteGroups,
+    allowAllFavoriteGroups,
     summary,
     onToggleAll,
     onToggleGroup
@@ -691,17 +804,19 @@ function FavoriteGroupMenu({
                             'dialog.wrist_feed_notifications.favorite_groups.menu_label'
                         )}
                     </DropdownMenuLabel>
-                    <DropdownMenuCheckboxItem
-                        checked={allFavoriteGroups}
-                        onCheckedChange={(checked) =>
-                            onToggleAll(Boolean(checked))
-                        }
-                        onClick={(event) => event.preventDefault()}
-                    >
-                        {t(
-                            'dialog.wrist_feed_notifications.favorite_groups.all_groups'
-                        )}
-                    </DropdownMenuCheckboxItem>
+                    {allowAllFavoriteGroups ? (
+                        <DropdownMenuCheckboxItem
+                            checked={allFavoriteGroups}
+                            onCheckedChange={(checked) =>
+                                onToggleAll(Boolean(checked))
+                            }
+                            onClick={(event) => event.preventDefault()}
+                        >
+                            {t(
+                                'dialog.wrist_feed_notifications.favorite_groups.all_groups'
+                            )}
+                        </DropdownMenuCheckboxItem>
+                    ) : null}
                     {favoriteGroupOptions.map((group) => (
                         <DropdownMenuCheckboxItem
                             key={group.key}

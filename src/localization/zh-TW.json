@@ -5579,6 +5579,9 @@
         "group_join_request_title": "群組加入請求",
         "group_transfer_request_title": "群主轉讓請求",
         "group_queue_ready_title": "房間排隊已準備完成",
+        "group_instance_opened": "建立了一個新實例",
+        "group_instance_opened_location": "建立了一個新實例：{location}",
+        "group_instances_opened": "建立了 {count} 個新實例",
         "instance_closed_title": "房間已關閉",
         "event_title": "活動",
         "external_title": "外部應用程式",
@@ -6058,6 +6061,27 @@
         "error_generic": "翻譯失敗",
         "error_network": "網路錯誤，請重試",
         "error_unsupported": "尚未設定翻譯"
+    },
+    "saved_group_favorites": {
+        "title": "收藏群組",
+        "description": "將常用群組儲存到本機分組，並接收新實例通知。",
+        "new_collection": "新增分組",
+        "empty_collections": "新增分組後即可收藏群組。",
+        "empty_group": "這個分組裡還沒有收藏群組。",
+        "delete_title": "刪除這個收藏分組？",
+        "delete_description": "刪除「{name}」也會取消其中 {count} 個群組的收藏。",
+        "choose_collection": "收藏到分組",
+        "remove": "取消收藏",
+        "toggle": "收藏群組",
+        "sidebar_saved": "收藏群組",
+        "sidebar_none": "還沒有收藏群組",
+        "sidebar_other": "其他活動群組",
+        "sidebar_failed": "無法載入群組實例",
+        "sidebar_no_active": "沒有其他活動群組實例",
+        "scope_all": "全部收藏群組",
+        "scope_selected": "指定收藏分組",
+        "notification_type": "群組開啟新實例",
+        "notification_empty": "目前沒有群組收藏分組。"
     },
     "app": {
         "routes": {

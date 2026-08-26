@@ -5552,6 +5552,9 @@
         "update_success": "Actualización correcta"
     },
     "notifications": {
+        "group_instance_opened": "Ha creado una nueva instancia",
+        "group_instance_opened_location": "Ha creado una nueva instancia: {location}",
+        "group_instances_opened": "Ha creado {count} instancias nuevas",
         "has_joined": "se ha unido",
         "has_left": "se ha ido",
         "joined_with_others": "y {count} más se han unido",
@@ -6053,6 +6056,27 @@
         "error_generic": "La traducción falló",
         "error_network": "Error de red, inténtalo de nuevo",
         "error_unsupported": "La traducción no está configurada"
+    },
+    "saved_group_favorites": {
+        "title": "Grupos guardados",
+        "description": "Guarda los grupos que usas con frecuencia en colecciones locales y úsalos para recibir avisos de nuevas instancias.",
+        "new_collection": "Nueva colección",
+        "empty_collections": "Crea una colección para empezar a guardar grupos.",
+        "empty_group": "No hay grupos guardados en esta colección.",
+        "delete_title": "¿Eliminar esta colección?",
+        "delete_description": "Al eliminar {name} también se quitarán sus {count} grupos guardados.",
+        "choose_collection": "Guardar en una colección",
+        "remove": "Quitar de grupos guardados",
+        "toggle": "Guardar grupo",
+        "sidebar_saved": "Grupos guardados",
+        "sidebar_none": "Aún no hay grupos guardados",
+        "sidebar_other": "Otros grupos activos",
+        "sidebar_failed": "No se pudieron cargar las instancias de grupos",
+        "sidebar_no_active": "No hay otras instancias de grupos activas",
+        "scope_all": "Todos los grupos guardados",
+        "scope_selected": "Colecciones de grupos seleccionadas",
+        "notification_type": "Nueva instancia de grupo",
+        "notification_empty": "No hay colecciones de grupos guardados disponibles."
     },
     "app": {
         "routes": {

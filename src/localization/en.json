@@ -5578,6 +5578,9 @@
         "group_join_request_title": "Group Join Request",
         "group_transfer_request_title": "Group Transfer Request",
         "group_queue_ready_title": "Instance Queue Ready",
+        "group_instance_opened": "Created a new instance",
+        "group_instance_opened_location": "Created a new instance: {location}",
+        "group_instances_opened": "Created {count} new instances",
         "instance_closed_title": "Instance Closed",
         "event_title": "Event",
         "external_title": "External App",
@@ -6057,6 +6060,27 @@
         "error_generic": "Translation failed",
         "error_network": "Network error, please try again",
         "error_unsupported": "Translation is not configured"
+    },
+    "saved_group_favorites": {
+        "title": "Saved Groups",
+        "description": "Save frequently used groups in local collections and use them for new-instance notifications.",
+        "new_collection": "New collection",
+        "empty_collections": "Create a collection to start saving groups.",
+        "empty_group": "No groups are saved in this collection.",
+        "delete_title": "Delete this collection?",
+        "delete_description": "Deleting {name} also removes its {count} saved groups.",
+        "choose_collection": "Save to collection",
+        "remove": "Remove from saved groups",
+        "toggle": "Save group",
+        "sidebar_saved": "Saved groups",
+        "sidebar_none": "No saved groups yet",
+        "sidebar_other": "Other active groups",
+        "sidebar_failed": "Failed to load group instances",
+        "sidebar_no_active": "No other active group instances",
+        "scope_all": "All saved groups",
+        "scope_selected": "Selected saved-group collections",
+        "notification_type": "New group instance",
+        "notification_empty": "No saved-group collections are available."
     },
     "app": {
         "routes": {

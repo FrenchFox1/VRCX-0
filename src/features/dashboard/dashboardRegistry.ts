@@ -121,6 +121,13 @@ export const DASHBOARD_PAGE_DEFINITIONS: DashboardPanelDefinition[] = [
         descriptionKey: 'dashboard.registry.favorite_friends_page'
     },
     {
+        key: 'favorite-groups',
+        category: 'page',
+        labelKey: 'saved_group_favorites.title',
+        path: '/favorites/groups',
+        descriptionKey: 'saved_group_favorites.description'
+    },
+    {
         key: 'favorite-worlds',
         category: 'page',
         labelKey: 'dashboard.registry.favorite_worlds',

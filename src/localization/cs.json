@@ -5556,6 +5556,9 @@
         "update_success": "Aktualizace úspěšná"
     },
     "notifications": {
+        "group_instance_opened": "Vytvořena nová instance",
+        "group_instance_opened_location": "Vytvořena nová instance: {location}",
+        "group_instances_opened": "Vytvořeno nových instancí: {count}",
         "has_joined": "se připojil(a)",
         "has_left": "odešel(odešla)",
         "joined_with_others": "a {count} dalších se připojilo",
@@ -6057,6 +6060,27 @@
         "error_generic": "Překlad se nezdařil",
         "error_network": "Chyba sítě, zkuste to znovu",
         "error_unsupported": "Překlad není nakonfigurován"
+    },
+    "saved_group_favorites": {
+        "title": "Uložené skupiny",
+        "description": "Uložte často používané skupiny do místních kolekcí a používejte je pro upozornění na nové instance.",
+        "new_collection": "Nová kolekce",
+        "empty_collections": "Vytvořte kolekci a začněte ukládat skupiny.",
+        "empty_group": "V této kolekci nejsou uloženy žádné skupiny.",
+        "delete_title": "Odstranit tuto kolekci?",
+        "delete_description": "Odstraněním kolekce {name} se odebere také jejích {count} uložených skupin.",
+        "choose_collection": "Uložit do kolekce",
+        "remove": "Odebrat z uložených skupin",
+        "toggle": "Uložit skupinu",
+        "sidebar_saved": "Uložené skupiny",
+        "sidebar_none": "Zatím nejsou uloženy žádné skupiny",
+        "sidebar_other": "Další aktivní skupiny",
+        "sidebar_failed": "Instance skupin se nepodařilo načíst",
+        "sidebar_no_active": "Žádné další aktivní instance skupin",
+        "scope_all": "Všechny uložené skupiny",
+        "scope_selected": "Vybrané kolekce skupin",
+        "notification_type": "Nová instance skupiny",
+        "notification_empty": "Nejsou dostupné žádné kolekce uložených skupin."
     },
     "app": {
         "routes": {

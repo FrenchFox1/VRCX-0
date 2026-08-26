@@ -5553,6 +5553,9 @@
         "update_success": "Atualização concluída com sucesso"
     },
     "notifications": {
+        "group_instance_opened": "Criou uma nova instância",
+        "group_instance_opened_location": "Criou uma nova instância: {location}",
+        "group_instances_opened": "Criou {count} novas instâncias",
         "has_joined": "entrou",
         "has_left": "saiu",
         "joined_with_others": "e mais {count} entraram",
@@ -6054,6 +6057,27 @@
         "error_generic": "Falha na tradução",
         "error_network": "Erro de rede, tente novamente",
         "error_unsupported": "A tradução não está configurada"
+    },
+    "saved_group_favorites": {
+        "title": "Grupos salvos",
+        "description": "Salve grupos usados com frequência em coleções locais e use-os para receber avisos de novas instâncias.",
+        "new_collection": "Nova coleção",
+        "empty_collections": "Crie uma coleção para começar a salvar grupos.",
+        "empty_group": "Não há grupos salvos nesta coleção.",
+        "delete_title": "Excluir esta coleção?",
+        "delete_description": "Excluir {name} também remove os {count} grupos salvos nela.",
+        "choose_collection": "Salvar na coleção",
+        "remove": "Remover dos grupos salvos",
+        "toggle": "Salvar grupo",
+        "sidebar_saved": "Grupos salvos",
+        "sidebar_none": "Nenhum grupo salvo ainda",
+        "sidebar_other": "Outros grupos ativos",
+        "sidebar_failed": "Não foi possível carregar as instâncias de grupos",
+        "sidebar_no_active": "Não há outras instâncias de grupos ativas",
+        "scope_all": "Todos os grupos salvos",
+        "scope_selected": "Coleções de grupos selecionadas",
+        "notification_type": "Nova instância de grupo",
+        "notification_empty": "Não há coleções de grupos salvos disponíveis."
     },
     "app": {
         "routes": {

@@ -37,7 +37,11 @@ pub use data_dir_migration::{
 };
 pub use database_upgrade::DatabaseUpgradeStatus;
 pub use entity_cache::{AvatarCacheOutput, CacheEntityInput, WorldSummaryOutput};
-pub use favorites::{FavoriteRow, VrchatFavoriteType};
+pub use favorites::{
+    FavoriteRow, SavedGroupCollection, SavedGroupCollectionCreateInput,
+    SavedGroupCollectionDeleteInput, SavedGroupFavoriteAddInput, SavedGroupFavoriteRemoveInput,
+    SavedGroupFavoritesSnapshot, VrchatFavoriteType,
+};
 pub use legacy_migration::{
     LegacyMigrationPaths, LegacyMigrationProgress, LegacyVrcxDiscovery, LegacyVrcxMigrationStatus,
     LegacyVrcxSource,

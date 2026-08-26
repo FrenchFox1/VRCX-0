@@ -5557,6 +5557,9 @@
         "update_success": "Успешное обновление"
     },
     "notifications": {
+        "group_instance_opened": "Создан новый инстанс",
+        "group_instance_opened_location": "Создан новый инстанс: {location}",
+        "group_instances_opened": "Создано новых инстансов: {count}",
         "has_joined": "Присоединился",
         "has_left": "ушёл.",
         "joined_with_others": "и ещё {count} присоединились",
@@ -6058,6 +6061,27 @@
         "error_generic": "Не удалось перевести",
         "error_network": "Ошибка сети, попробуйте ещё раз",
         "error_unsupported": "Перевод не настроен"
+    },
+    "saved_group_favorites": {
+        "title": "Сохранённые группы",
+        "description": "Сохраняйте часто используемые группы в локальных подборках и получайте уведомления о новых инстансах.",
+        "new_collection": "Новая подборка",
+        "empty_collections": "Создайте подборку, чтобы сохранять группы.",
+        "empty_group": "В этой подборке нет сохранённых групп.",
+        "delete_title": "Удалить эту подборку?",
+        "delete_description": "При удалении {name} из избранного также будут удалены {count} групп.",
+        "choose_collection": "Сохранить в подборку",
+        "remove": "Удалить из сохранённых",
+        "toggle": "Сохранить группу",
+        "sidebar_saved": "Сохранённые группы",
+        "sidebar_none": "Сохранённых групп пока нет",
+        "sidebar_other": "Другие активные группы",
+        "sidebar_failed": "Не удалось загрузить инстансы групп",
+        "sidebar_no_active": "Других активных инстансов групп нет",
+        "scope_all": "Все сохранённые группы",
+        "scope_selected": "Выбранные подборки групп",
+        "notification_type": "Новый инстанс группы",
+        "notification_empty": "Нет доступных подборок сохранённых групп."
     },
     "app": {
         "routes": {

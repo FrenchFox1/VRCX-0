@@ -58,6 +58,13 @@ const navDefinitions = [
         routeName: 'favorite-friends'
     },
     {
+        key: 'favorite-groups',
+        icon: 'lucide:UsersRound',
+        tooltip: 'saved_group_favorites.title',
+        labelKey: 'saved_group_favorites.title',
+        routeName: 'favorite-groups'
+    },
+    {
         key: 'favorite-worlds',
         icon: 'lucide:MapPinned',
         tooltip: 'nav_tooltip.favorite_worlds',

@@ -9,8 +9,9 @@ use super::content::build_activity_content;
 use super::definitions::{default_rule, known_definition_for_type, normalize_id};
 use super::types::{
     OverlayActivityActorRelation, OverlayActivityCandidate, OverlayActivityDelivery,
-    OverlayActivityEntry, OverlayActivityFavoriteGroupKeys, OverlayActivityFilters,
-    OverlayActivityRule, OverlayActivityScope, OverlayActivitySnapshot, OverlayActivitySurface,
+    OverlayActivityEntry, OverlayActivityFavoriteGroupKeys, OverlayActivityFavoriteSubject,
+    OverlayActivityFilters, OverlayActivityRule, OverlayActivityScope, OverlayActivitySnapshot,
+    OverlayActivitySurface,
 };
 
 const DEFAULT_CAPACITY: usize = 128;
@@ -89,15 +90,15 @@ impl OverlayFavoriteGroups {
         }
     }
 
-    fn contains_any(&self, user_id: &str) -> bool {
-        self.all_favorites.contains(user_id)
+    fn contains_any(&self, subject_id: &str) -> bool {
+        self.all_favorites.contains(subject_id)
     }
 
-    fn contains_selected(&self, group_keys: &[String], user_id: &str) -> bool {
+    fn contains_selected(&self, group_keys: &[String], subject_id: &str) -> bool {
         group_keys.iter().any(|group_key| {
             self.groups
                 .get(group_key)
-                .is_some_and(|group| group.contains(user_id))
+                .is_some_and(|group| group.contains(subject_id))
         })
     }
 }
@@ -121,8 +122,11 @@ pub trait OverlayActivitySink: Send + Sync {
 #[derive(Clone, Debug)]
 pub(super) struct OverlayActivityState {
     pub(super) filters: OverlayActivityFilters,
-    pub(super) favorite_groups: OverlayFavoriteGroups,
+    pub(super) friend_favorite_groups: OverlayFavoriteGroups,
+    pub(super) group_favorite_groups: OverlayFavoriteGroups,
     pub(super) friend_user_ids: HashSet<String>,
+    pub(super) group_instance_scope_key: String,
+    pub(super) group_instance_baseline: HashMap<String, Vec<String>>,
     current_instance_location: String,
     current_instance_user_ids: HashSet<String>,
     joined_delivery_coverage: HashMap<(String, String), JoinedDeliveryCoverage>,
@@ -139,8 +143,11 @@ impl Default for OverlayActivityState {
     fn default() -> Self {
         Self {
             filters: OverlayActivityFilters::default(),
-            favorite_groups: OverlayFavoriteGroups::default(),
+            friend_favorite_groups: OverlayFavoriteGroups::default(),
+            group_favorite_groups: OverlayFavoriteGroups::default(),
             friend_user_ids: HashSet::new(),
+            group_instance_scope_key: String::new(),
+            group_instance_baseline: HashMap::new(),
             current_instance_location: String::new(),
             current_instance_user_ids: HashSet::new(),
             joined_delivery_coverage: HashMap::new(),
@@ -186,6 +193,8 @@ impl OverlayActivityRuntime {
                 return;
             }
             state.filters = filters;
+            state.group_instance_scope_key.clear();
+            state.group_instance_baseline.clear();
             state.entries.clear();
             state.source_ids.clear();
             state.seen_order.clear();
@@ -206,7 +215,18 @@ impl OverlayActivityRuntime {
 
     pub fn set_favorite_groups(&self, favorite_groups: OverlayFavoriteGroups) {
         if let Ok(mut state) = self.inner.state.lock() {
-            state.favorite_groups = favorite_groups;
+            state.friend_favorite_groups = favorite_groups;
+        }
+    }
+
+    pub fn set_group_favorite_groups(&self, favorite_groups: OverlayFavoriteGroups) {
+        if let Ok(mut state) = self.inner.state.lock() {
+            if state.group_favorite_groups == favorite_groups {
+                return;
+            }
+            state.group_favorite_groups = favorite_groups;
+            state.group_instance_scope_key.clear();
+            state.group_instance_baseline.clear();
         }
     }
 
@@ -265,8 +285,11 @@ impl OverlayActivityRuntime {
             let Ok(mut state) = self.inner.state.lock() else {
                 return;
             };
-            state.favorite_groups = OverlayFavoriteGroups::default();
+            state.friend_favorite_groups = OverlayFavoriteGroups::default();
+            state.group_favorite_groups = OverlayFavoriteGroups::default();
             state.friend_user_ids.clear();
+            state.group_instance_scope_key.clear();
+            state.group_instance_baseline.clear();
             state.current_instance_location.clear();
             state.current_instance_user_ids.clear();
             state.joined_delivery_coverage.clear();
@@ -602,7 +625,7 @@ fn actor_relation_for_user_id(
     if actor_user_id.is_empty() {
         return OverlayActivityActorRelation::None;
     }
-    if state.favorite_groups.contains_any(&actor_user_id) {
+    if state.friend_favorite_groups.contains_any(&actor_user_id) {
         return OverlayActivityActorRelation::Favorite;
     }
     if state.friend_user_ids.contains(&actor_user_id) {
@@ -617,19 +640,32 @@ fn candidate_matches_rule(
     rule: &OverlayActivityRule,
 ) -> bool {
     let actor_user_id = normalize_id(&candidate.actor_user_id);
+    let favorite_membership = match &candidate.favorite_subject {
+        OverlayActivityFavoriteSubject::None => None,
+        OverlayActivityFavoriteSubject::UserId(user_id) => {
+            Some((&state.friend_favorite_groups, normalize_id(user_id)))
+        }
+        OverlayActivityFavoriteSubject::GroupId(group_id) => {
+            Some((&state.group_favorite_groups, normalize_id(group_id)))
+        }
+    };
     match rule.scope {
         OverlayActivityScope::Off => false,
         OverlayActivityScope::On => true,
         OverlayActivityScope::Friends => state.friend_user_ids.contains(&actor_user_id),
         OverlayActivityScope::SelectedFavorites => match &rule.favorite_group_keys {
-            OverlayActivityFavoriteGroupKeys::All => {
-                state.favorite_groups.contains_any(&actor_user_id)
-            }
-            OverlayActivityFavoriteGroupKeys::Selected(group_keys) => state
-                .favorite_groups
-                .contains_selected(group_keys, &actor_user_id),
+            OverlayActivityFavoriteGroupKeys::All => favorite_membership
+                .as_ref()
+                .is_some_and(|(groups, subject_id)| groups.contains_any(subject_id)),
+            OverlayActivityFavoriteGroupKeys::Selected(group_keys) => favorite_membership
+                .as_ref()
+                .is_some_and(|(groups, subject_id)| {
+                    groups.contains_selected(group_keys, subject_id)
+                }),
         },
-        OverlayActivityScope::AllFavorites => state.favorite_groups.contains_any(&actor_user_id),
+        OverlayActivityScope::AllFavorites => favorite_membership
+            .as_ref()
+            .is_some_and(|(groups, subject_id)| groups.contains_any(subject_id)),
         OverlayActivityScope::EveryoneInInstance => candidate.current_instance,
     }
 }

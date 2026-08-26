@@ -39,6 +39,11 @@ const INSTANCE_ACTOR_SCOPES: &[OverlayActivityScope] = &[
     OverlayActivityScope::AllFavorites,
     OverlayActivityScope::EveryoneInInstance,
 ];
+const GROUP_FAVORITE_SCOPES: &[OverlayActivityScope] = &[
+    OverlayActivityScope::Off,
+    OverlayActivityScope::AllFavorites,
+    OverlayActivityScope::SelectedFavorites,
+];
 
 const ACTIVITY_TYPES: &[ActivityTypeDefinition] = &[
     definition(
@@ -193,6 +198,13 @@ const ACTIVITY_TYPES: &[ActivityTypeDefinition] = &[
         OverlayActivityCategory::GroupSocial,
         BOOLEAN_SCOPES,
         OverlayActivityScope::On,
+        &[],
+    ),
+    definition(
+        "group.instanceOpened",
+        OverlayActivityCategory::GroupSocial,
+        GROUP_FAVORITE_SCOPES,
+        OverlayActivityScope::Off,
         &[],
     ),
     definition(
@@ -517,10 +529,13 @@ fn normalize_rule(
     } else {
         OverlayActivityFavoriteGroupKeys::All
     };
-    OverlayActivityRule {
-        scope,
-        favorite_group_keys,
-    }
+    normalize_group_instance_rule(
+        definition,
+        OverlayActivityRule {
+            scope,
+            favorite_group_keys,
+        },
+    )
 }
 
 fn parse_scope(value: &str) -> Option<OverlayActivityScope> {
@@ -563,14 +578,37 @@ fn legacy_category_rule(
         .and_then(|value| parse_scope_for_definition(value, definition))
         .filter(|scope| definition.allowed_scopes.contains(scope))
         .unwrap_or(definition.default_scope);
-    Some(OverlayActivityRule {
-        scope,
-        favorite_group_keys: if scope == OverlayActivityScope::SelectedFavorites {
-            source_favorite_group_keys
-        } else {
-            OverlayActivityFavoriteGroupKeys::All
+    Some(normalize_group_instance_rule(
+        definition,
+        OverlayActivityRule {
+            scope,
+            favorite_group_keys: if scope == OverlayActivityScope::SelectedFavorites {
+                source_favorite_group_keys
+            } else {
+                OverlayActivityFavoriteGroupKeys::All
+            },
         },
-    })
+    ))
+}
+
+fn normalize_group_instance_rule(
+    definition: &ActivityTypeDefinition,
+    rule: OverlayActivityRule,
+) -> OverlayActivityRule {
+    if definition.key == "group.instanceOpened"
+        && rule.scope == OverlayActivityScope::SelectedFavorites
+        && matches!(
+            rule.favorite_group_keys,
+            OverlayActivityFavoriteGroupKeys::All
+        )
+    {
+        OverlayActivityRule {
+            scope: OverlayActivityScope::Off,
+            favorite_group_keys: OverlayActivityFavoriteGroupKeys::All,
+        }
+    } else {
+        rule
+    }
 }
 
 fn get_type_candidate<'a>(

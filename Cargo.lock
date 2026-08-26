@@ -9162,6 +9162,7 @@ name = "vrcx-0-composition"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "futures-util",
  "serde",
  "serde_json",
  "specta",
@@ -9485,6 +9486,7 @@ dependencies = [
  "sys-locale",
  "tokio",
  "tracing",
+ "uuid",
  "vrcx-0-application",
  "vrcx-0-application-activity",
  "vrcx-0-application-core",

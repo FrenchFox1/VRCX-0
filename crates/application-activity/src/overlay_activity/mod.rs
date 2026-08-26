@@ -2,6 +2,7 @@ mod catalog;
 mod content;
 mod conversions;
 mod definitions;
+mod group_instance_monitor;
 mod input_sink;
 mod runtime;
 #[cfg(test)]
@@ -13,7 +14,7 @@ pub use runtime::{OverlayActivityRuntime, OverlayActivitySink, OverlayFavoriteGr
 pub use types::{
     OverlayActivityActorRelation, OverlayActivityCandidate, OverlayActivityCategory,
     OverlayActivityContent, OverlayActivityDelivery, OverlayActivityEntry,
-    OverlayActivityFavoriteGroupKeys, OverlayActivityFilters, OverlayActivityRule,
-    OverlayActivityScope, OverlayActivitySnapshot, OverlayActivitySurface,
+    OverlayActivityFavoriteGroupKeys, OverlayActivityFavoriteSubject, OverlayActivityFilters,
+    OverlayActivityRule, OverlayActivityScope, OverlayActivitySnapshot, OverlayActivitySurface,
     OverlayActivitySurfaceFilters, OverlayActivityText, OverlayActivityTypeDefinition,
 };

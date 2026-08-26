@@ -46,6 +46,7 @@ import {
 } from '../EntityDialogScaffold';
 import type { GroupActionStatus, GroupRemoteStatus } from './groupDialogTypes';
 import { GroupTitleLanguages } from './GroupDialogViewParts';
+import { SavedGroupFavoriteButton } from './SavedGroupFavoriteButton';
 
 interface GroupHeaderModel {
     actionStatus: GroupActionStatus;
@@ -307,6 +308,9 @@ export function GroupDialogHeaderSection({
                         <ShieldUserIcon data-icon="inline-start" />
                         {t('dialog.group.actions.moderation_tools')}
                     </Button>
+                ) : null}
+                {group.id ? (
+                    <SavedGroupFavoriteButton groupId={group.id} />
                 ) : null}
                 <EntityActionDropdown busy={actionStatus !== 'idle'}>
                     <EntityActionItem

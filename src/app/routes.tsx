@@ -148,6 +148,15 @@ export const protectedRoutes: AppRouteDefinition[] = [
         )
     },
     {
+        path: '/favorites/groups',
+        titleKey: 'saved_group_favorites.title',
+        descriptionKey: 'saved_group_favorites.description',
+        element: lazyRouteElement(
+            () => import('@/features/favorites/SavedGroupFavoritesPage'),
+            'SavedGroupFavoritesPage'
+        )
+    },
+    {
         path: '/favorites/worlds',
         titleKey: 'app.routes.favorite_worlds',
         descriptionKey:

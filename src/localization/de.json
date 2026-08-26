@@ -5552,6 +5552,9 @@
         "update_success": "Update erfolgreich"
     },
     "notifications": {
+        "group_instance_opened": "Hat eine neue Instanz erstellt",
+        "group_instance_opened_location": "Hat eine neue Instanz erstellt: {location}",
+        "group_instances_opened": "Hat {count} neue Instanzen erstellt",
         "has_joined": "ist beigetreten",
         "has_left": "hat verlassen",
         "joined_with_others": "und {count} weitere sind beigetreten",
@@ -6053,6 +6056,27 @@
         "error_generic": "Übersetzung fehlgeschlagen",
         "error_network": "Netzwerkfehler, bitte erneut versuchen",
         "error_unsupported": "Übersetzung ist nicht konfiguriert"
+    },
+    "saved_group_favorites": {
+        "title": "Gespeicherte Gruppen",
+        "description": "Speichere häufig verwendete Gruppen in lokalen Sammlungen und nutze sie für Benachrichtigungen über neue Instanzen.",
+        "new_collection": "Neue Sammlung",
+        "empty_collections": "Erstelle eine Sammlung, um Gruppen zu speichern.",
+        "empty_group": "In dieser Sammlung sind keine Gruppen gespeichert.",
+        "delete_title": "Diese Sammlung löschen?",
+        "delete_description": "Beim Löschen von {name} werden auch die {count} gespeicherten Gruppen entfernt.",
+        "choose_collection": "In Sammlung speichern",
+        "remove": "Aus gespeicherten Gruppen entfernen",
+        "toggle": "Gruppe speichern",
+        "sidebar_saved": "Gespeicherte Gruppen",
+        "sidebar_none": "Noch keine Gruppen gespeichert",
+        "sidebar_other": "Andere aktive Gruppen",
+        "sidebar_failed": "Gruppeninstanzen konnten nicht geladen werden",
+        "sidebar_no_active": "Keine weiteren aktiven Gruppeninstanzen",
+        "scope_all": "Alle gespeicherten Gruppen",
+        "scope_selected": "Ausgewählte Gruppensammlungen",
+        "notification_type": "Neue Gruppeninstanz",
+        "notification_empty": "Keine Gruppensammlungen verfügbar."
     },
     "app": {
         "routes": {

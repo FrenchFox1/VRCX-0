@@ -1,6 +1,20 @@
 use super::*;
 
 #[test]
+fn notification_scan_parser_rejects_invalid_json_and_accepts_empty_rows() {
+    assert!(parse_group_instance_rows("not-json").is_err());
+    assert_eq!(
+        parse_group_instance_rows("[]").unwrap(),
+        Vec::<Value>::new()
+    );
+    assert_eq!(
+        parse_group_instance_rows(r#"{"instances": []}"#).unwrap(),
+        Vec::<Value>::new()
+    );
+    assert!(parse_group_instance_rows(r#"{"error": "temporary"}"#).is_err());
+}
+
+#[test]
 fn group_id_uses_nested_group_before_top_level_owner_and_location() {
     let instance = json!({
         "group": { "groupId": " grp_nested " },

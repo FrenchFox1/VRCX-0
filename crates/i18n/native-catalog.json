@@ -109,6 +109,18 @@
                     "source": "notifications.group_queue_ready_title"
                 },
                 {
+                    "key": "notifications.group_instance_opened",
+                    "source": "notifications.group_instance_opened"
+                },
+                {
+                    "key": "notifications.group_instance_opened_location",
+                    "source": "notifications.group_instance_opened_location"
+                },
+                {
+                    "key": "notifications.group_instances_opened",
+                    "source": "notifications.group_instances_opened"
+                },
+                {
                     "key": "notifications.instance_closed_title",
                     "source": "notifications.instance_closed_title"
                 },
