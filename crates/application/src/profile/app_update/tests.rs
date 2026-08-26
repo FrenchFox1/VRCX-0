@@ -19,8 +19,9 @@ use super::release::{
     parse_release_version, GitHubRelease, GitHubReleaseAsset, TOKYO_UTC_OFFSET_SECONDS,
 };
 use super::{
-    AppUpdateBuildInfo, AppUpdateDeliveryKind, AppUpdateDownloadPhase, AppUpdateReleaseSnapshot,
-    AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot, DownloadState,
+    up_to_date_outcome, AppUpdateBuildInfo, AppUpdateDeliveryKind, AppUpdateDownloadPhase,
+    AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot,
+    DownloadState,
 };
 use crate::profile::test_support::MemoryProfileConfigStore;
 
@@ -148,6 +149,20 @@ fn update_release_snapshot() -> AppUpdateReleaseSnapshot {
         target: "windows-x86_64-stable".into(),
         updater_type: AppUpdateDeliveryKind::Tauri,
     }
+}
+
+#[test]
+fn up_to_date_outcome_keeps_the_checked_release() {
+    let outcome = up_to_date_outcome(update_release_snapshot(), "No newer release was found.");
+
+    assert!(!outcome.has_available_update);
+    assert_eq!(
+        outcome
+            .release
+            .expect("checked release remains available")
+            .canonical_version,
+        TEST_UPDATE_VERSION
+    );
 }
 
 fn app_update_test_context(

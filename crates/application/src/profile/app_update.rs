@@ -125,6 +125,17 @@ fn no_update_outcome(detail: impl Into<String>) -> CheckOutcome {
     }
 }
 
+fn up_to_date_outcome(
+    release: AppUpdateReleaseSnapshot,
+    detail: impl Into<String>,
+) -> CheckOutcome {
+    CheckOutcome {
+        has_available_update: false,
+        detail: detail.into(),
+        release: Some(release),
+    }
+}
+
 fn update_available_outcome(
     release: AppUpdateReleaseSnapshot,
     detail: impl Into<String>,
@@ -201,11 +212,15 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
 
     if let Some(target) = context.target {
         let release = fetch_latest_release(context.web, Some(target), true).await?;
-        let Some(release) =
-            release.filter(|release| is_release_newer_than_current(release, context.app_version))
-        else {
+        let Some(release) = release else {
             return Ok(no_update_outcome("No newer installable release was found."));
         };
+        if !is_release_newer_than_current(&release, context.app_version) {
+            return Ok(up_to_date_outcome(
+                release,
+                "No newer installable release was found.",
+            ));
+        }
 
         let manifest_check = context
             .port
@@ -234,16 +249,16 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
     }
 
     let release = fetch_latest_release(context.web, None, false).await?;
-    Ok(
-        match release.filter(|release| is_release_newer_than_current(release, context.app_version))
-        {
-            Some(release) => update_available_outcome(
+    Ok(match release {
+        Some(release) if is_release_newer_than_current(&release, context.app_version) => {
+            update_available_outcome(
                 release,
                 "A newer release is available; this platform does not support in-app installs.",
-            ),
-            None => no_update_outcome("No newer release was found."),
-        },
-    )
+            )
+        }
+        Some(release) => up_to_date_outcome(release, "No newer release was found."),
+        None => no_update_outcome("No newer release was found."),
+    })
 }
 
 async fn run_check(context: &AppUpdateCheckContext<'_>) -> AppUpdateStatusSnapshot {
