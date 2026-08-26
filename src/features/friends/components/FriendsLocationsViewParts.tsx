@@ -34,16 +34,13 @@ type BivariantCallback<Args extends unknown[]> = {
 
 type FriendsLocationsFriend = FriendRecord & {
     ref?: FriendLocationSource | null;
-    pendingOffline?: boolean;
     travelingToLocation?: string | null;
 };
 
 type FriendLocationSource = Pick<
     FriendLocationRecord,
     '$travelingToLocation' | 'location' | 'travelingToLocation'
-> & {
-    pendingOffline?: boolean;
-};
+>;
 
 type FriendsLocationsEmptyStateProps = {
     title: string;
@@ -228,8 +225,6 @@ export function FriendsLocationCardItem({
         : '';
     const timerLocation =
         friendIsOnline &&
-        !friend.pendingOffline &&
-        !source.pendingOffline &&
         (sectionInstanceLocation ||
             target.parsed.isRealInstance ||
             isTravelingLocation)

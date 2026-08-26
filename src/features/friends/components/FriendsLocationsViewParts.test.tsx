@@ -132,6 +132,46 @@ describe('FriendsLocationCardItem', () => {
         expect(html).toContain('data-can-use-location="false"');
     });
 
+    it('keeps the section timer while the online friend is pending offline', () => {
+        const location = 'wrld_test:123';
+        const friend = {
+            ...friendAt('private'),
+            pendingOffline: true,
+            ref: {
+                location: 'private',
+                pendingOffline: true
+            }
+        };
+        const html = renderToStaticMarkup(
+            <FriendsLocationCardItem
+                section={{
+                    key: `instance:${location}`,
+                    title: 'World',
+                    description: '',
+                    friends: [friend],
+                    worldId: 'wrld_test',
+                    groupId: '',
+                    rawLocation: location
+                }}
+                friend={friend}
+                currentUserId="usr_self"
+                densityConfig={getFriendsLocationsDensityConfig('compact')}
+                canUseFriendLocation={() => false}
+                canSendInvite
+                canBoop
+                onOpenUser={vi.fn()}
+                onOpenWorld={vi.fn()}
+                onLaunchLocation={vi.fn()}
+                onSelfInviteLocation={vi.fn()}
+                onSendInvite={vi.fn()}
+                onRequestInvite={vi.fn()}
+                onSendBoop={vi.fn()}
+            />
+        );
+
+        expect(html).toContain('data-timer-location="wrld_test:123"');
+    });
+
     it('disables every social and location action for the current user', () => {
         const location = 'wrld_test:123';
         const friend = friendAt(location);

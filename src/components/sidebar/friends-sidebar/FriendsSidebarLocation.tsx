@@ -112,7 +112,7 @@ export function resolveFriendRowLocationState({
         friendStateBucket === 'active' ||
         friendStateBucket === 'offline';
     const groupByInstanceTimerVisible = Boolean(
-        isGroupByInstance && !isActiveOrOffline && !statusSource?.pendingOffline
+        isGroupByInstance && !isActiveOrOffline
     );
     const showLocationSubline = Boolean(
         displayLocation &&
