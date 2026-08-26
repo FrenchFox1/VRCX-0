@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use super::{
@@ -13,10 +13,7 @@ use super::{
 use crate::GroupOrderSource;
 use futures_util::future::BoxFuture;
 use vrcx_0_application::social::{AuthenticatedRuntimeOrchestrator, SocialMaintenanceActions};
-use vrcx_0_application_activity::{
-    OverlayActivityFavoriteGroupKeys, OverlayActivityScope, OverlayActivitySurface,
-    OverlayFavoriteGroups,
-};
+use vrcx_0_application_activity::OverlayFavoriteGroups;
 use vrcx_0_core::OwnerId;
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
@@ -89,44 +86,10 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
                 )
             })
             .collect::<HashMap<_, _>>();
+        let favorite_groups = OverlayFavoriteGroups::from_map(memberships);
         let runtime = self.runtime_context.overlay_activity();
-        runtime.set_group_favorite_groups(OverlayFavoriteGroups::from_map(memberships.clone()));
-
-        let mut group_ids = BTreeSet::new();
-        let all_group_ids = snapshot
-            .collections
-            .iter()
-            .flat_map(|collection| collection.group_ids.iter().cloned())
-            .collect::<Vec<_>>();
-        let filters = runtime.filters();
-        for surface in [
-            OverlayActivitySurface::Wrist,
-            OverlayActivitySurface::Desktop,
-            OverlayActivitySurface::Vr,
-            OverlayActivitySurface::Hmd,
-            OverlayActivitySurface::Webhook,
-            OverlayActivitySurface::Tts,
-        ] {
-            let rule = filters.rule_for(surface, "group.instanceOpened");
-            match rule.scope {
-                OverlayActivityScope::AllFavorites => {
-                    group_ids.extend(all_group_ids.iter().cloned());
-                }
-                OverlayActivityScope::SelectedFavorites => {
-                    if let OverlayActivityFavoriteGroupKeys::Selected(keys) =
-                        rule.favorite_group_keys
-                    {
-                        for key in keys {
-                            if let Some(selected) = memberships.get(&key) {
-                                group_ids.extend(selected.iter().cloned());
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-        let group_ids = group_ids.into_iter().collect::<Vec<_>>();
+        let group_ids = favorite_groups.group_instance_notification_group_ids(&runtime.filters());
+        runtime.set_group_favorite_groups(favorite_groups);
         let config_key = format!(
             "groupInstanceNotificationGroupIds:{}",
             session.current_user_id
@@ -451,5 +414,63 @@ mod background_capability_session_identity_tests {
         assert_eq!(identity.current_user_id, "usr_owner");
         assert_eq!(identity.endpoint, "https://api.example.test/api/1");
         assert_eq!(identity.websocket, "wss://pipeline.example.test");
+    }
+
+    #[test]
+    fn notification_scan_ids_follow_enabled_saved_group_scopes() {
+        let favorite_groups = OverlayFavoriteGroups::from_map(HashMap::from([
+            (
+                "group:collection-a".to_string(),
+                vec!["grp_alpha".to_string(), "grp_shared".to_string()],
+            ),
+            (
+                "group:collection-b".to_string(),
+                vec!["grp_beta".to_string(), "grp_shared".to_string()],
+            ),
+            (
+                "group:collection-c".to_string(),
+                vec!["grp_not_selected".to_string()],
+            ),
+        ]));
+        let selected = vrcx_0_application_activity::OverlayActivityFilters::from_json(json!({
+            "version": 1,
+            "desktop": {
+                "types": {
+                    "group.instanceOpened": {
+                        "scope": "selectedFavorites",
+                        "favoriteGroupKeys": [
+                            "group:collection-a",
+                            "group:deleted-collection"
+                        ]
+                    }
+                }
+            }
+        }));
+
+        assert_eq!(
+            favorite_groups.group_instance_notification_group_ids(&selected),
+            vec!["grp_alpha", "grp_shared"]
+        );
+        assert!(favorite_groups
+            .group_instance_notification_group_ids(
+                &vrcx_0_application_activity::OverlayActivityFilters::default()
+            )
+            .is_empty());
+
+        let all_favorites = vrcx_0_application_activity::OverlayActivityFilters::from_json(json!({
+            "version": 1,
+            "tts": {
+                "types": {
+                    "group.instanceOpened": {
+                        "scope": "allFavorites",
+                        "favoriteGroupKeys": "all"
+                    }
+                }
+            }
+        }));
+        assert_eq!(
+            favorite_groups.group_instance_notification_group_ids(&all_favorites),
+            vec!["grp_alpha", "grp_beta", "grp_not_selected", "grp_shared"]
+        );
     }
 }

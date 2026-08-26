@@ -605,55 +605,48 @@ export function GroupsSidebar() {
             savedGroups.collections.flatMap((collection) => collection.groupIds)
         );
 
-        nextRows.push({
-            type: 'section',
-            key: 'section:saved',
-            title: t('saved_group_favorites.sidebar_saved', {
-                defaultValue: '收藏群组'
-            })
-        });
-        savedGroups.collections.forEach((collection) => {
+        if (savedGroups.collections.length) {
             nextRows.push({
-                type: 'collection',
-                key: `collection:${collection.id}`,
-                name: collection.name,
-                count: collection.groupIds.length
-            });
-            collection.groupIds.forEach((groupId) => {
-                const groupRows = groupsById.get(groupId) || [];
-                const profile = savedGroupProfiles.get(groupId);
-                const name =
-                    profile?.name ||
-                    resolveGroupName(groupRows[0], groupId) ||
-                    groupId;
-                const isCollapsed = collapsedGroups.has(groupId);
-                nextRows.push({
-                    type: 'group-header',
-                    key: `saved-group:${collection.id}:${groupId}`,
-                    groupId,
-                    name,
-                    count: groupRows.length,
-                    isCollapsed,
-                    first: false
-                });
-                if (!isCollapsed) {
-                    groupRows.forEach((instance, instanceIndex) => {
-                        nextRows.push({
-                            type: 'group-instance',
-                            key: `saved-group:${groupId}:${resolveLocation(instance)}:${instanceIndex}`,
-                            instance
-                        });
-                    });
-                }
-            });
-        });
-        if (!savedGroups.collections.length) {
-            nextRows.push({
-                type: 'message',
-                key: 'message:no-saved-groups',
-                text: t('saved_group_favorites.sidebar_none', {
-                    defaultValue: '还没有收藏群组'
+                type: 'section',
+                key: 'section:saved',
+                title: t('saved_group_favorites.sidebar_saved', {
+                    defaultValue: '收藏群组'
                 })
+            });
+            savedGroups.collections.forEach((collection) => {
+                nextRows.push({
+                    type: 'collection',
+                    key: `collection:${collection.id}`,
+                    name: collection.name,
+                    count: collection.groupIds.length
+                });
+                collection.groupIds.forEach((groupId) => {
+                    const groupRows = groupsById.get(groupId) || [];
+                    const profile = savedGroupProfiles.get(groupId);
+                    const name =
+                        profile?.name ||
+                        resolveGroupName(groupRows[0], groupId) ||
+                        groupId;
+                    const isCollapsed = collapsedGroups.has(groupId);
+                    nextRows.push({
+                        type: 'group-header',
+                        key: `saved-group:${collection.id}:${groupId}`,
+                        groupId,
+                        name,
+                        count: groupRows.length,
+                        isCollapsed,
+                        first: false
+                    });
+                    if (!isCollapsed) {
+                        groupRows.forEach((instance, instanceIndex) => {
+                            nextRows.push({
+                                type: 'group-instance',
+                                key: `saved-group:${groupId}:${resolveLocation(instance)}:${instanceIndex}`,
+                                instance
+                            });
+                        });
+                    }
+                });
             });
         }
 

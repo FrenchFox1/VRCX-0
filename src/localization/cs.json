@@ -6064,7 +6064,7 @@
         "error_unsupported": "Překlad není nakonfigurován"
     },
     "saved_group_favorites": {
-        "title": "Uložené skupiny",
+        "title": "Oblíbené skupiny",
         "description": "Uložte často používané skupiny do místních kolekcí a používejte je pro upozornění na nové instance.",
         "new_collection": "Nová kolekce",
         "empty_collections": "Vytvořte kolekci a začněte ukládat skupiny.",
@@ -6074,7 +6074,7 @@
         "choose_collection": "Uložit do kolekce",
         "remove": "Odebrat z uložených skupin",
         "toggle": "Uložit skupinu",
-        "sidebar_saved": "Uložené skupiny",
+        "sidebar_saved": "Oblíbené skupiny",
         "sidebar_none": "Zatím nejsou uloženy žádné skupiny",
         "sidebar_other": "Další aktivní skupiny",
         "sidebar_failed": "Instance skupin se nepodařilo načíst",

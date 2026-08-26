@@ -552,8 +552,8 @@
         "instance_history": "房间历史",
         "player_list": "房内玩家",
         "search": "搜索",
-        "favorites": "收藏&分组",
-        "favorite_friends": "好友分组",
+        "favorites": "收藏",
+        "favorite_friends": "好友收藏",
         "favorite_worlds": "世界收藏",
         "favorite_avatars": "模型收藏",
         "favorite_import": "收藏导入",
@@ -6065,7 +6065,7 @@
         "error_unsupported": "翻译功能未配置"
     },
     "saved_group_favorites": {
-        "title": "收藏群组",
+        "title": "群组收藏",
         "description": "将常用群组保存到本地分组，并接收新实例通知。",
         "new_collection": "新建分组",
         "empty_collections": "新建分组后即可收藏群组。",
@@ -6075,7 +6075,7 @@
         "choose_collection": "收藏到分组",
         "remove": "取消收藏",
         "toggle": "收藏群组",
-        "sidebar_saved": "收藏群组",
+        "sidebar_saved": "群组收藏",
         "sidebar_none": "还没有收藏群组",
         "sidebar_other": "其他活动群组",
         "sidebar_failed": "群组实例加载失败",

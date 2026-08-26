@@ -7,6 +7,7 @@ import {
     commands,
     type SavedGroupFavoritesSnapshot
 } from '@/platform/tauri/bindings';
+import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -17,7 +18,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import { Input } from '@/ui/shadcn/input';
 
 export const SAVED_GROUP_FAVORITES_CHANGED_EVENT =
     'saved-group-favorites-changed';
@@ -27,8 +27,8 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
     const [snapshot, setSnapshot] = useState<SavedGroupFavoritesSnapshot>({
         collections: []
     });
-    const [newCollectionName, setNewCollectionName] = useState('');
     const [busy, setBusy] = useState(false);
+    const prompt = useModalStore((state) => state.prompt);
 
     const load = useCallback(async () => {
         setSnapshot(await commands.appSavedGroupFavoritesGet());
@@ -57,9 +57,21 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
         }
     }
 
-    function createAndAdd() {
-        const name = newCollectionName.trim();
-        if (!name) return;
+    async function createAndAdd() {
+        const result = await prompt({
+            title: t('saved_group_favorites.new_collection'),
+            description: t('saved_group_favorites.empty_collections'),
+            inputValue: '',
+            confirmText: t('common.actions.confirm'),
+            cancelText: t('common.actions.cancel')
+        });
+        if (!result.ok || typeof result.value !== 'string') {
+            return;
+        }
+        const name = result.value.trim();
+        if (!name) {
+            return;
+        }
         void mutate(async () => {
             const previousIds = new Set(
                 snapshot.collections.map((collection) => collection.id)
@@ -76,7 +88,6 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
                 collectionId: collection.id,
                 groupId
             });
-            setNewCollectionName('');
         });
     }
 
@@ -101,7 +112,7 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
             />
             <DropdownMenuContent align="end" className="w-64">
                 {favoriteCollection ? (
-                    <>
+                    <DropdownMenuGroup>
                         <DropdownMenuLabel>
                             {favoriteCollection.name}
                         </DropdownMenuLabel>
@@ -121,15 +132,15 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
                                 defaultValue: '取消收藏'
                             })}
                         </DropdownMenuItem>
-                    </>
+                    </DropdownMenuGroup>
                 ) : (
                     <>
-                        <DropdownMenuLabel>
-                            {t('saved_group_favorites.choose_collection', {
-                                defaultValue: '收藏到分组'
-                            })}
-                        </DropdownMenuLabel>
                         <DropdownMenuGroup>
+                            <DropdownMenuLabel>
+                                {t('saved_group_favorites.choose_collection', {
+                                    defaultValue: '收藏到分组'
+                                })}
+                            </DropdownMenuLabel>
                             {snapshot.collections.map((collection) => (
                                 <DropdownMenuItem
                                     key={collection.id}
@@ -147,33 +158,20 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <form
-                            className="flex gap-2 p-2"
-                            onSubmit={(event) => {
-                                event.preventDefault();
-                                createAndAdd();
-                            }}
-                        >
-                            <Input
-                                value={newCollectionName}
+                        {snapshot.collections.length ? (
+                            <DropdownMenuSeparator />
+                        ) : null}
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem
                                 disabled={busy}
-                                placeholder={t(
-                                    'saved_group_favorites.new_collection',
-                                    { defaultValue: '新建分组' }
-                                )}
-                                onChange={(event) =>
-                                    setNewCollectionName(event.target.value)
-                                }
-                            />
-                            <Button
-                                type="submit"
-                                size="icon-sm"
-                                disabled={busy || !newCollectionName.trim()}
+                                onClick={() => {
+                                    void createAndAdd();
+                                }}
                             >
-                                <PlusIcon />
-                            </Button>
-                        </form>
+                                <PlusIcon data-icon="inline-start" />
+                                {t('saved_group_favorites.new_collection')}
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
                     </>
                 )}
             </DropdownMenuContent>

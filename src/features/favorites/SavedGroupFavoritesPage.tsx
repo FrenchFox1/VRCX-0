@@ -1,10 +1,26 @@
-import { PlusIcon, Trash2Icon, UsersIcon } from 'lucide-react';
+import {
+    FolderHeartIcon,
+    HeartIcon,
+    MoreHorizontalIcon,
+    Trash2Icon,
+    UsersIcon
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { PageScaffold } from '@/components/layout/PageScaffold';
-import { FadeInImage } from '@/components/media/FadeInImage';
+import { GroupCard } from '@/components/groups/GroupCard';
+import {
+    EmptyState,
+    PageScaffold,
+    PageToolbar,
+    PageToolbarRow
+} from '@/components/layout/PageScaffold';
+import {
+    ToolbarActions,
+    ToolbarRefreshButton,
+    ToolbarSearch
+} from '@/components/layout/ToolbarControls';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import {
     commands,
@@ -12,7 +28,6 @@ import {
 } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     AlertDialog,
@@ -24,10 +39,81 @@ import {
     AlertDialogHeader,
     AlertDialogTitle
 } from '@/ui/shadcn/alert-dialog';
+import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from '@/ui/shadcn/dropdown-menu';
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup
+} from '@/ui/shadcn/resizable';
+
+import { GroupRailSection } from './components/FavoritesGroupRail';
+import type { FavoriteGroupView } from './favoritesTypes';
 
 const SAVED_GROUP_FAVORITES_CHANGED_EVENT = 'saved-group-favorites-changed';
+
+function SavedGroupFavoriteCard({
+    busy,
+    groupId,
+    profile,
+    onRemove
+}: {
+    busy: boolean;
+    groupId: string;
+    profile?: GroupProfileRecord;
+    onRemove(groupId: string): void;
+}) {
+    const { t } = useTranslation();
+    const group = profile || { id: groupId, name: groupId };
+
+    return (
+        <GroupCard
+            group={group}
+            onClick={() =>
+                openGroupDialog({
+                    groupId,
+                    title: profile?.name
+                })
+            }
+            actions={
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                size="icon-sm"
+                                variant="ghost"
+                                disabled={busy}
+                                aria-label={t('common.actions.configure')}
+                            >
+                                <MoreHorizontalIcon data-icon="inline-start" />
+                            </Button>
+                        }
+                    />
+                    <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuGroup>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                disabled={busy}
+                                onClick={() => onRemove(groupId)}
+                            >
+                                <Trash2Icon data-icon="inline-start" />
+                                {t('saved_group_favorites.remove')}
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            }
+        />
+    );
+}
 
 export function SavedGroupFavoritesPage() {
     const { t } = useTranslation();
@@ -40,39 +126,49 @@ export function SavedGroupFavoritesPage() {
     );
     const [selectedCollectionId, setSelectedCollectionId] = useState('');
     const [newCollectionName, setNewCollectionName] = useState('');
+    const [creatingCollection, setCreatingCollection] = useState(false);
     const [deletingCollectionId, setDeletingCollectionId] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
-        if (!currentUserId) {
-            setSnapshot({ collections: [] });
-            setProfiles(new Map());
-            return;
-        }
-        const next = await commands.appSavedGroupFavoritesGet();
-        setSnapshot(next);
-        const groupIds = Array.from(
-            new Set(
-                next.collections.flatMap((collection) => collection.groupIds)
-            )
-        );
-        const results = await Promise.allSettled(
-            groupIds.map((groupId) =>
-                groupProfileRepository.fetchGroupProfile({
-                    groupId,
-                    includeRoles: false
-                })
-            )
-        );
-        setProfiles(
-            new Map(
-                results.flatMap((result) =>
-                    result.status === 'fulfilled'
-                        ? [[result.value.id, result.value] as const]
-                        : []
+        setLoading(true);
+        try {
+            if (!currentUserId) {
+                setSnapshot({ collections: [] });
+                setProfiles(new Map());
+                return;
+            }
+            const next = await commands.appSavedGroupFavoritesGet();
+            setSnapshot(next);
+            const groupIds = Array.from(
+                new Set(
+                    next.collections.flatMap(
+                        (collection) => collection.groupIds
+                    )
                 )
-            )
-        );
+            );
+            const results = await Promise.allSettled(
+                groupIds.map((groupId) =>
+                    groupProfileRepository.fetchGroupProfile({
+                        groupId,
+                        includeRoles: false
+                    })
+                )
+            );
+            setProfiles(
+                new Map(
+                    results.flatMap((result) =>
+                        result.status === 'fulfilled'
+                            ? [[result.value.id, result.value] as const]
+                            : []
+                    )
+                )
+            );
+        } finally {
+            setLoading(false);
+        }
     }, [currentUserId]);
 
     useEffect(() => {
@@ -98,6 +194,16 @@ export function SavedGroupFavoritesPage() {
         setSelectedCollectionId(snapshot.collections[0]?.id || '');
     }, [selectedCollectionId, snapshot.collections]);
 
+    const collections = useMemo<FavoriteGroupView[]>(
+        () =>
+            snapshot.collections.map((collection) => ({
+                key: collection.id,
+                source: 'local',
+                label: collection.name,
+                count: collection.groupIds.length
+            })),
+        [snapshot.collections]
+    );
     const selectedCollection = useMemo(
         () =>
             snapshot.collections.find(
@@ -105,6 +211,19 @@ export function SavedGroupFavoritesPage() {
             ),
         [selectedCollectionId, snapshot.collections]
     );
+    const visibleGroupIds = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!selectedCollection || !query) {
+            return selectedCollection?.groupIds || [];
+        }
+        return selectedCollection.groupIds.filter((groupId) => {
+            const profile = profiles.get(groupId);
+            return (
+                groupId.toLowerCase().includes(query) ||
+                profile?.name.toLowerCase().includes(query)
+            );
+        });
+    }, [profiles, searchQuery, selectedCollection]);
     const deletingCollection = snapshot.collections.find(
         (collection) => collection.id === deletingCollectionId
     );
@@ -125,187 +244,196 @@ export function SavedGroupFavoritesPage() {
 
     function createCollection() {
         const name = newCollectionName.trim();
-        if (!name) return;
+        if (!name) {
+            return;
+        }
         void mutate(async () => {
             await commands.appSavedGroupCollectionCreate({ name });
             setNewCollectionName('');
+            setCreatingCollection(false);
         });
+    }
+
+    function removeFavorite(groupId: string) {
+        void mutate(() => commands.appSavedGroupFavoriteRemove({ groupId }));
     }
 
     return (
         <PageScaffold className="flex-1" flushBottom>
-            <div className="border-b px-5 py-4">
-                <h1 className="text-lg font-semibold">
-                    {t('saved_group_favorites.title', {
-                        defaultValue: '收藏群组'
-                    })}
-                </h1>
-                <p className="text-muted-foreground mt-1 text-sm">
-                    {t('saved_group_favorites.description', {
-                        defaultValue:
-                            '在本地分组保存常用群组，并用于新实例通知。'
-                    })}
-                </p>
-            </div>
-            <div className="grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)]">
-                <aside className="flex min-h-0 flex-col border-r">
-                    <div className="flex gap-2 border-b p-3">
-                        <Input
-                            value={newCollectionName}
-                            disabled={busy}
-                            placeholder={t(
-                                'saved_group_favorites.new_collection',
-                                { defaultValue: '新建分组' }
-                            )}
-                            onChange={(event) =>
-                                setNewCollectionName(event.target.value)
-                            }
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') createCollection();
-                            }}
+            <PageToolbar>
+                <PageToolbarRow>
+                    <ToolbarSearch
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                        placeholder={t('common.actions.search')}
+                    />
+                    <ToolbarActions>
+                        <ToolbarRefreshButton
+                            onRefresh={() => void load().catch(showError)}
+                            loading={loading}
                         />
-                        <Button
-                            size="icon"
-                            disabled={busy || !newCollectionName.trim()}
-                            onClick={createCollection}
-                        >
-                            <PlusIcon />
-                        </Button>
-                    </div>
-                    <div className="min-h-0 flex-1 space-y-1 overflow-auto p-2">
-                        {snapshot.collections.map((collection) => (
-                            <div key={collection.id} className="flex gap-1">
-                                <Button
-                                    type="button"
-                                    variant={
-                                        collection.id === selectedCollection?.id
-                                            ? 'secondary'
-                                            : 'ghost'
-                                    }
-                                    className="min-w-0 flex-1 justify-between"
-                                    onClick={() =>
-                                        setSelectedCollectionId(collection.id)
-                                    }
-                                >
-                                    <span className="truncate">
-                                        {collection.name}
+                    </ToolbarActions>
+                </PageToolbarRow>
+            </PageToolbar>
+
+            <div className="flex h-full min-h-0 min-w-0 flex-1">
+                <ResizablePanelGroup
+                    id="saved-group-favorites-splitter"
+                    orientation="horizontal"
+                    className="h-full min-h-0 min-w-0 flex-1"
+                >
+                    <ResizablePanel
+                        id="saved-group-favorites-groups"
+                        defaultSize={288}
+                        minSize={0}
+                        className="min-w-0"
+                        collapsible
+                        collapsedSize={0}
+                        groupResizeBehavior="preserve-pixel-size"
+                    >
+                        <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-2">
+                            <GroupRailSection
+                                title={t('saved_group_favorites.title')}
+                                icon={FolderHeartIcon}
+                                emptyTitle={t(
+                                    'saved_group_favorites.empty_collections'
+                                )}
+                                emptyDescription={t(
+                                    'saved_group_favorites.description'
+                                )}
+                                groups={collections}
+                                selectedSource="local"
+                                selectedGroupKey={selectedCollectionId}
+                                loading={loading}
+                                creating={creatingCollection}
+                                newGroupName={newCollectionName}
+                                newGroupLabel={t(
+                                    'saved_group_favorites.new_collection'
+                                )}
+                                showNewGroup
+                                onSelect={(group) => {
+                                    setSearchQuery('');
+                                    setSelectedCollectionId(group.key);
+                                }}
+                                onStartCreate={() => {
+                                    setNewCollectionName('');
+                                    setCreatingCollection(true);
+                                }}
+                                onNewGroupNameChange={setNewCollectionName}
+                                onConfirmCreate={createCollection}
+                                onCancelCreate={() => {
+                                    setNewCollectionName('');
+                                    setCreatingCollection(false);
+                                }}
+                                onLocalDelete={(group) =>
+                                    setDeletingCollectionId(group.key)
+                                }
+                            />
+                        </div>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel
+                        id="saved-group-favorites-content"
+                        minSize={320}
+                        className="min-w-0"
+                    >
+                        <div className="flex h-full min-h-0 min-w-0 flex-col px-5 pb-4">
+                            <div className="mb-4 flex min-w-0 items-center justify-between gap-3 border-b pb-4">
+                                <div className="flex min-w-0 items-center gap-3">
+                                    <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-current/10">
+                                        <FolderHeartIcon className="size-5" />
                                     </span>
-                                    <span>{collection.groupIds.length}</span>
-                                </Button>
-                                <Button
-                                    size="icon-sm"
-                                    variant="ghost"
-                                    disabled={busy}
-                                    onClick={() =>
-                                        setDeletingCollectionId(collection.id)
-                                    }
-                                >
-                                    <Trash2Icon />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                </aside>
-                <main className="min-h-0 overflow-auto p-4">
-                    {!selectedCollection ? (
-                        <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-                            {t('saved_group_favorites.empty_collections', {
-                                defaultValue: '新建分组后即可收藏群组。'
-                            })}
-                        </div>
-                    ) : selectedCollection.groupIds.length === 0 ? (
-                        <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-                            {t('saved_group_favorites.empty_group')}
-                        </div>
-                    ) : (
-                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                            {selectedCollection.groupIds.map((groupId) => {
-                                const profile = profiles.get(groupId);
-                                return (
-                                    <div
-                                        key={groupId}
-                                        className="bg-card overflow-hidden rounded-lg border"
+                                    <span className="truncate text-lg font-semibold">
+                                        {selectedCollection?.name ||
+                                            t(
+                                                'view.favorites.empty.no_group_selected'
+                                            )}
+                                    </span>
+                                </div>
+                                {selectedCollection ? (
+                                    <Badge
+                                        variant="secondary"
+                                        className="shrink-0 tabular-nums"
                                     >
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className="h-auto w-full justify-start gap-3 rounded-none p-3"
-                                            onClick={() =>
-                                                openGroupDialog({
-                                                    groupId,
-                                                    title: profile?.name
-                                                })
-                                            }
-                                        >
-                                            <span className="bg-muted flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
-                                                {profile?.iconUrl ? (
-                                                    <FadeInImage
-                                                        src={convertFileUrlToImageUrl(
-                                                            profile.iconUrl,
-                                                            128
-                                                        )}
-                                                        alt=""
-                                                        className="size-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <UsersIcon className="text-muted-foreground" />
-                                                )}
-                                            </span>
-                                            <span className="min-w-0 flex-1 text-left">
-                                                <span className="block truncate font-medium">
-                                                    {profile?.name || groupId}
-                                                </span>
-                                                <span className="text-muted-foreground block truncate text-xs">
-                                                    {groupId}
-                                                </span>
-                                            </span>
-                                        </Button>
-                                        <div className="border-t p-2 text-right">
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                disabled={busy}
-                                                onClick={() =>
-                                                    void mutate(() =>
-                                                        commands.appSavedGroupFavoriteRemove(
-                                                            { groupId }
-                                                        )
-                                                    )
-                                                }
-                                            >
-                                                <Trash2Icon />
-                                                {t(
-                                                    'saved_group_favorites.remove',
-                                                    {
-                                                        defaultValue: '取消收藏'
-                                                    }
-                                                )}
-                                            </Button>
-                                        </div>
+                                        <HeartIcon data-icon="inline-start" />
+                                        {selectedCollection.groupIds.length}
+                                    </Badge>
+                                ) : null}
+                            </div>
+                            <div className="min-h-0 min-w-0 flex-1 overflow-auto pr-1">
+                                {loading && !snapshot.collections.length ? (
+                                    <EmptyState
+                                        variant="panel"
+                                        description={t(
+                                            'view.favorite.loading.loading_favorites_baseline'
+                                        )}
+                                    />
+                                ) : !selectedCollection ? (
+                                    <EmptyState
+                                        variant="panel"
+                                        icon={FolderHeartIcon}
+                                        title={t(
+                                            'saved_group_favorites.empty_collections'
+                                        )}
+                                        description={t(
+                                            'saved_group_favorites.description'
+                                        )}
+                                    />
+                                ) : !visibleGroupIds.length ? (
+                                    <EmptyState
+                                        variant="panel"
+                                        icon={UsersIcon}
+                                        title={
+                                            searchQuery.trim()
+                                                ? t(
+                                                      'common.no_matching_records'
+                                                  )
+                                                : t(
+                                                      'saved_group_favorites.empty_group'
+                                                  )
+                                        }
+                                        description={
+                                            searchQuery.trim()
+                                                ? t(
+                                                      'view.favorite.label.try_a_different_search_term'
+                                                  )
+                                                : undefined
+                                        }
+                                    />
+                                ) : (
+                                    <div className="grid [grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-3">
+                                        {visibleGroupIds.map((groupId) => (
+                                            <SavedGroupFavoriteCard
+                                                key={groupId}
+                                                busy={busy}
+                                                groupId={groupId}
+                                                profile={profiles.get(groupId)}
+                                                onRemove={removeFavorite}
+                                            />
+                                        ))}
                                     </div>
-                                );
-                            })}
+                                )}
+                            </div>
                         </div>
-                    )}
-                </main>
+                    </ResizablePanel>
+                </ResizablePanelGroup>
             </div>
+
             <AlertDialog
                 open={Boolean(deletingCollection)}
                 onOpenChange={(open) => {
-                    if (!open) setDeletingCollectionId('');
+                    if (!open) {
+                        setDeletingCollectionId('');
+                    }
                 }}
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            {t('saved_group_favorites.delete_title', {
-                                defaultValue: '删除这个收藏分组？'
-                            })}
+                            {t('saved_group_favorites.delete_title')}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('saved_group_favorites.delete_description', {
-                                defaultValue:
-                                    '删除“{name}”会同时取消其中 {count} 个群组的收藏。',
                                 name: deletingCollection?.name,
                                 count: deletingCollection?.groupIds.length || 0
                             })}
@@ -318,7 +446,9 @@ export function SavedGroupFavoritesPage() {
                         <AlertDialogAction
                             disabled={busy}
                             onClick={() => {
-                                if (!deletingCollection) return;
+                                if (!deletingCollection) {
+                                    return;
+                                }
                                 void mutate(() =>
                                     commands.appSavedGroupCollectionDelete({
                                         collectionId: deletingCollection.id

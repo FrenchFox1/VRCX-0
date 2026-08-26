@@ -352,6 +352,76 @@ fn group_instance_favorites_use_group_membership_not_friend_membership() {
 }
 
 #[test]
+fn saved_group_instance_scan_seeds_then_delivers_the_new_parsed_location() {
+    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
+        "version": 1,
+        "desktop": {
+            "types": {
+                "group.instanceOpened": {
+                    "scope": "selectedFavorites",
+                    "favoriteGroupKeys": ["group:collection-a"]
+                }
+            }
+        }
+    })));
+    runtime.set_group_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+        "group:collection-a",
+        ["grp_saved"].as_slice(),
+    )]));
+    let sink = RecordingSink::default();
+    runtime.set_sink(sink.clone());
+    runtime.set_delivery_armed(true);
+    let fetched_at = chrono::Utc::now().to_rfc3339();
+    let existing: vrcx_0_core::json::RawJson = json!({
+        "location": "wrld_test:existing~group(grp_saved)~groupAccessType(plus)",
+        "group": { "id": "grp_saved", "name": "Test Group" },
+        "world": { "name": "Test World" }
+    })
+    .into();
+
+    assert!(runtime
+        .ingest_group_instance_scan(
+            "usr_owner\u{1f}https://api.example.test\u{1f}7",
+            "grp_saved",
+            &fetched_at,
+            std::slice::from_ref(&existing),
+        )
+        .is_empty());
+    assert!(sink.deliveries.lock().unwrap().is_empty());
+
+    let entries = runtime.ingest_group_instance_scan(
+        "usr_owner\u{1f}https://api.example.test\u{1f}7",
+        "grp_saved",
+        &fetched_at,
+        &[
+            existing,
+            json!({
+                "location": "wrld_test:new~group(grp_saved)~groupAccessType(plus)",
+                "group": { "id": "grp_saved", "name": "Test Group" },
+                "world": { "name": "Test World" }
+            })
+            .into(),
+        ],
+    );
+
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].payload["groupId"], json!("grp_saved"));
+    assert_eq!(entries[0].payload["count"], json!(1));
+    assert_eq!(entries[0].content.title.source_text(), "Test Group");
+    assert_eq!(
+        entries[0].content.body.source_text(),
+        "Created a new instance: Test World groupPlus(Test Group)"
+    );
+    let deliveries = sink.deliveries.lock().unwrap();
+    assert_eq!(deliveries.len(), 1);
+    assert!(deliveries[0].desktop);
+    assert!(!deliveries[0].vr);
+    assert!(!deliveries[0].hmd);
+    assert!(!deliveries[0].webhook);
+    assert!(!deliveries[0].tts);
+}
+
+#[test]
 fn legacy_category_filters_normalize_to_type_rules() {
     let filters = OverlayActivityFilters::from_json(json!({
         "version": 1,

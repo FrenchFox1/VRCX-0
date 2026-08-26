@@ -210,6 +210,125 @@ mod tests {
     }
 
     #[test]
+    fn adding_a_saved_group_keeps_existing_group_baselines() {
+        let mut filters = OverlayActivityFilters::default();
+        filters.wrist.types.insert(
+            "group.instanceOpened".into(),
+            OverlayActivityRule {
+                scope: OverlayActivityScope::AllFavorites,
+                favorite_group_keys: OverlayActivityFavoriteGroupKeys::All,
+            },
+        );
+        let runtime = OverlayActivityRuntime::with_filters(filters);
+        runtime.set_group_favorite_groups(super::super::OverlayFavoriteGroups::from_map(
+            [("group:collection".into(), vec!["grp_test".into()])].into(),
+        ));
+        assert!(runtime
+            .ingest_group_instance_scan(
+                "scope",
+                "grp_test",
+                &Utc::now().to_rfc3339(),
+                &[instance("one")],
+            )
+            .is_empty());
+
+        runtime.set_group_favorite_groups(super::super::OverlayFavoriteGroups::from_map(
+            [(
+                "group:collection".into(),
+                vec!["grp_test".into(), "grp_new".into()],
+            )]
+            .into(),
+        ));
+
+        assert_eq!(
+            runtime
+                .ingest_group_instance_scan(
+                    "scope",
+                    "grp_test",
+                    &Utc::now().to_rfc3339(),
+                    &[instance("one"), instance("two")],
+                )
+                .len(),
+            1
+        );
+        assert!(runtime
+            .ingest_group_instance_scan(
+                "scope",
+                "grp_new",
+                &Utc::now().to_rfc3339(),
+                &[instance_for_group("grp_new", "existing")],
+            )
+            .is_empty());
+    }
+
+    #[test]
+    fn scope_changes_retain_only_groups_that_remain_watched() {
+        let mut filters = OverlayActivityFilters::default();
+        filters.wrist.types.insert(
+            "group.instanceOpened".into(),
+            OverlayActivityRule {
+                scope: OverlayActivityScope::SelectedFavorites,
+                favorite_group_keys: OverlayActivityFavoriteGroupKeys::Selected(vec![
+                    "group:collection-a".into(),
+                ]),
+            },
+        );
+        let runtime = OverlayActivityRuntime::with_filters(filters.clone());
+        runtime.set_group_favorite_groups(super::super::OverlayFavoriteGroups::from_map(
+            [
+                ("group:collection-a".into(), vec!["grp_one".into()]),
+                ("group:collection-b".into(), vec!["grp_two".into()]),
+            ]
+            .into(),
+        ));
+        for group_id in ["grp_one", "grp_two"] {
+            assert!(runtime
+                .ingest_group_instance_scan(
+                    "scope",
+                    group_id,
+                    &Utc::now().to_rfc3339(),
+                    &[instance_for_group(group_id, "existing")],
+                )
+                .is_empty());
+        }
+
+        filters.wrist.types.insert(
+            "group.instanceOpened".into(),
+            OverlayActivityRule {
+                scope: OverlayActivityScope::AllFavorites,
+                favorite_group_keys: OverlayActivityFavoriteGroupKeys::All,
+            },
+        );
+        runtime.set_filters(filters);
+
+        assert_eq!(
+            runtime
+                .ingest_group_instance_scan(
+                    "scope",
+                    "grp_one",
+                    &Utc::now().to_rfc3339(),
+                    &[
+                        instance_for_group("grp_one", "existing"),
+                        instance_for_group("grp_one", "new"),
+                    ],
+                )
+                .len(),
+            1
+        );
+        assert!(runtime
+            .ingest_group_instance_scan(
+                "scope",
+                "grp_two",
+                &Utc::now().to_rfc3339(),
+                &[
+                    instance_for_group("grp_two", "existing"),
+                    instance_for_group("grp_two", "new"),
+                ],
+            )
+            .is_empty());
+    }
+
+    #[test]
     fn player_count_changes_do_not_create_new_instance_events() {
         let runtime = OverlayActivityRuntime::new();
         assert!(runtime

@@ -6061,7 +6061,7 @@
         "error_unsupported": "A tradução não está configurada"
     },
     "saved_group_favorites": {
-        "title": "Grupos salvos",
+        "title": "Grupos Favoritos",
         "description": "Salve grupos usados com frequência em coleções locais e use-os para receber avisos de novas instâncias.",
         "new_collection": "Nova coleção",
         "empty_collections": "Crie uma coleção para começar a salvar grupos.",
@@ -6071,7 +6071,7 @@
         "choose_collection": "Salvar na coleção",
         "remove": "Remover dos grupos salvos",
         "toggle": "Salvar grupo",
-        "sidebar_saved": "Grupos salvos",
+        "sidebar_saved": "Grupos Favoritos",
         "sidebar_none": "Nenhum grupo salvo ainda",
         "sidebar_other": "Outros grupos ativos",
         "sidebar_failed": "Não foi possível carregar as instâncias de grupos",

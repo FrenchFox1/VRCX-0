@@ -6064,7 +6064,7 @@
         "error_unsupported": "Translation is not configured"
     },
     "saved_group_favorites": {
-        "title": "Saved Groups",
+        "title": "Favorite Groups",
         "description": "Save frequently used groups in local collections and use them for new-instance notifications.",
         "new_collection": "New collection",
         "empty_collections": "Create a collection to start saving groups.",
@@ -6074,7 +6074,7 @@
         "choose_collection": "Save to collection",
         "remove": "Remove from saved groups",
         "toggle": "Save group",
-        "sidebar_saved": "Saved groups",
+        "sidebar_saved": "Favorite Groups",
         "sidebar_none": "No saved groups yet",
         "sidebar_other": "Other active groups",
         "sidebar_failed": "Failed to load group instances",

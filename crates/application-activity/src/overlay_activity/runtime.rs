@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -88,6 +88,41 @@ impl OverlayFavoriteGroups {
             groups,
             all_favorites,
         }
+    }
+
+    pub fn group_instance_notification_group_ids(
+        &self,
+        filters: &OverlayActivityFilters,
+    ) -> Vec<String> {
+        let mut group_ids = BTreeSet::new();
+        for surface in [
+            OverlayActivitySurface::Wrist,
+            OverlayActivitySurface::Desktop,
+            OverlayActivitySurface::Vr,
+            OverlayActivitySurface::Hmd,
+            OverlayActivitySurface::Webhook,
+            OverlayActivitySurface::Tts,
+        ] {
+            let rule = filters.rule_for(surface, "group.instanceOpened");
+            match rule.scope {
+                OverlayActivityScope::AllFavorites => {
+                    group_ids.extend(self.all_favorites.iter().cloned());
+                }
+                OverlayActivityScope::SelectedFavorites => {
+                    if let OverlayActivityFavoriteGroupKeys::Selected(keys) =
+                        rule.favorite_group_keys
+                    {
+                        for key in keys {
+                            if let Some(selected) = self.groups.get(&normalize_id(&key)) {
+                                group_ids.extend(selected.iter().cloned());
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        group_ids.into_iter().collect()
     }
 
     fn contains_any(&self, subject_id: &str) -> bool {
@@ -192,9 +227,20 @@ impl OverlayActivityRuntime {
             if state.filters == filters {
                 return;
             }
+            let previous_group_ids = state
+                .group_favorite_groups
+                .group_instance_notification_group_ids(&state.filters)
+                .into_iter()
+                .collect::<HashSet<_>>();
+            let next_group_ids = state
+                .group_favorite_groups
+                .group_instance_notification_group_ids(&filters)
+                .into_iter()
+                .collect::<HashSet<_>>();
+            state.group_instance_baseline.retain(|group_id, _| {
+                previous_group_ids.contains(group_id) && next_group_ids.contains(group_id)
+            });
             state.filters = filters;
-            state.group_instance_scope_key.clear();
-            state.group_instance_baseline.clear();
             state.entries.clear();
             state.source_ids.clear();
             state.seen_order.clear();
@@ -224,9 +270,19 @@ impl OverlayActivityRuntime {
             if state.group_favorite_groups == favorite_groups {
                 return;
             }
+            let previous_group_ids = state
+                .group_favorite_groups
+                .group_instance_notification_group_ids(&state.filters)
+                .into_iter()
+                .collect::<HashSet<_>>();
+            let next_group_ids = favorite_groups
+                .group_instance_notification_group_ids(&state.filters)
+                .into_iter()
+                .collect::<HashSet<_>>();
+            state.group_instance_baseline.retain(|group_id, _| {
+                previous_group_ids.contains(group_id) && next_group_ids.contains(group_id)
+            });
             state.group_favorite_groups = favorite_groups;
-            state.group_instance_scope_key.clear();
-            state.group_instance_baseline.clear();
         }
     }
 
