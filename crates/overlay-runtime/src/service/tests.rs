@@ -289,7 +289,6 @@ fn surface_config(value: &str) -> OverlaySurfaceConfig {
             device_hint: "left-hand".to_string(),
         },
         activation_button: OverlayActivationButton::Grip,
-        interactive: false,
         force_visible: false,
     }
 }

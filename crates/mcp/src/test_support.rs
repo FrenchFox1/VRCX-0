@@ -581,7 +581,6 @@ fn test_runtime_with_database_and_event_bus(
         Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         Arc::new(NoopPrintCleanupInputSink),
         None,
-        None,
     )));
     let runtime = McpRuntime {
         realtime_runtime,

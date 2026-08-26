@@ -54,8 +54,8 @@ pub use legacy_migration::{
     DesktopLegacyMigrationRuntime, LegacyMigrationLifecycle, LegacyMigrationRequestMode,
 };
 pub use log_watcher::{
-    GameLogEvent, GameLogEventOrigin, GameLogEventSink, HostGameLogEventFanout,
-    HostInstanceRosterFanout, HostLogLocationSnapshotScanner, LogLocationSnapshot, LogWatcher,
+    GameLogEvent, GameLogEventOrigin, GameLogEventSink, HostInstanceRosterFanout,
+    HostLogLocationSnapshotScanner, LogLocationSnapshot, LogWatcher,
 };
 pub use media::DesktopMediaRuntime;
 pub use process_monitor::HostGameProcessMonitorActions;

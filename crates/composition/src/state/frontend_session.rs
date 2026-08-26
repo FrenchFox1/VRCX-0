@@ -30,9 +30,6 @@ impl RuntimeHostState {
         self.runtime_context
             .overlay_activity()
             .clear_runtime_state();
-        if let Some(extension) = &self.profile_extension {
-            extension.clear_profile_session();
-        }
         self.runtime_context.session.clear_realtime_context();
         if let Some((previous, _)) = cleared {
             self.runtime_context
@@ -73,9 +70,6 @@ impl RuntimeHostState {
                 self.runtime_context
                     .overlay_activity()
                     .clear_runtime_state();
-                if let Some(extension) = &self.profile_extension {
-                    extension.profile_session_scope_changed();
-                }
             }
             *current = next;
             current.clone()

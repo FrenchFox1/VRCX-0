@@ -93,15 +93,11 @@ pub fn app__memo_save_user(
     user_id: String,
     memo: String,
 ) -> Result<MemoSaveResult, AppError> {
-    let result = state
+    state
         .runtime_host()
         .local_data()
         .memo_save_user(user_id, memo)
-        .map_err(AppError::from)?;
-    state
-        .runtime_host()
-        .invalidate_friends_panel_note_memo_cache();
-    Ok(result)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

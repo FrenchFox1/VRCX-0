@@ -223,7 +223,6 @@ pub struct RealtimeHostRuntimeDeps {
     pub world_cache: Arc<WorldCache>,
     pub instance_dwell: Arc<InstanceDwellRegistry>,
     pub print_cleanup: Arc<dyn PrintCleanupInputSink>,
-    pub friend_note_change_sink: Option<Arc<dyn Fn() + Send + Sync>>,
     pub current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
 }
 
@@ -247,7 +246,6 @@ impl RealtimeHostRuntimeDeps {
         world_cache: Arc<WorldCache>,
         instance_dwell: Arc<InstanceDwellRegistry>,
         print_cleanup: Arc<dyn PrintCleanupInputSink>,
-        friend_note_change_sink: Option<Arc<dyn Fn() + Send + Sync>>,
         current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
     ) -> Self {
         Self {
@@ -268,7 +266,6 @@ impl RealtimeHostRuntimeDeps {
             world_cache,
             instance_dwell,
             print_cleanup,
-            friend_note_change_sink,
             current_user_snapshot_sink,
         }
     }

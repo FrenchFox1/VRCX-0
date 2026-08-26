@@ -245,8 +245,6 @@ fn desktop_idle_stop_still_cleans_up_profile_services() -> Result<()> {
     .finish(RuntimeHostComposition {
         local_game_context: Arc::new(UnavailableLocalGameContextSource),
         group_order_source: Arc::new(UnavailableGroupOrderSource),
-        friend_note_change_sink: None,
-        favorites_sink: None,
         friend_projection_observer: None,
         profile_extension: Some(extension.clone()),
     })?;

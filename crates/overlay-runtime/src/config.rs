@@ -27,7 +27,6 @@ pub const HMD_NOTIFICATION_POSITION_CONFIG_KEY: &str = "hmdNotificationPosition"
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 const DATE_TIME_HOUR12_CONFIG_KEY: &str = "dtHour12";
 const SHOW_INSTANCE_ID_IN_LOCATION_CONFIG_KEY: &str = "VRCX_showInstanceIdInLocation";
-pub(crate) const FRIENDS_PANEL_RUNTIME_ENABLED: bool = false;
 
 pub(super) fn load_runtime_config(config: &ConfigRepository) -> VrOverlayRuntimeConfig {
     let start_mode = config
@@ -93,8 +92,6 @@ pub(super) fn load_runtime_config(config: &ConfigRepository) -> VrOverlayRuntime
         .get_string(HMD_NOTIFICATION_POSITION_CONFIG_KEY, "bottom")
         .map(|value| HmdNotificationPosition::from_config(&value))
         .unwrap_or_default();
-    let panel_enabled = FRIENDS_PANEL_RUNTIME_ENABLED;
-    let panel_all_friends_includes_favorites = true;
     let locale = config
         .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
         .map(|value| OverlayLocale::from_config(&value))
@@ -111,8 +108,6 @@ pub(super) fn load_runtime_config(config: &ConfigRepository) -> VrOverlayRuntime
         backend,
         button,
         hand,
-        panel_enabled,
-        panel_all_friends_includes_favorites,
         hmd: HmdNotificationConfig {
             enabled: hmd_enabled,
             start_mode: hmd_start_mode,

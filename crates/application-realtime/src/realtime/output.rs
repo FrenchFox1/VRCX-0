@@ -15,7 +15,6 @@ pub struct RealtimeFriendOutput {
     pub persistence: RealtimePersistenceBatch,
     pub timer_action: PendingOfflineTimerAction,
     pub profile_refetch_user_ids: Vec<String>,
-    pub friend_note_changed: bool,
 }
 
 impl RealtimeFriendOutput {
@@ -33,7 +32,6 @@ impl RealtimeFriendOutput {
             persistence: RealtimePersistenceBatch::default(),
             timer_action: PendingOfflineTimerAction::None,
             profile_refetch_user_ids: Vec::new(),
-            friend_note_changed: false,
         }
     }
 }

@@ -137,7 +137,6 @@ mod tests {
             "persistence": persistence,
             "timer": timer_summary(&output.timer_action),
             "profileRefetchUserIds": output.profile_refetch_user_ids,
-            "friendNoteChanged": output.friend_note_changed,
         })
     }
 

@@ -12,8 +12,8 @@ use crate::realtime::{
 use super::persistence::{
     add_profile_diff_feed_entries, friend_log_upsert, friend_relationship_feed_entry,
     gps_feed_entry, is_online_state, is_private_location, meaningful_name, meaningful_record_name,
-    online_feed_entry, player_joining_feed_entry, trust_level_feed_entry, value_equal_for_diff,
-    FriendChangedProps, FriendRelationshipFeedKind, OfflineFeedPrevious,
+    online_feed_entry, player_joining_feed_entry, trust_level_feed_entry, FriendChangedProps,
+    FriendRelationshipFeedKind, OfflineFeedPrevious,
 };
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY};
 use super::utils::{first_owned, parse_location, EventTime, JsonExt};
@@ -170,7 +170,6 @@ fn apply_add(
         StateBucket::Offline.as_str(),
     );
     let already_friend = previous.is_some();
-    output.friend_note_changed |= patch_changes_note(&patch, previous.as_ref());
     apply_patch_to_state(
         state,
         output,
@@ -267,7 +266,6 @@ fn apply_update(
     if location_changed {
         normalize_friend_update_location_patch(&mut patch, previous.as_ref(), now);
     }
-    output.friend_note_changed |= changes.has("note");
     let state_bucket = if source.trusts_embedded_state() {
         resolve_state_bucket(
             content,
@@ -341,7 +339,6 @@ fn apply_online(
         StateBucket::Online.as_str(),
     );
     normalize_patch_trust(&mut patch, previous_record.as_ref());
-    output.friend_note_changed |= patch_changes_note(&patch, previous_record.as_ref());
     record_profile_identity_change(
         output,
         &user_id,
@@ -535,7 +532,6 @@ fn apply_location(
             patch_object.remove("pendingOffline");
         }
     }
-    output.friend_note_changed |= patch_changes_note(&patch, previous_record.as_ref());
     record_profile_identity_change(
         output,
         &user_id,
@@ -707,16 +703,6 @@ fn record_profile_identity_change(
     }
     output.persistence.friend_log_upserts.push(upsert);
     output.projection.friend_log_changed = true;
-}
-
-fn patch_changes_note(patch: &Value, previous: Option<&FriendRecord>) -> bool {
-    let Some(next) = patch.get("note") else {
-        return false;
-    };
-    let previous = previous
-        .map(|previous| record_value(previous, "note"))
-        .unwrap_or_else(|| Value::String(String::new()));
-    !value_equal_for_diff(next, &previous)
 }
 
 fn add_gps_feed_entry_if_not_repeated(

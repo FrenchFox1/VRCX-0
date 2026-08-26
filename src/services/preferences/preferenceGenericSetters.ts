@@ -68,18 +68,6 @@ import type {
     StringConfigPreferenceKey
 } from './preferencesTypes';
 
-type HiddenVrPanelBoolConfigKey =
-    | 'vrOverlayPanelEnabled'
-    | 'vrOverlayPanelAllFriendsIncludesFavorites';
-type BoolConfigPreferenceInputKey =
-    | BoolConfigPreferenceKey
-    | HiddenVrPanelBoolConfigKey;
-
-const HIDDEN_VR_PANEL_BOOL_CONFIG_KEYS = new Set<string>([
-    'vrOverlayPanelEnabled',
-    'vrOverlayPanelAllFriendsIncludesFavorites'
-]);
-
 export async function setAppLanguagePreference(language: string | null) {
     const nextLanguage = normalizeLanguageCode(language);
     useShellStore.getState().setLocale(nextLanguage);
@@ -309,13 +297,9 @@ export async function setSystemWindowFramePreference(value: boolean) {
 }
 
 export async function setBoolConfigPreference(
-    key: BoolConfigPreferenceInputKey,
+    key: BoolConfigPreferenceKey,
     value: boolean
 ) {
-    if (isHiddenVrPanelBoolConfigKey(key)) {
-        patchPreferenceValue(key, false);
-        return;
-    }
     const enabled = value;
     await configRepository.setBool(key, enabled);
     const normalizedKey = normalizePreferenceKey(key);
@@ -374,12 +358,6 @@ export async function setAvatarFeedPersistenceDisabledPreference(
     await commands.appAvatarFeedPersistenceSetDisabled(disabled);
     patchPreferenceValue('avatarFeedPersistenceDisabled', disabled);
     publishPreferenceChanged('avatarFeedPersistenceDisabled', disabled);
-}
-
-function isHiddenVrPanelBoolConfigKey(
-    key: BoolConfigPreferenceInputKey
-): key is HiddenVrPanelBoolConfigKey {
-    return HIDDEN_VR_PANEL_BOOL_CONFIG_KEYS.has(key);
 }
 
 export async function setStringConfigPreference(

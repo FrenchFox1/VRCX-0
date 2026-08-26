@@ -500,8 +500,6 @@ export async function loadPreferenceSnapshot() {
         webhookUrl: String(webhookUrl || ''),
         webhookFormat: webhookFormat === 'discord' ? 'discord' : 'generic',
         webhookFields: String(webhookFields || DEFAULT_GENERIC_WEBHOOK_FIELDS),
-        vrOverlayPanelEnabled: false,
-        vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: Boolean(wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             wristOverlayStartMode
