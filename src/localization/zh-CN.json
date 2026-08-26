@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "已收藏 Print 占满列表，自动删除无法降到配置上限以下。当前剩余 {remaining} 个 Print。"
                 }
             },
+            "gallery_selection": {
+                "count": "已选 {count} 项",
+                "select_all": "全选",
+                "deselect_all": "取消全选",
+                "confirm_delete_title": "删除选中的 {count} 项？",
+                "confirm_delete_locked": "其中 {count} 项已锁定，将被跳过。此操作无法撤销。",
+                "deleting_progress": "正在删除 {done}/{total}",
+                "deleted_toast": "已删除 {count} 项。",
+                "delete_partial_toast": "已删除 {succeeded} 项，{failed} 项失败。{reason}",
+                "delete_cancelled_toast": "已中止，已删除 {count} 项。",
+                "delete_unlocked": "删除 {count} 项",
+                "delete_locked": "选中的项目均已锁定。",
+                "delete_locked_favorite": "已收藏，取消收藏后才能删除",
+                "delete_locked_in_use": "使用中，无法删除",
+                "favorited_toast": "已收藏 {count} 个 Print。",
+                "unfavorited_toast": "已取消收藏 {count} 个 Print。",
+                "favorite_skipped_toast": "有 {count} 个 Print 未能收藏，上限为 {max} 个。"
+            },
+            "prints_filter": {
+                "all": "全部",
+                "favorites": "已收藏",
+                "others": "未收藏"
+            },
             "llm_endpoints": {
                 "title": "LLM 端点",
                 "description": "供 Social AI 和翻译共用的 OpenAI 兼容连接。",

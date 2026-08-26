@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "由於已收藏的拍立得已占滿清單，自動刪除無法將拍立得數量降至設定的上限。目前仍有 {remaining} 張拍立得。"
                 }
             },
+            "gallery_selection": {
+                "count": "已選 {count} 項",
+                "select_all": "全選",
+                "deselect_all": "取消全選",
+                "confirm_delete_title": "刪除選取的 {count} 項？",
+                "confirm_delete_locked": "其中 {count} 項已鎖定，將略過。此操作無法復原。",
+                "deleting_progress": "正在刪除 {done}/{total}",
+                "deleted_toast": "已刪除 {count} 項。",
+                "delete_partial_toast": "已刪除 {succeeded} 項，{failed} 項失敗。{reason}",
+                "delete_cancelled_toast": "已中止，已刪除 {count} 項。",
+                "delete_unlocked": "刪除 {count} 項",
+                "delete_locked": "選取的項目皆已鎖定。",
+                "delete_locked_favorite": "已收藏，取消收藏後才能刪除",
+                "delete_locked_in_use": "使用中，無法刪除",
+                "favorited_toast": "已收藏 {count} 張拍立得。",
+                "unfavorited_toast": "已取消收藏 {count} 張拍立得。",
+                "favorite_skipped_toast": "有 {count} 張拍立得未能收藏，上限為 {max} 張。"
+            },
+            "prints_filter": {
+                "all": "全部",
+                "favorites": "已收藏",
+                "others": "未收藏"
+            },
             "llm_endpoints": {
                 "title": "LLM 端點",
                 "description": "適用於社交 AI 和翻譯的共享 OpenAI 相容連線。",

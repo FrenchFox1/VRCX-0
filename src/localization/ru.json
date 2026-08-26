@@ -2028,6 +2028,29 @@
                     "too_many_favorites_event": "Автоудаление не смогло опуститься ниже заданного лимита, потому что список заполнен избранными принтами. Осталось принтов: {remaining}."
                 }
             },
+            "gallery_selection": {
+                "count": "Выбрано: {count}",
+                "select_all": "Выбрать все",
+                "deselect_all": "Снять выделение",
+                "confirm_delete_title": "Удалить выбранное ({count})?",
+                "confirm_delete_locked": "Заблокированные элементы будут пропущены: {count}. Это действие нельзя отменить.",
+                "deleting_progress": "Удаление {done}/{total}",
+                "deleted_toast": "Удалено элементов: {count}.",
+                "delete_partial_toast": "Удалено: {succeeded}, не удалось: {failed}. {reason}",
+                "delete_cancelled_toast": "Отменено. Удалено элементов: {count}.",
+                "delete_unlocked": "Удалить {count}",
+                "delete_locked": "Все выбранные элементы заблокированы.",
+                "delete_locked_favorite": "В избранном - сначала уберите из избранного",
+                "delete_locked_in_use": "Используется - удалить нельзя",
+                "favorited_toast": "Добавлено в избранное принтов: {count}.",
+                "unfavorited_toast": "Убрано из избранного принтов: {count}.",
+                "favorite_skipped_toast": "Не удалось добавить в избранное: {count}. Лимит - {max}."
+            },
+            "prints_filter": {
+                "all": "Все",
+                "favorites": "Избранные",
+                "others": "Не в избранном"
+            },
             "llm_endpoints": {
                 "title": "LLM Эндпоинты",
                 "description": "Общие OpenAI-совместимые подключения для Social AI и перевода.",

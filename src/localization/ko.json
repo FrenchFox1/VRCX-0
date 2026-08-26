@@ -2004,6 +2004,29 @@
                     "too_many_favorites_event": "즐겨찾기 인쇄물이 목록을 채우고 있어 자동 삭제가 설정된 제한 이하로 줄이지 못했습니다. {remaining}개가 남아 있습니다."
                 }
             },
+            "gallery_selection": {
+                "count": "{count}개 선택됨",
+                "select_all": "모두 선택",
+                "deselect_all": "선택 해제",
+                "confirm_delete_title": "{count}개 항목을 삭제할까요?",
+                "confirm_delete_locked": "잠긴 항목 {count}개는 건너뜁니다. 이 작업은 되돌릴 수 없습니다.",
+                "deleting_progress": "삭제 중 {done}/{total}",
+                "deleted_toast": "{count}개 항목을 삭제했습니다.",
+                "delete_partial_toast": "{succeeded}개를 삭제했고 {failed}개는 실패했습니다. {reason}",
+                "delete_cancelled_toast": "중단했습니다. {count}개를 삭제했습니다.",
+                "delete_unlocked": "{count}개 삭제",
+                "delete_locked": "선택한 항목이 모두 잠겨 있습니다.",
+                "delete_locked_favorite": "즐겨찾기를 해제해야 삭제할 수 있습니다",
+                "delete_locked_in_use": "사용 중이라 삭제할 수 없습니다",
+                "favorited_toast": "인쇄물 {count}개를 즐겨찾기에 추가했습니다.",
+                "unfavorited_toast": "인쇄물 {count}개의 즐겨찾기를 해제했습니다.",
+                "favorite_skipped_toast": "{count}개는 즐겨찾기에 추가하지 못했습니다. 제한은 {max}개입니다."
+            },
+            "prints_filter": {
+                "all": "전체",
+                "favorites": "즐겨찾기",
+                "others": "즐겨찾기 아님"
+            },
             "llm_endpoints": {
                 "title": "LLM 엔드포인트",
                 "description": "Social AI 및 번역에서 공유하는 OpenAI 호환 연결입니다.",

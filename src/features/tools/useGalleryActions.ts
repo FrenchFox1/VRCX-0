@@ -11,12 +11,9 @@ import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import { isRuntimeAuthTarget } from './galleryAuthTarget';
 import { FILE_TABS, UPLOAD_ASPECT_RATIOS } from './galleryConstants';
-import type {
-    GalleryActionDeps,
-    GalleryAuthTarget,
-    GalleryControllerDeps
-} from './galleryTypes';
+import type { GalleryActionDeps, GalleryControllerDeps } from './galleryTypes';
 import {
     parseEmojiUploadSettings,
     validateImageFile
@@ -36,22 +33,6 @@ function getLocalTimestampString() {
     const date = new Date();
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     return date.toISOString().slice(0, 19);
-}
-
-function getRuntimeAuthTarget() {
-    const runtimeAuth = useRuntimeStore.getState().auth;
-    return {
-        userId: runtimeAuth.currentUserId || '',
-        endpoint: runtimeAuth.currentUserEndpoint || ''
-    };
-}
-
-function isRuntimeAuthTarget(authTarget: GalleryAuthTarget) {
-    const runtimeAuth = getRuntimeAuthTarget();
-    return (
-        runtimeAuth.userId === authTarget.userId &&
-        runtimeAuth.endpoint === authTarget.endpoint
-    );
 }
 
 export function useGalleryActions(deps: GalleryControllerDeps) {

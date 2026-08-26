@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "La autoeliminación no pudo bajar del límite configurado porque los prints favoritos están llenando la lista. Quedan {remaining} print(s)."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} seleccionado(s)",
+                "select_all": "Seleccionar todo",
+                "deselect_all": "Deseleccionar todo",
+                "confirm_delete_title": "¿Eliminar {count} elemento(s)?",
+                "confirm_delete_locked": "Se omitirán {count} elemento(s) bloqueado(s). Esta acción no se puede deshacer.",
+                "deleting_progress": "Eliminando {done}/{total}",
+                "deleted_toast": "Se eliminaron {count} elemento(s).",
+                "delete_partial_toast": "Se eliminaron {succeeded} elemento(s); {failed} fallaron. {reason}",
+                "delete_cancelled_toast": "Cancelado. Se eliminaron {count} elemento(s).",
+                "delete_unlocked": "Eliminar {count}",
+                "delete_locked": "Todos los elementos seleccionados están bloqueados.",
+                "delete_locked_favorite": "Favorito: quítalo de favoritos para eliminar",
+                "delete_locked_in_use": "En uso: no se puede eliminar",
+                "favorited_toast": "{count} print(s) marcados como favoritos.",
+                "unfavorited_toast": "{count} print(s) eliminados de favoritos.",
+                "favorite_skipped_toast": "No se pudieron marcar {count} print(s) como favoritos. El límite es {max}."
+            },
+            "prints_filter": {
+                "all": "Todos",
+                "favorites": "Favoritos",
+                "others": "No favoritos"
+            },
             "llm_endpoints": {
                 "title": "Endpoints LLM",
                 "description": "Conexiones compartidas compatibles con OpenAI para Social AI y la traducción.",

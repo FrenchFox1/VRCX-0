@@ -158,6 +158,16 @@ export type GalleryInventoryActionDeps = Pick<
 
 export type GalleryProfileField = 'profilePicOverride' | 'userIcon';
 
+export type GalleryBulkCommands = {
+    bulkRunning: boolean;
+    onBulkDelete(input: {
+        tab: GalleryTab;
+        assetIds: string[];
+        lockedCount: number;
+    }): void;
+    onBulkSetFavorite(input: { printIds: string[]; favorite: boolean }): void;
+};
+
 export type GalleryCommands = {
     onActiveTabChange(value: string): void;
     onBeginUpload(tab: GalleryUploadTarget): void;
@@ -187,6 +197,7 @@ export type GalleryModel = {
 
 export type GalleryFileTabState = Pick<
     GalleryModel,
+    | 'activeTab'
     | 'assets'
     | 'currentUserId'
     | 'gridDensityConfig'
@@ -204,4 +215,5 @@ export type GalleryFileTabState = Pick<
         | 'onPreview'
         | 'onRefresh'
         | 'onSetProfileField'
-    >;
+    > &
+    GalleryBulkCommands;

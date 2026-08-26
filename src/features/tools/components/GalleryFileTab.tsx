@@ -1,12 +1,16 @@
 import { RefreshCwIcon, UploadIcon, XIcon } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useTileSelectionState } from '@/lib/useTileSelectionState';
+import { extractFileId } from '@/shared/utils/fileUtils';
 import { Button } from '@/ui/shadcn/button';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
 import type { FileAssetTab, FileTabDefinition } from '../galleryConstants';
 import type { GalleryFileTabState } from '../galleryTypes';
 import { GalleryFileCard } from './GalleryFileCard';
+import { GallerySelectionBar } from './GallerySelectionBar';
 import { EmptyState, LoadingState } from './GalleryViewParts';
 import { MediaLibraryToolbar } from './MediaLibraryToolbar';
 
@@ -20,7 +24,9 @@ export function GalleryFileTab({
     fileTab: GalleryFileTabState;
 }) {
     const {
+        activeTab,
         assets,
+        bulkRunning,
         loadingByTab,
         uploadingTab,
         mutatingKey,
@@ -30,6 +36,7 @@ export function GalleryFileTab({
         gridDensityConfig,
         onRefresh,
         onBeginUpload,
+        onBulkDelete,
         onClearProfileField,
         onPreview,
         onSetProfileField,
@@ -38,13 +45,30 @@ export function GalleryFileTab({
     const files = assets[tab];
     const loading = loadingByTab[tab];
     const { t } = useTranslation();
+    const activeFileId =
+        tab === 'gallery'
+            ? extractFileId(profilePicOverride)
+            : extractFileId(userIcon);
+    const fileIds = useMemo(() => files.map((file) => file.id), [files]);
+    const selection = useTileSelectionState({
+        keys: fileIds,
+        resetToken: activeTab
+    });
+    const selectedFileIds = useMemo(
+        () => fileIds.filter((fileId) => selection.selectedKeysSet.has(fileId)),
+        [fileIds, selection.selectedKeysSet]
+    );
+    const deletableFileIds = useMemo(
+        () => selectedFileIds.filter((fileId) => fileId !== activeFileId),
+        [activeFileId, selectedFileIds]
+    );
 
     return (
         <TabsContent
             value={tab}
             className="mt-2 flex min-h-0 flex-1 data-hidden:hidden"
         >
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
                 <MediaLibraryToolbar
                     actions={
                         <>
@@ -119,6 +143,15 @@ export function GalleryFileTab({
                                     userIcon={userIcon}
                                     mutatingKey={mutatingKey}
                                     currentUserId={currentUserId}
+                                    selected={selection.selectedKeysSet.has(
+                                        file.id
+                                    )}
+                                    selectionActive={selection.hasSelection}
+                                    onToggleSelect={(checked, shift) =>
+                                        selection.selectItem(file.id, checked, {
+                                            shift
+                                        })
+                                    }
                                     onPreview={onPreview}
                                     onSetProfileField={onSetProfileField}
                                     onDeleteFile={onDeleteFile}
@@ -144,6 +177,22 @@ export function GalleryFileTab({
                         </EmptyState>
                     )}
                 </div>
+                <GallerySelectionBar
+                    selectedCount={selectedFileIds.length}
+                    deletableCount={deletableFileIds.length}
+                    isAllSelected={selection.isAllSelected}
+                    actionsDisabled={bulkRunning}
+                    onSelectAll={selection.toggleSelectAll}
+                    onClearSelection={selection.clearSelection}
+                    onDelete={() =>
+                        onBulkDelete({
+                            tab,
+                            assetIds: deletableFileIds,
+                            lockedCount:
+                                selectedFileIds.length - deletableFileIds.length
+                        })
+                    }
+                />
             </div>
         </TabsContent>
     );

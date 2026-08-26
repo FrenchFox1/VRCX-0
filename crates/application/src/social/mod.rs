@@ -125,9 +125,10 @@ pub use notification_sync::{
     NotificationSyncPort, NotificationSyncSource, NotificationSyncWrite,
 };
 pub use prints::{
-    favorite_state, is_print_created_content_refresh, run_print_auto_cleanup, set_print_favorite,
-    CleanupWarningKind, PrintAutoCleanupEvent, PrintCleanupDeps, PrintCleanupQueue,
-    PrintCleanupQueueSink, PrintCleanupTrigger, PrintFavoriteState, PrintFavoritesStore,
+    ensure_print_deletable, favorite_state, is_print_created_content_refresh,
+    run_print_auto_cleanup, set_print_favorite, set_print_favorites, CleanupWarningKind,
+    PrintAutoCleanupEvent, PrintCleanupDeps, PrintCleanupQueue, PrintCleanupQueueSink,
+    PrintCleanupTrigger, PrintFavoriteBulkResult, PrintFavoriteState, PrintFavoritesStore,
     PrintRemote, PrintRemoteFuture,
 };
 pub use quick_search_catalog::{

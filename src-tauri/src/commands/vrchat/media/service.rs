@@ -17,7 +17,7 @@ use vrcx_0_application::media::{
     InventoryItemsCollectInput, InventoryItemsCollectOutput, LegacyEntityImageKind,
     LegacyEntityImageUploadInput,
 };
-use vrcx_0_application::social::PrintFavoriteState;
+use vrcx_0_application::social::{PrintFavoriteBulkResult, PrintFavoriteState};
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
@@ -27,7 +27,7 @@ use super::types::{
     VrchatMediaInventoryTemplateInput, VrchatMediaLegacyImageUploadInput, VrchatMediaPrintIdInput,
     VrchatMediaPrintUploadInput, VrchatMediaPrintsInput, VrchatMediaProfileDecorationEquipInput,
     VrchatMediaProfileDecorationUnequipInput, VrchatMediaRewardRedeemInput,
-    VrchatMediaUserInventoryItemInput, VrchatPrintFavoriteSetInput,
+    VrchatMediaUserInventoryItemInput, VrchatPrintFavoriteSetInput, VrchatPrintFavoritesSetInput,
 };
 
 async fn execute_media_api(
@@ -299,6 +299,10 @@ pub async fn app__vrchat_media_print_delete(
     input: VrchatMediaPrintIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let print_id = input.print_id.clone();
+    state
+        .runtime_host()
+        .media()
+        .ensure_print_deletable(&print_id)?;
     execute_media_api(
         state,
         "app__vrchat_media_print_delete",
@@ -326,6 +330,18 @@ pub async fn app__vrchat_prints_favorite_set(
         .runtime_host()
         .media()
         .set_print_favorite(&input.print_id, input.favorite)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_prints_favorites_set(
+    state: State<'_, AppState>,
+    input: VrchatPrintFavoritesSetInput,
+) -> Result<PrintFavoriteBulkResult, AppError> {
+    Ok(state
+        .runtime_host()
+        .media()
+        .set_print_favorites(&input.print_ids, input.favorite)?)
 }
 
 #[tauri::command]

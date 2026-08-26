@@ -2028,6 +2028,29 @@
                     "too_many_favorites_event": "Automatické mazání se nepodařilo dostat pod nastavený limit, protože seznam zaplňují oblíbené tisky. Zbývá {remaining} tisků."
                 }
             },
+            "gallery_selection": {
+                "count": "Vybráno: {count}",
+                "select_all": "Vybrat vše",
+                "deselect_all": "Zrušit výběr",
+                "confirm_delete_title": "Smazat {count} položek?",
+                "confirm_delete_locked": "{count} zamčených položek bude přeskočeno. Tuto akci nelze vrátit zpět.",
+                "deleting_progress": "Mazání {done}/{total}",
+                "deleted_toast": "Smazáno {count} položek.",
+                "delete_partial_toast": "Smazáno {succeeded} položek, {failed} se nezdařilo. {reason}",
+                "delete_cancelled_toast": "Zrušeno. Smazáno {count} položek.",
+                "delete_unlocked": "Smazat {count}",
+                "delete_locked": "Všechny vybrané položky jsou zamčené.",
+                "delete_locked_favorite": "V oblíbených - nejprve odeberte z oblíbených",
+                "delete_locked_in_use": "Používá se - nelze smazat",
+                "favorited_toast": "{count} tisků přidáno do oblíbených.",
+                "unfavorited_toast": "{count} tisků odebráno z oblíbených.",
+                "favorite_skipped_toast": "{count} tisků se nepodařilo přidat do oblíbených. Limit je {max}."
+            },
+            "prints_filter": {
+                "all": "Vše",
+                "favorites": "Oblíbené",
+                "others": "Neoblíbené"
+            },
             "llm_endpoints": {
                 "title": "LLM endpointy",
                 "description": "Sdílená připojení kompatibilní s OpenAI pro Social AI a překlad.",

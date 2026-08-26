@@ -7,5 +7,6 @@ pub use cleanup::{
     PrintRemoteFuture,
 };
 pub use favorites::{
-    favorite_state, set_print_favorite, CleanupWarningKind, PrintFavoriteState, PrintFavoritesStore,
+    ensure_print_deletable, favorite_state, set_print_favorite, set_print_favorites,
+    CleanupWarningKind, PrintFavoriteBulkResult, PrintFavoriteState, PrintFavoritesStore,
 };

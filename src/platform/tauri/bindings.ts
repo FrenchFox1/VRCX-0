@@ -1792,6 +1792,13 @@ const generatedCommands = {
     ): Promise<PrintFavoriteState> {
         return await TAURI_INVOKE('app__vrchat_prints_favorite_set', { input });
     },
+    async appVrchatPrintsFavoritesSet(
+        input: VrchatPrintFavoritesSetInput
+    ): Promise<PrintFavoriteBulkResult> {
+        return await TAURI_INVOKE('app__vrchat_prints_favorites_set', {
+            input
+        });
+    },
     async appVrchatMediaRewardRedeem(
         input: VrchatMediaRewardRedeemInput
     ): Promise<HttpApiExecuteResponse> {
@@ -5051,6 +5058,11 @@ export type PrintAutoCleanupEvent = {
     remaining: number;
     warning: string | null;
 };
+export type PrintFavoriteBulkResult = {
+    state: PrintFavoriteState;
+    applied: number;
+    skipped: number;
+};
 export type PrintFavoriteState = {
     favoriteIds: string[];
     maxFavorites: number;
@@ -6021,6 +6033,10 @@ export type VrchatMediaUserInventoryItemInput = {
 };
 export type VrchatPrintFavoriteSetInput = {
     printId?: string;
+    favorite?: boolean;
+};
+export type VrchatPrintFavoritesSetInput = {
+    printIds?: string[];
     favorite?: boolean;
 };
 export type VrchatRequestInvitePhotoSendInput = {

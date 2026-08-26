@@ -454,6 +454,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::media::service::app__vrchat_media_prints_get,
             commands::vrchat::media::service::app__vrchat_prints_favorites_list,
             commands::vrchat::media::service::app__vrchat_prints_favorite_set,
+            commands::vrchat::media::service::app__vrchat_prints_favorites_set,
             commands::vrchat::media::service::app__vrchat_media_reward_redeem,
             commands::vrchat::media::service::app__vrchat_media_sticker_upload,
             commands::vrchat::media::service::app__vrchat_media_user_inventory_item_get,

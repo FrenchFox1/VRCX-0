@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "Auto-Löschen konnte das konfigurierte Limit nicht unterschreiten, da favorisierte Prints die Liste füllen. {remaining} Print(s) verbleiben."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} ausgewählt",
+                "select_all": "Alle auswählen",
+                "deselect_all": "Auswahl aufheben",
+                "confirm_delete_title": "{count} Element(e) löschen?",
+                "confirm_delete_locked": "{count} gesperrte Element(e) werden übersprungen. Diese Aktion kann nicht rückgängig gemacht werden.",
+                "deleting_progress": "Lösche {done}/{total}",
+                "deleted_toast": "{count} Element(e) gelöscht.",
+                "delete_partial_toast": "{succeeded} Element(e) gelöscht, {failed} fehlgeschlagen. {reason}",
+                "delete_cancelled_toast": "Abgebrochen. {count} Element(e) gelöscht.",
+                "delete_unlocked": "{count} löschen",
+                "delete_locked": "Alle ausgewählten Elemente sind gesperrt.",
+                "delete_locked_favorite": "Favorit - zum Löschen zuerst entfernen",
+                "delete_locked_in_use": "In Verwendung - kann nicht gelöscht werden",
+                "favorited_toast": "{count} Print(s) favorisiert.",
+                "unfavorited_toast": "Favorit von {count} Print(s) entfernt.",
+                "favorite_skipped_toast": "{count} Print(s) konnten nicht favorisiert werden. Das Limit ist {max}."
+            },
+            "prints_filter": {
+                "all": "Alle",
+                "favorites": "Favoriten",
+                "others": "Nicht favorisiert"
+            },
             "llm_endpoints": {
                 "title": "LLM-Endpunkte",
                 "description": "Gemeinsame OpenAI-kompatible Verbindungen für Social AI und Übersetzung.",

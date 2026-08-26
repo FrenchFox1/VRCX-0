@@ -146,10 +146,117 @@ pub fn set_print_favorite(
     })
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PrintFavoriteBulkResult {
+    pub state: PrintFavoriteState,
+    pub applied: usize,
+    pub skipped: usize,
+}
+
+pub fn set_print_favorites(
+    store: &dyn PrintFavoritesStore,
+    print_ids: &[String],
+    favorite: bool,
+) -> Result<PrintFavoriteBulkResult> {
+    let limit = effective_favorite_limit(store)?;
+    let max_favorites = favorite_limit_for_print_limit(limit);
+    let mut next = read_favorite_ids(store)?;
+    let mut applied = 0;
+    let mut skipped = 0;
+
+    for print_id in print_ids {
+        let print_id = print_id.trim();
+        if print_id.is_empty() {
+            continue;
+        }
+        if next.iter().any(|id| id == print_id) == favorite {
+            continue;
+        }
+        let updated = set_favorite_id(&next, print_id, favorite, max_favorites);
+        if updated.len() == next.len() {
+            skipped += 1;
+            continue;
+        }
+        next = updated;
+        applied += 1;
+    }
+
+    if applied > 0 {
+        write_favorite_ids(store, &next)?;
+    }
+
+    Ok(PrintFavoriteBulkResult {
+        state: PrintFavoriteState {
+            warning: favorite_warning(next.len(), limit),
+            favorite_ids: next,
+            max_favorites,
+        },
+        applied,
+        skipped,
+    })
+}
+
+pub fn ensure_print_deletable(store: &dyn PrintFavoritesStore, print_id: &str) -> Result<()> {
+    let print_id = print_id.trim();
+    if print_id.is_empty() {
+        return Ok(());
+    }
+    if read_favorite_ids(store)?.iter().any(|id| id == print_id) {
+        return Err(vrcx_0_application_core::Error::Custom(format!(
+            "Print {print_id} is favorited and cannot be deleted."
+        )));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{favorite_ids_from_json, favorite_warning, set_favorite_id, CleanupWarningKind};
-    use serde_json::json;
+    use std::sync::Mutex;
+
+    use super::{
+        ensure_print_deletable, favorite_ids_from_json, favorite_warning, set_favorite_id,
+        set_print_favorites, CleanupWarningKind, PrintFavoritesStore,
+    };
+    use serde_json::{json, Value};
+    use vrcx_0_application_core::Result;
+
+    struct TestFavoritesStore {
+        limit: i64,
+        ids: Mutex<Value>,
+    }
+
+    impl TestFavoritesStore {
+        fn new(limit: i64, ids: &[&str]) -> Self {
+            Self {
+                limit,
+                ids: Mutex::new(json!(ids)),
+            }
+        }
+
+        fn ids(&self) -> Vec<String> {
+            favorite_ids_from_json(&self.ids.lock().expect("favorite ids lock"))
+        }
+    }
+
+    impl PrintFavoritesStore for TestFavoritesStore {
+        fn auto_delete_enabled(&self) -> Result<bool> {
+            Ok(true)
+        }
+
+        fn auto_delete_limit(&self) -> Result<String> {
+            Ok(self.limit.to_string())
+        }
+
+        fn favorite_ids(&self) -> Result<Value> {
+            Ok(self.ids.lock().expect("favorite ids lock").clone())
+        }
+
+        fn write_favorite_ids(&self, ids: &Value) -> Result<()> {
+            *self.ids.lock().expect("favorite ids lock") = ids.clone();
+            Ok(())
+        }
+    }
 
     #[test]
     fn normalizes_favorite_ids_from_json() {
@@ -199,5 +306,72 @@ mod tests {
             Some(CleanupWarningKind::TooManyFavorites)
         );
         assert_eq!(favorite_warning(25, 30), None);
+    }
+
+    #[test]
+    fn bulk_favorite_stops_at_the_favorite_limit() {
+        let existing = (0..24)
+            .map(|index| format!("prnt_{index:02}"))
+            .collect::<Vec<_>>();
+        let store =
+            TestFavoritesStore::new(30, &existing.iter().map(String::as_str).collect::<Vec<_>>());
+
+        let result = set_print_favorites(
+            &store,
+            &[
+                "prnt_new_a".to_string(),
+                "prnt_new_b".to_string(),
+                "prnt_new_c".to_string(),
+            ],
+            true,
+        )
+        .expect("bulk favorite");
+
+        assert_eq!(result.applied, 1);
+        assert_eq!(result.skipped, 2);
+        assert_eq!(result.state.max_favorites, 25);
+        assert_eq!(result.state.favorite_ids.len(), 25);
+        assert_eq!(store.ids().len(), 25);
+    }
+
+    #[test]
+    fn bulk_favorite_ignores_ids_already_in_the_requested_state() {
+        let store = TestFavoritesStore::new(30, &["prnt_a", "prnt_b"]);
+
+        let result = set_print_favorites(
+            &store,
+            &[" prnt_a ".to_string(), "".to_string(), "prnt_c".to_string()],
+            true,
+        )
+        .expect("bulk favorite");
+
+        assert_eq!(result.applied, 1);
+        assert_eq!(result.skipped, 0);
+        assert_eq!(
+            result.state.favorite_ids,
+            vec!["prnt_a", "prnt_b", "prnt_c"]
+        );
+    }
+
+    #[test]
+    fn bulk_unfavorite_removes_every_requested_id() {
+        let store = TestFavoritesStore::new(30, &["prnt_a", "prnt_b", "prnt_c"]);
+
+        let result =
+            set_print_favorites(&store, &["prnt_a".to_string(), "prnt_c".to_string()], false)
+                .expect("bulk unfavorite");
+
+        assert_eq!(result.applied, 2);
+        assert_eq!(result.state.favorite_ids, vec!["prnt_b"]);
+        assert_eq!(store.ids(), vec!["prnt_b"]);
+    }
+
+    #[test]
+    fn favorited_prints_are_not_deletable() {
+        let store = TestFavoritesStore::new(30, &["prnt_a"]);
+
+        assert!(ensure_print_deletable(&store, " prnt_a ").is_err());
+        assert!(ensure_print_deletable(&store, "prnt_b").is_ok());
+        assert!(ensure_print_deletable(&store, "  ").is_ok());
     }
 }

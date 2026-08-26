@@ -19,9 +19,12 @@ export function GalleryFileCard({
     userIcon,
     mutatingKey,
     currentUserId,
+    selected,
+    selectionActive,
     onPreview,
     onSetProfileField,
-    onDeleteFile
+    onDeleteFile,
+    onToggleSelect
 }: {
     tab: FileAssetTab;
     definition: FileTabDefinition;
@@ -30,9 +33,12 @@ export function GalleryFileCard({
     userIcon: string;
     mutatingKey: string;
     currentUserId: string | null;
+    selected: boolean;
+    selectionActive: boolean;
     onPreview: (options: MediaPreviewOptions) => void;
     onSetProfileField: (fieldName: GalleryProfileField, fileId: string) => void;
     onDeleteFile: (tab: FileAssetTab, fileId: string) => void;
+    onToggleSelect: (checked: boolean, shift: boolean) => void;
 }) {
     const { t } = useTranslation();
 
@@ -83,6 +89,11 @@ export function GalleryFileCard({
             menuLabel={t('aria.more')}
             placeholderIcon={ImageIcon}
             hideContent
+            selectable
+            selected={selected}
+            selectionActive={selectionActive}
+            selectLabel={`${t('common.actions.select')} ${displayName || file.id}`}
+            onToggleSelect={onToggleSelect}
             renderMedia={
                 imageUrl
                     ? ({ className }: { className: string }) => (
@@ -120,10 +131,12 @@ export function GalleryFileCard({
                     : null,
                 {
                     key: 'delete',
-                    label: t('common.actions.delete'),
+                    label: isCurrent
+                        ? t('view.tools.gallery_selection.delete_locked_in_use')
+                        : t('common.actions.delete'),
                     icon: Trash2Icon,
                     destructive: true,
-                    disabled: isMutating,
+                    disabled: isMutating || isCurrent,
                     onSelect: () => onDeleteFile(tab, file.id)
                 }
             ]}

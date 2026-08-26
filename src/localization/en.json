@@ -2026,6 +2026,29 @@
                     "too_many_favorites_event": "Auto-delete could not get below the configured limit because favorite prints are filling the list. {remaining} print(s) remain."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} selected",
+                "select_all": "Select all",
+                "deselect_all": "Deselect all",
+                "confirm_delete_title": "Delete {count} item(s)?",
+                "confirm_delete_locked": "{count} locked item(s) will be skipped. This action cannot be undone.",
+                "deleting_progress": "Deleting {done}/{total}",
+                "deleted_toast": "Deleted {count} item(s).",
+                "delete_partial_toast": "Deleted {succeeded} item(s), {failed} failed. {reason}",
+                "delete_cancelled_toast": "Cancelled. Deleted {count} item(s).",
+                "delete_unlocked": "Delete {count}",
+                "delete_locked": "Every selected item is locked.",
+                "delete_locked_favorite": "Favorited - unfavorite to delete",
+                "delete_locked_in_use": "In use - cannot delete",
+                "favorited_toast": "Favorited {count} print(s).",
+                "unfavorited_toast": "Unfavorited {count} print(s).",
+                "favorite_skipped_toast": "{count} print(s) were not favorited. The limit is {max}."
+            },
+            "prints_filter": {
+                "all": "All",
+                "favorites": "Favorites",
+                "others": "Not favorited"
+            },
             "llm_endpoints": {
                 "title": "LLM Endpoints",
                 "description": "Shared OpenAI-compatible connections for Social AI and translation.",
