@@ -13,8 +13,10 @@ import {
     normalizeDroppedFilePath,
     normalizeScreenshotMetadata,
     normalizeScreenshotSearchResult,
+    pickRandomScreenshotPath,
     resolveGalleryFolder,
     resolvePathAfterScreenshotDelete,
+    searchResultToLibraryImage,
     SCREENSHOT_METADATA_SEARCH_TYPES,
     serializeGalleryScrollPositions,
     sortScreenshotRowsByNewest,
@@ -339,5 +341,79 @@ describe('resolvePathAfterScreenshotDelete', () => {
         ).toBeNull();
 
         expect(resolvePathAfterScreenshotDelete(null)).toBeNull();
+    });
+});
+
+describe('pickRandomScreenshotPath', () => {
+    const images = [{ path: 'a.png' }, { path: 'b.png' }, { path: 'c.png' }];
+
+    it('maps the random value across the whole list and clamps the upper bound', () => {
+        expect(pickRandomScreenshotPath(images, 0)).toBe('a.png');
+        expect(pickRandomScreenshotPath(images, 0.5)).toBe('b.png');
+        expect(pickRandomScreenshotPath(images, 0.999)).toBe('c.png');
+        expect(pickRandomScreenshotPath(images, 1)).toBe('c.png');
+    });
+
+    it('returns nothing when there is no image to open', () => {
+        expect(pickRandomScreenshotPath([], 0.5)).toBe('');
+    });
+});
+
+describe('searchResultToLibraryImage', () => {
+    it('maps a search result onto the library image shape the thumbnail grid renders', () => {
+        expect(
+            searchResultToLibraryImage({
+                filePath: 'C:\\VRChat\\2026-07\\shot.png',
+                fileName: 'shot.png',
+                fileSizeBytes: 2048,
+                creationDate: '2026-04-16T01:02:03.000Z',
+                width: 1920,
+                height: 1080,
+                metadata: {
+                    author: { id: 'usr_author', displayName: 'Author' },
+                    world: {
+                        id: 'wrld_1',
+                        name: 'Great World',
+                        instanceId: 'wrld_1:12345'
+                    },
+                    players: [],
+                    timestamp: '2026-04-16T01:02:03.000Z'
+                }
+            })
+        ).toMatchObject({
+            path: 'C:\\VRChat\\2026-07\\shot.png',
+            folderPath: 'C:\\VRChat\\2026-07',
+            fileName: 'shot.png',
+            sizeBytes: 2048,
+            modifiedAt: Date.parse('2026-04-16T01:02:03.000Z'),
+            width: 1920,
+            height: 1080,
+            worldId: 'wrld_1',
+            worldName: 'Great World',
+            capturedAt: '2026-04-16T01:02:03.000Z',
+            error: null
+        });
+    });
+
+    it('keeps posix folders and degrades missing metadata and dates', () => {
+        expect(
+            searchResultToLibraryImage({
+                filePath: '/home/ava/Pictures/VRChat/shot.png',
+                fileName: 'shot.png',
+                fileSizeBytes: 0,
+                creationDate: null,
+                width: null,
+                height: null,
+                metadata: null
+            })
+        ).toMatchObject({
+            folderPath: '/home/ava/Pictures/VRChat',
+            modifiedAt: 0,
+            createdAt: null,
+            worldId: null,
+            worldName: null,
+            capturedAt: null,
+            metadata: null
+        });
     });
 });

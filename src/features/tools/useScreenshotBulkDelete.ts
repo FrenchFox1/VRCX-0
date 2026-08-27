@@ -9,23 +9,23 @@ import { runGalleryBulkDelete } from './galleryBulkDelete';
 import { startGalleryBulkProgressToast } from './galleryBulkProgressToast';
 
 export function useScreenshotBulkDelete({
-    selectedFolder,
-    removeGalleryImages,
+    scopeKey,
+    removeDeletedImages,
     refreshGalleryTree
 }: {
-    selectedFolder: string;
-    removeGalleryImages: (paths: string[]) => void;
+    scopeKey: string;
+    removeDeletedImages: (paths: string[]) => void;
     refreshGalleryTree: () => void;
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const [bulkDeleteRunning, setBulkDeleteRunning] = useState(false);
     const cancelledRef = useRef(false);
-    const selectedFolderRef = useRef(selectedFolder);
+    const scopeKeyRef = useRef(scopeKey);
 
     useEffect(() => {
-        selectedFolderRef.current = selectedFolder;
-    }, [selectedFolder]);
+        scopeKeyRef.current = scopeKey;
+    }, [scopeKey]);
 
     async function deleteScreenshots(paths: string[]) {
         if (bulkDeleteRunning || paths.length === 0) {
@@ -48,7 +48,7 @@ export function useScreenshotBulkDelete({
             return;
         }
 
-        const startedFolder = selectedFolderRef.current;
+        const startedScopeKey = scopeKeyRef.current;
         const deletedPaths: string[] = [];
         cancelledRef.current = false;
         setBulkDeleteRunning(true);
@@ -70,7 +70,7 @@ export function useScreenshotBulkDelete({
                 deleteAsset: (path) =>
                     mediaRepository.deleteScreenshotFile(path),
                 isCancelled: () => cancelledRef.current,
-                isScopeValid: () => selectedFolderRef.current === startedFolder,
+                isScopeValid: () => scopeKeyRef.current === startedScopeKey,
                 onDeleted: (path) => deletedPaths.push(path),
                 onProgress: progress.update
             }).finally(() => {
@@ -79,7 +79,7 @@ export function useScreenshotBulkDelete({
             });
 
         if (deletedPaths.length > 0) {
-            removeGalleryImages(deletedPaths);
+            removeDeletedImages(deletedPaths);
         }
         if (deleted > 0) {
             refreshGalleryTree();

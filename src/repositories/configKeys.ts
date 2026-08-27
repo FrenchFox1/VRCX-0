@@ -354,7 +354,8 @@ export const USER_ACTIVITY_CONFIG_KEYS = Object.freeze({
 
 export const SCREENSHOT_GALLERY_CONFIG_KEYS = Object.freeze({
     folder: 'screenshotGalleryFolder',
-    scrollPositions: 'screenshotGalleryScrollPositions'
+    scrollPositions: 'screenshotGalleryScrollPositions',
+    searchLayout: 'screenshotSearchResultLayout'
 });
 
 export const STATUS_BAR_CONFIG_KEYS = Object.freeze({

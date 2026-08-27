@@ -4747,6 +4747,7 @@
             "folders": "Dossiers",
             "scanning": "Analyse des captures d'écran",
             "image_count": "{count} images",
+            "feeling_lucky": "J'ai de la chance",
             "empty_gallery": "Aucune capture d'écran dans ce dossier",
             "empty_gallery_description": "Sélectionnez un autre dossier ou actualisez la bibliothèque de captures d'écran.",
             "empty_folders": "Aucun dossier de captures d'écran",

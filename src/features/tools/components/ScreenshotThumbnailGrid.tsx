@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 import { parseLocation } from '@/shared/utils/location';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -286,53 +285,6 @@ export function ScreenshotThumbnailCard({
                     />
                 </span>
             ) : null}
-        </div>
-    );
-}
-
-export function ScreenshotThumbnailGrid({
-    compact = false,
-    count,
-    items,
-    onOpen,
-    worldNameHint = ''
-}: {
-    compact?: boolean;
-    count?: number;
-    items: readonly ScreenshotThumbnailItem[];
-    onOpen: (path: string) => void;
-    worldNameHint?: string;
-}) {
-    const { t } = useTranslation();
-    const titleMap = useScreenshotThumbnailTitleMap(items, {
-        worldNameHint
-    });
-
-    return (
-        <div className="flex min-h-0 flex-col gap-2">
-            {typeof count === 'number' ? (
-                <Badge variant="outline" className="w-fit">
-                    {t('dialog.screenshot_metadata.image_count', { count })}
-                </Badge>
-            ) : null}
-            <div
-                className={
-                    compact
-                        ? 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2'
-                        : 'grid grid-cols-[repeat(auto-fill,minmax(208px,1fr))] gap-3'
-                }
-            >
-                {items.map((item) => (
-                    <ScreenshotThumbnailCard
-                        key={item.path}
-                        compact={compact}
-                        item={item}
-                        onOpen={onOpen}
-                        title={titleMap.get(item.path)}
-                        worldNameHint={worldNameHint}
-                    />
-                ))}
-            </div>
         </div>
     );
 }

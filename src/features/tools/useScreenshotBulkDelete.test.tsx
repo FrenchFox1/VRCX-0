@@ -46,14 +46,14 @@ import { useScreenshotBulkDelete } from './useScreenshotBulkDelete';
 type HookValue = ReturnType<typeof useScreenshotBulkDelete>;
 
 function renderHarness() {
-    const removeGalleryImages = vi.fn();
+    const removeDeletedImages = vi.fn();
     const refreshGalleryTree = vi.fn();
     let value: HookValue | null = null;
 
     function Harness() {
         value = useScreenshotBulkDelete({
-            selectedFolder: 'C:\\VRChat\\2026-07',
-            removeGalleryImages,
+            scopeKey: 'folder:C:\\VRChat\\2026-07',
+            removeDeletedImages,
             refreshGalleryTree
         });
         return null;
@@ -62,7 +62,7 @@ function renderHarness() {
     render(<Harness />);
     return {
         refreshGalleryTree,
-        removeGalleryImages,
+        removeDeletedImages,
         deleteScreenshots: (paths: string[]) =>
             act(async () => {
                 await value!.deleteScreenshots(paths);
@@ -85,8 +85,8 @@ describe('useScreenshotBulkDelete', () => {
         await harness.deleteScreenshots(['a.png', 'b.png']);
 
         expect(mocks.deleteScreenshotFile).toHaveBeenCalledTimes(2);
-        expect(harness.removeGalleryImages).toHaveBeenCalledTimes(1);
-        expect(harness.removeGalleryImages).toHaveBeenCalledWith([
+        expect(harness.removeDeletedImages).toHaveBeenCalledTimes(1);
+        expect(harness.removeDeletedImages).toHaveBeenCalledWith([
             'a.png',
             'b.png'
         ]);
@@ -104,7 +104,7 @@ describe('useScreenshotBulkDelete', () => {
 
         await harness.deleteScreenshots(['a.png', 'b.png', 'c.png']);
 
-        expect(harness.removeGalleryImages).toHaveBeenCalledWith([
+        expect(harness.removeDeletedImages).toHaveBeenCalledWith([
             'a.png',
             'c.png'
         ]);
@@ -119,7 +119,7 @@ describe('useScreenshotBulkDelete', () => {
         await harness.deleteScreenshots(['a.png']);
 
         expect(mocks.deleteScreenshotFile).not.toHaveBeenCalled();
-        expect(harness.removeGalleryImages).not.toHaveBeenCalled();
+        expect(harness.removeDeletedImages).not.toHaveBeenCalled();
         expect(harness.refreshGalleryTree).not.toHaveBeenCalled();
     });
 });

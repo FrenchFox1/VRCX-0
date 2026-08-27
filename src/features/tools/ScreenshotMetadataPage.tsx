@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -13,47 +13,29 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { ScreenshotGalleryView } from './components/ScreenshotGalleryView';
 import {
+    ScreenshotDetailActions,
     ScreenshotMetadataDetailsCard,
     ScreenshotMetadataHeader,
     ScreenshotMetadataPreviewCard,
-    ScreenshotMetadataResultsTable,
-    ScreenshotMetadataToolbar
+    ScreenshotSearchToolbar
 } from './components/ScreenshotMetadataSections';
+import { ScreenshotSearchResultsView } from './components/ScreenshotSearchResultsView';
 import {
     buildScreenshotSearchRow,
     getDroppedScreenshotPath,
     normalizeScreenshotMetadata,
     normalizeScreenshotSearchResult,
     resolvePathAfterScreenshotDelete,
+    searchResultToLibraryImage,
     SCREENSHOT_METADATA_SEARCH_TYPES,
     sortScreenshotRowsByNewest,
-    type ScreenshotMetadataSearchType,
-    type ScreenshotSearchRow
+    type ScreenshotMetadataSearchType
 } from './screenshotMetadataValues';
+import { useScreenshotBrowseSelection } from './useScreenshotBrowseSelection';
 import { useScreenshotBulkDelete } from './useScreenshotBulkDelete';
 import { useScreenshotGalleryController } from './useScreenshotGalleryController';
 import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigation';
 import { useScreenshotMetadataSearch } from './useScreenshotMetadataSearch';
-
-function openSearchResult(
-    row: ScreenshotSearchRow,
-    {
-        openDetailPath,
-        setSelectedPath,
-        setSearchViewMode
-    }: {
-        openDetailPath: (
-            path: string,
-            options?: { clearPreview?: boolean }
-        ) => void;
-        setSelectedPath: (path: string) => void;
-        setSearchViewMode: (mode: 'detail' | 'table') => void;
-    }
-) {
-    setSelectedPath(row.filePath);
-    setSearchViewMode('detail');
-    openDetailPath(row.filePath);
-}
 
 function recordFromUnknown(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object' && !Array.isArray(value)
@@ -86,7 +68,9 @@ export function ScreenshotMetadataPage() {
     const isGalleryMode = !routePath;
     const {
         currentSearchType,
-        resetSearchTable,
+        removeSearchPaths,
+        resetSearchResults,
+        searchLayout,
         searchNavigationPaths,
         searchQuery,
         searchRows,
@@ -95,14 +79,17 @@ export function ScreenshotMetadataPage() {
         searchViewMode,
         selectedPath,
         selectedPathIndex,
+        setSearchLayout,
         setSearchQuery,
-        setSearchRows,
+        setSearchResults,
         setSearchType,
         setSearchViewMode,
         setSelectedPath,
+        sortedSearchImages,
         sortedSearchRows,
         toggleSearchSort
     } = useScreenshotMetadataSearch();
+    const showSearchResults = searchViewMode === 'results';
     const [metadata, setMetadata] = useState<ReturnType<
         typeof normalizeScreenshotMetadata
     > | null>(null);
@@ -138,9 +125,20 @@ export function ScreenshotMetadataPage() {
         screenshotCacheStatus,
         setSearchParams
     });
+    const visibleGalleryImagePaths = useMemo(
+        () => visibleGalleryImages.map((image) => image.path),
+        [visibleGalleryImages]
+    );
+    const browseSelection = useScreenshotBrowseSelection(
+        visibleGalleryImagePaths
+    );
     const { bulkDeleteRunning, deleteScreenshots } = useScreenshotBulkDelete({
-        selectedFolder: selectedGalleryFolder,
-        removeGalleryImages,
+        scopeKey: showSearchResults ? `search:${searchQuery}` : 'browse',
+        removeDeletedImages: (paths) => {
+            removeGalleryImages(paths);
+            removeSearchPaths(paths);
+            browseSelection.removePaths(paths);
+        },
         refreshGalleryTree
     });
 
@@ -175,11 +173,17 @@ export function ScreenshotMetadataPage() {
         [updateRoutePath]
     );
 
+    function openSearchResultPath(path: string) {
+        setSelectedPath(path);
+        setSearchViewMode('detail');
+        openDetailPath(path);
+    }
+
     function resetSearchContext({
         clearQuery = false,
         clearPreview = false
     }: { clearQuery?: boolean; clearPreview?: boolean } = {}) {
-        resetSearchTable({ clearQuery });
+        resetSearchResults({ clearQuery });
 
         if (clearPreview) {
             setMetadata(null);
@@ -490,6 +494,7 @@ export function ScreenshotMetadataPage() {
         const requestId = searchRequestRef.current + 1;
         searchRequestRef.current = requestId;
         setIsSearchLoading(true);
+        setSearchViewMode('results');
 
         try {
             const results = await mediaRepository.findScreenshotsBySearch(
@@ -502,10 +507,9 @@ export function ScreenshotMetadataPage() {
             }
 
             if (!Array.isArray(results) || results.length === 0) {
-                const message = t('dialog.screenshot_metadata.no_results');
-                resetSearchContext({ clearPreview: true });
-                setMetadataError(message);
-                toast.error(message);
+                setSearchResults({ rows: [], images: [] });
+                setSelectedPath('');
+                setMetadataError('');
                 return;
             }
 
@@ -518,19 +522,18 @@ export function ScreenshotMetadataPage() {
                 )
             );
 
-            const nextRows = sortScreenshotRowsByNewest(rows);
-
-            setSearchRows(nextRows);
+            setSearchResults({
+                rows: sortScreenshotRowsByNewest(rows),
+                images: results.map(searchResultToLibraryImage)
+            });
             setMetadataError('');
             setSelectedPath('');
-            setSearchViewMode('table');
         } catch (error) {
             const message =
                 error instanceof Error
                     ? error.message
                     : 'Failed to search screenshot metadata.';
-            setMetadata(null);
-            setImageUrl('');
+            setSearchResults({ rows: [], images: [] });
             setMetadataError(message);
             toast.error(message);
         } finally {
@@ -549,7 +552,7 @@ export function ScreenshotMetadataPage() {
         }
         setSearchType(nextType);
         if (searchQuery.trim()) {
-            setSearchRows([]);
+            setSearchResults({ rows: [], images: [] });
             setSelectedPath('');
         }
         runSearch(nextType);
@@ -610,12 +613,56 @@ export function ScreenshotMetadataPage() {
                         : t('view.tools.loading.deleting_metadata')
                 }
                 uploadingLabel={t('view.tools.loading.uploading_screenshot')}
-                onBack={() =>
-                    isGalleryMode ? navigate('/tools') : openGalleryRoute()
-                }
+                onBack={() => {
+                    if (showSearchResults) {
+                        resetSearchContext({ clearQuery: true });
+                        return;
+                    }
+                    if (isGalleryMode) {
+                        navigate('/tools');
+                        return;
+                    }
+                    openGalleryRoute();
+                }}
             />
 
-            {isGalleryMode ? (
+            <ScreenshotSearchToolbar
+                searchQuery={searchQuery}
+                searchType={searchType}
+                searchLayout={searchLayout}
+                showResultControls={showSearchResults}
+                searchRowsCount={searchRows.length}
+                searchNavigationCount={searchNavigationPaths.length}
+                selectedPathIndex={selectedPathIndex}
+                onSearchQueryChange={setSearchQuery}
+                onSearchTypeChange={handleSearchTypeChange}
+                onSearch={() => {
+                    runSearch();
+                }}
+                onSearchLayoutChange={setSearchLayout}
+                onClearSearch={() => {
+                    resetSearchContext({ clearQuery: true });
+                }}
+            />
+
+            {showSearchResults ? (
+                <ScreenshotSearchResultsView
+                    isSearchLoading={isSearchLoading}
+                    layout={searchLayout}
+                    images={sortedSearchImages}
+                    rows={sortedSearchRows}
+                    currentSearchType={currentSearchType}
+                    searchSort={searchSort}
+                    searchQuery={searchQuery}
+                    selectedPath={selectedPath}
+                    isDeleteRunning={bulkDeleteRunning}
+                    onToggleSearchSort={toggleSearchSort}
+                    onOpenResultPath={openSearchResultPath}
+                    onDeleteSelection={(paths) => {
+                        deleteScreenshots(paths);
+                    }}
+                />
+            ) : isGalleryMode ? (
                 <ScreenshotGalleryView
                     folderTree={folderTree}
                     images={visibleGalleryImages}
@@ -642,26 +689,16 @@ export function ScreenshotMetadataPage() {
                     onScrollPositionChange={updateGalleryScrollPosition}
                     isDeleteRunning={bulkDeleteRunning}
                     restoreScrollTop={selectedGalleryScrollTop}
+                    selection={browseSelection}
                 />
             ) : (
                 <>
-                    <ScreenshotMetadataToolbar
+                    <ScreenshotDetailActions
                         metadata={metadata}
                         isVrcPlusSupporter={isVrcPlusSupporter}
                         isUploadingScreenshot={isUploadingScreenshot}
                         isDeletingMetadata={isDeletingMetadata}
                         isDeletingFile={isDeletingFile}
-                        searchQuery={searchQuery}
-                        searchType={searchType}
-                        searchViewMode={searchViewMode}
-                        searchRowsCount={searchRows.length}
-                        searchNavigationCount={searchNavigationPaths.length}
-                        selectedPathIndex={selectedPathIndex}
-                        onSearchQueryChange={setSearchQuery}
-                        onSearchTypeChange={handleSearchTypeChange}
-                        onSearch={() => {
-                            runSearch();
-                        }}
                         onOpenFolder={() => {
                             openFolder();
                         }}
@@ -679,74 +716,56 @@ export function ScreenshotMetadataPage() {
                         }}
                     />
 
-                    {searchViewMode === 'table' ? (
-                        <ScreenshotMetadataResultsTable
-                            isSearchLoading={isSearchLoading}
-                            currentSearchType={currentSearchType}
-                            searchSort={searchSort}
-                            sortedSearchRows={sortedSearchRows}
-                            selectedPath={selectedPath}
-                            onToggleSearchSort={toggleSearchSort}
-                            onOpenResult={(row) =>
-                                openSearchResult(row, {
-                                    openDetailPath,
-                                    setSelectedPath,
-                                    setSearchViewMode
+                    <div
+                        className={
+                            isDetailsVisible
+                                ? 'grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]'
+                                : 'grid min-h-0 flex-1'
+                        }
+                    >
+                        <ScreenshotMetadataPreviewCard
+                            metadata={metadata}
+                            imageUrl={imageUrl}
+                            isMetadataLoading={isMetadataLoading}
+                            canNavigatePrev={canNavigatePrev}
+                            canNavigateNext={canNavigateNext}
+                            isDetailsVisible={isDetailsVisible}
+                            onNavigatePrev={() => {
+                                navigatePrev();
+                            }}
+                            onNavigateNext={() => {
+                                navigateNext();
+                            }}
+                            onToggleDetails={() => {
+                                setIsDetailsVisible((visible) => !visible);
+                            }}
+                            onImagePreview={() =>
+                                openImagePreview({
+                                    url: imageUrl,
+                                    title:
+                                        metadata?.fileName ||
+                                        'Screenshot preview',
+                                    fileName: metadata?.fileName || '',
+                                    sourcePath: metadata?.filePath || ''
                                 })
                             }
+                            onDragOver={handleScreenshotDragOver}
+                            onDrop={(event) => {
+                                handleScreenshotDrop(event);
+                            }}
                         />
-                    ) : (
-                        <div
-                            className={
-                                isDetailsVisible
-                                    ? 'grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]'
-                                    : 'grid min-h-0 flex-1'
-                            }
-                        >
-                            <ScreenshotMetadataPreviewCard
-                                metadata={metadata}
-                                imageUrl={imageUrl}
-                                isMetadataLoading={isMetadataLoading}
-                                canNavigatePrev={canNavigatePrev}
-                                canNavigateNext={canNavigateNext}
-                                isDetailsVisible={isDetailsVisible}
-                                onNavigatePrev={() => {
-                                    navigatePrev();
-                                }}
-                                onNavigateNext={() => {
-                                    navigateNext();
-                                }}
-                                onToggleDetails={() => {
-                                    setIsDetailsVisible((visible) => !visible);
-                                }}
-                                onImagePreview={() =>
-                                    openImagePreview({
-                                        url: imageUrl,
-                                        title:
-                                            metadata?.fileName ||
-                                            'Screenshot preview',
-                                        fileName: metadata?.fileName || '',
-                                        sourcePath: metadata?.filePath || ''
-                                    })
-                                }
-                                onDragOver={handleScreenshotDragOver}
-                                onDrop={(event) => {
-                                    handleScreenshotDrop(event);
-                                }}
-                            />
 
-                            {isDetailsVisible ? (
-                                <ScreenshotMetadataDetailsCard
-                                    metadata={metadata}
-                                    metadataError={metadataError}
-                                    searchRowsCount={searchRows.length}
-                                    onBackToResults={() =>
-                                        setSearchViewMode('table')
-                                    }
-                                />
-                            ) : null}
-                        </div>
-                    )}
+                        {isDetailsVisible ? (
+                            <ScreenshotMetadataDetailsCard
+                                metadata={metadata}
+                                metadataError={metadataError}
+                                searchRowsCount={searchRows.length}
+                                onBackToResults={() =>
+                                    setSearchViewMode('results')
+                                }
+                            />
+                        ) : null}
+                    </div>
                 </>
             )}
         </PageScaffold>
