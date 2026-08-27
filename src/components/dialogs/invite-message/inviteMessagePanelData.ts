@@ -3,6 +3,7 @@ import vrchatToolsRepository, {
     type InviteMessageRecord
 } from '@/repositories/vrchatToolsRepository';
 import { HOUR_MS, MINUTE_MS } from '@/shared/constants/time';
+import { isRecord } from '@/shared/utils/record';
 
 export type InviteMessageMode = 'select' | 'manage' | 'respond';
 
@@ -48,23 +49,8 @@ export const INVITE_MESSAGE_TYPES = [
     }
 ] as const;
 
-export function isInviteMessageMode(
-    value: unknown
-): value is InviteMessageMode {
-    return value === 'select' || value === 'manage' || value === 'respond';
-}
-
-export function resolveInviteMessageType(value: unknown): InviteMessageType {
-    return value === 'message' ||
-        value === 'request' ||
-        value === 'requestResponse' ||
-        value === 'response'
-        ? value
-        : 'message';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+export function isInviteMessageType(value: string): value is InviteMessageType {
+    return INVITE_MESSAGE_TYPES.some((entry) => entry.type === value);
 }
 
 function isInviteMessageRecord(value: unknown): value is InviteMessageRecord {
@@ -102,7 +88,7 @@ export function normalizeInviteMessageRows(
         .sort((left, right) => left.slot - right.slot);
 }
 
-export function getInviteCooldownLabel(updatedAt: unknown, nowMs: unknown) {
+export function getInviteCooldownLabel(updatedAt: unknown, nowMs: number) {
     if (!updatedAt) {
         return '';
     }
@@ -115,7 +101,7 @@ export function getInviteCooldownLabel(updatedAt: unknown, nowMs: unknown) {
     if (!Number.isFinite(updatedTime)) {
         return String(updatedAt);
     }
-    const remainingMs = updatedTime + HOUR_MS - Number(nowMs);
+    const remainingMs = updatedTime + HOUR_MS - nowMs;
     if (remainingMs <= 0) {
         return '';
     }
@@ -127,7 +113,7 @@ export function getInviteCooldownLabel(updatedAt: unknown, nowMs: unknown) {
 
 export function isInviteMessageOnCooldown(
     row: InviteMessageRow,
-    nowMs: unknown
+    nowMs: number
 ) {
     return Boolean(getInviteCooldownLabel(rowUpdatedAt(row), nowMs));
 }
@@ -157,7 +143,7 @@ export function dialogTitle(
 export function dialogDescription(
     mode: InviteMessageMode,
     messageType: InviteMessageType,
-    _targetLabel: unknown,
+    _targetLabel: string | null | undefined,
     t: Translate
 ) {
     if (mode === 'manage') {

@@ -1,4 +1,4 @@
-use vrcx_0_persistence::game_log::GameLogJoinLeaveSnapshot;
+use vrcx_0_contracts::game_log::GameLogJoinLeaveSnapshot;
 
 use super::runtime_state::{parse_event_time_ms, player_key};
 

@@ -87,12 +87,16 @@ describe('Feed avatar info loading', () => {
         });
     });
 
-    it('waits for the expanded row before resolving avatar file metadata', async () => {
+    it('resolves avatar file metadata for the collapsed row', async () => {
         render(<FeedDetailCell row={avatarRow} />);
 
-        expect(mocks.getAvatarNameFromImageUrl).not.toHaveBeenCalled();
+        await waitFor(() => {
+            expect(mocks.getAvatarNameFromImageUrl).toHaveBeenCalledOnce();
+            expect(screen.getByText('Resolved Avatar')).toBeTruthy();
+        });
+    });
 
-        cleanup();
+    it('resolves avatar file metadata for the expanded row', async () => {
         render(
             <FeedExpandedRow
                 loadingHistoryKey=""

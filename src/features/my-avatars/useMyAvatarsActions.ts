@@ -42,9 +42,7 @@ type MyAvatarsActionsOptions = {
 };
 
 function avatarIdFromValue(avatar: MyAvatarRow | null | undefined) {
-    return typeof avatar?.id === 'string'
-        ? avatar.id.trim()
-        : String(avatar?.id ?? '').trim();
+    return avatar?.id?.trim() ?? '';
 }
 
 function isMyAvatarRow(value: unknown): value is MyAvatarRow & { id: string } {
@@ -100,7 +98,7 @@ export function useMyAvatarsActions({
         const { activeDialog, closeDialog } = useDialogStore.getState();
         if (
             activeDialog?.kind === 'avatar' &&
-            String(activeDialog.entityId ?? '').trim() === avatarId
+            activeDialog.entityId.trim() === avatarId
         ) {
             closeDialog();
         }

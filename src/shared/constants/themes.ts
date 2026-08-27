@@ -3,7 +3,7 @@ export const DEFAULT_THEME_COLOR_KEY = 'default';
 const neutralForeground = 'var(--color-neutral-50)';
 const darkForeground = 'var(--color-neutral-950)';
 
-type ThemeColorConfig = {
+export type ThemeColorConfig = {
     key: string;
     label: string;
     swatch: string;

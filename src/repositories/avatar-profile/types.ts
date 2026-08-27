@@ -1,3 +1,4 @@
+import type { AvatarLocalTag } from '@/domain/entities/avatar';
 import type {
     AvatarUpdateRequest,
     AvatarListSort,
@@ -54,10 +55,10 @@ export type AvatarModerationDeleteRecord = AvatarRecord & {
 };
 
 export interface AvatarProfileExtras extends AvatarRecord {
-    cachedAvatar?: unknown;
-    localTags?: unknown[];
-    timeSpent?: unknown;
-    memo?: unknown;
+    cachedAvatar?: boolean;
+    localTags?: AvatarLocalTag[];
+    timeSpent?: number;
+    memo?: string;
 }
 
 export interface AvatarListOptions {
@@ -89,6 +90,4 @@ export interface AvatarProfileInput extends AvatarIdInput {
     currentUserId?: string | null;
 }
 
-export interface AvatarModerationInput extends AvatarIdInput {
-    type?: string;
-}
+export type AvatarModerationInput = AvatarIdInput;

@@ -1,19 +1,18 @@
 use std::collections::HashMap;
 
-use vrcx_0_integrations::world_collections::{
-    register_world_revision, WorldOpenRegisterPayload, WorldOpenRegisterWorld,
-};
-use vrcx_0_persistence::{worlds::world_cache_get, DatabaseService};
+use vrcx_0_contracts::world_collections::{WorldOpenRegisterPayload, WorldOpenRegisterWorld};
 
 use super::blocking_db::run_blocking_db;
-use crate::Error;
+use super::{WorldCollectionRemote, WorldCollectionStore};
+use vrcx_0_application_core::Error;
 
 use super::share_collection::{
     get_or_create_share_owner_token, payload_world_from_row, share_collection_owner_hint,
 };
 
 pub async fn register_world_open_share(
-    db: &DatabaseService,
+    store: &dyn WorldCollectionStore,
+    remote: &dyn WorldCollectionRemote,
     current_user_id: &str,
     world_id: &str,
 ) -> Result<(), Error> {
@@ -30,7 +29,7 @@ pub async fn register_world_open_share(
         ));
     }
 
-    let Some(row) = run_blocking_db(|| world_cache_get(db, world_id.to_string()))? else {
+    let Some(row) = run_blocking_db(|| store.world_summary(world_id))? else {
         return Err(Error::Custom("World is not cached locally.".into()));
     };
     if row.id.trim().is_empty()
@@ -44,7 +43,7 @@ pub async fn register_world_open_share(
 
     let world = payload_world_from_row(&row, &HashMap::new());
     let owner_hint = share_collection_owner_hint(current_user_id);
-    let owner_token = get_or_create_share_owner_token(db, current_user_id).await?;
+    let owner_token = get_or_create_share_owner_token(store, remote, current_user_id).await?;
     let payload = WorldOpenRegisterPayload {
         schema: 1,
         owner_hint,
@@ -62,7 +61,5 @@ pub async fn register_world_open_share(
             version: world.version,
         },
     };
-    register_world_revision(&owner_token, &payload)
-        .await
-        .map_err(|error| Error::Custom(error.to_string()))
+    remote.register_world(&owner_token, &payload).await
 }

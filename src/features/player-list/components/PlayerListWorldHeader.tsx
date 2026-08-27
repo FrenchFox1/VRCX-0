@@ -20,23 +20,9 @@ type CurrentWorldProfile = Awaited<
     ReturnType<typeof worldProfileRepository.getWorldProfile>
 >;
 type CurrentInstanceProfile = Record<string, unknown>;
-type CurrentWorldFileAnalysis = {
-    android?: WorldFileAnalysisPlatform;
-    standalonewindows?: WorldFileAnalysisPlatform;
-    ios?: WorldFileAnalysisPlatform;
-    [key: string]: WorldFileAnalysisPlatform | undefined;
-};
-type WorldFileAnalysisPlatform = {
-    created_at?: string;
-    encryptionKey?: string;
-    fileSize?: number;
-    success?: boolean;
-    uncompressedSize?: number;
-    worldSignature?: string;
-    _fileSize?: string;
-    _uncompressedSize?: string;
-    [key: string]: unknown;
-};
+type CurrentWorldFileAnalysis = Awaited<
+    ReturnType<typeof getFileAnalysisForUnityPackages>
+>;
 
 function isInstanceProfile(value: unknown): value is CurrentInstanceProfile {
     return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -44,12 +30,12 @@ function isInstanceProfile(value: unknown): value is CurrentInstanceProfile {
 
 type PlayerListWorldHeaderProps = {
     clockNow: number;
-    currentUserLocation?: unknown;
+    currentUserLocation?: string;
     friendCount: number;
     instanceSnapshot: PlayerListContext;
     isGameRunning: boolean;
     playerCount: number;
-    startedAt?: unknown;
+    startedAt?: string | null;
 };
 
 export function PlayerListWorldHeader({
@@ -120,9 +106,7 @@ export function PlayerListWorldHeader({
             })
             .then(([fileAnalysis, cacheInfo]) => {
                 if (active) {
-                    setCurrentWorldFileAnalysis(
-                        (fileAnalysis || {}) as CurrentWorldFileAnalysis
-                    );
+                    setCurrentWorldFileAnalysis(fileAnalysis || {});
                     setCurrentWorldCacheInfo(
                         cacheInfo || defaultWorldCacheInfo()
                     );

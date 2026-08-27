@@ -67,9 +67,9 @@ type SortableRowRenderProps = {
 };
 
 type MoveCandidate = {
-    key: unknown;
+    key: string;
     label: string;
-    icon: unknown;
+    icon?: string;
 };
 
 type SortableNavItemRowProps = {
@@ -78,9 +78,9 @@ type SortableNavItemRowProps = {
 };
 
 type NavDefinitionRowProps = {
-    itemKey: unknown;
+    itemKey: string;
     definition: CustomNavDefinition;
-    icon: unknown;
+    icon?: string;
     indent?: boolean;
     justMoved: boolean;
     onIconChange: (icon: string) => void;
@@ -90,24 +90,24 @@ type NavDefinitionRowProps = {
 };
 
 type FolderHeaderRowProps = {
-    folderId: unknown;
-    name: unknown;
-    icon: unknown;
+    folderId: string;
+    name?: string;
+    icon?: string;
     itemCount: number;
     candidates: MoveCandidate[];
     onIconChange: (icon: string) => void;
-    onAddItem: (key: unknown) => void;
+    onAddItem: (key: string) => void;
     onRename: () => void;
     onUngroup: () => void;
 };
 
 type FolderDropZoneProps = {
-    folderId: unknown;
+    folderId: string;
     label: ReactNode;
 };
 
 type HiddenNavItem = {
-    key: unknown;
+    key: string;
     label: string;
 };
 
@@ -115,14 +115,14 @@ type CustomNavDialogLayoutEditorProps = {
     sensors: DndSensors;
     sortableNodeIds: string[];
     localLayout: CustomNavLayout;
-    definitionMap: Map<unknown, CustomNavDefinition>;
+    definitionMap: Map<string, CustomNavDefinition>;
     hiddenItems: HiddenNavItem[];
     justMovedKey: string;
     onDragEnd: (event: DragEndEvent) => void;
     onFolderIconChange: (
         index: number,
         icon: string,
-        fallbackIcon?: unknown
+        fallbackIcon?: string
     ) => void;
     onFolderEdit: (index: number) => void;
     onFolderUngroup: (index: number) => void;
@@ -130,19 +130,19 @@ type CustomNavDialogLayoutEditorProps = {
         folderIndex: number,
         itemIndex: number,
         icon: string,
-        fallbackIcon: unknown
+        fallbackIcon: string
     ) => void;
-    onMoveItemToFolder: (key: unknown, folderId: unknown) => void;
-    onHideItem: (key: unknown) => void;
-    onEditDashboard: (key: unknown) => void;
-    onDeleteDashboard: (key: unknown) => void;
-    onShowItem: (key: unknown) => void;
+    onMoveItemToFolder: (key: string, folderId: string) => void;
+    onHideItem: (key: string) => void;
+    onEditDashboard: (key: string) => void;
+    onDeleteDashboard: (key: string) => void;
+    onShowItem: (key: string) => void;
 };
 
 const JUST_MOVED_CLASS =
     'animate-in fade-in-0 slide-in-from-top-1 duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:slide-in-from-top-0';
 
-function customNavActionLabel(t: TranslationFn, key: string, value: unknown) {
+function customNavActionLabel(t: TranslationFn, key: string, value: string) {
     return t(`nav_menu.custom_nav.dynamic.${key}`, { value });
 }
 
@@ -364,7 +364,7 @@ function FolderAddItemsButton({
     onAdd
 }: {
     candidates: MoveCandidate[];
-    onAdd: (key: unknown) => void;
+    onAdd: (key: string) => void;
 }) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
@@ -407,7 +407,7 @@ function FolderAddItemsButton({
                     );
                     return (
                         <Button
-                            key={String(candidate.key)}
+                            key={candidate.key}
                             type="button"
                             variant="ghost"
                             className="h-auto w-full justify-start px-2 py-1.5 font-normal"
@@ -440,6 +440,7 @@ function FolderHeaderRow({
     onUngroup
 }: FolderHeaderRowProps) {
     const { t } = useTranslation();
+    const folderName = name || '';
 
     return (
         <SortableNavItemRow id={getFolderSortableId(folderId)}>
@@ -453,7 +454,11 @@ function FolderHeaderRow({
                     )}
                 >
                     <DragHandleButton
-                        label={customNavActionLabel(t, 'drag_value', name)}
+                        label={customNavActionLabel(
+                            t,
+                            'drag_value',
+                            folderName
+                        )}
                         dragHandleProps={dragHandleProps}
                     />
                     <NavIconPicker
@@ -462,12 +467,12 @@ function FolderHeaderRow({
                         ariaLabel={customNavActionLabel(
                             t,
                             'icon_for_value',
-                            name
+                            folderName
                         )}
                         onValueChange={onIconChange}
                     />
                     <span className="min-w-0 flex-1 truncate px-1">
-                        {String(name || '')}
+                        {folderName}
                     </span>
                     <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                         {t('nav_menu.custom_nav.folder_item_count', {
@@ -479,7 +484,11 @@ function FolderHeaderRow({
                         onAdd={onAddItem}
                     />
                     <IconAction
-                        label={customNavActionLabel(t, 'rename_value', name)}
+                        label={customNavActionLabel(
+                            t,
+                            'rename_value',
+                            folderName
+                        )}
                         icon={PencilIcon}
                         onClick={onRename}
                     />
@@ -517,13 +526,14 @@ export function CustomNavDialogLayoutEditor({
         if (entry.type !== 'item') {
             return [];
         }
-        const definition = definitionMap.get(entry.key);
+        const key = entry.key;
+        const definition = definitionMap.get(key);
         if (!definition) {
             return [];
         }
         return [
             {
-                key: entry.key,
+                key,
                 label: definitionLabel(definition, t),
                 icon: entry.icon || definition.icon
             }
@@ -558,13 +568,14 @@ export function CustomNavDialogLayoutEditor({
                         <div className="flex flex-col gap-1">
                             {localLayout.map((entry, index) => {
                                 if (entry.type === 'folder') {
+                                    const folderId = entry.id;
                                     return (
                                         <div
-                                            key={String(entry.id)}
+                                            key={entry.id}
                                             className="flex flex-col gap-1 rounded-lg border p-2"
                                         >
                                             <FolderHeaderRow
-                                                folderId={entry.id}
+                                                folderId={folderId}
                                                 name={entry.name}
                                                 icon={entry.icon}
                                                 itemCount={entry.items.length}
@@ -578,7 +589,7 @@ export function CustomNavDialogLayoutEditor({
                                                 onAddItem={(key) =>
                                                     onMoveItemToFolder(
                                                         key,
-                                                        entry.id
+                                                        folderId
                                                     )
                                                 }
                                                 onRename={() =>
@@ -605,9 +616,7 @@ export function CustomNavDialogLayoutEditor({
                                                             }
                                                             return (
                                                                 <NavDefinitionRow
-                                                                    key={String(
-                                                                        key
-                                                                    )}
+                                                                    key={key}
                                                                     itemKey={
                                                                         key
                                                                     }
@@ -623,9 +632,7 @@ export function CustomNavDialogLayoutEditor({
                                                                     indent
                                                                     justMoved={
                                                                         justMovedKey ===
-                                                                        String(
-                                                                            key
-                                                                        )
+                                                                        key
                                                                     }
                                                                     onIconChange={(
                                                                         icon
@@ -660,7 +667,7 @@ export function CustomNavDialogLayoutEditor({
                                                 </div>
                                             ) : (
                                                 <FolderDropZone
-                                                    folderId={entry.id}
+                                                    folderId={folderId}
                                                     label={t(
                                                         'nav_menu.custom_nav.folder_drop_here'
                                                     )}
@@ -670,19 +677,18 @@ export function CustomNavDialogLayoutEditor({
                                     );
                                 }
 
-                                const definition = definitionMap.get(entry.key);
+                                const key = entry.key;
+                                const definition = definitionMap.get(key);
                                 if (!definition) {
                                     return null;
                                 }
                                 return (
                                     <NavDefinitionRow
-                                        key={String(entry.key)}
-                                        itemKey={entry.key}
+                                        key={key}
+                                        itemKey={key}
                                         definition={definition}
                                         icon={entry.icon || definition.icon}
-                                        justMoved={
-                                            justMovedKey === String(entry.key)
-                                        }
+                                        justMoved={justMovedKey === key}
                                         onIconChange={(icon) =>
                                             onFolderIconChange(
                                                 index,
@@ -691,12 +697,12 @@ export function CustomNavDialogLayoutEditor({
                                                     DEFAULT_NAV_ICON_KEY
                                             )
                                         }
-                                        onHide={() => onHideItem(entry.key)}
+                                        onHide={() => onHideItem(key)}
                                         onEditDashboard={() =>
-                                            onEditDashboard(entry.key)
+                                            onEditDashboard(key)
                                         }
                                         onDeleteDashboard={() =>
-                                            onDeleteDashboard(entry.key)
+                                            onDeleteDashboard(key)
                                         }
                                     />
                                 );
@@ -713,12 +719,12 @@ export function CustomNavDialogLayoutEditor({
                     <div className="flex flex-col gap-1">
                         {hiddenItems.map((item) => (
                             <Button
-                                key={String(item.key)}
+                                key={item.key}
                                 type="button"
                                 variant="ghost"
                                 className={cn(
                                     'text-muted-foreground h-auto w-full justify-start px-2 py-1.5 text-left font-normal',
-                                    justMovedKey === String(item.key) &&
+                                    justMovedKey === item.key &&
                                         JUST_MOVED_CLASS
                                 )}
                                 aria-label={customNavActionLabel(

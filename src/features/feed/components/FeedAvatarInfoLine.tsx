@@ -30,21 +30,20 @@ type AvatarInfoLineState = {
 };
 
 type AvatarInfoLineStateInput = {
-    avatarName?: unknown;
-    ownerId?: unknown;
+    avatarName?: string;
+    ownerId?: string;
     status?: AvatarInfoLineStatus;
     cacheKey?: string;
 };
 
 type AvatarInfoLineProps = {
-    avatarName?: unknown;
-    avatarTags?: unknown;
+    avatarName?: string | null;
+    avatarTags?: string[] | null;
     compact?: boolean;
-    imageUrl?: unknown;
-    ownerId?: unknown;
-    resolveFromImage?: boolean;
+    imageUrl?: string | null;
+    ownerId?: string | null;
     showTags?: boolean;
-    userId?: unknown;
+    userId?: string | null;
 };
 
 function isAvatarRecord(value: unknown): value is ResolvedAvatarRecord {
@@ -68,10 +67,10 @@ async function findAvatarByImageUrl({
     imageUrl,
     avatarName
 }: {
-    imageUrl: unknown;
-    avatarName: unknown;
+    imageUrl: string;
+    avatarName: string;
 }): Promise<ResolvedAvatarRecord | null> {
-    const fileId = extractFileId(String(imageUrl ?? ''));
+    const fileId = extractFileId(imageUrl);
     const query = normalizeId(avatarName) || fileId;
     if (!fileId || query.length < 3) {
         return null;
@@ -102,15 +101,12 @@ async function findAvatarByImageUrl({
     );
 }
 
-function getAvatarInfoLineCacheKey(
-    imageUrl: unknown,
-    endpoint: unknown
-): string {
-    const normalizedImageUrl = String(imageUrl || '').trim();
+function getAvatarInfoLineCacheKey(imageUrl: string, endpoint: string): string {
+    const normalizedImageUrl = imageUrl.trim();
     if (!normalizedImageUrl) {
         return '';
     }
-    return `${String(endpoint || '').trim()}\n${normalizedImageUrl}`;
+    return `${endpoint.trim()}\n${normalizedImageUrl}`;
 }
 
 function normalizeAvatarInfoLineState({
@@ -120,7 +116,7 @@ function normalizeAvatarInfoLineState({
     cacheKey = ''
 }: AvatarInfoLineStateInput = {}): AvatarInfoLineState {
     return {
-        avatarName: typeof avatarName === 'string' ? avatarName.trim() : '',
+        avatarName: avatarName.trim(),
         ownerId: normalizeId(ownerId),
         status,
         cacheKey
@@ -152,20 +148,18 @@ function resolveInitialAvatarInfoLineState({
     avatarName,
     imageUrl,
     ownerId,
-    endpoint,
-    resolveFromImage
+    endpoint
 }: {
-    avatarName?: unknown;
-    imageUrl?: unknown;
-    ownerId?: unknown;
-    endpoint?: unknown;
-    resolveFromImage: boolean;
+    avatarName?: string | null;
+    imageUrl?: string | null;
+    ownerId?: string | null;
+    endpoint: string;
 }): AvatarInfoLineState {
-    const hintedName = typeof avatarName === 'string' ? avatarName.trim() : '';
+    const hintedName = avatarName?.trim() ?? '';
     const hintedOwnerId = normalizeId(ownerId);
-    const cacheKey = getAvatarInfoLineCacheKey(imageUrl, endpoint);
+    const cacheKey = getAvatarInfoLineCacheKey(imageUrl ?? '', endpoint);
 
-    if (!cacheKey || !resolveFromImage) {
+    if (!cacheKey) {
         return normalizeAvatarInfoLineState({
             avatarName: hintedName,
             ownerId: hintedOwnerId,
@@ -191,7 +185,13 @@ function resolveInitialAvatarInfoLineState({
 }
 
 function isEmptyAvatarTags(value: unknown): boolean {
-    return !(value as { length?: unknown } | null | undefined)?.length;
+    if (typeof value === 'string' || Array.isArray(value)) {
+        return value.length === 0;
+    }
+    if (value && typeof value === 'object' && 'length' in value) {
+        return !value.length;
+    }
+    return true;
 }
 
 function avatarTagsEqual(left: unknown, right: unknown): boolean {
@@ -215,7 +215,6 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     compact = false,
     imageUrl,
     ownerId,
-    resolveFromImage = true,
     showTags = true,
     userId
 }: AvatarInfoLineProps) {
@@ -231,18 +230,20 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             avatarName,
             imageUrl,
             ownerId,
-            endpoint: currentEndpoint,
-            resolveFromImage
+            endpoint: currentEndpoint
         })
     );
 
     useEffect(() => {
-        const hintedName =
-            typeof avatarName === 'string' ? avatarName.trim() : '';
+        const hintedName = avatarName?.trim() ?? '';
         const hintedOwnerId = normalizeId(ownerId);
-        const cacheKey = getAvatarInfoLineCacheKey(imageUrl, currentEndpoint);
+        const resolvedImageUrl = imageUrl?.trim() ?? '';
+        const cacheKey = getAvatarInfoLineCacheKey(
+            resolvedImageUrl,
+            currentEndpoint
+        );
 
-        if (!cacheKey || !resolveFromImage) {
+        if (!cacheKey) {
             setAvatarInfoLineState(setInfo, {
                 avatarName: hintedName,
                 ownerId: hintedOwnerId,
@@ -278,7 +279,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         });
 
         avatarProfileRepository
-            .getAvatarNameFromImageUrl(imageUrl)
+            .getAvatarNameFromImageUrl(resolvedImageUrl)
             .then((nextInfo) => {
                 if (!active) {
                     return;
@@ -310,7 +311,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         return () => {
             active = false;
         };
-    }, [avatarName, currentEndpoint, imageUrl, ownerId, resolveFromImage]);
+    }, [avatarName, currentEndpoint, imageUrl, ownerId]);
 
     const normalizedOwnerId = normalizeId(info.ownerId);
     const normalizedUserId = normalizeId(userId);
@@ -326,7 +327,8 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             : info.avatarName || t('dialog.user.info.unknown_avatar');
 
     async function openAvatarAuthorTarget(): Promise<void> {
-        if (!imageUrl) {
+        const resolvedImageUrl = imageUrl?.trim() ?? '';
+        if (!resolvedImageUrl) {
             return;
         }
 
@@ -338,9 +340,9 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             openAvatarDialog({
                 avatarId: currentUserSnapshot.currentAvatar,
                 title:
-                    currentUserSnapshot.currentAvatarName ||
-                    currentUserSnapshot.avatarName ||
-                    info.avatarName ||
+                    normalizeId(currentUserSnapshot.currentAvatarName) ||
+                    normalizeId(currentUserSnapshot.avatarName) ||
+                    normalizeId(info.avatarName) ||
                     undefined
             });
             return;
@@ -352,7 +354,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             try {
                 const nextInfo =
                     await avatarProfileRepository.getAvatarNameFromImageUrl(
-                        imageUrl
+                        resolvedImageUrl
                     );
                 nextOwnerId = normalizeId(nextInfo?.ownerId);
                 nextAvatarName = nextInfo?.avatarName || nextAvatarName;
@@ -368,7 +370,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
 
         try {
             const avatar = await findAvatarByImageUrl({
-                imageUrl,
+                imageUrl: resolvedImageUrl,
                 avatarName: nextAvatarName
             });
             if (avatar?.id) {
@@ -444,7 +446,6 @@ function areAvatarInfoLinePropsEqual(
         previousProps.showTags === nextProps.showTags &&
         previousProps.imageUrl === nextProps.imageUrl &&
         previousProps.ownerId === nextProps.ownerId &&
-        previousProps.resolveFromImage === nextProps.resolveFromImage &&
         previousProps.userId === nextProps.userId &&
         avatarTagsEqual(previousProps.avatarTags, nextProps.avatarTags)
     );

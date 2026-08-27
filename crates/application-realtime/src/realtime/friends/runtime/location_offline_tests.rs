@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn friend_location_offline_with_real_location_requests_profile_refetch() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -53,7 +53,7 @@ mod tests {
 
     #[test]
     fn friend_location_embedded_user_without_online_location_does_not_revive_offline_friend() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn friend_location_embedded_user_offline_location_starts_pending_offline() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn friend_location_embedded_user_offline_location_ignores_nested_active_state() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

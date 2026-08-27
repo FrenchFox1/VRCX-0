@@ -236,7 +236,7 @@ function roleNameContainsOwner(value: unknown): boolean {
     return normalizedText(value).toLowerCase().includes('owner');
 }
 
-function isOwnedGroupForUser(source: unknown, userId: unknown) {
+function isOwnedGroupForUser(source: unknown, userId: string | undefined) {
     const group = record(source);
     const membership = record(group.membership);
     const member = record(group.member);
@@ -343,7 +343,7 @@ export function normalizeUserGroupMembershipRows(groups: unknown) {
 
 export function splitUserGroups(
     groups: UserGroupRow[],
-    userId: unknown,
+    userId: string | undefined,
     isCurrentUser: boolean
 ) {
     const ownGroups: UserGroupRow[] = [];

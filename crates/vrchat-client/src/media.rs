@@ -13,8 +13,8 @@ mod params;
 mod request;
 
 pub use params::{
-    EmojiFileTag, EmojiLoopStyle, EmojiUploadParams, ImageAnimationStyle, ImageMaskTag,
-    InventoryListParams, InventoryOrder, MediaFileListParams, MediaFileTag, PrintUploadParams,
+    EmojiLoopStyle, EmojiUploadParams, ImageAnimationStyle, ImageMaskTag, InventoryListParams,
+    InventoryOrder, MediaFileListParams, MediaFileTag, PrintUploadParams,
 };
 pub use request::{
     InventoryItemUpdateRequest, MediaAssetUploadRequest, ProfileDecorationEquipSlot,
@@ -224,7 +224,7 @@ pub fn asset_upload_input(
 pub fn prints_get_input(
     endpoint: String,
     user_id: String,
-    n: i64,
+    n: i32,
 ) -> Result<HttpApiRequestInput, HttpApiError> {
     let user_id = require_text(user_id, "VrchatMediaPrintsGet requires userId.")?;
     Ok(get_input(

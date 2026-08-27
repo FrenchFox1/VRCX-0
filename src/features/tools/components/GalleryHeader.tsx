@@ -21,14 +21,18 @@ import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
-import { GALLERY_GRID_DENSITY_OPTIONS } from '../galleryDensity';
+import {
+    GALLERY_GRID_DENSITY_OPTIONS,
+    sanitizeGalleryGridDensity,
+    type GalleryGridDensity
+} from '../galleryDensity';
 
 function GalleryGridSettingsMenu({
     gridDensity,
     onGridDensityChange
 }: {
-    gridDensity: string;
-    onGridDensityChange: (value: string) => void;
+    gridDensity: GalleryGridDensity;
+    onGridDensityChange: (value: GalleryGridDensity) => void;
 }) {
     const { t } = useTranslation();
 
@@ -59,7 +63,9 @@ function GalleryGridSettingsMenu({
                             value={gridDensity ? [gridDensity] : []}
                             onValueChange={(nextValue) => {
                                 if (nextValue[0]) {
-                                    onGridDensityChange(nextValue[0]);
+                                    onGridDensityChange(
+                                        sanitizeGalleryGridDensity(nextValue[0])
+                                    );
                                 }
                             }}
                             className="grid w-full grid-cols-3"
@@ -96,8 +102,8 @@ export function GalleryHeader({
     uploadInputRef: RefObject<HTMLInputElement | null>;
     uploadingTab: string;
     onUploadChange: (event: ChangeEvent<HTMLInputElement>) => void;
-    gridDensity: string;
-    onGridDensityChange: (value: string) => void;
+    gridDensity: GalleryGridDensity;
+    onGridDensityChange: (value: GalleryGridDensity) => void;
     onBack: () => void;
     onRefreshAll: () => void;
 }) {

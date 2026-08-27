@@ -7,6 +7,7 @@ import {
     useSensor,
     useSensors
 } from '@dnd-kit/core';
+import type { UniqueIdentifier } from '@dnd-kit/core';
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
     SortableContext,
@@ -64,8 +65,8 @@ import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu';
 
 function moveColumnByDrag<TData extends RowData>(
     table: AppTable<TData>,
-    activeId: unknown,
-    overId: unknown
+    activeId: UniqueIdentifier,
+    overId: UniqueIdentifier | undefined
 ) {
     if (!activeId || !overId || activeId === overId) {
         return;
@@ -85,8 +86,9 @@ function moveColumnByDrag<TData extends RowData>(
 }
 
 function getColumnId<TData extends RowData>(column: AppColumnDef<TData>) {
-    const source = column as { id?: unknown; accessorKey?: unknown };
-    const columnId = source.id ?? source.accessorKey ?? null;
+    const columnId =
+        ('id' in column ? column.id : undefined) ??
+        ('accessorKey' in column ? column.accessorKey : null);
     return typeof columnId === 'string' ? columnId : null;
 }
 
@@ -146,19 +148,27 @@ export function DataTableColumnDndProvider<TData extends RowData>({
     children: ReactNode;
 }) {
     const columnOrderLocked = getColumnOrderLocked(table);
-    const reorderableColumnIds = getReorderableColumnIds(table);
+    const visibleLeafColumns = table.getVisibleLeafColumns();
+    const reorderableColumnIds = useMemo(
+        () => getReorderableColumnIds(visibleLeafColumns),
+        [visibleLeafColumns]
+    );
     const canReorder =
         enableColumnReorder &&
         !columnOrderLocked &&
         reorderableColumnIds.length > 1;
     const sensors = useColumnDndSensors();
-    const contextValue = canReorder
-        ? {
-              enabled: true,
-              items: reorderableColumnIds,
-              table
-          }
-        : dataTableColumnDndDefaultState;
+    const contextValue = useMemo(
+        () =>
+            canReorder
+                ? {
+                      enabled: true,
+                      items: reorderableColumnIds,
+                      table
+                  }
+                : dataTableColumnDndDefaultState,
+        [canReorder, reorderableColumnIds, table]
+    );
 
     if (!canReorder) {
         return (

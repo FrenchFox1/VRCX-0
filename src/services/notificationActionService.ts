@@ -4,17 +4,23 @@ import {
     type NotificationTarget,
     type SocialFriendMutationOutcome
 } from '@/platform/tauri/bindings';
-import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
+import notificationPersistenceRepository, {
+    type NotificationResponse,
+    type NotificationRow
+} from '@/repositories/notificationPersistenceRepository';
 
-type NotificationRecord = Record<string, unknown> & {
-    id?: unknown;
-    version?: unknown;
-    type?: unknown;
-    senderUserId?: unknown;
-    senderUsername?: unknown;
-    expired?: unknown;
-    link?: unknown;
-};
+type NotificationRecord = Partial<
+    Pick<
+        NotificationRow,
+        | 'id'
+        | 'version'
+        | 'type'
+        | 'senderUserId'
+        | 'senderUsername'
+        | 'expired'
+        | 'link'
+    >
+>;
 
 interface NotificationActionInput {
     currentUserId?: string;
@@ -23,7 +29,7 @@ interface NotificationActionInput {
 
 interface FriendRequestNotificationInput {
     notification?: NotificationRecord | null;
-    targetUser?: NotificationRecord | null;
+    targetUser?: { displayName?: string } | null;
 }
 
 interface AcceptRequestInviteInput extends NotificationActionInput {
@@ -40,7 +46,7 @@ interface InviteResponseInput extends NotificationActionInput {
 }
 
 interface NotificationResponseInput extends NotificationActionInput {
-    response?: NotificationRecord | null;
+    response?: Pick<NotificationResponse, 'data' | 'type'> | null;
 }
 
 interface BoopReplyInput extends NotificationActionInput {

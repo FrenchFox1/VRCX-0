@@ -23,7 +23,7 @@ export function GalleryTabs({
     printsTab
 }: {
     activeTab: GalleryTab;
-    onActiveTabChange: (value: unknown) => void;
+    onActiveTabChange: (value: string) => void;
     tabCounts: Record<GalleryTab, string>;
     fileTab: GalleryFileTabState;
     printsTab: GalleryPrintsTabState;

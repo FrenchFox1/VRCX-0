@@ -14,15 +14,13 @@ use super::super::localization::OverlayLocale;
 use super::super::manager::VrOverlayManager;
 use super::super::runtime::{render_slint_hmd_frame, VrOverlayRuntime, VrOverlayRuntimeConfig};
 use super::super::service::HostVrOverlayService;
+use super::super::test_preview::test_hmd_toast_views;
 use super::friend_record::friend_record_avatar_url;
 use super::main::{build_main_surface_model, HmdToastView, MainOverlayFrameInput};
 
 const HMD_TOAST_CAPACITY: usize = 3;
 const HMD_TOAST_WORLD_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
 const HMD_JOIN_LEAVE_MERGE_WINDOW: Duration = Duration::from_secs(4);
-const HMD_TOAST_FADE_IN: Duration = Duration::from_millis(200);
-const HMD_TOAST_FADE_OUT: Duration = Duration::from_millis(240);
-const HMD_TOAST_SLIDE_STEP_SECONDS: f32 = 0.2;
 
 #[derive(Clone)]
 pub(crate) struct HmdToastState {
@@ -31,9 +29,6 @@ pub(crate) struct HmdToastState {
     last_updated_at: Instant,
     avatar: Option<AvatarBitmap>,
     merge_count: u32,
-    appeared_at: Instant,
-    visual_pos: f32,
-    last_frame_at: Instant,
 }
 
 impl VrOverlayRuntime {
@@ -56,13 +51,13 @@ impl VrOverlayRuntime {
             return;
         };
         let runtime = Arc::clone(self);
-        let tasks = services.data().tasks.clone();
+        let tasks = services.tasks().clone();
         tasks.spawn(async move {
             let mut entry = entry;
-            let endpoint = services.data().auth_scope.snapshot().endpoint;
+            let endpoint = services.auth_scope().snapshot().endpoint;
             if !endpoint.trim().is_empty() {
-                let resolve = services.data().world_cache.resolve_name(
-                    services.data().web.as_ref(),
+                let resolve = services.world_cache().resolve_name(
+                    services.web_client().as_ref(),
                     &endpoint,
                     &world_id,
                 );
@@ -115,16 +110,12 @@ impl VrOverlayRuntime {
             while queue.len() >= HMD_TOAST_CAPACITY {
                 queue.pop_front();
             }
-            let visual_pos = queue.len() as f32;
             queue.push_back(HmdToastState {
                 entry,
                 expires_at: now + timeout,
                 last_updated_at: now,
                 avatar: None,
                 merge_count: 1,
-                appeared_at: now,
-                visual_pos,
-                last_frame_at: now,
             });
         }
         if last_toast_expired {
@@ -147,7 +138,11 @@ impl VrOverlayRuntime {
         now: Instant,
     ) {
         let surface_id = OverlaySurfaceId::new(MAIN_SURFACE_ID);
-        let toasts = self.hmd_toast_views(now);
+        let toasts = if self.is_test_mode() {
+            test_hmd_toast_views()
+        } else {
+            self.hmd_toast_views(now)
+        };
         if toasts.is_empty() {
             if let Err(error) = manager.hide_surface(&surface_id) {
                 tracing::warn!(error = %error, "failed to hide HMD overlay surface");
@@ -191,12 +186,10 @@ impl VrOverlayRuntime {
         }
         queue
             .iter_mut()
-            .enumerate()
-            .map(|(index, toast)| {
+            .map(|toast| {
                 if let Some(services) = &self.services {
-                    refresh_cached_world_name(&services.data().world_cache, &mut toast.entry);
+                    refresh_cached_world_name(services.world_cache(), &mut toast.entry);
                 }
-                advance_hmd_toast_slide(toast, index, now);
                 let show_avatar = self.is_current_hmd_friend(&toast.entry.actor_user_id);
                 HmdToastView {
                     entry: toast.entry.clone(),
@@ -207,8 +200,6 @@ impl VrOverlayRuntime {
                     },
                     show_avatar,
                     merge_count: toast.merge_count,
-                    opacity: hmd_toast_alpha(toast, now),
-                    slide_offset: toast.visual_pos - index as f32,
                 }
             })
             .collect()
@@ -216,26 +207,10 @@ impl VrOverlayRuntime {
 
     pub(crate) fn hmd_toast_refresh_hint(&self, now: Instant) -> Option<Duration> {
         let queue = self.hmd_toasts.lock().ok()?;
-        let mut next_deadline: Option<Duration> = None;
-        for (index, toast) in queue.iter().enumerate() {
-            let fade_in_ends_at = toast.appeared_at + HMD_TOAST_FADE_IN;
-            let fade_out_ends_at = toast.expires_at + HMD_TOAST_FADE_OUT;
-            if now >= fade_out_ends_at && toast.last_frame_at >= fade_out_ends_at {
-                continue;
-            }
-            let fading_in = now < fade_in_ends_at || toast.last_frame_at < fade_in_ends_at;
-            let fading_out = now >= toast.expires_at;
-            let sliding = toast.visual_pos != index as f32;
-            if fading_in || fading_out || sliding {
-                return Some(Duration::ZERO);
-            }
-            let until_expiry = toast.expires_at.saturating_duration_since(now);
-            next_deadline = Some(match next_deadline {
-                Some(current) => current.min(until_expiry),
-                None => until_expiry,
-            });
-        }
-        next_deadline
+        queue
+            .iter()
+            .map(|toast| toast.expires_at.saturating_duration_since(now))
+            .min()
     }
 
     fn render_hmd_frame(
@@ -279,14 +254,13 @@ impl VrOverlayRuntime {
             );
             return;
         };
-        let auth = services.data().auth_scope.snapshot();
+        let auth = services.auth_scope().snapshot();
         let endpoint = if snapshot_endpoint.trim().is_empty() {
             auth.endpoint.clone()
         } else {
             snapshot_endpoint
         };
         let allow_user_icon = services
-            .data()
             .config()
             .get_bool("displayVRCPlusIconsAsAvatar", true)
             .unwrap_or(true);
@@ -307,11 +281,11 @@ impl VrOverlayRuntime {
         let avatar_cache = Arc::clone(&self.avatar_bitmap_cache);
         let runtime = Arc::clone(self);
         let avatar_cache_generation = avatar_cache.generation();
-        let tasks = services.data().tasks.clone();
+        let tasks = services.tasks().clone();
         tasks.spawn(async move {
             let Some(bitmap) = avatar_cache
                 .resolve(
-                    services.data().web.as_ref(),
+                    services.web_client().as_ref(),
                     initial_image_url.trim(),
                     &actor_user_id,
                 )
@@ -373,26 +347,8 @@ impl VrOverlayRuntime {
 
 fn prune_expired_hmd_toasts(queue: &mut VecDeque<HmdToastState>, now: Instant) -> bool {
     let had_toasts = !queue.is_empty();
-    queue.retain(|toast| now < toast.expires_at + HMD_TOAST_FADE_OUT);
+    queue.retain(|toast| now < toast.expires_at);
     had_toasts && queue.is_empty()
-}
-
-fn hmd_toast_alpha(toast: &HmdToastState, now: Instant) -> f32 {
-    let elapsed_in = now.saturating_duration_since(toast.appeared_at);
-    let elapsed_out = now.saturating_duration_since(toast.expires_at);
-    let fade_in = (elapsed_in.as_secs_f32() / HMD_TOAST_FADE_IN.as_secs_f32()).clamp(0.0, 1.0);
-    let fade_out =
-        1.0 - (elapsed_out.as_secs_f32() / HMD_TOAST_FADE_OUT.as_secs_f32()).clamp(0.0, 1.0);
-    fade_in * fade_out
-}
-
-fn advance_hmd_toast_slide(toast: &mut HmdToastState, index: usize, now: Instant) {
-    let step = now
-        .saturating_duration_since(toast.last_frame_at)
-        .as_secs_f32()
-        / HMD_TOAST_SLIDE_STEP_SECONDS;
-    toast.last_frame_at = now;
-    toast.visual_pos += (index as f32 - toast.visual_pos).clamp(-step, step);
 }
 
 fn should_merge_hmd_toast(
@@ -452,6 +408,4 @@ pub(crate) fn refresh_cached_world_name(
 }
 
 #[cfg(test)]
-mod animation_tests;
-#[cfg(all(test, feature = "friends-panel"))]
-mod tests;
+mod lifecycle_tests;

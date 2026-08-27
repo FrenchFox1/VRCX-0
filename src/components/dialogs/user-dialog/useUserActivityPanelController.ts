@@ -2,50 +2,26 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import configRepository from '@/repositories/configRepository';
-import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { userActivityViewService } from '@/services/userActivityViewService';
 
 import {
     ACTIVITY_FRIEND_PERIOD_KEY,
-    ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY,
-    ACTIVITY_SELF_PERIOD_KEY,
-    ACTIVITY_SELF_TOP_WORLDS_SORT_KEY,
     getRangeDays,
-    getWorldThumbnailUrl,
     normalizeActivityPeriod,
-    normalizeTopWorldsSort,
     OVERLAP_EXCLUDE_ENABLED_KEY,
     OVERLAP_EXCLUDE_END_KEY,
     OVERLAP_EXCLUDE_START_KEY,
     OVERLAP_LOADING_DELAY_MS,
-    TOP_WORLDS_LOADING_DELAY_MS,
-    type ActivityHeatmapData,
-    type TopWorldsSort,
-    type UserActivityTopWorld
+    type ActivityHeatmapData
 } from './userActivityPanelModel';
 
 type UserActivityPanelControllerProps = {
     active: boolean;
     activityContextKey: string;
-    currentHomeWorldId?: string | null;
     currentUserId?: string | null;
     dayLabels: string[];
     failedToLoadMessage: string;
-    isCurrentUser: boolean;
     userId?: string | null;
-};
-
-type LoadTopWorldsOptions = {
-    excludeHomeWorld: boolean;
-    rangeDays: number;
-    requestId: number;
-    sortBy: TopWorldsSort;
-};
-
-type RefreshTopWorldsOptions = {
-    excludeHomeWorld?: boolean;
-    period?: string;
-    sortBy?: TopWorldsSort;
 };
 
 type RefreshOverlapOptions = {
@@ -54,34 +30,21 @@ type RefreshOverlapOptions = {
     excludeStart?: string;
 };
 
-type RefreshDataOptions = RefreshTopWorldsOptions &
-    RefreshOverlapOptions & {
-        forceRefresh?: boolean;
-    };
+type RefreshDataOptions = RefreshOverlapOptions & {
+    forceRefresh?: boolean;
+    period?: string;
+};
 
 type OverlapViewResult = Awaited<
     ReturnType<typeof userActivityViewService.loadOverlapView>
 >;
-type WorldProfileResult = Awaited<
-    ReturnType<typeof worldProfileRepository.getWorldProfile>
->;
-
-function isTopWorld(value: unknown): value is UserActivityTopWorld {
-    return Boolean(value && typeof value === 'object');
-}
-
-function normalizeTopWorlds(value: unknown): UserActivityTopWorld[] {
-    return Array.isArray(value) ? value.filter(isTopWorld) : [];
-}
 
 export function useUserActivityPanelController({
     active,
     activityContextKey,
-    currentHomeWorldId,
     currentUserId,
     dayLabels,
     failedToLoadMessage,
-    isCurrentUser,
     userId
 }: UserActivityPanelControllerProps) {
     const [loading, setLoading] = useState(false);
@@ -95,14 +58,6 @@ export function useUserActivityPanelController({
         rawBuckets: [],
         normalizedBuckets: []
     });
-    const [topWorlds, setTopWorlds] = useState<UserActivityTopWorld[]>([]);
-    const [topWorldsLoading, setTopWorldsLoading] = useState(false);
-    const [topWorldsLoadingVisible, setTopWorldsLoadingVisible] =
-        useState(false);
-    const [topWorldsSortBy, setTopWorldsSortBy] =
-        useState<TopWorldsSort>('time');
-    const [excludeHomeWorldEnabled, setExcludeHomeWorldEnabled] =
-        useState(false);
     const [overlapLoading, setOverlapLoading] = useState(false);
     const [overlapLoadingVisible, setOverlapLoadingVisible] = useState(false);
     const [hasOverlapData, setHasOverlapData] = useState(false);
@@ -117,49 +72,16 @@ export function useUserActivityPanelController({
     const [excludeEndHour, setExcludeEndHour] = useState('6');
     const activityRequestIdRef = useRef(0);
     const overlapRequestIdRef = useRef(0);
-    const topWorldRequestIdRef = useRef(0);
-    const topWorldsLoadingTimerRef = useRef<ReturnType<
-        typeof setTimeout
-    > | null>(null);
     const overlapLoadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
         null
     );
-    const pendingWorldThumbnailFetchesRef = useRef(new Set<string>());
     const lastLoadedContextRef = useRef('');
-
-    function clearTopWorldsLoadingTimer() {
-        if (topWorldsLoadingTimerRef.current !== null) {
-            clearTimeout(topWorldsLoadingTimerRef.current);
-            topWorldsLoadingTimerRef.current = null;
-        }
-    }
 
     function clearOverlapLoadingTimer() {
         if (overlapLoadingTimerRef.current !== null) {
             clearTimeout(overlapLoadingTimerRef.current);
             overlapLoadingTimerRef.current = null;
         }
-    }
-
-    function beginTopWorldsLoading(requestId: number) {
-        setTopWorldsLoading(true);
-        setTopWorldsLoadingVisible(false);
-        clearTopWorldsLoadingTimer();
-        topWorldsLoadingTimerRef.current = setTimeout(() => {
-            topWorldsLoadingTimerRef.current = null;
-            if (requestId === topWorldRequestIdRef.current) {
-                setTopWorldsLoadingVisible(true);
-            }
-        }, TOP_WORLDS_LOADING_DELAY_MS);
-    }
-
-    function finishTopWorldsLoading(requestId: number) {
-        if (requestId !== topWorldRequestIdRef.current) {
-            return;
-        }
-        clearTopWorldsLoadingTimer();
-        setTopWorldsLoading(false);
-        setTopWorldsLoadingVisible(false);
     }
 
     function beginOverlapLoading(requestId: number) {
@@ -184,9 +106,7 @@ export function useUserActivityPanelController({
     }
 
     function resetActivityState() {
-        clearTopWorldsLoadingTimer();
         clearOverlapLoadingTimer();
-        topWorldRequestIdRef.current += 1;
         overlapRequestIdRef.current += 1;
         setLoading(false);
         setError('');
@@ -196,122 +116,12 @@ export function useUserActivityPanelController({
         setPeakDayText('');
         setPeakTimeText('');
         setMainHeatmap({ rawBuckets: [], normalizedBuckets: [] });
-        setTopWorlds([]);
-        setTopWorldsLoading(false);
-        setTopWorldsLoadingVisible(false);
-        setTopWorldsSortBy('time');
         setHasOverlapData(false);
         setOverlapPercent(0);
         setBestOverlapTime('');
         setOverlapHeatmap({ rawBuckets: [], normalizedBuckets: [] });
         setOverlapLoading(false);
         setOverlapLoadingVisible(false);
-    }
-
-    async function fetchMissingTopWorldThumbnails(
-        worlds: UserActivityTopWorld[]
-    ) {
-        const pendingWorldThumbnailFetches =
-            pendingWorldThumbnailFetchesRef.current;
-        const missingWorlds = worlds.filter((world) => {
-            const worldId = String(world.worldId || '').trim();
-            if (
-                !worldId ||
-                getWorldThumbnailUrl(world) ||
-                pendingWorldThumbnailFetches.has(worldId)
-            ) {
-                return false;
-            }
-            pendingWorldThumbnailFetches.add(worldId);
-            return true;
-        });
-        if (!missingWorlds.length) {
-            return;
-        }
-
-        let results: PromiseSettledResult<WorldProfileResult>[] = [];
-        try {
-            results = await Promise.allSettled(
-                missingWorlds.map((world) =>
-                    worldProfileRepository.getWorldProfile({
-                        worldId: String(world.worldId || '').trim()
-                    })
-                )
-            );
-        } finally {
-            for (const world of missingWorlds) {
-                pendingWorldThumbnailFetches.delete(
-                    String(world.worldId || '').trim()
-                );
-            }
-        }
-        const profileByWorldId = new Map<string, WorldProfileResult>();
-        results.forEach((result, index) => {
-            if (result.status === 'fulfilled' && result.value?.id) {
-                profileByWorldId.set(
-                    String(missingWorlds[index].worldId || '').trim(),
-                    result.value
-                );
-            }
-        });
-        if (!profileByWorldId.size) {
-            return;
-        }
-
-        setTopWorlds((currentRows) =>
-            currentRows.map((world) => {
-                const profileWorld = profileByWorldId.get(
-                    String(world.worldId || '').trim()
-                );
-                if (!profileWorld) {
-                    return world;
-                }
-                return {
-                    ...world,
-                    worldName: profileWorld.name || world.worldName,
-                    imageUrl: profileWorld.imageUrl || world.imageUrl || '',
-                    thumbnailImageUrl:
-                        profileWorld.thumbnailImageUrl ||
-                        world.thumbnailImageUrl ||
-                        ''
-                };
-            })
-        );
-    }
-
-    async function loadTopWorlds({
-        rangeDays,
-        sortBy,
-        excludeHomeWorld,
-        requestId
-    }: LoadTopWorldsOptions) {
-        if (!isCurrentUser || !userId) {
-            return;
-        }
-        const topWorldRequestId = ++topWorldRequestIdRef.current;
-        beginTopWorldsLoading(topWorldRequestId);
-        try {
-            const rows = normalizeTopWorlds(
-                await userActivityViewService.loadTopWorldsView({
-                    rangeDays,
-                    limit: 5,
-                    sortBy,
-                    excludeWorldId: excludeHomeWorld
-                        ? (currentHomeWorldId ?? '')
-                        : ''
-                })
-            );
-            if (
-                requestId !== activityRequestIdRef.current ||
-                topWorldRequestId !== topWorldRequestIdRef.current
-            ) {
-                return;
-            }
-            setTopWorlds(rows);
-            fetchMissingTopWorldThumbnails(rows);
-        } finally {
-            finishTopWorldsLoading(topWorldRequestId);
-        }
     }
 
     function applyOverlapView(overlapView: OverlapViewResult) {
@@ -324,34 +134,12 @@ export function useUserActivityPanelController({
         });
     }
 
-    async function refreshTopWorldsOnly({
-        sortBy = topWorldsSortBy,
-        excludeHomeWorld = excludeHomeWorldEnabled,
-        period = selectedPeriod
-    }: RefreshTopWorldsOptions = {}) {
-        if (!active || !isCurrentUser || !hasAnyData || !userId) {
-            return;
-        }
-        await loadTopWorlds({
-            rangeDays: getRangeDays(period),
-            sortBy,
-            excludeHomeWorld,
-            requestId: activityRequestIdRef.current
-        });
-    }
-
     async function refreshOverlapOnly({
         excludeOverlap = excludeHoursEnabled,
         excludeStart = excludeStartHour,
         excludeEnd = excludeEndHour
     }: RefreshOverlapOptions = {}) {
-        if (
-            !active ||
-            isCurrentUser ||
-            !hasAnyData ||
-            !currentUserId ||
-            !userId
-        ) {
+        if (!active || !hasAnyData || !currentUserId || !userId) {
             return;
         }
 
@@ -392,8 +180,6 @@ export function useUserActivityPanelController({
     async function refreshData({
         forceRefresh = false,
         period = selectedPeriod,
-        sortBy = topWorldsSortBy,
-        excludeHomeWorld = excludeHomeWorldEnabled,
         excludeOverlap = excludeHoursEnabled,
         excludeStart = excludeStartHour,
         excludeEnd = excludeEndHour
@@ -412,7 +198,6 @@ export function useUserActivityPanelController({
                 {
                     userId,
                     ownerUserId: currentUserId ?? '',
-                    isSelf: isCurrentUser,
                     rangeDays,
                     dayLabels,
                     forceRefresh
@@ -433,25 +218,8 @@ export function useUserActivityPanelController({
             lastLoadedContextRef.current = activityContextKey;
 
             if (!activityView.hasAnyData) {
-                setTopWorlds([]);
-                setTopWorldsLoading(false);
-                setTopWorldsLoadingVisible(false);
                 setHasOverlapData(false);
                 setOverlapHeatmap({ rawBuckets: [], normalizedBuckets: [] });
-                return;
-            }
-
-            if (isCurrentUser) {
-                await loadTopWorlds({
-                    rangeDays,
-                    sortBy,
-                    excludeHomeWorld,
-                    requestId
-                });
-                if (requestId !== activityRequestIdRef.current) {
-                    return;
-                }
-                setHasOverlapData(false);
                 return;
             }
 
@@ -500,14 +268,10 @@ export function useUserActivityPanelController({
         if (!active) {
             activityRequestIdRef.current += 1;
             overlapRequestIdRef.current += 1;
-            topWorldRequestIdRef.current += 1;
-            clearTopWorldsLoadingTimer();
             clearOverlapLoadingTimer();
             setLoading(false);
             setOverlapLoading(false);
             setOverlapLoadingVisible(false);
-            setTopWorldsLoading(false);
-            setTopWorldsLoadingVisible(false);
             return undefined;
         }
 
@@ -529,26 +293,11 @@ export function useUserActivityPanelController({
         async function loadSettingsAndData() {
             const [
                 period,
-                sortBy,
-                excludeHomeWorld,
                 overlapExcludeEnabled,
                 overlapExcludeStart,
                 overlapExcludeEnd
             ] = await Promise.all([
-                configRepository.getString(
-                    isCurrentUser
-                        ? ACTIVITY_SELF_PERIOD_KEY
-                        : ACTIVITY_FRIEND_PERIOD_KEY,
-                    '30'
-                ),
-                configRepository.getString(
-                    ACTIVITY_SELF_TOP_WORLDS_SORT_KEY,
-                    'time'
-                ),
-                configRepository.getBool(
-                    ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY,
-                    false
-                ),
+                configRepository.getString(ACTIVITY_FRIEND_PERIOD_KEY, '30'),
                 configRepository.getBool(OVERLAP_EXCLUDE_ENABLED_KEY, false),
                 configRepository.getString(OVERLAP_EXCLUDE_START_KEY, '1'),
                 configRepository.getString(OVERLAP_EXCLUDE_END_KEY, '6')
@@ -558,22 +307,16 @@ export function useUserActivityPanelController({
             }
 
             const nextPeriod = normalizeActivityPeriod(period);
-            const nextSortBy = normalizeTopWorldsSort(sortBy);
-            const nextExcludeStart = String(overlapExcludeStart);
-            const nextExcludeEnd = String(overlapExcludeEnd);
-            const nextExcludeHomeWorld = Boolean(excludeHomeWorld);
-            const nextExcludeOverlap = Boolean(overlapExcludeEnabled);
+            const nextExcludeStart = overlapExcludeStart;
+            const nextExcludeEnd = overlapExcludeEnd;
+            const nextExcludeOverlap = overlapExcludeEnabled;
             setSelectedPeriod(nextPeriod);
-            setTopWorldsSortBy(nextSortBy);
-            setExcludeHomeWorldEnabled(nextExcludeHomeWorld);
             setExcludeHoursEnabled(nextExcludeOverlap);
             setExcludeStartHour(nextExcludeStart);
             setExcludeEndHour(nextExcludeEnd);
             activityRequestIdRef.current = baseRequestId - 1;
             await refreshData({
                 period: nextPeriod,
-                sortBy: nextSortBy,
-                excludeHomeWorld: nextExcludeHomeWorld,
                 excludeOverlap: nextExcludeOverlap,
                 excludeStart: nextExcludeStart,
                 excludeEnd: nextExcludeEnd
@@ -588,61 +331,22 @@ export function useUserActivityPanelController({
 
     useEffect(() => initializeActivity(), [active, activityContextKey]);
 
-    useEffect(
-        () => () => {
-            clearTopWorldsLoadingTimer();
-            clearOverlapLoadingTimer();
-        },
-        []
-    );
+    useEffect(() => () => clearOverlapLoadingTimer(), []);
 
-    const refreshTopWorldsForHomeWorldChange = useEffectEvent(() => {
-        if (active && isCurrentUser && excludeHomeWorldEnabled && hasAnyData) {
-            refreshTopWorldsOnly();
-        }
-    });
-
-    useEffect(() => {
-        refreshTopWorldsForHomeWorldChange();
-    }, [currentHomeWorldId]);
-
-    async function changePeriod(value: unknown) {
+    async function changePeriod(value: string) {
         const nextPeriod = normalizeActivityPeriod(value);
         setSelectedPeriod(nextPeriod);
         await configRepository.setString(
-            isCurrentUser
-                ? ACTIVITY_SELF_PERIOD_KEY
-                : ACTIVITY_FRIEND_PERIOD_KEY,
+            ACTIVITY_FRIEND_PERIOD_KEY,
             nextPeriod
         );
         await refreshData({ period: nextPeriod });
     }
 
-    async function changeTopWorldsSort(value: unknown) {
-        const nextSortBy = normalizeTopWorldsSort(value);
-        setTopWorldsSortBy(nextSortBy);
-        await configRepository.setString(
-            ACTIVITY_SELF_TOP_WORLDS_SORT_KEY,
-            nextSortBy
-        );
-        await refreshTopWorldsOnly({ sortBy: nextSortBy });
-    }
-
-    async function changeExcludeHomeWorld(value: unknown) {
-        const enabled = value === true;
-        setExcludeHomeWorldEnabled(enabled);
-        await configRepository.setBool(
-            ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY,
-            enabled
-        );
-        await refreshTopWorldsOnly({ excludeHomeWorld: enabled });
-    }
-
-    async function changeExcludeHours(value: unknown) {
-        const enabled = value === true;
-        setExcludeHoursEnabled(enabled);
-        await configRepository.setBool(OVERLAP_EXCLUDE_ENABLED_KEY, enabled);
-        await refreshOverlapOnly({ excludeOverlap: enabled });
+    async function changeExcludeHours(value: boolean) {
+        setExcludeHoursEnabled(value);
+        await configRepository.setBool(OVERLAP_EXCLUDE_ENABLED_KEY, value);
+        await refreshOverlapOnly({ excludeOverlap: value });
     }
 
     async function changeExcludeRange(kind: 'start' | 'end', value: string) {
@@ -665,14 +369,11 @@ export function useUserActivityPanelController({
 
     return {
         bestOverlapTime,
-        changeExcludeHomeWorld,
         changeExcludeHours,
         changeExcludeRange,
         changePeriod,
-        changeTopWorldsSort,
         error,
         excludeEndHour,
-        excludeHomeWorldEnabled,
         excludeHoursEnabled,
         excludeStartHour,
         filteredEventCount,
@@ -687,10 +388,6 @@ export function useUserActivityPanelController({
         peakDayText,
         peakTimeText,
         refreshData,
-        selectedPeriod,
-        topWorlds,
-        topWorldsLoading,
-        topWorldsLoadingVisible,
-        topWorldsSortBy
+        selectedPeriod
     };
 }

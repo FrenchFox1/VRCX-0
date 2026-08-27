@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use vrcx_0_application::{
+use vrcx_0_application::auth::{
     migrate_saved_credential_secrets, saved_credential_session_data, saved_snapshot,
     SavedAuthAutoLoginStatus,
 };
@@ -52,6 +52,8 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
     let db_path = dir.path.join("VRCX-0.sqlite3");
     let db = Arc::new(DatabaseService::new(&db_path).unwrap());
     let config = ConfigRepository::new(Arc::clone(&db));
+    let auth_store =
+        vrcx_0_outbound_adapters::LocalAuthCredentialStore::from_repository(config.clone());
     init_secrets(Some([11; 32]), true);
     config
         .set_bool(
@@ -100,8 +102,8 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
         .unwrap();
     config.set_string("lastUserLoggedIn", "usr_1").unwrap();
 
-    assert!(migrate_saved_credential_secrets(&config).unwrap());
-    assert!(!migrate_saved_credential_secrets(&config).unwrap());
+    assert!(migrate_saved_credential_secrets(&auth_store).unwrap());
+    assert!(!migrate_saved_credential_secrets(&auth_store).unwrap());
 
     let raw = raw_saved_credentials(&config);
     let password = raw["usr_1"]["loginParams"]["password"]
@@ -148,7 +150,7 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
         ));
     }
 
-    let snapshot = saved_snapshot(&config).unwrap();
+    let snapshot = saved_snapshot(&auth_store).unwrap();
     let credential = snapshot
         .saved_credentials_list
         .iter()
@@ -160,7 +162,7 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
         .saved_credentials_list
         .iter()
         .any(|credential| credential.user.id == "usr_literal" && credential.has_login_credentials));
-    let session = saved_credential_session_data(&config, "usr_1")
+    let session = saved_credential_session_data(&auth_store, "usr_1")
         .unwrap()
         .unwrap();
     assert_eq!(session.cookies.as_deref(), Some("saved-cookie-secret"));
@@ -172,7 +174,7 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
         .set_string("savedCredentials", &damaged.to_string())
         .unwrap();
 
-    let snapshot = saved_snapshot(&config).unwrap();
+    let snapshot = saved_snapshot(&auth_store).unwrap();
     let credential = snapshot
         .saved_credentials_list
         .iter()
@@ -188,7 +190,7 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
     assert!(cleaned["usr_1"].get("cookies").is_none());
     assert!(cleaned["usr_1"]["loginParams"].get("password").is_none());
     assert_eq!(
-        saved_credential_session_data(&config, "usr_1")
+        saved_credential_session_data(&auth_store, "usr_1")
             .unwrap()
             .unwrap()
             .cookies,
@@ -198,7 +200,7 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
     config
         .set_string("savedCredentials", "{broken-json")
         .unwrap();
-    assert!(migrate_saved_credential_secrets(&config).unwrap());
+    assert!(migrate_saved_credential_secrets(&auth_store).unwrap());
     assert_eq!(raw_saved_credentials(&config), json!({}));
 
     drop(config);

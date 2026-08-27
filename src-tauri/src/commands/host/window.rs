@@ -82,22 +82,25 @@ fn finish_application_exit(app_handle: &AppHandle) {
 pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
     use tauri::Manager;
     if let Some(state) = app_handle.try_state::<AppState>() {
-        state.log_watcher_compat_bridge.stop();
-        state.stop_backend_runtime("application-exit");
-        flush_telemetry_before_task_shutdown(&state);
-        state.runtime_context.tasks.stop_all();
+        state.log_watcher_compat_bridge().stop();
+        state
+            .runtime_host()
+            .stop_for_application_exit("application-exit", || {
+                flush_telemetry_before_task_shutdown(&state);
+            });
     }
 }
 
 fn flush_telemetry_before_task_shutdown(state: &AppState) {
-    let telemetry = state.desktop.telemetry.clone();
     match tokio::runtime::Handle::try_current() {
         Ok(handle) if handle.runtime_flavor() == tokio::runtime::RuntimeFlavor::MultiThread => {
-            tokio::task::block_in_place(|| handle.block_on(telemetry.shutdown_flush()));
+            tokio::task::block_in_place(|| {
+                handle.block_on(state.runtime_host().shutdown_telemetry_flush())
+            });
         }
         Ok(_) => {}
         Err(_) => {
-            tauri::async_runtime::block_on(telemetry.shutdown_flush());
+            tauri::async_runtime::block_on(state.runtime_host().shutdown_telemetry_flush());
         }
     }
 }
@@ -206,7 +209,7 @@ pub fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
 
         stop_runtime_services(&app_handle);
         if let Some(state) = app_handle.try_state::<AppState>() {
-            state.release_profile_lock();
+            state.runtime_host().release_profile_lock();
         }
         app_handle.request_restart();
         Ok(())
@@ -237,7 +240,7 @@ pub fn app__set_startup(
             {
                 return Err(format!(
                     "Autostart is not supported on {}",
-                    vrcx_0_host::host_capabilities::current_platform()
+                    vrcx_0_platform::host_capabilities::current_platform()
                 ));
             }
             let autolaunch = self.0.autolaunch();
@@ -253,11 +256,9 @@ pub fn app__set_startup(
         }
     }
 
-    Ok(vrcx_0_runtime_host_desktop::set_autostart_preference(
-        state.runtime_context.config(),
-        &TauriAutostartPlatform(app_handle),
-        enabled,
-    )?)
+    Ok(state
+        .runtime_host()
+        .set_autostart_preference(&TauriAutostartPlatform(app_handle), enabled)?)
 }
 
 #[tauri::command]

@@ -13,7 +13,7 @@ pub fn get_invite_history(
     db: &DatabaseService,
     input: InviteHistoryInput,
 ) -> Result<InviteHistoryOutput, Error> {
-    let user_prefix = normalize_user_table_prefix(&input.owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(input.owner_user_id.as_str())?;
     let mut grouped: BTreeMap<(String, InviteDirection), InviteAccumulator> = BTreeMap::new();
     append_v1_invites(db, &input, &user_prefix, &mut grouped)?;
     append_v2_invites(db, &input, &user_prefix, &mut grouped)?;
@@ -84,7 +84,7 @@ fn append_v1_invites(
         let receiver_user_id = row_string(&row, 2);
         let kind = row_string(&row, 3);
         let created_at = row_string(&row, 4);
-        let inferred_direction = if sender_user_id == input.owner_user_id {
+        let inferred_direction = if sender_user_id == input.owner_user_id.as_str() {
             InviteDirection::Sent
         } else {
             InviteDirection::Received

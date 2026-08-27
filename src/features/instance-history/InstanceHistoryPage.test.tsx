@@ -83,12 +83,10 @@ vi.mock('@/components/layout/PageScaffold', () => ({
 }));
 
 vi.mock('@/components/layout/ToolbarControls', () => ({
-    toolbarDateRangeTrigger: () => (
-        <button type="button" aria-label="date range" />
-    ),
     ToolbarActions: ({ children }: { children?: ReactNode }) => (
         <div>{children}</div>
     ),
+    ToolbarDivider: () => null,
     ToolbarRefreshButton: () => null,
     ToolbarSearch: () => null,
     ToolbarSegmented: () => null,
@@ -273,12 +271,12 @@ import { InstanceHistoryPage } from './InstanceHistoryPage';
 type Deferred<T> = {
     promise: Promise<T>;
     resolve: (value: T) => void;
-    reject: (reason?: unknown) => void;
+    reject: (reason?: Error) => void;
 };
 
 function deferred<T>(): Deferred<T> {
     let resolve!: (value: T) => void;
-    let reject!: (reason?: unknown) => void;
+    let reject!: (reason?: Error) => void;
     const promise = new Promise<T>((resolvePromise, rejectPromise) => {
         resolve = resolvePromise;
         reject = rejectPromise;
@@ -420,7 +418,6 @@ describe('InstanceHistoryPage', () => {
 
         await waitFor(() =>
             expect(mocks.deleteGameLogInstance).toHaveBeenCalledWith({
-                id: 'usr_self',
                 location: 'wrld_delete:1',
                 events: [41, 42]
             })

@@ -14,6 +14,7 @@ import {
     recordLocationHintsFromInstances
 } from '@/services/domainIngestionService';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 import type { WorldDialogTabbedRuntimeState } from './useWorldDialogRuntimeState';
 import {
@@ -30,10 +31,6 @@ export interface WorldDialogCurrentInstanceDetails {
     ownerUser: EntityRecord | null;
     ownerGroup: EntityRecord | null;
     playerSnapshot: CurrentInstanceRosterSnapshot | null;
-}
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
 }
 
 function record(value: unknown): EntityRecord {
@@ -119,7 +116,7 @@ export function useWorldDialogCurrentInstance({
                 .catch((): null => null),
             isCurrentLiveInstance
                 ? loadCurrentInstanceRoster({
-                      currentUserId,
+                      currentUserId: currentUserId || '',
                       currentLocation: normalizedWorldId,
                       runtime: {
                           currentLocation: currentResolvedLocation,

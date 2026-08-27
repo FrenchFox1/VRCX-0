@@ -146,6 +146,28 @@ describe('DashboardFeedWidget', () => {
         ).toBe(true);
     });
 
+    it('marks status dots with their accessible shape semantics', () => {
+        const view = render(
+            <MemoryRouter>
+                <FeedEntryContent
+                    row={{
+                        type: 'Status',
+                        displayName: 'Friend',
+                        status: 'join me'
+                    }}
+                />
+            </MemoryRouter>
+        );
+
+        const statusDot = view.container.querySelector(
+            '[data-dashboard-feed-status-dot]'
+        );
+        expect(statusDot?.classList.contains('user-status-indicator')).toBe(
+            true
+        );
+        expect(statusDot?.classList.contains('joinme')).toBe(true);
+    });
+
     it('groups compact feed rows by day instead of repeating the date per row', async () => {
         mocks.queryFeedLatest.mockResolvedValue({
             rows: [

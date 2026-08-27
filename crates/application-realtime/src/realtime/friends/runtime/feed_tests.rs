@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn websocket_friend_update_still_emits_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn websocket_friend_update_with_offline_status_does_not_emit_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn duplicate_friend_update_status_payload_only_writes_status_feed_once() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn friend_update_status_a_b_a_writes_each_real_diff() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn websocket_friend_update_avatar_tags_change_emits_avatar_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn duplicate_friend_update_avatar_payload_only_writes_avatar_feed_once() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

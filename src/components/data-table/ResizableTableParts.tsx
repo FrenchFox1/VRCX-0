@@ -21,9 +21,8 @@ import { isColumnReorderable } from './tableColumnLayout';
 
 type DragHandleProps = Partial<ComponentProps<typeof Button>>;
 
-function resolveSize(value: unknown) {
-    const size = Number(value);
-    return Number.isFinite(size) && size > 0 ? `${size}px` : undefined;
+function resolveSize(value: number) {
+    return Number.isFinite(value) && value > 0 ? `${value}px` : undefined;
 }
 
 function resizeHeaderFromKeyboard<TData extends RowData>(

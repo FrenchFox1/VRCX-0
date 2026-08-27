@@ -1,19 +1,27 @@
 use std::sync::{Arc, Mutex};
 
-use serde_json::{json, Map, Value};
-use vrcx_0_application_activity::{OverlayActivityRuntime, OverlayActivitySink};
-use vrcx_0_application_core::FriendProjection;
-use vrcx_0_application_game::{GameLogSideEffectEvent, GameLogSideEffectObserver, RuntimeSnapshot};
+use vrcx_0_application_activity::notification::{
+    extract_file_id, extract_file_version, fallback_file_version, load_overlay_activity_filters,
+    normalize_avatar_image_url_128, CachedNotificationUserImageResolver, NotificationConfig,
+    RealtimeUserImageResolverSlot,
+};
+use vrcx_0_application_activity::{
+    OverlayActivityRuntime, OverlayActivitySink, OverlayActivitySinkRegistry,
+};
+use vrcx_0_application_core::{
+    FriendProjection, HostSessionRuntime, ImageCache, RuntimeAuthScope, TaskSupervisor, WebClient,
+    WorldCache,
+};
+use vrcx_0_application_game::{
+    GameLogSideEffectEvent, GameLogSideEffectObserver, NowPlayingSnapshot, RuntimeSnapshot,
+    RuntimeSnapshotStore,
+};
 use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeHostRuntime};
 use vrcx_0_core::friends::StateBucket;
 use vrcx_0_host_desktop::tts::{SystemTtsEngine, TtsEngine};
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_overlay_runtime::VrOverlayRuntimeServices;
-use vrcx_0_runtime_host::notification::{
-    extract_file_id, extract_file_version, fallback_file_version, normalize_avatar_image_url_128,
-    RealtimeUserImageResolverSlot,
-};
-use vrcx_0_runtime_host::RuntimeHostContext;
+use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
 use crate::host_actions::RuntimeHost;
 use crate::notification::{
@@ -23,19 +31,43 @@ use crate::notification::{
 
 const AVATAR_PREFETCH_MAX_PATCHES: usize = 8;
 
+pub(crate) struct DesktopRuntimeServicesDeps {
+    pub db: Arc<DatabaseService>,
+    pub web: Arc<WebClient>,
+    pub image_cache: Arc<ImageCache>,
+    pub config: ConfigRepository,
+    pub notification_config: Arc<dyn NotificationConfig>,
+    pub auth_scope: RuntimeAuthScope,
+    pub session: HostSessionRuntime,
+    pub world_cache: Arc<WorldCache>,
+    pub tasks: TaskSupervisor,
+    pub overlay_activity: OverlayActivityRuntime,
+    pub overlay_activity_sinks: OverlayActivitySinkRegistry,
+}
+
 pub struct DesktopRuntimeServices {
-    data: Arc<RuntimeHostContext>,
+    web: Arc<WebClient>,
+    image_cache: Arc<ImageCache>,
+    config: ConfigRepository,
+    notification_config: Arc<dyn NotificationConfig>,
+    auth_scope: RuntimeAuthScope,
+    session: HostSessionRuntime,
+    world_cache: Arc<WorldCache>,
+    tasks: TaskSupervisor,
+    overlay_activity: OverlayActivityRuntime,
+    overlay_activity_sinks: OverlayActivitySinkRegistry,
     pub host: RuntimeHost,
     tts: Arc<dyn TtsEngine>,
     notification_desktop_notifier: DesktopNotifierSlot,
     realtime_user_image_resolver: RealtimeUserImageResolverSlot,
-    game_log_snapshot: Arc<Mutex<RuntimeSnapshot>>,
-    now_playing: Arc<Mutex<Value>>,
+    realtime_user_image_resolver_owner: Mutex<Option<Arc<dyn CachedNotificationUserImageResolver>>>,
+    game_log_snapshot: RuntimeSnapshotStore,
+    now_playing: Arc<Mutex<Arc<NowPlayingSnapshot>>>,
 }
 
 impl DesktopRuntimeServices {
-    pub fn new(data: Arc<RuntimeHostContext>) -> Self {
-        if let Err(error) = seed_hmd_notifications_default(&data.config) {
+    pub(crate) fn new(deps: DesktopRuntimeServicesDeps) -> Self {
+        if let Err(error) = seed_hmd_notifications_default(&deps.config) {
             tracing::warn!(error = %error, "failed to seed HMD notification preference");
         }
         let tts: Arc<dyn TtsEngine> = Arc::new(SystemTtsEngine::new());
@@ -43,38 +75,47 @@ impl DesktopRuntimeServices {
         let realtime_user_image_resolver = RealtimeUserImageResolverSlot::default();
         let notification_sink: Arc<dyn OverlayActivitySink> =
             Arc::new(NotificationDispatcher::new(NotificationDispatcherDeps {
-                session: data.session.clone(),
-                auth_scope: data.auth_scope.clone(),
-                config: data.config.clone(),
-                db: Arc::clone(&data.db),
-                image_cache: Arc::clone(&data.image_cache),
+                session: deps.session.clone(),
+                auth_scope: deps.auth_scope.clone(),
+                config: deps.config.clone(),
+                db: Arc::clone(&deps.db),
+                image_cache: Arc::clone(&deps.image_cache),
                 realtime_user_image_resolver: realtime_user_image_resolver.clone(),
                 desktop: Arc::new(notification_desktop_notifier.clone()),
                 tts: Arc::clone(&tts),
-                tasks: data.tasks.clone(),
+                tasks: deps.tasks.clone(),
             }));
-        data.add_overlay_activity_sink(notification_sink);
+        deps.overlay_activity_sinks.add(notification_sink);
         Self {
-            data,
+            web: deps.web,
+            image_cache: deps.image_cache,
+            config: deps.config,
+            notification_config: deps.notification_config,
+            auth_scope: deps.auth_scope,
+            session: deps.session,
+            world_cache: deps.world_cache,
+            tasks: deps.tasks,
+            overlay_activity: deps.overlay_activity,
+            overlay_activity_sinks: deps.overlay_activity_sinks,
             host: RuntimeHost::new(),
             tts,
             notification_desktop_notifier,
             realtime_user_image_resolver,
-            game_log_snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
-            now_playing: Arc::new(Mutex::new(default_now_playing_value())),
+            realtime_user_image_resolver_owner: Mutex::new(None),
+            game_log_snapshot: RuntimeSnapshotStore::default(),
+            now_playing: Arc::new(Mutex::new(Arc::new(NowPlayingSnapshot::default()))),
         }
     }
 
-    pub fn data(&self) -> &RuntimeHostContext {
-        self.data.as_ref()
-    }
-
     pub fn reload_overlay_activity_filters(&self) {
-        self.data.reload_overlay_activity_filters();
+        self.overlay_activity
+            .set_filters(load_overlay_activity_filters(
+                self.notification_config.as_ref(),
+            ));
     }
 
     pub fn set_overlay_activity_extra_sink(&self, extra_sink: Arc<dyn OverlayActivitySink>) {
-        self.data.add_overlay_activity_sink(extra_sink);
+        self.overlay_activity_sinks.add(extra_sink);
     }
 
     pub fn set_notification_desktop_notifier(&self, desktop: Arc<dyn DesktopNotifier>) {
@@ -82,29 +123,36 @@ impl DesktopRuntimeServices {
     }
 
     pub fn set_realtime_user_image_resolver(&self, realtime_runtime: &Arc<RealtimeHostRuntime>) {
-        self.realtime_user_image_resolver.set(realtime_runtime);
+        let resolver: Arc<dyn CachedNotificationUserImageResolver> = Arc::new(
+            vrcx_0_outbound_adapters::RealtimeNotificationUserImageResolver::new(realtime_runtime),
+        );
+        self.realtime_user_image_resolver.set(&resolver);
+        match self.realtime_user_image_resolver_owner.lock() {
+            Ok(mut owner) => *owner = Some(resolver),
+            Err(error) => tracing::warn!(
+                error = %error,
+                "failed to retain realtime notification image resolver"
+            ),
+        }
     }
 
-    pub fn game_log_snapshot_handle(&self) -> Arc<Mutex<RuntimeSnapshot>> {
-        Arc::clone(&self.game_log_snapshot)
+    pub fn game_log_snapshot_handle(&self) -> RuntimeSnapshotStore {
+        self.game_log_snapshot.clone()
     }
 
-    pub fn game_log_snapshot(&self) -> RuntimeSnapshot {
-        self.game_log_snapshot
-            .lock()
-            .map(|snapshot| snapshot.clone())
-            .unwrap_or_default()
+    pub fn game_log_snapshot(&self) -> Arc<RuntimeSnapshot> {
+        self.game_log_snapshot.snapshot()
     }
 
-    pub fn now_playing(&self) -> Value {
+    pub fn now_playing(&self) -> Arc<NowPlayingSnapshot> {
         self.now_playing
             .lock()
-            .map(|snapshot| snapshot.clone())
-            .unwrap_or_else(|_| default_now_playing_value())
+            .map(|snapshot| Arc::clone(&snapshot))
+            .unwrap_or_else(|_| Arc::new(NowPlayingSnapshot::default()))
     }
 
     pub fn overlay_activity(&self) -> OverlayActivityRuntime {
-        self.data.overlay_activity()
+        self.overlay_activity.clone()
     }
 
     pub fn tts(&self) -> Arc<dyn TtsEngine> {
@@ -113,29 +161,17 @@ impl DesktopRuntimeServices {
 
     fn observe_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {
         match event {
-            GameLogSideEffectEvent::NowPlaying(payload) => {
-                let Ok(Value::Object(patch)) = serde_json::to_value(payload) else {
-                    return;
-                };
-                match self.now_playing.lock() {
-                    Ok(mut current) => {
-                        let mut merged = current
-                            .as_object()
-                            .cloned()
-                            .unwrap_or_else(default_now_playing_map);
-                        for (key, value) in patch {
-                            merged.insert(key, value);
-                        }
-                        *current = Value::Object(merged);
-                    }
-                    Err(error) => {
-                        tracing::warn!("failed to lock now playing snapshot: {error}");
-                    }
+            GameLogSideEffectEvent::NowPlaying(payload) => match self.now_playing.lock() {
+                Ok(mut current) => {
+                    Arc::make_mut(&mut current).apply(payload);
                 }
-            }
+                Err(error) => {
+                    tracing::warn!("failed to lock now playing snapshot: {error}");
+                }
+            },
             GameLogSideEffectEvent::NowPlayingReset(_) => match self.now_playing.lock() {
                 Ok(mut current) => {
-                    *current = default_now_playing_value();
+                    *current = Arc::new(NowPlayingSnapshot::default());
                 }
                 Err(error) => {
                     tracing::warn!("failed to lock now playing snapshot: {error}");
@@ -152,7 +188,6 @@ impl DesktopRuntimeServices {
             return;
         }
         let Some(endpoint) = self
-            .data
             .session
             .snapshot()
             .realtime_context
@@ -162,7 +197,6 @@ impl DesktopRuntimeServices {
             return;
         };
         let allow_user_icon = self
-            .data
             .config
             .get_bool("displayVRCPlusIconsAsAvatar", true)
             .unwrap_or(true);
@@ -189,8 +223,8 @@ impl DesktopRuntimeServices {
             if version.is_empty() {
                 continue;
             }
-            let image_cache = Arc::clone(&self.data.image_cache);
-            self.data.tasks.spawn(async move {
+            let image_cache = Arc::clone(&self.image_cache);
+            self.tasks.spawn(async move {
                 let _ = image_cache.get_image(&normalized, &file_id, &version).await;
             });
         }
@@ -211,34 +245,35 @@ impl FriendProjectionObserver for DesktopRuntimeServices {
 
 #[cfg(any(windows, target_os = "linux"))]
 impl VrOverlayRuntimeServices for DesktopRuntimeServices {
-    fn data(&self) -> &RuntimeHostContext {
-        DesktopRuntimeServices::data(self)
+    fn config(&self) -> &ConfigRepository {
+        &self.config
+    }
+
+    fn web_client(&self) -> &Arc<WebClient> {
+        &self.web
+    }
+
+    fn auth_scope(&self) -> &RuntimeAuthScope {
+        &self.auth_scope
+    }
+
+    fn world_cache(&self) -> &Arc<WorldCache> {
+        &self.world_cache
+    }
+
+    fn tasks(&self) -> &TaskSupervisor {
+        &self.tasks
+    }
+
+    fn overlay_activity(&self) -> OverlayActivityRuntime {
+        self.overlay_activity.clone()
     }
 
     fn game_log_snapshot(&self) -> RuntimeSnapshot {
         DesktopRuntimeServices::game_log_snapshot(self)
+            .as_ref()
+            .clone()
     }
-}
-
-fn default_now_playing_map() -> Map<String, Value> {
-    default_now_playing_value()
-        .as_object()
-        .cloned()
-        .unwrap_or_default()
-}
-
-fn default_now_playing_value() -> Value {
-    json!({
-        "url": "",
-        "name": "",
-        "source": "",
-        "displayName": "",
-        "thumbnailUrl": "",
-        "length": 0,
-        "position": 0,
-        "startedAt": null,
-        "updatedAt": null,
-    })
 }
 
 #[cfg(test)]

@@ -279,9 +279,9 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
     }
 }
 
-async function hydrateRuntimeState(
+async function hydrateRuntimeState<TResult>(
     failureMessage: string,
-    hydrate: () => Promise<unknown>
+    hydrate: () => TResult | PromiseLike<TResult>
 ): Promise<void> {
     try {
         await hydrate();

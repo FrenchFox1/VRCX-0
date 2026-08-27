@@ -54,13 +54,18 @@ vi.mock('./worldInstanceResolver', () => ({
     resolveCreatedInstanceDetails: mocks.resolveCreatedInstanceDetails
 }));
 
+import configRepository from '@/repositories/configRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import {
     resolveNewInstanceAfterCreateAction,
     useWorldInstanceActions
 } from './useWorldInstanceActions';
-import type { NewInstanceAfterCreateAction } from './worldNewInstanceTypes';
+import { normalizeMinimumAvatarPerformance } from './worldDialogHelpers';
+import type {
+    NewInstanceAfterCreateAction,
+    WorldNewInstanceForm
+} from './worldNewInstanceTypes';
 
 describe('useWorldInstanceActions helpers', () => {
     it('maps the follow-up new-instance action to open in-game while VRChat is running', () => {
@@ -77,6 +82,11 @@ describe('useWorldInstanceActions helpers', () => {
 
     it('does not attach a follow-up action for a plain new instance', () => {
         expect(resolveNewInstanceAfterCreateAction(false, true)).toBe('');
+    });
+
+    it('accepts API avatar-performance values and treats legacy None as no limit', () => {
+        expect(normalizeMinimumAvatarPerformance('Medium')).toBe('Medium');
+        expect(normalizeMinimumAvatarPerformance('None')).toBe('');
     });
 });
 
@@ -124,9 +134,10 @@ function renderCreateFlow(
     return result;
 }
 
-async function submit(result: {
-    current: ReturnType<typeof useWorldInstanceActions>;
-}) {
+async function submit(
+    result: { current: ReturnType<typeof useWorldInstanceActions> },
+    overrides: Partial<WorldNewInstanceForm> = {}
+) {
     await act(async () => {
         await result.current.createWorldInstance({
             selectedTab: 'Normal',
@@ -134,6 +145,7 @@ async function submit(result: {
             region: 'US West',
             groupId: '',
             groupAccessType: 'plus',
+            minimumAvatarPerformance: '',
             queueEnabled: true,
             ageGate: false,
             displayName: '',
@@ -141,7 +153,8 @@ async function submit(result: {
             roleIds: '',
             instanceName: '',
             legacyUserId: '',
-            strict: false
+            strict: false,
+            ...overrides
         });
     });
 }
@@ -181,6 +194,23 @@ describe('useWorldInstanceActions createWorldInstance', () => {
             created.shortName,
             created.secureOrShortName,
             expect.objectContaining({ createdInstance: created })
+        );
+    });
+
+    it('persists and forwards the group avatar-performance limit', async () => {
+        const result = renderCreateFlow('');
+        await submit(result, {
+            accessType: 'group',
+            groupId: 'grp_test',
+            minimumAvatarPerformance: 'Good'
+        });
+
+        expect(configRepository.setString).toHaveBeenCalledWith(
+            'instanceDialogMinimumAvatarPerformance',
+            'Good'
+        );
+        expect(mocks.createInstance).toHaveBeenCalledWith(
+            expect.objectContaining({ minimumAvatarPerformance: 'Good' })
         );
     });
 

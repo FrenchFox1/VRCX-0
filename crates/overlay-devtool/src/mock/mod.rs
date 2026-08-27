@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use vrcx_0_vr_overlay::{AvatarBitmap, Color};
 
-pub mod friends;
 pub mod toast;
 pub mod wrist;
 

@@ -4,7 +4,7 @@ import { createContext, useContext } from 'react';
 type DataTableColumnDndState = {
     enabled: boolean;
     items: UniqueIdentifier[];
-    table: unknown;
+    table: object | null;
 };
 
 export const dataTableColumnDndDefaultState: DataTableColumnDndState = {

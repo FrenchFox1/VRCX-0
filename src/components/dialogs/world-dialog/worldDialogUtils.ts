@@ -1,12 +1,9 @@
 import type { TFunction } from 'i18next';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import { isRecord } from '@/shared/utils/record';
 
 type WorldDialogTab = { value: string };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 export function resolveWorldDialogTab(
     tabs: readonly WorldDialogTab[],

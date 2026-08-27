@@ -151,7 +151,7 @@ fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListIt
         message: row.message,
         title: String::new(),
         image_url: row.image_url,
-        seen: false,
+        seen: row.seen == 1,
         sender_user_id: row.sender_user_id,
         sender_username: row.sender_username,
         receiver_user_id: row.receiver_user_id,
@@ -425,6 +425,7 @@ fn notification_v1_from_row(row: &[Value]) -> Result<NotificationV1RowOutput, Er
         request_message: strict_row_string(row, 11)?,
         response_message: strict_row_string(row, 12)?,
         expired: strict_row_i64(row, 13)?,
+        seen: strict_row_i64(row, 14)?,
     })
 }
 fn notification_v2_from_row(row: &[Value]) -> Result<NotificationV2RowOutput, Error> {
@@ -500,6 +501,7 @@ mod tests {
             request_message: "Can I join?".into(),
             response_message: "Accepted".into(),
             expired: 1,
+            seen: 1,
         }
     }
 
@@ -569,7 +571,7 @@ mod tests {
         assert_eq!(item.created_at_legacy, "2026-06-22T10:30:00Z");
         assert_eq!(item.r#type, "friendRequest");
         assert_eq!(item.message, "Let's be friends");
-        assert!(!item.seen);
+        assert!(item.seen);
         assert_eq!(item.sender_user_id, "usr_sender");
         assert_eq!(item.sender_username, "Sender Name");
         assert_eq!(item.receiver_user_id, "usr_receiver");

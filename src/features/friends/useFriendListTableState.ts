@@ -187,7 +187,7 @@ export function useFriendListTableState({
         setColumnSizing({});
     }
 
-    function setPageSize(value: unknown) {
+    function setPageSize(value: string) {
         const nextPageSize = resolvePageSize(
             value,
             pageSizes,

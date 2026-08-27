@@ -1,4 +1,4 @@
-use vrcx_0_application::{
+use vrcx_0_application::favorites::{
     favorite_transfer_plan_for_item, FavoriteTransferInput, FavoriteTransferItem,
     FavoriteTransferLocation, FavoriteTransferMode, FavoriteTransferSource, FavoriteTransferStage,
     FavoriteTransferTarget,

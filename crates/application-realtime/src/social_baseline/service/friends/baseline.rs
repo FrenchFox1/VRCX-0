@@ -3,18 +3,10 @@ use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::friend_log::{FriendLogCurrentEntryInput, FriendLogReplaceOptionsInput};
+use vrcx_0_contracts::realtime::{FriendLogDelete, FriendLogUpsert, RealtimePersistenceBatch};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
-use vrcx_0_persistence::config::{get_bool as config_get_bool, set_bool as config_set_bool};
-use vrcx_0_persistence::friends::{
-    friend_log_current_list, friend_log_replace_current, FriendLogCurrentEntryInput,
-    FriendLogReplaceOptionsInput,
-};
-use vrcx_0_persistence::realtime::{
-    write_realtime_batch, FriendLogDelete, FriendLogUpsert, RealtimePersistenceBatch,
-};
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::auth::current_user_get_input;
 
 use crate::realtime::friends::trust_level_feed_entry;
 
@@ -32,6 +24,7 @@ use super::entry::{
 use super::profile::{
     fetch_all_friends, insert_fetched_friend, normalize_state_bucket, RemoteFriendProfile,
 };
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Default)]
 pub struct FriendStatusVerdicts(HashMap<String, bool>);
@@ -58,7 +51,8 @@ pub(crate) async fn verify_friend_log_relationship_changes(
     user_id: &str,
     friends_by_id: &HashMap<String, FriendRecord>,
 ) -> FriendStatusVerdicts {
-    let candidates = friend_log_relationship_candidates(deps.db.as_ref(), user_id, friends_by_id);
+    let candidates =
+        friend_log_relationship_candidates(deps.store.as_ref(), user_id, friends_by_id);
     if candidates.is_empty() {
         return FriendStatusVerdicts::default();
     }
@@ -68,14 +62,17 @@ pub(crate) async fn verify_friend_log_relationship_changes(
 }
 
 pub(crate) fn friend_log_relationship_candidates(
-    db: &DatabaseService,
+    store: &dyn crate::RealtimeStore,
     user_id: &str,
     friends_by_id: &HashMap<String, FriendRecord>,
 ) -> Vec<String> {
-    if !config_get_bool(db, &format!("friendLogInit_{user_id}"), false).unwrap_or(false) {
+    if !store
+        .get_bool(&format!("friendLogInit_{user_id}"), false)
+        .unwrap_or(false)
+    {
         return Vec::new();
     }
-    let existing = match friend_log_current_list(db, user_id.to_string()) {
+    let existing = match store.friend_log_current_list(user_id) {
         Ok(rows) => rows,
         Err(error) => {
             tracing::warn!("friend-log relationship candidate read failed: {error}");
@@ -202,13 +199,15 @@ async fn build_friend_roster_baseline_inner(
         });
     }
 
-    let current_user =
-        execute_vrchat_json_request(&deps, current_user_get_input(input.endpoint.clone()))
-            .await
-            .ok()
-            .filter(|value| !object_field_string(value, &["id"]).is_empty())
-            .map(|value| CurrentUserSnapshotView::from_raw(&value))
-            .unwrap_or(cached_current_user);
+    let current_user = execute_vrchat_json_request(
+        &deps,
+        deps.remote_requests.current_user(input.endpoint.clone())?,
+    )
+    .await
+    .ok()
+    .filter(|value| !object_field_string(value, &["id"]).is_empty())
+    .map(|value| CurrentUserSnapshotView::from_raw(&value))
+    .unwrap_or(cached_current_user);
 
     let CurrentUserSnapshotView {
         mut state_by_id,
@@ -316,7 +315,7 @@ async fn build_friend_roster_baseline_inner(
     let mut output = SocialFriendRosterBaselineOutput {
         user_id,
         stale: false,
-        count,
+        count: u32::try_from(count).unwrap_or(u32::MAX),
         detail,
         snapshot,
         friend_log_changed: false,
@@ -354,10 +353,12 @@ async fn reconcile_friend_roster_baseline(
 ) -> bool {
     let verdicts =
         verify_friend_log_relationship_changes(deps, endpoint, user_id, friends_by_id).await;
-    let feed_persistence_disabled =
-        config_get_bool(deps.db.as_ref(), "feedPersistenceDisabled", false).unwrap_or(false);
+    let feed_persistence_disabled = deps
+        .store
+        .get_bool("feedPersistenceDisabled", false)
+        .unwrap_or(false);
     reconcile_friend_roster_records(
-        deps.db.as_ref(),
+        deps.store.as_ref(),
         user_id,
         friends_by_id,
         roster_order,
@@ -371,7 +372,7 @@ fn replace_friend_roster_baseline_snapshot(
     output: &mut SocialFriendRosterBaselineOutput,
     friends_by_id: &HashMap<String, FriendRecord>,
 ) -> Result<()> {
-    output.count = friends_by_id.len();
+    output.count = u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX);
     output.snapshot = Some(RawJson::from(build_roster_snapshot_from_records(
         &output.user_id,
         friends_by_id,
@@ -414,7 +415,7 @@ pub(crate) struct FriendRosterReconcileOutcome {
 }
 
 fn init_friend_roster_records(
-    db: &DatabaseService,
+    store: &dyn crate::RealtimeStore,
     user_id: &str,
     friends_by_id: &HashMap<String, FriendRecord>,
     roster_order: Option<&[String]>,
@@ -468,14 +469,13 @@ fn init_friend_roster_records(
         })
         .collect();
 
-    match friend_log_replace_current(
-        db,
-        user_id.to_string(),
+    match store.friend_log_replace_current(
+        user_id,
         entries,
         FriendLogReplaceOptionsInput::default(),
     ) {
         Ok(_) => {
-            if let Err(error) = config_set_bool(db, &format!("friendLogInit_{user_id}"), true) {
+            if let Err(error) = store.set_bool(&format!("friendLogInit_{user_id}"), true) {
                 tracing::warn!("friend-log first-time init flag write failed: {error}");
             }
             FriendRosterReconcileOutcome {
@@ -491,20 +491,21 @@ fn init_friend_roster_records(
 }
 
 pub(crate) fn reconcile_friend_roster_records(
-    db: &DatabaseService,
+    store: &dyn crate::RealtimeStore,
     user_id: &str,
     friends_by_id: &HashMap<String, FriendRecord>,
     roster_order: Option<&[String]>,
     feed_persistence_disabled: bool,
     verdicts: &FriendStatusVerdicts,
 ) -> FriendRosterReconcileOutcome {
-    let initialized =
-        config_get_bool(db, &format!("friendLogInit_{user_id}"), false).unwrap_or(false);
+    let initialized = store
+        .get_bool(&format!("friendLogInit_{user_id}"), false)
+        .unwrap_or(false);
     if !initialized {
-        return init_friend_roster_records(db, user_id, friends_by_id, roster_order);
+        return init_friend_roster_records(store, user_id, friends_by_id, roster_order);
     }
 
-    let existing = match friend_log_current_list(db, user_id.to_string()) {
+    let existing = match store.friend_log_current_list(user_id) {
         Ok(rows) => rows,
         Err(error) => {
             tracing::warn!("friend-log reconciliation read failed: {error}");
@@ -599,7 +600,7 @@ pub(crate) fn reconcile_friend_roster_records(
 
     if feed_persistence_disabled {
         let feed_entries = std::mem::take(&mut batch.feed_entries);
-        return match write_realtime_batch(db, user_id, &batch) {
+        return match store.write_realtime_batch(&OwnerId::new(user_id), &batch) {
             Ok(counts) => FriendRosterReconcileOutcome {
                 changed: counts.affected_count > 0,
                 feed_entries,
@@ -613,7 +614,7 @@ pub(crate) fn reconcile_friend_roster_records(
             }
         };
     }
-    match write_realtime_batch(db, user_id, &batch) {
+    match store.write_realtime_batch(&OwnerId::new(user_id), &batch) {
         Ok(counts) => FriendRosterReconcileOutcome {
             changed: counts.affected_count > 0,
             feed_entries: batch.feed_entries,

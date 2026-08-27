@@ -9,6 +9,7 @@ import {
 } from '@/services/inviteDeliveryService';
 import { recordRecentAction } from '@/services/recentActionService';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 import { normalizeUserId } from './userProfileFields';
 
@@ -28,7 +29,7 @@ type UserInviteActionsOptions = {
     isFriend: boolean;
     normalizedCurrentUserId?: string | null;
     normalizedUserId?: string | null;
-    openNonce?: unknown;
+    openNonce?: number;
     profile?: Record<string, unknown> | null;
     setActionStatus: (status: string) => void;
 };
@@ -70,10 +71,6 @@ type PerformSendInviteRequestOptions = {
     imageData?: string;
     context?: InviteRequestContext | null;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function inviteMessageSlot(row: unknown) {
     const source = isRecord(row) ? row : {};

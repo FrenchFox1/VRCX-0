@@ -27,11 +27,12 @@ export interface SidebarVirtualRow {
     count?: number;
     open?: boolean;
     label?: string;
-    location?: unknown;
+    location?: string;
     friend?: SidebarFriendRecord;
     isCurrentUser?: boolean;
     isCurrentInstance?: boolean;
     isGroupByInstance?: boolean;
+    instanceLocation?: string;
     className?: string;
     text?: string;
 }
@@ -47,6 +48,7 @@ type SidebarFriendRowsOptions = {
     currentUserId?: string | null;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
+    instanceLocation?: string;
 };
 
 type FavoriteGroupSection = {
@@ -57,9 +59,9 @@ type FavoriteGroupSection = {
 
 type SidebarGameState = Record<string, unknown> & {
     isGameRunning?: boolean | null;
-    currentLocation?: unknown;
-    currentDestination?: unknown;
-    currentWorldId?: unknown;
+    currentLocation?: string | null;
+    currentDestination?: string | null;
+    currentWorldId?: string | null;
 };
 
 const STOPPED_GAME_CURRENT_USER_PRESENCE_FIELDS = [
@@ -98,7 +100,8 @@ function pushFriendRows(
     {
         currentUserId,
         isCurrentUser = false,
-        isGroupByInstance = false
+        isGroupByInstance = false,
+        instanceLocation
     }: SidebarFriendRowsOptions = {}
 ) {
     for (const friend of sectionRows) {
@@ -110,7 +113,8 @@ function pushFriendRows(
             isCurrentUser: Boolean(
                 isCurrentUser || friendId === normalizeId(currentUserId)
             ),
-            isGroupByInstance: Boolean(isGroupByInstance)
+            isGroupByInstance: Boolean(isGroupByInstance),
+            instanceLocation
         });
     }
 }
@@ -226,7 +230,7 @@ function buildCurrentUserRows({
             {
                 ...currentUserDisplayRow,
                 stateBucket: resolveCurrentUserStateBucket(
-                    currentUserDisplayRow as SidebarFriendRecord
+                    currentUserDisplayRow
                 )
             }
         ],
@@ -335,7 +339,8 @@ export function buildFriendsSidebarVirtualRows({
                 nextRows.push(...entry.currentUserRows);
                 pushFriendRows(nextRows, entry.sectionKey, entry.group.rows, {
                     currentUserId,
-                    isGroupByInstance: true
+                    isGroupByInstance: true,
+                    instanceLocation: entry.group.location
                 });
             });
         }

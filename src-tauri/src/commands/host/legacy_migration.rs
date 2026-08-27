@@ -1,18 +1,30 @@
 #![allow(non_snake_case)]
 
+use std::sync::Arc;
+
 use tauri::{AppHandle, State};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_persistence::legacy_migration::LegacyMigrationPaths;
-use vrcx_0_persistence::legacy_vrcx::{
-    LegacyVrcxDiscovery, LegacyVrcxMigrationStatus, LegacyVrcxSource,
-};
+use vrcx_0_runtime_host_desktop::legacy_migration::LegacyVrcxMigrationStatus;
+use vrcx_0_runtime_host_desktop::{LegacyMigrationLifecycle, LegacyMigrationRequestMode};
+
+struct TauriLegacyMigrationLifecycle(AppHandle);
+
+impl LegacyMigrationLifecycle for TauriLegacyMigrationLifecycle {
+    fn stop_runtime_services(&self) {
+        super::window::stop_runtime_services(&self.0);
+    }
+
+    fn request_restart(&self) {
+        self.0.request_restart();
+    }
+}
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__check_legacy_vrcx_available(state: State<'_, AppState>) -> bool {
-    state.legacy_vrcx_available
+    state.runtime_host().legacy_migration().available()
 }
 
 #[tauri::command]
@@ -20,70 +32,28 @@ pub fn app__check_legacy_vrcx_available(state: State<'_, AppState>) -> bool {
 pub fn app__get_legacy_vrcx_migration_status(
     state: State<'_, AppState>,
 ) -> LegacyVrcxMigrationStatus {
-    state.legacy_vrcx_migration_status.clone()
+    state.runtime_host().legacy_migration().status()
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__is_legacy_vrcx_running() -> bool {
-    vrcx_0_host_desktop::process_status::detect_legacy_vrcx_running()
+pub fn app__is_legacy_vrcx_running(state: State<'_, AppState>) -> bool {
+    state
+        .runtime_host()
+        .legacy_migration()
+        .is_legacy_vrcx_running()
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn app__get_legacy_vrcx_force_migration_status(
+    state: State<'_, AppState>,
 ) -> Result<LegacyVrcxMigrationStatus, AppError> {
-    Ok(discover_legacy_vrcx_source().await?.status)
-}
-
-async fn discover_legacy_vrcx_source() -> Result<LegacyVrcxDiscovery, AppError> {
-    tauri::async_runtime::spawn_blocking(
-        vrcx_0_persistence::legacy_vrcx::discover_supported_legacy_source,
-    )
-    .await
-    .map_err(|error| AppError::Custom(format!("legacy VRCX discovery task failed: {error}")))
-}
-
-fn legacy_migration_unavailable_reason(status: &LegacyVrcxMigrationStatus) -> String {
-    status
-        .reason
-        .clone()
-        .unwrap_or_else(|| "Legacy VRCX migration is unavailable.".to_string())
-}
-
-fn ensure_legacy_vrcx_process_allows_migration(
-    allow_running_legacy_vrcx: bool,
-) -> Result<(), AppError> {
-    if !allow_running_legacy_vrcx && app__is_legacy_vrcx_running() {
-        return Err(AppError::Custom(
-            "VRCX is still running. Close it before migrating or explicitly allow migration while it is running."
-                .into(),
-        ));
-    }
-    Ok(())
-}
-
-async fn stage_legacy_migration(
-    state: &AppState,
-    paths: LegacyMigrationPaths,
-    source: LegacyVrcxSource,
-) -> Result<(), AppError> {
-    let runtime = state.database_upgrade.clone();
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        vrcx_0_persistence::legacy_vrcx::validate_legacy_source(&source)
-            .map_err(AppError::Custom)?;
-        runtime
-            .prepare_legacy_migration(&paths, &source)
-            .map_err(AppError::from)
-    })
-    .await
-    .map_err(|error| AppError::Custom(format!("legacy migration task failed: {error}")))
-    .and_then(|result| result);
-    if let Err(error) = &result {
-        tracing::error!(error = %error, "legacy VRCX snapshot preparation failed");
-        super::super::database::flush_pending_upgrade_failure_telemetry(state).await;
-    }
-    result
+    Ok(state
+        .runtime_host()
+        .legacy_migration()
+        .force_status()
+        .await?)
 }
 
 #[tauri::command]
@@ -93,27 +63,15 @@ pub async fn app__request_legacy_migration(
     state: State<'_, AppState>,
     allow_running_legacy_vrcx: bool,
 ) -> Result<bool, AppError> {
-    ensure_legacy_vrcx_process_allows_migration(allow_running_legacy_vrcx)?;
-    let Some(source) = state.legacy_vrcx_source.clone() else {
-        return Err(AppError::Custom(legacy_migration_unavailable_reason(
-            &state.legacy_vrcx_migration_status,
-        )));
-    };
-    #[cfg(debug_assertions)]
-    {
-        tracing::warn!("app__request_legacy_migration: dev mode does not auto-restart or persist migration flag");
-        let _ = (app_handle, state, source);
-        Ok(false)
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        let paths = LegacyMigrationPaths::from_app_data(state.paths.app_data.clone());
-        stage_legacy_migration(&state, paths, source).await?;
-        super::window::stop_runtime_services(&app_handle);
-        app_handle.request_restart();
-        Ok(true)
-    }
+    Ok(state
+        .runtime_host()
+        .legacy_migration()
+        .request(
+            LegacyMigrationRequestMode::Configured,
+            allow_running_legacy_vrcx,
+            Arc::new(TauriLegacyMigrationLifecycle(app_handle)),
+        )
+        .await?)
 }
 
 #[tauri::command]
@@ -123,29 +81,13 @@ pub async fn app__request_legacy_vrcx_force_migration(
     state: State<'_, AppState>,
     allow_running_legacy_vrcx: bool,
 ) -> Result<bool, AppError> {
-    ensure_legacy_vrcx_process_allows_migration(allow_running_legacy_vrcx)?;
-    let discovery = discover_legacy_vrcx_source().await?;
-    let Some(source) = discovery.importable_source else {
-        return Err(AppError::Custom(legacy_migration_unavailable_reason(
-            &discovery.status,
-        )));
-    };
-    let paths = LegacyMigrationPaths::from_app_data(state.paths.app_data.clone());
-    stage_legacy_migration(&state, paths, source).await?;
-
-    #[cfg(debug_assertions)]
-    {
-        tracing::warn!(
-            "app__request_legacy_vrcx_force_migration: dev mode wrote migration flag but did not auto-restart"
-        );
-        let _ = app_handle;
-        Ok(false)
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        super::window::stop_runtime_services(&app_handle);
-        app_handle.request_restart();
-        Ok(true)
-    }
+    Ok(state
+        .runtime_host()
+        .legacy_migration()
+        .request(
+            LegacyMigrationRequestMode::Force,
+            allow_running_legacy_vrcx,
+            Arc::new(TauriLegacyMigrationLifecycle(app_handle)),
+        )
+        .await?)
 }

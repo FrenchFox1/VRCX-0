@@ -328,7 +328,7 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
                         'dialog.previous_instances.empty.no_instance_records'
                     )}
                     description={
-                        query ? t('common.search_no_results') : undefined
+                        query ? t('empty_state.search_no_results') : undefined
                     }
                     className="min-h-40 flex-none"
                 />

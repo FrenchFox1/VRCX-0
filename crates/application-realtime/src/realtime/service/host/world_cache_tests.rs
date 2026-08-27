@@ -1,6 +1,9 @@
+use std::time::Duration;
+
 use super::test_support::*;
 use super::*;
 use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardWorldCacheTaskExecutor;
@@ -32,7 +35,8 @@ fn enrich_projection_world_names_returns_unresolved_world_ids() -> Result<()> {
         "userId": "usr_location",
         "location": "wrld_missing:123",
         "worldName": "wrld_missing"
-    })];
+    })
+    .into()];
 
     let unresolved_world_ids = runtime
         .runtime()
@@ -103,30 +107,16 @@ fn feed_entry_correction_id_matches_frontend_golden_vectors() {
 
 #[test]
 fn world_cache_name_lookup_does_not_fallback_to_db_hot_path() -> Result<()> {
-    let (dir, db) = {
-        let dir = TestDir::new("world-cache-fast-path");
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-        (dir, db)
-    };
-    world_cache_upsert(
-        db.as_ref(),
-        cached_world_entry("wrld_db_only", "DB Only World", "2026-01-01T00:00:00.000Z"),
-    )?;
     let cache =
-        vrcx_0_application_core::WorldCache::new(Arc::clone(&db), 1, Duration::from_secs(60));
+        vrcx_0_application_core::WorldCache::new(vrcx_0_application_core::NoopWorldCachePort);
 
     assert_eq!(cache.get_name("wrld_db_only"), None);
-    drop(dir);
     Ok(())
 }
 
 #[test]
 fn realtime_start_does_not_preload_world_cache_rows() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("world-cache-starts-empty")?;
-    world_cache_upsert(
-        runtime.database(),
-        cached_world_entry("wrld_db_only", "DB Only World", "2026-01-01T00:00:00.000Z"),
-    )?;
     runtime.set_task_executor_for_test(DiscardWorldCacheTaskExecutor);
 
     runtime.runtime().start(
@@ -185,14 +175,15 @@ fn resolved_feed_world_name_patches_the_rust_cache_and_emits_feed_projection() -
         runtime_with_active_session("world-warm-feed-correction")?;
     runtime.runtime().emit_feed_entries(
         7,
-        "usr_self",
+        &OwnerId::new("usr_self"),
         vec![json!({
             "type": "GPS",
             "created_at": "2026-06-21T00:00:00.000Z",
             "userId": "usr_location",
             "location": "wrld_pending:123",
             "worldName": "wrld_pending"
-        })],
+        })
+        .into()],
     );
     runtime.runtime().deps.event_bus.take_events_for_test();
     {

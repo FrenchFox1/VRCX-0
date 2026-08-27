@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { EntityRecord } from '@/domain/entities/shared';
+import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { GroupMemberPatch } from '@/platform/tauri/bindings';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -14,13 +15,14 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import type { GroupActionStatus } from './groupDialogTypes';
 import { buildGroupDialogViewState } from './groupDialogViewState';
 import { normalizeEntityId } from './groupInstances';
 import { useGroupDialogActiveInstances } from './useGroupDialogActiveInstances';
 import { useGroupOwnerProfile } from './useGroupOwnerProfile';
 
 interface GroupDialogStateInput {
-    groupId: unknown;
+    groupId?: string;
     seedData?: EntityRecord | null;
 }
 
@@ -56,7 +58,7 @@ export function useGroupDialogState({
 }: GroupDialogStateInput) {
     const { t } = useTranslation();
 
-    const normalizedGroupId = normalizeEntityId(groupId);
+    const normalizedGroupId = groupId?.trim() ?? '';
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -75,15 +77,15 @@ export function useGroupDialogState({
     const [group, setGroup] = useState(() =>
         seedData ? groupProfileRepository.normalize(seedData) : null
     );
-    const [loadStatus, setLoadStatus] = useState(
+    const [loadStatus, setLoadStatus] = useState<LoadStatus>(
         normalizedGroupId ? 'running' : 'idle'
     );
-    const [actionStatus, setActionStatus] = useState('idle');
+    const [actionStatus, setActionStatus] = useState<GroupActionStatus>('idle');
     const [detail, setDetail] = useState('');
     const [previousInstances, setPreviousInstances] = useState<
         GroupPreviousInstanceRow[]
     >([]);
-    const actionStatusRef = useRef('idle');
+    const actionStatusRef = useRef<GroupActionStatus>('idle');
     const activeGroupTargetRef = useRef<ActiveGroupTarget>({
         groupId: normalizedGroupId,
         endpoint: currentEndpoint

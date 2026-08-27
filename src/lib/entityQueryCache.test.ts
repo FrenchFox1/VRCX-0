@@ -20,7 +20,9 @@ describe('entityQueryCache', () => {
                     userId: 'usr_123',
                     offset: 100,
                     n: 50,
-                    releaseStatus: undefined
+                    sort: 'updated',
+                    order: 'descending',
+                    releaseStatus: 'all'
                 },
                 'https://api.example.test///'
             )
@@ -31,6 +33,9 @@ describe('entityQueryCache', () => {
             {
                 n: 50,
                 offset: 100,
+                order: 'descending',
+                releaseStatus: 'all',
+                sort: 'updated',
                 userId: 'usr_123'
             },
             {

@@ -8,7 +8,6 @@ use vrcx_0_application_game::{
     RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
 };
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
-use vrcx_0_host_desktop::{shell_actions, vrchat_registry};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -19,7 +18,7 @@ pub fn app__registry_backup_list(
     state: State<'_, AppState>,
 ) -> Result<Vec<RegistryBackupSnapshot>, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    Ok(state.registry_backup_list()?)
+    Ok(state.runtime_host().registry_backup_list()?)
 }
 
 #[tauri::command]
@@ -29,7 +28,7 @@ pub fn app__registry_backup_create(
     name: String,
 ) -> Result<Vec<RegistryBackupSnapshot>, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    Ok(state.registry_backup_create(&name)?)
+    Ok(state.runtime_host().registry_backup_create(&name)?)
 }
 
 #[tauri::command]
@@ -39,7 +38,7 @@ pub fn app__registry_backup_restore(
     key: String,
 ) -> Result<RegistryBackupSnapshot, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    Ok(state.registry_backup_restore(&key)?)
+    Ok(state.runtime_host().registry_backup_restore(&key)?)
 }
 
 #[tauri::command]
@@ -49,7 +48,7 @@ pub fn app__registry_backup_delete(
     key: String,
 ) -> Result<Vec<RegistryBackupSnapshot>, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    Ok(state.registry_backup_delete(&key)?)
+    Ok(state.runtime_host().registry_backup_delete(&key)?)
 }
 
 #[tauri::command]
@@ -60,22 +59,12 @@ pub async fn app__registry_backup_export_to_file(
     key: String,
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    let backup = state
-        .registry_backup_list()?
-        .into_iter()
-        .find(|backup| backup.key == key)
-        .ok_or_else(|| AppError::Custom("Registry backup not found.".into()))?;
-    let json = state.registry_backup_export_json(&key)?;
-    let backup_name = if backup.name.trim().is_empty() {
-        "VRChat Registry Backup"
-    } else {
-        backup.name.trim()
-    };
+    let export = state.runtime_host().registry_backup_prepare_export(&key)?;
     let file_path = crate::commands::host::dialog::save_file(
         app_handle
             .dialog()
             .file()
-            .set_file_name(format!("{backup_name}.json"))
+            .set_file_name(&export.file_name)
             .add_filter("JSON Files", &["json"]),
     )
     .await;
@@ -86,9 +75,9 @@ pub async fn app__registry_backup_export_to_file(
         tauri_plugin_dialog::FilePath::Path(path) => path,
         other => PathBuf::from(other.to_string()),
     };
-    shell_actions::write_string_file(&path, &json)?;
-    state.desktop.host_file_access.register_path(&path);
-    Ok(path.to_string_lossy().to_string())
+    Ok(state
+        .runtime_host()
+        .registry_backup_write_export(&path, &export)?)
 }
 
 #[tauri::command]
@@ -112,9 +101,9 @@ pub async fn app__registry_backup_import_from_file(
         tauri_plugin_dialog::FilePath::Path(path) => path,
         other => PathBuf::from(other.to_string()),
     };
-    state.desktop.host_file_access.register_path(&path);
-    let json = vrchat_registry::read_reg_json_file(&path.to_string_lossy())?;
-    state.registry_backup_import_json(&json)?;
+    state
+        .runtime_host()
+        .registry_backup_import_from_file(&path)?;
     Ok(true)
 }
 
@@ -125,10 +114,9 @@ pub fn app__registry_backup_maintenance_run(
     reason: String,
 ) -> Result<RegistryBackupMaintenanceResult, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    Ok(
-        state
-            .registry_backup_maintenance_run(&reason, RegistryBackupMaintenanceMode::Foreground)?,
-    )
+    Ok(state
+        .runtime_host()
+        .registry_backup_maintenance_run(&reason, RegistryBackupMaintenanceMode::Foreground)?)
 }
 
 #[tauri::command]
@@ -137,10 +125,7 @@ pub fn app__registry_backup_restore_prompt_acknowledge(
     state: State<'_, AppState>,
     backup_date: String,
 ) -> Result<String, AppError> {
-    Ok(
-        vrcx_0_application_game::registry_backup_restore_prompt_acknowledge(
-            state.db.as_ref(),
-            &backup_date,
-        )?,
-    )
+    Ok(state
+        .runtime_host()
+        .acknowledge_registry_backup_restore_prompt(&backup_date)?)
 }

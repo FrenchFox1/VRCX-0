@@ -1,19 +1,20 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_contracts::realtime::{NotificationExpiration, NotificationV2Update};
 use vrcx_0_core::json::{text_of, JsonExt};
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use vrcx_0_core::text::first_non_empty;
 use vrcx_0_core::text::first_owned;
-use vrcx_0_persistence::realtime::{NotificationExpiration, NotificationV2Update};
 
 use super::event_kind::RealtimeWsEventKind;
 use super::{
     RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection, RealtimeNotificationOutput,
     RealtimeNotificationProjection, RealtimeNotificationUpsert,
 };
+use vrcx_0_core::OwnerId;
 
 #[cfg(any(test, feature = "test-utils"))]
 pub fn apply_notification_ws_message(
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     generation: u64,
     payload: &RealtimeWsMessagePayload,
@@ -23,7 +24,7 @@ pub fn apply_notification_ws_message(
 }
 
 pub(crate) fn apply_notification_ws_event(
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     generation: u64,
     event_kind: &RealtimeWsEventKind,
@@ -35,7 +36,7 @@ pub(crate) fn apply_notification_ws_event(
     let content = payload.json.get("content").unwrap_or(&Value::Null);
     let now = payload.received_at.clone();
     let mut output = RealtimeNotificationOutput {
-        owner_user_id: owner_user_id.trim().to_string(),
+        owner_user_id: OwnerId::new(owner_user_id.as_str().trim()),
         projection: RealtimeNotificationProjection {
             generation,
             ..RealtimeNotificationProjection::default()
@@ -46,7 +47,7 @@ pub(crate) fn apply_notification_ws_event(
     match event_kind {
         RealtimeWsEventKind::Notification => {
             let notification = normalize_v1_notification(content, &now);
-            if should_persist_v1(&notification, owner_user_id) {
+            if should_persist_v1(&notification, owner_user_id.as_str()) {
                 output
                     .persistence
                     .notification_v1_upserts
@@ -57,7 +58,7 @@ pub(crate) fn apply_notification_ws_event(
                 notify_menu: true,
                 deliver_runtime: true,
                 run_automation: true,
-                notification,
+                notification: notification.into(),
             });
         }
         RealtimeWsEventKind::NotificationV2 => {
@@ -71,7 +72,7 @@ pub(crate) fn apply_notification_ws_event(
                 notify_menu: should_notify_menu(&notification),
                 deliver_runtime: true,
                 run_automation: true,
-                notification,
+                notification: notification.into(),
             });
         }
         RealtimeWsEventKind::NotificationV2Update => {
@@ -97,15 +98,18 @@ pub(crate) fn apply_notification_ws_event(
                 output.projection.clear_menu_if_no_unseen = true;
             }
             output.projection.upserts.push(RealtimeNotificationUpsert {
-                insert_defaults: Some(json!({
-                    "createdAt": now,
-                    "created_at": now,
-                    "seen": false,
-                })),
+                insert_defaults: Some(
+                    json!({
+                        "createdAt": now,
+                        "created_at": now,
+                        "seen": false,
+                    })
+                    .into(),
+                ),
                 notify_menu: should_notify_menu(&notification),
                 deliver_runtime: false,
                 run_automation: false,
-                notification,
+                notification: notification.into(),
             });
         }
         RealtimeWsEventKind::NotificationV2Delete => {
@@ -203,12 +207,12 @@ pub(crate) fn apply_instance_closed_ws_event(
     Some(RealtimeInstanceClosedOutput {
         projection: RealtimeInstanceClosedProjection {
             generation,
-            notification: notification.clone(),
+            notification: notification.clone().into(),
         },
-        feed_entry: notification.clone(),
-        persistence: vrcx_0_persistence::realtime::RealtimePersistenceBatch {
+        feed_entry: notification.clone().into(),
+        persistence: vrcx_0_contracts::realtime::RealtimePersistenceBatch {
             notification_v1_upserts: vec![notification],
-            ..vrcx_0_persistence::realtime::RealtimePersistenceBatch::default()
+            ..vrcx_0_contracts::realtime::RealtimePersistenceBatch::default()
         },
     })
 }

@@ -29,7 +29,7 @@ const QUICK_FILTERS: { value: NotificationQuickFilter; labelKey: string }[] = [
 type NotificationPageToolbarProps = {
     activeTypes: string[];
     loadStatus: NotificationLoadStatus;
-    notificationTypeLabel: (type: unknown) => string;
+    notificationTypeLabel: (type: string) => string;
     onActiveTypesChange: (types: string[]) => void;
     onClearFilters: () => void;
     onMarkAllSeen: () => void;

@@ -14,20 +14,14 @@ use tokio_tungstenite::{client_async_tls, MaybeTlsStream, WebSocketStream};
 use tower_service::Service;
 use url::Url;
 
-const DEFAULT_WEBSOCKET_DOMAIN: &str = "wss://pipeline.vrchat.cloud";
 const VRCHAT_WEBSOCKET_HOST: &str = "pipeline.vrchat.cloud";
 const BROWSER_WEBSOCKET_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0";
 const TCP_KEEPALIVE_IDLE: Duration = Duration::from_secs(30);
 const TCP_KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
 const TCP_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
+pub use vrcx_0_contracts::RealtimeConnectionOptions;
 pub type RealtimeWebSocketStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RealtimeConnectionOptions {
-    pub origin: String,
-    pub proxy_url: Option<String>,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RealtimeFrame {
@@ -67,14 +61,7 @@ impl Error {
     }
 }
 
-pub fn normalize_websocket_domain(value: &str) -> String {
-    let trimmed = value.trim().trim_end_matches('/');
-    if trimmed.is_empty() {
-        DEFAULT_WEBSOCKET_DOMAIN.to_string()
-    } else {
-        trimmed.to_string()
-    }
-}
+pub use vrcx_0_core::vrchat_endpoints::normalize_vrchat_websocket_endpoint as normalize_websocket_domain;
 
 pub fn validated_websocket_domain(value: &str) -> Result<String, Error> {
     let domain = normalize_websocket_domain(value);

@@ -1,66 +1,64 @@
+import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { buildLegacyInstanceTag, getLaunchURL } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 type DynamicRecord = Record<string, unknown>;
 
 export type WorldInstanceRecord = DynamicRecord & {
-    accessType?: unknown;
-    capacity?: unknown;
-    creatorGroup?: unknown;
-    creatorGroupId?: unknown;
-    creatorUser?: unknown;
-    creatorUserId?: unknown;
-    group?: unknown;
-    groupId?: unknown;
-    group_id?: unknown;
-    id?: unknown;
-    instanceId?: unknown;
-    location?: unknown;
-    occupants?: unknown;
-    owner?: unknown;
-    ownerId?: unknown;
-    playerCount?: unknown;
-    players?: unknown;
-    ref?: unknown;
-    secureName?: unknown;
-    shortName?: unknown;
-    tag?: unknown;
-    userCount?: unknown;
-    userIds?: unknown;
-    userList?: unknown;
-    users?: unknown;
-    usersById?: unknown;
+    accessType?: string;
+    capacity?: number;
+    creatorGroup?: DynamicRecord | null;
+    creatorGroupId?: string;
+    creatorUser?: DynamicRecord | null;
+    creatorUserId?: string;
+    group?: DynamicRecord | null;
+    groupId?: string;
+    group_id?: string;
+    id?: string;
+    instanceId?: string;
+    location?: string;
+    occupants?: number;
+    owner?: DynamicRecord | null;
+    ownerId?: string;
+    playerCount?: number;
+    players?: Array<Record<string, unknown> | string>;
+    ref?: WorldInstanceRecord | null;
+    secureName?: string;
+    shortName?: string | null;
+    tag?: string;
+    userCount?: number;
+    userIds?: string[];
+    userList?: Array<Record<string, unknown> | string>;
+    users?: InstanceRosterRow[];
+    usersById?: Record<string, unknown>;
 };
 
 export type CreatedInstanceFallback = DynamicRecord & {
-    accessType?: unknown;
-    group?: unknown;
-    groupId?: unknown;
-    ownerId?: unknown;
+    accessType?: string;
+    group?: DynamicRecord | null;
+    groupId?: string;
+    ownerId?: string | null;
 };
 
 type LegacyInstanceForm = {
     accessType?: string;
-    ageGate?: unknown;
+    ageGate?: boolean;
     groupAccessType?: string;
     groupId?: string;
     groupName?: string;
-    instanceName?: unknown;
-    legacyUserId?: unknown;
+    instanceName?: string;
+    legacyUserId?: string;
     region?: string;
-    strict?: unknown;
+    strict?: boolean;
 };
 
 type BuildLegacyCreatedInstanceInput = {
     worldId: string;
     form: LegacyInstanceForm;
-    currentUserId: unknown;
+    currentUserId: string;
     legacySeed: string;
 };
-
-function isRecord(value: unknown): value is DynamicRecord {
-    return Boolean(value && typeof value === 'object');
-}
 
 function record(value: unknown): DynamicRecord {
     return isRecord(value) ? value : {};
@@ -141,7 +139,7 @@ export function buildLegacyCreatedInstance({
 }
 
 export function buildCreatedInstanceDetails(
-    location: unknown,
+    location: string,
     instance: unknown,
     fallback: CreatedInstanceFallback = {}
 ) {

@@ -37,18 +37,23 @@ import {
     FAVORITES_DENSITY_OPTIONS,
     type FavoritesDensity
 } from '../favoritesDensity';
+import {
+    normalizeFavoriteSortValue,
+    type FavoriteSortValue
+} from '../favoritesItems';
+import type { FavoriteSearchMode } from '../favoritesTypes';
 
 type FavoritesToolbarProps = {
     kind: FavoriteKind;
-    sortValue: string;
+    sortValue: FavoriteSortValue;
     searchQuery: string;
     searchPlaceholder: string;
-    searchMode: string;
+    searchMode: FavoriteSearchMode;
     density: FavoritesDensity;
     refreshing: boolean;
-    onSortValueChange: (value: string) => void;
+    onSortValueChange: (value: FavoriteSortValue) => void;
     onSearchChange: (value: string) => void;
-    onSearchModeChange: (mode: string) => void;
+    onSearchModeChange: (mode: FavoriteSearchMode) => void;
     onDensityChange: (value: FavoritesDensity) => void;
     onRefresh: () => void;
     onImport: () => void;
@@ -74,18 +79,16 @@ function FavoritesToolbar({
     onManageShares
 }: FavoritesToolbarProps) {
     const { t } = useTranslation();
-    const sortItems = [
+    const sortItems: Array<{ value: FavoriteSortValue; label: string }> = [
         { value: 'name', label: t('view.search.avatar.sort_name') },
-        { value: 'date', label: t('view.favorite.label.sort_by_date') },
-        ...(kind === 'world'
-            ? [
-                  {
-                      value: 'players',
-                      label: t('view.favorite.label.sort_by_players')
-                  }
-              ]
-            : [])
+        { value: 'date', label: t('view.favorite.label.sort_by_date') }
     ];
+    if (kind === 'world') {
+        sortItems.push({
+            value: 'players',
+            label: t('view.favorite.label.sort_by_players')
+        });
+    }
 
     return (
         <PageToolbar>
@@ -95,7 +98,9 @@ function FavoritesToolbar({
                         value={sortValue}
                         items={sortItems}
                         onValueChange={(value) =>
-                            onSortValueChange(value ?? '')
+                            onSortValueChange(
+                                normalizeFavoriteSortValue(kind, value)
+                            )
                         }
                     >
                         <SelectTrigger className="max-w-56 min-w-40 shrink-0">

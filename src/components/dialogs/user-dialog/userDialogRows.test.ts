@@ -26,7 +26,6 @@ import {
     sortMutualFriendRows,
     summarizeEntityRow,
     userIdForRow,
-    userTravelingTimestamp,
     worldOccupantSubtitle
 } from './userDialogRows';
 
@@ -350,11 +349,5 @@ describe('userDialogRows', () => {
             resolveTabValue([{ value: 'info' }, { value: 'groups' }], 'groups')
         ).toBe('groups');
         expect(resolveTabValue([{ value: 'info' }], 'groups')).toBe('info');
-        expect(
-            userTravelingTimestamp({
-                location: 'traveling',
-                travelingToTime: 12345
-            })
-        ).toBe(12345);
     });
 });

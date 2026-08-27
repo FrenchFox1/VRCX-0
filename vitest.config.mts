@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 const coverageExcludedPureConstants = [
     'src/shared/constants/accessType.ts',
@@ -30,6 +30,7 @@ export default defineConfig({
     },
     test: {
         environment: 'node',
+        exclude: [...configDefaults.exclude, '.claude/**'],
         coverage: {
             include: ['src/**/*.{ts,tsx}'],
             exclude: [

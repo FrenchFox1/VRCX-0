@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -8,7 +9,7 @@ import {
     resolveCurrentInviteLocation
 } from './notificationRows';
 
-const EMPTY_GROUP_INSTANCES: unknown[] = [];
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
 
 export function useNotificationRuntime() {
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);

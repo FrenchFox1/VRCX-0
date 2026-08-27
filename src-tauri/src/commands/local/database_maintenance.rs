@@ -6,7 +6,7 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use serde_json::Value;
-use vrcx_0_persistence::maintenance::{
+use vrcx_0_runtime_host_desktop::local_data::{
     BrokenGameLogDisplayNameOutput, MaintenanceTableSizesOutput, UserTableContextOutput,
 };
 
@@ -15,10 +15,11 @@ use vrcx_0_persistence::maintenance::{
 pub fn app__database_maintenance_broken_game_log_display_names_get(
     state: State<'_, AppState>,
 ) -> Result<Vec<BrokenGameLogDisplayNameOutput>, AppError> {
-    vrcx_0_persistence::maintenance::database_maintenance_broken_game_log_display_names_get(
-        state.db.as_ref(),
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .broken_game_log_display_names()
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -26,23 +27,24 @@ pub fn app__database_maintenance_broken_game_log_display_names_get(
 pub fn app__database_maintenance_broken_leave_entries_get(
     state: State<'_, AppState>,
 ) -> Result<Vec<Value>, AppError> {
-    vrcx_0_persistence::maintenance::database_maintenance_broken_leave_entries_get(
-        state.db.as_ref(),
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .broken_leave_entries()
+        .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__database_maintenance_max_friend_log_number_get(
     state: State<'_, AppState>,
     user_id: String,
 ) -> Result<i64, AppError> {
-    vrcx_0_persistence::maintenance::database_maintenance_max_friend_log_number_get(
-        state.db.as_ref(),
-        user_id,
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .max_friend_log_number(user_id)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -51,11 +53,11 @@ pub fn app__database_maintenance_table_sizes_get(
     state: State<'_, AppState>,
     user_id: String,
 ) -> Result<MaintenanceTableSizesOutput, AppError> {
-    vrcx_0_persistence::maintenance::database_maintenance_table_sizes_get(
-        state.db.as_ref(),
-        user_id,
-    )
-    .map_err(AppError::from)
+    state
+        .runtime_host()
+        .local_data()
+        .maintenance_table_sizes(user_id)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -64,6 +66,9 @@ pub fn app__user_tables_ensure(
     state: State<'_, AppState>,
     user_id: String,
 ) -> Result<UserTableContextOutput, AppError> {
-    vrcx_0_persistence::maintenance::user_tables_ensure(state.db.as_ref(), user_id)
+    state
+        .runtime_host()
+        .local_data()
+        .ensure_user_tables(user_id)
         .map_err(AppError::from)
 }

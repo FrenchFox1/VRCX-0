@@ -5,6 +5,10 @@ import { Location } from '@/components/Location';
 import type { FriendRecordInput } from '@/domain/friends/types';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
+import {
+    SOLID_USER_STATUS_DOT_CLASS_NAMES,
+    userStatusFromValue
+} from '@/shared/utils/friendStatus';
 import { normalizeString } from '@/shared/utils/string';
 import { Button } from '@/ui/shadcn/button';
 
@@ -147,29 +151,24 @@ function FeedLocation({
 }
 
 function FeedStatusDot({ status = '' }: { status?: string | null }) {
-    const normalizedStatus = String(status || '').toLowerCase();
-    const className =
-        normalizedStatus === 'active'
-            ? 'bg-[var(--status-online)]'
-            : normalizedStatus === 'online'
-              ? 'bg-[var(--status-online)]'
-              : normalizedStatus === 'join me'
-                ? 'bg-[var(--status-joinme)]'
-                : normalizedStatus === 'ask me'
-                  ? 'bg-[var(--status-askme)]'
-                  : normalizedStatus === 'busy'
-                    ? 'bg-[var(--status-busy)]'
-                    : '';
+    const normalizedStatus =
+        String(status || '').toLowerCase() === 'online'
+            ? 'active'
+            : userStatusFromValue(status);
 
-    return className ? (
+    if (!normalizedStatus || normalizedStatus === 'offline') {
+        return null;
+    }
+
+    return (
         <span
             className={cn(
                 'mr-1 ml-0.5 size-2.5 shrink-0 self-center rounded-full',
-                className
+                SOLID_USER_STATUS_DOT_CLASS_NAMES[normalizedStatus]
             )}
             data-dashboard-feed-status-dot
         />
-    ) : null;
+    );
 }
 
 export function FeedEntryContent({

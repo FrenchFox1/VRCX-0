@@ -24,7 +24,13 @@ const TYPE_ICONS: Record<string, { Icon: LucideIcon; className: string }> = {
     Bio: { Icon: FileTextIcon, className: 'text-muted-foreground/70' }
 };
 
-function FeedTypeIndicator({ label, type }: { label: string; type: unknown }) {
+function FeedTypeIndicator({
+    label,
+    type
+}: {
+    label: string;
+    type: string | null | undefined;
+}) {
     const meta = TYPE_ICONS[normalizeFeedId(type)];
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">

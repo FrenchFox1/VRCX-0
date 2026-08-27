@@ -8,7 +8,6 @@ use rmcp::model::{
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{tool_handler, ErrorData as RmcpError, ServerHandler};
-use vrcx_0_persistence::social_aggregates;
 
 use crate::runtime::McpRuntime;
 
@@ -25,7 +24,7 @@ Ground rules:
 - Ranked tools pre-sort and limit rows: read the top rows; do not loop to enumerate everyone. Pass a small `limit` only to widen or narrow the ranking.
 - User-targeting tools accept a usr_ id or a display name. Check `resolvedUser` is the intended person; on `needsDisambiguation`, ask the user instead of guessing.
 - Results with a `summary` field are ready-to-read fact bundles; narrate from the summary, then add only the caveats and details the question needs.
-- `timeWindow` accepts {from, to} RFC3339 or a relative string (\"this week\", \"7d\"); omit it only when the chosen tool permits all history.
+- `timeWindow` accepts {from, to} RFC3339, a four-digit calendar year such as 2026, or a relative string (\"this week\", \"7d\"); omit it only when the chosen tool permits all history.
 - Writes (favorite_local, favorite_vrchat, set_friend_note) default to dry_run=true and never message other users; confirm before a real write.
 
 Tool tiers — pick the right altitude:
@@ -95,12 +94,22 @@ impl ServerHandler for VrcxMcpServer {
             )));
         }
         future::ready(Ok(ReadResourceResult::new(vec![ResourceContents::text(
-            social_aggregates::data_caveats_resource(),
+            data_caveats_resource(),
             DATA_CAVEATS_URI,
         )
         .with_mime_type("text/plain")])
         .into()))
     }
+}
+
+fn data_caveats_resource() -> String {
+    [
+        "VRCX-0 data is observer-centered and not a global VRChat record.",
+        "Missing rows mean this VRCX-0 profile did not observe the event, not that the event did not happen.",
+        "Co-presence minutes are useful for relative sorting; join/leave pairing can undercount absolute duration.",
+        "Private instances that the owner cannot see may only appear as private and cannot be separated by instance.",
+    ]
+    .join("\n")
 }
 
 #[cfg(test)]
@@ -118,6 +127,7 @@ mod instructions_tests {
             "resolvedUser",
             "dry_run",
             "relative string",
+            "calendar year",
             "`timeWindow`",
             "search_friend_feed",
             "Exact observed friend Feed history",

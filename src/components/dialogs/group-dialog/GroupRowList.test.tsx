@@ -144,4 +144,26 @@ describe('group post authors', () => {
         expect(screen.getByText('Known author')).toBeTruthy();
         expect(mocks.getUserProfile).not.toHaveBeenCalled();
     });
+
+    it('does not render a raw user id while resolving the author', async () => {
+        render(
+            <RowList
+                kind="posts"
+                rows={[
+                    {
+                        id: 'post_1',
+                        title: 'Announcement',
+                        authorId: 'usr_author'
+                    }
+                ]}
+            />
+        );
+
+        await waitFor(() => {
+            expect(mocks.getUserProfile).toHaveBeenCalledWith({
+                userId: 'usr_author'
+            });
+        });
+        expect(screen.queryByText('usr_author')).toBeNull();
+    });
 });

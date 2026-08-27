@@ -8,20 +8,20 @@ import { parseLocation } from '@/shared/utils/location';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 type InstanceUser = EntityRecord & {
-    displayName?: unknown;
-    id?: unknown;
-    location?: unknown;
-    travelingToLocation?: unknown;
-    userId?: unknown;
+    displayName?: string;
+    id?: string;
+    location?: string;
+    travelingToLocation?: string;
+    userId?: string;
 };
 
 interface MergeGroupInstancesOptions {
-    groupId: unknown;
+    groupId: string;
     friendsById:
         | FriendRosterById
         | Record<string, InstanceUser | null | undefined>;
     currentUserSnapshot: CurrentUserSnapshotState | null;
-    currentLocation: unknown;
+    currentLocation: string;
 }
 
 function isEntityRecord(value: unknown): value is EntityRecord {
@@ -83,7 +83,7 @@ export function mergeGroupInstances(
         currentLocation
     }: MergeGroupInstancesOptions
 ): GroupDialogInstanceRow[] {
-    const normalizedGroupId = normalizeEntityId(groupId);
+    const normalizedGroupId = groupId.trim();
     const currentLocationKey = normalizeLocation(currentLocation);
     const byLocation = new Map<string, GroupDialogInstanceRow>();
 

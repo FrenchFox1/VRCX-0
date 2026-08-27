@@ -1,11 +1,12 @@
 import { languageKeys } from '@/shared/constants/language';
+import { isRecord } from '@/shared/utils/record';
 
 export type LanguageOption = {
-    key?: unknown;
-    id?: unknown;
-    value?: unknown;
-    label?: unknown;
-    name?: unknown;
+    key?: string;
+    id?: string;
+    value?: string;
+    label?: string;
+    name?: string;
 };
 const fallbackLanguageDisplayNames: Readonly<Record<string, string>> =
     Object.freeze({
@@ -81,10 +82,6 @@ const fallbackLanguageDisplayNames: Readonly<Record<string, string>> =
 
 function fallbackLanguageDisplayName(key: string): string {
     return fallbackLanguageDisplayNames[key] ?? key.toUpperCase();
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function normalizeLanguageText(value: unknown): string {

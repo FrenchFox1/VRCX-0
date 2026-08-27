@@ -119,7 +119,7 @@ fn notification_add_v1_maps_legacy_fields_and_preserves_the_first_insert() -> Re
         concat!(
             "SELECT created_at, type, sender_user_id, sender_username, receiver_user_id, ",
             "message, world_id, world_name, image_url, invite_message, request_message, ",
-            "response_message, expired FROM usrself_notifications WHERE id = @id"
+            "response_message, expired, seen FROM usrself_notifications WHERE id = @id"
         ),
         "notif_v1",
     )?;
@@ -138,6 +138,7 @@ fn notification_add_v1_maps_legacy_fields_and_preserves_the_first_insert() -> Re
             json!("Invite text"),
             json!("Request text"),
             json!("Response text"),
+            json!(1),
             json!(1),
         ]]
     );
@@ -437,7 +438,7 @@ fn notification_mutations_update_only_the_requested_rows() -> Result<(), Error> 
 }
 
 #[test]
-fn remote_seen_commit_expires_v1_and_marks_v2_seen() -> Result<(), Error> {
+fn remote_seen_commit_marks_v1_and_v2_seen() -> Result<(), Error> {
     let (_dir, db) = test_db("remote-seen-commit")?;
     notification_add_v1(
         &db,
@@ -463,7 +464,7 @@ fn remote_seen_commit_expires_v1_and_marks_v2_seen() -> Result<(), Error> {
 
     let legacy = rows_by_id(
         &db,
-        "SELECT expired FROM usrself_notifications WHERE id = @id",
+        "SELECT expired, seen FROM usrself_notifications WHERE id = @id",
         "legacy",
     )?;
     let modern = rows_by_id(
@@ -471,7 +472,7 @@ fn remote_seen_commit_expires_v1_and_marks_v2_seen() -> Result<(), Error> {
         "SELECT seen FROM usrself_notifications_v2 WHERE id = @id",
         "modern",
     )?;
-    assert_eq!(legacy[0][0], json!(1));
+    assert_eq!(legacy[0], vec![json!(0), json!(1)]);
     assert_eq!(modern[0][0], json!(1));
     Ok(())
 }

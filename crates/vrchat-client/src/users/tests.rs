@@ -63,30 +63,22 @@ fn profile_reads_encode_ids_and_always_send_the_self_and_expansion_queries() {
 }
 
 #[test]
-fn mutual_friends_controls_the_legacy_user_id_query_parameter() {
-    for (include_user_id_param, expected_user_id) in [
-        (false, None),
-        (true, Some(Value::String("usr/test".into()))),
-    ] {
-        let (user_id, request) = user_mutual_friends_get_input(
-            "endpoint".into(),
-            " usr/test ".into(),
-            100,
-            200,
-            include_user_id_param,
-        )
-        .unwrap();
-        let params = request.query_params.unwrap();
+fn mutual_friends_sends_the_user_id_query_parameter() {
+    let (user_id, request) =
+        user_mutual_friends_get_input("endpoint".into(), " usr/test ".into(), 100, 200).unwrap();
+    let params = request.query_params.unwrap();
 
-        assert_eq!(user_id, "usr/test");
-        assert_eq!(
-            request.path.as_deref(),
-            Some("users/usr%2Ftest/mutuals/friends")
-        );
-        assert_eq!(params.get("n"), Some(&json!(100)));
-        assert_eq!(params.get("offset"), Some(&json!(200)));
-        assert_eq!(params.get("userId").cloned(), expected_user_id);
-    }
+    assert_eq!(user_id, "usr/test");
+    assert_eq!(
+        request.path.as_deref(),
+        Some("users/usr%2Ftest/mutuals/friends")
+    );
+    assert_eq!(params.get("n"), Some(&json!(100)));
+    assert_eq!(params.get("offset"), Some(&json!(200)));
+    assert_eq!(
+        params.get("userId"),
+        Some(&Value::String("usr/test".into()))
+    );
 }
 
 #[test]
@@ -214,7 +206,7 @@ fn user_requests_reject_blank_required_ids() {
     assert!(user_mutual_counts_get_input("".into(), " ".into()).is_err());
     assert!(user_groups_get_input("".into(), " ".into()).is_err());
     assert!(user_represented_group_get_input("".into(), " ".into()).is_err());
-    assert!(user_mutual_friends_get_input("".into(), " ".into(), 1, 0, false).is_err());
+    assert!(user_mutual_friends_get_input("".into(), " ".into(), 1, 0).is_err());
     assert!(
         current_user_update_input("".into(), " ".into(), CurrentUserUpdateRequest::default(),)
             .is_err()

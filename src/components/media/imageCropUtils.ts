@@ -289,7 +289,11 @@ export async function prepareImage(file: File): Promise<{
         const reader = new FileReader();
         reader.onerror = () => reject(new Error('Failed to read file.'));
         reader.onload = () => {
-            const dataUrl = reader.result as string;
+            if (typeof reader.result !== 'string') {
+                reject(new Error('Failed to read file.'));
+                return;
+            }
+            const dataUrl = reader.result;
             const img = new Image();
             img.onerror = () => reject(new Error('Failed to decode image.'));
             img.onload = () => {

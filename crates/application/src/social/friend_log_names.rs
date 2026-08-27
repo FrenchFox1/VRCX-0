@@ -5,26 +5,46 @@ use std::sync::{
 };
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 use vrcx_0_application_realtime::{
     RealtimeHostRuntime, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,
 };
-use vrcx_0_core::json::RawJson;
-use vrcx_0_persistence::friends::friend_display_names;
-use vrcx_0_persistence::game_log::{game_log_query, GameLogQueryInput};
-use vrcx_0_persistence::DatabaseService;
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
+use vrcx_0_core::OwnerId;
 
 pub const FRIEND_LOG_NAME_RESOLUTION_MAX_USERS: usize = 100;
 const FRIEND_LOG_REMOTE_LOOKUP_MAX_USERS: usize = 30;
 const UNKNOWN_DISPLAY_NAME: &str = "Unknown";
 
+pub trait FriendLogNameStore: Send + Sync {
+    fn friend_display_names(
+        &self,
+        owner_user_id: &OwnerId,
+        user_ids: &[String],
+    ) -> Result<HashMap<String, String>>;
+    fn game_log_user_stats(&self, owner_user_id: &OwnerId, user_ids: &[String]) -> Result<Value>;
+}
+
 pub struct FriendLogNameResolutionDeps<'a> {
-    pub db: &'a DatabaseService,
+    pub(crate) store: &'a dyn FriendLogNameStore,
     pub auth_scope: &'a RuntimeAuthScope,
     pub realtime: &'a Arc<RealtimeHostRuntime>,
+}
+
+impl<'a> FriendLogNameResolutionDeps<'a> {
+    pub fn new(
+        store: &'a dyn FriendLogNameStore,
+        auth_scope: &'a RuntimeAuthScope,
+        realtime: &'a Arc<RealtimeHostRuntime>,
+    ) -> Self {
+        Self {
+            store,
+            auth_scope,
+            realtime,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -116,23 +136,26 @@ pub async fn resolve_friend_log_names(
         return Ok(Vec::new());
     }
 
-    let mut names =
-        match friend_display_names(deps.db, expected_scope.current_user_id.clone(), &user_ids) {
-            Ok(rows) => rows
-                .into_iter()
-                .filter_map(|(user_id, display_name)| {
-                    normalize_display_name(&display_name, &user_id).map(|name| (user_id, name))
-                })
-                .collect::<HashMap<_, _>>(),
-            Err(error) => {
-                tracing::debug!(error = %error, "friend log persisted-name lookup failed");
-                HashMap::new()
-            }
-        };
+    let mut names = match deps.store.friend_display_names(
+        &OwnerId::new(expected_scope.current_user_id.clone()),
+        &user_ids,
+    ) {
+        Ok(rows) => rows
+            .into_iter()
+            .filter_map(|(user_id, display_name)| {
+                normalize_display_name(&display_name, &user_id).map(|name| (user_id, name))
+            })
+            .collect::<HashMap<_, _>>(),
+        Err(error) => {
+            tracing::debug!(error = %error, "friend log persisted-name lookup failed");
+            HashMap::new()
+        }
+    };
 
     let missing = unresolved_ids(&user_ids, &names);
     if !missing.is_empty() {
-        if let Err(error) = merge_game_log_names(deps.db, &expected_scope, &missing, &mut names) {
+        if let Err(error) = merge_game_log_names(deps.store, &expected_scope, &missing, &mut names)
+        {
             tracing::debug!(error = %error, "friend log GameLog-name lookup failed");
         }
     }
@@ -196,19 +219,13 @@ pub async fn resolve_friend_log_names(
 }
 
 fn merge_game_log_names(
-    db: &DatabaseService,
+    store: &dyn FriendLogNameStore,
     scope: &RuntimeAuthScopeSnapshot,
     user_ids: &[String],
     names: &mut HashMap<String, String>,
 ) -> Result<()> {
-    let value = game_log_query(
-        db,
-        &scope.current_user_id,
-        GameLogQueryInput {
-            kind: "allUserStats".into(),
-            params: RawJson::from(json!({ "userIds": user_ids })),
-        },
-    )?;
+    let value =
+        store.game_log_user_stats(&OwnerId::new(scope.current_user_id.clone()), user_ids)?;
     for row in value.as_array().into_iter().flatten() {
         let user_id = row
             .get("userId")

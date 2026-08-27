@@ -1,1 +1,0 @@
-mod friend_mutation_sink_tests;

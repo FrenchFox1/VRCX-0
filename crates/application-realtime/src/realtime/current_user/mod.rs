@@ -3,6 +3,7 @@ mod game_log;
 mod location;
 mod patch;
 mod runtime;
+mod self_profile;
 mod state;
 mod utils;
 

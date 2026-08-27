@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ComponentType } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     HashRouter,
@@ -41,7 +41,7 @@ function RouteErrorFallback() {
 
 const AppShellLayout = lazy(() =>
     import('@/components/layout/AppShellLayout').then((module) => ({
-        default: module.AppShellLayout as ComponentType
+        default: module.AppShellLayout
     }))
 );
 
@@ -135,6 +135,10 @@ function AppRouterContent() {
                         : 'h-screen'
                 )}
             >
+                <div
+                    aria-hidden="true"
+                    className="vrcx-0-background-image-transition-layer"
+                />
                 {isMacHost ? <MacOverlayTitleBar /> : <AppTitleBar />}
                 <div
                     data-vrcx-0-surface="route-host"

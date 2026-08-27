@@ -7,10 +7,10 @@ import {
     type SetStateAction
 } from 'react';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
-
 import {
     cachePreviousInstances,
     cacheUserStats,
@@ -19,7 +19,8 @@ import {
     readCachedUserStats,
     type UserDialogPreviousInstance,
     type UserDialogStats
-} from './userDialogCache';
+} from '@/services/userDialogSessionCacheService';
+
 import {
     isSameLocationTag,
     resolvePresenceLocation
@@ -54,14 +55,14 @@ function resolveFriendedAtFromHistoryRows(rows: unknown) {
 }
 
 type RepresentedGroupState = {
-    endpoint: unknown;
+    endpoint: string;
     group: Awaited<
         ReturnType<
             typeof import('@/repositories/userProfileRepository').getRepresentedGroup
         >
     >;
-    status: string;
-    userId: unknown;
+    status: LoadStatus;
+    userId: string;
 };
 
 type UseUserDialogSupplementalDataInput = {
@@ -72,14 +73,14 @@ type UseUserDialogSupplementalDataInput = {
         };
     };
     currentEndpoint: string;
-    currentGameDestination: unknown;
-    currentGameLocation: unknown;
-    currentSnapshotLocation: unknown;
-    currentUserId: unknown;
+    currentGameDestination: string;
+    currentGameLocation: string;
+    currentSnapshotLocation: string;
+    currentUserId: string | null;
     currentUserSnapshot: DialogRecord | null;
     isTargetCurrentUser: boolean;
     normalizedUserId: string;
-    openNonce: unknown;
+    openNonce: number;
     profile: UserDialogProfileRecord | null;
     reloadToken: number;
     targetKey: string;

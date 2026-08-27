@@ -91,7 +91,10 @@
             "avatar": "Avatars",
             "group": "Groups"
         },
-        "date": { "today": "Today", "yesterday": "Yesterday" },
+        "date": {
+            "today": "Today",
+            "yesterday": "Yesterday"
+        },
         "retention": {
             "label": "View history retention",
             "description": "Entries older than this are deleted automatically.",
@@ -457,22 +460,6 @@
             "instance_duration": "Instance {duration}"
         },
         "generic_instance_location": "an instance",
-        "friends_panel": {
-            "title": "Favorite Friends",
-            "all": "All",
-            "empty": "No favorite friends online",
-            "note": "Note",
-            "memo": "Local Note",
-            "open": "Open",
-            "request": "Request",
-            "invite": "Invite",
-            "favorites_online": "Favorites Online",
-            "same_instance": "Same Instance",
-            "local_favorites": "Local Favorites",
-            "traveling": "Traveling",
-            "private": "Private",
-            "offline": "Offline"
-        },
         "discord": {
             "title": {
                 "invite": "{name}'s invite",
@@ -1136,7 +1123,6 @@
                 "end": "End"
             },
             "action": {
-                "current_user": "Me",
                 "open_full": "Open full instance history"
             },
             "toast": {
@@ -2039,6 +2025,29 @@
                     "too_many_favorites_event": "Auto-delete could not get below the configured limit because favorite prints are filling the list. {remaining} print(s) remain."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} selected",
+                "select_all": "Select all",
+                "deselect_all": "Deselect all",
+                "confirm_delete_title": "Delete {count} item(s)?",
+                "confirm_delete_locked": "{count} locked item(s) will be skipped. This action cannot be undone.",
+                "deleting_progress": "Deleting {done}/{total}",
+                "deleted_toast": "Deleted {count} item(s).",
+                "delete_partial_toast": "Deleted {succeeded} item(s), {failed} failed. {reason}",
+                "delete_cancelled_toast": "Cancelled. Deleted {count} item(s).",
+                "delete_unlocked": "Delete {count}",
+                "delete_locked": "Every selected item is locked.",
+                "delete_locked_favorite": "Favorited - unfavorite to delete",
+                "delete_locked_in_use": "In use - cannot delete",
+                "favorited_toast": "Favorited {count} print(s).",
+                "unfavorited_toast": "Unfavorited {count} print(s).",
+                "favorite_skipped_toast": "{count} print(s) were not favorited. The limit is {max}."
+            },
+            "prints_filter": {
+                "all": "All",
+                "favorites": "Favorites",
+                "others": "Not favorited"
+            },
             "llm_endpoints": {
                 "title": "LLM Endpoints",
                 "description": "Shared OpenAI-compatible connections for Social AI and translation.",
@@ -2155,13 +2164,6 @@
                     "opacity": "Opacity",
                     "filters": "HMD Notification Filters"
                 },
-                "interactive_panel": {
-                    "header": "Interactive Friends Panel",
-                    "enabled": "Interactive friends panel",
-                    "all_friends_include_favorites": "Include favorites in All",
-                    "summon_hint": "Summon gesture",
-                    "openvr_required": "Hold the right-hand grip for about 2 seconds to summon it. Requires the SteamVR/OpenVR overlay backend; OpenXR does not provide the interactive panel."
-                },
                 "wrist_overlay": {
                     "header": "Wrist Overlay",
                     "wrist_feed_overlay": "Wrist Feed Overlay",
@@ -2184,6 +2186,12 @@
                     "vr_device_status": "VR Device Status",
                     "battery_percentage": "Battery Percentage",
                     "wrist_feed_notifications": "Wrist Overlay Notification Filters"
+                },
+                "test_mode": {
+                    "header": "Overlay Test",
+                    "description": "Forces the wrist overlay and HMD notification to show a test card so you can check placement, size and opacity while wearing the headset. It is never saved and turns off when VRCX-0 restarts.",
+                    "force_display": "Force Overlay Display",
+                    "requires_steamvr": "Requires SteamVR to be running."
                 }
             },
             "interface": {
@@ -2558,6 +2566,7 @@
                         "header": "Text-To-Speech",
                         "when_to_play": "Notification TTS",
                         "tts_voice": "TTS Voice",
+                        "tts_volume": "TTS Volume",
                         "system_default_voice": "System default",
                         "notification_filters": "TTS Notification Filters",
                         "name_mode": "Spoken Name",
@@ -3237,17 +3246,18 @@
                 "community": "Community theme"
             },
             "accent": {
-                "header": "Accent color"
+                "header": "Accent color",
+                "custom": "Custom",
+                "hex_label": "Hex color"
             },
             "custom_css": {
+                "status_on": "On",
+                "status_off": "Off",
                 "header": "Custom CSS",
-                "enabled_summary": "Override CSS is enabled ({count} bytes).",
-                "disabled_summary": "Optional final CSS layer. It is currently disabled.",
                 "edit": "Edit",
                 "hide_editor": "Hide editor"
             },
             "developer": {
-                "summary": "Local theme preview tools for theme development builds.",
                 "preview_active": "Previewing {name}.",
                 "show": "Show tools",
                 "hide": "Hide tools"
@@ -3266,16 +3276,11 @@
         "background_image": {
             "settings": {
                 "header": "Background Image",
-                "description": "Use a daily image source or your own local image source.",
                 "apod_note": "NASA APOD only uses images without a copyright field.",
-                "custom_source": "Local image",
-                "custom_source_description": "Select one image for a fixed background, or select multiple images or a folder for rotation.",
-                "folder_first_level_note": "Only the top level of a folder is scanned; subfolders are not included.",
-                "selected_files": "{count} selected image",
+                "folder_recursive_note": "Images in subfolders are included.",
                 "current_image": "Current image",
-                "image_count": "{count} image",
+                "image_count": "{count} images",
                 "rotation": "Rotation",
-                "no_custom_source": "No local image selected",
                 "no_image": "No image loaded",
                 "no_image_description": "Refresh or choose a source to load an image.",
                 "source_type_file": "Local file",
@@ -3288,11 +3293,13 @@
                 "custom": "Local image"
             },
             "rotation": {
-                "daily": "Daily",
-                "hourly": "Hourly"
+                "minutes": "min",
+                "custom": "Custom"
             },
             "action": {
                 "refresh": "Refresh",
+                "change_image": "Change image",
+                "show_in_folder": "Show in folder",
                 "select_images": "Select images",
                 "select_folder": "Select folder"
             },
@@ -3300,6 +3307,7 @@
                 "enabled": "Background Image enabled.",
                 "refreshed": "Background Image refreshed.",
                 "failed": "Failed to update Background Image.",
+                "failed_to_open_folder": "Failed to show the image in its folder.",
                 "no_images": "No supported images were found."
             }
         },
@@ -3309,6 +3317,88 @@
             "contributors_error": "Couldn't load the contributor list.",
             "thanks": "Every translation, test, bug report, and idea comes from the community. Thank you.",
             "license_line": "Free and open source under GPL-3.0"
+        },
+        "activity": {
+            "title": "Activity",
+            "description": "Where your time went, summarised over a period",
+            "range": {
+                "all": "All time",
+                "days": "Last {days} days"
+            },
+            "stat": {
+                "total_time": "Total time",
+                "daily_average": "Daily average",
+                "active_days": "Days played",
+                "longest_session": "Longest session",
+                "change_up": "+{percent}% vs previous",
+                "change_down": "-{percent}% vs previous"
+            },
+            "unit": {
+                "hours": "h",
+                "minutes": "minutes"
+            },
+            "section": {
+                "instance_types": "Instance preferences",
+                "daily_time": "Time per day",
+                "weekly_time": "Time per week",
+                "when_you_play": "When you play",
+                "top_worlds": "Where you spend your time",
+                "companions": "Who you spend time with",
+                "highlights": "Worth noticing",
+                "avatars": "Avatars you use most"
+            },
+            "access": {
+                "unknown": "Unknown",
+                "public": "Public",
+                "friendsPlus": "Friends+",
+                "friends": "Friends",
+                "invitePlus": "Invite+",
+                "invite": "Invite",
+                "group": "Group"
+            },
+            "empty": {
+                "title": "Nothing recorded yet",
+                "description": "Play some VRChat and your activity will show up here."
+            },
+            "error": {
+                "failed_to_load": "Could not load your activity"
+            },
+            "caveat": {
+                "recorded_since": "Only recorded while running."
+            },
+            "worlds": {
+                "visit_count": "{count} visits",
+                "open_ranking": "Details",
+                "total": "{count} worlds in total",
+                "show_home": "Include Home World"
+            },
+            "people": {
+                "co_days": "{count} days",
+                "lead_caption": "{days} days · {hours}h",
+                "fading_title": "Fading out",
+                "fading_caveat": "Less overlap than the period before. Could be schedules, not intent.",
+                "encountered_total": "{count} met in total",
+                "fading_last_seen": "last seen {date}",
+                "order_minutes": "By time",
+                "order_days": "By days"
+            },
+            "hero": {
+                "per_day": "a day",
+                "days_played": "days played",
+                "sessions": "sessions",
+                "longest": "longest session"
+            },
+            "action": {
+                "show_all": "Show all {count}",
+                "show_less": "Show less"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% between midnight and 6am",
+                "open_heatmap": "Hour by hour, day by day"
+            },
+            "avatars": {
+                "all_time": "All time"
+            }
         }
     },
     "dialog": {
@@ -3425,7 +3515,6 @@
                 "edit_note_memo": "Edit Note and Local Note"
             },
             "group_invite": {
-                "description": "Choose a group to invite {value} to.",
                 "select_group": "Select a group...",
                 "loading": "Loading groups you can send invites for...",
                 "no_groups": "You don't have any groups you can send invites for",
@@ -3779,7 +3868,8 @@
                 "content_gore": "Gore",
                 "content_violence": "Violence",
                 "content_adult": "Adult",
-                "content_sex": "Sexual"
+                "content_sex": "Sexual",
+                "pedestals": "Pedestals"
             },
             "actions": {
                 "delete_cache_tooltip": "Delete world from cache",
@@ -3893,7 +3983,11 @@
                 "change_world_image": "Change world image",
                 "reset_your_vrchat_home_location": "Reset your VRChat home location",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Edit managed content, author, and feature tags for this world",
+                "enable_avatar_scaling": "Enable avatar scaling",
+                "enable_focus_view": "Enable focus view",
                 "enable_debugging": "Enable debugging",
+                "enable_third_person_view": "Enable third-person view",
+                "allow_props_to_modify_player_movement": "Allow props to modify player movement",
                 "add_domain": "Add domain"
             },
             "loading": {
@@ -4343,6 +4437,11 @@
             "group_access_type_members": "Group Members",
             "group_access_type_plus": "Group+",
             "group_access_type_public": "Group Public",
+            "minimum_avatar_performance": "Minimum Avatar Performance",
+            "minimum_avatar_performance_none": "No Limit",
+            "minimum_avatar_performance_poor": "Poor",
+            "minimum_avatar_performance_medium": "Medium",
+            "minimum_avatar_performance_good": "Good",
             "region": "Region",
             "region_usw": "US West",
             "region_use": "US East",
@@ -4859,6 +4958,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Copy instance ID",
+                "copy_world_name": "Copy world name",
                 "more_actions": "More actions"
             },
             "header": "Instance History",
@@ -5480,6 +5580,9 @@
         "group_join_request_title": "Group Join Request",
         "group_transfer_request_title": "Group Transfer Request",
         "group_queue_ready_title": "Instance Queue Ready",
+        "group_instance_opened": "Created a new instance",
+        "group_instance_opened_location": "Created a new instance: {location}",
+        "group_instances_opened": "Created {count} new instances",
         "instance_closed_title": "Instance Closed",
         "event_title": "Event",
         "external_title": "External App",
@@ -5959,6 +6062,27 @@
         "error_generic": "Translation failed",
         "error_network": "Network error, please try again",
         "error_unsupported": "Translation is not configured"
+    },
+    "saved_group_favorites": {
+        "title": "Favorite Groups",
+        "description": "Save frequently used groups in local collections and use them for new-instance notifications.",
+        "new_collection": "New collection",
+        "empty_collections": "Create a collection to start saving groups.",
+        "empty_group": "No groups are saved in this collection.",
+        "delete_title": "Delete this collection?",
+        "delete_description": "Deleting {name} also removes its {count} saved groups.",
+        "choose_collection": "Save to collection",
+        "remove": "Remove from saved groups",
+        "toggle": "Save group",
+        "sidebar_saved": "Favorite Groups",
+        "sidebar_none": "No saved groups yet",
+        "sidebar_other": "Other active groups",
+        "sidebar_failed": "Failed to load group instances",
+        "sidebar_no_active": "No other active group instances",
+        "scope_all": "All saved groups",
+        "scope_selected": "Selected saved-group collections",
+        "notification_type": "New group instance",
+        "notification_empty": "No saved-group collections are available."
     },
     "app": {
         "routes": {

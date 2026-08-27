@@ -1,7 +1,11 @@
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use crate::notification::{NotificationDeliveryPreferences, NotificationTtsNameMode};
 use serde_json::json;
+use vrcx_0_application_activity::notification::{
+    render_delivery, OverlayLocale, RenderedNotification,
+};
 use vrcx_0_application_activity::{
     OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityContent,
     OverlayActivityDelivery, OverlayActivityEntry, OverlayActivityText,
@@ -9,9 +13,11 @@ use vrcx_0_application_activity::{
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_persistence::{memos::memo_save_user, DatabaseService};
-use vrcx_0_runtime_host::notification::{render_delivery, OverlayLocale, RenderedNotification};
+use vrcx_0_platform::Error;
 
-use crate::notification::tts::notification_tts_text;
+use vrcx_0_host_desktop::tts::{TtsEngine, TtsVoice};
+
+use crate::notification::tts::{notification_tts_text, send_tts_notification};
 
 use super::{notification_session_identity, OrderedDeliveryBuffer};
 
@@ -114,6 +120,43 @@ fn notification_tts_text_omits_instance_id_even_when_display_shows_it() {
     assert!(!spoken.contains("#12345"));
 }
 
+#[test]
+fn notification_tts_passes_configured_volume_to_engine() {
+    let (_dir, db) = test_db("tts-volume");
+    let tts = RecordingTts::default();
+    let preferences = NotificationDeliveryPreferences {
+        notification_tts_volume: 42,
+        ..NotificationDeliveryPreferences::default()
+    };
+
+    send_tts_notification(
+        &tts,
+        &db,
+        &delivery(),
+        &rendered(),
+        &preferences,
+        OverlayLocale::En,
+    );
+
+    assert_eq!(tts.volumes.lock().unwrap().as_slice(), &[42]);
+}
+
+#[derive(Default)]
+struct RecordingTts {
+    volumes: Mutex<Vec<u8>>,
+}
+
+impl TtsEngine for RecordingTts {
+    fn voices(&self) -> Vec<TtsVoice> {
+        Vec::new()
+    }
+
+    fn speak(&self, _text: &str, _voice_id: Option<&str>, volume: u8) -> Result<(), Error> {
+        self.volumes.lock().unwrap().push(volume);
+        Ok(())
+    }
+}
+
 fn rendered() -> RenderedNotification {
     RenderedNotification {
         title: "Traveler".into(),
@@ -142,7 +185,7 @@ fn delivery() -> OverlayActivityDelivery {
                 ..OverlayActivityContent::default()
             },
             actor_relation: OverlayActivityActorRelation::None,
-            payload: json!({}),
+            payload: json!({}).into(),
         },
         desktop: false,
         vr: false,

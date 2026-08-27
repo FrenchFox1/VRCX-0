@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 pub fn open_calendar_file(ics_content: &str) -> Result<(), Error> {
     validate_calendar_content(ics_content)?;

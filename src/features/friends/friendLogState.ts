@@ -104,15 +104,9 @@ export function sanitizeColumnOrder(value: unknown): string[] {
 
 export function resolvePageSize(
     candidate: unknown,
-    allowed: unknown,
+    pageSizes: readonly number[],
     fallback: number = DEFAULT_PAGE_SIZES[1]
 ) {
-    const pageSizes = Array.isArray(allowed)
-        ? allowed.filter(
-              (size): size is number =>
-                  typeof size === 'number' && Number.isFinite(size) && size > 0
-          )
-        : DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : DEFAULT_PAGE_SIZES[0];
@@ -133,7 +127,7 @@ export function resolvePageSize(
         return fallback;
     }
 
-    return nearestPageSize(Number(fallback) || fallbackPageSize);
+    return nearestPageSize(fallback);
 }
 
 export function parseTypeFilters(value: unknown): FriendLogType[] {
@@ -145,6 +139,6 @@ export function parseTypeFilters(value: unknown): FriendLogType[] {
     return parsed.filter(
         (entry): entry is FriendLogType =>
             typeof entry === 'string' &&
-            (FRIEND_LOG_TYPES as readonly string[]).includes(entry)
+            FRIEND_LOG_TYPES.some((type) => type === entry)
     );
 }

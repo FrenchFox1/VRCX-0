@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashSet;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -6,28 +8,38 @@ use std::sync::{
 use std::time::Duration;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::media::{print_delete_input, prints_get_input};
-use vrcx_0_application_core::vrchat_api::VrchatScope;
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 pub use vrcx_0_application_core::PrintAutoCleanupEvent;
 pub use vrcx_0_application_core::PrintCleanupTrigger;
 use vrcx_0_application_core::RuntimeAuthScope;
-use vrcx_0_application_core::{PrintCleanupInputSink, RuntimeEventBus, TaskSupervisor, WebClient};
+use vrcx_0_application_core::{PrintCleanupInputSink, RuntimeEventBus, TaskSupervisor};
 pub use vrcx_0_application_realtime::is_print_created_content_refresh;
-use vrcx_0_persistence::DatabaseService;
 
 use super::favorites::{
     read_auto_delete_old_prints_enabled, read_auto_delete_prints_limit, read_favorite_ids,
-    write_favorite_ids,
+    write_favorite_ids, PrintFavoritesStore,
 };
-use crate::{AuthenticatedMutationContext, Error, RemoteMutationGate, Result};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, RemoteMutationGate, Result};
 
 pub const PRINT_HARD_CAP: i64 = 64;
 pub const PRINT_AUTO_DELETE_LIMIT_MIN: i64 = 30;
 pub const PRINT_AUTO_DELETE_LIMIT_MAX: i64 = 60;
 pub const PRINT_FAVORITE_LIMIT_BUFFER: usize = 5;
 const PRINT_CLEANUP_DEBOUNCE: Duration = Duration::from_millis(2500);
-const PRINT_CLEANUP_LIST_COUNT: i64 = 100;
+const PRINT_CLEANUP_LIST_COUNT: i32 = 100;
 const PRINT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
+
+pub type PrintRemoteFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+
+pub trait PrintRemote: Send + Sync {
+    fn list_prints<'a>(
+        &'a self,
+        endpoint: &'a str,
+        user_id: &'a str,
+        count: i32,
+    ) -> PrintRemoteFuture<'a>;
+    fn delete_print<'a>(&'a self, endpoint: &'a str, print_id: &'a str) -> PrintRemoteFuture<'a>;
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PrintListItem {
@@ -45,9 +57,9 @@ pub enum CleanupWarningKind {
 #[serde(rename_all = "camelCase")]
 pub struct CleanupWarning {
     pub kind: CleanupWarningKind,
-    pub favorites: usize,
-    pub max: usize,
-    pub over: usize,
+    pub favorites: u32,
+    pub max: u32,
+    pub over: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -59,11 +71,29 @@ pub struct PrintCleanupSelection {
 
 #[derive(Clone)]
 pub struct PrintCleanupDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
+    pub(crate) store: Arc<dyn PrintFavoritesStore>,
+    pub(crate) remote: Arc<dyn PrintRemote>,
     pub event_bus: RuntimeEventBus,
     pub auth_scope: RuntimeAuthScope,
     pub remote_mutations: Arc<RemoteMutationGate>,
+}
+
+impl PrintCleanupDeps {
+    pub fn new(
+        store: Arc<dyn PrintFavoritesStore>,
+        remote: Arc<dyn PrintRemote>,
+        event_bus: RuntimeEventBus,
+        auth_scope: RuntimeAuthScope,
+        remote_mutations: Arc<RemoteMutationGate>,
+    ) -> Self {
+        Self {
+            store,
+            remote,
+            event_bus,
+            auth_scope,
+            remote_mutations,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -207,7 +237,7 @@ pub async fn run_print_auto_cleanup(
     deps: &PrintCleanupDeps,
     trigger: &PrintCleanupTrigger,
 ) -> Result<Option<PrintAutoCleanupEvent>> {
-    if !read_auto_delete_old_prints_enabled(&deps.db)? {
+    if !read_auto_delete_old_prints_enabled(deps.store.as_ref())? {
         return Ok(None);
     }
 
@@ -225,13 +255,13 @@ pub async fn run_print_auto_cleanup(
         ));
     }
 
-    let limit = read_auto_delete_prints_limit(&deps.db)?;
+    let limit = read_auto_delete_prints_limit(deps.store.as_ref())?;
     let prints = load_prints(deps, &mutation).await?;
     let existing_ids = prints
         .iter()
         .map(|print| print.id.clone())
         .collect::<HashSet<_>>();
-    let stored_favorite_ids = read_favorite_ids(&deps.db)?;
+    let stored_favorite_ids = read_favorite_ids(deps.store.as_ref())?;
     let favorite_ids_list = stored_favorite_ids
         .iter()
         .filter(|id| existing_ids.contains(*id))
@@ -239,7 +269,7 @@ pub async fn run_print_auto_cleanup(
         .collect::<Vec<_>>();
     let favorite_ids = favorite_ids_list.iter().cloned().collect::<HashSet<_>>();
     if favorite_ids_list.len() != stored_favorite_ids.len() {
-        write_favorite_ids(&deps.db, &favorite_ids_list)?;
+        write_favorite_ids(deps.store.as_ref(), &favorite_ids_list)?;
     }
 
     let selection = select_prints_to_delete(&prints, limit, &favorite_ids);
@@ -258,8 +288,8 @@ pub async fn run_print_auto_cleanup(
     }
 
     let event = PrintAutoCleanupEvent {
-        deleted,
-        remaining: prints.len().saturating_sub(deleted),
+        deleted: crate::wire_count(deleted),
+        remaining: crate::wire_count(prints.len().saturating_sub(deleted)),
         warning: selection
             .warning
             .as_ref()
@@ -274,9 +304,9 @@ fn cleanup_warning(limit: usize, favorite_count: usize) -> Option<CleanupWarning
     if favorite_count > favorite_limit {
         return Some(CleanupWarning {
             kind: CleanupWarningKind::TooManyFavorites,
-            favorites: favorite_count,
-            max: favorite_limit,
-            over: favorite_count - favorite_limit,
+            favorites: crate::wire_count(favorite_count),
+            max: crate::wire_count(favorite_limit),
+            over: crate::wire_count(favorite_count - favorite_limit),
         });
     }
 
@@ -288,15 +318,11 @@ async fn load_prints(
     mutation: &AuthenticatedMutationContext<'_>,
 ) -> Result<Vec<PrintListItem>> {
     let response = deps
-        .web
-        .execute_api(
-            prints_get_input(
-                mutation.scope().endpoint.clone(),
-                mutation.scope().current_user_id.clone(),
-                PRINT_CLEANUP_LIST_COUNT,
-            )?,
-            VrchatScope::Vrchat,
-            deps.db.as_ref(),
+        .remote
+        .list_prints(
+            &mutation.scope().endpoint,
+            &mutation.scope().current_user_id,
+            PRINT_CLEANUP_LIST_COUNT,
         )
         .await?;
     if !(200..300).contains(&response.status) {
@@ -314,12 +340,10 @@ async fn delete_print(
     mutation: &AuthenticatedMutationContext<'_>,
     print_id: &str,
 ) -> Result<()> {
-    let mut request = print_delete_input(mutation.scope().endpoint.clone(), print_id.to_string())?;
-    mutation.apply_scope_to_request(&mut request);
     let response = mutation
         .run_after_wait(PRINT_REMOTE_MUTATION_INTERVAL, || async {
-            deps.web
-                .execute_api(request, VrchatScope::Vrchat, deps.db.as_ref())
+            deps.remote
+                .delete_print(&mutation.scope().endpoint, print_id)
                 .await
         })
         .await?;
@@ -333,7 +357,7 @@ async fn delete_print(
 }
 
 fn normalize_print_endpoint(endpoint: &str) -> String {
-    vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(endpoint))
+    vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint(Some(endpoint))
 }
 
 fn cleanup_warning_event_kind(kind: &CleanupWarningKind) -> &'static str {

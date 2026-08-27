@@ -14,7 +14,7 @@ on:
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-    cancel-in-progress: true
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
     contents: read
@@ -23,11 +23,11 @@ jobs:
     changes:
         name: Detect Changes
         runs-on: ubuntu-latest
+        timeout-minutes: 5
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         outputs:
             frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
             rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust }}
-            rust_backend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust_backend }}
-            tauri_build: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.tauri_build }}
             tauri_bindings: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.tauri_bindings }}
         steps:
             - uses: actions/checkout@v7
@@ -39,6 +39,8 @@ jobs:
                       frontend:
                         - '.github/actions/setup-node/**'
                         - '.github/workflows/ci.yml'
+                        - '.oxfmtrc.json'
+                        - '.oxlintrc.json'
                         - 'index.html'
                         - 'package.json'
                         - 'package-lock.json'
@@ -47,43 +49,20 @@ jobs:
                         - 'src/**'
                         - 'tsconfig*.json'
                         - 'vite.config.*'
+                        - 'vitest.config.*'
                       rust:
-                        - '.github/actions/setup-linux-tauri/**'
-                        - '.github/actions/setup-rust/**'
-                        - '.github/workflows/ci.yml'
-                        - 'Cargo.lock'
-                        - 'Cargo.toml'
-                        - 'crates/**'
-                        - 'package.json'
-                        - 'package-lock.json'
-                        - 'scripts/**'
-                        - 'src-tauri/**'
-                      rust_backend:
-                        - '.github/actions/setup-linux-tauri/**'
-                        - '.github/actions/setup-rust/**'
-                        - '.github/workflows/ci.yml'
-                        - 'Cargo.lock'
-                        - 'Cargo.toml'
-                        - 'crates/**'
-                        - 'package.json'
-                        - 'package-lock.json'
-                        - 'src-tauri/**'
-                      tauri_build:
                         - '.cargo/**'
                         - '.github/actions/setup-linux-tauri/**'
                         - '.github/actions/setup-rust/**'
                         - '.github/workflows/ci.yml'
                         - 'Cargo.lock'
                         - 'Cargo.toml'
-                        - 'crates/**/Cargo.toml'
-                        - 'crates/**/build.rs'
-                        - 'crates/application-game/**'
-                        - 'crates/host-desktop/**'
-                        - 'crates/overlay-runtime/**'
-                        - 'crates/runtime-host-desktop/**'
-                        - 'crates/vr-overlay/**'
+                        - 'crates/**'
+                        - 'deny.toml'
+                        - 'package.json'
                         - 'src-tauri/**'
                       tauri_bindings:
+                        - '.cargo/**'
                         - '.github/actions/setup-linux-tauri/**'
                         - '.github/actions/setup-node/**'
                         - '.github/actions/setup-rust/**'
@@ -99,6 +78,7 @@ jobs:
     frontend-checks:
         name: Frontend Checks
         runs-on: ubuntu-latest
+        timeout-minutes: 15
         needs: changes
         if: needs.changes.outputs.frontend == 'true'
         steps:
@@ -111,21 +91,20 @@ jobs:
     frontend-build:
         name: Frontend Build
         runs-on: ubuntu-latest
+        timeout-minutes: 15
         needs: changes
         if: needs.changes.outputs.frontend == 'true'
         steps:
             - uses: actions/checkout@v7
             - uses: ./.github/actions/setup-node
             - run: npm run build
-            - uses: actions/upload-artifact@v7
-              with:
-                  name: frontend-dist
-                  path: dist
-                  if-no-files-found: error
 
     frontend-test:
         name: Frontend Tests
         runs-on: ubuntu-latest
+        timeout-minutes: 20
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true' || (github.ref == 'refs/heads/master' && github.event_name == 'push')
         steps:
             - uses: actions/checkout@v7
             - uses: ./.github/actions/setup-node
@@ -140,6 +119,7 @@ jobs:
     rust-checks:
         name: Rust Checks
         runs-on: ubuntu-24.04
+        timeout-minutes: 45
         needs: changes
         if: needs.changes.outputs.rust == 'true'
         steps:
@@ -152,18 +132,20 @@ jobs:
                   node-version: 24.x
             - uses: ./.github/actions/setup-rust
               with:
-                  components: clippy
-                  cache-key: ci-linux-x86_64
+                  cache-key: ci-linux-clippy
+                  save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+            - run: npm run rust:fmt:check
             - run: mkdir -p dist && printf '<!doctype html><html><body></body></html>' > dist/index.html
-            - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+            - run: npm run rust:clippy:ci
             - uses: taiki-e/install-action@cargo-deny
             - run: npm run rust:deny
 
     tauri-build:
         name: Tauri Build (${{ matrix.label }})
         runs-on: ${{ matrix.os }}
+        timeout-minutes: 60
         needs: changes
-        if: needs.changes.outputs.tauri_build == 'true'
+        if: needs.changes.outputs.rust == 'true'
         defaults:
             run:
                 shell: bash
@@ -212,6 +194,8 @@ jobs:
     rust-coverage:
         name: Rust Coverage
         runs-on: ubuntu-24.04
+        timeout-minutes: 60
+        needs: changes
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         steps:
             - uses: actions/checkout@v7
@@ -236,8 +220,9 @@ jobs:
     rust-tests:
         name: Rust Tests (${{ matrix.label }})
         runs-on: ${{ matrix.os }}
+        timeout-minutes: 60
         needs: changes
-        if: needs.changes.outputs.rust_backend == 'true'
+        if: needs.changes.outputs.rust == 'true'
         defaults:
             run:
                 shell: bash
@@ -264,15 +249,21 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get install -y --no-install-recommends libfontconfig1-dev libfreetype6-dev
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24.x
             - uses: ./.github/actions/setup-rust
               with:
                   cache-key: ${{ matrix.cache_key }}
                   save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-            - run: npm run rust:test -- ${{ matrix.rust_test_args }}
+            - env:
+                  RUST_TEST_ARGS: ${{ matrix.rust_test_args }}
+              run: npm run rust:test:ci -- $RUST_TEST_ARGS
 
     tauri-bindings:
         name: Tauri Bindings Up-to-date
         runs-on: ubuntu-24.04
+        timeout-minutes: 45
         needs: changes
         if: needs.changes.outputs.tauri_bindings == 'true'
         steps:
@@ -283,7 +274,8 @@ jobs:
             - uses: ./.github/actions/setup-node
             - uses: ./.github/actions/setup-rust
               with:
-                  cache-key: ci-linux-x86_64
+                  cache-key: ci-linux-bindings
+                  save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
             - run: npm run generate:tauri-bindings
             - name: Verify bindings.ts is regenerated
               run: git diff --exit-code src/platform/tauri/bindings.ts
@@ -291,6 +283,7 @@ jobs:
     combined-coverage:
         name: Publish Coverage Badge
         runs-on: ubuntu-latest
+        timeout-minutes: 10
         needs:
             - frontend-test
             - rust-coverage
@@ -318,16 +311,15 @@ jobs:
                   const ts = JSON.parse(fs.readFileSync('coverage-artifacts/ts/coverage-summary.json', 'utf8'));
                   const rust = JSON.parse(fs.readFileSync('coverage-artifacts/rust/rust-coverage-summary.json', 'utf8'));
 
-                  const tsLines = ts.total.lines;
-                  const rustLines = rust.data[0].totals.lines;
+                  const tsPct = ts.total.lines.pct;
+                  const rustPct = rust.data[0].totals.lines.percent;
 
                   fs.writeFileSync(
                       'coverage.json',
                       JSON.stringify({
                           schemaVersion: 1,
                           label: 'coverage',
-                          message: `TS ${tsLines.pct.toFixed(1)}% · Rust ${rustLines.percent.toFixed(1)}%`,
-                          color: 'brightgreen'
+                          message: `TS ${tsPct.toFixed(1)}% · Rust ${rustPct.toFixed(1)}%`
                       }) + '\n'
                   );
                   NODE
@@ -354,3 +346,31 @@ jobs:
                   git diff --cached --quiet && exit 0
                   git commit -q -m "chore(badge): coverage"
                   git push -q -f "$repo_url" badge-data
+
+    ci-success:
+        name: CI Success
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        if: always()
+        needs:
+            - changes
+            - frontend-checks
+            - frontend-build
+            - frontend-test
+            - rust-checks
+            - tauri-build
+            - rust-tests
+            - tauri-bindings
+        steps:
+            - name: Verify no required job failed
+              env:
+                  RESULTS: ${{ join(needs.*.result, ' ') }}
+              run: |
+                  set -euo pipefail
+                  echo "job results: $RESULTS"
+                  for result in $RESULTS; do
+                      if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+                          echo "A required job did not pass: $result" >&2
+                          exit 1
+                      fi
+                  done

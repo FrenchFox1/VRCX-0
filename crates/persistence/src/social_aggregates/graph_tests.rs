@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn social_graph_uses_mutual_graph_edges_without_implying_coplay() {
@@ -53,7 +54,7 @@ fn social_graph_uses_mutual_graph_edges_without_implying_coplay() {
     let output = get_social_graph(
         &db,
         SocialGraphInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: None,
             depth: 1,
             max_nodes: None,
@@ -139,7 +140,7 @@ fn social_graph_marks_first_degree_friends_apart_from_mutuals() {
     let output = get_social_graph(
         &db,
         SocialGraphInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: None,
             depth: 1,
             max_nodes: None,
@@ -218,7 +219,7 @@ fn social_graph_applies_node_and_edge_caps_with_total_counts() {
     let output = get_social_graph(
         &db,
         SocialGraphInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             user_id: Some("usr_d".into()),
             depth: 1,
             max_nodes: Some(3),
@@ -295,7 +296,7 @@ fn friend_circles_groups_mutually_linked_friends_and_excludes_second_degree_node
     let output = get_friend_circles(
         &db,
         FriendCirclesInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             max_circles: Some(6),
             max_members_per_circle: Some(8),
         },

@@ -37,15 +37,15 @@ export function useInstanceActivitySettings() {
                     nextSoloVisible,
                     nextNoFriendVisible,
                     nextChartCollapsed
-                ]: [number, boolean, boolean, boolean]) => {
+                ]) => {
                     if (!active) {
                         return;
                     }
 
                     setBarWidth(normalizeBarWidth(nextBarWidth));
-                    setIsSoloInstanceVisible(Boolean(nextSoloVisible));
-                    setIsNoFriendInstanceVisible(Boolean(nextNoFriendVisible));
-                    setIsChartCollapsed(Boolean(nextChartCollapsed));
+                    setIsSoloInstanceVisible(nextSoloVisible);
+                    setIsNoFriendInstanceVisible(nextNoFriendVisible);
+                    setIsChartCollapsed(nextChartCollapsed);
                 }
             )
             .catch(() => {});

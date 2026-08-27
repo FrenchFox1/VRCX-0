@@ -56,7 +56,7 @@ pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&FriendR
         .unwrap_or("");
     let trust = compute_trust_level(&tags, developer_type);
     let trust_level = if has_trust_metadata {
-        trust.trust_level.clone()
+        trust.trust_level().to_string()
     } else {
         explicit_trust_level
     };
@@ -64,11 +64,11 @@ pub(super) fn normalize_patch_trust(patch: &mut Value, previous: Option<&FriendR
     if has_trust_metadata {
         object.insert(
             derived_keys::TRUST_CLASS.into(),
-            Value::String(trust.trust_class),
+            Value::String(trust.trust_class().to_string()),
         );
         object.insert(
             derived_keys::TRUST_SORT_NUM.into(),
-            json!(trust.trust_sort_num),
+            json!(trust.trust_sort_num()),
         );
         object.insert(
             derived_keys::IS_MODERATOR.into(),

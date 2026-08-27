@@ -10,5 +10,5 @@ export const FRIEND_LOG_TYPES = [
 export type FriendLogType = (typeof FRIEND_LOG_TYPES)[number];
 
 export function isFriendLogType(value: unknown): value is FriendLogType {
-    return (FRIEND_LOG_TYPES as readonly unknown[]).includes(value);
+    return FRIEND_LOG_TYPES.some((type) => type === value);
 }

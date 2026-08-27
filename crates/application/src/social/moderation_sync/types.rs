@@ -1,20 +1,87 @@
 use serde::{Deserialize, Serialize};
+use vrcx_0_application_core::RemoteMutationGate;
+use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope, WebClient};
 use vrcx_0_core::text::normalize_text;
-use vrcx_0_persistence::local_moderation::{LocalModerationOutput, RemoteModerationInput};
-use vrcx_0_persistence::DatabaseService;
-
-use crate::RemoteMutationGate;
-use vrcx_0_application_core::{RuntimeAuthScope, WebClient};
+use vrcx_0_core::OwnerId;
 
 pub struct ModerationSyncDeps<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) store: &'a dyn ModerationSyncStore,
+    pub(crate) remote_requests: &'a dyn ModerationSyncRemoteRequests,
+    pub(crate) web: &'a WebClient,
     pub auth_scope: &'a RuntimeAuthScope,
     pub remote_mutations: &'a RemoteMutationGate,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+impl<'a> ModerationSyncDeps<'a> {
+    pub fn new(
+        store: &'a dyn ModerationSyncStore,
+        remote_requests: &'a dyn ModerationSyncRemoteRequests,
+        web: &'a WebClient,
+        auth_scope: &'a RuntimeAuthScope,
+        remote_mutations: &'a RemoteMutationGate,
+    ) -> Self {
+        Self {
+            store,
+            remote_requests,
+            web,
+            auth_scope,
+            remote_mutations,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct RemoteModerationInput {
+    pub r#type: String,
+    pub target_user_id: String,
+    pub target_display_name: String,
+    pub created: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct LocalModerationInput {
+    pub user_id: String,
+    pub updated_at: String,
+    pub display_name: String,
+    pub block: bool,
+    pub mute: bool,
+}
+
+#[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename = "ModerationSyncLocalOutput")]
+pub struct LocalModerationOutput {
+    pub user_id: String,
+    pub updated_at: String,
+    pub display_name: String,
+    pub block: bool,
+    pub mute: bool,
+}
+
+pub trait ModerationSyncStore: Send + Sync {
+    fn sync_snapshot(
+        &self,
+        owner: OwnerId,
+        rows: Vec<RemoteModerationInput>,
+    ) -> Result<Vec<LocalModerationOutput>>;
+    fn get(&self, owner: OwnerId, user_id: String) -> Result<Option<LocalModerationOutput>>;
+    fn set(&self, owner: OwnerId, entry: LocalModerationInput) -> Result<()>;
+    fn delete(&self, owner: OwnerId, user_id: String) -> Result<()>;
+}
+
+pub trait ModerationSyncRemoteRequests: Send + Sync {
+    fn list(&self, endpoint: String) -> Result<VrchatApiRequest>;
+    fn update(
+        &self,
+        endpoint: String,
+        enabled: bool,
+        target_user_id: String,
+        moderation_type: String,
+    ) -> Result<VrchatApiRequest>;
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ModerationSyncRefreshInput {
     pub user_id: String,
     #[serde(default)]
@@ -61,7 +128,7 @@ impl From<String> for ModerationMutationType {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ModerationSyncMutationInput {
     pub(super) target_user_id: String,
     #[serde(default)]
@@ -76,8 +143,8 @@ pub struct ModerationSyncMutationInput {
 pub struct ModerationSyncRefreshOutput {
     pub accepted: bool,
     pub user_id: String,
-    pub remote_count: usize,
-    pub local_count: usize,
+    pub remote_count: u32,
+    pub local_count: u32,
     pub rows: Vec<RemoteModerationRow>,
 }
 
@@ -107,7 +174,7 @@ impl RemoteModerationRow {
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ModerationSyncMutationOutput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub target_user_id: String,
     pub r#type: String,
     pub enabled: bool,

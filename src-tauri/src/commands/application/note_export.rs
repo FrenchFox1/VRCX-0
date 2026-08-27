@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{NoteExportStartInput, NoteExportStatus};
+use vrcx_0_application::social::{NoteExportStartInput, NoteExportStatus};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -12,17 +12,17 @@ pub fn app__note_export_start(
     state: State<'_, AppState>,
     input: NoteExportStartInput,
 ) -> Result<NoteExportStatus, AppError> {
-    Ok(state.note_export.start(input)?)
+    Ok(state.runtime_host().start_note_export(input)?)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__note_export_status(state: State<'_, AppState>) -> NoteExportStatus {
-    state.note_export.status()
+    state.runtime_host().note_export_status()
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__note_export_cancel(state: State<'_, AppState>) -> NoteExportStatus {
-    state.note_export.cancel()
+    state.runtime_host().cancel_note_export()
 }

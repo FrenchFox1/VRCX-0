@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use super::friend_profile::FriendProfileRefreshExpectation;
 use super::friend_profile_bulk_load::{
-    friend_profile_bulk_load_backoff_delay_ms, select_friend_profile_bulk_load_targets,
+    friend_profile_bulk_load_backoff_delay, select_friend_profile_bulk_load_targets,
     FriendProfileBulkLoadInitialProgress, FriendProfileBulkLoadItemOutcome,
-    FriendProfileBulkLoadStatus,
+    FriendProfileBulkLoadPacer, FriendProfileBulkLoadStatus, FRIEND_PROFILE_BULK_LOAD_CONCURRENCY,
+    FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL, FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING,
 };
 use super::test_support::*;
 use super::*;
@@ -74,10 +76,49 @@ fn select_targets_excludes_fully_loaded_roster() {
 
 #[test]
 fn backoff_delay_grows_exponentially_from_base() {
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(0), 500);
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(1), 1_000);
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(2), 2_000);
-    assert_eq!(friend_profile_bulk_load_backoff_delay_ms(3), 4_000);
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(0),
+        Duration::from_millis(500)
+    );
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(1),
+        Duration::from_secs(1)
+    );
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(2),
+        Duration::from_secs(2)
+    );
+    assert_eq!(
+        friend_profile_bulk_load_backoff_delay(3),
+        Duration::from_secs(4)
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn pacer_releases_concurrency_slots_within_one_interval() {
+    let pacer = FriendProfileBulkLoadPacer::new();
+    let start = tokio::time::Instant::now();
+    for _ in 0..FRIEND_PROFILE_BULK_LOAD_CONCURRENCY {
+        pacer.acquire_slot().await;
+    }
+    assert!(start.elapsed() < FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL);
+
+    pacer.acquire_slot().await;
+    assert_eq!(
+        start.elapsed(),
+        FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING * 3
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn pacer_holds_every_worker_back_after_a_rate_limit() {
+    let pacer = FriendProfileBulkLoadPacer::new();
+    pacer.acquire_slot().await;
+    pacer.delay_next_slots(Duration::from_millis(2_000)).await;
+
+    let start = tokio::time::Instant::now();
+    pacer.acquire_slot().await;
+    assert_eq!(start.elapsed(), Duration::from_millis(2_000));
 }
 
 #[test]
@@ -90,22 +131,16 @@ fn initial_progress_counts_preloaded_friends_in_the_full_roster() {
 #[test]
 fn start_requires_active_realtime_session() -> Result<()> {
     let dir = TestDir::new("friend-profile-bulk-load-no-session");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let storage = StorageService::new(&dir.path.join("storage.json"))?;
-    let web = Arc::new(WebClient::new(
-        &storage,
-        db.as_ref(),
-        "wss://pipeline.vrchat.cloud".to_string(),
-        env!("CARGO_PKG_VERSION"),
-    )?);
+    let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
+    let web = Arc::new(WebClient::new(vrcx_0_application_core::NoopWebClientPort));
     let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
-        Arc::clone(&db),
-        512,
-        Duration::from_secs(30 * 60),
+        vrcx_0_application_core::NoopWorldCachePort,
     ));
     let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        db,
+        store: store as Arc<dyn crate::RealtimeStore>,
+        transport: Arc::new(TestRealtimeTransport),
+        remote_requests: Arc::new(TestRealtimeRemoteRequests),
         web,
         event_bus: event_bus.clone(),
         backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
@@ -123,8 +158,8 @@ fn start_requires_active_realtime_session() -> Result<()> {
         local_game_context: Arc::new(UnavailableLocalGameContextSource),
         activity_sink: None,
         world_cache,
+        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
-        friend_note_change_sink: None,
         current_user_snapshot_sink: None,
     }));
 
@@ -186,9 +221,10 @@ async fn wait_for_bulk_load_processed(runtime: &Arc<RealtimeHostRuntime>, proces
 }
 
 async fn park_bulk_worker_on_the_transport_gate() {
-    tokio::time::sleep(Duration::from_millis(
-        super::friend_profile_bulk_load::FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL_MS + 500,
-    ))
+    tokio::time::sleep(
+        super::friend_profile_bulk_load::FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL
+            + Duration::from_millis(500),
+    )
     .await;
 }
 

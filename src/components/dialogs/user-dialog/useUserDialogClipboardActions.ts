@@ -15,10 +15,9 @@ export function useUserDialogClipboardActions() {
         });
     }
 
-    async function openDiscordProfile(discordId: unknown) {
+    async function openDiscordProfile(discordId: string) {
         try {
-            const normalizedDiscordId =
-                typeof discordId === 'string' ? discordId.trim() : '';
+            const normalizedDiscordId = discordId.trim();
             if (!normalizedDiscordId) {
                 return;
             }

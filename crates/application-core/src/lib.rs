@@ -4,12 +4,15 @@ mod avatar_cache;
 mod backend_runtime;
 mod background;
 mod config;
+#[cfg(any(test, feature = "test-utils"))]
+mod contract_test_support;
 mod diagnostics;
 mod error;
 mod event_bus;
 pub mod events;
 mod favorite_kind;
 mod image_cache;
+mod instance_dwell;
 mod interruptible_sleep;
 pub mod ports;
 mod proxy;
@@ -30,7 +33,7 @@ pub use async_runtime_policy::{
     recommended_tokio_worker_threads, recommended_tokio_worker_threads_for,
 };
 pub use auth_scope::{RuntimeAuthIdentity, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
-pub use avatar_cache::AvatarCache;
+pub use avatar_cache::{AvatarCache, AvatarCachePort};
 pub use backend_runtime::{
     BackendRuntime, BackendRuntimeAuthStatus, BackendRuntimeGameLogStatus, BackendRuntimeMode,
     BackendRuntimePhase, BackendRuntimeProcessStatus, BackendRuntimeSnapshot,
@@ -38,9 +41,16 @@ pub use backend_runtime::{
     GuiRuntimeMode, RealtimeProjectionSync, RuntimeHostProfile,
 };
 pub use background::{
-    sleep_until_due_or_stopped, RuntimeBackgroundJobSnapshot, RuntimeBackgroundJobs,
+    sleep_until_due_or_stopped, DatabaseCheckpointKind, DatabaseCheckpointResult,
+    DatabaseMaintenancePort, RuntimeBackgroundJobSnapshot, RuntimeBackgroundJobs,
 };
-pub use config::{read_config_string_array, write_config_string_array};
+pub use config::{config_string_array_value, normalize_config_string_array};
+#[cfg(any(test, feature = "test-utils"))]
+pub use contract_test_support::{
+    assert_json_contract, BehaviorLockFacet, CallRecorder, MemoryCookieWebClientPort,
+    MemoryWorldCachePort, NoopImageCachePort, NoopWebClientPort, NoopWorldCachePort,
+    ScriptedResults, BEHAVIOR_LOCK_CHECKLIST,
+};
 pub use diagnostics::RuntimeDiagnostics;
 pub use error::Error;
 #[cfg(any(test, feature = "test-utils"))]
@@ -58,19 +68,24 @@ pub use events::{
     RealtimeUserProjection,
 };
 pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteType};
-pub use image_cache::{save_ugc_image_to_file, ImageCache};
+pub use image_cache::{save_ugc_image_to_file, ImageCache, ImageCachePort};
+pub use instance_dwell::{FriendLocationTime, InstanceDwellRegistry};
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
-    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, GameProcessEvent,
-    GameProcessEventSink, HostRealtimeSessionContext, HostSessionGameProcessStatus,
-    HostSessionProjection, HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver,
-    InstanceRosterSnapshot, LocalGameContextSnapshot, LocalGameContextSource,
-    NoopPrintCleanupInputSink, NoopUpdaterPort, OverlayActivityInputSink, PrintCleanupInputSink,
-    PrintCleanupTrigger, SessionHostRuntime, UnavailableLocalGameContextSource,
-    UpdaterCheckRequest, UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle,
-    UpdaterMetadata, UpdaterPort, UpdaterProgressCallback,
+    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, CurrentUserSnapshot,
+    GameProcessEvent, GameProcessEventSink, HostRealtimeSessionContext,
+    HostSessionGameProcessStatus, HostSessionProjection, HostSessionRuntime, InstanceRosterMember,
+    InstanceRosterObserver, InstanceRosterSnapshot, LocalGameContextSnapshot,
+    LocalGameContextSource, NoopPrintCleanupInputSink, NoopUpdaterPort, OverlayActivityInputSink,
+    PrintCleanupInputSink, PrintCleanupTrigger, SessionHostRuntime,
+    UnavailableLocalGameContextSource, UpdaterCheckRequest, UpdaterDownloadOutcome,
+    UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata, UpdaterPort,
+    UpdaterProgressCallback,
 };
-pub use proxy::{load_proxy_url, test_proxy_connectivity, ProxySettingsTestResult};
+pub use proxy::{
+    load_proxy_url, test_proxy_connectivity, ProxyConnectivityPort, ProxySettingsTestResult,
+    PROXY_ENABLED_STORAGE_KEY, PROXY_STORAGE_KEY,
+};
 pub use remote_mutation_gate::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate,
 };
@@ -81,14 +96,18 @@ pub use runtime_output::{
 pub use runtime_status::RuntimeOperationStatus;
 pub use sync::{RuntimeSyncEngine, RuntimeSyncSnapshot};
 pub use task_supervisor::{
-    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskStopToken, TaskSupervisor,
+    RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSpawnOutcome, TaskStopReport,
+    TaskStopToken, TaskSupervisor,
 };
-pub use vrcx_0_application_contracts::{runtime_event_payload, RuntimeEventPayload};
+pub use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
+pub use vrcx_0_contracts::{
+    RealtimeAuthTokenFetch, RealtimeConnectionOptions, WebExecuteRequest, WebUploadMode,
+};
 pub use vrcx_0_core::FavoriteGroupVisibility;
-pub use web_client::{RealtimeAuthTokenFetch, WebClient};
-pub use world_cache::WorldCache;
+pub use web_client::{WebClient, WebClientPort};
+pub use world_cache::{WorldCache, WorldCachePort};
 
+pub use vrcx_0_contracts::UgcCategory;
 pub use vrcx_0_core::location::ParsedLocation;
-pub use vrcx_0_media::ugc_image_files::UgcCategory;
 
 pub type Result<T> = std::result::Result<T, Error>;

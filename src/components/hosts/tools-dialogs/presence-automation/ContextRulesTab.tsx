@@ -67,7 +67,7 @@ const TITLE_FALLBACK_KEY = `${I18N_ROOT}.room_rule_default`;
 type ContextRulesTabProps = {
     contextRules: ContextAutomationRule[];
     loading: boolean;
-    onRulesChange: (rules: ContextAutomationRule[]) => unknown;
+    onRulesChange: (rules: ContextAutomationRule[]) => void;
 };
 
 export function ContextRulesTab({

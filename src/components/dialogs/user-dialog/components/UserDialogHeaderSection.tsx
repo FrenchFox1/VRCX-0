@@ -12,7 +12,9 @@ import {
     isValidElement,
     type ComponentType,
     type CSSProperties,
-    type ReactNode
+    type ReactNode,
+    useLayoutEffect,
+    useRef
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -73,6 +75,57 @@ import {
 } from './UserDialogHeaderBadges';
 import { UserDialogHeaderMedia } from './UserDialogHeaderMedia';
 import { UserDialogProfileDecorationImage } from './UserDialogProfileDecorationImage';
+
+const displayNameMaxFontSizePx = 18;
+const displayNameMinFontSizePx = 12;
+
+function AutoFitDisplayName({ text }: { text: string }) {
+    const textRef = useRef<HTMLSpanElement>(null);
+
+    useLayoutEffect(() => {
+        const element = textRef.current;
+        if (!element) {
+            return undefined;
+        }
+
+        const updateFontSize = () => {
+            element.style.fontSize = `${displayNameMaxFontSizePx}px`;
+            const availableWidth = element.clientWidth;
+            const requiredWidth = element.scrollWidth;
+            if (
+                !availableWidth ||
+                !requiredWidth ||
+                requiredWidth <= availableWidth
+            ) {
+                return;
+            }
+
+            const fontSize = Math.max(
+                displayNameMinFontSizePx,
+                Math.floor(
+                    (displayNameMaxFontSizePx * availableWidth) / requiredWidth
+                )
+            );
+            element.style.fontSize = `${fontSize}px`;
+        };
+
+        updateFontSize();
+        if (typeof ResizeObserver === 'function') {
+            const resizeObserver = new ResizeObserver(updateFontSize);
+            resizeObserver.observe(element);
+            return () => resizeObserver.disconnect();
+        }
+
+        window.addEventListener('resize', updateFontSize);
+        return () => window.removeEventListener('resize', updateFontSize);
+    }, [text]);
+
+    return (
+        <span ref={textRef} className="min-w-0 flex-1 truncate">
+            {text}
+        </span>
+    );
+}
 
 function linearGradientStyle(
     angle: number,
@@ -165,6 +218,7 @@ export interface UserHeaderModel {
 export interface UserHeaderCommands {
     onAvatarOverride: (type: AvatarOverrideType) => void;
     onBoop: () => void;
+    onCopyDisplayName: (displayName: string) => void;
     onCopyUserId: () => void;
     onCopyUsername?: () => void;
     onCopyUserUrl: () => void;
@@ -186,7 +240,7 @@ export interface UserHeaderCommands {
     onInviteRequestMessage: () => void;
     onInviteToGroup: () => void;
     onModeration: (type: ModerationType, enabled: boolean) => void;
-    onOpenDiscordProfile: (discordId: unknown) => void | Promise<void>;
+    onOpenDiscordProfile: (discordId: string) => void | Promise<void>;
     onOpenFallbackAvatar: () => void;
     onOpenImagePreview: (options?: Record<string, unknown>) => void;
     onOpenUserIcon: () => void;
@@ -195,7 +249,6 @@ export interface UserHeaderCommands {
     onReportHacking: () => void;
     onShowAvatarAuthor: () => void;
     onShowInstanceHistory: () => void;
-    onTitleClick?: () => void;
     onToggleBadgeShowcased: (
         badge: UserBadgeRecord,
         showcased: boolean
@@ -488,6 +541,7 @@ export function UserDialogHeaderSection({
     const {
         onAvatarOverride,
         onBoop,
+        onCopyDisplayName,
         onCopyUserId,
         onCopyUsername,
         onCopyUserUrl,
@@ -515,7 +569,6 @@ export function UserDialogHeaderSection({
         onReportHacking,
         onShowAvatarAuthor,
         onShowInstanceHistory,
-        onTitleClick,
         onToggleBadgeShowcased,
         onToggleBadgeVisibility,
         onToggleSelfAvatarCopying,
@@ -615,6 +668,9 @@ export function UserDialogHeaderSection({
         nameplateAssets.animatedUrl ||
         nameplateAssets.staticUrl
     );
+    const copyableDisplayName = String(
+        profile.displayName || profile.username || ''
+    ).trim();
     return (
         <EntityOverviewCard
             style={profileBackgroundStyle}
@@ -667,20 +723,23 @@ export function UserDialogHeaderSection({
                                     variant="inline"
                                 />
                             </span>
-                            {onTitleClick ? (
+                            {copyableDisplayName ? (
                                 <Tooltip>
                                     <TooltipTrigger
                                         render={
                                             <Button
                                                 type="button"
                                                 variant="ghost"
-                                                className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg leading-tight font-semibold"
-                                                title={profileTitle}
-                                                onClick={onTitleClick}
+                                                className="h-auto min-w-0 flex-1 shrink justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold shadow-none hover:bg-transparent hover:text-inherit hover:shadow-none dark:hover:bg-transparent"
+                                                onClick={() =>
+                                                    onCopyDisplayName(
+                                                        copyableDisplayName
+                                                    )
+                                                }
                                             >
-                                                <span className="min-w-0 truncate">
-                                                    {profileTitle}
-                                                </span>
+                                                <AutoFitDisplayName
+                                                    text={profileTitle}
+                                                />
                                             </Button>
                                         }
                                     />
@@ -778,6 +837,7 @@ export function UserDialogHeaderSection({
                             ) : null}
                             <PreviousDisplayNamesBadge
                                 names={previousDisplayNames}
+                                onCopyName={onCopyDisplayName}
                             />
                         </HeaderMetaRow>
                     ) : null}

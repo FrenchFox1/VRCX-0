@@ -9,21 +9,17 @@ use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Semaphore;
-use vrcx_0_application_core::vrchat_api::groups::profile_get_input;
-use vrcx_0_application_core::vrchat_api::tools::{
-    calendars_get_input, featured_calendars_get_input, following_calendars_get_input,
-    CalendarListParams,
-};
 use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
+use vrcx_0_contracts::VrchatJsonResponse;
+use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::GroupJson;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
-const CALENDAR_PAGE_SIZE: i64 = 100;
+const CALENDAR_PAGE_SIZE: i32 = 100;
 const CALENDAR_MAX_PAGES: usize = 50;
 const GROUP_PROFILE_CONCURRENCY: usize = 4;
 const GROUP_PROFILE_CACHE_CAPACITY: u64 = 32;
@@ -31,11 +27,48 @@ const GROUP_PROFILE_CACHE_TTL: Duration = Duration::from_secs(5 * 60);
 
 #[derive(Clone)]
 pub struct GroupCalendarDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
+    pub(crate) web: Arc<WebClient>,
+    remote_requests: Arc<dyn GroupCalendarRemoteRequests>,
     pub auth_scope: RuntimeAuthScope,
     pub diagnostics: RuntimeDiagnostics,
     pub sync: RuntimeSyncEngine,
+}
+
+impl GroupCalendarDeps {
+    pub fn new(
+        web: Arc<WebClient>,
+        remote_requests: Arc<dyn GroupCalendarRemoteRequests>,
+        auth_scope: RuntimeAuthScope,
+        diagnostics: RuntimeDiagnostics,
+        sync: RuntimeSyncEngine,
+    ) -> Self {
+        Self {
+            web,
+            remote_requests,
+            auth_scope,
+            diagnostics,
+            sync,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum GroupCalendarPageKind {
+    All,
+    Following,
+    Featured,
+}
+
+pub trait GroupCalendarRemoteRequests: Send + Sync {
+    fn page(
+        &self,
+        endpoint: String,
+        kind: GroupCalendarPageKind,
+        date: String,
+        n: i32,
+        offset: i32,
+    ) -> Result<VrchatApiRequest>;
+    fn group_profile(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest>;
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -49,10 +82,10 @@ pub struct GroupCalendarInput {
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupCalendarSnapshot {
-    pub events: Vec<Value>,
+    pub events: Vec<RawJson>,
     pub following_event_ids: Vec<String>,
     pub group_names: HashMap<String, String>,
-    pub group_profiles: HashMap<String, Value>,
+    pub group_profiles: HashMap<String, RawJson>,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -120,11 +153,11 @@ async fn load_group_calendar_inner(
     date: &str,
     include_featured: bool,
 ) -> Result<GroupCalendarSnapshot> {
-    let calendars = collect_calendar_pages(deps, scope, date, CalendarKind::All);
-    let following = collect_calendar_pages(deps, scope, date, CalendarKind::Following);
+    let calendars = collect_calendar_pages(deps, scope, date, GroupCalendarPageKind::All);
+    let following = collect_calendar_pages(deps, scope, date, GroupCalendarPageKind::Following);
     let featured = async {
         if include_featured {
-            collect_calendar_pages(deps, scope, date, CalendarKind::Featured).await
+            collect_calendar_pages(deps, scope, date, GroupCalendarPageKind::Featured).await
         } else {
             Ok(Vec::new())
         }
@@ -154,18 +187,14 @@ async fn load_group_calendar_inner(
         .collect();
 
     Ok(GroupCalendarSnapshot {
-        events,
+        events: events.into_iter().map(RawJson::from).collect(),
         following_event_ids,
         group_names,
-        group_profiles,
+        group_profiles: group_profiles
+            .into_iter()
+            .map(|(id, profile)| (id, RawJson::from(profile)))
+            .collect(),
     })
-}
-
-#[derive(Clone, Copy)]
-enum CalendarKind {
-    All,
-    Following,
-    Featured,
 }
 
 struct CalendarPage {
@@ -177,24 +206,19 @@ async fn collect_calendar_pages(
     deps: &GroupCalendarDeps,
     scope: &RuntimeAuthScopeSnapshot,
     date: &str,
-    kind: CalendarKind,
+    kind: GroupCalendarPageKind,
 ) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     for page_index in 0..=CALENDAR_MAX_PAGES {
         ensure_scope_matches(&deps.auth_scope, scope)?;
-        let offset = (page_index as i64) * CALENDAR_PAGE_SIZE;
-        let params = CalendarListParams {
-            n: Some(CALENDAR_PAGE_SIZE),
-            offset: Some(offset),
-            date: Some(date.to_string()),
-        };
-        let request = match kind {
-            CalendarKind::All => calendars_get_input(scope.endpoint.clone(), params),
-            CalendarKind::Following => {
-                following_calendars_get_input(scope.endpoint.clone(), params)
-            }
-            CalendarKind::Featured => featured_calendars_get_input(scope.endpoint.clone(), params),
-        };
+        let offset = (page_index as i32) * CALENDAR_PAGE_SIZE;
+        let request = deps.remote_requests.page(
+            scope.endpoint.clone(),
+            kind,
+            date.to_string(),
+            CALENDAR_PAGE_SIZE,
+            offset,
+        )?;
         let page = execute_page(deps, scope, request).await?;
         let count = page.rows.len();
         if page_index == CALENDAR_MAX_PAGES {
@@ -216,14 +240,11 @@ async fn collect_calendar_pages(
 async fn execute_page(
     deps: &GroupCalendarDeps,
     scope: &RuntimeAuthScopeSnapshot,
-    request: HttpApiRequestInput,
+    request: VrchatApiRequest,
 ) -> Result<CalendarPage> {
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
-        .await?;
+    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
     ensure_scope_matches(&deps.auth_scope, scope)?;
-    let response = ApiJsonResponse {
+    let response = VrchatJsonResponse {
         status: response.status,
         json: serde_json::from_str::<Value>(&response.data)?,
     };
@@ -285,17 +306,19 @@ async fn fetch_group_profile(
             if !deps.auth_scope.snapshot().generation_matches(&scope) {
                 return None;
             }
-            let (_, request) =
-                profile_get_input(scope.endpoint.clone(), request_group_id, false).ok()?;
+            let request = deps
+                .remote_requests
+                .group_profile(scope.endpoint.clone(), request_group_id)
+                .ok()?;
             let response = deps
                 .web
-                .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
+                .execute_api(request, VrchatScope::Vrchat)
                 .await
                 .ok()?;
             if !deps.auth_scope.snapshot().generation_matches(&scope) {
                 return None;
             }
-            let response = ApiJsonResponse {
+            let response = VrchatJsonResponse {
                 status: response.status,
                 json: serde_json::from_str::<Value>(&response.data).ok()?,
             };

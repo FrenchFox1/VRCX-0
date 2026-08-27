@@ -149,7 +149,7 @@ async function followGroupEvent({
     const response = await commands.appVrchatToolsGroupEventFollow({
         groupId,
         eventId,
-        isFollowing: Boolean(isFollowing)
+        isFollowing
     });
     invalidateEntityQueries(['calendar']);
     return unwrapVrchatToolsResponse<GroupCalendarEventRecord>(
@@ -199,20 +199,14 @@ async function saveUserNote({
 
 async function reportUser({
     userId,
-    contentType = 'user',
-    reason,
-    type = 'report'
+    reason
 }: {
     userId: string;
-    contentType?: string;
     reason: string;
-    type?: string;
 }) {
     const response = await commands.appVrchatToolsUserReport({
         userId,
-        contentType,
-        reason,
-        type
+        reason
     });
     return unwrapVrchatToolsResponse(
         response,
@@ -245,13 +239,13 @@ async function editInviteMessage({
 }: {
     currentUserId: string;
     messageType: InviteMessageType;
-    slot: number | string;
+    slot: number;
     message: string;
 }) {
     const response = await commands.appVrchatToolsInviteMessageEdit({
         currentUserId,
         messageType,
-        slot: String(slot),
+        slot,
         message
     });
     return unwrapVrchatToolsResponse<InviteMessagesRecord>(

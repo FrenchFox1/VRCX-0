@@ -19,6 +19,7 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
+import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import {
@@ -36,7 +37,9 @@ import {
     loadUserDialogTabData,
     loadUserDialogTabCounts,
     userDialogDataKeyForTab,
-    type UserDialogDataTab
+    type UserDialogDataTab,
+    type UserDialogRemoteStatus,
+    type UserDialogTabCounts
 } from './userDialogTabService';
 import { buildUserDialogListViewData } from './userDialogViewData';
 import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
@@ -111,11 +114,11 @@ interface UseUserDialogTabDataInput {
     previousAvatarSwapTime?: number;
     currentUserHasSharedConnectionsOptOut: boolean;
     friendsById: FriendRosterById;
-    inGameGroupOrder: readonly unknown[];
+    inGameGroupOrder: readonly string[];
 }
 
-function normalizeUserDialogAvatarSort(value: unknown): UserDialogAvatarSort {
-    const normalizedValue = typeof value === 'string' ? value.trim() : '';
+function normalizeUserDialogAvatarSort(value: string): UserDialogAvatarSort {
+    const normalizedValue = value.trim();
     return isUserDialogAvatarSort(normalizedValue) ? normalizedValue : 'name';
 }
 
@@ -153,19 +156,15 @@ export function useUserDialogTabData({
     const [remoteData, setRemoteData] = useState<UserDialogRemoteData>(
         emptyUserDialogRemoteData
     );
-    const [remoteStatus, setRemoteStatus] = useState<Record<string, string>>(
+    const [remoteStatus, setRemoteStatus] = useState<UserDialogRemoteStatus>(
         emptyUserDialogStatus
     );
-    const [remoteErrors, setRemoteErrors] = useState<Record<string, string>>(
+    const [remoteErrors, setRemoteErrors] = useState<
+        Partial<Record<UserDialogDataTab, string>>
+    >(emptyUserDialogStatus);
+    const [remoteTabCounts, setRemoteTabCounts] = useState<UserDialogTabCounts>(
         emptyUserDialogStatus
     );
-    const [remoteTabCounts, setRemoteTabCounts] = useState<{
-        mutual?: number;
-        groups?: number;
-        worlds?: number;
-        'favorite-worlds'?: number;
-        avatars?: number;
-    }>(emptyUserDialogStatus);
     const [search, setSearch] = useState(emptyUserDialogSearch);
     const [worldSort, setWorldSort] = useState<UserDialogWorldSort>('updated');
     const [worldOrder, setWorldOrder] =
@@ -416,17 +415,24 @@ export function useUserDialogTabData({
         setRemoteStatus((current) => ({ ...current, [tab]: 'running' }));
         setRemoteErrors((current) => ({ ...current, [tab]: '' }));
         try {
-            const { rows, favoriteWorldGroups } = await loadUserDialogTabData({
-                tab,
-                userId: profileUserId,
-                endpoint: currentEndpoint,
-                currentUserId: currentUserId || '',
-                currentAvatarId,
-                previousAvatarSwapTime,
-                worldSort,
-                worldOrder,
-                repositories: userDialogTabServiceRepositories
-            });
+            const { rows, favoriteWorldGroups, mutualGraphUpdated } =
+                await loadUserDialogTabData({
+                    tab,
+                    userId: profileUserId,
+                    endpoint: currentEndpoint,
+                    currentUserId: currentUserId || '',
+                    currentAvatarId,
+                    previousAvatarSwapTime,
+                    worldSort,
+                    worldOrder,
+                    repositories: userDialogTabServiceRepositories
+                });
+
+            if (mutualGraphUpdated) {
+                useMutualGraphRevisionStore
+                    .getState()
+                    .bumpRevision(currentUserId || '');
+            }
 
             if (!isCurrentLoadContext(loadContext)) {
                 return;

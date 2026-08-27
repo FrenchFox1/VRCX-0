@@ -2,14 +2,15 @@ use super::test_support::*;
 use super::*;
 use vrcx_0_application_core::HostSessionGameProcessStatus as GameProcessStatus;
 use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_core::OwnerId;
 
 fn joining_output(
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     baseline_revision: u64,
     destination: &str,
 ) -> RealtimeFriendOutput {
     RealtimeFriendOutput::from_projection(
-        owner_user_id.to_string(),
+        owner_user_id.clone(),
         FriendProjection {
             generation: 7,
             baseline_revision,
@@ -20,7 +21,8 @@ fn joining_output(
                 "displayName": "Friend",
                 "location": "traveling",
                 "travelingToLocation": destination,
-            })],
+            })
+            .into()],
             ..FriendProjection::new(7, baseline_revision)
         },
     )
@@ -52,7 +54,7 @@ fn player_joining_only_reaches_overlay_for_current_instance_absent_player() -> R
     local_game_context.set_location("wrld_current:456");
     let apply_joining = |destination: &str| {
         runtime.runtime().apply_friend_output(joining_output(
-            &active_session.user_id,
+            &OwnerId::new(active_session.user_id.clone()),
             baseline.baseline_revision,
             destination,
         ));

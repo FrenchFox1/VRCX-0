@@ -73,10 +73,10 @@ function MyAvatarsTableHeader({ table }: { table: AppTable<MyAvatarRow> }) {
                                 key={header.id}
                                 header={header}
                                 enableColumnReorder={columnDnd.enabled}
-                                className={String(
+                                className={
                                     header.column.columnDef.meta
                                         ?.tableHeadClassName || ''
-                                )}
+                                }
                             />
                         ))}
                     </TableRow>

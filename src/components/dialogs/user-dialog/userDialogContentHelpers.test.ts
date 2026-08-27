@@ -91,7 +91,13 @@ describe('resolveUserDialogTargetPresenceLocation', () => {
                 currentLocation,
                 currentLocationPlayerIds: [],
                 currentLocationPlayers: [
-                    { userId: '', displayName: 'Hidden Friend' }
+                    {
+                        id: 'Hidden Friend',
+                        userId: '',
+                        displayName: 'Hidden Friend',
+                        joinedAt: '',
+                        joinedAtMs: 0
+                    }
                 ],
                 friendsById: {
                     usr_friend: {

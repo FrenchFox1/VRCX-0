@@ -91,7 +91,10 @@
             "avatar": "アバター",
             "group": "グループ"
         },
-        "date": { "today": "今日", "yesterday": "昨日" },
+        "date": {
+            "today": "今日",
+            "yesterday": "昨日"
+        },
         "retention": {
             "label": "閲覧履歴の保存期間",
             "description": "この期間を過ぎた履歴は自動的に削除されます。",
@@ -457,22 +460,6 @@
             "instance_duration": "滞在 {duration}"
         },
         "generic_instance_location": "インスタンス",
-        "friends_panel": {
-            "title": "お気に入りフレンド",
-            "all": "すべて",
-            "empty": "オンラインのお気に入りフレンドはいません",
-            "note": "ノート",
-            "memo": "ローカルノート",
-            "open": "開く",
-            "request": "参加を申請",
-            "invite": "招待",
-            "favorites_online": "オンラインお気に入り",
-            "same_instance": "同じインスタンス",
-            "local_favorites": "ローカルお気に入り",
-            "traveling": "移動中",
-            "private": "プライベート",
-            "offline": "オフライン"
-        },
         "discord": {
             "title": {
                 "invite": "{name} からの招待",
@@ -1132,7 +1119,6 @@
                 "end": "終了"
             },
             "action": {
-                "current_user": "自分",
                 "open_full": "完全なインスタンス履歴を開く"
             },
             "toast": {
@@ -2035,6 +2021,29 @@
                     "too_many_favorites_event": "お気に入りのプリントがリストを占めているため、自動削除で設定上限以下にできませんでした。残りは {remaining} 件です。"
                 }
             },
+            "gallery_selection": {
+                "count": "{count} 件選択中",
+                "select_all": "すべて選択",
+                "deselect_all": "選択を解除",
+                "confirm_delete_title": "{count} 件を削除しますか？",
+                "confirm_delete_locked": "ロック中の {count} 件はスキップされます。この操作は取り消せません。",
+                "deleting_progress": "削除中 {done}/{total}",
+                "deleted_toast": "{count} 件を削除しました。",
+                "delete_partial_toast": "{succeeded} 件を削除しましたが、{failed} 件は失敗しました。{reason}",
+                "delete_cancelled_toast": "中止しました。{count} 件を削除済みです。",
+                "delete_unlocked": "{count} 件を削除",
+                "delete_locked": "選択した項目はすべてロックされています。",
+                "delete_locked_favorite": "お気に入りを解除すると削除できます",
+                "delete_locked_in_use": "使用中のため削除できません",
+                "favorited_toast": "{count} 件のプリントをお気に入りに追加しました。",
+                "unfavorited_toast": "{count} 件のプリントのお気に入りを解除しました。",
+                "favorite_skipped_toast": "{count} 件はお気に入りにできませんでした。上限は {max} 件です。"
+            },
+            "prints_filter": {
+                "all": "すべて",
+                "favorites": "お気に入り",
+                "others": "お気に入り以外"
+            },
             "llm_endpoints": {
                 "title": "LLM エンドポイント",
                 "description": "Social AI と翻訳で共有する OpenAI 互換の接続です。",
@@ -2151,13 +2160,6 @@
                     "opacity": "不透明度",
                     "filters": "ヘッドセット通知フィルター"
                 },
-                "interactive_panel": {
-                    "header": "インタラクティブフレンドパネル",
-                    "enabled": "インタラクティブフレンドパネルを有効にする",
-                    "all_friends_include_favorites": "すべてにお気に入りを含める",
-                    "summon_hint": "呼び出しジェスチャー",
-                    "openvr_required": "右手のグリップを約 2 秒長押しして呼び出します。SteamVR/OpenVR オーバーレイバックエンドが必要です。OpenXR では現在インタラクティブパネルを提供していません。"
-                },
                 "wrist_overlay": {
                     "header": "手首のオーバーレイ",
                     "wrist_feed_overlay": "手首フィードオーバーレイ",
@@ -2180,6 +2182,12 @@
                     "vr_device_status": "VR デバイス状態",
                     "battery_percentage": "バッテリー残量を表示",
                     "wrist_feed_notifications": "手首オーバーレイ通知フィルター"
+                },
+                "test_mode": {
+                    "header": "オーバーレイのテスト",
+                    "description": "手首のオーバーレイとヘッドセット通知にテスト用のカードを常時表示します。ヘッドセットをかぶったまま位置・サイズ・不透明度を確認できます。設定は保存されず、VRCX-0 を再起動するとオフに戻ります。",
+                    "force_display": "オーバーレイを強制表示",
+                    "requires_steamvr": "SteamVR が起動している必要があります。"
                 }
             },
             "interface": {
@@ -2554,6 +2562,7 @@
                         "header": "テキスト読み上げ",
                         "when_to_play": "読み上げタイミング",
                         "tts_voice": "読み上げボイス",
+                        "tts_volume": "読み上げ音量",
                         "system_default_voice": "システム既定",
                         "notification_filters": "TTS 通知フィルター",
                         "name_mode": "読み上げる名前",
@@ -3233,17 +3242,18 @@
                 "community": "コミュニティテーマ"
             },
             "accent": {
-                "header": "アクセントカラー"
+                "header": "アクセントカラー",
+                "custom": "カスタム",
+                "hex_label": "16進カラーコード"
             },
             "custom_css": {
+                "status_on": "オン",
+                "status_off": "オフ",
                 "header": "カスタム CSS",
-                "enabled_summary": "Override CSS が有効です（{count} bytes）。",
-                "disabled_summary": "必要に応じて最後に適用される CSS レイヤーです。現在は無効です。",
                 "edit": "編集",
                 "hide_editor": "エディターを閉じる"
             },
             "developer": {
-                "summary": "テーマ開発ビルド用のローカルテーマプレビューツールです。",
                 "preview_active": "{name} をプレビュー中です。",
                 "show": "ツールを表示",
                 "hide": "ツールを隠す"
@@ -3262,16 +3272,11 @@
         "background_image": {
             "settings": {
                 "header": "背景画像",
-                "description": "デイリー画像ソース、またはローカル画像ソースを背景に使用します。",
                 "apod_note": "NASA APOD は著作権情報のない画像のみを使用します。",
-                "custom_source": "ローカル画像",
-                "custom_source_description": "画像 1 枚なら固定背景、複数画像またはフォルダならローテーションになります。",
-                "folder_first_level_note": "フォルダは直下の画像だけを読み込みます。サブフォルダは読み込みません。",
-                "selected_files": "{count} 枚の画像を選択済み",
+                "folder_recursive_note": "サブフォルダ内の画像も読み込みます。",
                 "current_image": "現在の画像",
                 "image_count": "{count} 枚の画像",
                 "rotation": "ローテーション",
-                "no_custom_source": "ローカル画像は未選択です",
                 "no_image": "画像はまだ読み込まれていません",
                 "no_image_description": "再読み込みするかソースを選択すると画像を読み込みます。",
                 "source_type_file": "ローカルファイル",
@@ -3284,11 +3289,13 @@
                 "custom": "ローカル画像"
             },
             "rotation": {
-                "daily": "毎日",
-                "hourly": "毎時"
+                "minutes": "分",
+                "custom": "カスタム"
             },
             "action": {
                 "refresh": "再読み込み",
+                "change_image": "画像を変更",
+                "show_in_folder": "フォルダーで表示",
                 "select_images": "画像を選択",
                 "select_folder": "フォルダを選択"
             },
@@ -3296,6 +3303,7 @@
                 "enabled": "背景画像を有効化しました。",
                 "refreshed": "背景画像を再読み込みしました。",
                 "failed": "背景画像の更新に失敗しました。",
+                "failed_to_open_folder": "画像をフォルダーで表示できませんでした。",
                 "no_images": "対応している画像が見つかりません。"
             }
         },
@@ -3305,6 +3313,88 @@
             "contributors_error": "コントリビューター一覧を読み込めませんでした。",
             "thanks": "翻訳、テスト、不具合報告、アイデアの一つひとつがコミュニティから届いています。ありがとうございます。",
             "license_line": "GPL-3.0 のフリー・オープンソースソフトウェア"
+        },
+        "activity": {
+            "title": "アクティビティ",
+            "description": "期間ごとに、時間の使い方をまとめて振り返る",
+            "range": {
+                "all": "全期間",
+                "days": "直近 {days} 日"
+            },
+            "stat": {
+                "total_time": "合計プレイ時間",
+                "daily_average": "1日あたり",
+                "active_days": "プレイした日数",
+                "longest_session": "最長プレイ",
+                "change_up": "前の期間より +{percent}%",
+                "change_down": "前の期間より -{percent}%"
+            },
+            "unit": {
+                "hours": "時間",
+                "minutes": "分"
+            },
+            "section": {
+                "instance_types": "インスタンスの傾向",
+                "daily_time": "日ごとのプレイ時間",
+                "weekly_time": "週ごとのプレイ時間",
+                "when_you_play": "よく遊んでいる時間帯",
+                "top_worlds": "長く過ごしたワールド",
+                "companions": "よく一緒にいる人",
+                "highlights": "ちょっとした発見",
+                "avatars": "よく使うアバター"
+            },
+            "access": {
+                "unknown": "不明",
+                "public": "パブリック",
+                "friendsPlus": "フレンド+",
+                "friends": "フレンド",
+                "invitePlus": "インバイト+",
+                "invite": "インバイト",
+                "group": "グループ"
+            },
+            "empty": {
+                "title": "まだ記録がありません",
+                "description": "VRChat で少し遊ぶと、ここにアクティビティが表示されます。"
+            },
+            "error": {
+                "failed_to_load": "アクティビティを読み込めませんでした"
+            },
+            "caveat": {
+                "recorded_since": "起動中のみ記録されます。"
+            },
+            "worlds": {
+                "visit_count": "{count} 回",
+                "open_ranking": "詳細",
+                "total": "合計 {count} ワールド",
+                "show_home": "ホームワールドを含む"
+            },
+            "people": {
+                "co_days": "{count} 日",
+                "lead_caption": "{days} 日 · {hours} 時間",
+                "fading_title": "会う頻度が減った人",
+                "fading_caveat": "前の期間より会う時間が減っています。生活リズムの違いかもしれません。",
+                "encountered_total": "合計 {count} 人",
+                "fading_last_seen": "最後に会った {date}",
+                "order_minutes": "時間順",
+                "order_days": "日数順"
+            },
+            "hero": {
+                "per_day": "1日あたり",
+                "days_played": "記録のある日",
+                "sessions": "セッション",
+                "longest": "最長セッション"
+            },
+            "action": {
+                "show_all": "すべて表示（{count}件）",
+                "show_less": "折りたたむ"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% が深夜 0 時から 6 時",
+                "open_heatmap": "曜日と時間帯で見る"
+            },
+            "avatars": {
+                "all_time": "全期間"
+            }
         }
     },
     "dialog": {
@@ -3420,7 +3510,6 @@
                 "edit_note_memo": "ノートとローカルノートを編集"
             },
             "group_invite": {
-                "description": "{value} を招待するグループを選択してください。",
                 "select_group": "グループを選択",
                 "loading": "招待を送信できるグループを読み込み中...",
                 "no_groups": "招待を送信できるグループがありません",
@@ -3774,7 +3863,8 @@
                 "content_gore": "過剰なゴア",
                 "content_violence": "写実的な暴力",
                 "content_adult": "成人向けの言葉やテーマ",
-                "content_sex": "性的なものを思わせる"
+                "content_sex": "性的なものを思わせる",
+                "pedestals": "台座"
             },
             "actions": {
                 "delete_cache_tooltip": "キャッシュからワールドを削除",
@@ -3888,7 +3978,11 @@
                 "change_world_image": "ワールド画像を変更",
                 "reset_your_vrchat_home_location": "VRChat ホーム位置をリセット",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "このワールドの管理対象コンテンツ、作者、機能タグを編集します",
+                "enable_avatar_scaling": "アバターのスケーリングを有効化",
+                "enable_focus_view": "フォーカス表示を有効化",
                 "enable_debugging": "デバッグを有効化",
+                "enable_third_person_view": "三人称視点を有効化",
+                "allow_props_to_modify_player_movement": "プロップによるプレイヤーの移動変更を許可",
                 "add_domain": "ドメインを追加"
             },
             "loading": {
@@ -4338,6 +4432,11 @@
             "group_access_type_members": "メンバー",
             "group_access_type_plus": "+",
             "group_access_type_public": "パブリック",
+            "minimum_avatar_performance": "最低アバターパフォーマンスランク",
+            "minimum_avatar_performance_none": "制限なし",
+            "minimum_avatar_performance_poor": "Poor",
+            "minimum_avatar_performance_medium": "Medium",
+            "minimum_avatar_performance_good": "Good",
             "region": "地域",
             "region_usw": "アメリカ(西)",
             "region_use": "アメリカ(東)",
@@ -4854,6 +4953,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "インスタンスIDをコピー",
+                "copy_world_name": "ワールド名をコピー",
                 "more_actions": "その他の操作"
             },
             "header": "インスタンス履歴",
@@ -5473,6 +5573,9 @@
         "group_join_request_title": "グループ参加リクエスト",
         "group_transfer_request_title": "グループ管理者の移譲",
         "group_queue_ready_title": "グループキューが準備完了",
+        "group_instance_opened": "新しいインスタンスを作成しました",
+        "group_instance_opened_location": "新しいインスタンスを作成しました：{location}",
+        "group_instances_opened": "新しいインスタンスを {count} 件作成しました",
         "instance_closed_title": "インスタンスが閉じられました",
         "event_title": "イベント",
         "external_title": "外部アプリ",
@@ -5952,6 +6055,27 @@
         "error_generic": "翻訳に失敗しました",
         "error_network": "ネットワークエラーです。もう一度お試しください",
         "error_unsupported": "翻訳が設定されていません"
+    },
+    "saved_group_favorites": {
+        "title": "お気に入りグループ",
+        "description": "よく使うグループをローカルのコレクションに保存し、新しいインスタンスの通知に利用できます。",
+        "new_collection": "新しいコレクション",
+        "empty_collections": "コレクションを作成するとグループを保存できます。",
+        "empty_group": "このコレクションに保存されたグループはありません。",
+        "delete_title": "このコレクションを削除しますか？",
+        "delete_description": "「{name}」を削除すると、保存されている{count}件のグループもお気に入りから外れます。",
+        "choose_collection": "保存先を選択",
+        "remove": "お気に入りから削除",
+        "toggle": "グループをお気に入りに追加",
+        "sidebar_saved": "お気に入りグループ",
+        "sidebar_none": "お気に入りグループはまだありません",
+        "sidebar_other": "その他のアクティブなグループ",
+        "sidebar_failed": "グループインスタンスを読み込めませんでした",
+        "sidebar_no_active": "その他のアクティブなグループインスタンスはありません",
+        "scope_all": "すべてのお気に入りグループ",
+        "scope_selected": "選択したお気に入りコレクション",
+        "notification_type": "グループの新規インスタンス",
+        "notification_empty": "お気に入りグループのコレクションがありません。"
     },
     "app": {
         "routes": {

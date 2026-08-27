@@ -28,7 +28,7 @@ function applyFactDerivedFields(
         if (!next) {
             next = { ...friend };
         }
-        (next as Record<string, unknown>)[field] = value;
+        Object.assign(next, { [field]: value });
     }
     return next ?? friend;
 }

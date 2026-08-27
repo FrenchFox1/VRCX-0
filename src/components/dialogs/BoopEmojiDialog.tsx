@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import mediaRepository from '@/repositories/mediaRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { vrchatDefaultEmojis } from '@/shared/constants/vrchatDefaultEmojis';
+import { isRecord } from '@/shared/utils/record';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -40,10 +41,6 @@ type BoopEmojiDialogProps = {
     onOpenChange: (open: boolean) => void;
     onSend: (emojiId: string) => void | Promise<void>;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-}
 
 function getString(record: Record<string, unknown>, key: string): string {
     const value = record[key];
@@ -392,7 +389,7 @@ export function BoopEmojiDialog({
                                     </div>
                                 ) : (
                                     <div className="text-muted-foreground flex h-28 items-center justify-center text-sm">
-                                        {t('common.search_no_results')}
+                                        {t('empty_state.search_no_results')}
                                     </div>
                                 )}
                             </TabsContent>

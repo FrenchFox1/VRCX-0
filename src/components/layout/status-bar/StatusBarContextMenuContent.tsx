@@ -20,12 +20,9 @@ import type {
 
 type StatusBarContextMenuContentProps = {
     clockCount: number;
-    onSetClockCountValue: (nextValue: number) => unknown;
-    onOpenProxySettings: () => unknown;
-    onToggleVisibility: (
-        key: StatusBarVisibilityKey,
-        checked: boolean
-    ) => unknown;
+    onSetClockCountValue: (nextValue: number) => void;
+    onOpenProxySettings: () => void;
+    onToggleVisibility: (key: StatusBarVisibilityKey, checked: boolean) => void;
     visibility: StatusBarVisibility;
 };
 

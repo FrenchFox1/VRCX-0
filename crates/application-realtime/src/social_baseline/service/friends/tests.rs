@@ -417,7 +417,7 @@ fn canonical_records_replace_raw_roster_snapshot_and_ordering() -> Result<()> {
                 accepted: true,
                 generation: 7,
                 baseline_revision: 1,
-                friend_count: friends_by_id.len(),
+                friend_count: u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX),
             },
             crate::realtime::RealtimeFriendSnapshot {
                 current_user_id: "usr_self".into(),
@@ -477,7 +477,7 @@ fn canonical_records_can_be_moved_out_after_raw_snapshot_rebuild() -> Result<()>
                 accepted: true,
                 generation: 7,
                 baseline_revision: 1,
-                friend_count: friends_by_id.len(),
+                friend_count: u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX),
             },
             crate::realtime::RealtimeFriendSnapshot {
                 current_user_id: "usr_self".into(),

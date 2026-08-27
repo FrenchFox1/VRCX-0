@@ -163,8 +163,8 @@ function createResult<TValue = never>(
     };
 }
 
-function matchesPromptPattern(pattern: unknown, value: unknown): boolean {
-    if (!(pattern instanceof RegExp)) {
+function matchesPromptPattern(pattern: RegExp | null, value: string): boolean {
+    if (!pattern) {
         return true;
     }
 

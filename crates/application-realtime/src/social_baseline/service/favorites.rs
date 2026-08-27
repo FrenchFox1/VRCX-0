@@ -2,19 +2,20 @@ use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_persistence::favorites::FavoriteRow;
 
 use super::friends::{FriendStateMap, SnapshotFriendIds};
 use super::{
     auth_scope_matches, build_friend_state_map, build_snapshot_friend_ids,
     execute_vrchat_json_request, fetch_paged_array, get_config_array, json, normalize_endpoint,
-    normalize_text, object_field, object_field_normalized, object_field_string, remote_favorites,
+    normalize_text, object_field, object_field_normalized, object_field_string,
     stale_favorites_output, unique_values, value_as_i64, value_as_string, BTreeMap, Map, RawJson,
     SocialBaselineDeps, SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput,
     SocialFavoritesBaselineRequest, FAVORITES_PAGE_SIZE, FAVORITE_GROUPS_PAGE_SIZE,
 };
 use crate::{FavoriteBaselineSnapshot, FavoriteGroupOutput};
+use vrcx_0_core::OwnerId;
 
 const MAX_FAVORITE_GROUPS_KEY: &str = "maxFavoriteGroups";
 const MAX_FAVORITES_PER_GROUP_KEY: &str = "maxFavoritesPerGroup";
@@ -534,37 +535,30 @@ async fn build_favorites_baseline_inner(
 
     let favorite_limits_response = execute_vrchat_json_request(
         &deps,
-        remote_favorites::favorite_limits_get_input(normalize_endpoint(&request.endpoint)),
+        deps.remote_requests
+            .favorite_limits(normalize_endpoint(&request.endpoint))?,
     )
     .await?;
     let remote_favorites = fetch_paged_array(&deps, FAVORITES_PAGE_SIZE, None, |n, offset| {
-        remote_favorites::favorites_get_input(normalize_endpoint(&request.endpoint), n, offset)
+        deps.remote_requests
+            .favorites(normalize_endpoint(&request.endpoint), n, offset)
     })
     .await?;
     let remote_favorite_groups =
         fetch_paged_array(&deps, FAVORITE_GROUPS_PAGE_SIZE, None, |n, offset| {
-            remote_favorites::favorite_groups_get_input(
-                normalize_endpoint(&request.endpoint),
-                n,
-                offset,
-                String::new(),
-            )
+            deps.remote_requests
+                .favorite_groups(normalize_endpoint(&request.endpoint), n, offset)
         })
         .await?;
 
-    let local_world_favorite_rows = vrcx_0_persistence::favorites::favorite_list(
-        deps.db.as_ref(),
-        None,
-        vrcx_0_core::FavoriteEntityKind::World,
-    )?;
-    let local_avatar_favorite_rows = vrcx_0_persistence::favorites::favorite_list(
-        deps.db.as_ref(),
-        None,
-        vrcx_0_core::FavoriteEntityKind::Avatar,
-    )?;
-    let local_friend_favorite_rows = vrcx_0_persistence::favorites::favorite_list(
-        deps.db.as_ref(),
-        Some(&user_id),
+    let local_world_favorite_rows = deps
+        .store
+        .favorite_list(None, vrcx_0_core::FavoriteEntityKind::World)?;
+    let local_avatar_favorite_rows = deps
+        .store
+        .favorite_list(None, vrcx_0_core::FavoriteEntityKind::Avatar)?;
+    let local_friend_favorite_rows = deps.store.favorite_list(
+        Some(&OwnerId::new(user_id.clone())),
         vrcx_0_core::FavoriteEntityKind::Friend,
     )?;
     let explicit_local_world_groups = get_config_array(&deps, "localFavoriteWorldGroups")?;
@@ -674,7 +668,7 @@ async fn build_favorites_baseline_inner(
     Ok(SocialFavoritesBaselineOutput {
         user_id,
         stale: false,
-        count,
+        count: u32::try_from(count).unwrap_or(u32::MAX),
         snapshot: Some(snapshot),
     })
 }

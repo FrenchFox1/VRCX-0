@@ -13,9 +13,9 @@ import { requestGroupInstancesRefresh } from './runtime-event-bridge/auxiliaryEv
 import { syncStartupServicesTask } from './startupServicesStatus';
 
 type AuthenticatedUser = Record<string, unknown> & {
-    id?: unknown;
-    displayName?: unknown;
-    username?: unknown;
+    id?: string;
+    displayName?: string;
+    username?: string;
 };
 
 function getCurrentUserDisplayName(
@@ -28,7 +28,7 @@ async function loadInstanceJoinHistory(
     userId: string,
     attempt: AuthAttempt
 ): Promise<void> {
-    let history: Iterable<[unknown, unknown]>;
+    let history: Iterable<[string, number]>;
     try {
         history =
             await gameLogPersistenceRepository.getInstanceJoinHistory(userId);

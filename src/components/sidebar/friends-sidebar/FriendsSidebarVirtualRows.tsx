@@ -1,6 +1,9 @@
+import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
+import type { UserStatus } from '@/platform/tauri/bindings';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
+import type { TrustColorMap } from '@/shared/utils/trustColors';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
@@ -14,13 +17,16 @@ import {
     type SidebarFriendRecord
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
-import type { FriendsSidebarGroupKey } from './useFriendsSidebarPreferences';
+import {
+    isFriendsSidebarGroupKey,
+    type FriendsSidebarGroupKey
+} from './useFriendsSidebarPreferences';
 
 type FriendCommandsView = {
     onOpenFriend: (friend: SidebarFriendRecord) => void;
     onToggleSection: (id: FriendsSidebarGroupKey) => void;
-    onLaunch?: (location: unknown) => void;
-    onSelfInvite?: (location: unknown) => void;
+    onLaunch?: (location: string) => void;
+    onSelfInvite?: (location: string) => void;
     onInvite?: (friend: SidebarFriendRecord) => void;
     onRequestInvite?: (friend: SidebarFriendRecord) => void;
     onBoop?: (friend: SidebarFriendRecord) => void;
@@ -31,7 +37,10 @@ type RuntimeView = {
         | (Record<string, unknown> & { isBoopingEnabled?: unknown })
         | null;
     currentUserId?: string | null;
-    gameState: { isGameRunning?: boolean | null };
+    gameState: {
+        isGameRunning?: boolean | null;
+        currentLocationStartedAt?: string | number | null;
+    };
     onlineIdSet: Set<string>;
     instanceActionGatesByUserId: Map<string, LocalInstanceActionGates>;
 };
@@ -42,34 +51,31 @@ type AppearanceView = {
     randomUserColours?: boolean;
     recentActionVersion?: number;
     showInstanceIdInLocation?: boolean;
-    trustColor?: unknown;
+    trustColor?: TrustColorMap;
 };
 
 type LocationView = {
-    locationMetadataByKey: Map<
-        unknown,
-        Record<string, unknown> | null | undefined
-    >;
+    locationMetadataByKey: Map<string, LocationMetadata>;
 };
 
 type StatusCommandsView = {
     statusPresets?: StatusPreset[];
-    onChangeStatus?: (status: string) => unknown;
-    onSetStatusDescription?: (statusDescription: string) => unknown;
-    onEditSocialStatus?: () => unknown;
-    onApplyStatusPreset?: (preset: StatusPreset) => unknown;
+    onChangeStatus?: (status: UserStatus) => void;
+    onSetStatusDescription?: (statusDescription: string) => void;
+    onEditSocialStatus?: () => void;
+    onApplyStatusPreset?: (preset: StatusPreset) => void;
 };
 
 function FavoriteGroupHeaderRow({
     label,
     count
 }: {
-    label?: unknown;
+    label?: string;
     count?: number;
 }) {
     return (
         <div className="text-muted-foreground flex w-full items-center px-1.5 py-1 text-left text-xs">
-            {String(label || '')} - {count || 0}
+            {label || ''} - {count || 0}
         </div>
     );
 }
@@ -79,7 +85,7 @@ function SidebarMessageRow({
     text
 }: {
     className?: string;
-    text?: unknown;
+    text?: string;
 }) {
     return (
         <div
@@ -88,7 +94,7 @@ function SidebarMessageRow({
                 className
             )}
         >
-            {String(text || '')}
+            {text || ''}
         </div>
     );
 }
@@ -111,6 +117,7 @@ function FriendVirtualRow({
     metadataKey = '',
     isCurrentUser = false,
     isGroupByInstance = false,
+    instanceLocation,
     friendCommands,
     location,
     runtime,
@@ -118,9 +125,10 @@ function FriendVirtualRow({
 }: {
     appearance: AppearanceView;
     friend: SidebarFriendRecord;
-    metadataKey?: unknown;
+    metadataKey?: string;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
+    instanceLocation?: string;
     friendCommands: FriendCommandsView;
     location: LocationView;
     runtime: RuntimeView;
@@ -140,6 +148,7 @@ function FriendVirtualRow({
             rowModel={{
                 isCurrentUser,
                 isGroupByInstance,
+                instanceLocation,
                 canSendInvite: Boolean(instanceActionGates?.canInvite),
                 canRequestInvite: !isCurrentUser,
                 canBoop: Boolean(runtime.currentUser?.isBoopingEnabled),
@@ -166,6 +175,8 @@ function FriendVirtualRow({
                 trustColor: appearance.trustColor,
                 currentUserSnapshot: runtime.currentUser,
                 isGameRunning: runtime.gameState.isGameRunning,
+                currentLocationStartedAt:
+                    runtime.gameState.currentLocationStartedAt,
                 recentActionVersion: appearance.recentActionVersion,
                 locationMetadata:
                     location.locationMetadataByKey.get(metadataKey),
@@ -202,11 +213,11 @@ function FriendsSidebarVirtualRow({
                     count={row.count}
                     open={row.open}
                     isFirst={isFirstRow}
-                    onToggle={(id) =>
-                        friendCommands.onToggleSection(
-                            id as FriendsSidebarGroupKey
-                        )
-                    }
+                    onToggle={(id) => {
+                        if (isFriendsSidebarGroupKey(id)) {
+                            friendCommands.onToggleSection(id);
+                        }
+                    }}
                 />
             );
         case 'favorite-group-header':
@@ -219,7 +230,7 @@ function FriendsSidebarVirtualRow({
                     location={row.location}
                     count={row.count}
                     isCurrentInstance={row.isCurrentInstance}
-                    metadata={location.locationMetadataByKey.get(row.key)}
+                    metadata={location.locationMetadataByKey.get(row.key ?? '')}
                     showInstanceIdInLocation={
                         appearance.showInstanceIdInLocation
                     }
@@ -244,6 +255,7 @@ function FriendsSidebarVirtualRow({
                     friend={row.friend}
                     isCurrentUser={row.isCurrentUser}
                     isGroupByInstance={row.isGroupByInstance}
+                    instanceLocation={row.instanceLocation}
                     metadataKey={row.key}
                     friendCommands={friendCommands}
                     location={location}

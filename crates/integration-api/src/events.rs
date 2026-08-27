@@ -36,14 +36,14 @@ impl IntegrationApiStartFailedPayload {
     }
 }
 
-vrcx_0_application_contracts::runtime_event_payload!(
+vrcx_0_runtime_event::runtime_event_payload!(
     IntegrationApiStartFailedPayload,
     "integrationApiStartFailed"
 );
 
 #[cfg(test)]
 mod tests {
-    use vrcx_0_application_contracts::RuntimeEventPayload;
+    use vrcx_0_runtime_event::RuntimeEventPayload;
 
     use super::{IntegrationApiStartFailedPayload, IntegrationApiStartFailureReason};
 

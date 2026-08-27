@@ -7,7 +7,10 @@ import {
     shouldShowReasoningEffortSelector
 } from '@/features/llm/reasoning';
 import { getLanguageName, languageCodes } from '@/localization/index';
-import type { LlmEndpointDto } from '@/platform/tauri/bindings';
+import type {
+    LlmEndpointDto,
+    TranslationProvider
+} from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
 import { openLlmEndpointsManager } from '@/state/llmEndpointsStore';
 import { Button } from '@/ui/shadcn/button';
@@ -36,7 +39,7 @@ import { Field, FieldGroup } from '../SettingsField';
 
 type TranslationDraft = {
     bioLanguage: string;
-    translationAPIType: string;
+    translationAPIType: TranslationProvider;
     translationAPIKey: string;
     translationEndpointId: string;
     translationAPIEndpoint: string;
@@ -46,7 +49,7 @@ type TranslationDraft = {
 };
 
 type TranslationProviderOption = {
-    value: string;
+    value: TranslationProvider;
     label?: string;
     labelKey?: string;
 };

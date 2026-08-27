@@ -1,3 +1,5 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::VecDeque,
     sync::{
@@ -11,7 +13,7 @@ use super::*;
 struct FakeActions {
     calls: Mutex<Vec<String>>,
     outcomes: Mutex<VecDeque<Result<GroupModerationRemoteOutcome>>>,
-    progress: Mutex<Vec<(usize, usize)>>,
+    progress: Mutex<Vec<(u32, u32)>>,
     scope_current: AtomicBool,
 }
 
@@ -39,7 +41,7 @@ impl GroupModerationBatchActions for FakeActions {
     fn execute<'a>(
         &'a self,
         operation: GroupModerationOperation<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<GroupModerationRemoteOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<GroupModerationRemoteOutcome>> {
         Box::pin(async move {
             let call = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
@@ -96,7 +98,7 @@ fn input(
     targets: Vec<GroupModerationBatchTarget>,
 ) -> GroupModerationBatchInput {
     GroupModerationBatchInput {
-        expected_owner_user_id: "usr_self".into(),
+        expected_owner_user_id: OwnerId::new("usr_self"),
         expected_endpoint: String::new(),
         group_id: "grp_test".into(),
         action,
@@ -230,7 +232,7 @@ fn input_rejects_more_than_the_operation_limit() {
         .collect();
 
     let result = prepare_input(GroupModerationBatchInput {
-        expected_owner_user_id: "usr_self".into(),
+        expected_owner_user_id: OwnerId::new("usr_self"),
         expected_endpoint: String::new(),
         group_id: "grp_test".into(),
         action: GroupModerationBatchAction::RemoveRoles,
@@ -246,9 +248,17 @@ fn input_rejects_more_than_the_operation_limit() {
 #[test]
 fn coordinator_rejects_overlapping_batches_for_the_same_owner_and_group() {
     let coordinator = GroupModerationBatchCoordinator::default();
-    let _running = coordinator.try_begin("usr_self", "grp_test").unwrap();
+    let _running = coordinator
+        .try_begin(&OwnerId::new("usr_self"), "grp_test")
+        .unwrap();
 
-    assert!(coordinator.try_begin("usr_self", "grp_test").is_err());
-    assert!(coordinator.try_begin("usr_other", "grp_test").is_ok());
-    assert!(coordinator.try_begin("usr_self", "grp_other").is_ok());
+    assert!(coordinator
+        .try_begin(&OwnerId::new("usr_self"), "grp_test")
+        .is_err());
+    assert!(coordinator
+        .try_begin(&OwnerId::new("usr_other"), "grp_test")
+        .is_ok());
+    assert!(coordinator
+        .try_begin(&OwnerId::new("usr_self"), "grp_other")
+        .is_ok());
 }

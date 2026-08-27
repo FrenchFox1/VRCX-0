@@ -12,6 +12,7 @@ test-utils = [
 ]
 
 [dependencies]
+async-trait = { workspace = true }
 chrono = { workspace = true }
 percent-encoding = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
@@ -20,16 +21,10 @@ specta = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync", "time"] }
 tracing = { workspace = true }
 url = { workspace = true }
-walkdir = { workspace = true }
 vrcx-0-application-activity = { path = "../application-activity" }
+vrcx-0-contracts = { path = "../contracts" }
 vrcx-0-application-core = { path = "../application-core" }
 vrcx-0-core = { path = "../core" }
-vrcx-0-integrations = { path = "../integrations" }
-vrcx-0-media = { path = "../media" }
-vrcx-0-persistence = { path = "../persistence" }
-vrcx-0-vrchat-client = { path = "../vrchat-client" }
 
 [dev-dependencies]
-image = { workspace = true }
-rusqlite = { workspace = true }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }

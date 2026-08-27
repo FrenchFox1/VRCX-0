@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-type SettingsCommitAction = () => unknown | Promise<unknown>;
+type SettingsCommitAction = () => void;
 type SettingsRollback = () => void;
 type SettingsOptimisticUpdate = () => void | SettingsRollback;
 

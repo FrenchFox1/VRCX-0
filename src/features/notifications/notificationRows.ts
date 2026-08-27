@@ -1,25 +1,21 @@
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 
 type CachedInstanceLike = Record<string, unknown> & {
-    closedAt?: unknown;
+    closedAt?: string | null;
     instance?: CachedInstanceLike;
     instanceId?: string;
     location?: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
 export function matchesNotificationSearch(
     notification: NotificationRow,
-    search: unknown
+    search: string
 ): boolean {
-    const query = String(search || '')
-        .trim()
-        .toLowerCase();
+    const query = search.trim().toLowerCase();
     if (!query) {
         return true;
     }
@@ -49,7 +45,7 @@ export function matchesNotificationSearch(
 export function filterNotificationRows(
     rows: readonly NotificationRow[] | null | undefined,
     filters: readonly string[] | null | undefined,
-    search: unknown
+    search: string
 ): NotificationRow[] {
     const activeFilters = Array.isArray(filters) ? filters : [];
     const inputRows = Array.isArray(rows) ? rows : [];
@@ -64,9 +60,8 @@ export function filterNotificationRows(
     });
 }
 
-export function normalizeWorldTarget(value: unknown): string {
-    const text =
-        typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+export function normalizeWorldTarget(value: string): string {
+    const text = value.trim();
     return parseLocation(text).worldId || text.split(':')[0] || text;
 }
 
@@ -86,13 +81,10 @@ export function getCachedInstanceLocation(instance: unknown) {
 }
 
 export function buildCachedInstanceMap(
-    instances: readonly unknown[] | null | undefined
+    instances: readonly GroupInstanceRecord[]
 ) {
     const map = new Map<string, CachedInstanceLike>();
-    for (const instance of Array.isArray(instances) ? instances : []) {
-        if (!isRecord(instance)) {
-            continue;
-        }
+    for (const instance of instances) {
         const location = getCachedInstanceLocation(instance);
         if (location) {
             const nestedInstance = isRecord(instance.instance)

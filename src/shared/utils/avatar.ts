@@ -44,9 +44,10 @@ function stripDefaultAvatarImage<T extends Record<string, unknown>>(
         typeof imageUrl === 'string' &&
         imageUrl.includes(DEFAULT_AVATAR_FILE_ID)
     ) {
-        const target = record as Record<string, unknown>;
-        target['currentAvatarImageUrl'] = '';
-        target['currentAvatarThumbnailImageUrl'] = '';
+        Object.assign(record, {
+            currentAvatarImageUrl: '',
+            currentAvatarThumbnailImageUrl: ''
+        });
     }
     return record;
 }

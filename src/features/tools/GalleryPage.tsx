@@ -30,6 +30,15 @@ export function GalleryPage() {
 
             <PageBody>
                 <GalleryTabsSection
+                    galleryBulkCommands={{
+                        bulkRunning: pageState.bulkRunning,
+                        onBulkDelete: (input) => {
+                            pageState.deleteSelection(input);
+                        },
+                        onBulkSetFavorite: (input) => {
+                            pageState.setFavoriteSelection(input);
+                        }
+                    }}
                     galleryModel={{
                         activeTab: pageState.activeTab,
                         assets: pageState.assets,

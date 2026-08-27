@@ -7,6 +7,7 @@ pub use service::{
     force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
 };
 pub use types::{
-    ModerationSyncDeps, ModerationSyncMutationInput, ModerationSyncMutationOutput,
-    ModerationSyncRefreshInput, ModerationSyncRefreshOutput, RemoteModerationRow,
+    LocalModerationInput, LocalModerationOutput, ModerationSyncDeps, ModerationSyncMutationInput,
+    ModerationSyncMutationOutput, ModerationSyncRefreshInput, ModerationSyncRefreshOutput,
+    ModerationSyncRemoteRequests, ModerationSyncStore, RemoteModerationInput, RemoteModerationRow,
 };

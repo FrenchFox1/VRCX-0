@@ -168,7 +168,7 @@ export function priorityLabelKeyFromNumber(
 }
 
 export function priorityNumberFromValue(
-    value: unknown,
+    value: string | null | undefined,
     fallback = 400
 ): number {
     return (
@@ -177,7 +177,7 @@ export function priorityNumberFromValue(
     );
 }
 
-export function contextPresetLabelKeyFromValue(value: unknown) {
+export function contextPresetLabelKeyFromValue(value: string | undefined) {
     return (
         contextPresetOptions.find((option) => option.value === value)
             ?.labelKey || 'view.tools.social_automation.preset_custom'

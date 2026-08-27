@@ -68,9 +68,10 @@ export function FriendsLocationsVirtualList({
                             style={{
                                 height: `${row.height}px`,
                                 transform: `translateY(${row.top}px)`,
-                                paddingTop: row.topGap
-                                    ? `${row.topGap}px`
-                                    : undefined
+                                paddingTop:
+                                    row.type === 'cards' && row.topGap
+                                        ? `${row.topGap}px`
+                                        : undefined
                             }}
                         >
                             {row.type === 'header' ? (

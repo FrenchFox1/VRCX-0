@@ -57,18 +57,17 @@ export type RealtimeUserProjectionPayload = Omit<
     users: RealtimeUserRecord[];
 };
 
-export type RealtimeGameStatePatch = Record<string, unknown> &
-    Partial<{
-        currentLocation: string;
-        currentWorldId: string;
-        currentWorldName: string;
-        currentDestination: string;
-        currentLocationStartedAt: string | null;
-        currentLocationPlayerIds: [];
-        currentLocationPlayers: [];
-        lastGameLogAt?: string;
-        lastGameLogType?: 'location';
-    }>;
+export type RealtimeGameStatePatch = Partial<{
+    currentLocation: string;
+    currentWorldId: string;
+    currentWorldName: string;
+    currentDestination: string;
+    currentLocationStartedAt: string | null;
+    currentLocationPlayerIds: [];
+    currentLocationPlayers: [];
+    lastGameLogAt: string;
+    lastGameLogType: 'location';
+}>;
 
 export type RealtimeCurrentUserProjectionPayload = Omit<
     RealtimeCurrentUserProjection,

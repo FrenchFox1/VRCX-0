@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::friends::friend_status_get_input;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::friends::friend_status_get_input;
 
 use crate::error::AppError;
 use crate::state::AppState;

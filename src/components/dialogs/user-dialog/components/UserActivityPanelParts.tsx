@@ -1,15 +1,8 @@
 import type { EChartsType } from 'echarts/core';
-import { ImageIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 
-import { timeToText } from '@/lib/dateTime';
 import { echarts } from '@/lib/echarts';
-import { cn } from '@/lib/utils';
-import { openWorldDialog } from '@/services/dialogService';
-import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
-import { Button } from '@/ui/shadcn/button';
 import {
     Empty,
     EmptyDescription,
@@ -17,13 +10,21 @@ import {
     EmptyTitle
 } from '@/ui/shadcn/empty';
 
-import {
-    getWorldThumbnailUrl,
-    type TopWorldsSort,
-    type UserActivityTopWorld
-} from '../userActivityPanelModel';
-
 type HeatmapPoint = [number, number, number];
+
+const DEFAULT_HEIGHT = 240;
+const GRID_LEFT = 42;
+const GRID_RIGHT = 16;
+const GRID_TOP = 6;
+const GRID_BOTTOM = 32;
+
+function squareGridHeight(width: number) {
+    const plotWidth = width - GRID_LEFT - GRID_RIGHT;
+    if (plotWidth <= 0) {
+        return DEFAULT_HEIGHT;
+    }
+    return Math.round((plotWidth / 24) * 7) + GRID_TOP + GRID_BOTTOM;
+}
 
 function toHeatmapSeriesData(
     normalizedBuckets: readonly number[],
@@ -156,6 +157,7 @@ export function HeatmapChart({
     scaleColors,
     unitLabel,
     renderDelay = 0,
+    squareCells = false,
     onContextMenu
 }: {
     rawBuckets?: number[];
@@ -168,6 +170,7 @@ export function HeatmapChart({
     scaleColors: string[];
     unitLabel: string;
     renderDelay?: number;
+    squareCells?: boolean;
     onContextMenu?: () => void;
 }) {
     const [chartElement, setChartElement] = useState<HTMLDivElement | null>(
@@ -203,6 +206,11 @@ export function HeatmapChart({
             renderTimerRef.current = null;
         }
 
+        const resolveHeight = () =>
+            squareCells
+                ? squareGridHeight(chartElement.clientWidth)
+                : DEFAULT_HEIGHT;
+
         const renderChart = () => {
             const themeName = isDarkMode ? 'dark' : null;
             let chart = chartInstanceRef.current;
@@ -214,14 +222,16 @@ export function HeatmapChart({
                     chartElement,
                     themeName || undefined,
                     {
-                        height: 240
+                        height: resolveHeight()
                     }
                 );
                 chart = nextChart;
                 chartInstanceRef.current = nextChart;
                 chartThemeRef.current = themeName;
                 resizeObserverRef.current = new ResizeObserver(() => {
-                    nextChart.resize();
+                    const nextHeight = resolveHeight();
+                    chartElement.style.height = `${nextHeight}px`;
+                    nextChart.resize({ height: nextHeight });
                 });
                 resizeObserverRef.current.observe(chartElement);
             }
@@ -230,8 +240,9 @@ export function HeatmapChart({
                 return;
             }
 
-            chartElement.style.height = '240px';
-            chart.resize({ height: 240 });
+            const height = resolveHeight();
+            chartElement.style.height = `${height}px`;
+            chart.resize({ height });
 
             if (!normalizedBuckets.length) {
                 chart.clear();
@@ -279,6 +290,7 @@ export function HeatmapChart({
         rawBuckets,
         renderDelay,
         scaleColors,
+        squareCells,
         unitLabel,
         weekStartsOn
     ]);
@@ -287,7 +299,7 @@ export function HeatmapChart({
         <div
             ref={setChartElement}
             className="min-w-0 shrink-0 overflow-hidden"
-            style={{ width: '100%', height: 240 }}
+            style={{ width: '100%', height: DEFAULT_HEIGHT }}
             onContextMenu={(event) => {
                 event.preventDefault();
                 onContextMenu?.();
@@ -312,98 +324,5 @@ export function ActivityEmptyState({
                 ) : null}
             </EmptyHeader>
         </Empty>
-    );
-}
-
-export function TopWorldRows({
-    worlds,
-    sortBy
-}: {
-    worlds: UserActivityTopWorld[];
-    sortBy: TopWorldsSort;
-}) {
-    const { t } = useTranslation();
-    const key = sortBy === 'count' ? 'visitCount' : 'totalTime';
-    const maxValue = Math.max(...worlds.map((world) => world[key] || 0), 0);
-
-    if (!worlds.length) {
-        return null;
-    }
-
-    return (
-        <div className="flex flex-col gap-0.5">
-            {worlds.map((world, index) => {
-                const value = world[key] || 0;
-                const thumbnailUrl = getWorldThumbnailUrl(world);
-                const barWidth =
-                    maxValue > 0
-                        ? `${Math.max((value / maxValue) * 100, 8)}%`
-                        : '0%';
-                return (
-                    <Button
-                        key={world.worldId || index}
-                        type="button"
-                        variant="ghost"
-                        className={cn(
-                            'h-auto w-full items-start justify-start gap-3 rounded-lg px-3 py-2 text-left font-normal transition-colors',
-                            index === 0 ? 'bg-primary/5' : ''
-                        )}
-                        onClick={() =>
-                            openWorldDialog({
-                                worldId: world.worldId,
-                                title: world.worldName || undefined
-                            })
-                        }
-                    >
-                        <span
-                            className={cn(
-                                'mt-1 w-5 shrink-0 text-right font-mono text-xs font-bold',
-                                index === 0
-                                    ? 'text-primary'
-                                    : 'text-muted-foreground'
-                            )}
-                        >
-                            #{index + 1}
-                        </span>
-                        <Avatar className="mt-0.5 size-8 shrink-0 rounded-sm">
-                            {thumbnailUrl ? (
-                                <AvatarImage
-                                    src={thumbnailUrl}
-                                    loading="lazy"
-                                    decoding="async"
-                                    className="rounded-sm object-cover"
-                                />
-                            ) : null}
-                            <AvatarFallback className="rounded-sm [&>svg]:size-3.5">
-                                <ImageIcon className="text-muted-foreground" />
-                            </AvatarFallback>
-                        </Avatar>
-                        <span className="min-w-0 flex-1">
-                            <span className="flex items-baseline justify-between gap-2">
-                                <span className="truncate text-sm font-medium">
-                                    {world.worldName || 'World'}
-                                </span>
-                                <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                                    {sortBy === 'time'
-                                        ? timeToText(world.totalTime || 0)
-                                        : t(
-                                              'dialog.user.activity.most_visited_worlds.visit_count_label',
-                                              {
-                                                  count: world.visitCount || 0
-                                              }
-                                          )}
-                                </span>
-                            </span>
-                            <span className="bg-muted mt-1 block h-1.5 w-full overflow-hidden rounded-full">
-                                <span
-                                    className="bg-muted-foreground/45 block h-full rounded-full transition-[width] duration-200 ease-out motion-reduce:transition-none"
-                                    style={{ width: barWidth }}
-                                />
-                            </span>
-                        </span>
-                    </Button>
-                );
-            })}
-        </div>
     );
 }

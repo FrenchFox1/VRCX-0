@@ -1,14 +1,11 @@
-import { branches } from '@/shared/constants/settings';
+import type { ReleaseBranchKey } from '@/shared/constants/settings';
+import { isRecord } from '@/shared/utils/record';
 import {
     compareReleaseVersions,
     parseReleaseVersion
 } from '@/shared/utils/releaseVersion';
 
 import type { GitHubRelease, NormalizedRelease } from './types';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function asGitHubRelease(value: unknown): GitHubRelease {
     return isRecord(value) ? value : {};
@@ -37,16 +34,15 @@ export function normalizeGitHubRelease(
 }
 
 export function normalizeReleaseList(
-    branch: unknown,
+    branch: ReleaseBranchKey,
     releases: unknown
 ): NormalizedRelease[] {
-    const normalizedBranch = sanitizeBranch(branch);
     return (Array.isArray(releases) ? releases : [releases])
         .map((release) => normalizeGitHubRelease(asGitHubRelease(release)))
         .filter(
             (release): release is NormalizedRelease =>
                 release !== null &&
-                release.channel === normalizedBranch &&
+                release.channel === branch &&
                 release.prerelease === false
         )
         .sort((left, right) =>
@@ -57,6 +53,6 @@ export function normalizeReleaseList(
         );
 }
 
-export function sanitizeBranch(_branch?: unknown): keyof typeof branches {
+export function sanitizeBranch(_branch?: ReleaseBranchKey): ReleaseBranchKey {
     return 'Stable';
 }

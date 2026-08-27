@@ -288,7 +288,7 @@ export function SettingsSocialTab() {
                                             {!hiddenUserOptions.length ? (
                                                 <div className="text-muted-foreground p-3 text-xs">
                                                     {t(
-                                                        'common.search_no_results'
+                                                        'empty_state.search_no_results'
                                                     )}
                                                 </div>
                                             ) : null}

@@ -20,7 +20,7 @@ const runtimeState: RuntimeAuthState = {
 };
 
 vi.mock('@/state/runtimeStore', () => ({
-    useRuntimeStore: (selector: (state: RuntimeAuthState) => unknown) =>
+    useRuntimeStore: <T>(selector: (state: RuntimeAuthState) => T): T =>
         selector(runtimeState)
 }));
 

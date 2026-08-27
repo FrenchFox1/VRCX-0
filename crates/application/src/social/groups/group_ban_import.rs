@@ -1,7 +1,7 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::HashSet,
-    future::Future,
-    pin::Pin,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -13,14 +13,10 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::TaskStopToken;
 use vrcx_0_core::vrchat_ids::is_user_id;
-use vrcx_0_vrchat_client::http_api::ApiJsonResponse;
 
-use crate::{
+use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
-
-use super::service::{ban_member, GroupApiDeps};
-use super::types::VrchatGroupUserInput;
 
 const GROUP_BAN_IMPORT_MAX_ITEMS: usize = 1_000;
 const GROUP_BAN_IMPORT_INTERVAL: Duration = Duration::from_secs(1);
@@ -66,10 +62,10 @@ pub struct GroupBanImportStatus {
     pub run_id: String,
     pub status: GroupBanImportState,
     pub group_id: String,
-    pub total: usize,
-    pub processed: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub processed: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub cancel_requested: bool,
     pub items: Vec<GroupBanImportItemResult>,
     pub started_at: Option<String>,
@@ -77,36 +73,10 @@ pub struct GroupBanImportStatus {
     pub last_error: Option<String>,
 }
 
-pub type GroupBanImportFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+pub type GroupBanImportFuture<'a> = BoxFuture<'a, Result<()>>;
 
 pub trait GroupBanImportActions: Send + Sync {
     fn ban_user<'a>(&'a self, group_id: &'a str, user_id: &'a str) -> GroupBanImportFuture<'a>;
-}
-
-pub struct VrchatGroupBanImportActions {
-    pub deps: GroupApiDeps,
-}
-
-impl GroupBanImportActions for VrchatGroupBanImportActions {
-    fn ban_user<'a>(&'a self, group_id: &'a str, user_id: &'a str) -> GroupBanImportFuture<'a> {
-        Box::pin(async move {
-            let response = ban_member(
-                self.deps.clone(),
-                VrchatGroupUserInput {
-                    group_id: group_id.to_string(),
-                    user_id: user_id.to_string(),
-                },
-            )
-            .await?;
-            let response = ApiJsonResponse::parse(response.status, &response.data);
-            if response.is_failure() {
-                return Err(Error::Custom(
-                    response.error_message_or("VRChat group request failed"),
-                ));
-            }
-            Ok(())
-        })
-    }
 }
 
 #[derive(Clone)]
@@ -190,7 +160,7 @@ impl GroupBanImportRuntime {
                 run_id: format!("group-ban-{}-{generation}", Utc::now().timestamp_millis()),
                 status: GroupBanImportState::Running,
                 group_id: prepared.group_id.clone(),
-                total: prepared.user_ids.len(),
+                total: crate::wire_count(prepared.user_ids.len()),
                 started_at: Some(Utc::now().to_rfc3339()),
                 ..Default::default()
             };

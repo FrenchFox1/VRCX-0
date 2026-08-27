@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-    buildPrintUploadParams,
-    resolvePrintCropWhiteBorder
-} from './galleryUploadParams';
+import { buildPrintUploadParams } from './galleryUploadParams';
 
 describe('galleryUploadParams', () => {
     it('builds print upload params from the image crop note', () => {
@@ -25,13 +22,5 @@ describe('galleryUploadParams', () => {
                 timestamp: '2026-06-09T10:11:12'
             }).note
         ).toBe('12345678901234567890123456789012');
-    });
-
-    it('defaults print white-border cropping on when the dialog does not provide a value', () => {
-        expect(resolvePrintCropWhiteBorder(undefined)).toBe(true);
-    });
-
-    it('uses the per-upload print white-border crop option from the dialog', () => {
-        expect(resolvePrintCropWhiteBorder(false)).toBe(false);
     });
 });

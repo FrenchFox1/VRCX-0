@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use super::TimeWindow;
+use crate::ownership::OwnerId;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub target_user_id: Option<String>,
     #[serde(default)]
@@ -17,7 +18,7 @@ pub struct FriendLogInput {
     pub cursor: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogOutput {
     pub rows: Vec<FriendLogRow>,
@@ -30,7 +31,7 @@ pub struct FriendLogOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendLogRow {
     pub created_at: String,

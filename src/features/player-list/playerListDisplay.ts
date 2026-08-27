@@ -5,9 +5,14 @@ import {
     RectangleGogglesIcon
 } from 'lucide-react';
 
+import type {
+    PlatformFileAnalysis,
+    WorldProfileRecord
+} from '@/domain/entities/world';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 
@@ -26,17 +31,13 @@ type StatusMeta = {
 };
 
 type PlayerStatusSource = PlayerListRecord & {
-    isCurrentUser?: unknown;
-    isFavorite?: unknown;
-    isFriend?: unknown;
-    location?: unknown;
-    status?: unknown;
-    statusDescription?: unknown;
+    isCurrentUser?: boolean;
+    isFavorite?: boolean;
+    isFriend?: boolean;
+    location?: string;
+    status?: string;
+    statusDescription?: string;
 };
-
-function isRecord(value: unknown): value is PlayerListRecord {
-    return Boolean(value && typeof value === 'object');
-}
 
 export function resolvePlatformMeta(platform: unknown): PlatformMeta {
     const normalized = normalizeString(platform).toLowerCase();
@@ -76,8 +77,8 @@ export function resolvePlatformMeta(platform: unknown): PlatformMeta {
     };
 }
 
-function isLivePlayerLocation(location: unknown) {
-    const parsed = parseLocation(normalizeString(location));
+function isLivePlayerLocation(location: string | undefined) {
+    const parsed = parseLocation(location ?? '');
     return Boolean(
         parsed.worldId &&
         !parsed.isOffline &&
@@ -146,10 +147,8 @@ export function resolvePlatformMode(
     return '';
 }
 
-export function languageCodeLabel(languageKey: unknown) {
-    const key = normalizeString(languageKey)
-        .toLowerCase()
-        .replace(/^language_/, '');
+export function languageCodeLabel(languageKey: string) {
+    const key = languageKey.toLowerCase().replace(/^language_/, '');
     return key ? key.toUpperCase() : '';
 }
 
@@ -173,19 +172,22 @@ export function getHomeWorldId(homeLocation: unknown) {
     );
 }
 
-export function getWorldImage(world: PlayerListRecord | null | undefined) {
-    const imageUrl = normalizeString(
-        world?.thumbnailImageUrl || world?.imageUrl || ''
-    );
+export function getWorldImage(
+    world:
+        | Partial<Pick<WorldProfileRecord, 'thumbnailImageUrl' | 'imageUrl'>>
+        | null
+        | undefined
+) {
+    const imageUrl = (world?.thumbnailImageUrl || world?.imageUrl || '').trim();
     return imageUrl ? convertFileUrlToImageUrl(imageUrl, 256) : '';
 }
 
-export function resolvePlatformBadge(platform: unknown): {
-    key: unknown;
-    label: unknown;
+export function resolvePlatformBadge(platform: string): {
+    key: string;
+    label: string;
     icon: LucideIcon | null;
 } {
-    const normalized = normalizeString(platform).toLowerCase();
+    const normalized = platform.trim().toLowerCase();
     if (
         normalized === 'pc' ||
         normalized === 'standalonewindows' ||
@@ -220,20 +222,17 @@ export function resolvePlatformBadge(platform: unknown): {
 }
 
 export function fileAnalysisSizeForPlatform(
-    fileAnalysis:
-        | Record<string, PlayerListRecord | undefined>
-        | null
-        | undefined,
-    platformKey: unknown
+    fileAnalysis: PlatformFileAnalysis | null | undefined,
+    platformKey: string
 ) {
     if (platformKey === 'PC') {
-        return normalizeString(fileAnalysis?.standalonewindows?._fileSize);
+        return fileAnalysis?.standalonewindows?._fileSize?.trim() ?? '';
     }
     if (platformKey === 'Quest' || platformKey === 'Android') {
-        return normalizeString(fileAnalysis?.android?._fileSize);
+        return fileAnalysis?.android?._fileSize?.trim() ?? '';
     }
     if (platformKey === 'iOS') {
-        return normalizeString(fileAnalysis?.ios?._fileSize);
+        return fileAnalysis?.ios?._fileSize?.trim() ?? '';
     }
     return '';
 }

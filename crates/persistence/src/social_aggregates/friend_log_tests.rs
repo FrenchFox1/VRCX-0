@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn friend_log_applies_filters_limit_and_rejects_unknown_types() {
@@ -20,7 +21,7 @@ fn friend_log_applies_filters_limit_and_rejects_unknown_types() {
     let output = get_friend_log(
         &db,
         FriendLogInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             target_user_id: Some("usr_alice".into()),
             types: vec!["Friend".into(), "TrustLevel".into()],
             time_window: TimeWindow {
@@ -41,7 +42,8 @@ fn friend_log_applies_filters_limit_and_rejects_unknown_types() {
     assert_eq!(output.rows[0].kind, "TrustLevel");
     assert_eq!(output.rows[0].user_id, "usr_alice");
     assert_eq!(
-        get_friend_log_first_created_at(&db, "usr_self", "usr_alice", "Friend").unwrap(),
+        get_friend_log_first_created_at(&db, &OwnerId::new("usr_self"), "usr_alice", "Friend")
+            .unwrap(),
         Some("2026-06-01T10:00:00Z".into())
     );
     assert!(output
@@ -52,7 +54,7 @@ fn friend_log_applies_filters_limit_and_rejects_unknown_types() {
     let error = get_friend_log(
         &db,
         FriendLogInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             target_user_id: None,
             types: vec!["Block".into()],
             time_window: TimeWindow::all(),
@@ -82,7 +84,7 @@ fn friend_log_cursor_returns_the_next_page() {
     let first = get_friend_log(
         &db,
         FriendLogInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             target_user_id: None,
             types: vec!["Friend".into()],
             time_window: TimeWindow::all(),
@@ -98,7 +100,7 @@ fn friend_log_cursor_returns_the_next_page() {
     let second = get_friend_log(
         &db,
         FriendLogInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             target_user_id: None,
             types: vec!["Friend".into()],
             time_window: TimeWindow::all(),

@@ -5,10 +5,7 @@ import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import type { FavoriteGroup } from '@/domain/favorites/types';
-import {
-    resolveObservedPlayerDwellEpochs,
-    resolveObservedPlayerUserIds
-} from '@/domain/friends/sameInstanceFriends';
+import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import {
@@ -28,7 +25,6 @@ import {
 import {
     buildFavoriteIdSet,
     buildSameInstanceGroups,
-    getSharedSameInstanceFallbackJoinTimes,
     readFriendStatusSource,
     readFriendRefLocation,
     resolveCurrentInviteLocation,
@@ -146,8 +142,6 @@ export function FriendsSidebar({
     const { openGroups, statusPresets, toggleSection } =
         useFriendsSidebarPreferences();
     const [recentActionVersion, setRecentActionVersion] = useState(0);
-    const sameInstanceFallbackJoinTimes =
-        getSharedSameInstanceFallbackJoinTimes();
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUser),
         [currentUser, gameState]
@@ -155,12 +149,6 @@ export function FriendsSidebar({
     const currentLocationSnapshot = useMemo<LastLocationSnapshot>(
         () => ({
             location: currentInviteLocation,
-            locationStartedAt: gameState.currentLocationStartedAt,
-            dwellEpochsByUserId: resolveObservedPlayerDwellEpochs(
-                currentLocationPlayers,
-                friendsById,
-                currentInviteLocation
-            ),
             friendList: new Set(
                 resolveObservedPlayerUserIds(
                     effectiveCurrentLocationPlayerIds,
@@ -173,8 +161,7 @@ export function FriendsSidebar({
             currentInviteLocation,
             currentLocationPlayers,
             effectiveCurrentLocationPlayerIds,
-            friendsById,
-            gameState.currentLocationStartedAt
+            friendsById
         ]
     );
     const canInviteFromCurrentLocation = useMemo(
@@ -363,19 +350,8 @@ export function FriendsSidebar({
         if (!prefs.sidebarGroupByInstance) {
             return [];
         }
-        return buildSameInstanceGroups(
-            rows,
-            prefs,
-            currentLocationSnapshot,
-            sameInstanceFallbackJoinTimes
-        );
-    }, [
-        currentLocationSnapshot,
-        favoriteCollectionTab,
-        prefs,
-        rows,
-        sameInstanceFallbackJoinTimes
-    ]);
+        return buildSameInstanceGroups(rows, prefs, currentLocationSnapshot);
+    }, [currentLocationSnapshot, favoriteCollectionTab, prefs, rows]);
     const favoriteCollectionSameInstanceGroups = useMemo(() => {
         if (!favoriteCollectionTab) {
             return [];
@@ -383,15 +359,13 @@ export function FriendsSidebar({
         return buildFavoriteCollectionSameInstanceGroups({
             rows: favoriteCollectionRows,
             prefs,
-            currentLocationSnapshot,
-            fallbackJoinTimes: sameInstanceFallbackJoinTimes
+            currentLocationSnapshot
         });
     }, [
         currentLocationSnapshot,
         favoriteCollectionRows,
         favoriteCollectionTab,
-        prefs,
-        sameInstanceFallbackJoinTimes
+        prefs
     ]);
     const favoriteCollectionSameInstanceIds = useMemo(
         () =>

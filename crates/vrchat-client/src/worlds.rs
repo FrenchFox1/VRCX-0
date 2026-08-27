@@ -29,8 +29,8 @@ pub fn world_get_input(
 pub fn world_list_by_user_get_input(
     endpoint: String,
     user_id: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     sort: WorldSearchSort,
     order: QueryOrder,
     release_status: ReleaseStatusFilter,

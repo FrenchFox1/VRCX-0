@@ -91,7 +91,10 @@
             "avatar": "아바타",
             "group": "그룹"
         },
-        "date": { "today": "오늘", "yesterday": "어제" },
+        "date": {
+            "today": "오늘",
+            "yesterday": "어제"
+        },
         "retention": {
             "label": "조회 기록 보관 기간",
             "description": "이 기간이 지난 기록은 자동으로 삭제됩니다.",
@@ -457,22 +460,6 @@
             "instance_duration": "체류 {duration}"
         },
         "generic_instance_location": "인스턴스",
-        "friends_panel": {
-            "title": "즐겨찾기 친구",
-            "all": "전체",
-            "empty": "온라인 즐겨찾기 친구가 없습니다",
-            "note": "VRChat 메모",
-            "memo": "로컬 메모",
-            "open": "열기",
-            "request": "참가 요청",
-            "invite": "초대",
-            "favorites_online": "온라인 즐겨찾기",
-            "same_instance": "동일한 인스턴스",
-            "local_favorites": "로컬 즐겨찾기",
-            "traveling": "이동 중",
-            "private": "비공개",
-            "offline": "오프라인"
-        },
         "discord": {
             "title": {
                 "invite": "{name}님의 초대",
@@ -2017,6 +2004,29 @@
                     "too_many_favorites_event": "즐겨찾기 인쇄물이 목록을 채우고 있어 자동 삭제가 설정된 제한 이하로 줄이지 못했습니다. {remaining}개가 남아 있습니다."
                 }
             },
+            "gallery_selection": {
+                "count": "{count}개 선택됨",
+                "select_all": "모두 선택",
+                "deselect_all": "선택 해제",
+                "confirm_delete_title": "{count}개 항목을 삭제할까요?",
+                "confirm_delete_locked": "잠긴 항목 {count}개는 건너뜁니다. 이 작업은 되돌릴 수 없습니다.",
+                "deleting_progress": "삭제 중 {done}/{total}",
+                "deleted_toast": "{count}개 항목을 삭제했습니다.",
+                "delete_partial_toast": "{succeeded}개를 삭제했고 {failed}개는 실패했습니다. {reason}",
+                "delete_cancelled_toast": "중단했습니다. {count}개를 삭제했습니다.",
+                "delete_unlocked": "{count}개 삭제",
+                "delete_locked": "선택한 항목이 모두 잠겨 있습니다.",
+                "delete_locked_favorite": "즐겨찾기를 해제해야 삭제할 수 있습니다",
+                "delete_locked_in_use": "사용 중이라 삭제할 수 없습니다",
+                "favorited_toast": "인쇄물 {count}개를 즐겨찾기에 추가했습니다.",
+                "unfavorited_toast": "인쇄물 {count}개의 즐겨찾기를 해제했습니다.",
+                "favorite_skipped_toast": "{count}개는 즐겨찾기에 추가하지 못했습니다. 제한은 {max}개입니다."
+            },
+            "prints_filter": {
+                "all": "전체",
+                "favorites": "즐겨찾기",
+                "others": "즐겨찾기 아님"
+            },
             "llm_endpoints": {
                 "title": "LLM 엔드포인트",
                 "description": "Social AI 및 번역에서 공유하는 OpenAI 호환 연결입니다.",
@@ -2132,16 +2142,15 @@
                     "opacity": "불투명도",
                     "filters": "헤드셋 알림 필터"
                 },
-                "interactive_panel": {
-                    "header": "인터랙티브 친구 패널",
-                    "enabled": "인터랙티브 친구 패널 사용",
-                    "all_friends_include_favorites": "전체에 즐겨찾기 포함",
-                    "summon_hint": "호출 제스처",
-                    "openvr_required": "오른손 Grip을 약 2초 동안 길게 눌러 호출합니다. SteamVR/OpenVR 오버레이 백엔드가 필요하며 OpenXR에서는 현재 인터랙티브 패널을 제공하지 않습니다."
-                },
                 "wrist_overlay": {
                     "header": "손목 오버레이",
                     "wrist_feed_notifications": "손목 오버레이 알림 필터"
+                },
+                "test_mode": {
+                    "header": "오버레이 테스트",
+                    "description": "손목 오버레이와 헤드셋 알림에 테스트 카드를 강제로 표시합니다. 헤드셋을 쓴 채로 위치, 크기, 불투명도를 확인할 수 있습니다. 이 설정은 저장되지 않으며 VRCX-0을 다시 시작하면 꺼집니다.",
+                    "force_display": "오버레이 강제 표시",
+                    "requires_steamvr": "SteamVR이 실행 중이어야 합니다."
                 }
             },
             "interface": {
@@ -2510,6 +2519,7 @@
                         "header": "텍스트 음성 변환",
                         "when_to_play": "알림 TTS 재생 조건",
                         "tts_voice": "TTS 목소리",
+                        "tts_volume": "TTS 음량",
                         "system_default_voice": "시스템 기본값",
                         "notification_filters": "TTS 알림 필터",
                         "name_mode": "읽을 이름",
@@ -3189,17 +3199,18 @@
                 "built_in_description": "VRCX-0의 기본 밝은 테마와 어두운 테마를 사용하세요."
             },
             "accent": {
-                "header": "악센트 색상"
+                "header": "악센트 색상",
+                "custom": "사용자 지정",
+                "hex_label": "16진수 색상"
             },
             "custom_css": {
+                "status_on": "켜기",
+                "status_off": "끄기",
                 "edit": "편집",
                 "hide_editor": "편집기 숨기기",
-                "header": "맞춤 CSS",
-                "enabled_summary": "CSS 재정의가 활성화되었습니다({count}바이트).",
-                "disabled_summary": "선택적인 최종 CSS 레이어. 현재는 비활성화되어 있습니다."
+                "header": "맞춤 CSS"
             },
             "developer": {
-                "summary": "테마 개발 빌드를 위한 로컬 테마 미리보기 도구입니다.",
                 "show": "도구 표시",
                 "hide": "도구 숨기기",
                 "preview_active": "{name} 미리보기 중입니다."
@@ -3218,21 +3229,16 @@
         "background_image": {
             "settings": {
                 "header": "배경 이미지",
-                "description": "일일 이미지 소스 또는 자체 로컬 이미지 소스를 사용하세요.",
                 "apod_note": "NASA APOD는 저작권 필드가 없는 이미지만 사용합니다.",
-                "custom_source": "로컬 이미지",
-                "custom_source_description": "고정된 배경으로 하나의 이미지를 선택하거나 회전할 여러 이미지 또는 폴더를 선택합니다.",
-                "folder_first_level_note": "폴더는 한 수준만 검사됩니다. 하위 폴더를 읽을 수 없습니다.",
+                "folder_recursive_note": "하위 폴더의 이미지도 읽습니다.",
                 "current_image": "현재 이미지",
                 "rotation": "회전",
-                "no_custom_source": "선택한 로컬 이미지가 없습니다.",
                 "no_image": "로드된 이미지가 없습니다.",
                 "no_image_description": "이미지를 로드하려면 소스를 새로 고치거나 선택하세요.",
                 "source_type_file": "로컬 파일",
                 "source_type_files": "선택한 파일",
                 "source_type_folder": "폴더",
                 "resolved_at": "로드됨",
-                "selected_files": "{count} 선택한 이미지",
                 "image_count": "{count} 이미지"
             },
             "mode": {
@@ -3240,11 +3246,13 @@
                 "custom": "로컬 이미지"
             },
             "rotation": {
-                "daily": "매일",
-                "hourly": "시간별"
+                "minutes": "분",
+                "custom": "사용자 지정"
             },
             "action": {
                 "refresh": "새로고침",
+                "change_image": "이미지 바꾸기",
+                "show_in_folder": "폴더에서 보기",
                 "select_images": "이미지 선택",
                 "select_folder": "폴더 선택"
             },
@@ -3252,6 +3260,7 @@
                 "enabled": "배경 이미지가 활성화되었습니다.",
                 "refreshed": "배경 이미지가 새로 고쳐졌습니다.",
                 "failed": "배경 이미지를 업데이트하지 못했습니다.",
+                "failed_to_open_folder": "폴더에서 이미지를 표시하지 못했습니다.",
                 "no_images": "지원되는 이미지를 찾을 수 없습니다."
             }
         },
@@ -3261,6 +3270,88 @@
             "contributors_error": "기여자 목록을 불러오지 못했습니다.",
             "thanks": "번역, 테스트, 버그 제보와 아이디어 하나하나가 커뮤니티에서 나옵니다. 감사합니다.",
             "license_line": "GPL-3.0 자유 오픈 소스"
+        },
+        "activity": {
+            "title": "활동",
+            "description": "기간별로 시간을 어디에 썼는지 정리해서 보여줍니다",
+            "range": {
+                "all": "전체",
+                "days": "최근 {days}일"
+            },
+            "stat": {
+                "total_time": "총 플레이 시간",
+                "daily_average": "하루 평균",
+                "active_days": "플레이한 날",
+                "longest_session": "가장 긴 플레이",
+                "change_up": "지난 기간 대비 +{percent}%",
+                "change_down": "지난 기간 대비 -{percent}%"
+            },
+            "unit": {
+                "hours": "시간",
+                "minutes": "분"
+            },
+            "section": {
+                "instance_types": "인스턴스 성향",
+                "daily_time": "일별 플레이 시간",
+                "weekly_time": "주별 플레이 시간",
+                "when_you_play": "주로 플레이하는 시간대",
+                "top_worlds": "오래 머문 월드",
+                "companions": "자주 함께한 사람",
+                "highlights": "눈에 띄는 점",
+                "avatars": "자주 쓰는 아바타"
+            },
+            "access": {
+                "unknown": "알 수 없음",
+                "public": "공개",
+                "friendsPlus": "친구+",
+                "friends": "친구",
+                "invitePlus": "초대+",
+                "invite": "초대",
+                "group": "그룹"
+            },
+            "empty": {
+                "title": "아직 기록이 없습니다",
+                "description": "VRChat을 잠시 플레이하면 여기에 활동이 표시됩니다."
+            },
+            "error": {
+                "failed_to_load": "활동을 불러오지 못했습니다"
+            },
+            "caveat": {
+                "recorded_since": "실행 중에만 기록됩니다."
+            },
+            "worlds": {
+                "visit_count": "{count}회",
+                "open_ranking": "자세히",
+                "total": "총 {count}개 월드",
+                "show_home": "홈 월드 포함"
+            },
+            "people": {
+                "co_days": "{count}일",
+                "lead_caption": "{days}일 · {hours}시간",
+                "fading_title": "만남이 줄어든 사람",
+                "fading_caveat": "이전 기간보다 함께한 시간이 줄었어요. 단순히 생활 패턴 차이일 수 있어요.",
+                "encountered_total": "총 {count}명",
+                "fading_last_seen": "마지막으로 만난 {date}",
+                "order_minutes": "시간순",
+                "order_days": "일수순"
+            },
+            "hero": {
+                "per_day": "하루 평균",
+                "days_played": "기록된 날",
+                "sessions": "세션",
+                "longest": "최장 세션"
+            },
+            "action": {
+                "show_all": "전체 {count}개 보기",
+                "show_less": "접기"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}%가 자정부터 오전 6시 사이",
+                "open_heatmap": "요일별 시간대"
+            },
+            "avatars": {
+                "all_time": "전체 기간"
+            }
         }
     },
     "dialog": {
@@ -3727,7 +3818,8 @@
                 "content_gore": "고어",
                 "content_violence": "폭력",
                 "content_adult": "성인",
-                "content_sex": "성적"
+                "content_sex": "성적",
+                "pedestals": "받침대"
             },
             "actions": {
                 "delete_cache_tooltip": "캐시에서 월드 삭제",
@@ -3840,7 +3932,11 @@
                 "update_world_name_description_capacity_and_preview": "이 세계의 이름, 설명, 용량, 미리보기 업데이트",
                 "change_world_image": "월드 이미지 변경",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "이 세계에 대한 관리 콘텐츠, 작성자 및 기능 태그 편집",
+                "enable_avatar_scaling": "아바타 크기 조정 활성화",
+                "enable_focus_view": "포커스 뷰 활성화",
                 "enable_debugging": "디버깅 활성화",
+                "enable_third_person_view": "3인칭 시점 활성화",
+                "allow_props_to_modify_player_movement": "프롭이 플레이어 이동을 변경하도록 허용",
                 "add_domain": "도메인 추가",
                 "reset_your_vrchat_home_location": "VRChat 집 위치 재설정"
             },
@@ -4291,6 +4387,11 @@
             "group_access_type_members": "그룹원만",
             "group_access_type_plus": "그룹원+",
             "group_access_type_public": "공개",
+            "minimum_avatar_performance": "최소 아바타 성능 등급",
+            "minimum_avatar_performance_none": "제한 없음",
+            "minimum_avatar_performance_poor": "낮음",
+            "minimum_avatar_performance_medium": "보통",
+            "minimum_avatar_performance_good": "좋음",
             "region": "지역",
             "region_usw": "미국 서부",
             "region_use": "미국 동부",
@@ -4807,6 +4908,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "인스턴스 ID 복사",
+                "copy_world_name": "월드 이름 복사",
                 "more_actions": "추가 작업"
             },
             "header": "인스턴스 기록",
@@ -5402,6 +5504,9 @@
         "group_join_request_title": "그룹 가입 요청",
         "group_transfer_request_title": "그룹 이전 요청",
         "group_queue_ready_title": "인스턴스 대기열 준비",
+        "group_instance_opened": "새 인스턴스를 생성했습니다",
+        "group_instance_opened_location": "새 인스턴스를 생성했습니다: {location}",
+        "group_instances_opened": "새 인스턴스 {count}개를 생성했습니다",
         "instance_closed_title": "인스턴스가 닫혔습니다.",
         "portal_spawn": "사용자가 포털을 생성했습니다.",
         "blocked_player_joined": "차단된 사용자가 가입했습니다",
@@ -5891,6 +5996,27 @@
         "error_generic": "번역 실패",
         "error_network": "네트워크 오류, 다시 시도해 주세요",
         "error_unsupported": "번역이 설정되지 않았습니다"
+    },
+    "saved_group_favorites": {
+        "title": "즐겨찾는 그룹",
+        "description": "자주 이용하는 그룹을 로컬 모음에 저장하고 새 인스턴스 알림에 사용할 수 있습니다.",
+        "new_collection": "새 모음",
+        "empty_collections": "모음을 만들면 그룹을 저장할 수 있습니다.",
+        "empty_group": "이 모음에 저장된 그룹이 없습니다.",
+        "delete_title": "이 모음을 삭제할까요?",
+        "delete_description": "{name} 모음을 삭제하면 저장된 그룹 {count}개도 즐겨찾기에서 제거됩니다.",
+        "choose_collection": "저장할 모음 선택",
+        "remove": "즐겨찾기에서 제거",
+        "toggle": "그룹 즐겨찾기",
+        "sidebar_saved": "즐겨찾는 그룹",
+        "sidebar_none": "즐겨찾는 그룹이 없습니다",
+        "sidebar_other": "기타 활성 그룹",
+        "sidebar_failed": "그룹 인스턴스를 불러오지 못했습니다",
+        "sidebar_no_active": "다른 활성 그룹 인스턴스가 없습니다",
+        "scope_all": "모든 즐겨찾는 그룹",
+        "scope_selected": "선택한 즐겨찾기 모음",
+        "notification_type": "새 그룹 인스턴스",
+        "notification_empty": "사용 가능한 그룹 즐겨찾기 모음이 없습니다."
     },
     "app": {
         "routes": {

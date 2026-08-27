@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GalleryUploadTarget } from './galleryConstants';
+import type { GalleryAssetActionDeps } from './galleryTypes';
 import { createGalleryAssetActions } from './useGalleryAssetActions';
 
-function createActions(overrides: Record<string, unknown> = {}) {
+function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
     const uploadAssetImage = vi.fn().mockResolvedValue({ json: null });
     const uploadInputRef = {
         current: {
@@ -87,6 +88,22 @@ function createActions(overrides: Record<string, unknown> = {}) {
 }
 
 describe('createGalleryAssetActions', () => {
+    it('defaults print white-border cropping on', async () => {
+        const { actions, uploadAssetImage } = createActions();
+        const blob = new Blob(['image'], { type: 'image/png' });
+
+        await actions.confirmCroppedUpload(blob, { note: 'print note' });
+
+        expect(uploadAssetImage).toHaveBeenCalledWith('base64-body', {
+            assetKind: 'prints',
+            cropWhiteBorder: true,
+            params: {
+                note: 'print note',
+                timestamp: '2026-06-09T10:11:12'
+            }
+        });
+    });
+
     it('uses the crop white border option provided by the print crop dialog', async () => {
         const { actions, uploadAssetImage } = createActions();
         const blob = new Blob(['image'], { type: 'image/png' });

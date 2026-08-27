@@ -11,12 +11,14 @@ export function getMyAvatarPlatformInfo(
     return getPlatformInfo(avatar?.unityPackages);
 }
 
-export function resolveMyAvatarPerformanceLabel(value: unknown) {
+export function resolveMyAvatarPerformanceLabel(
+    value: string | null | undefined
+) {
     if (!value) {
         return '-';
     }
 
-    return String(value);
+    return value;
 }
 
 export function resolveMyAvatarActionDisabled(
@@ -34,8 +36,8 @@ export function resolveMyAvatarTagBadgeStyle(
 ): CSSProperties {
     const color = entry?.color
         ? {
-              bg: String(entry.color),
-              text: String(entry.color).replace(/\/ [\d.]+\)$/, ')')
+              bg: entry.color,
+              text: entry.color.replace(/\/ [\d.]+\)$/, ')')
           }
         : getTagColor(entry?.tag || '');
     return {

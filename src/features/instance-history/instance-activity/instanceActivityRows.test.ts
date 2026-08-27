@@ -15,9 +15,12 @@ function iso(value: number | string | Date) {
 function detailRow(id: string, isFriend: boolean): InstanceActivityDetailRow {
     return {
         id,
+        created_at: '2024-01-02T00:00:00.001Z',
         user_id: id,
         display_name: id,
         location: 'wrld_filter:1',
+        time: 1,
+        type: 'Location',
         displayName: id,
         userId: id,
         joinMs: 0,
@@ -38,36 +41,40 @@ describe('instanceActivityRows', () => {
         const rows = buildChartRows(
             [
                 {
-                    id: 'late',
+                    id: 1,
                     user_id: currentUserId,
                     display_name: 'Self',
                     location: 'wrld_late:2',
                     created_at: iso(startMs + 5 * 60 * 60 * 1000),
-                    time: 60 * 60 * 1000
+                    time: 60 * 60 * 1000,
+                    type: 'Location'
                 },
                 {
-                    id: 'other-user',
+                    id: 2,
                     user_id: 'usr_other',
                     display_name: 'Other',
                     location: 'wrld_other:1',
                     created_at: iso(startMs + 2 * 60 * 60 * 1000),
-                    time: 60 * 60 * 1000
+                    time: 60 * 60 * 1000,
+                    type: 'Location'
                 },
                 {
-                    id: 'traveling',
+                    id: 3,
                     user_id: currentUserId,
                     display_name: 'Self',
                     location: 'traveling:traveling',
                     created_at: iso(startMs + 3 * 60 * 60 * 1000),
-                    time: 60 * 60 * 1000
+                    time: 60 * 60 * 1000,
+                    type: 'Location'
                 },
                 {
-                    id: 'cross-midnight',
+                    id: 4,
                     user_id: currentUserId,
                     display_name: 'Self',
                     location: 'wrld_known:1',
                     created_at: iso(startMs + 2 * 60 * 60 * 1000),
-                    time: 4 * 60 * 60 * 1000
+                    time: 4 * 60 * 60 * 1000,
+                    type: 'Location'
                 }
             ],
             selectedDate,
@@ -78,7 +85,7 @@ describe('instanceActivityRows', () => {
         );
 
         expect(rows).toHaveLength(2);
-        expect(rows.map((row) => row.id)).toEqual(['cross-midnight', 'late']);
+        expect(rows.map((row) => row.id)).toEqual(['4', '1']);
         expect(rows[0]).toMatchObject({
             worldId: 'wrld_known',
             worldName: 'Known World',
@@ -100,36 +107,40 @@ describe('instanceActivityRows', () => {
         const location = 'wrld_group:1';
         const rawRows = [
             {
-                id: 'self-1',
+                id: 10,
                 user_id: currentUserId,
                 display_name: 'Self',
                 location,
                 created_at: iso(startMs + 60 * 60 * 1000),
-                time: 60 * 60 * 1000
+                time: 60 * 60 * 1000,
+                type: 'Location'
             },
             {
-                id: 'friend-1',
+                id: 11,
                 user_id: 'usr_friend',
                 display_name: 'Friend',
                 location,
                 created_at: iso(startMs + 45 * 60 * 1000),
-                time: 30 * 60 * 1000
+                time: 30 * 60 * 1000,
+                type: 'Location'
             },
             {
-                id: 'self-2',
+                id: 12,
                 user_id: currentUserId,
                 display_name: 'Self',
                 location,
                 created_at: iso(startMs + 4 * 60 * 60 * 1000),
-                time: 60 * 60 * 1000
+                time: 60 * 60 * 1000,
+                type: 'Location'
             },
             {
-                id: 'favorite-1',
+                id: 13,
                 user_id: 'usr_favorite',
                 display_name: 'Favorite',
                 location,
                 created_at: iso(startMs + 3.5 * 60 * 60 * 1000),
-                time: 15 * 60 * 1000
+                time: 15 * 60 * 1000,
+                type: 'Location'
             }
         ];
 
@@ -149,8 +160,8 @@ describe('instanceActivityRows', () => {
 
         expect(groups).toHaveLength(2);
         expect(groups.map((group) => group.map((entry) => entry.id))).toEqual([
-            ['self-1', 'friend-1'],
-            ['self-2', 'favorite-1']
+            ['10', '11'],
+            ['12', '13']
         ]);
         expect(
             groups[0].find((entry) => entry.userId === 'usr_friend')

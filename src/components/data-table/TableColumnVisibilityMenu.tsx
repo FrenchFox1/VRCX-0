@@ -1,6 +1,6 @@
 import type { RowData } from '@tanstack/react-table';
 import type { TFunction } from 'i18next';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ToolbarViewMenu } from '@/components/layout/ToolbarControls';
@@ -122,7 +122,7 @@ export function TableColumnHeaderContextMenu<TData extends RowData>({
 }: {
     table: AppTable<TData>;
     onResetLayout?: ResetTableLayoutHandler<TData>;
-    children: ReactNode;
+    children: ReactElement;
     className?: string;
 }) {
     const { t } = useTranslation();
@@ -147,7 +147,7 @@ export function TableColumnHeaderContextMenu<TData extends RowData>({
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger render={children as ReactElement} />
+            <ContextMenuTrigger render={children} />
             <ContextMenuContent className={className}>
                 {columns.length ? (
                     <ContextMenuGroup>

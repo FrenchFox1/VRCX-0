@@ -1,14 +1,10 @@
-import type { EntityRecord } from '@/domain/entities/shared';
 import {
     convertFileUrlToImageUrl,
     userImage
 } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 
 export type UserDialogEntityKind = 'user' | 'world' | 'avatar' | 'group';
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 export function rowImage(row: unknown, kind: UserDialogEntityKind) {
     if (!isRecord(row)) {

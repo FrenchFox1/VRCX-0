@@ -55,7 +55,7 @@ export function UserDetailContent({
 }
 
 type UserDetailTileProps = UserDetailContentProps & {
-    userId?: unknown;
+    userId?: string;
     seed?: ComponentProps<typeof UserHoverCard>['seed'];
     hoverSide?: ComponentProps<typeof UserHoverCard>['side'];
     hoverDisabled?: boolean;

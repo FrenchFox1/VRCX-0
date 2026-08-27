@@ -8,7 +8,7 @@ use std::{
 
 use serde_json::{json, Value};
 
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 const DEFAULT_APP_ID: &str = "1510639562177642557";
 #[cfg(any(windows, unix))]

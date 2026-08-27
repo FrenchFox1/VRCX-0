@@ -5,27 +5,24 @@ use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use vrcx_0_application_core::vrchat_api::favorites::{
-    favorite_avatars_get_input, favorite_worlds_get_input,
-};
-use vrcx_0_application_core::vrchat_api::groups::user_groups_get_input;
-use vrcx_0_application_core::vrchat_api::worlds::{
-    world_list_by_user_get_input, QueryOrder, ReleaseStatusFilter, WorldSearchSort,
-};
 use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeOperationStatus,
     RuntimeSyncEngine, WebClient, WorldCache,
 };
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
+use vrcx_0_contracts::{VrchatJsonResponse, WorldSummaryOutput};
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_persistence::memos::{memo_list_user_notes, memo_list_users};
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
+use vrcx_0_core::json::RawJson;
 
-use crate::{get_my_avatars, Error, MyAvatarsDeps, MyAvatarsInput, Result};
+use crate::avatars::{
+    get_my_avatars, AvatarRemoteRequests, MyAvatarsDeps, MyAvatarsInput, MyAvatarsStore,
+};
+use vrcx_0_application_core::{Error, Result};
+use vrcx_0_core::OwnerId;
 
-const WORLD_PAGE_SIZE: i64 = 50;
-const FAVORITE_PAGE_SIZE: i64 = 300;
+const WORLD_PAGE_SIZE: i32 = 50;
+const FAVORITE_PAGE_SIZE: i32 = 300;
 const MAX_PAGES_PER_SOURCE: usize = 50;
 const RESULT_LIMIT: usize = 8;
 const DETAIL_QUERY_MIN_LENGTH: usize = 2;
@@ -38,7 +35,10 @@ pub struct QuickSearchRuntime {
 }
 
 struct QuickSearchRuntimeInner {
-    db: Arc<DatabaseService>,
+    detail_store: Arc<dyn QuickSearchDetailStore>,
+    remote_requests: Arc<dyn QuickSearchRemoteRequests>,
+    avatar_store: Arc<dyn MyAvatarsStore>,
+    avatar_remote_requests: Arc<dyn AvatarRemoteRequests>,
     web: Arc<WebClient>,
     auth_scope: RuntimeAuthScope,
     diagnostics: RuntimeDiagnostics,
@@ -97,7 +97,7 @@ pub struct QuickSearchResult {
     pub name: String,
     pub subtitle: String,
     pub image_url: String,
-    pub seed_data: Option<Value>,
+    pub seed_data: Option<RawJson>,
     pub memo: String,
     pub note: String,
     pub matched_field: QuickSearchMatchedField,
@@ -157,23 +157,75 @@ struct QuickSearchRemoteCatalog {
     failures: usize,
 }
 
+#[derive(Clone, Copy)]
+pub enum QuickSearchRemoteSource {
+    OwnWorlds,
+    FavoriteAvatars,
+    FavoriteWorlds,
+}
+
+pub trait QuickSearchDetailStore: Send + Sync {
+    fn user_memos(&self) -> Result<Vec<(String, String)>>;
+    fn user_notes(&self, owner: OwnerId) -> Result<Vec<(String, String)>>;
+}
+
+pub trait QuickSearchRemoteRequests: Send + Sync {
+    fn page(
+        &self,
+        source: QuickSearchRemoteSource,
+        endpoint: String,
+        current_user_id: String,
+        n: i32,
+        offset: i32,
+    ) -> Result<VrchatApiRequest>;
+    fn user_groups(&self, endpoint: String, current_user_id: String) -> Result<VrchatApiRequest>;
+}
+
+pub struct QuickSearchSources {
+    detail_store: Arc<dyn QuickSearchDetailStore>,
+    remote_requests: Arc<dyn QuickSearchRemoteRequests>,
+    avatar_store: Arc<dyn MyAvatarsStore>,
+    avatar_remote_requests: Arc<dyn AvatarRemoteRequests>,
+    world_cache: Arc<WorldCache>,
+}
+
+impl QuickSearchSources {
+    pub fn new(
+        detail_store: Arc<dyn QuickSearchDetailStore>,
+        remote_requests: Arc<dyn QuickSearchRemoteRequests>,
+        avatar_store: Arc<dyn MyAvatarsStore>,
+        avatar_remote_requests: Arc<dyn AvatarRemoteRequests>,
+        world_cache: Arc<WorldCache>,
+    ) -> Self {
+        Self {
+            detail_store,
+            remote_requests,
+            avatar_store,
+            avatar_remote_requests,
+            world_cache,
+        }
+    }
+}
+
 impl QuickSearchRuntime {
     pub fn new(
-        db: Arc<DatabaseService>,
+        sources: QuickSearchSources,
         web: Arc<WebClient>,
         auth_scope: RuntimeAuthScope,
         diagnostics: RuntimeDiagnostics,
         sync: RuntimeSyncEngine,
-        world_cache: Arc<WorldCache>,
     ) -> Self {
         Self {
             inner: Arc::new(QuickSearchRuntimeInner {
-                db,
+                detail_store: sources.detail_store,
+                remote_requests: sources.remote_requests,
+                avatar_store: sources.avatar_store,
+                avatar_remote_requests: sources.avatar_remote_requests,
                 web,
                 auth_scope,
                 diagnostics,
                 sync,
-                world_cache,
+                world_cache: sources.world_cache,
                 remote_working_set: Mutex::new(None),
                 remote_load_gate: tokio::sync::Mutex::new(()),
                 remote_revision: AtomicU64::new(0),
@@ -202,29 +254,26 @@ impl QuickSearchRuntime {
         let mut failures = 0;
         let can_search_details = query.chars().count() >= DETAIL_QUERY_MIN_LENGTH;
         let (memo_by_user_id, note_by_user_id) = if can_search_details {
-            let memos = match memo_list_users(self.inner.db.as_ref()) {
-                Ok(rows) => rows
-                    .into_iter()
-                    .map(|row| (row.user_id, row.memo))
-                    .collect::<HashMap<_, _>>(),
+            let memos = match self.inner.detail_store.user_memos() {
+                Ok(rows) => rows.into_iter().collect::<HashMap<_, _>>(),
                 Err(error) => {
                     failures += 1;
                     tracing::debug!(error = %error, "quick search user memos failed");
                     HashMap::new()
                 }
             };
-            let notes =
-                match memo_list_user_notes(self.inner.db.as_ref(), scope.current_user_id.clone()) {
-                    Ok(rows) => rows
-                        .into_iter()
-                        .map(|row| (row.user_id, row.note))
-                        .collect::<HashMap<_, _>>(),
-                    Err(error) => {
-                        failures += 1;
-                        tracing::debug!(error = %error, "quick search user notes failed");
-                        HashMap::new()
-                    }
-                };
+            let notes = match self
+                .inner
+                .detail_store
+                .user_notes(OwnerId::new(scope.current_user_id.clone()))
+            {
+                Ok(rows) => rows.into_iter().collect::<HashMap<_, _>>(),
+                Err(error) => {
+                    failures += 1;
+                    tracing::debug!(error = %error, "quick search user notes failed");
+                    HashMap::new()
+                }
+            };
             (memos, notes)
         } else {
             (HashMap::new(), HashMap::new())
@@ -407,7 +456,8 @@ async fn load_quick_search_remote_catalog(
     scope: &RuntimeAuthScopeSnapshot,
 ) -> QuickSearchRemoteCatalog {
     let my_avatars_deps = MyAvatarsDeps {
-        db: runtime.db.as_ref(),
+        store: runtime.avatar_store.as_ref(),
+        remote_requests: runtime.avatar_remote_requests.as_ref(),
         web: runtime.web.as_ref(),
         auth_scope: &runtime.auth_scope,
         expected_scope: scope.clone(),
@@ -471,48 +521,23 @@ async fn load_quick_search_remote_catalog(
     }
 }
 
-#[derive(Clone, Copy)]
-enum QuickSearchRemoteSource {
-    OwnWorlds,
-    FavoriteAvatars,
-    FavoriteWorlds,
-}
-
 async fn collect_pages(
     runtime: &QuickSearchRuntimeInner,
     scope: &RuntimeAuthScopeSnapshot,
     source: QuickSearchRemoteSource,
-    page_size: i64,
+    page_size: i32,
 ) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     for page in 0..=MAX_PAGES_PER_SOURCE {
         ensure_scope_matches(&runtime.auth_scope, scope)?;
-        let offset = (page as i64) * page_size;
-        let request = match source {
-            QuickSearchRemoteSource::OwnWorlds => {
-                let (_, request) = world_list_by_user_get_input(
-                    scope.endpoint.clone(),
-                    scope.current_user_id.clone(),
-                    page_size,
-                    offset,
-                    WorldSearchSort::Updated,
-                    QueryOrder::Descending,
-                    ReleaseStatusFilter::All,
-                )?;
-                request
-            }
-            QuickSearchRemoteSource::FavoriteAvatars => {
-                favorite_avatars_get_input(scope.endpoint.clone(), page_size, offset, String::new())
-            }
-            QuickSearchRemoteSource::FavoriteWorlds => favorite_worlds_get_input(
-                scope.endpoint.clone(),
-                page_size,
-                offset,
-                String::new(),
-                String::new(),
-                String::new(),
-            ),
-        };
+        let offset = (page as i32) * page_size;
+        let request = runtime.remote_requests.page(
+            source,
+            scope.endpoint.clone(),
+            scope.current_user_id.clone(),
+            page_size,
+            offset,
+        )?;
         let page_rows = execute_rows(runtime, scope, request).await?;
         let count = page_rows.len();
         if page == MAX_PAGES_PER_SOURCE {
@@ -535,10 +560,16 @@ async fn fetch_user_groups(
     runtime: &QuickSearchRuntimeInner,
     scope: &RuntimeAuthScopeSnapshot,
 ) -> Result<Vec<Value>> {
-    let (_, request) =
-        user_groups_get_input(scope.endpoint.clone(), scope.current_user_id.clone())?;
+    let request = runtime
+        .remote_requests
+        .user_groups(scope.endpoint.clone(), scope.current_user_id.clone())?;
     let mut rows = execute_rows(runtime, scope, request).await?;
-    for row in &mut rows {
+    remap_group_membership_row_ids(&mut rows);
+    Ok(rows)
+}
+
+fn remap_group_membership_row_ids(rows: &mut [Value]) {
+    for row in rows {
         let Some(object) = row.as_object_mut() else {
             continue;
         };
@@ -552,20 +583,19 @@ async fn fetch_user_groups(
         };
         object.insert("id".into(), Value::String(group_id));
     }
-    Ok(rows)
 }
 
 async fn execute_rows(
     runtime: &QuickSearchRuntimeInner,
     scope: &RuntimeAuthScopeSnapshot,
-    request: HttpApiRequestInput,
+    request: VrchatApiRequest,
 ) -> Result<Vec<Value>> {
     let response = runtime
         .web
-        .execute_api(request, ApiScope::Vrchat, runtime.db.as_ref())
+        .execute_api(request, VrchatScope::Vrchat)
         .await?;
     ensure_scope_matches(&runtime.auth_scope, scope)?;
-    let response = ApiJsonResponse {
+    let response = VrchatJsonResponse {
         status: response.status,
         json: serde_json::from_str::<Value>(&response.data)?,
     };
@@ -651,7 +681,7 @@ fn friend_result(
         .unwrap_or_default()
         .to_string();
     let subtitle = friend.status_description.to_string();
-    let seed_data = serde_json::to_value(&friend).ok();
+    let seed_data = serde_json::to_value(&friend).ok().map(RawJson::from);
     QuickSearchResult {
         id: friend.id,
         entity_type: QuickSearchEntityType::Friend,
@@ -667,7 +697,7 @@ fn friend_result(
     }
 }
 
-fn local_world_result(row: vrcx_0_persistence::worlds::WorldSummaryOutput) -> QuickSearchResult {
+fn local_world_result(row: WorldSummaryOutput) -> QuickSearchResult {
     let image_url = if row.thumbnail_image_url.trim().is_empty() {
         row.image_url.clone()
     } else {
@@ -681,7 +711,7 @@ fn local_world_result(row: vrcx_0_persistence::worlds::WorldSummaryOutput) -> Qu
         name: row.name.clone(),
         subtitle,
         image_url,
-        seed_data: serde_json::to_value(row).ok(),
+        seed_data: serde_json::to_value(row).ok().map(RawJson::from),
         memo: String::new(),
         note: String::new(),
         matched_field: QuickSearchMatchedField::Name,
@@ -819,7 +849,7 @@ fn candidate_result(row: &QuickSearchCandidate) -> QuickSearchResult {
         name: row.name.clone(),
         subtitle: row.subtitle.clone(),
         image_url: row.image_url.clone(),
-        seed_data: Some(row.seed_data.clone()),
+        seed_data: Some(RawJson::from(row.seed_data.clone())),
         memo: String::new(),
         note: String::new(),
         matched_field: QuickSearchMatchedField::Name,
@@ -933,6 +963,21 @@ mod tests {
             owner_id: String::new(),
             seed_data: json!({ "id": id, "name": name }),
         }
+    }
+
+    #[test]
+    fn remap_group_membership_row_ids_prefers_group_id_over_membership_record_id() {
+        let mut rows = vec![
+            json!({ "id": "gmem_membership_1", "groupId": "grp_real_1", "name": "Real Group" }),
+            json!({ "id": "gmem_membership_2", "groupId": "", "name": "Missing Group Id" }),
+            json!({ "id": "gmem_membership_3", "name": "No Group Id Field" }),
+        ];
+
+        remap_group_membership_row_ids(&mut rows);
+
+        assert_eq!(rows[0]["id"], json!("grp_real_1"));
+        assert_eq!(rows[1]["id"], json!("gmem_membership_2"));
+        assert_eq!(rows[2]["id"], json!("gmem_membership_3"));
     }
 
     #[test]

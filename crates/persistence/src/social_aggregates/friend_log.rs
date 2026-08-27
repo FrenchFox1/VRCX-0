@@ -6,12 +6,13 @@ use crate::Error;
 use super::caveats::friend_log_caveats;
 use super::helpers::{append_time_window_filter, clamped_optional_limit, table_exists};
 use super::types::{FriendLogInput, FriendLogOutput, FriendLogRow};
+use crate::ownership::OwnerId;
 
 pub fn get_friend_log(
     db: &DatabaseService,
     input: FriendLogInput,
 ) -> Result<FriendLogOutput, Error> {
-    let user_prefix = normalize_user_table_prefix(&input.owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(input.owner_user_id.as_str())?;
     let table_name = format!("{user_prefix}_friend_log_history");
     if !table_exists(db, &table_name)? {
         return Ok(FriendLogOutput {
@@ -183,7 +184,7 @@ fn parse_friend_log_cursor(value: &str) -> Result<(String, i64), Error> {
 
 pub fn get_friend_log_first_created_at(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     kind: &str,
 ) -> Result<Option<String>, Error> {
@@ -198,7 +199,7 @@ pub fn get_friend_log_first_created_at(
         )));
     }
 
-    let user_prefix = normalize_user_table_prefix(owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
     let table_name = format!("{user_prefix}_friend_log_history");
     if !table_exists(db, &table_name)? {
         return Ok(None);

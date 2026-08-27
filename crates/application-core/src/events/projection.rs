@@ -1,11 +1,13 @@
 use serde::Serialize;
-use serde_json::{Map, Value};
 use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_core::json::{RawJson, RawJsonObject};
+
+use crate::FriendLocationTime;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeUserProjection {
-    pub users: Vec<Value>,
+    pub users: Vec<RawJson>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]
@@ -33,7 +35,9 @@ pub struct FriendProjection {
     #[serde(default)]
     pub removals: Vec<String>,
     #[serde(default)]
-    pub feed_entries: Vec<Value>,
+    pub feed_entries: Vec<RawJson>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location_time_snapshot: Option<Vec<FriendLocationTime>>,
     pub friend_log_changed: bool,
 }
 
@@ -45,6 +49,7 @@ impl FriendProjection {
             patches: Vec::new(),
             removals: Vec::new(),
             feed_entries: Vec::new(),
+            location_time_snapshot: None,
             friend_log_changed: false,
         }
     }
@@ -53,9 +58,9 @@ impl FriendProjection {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeNotificationUpsert {
-    pub notification: Value,
+    pub notification: RawJson,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub insert_defaults: Option<Value>,
+    pub insert_defaults: Option<RawJson>,
     pub notify_menu: bool,
     pub deliver_runtime: bool,
     pub run_automation: bool,
@@ -104,17 +109,17 @@ pub struct RealtimeEntryCorrection {
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeCurrentUserProjection {
     pub generation: u64,
-    pub patch: Map<String, Value>,
-    pub snapshot: Map<String, Value>,
+    pub patch: RawJsonObject,
+    pub snapshot: RawJsonObject,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub game_state_patch: Option<Map<String, Value>>,
+    pub game_state_patch: Option<RawJsonObject>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeInstanceClosedProjection {
     pub generation: u64,
-    pub notification: Value,
+    pub notification: RawJson,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]

@@ -15,7 +15,10 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { InstanceActionSummary } from './InstanceActionSummary';
-import { useInstanceActionBarController } from './useInstanceActionBarController';
+import {
+    useInstanceActionBarController,
+    type InstanceActionBarControllerInput
+} from './useInstanceActionBarController';
 
 function ActionButton({
     label,
@@ -91,8 +94,8 @@ export function InstanceActionBar({
     target?: LocationObjectRecord | null;
     instance?: unknown;
     friendCount?: number;
-    playerCount?: unknown;
-    capacity?: unknown;
+    playerCount?: number | string | null;
+    capacity?: number | string | null;
     showLaunch?: boolean;
     showInvite?: boolean;
     showRefresh?: boolean;
@@ -105,7 +108,7 @@ export function InstanceActionBar({
     disableInstanceInfoTooltip?: boolean;
     refreshTooltip?: string;
     historyTooltip?: string;
-    onRefresh?: (location: string) => unknown | Promise<unknown>;
+    onRefresh?: InstanceActionBarControllerInput['onRefresh'];
     onHistory?: () => void;
 }) {
     const { t } = useTranslation();

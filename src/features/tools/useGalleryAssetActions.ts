@@ -1,8 +1,5 @@
 import type { ChangeEvent } from 'react';
 
-import type { EmojiUploadParams } from '@/platform/tauri/bindings';
-
-import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import type {
     GalleryAssets,
     GalleryAssetTab,
@@ -12,12 +9,11 @@ import type {
     GalleryAssetActionDeps,
     GalleryUploadOptions
 } from './galleryTypes';
+import { buildPrintUploadParams } from './galleryUploadParams';
 import {
-    buildPrintUploadParams,
-    resolvePrintCropWhiteBorder
-} from './galleryUploadParams';
-import type { EmojiUploadSettings } from './inventoryHelpers';
-import { resolveEmojiStyleName } from './inventoryHelpers';
+    buildEmojiUploadParams,
+    type EmojiUploadSettings
+} from './inventoryHelpers';
 
 export function createGalleryAssetActions({
     FILE_TABS,
@@ -65,7 +61,7 @@ export function createGalleryAssetActions({
     function setTabLoading(tab: GalleryAssetTab, value: boolean) {
         setLoadingByTab((current) => ({
             ...current,
-            [tab]: Boolean(value)
+            [tab]: value
         }));
     }
     function updateAssets<TTab extends GalleryAssetTab>(
@@ -146,9 +142,7 @@ export function createGalleryAssetActions({
         setTabLoading('inventory', true);
         try {
             const { items, truncated } =
-                await mediaRepository.collectInventoryItems({
-                    order: 'newest'
-                });
+                await mediaRepository.collectInventoryItems();
             if (truncated) {
                 console.warn('Inventory listing truncated at the page limit.');
             }
@@ -195,30 +189,6 @@ export function createGalleryAssetActions({
         uploadAuthTargetRef.current = getAuthTarget();
         uploadInputRef.current?.click();
     }
-    function getEmojiUploadParams(settings: EmojiUploadSettings) {
-        const params: EmojiUploadParams = {
-            tag: settings.isAnimated ? 'emojianimated' : 'emoji',
-            animationStyle:
-                emojiAnimationStyleValues[
-                    resolveEmojiStyleName(settings.animationStyle)
-                ],
-            maskTag: 'square'
-        };
-        if (settings.isAnimated) {
-            params.frames = Math.min(
-                64,
-                Math.max(2, Number(settings.frames) || 4)
-            );
-            params.framesOverTime = Math.min(
-                64,
-                Math.max(1, Number(settings.fps) || 15)
-            );
-        }
-        if (settings.loopPingPong) {
-            params.loopStyle = 'pingpong';
-        }
-        return params;
-    }
     function uploadAsset(
         tab: GalleryUploadTarget,
         base64Body: string,
@@ -228,15 +198,13 @@ export function createGalleryAssetActions({
         if (tab === 'emojis') {
             return mediaRepository.uploadAssetImage(base64Body, {
                 assetKind: tab,
-                params: getEmojiUploadParams(settings)
+                params: buildEmojiUploadParams(settings)
             });
         }
         if (tab === 'prints') {
             return mediaRepository.uploadAssetImage(base64Body, {
                 assetKind: tab,
-                cropWhiteBorder: resolvePrintCropWhiteBorder(
-                    uploadOptions.cropWhiteBorder
-                ),
+                cropWhiteBorder: uploadOptions.cropWhiteBorder ?? true,
                 params: buildPrintUploadParams({
                     note: uploadOptions.note,
                     timestamp: getLocalTimestampString()
@@ -373,12 +341,9 @@ export function createGalleryAssetActions({
     }
     async function deleteFileAsset(
         tab: keyof typeof FILE_TABS,
-        fileId: unknown
+        fileId: string
     ) {
-        const normalizedFileId =
-            typeof fileId === 'string'
-                ? fileId.trim()
-                : String(fileId ?? '').trim();
+        const normalizedFileId = fileId.trim();
         if (!normalizedFileId) {
             return;
         }

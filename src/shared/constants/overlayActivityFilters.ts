@@ -1,3 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
+
 import hmdDefaultScopes from './overlayActivityHmdDefaults.json';
 
 export type OverlayActivityCategory =
@@ -67,6 +69,10 @@ export const OVERLAY_ACTIVITY_SCOPES: OverlayActivityScope[] = [
     'everyoneInInstance'
 ];
 
+function isOverlayActivityScope(value: unknown): value is OverlayActivityScope {
+    return OVERLAY_ACTIVITY_SCOPES.some((scope) => scope === value);
+}
+
 const BOOLEAN_SCOPES: OverlayActivityScope[] = ['off', 'on'];
 const DIRECT_ACTOR_SCOPES: OverlayActivityScope[] = [
     'off',
@@ -87,6 +93,11 @@ const INSTANCE_ACTOR_SCOPES: OverlayActivityScope[] = [
     'selectedFavorites',
     'allFavorites',
     'everyoneInInstance'
+];
+const GROUP_FAVORITE_SCOPES: OverlayActivityScope[] = [
+    'off',
+    'allFavorites',
+    'selectedFavorites'
 ];
 const REMOVED_OVERLAY_ACTIVITY_TYPE_KEYS = new Set([
     'PortalSpawn',
@@ -216,6 +227,12 @@ export const OVERLAY_ACTIVITY_TYPE_DEFINITIONS: OverlayActivityTypeDefinition[] 
         defineType('profileChange', 'Bio', FRIEND_ACTOR_SCOPES, 'off'),
 
         defineType('groupSocial', 'groupChange', BOOLEAN_SCOPES, 'on'),
+        defineType(
+            'groupSocial',
+            'group.instanceOpened',
+            GROUP_FAVORITE_SCOPES,
+            'off'
+        ),
         defineType('groupSocial', 'group.announcement', BOOLEAN_SCOPES, 'on'),
         defineType('groupSocial', 'group.informative', BOOLEAN_SCOPES, 'on'),
         defineType('groupSocial', 'group.invite', BOOLEAN_SCOPES, 'on'),
@@ -272,7 +289,12 @@ export const OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY =
     overlayActivityDefinitionByKey(OVERLAY_ACTIVITY_TYPE_DEFINITIONS);
 
 export const HMD_DEFAULT_SCOPES: Record<string, OverlayActivityScope> =
-    hmdDefaultScopes as Record<string, OverlayActivityScope>;
+    Object.fromEntries(
+        Object.entries(hmdDefaultScopes).filter(
+            (entry): entry is [string, OverlayActivityScope] =>
+                isOverlayActivityScope(entry[1])
+        )
+    );
 
 for (const definition of OVERLAY_ACTIVITY_TYPE_DEFINITIONS) {
     definition.hmdDefaultScope =
@@ -434,10 +456,6 @@ export function overlayActivityTypeLabelKey(type: string) {
     return type.replace(/\./g, '_');
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function cloneOverlayActivityTypeRules(
     types: Record<string, OverlayActivityRule>,
     definitions: OverlayActivityTypeDefinition[] = OVERLAY_ACTIVITY_TYPE_DEFINITIONS
@@ -496,12 +514,9 @@ function mappedLegacyScope(
     scope: unknown,
     definition: OverlayActivityTypeDefinition
 ): OverlayActivityScope | null {
-    if (typeof scope !== 'string') {
-        return null;
-    }
     const allowedScopes = definition.allowedScopes;
-    if (allowedScopes.includes(scope as OverlayActivityScope)) {
-        return scope as OverlayActivityScope;
+    if (isOverlayActivityScope(scope) && allowedScopes.includes(scope)) {
+        return scope;
     }
     if (scope === 'everyone' && allowedScopes.includes('everyoneInInstance')) {
         return 'everyoneInInstance';
@@ -558,11 +573,7 @@ function normalizeUnknownTypeRule(value: unknown): OverlayActivityRule | null {
     if (!isRecord(value)) {
         return null;
     }
-    const scope = OVERLAY_ACTIVITY_SCOPES.includes(
-        value.scope as OverlayActivityScope
-    )
-        ? (value.scope as OverlayActivityScope)
-        : null;
+    const scope = isOverlayActivityScope(value.scope) ? value.scope : null;
     if (!scope) {
         return null;
     }

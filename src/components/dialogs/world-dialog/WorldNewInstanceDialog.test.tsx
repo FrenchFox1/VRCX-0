@@ -17,8 +17,19 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import type { Button } from '@/ui/shadcn/button';
+import type { InputGroupButton } from '@/ui/shadcn/input-group';
 
 import type { WorldInstanceAccessType } from './worldNewInstanceTypes';
+
+type ButtonMockProps = PropsWithChildren<
+    ButtonHTMLAttributes<HTMLButtonElement> &
+        Pick<ComponentProps<typeof Button>, 'size' | 'variant'>
+>;
+type InputGroupButtonMockProps = PropsWithChildren<
+    ButtonHTMLAttributes<HTMLButtonElement> &
+        Pick<ComponentProps<typeof InputGroupButton>, 'size'>
+>;
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
@@ -30,12 +41,7 @@ vi.mock('@/ui/shadcn/button', () => ({
         variant: _variant,
         size: _size,
         ...props
-    }: PropsWithChildren<
-        ButtonHTMLAttributes<HTMLButtonElement> & {
-            size?: unknown;
-            variant?: unknown;
-        }
-    >) => <button {...props}>{children}</button>
+    }: ButtonMockProps) => <button {...props}>{children}</button>
 }));
 
 vi.mock('@/ui/shadcn/checkbox', () => ({
@@ -95,9 +101,7 @@ vi.mock('@/ui/shadcn/input-group', async () => {
             children,
             size: _size,
             ...props
-        }: PropsWithChildren<
-            ButtonHTMLAttributes<HTMLButtonElement> & { size?: unknown }
-        >) => <button {...props}>{children}</button>,
+        }: InputGroupButtonMockProps) => <button {...props}>{children}</button>,
         InputGroupInput: (props: InputHTMLAttributes<HTMLInputElement>) => (
             <input {...props} />
         )
@@ -144,7 +148,7 @@ vi.mock('@/ui/shadcn/select', () => {
 });
 
 vi.mock('@/ui/shadcn/tabs', async () => {
-    const { createContext, useContext } = await import('react');
+    const { createContext, useContext, useMemo } = await import('react');
     type TabsContextValue = {
         onValueChange(value: string): void;
         value: string;
@@ -158,11 +162,17 @@ vi.mock('@/ui/shadcn/tabs', async () => {
             children,
             onValueChange,
             value
-        }: PropsWithChildren<TabsContextValue>) => (
-            <TabsContext.Provider value={{ onValueChange, value }}>
-                {children}
-            </TabsContext.Provider>
-        ),
+        }: PropsWithChildren<TabsContextValue>) => {
+            const contextValue = useMemo(
+                () => ({ onValueChange, value }),
+                [onValueChange, value]
+            );
+            return (
+                <TabsContext.Provider value={contextValue}>
+                    {children}
+                </TabsContext.Provider>
+            );
+        },
         TabsContent: ({
             children,
             value
@@ -358,6 +368,27 @@ describe('WorldNewInstanceDialog', () => {
         expect(
             props.onCommitDisplayName.mock.invocationCallOrder[0]
         ).toBeLessThan(props.onSubmit.mock.invocationCallOrder[0]);
+    });
+
+    it('maps the group avatar-performance selection back to an omitted request value', async () => {
+        const props = defaultProps({
+            request: makeRequest({
+                accessType: 'group',
+                groupId: 'grp_test',
+                minimumAvatarPerformance: 'Good'
+            })
+        });
+        render(<WorldNewInstanceDialog {...props} />);
+
+        const performanceSelect = await screen.findByDisplayValue(
+            'dialog.new_instance.minimum_avatar_performance_good'
+        );
+        fireEvent.change(performanceSelect, { target: { value: 'none' } });
+        fireEvent.click(buttonByName('dialog.new_instance.create_instance'));
+
+        expect(props.onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({ minimumAvatarPerformance: '' })
+        );
     });
 
     it('keeps the normal tab on create-only actions', async () => {

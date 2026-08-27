@@ -4,7 +4,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use rmcp::handler::server::wrapper::Parameters;
-use vrcx_0_application::{FavoriteMutationCoordinator, MutualGraphFetchRuntime};
+use vrcx_0_application::favorites::{FavoriteMutationCoordinator, FavoriteMutationRuntimeDeps};
+use vrcx_0_application::social::MutualGraphFetchRuntime;
 use vrcx_0_application_core::{
     HostSessionRuntime, NoopPrintCleanupInputSink, RuntimeAuthScope, RuntimeDiagnostics,
     RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor, UnavailableLocalGameContextSource,
@@ -76,11 +77,13 @@ fn test_server(
     ensure_game_log_tables(db.as_ref())?;
     let storage = StorageService::new(&dir.path.join("storage.json"))?;
     let web = Arc::new(WebClient::new(
-        &storage,
-        db.as_ref(),
-        "wss://pipeline.vrchat.cloud".into(),
-        env!("CARGO_PKG_VERSION"),
-    )?);
+        vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
+            &storage,
+            Arc::clone(&db),
+            "wss://pipeline.vrchat.cloud".into(),
+            env!("CARGO_PKG_VERSION"),
+        )?,
+    ));
     let auth_scope = RuntimeAuthScope::new();
     if !auth_scope_user_id.trim().is_empty() {
         auth_scope.set(auth_scope_user_id, "https://api.vrchat.cloud/api/1");
@@ -91,53 +94,90 @@ fn test_server(
     let tasks = TaskSupervisor::new();
     let session = HostSessionRuntime::new();
     let world_cache = Arc::new(WorldCache::new(
-        Arc::clone(&db),
-        512,
-        Duration::from_secs(30 * 60),
+        vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
+            Arc::clone(&db),
+            512,
+            Duration::from_secs(30 * 60),
+        ),
     ));
-    let remote_mutations = Arc::new(vrcx_0_application::RemoteMutationGate::default());
+    let remote_mutations = Arc::new(vrcx_0_application_core::RemoteMutationGate::default());
     let favorite_mutations = FavoriteMutationCoordinator::new(
-        Arc::clone(&db),
-        Arc::clone(&web),
-        diagnostics,
-        sync.clone(),
-        event_bus.clone(),
-        auth_scope.clone(),
-        Arc::clone(&remote_mutations),
+        Arc::new(vrcx_0_outbound_adapters::LocalFavoriteStore::new(
+            Arc::clone(&db),
+        )),
+        Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemoteRequests),
+        FavoriteMutationRuntimeDeps::new(
+            Arc::clone(&web),
+            diagnostics,
+            sync.clone(),
+            event_bus.clone(),
+            auth_scope.clone(),
+            Arc::clone(&remote_mutations),
+        ),
     );
-    let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        db: Arc::clone(&db),
-        web: Arc::clone(&web),
-        event_bus: event_bus.clone(),
-        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
-            vrcx_0_application_core::BackendRuntime::new(
-                vrcx_0_application_core::RuntimeHostProfile::Desktop,
-            ),
-            event_bus.clone(),
+    let backend_status = vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
+        vrcx_0_application_core::BackendRuntime::new(
+            vrcx_0_application_core::RuntimeHostProfile::Desktop,
         ),
-        friend_projection_sink: vrcx_0_application_realtime::FriendProjectionSink::new(
-            event_bus.clone(),
-            None,
-        ),
+        event_bus.clone(),
+    );
+    let realtime_store: Arc<dyn vrcx_0_application_realtime::RealtimeStore> = Arc::new(
+        vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(Arc::clone(&db)),
+    );
+    let realtime_transport: Arc<dyn vrcx_0_application_realtime::RealtimeTransport> =
+        Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeTransport::new(
+            Arc::clone(&realtime_store),
+            Arc::clone(&web),
+            backend_status.clone(),
+        ));
+    let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
+        realtime_store,
+        realtime_transport,
+        Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
+        Arc::clone(&web),
+        event_bus.clone(),
+        backend_status,
+        vrcx_0_application_realtime::FriendProjectionSink::new(event_bus.clone(), None),
         sync,
-        tasks: tasks.clone(),
+        tasks.clone(),
         session,
-        auth_scope: auth_scope.clone(),
+        auth_scope.clone(),
         remote_mutations,
-        local_game_context: Arc::new(UnavailableLocalGameContextSource),
-        activity_sink: None,
+        Arc::new(UnavailableLocalGameContextSource),
+        None,
         world_cache,
-        print_cleanup: Arc::new(NoopPrintCleanupInputSink),
-        friend_note_change_sink: None,
-        current_user_snapshot_sink: None,
-    }));
+        Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
+        Arc::new(NoopPrintCleanupInputSink),
+        None,
+    )));
     let runtime = crate::runtime::McpRuntime {
-        db: Arc::clone(&db),
-        web,
         realtime_runtime,
-        auth_scope,
-        config: ConfigRepository::new(db),
-        mutual_graph_fetch: MutualGraphFetchRuntime::new(),
+        auth_scope: auth_scope.clone(),
+        config: Arc::new(crate::test_support::TestMcpConfigAdapter::new(
+            ConfigRepository::new(Arc::clone(&db)),
+        )),
+        activity_queries: Arc::new(crate::test_support::TestMcpActivityQueryAdapter::new(
+            Arc::clone(&db),
+        )),
+        social_history_queries: Arc::new(
+            crate::test_support::TestMcpSocialHistoryQueryAdapter::new(Arc::clone(&db)),
+        ),
+        friend_local_data: Arc::new(crate::test_support::TestMcpFriendLocalDataAdapter::new(
+            Arc::clone(&db),
+        )),
+        favorites_queries: Arc::new(crate::test_support::TestMcpFavoritesQueryAdapter::new(
+            Arc::clone(&db),
+        )),
+        feed_queries: Arc::new(crate::test_support::TestMcpFeedQueryAdapter::new(
+            Arc::clone(&db),
+        )),
+        mutual_graph: Arc::new(crate::test_support::TestMcpMutualGraphAdapter::new(
+            MutualGraphFetchRuntime::new(),
+            Arc::clone(&db),
+            Arc::clone(&web),
+            auth_scope.clone(),
+            tasks.clone(),
+        )),
         favorite_mutations,
         tasks,
         caller: crate::runtime::McpCaller::ExternalServer,

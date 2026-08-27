@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn search_worlds_visited_returns_recent_world_candidates() {
@@ -16,7 +17,7 @@ fn search_worlds_visited_returns_recent_world_candidates() {
 
     let output = search_worlds_visited(
         &db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         SearchWorldsVisitedInput {
             time_window: TimeWindow {
                 from: Some("2026-06-01T21:00:00Z".into()),
@@ -39,7 +40,7 @@ fn favorite_local_supports_kind_action_and_dry_run() {
 
     let output = favorite_local(
         &db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         favorite_friend_input(FavoriteAction::Add, true),
     )
     .unwrap();
@@ -50,7 +51,7 @@ fn favorite_local_supports_kind_action_and_dry_run() {
     assert_eq!(output.action, FavoriteAction::Add);
     assert!(crate::favorites::favorite_list(
         &db,
-        Some("usr_test"),
+        Some(&OwnerId::new("usr_test")),
         vrcx_0_core::FavoriteEntityKind::Friend,
     )
     .unwrap()
@@ -58,14 +59,14 @@ fn favorite_local_supports_kind_action_and_dry_run() {
 
     favorite_local(
         &db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         favorite_friend_input(FavoriteAction::Add, false),
     )
     .unwrap();
     assert_eq!(
         crate::favorites::favorite_list(
             &db,
-            Some("usr_test"),
+            Some(&OwnerId::new("usr_test")),
             vrcx_0_core::FavoriteEntityKind::Friend,
         )
         .unwrap()
@@ -75,14 +76,14 @@ fn favorite_local_supports_kind_action_and_dry_run() {
 
     favorite_local(
         &db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         favorite_friend_input(FavoriteAction::Remove, true),
     )
     .unwrap();
     assert_eq!(
         crate::favorites::favorite_list(
             &db,
-            Some("usr_test"),
+            Some(&OwnerId::new("usr_test")),
             vrcx_0_core::FavoriteEntityKind::Friend,
         )
         .unwrap()
@@ -92,13 +93,13 @@ fn favorite_local_supports_kind_action_and_dry_run() {
 
     favorite_local(
         &db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         favorite_friend_input(FavoriteAction::Remove, false),
     )
     .unwrap();
     assert!(crate::favorites::favorite_list(
         &db,
-        Some("usr_test"),
+        Some(&OwnerId::new("usr_test")),
         vrcx_0_core::FavoriteEntityKind::Friend,
     )
     .unwrap()

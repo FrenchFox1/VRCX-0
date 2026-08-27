@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vrcx_0_application_core::vrchat_api::search::{
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::search::{
     GroupSearchParams, UserSearchParams, WorldSearchParams,
 };
 
@@ -26,7 +26,7 @@ pub struct VrchatSearchWorldsInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatSearchShortNameInput {
     #[serde(default)]
     pub(crate) short_name: String,

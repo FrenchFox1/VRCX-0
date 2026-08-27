@@ -11,19 +11,19 @@ import {
     HoverCardTrigger
 } from '@/ui/shadcn/hover-card';
 
-function formatUpdateReleaseDate(value: unknown) {
+function formatUpdateReleaseDate(value: string | null | undefined) {
     if (!value) {
         return '-';
     }
-    const timestamp = Date.parse(String(value));
+    const timestamp = Date.parse(value);
     if (!Number.isFinite(timestamp)) {
-        return String(value);
+        return value;
     }
     return formatDateFilter(timestamp, 'date');
 }
 
-function clampUpdateProgress(value: unknown) {
-    return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+function clampUpdateProgress(value: number) {
+    return Math.max(0, Math.min(100, Math.round(value || 0)));
 }
 
 function formatMegabytes(bytes: number) {

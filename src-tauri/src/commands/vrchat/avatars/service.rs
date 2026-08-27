@@ -1,42 +1,20 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::avatars::{
-    avatar_delete_input, avatar_file_get_input, avatar_gallery_get_input,
-    avatar_impostor_create_input, avatar_impostor_delete_input, avatar_list_by_user_get_input,
-    avatar_moderation_delete_input, avatar_moderation_send_input, avatar_save_input,
-    avatar_select_fallback_input, avatar_select_input, avatar_styles_get_input,
-    AvatarListByUserGetInput,
-};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::avatars::{
+    avatar_file_get_input, avatar_gallery_get_input, avatar_list_by_user_get_input,
+    avatar_styles_get_input, AvatarListByUserGetInput,
+};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
     VrchatAvatarFileInput, VrchatAvatarIdInput, VrchatAvatarListByUserInput,
     VrchatAvatarModerationInput, VrchatAvatarSaveInput,
 };
-
-fn avatar_mutation_deps<'a>(
-    state: &'a State<'_, AppState>,
-) -> Result<vrcx_0_application::AvatarRemoteMutationDeps<'a>, AppError> {
-    Ok(vrcx_0_application::AvatarRemoteMutationDeps {
-        db: &state.db,
-        web: &state.web,
-        diagnostics: &state.runtime_context.diagnostics,
-        sync: &state.runtime_context.sync,
-        realtime: &state.realtime_runtime,
-        avatar_cache: &state.runtime_context.avatar_cache,
-        avatar_moderation: &state.runtime_context.avatar_moderation,
-        mutation: vrcx_0_application::AuthenticatedMutationContext::capture(
-            &state.runtime_context.auth_scope,
-            &state.runtime_context.remote_mutations,
-            "Avatar mutation",
-        )?,
-    })
-}
 
 async fn execute_avatar_api(
     state: State<'_, AppState>,
@@ -109,19 +87,7 @@ pub async fn app__vrchat_avatar_styles_get(
 pub async fn app__vrchat_avatar_moderations_get(
     state: State<'_, AppState>,
 ) -> Result<VrchatApiResponse, AppError> {
-    Ok(vrcx_0_application::get_avatar_moderations(
-        &state.runtime_context.avatar_moderation,
-        vrcx_0_application::AvatarModerationDeps {
-            db: &state.db,
-            web: &state.web,
-            diagnostics: &state.runtime_context.diagnostics,
-            sync: &state.runtime_context.sync,
-            auth_scope: &state.runtime_context.auth_scope,
-        },
-        "app__vrchat_avatar_moderations_get",
-        "Getting avatar moderations.",
-    )
-    .await?)
+    Ok(state.runtime_host().avatars().moderations().await?)
 }
 
 #[tauri::command]
@@ -146,18 +112,12 @@ pub async fn app__vrchat_avatar_file_get(
 pub async fn app__vrchat_avatar_select(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
-) -> Result<vrcx_0_application::AvatarSelectionMutationOutcome, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, request) =
-        avatar_select_input(deps.mutation.scope().endpoint.clone(), input.avatar_id)?;
-    Ok(vrcx_0_application::select_avatar(
-        &deps,
-        "app__vrchat_avatar_select",
-        format!("Selecting avatar {avatar_id}."),
-        request,
-        vrcx_0_application_realtime::CURRENT_USER_AVATAR_RESPONSE_AUTHORITY_FIELDS,
-    )
-    .await?)
+) -> Result<vrcx_0_application::avatars::AvatarSelectionMutationOutcome, AppError> {
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .select(input.avatar_id)
+        .await?)
 }
 
 #[tauri::command]
@@ -165,18 +125,12 @@ pub async fn app__vrchat_avatar_select(
 pub async fn app__vrchat_avatar_select_fallback(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
-) -> Result<vrcx_0_application::AvatarSelectionMutationOutcome, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, request) =
-        avatar_select_fallback_input(deps.mutation.scope().endpoint.clone(), input.avatar_id)?;
-    Ok(vrcx_0_application::select_avatar(
-        &deps,
-        "app__vrchat_avatar_select_fallback",
-        format!("Selecting fallback avatar {avatar_id}."),
-        request,
-        vrcx_0_application_realtime::CURRENT_USER_FALLBACK_AVATAR_RESPONSE_AUTHORITY_FIELDS,
-    )
-    .await?)
+) -> Result<vrcx_0_application::avatars::AvatarSelectionMutationOutcome, AppError> {
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .select_fallback(input.avatar_id)
+        .await?)
 }
 
 #[tauri::command]
@@ -185,19 +139,11 @@ pub async fn app__vrchat_avatar_save(
     state: State<'_, AppState>,
     input: VrchatAvatarSaveInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, request) = avatar_save_input(
-        deps.mutation.scope().endpoint.clone(),
-        input.avatar_id,
-        input.params,
-    )?;
-    Ok(vrcx_0_application::save_avatar(
-        &deps,
-        "app__vrchat_avatar_save",
-        format!("Saving avatar {avatar_id}."),
-        request,
-    )
-    .await?)
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .save(input.avatar_id, input.params)
+        .await?)
 }
 
 #[tauri::command]
@@ -206,17 +152,11 @@ pub async fn app__vrchat_avatar_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, request) =
-        avatar_delete_input(deps.mutation.scope().endpoint.clone(), input.avatar_id)?;
-    Ok(vrcx_0_application::delete_avatar(
-        &deps,
-        avatar_id.clone(),
-        "app__vrchat_avatar_delete",
-        format!("Deleting avatar {avatar_id}."),
-        request,
-    )
-    .await?)
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .delete(input.avatar_id)
+        .await?)
 }
 
 #[tauri::command]
@@ -225,16 +165,11 @@ pub async fn app__vrchat_avatar_impostor_create(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, request) =
-        avatar_impostor_create_input(deps.mutation.scope().endpoint.clone(), input.avatar_id)?;
-    Ok(vrcx_0_application::execute_avatar_remote_mutation(
-        &deps,
-        "app__vrchat_avatar_impostor_create",
-        format!("Creating avatar impostor for {avatar_id}."),
-        request,
-    )
-    .await?)
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .create_impostor(input.avatar_id)
+        .await?)
 }
 
 #[tauri::command]
@@ -243,16 +178,11 @@ pub async fn app__vrchat_avatar_impostor_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, request) =
-        avatar_impostor_delete_input(deps.mutation.scope().endpoint.clone(), input.avatar_id)?;
-    Ok(vrcx_0_application::execute_avatar_remote_mutation(
-        &deps,
-        "app__vrchat_avatar_impostor_delete",
-        format!("Deleting avatar impostor for {avatar_id}."),
-        request,
-    )
-    .await?)
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .delete_impostor(input.avatar_id)
+        .await?)
 }
 
 #[tauri::command]
@@ -261,19 +191,11 @@ pub async fn app__vrchat_avatar_moderation_send(
     state: State<'_, AppState>,
     input: VrchatAvatarModerationInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, type_name, request) = avatar_moderation_send_input(
-        deps.mutation.scope().endpoint.clone(),
-        input.avatar_id,
-        input.type_name,
-    )?;
-    Ok(vrcx_0_application::execute_avatar_moderation_mutation(
-        &deps,
-        "app__vrchat_avatar_moderation_send",
-        format!("Sending avatar moderation {type_name} for {avatar_id}."),
-        request,
-    )
-    .await?)
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .send_moderation(input.avatar_id)
+        .await?)
 }
 
 #[tauri::command]
@@ -282,17 +204,9 @@ pub async fn app__vrchat_avatar_moderation_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarModerationInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let deps = avatar_mutation_deps(&state)?;
-    let (avatar_id, type_name, request) = avatar_moderation_delete_input(
-        deps.mutation.scope().endpoint.clone(),
-        input.avatar_id,
-        input.type_name,
-    )?;
-    Ok(vrcx_0_application::execute_avatar_moderation_mutation(
-        &deps,
-        "app__vrchat_avatar_moderation_delete",
-        format!("Deleting avatar moderation {type_name} for {avatar_id}."),
-        request,
-    )
-    .await?)
+    Ok(state
+        .runtime_host()
+        .avatars()
+        .delete_moderation(input.avatar_id)
+        .await?)
 }

@@ -4,7 +4,6 @@ import type {
     HostSessionProjection,
     NowPlayingPayload
 } from '@/platform/tauri/bindings';
-import { normalizeString } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -17,13 +16,13 @@ import { handleBrowserFocus } from '../vrcStatusService';
 import type { RuntimeEventPayloadMap } from './types';
 
 function publishNowPlayingSharedFeed(payload: NowPlayingPayload): void {
-    const videoUrl = normalizeString(payload.videoUrl || payload.url);
+    const videoUrl = (payload.videoUrl || payload.url || '').trim();
     if (!videoUrl) {
         return;
     }
 
-    const videoName = normalizeString(payload.videoName || payload.name);
-    const displayName = normalizeString(payload.displayName);
+    const videoName = (payload.videoName || payload.name || '').trim();
+    const displayName = (payload.displayName || '').trim();
     const message = [
         videoName || videoUrl,
         displayName ? `(${displayName})` : ''
@@ -34,16 +33,16 @@ function publishNowPlayingSharedFeed(payload: NowPlayingPayload): void {
     pushSharedFeedNotification({
         ...payload,
         created_at:
-            normalizeString(payload.created_at) ||
-            normalizeString(payload.startedAt) ||
+            (payload.created_at || '').trim() ||
+            payload.startedAt.trim() ||
             new Date().toISOString(),
         type: 'VideoPlay',
         videoUrl,
         videoName,
-        videoId: normalizeString(payload.videoId || payload.source),
-        location: normalizeString(payload.location),
+        videoId: (payload.videoId || payload.source || '').trim(),
+        location: (payload.location || '').trim(),
         displayName,
-        userId: normalizeString(payload.userId),
+        userId: (payload.userId || '').trim(),
         message,
         notyName: message
     }).catch((error: unknown) => {
@@ -62,7 +61,7 @@ export function handleGameLogPersistenceFallback(
     useRuntimeStore
         .getState()
         .recordRuntimeEvent('gameLogPersistenceFallback', payload);
-    const errorMessage = normalizeString(payload.error);
+    const errorMessage = payload.error.trim();
     if (errorMessage) {
         console.warn('Backend GameLog persistence failed:', errorMessage);
     }

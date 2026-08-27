@@ -33,8 +33,8 @@ function manualBackupDefaultFileName(now: Date): string {
     return `VRCX-0-backup-${date}-${time}.vrcx0backup`;
 }
 
-function clampInteger(value: unknown, min: number, max: number): number {
-    const parsed = Number.parseInt(String(value), 10);
+function clampInteger(value: string, min: number, max: number): number {
+    const parsed = Number.parseInt(value, 10);
     if (!Number.isFinite(parsed)) {
         return min;
     }

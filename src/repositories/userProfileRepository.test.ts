@@ -341,13 +341,16 @@ describe('UserProfileRepository', () => {
     it('loads the backend-collected mutual friend list', async () => {
         vi.mocked(
             tauriMock.commands.appUserMutualFriendsListGet
-        ).mockResolvedValue([
-            { id: 'usr_mutual', futureField: 'keep' },
-            null,
-            { displayName: 'Missing id' }
-        ]);
+        ).mockResolvedValue({
+            rows: [
+                { id: 'usr_mutual', futureField: 'keep' },
+                null,
+                { displayName: 'Missing id' }
+            ],
+            persisted: true
+        });
 
-        const rows = await userProfileRepository.getAllMutualFriends({
+        const result = await userProfileRepository.getAllMutualFriends({
             userId: 'usr_target'
         });
 
@@ -356,6 +359,9 @@ describe('UserProfileRepository', () => {
         ).toHaveBeenCalledWith({
             userId: 'usr_target'
         });
-        expect(rows).toEqual([{ id: 'usr_mutual', futureField: 'keep' }]);
+        expect(result).toEqual({
+            rows: [{ id: 'usr_mutual', futureField: 'keep' }],
+            persisted: true
+        });
     });
 });

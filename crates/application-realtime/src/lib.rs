@@ -1,7 +1,9 @@
+mod ports;
 mod realtime;
 mod social_baseline;
+#[cfg(any(test, feature = "test-utils"))]
+mod test_store;
 
-pub use realtime::lifecycle_log as realtime_lifecycle_log;
 mod world_enrich;
 
 #[cfg(any(test, feature = "test-utils"))]
@@ -11,6 +13,7 @@ pub mod test_support {
     };
 }
 
+pub use ports::{RealtimeRemoteRequests, RealtimeStore};
 pub use realtime::{
     is_friend_event_type, is_print_created_content_refresh, FriendBaselineCausalWatermark,
     FriendBaselineResult, FriendBaselineSyncOutcome, FriendProfileBulkLoadStatus,
@@ -24,8 +27,9 @@ pub use realtime::{
     RealtimeFriendOutput, RealtimeFriendRecordSnapshot, RealtimeFriendRosterSnapshot,
     RealtimeFriendSnapshot, RealtimeFriendsRuntime, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
     RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
-    RealtimeInstanceQueueProjection, RealtimeNotificationOutput, RealtimeNotificationProjection,
-    RealtimeNotificationUpsert, RealtimeSessionContext, RealtimeStopRequest,
+    RealtimeInstanceQueueProjection, RealtimeMessageSink, RealtimeNotificationOutput,
+    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeSessionContext,
+    RealtimeStopRequest, RealtimeTransport, RealtimeTransportFuture,
     RealtimeTransportLifecycleEvent, RealtimeTransportStartResult, RealtimeTransportTermination,
     RealtimeUserProjection, RealtimeWsMessagePayload, RealtimeWsStatus, RealtimeWsStatusPayload,
     SyntheticFriendEventOutcome, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,

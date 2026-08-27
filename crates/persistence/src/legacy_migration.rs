@@ -6,39 +6,13 @@ use rusqlite::{Connection, OpenFlags};
 use crate::database::{backup_connection_to_path, remove_sidecars};
 use crate::legacy_vrcx::{LegacyVrcxDiscovery, LegacyVrcxSource};
 use crate::Error;
+pub use vrcx_0_contracts::{LegacyMigrationPaths, LegacyMigrationProgress};
 
 const PENDING_MIGRATION_FILE: &str = "pending_vrcx_migration";
 const STAGED_FLAG_CONTENTS: &[u8] = b"staged-v1";
 const STAGING_DIRECTORY: &str = "legacy-migration-staging";
 const STAGED_DATABASE_FILE: &str = "VRCX-0.sqlite3";
 const STAGED_CONFIG_FILE: &str = "VRCX-0.json";
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LegacyMigrationProgress {
-    DatabaseCopy {
-        completed_pages: u64,
-        total_pages: u64,
-    },
-    Configuration,
-    Finalizing,
-}
-
-#[derive(Clone, Debug)]
-pub struct LegacyMigrationPaths {
-    pub app_data: PathBuf,
-    pub db_file: PathBuf,
-    pub config_file: PathBuf,
-}
-
-impl LegacyMigrationPaths {
-    pub fn from_app_data(app_data: PathBuf) -> Self {
-        Self {
-            db_file: app_data.join("VRCX-0.sqlite3"),
-            config_file: app_data.join("VRCX-0.json"),
-            app_data,
-        }
-    }
-}
 
 pub fn cleanup_legacy_updater_files(app_data: &Path) {
     for file_name in ["update.exe", "VRCX-0_Setup.exe", "tempDownload"] {

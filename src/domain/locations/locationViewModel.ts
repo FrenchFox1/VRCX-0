@@ -9,27 +9,27 @@ import {
 } from '@/shared/utils/location';
 
 interface LocationMetadataModelInput {
-    worldId?: unknown;
-    groupId?: unknown;
-    explicitWorldNameHint?: unknown;
-    explicitGroupNameHint?: unknown;
-    queryWorld?: { name?: unknown } | null;
+    worldId?: string | null;
+    groupId?: string | null;
+    explicitWorldNameHint?: string | null;
+    explicitGroupNameHint?: string | null;
+    queryWorld?: { name?: string | null } | null;
     queryGroup?: {
-        name?: unknown;
-        displayName?: unknown;
-        shortCode?: unknown;
+        name?: string | null;
+        displayName?: string | null;
+        shortCode?: string | null;
     } | null;
     locationHint?:
         | {
-              worldName?: unknown;
-              groupName?: unknown;
-              instanceName?: unknown;
-              isClosed?: unknown;
-              region?: unknown;
+              worldName?: string | null;
+              groupName?: string | null;
+              instanceName?: string | null;
+              isClosed?: boolean | null;
+              region?: string | null;
           }
         | null
         | undefined;
-    gameLogWorldName?: unknown;
+    gameLogWorldName?: string | null;
 }
 
 interface LocationMetadataModel {
@@ -41,19 +41,17 @@ interface LocationMetadataModel {
 }
 
 interface LocationViewModelInput {
-    location?: unknown;
-    traveling?: unknown;
+    location?: string | null;
+    traveling?: string | null;
     metadata?: Partial<LocationMetadataModel> | null;
-    hint?: unknown;
+    hint?: string | null;
 }
 
-function text(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function text(value: string | null | undefined): string {
+    return value?.trim() ?? '';
 }
 
-function firstText(...values: unknown[]): string {
+function firstText(...values: Array<string | null | undefined>): string {
     for (const value of values) {
         const valueText = text(value);
         if (valueText) {
@@ -63,7 +61,10 @@ function firstText(...values: unknown[]): string {
     return '';
 }
 
-function resolveLocationTarget(location: unknown, traveling?: unknown): string {
+function resolveLocationTarget(
+    location: string | null | undefined,
+    traveling?: string | null
+): string {
     const normalized = normalizeLocationValue(location);
     if (typeof traveling !== 'undefined' && normalized === 'traveling') {
         return normalizeLocationValue(traveling);
@@ -71,7 +72,10 @@ function resolveLocationTarget(location: unknown, traveling?: unknown): string {
     return normalized;
 }
 
-function normalizeWorldHint(value: unknown, worldId: unknown): string {
+function normalizeWorldHint(
+    value: string | null | undefined,
+    worldId: string | null | undefined
+): string {
     const hint = text(value);
     if (!hint || hint === text(worldId) || hasWorldIdPrefix(hint)) {
         return '';
@@ -79,7 +83,10 @@ function normalizeWorldHint(value: unknown, worldId: unknown): string {
     return hint;
 }
 
-function normalizeGroupHint(value: unknown, groupId: unknown): string {
+function normalizeGroupHint(
+    value: string | null | undefined,
+    groupId: string | null | undefined
+): string {
     const hint = text(value);
     if (!hint || hint === text(groupId) || hasGroupIdPrefix(hint)) {
         return '';

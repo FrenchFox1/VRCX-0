@@ -1,14 +1,19 @@
+import { finiteLocationNumber } from '@/components/location/locationModel';
 import type { EntityRecord } from '@/domain/entities/shared';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import {
     isExplicitlyOfflineFriend,
-    resolveObservedPlayerDwellEpochs,
     resolveObservedPlayerUserId
 } from '@/domain/friends/sameInstanceFriends';
-import { applyInstanceDwellEpochs } from '@/domain/instances/instanceRoster';
+import type {
+    CurrentInstanceRosterContext,
+    CurrentInstanceRosterPlayer
+} from '@/domain/instances/currentInstanceRoster';
 import {
     parseLocation,
     resolveFriendPresenceLocation
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 import {
     firstText,
@@ -23,31 +28,34 @@ import {
 } from './WorldDialogViewParts';
 
 type CurrentInstanceDetails = {
-    location?: unknown;
-    instance?: unknown;
-    ownerUser?: unknown;
-    ownerGroup?: unknown;
-    playerSnapshot?: unknown;
+    location?: string;
+    instance?: EntityRecord | null;
+    ownerUser?: EntityRecord | null;
+    ownerGroup?: EntityRecord | null;
+    playerSnapshot?: {
+        context?: Partial<CurrentInstanceRosterContext>;
+        players?: Array<Partial<CurrentInstanceRosterPlayer>>;
+    } | null;
 };
 
 type BuildWorldDialogDisplayInstanceRowsInput = {
     creatorGroupsById: Record<string, EntityRecord>;
     currentInstanceDetails: CurrentInstanceDetails;
-    currentLocation?: unknown;
+    currentLocation?: string;
     friendsById: Record<string, unknown>;
     instanceRows: EntityRecord[];
     isInstanceLocation: boolean;
     normalizedWorldId: string;
-    world: EntityRecord & { id: string; capacity: number };
+    world: Pick<WorldProfileRecord, 'id' | 'capacity'>;
     worldDialogShortName?: string;
 };
 
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
-}
-
 function record(value: unknown): EntityRecord {
     return isRecord(value) ? value : {};
+}
+
+function recordOrNull(value: unknown): EntityRecord | null {
+    return isRecord(value) ? value : null;
 }
 
 export function buildWorldDialogDisplayInstanceRows({
@@ -68,11 +76,11 @@ export function buildWorldDialogDisplayInstanceRows({
             location: firstText(instance.location, instance.tag),
             users: mergeInstanceUsers(instance.users),
             creatorUserId: firstText(instance.creatorUserId),
-            creatorUser: instance.creatorUser ?? null,
+            creatorUser: recordOrNull(instance.creatorUser),
             creatorGroupId: firstText(instance.creatorGroupId),
             creatorGroup: normalizeInstanceGroup(
                 instance.creatorGroup,
-                instance.creatorGroupId
+                firstText(instance.creatorGroupId)
             )
         })
     );
@@ -147,11 +155,6 @@ export function buildWorldDialogDisplayInstanceRows({
         .filter(
             (player) => !isExplicitlyOfflineFriend(friendsById[player.userId])
         );
-    const currentInstanceDwellEpochsByUserId = resolveObservedPlayerDwellEpochs(
-        snapshotPlayers,
-        friendsById,
-        firstText(currentInstanceDetailsForLocation.location, normalizedWorldId)
-    );
     const currentInstanceRow: WorldDialogInstanceRow | null =
         parsedCurrentInstanceLocation?.worldId &&
         parsedCurrentInstanceLocation?.instanceId
@@ -163,17 +166,23 @@ export function buildWorldDialogDisplayInstanceRows({
                       worldDialogShortName ||
                       '',
                   occupants:
-                      currentInstance.userCount ??
-                      currentInstance.occupants ??
-                      playerSnapshotContext.playerCount,
+                      finiteLocationNumber(
+                          currentInstance.userCount ??
+                              currentInstance.occupants ??
+                              playerSnapshotContext.playerCount
+                      ) ?? undefined,
                   playerCount:
-                      currentInstance.userCount ??
-                      currentInstance.occupants ??
-                      playerSnapshotContext.playerCount,
+                      finiteLocationNumber(
+                          currentInstance.userCount ??
+                              currentInstance.occupants ??
+                              playerSnapshotContext.playerCount
+                      ) ?? undefined,
                   capacity:
-                      currentInstance.capacity ??
-                      record(currentInstance.world).capacity ??
-                      world.capacity,
+                      finiteLocationNumber(
+                          currentInstance.capacity ??
+                              record(currentInstance.world).capacity ??
+                              world.capacity
+                      ) ?? undefined,
                   users: mergeInstanceUsers(
                       currentInstance.users,
                       currentInstance.players,
@@ -189,12 +198,13 @@ export function buildWorldDialogDisplayInstanceRows({
                       : currentInstanceOwnerId,
                   creatorUser: currentInstanceOwnerIsGroup
                       ? null
-                      : currentInstanceDetailsForLocation.ownerUser ||
-                        currentInstance.ownerUser ||
-                        currentInstance.owner ||
-                        currentInstance.creatorUser ||
-                        currentInstance.user ||
-                        null,
+                      : recordOrNull(
+                            currentInstanceDetailsForLocation.ownerUser ||
+                                currentInstance.ownerUser ||
+                                currentInstance.owner ||
+                                currentInstance.creatorUser ||
+                                currentInstance.user
+                        ),
                   creatorGroupId: currentInstanceOwnerIsGroup
                       ? currentInstanceOwnerId
                       : '',
@@ -349,20 +359,10 @@ export function buildWorldDialogDisplayInstanceRows({
             instance,
             currentLocation
         );
-        const hasMatchingInstanceDetails = sameInstanceLocation(
-            world,
-            instance,
-            currentInstanceDetailsForLocation.location
-        );
         const instanceWithFriends: WorldDialogInstanceRow = {
             ...instance,
             isCurrentInstance,
-            users: hasMatchingInstanceDetails
-                ? applyInstanceDwellEpochs(
-                      mergedUsers,
-                      currentInstanceDwellEpochsByUserId
-                  )
-                : mergedUsers
+            users: mergedUsers
         };
         return creatorGroupProfile
             ? {

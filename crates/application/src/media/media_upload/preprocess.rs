@@ -1,46 +1,24 @@
-use vrcx_0_media::image_processing;
-use vrcx_0_vrchat_client::http_api::{HttpApiRequestInput, HttpApiUpload};
+use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
+use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatUpload;
 
-use crate::{Error, Result};
+use super::MediaUploadPreprocessor;
 
-pub fn prepare_media_upload_request(mut input: HttpApiRequestInput) -> Result<HttpApiRequestInput> {
-    match input.body.as_upload_mut() {
-        Some(HttpApiUpload::Image {
-            image_data,
-            matching_dimensions,
-            ..
-        }) => {
-            *image_data =
-                image_processing::resize_upload_image_base64(image_data, *matching_dimensions)?;
-        }
-        Some(HttpApiUpload::LegacyImage { image_data, .. }) => {
-            *image_data = image_processing::resize_upload_image_base64(image_data, false)?;
-        }
-        Some(HttpApiUpload::PrintImage {
-            image_data,
-            crop_white_border,
-            ..
-        }) => {
-            let prepared = if *crop_white_border {
-                image_processing::crop_print_base64(image_data)?
-            } else {
-                std::mem::take(image_data)
-            };
-            *image_data = image_processing::resize_print_image_base64(&prepared)?;
-        }
-        Some(HttpApiUpload::FilePut { .. }) | None => {}
-    }
-    Ok(input)
+pub fn prepare_media_upload_request(
+    preprocessor: &dyn MediaUploadPreprocessor,
+    input: VrchatApiRequest,
+) -> Result<VrchatApiRequest> {
+    preprocessor.prepare(input)
 }
 
-pub fn require_prepared_image_data(input: &HttpApiRequestInput) -> Result<&str> {
+pub fn require_prepared_image_data(input: &VrchatApiRequest) -> Result<&str> {
     let image_data = match input.body.as_upload() {
         Some(
-            HttpApiUpload::Image { image_data, .. }
-            | HttpApiUpload::PrintImage { image_data, .. }
-            | HttpApiUpload::LegacyImage { image_data, .. },
+            VrchatUpload::Image { image_data, .. }
+            | VrchatUpload::PrintImage { image_data, .. }
+            | VrchatUpload::LegacyImage { image_data, .. },
         ) => Some(image_data.as_str()),
-        Some(HttpApiUpload::FilePut { .. }) | None => None,
+        Some(VrchatUpload::FilePut { .. }) | None => None,
     };
     image_data
         .filter(|value| !value.trim().is_empty())

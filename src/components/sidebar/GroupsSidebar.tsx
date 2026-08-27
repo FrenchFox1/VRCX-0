@@ -1,13 +1,21 @@
 import { ChevronDownIcon, UsersIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
-import type { GroupInstanceRecord } from '@/domain/entities/group';
+import type {
+    GroupInstanceRecord,
+    GroupProfileRecord
+} from '@/domain/entities/group';
 import { cn } from '@/lib/utils';
+import {
+    commands,
+    type SavedGroupFavoritesSnapshot
+} from '@/platform/tauri/bindings';
+import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
@@ -15,6 +23,7 @@ import { selfInviteToInstance } from '@/services/launchService';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -35,6 +44,19 @@ const GROUP_MESSAGE_ROW_SIZE = 64;
 const GROUP_FOOTER_ROW_SIZE = 16;
 const EMPTY_GROUP_ORDER: string[] = [];
 const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
+const SAVED_GROUP_FAVORITES_CHANGED_EVENT = 'saved-group-favorites-changed';
+
+type GroupSectionSidebarRow = {
+    type: 'section';
+    key: string;
+    title: string;
+};
+type GroupCollectionSidebarRow = {
+    type: 'collection';
+    key: string;
+    name: string;
+    count: number;
+};
 
 type GroupHeaderSidebarRow = {
     type: 'group-header';
@@ -58,6 +80,8 @@ type GroupMessageSidebarRow = {
 type GroupSkeletonSidebarRow = { type: 'skeleton'; key: string };
 type GroupFooterSidebarRow = { type: 'footer'; key: string };
 type GroupSidebarRow =
+    | GroupSectionSidebarRow
+    | GroupCollectionSidebarRow
     | GroupHeaderSidebarRow
     | GroupInstanceSidebarRow
     | GroupMessageSidebarRow
@@ -66,6 +90,10 @@ type GroupSidebarRow =
 
 function estimateGroupSidebarRowSize(row: GroupSidebarRow) {
     switch (row?.type) {
+        case 'section':
+            return 34;
+        case 'collection':
+            return 30;
         case 'group-header':
             return GROUP_HEADER_ROW_SIZE;
         case 'message':
@@ -86,6 +114,24 @@ function GroupHeaderRow({
     onToggleGroup(groupId: string): void;
 }) {
     const isOpen = !row.isCollapsed;
+
+    if (row.count === 0) {
+        return (
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() =>
+                    openGroupDialog({ groupId: row.groupId, title: row.name })
+                }
+            >
+                <span className="min-w-0 flex-1 truncate text-left">
+                    {row.name} - 0
+                </span>
+            </Button>
+        );
+    }
 
     return (
         <Collapsible
@@ -282,7 +328,8 @@ function GroupInstanceRow({
         instance?.instance?.userCount ??
         '';
     const capacity = instance?.capacity ?? instance?.instance?.capacity ?? '';
-    const worldHint = instance?.world?.name || instance?.worldName || '';
+    const worldHint =
+        normalizeString(instance?.world?.name) || instance?.worldName || '';
     const parsedLocation = parseLocation(location);
     const instanceRef = instance?.instance || instance;
     const canUseInstanceAction = Boolean(
@@ -435,6 +482,7 @@ function GroupInstanceRow({
 }
 
 export function GroupsSidebar() {
+    const { t } = useTranslation();
     const groupInstancesState = useRuntimeStore(
         (state) => state.groupInstances
     );
@@ -459,6 +507,12 @@ export function GroupsSidebar() {
     const [collapsedGroups, setCollapsedGroups] = useState(
         () => new Set<string>()
     );
+    const [savedGroups, setSavedGroups] = useState<SavedGroupFavoritesSnapshot>(
+        { collections: [] }
+    );
+    const [savedGroupProfiles, setSavedGroupProfiles] = useState<
+        Map<string, GroupProfileRecord>
+    >(new Map());
     const preferencesHydrated = usePreferencesStore(
         (state) => state.preferencesHydrated
     );
@@ -485,6 +539,53 @@ export function GroupsSidebar() {
         [groupOrder, visibleInstances]
     );
 
+    const loadSavedGroups = useCallback(async () => {
+        if (!currentUserId) {
+            setSavedGroups({ collections: [] });
+            setSavedGroupProfiles(new Map());
+            return;
+        }
+        const next = await commands.appSavedGroupFavoritesGet();
+        setSavedGroups(next);
+        const groupIds = Array.from(
+            new Set(
+                next.collections.flatMap((collection) => collection.groupIds)
+            )
+        );
+        const results = await Promise.allSettled(
+            groupIds.map((groupId) =>
+                groupProfileRepository.fetchGroupProfile({
+                    groupId,
+                    includeRoles: false
+                })
+            )
+        );
+        setSavedGroupProfiles(
+            new Map(
+                results.flatMap((result) =>
+                    result.status === 'fulfilled'
+                        ? [[result.value.id, result.value] as const]
+                        : []
+                )
+            )
+        );
+    }, [currentUserId]);
+
+    useEffect(() => {
+        const refresh = () => {
+            void loadSavedGroups().catch((loadError: unknown) =>
+                console.warn('Failed to load saved groups:', loadError)
+            );
+        };
+        refresh();
+        window.addEventListener(SAVED_GROUP_FAVORITES_CHANGED_EVENT, refresh);
+        return () =>
+            window.removeEventListener(
+                SAVED_GROUP_FAVORITES_CHANGED_EVENT,
+                refresh
+            );
+    }, [loadSavedGroups]);
+
     function toggleGroup(groupId: string) {
         setCollapsedGroups((current) => {
             const next = new Set(current);
@@ -499,8 +600,68 @@ export function GroupsSidebar() {
 
     const virtualRows = useMemo(() => {
         const nextRows: GroupSidebarRow[] = [];
+        const groupsById = new Map(groups);
+        const savedGroupIds = new Set(
+            savedGroups.collections.flatMap((collection) => collection.groupIds)
+        );
 
-        groups.forEach(([groupId, groupRows], index) => {
+        if (savedGroups.collections.length) {
+            nextRows.push({
+                type: 'section',
+                key: 'section:saved',
+                title: t('saved_group_favorites.sidebar_saved', {
+                    defaultValue: '收藏群组'
+                })
+            });
+            savedGroups.collections.forEach((collection) => {
+                nextRows.push({
+                    type: 'collection',
+                    key: `collection:${collection.id}`,
+                    name: collection.name,
+                    count: collection.groupIds.length
+                });
+                collection.groupIds.forEach((groupId) => {
+                    const groupRows = groupsById.get(groupId) || [];
+                    const profile = savedGroupProfiles.get(groupId);
+                    const name =
+                        profile?.name ||
+                        resolveGroupName(groupRows[0], groupId) ||
+                        groupId;
+                    const isCollapsed = collapsedGroups.has(groupId);
+                    nextRows.push({
+                        type: 'group-header',
+                        key: `saved-group:${collection.id}:${groupId}`,
+                        groupId,
+                        name,
+                        count: groupRows.length,
+                        isCollapsed,
+                        first: false
+                    });
+                    if (!isCollapsed) {
+                        groupRows.forEach((instance, instanceIndex) => {
+                            nextRows.push({
+                                type: 'group-instance',
+                                key: `saved-group:${groupId}:${resolveLocation(instance)}:${instanceIndex}`,
+                                instance
+                            });
+                        });
+                    }
+                });
+            });
+        }
+
+        nextRows.push({
+            type: 'section',
+            key: 'section:other',
+            title: t('saved_group_favorites.sidebar_other', {
+                defaultValue: '其他活动群组'
+            })
+        });
+
+        const otherGroups = groups.filter(
+            ([groupId]) => !savedGroupIds.has(groupId)
+        );
+        otherGroups.forEach(([groupId, groupRows], index) => {
             const name = resolveGroupName(groupRows[0], groupId);
             const isCollapsed = collapsedGroups.has(groupId);
             nextRows.push({
@@ -523,18 +684,24 @@ export function GroupsSidebar() {
             }
         });
 
-        if (!groups.length) {
+        if (!otherGroups.length) {
             if (status === 'error') {
                 nextRows.push({
                     type: 'message',
                     key: 'message:empty',
-                    text: error || 'Failed to load group instances.'
+                    text:
+                        error ||
+                        t('saved_group_favorites.sidebar_failed', {
+                            defaultValue: '群组房间加载失败'
+                        })
                 });
             } else if (status === 'ready') {
                 nextRows.push({
                     type: 'message',
                     key: 'message:empty-ready',
-                    text: 'No active group instances.'
+                    text: t('saved_group_favorites.sidebar_no_active', {
+                        defaultValue: '没有其他活动群组房间'
+                    })
                 });
             } else {
                 for (let index = 0; index < 4; index += 1) {
@@ -548,13 +715,36 @@ export function GroupsSidebar() {
 
         nextRows.push({ type: 'footer', key: 'footer' });
         return nextRows;
-    }, [collapsedGroups, error, groups, status]);
+    }, [
+        collapsedGroups,
+        error,
+        groups,
+        savedGroupProfiles,
+        savedGroups.collections,
+        status,
+        t
+    ]);
 
     const { getRowRef, viewportRef, virtualItems, totalSize } =
         useVirtualSidebarRows(virtualRows, estimateGroupSidebarRowSize);
 
     function renderVirtualRow(row: GroupSidebarRow) {
         switch (row?.type) {
+            case 'section':
+                return (
+                    <div className="text-muted-foreground flex h-full items-end px-2 pb-1 text-xs font-semibold uppercase">
+                        {row.title}
+                    </div>
+                );
+            case 'collection':
+                return (
+                    <div className="flex h-full items-center justify-between px-2 text-sm font-medium">
+                        <span className="truncate">{row.name}</span>
+                        <span className="text-muted-foreground text-xs">
+                            {row.count}
+                        </span>
+                    </div>
+                );
             case 'group-header':
                 return <GroupHeaderRow row={row} onToggleGroup={toggleGroup} />;
             case 'message':

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import type { InviteMessageType } from '@/platform/tauri/bindings';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import {
     IMAGE_UPLOAD_ACCEPT,
@@ -34,11 +35,9 @@ import { Textarea } from '@/ui/shadcn/textarea';
 
 import {
     getInviteCooldownLabel,
-    isInviteMessageMode,
     isInviteMessageOnCooldown,
     normalizeInviteMessageRows,
     primaryActionLabel,
-    resolveInviteMessageType,
     rowUpdatedAt,
     saveInviteMessage,
     type InviteMessageMode,
@@ -51,10 +50,9 @@ export {
     dialogDescription,
     dialogTitle,
     getInviteCooldownLabel,
-    isInviteMessageMode,
+    isInviteMessageType,
     INVITE_MESSAGE_TYPES,
-    normalizeInviteMessageRows,
-    resolveInviteMessageType
+    normalizeInviteMessageRows
 } from './inviteMessagePanelData';
 
 export type {
@@ -67,8 +65,8 @@ export type {
 type InviteMessagePanelProps = {
     currentUserId?: string | null;
     endpoint?: string | null;
-    messageType?: string | null;
-    mode?: InviteMessageMode | string | null;
+    messageType?: InviteMessageType | null;
+    mode?: InviteMessageMode | null;
     targetLabel?: string | null;
     allowEdit?: boolean;
     allowImageUpload?: boolean;
@@ -77,7 +75,9 @@ type InviteMessagePanelProps = {
               payload: InviteMessageUsePayload
           ) => boolean | void | Promise<boolean | void>)
         | null;
-    onSave?: ((payload: InviteMessageSavePayload) => unknown) | null;
+    onSave?:
+        | ((payload: InviteMessageSavePayload) => void | Promise<void>)
+        | null;
     onClose?: (() => void) | null;
 };
 
@@ -95,8 +95,8 @@ export function InviteMessagePanel({
 }: InviteMessagePanelProps) {
     const { t } = useTranslation();
 
-    const resolvedMode = isInviteMessageMode(mode) ? mode : 'select';
-    const resolvedMessageType = resolveInviteMessageType(messageType);
+    const resolvedMode = mode ?? 'select';
+    const resolvedMessageType = messageType ?? 'message';
     const [rows, setRows] = useState<InviteMessageRow[]>([]);
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
@@ -273,7 +273,7 @@ export function InviteMessagePanel({
             return;
         }
         const nextMessage =
-            resolvedMode === 'respond' ? String(message || '').trim() : message;
+            resolvedMode === 'respond' ? message.trim() : message;
         if (resolvedMode === 'respond' && !nextMessage) {
             setError(t('dialog.invite_message.error.message_required'));
             return;

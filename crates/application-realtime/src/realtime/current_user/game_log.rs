@@ -1,9 +1,9 @@
 use serde_json::{Map, Value};
+use vrcx_0_contracts::game_log::GameLogLocationTimeUpdate;
+use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
 use vrcx_0_core::derived_keys;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_core::text::first_owned;
-use vrcx_0_persistence::game_log::GameLogLocationTimeUpdate;
-use vrcx_0_persistence::realtime::RealtimePersistenceBatch;
 
 use crate::realtime::RealtimeCurrentUserAuthority;
 

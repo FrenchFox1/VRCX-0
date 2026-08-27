@@ -1,3 +1,4 @@
+import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
@@ -63,7 +64,6 @@ import {
     applyTableDensityClass,
     getBoolConfigWithLegacy,
     getIntConfigWithLegacy,
-    normalizeBioLanguage,
     normalizeStringList,
     setDocumentLanguage
 } from './preferencesCore';
@@ -124,6 +124,7 @@ export async function loadPreferenceSnapshot() {
         notificationTTSNickName,
         notificationTTSNameMode,
         notificationTTSVoiceNative,
+        notificationTTSVolume,
         xsNotifications,
         ovrtHudNotifications,
         ovrtWristNotifications,
@@ -258,6 +259,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('notificationTTSNickName', false),
         configRepository.getString('notificationTTSNameMode', ''),
         configRepository.getString('notificationTTSVoiceNative', ''),
+        configRepository.getInt('notificationTTSVolume', 100),
         getBoolConfigWithLegacy('xsNotifications', false),
         getBoolConfigWithLegacy('ovrtHudNotifications', false),
         getBoolConfigWithLegacy('ovrtWristNotifications', false),
@@ -467,6 +469,9 @@ export async function loadPreferenceSnapshot() {
             notificationTTSNickName
         ),
         notificationTTSVoiceNative: String(notificationTTSVoiceNative || ''),
+        notificationTTSVolume: Number.isFinite(notificationTTSVolume)
+            ? Math.min(100, Math.max(0, notificationTTSVolume))
+            : 100,
         xsNotifications: Boolean(xsNotifications),
         ovrtHudNotifications: Boolean(ovrtHudNotifications),
         ovrtWristNotifications: Boolean(ovrtWristNotifications),
@@ -495,8 +500,6 @@ export async function loadPreferenceSnapshot() {
         webhookUrl: String(webhookUrl || ''),
         webhookFormat: webhookFormat === 'discord' ? 'discord' : 'generic',
         webhookFields: String(webhookFields || DEFAULT_GENERIC_WEBHOOK_FIELDS),
-        vrOverlayPanelEnabled: false,
-        vrOverlayPanelAllFriendsIncludesFavorites: false,
         wristOverlayEnabled: Boolean(wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             wristOverlayStartMode
@@ -569,7 +572,7 @@ export async function loadPreferenceSnapshot() {
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(feedTimeDisplayMode),
         youtubeAPI: Boolean(youtubeAPI),
         translationAPI: Boolean(translationAPI),
-        bioLanguage: normalizeBioLanguage(bioLanguage),
+        bioLanguage: normalizeLanguageCode(bioLanguage),
         translationAPIType: normalizeTranslationApiType(translationAPIType),
         translationEndpointId: String(translationEndpointId || ''),
         translationAPIEndpoint:

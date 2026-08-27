@@ -4,6 +4,7 @@ import {
     parseLocation,
     resolveFriendPresenceLocation
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
 type InstancePresenceSource =
     | 'seed'
@@ -14,24 +15,24 @@ type InstancePresenceSource =
     | 'gameRuntime';
 
 interface InstancePresenceFactInput {
-    endpoint?: unknown;
-    location?: unknown;
+    endpoint?: string;
+    location?: string;
     source?: InstancePresenceSource;
-    ownerUserId?: unknown;
-    ownerGroupId?: unknown;
-    worldName?: unknown;
-    groupName?: unknown;
-    instanceName?: unknown;
+    ownerUserId?: string;
+    ownerGroupId?: string;
+    worldName?: string;
+    groupName?: string;
+    instanceName?: string;
     players?: unknown[];
-    receivedAt?: unknown;
+    receivedAt?: string;
 }
 
 interface InstancePlayerFact {
     id: string;
     userId: string;
     displayName: string;
-    joinedAt?: unknown;
-    locationAt?: unknown;
+    joinedAt?: string;
+    locationAt?: string;
 }
 
 interface InstancePresenceFact {
@@ -52,7 +53,7 @@ interface InstancePresenceFact {
 }
 
 interface InstanceRosterModelInput {
-    location?: unknown;
+    location?: string;
     currentUser?: unknown;
     friends?: unknown[];
     instanceUsers?: unknown[];
@@ -68,8 +69,8 @@ interface RosterUserRow {
     displayName: string;
     status?: string;
     location?: string;
-    joinedAt?: unknown;
-    $location_at?: unknown;
+    joinedAt?: string;
+    $location_at?: string;
     $subtitle?: string;
     isFriend?: boolean;
     [key: string]: unknown;
@@ -81,7 +82,7 @@ function text(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-function endpointText(value: unknown): string {
+function endpointText(value: string | undefined): string {
     return text(value) || 'default';
 }
 
@@ -96,9 +97,7 @@ function firstText(...values: unknown[]): string {
 }
 
 function record(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : {};
+    return isRecord(value) ? value : {};
 }
 
 function userId(value: unknown): string {
@@ -138,7 +137,7 @@ function displayName(value: unknown): string {
     );
 }
 
-function instanceLocationKey(location: unknown): string {
+function instanceLocationKey(location: string | undefined): string {
     const parsed = parseLocation(normalizeLocationValue(location));
     if (!parsed.isRealInstance || !parsed.worldId || !parsed.instanceId) {
         return '';
@@ -146,7 +145,10 @@ function instanceLocationKey(location: unknown): string {
     return `${parsed.worldId}:${parsed.instanceId}`;
 }
 
-function instancePresenceKey(endpoint: unknown, location: unknown): string {
+function instancePresenceKey(
+    endpoint: string | undefined,
+    location: string | undefined
+): string {
     const key = instanceLocationKey(location);
     return key ? `${endpointText(endpoint)}::${key}` : '';
 }
@@ -230,7 +232,7 @@ function addRosterRow(
     rowsByKey.set(key, mergeRosterRow(rowsByKey.get(key), row));
 }
 
-function sameInstance(user: unknown, location: unknown): boolean {
+function sameInstance(user: unknown, location: string): boolean {
     const explicit = resolveFriendPresenceLocation(user, {
         requireInstance: true
     });

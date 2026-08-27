@@ -1,8 +1,8 @@
 import { commands } from '@/platform/tauri/bindings';
 import { tauriClient } from '@/platform/tauri/client';
-import { isUserId } from '@/shared/constants/vrchatIds';
+import { isGroupId, isUserId } from '@/shared/constants/vrchatIds';
 
-import { openUserDialog } from './dialogService';
+import { openGroupDialog, openUserDialog } from './dialogService';
 
 const DESKTOP_NOTIFICATION_ACTIVATED_EVENT = 'desktopNotificationActivated';
 
@@ -25,14 +25,25 @@ export async function takePendingDesktopNotificationActivation(): Promise<void> 
     if (!activation) {
         return;
     }
-    if (!isUserId(activation.userId)) {
+    if (activation.target.kind === 'openUserProfile') {
+        if (!isUserId(activation.target.userId)) {
+            console.warn(
+                'Ignored desktop notification activation with invalid user id:',
+                activation.target.userId
+            );
+            return;
+        }
+        openUserDialog({ userId: activation.target.userId });
+        return;
+    }
+    if (!isGroupId(activation.target.groupId)) {
         console.warn(
-            'Ignored desktop notification activation with invalid user id:',
-            activation.userId
+            'Ignored desktop notification activation with invalid group id:',
+            activation.target.groupId
         );
         return;
     }
-    openUserDialog({ userId: activation.userId });
+    openGroupDialog({ groupId: activation.target.groupId });
 }
 
 function logDesktopNotificationActivationFailure(error: unknown): void {

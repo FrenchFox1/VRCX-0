@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BackgroundImageProjection } from '@/platform/tauri/bindings';
+import type {
+    BackgroundImageCustomSource,
+    BackgroundImageProjection
+} from '@/platform/tauri/bindings';
 
 const mocks = vi.hoisted(() => ({
     appBackgroundImageStateGet: vi.fn(),
@@ -48,6 +51,7 @@ import {
     applyBackgroundImageProjectionEvent,
     disableBackgroundImage,
     initializeBackgroundImage,
+    setBackgroundImageCustomRotationIntervalMinutes,
     setBackgroundImageMode
 } from './backgroundImageService';
 
@@ -117,7 +121,7 @@ describe('backgroundImageService', () => {
                     kind: 'files',
                     paths: ['C:\\img\\a.png'],
                     folderPath: '',
-                    rotationInterval: 'daily'
+                    rotationIntervalMinutes: 60
                 },
                 snapshot: {
                     mode: 'custom',
@@ -140,6 +144,41 @@ describe('backgroundImageService', () => {
         expect(useBackgroundImageStore.getState().snapshot?.imageUrl).toBe(
             'vrcx-0-bg-img://localhost/C:\\img\\a.png?v=static'
         );
+    });
+
+    it('configures a custom rotation interval in minutes', async () => {
+        const customSource: BackgroundImageCustomSource = {
+            kind: 'files',
+            paths: ['C:\\img\\a.png', 'C:\\img\\b.png'],
+            folderPath: '',
+            rotationIntervalMinutes: 60
+        };
+        useBackgroundImageStore.getState().applyProjection({
+            mode: 'custom',
+            enabled: true,
+            providerId: 'nasa-epic',
+            customSource,
+            snapshot: null,
+            error: null
+        });
+        mocks.appBackgroundImageConfigure.mockResolvedValue(
+            dailyProjection({
+                mode: 'custom',
+                customSource: {
+                    ...customSource,
+                    rotationIntervalMinutes: 180
+                }
+            })
+        );
+
+        await expect(
+            setBackgroundImageCustomRotationIntervalMinutes(180)
+        ).resolves.toBe(true);
+
+        expect(mocks.appBackgroundImageConfigure).toHaveBeenCalledWith({
+            kind: 'setRotationIntervalMinutes',
+            rotationIntervalMinutes: 180
+        });
     });
 
     it('disables community themes before applying an enabling configure result', async () => {

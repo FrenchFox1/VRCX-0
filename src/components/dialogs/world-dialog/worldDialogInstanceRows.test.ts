@@ -203,8 +203,9 @@ describe('worldDialogInstanceRows', () => {
         expect(users[0]).toMatchObject({
             id: 'usr_dup',
             userId: 'usr_dup',
-            $location_at: '2024-01-01T00:00:00Z'
+            joinedAt: '2024-01-01T00:00:00Z'
         });
+        expect(users[0].$location_at).toBeUndefined();
     });
 
     it('restores name-only Busy and Ask Me friends in the current instance', () => {

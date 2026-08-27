@@ -380,7 +380,7 @@ export function useScreenshotGalleryController({
     }
 
     const updateGalleryScrollPosition = useCallback(
-        (folder: string, scrollTop: unknown) => {
+        (folder: string, scrollTop: number) => {
             if (!folder) {
                 return;
             }

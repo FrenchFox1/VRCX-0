@@ -12,7 +12,7 @@ export function GroupDialogContent({
     groupId,
     seedData = null
 }: {
-    groupId: unknown;
+    groupId?: string;
     seedData?: unknown;
 }) {
     const normalizedSeedData = isEntityRecord(seedData) ? seedData : null;

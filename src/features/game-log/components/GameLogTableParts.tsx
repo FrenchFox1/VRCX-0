@@ -34,7 +34,7 @@ function GameLogLocationDetail({
     detailValue: GameLogDetailValue;
     onPreviousInstances?(row: GameLogRow): void;
     row: GameLogRow;
-    worldTarget?: unknown;
+    worldTarget?: string;
 }) {
     const location = getGameLogLocationTarget(row);
     const targetLocation = location || worldTarget;

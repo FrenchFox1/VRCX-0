@@ -6,7 +6,13 @@ enum AppErrorCode {
     Database,
     Io,
     Json,
+    PersistenceInvalidData,
+    RegistryPolicyInvalid,
+    WebClient,
+    UpdateArtifactInvalid,
     VrchatApi,
+    AuthInteractionRequired,
+    AuthSessionInvalidated,
     IntegrationApiPortInUse,
     IntegrationApiBind,
     Custom,
@@ -48,8 +54,32 @@ pub enum AppError {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
+    #[error("JSON error: {0}")]
+    JsonMessage(String),
+
+    #[error("{0}")]
+    PersistenceInvalidData(String),
+
+    #[error("{0}")]
+    RegistryPolicyInvalid(String),
+
+    #[error("{0}")]
+    WebClient(String),
+
+    #[error("Update artifact is invalid: {0}")]
+    UpdateArtifactInvalid(String),
+
     #[error("{message}")]
     VrchatApi { status_code: i32, message: String },
+
+    #[error("{0}")]
+    AuthInteractionRequired(String),
+
+    #[error("{reason}")]
+    AuthSessionInvalidated {
+        reason: String,
+        status_code: Option<i32>,
+    },
 
     #[error("Integration API port {port} is already in use")]
     IntegrationApiPortInUse { port: u16 },
@@ -105,8 +135,14 @@ impl AppError {
         match self {
             Self::Database { .. } => AppErrorCode::Database,
             Self::Io(_) => AppErrorCode::Io,
-            Self::Json(_) => AppErrorCode::Json,
+            Self::Json(_) | Self::JsonMessage(_) => AppErrorCode::Json,
+            Self::PersistenceInvalidData(_) => AppErrorCode::PersistenceInvalidData,
+            Self::RegistryPolicyInvalid(_) => AppErrorCode::RegistryPolicyInvalid,
+            Self::WebClient(_) => AppErrorCode::WebClient,
+            Self::UpdateArtifactInvalid(_) => AppErrorCode::UpdateArtifactInvalid,
             Self::VrchatApi { .. } => AppErrorCode::VrchatApi,
+            Self::AuthInteractionRequired(_) => AppErrorCode::AuthInteractionRequired,
+            Self::AuthSessionInvalidated { .. } => AppErrorCode::AuthSessionInvalidated,
             Self::IntegrationApiPortInUse { .. } => AppErrorCode::IntegrationApiPortInUse,
             Self::IntegrationApiBind { .. } => AppErrorCode::IntegrationApiBind,
             Self::Custom(_) => AppErrorCode::Custom,
@@ -125,6 +161,7 @@ impl AppError {
     fn status_code(&self) -> Option<i32> {
         match self {
             Self::VrchatApi { status_code, .. } => Some(*status_code),
+            Self::AuthSessionInvalidated { status_code, .. } => *status_code,
             _ => None,
         }
     }
@@ -159,7 +196,9 @@ impl From<vrcx_0_persistence::Error> for AppError {
             }
             vrcx_0_persistence::Error::Io(error) => AppError::Io(error),
             vrcx_0_persistence::Error::Json(error) => AppError::Json(error),
-            vrcx_0_persistence::Error::InvalidData(message) => AppError::Custom(message),
+            vrcx_0_persistence::Error::InvalidData(message) => {
+                AppError::PersistenceInvalidData(message)
+            }
             vrcx_0_persistence::Error::Custom(message) => AppError::Custom(message),
         }
     }
@@ -174,12 +213,15 @@ impl From<vrcx_0_media::Error> for AppError {
     }
 }
 
-impl From<vrcx_0_host::Error> for AppError {
-    fn from(value: vrcx_0_host::Error) -> Self {
+impl From<vrcx_0_platform::Error> for AppError {
+    fn from(value: vrcx_0_platform::Error) -> Self {
         match value {
-            vrcx_0_host::Error::Io(error) => AppError::Io(error),
-            vrcx_0_host::Error::Json(error) => AppError::Json(error),
-            vrcx_0_host::Error::Custom(message) => AppError::Custom(message),
+            vrcx_0_platform::Error::Io(error) => AppError::Io(error),
+            vrcx_0_platform::Error::Json(error) => AppError::Json(error),
+            vrcx_0_platform::Error::RegistryPolicyInvalid(message) => {
+                AppError::RegistryPolicyInvalid(message)
+            }
+            vrcx_0_platform::Error::Custom(message) => AppError::Custom(message),
         }
     }
 }
@@ -193,8 +235,15 @@ impl From<vrcx_0_application_core::Error> for AppError {
             }
             vrcx_0_application_core::Error::Io(error) => AppError::Io(error),
             vrcx_0_application_core::Error::Json(error) => AppError::Json(error),
+            vrcx_0_application_core::Error::PersistenceInvalidData(message) => {
+                AppError::PersistenceInvalidData(message)
+            }
+            vrcx_0_application_core::Error::RegistryPolicyInvalid(message) => {
+                AppError::RegistryPolicyInvalid(message)
+            }
+            vrcx_0_application_core::Error::WebClient(message) => AppError::WebClient(message),
             vrcx_0_application_core::Error::UpdateArtifactInvalid(message) => {
-                AppError::Custom(format!("Update artifact is invalid: {message}"))
+                AppError::UpdateArtifactInvalid(message)
             }
             vrcx_0_application_core::Error::VrchatApi {
                 status_code,
@@ -208,27 +257,43 @@ impl From<vrcx_0_application_core::Error> for AppError {
     }
 }
 
-impl From<vrcx_0_runtime_host::Error> for AppError {
-    fn from(value: vrcx_0_runtime_host::Error) -> Self {
+impl From<vrcx_0_composition::Error> for AppError {
+    fn from(value: vrcx_0_composition::Error) -> Self {
         match value {
-            vrcx_0_runtime_host::Error::Database(message) => AppError::database(message, None),
-            vrcx_0_runtime_host::Error::Sqlite { message, category } => {
+            vrcx_0_composition::Error::Database(message) => AppError::database(message, None),
+            vrcx_0_composition::Error::Sqlite { message, category } => {
                 AppError::database(message, category)
             }
-            vrcx_0_runtime_host::Error::Io(error) => AppError::Io(error),
-            vrcx_0_runtime_host::Error::Json(error) => AppError::Json(error),
-            vrcx_0_runtime_host::Error::VrchatApi {
+            vrcx_0_composition::Error::Io(error) => AppError::Io(error),
+            vrcx_0_composition::Error::Json(error) => AppError::Json(error),
+            vrcx_0_composition::Error::PersistenceInvalidData(message) => {
+                AppError::PersistenceInvalidData(message)
+            }
+            vrcx_0_composition::Error::RegistryPolicyInvalid(message) => {
+                AppError::RegistryPolicyInvalid(message)
+            }
+            vrcx_0_composition::Error::WebClient(message) => AppError::WebClient(message),
+            vrcx_0_composition::Error::UpdateArtifactInvalid(message) => {
+                AppError::UpdateArtifactInvalid(message)
+            }
+            vrcx_0_composition::Error::VrchatApi {
                 status_code,
                 message,
             } => AppError::VrchatApi {
                 status_code,
                 message,
             },
-            vrcx_0_runtime_host::Error::AuthInteractionRequired(reason)
-            | vrcx_0_runtime_host::Error::AuthSessionInvalidated { reason, .. } => {
-                AppError::Custom(reason)
+            vrcx_0_composition::Error::AuthInteractionRequired(reason) => {
+                AppError::AuthInteractionRequired(reason)
             }
-            vrcx_0_runtime_host::Error::Custom(message) => AppError::Custom(message),
+            vrcx_0_composition::Error::AuthSessionInvalidated {
+                reason,
+                status_code,
+            } => AppError::AuthSessionInvalidated {
+                reason,
+                status_code,
+            },
+            vrcx_0_composition::Error::Custom(message) => AppError::Custom(message),
         }
     }
 }
@@ -237,7 +302,6 @@ impl From<vrcx_0_mcp::McpError> for AppError {
     fn from(value: vrcx_0_mcp::McpError) -> Self {
         match value {
             vrcx_0_mcp::McpError::Io(error) => AppError::Io(error),
-            vrcx_0_mcp::McpError::Persistence(error) => AppError::from(error),
             vrcx_0_mcp::McpError::Application(error) => AppError::from(error),
             other => AppError::Custom(other.to_string()),
         }
@@ -265,7 +329,38 @@ impl From<vrcx_0_integration_api::IntegrationApiError> for AppError {
 impl From<vrcx_0_assistant::AssistantError> for AppError {
     fn from(value: vrcx_0_assistant::AssistantError) -> Self {
         match value {
-            vrcx_0_assistant::AssistantError::Persistence(error) => AppError::from(error),
+            vrcx_0_assistant::AssistantError::Persistence(error) => match error {
+                vrcx_0_assistant::AssistantPortError::Database {
+                    message,
+                    sqlite_category,
+                } => AppError::Database {
+                    message,
+                    sqlite_category: sqlite_category.map(|category| match category {
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::Malformed => {
+                            SqliteErrorCategory::Malformed
+                        }
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::DiskFull => {
+                            SqliteErrorCategory::DiskFull
+                        }
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::Locked => {
+                            SqliteErrorCategory::Locked
+                        }
+                        vrcx_0_assistant::AssistantSqliteErrorCategory::IoError => {
+                            SqliteErrorCategory::IoError
+                        }
+                    }),
+                },
+                vrcx_0_assistant::AssistantPortError::Io(message) => {
+                    AppError::Io(std::io::Error::other(message))
+                }
+                vrcx_0_assistant::AssistantPortError::Json(message) => {
+                    AppError::JsonMessage(message)
+                }
+                vrcx_0_assistant::AssistantPortError::InvalidData(message) => {
+                    AppError::PersistenceInvalidData(message)
+                }
+                vrcx_0_assistant::AssistantPortError::Custom(message) => AppError::Custom(message),
+            },
             vrcx_0_assistant::AssistantError::Mcp(error) => AppError::from(error),
             other => AppError::Custom(other.to_string()),
         }
@@ -356,6 +451,77 @@ mod tests {
                 "code": "vrchat_api",
                 "message": "Not found",
                 "statusCode": 404
+            })
+        );
+    }
+
+    #[test]
+    fn serializes_stable_diagnostic_codes_across_error_boundaries() {
+        let cases = [
+            (
+                AppError::from(vrcx_0_application_core::Error::PersistenceInvalidData(
+                    "invalid snapshot".into(),
+                )),
+                "persistence_invalid_data",
+                "invalid snapshot",
+            ),
+            (
+                AppError::from(vrcx_0_application_core::Error::RegistryPolicyInvalid(
+                    "invalid registry".into(),
+                )),
+                "registry_policy_invalid",
+                "invalid registry",
+            ),
+            (
+                AppError::from(vrcx_0_application_core::Error::WebClient(
+                    "request setup failed".into(),
+                )),
+                "web_client",
+                "request setup failed",
+            ),
+            (
+                AppError::from(vrcx_0_application_core::Error::UpdateArtifactInvalid(
+                    "signature mismatch".into(),
+                )),
+                "update_artifact_invalid",
+                "Update artifact is invalid: signature mismatch",
+            ),
+        ];
+
+        for (error, code, message) in cases {
+            let payload = serde_json::to_value(error).unwrap();
+            assert_eq!(payload["code"], code);
+            assert_eq!(payload["message"], message);
+        }
+    }
+
+    #[test]
+    fn preserves_auth_session_diagnostics_in_ipc_payload() {
+        let interaction_required = serde_json::to_value(AppError::from(
+            vrcx_0_composition::Error::AuthInteractionRequired("2FA required".into()),
+        ))
+        .unwrap();
+        assert_eq!(
+            interaction_required,
+            serde_json::json!({
+                "code": "auth_interaction_required",
+                "message": "2FA required"
+            })
+        );
+
+        let invalidated = serde_json::to_value(AppError::from(
+            vrcx_0_composition::Error::AuthSessionInvalidated {
+                reason: "session expired".into(),
+                status_code: Some(401),
+            },
+        ))
+        .unwrap();
+        assert_eq!(
+            invalidated,
+            serde_json::json!({
+                "code": "auth_session_invalidated",
+                "message": "session expired",
+                "statusCode": 401
             })
         );
     }

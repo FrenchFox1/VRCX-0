@@ -44,8 +44,8 @@ type DialogRequest = {
 type Translation = (key: string, options?: Record<string, unknown>) => string;
 
 type ToastApi = {
-    error(message: string): unknown;
-    success(message: string): unknown;
+    error(message: string): void;
+    success(message: string): void;
 };
 
 export type GalleryControllerDeps = {
@@ -78,13 +78,13 @@ export type GalleryControllerDeps = {
 export type GalleryActionDeps = GalleryControllerDeps & {
     FILE_TABS: Partial<typeof import('./galleryConstants').FILE_TABS>;
     UPLOAD_ASPECT_RATIOS: Partial<Record<GalleryUploadTarget, number>>;
-    buildProfilePicOverride(endpoint: unknown, fileId: unknown): string;
+    buildProfilePicOverride(endpoint: string, fileId: string): string;
     confirm(request: DialogRequest): Promise<DialogResult>;
     getLocalTimestampString(): string;
     isRuntimeAuthTarget(authTarget: GalleryAuthTarget): boolean;
     mediaRepository: typeof import('@/repositories/mediaRepository').default;
     parseEmojiUploadSettings(
-        fileName: unknown,
+        fileName: string,
         settings?: Partial<EmojiUploadSettings>
     ): EmojiUploadSettings;
     prompt(request: DialogRequest): Promise<DialogResult<string>>;
@@ -158,8 +158,18 @@ export type GalleryInventoryActionDeps = Pick<
 
 export type GalleryProfileField = 'profilePicOverride' | 'userIcon';
 
+export type GalleryBulkCommands = {
+    bulkRunning: boolean;
+    onBulkDelete(input: {
+        tab: GalleryTab;
+        assetIds: string[];
+        lockedCount: number;
+    }): void;
+    onBulkSetFavorite(input: { printIds: string[]; favorite: boolean }): void;
+};
+
 export type GalleryCommands = {
-    onActiveTabChange(value: unknown): void;
+    onActiveTabChange(value: string): void;
     onBeginUpload(tab: GalleryUploadTarget): void;
     onClearProfileField(fieldName: GalleryProfileField, fileId: string): void;
     onDeleteFile(tab: FileAssetTab, fileId: string): void;
@@ -187,6 +197,7 @@ export type GalleryModel = {
 
 export type GalleryFileTabState = Pick<
     GalleryModel,
+    | 'activeTab'
     | 'assets'
     | 'currentUserId'
     | 'gridDensityConfig'
@@ -204,4 +215,5 @@ export type GalleryFileTabState = Pick<
         | 'onPreview'
         | 'onRefresh'
         | 'onSetProfileField'
-    >;
+    > &
+    GalleryBulkCommands;

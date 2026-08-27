@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use serde_json::json;
+use vrcx_0_core::ReleaseStatus;
 
 use super::*;
 
@@ -174,5 +175,93 @@ fn cache_upsert_many_overwrites_an_existing_snapshot() -> Result<(), Error> {
         avatar_cache_get(&db, "avtr_a".into())?.unwrap().name,
         "Renamed Avatar"
     );
+    Ok(())
+}
+
+const HOUR_MS: i64 = 3_600_000;
+
+fn write_wear(
+    db: &DatabaseService,
+    user_id: &str,
+    avatar_id: &str,
+    started_ms: i64,
+    ended_ms: i64,
+) -> Result<(), Error> {
+    crate::realtime::write_realtime_batch(
+        db,
+        &crate::ownership::OwnerId::new(user_id),
+        &vrcx_0_contracts::realtime::RealtimePersistenceBatch {
+            avatar_time_spent_upserts: vec![vrcx_0_contracts::realtime::AvatarTimeSpentUpsert {
+                avatar_id: avatar_id.into(),
+                created_at: "2026-01-01T00:00:00.000Z".into(),
+                time_spent: ended_ms - started_ms,
+                started_at_ms: started_ms,
+                ended_at_ms: ended_ms,
+            }],
+            ..Default::default()
+        },
+    )?;
+    Ok(())
+}
+
+#[test]
+fn windowed_avatar_ranking_clips_sessions_to_the_window() -> Result<(), Error> {
+    let dir = TestDir::new("avatar-wear-window");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let base: i64 = 1_767_225_600_000;
+
+    write_wear(
+        &db,
+        "usr_a",
+        "avtr_inside",
+        base + HOUR_MS,
+        base + 3 * HOUR_MS,
+    )?;
+    write_wear(
+        &db,
+        "usr_a",
+        "avtr_straddle",
+        base - 5 * HOUR_MS,
+        base + HOUR_MS,
+    )?;
+    write_wear(
+        &db,
+        "usr_a",
+        "avtr_before",
+        base - 9 * HOUR_MS,
+        base - 6 * HOUR_MS,
+    )?;
+
+    let ranked = avatar_usage_ranking_windowed(&db, "usr_a".into(), base, base + 4 * HOUR_MS, 10)?;
+
+    assert_eq!(ranked.len(), 2);
+    assert_eq!(ranked[0].avatar_id, "avtr_inside");
+    assert_eq!(ranked[0].time_spent, 2 * HOUR_MS);
+    assert_eq!(ranked[1].avatar_id, "avtr_straddle");
+    assert_eq!(ranked[1].time_spent, HOUR_MS);
+    Ok(())
+}
+
+#[test]
+fn windowed_avatar_ranking_sums_repeat_sessions() -> Result<(), Error> {
+    let dir = TestDir::new("avatar-wear-repeat");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let base: i64 = 1_767_225_600_000;
+
+    write_wear(&db, "usr_a", "avtr_repeat", base, base + HOUR_MS)?;
+    write_wear(
+        &db,
+        "usr_a",
+        "avtr_repeat",
+        base + 2 * HOUR_MS,
+        base + 5 * HOUR_MS,
+    )?;
+    write_wear(&db, "usr_a", "avtr_single", base, base + 2 * HOUR_MS)?;
+
+    let ranked = avatar_usage_ranking_windowed(&db, "usr_a".into(), base, base + 6 * HOUR_MS, 10)?;
+
+    assert_eq!(ranked[0].avatar_id, "avtr_repeat");
+    assert_eq!(ranked[0].time_spent, 4 * HOUR_MS);
+    assert_eq!(ranked[1].avatar_id, "avtr_single");
     Ok(())
 }

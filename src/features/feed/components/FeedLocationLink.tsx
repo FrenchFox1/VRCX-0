@@ -9,12 +9,12 @@ import type { FeedLocationActionPayload } from '../feedTypes';
 type FeedLocationLinkProps = {
     className?: string;
     disableTooltip?: boolean;
-    groupName?: unknown;
+    groupName?: string | null;
     loadingHistoryKey?: string;
-    location?: unknown;
+    location?: string | null;
     onNewInstance?(payload?: FeedLocationActionPayload): void;
     onOpenPreviousInstances?(payload?: FeedLocationActionPayload): void;
-    worldName?: unknown;
+    worldName?: string | null;
     wrapperClassName?: string;
 };
 

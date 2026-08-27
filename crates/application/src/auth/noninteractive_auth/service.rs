@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use serde::Serialize;
 use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
 use vrcx_0_application_core::WebClient;
-use vrcx_0_core::json::JsonExt;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{
-    normalize_vrchat_api_endpoint, vrchat_auth_error_message, HttpApiExecuteResponse,
+use vrcx_0_contracts::vrchat_api::vrchat_auth_error_message;
+use vrcx_0_core::json::{JsonExt, RawJson};
+use vrcx_0_core::vrchat_endpoints::{
+    normalize_vrchat_api_endpoint, normalize_vrchat_websocket_endpoint,
 };
-use vrcx_0_vrchat_client::realtime::normalize_websocket_domain;
 
 use crate::auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage};
 use crate::auth::{LoginApi, WebClientLoginApi};
@@ -20,7 +20,7 @@ pub struct AuthenticatedRuntimeSession {
     pub display_name: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user: Value,
+    pub current_user: RawJson,
 }
 
 impl AuthenticatedRuntimeSession {
@@ -34,8 +34,8 @@ impl AuthenticatedRuntimeSession {
             user_id,
             display_name,
             endpoint: normalize_vrchat_api_endpoint(Some(&endpoint)),
-            websocket: normalize_websocket_domain(&websocket),
-            current_user: user,
+            websocket: normalize_vrchat_websocket_endpoint(&websocket),
+            current_user: RawJson::from(user),
         }
     }
 }
@@ -58,12 +58,12 @@ pub enum CookieSessionProbe {
 
 pub async fn probe_current_user_from_cookie(
     web: Arc<WebClient>,
-    db: Arc<DatabaseService>,
+    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, db);
+    let api = WebClientLoginApi::new(web, requests);
     probe_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
 }
 
@@ -84,12 +84,12 @@ pub(crate) async fn probe_current_user_from_cookie_with_api(
 
 pub async fn probe_saved_current_user_from_cookie(
     web: Arc<WebClient>,
-    db: Arc<DatabaseService>,
+    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, db);
+    let api = WebClientLoginApi::new(web, requests);
     probe_saved_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
 }
 
@@ -136,12 +136,12 @@ fn map_fallback_probe(
 
 pub async fn current_user_from_cookie(
     web: Arc<WebClient>,
-    db: Arc<DatabaseService>,
+    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, db);
+    let api = WebClientLoginApi::new(web, requests);
     current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
 }
 
@@ -254,7 +254,7 @@ mod tests {
     use super::*;
 
     fn response(status: i32, data: serde_json::Value) -> HttpApiExecuteResponse {
-        vrcx_0_vrchat_client::http_api::execute_response(status, data.to_string())
+        vrcx_0_contracts::vrchat_api::vrchat_response(status, data.to_string())
     }
 
     #[test]

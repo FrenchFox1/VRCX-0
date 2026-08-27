@@ -2,10 +2,7 @@ import { PlusIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-    FEED_FILTER_TYPES,
-    type FeedFilterType
-} from '@/repositories/feedRepository';
+import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import {
     AlertDialog,
@@ -607,7 +604,7 @@ export function FeedColumnsManagerDialog({
                                                         toggleValue(
                                                             selectedColumn.feedTypes,
                                                             type
-                                                        ) as FeedFilterType[];
+                                                        );
                                                     if (nextTypes.length) {
                                                         updateSelectedColumn({
                                                             feedTypes: nextTypes

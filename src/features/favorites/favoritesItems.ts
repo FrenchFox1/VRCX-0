@@ -5,14 +5,43 @@ import type { FavoriteKind } from '@/domain/favorites/types';
 import type { VrchatFavoriteType } from '@/platform/tauri/bindings';
 
 type SortableFavoriteItem = {
-    id?: unknown;
-    title?: unknown;
+    id: string;
+    title?: string;
     orderIndex?: number;
     playerCount?: number;
 };
 
-export function normalizeFavoriteSearchValue(value: unknown): string {
-    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+export type FavoriteSortValue = 'name' | 'date' | 'players';
+
+const SORT_VALUES_BY_KIND: Record<
+    FavoriteKind,
+    ReadonlySet<FavoriteSortValue>
+> = {
+    friend: new Set(['name', 'date']),
+    world: new Set(['name', 'date', 'players']),
+    avatar: new Set(['name', 'date'])
+};
+const DEFAULT_SORT_VALUE: FavoriteSortValue = 'date';
+
+export function normalizeFavoriteSortValue(
+    kind: FavoriteKind,
+    value: unknown
+): FavoriteSortValue {
+    const normalizedValue = String(value ?? '').trim();
+    if (
+        normalizedValue === 'name' ||
+        normalizedValue === 'date' ||
+        normalizedValue === 'players'
+    ) {
+        return SORT_VALUES_BY_KIND[kind].has(normalizedValue)
+            ? normalizedValue
+            : DEFAULT_SORT_VALUE;
+    }
+    return DEFAULT_SORT_VALUE;
+}
+
+export function normalizeFavoriteSearchValue(value: string): string {
+    return value.trim().toLowerCase();
 }
 
 export function normalizeFavoriteEntityId(value: unknown): string {
@@ -23,7 +52,7 @@ export function normalizeFavoriteEntityId(value: unknown): string {
 
 export function sortFavoriteItems<TItem extends SortableFavoriteItem>(
     items: readonly TItem[],
-    sortValue: unknown
+    sortValue: FavoriteSortValue
 ): TItem[] {
     return [...items].sort((left, right) => {
         if (sortValue === 'players') {
@@ -78,7 +107,7 @@ export function shrinkFavoriteImage(url: unknown): string {
 
 export function favoriteGroupType(
     kind: FavoriteKind,
-    group: { type?: unknown }
+    group: { type?: string }
 ): VrchatFavoriteType {
     if (
         group.type === 'avatar' ||

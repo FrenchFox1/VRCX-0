@@ -17,6 +17,7 @@ import {
     RECENT_WINDOW_MS,
     shouldMarkSeenRemotely
 } from '@/shared/utils/notificationSeen';
+import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
@@ -70,10 +71,6 @@ function normalizeNotificationIds(value: string | string[]): string[] {
     return (Array.isArray(value) ? value : [value])
         .map((entry) => normalizeNotificationId(entry))
         .filter(Boolean);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function nonEmptyNotificationPatch(
@@ -262,31 +259,19 @@ function applyMarkSeenResults(
     rows: NotificationRow[],
     results: NotificationMarkSeenItemResult[]
 ): NotificationRow[] {
-    const effects = new Map(
+    const seenIds = new Set(
         results.flatMap((result) =>
-            result.state === 'succeeded' && result.effect
-                ? [[result.id, result.effect] as const]
+            result.state === 'succeeded' && result.effect === 'seen'
+                ? [result.id]
                 : []
         )
     );
-    if (!effects.size) {
+    if (!seenIds.size) {
         return rows;
     }
-    return rows.map((row) => {
-        const effect = row.id ? effects.get(row.id) : undefined;
-        if (effect === 'seen') {
-            return { ...row, seen: true };
-        }
-        if (effect === 'expired') {
-            return {
-                ...row,
-                $isExpired: true,
-                expired: true,
-                seen: false
-            };
-        }
-        return row;
-    });
+    return rows.map((row) =>
+        row.id && seenIds.has(row.id) ? { ...row, seen: true } : row
+    );
 }
 
 function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {

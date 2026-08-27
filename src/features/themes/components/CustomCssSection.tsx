@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     Collapsible,
@@ -50,18 +51,21 @@ export function CustomCssSection({
         >
             <div className="flex flex-col gap-3">
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="grid min-w-0 gap-1">
-                        <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
-                            <CodeIcon data-icon="inline-start" />
-                            {t('view.themes.custom_css.header')}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                            {overrideCssLength
-                                ? t('view.themes.custom_css.enabled_summary', {
-                                      count: overrideCssLength
-                                  })
-                                : t('view.themes.custom_css.disabled_summary')}
-                        </div>
+                    <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                        <CodeIcon data-icon="inline-start" />
+                        {t('view.themes.custom_css.header')}
+                        <Badge
+                            variant={
+                                overrideCssLength ? 'default' : 'secondary'
+                            }
+                            className="font-normal"
+                        >
+                            {t(
+                                overrideCssLength
+                                    ? 'view.themes.custom_css.status_on'
+                                    : 'view.themes.custom_css.status_off'
+                            )}
+                        </Badge>
                     </div>
                     <CollapsibleTrigger
                         render={

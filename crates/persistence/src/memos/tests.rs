@@ -168,7 +168,9 @@ fn memo_get_worlds_many_filters_blanks_and_only_returns_matches() {
 fn memo_list_user_notes_returns_empty_for_blank_owner_without_touching_db() {
     let (_dir, db) = test_db("notes-blank-owner");
 
-    assert!(memo_list_user_notes(&db, "  ".into()).unwrap().is_empty());
+    assert!(memo_list_user_notes(&db, OwnerId::new("  "))
+        .unwrap()
+        .is_empty());
 }
 
 #[test]
@@ -185,7 +187,7 @@ fn memo_list_user_notes_reads_the_owners_notes_table() {
     )
     .unwrap();
 
-    let notes = memo_list_user_notes(&db, "usr_self".into()).unwrap();
+    let notes = memo_list_user_notes(&db, OwnerId::new("usr_self")).unwrap();
 
     assert_eq!(notes.len(), 1);
     assert_eq!(notes[0].user_id, "usr_alice");

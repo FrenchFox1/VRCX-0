@@ -6,6 +6,7 @@ export interface MutualFriendNode {
     lastFetchedAt: string | null;
     optedOut: boolean;
     degree: number;
+    mutualCount: number;
 }
 
 export interface MutualFriendLink {
@@ -21,6 +22,7 @@ export interface MutualFriendGraph {
 export interface MutualFriendNodeMeta {
     lastFetchedAt: string | null;
     optedOut: boolean;
+    totalCount: number | null;
 }
 
 export type MutualFriendSnapshot = Map<string, string[]>;

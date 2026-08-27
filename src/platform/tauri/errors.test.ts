@@ -85,6 +85,22 @@ describe('tauri errors', () => {
         });
     });
 
+    it('preserves stable diagnostic command error codes', () => {
+        const rawError = {
+            code: 'persistence_invalid_data',
+            message: 'invalid snapshot'
+        } satisfies AppErrorPayload;
+
+        const normalized = normalizePlatformError(rawError);
+
+        expect(normalized).toBeInstanceOf(PlatformCommandError);
+        expect(normalized).toMatchObject({
+            code: 'persistence_invalid_data',
+            message: 'invalid snapshot',
+            cause: rawError
+        });
+    });
+
     it('uses a specific name for unavailable platform APIs', () => {
         const error = new PlatformUnavailableError();
 

@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
 
-import type { FavoriteGroupView, FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteGroupView,
+    FavoriteSearchMode,
+    FavoriteSource
+} from './favoritesTypes';
 
 export function useFavoritesFilters({ kind }: { kind: FavoriteKind }) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchMode, setSearchMode] = useState('name');
+    const [searchMode, setSearchMode] = useState<FavoriteSearchMode>('name');
     const [selectedSource, setSelectedSource] =
         useState<FavoriteSource>('remote');
     const [selectedGroupKey, setSelectedGroupKey] = useState('');

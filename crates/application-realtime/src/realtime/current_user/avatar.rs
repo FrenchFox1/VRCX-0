@@ -1,7 +1,7 @@
-use vrcx_0_core::derived_keys;
-use vrcx_0_persistence::realtime::{
+use vrcx_0_contracts::realtime::{
     AvatarHistoryUpsert, AvatarTimeSpentUpsert, RealtimePersistenceBatch,
 };
+use vrcx_0_core::derived_keys;
 
 use crate::realtime::RealtimeCurrentUserAuthority;
 
@@ -46,6 +46,8 @@ pub(super) fn apply_avatar_wear_transition(
                     avatar_id: previous_avatar_id,
                     created_at: now.iso.clone(),
                     time_spent: now.timestamp_ms.saturating_sub(previous_swap_time),
+                    started_at_ms: previous_swap_time,
+                    ended_at_ms: now.timestamp_ms,
                 });
         }
         next.set_previous_avatar_swap_time(None);
@@ -81,6 +83,8 @@ pub(super) fn apply_avatar_wear_transition(
                     avatar_id: previous_avatar_id,
                     created_at: now.iso.clone(),
                     time_spent: now.timestamp_ms.saturating_sub(previous_swap_time),
+                    started_at_ms: previous_swap_time,
+                    ended_at_ms: now.timestamp_ms,
                 });
         }
         return (next, persistence);

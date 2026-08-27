@@ -12,7 +12,7 @@ use rusqlite::{
     types::{ToSql, Value as SqlValue},
     Connection, OpenFlags, OptionalExtension, Statement,
 };
-use serde::{Deserialize, Serialize};
+pub use vrcx_0_contracts::DatabaseUpgradeStatus;
 
 use crate::Error;
 
@@ -23,25 +23,7 @@ mod tests;
 mod upgrade;
 
 const READ_CONNECTION_COUNT: usize = 2;
-
-#[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct DatabaseUpgradeStatus {
-    pub from_version: i64,
-    pub to_version: i64,
-    pub work_db_path: String,
-    pub started_at: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stage: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub operation: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub failed_at: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reason: Option<String>,
-}
+const CONNECTION_BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 
 struct UpgradeSession {
     conn: Mutex<Connection>,
@@ -76,6 +58,34 @@ pub struct FrozenDatabase {
     pub db_bytes: u64,
     pub wal_path: Option<PathBuf>,
     pub wal_bytes: Option<u64>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WalCheckpointResult {
+    pub busy: bool,
+    pub log_frames: i64,
+    pub checkpointed_frames: i64,
+}
+
+impl WalCheckpointResult {
+    pub fn is_complete(self) -> bool {
+        !self.busy && self.log_frames == self.checkpointed_frames
+    }
+}
+
+#[derive(Clone, Copy)]
+enum WalCheckpointMode {
+    Passive,
+    Truncate,
+}
+
+impl WalCheckpointMode {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::Passive => "PRAGMA wal_checkpoint(PASSIVE);",
+            Self::Truncate => "PRAGMA wal_checkpoint(TRUNCATE);",
+        }
+    }
 }
 
 pub(crate) struct DatabaseWriteTransaction<'conn> {
@@ -389,6 +399,21 @@ impl DatabaseService {
     }
 
     pub fn checkpoint_wal(&self) -> Result<(), Error> {
+        self.with_checkpoint_connection(checkpoint)
+    }
+
+    pub fn checkpoint_wal_passive(&self) -> Result<WalCheckpointResult, Error> {
+        self.with_checkpoint_connection(|conn| checkpoint_status(conn, WalCheckpointMode::Passive))
+    }
+
+    pub fn truncate_wal(&self) -> Result<WalCheckpointResult, Error> {
+        self.with_checkpoint_connection(truncate_status_without_wait)
+    }
+
+    fn with_checkpoint_connection<T>(
+        &self,
+        run: impl FnOnce(&Connection) -> Result<T, Error>,
+    ) -> Result<T, Error> {
         let inner = self
             .inner
             .read()
@@ -408,7 +433,7 @@ impl DatabaseService {
                 ));
             }
         };
-        checkpoint(&conn)
+        run(&conn)
     }
 }
 
@@ -569,9 +594,10 @@ fn open_read_connection(db_path: &Path) -> Result<Connection, Error> {
 }
 
 fn configure_connection(conn: &Connection) -> Result<(), Error> {
+    conn.busy_timeout(CONNECTION_BUSY_TIMEOUT)
+        .map_err(Error::sqlite)?;
     conn.execute_batch(
         "PRAGMA locking_mode=NORMAL;
-         PRAGMA busy_timeout=5000;
          PRAGMA journal_mode=WAL;
          PRAGMA synchronous=NORMAL;
          PRAGMA secure_delete=OFF;
@@ -583,9 +609,10 @@ fn configure_connection(conn: &Connection) -> Result<(), Error> {
 }
 
 fn configure_read_connection(conn: &Connection) -> Result<(), Error> {
+    conn.busy_timeout(CONNECTION_BUSY_TIMEOUT)
+        .map_err(Error::sqlite)?;
     conn.execute_batch(
-        "PRAGMA busy_timeout=5000;
-         PRAGMA query_only=ON;
+        "PRAGMA query_only=ON;
          PRAGMA temp_store=MEMORY;",
     )
     .map_err(Error::sqlite)?;
@@ -593,16 +620,13 @@ fn configure_read_connection(conn: &Connection) -> Result<(), Error> {
     Ok(())
 }
 
-struct WalCheckpointStatus {
-    busy: i64,
-    log_frames: i64,
-    checkpointed_frames: i64,
-}
-
-fn checkpoint_status(conn: &Connection) -> Result<WalCheckpointStatus, Error> {
-    conn.query_row("PRAGMA wal_checkpoint(TRUNCATE);", [], |row| {
-        Ok(WalCheckpointStatus {
-            busy: row.get(0)?,
+fn checkpoint_status(
+    conn: &Connection,
+    mode: WalCheckpointMode,
+) -> Result<WalCheckpointResult, Error> {
+    conn.query_row(mode.sql(), [], |row| {
+        Ok(WalCheckpointResult {
+            busy: row.get::<_, i64>(0)? != 0,
             log_frames: row.get(1)?,
             checkpointed_frames: row.get(2)?,
         })
@@ -611,8 +635,20 @@ fn checkpoint_status(conn: &Connection) -> Result<WalCheckpointStatus, Error> {
 }
 
 fn checkpoint(conn: &Connection) -> Result<(), Error> {
-    let status = checkpoint_status(conn)?;
-    if status.busy != 0 {
+    let status = checkpoint_status(conn, WalCheckpointMode::Truncate)?;
+    ensure_checkpoint_completed(status)
+}
+
+fn truncate_status_without_wait(conn: &Connection) -> Result<WalCheckpointResult, Error> {
+    conn.busy_timeout(Duration::ZERO).map_err(Error::sqlite)?;
+    let result = checkpoint_status(conn, WalCheckpointMode::Truncate);
+    conn.busy_timeout(CONNECTION_BUSY_TIMEOUT)
+        .map_err(Error::sqlite)?;
+    result
+}
+
+fn ensure_checkpoint_completed(status: WalCheckpointResult) -> Result<(), Error> {
+    if status.busy {
         return Err(Error::Database("WAL checkpoint remained busy.".into()));
     }
     Ok(())

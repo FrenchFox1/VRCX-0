@@ -114,21 +114,9 @@ pub fn user_note_save_input(
 pub fn user_report_input(
     endpoint: String,
     user_id: String,
-    content_type: String,
     reason: String,
-    type_name: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatToolsUserReport requires userId.")?;
-    let content_type = if content_type.trim().is_empty() {
-        "user".to_string()
-    } else {
-        content_type
-    };
-    let type_name = if type_name.trim().is_empty() {
-        "report".to_string()
-    } else {
-        type_name
-    };
     Ok((
         user_id.clone(),
         api_input(
@@ -136,9 +124,9 @@ pub fn user_report_input(
             "POST",
             format!("feedback/{}/user", encode_path_segment(&user_id)),
             Some(json!({
-                "contentType": content_type,
+                "contentType": "user",
                 "reason": reason,
-                "type": type_name,
+                "type": "report",
             })),
         ),
     ))
@@ -172,17 +160,16 @@ pub fn invite_message_edit_input(
     endpoint: String,
     current_user_id: String,
     message_type: InviteMessageType,
-    slot: String,
+    slot: i32,
     message: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(i32, HttpApiRequestInput), HttpApiError> {
     let current_user_id = require_text(
         current_user_id,
         "VrchatToolsInviteMessageEdit requires currentUserId.",
     )?;
     let message_type = message_type.as_str();
-    let slot = require_text(slot, "VrchatToolsInviteMessageEdit requires slot.")?;
     Ok((
-        slot.clone(),
+        slot,
         api_input(
             endpoint,
             "PUT",
@@ -190,7 +177,7 @@ pub fn invite_message_edit_input(
                 "message/{}/{}/{}",
                 encode_path_segment(&current_user_id),
                 encode_path_segment(message_type),
-                encode_path_segment(&slot)
+                slot
             ),
             Some(json!({ "message": message })),
         ),
@@ -282,14 +269,8 @@ mod tests {
             &json!({ "targetUserId": "usr/1", "note": "  keep note whitespace  " })
         );
 
-        let (_, report) = user_report_input(
-            "endpoint".into(),
-            " usr/1 ".into(),
-            " ".into(),
-            "reason".into(),
-            "".into(),
-        )
-        .unwrap();
+        let (_, report) =
+            user_report_input("endpoint".into(), " usr/1 ".into(), "reason".into()).unwrap();
         assert_eq!(report.method.as_deref(), Some("POST"));
         assert_eq!(report.path.as_deref(), Some("feedback/usr%2F1/user"));
         assert_eq!(
@@ -301,16 +282,13 @@ mod tests {
             "endpoint".into(),
             " usr/1 ".into(),
             InviteMessageType::Request,
-            " slot 雪 ".into(),
+            2,
             "Message".into(),
         )
         .unwrap();
-        assert_eq!(slot, "slot 雪");
+        assert_eq!(slot, 2);
         assert_eq!(edit.method.as_deref(), Some("PUT"));
-        assert_eq!(
-            edit.path.as_deref(),
-            Some("message/usr%2F1/request/slot%20%E9%9B%AA")
-        );
+        assert_eq!(edit.path.as_deref(), Some("message/usr%2F1/request/2"));
         assert_eq!(json_body(&edit), &json!({ "message": "Message" }));
     }
 
@@ -337,22 +315,7 @@ mod tests {
         assert!(group_event_follow_input("".into(), "group".into(), " ".into(), false,).is_err());
         assert!(group_calendar_ics_get_input("".into(), " ".into(), "event".into()).is_err());
         assert!(user_note_save_input("".into(), " ".into(), "note".into()).is_err());
-        assert!(user_report_input(
-            "".into(),
-            " ".into(),
-            "user".into(),
-            "reason".into(),
-            "report".into(),
-        )
-        .is_err());
+        assert!(user_report_input("".into(), " ".into(), "reason".into(),).is_err());
         assert!(serde_json::from_str::<InviteMessageType>(r#""invite""#).is_err());
-        assert!(invite_message_edit_input(
-            "".into(),
-            "user".into(),
-            InviteMessageType::Message,
-            " ".into(),
-            "text".into(),
-        )
-        .is_err());
     }
 }

@@ -73,8 +73,8 @@ function updateTimeWindow(
     };
 }
 
-function daysSummary(days: unknown, t: TFunction) {
-    if (!Array.isArray(days) || days.length === 0) {
+function daysSummary(days: readonly number[], t: TFunction) {
+    if (days.length === 0) {
         return t(`${I18N_ROOT}.every_day`);
     }
     const selectedDays = new Set(days);
@@ -86,7 +86,7 @@ function daysSummary(days: unknown, t: TFunction) {
 
 type TimeRulesTabProps = {
     disabled?: boolean;
-    onRulesChange: (rules: TimeAutomationRule[]) => unknown;
+    onRulesChange: (rules: TimeAutomationRule[]) => void;
     rules: TimeAutomationRule[];
 };
 

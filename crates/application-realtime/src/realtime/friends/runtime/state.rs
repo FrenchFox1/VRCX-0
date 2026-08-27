@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::Duration;
+use vrcx_0_application_core::{FriendLocationTime, InstanceDwellRegistry};
 use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
@@ -7,7 +9,7 @@ use compact_str::CompactString;
 use serde_json::{json, Value};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline, StateBucket};
 use vrcx_0_core::realtime::{RealtimeSessionContext, RealtimeWsMessagePayload};
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
@@ -23,7 +25,8 @@ use super::event_patch::{
 use super::persistence::{is_online_state, offline_feed_entry, OfflineFeedPrevious};
 use super::utils::EventTime;
 
-pub(super) use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY_MS;
+pub(super) use crate::realtime::runtime_types::PENDING_OFFLINE_DELAY;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct RecentGps {
@@ -41,13 +44,14 @@ pub(super) struct PendingOffline {
 pub(crate) struct PendingOfflineSchedule {
     pub(crate) user_id: String,
     pub(crate) token: u64,
-    pub(crate) delay_ms: u64,
+    pub(crate) delay: Duration,
 }
 
 pub(crate) struct FriendBaselineEffects {
     pub(crate) result: FriendBaselineResult,
     pub(crate) schedules: Vec<PendingOfflineSchedule>,
     pub(crate) confirmed_feed_entries: Vec<Value>,
+    pub(crate) location_time_snapshot: Option<Vec<FriendLocationTime>>,
 }
 
 pub(crate) enum SyntheticFriendEvent {
@@ -62,7 +66,7 @@ enum FriendEventTrust {
 }
 
 struct ExpectedFriendScope<'a> {
-    owner_user_id: &'a str,
+    owner_user_id: &'a OwnerId,
     endpoint: &'a str,
 }
 
@@ -79,8 +83,16 @@ pub(super) struct RealtimeFriendState {
     pub(super) friend_state_sequence: u64,
     pub(super) friend_state_sequence_by_user: HashMap<String, u64>,
     pub(super) baseline: Option<RealtimeFriendSnapshot>,
+    pub(super) friend_user_ids_snapshot: Option<Arc<HashSet<String>>>,
     pub(super) pending_offline: HashMap<String, PendingOffline>,
     pub(super) recent_gps: HashMap<String, RecentGps>,
+    pub(super) instance_dwell: Arc<InstanceDwellRegistry>,
+}
+
+impl RealtimeFriendState {
+    pub(super) fn invalidate_friend_user_ids_snapshot(&mut self) {
+        self.friend_user_ids_snapshot = None;
+    }
 }
 
 #[derive(Debug, Default)]
@@ -89,8 +101,13 @@ pub struct RealtimeFriendsRuntime {
 }
 
 impl RealtimeFriendsRuntime {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(instance_dwell: Arc<InstanceDwellRegistry>) -> Self {
+        Self {
+            state: Mutex::new(RealtimeFriendState {
+                instance_dwell,
+                ..RealtimeFriendState::default()
+            }),
+        }
     }
 
     pub fn baseline_causal_watermark(&self) -> FriendBaselineCausalWatermark {
@@ -260,7 +277,7 @@ impl RealtimeFriendsRuntime {
             schedules.push(PendingOfflineSchedule {
                 user_id: transition.user_id,
                 token,
-                delay_ms: PENDING_OFFLINE_DELAY_MS,
+                delay: PENDING_OFFLINE_DELAY,
             });
         }
         if same_generation {
@@ -302,6 +319,16 @@ impl RealtimeFriendsRuntime {
                 }
             }
         }
+        let friend_membership_changed = state.baseline.as_ref().map_or(
+            !baseline.friends_by_id.is_empty(),
+            |existing_snapshot| {
+                existing_snapshot.friends_by_id.len() != baseline.friends_by_id.len()
+                    || existing_snapshot
+                        .friends_by_id
+                        .keys()
+                        .any(|user_id| !baseline.friends_by_id.contains_key(user_id))
+            },
+        );
         let friend_count = baseline.friends_by_id.len();
         state.baseline = Some(RealtimeFriendSnapshot {
             current_user_id: baseline.current_user_id,
@@ -311,6 +338,13 @@ impl RealtimeFriendsRuntime {
             baseline_revision,
             friends_by_id: baseline.friends_by_id,
         });
+        let instance_dwell = Arc::clone(&state.instance_dwell);
+        let location_time_snapshot = state.baseline.as_ref().and_then(|snapshot| {
+            instance_dwell.sync_friends(&snapshot.friends_by_id, confirmed_at.timestamp_millis())
+        });
+        if friend_membership_changed {
+            state.invalidate_friend_user_ids_snapshot();
+        }
         if !changed_user_ids.is_empty() {
             state.friend_state_sequence = state.friend_state_sequence.saturating_add(1);
             let sequence = state.friend_state_sequence;
@@ -326,10 +360,11 @@ impl RealtimeFriendsRuntime {
                 accepted: true,
                 generation,
                 baseline_revision,
-                friend_count,
+                friend_count: u32::try_from(friend_count).unwrap_or(u32::MAX),
             },
             schedules,
             confirmed_feed_entries,
+            location_time_snapshot,
         }
     }
 
@@ -337,9 +372,11 @@ impl RealtimeFriendsRuntime {
         let mut state = self.lock_state();
         state.generation = state.generation.saturating_add(1);
         state.baseline = None;
+        state.invalidate_friend_user_ids_snapshot();
         state.pending_offline.clear();
         state.recent_gps.clear();
         state.friend_state_sequence_by_user.clear();
+        state.instance_dwell.clear();
         state.generation
     }
 
@@ -355,9 +392,11 @@ impl RealtimeFriendsRuntime {
         if should_clear {
             state.generation = state.generation.saturating_add(1);
             state.baseline = None;
+            state.invalidate_friend_user_ids_snapshot();
             state.pending_offline.clear();
             state.recent_gps.clear();
             state.friend_state_sequence_by_user.clear();
+            state.instance_dwell.clear();
         }
         should_clear
     }
@@ -425,12 +464,20 @@ impl RealtimeFriendsRuntime {
         })
     }
 
-    pub fn friend_user_ids(&self) -> HashSet<String> {
-        self.lock_state()
-            .baseline
-            .as_ref()
-            .map(|baseline| baseline.friends_by_id.keys().cloned().collect())
-            .unwrap_or_default()
+    pub fn friend_user_ids_snapshot(&self) -> Arc<HashSet<String>> {
+        let mut state = self.lock_state();
+        if let Some(snapshot) = state.friend_user_ids_snapshot.as_ref() {
+            return Arc::clone(snapshot);
+        }
+        let snapshot = Arc::new(
+            state
+                .baseline
+                .as_ref()
+                .map(|baseline| baseline.friends_by_id.keys().cloned().collect())
+                .unwrap_or_default(),
+        );
+        state.friend_user_ids_snapshot = Some(Arc::clone(&snapshot));
+        snapshot
     }
 
     pub(crate) fn with_user_cache_records<R>(
@@ -460,7 +507,7 @@ impl RealtimeFriendsRuntime {
             endpoint: baseline.endpoint.clone(),
             websocket: baseline.websocket.clone(),
             friend_count: baseline.friends_by_id.len(),
-            snapshot,
+            snapshot: snapshot.into(),
         }))
     }
 
@@ -526,7 +573,7 @@ impl RealtimeFriendsRuntime {
 
     pub(crate) fn apply_scoped_synthetic_event(
         &self,
-        expected_owner_user_id: &str,
+        expected_owner_user_id: &OwnerId,
         expected_endpoint: &str,
         event: SyntheticFriendEvent,
         received_at: &str,
@@ -587,7 +634,7 @@ impl RealtimeFriendsRuntime {
             return RealtimeFriendApplyResult::MissingBaseline;
         };
         if expected_scope.is_some_and(|expected| {
-            baseline.current_user_id != expected.owner_user_id.trim()
+            baseline.current_user_id != expected.owner_user_id.as_str().trim()
                 || normalize_vrchat_api_endpoint(Some(&baseline.endpoint))
                     != normalize_vrchat_api_endpoint(Some(expected.endpoint))
         }) {
@@ -699,7 +746,8 @@ impl RealtimeFriendsRuntime {
         patch.set_pending_offline(false);
         let state_bucket = pending.state_bucket;
         let previous = pending.previous;
-        let mut output = RealtimeFriendOutput::new(owner_user_id, generation, baseline_revision);
+        let mut output =
+            RealtimeFriendOutput::new(OwnerId::new(owner_user_id), generation, baseline_revision);
         apply_record_patch_to_state(
             &mut state,
             &mut output,
@@ -720,7 +768,13 @@ impl RealtimeFriendsRuntime {
             &now_iso,
             Utc::now().timestamp_millis(),
         ));
-        output.projection.feed_entries = output.persistence.feed_entries.clone();
+        output.projection.feed_entries = output
+            .persistence
+            .feed_entries
+            .iter()
+            .cloned()
+            .map(vrcx_0_core::json::RawJson::from)
+            .collect();
         record_output_friend_state_sequence(&mut state, &output);
         Some(output)
     }
@@ -840,7 +894,6 @@ fn preserve_fields_over_placeholder(incoming: &mut FriendRecord, existing: &Frie
     for key in [
         "pendingOffline",
         derived_keys::LOCATION_PROJECTION,
-        derived_keys::LOCATION_UPDATED_AT,
         "locationUpdatedAt",
         "instanceId",
         "travelingToWorld",

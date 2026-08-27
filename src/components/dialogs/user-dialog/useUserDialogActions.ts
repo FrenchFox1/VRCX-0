@@ -66,7 +66,7 @@ type UseUserDialogActionsProps = {
     openGroupQuickModerationDialog?: () => void;
     moderationRevisionRef: MutableRefObject<number>;
     moderationState: ModerationState;
-    openNonce: unknown;
+    openNonce: number;
     profile: UserDialogProfileRecord | null;
     setActionStatus: Dispatch<SetStateAction<string>>;
     setAvatarOverrideState: Dispatch<SetStateAction<AvatarOverrideState>>;
@@ -505,9 +505,7 @@ export function useUserDialogActions({
         try {
             await vrchatToolsRepository.reportUser({
                 userId: rosterUserId,
-                contentType: 'user',
-                reason: 'behavior-hacking',
-                type: 'report'
+                reason: 'behavior-hacking'
             });
             toast.success(t('dialog.user.success.report_sent'));
         } catch (error) {

@@ -39,7 +39,7 @@ export const useBackgroundImageStore = create<BackgroundImageStore>((set) => ({
         set(options);
     },
     setLoading(loading) {
-        set({ loading: Boolean(loading) });
+        set({ loading });
     },
     setError(error) {
         set({ error });

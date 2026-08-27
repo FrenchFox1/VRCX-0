@@ -1,18 +1,18 @@
 {
     "empty_state": {
-        "dashboard_title": "Build your dashboard",
-        "dashboard_description": "Add the views you check most often so they are ready in one place.",
-        "theme_catalog_title": "No themes are available right now",
-        "theme_catalog_description": "Community themes will appear here when the catalog is available.",
-        "installed_themes_title": "No community themes installed",
-        "installed_themes_description": "Browse the catalog and install a theme to give VRCX-0 a different look.",
-        "browse_themes": "Browse themes",
-        "app_launcher_title": "Choose what starts with VRChat",
-        "app_launcher_description": "Add an app or shortcut and choose when you want it to open.",
-        "app_launcher_selection_title": "Choose an app or shortcut",
-        "app_launcher_selection_description": "Select an item from the list to view or change when it starts.",
+        "dashboard_title": "Configurer le tableau de bord",
+        "dashboard_description": "Ajoutez les vues que vous consultez le plus souvent pour les avoir prêtes en un endroit.",
+        "theme_catalog_title": "Aucun thème disponible pour le moment",
+        "theme_catalog_description": "Les thèmes communautaires apparaîtront ici une fois le catalogue disponible.",
+        "installed_themes_title": "Aucun thème communautaire installé",
+        "installed_themes_description": "Parcourez le catalogue et installez un thème pour donner à VRCX-0 un aspect différent.",
+        "browse_themes": "Parcourir les thèmes",
+        "app_launcher_title": "Choisir quelle application démarrer avec VRCX-0",
+        "app_launcher_description": "Ajoutez une application ou un raccourci et choisissez quand vous voulez qu'elle s'ouvre.",
+        "app_launcher_selection_title": "Choisissez une application ou un raccourci",
+        "app_launcher_selection_description": "Sélectionnez un élément de la liste pour le voir ou modifier son comportement.",
         "game_log_title": "Aucune activité enregistrée",
-        "game_log_description": "World visits, players, and other VRChat activity will appear here as you play.",
+        "game_log_description": "Les mondes visités, les utilisateurs et autres activités de VRChat apparaîtront ici pendant que vous jouez.",
         "my_avatars_title": "Aucun avatar mis en ligne",
         "my_avatars_description": "Vos avatars mis en ligne apparaîtront ici.",
         "search_no_results": "Aucun résultat trouvé",
@@ -91,7 +91,10 @@
             "avatar": "Avatars",
             "group": "Groupes"
         },
-        "date": { "today": "Aujourd’hui", "yesterday": "Hier" },
+        "date": {
+            "today": "Aujourd’hui",
+            "yesterday": "Hier"
+        },
         "retention": {
             "label": "Conservation de l’historique",
             "description": "Les entrées plus anciennes sont supprimées automatiquement.",
@@ -457,22 +460,6 @@
             "instance_duration": "Instance {duration}"
         },
         "generic_instance_location": "une instance",
-        "friends_panel": {
-            "title": "Amis favoris",
-            "all": "Tous",
-            "empty": "Aucun ami favori en ligne",
-            "note": "Note",
-            "memo": "Note locale",
-            "open": "Ouvrir",
-            "request": "Demande",
-            "invite": "Inviter",
-            "favorites_online": "Favoris en ligne",
-            "same_instance": "Même instance",
-            "local_favorites": "Favoris locaux",
-            "traveling": "En voyage",
-            "private": "Privé",
-            "offline": "Hors ligne"
-        },
         "discord": {
             "title": {
                 "invite": "Invitation de {name}",
@@ -1979,7 +1966,7 @@
             },
             "label": {
                 "inventory_bundle_consumed": "Lot d'inventaire utilisé",
-                "fps": "fps",
+                "fps": "ips",
                 "frames": "images",
                 "prev": "Précédent"
             },
@@ -2038,6 +2025,29 @@
                     "too_many_favorites": "{favorites} imprimé(s) favori(s) dépassent la limite de {max} de {over}. La suppression automatique ne supprimera pas les imprimés favoris.",
                     "too_many_favorites_event": "La suppression automatique n'a pas pu redescendre sous la limite configurée car les imprimés favoris remplissent la liste. {remaining} imprimé(s) restant(s)."
                 }
+            },
+            "gallery_selection": {
+                "count": "{count} sélectionné(s)",
+                "select_all": "Tout sélectionner",
+                "deselect_all": "Tout désélectionner",
+                "confirm_delete_title": "Supprimer {count} élément(s) ?",
+                "confirm_delete_locked": "{count} élément(s) verrouillé(s) sera(ont) ignoré(s). Cette action est irréversible.",
+                "deleting_progress": "Suppression de {done}/{total}",
+                "deleted_toast": "{count} élément(s) supprimé(s).",
+                "delete_partial_toast": "{succeeded} élément(s) supprimé(s), {failed} échoué(s). {reason}",
+                "delete_cancelled_toast": "Annulé. {count} élément(s) supprimé(s).",
+                "delete_unlocked": "{count} supprimé(s)",
+                "delete_locked": "Tout les éléments sélectionnés sont verouillés.",
+                "delete_locked_favorite": "Favoris - Retirer le des favoris pour le supprimer",
+                "delete_locked_in_use": "Utilisé - ne peut être supprimé",
+                "favorited_toast": "{count} imprimé(s) ajouté(s) aux favoris.",
+                "unfavorited_toast": "Imprimé retiré des favoris",
+                "favorite_skipped_toast": "{count} imprimé(s) n'ont pas été ajoutés aux favoris. La limite est de {max}."
+            },
+            "prints_filter": {
+                "all": "Tout",
+                "favorites": "Favoris",
+                "others": "Non favoris"
             },
             "llm_endpoints": {
                 "title": "Endpoints LLM",
@@ -2155,13 +2165,6 @@
                     "opacity": "Opacité",
                     "filters": "Filtres des notifications du casque"
                 },
-                "interactive_panel": {
-                    "header": "Panneau d'amis interactif",
-                    "enabled": "Activer le panneau d'amis interactif",
-                    "all_friends_include_favorites": "Inclure les favoris dans Tous",
-                    "summon_hint": "Geste d'appel",
-                    "openvr_required": "Maintenez le grip droit environ 2 secondes pour l'afficher. Nécessite le backend d'overlay SteamVR/OpenVR; OpenXR ne fournit pas encore le panneau interactif."
-                },
                 "wrist_overlay": {
                     "header": "Overlay au poignet",
                     "wrist_feed_overlay": "Overlay du flux au poignet",
@@ -2184,6 +2187,12 @@
                     "vr_device_status": "État des appareils VR",
                     "battery_percentage": "Pourcentage de batterie",
                     "wrist_feed_notifications": "Filtres de notifications de l'overlay au poignet"
+                },
+                "test_mode": {
+                    "header": "Overlay test",
+                    "description": "Force l'overlay du poignet et les notifications à afficher un écran de test pour vérifier le placement, la taille et l'opacité lors du port du casque. Cela n'est pas enregistré et est désactivé lorsque VRCX-0 redémarre.",
+                    "force_display": "Forcer l'affichage de l'overlay",
+                    "requires_steamvr": "Nécessite que SteamVR soit en cours d'exécution."
                 }
             },
             "interface": {
@@ -2558,6 +2567,7 @@
                         "header": "Synthèse vocale",
                         "when_to_play": "Quand la jouer",
                         "tts_voice": "Voix de la synthèse vocale",
+                        "tts_volume": "Volume de la synthèse vocale",
                         "system_default_voice": "Voix système par défaut",
                         "notification_filters": "Filtres de notifications TTS",
                         "name_mode": "Nom lu",
@@ -2795,7 +2805,6 @@
                         "purge_confirm_description_3": "VRCX-0 redémarrera une fois l'opération terminée.",
                         "purge_confirm_alert": "Il est fortement recommandé de sauvegarder votre fichier de base de données avant de continuer !",
                         "purge_confirm_button": "Purger et redémarrer",
-                        "purge_in_progress": "Purge des données d'avatar",
                         "purge_complete": "Données d'avatar purgées avec succès. Redémarrage",
                         "purge_failed": "Échec de la purge : {error}",
                         "purge_optimization_failed": "Les données d’avatar ont été purgées, mais la base de données n’a pas pu être optimisée : {error}",
@@ -3238,17 +3247,18 @@
                 "community": "Thème de la communauté"
             },
             "accent": {
-                "header": "Couleur d'accentuation"
+                "header": "Couleur d'accentuation",
+                "custom": "Personnalisée",
+                "hex_label": "Couleur hex"
             },
             "custom_css": {
+                "status_on": "Activé",
+                "status_off": "Désactivé",
                 "header": "CSS personnalisé",
-                "enabled_summary": "Le CSS de remplacement est activé ({count} bytes).",
-                "disabled_summary": "Couche CSS finale facultative. Elle est actuellement désactivée.",
                 "edit": "Modifier",
                 "hide_editor": "Masquer l'éditeur"
             },
             "developer": {
-                "summary": "Outils d'aperçu de thème local pour les builds de développement de thèmes.",
                 "preview_active": "Aperçu de {name} en cours.",
                 "show": "Afficher les outils",
                 "hide": "Masquer les outils"
@@ -3267,16 +3277,11 @@
         "background_image": {
             "settings": {
                 "header": "Image de fond",
-                "description": "Utilisez une source d'image quotidienne ou votre propre source d'image locale.",
                 "apod_note": "NASA APOD n'utilise que les images sans champ copyright.",
-                "custom_source": "Image locale",
-                "custom_source_description": "Sélectionnez une seule image pour un fond fixe, ou plusieurs images ou un dossier pour la rotation.",
-                "folder_first_level_note": "Les dossiers ne sont analysés que sur un seul niveau. Les sous-dossiers ne sont pas lus.",
-                "selected_files": "{count} image sélectionnée",
+                "folder_recursive_note": "Les images dans les sous-dossiers sont également incluses.",
                 "current_image": "Image actuelle",
-                "image_count": "{count} image",
+                "image_count": "{count} images",
                 "rotation": "Rotation",
-                "no_custom_source": "Aucune image locale sélectionnée",
                 "no_image": "Aucune image chargée",
                 "no_image_description": "Actualisez ou choisissez une source pour charger une image.",
                 "source_type_file": "Fichier local",
@@ -3289,11 +3294,13 @@
                 "custom": "Image locale"
             },
             "rotation": {
-                "daily": "Chaque jour",
-                "hourly": "Chaque heure"
+                "minutes": "Chaque minute",
+                "custom": "Personnalisé"
             },
             "action": {
                 "refresh": "Actualiser",
+                "change_image": "Changer d'image",
+                "show_in_folder": "Afficher dans le dossier",
                 "select_images": "Sélectionner des images",
                 "select_folder": "Sélectionner un dossier"
             },
@@ -3301,6 +3308,7 @@
                 "enabled": "Image de fond activée.",
                 "refreshed": "Image de fond actualisée.",
                 "failed": "Échec de la mise à jour de l'image de fond.",
+                "failed_to_open_folder": "Impossible d'ouvrir le dossier de l'image.",
                 "no_images": "Aucune image prise en charge n'a été trouvée."
             }
         },
@@ -3310,6 +3318,88 @@
             "contributors_error": "Impossible de charger la liste des contributeurs.",
             "thanks": "Les traductions, les tests, les signalements de bugs et les idées viennent de la communauté. Merci.",
             "license_line": "Libre et open source sous GPL-3.0"
+        },
+        "activity": {
+            "title": "Activité",
+            "description": "Où votre temps s'est écoulé, résumé sur une période",
+            "range": {
+                "all": "Tout le temps",
+                "days": "Les {days} derniers jours"
+            },
+            "stat": {
+                "total_time": "Temps total",
+                "daily_average": "Moyenne quotidienne",
+                "active_days": "Jours de jeu",
+                "longest_session": "Session la plus longue",
+                "change_up": "+{percent}% vs précédent",
+                "change_down": "-{percent}% vs précédent"
+            },
+            "unit": {
+                "hours": "h",
+                "minutes": "minutes"
+            },
+            "section": {
+                "instance_types": "Préférences d'instance",
+                "daily_time": "Temps par jour",
+                "weekly_time": "Temps par semaine",
+                "when_you_play": "Quand vous jouez",
+                "top_worlds": "Où vous passez votre temps",
+                "companions": "Personnes avec qui vous passez du temps",
+                "highlights": "En vaut la peine",
+                "avatars": "Avatars utilisés le plus souvent"
+            },
+            "access": {
+                "unknown": "Inconnu",
+                "public": "Publique",
+                "friendsPlus": "Amis+",
+                "friends": "Amis",
+                "invitePlus": "Invitation+",
+                "invite": "Invitation",
+                "group": "Groupe"
+            },
+            "empty": {
+                "title": "Aucune activité enregistrée",
+                "description": "Jouez un peu à VRChat et votre activité apparaîtra ici."
+            },
+            "error": {
+                "failed_to_load": "Impossible de charger votre activité"
+            },
+            "caveat": {
+                "recorded_since": "Seulement enregistré lorsqu'en cours d'exécution."
+            },
+            "worlds": {
+                "visit_count": "{count} visites",
+                "open_ranking": "Détails",
+                "total": "{count} mondes au total",
+                "show_home": "Inclue le monde d'accueil"
+            },
+            "people": {
+                "co_days": "{count} jours",
+                "lead_caption": "{days} jours · {hours}h",
+                "fading_title": "Moins vu récemment",
+                "fading_caveat": "Moins de similitudes que la période précédente.",
+                "encountered_total": "{count} rencontres au total",
+                "fading_last_seen": "Dernière fois vue {date}",
+                "order_minutes": "Par temps",
+                "order_days": "Par jours"
+            },
+            "hero": {
+                "per_day": "par jour",
+                "days_played": "jours joués",
+                "sessions": "sessions",
+                "longest": "série la plus longue"
+            },
+            "action": {
+                "show_all": "Afficher tout les {count}",
+                "show_less": "Afficher moins"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% entre minuit et 6h",
+                "open_heatmap": "heure par heure, jour par jour"
+            },
+            "avatars": {
+                "all_time": "Tout le temps"
+            }
         }
     },
     "dialog": {
@@ -3426,7 +3516,6 @@
                 "edit_note_memo": "Modifier la note et la note locale"
             },
             "group_invite": {
-                "description": "Choisissez le groupe dans lequel inviter {value}.",
                 "select_group": "Sélectionner un groupe...",
                 "loading": "Chargement des groupes pour lesquels vous pouvez envoyer des invitations...",
                 "no_groups": "Vous n’avez aucun groupe pour lequel vous pouvez envoyer des invitations",
@@ -3780,7 +3869,8 @@
                 "content_gore": "Gore",
                 "content_violence": "Violence",
                 "content_adult": "Adulte",
-                "content_sex": "Sexuel"
+                "content_sex": "Sexuel",
+                "pedestals": "Piédestaux"
             },
             "actions": {
                 "delete_cache_tooltip": "Supprimer le monde du cache",
@@ -3894,7 +3984,11 @@
                 "change_world_image": "Modifier l'image du monde",
                 "reset_your_vrchat_home_location": "Réinitialiser votre emplacement d'accueil VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Modifier les tags de contenu géré, d'auteur et de fonctionnalité pour ce monde",
+                "enable_avatar_scaling": "Activer la mise à l’échelle des avatars",
+                "enable_focus_view": "Activer la vue focale",
                 "enable_debugging": "Activer le débogage",
+                "enable_third_person_view": "Activer la vue à la troisième personne",
+                "allow_props_to_modify_player_movement": "Autoriser les objets à modifier le mouvement de l'utilisateur",
                 "add_domain": "Ajouter un domaine"
             },
             "loading": {
@@ -4344,6 +4438,11 @@
             "group_access_type_members": "Membres",
             "group_access_type_plus": "Groupe+",
             "group_access_type_public": "Public",
+            "minimum_avatar_performance": "Performance minimale de l'avatar",
+            "minimum_avatar_performance_none": "Aucune limite",
+            "minimum_avatar_performance_poor": "Médiocre",
+            "minimum_avatar_performance_medium": "Moyen",
+            "minimum_avatar_performance_good": "Bon",
             "region": "Région",
             "region_usw": "Ouest des États-Unis",
             "region_use": "Est des États-Unis",
@@ -4528,10 +4627,10 @@
             "profile_icons_managed_link": "Les icônes de profil sont gérées dans la galerie",
             "emoji_animation_styles": "Styles d'animation",
             "emoji_animation_type": "Émoji animé",
-            "emoji_animation_fps": "FPS",
+            "emoji_animation_fps": "IPS",
             "emoji_animation_frame_count": "Nombre de frames",
             "emoji_loop_pingpong": "Boucle aller-retour (Ping-Pong)",
-            "flipbook_info": "Sélectionnez une image PNG 1024x1024 pour l'utiliser comme émoji animé : 4, 16 ou 64 (64 FPS max, 64 frames max).",
+            "flipbook_info": "Sélectionnez une image PNG 1024x1024 pour l'utiliser comme émoji animé : 4, 16 ou 64 (64 IPS max, 64 frames max).",
             "note": "Note",
             "crop_print_border": "Rogner la bordure existante (nouvel envoi)",
             "upload_options": "Options de téléversement",
@@ -4657,7 +4756,9 @@
             "loading_gallery_description": "Lecture de la liste indexée des captures d'écran.",
             "gallery_load_failed": "Échec du chargement de la galerie de captures d'écran",
             "scan_failed": "Échec de l'analyse de la bibliothèque de captures d'écran",
-            "thumbnail_failed": "Miniature indisponible"
+            "thumbnail_failed": "Miniature indisponible",
+            "hide_details": "Masquer les informations",
+            "show_details": "Afficher les informations"
         },
         "set_avatar_styles": {
             "header": "Définir les styles d'avatar",
@@ -5328,6 +5429,8 @@
             "migration_restarting_title": "Migration des données",
             "migration_restarting": "VRCX-0 va redémarrer pour terminer la migration...",
             "upgrade_in_progress_title": "Mise à niveau de la base de données en cours",
+            "maintenance_in_progress_title": "Entretien de la base de données en cours",
+            "maintenance_in_progress_description": "Récupération de l'espace disque. L'accès à la base de données est mis en pause jusqu'à la fin de cette opération.",
             "upgrade_stage": {
                 "preflight": "Vérification de la base de données",
                 "prepare_legacy_snapshot": "Création d’une copie cohérente de la base de données VRCX",
@@ -5477,6 +5580,9 @@
         "group_join_request_title": "Demande d'adhésion au groupe",
         "group_transfer_request_title": "Demande de transfert de groupe",
         "group_queue_ready_title": "File d'attente d'instance prête",
+        "group_instance_opened": "Créé une nouvelle instance",
+        "group_instance_opened_location": "Créé une nouvelle instance: {location}",
+        "group_instances_opened": "Créé {count} nouvelles instances",
         "instance_closed_title": "Instance fermée",
         "event_title": "Événement",
         "external_title": "Appplication externe",
@@ -5956,6 +6062,27 @@
         "error_generic": "Échec de la traduction",
         "error_network": "Erreur réseau, veuillez réessayer",
         "error_unsupported": "La traduction n'est pas configurée"
+    },
+    "saved_group_favorites": {
+        "title": "Groupes favoris",
+        "description": "Enregistrer les groupes souvent rejoint afin de reçevoir des notifications lors de nouvelles instances.",
+        "new_collection": "Nouvelle collection",
+        "empty_collections": "Créez une nouvelle collection pour enregistrer des groupes.",
+        "empty_group": "Aucun groupe n'est enregistré dans cette collection.",
+        "delete_title": "Supprimer cette collection ?",
+        "delete_description": "Supprimer {name} en retirera les {count} groupes enregistrés.",
+        "choose_collection": "Enregistrer dans la collection",
+        "remove": "Retirer des groupes enregistrés",
+        "toggle": "Enregistrer le groupe",
+        "sidebar_saved": "Groupes favoris",
+        "sidebar_none": "Aucun groupe enregistré",
+        "sidebar_other": "Autres groupes actifs",
+        "sidebar_failed": "Échec du chargement des instances de groupe",
+        "sidebar_no_active": "Aucune instance de groupe active",
+        "scope_all": "Tous les groups enregistrés",
+        "scope_selected": "Collections de groupes sélectionnées",
+        "notification_type": "Nouvelle instance de groupe",
+        "notification_empty": "Aucune collection de groupe n'est disponible."
     },
     "app": {
         "routes": {

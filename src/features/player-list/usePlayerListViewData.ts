@@ -8,7 +8,7 @@ import { enrichPlayerListRows } from './playerListEnrichment';
 import { buildFavoriteIdSet } from './playerListRows';
 import type {
     PlayerListContext,
-    PlayerListModerationRecord,
+    PlayerListLocalModerationRecord,
     PlayerListProfileRecord,
     PlayerListSourceRow
 } from './playerListTypes';
@@ -16,8 +16,8 @@ import type {
 type PlayerListViewDataInput = {
     clockNow: number;
     context: PlayerListContext;
-    currentUserId?: unknown;
-    currentUserLocation?: unknown;
+    currentUserId?: string | null;
+    currentUserLocation?: string;
     currentUserSnapshot?: PlayerListProfileRecord | null;
     isGameRunning: boolean;
     knownUsersById: Record<string, PlayerListProfileRecord | null | undefined>;
@@ -27,7 +27,7 @@ type PlayerListViewDataInput = {
     loadStatus: string;
     moderationByUserId: Record<
         string,
-        PlayerListModerationRecord | null | undefined
+        PlayerListLocalModerationRecord | null | undefined
     >;
     playerSourceRows: PlayerListSourceRow[];
     profilesByUserId: Record<

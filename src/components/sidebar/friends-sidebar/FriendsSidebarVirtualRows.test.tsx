@@ -3,8 +3,25 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('./FriendsSidebarFriendRow', () => ({
-    FriendRow: ({ rowModel }: { rowModel: { canRequestInvite?: boolean } }) => (
-        <button disabled={!rowModel.canRequestInvite}>Request invite</button>
+    FriendRow: ({
+        appearance,
+        rowModel
+    }: {
+        appearance: { currentLocationStartedAt?: string | number | null };
+        rowModel: {
+            canRequestInvite?: boolean;
+            instanceLocation?: string;
+        };
+    }) => (
+        <button
+            disabled={!rowModel.canRequestInvite}
+            data-current-location-started-at={String(
+                appearance.currentLocationStartedAt ?? ''
+            )}
+            data-instance-location={rowModel.instanceLocation || ''}
+        >
+            Request invite
+        </button>
     )
 }));
 
@@ -13,9 +30,13 @@ import { FriendsSidebarVirtualRow } from './FriendsSidebarVirtualRows';
 type VirtualRowProps = ComponentProps<typeof FriendsSidebarVirtualRow>;
 
 function renderFriendRow({
+    currentLocationStartedAt = null,
+    instanceLocation,
     isCurrentUser = false,
     state = 'offline'
 }: {
+    currentLocationStartedAt?: string | number | null;
+    instanceLocation?: string;
     isCurrentUser?: boolean;
     state?: string;
 }) {
@@ -30,12 +51,13 @@ function renderFriendRow({
             type: 'friend',
             key: 'friend:test',
             friend: { id: 'usr_friend', state },
-            isCurrentUser
+            isCurrentUser,
+            instanceLocation
         },
         runtime: {
             currentUser: null,
             currentUserId: 'usr_current',
-            gameState: { isGameRunning: false },
+            gameState: { isGameRunning: false, currentLocationStartedAt },
             onlineIdSet: new Set(),
             instanceActionGatesByUserId: new Map([
                 [
@@ -61,15 +83,28 @@ describe('FriendsSidebarVirtualRow request invite action', () => {
     it.each(['online', 'offline'])(
         'keeps request invite enabled for a %s friend regardless of instance gates',
         (state) => {
-            expect(renderFriendRow({ state })).toBe(
-                '<button>Request invite</button>'
-            );
+            expect(renderFriendRow({ state })).not.toContain('disabled=""');
         }
     );
 
     it('keeps request invite unavailable for the current user', () => {
         expect(renderFriendRow({ isCurrentUser: true })).toContain(
             'disabled=""'
+        );
+    });
+
+    it('passes the local room start time through for the current-user row', () => {
+        expect(
+            renderFriendRow({
+                isCurrentUser: true,
+                currentLocationStartedAt: 1_700_000_000_000
+            })
+        ).toContain('data-current-location-started-at="1700000000000"');
+    });
+
+    it('passes the same-instance room through for a friend row', () => {
+        expect(renderFriendRow({ instanceLocation: 'wrld_live:1' })).toContain(
+            'data-instance-location="wrld_live:1"'
         );
     });
 });

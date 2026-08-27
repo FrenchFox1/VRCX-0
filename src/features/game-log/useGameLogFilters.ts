@@ -22,19 +22,17 @@ import {
 
 function normalizeFilters(
     filters: unknown,
-    allowedFilters: readonly string[]
+    allowedFilters: readonly GameLogFilterType[]
 ): GameLogFilterType[] {
     if (!Array.isArray(filters)) {
         return [];
     }
     return filters.filter(
-        (entry): entry is string =>
-            typeof entry === 'string' && allowedFilters.includes(entry)
+        (entry): entry is GameLogFilterType =>
+            typeof entry === 'string' &&
+            isGameLogFilterType(entry) &&
+            allowedFilters.includes(entry)
     );
-}
-
-function normalizeViewMode(value: unknown): GameLogViewMode {
-    return value === 'sessions' || value === 'table' ? value : 'table';
 }
 
 export function useGameLogFilters() {
@@ -93,11 +91,15 @@ export function useGameLogFilters() {
                             GAME_LOG_SESSION_FILTER_TYPES
                         )
                     );
-                    setTableFavoritesOnly(Boolean(nextTableFavoritesOnly));
-                    setSessionFavoritesOnly(Boolean(nextSessionFavoritesOnly));
-                    setSessionDateFrom(String(nextSessionDateFrom || ''));
-                    setSessionDateTo(String(nextSessionDateTo || ''));
-                    setViewMode(normalizeViewMode(nextViewMode));
+                    setTableFavoritesOnly(nextTableFavoritesOnly);
+                    setSessionFavoritesOnly(nextSessionFavoritesOnly);
+                    setSessionDateFrom(nextSessionDateFrom);
+                    setSessionDateTo(nextSessionDateTo);
+                    setViewMode(
+                        nextViewMode === 'sessions' || nextViewMode === 'table'
+                            ? nextViewMode
+                            : 'table'
+                    );
                     preferencesReadyRef.current = true;
                     setPreferencesReady(true);
                 }

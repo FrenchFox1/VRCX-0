@@ -7,6 +7,7 @@ import type {
 } from '@/domain/entities/world';
 import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import {
     Empty,
     EmptyDescription,
@@ -42,7 +43,7 @@ export type InstanceGroupRecord = EntityRecord & {
 export type WorldDialogInstanceRow = WorldInstanceRecord & {
     creatorGroup: InstanceGroupRecord | null;
     creatorGroupId: string;
-    creatorUser: unknown;
+    creatorUser: EntityRecord | null;
     creatorUserId: string;
     id: string;
     isCurrentInstance?: boolean;
@@ -52,12 +53,19 @@ export type WorldDialogInstanceRow = WorldInstanceRecord & {
 
 type WorldLocationSource = EntityRecord & { id: string };
 
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
-}
-
 function record(value: unknown): EntityRecord {
     return isRecord(value) ? value : {};
+}
+
+function recordOrNull(value: unknown): EntityRecord | null {
+    return isRecord(value) ? value : null;
+}
+
+function finiteNumber(value: unknown): number | undefined {
+    const numeric = Number(value);
+    return value !== null && value !== '' && Number.isFinite(numeric)
+        ? numeric
+        : undefined;
 }
 
 export function WorldInstancesEmptyState() {
@@ -109,7 +117,7 @@ export function groupSeed(value: unknown) {
 
 export function normalizeInstanceGroup(
     value: unknown,
-    fallbackId: unknown = ''
+    fallbackId: string = ''
 ): InstanceGroupRecord | null {
     if (!value) {
         const groupId = firstText(fallbackId);
@@ -209,7 +217,7 @@ function instanceLocationForId(world: WorldProfileRecord, instanceId: unknown) {
     return world?.id ? `${world.id}:${normalizedId}` : normalizedId;
 }
 
-function parsedGroupForInstanceLocation(location: unknown) {
+function parsedGroupForInstanceLocation(location: string) {
     const parsedLocation = parseLocation(location);
     return parsedLocation.groupId || '';
 }
@@ -229,7 +237,7 @@ export function resolveInstanceRows(
                 const groupId = parsedGroupForInstanceLocation(location);
                 return {
                     id,
-                    occupants: entry[1],
+                    occupants: finiteNumber(entry[1]),
                     location,
                     users: [],
                     creatorUserId: '',
@@ -297,17 +305,17 @@ export function resolveInstanceRows(
                     parsedEntryLocation.groupId
                 );
                 const creatorIsGroup = isGroupId(creatorId);
-                const creatorEntity =
+                const creatorEntity = recordOrNull(
                     locationData.ownerUser ||
-                    locationData.owner ||
-                    locationData.creatorUser ||
-                    locationData.user ||
-                    entry.creatorUser ||
-                    entry.creator_user ||
-                    entry.ownerUser ||
-                    entry.owner ||
-                    entry.user ||
-                    null;
+                        locationData.owner ||
+                        locationData.creatorUser ||
+                        locationData.user ||
+                        entry.creatorUser ||
+                        entry.creator_user ||
+                        entry.ownerUser ||
+                        entry.owner ||
+                        entry.user
+                );
                 const creatorGroupEntity =
                     locationData.group ||
                     locationData.ownerGroup ||
@@ -319,7 +327,7 @@ export function resolveInstanceRows(
                 return {
                     ...entry,
                     id: String(entry.id || entry.instanceId || '').trim(),
-                    occupants: entry.occupants,
+                    occupants: finiteNumber(entry.occupants),
                     location: entryLocation,
                     users: normalizeInstanceUsers(
                         entry.users,
@@ -344,7 +352,7 @@ export function resolveInstanceRows(
             const groupId = parsedGroupForInstanceLocation(location);
             return {
                 id,
-                occupants: '',
+                occupants: undefined,
                 location,
                 users: [],
                 creatorUserId: '',

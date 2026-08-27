@@ -220,9 +220,7 @@ describe('screenshotMetadataValues', () => {
             )
         ).toEqual(['new', 'middle', 'old']);
         expect(
-            sortScreenshotRowsByNewest([null, ...rows]).map(
-                (row) => row.filePath
-            )
+            sortScreenshotRowsByNewest(rows).map((row) => row.filePath)
         ).toEqual(['new', 'middle', 'old']);
     });
 
@@ -264,9 +262,30 @@ describe('screenshotMetadataValues', () => {
         const folderTree = {
             rootPath: 'D:\\Root',
             folders: [
-                { path: 'D:\\Old', imageCount: 2, latestModifiedAt: 10 },
-                { path: 'D:\\New', imageCount: 1, latestModifiedAt: 20 },
-                { path: 'D:\\Empty', imageCount: 0, latestModifiedAt: 99 }
+                {
+                    path: 'D:\\Old',
+                    parentPath: 'D:\\Root',
+                    name: 'Old',
+                    imageCount: 2,
+                    totalImageCount: 2,
+                    latestModifiedAt: 10
+                },
+                {
+                    path: 'D:\\New',
+                    parentPath: 'D:\\Root',
+                    name: 'New',
+                    imageCount: 1,
+                    totalImageCount: 1,
+                    latestModifiedAt: 20
+                },
+                {
+                    path: 'D:\\Empty',
+                    parentPath: 'D:\\Root',
+                    name: 'Empty',
+                    imageCount: 0,
+                    totalImageCount: 0,
+                    latestModifiedAt: 99
+                }
             ]
         };
 

@@ -91,7 +91,10 @@
             "avatar": "Avatares",
             "group": "Grupos"
         },
-        "date": { "today": "Hoje", "yesterday": "Ontem" },
+        "date": {
+            "today": "Hoje",
+            "yesterday": "Ontem"
+        },
         "retention": {
             "label": "Retenção do histórico",
             "description": "As entradas mais antigas são eliminadas automaticamente.",
@@ -457,22 +460,6 @@
             "instance_duration": "Instância {duration}"
         },
         "generic_instance_location": "uma instância",
-        "friends_panel": {
-            "title": "Amigos Favoritos",
-            "all": "Todos",
-            "empty": "Nenhum amigo favorito online",
-            "note": "Nota",
-            "memo": "Nota Local",
-            "open": "Abrir",
-            "request": "Solicitar",
-            "invite": "Convidar",
-            "favorites_online": "Favoritos Online",
-            "same_instance": "Mesma Instância",
-            "local_favorites": "Favoritos Locais",
-            "traveling": "Viajando",
-            "private": "Privado",
-            "offline": "Offline"
-        },
         "discord": {
             "title": {
                 "invite": "Convite de {name}",
@@ -1136,7 +1123,6 @@
                 "end": "Fim"
             },
             "action": {
-                "current_user": "Eu",
                 "open_full": "Abrir histórico completo de instâncias"
             },
             "toast": {
@@ -2039,6 +2025,29 @@
                     "too_many_favorites_event": "Auto-delete could not get below the configured limit because favorite prints are filling the list. {remaining} print(s) remain."
                 }
             },
+            "gallery_selection": {
+                "count": "{count} selecionado(s)",
+                "select_all": "Selecionar tudo",
+                "deselect_all": "Desmarcar tudo",
+                "confirm_delete_title": "Excluir {count} item(ns)?",
+                "confirm_delete_locked": "{count} item(ns) bloqueado(s) serão ignorados. Esta ação não pode ser desfeita.",
+                "deleting_progress": "Excluindo {done}/{total}",
+                "deleted_toast": "{count} item(ns) excluído(s).",
+                "delete_partial_toast": "{succeeded} item(ns) excluído(s), {failed} falharam. {reason}",
+                "delete_cancelled_toast": "Cancelado. {count} item(ns) excluído(s).",
+                "delete_unlocked": "Excluir {count}",
+                "delete_locked": "Todos os itens selecionados estão bloqueados.",
+                "delete_locked_favorite": "Favorito - remova dos favoritos para excluir",
+                "delete_locked_in_use": "Em uso - não pode ser excluído",
+                "favorited_toast": "{count} print(s) favoritado(s).",
+                "unfavorited_toast": "{count} print(s) removido(s) dos favoritos.",
+                "favorite_skipped_toast": "{count} print(s) não puderam ser favoritados. O limite é {max}."
+            },
+            "prints_filter": {
+                "all": "Todos",
+                "favorites": "Favoritos",
+                "others": "Não favoritados"
+            },
             "llm_endpoints": {
                 "title": "Endpoints LLM",
                 "description": "Conexões compartilhadas compatíveis com OpenAI para Social AI e tradução.",
@@ -2155,13 +2164,6 @@
                     "opacity": "Opacidade",
                     "filters": "Filtros de notificações do headset"
                 },
-                "interactive_panel": {
-                    "header": "Painel interativo de amigos",
-                    "enabled": "Ativar painel interativo de amigos",
-                    "all_friends_include_favorites": "Incluir favoritos em Todos",
-                    "summon_hint": "Gesto de invocação",
-                    "openvr_required": "Segure o grip direito por cerca de 2 segundos para invocar. Requer o backend de sobreposição SteamVR/OpenVR; o OpenXR ainda não oferece o painel interativo."
-                },
                 "wrist_overlay": {
                     "header": "Overlay de Pulso",
                     "wrist_feed_overlay": "Overlay de Feed no Pulso",
@@ -2184,6 +2186,12 @@
                     "vr_device_status": "Status do Dispositivo VR",
                     "battery_percentage": "Porcentagem da Bateria",
                     "wrist_feed_notifications": "Filtros de Notificação do Overlay de Pulso"
+                },
+                "test_mode": {
+                    "header": "Teste de overlay",
+                    "description": "Força o overlay de pulso e a notificação do headset a exibir um cartão de teste para você conferir posição, tamanho e opacidade com o headset na cabeça. Não é salvo e desliga ao reiniciar o VRCX-0.",
+                    "force_display": "Forçar exibição do overlay",
+                    "requires_steamvr": "Requer o SteamVR em execução."
                 }
             },
             "interface": {
@@ -2558,6 +2566,7 @@
                         "header": "Texto para Voz",
                         "when_to_play": "TTS de Notificação. Quando Reproduzir",
                         "tts_voice": "Voz TTS",
+                        "tts_volume": "Volume do TTS",
                         "system_default_voice": "Voz padrão do sistema",
                         "notification_filters": "Filtros de Notificação TTS",
                         "name_mode": "Nome lido",
@@ -3237,17 +3246,18 @@
                 "community": "Tema da comunidade"
             },
             "accent": {
-                "header": "Cor de destaque"
+                "header": "Cor de destaque",
+                "custom": "Personalizado",
+                "hex_label": "Cor hexadecimal"
             },
             "custom_css": {
+                "status_on": "Ativado",
+                "status_off": "Desativado",
                 "header": "CSS personalizado",
-                "enabled_summary": "O CSS de override está ativado ({count} bytes).",
-                "disabled_summary": "Camada final de CSS opcional. No momento está desativada.",
                 "edit": "Editar",
                 "hide_editor": "Ocultar editor"
             },
             "developer": {
-                "summary": "Ferramentas de prévia de tema local para builds de desenvolvimento de temas.",
                 "preview_active": "Visualizando {name}.",
                 "show": "Mostrar ferramentas",
                 "hide": "Ocultar ferramentas"
@@ -3266,16 +3276,11 @@
         "background_image": {
             "settings": {
                 "header": "Imagem de Fundo",
-                "description": "Use uma origem de imagem diária ou sua própria origem de imagem local.",
                 "apod_note": "O NASA APOD usa apenas imagens sem o campo copyright.",
-                "custom_source": "Imagem local",
-                "custom_source_description": "Selecione uma imagem para um fundo fixo, ou selecione várias imagens ou uma pasta para alternar.",
-                "folder_first_level_note": "As pastas são lidas apenas um nível. Subpastas não são lidas.",
-                "selected_files": "{count} imagem selecionada",
+                "folder_recursive_note": "As imagens em subpastas também são incluídas.",
                 "current_image": "Imagem atual",
-                "image_count": "{count} imagem",
+                "image_count": "{count} imagens",
                 "rotation": "Alternância",
-                "no_custom_source": "Nenhuma imagem local selecionada",
                 "no_image": "Nenhuma imagem carregada",
                 "no_image_description": "Atualize ou escolha uma fonte para carregar uma imagem.",
                 "source_type_file": "Arquivo local",
@@ -3288,11 +3293,13 @@
                 "custom": "Imagem local"
             },
             "rotation": {
-                "daily": "Diária",
-                "hourly": "A cada hora"
+                "minutes": "min",
+                "custom": "Personalizado"
             },
             "action": {
                 "refresh": "Atualizar",
+                "change_image": "Trocar imagem",
+                "show_in_folder": "Mostrar na pasta",
                 "select_images": "Selecionar imagens",
                 "select_folder": "Selecionar pasta"
             },
@@ -3300,6 +3307,7 @@
                 "enabled": "Imagem de Fundo ativada.",
                 "refreshed": "Imagem de Fundo atualizada.",
                 "failed": "Falha ao atualizar a Imagem de Fundo.",
+                "failed_to_open_folder": "Não foi possível mostrar a imagem na pasta.",
                 "no_images": "Nenhuma imagem compatível foi encontrada."
             }
         },
@@ -3309,6 +3317,88 @@
             "contributors_error": "Não foi possível carregar a lista de contribuidores.",
             "thanks": "Cada tradução, teste, relato de bug e ideia vem da comunidade. Agradecemos.",
             "license_line": "Livre e de código aberto sob GPL-3.0"
+        },
+        "activity": {
+            "title": "Atividade",
+            "description": "Para onde foi o seu tempo, resumido por período",
+            "range": {
+                "all": "Tudo",
+                "days": "Últimos {days} dias"
+            },
+            "stat": {
+                "total_time": "Tempo total",
+                "daily_average": "Média diária",
+                "active_days": "Dias jogados",
+                "longest_session": "Sessão mais longa",
+                "change_up": "+{percent}% face ao anterior",
+                "change_down": "-{percent}% face ao anterior"
+            },
+            "unit": {
+                "hours": "h",
+                "minutes": "minutos"
+            },
+            "section": {
+                "instance_types": "Preferências de instância",
+                "daily_time": "Tempo por dia",
+                "weekly_time": "Tempo por semana",
+                "when_you_play": "Quando você joga",
+                "top_worlds": "Onde você passa mais tempo",
+                "companions": "Com quem você passa o tempo",
+                "highlights": "Vale notar",
+                "avatars": "Avatares que mais usa"
+            },
+            "access": {
+                "unknown": "Desconhecido",
+                "public": "Público",
+                "friendsPlus": "Amigos+",
+                "friends": "Amigos",
+                "invitePlus": "Convite+",
+                "invite": "Convite",
+                "group": "Grupo"
+            },
+            "empty": {
+                "title": "Ainda sem registos",
+                "description": "Jogue um pouco de VRChat e a atividade aparecerá aqui."
+            },
+            "error": {
+                "failed_to_load": "Não foi possível carregar a sua atividade"
+            },
+            "caveat": {
+                "recorded_since": "Registado apenas com a app aberta."
+            },
+            "worlds": {
+                "visit_count": "{count} visitas",
+                "open_ranking": "Detalhes",
+                "total": "{count} mundos no total",
+                "show_home": "Incluir Mundo Inicial"
+            },
+            "people": {
+                "co_days": "{count} dias",
+                "lead_caption": "{days} dias · {hours} h",
+                "fading_title": "Vistos com menos frequência",
+                "fading_caveat": "Menos tempo juntos que no período anterior. Pode ser só questão de horários.",
+                "encountered_total": "{count} no total",
+                "fading_last_seen": "visto pela última vez {date}",
+                "order_minutes": "Por tempo",
+                "order_days": "Por dias"
+            },
+            "hero": {
+                "per_day": "por dia",
+                "days_played": "dias jogados",
+                "sessions": "sessões",
+                "longest": "sessão mais longa"
+            },
+            "action": {
+                "show_all": "Ver todos os {count}",
+                "show_less": "Ver menos"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% entre meia-noite e 6h",
+                "open_heatmap": "Por dia e por hora"
+            },
+            "avatars": {
+                "all_time": "Todo o período"
+            }
         }
     },
     "dialog": {
@@ -3779,7 +3869,8 @@
                 "content_gore": "Gore",
                 "content_violence": "Violência",
                 "content_adult": "Adulto",
-                "content_sex": "Sexual"
+                "content_sex": "Sexual",
+                "pedestals": "Pedestais"
             },
             "actions": {
                 "delete_cache_tooltip": "Excluir mundo do cache",
@@ -3893,7 +3984,11 @@
                 "change_world_image": "Alterar imagem do mundo",
                 "reset_your_vrchat_home_location": "Redefinir seu local inicial do VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Editar as tags de conteúdo gerenciado, autor e recursos deste mundo",
+                "enable_avatar_scaling": "Ativar escalonamento de avatar",
+                "enable_focus_view": "Ativar visão em foco",
                 "enable_debugging": "Ativar depuração",
+                "enable_third_person_view": "Ativar visão em terceira pessoa",
+                "allow_props_to_modify_player_movement": "Permitir que objetos alterem o movimento do jogador",
                 "add_domain": "Adicionar domínio"
             },
             "loading": {
@@ -4343,6 +4438,11 @@
             "group_access_type_members": "Membros",
             "group_access_type_plus": "Plus",
             "group_access_type_public": "Público",
+            "minimum_avatar_performance": "Desempenho mínimo do avatar",
+            "minimum_avatar_performance_none": "Sem restrições",
+            "minimum_avatar_performance_poor": "Baixo",
+            "minimum_avatar_performance_medium": "Médio",
+            "minimum_avatar_performance_good": "Bom",
             "region": "Região",
             "region_usw": "EUA Oeste",
             "region_use": "EUA Leste",
@@ -4859,6 +4959,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Copiar ID da instância",
+                "copy_world_name": "Copiar nome do mundo",
                 "more_actions": "Mais ações"
             },
             "header": "Histórico de Instâncias",
@@ -5454,6 +5555,9 @@
         "update_success": "Atualização concluída com sucesso"
     },
     "notifications": {
+        "group_instance_opened": "Criou uma nova instância",
+        "group_instance_opened_location": "Criou uma nova instância: {location}",
+        "group_instances_opened": "Criou {count} novas instâncias",
         "has_joined": "entrou",
         "has_left": "saiu",
         "joined_with_others": "e mais {count} entraram",
@@ -5955,6 +6059,27 @@
         "error_generic": "Falha na tradução",
         "error_network": "Erro de rede, tente novamente",
         "error_unsupported": "A tradução não está configurada"
+    },
+    "saved_group_favorites": {
+        "title": "Grupos Favoritos",
+        "description": "Salve grupos usados com frequência em coleções locais e use-os para receber avisos de novas instâncias.",
+        "new_collection": "Nova coleção",
+        "empty_collections": "Crie uma coleção para começar a salvar grupos.",
+        "empty_group": "Não há grupos salvos nesta coleção.",
+        "delete_title": "Excluir esta coleção?",
+        "delete_description": "Excluir {name} também remove os {count} grupos salvos nela.",
+        "choose_collection": "Salvar na coleção",
+        "remove": "Remover dos grupos salvos",
+        "toggle": "Salvar grupo",
+        "sidebar_saved": "Grupos Favoritos",
+        "sidebar_none": "Nenhum grupo salvo ainda",
+        "sidebar_other": "Outros grupos ativos",
+        "sidebar_failed": "Não foi possível carregar as instâncias de grupos",
+        "sidebar_no_active": "Não há outras instâncias de grupos ativas",
+        "scope_all": "Todos os grupos salvos",
+        "scope_selected": "Coleções de grupos selecionadas",
+        "notification_type": "Nova instância de grupo",
+        "notification_empty": "Não há coleções de grupos salvos disponíveis."
     },
     "app": {
         "routes": {

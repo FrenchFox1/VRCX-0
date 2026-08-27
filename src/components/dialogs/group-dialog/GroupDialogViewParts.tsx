@@ -6,7 +6,6 @@ import {
     languageOptionLabel,
     normalizeProfileLanguageRows
 } from '../user-dialog/userProfileFields';
-import { firstText } from './groupDialogUtils';
 
 export function normalizeGroupLanguages(
     group: GroupProfileRecord,
@@ -41,12 +40,10 @@ export function GroupTitleLanguages({
     return (
         <span className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-1">
             {visibleLanguages.map((language) => {
-                const key = String(
-                    language?.key || language?.value || ''
-                ).trim();
+                const key = language.key || language.value;
                 const label = languageOptionLabel(language);
                 return (
-                    <Tooltip key={`${key}:${language?.value || ''}`}>
+                    <Tooltip key={`${key}:${language.value}`}>
                         <TooltipTrigger
                             render={
                                 <Badge
@@ -80,7 +77,7 @@ export function GroupTitleLanguages({
     );
 }
 
-export function shouldShowGroupBadgeValue(value: unknown) {
-    const normalizedValue = firstText(value).toLowerCase();
+export function shouldShowGroupBadgeValue(value: string) {
+    const normalizedValue = value.trim().toLowerCase();
     return Boolean(normalizedValue && normalizedValue !== 'default');
 }

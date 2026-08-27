@@ -269,8 +269,7 @@ describe('vrchatMediaRepository', () => {
 
         await expect(
             vrchatMediaRepository.collectInventoryItems({
-                order: 'newest',
-                types: 'emoji'
+                types: ['emoji']
             })
         ).resolves.toEqual({
             items: [{ id: 'inv_1' }],
@@ -279,7 +278,7 @@ describe('vrchatMediaRepository', () => {
         expect(
             commandMocks.appVrchatMediaInventoryItemsCollect
         ).toHaveBeenCalledWith({
-            params: { order: 'newest', types: 'emoji' }
+            types: ['emoji']
         });
     });
 

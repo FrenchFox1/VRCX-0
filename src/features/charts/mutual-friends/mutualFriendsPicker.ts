@@ -12,7 +12,7 @@ import type {
 } from './mutualFriendsTypes';
 
 export function truncateMutualFriendLabel(value: string, maxLength = 18) {
-    const text = String(value || '');
+    const text = value;
     return text.length <= maxLength
         ? text
         : `${text.slice(0, Math.max(0, maxLength - 1))}…`;
@@ -22,9 +22,7 @@ export function mutualFriendPickerOptionMatches(
     option: MutualFriendPickerOption | null | undefined,
     query: string
 ) {
-    const normalizedQuery = String(query || '')
-        .trim()
-        .toLowerCase();
+    const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
         return true;
     }
@@ -75,7 +73,7 @@ export function filterMutualFriendPickerOptions(
 }
 
 export function buildMutualFriendPickerOption(
-    userId: unknown,
+    userId: string,
     friendsById: FriendRosterById,
     fallbackName = '',
     degree?: number
@@ -108,7 +106,7 @@ export function buildMutualFriendExcludePickerOptions(
     const seen = new Set<string>();
     const items: MutualFriendPickerOption[] = [];
 
-    function pushOption(userId: unknown, fallbackName = '') {
+    function pushOption(userId: string, fallbackName = '') {
         const normalizedId = normalizeMutualFriendId(userId);
         if (
             !isValidMutualFriendId(normalizedId) ||

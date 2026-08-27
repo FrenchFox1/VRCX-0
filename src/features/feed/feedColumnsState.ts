@@ -1,7 +1,9 @@
 import {
     FEED_FILTER_TYPES,
+    isFeedFilterType,
     type FeedFilterType
 } from '@/repositories/feedRepository';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 
 export type FeedViewMode = 'table' | 'columns';
@@ -89,15 +91,9 @@ function sanitizeFeedTypes(value: unknown): FeedFilterType[] {
     if (!Array.isArray(value)) {
         return [];
     }
-    return value.filter((type, index, source): type is FeedFilterType => {
-        if (typeof type !== 'string') {
-            return false;
-        }
-        if (!FEED_FILTER_TYPES.includes(type as FeedFilterType)) {
-            return false;
-        }
-        return source.indexOf(type) === index;
-    });
+    return value
+        .filter(isFeedFilterType)
+        .filter((type, index, source) => source.indexOf(type) === index);
 }
 
 function feedTypesEqual(left: FeedFilterType[], right: FeedFilterType[]) {
@@ -136,33 +132,32 @@ function applyExcludedFavoriteGroups<T extends FeedColumnFriendScope>(
 }
 
 function sanitizeFriendScope(value: unknown): FeedColumnFriendScope {
-    if (!value || typeof value !== 'object') {
+    if (!isRecord(value)) {
         return { kind: 'all' };
     }
-    const scope = value as Record<string, unknown>;
     const excludedFavoriteGroupKeys = sanitizeFavoriteGroupSelection(
-        scope.excludedFavoriteGroupKeys
+        value.excludedFavoriteGroupKeys
     );
-    if (scope.kind !== 'favorites') {
+    if (value.kind !== 'favorites') {
         return applyExcludedFavoriteGroups(
             { kind: 'all' },
             excludedFavoriteGroupKeys
         );
     }
-    if (scope.groupKeys === 'all') {
+    if (value.groupKeys === 'all') {
         return applyExcludedFavoriteGroups(
             { kind: 'favorites', groupKeys: 'all' },
             excludedFavoriteGroupKeys
         );
     }
-    if (!Array.isArray(scope.groupKeys)) {
+    if (!Array.isArray(value.groupKeys)) {
         return applyExcludedFavoriteGroups(
             { kind: 'favorites', groupKeys: 'all' },
             excludedFavoriteGroupKeys
         );
     }
     const groupKeys = Array.from(
-        new Set(scope.groupKeys.map(normalizeString).filter(Boolean))
+        new Set(value.groupKeys.map(normalizeString).filter(Boolean))
     );
     return {
         kind: 'favorites',
@@ -178,24 +173,23 @@ export function sanitizeFeedViewMode(value: unknown): FeedViewMode {
 export function sanitizeFeedColumnConfig(
     value: unknown
 ): FeedColumnConfig | null {
-    if (!value || typeof value !== 'object') {
+    if (!isRecord(value)) {
         return null;
     }
-    const column = value as Record<string, unknown>;
-    const feedTypes = sanitizeFeedTypes(column.feedTypes);
+    const feedTypes = sanitizeFeedTypes(value.feedTypes);
     if (!feedTypes.length) {
         return null;
     }
-    const id = normalizeString(column.id) || createColumnId();
-    const title = normalizeString(column.title);
+    const id = normalizeString(value.id) || createColumnId();
+    const title = normalizeString(value.title);
     if (!title) {
         return null;
     }
     return applyPresetScopeDefaults({
         id,
         title: id === 'fav' && title === 'Fav' ? 'Favorites' : title,
-        width: sanitizeWidth(column.width),
-        friendScope: sanitizeFriendScope(column.friendScope),
+        width: sanitizeWidth(value.width),
+        friendScope: sanitizeFriendScope(value.friendScope),
         feedTypes
     });
 }

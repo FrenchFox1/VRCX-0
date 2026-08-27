@@ -19,8 +19,8 @@ type LegacyMigrationPromptOptions = {
     confirm: (options: ConfirmOptions) => Promise<ConfirmResult>;
     t: (key: string, params?: Record<string, unknown>) => string;
     toast: {
-        error: (message: string) => unknown;
-        warning: (message: string) => unknown;
+        error: (message: string) => void;
+        warning: (message: string) => void;
     };
 };
 

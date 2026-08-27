@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use vrcx_0_core::vrchat_log_reader::{
     parse_log_document, LogEntry, LogEntryFilter, ParsedLogDocument,
 };
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 use crate::host_capabilities::{require_host_capability, HostCapability};
 use crate::vrchat_paths;
@@ -32,8 +32,8 @@ pub struct VrchatLogEntryOutput {
     pub category: Option<String>,
     pub message: String,
     pub raw: String,
-    pub line_number: usize,
-    pub end_line_number: usize,
+    pub line_number: u32,
+    pub end_line_number: u32,
     pub file_name: String,
     pub continuation_lines: Vec<String>,
 }
@@ -58,8 +58,8 @@ impl From<LogEntry> for VrchatLogEntryOutput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatLogEntriesReadInput {
     pub file_name: String,
-    pub offset: Option<usize>,
-    pub limit: Option<usize>,
+    pub offset: Option<u32>,
+    pub limit: Option<u32>,
     pub query: Option<String>,
     pub levels: Option<Vec<String>>,
     pub categories: Option<Vec<String>>,
@@ -69,9 +69,9 @@ pub struct VrchatLogEntriesReadInput {
 #[serde(rename_all = "camelCase")]
 pub struct VrchatLogTailReadInput {
     pub file_name: Option<String>,
-    pub after_line_number: Option<usize>,
+    pub after_line_number: Option<u32>,
     pub file_size: Option<u64>,
-    pub limit: Option<usize>,
+    pub limit: Option<u32>,
     pub query: Option<String>,
     pub levels: Option<Vec<String>>,
     pub categories: Option<Vec<String>>,
@@ -82,11 +82,11 @@ pub struct VrchatLogTailReadInput {
 pub struct VrchatLogEntriesReadOutput {
     pub file_name: String,
     pub entries: Vec<VrchatLogEntryOutput>,
-    pub offset: usize,
-    pub next_offset: Option<usize>,
-    pub total_entries: usize,
-    pub total_lines: usize,
-    pub last_line_number: usize,
+    pub offset: u32,
+    pub next_offset: Option<u32>,
+    pub total_entries: u32,
+    pub total_lines: u32,
+    pub last_line_number: u32,
     pub file_size: u64,
     pub file_modified_at: Option<String>,
     pub reset_required: bool,
@@ -128,7 +128,8 @@ fn read_log_entries(
         total_lines,
     } = read_log_document(base_dir, &file_name)?;
     let filter = LogEntryFilter::from_parts(input.query, input.levels, input.categories);
-    let offset = input.offset.unwrap_or(0);
+    let output_offset = input.offset.unwrap_or(0);
+    let offset = output_offset as usize;
     let limit = normalize_limit(input.limit);
     let filtered_entries = entries
         .into_iter()
@@ -142,15 +143,16 @@ fn read_log_entries(
         .map(VrchatLogEntryOutput::from)
         .collect::<Vec<_>>();
     let next_offset = offset + page.len();
+    let output_next_offset = u32::try_from(next_offset).unwrap_or(u32::MAX);
 
     Ok(VrchatLogEntriesReadOutput {
         file_name,
         entries: page,
-        offset,
-        next_offset: (next_offset < total_entries).then_some(next_offset),
-        total_entries,
-        total_lines,
-        last_line_number: total_lines,
+        offset: output_offset,
+        next_offset: (next_offset < total_entries).then_some(output_next_offset),
+        total_entries: u32::try_from(total_entries).unwrap_or(u32::MAX),
+        total_lines: u32::try_from(total_lines).unwrap_or(u32::MAX),
+        last_line_number: u32::try_from(total_lines).unwrap_or(u32::MAX),
         file_size: file_state.size,
         file_modified_at: file_state.modified_at,
         reset_required: false,
@@ -188,15 +190,16 @@ fn read_log_tail(
     }
 
     let total_lines = count_log_lines(base_dir, &file_name)?;
-    if total_lines <= after_line_number {
+    let output_total_lines = u32::try_from(total_lines).unwrap_or(u32::MAX);
+    if output_total_lines <= after_line_number {
         return Ok(VrchatLogEntriesReadOutput {
             file_name,
             entries: Vec::new(),
             offset: 0,
             next_offset: None,
             total_entries: 0,
-            total_lines,
-            last_line_number: total_lines,
+            total_lines: output_total_lines,
+            last_line_number: output_total_lines,
             file_size: file_state.size,
             file_modified_at: file_state.modified_at,
             reset_required: false,
@@ -205,7 +208,7 @@ fn read_log_tail(
 
     let ParsedLogDocument {
         entries,
-        total_lines,
+        total_lines: _,
     } = read_log_document(base_dir, &file_name)?;
     let filter = LogEntryFilter::from_parts(input.query, input.levels, input.categories);
     let filtered_entries = entries
@@ -220,7 +223,7 @@ fn read_log_tail(
             .map(|entry| entry.end_line_number)
             .unwrap_or(after_line_number)
     } else {
-        total_lines
+        output_total_lines
     };
     let tail_entries = tail_entries
         .into_iter()
@@ -232,8 +235,8 @@ fn read_log_tail(
         entries: tail_entries,
         offset: 0,
         next_offset: None,
-        total_entries,
-        total_lines,
+        total_entries: u32::try_from(total_entries).unwrap_or(u32::MAX),
+        total_lines: output_total_lines,
         last_line_number,
         file_size: file_state.size,
         file_modified_at: file_state.modified_at,
@@ -241,8 +244,9 @@ fn read_log_tail(
     })
 }
 
-fn normalize_limit(limit: Option<usize>) -> usize {
+fn normalize_limit(limit: Option<u32>) -> usize {
     limit
+        .map(|value| value as usize)
         .unwrap_or(DEFAULT_ENTRY_LIMIT)
         .clamp(1, MAX_ENTRY_LIMIT)
 }

@@ -219,17 +219,15 @@ export function InstanceInviteDialog({
         ]
     );
 
-    function addUserIds(userIds: unknown) {
-        const ids = (Array.isArray(userIds) ? userIds : [])
-            .map(normalizeId)
-            .filter(Boolean);
+    function addUserIds(userIds: string[]) {
+        const ids = userIds.map(normalizeId).filter(Boolean);
         if (!ids.length) {
             return;
         }
         setSelectedUserIds((current) => [...new Set([...current, ...ids])]);
     }
 
-    function toggleUserId(userId: unknown) {
+    function toggleUserId(userId: string) {
         const normalizedUserId = normalizeId(userId);
         if (!normalizedUserId) {
             return;
@@ -357,7 +355,11 @@ export function InstanceInviteDialog({
                             size="sm"
                             variant="outline"
                             disabled={!currentUserId || sending}
-                            onClick={() => addUserIds([currentUserId])}
+                            onClick={() => {
+                                if (currentUserId) {
+                                    addUserIds([currentUserId]);
+                                }
+                            }}
                         >
                             <UserIcon data-icon="inline-start" />
                             {t('dialog.invite.add_self')}

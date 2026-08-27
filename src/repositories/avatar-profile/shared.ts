@@ -2,6 +2,7 @@ import type {
     HttpApiExecuteResponse,
     VrchatAvatarIdInput as IpcVrchatAvatarIdInput
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 
 import { unwrapVrchatResponse } from '../vrchatRequest';
 
@@ -37,9 +38,7 @@ export function normalizeArray(values: unknown): string[] {
         .filter(Boolean);
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
+export { isRecord };
 
 export function parseInteger(value: unknown): number {
     const parsed = Number.parseInt(String(value), 10);

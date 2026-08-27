@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { openExternalLink } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -47,10 +48,6 @@ type OpenSourceNoticeDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeOpenSourceManifest(value: unknown): OpenSourceManifest {
     if (!isRecord(value)) {

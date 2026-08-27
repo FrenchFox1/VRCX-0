@@ -1,4 +1,4 @@
-use vrcx_0_runtime_host::notification::RenderedNotification;
+use vrcx_0_application_activity::notification::RenderedNotification;
 
 use super::{NotificationDeliveryPlan, NotificationDeliveryPreferences};
 

@@ -4,21 +4,19 @@ import {
     setTaskbarOverlayNotification,
     setTrayIconNotification
 } from '@/services/shellIntegrationService';
-import {
-    DEFAULT_THEME_COLOR_KEY,
-    THEME_COLOR_CONFIG
-} from '@/shared/constants/themes';
+import { DEFAULT_THEME_COLOR_KEY } from '@/shared/constants/themes';
 import {
     DEFAULT_TIME_UNIT_LABELS,
     type TimeUnitLabels
 } from '@/shared/utils/dateTime';
+import { normalizeThemeColor } from '@/shared/utils/themeColor';
 
 const MIN_NAV_WIDTH = 64;
 const MAX_NAV_WIDTH = 480;
 
-type ThemeMode = 'system' | 'light' | 'dark';
-type TableDensity = 'standard' | 'compact';
-type NotificationLayout = 'notification-center' | 'table';
+export type ThemeMode = 'system' | 'light' | 'dark';
+export type TableDensity = 'standard' | 'compact';
+export type NotificationLayout = 'notification-center' | 'table';
 type ShellStore = {
     sidebarOpen: boolean;
     rightSidebarOpen: boolean;
@@ -120,8 +118,6 @@ const initialState: ShellStoreState = {
     taskbarIconNotify: false
 };
 
-const themeColorValues = new Set(Object.keys(THEME_COLOR_CONFIG));
-
 export function normalizeTableDensity(value: unknown): TableDensity {
     if (value === 'comfortable') {
         return 'standard';
@@ -196,11 +192,7 @@ export const useShellStore = create<ShellStore>((set, get) => ({
         set({ themeMode });
     },
     setThemeColor(themeColor) {
-        set({
-            themeColor: themeColorValues.has(themeColor)
-                ? themeColor
-                : DEFAULT_THEME_COLOR_KEY
-        });
+        set({ themeColor: normalizeThemeColor(themeColor) });
     },
     setTableDensity(tableDensity) {
         set({ tableDensity });

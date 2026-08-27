@@ -91,7 +91,7 @@ function isTrustColorKey(value: string): value is TrustColorKey {
 export function normalizeTrustColors(value: unknown): TrustColorMap {
     const source = parseTrustColorSource(value);
     const normalized: TrustColorMap = { ...TRUST_COLOR_DEFAULTS };
-    for (const key of Object.keys(TRUST_COLOR_DEFAULTS) as TrustColorKey[]) {
+    for (const { key } of TRUST_COLOR_ENTRIES) {
         const color = String(source[key] || '').trim();
         normalized[key] = HEX_COLOR_PATTERN.test(color)
             ? color.toUpperCase()

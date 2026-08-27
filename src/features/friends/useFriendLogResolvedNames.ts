@@ -17,7 +17,7 @@ const LOOKUP_LIMIT = 100;
 type ResolveDisplayName = (row: FriendLogRow) => string;
 
 export function useFriendLogResolvedNames(
-    currentUserId: unknown,
+    currentUserId: string | null,
     rows: FriendLogRow[]
 ): ResolveDisplayName {
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
@@ -26,7 +26,7 @@ export function useFriendLogResolvedNames(
     const attemptedRef = useRef<Set<string>>(new Set());
 
     const resolveSyncName = useCallback(
-        (userId: string, rowDisplayName: unknown) => {
+        (userId: string, rowDisplayName: string) => {
             const own = resolveDisplayNameCandidate(rowDisplayName, userId);
             if (own) {
                 return own;
@@ -64,10 +64,7 @@ export function useFriendLogResolvedNames(
             ) {
                 continue;
             }
-            if (
-                resolveSyncName(userId, row?.displayName) ||
-                namesById[userId]
-            ) {
+            if (resolveSyncName(userId, row.displayName) || namesById[userId]) {
                 continue;
             }
             seen.add(userId);
@@ -130,7 +127,7 @@ export function useFriendLogResolvedNames(
     return useCallback(
         (row: FriendLogRow) => {
             const userId = normalizeUserId(row?.userId);
-            const sync = resolveSyncName(userId, row?.displayName);
+            const sync = resolveSyncName(userId, row.displayName);
             if (sync) {
                 return sync;
             }

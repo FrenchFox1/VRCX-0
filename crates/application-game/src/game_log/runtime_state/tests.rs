@@ -64,6 +64,25 @@ fn player_identity_prefers_user_id_and_falls_back_to_display_name() {
 }
 
 #[test]
+fn runtime_snapshot_store_shares_reads_until_the_snapshot_changes() {
+    let store = RuntimeSnapshotStore::default();
+    let first = store.snapshot();
+    let second = store.snapshot();
+
+    assert!(Arc::ptr_eq(&first, &second));
+
+    store.replace(RuntimeSnapshot {
+        location: "wrld_next:instance".into(),
+        ..RuntimeSnapshot::default()
+    });
+    let replaced = store.snapshot();
+
+    assert!(!Arc::ptr_eq(&first, &replaced));
+    assert_eq!(replaced.location, "wrld_next:instance");
+    assert!(first.location.is_empty());
+}
+
+#[test]
 fn leave_duration_requires_known_monotonic_event_times() {
     assert_eq!(duration_ms(Some(1_000), Some(61_000)), 60_000);
     assert_eq!(duration_ms(None, Some(61_000)), 0);

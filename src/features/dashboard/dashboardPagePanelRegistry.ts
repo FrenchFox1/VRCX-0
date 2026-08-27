@@ -92,13 +92,13 @@ const dashboardPagePanelComponentMap: Record<
     tools: toolsPage
 };
 
-export function getDashboardPagePanelComponent(key: unknown) {
-    const normalizedKey = String(key || '').trim();
+export function getDashboardPagePanelComponent(key: string | null) {
+    const normalizedKey = (key ?? '').trim();
     return normalizedKey
         ? (dashboardPagePanelComponentMap[normalizedKey] ?? null)
         : null;
 }
 
-export function canEmbedDashboardPagePanel(key: unknown) {
+export function canEmbedDashboardPagePanel(key: string | null) {
     return Boolean(getDashboardPagePanelComponent(key));
 }

@@ -1,4 +1,6 @@
 import type { FavoriteKind } from '@/domain/favorites/types';
+
+export type FavoriteSearchMode = 'name' | 'tag';
 export type FavoriteSource = 'remote' | 'local' | 'history';
 
 export type FavoriteSeedData = Record<string, unknown> & {

@@ -68,7 +68,8 @@ describe('favoriteCollectionSidebarRows', () => {
             isCurrentInstance: true
         });
         expect(rows[2]).toMatchObject({
-            isGroupByInstance: true
+            isGroupByInstance: true,
+            instanceLocation: 'wrld_live:1'
         });
 
         expect(

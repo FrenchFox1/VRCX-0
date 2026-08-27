@@ -3,6 +3,7 @@ use vrcx_0_core::game_process::GameProcessEvent;
 
 use super::{
     GameLogIngestEngine, GameLogIngestOptions, GameLogJoinLeaveSnapshot, GameLogProcessEvent,
+    GameLogSideEffect,
 };
 
 fn event(created_at: &str, kind: GameLogEventKind) -> GameLogEvent {
@@ -65,6 +66,104 @@ fn provider_video_vrcx_event_does_not_emit_core_persisted_mirror() {
     assert!(output.batch.is_empty());
     assert_eq!(output.side_effects.len(), 1);
     assert!(output.runtime_persisted_mirrors.is_empty());
+}
+
+#[test]
+fn pypy_dance_provider_event_enriches_video_after_generic_playback_log() {
+    let mut engine = GameLogIngestEngine::default();
+    let video_url = "http://api.pypy.dance/video?id=1234";
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-05-14T00:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_f20326da-f1ac-45fc-a062-609723b097b1:1".into(),
+                    world_name: "PyPyDance".into(),
+                },
+            ),
+            event(
+                "2026-05-14T00:00:01.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: video_url.into(),
+                    display_name: String::new(),
+                },
+            ),
+            event(
+                "2026-05-14T00:00:02.000Z",
+                GameLogEventKind::Vrcx {
+                    data: format!(
+                        "VideoPlay(PyPyDance) \"{video_url}\",0,180,\"1234 : Song Title (Alpha)\""
+                    ),
+                },
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input)] = output.side_effects.as_slice() else {
+        panic!("expected one enriched video side effect");
+    };
+    assert_eq!(input.video_url, video_url);
+    assert_eq!(input.video_id, "1234");
+    assert_eq!(input.video_name, "Song Title");
+    assert_eq!(input.display_name, "Alpha");
+}
+
+#[test]
+fn leaving_room_resets_now_playing_for_world_switch_and_rejoin() {
+    for destination in ["wrld_next:2", "wrld_current:1"] {
+        let mut engine = GameLogIngestEngine::default();
+        engine.ingest_events(
+            &[
+                event(
+                    "2026-05-14T00:00:00.000Z",
+                    GameLogEventKind::Location {
+                        location: "wrld_current:1".into(),
+                        world_name: "Current World".into(),
+                    },
+                ),
+                event(
+                    "2026-05-14T00:01:00.000Z",
+                    GameLogEventKind::VideoPlay {
+                        video_url: "https://example.test/video.mp4".into(),
+                        display_name: "Player".into(),
+                    },
+                ),
+            ],
+            GameLogIngestOptions::default(),
+        );
+
+        let leave_output = engine.ingest_events(
+            &[event(
+                "2026-05-14T00:02:00.000Z",
+                GameLogEventKind::LocationDestination {
+                    location: destination.into(),
+                },
+            )],
+            GameLogIngestOptions::default(),
+        );
+
+        assert_eq!(
+            leave_output.side_effects,
+            vec![GameLogSideEffect::NowPlayingReset]
+        );
+
+        let next_video_output = engine.ingest_events(
+            &[event(
+                "2026-05-14T00:03:00.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "https://example.test/video.mp4".into(),
+                    display_name: "Player".into(),
+                },
+            )],
+            GameLogIngestOptions::default(),
+        );
+
+        assert!(matches!(
+            next_video_output.side_effects.as_slice(),
+            [GameLogSideEffect::Video(_)]
+        ));
+    }
 }
 
 #[test]

@@ -3,7 +3,7 @@ mod tests {
     use super::super::*;
 
     fn runtime_with_friend(record: FriendRecord) -> RealtimeFriendsRuntime {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -17,7 +17,7 @@ mod tests {
     }
 
     fn empty_runtime() -> RealtimeFriendsRuntime {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -427,6 +427,7 @@ mod tests {
     #[test]
     fn friend_delete_removes_from_roster() {
         let runtime = runtime_with_friend(friend_record("online", "wrld_1:123~region(jp)"));
+        let friend_user_ids = runtime.friend_user_ids_snapshot();
 
         let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
             "type": "friend-delete",
@@ -436,6 +437,7 @@ mod tests {
         };
 
         assert_eq!(output.projection.removals, vec!["usr_friend"]);
+        assert_eq!(output.projection.location_time_snapshot, Some(vec![]));
         assert_eq!(output.persistence.friend_log_deletes.len(), 1);
         assert!(output
             .persistence
@@ -448,6 +450,12 @@ mod tests {
             .unwrap()
             .friends_by_id
             .contains_key("usr_friend"));
+        let empty_friend_user_ids = runtime.friend_user_ids_snapshot();
+        assert!(!std::sync::Arc::ptr_eq(
+            &friend_user_ids,
+            &empty_friend_user_ids
+        ));
+        assert!(empty_friend_user_ids.is_empty());
     }
 
     #[test]

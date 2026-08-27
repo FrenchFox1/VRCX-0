@@ -1,15 +1,18 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::VecDeque,
-    path::PathBuf,
     sync::{
         atomic::{AtomicBool, Ordering},
         Mutex,
     },
 };
 
-use vrcx_0_persistence::storage::StorageService;
+use vrcx_0_application_core::NoopWebClientPort;
 
 use super::*;
+use crate::favorites::test_support::{TestFavoriteRemoteRequests, TestFavoriteStore};
+use crate::favorites::FavoriteStore;
 
 struct FakeActions {
     local_outcomes: Mutex<VecDeque<Result<i64>>>,
@@ -33,7 +36,7 @@ impl FavoriteBulkRemoveActions for FakeActions {
     fn remove_remote<'a>(
         &'a self,
         _item: &'a FavoriteBulkRemoveItem,
-    ) -> Pin<Box<dyn Future<Output = Result<RemoteRemoveOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>> {
         Box::pin(async move {
             self.remote_outcomes
                 .lock()
@@ -76,7 +79,7 @@ async fn mixed_batch_keeps_per_item_results_and_continues_failures() {
 
     let result = run_favorite_bulk_remove(
         &actions,
-        "usr_self".into(),
+        OwnerId::new("usr_self"),
         FavoriteEntityKind::World,
         vec![
             item("local", FavoriteBulkRemoveSource::Local),
@@ -114,7 +117,7 @@ async fn remote_success_then_scope_change_stops_remaining_items() {
 
     let result = run_favorite_bulk_remove(
         &actions,
-        "usr_self".into(),
+        OwnerId::new("usr_self"),
         FavoriteEntityKind::World,
         vec![
             item("first", FavoriteBulkRemoveSource::Remote),
@@ -130,56 +133,27 @@ async fn remote_success_then_scope_change_stops_remaining_items() {
     );
 }
 
-struct TestDir(PathBuf);
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-favorite-bulk-remove-{name}-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
 #[tokio::test]
 async fn local_items_are_removed_from_account_scoped_persistence() {
-    let dir = TestDir::new("local-persistence");
-    let db = DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap();
-    let storage = StorageService::new(&dir.0.join("storage.json")).unwrap();
-    let web = WebClient::new(
-        &storage,
-        &db,
-        "wss://pipeline.vrchat.cloud".into(),
-        env!("CARGO_PKG_VERSION"),
-    )
-    .unwrap();
+    let store = TestFavoriteStore::default();
+    let remote_requests = TestFavoriteRemoteRequests;
+    let web = WebClient::new(NoopWebClientPort);
     let auth_scope = RuntimeAuthScope::new();
     let expected_scope = auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
-    favorites::favorite_add(
-        &db,
-        Some("usr_self"),
-        FavoriteEntityKind::Friend,
-        "usr_target".into(),
-        "Friends".into(),
-    )
-    .unwrap();
+    store
+        .add(
+            Some(&OwnerId::new("usr_self")),
+            FavoriteEntityKind::Friend,
+            "usr_target".into(),
+            "Friends".into(),
+        )
+        .unwrap();
 
     let result = remove_favorites_bulk(
         &FavoriteBulkRemoveDeps {
-            db: &db,
+            store: &store,
+            remote_requests: &remote_requests,
             web: &web,
             auth_scope: &auth_scope,
             expected_scope,
@@ -199,39 +173,31 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
     .unwrap();
 
     assert_eq!(result.succeeded, 1);
-    assert!(
-        favorites::favorite_list(&db, Some("usr_self"), FavoriteEntityKind::Friend,)
-            .unwrap()
-            .is_empty()
-    );
+    assert!(store
+        .list(Some(&OwnerId::new("usr_self")), FavoriteEntityKind::Friend,)
+        .unwrap()
+        .is_empty());
 }
 
 #[tokio::test]
 async fn selection_chunks_more_than_one_protected_batch() {
-    let dir = TestDir::new("selection-chunks");
-    let db = DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap();
-    let storage = StorageService::new(&dir.0.join("storage.json")).unwrap();
-    let web = WebClient::new(
-        &storage,
-        &db,
-        "wss://pipeline.vrchat.cloud".into(),
-        env!("CARGO_PKG_VERSION"),
-    )
-    .unwrap();
+    let store = TestFavoriteStore::default();
+    let remote_requests = TestFavoriteRemoteRequests;
+    let web = WebClient::new(NoopWebClientPort);
     let auth_scope = RuntimeAuthScope::new();
     let expected_scope = auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
     let items = (0..=FAVORITE_BULK_REMOVE_MAX_ITEMS)
         .map(|index| {
             let entity_id = format!("usr_{index}");
-            favorites::favorite_add(
-                &db,
-                Some("usr_self"),
-                FavoriteEntityKind::Friend,
-                entity_id.clone(),
-                "Friends".into(),
-            )
-            .unwrap();
+            store
+                .add(
+                    Some(&OwnerId::new("usr_self")),
+                    FavoriteEntityKind::Friend,
+                    entity_id.clone(),
+                    "Friends".into(),
+                )
+                .unwrap();
             FavoriteBulkRemoveItem {
                 key: format!("local:Friends:{entity_id}"),
                 source: FavoriteBulkRemoveSource::Local,
@@ -243,7 +209,8 @@ async fn selection_chunks_more_than_one_protected_batch() {
 
     let result = remove_favorites_selection(
         &FavoriteBulkRemoveDeps {
-            db: &db,
+            store: &store,
+            remote_requests: &remote_requests,
             web: &web,
             auth_scope: &auth_scope,
             expected_scope,
@@ -257,14 +224,19 @@ async fn selection_chunks_more_than_one_protected_batch() {
     .await
     .unwrap();
 
-    assert_eq!(result.total, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
-    assert_eq!(result.succeeded, FAVORITE_BULK_REMOVE_MAX_ITEMS + 1);
-    assert_eq!(result.failed, 0);
-    assert!(
-        favorites::favorite_list(&db, Some("usr_self"), FavoriteEntityKind::Friend,)
-            .unwrap()
-            .is_empty()
+    assert_eq!(
+        result.total,
+        crate::wire_count(FAVORITE_BULK_REMOVE_MAX_ITEMS + 1)
     );
+    assert_eq!(
+        result.succeeded,
+        crate::wire_count(FAVORITE_BULK_REMOVE_MAX_ITEMS + 1)
+    );
+    assert_eq!(result.failed, 0);
+    assert!(store
+        .list(Some(&OwnerId::new("usr_self")), FavoriteEntityKind::Friend,)
+        .unwrap()
+        .is_empty());
 }
 
 #[tokio::test]
@@ -295,7 +267,7 @@ async fn invalid_items_fail_individually_and_valid_items_still_run() {
 
     let result = run_favorite_bulk_remove(
         &actions,
-        "usr_self".into(),
+        OwnerId::new("usr_self"),
         FavoriteEntityKind::World,
         work_items,
     )

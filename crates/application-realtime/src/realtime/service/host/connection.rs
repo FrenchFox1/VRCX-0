@@ -5,17 +5,11 @@ use vrcx_0_application_core::{RuntimeAuthScopeSnapshot, RuntimeOperationStatus};
 
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::realtime::{NotificationExpiration, RealtimePersistenceBatch};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::realtime::{
-    write_realtime_batch, NotificationExpiration, RealtimePersistenceBatch,
-};
-use vrcx_0_vrchat_client::realtime::normalize_websocket_domain;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_websocket_endpoint;
 
-use crate::realtime::connection::{
-    run_realtime_transport, supervise_realtime_transport, RealtimeMessageSink,
-    RealtimeTransportDeps,
-};
+use crate::realtime::connection::{supervise_realtime_transport, RealtimeMessageSink};
 use crate::realtime::current_user::RealtimeCurrentUserRuntime;
 use crate::realtime::friends::RealtimeFriendsRuntime;
 use crate::realtime::user_cache::UserCacheRuntime;
@@ -31,6 +25,7 @@ use super::state::{
     ActiveRealtimeContext, RealtimeHostRuntimeMessageSink, RealtimeHostRuntimeState,
 };
 use super::{RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeStopRequest};
+use vrcx_0_core::OwnerId;
 
 enum RealtimeFriendBaselineStart {
     Supplied(HashMap<String, FriendRecord>),
@@ -43,24 +38,27 @@ impl RealtimeHostRuntime {
         let (transport_lifecycle_tx, _) = broadcast::channel(32);
         let (friend_profile_bulk_cancel_tx, _) = watch::channel(0);
         let world_cache = Arc::clone(&deps.world_cache);
-        let feed_persistence_disabled =
-            config_store::get_bool(deps.db.as_ref(), "feedPersistenceDisabled", false)
-                .unwrap_or_else(|error| {
-                    tracing::warn!("Feed persistence preference read failed: {error}");
-                    false
-                });
-        let avatar_feed_persistence_disabled =
-            config_store::get_bool(deps.db.as_ref(), "avatarFeedPersistenceDisabled", false)
-                .unwrap_or_else(|error| {
-                    tracing::warn!("Avatar Feed persistence preference read failed: {error}");
-                    false
-                });
+        let instance_dwell = Arc::clone(&deps.instance_dwell);
+        let feed_persistence_disabled = deps
+            .store
+            .get_bool("feedPersistenceDisabled", false)
+            .unwrap_or_else(|error| {
+                tracing::warn!("Feed persistence preference read failed: {error}");
+                false
+            });
+        let avatar_feed_persistence_disabled = deps
+            .store
+            .get_bool("avatarFeedPersistenceDisabled", false)
+            .unwrap_or_else(|error| {
+                tracing::warn!("Avatar Feed persistence preference read failed: {error}");
+                false
+            });
         Self {
             deps,
             state: Mutex::new(RealtimeHostRuntimeState::default()),
             cancel_tx,
             transport_lifecycle_tx,
-            friends: RealtimeFriendsRuntime::new(),
+            friends: RealtimeFriendsRuntime::new(instance_dwell),
             current_user: RealtimeCurrentUserRuntime::new(),
             user_cache: UserCacheRuntime::new(),
             user_query_cache: UserQueryCache::new(),
@@ -230,6 +228,8 @@ impl RealtimeHostRuntime {
                         generation,
                         0,
                     );
+                    pending_projection.location_time_snapshot =
+                        Some(self.deps.instance_dwell.snapshot());
                     friend_user_ids
                 } else {
                     let Some(friend_user_ids) = self
@@ -268,17 +268,21 @@ impl RealtimeHostRuntime {
         if !pending_projection.patches.is_empty()
             || !pending_projection.removals.is_empty()
             || pending_projection.friend_log_changed
+            || pending_projection.location_time_snapshot.is_some()
         {
             pending_projection.generation = generation;
             pending_projection.baseline_revision = baseline_revision;
             self.apply_friend_output_owned(
                 &friend_owner,
-                RealtimeFriendOutput::from_projection(session.user_id.clone(), pending_projection),
+                RealtimeFriendOutput::from_projection(
+                    OwnerId::new(session.user_id.clone()),
+                    pending_projection,
+                ),
             );
         }
         self.apply_reconciled_friend_feed_entries_owned(
             &friend_owner,
-            &session.user_id,
+            &OwnerId::new(session.user_id.clone()),
             generation,
             baseline_revision,
             pending_feed_entries,
@@ -287,11 +291,6 @@ impl RealtimeHostRuntime {
         self.user_cache.clear();
         self.user_query_cache.clear();
         self.record_baseline_friends_into_cache();
-        let transport_deps = RealtimeTransportDeps {
-            db: Arc::clone(&self.deps.db),
-            web: Arc::clone(&self.deps.web),
-            backend_status: self.deps.backend_status.clone(),
-        };
         let message_sink: Arc<dyn RealtimeMessageSink> = Arc::new(RealtimeHostRuntimeMessageSink {
             runtime: Arc::clone(self),
         });
@@ -304,6 +303,7 @@ impl RealtimeHostRuntime {
         };
         let task_transport = transport.clone();
         let runtime = Arc::clone(self);
+        let realtime_transport = Arc::clone(&self.deps.transport);
         self.deps.sync.record(
             "realtime",
             RuntimeOperationStatus::Running,
@@ -311,8 +311,7 @@ impl RealtimeHostRuntime {
             0,
         );
         self.deps.tasks.spawn(async move {
-            let termination = supervise_realtime_transport(run_realtime_transport(
-                transport_deps,
+            let termination = supervise_realtime_transport(realtime_transport.run(
                 message_sink,
                 client_run_id,
                 generation,
@@ -405,7 +404,9 @@ impl RealtimeHostRuntime {
                     .backend_status
                     .publish_realtime_ws_status(RealtimeWsStatusPayload {
                         status,
-                        websocket_domain: normalize_websocket_domain(&active.session.websocket),
+                        websocket_domain: normalize_vrchat_websocket_endpoint(
+                            &active.session.websocket,
+                        ),
                         at: chrono::Utc::now().to_rfc3339(),
                         client_run_id: Some(active.client_run_id),
                         generation: Some(active.generation),
@@ -436,8 +437,8 @@ impl RealtimeHostRuntime {
         self.friends.current_friend_record(user_id)
     }
 
-    pub fn friend_user_ids(&self) -> std::collections::HashSet<String> {
-        self.friends.friend_user_ids()
+    pub fn friend_user_ids_snapshot(&self) -> std::sync::Arc<std::collections::HashSet<String>> {
+        self.friends.friend_user_ids_snapshot()
     }
 
     pub fn friend_roster_snapshot(
@@ -515,7 +516,10 @@ impl RealtimeHostRuntime {
             }],
             ..RealtimePersistenceBatch::default()
         };
-        let result = write_realtime_batch(&self.deps.db, &user_id, &batch)
+        let result = self
+            .deps
+            .store
+            .write_realtime_batch(&OwnerId::new(user_id), &batch)
             .map_err(|error| Error::Custom(format!("expire realtime notification: {error}")));
         match &result {
             Ok(_) => {
@@ -581,7 +585,8 @@ impl RealtimeHostRuntime {
                         return;
                     }
 
-                    let websocket_domain = normalize_websocket_domain(&active.session.websocket);
+                    let websocket_domain =
+                        normalize_vrchat_websocket_endpoint(&active.session.websocket);
                     let final_current_user_output =
                         self.current_user_transport_finalization_output(active.generation);
                     state.connection.generation = state.connection.generation.saturating_add(1);

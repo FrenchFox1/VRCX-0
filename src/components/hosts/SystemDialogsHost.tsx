@@ -101,13 +101,13 @@ export function SystemDialogsHost() {
             <DataDirMigrationDialog />
             <UpdateAvailableToastHost />
             <UpdaterDialog
-                open={Boolean(updaterOpen)}
+                open={updaterOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('updaterOpen', open)
                 }
             />
             <ChangelogDialog
-                open={Boolean(changelogOpen)}
+                open={changelogOpen}
                 targetVersion={changelogTargetVersion}
                 onOpenChange={(open: boolean) => {
                     setSystemHostOpen('changelogOpen', open);
@@ -117,38 +117,36 @@ export function SystemDialogsHost() {
                 }}
             />
             <RegistryBackupDialog
-                open={Boolean(registryBackupOpen)}
+                open={registryBackupOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('registryBackupOpen', open)
                 }
             />
             <LaunchOptionsDialog
-                open={Boolean(launchOptionsOpen)}
+                open={launchOptionsOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('launchOptionsOpen', open)
                 }
             />
             <VRChatConfigDialog
-                open={Boolean(vrchatConfigOpen)}
+                open={vrchatConfigOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('vrchatConfigOpen', open)
                 }
             />
             <DatabaseUpgradeDialog
-                open={Boolean(
-                    databaseUpgradeOpen || systemHostDatabaseUpgradeOpen
-                )}
+                open={databaseUpgradeOpen || systemHostDatabaseUpgradeOpen}
             />
             <DatabaseMaintenanceDialog />
             <ProfileBackupDialogs />
             <KeyboardShortcutsDialog
-                open={Boolean(keyboardShortcutsOpen)}
+                open={keyboardShortcutsOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('keyboardShortcutsOpen', open)
                 }
             />
             <ProxySettingsDialog
-                open={Boolean(proxySettingsOpen)}
+                open={proxySettingsOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('proxySettingsOpen', open)
                 }

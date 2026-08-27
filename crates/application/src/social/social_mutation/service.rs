@@ -5,29 +5,24 @@ use vrcx_0_core::text::normalize_text;
 use serde_json::{json, Value};
 use vrcx_0_core::time::now_iso;
 
-use vrcx_0_persistence::friends::{
-    friend_log_delete_current_array, friend_log_history_add, friend_log_upsert_current,
-    FriendLogCurrentEntryInput, FriendLogDeleteOptionsInput, FriendLogHistoryEntryInput,
-    FriendLogUpsertOptionsInput,
-};
-use vrcx_0_persistence::notifications::notification_expire;
-use vrcx_0_vrchat_client::friends::{
-    friend_delete_input, friend_request_cancel_input, friend_request_send_input,
-};
-use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
-use vrcx_0_vrchat_client::notifications::notification_accept_friend_request_input;
-
-use crate::{Error, Result, RuntimeAuthScopeSnapshot};
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
 use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
+use vrcx_0_application_core::{Error, Result, RuntimeAuthScopeSnapshot};
 use vrcx_0_application_realtime::{
     SyntheticFriendEventOutcome, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,
 };
+use vrcx_0_contracts::friend_log::{
+    FriendLogCurrentEntryInput, FriendLogDeleteOptionsInput, FriendLogHistoryEntryInput,
+    FriendLogUpsertOptionsInput,
+};
+use vrcx_0_contracts::vrchat_api::VrchatJsonResponse;
 
 use super::types::{
     SocialFriendMutationInput, SocialFriendMutationOutcome, SocialFriendRequestAcceptInput,
     SocialFriendRequestCancelInput, SocialFriendRequestNotificationAcceptOutput,
     SocialFriendRequestNotificationAcceptStatus, SocialMutationDeps,
 };
+use vrcx_0_core::OwnerId;
 
 const SOCIAL_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -55,8 +50,9 @@ pub(super) async fn unfriend_with_expected_scope(
     target_display_name: &str,
 ) -> Result<SocialFriendMutationOutcome> {
     ensure_expected_auth_scope(deps, auth_scope)?;
-    let (_, request) =
-        friend_delete_input(auth_scope.endpoint.clone(), target_user_id.to_string())?;
+    let request = deps
+        .remote_requests
+        .unfriend(auth_scope.endpoint.clone(), target_user_id.to_string())?;
     execute_vrchat_json_request(deps, auth_scope, request).await?;
     if let Err(error) = ensure_expected_auth_scope(deps, auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
@@ -66,7 +62,7 @@ pub(super) async fn unfriend_with_expected_scope(
     }
     Ok(apply_unfriend_locally(
         deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id.clone()),
         &auth_scope.endpoint,
         target_user_id,
         target_display_name,
@@ -81,8 +77,9 @@ pub async fn send_friend_request(
     require_target(&target_user_id)?;
     let auth_scope = capture_current_auth_scope(&deps)?;
 
-    let (_, request) =
-        friend_request_send_input(auth_scope.endpoint.clone(), target_user_id.clone())?;
+    let request = deps
+        .remote_requests
+        .send_friend_request(auth_scope.endpoint.clone(), target_user_id.clone())?;
     execute_vrchat_json_request(&deps, &auth_scope, request).await?;
     if let Err(error) = ensure_expected_auth_scope(&deps, &auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
@@ -93,7 +90,7 @@ pub async fn send_friend_request(
 
     Ok(write_friend_request_history(
         &deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id),
         &target_user_id,
         &input.target_display_name,
         "FriendRequest",
@@ -108,7 +105,7 @@ pub async fn cancel_friend_request(
     require_target(&target_user_id)?;
     let auth_scope = capture_current_auth_scope(&deps)?;
 
-    let (_, request) = friend_request_cancel_input(
+    let request = deps.remote_requests.cancel_friend_request(
         auth_scope.endpoint.clone(),
         target_user_id.clone(),
         normalize_text(&input.notification_id),
@@ -123,7 +120,7 @@ pub async fn cancel_friend_request(
 
     Ok(write_friend_request_history(
         &deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id),
         &target_user_id,
         &input.target_display_name,
         "CancelFriendRequest",
@@ -153,8 +150,9 @@ async fn accept_friend_request_with_expected_scope(
     }
     ensure_expected_auth_scope(deps, auth_scope)?;
 
-    let (_, request) =
-        notification_accept_friend_request_input(auth_scope.endpoint.clone(), notification_id)?;
+    let request = deps
+        .remote_requests
+        .accept_friend_request(auth_scope.endpoint.clone(), notification_id)?;
     execute_vrchat_json_request(deps, auth_scope, request).await?;
     if let Err(error) = ensure_expected_auth_scope(deps, auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
@@ -178,7 +176,7 @@ async fn accept_friend_request_with_expected_scope(
     }
     Ok(apply_friend_request_accept_locally(
         deps,
-        &auth_scope.current_user_id,
+        &OwnerId::new(auth_scope.current_user_id.clone()),
         &auth_scope.endpoint,
         &target_user_id,
         &input.target_display_name,
@@ -198,7 +196,8 @@ pub async fn accept_friend_request_notification(
         Err(error) => return Err(error),
     };
     ensure_expected_auth_scope(&deps, &auth_scope)?;
-    notification_expire(deps.db, auth_scope.current_user_id.clone(), notification_id)?;
+    deps.store
+        .expire_notification(&auth_scope.current_user_id, &notification_id)?;
     Ok(SocialFriendRequestNotificationAcceptOutput {
         status: if outcome.is_some() {
             SocialFriendRequestNotificationAcceptStatus::Accepted
@@ -221,7 +220,7 @@ fn is_not_found_error(error: &Error) -> bool {
 
 pub(in crate::social) fn apply_unfriend_locally(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -255,7 +254,7 @@ pub(in crate::social) fn apply_unfriend_locally(
 
 fn fallback_unfriend(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -266,9 +265,8 @@ fn fallback_unfriend(
         endpoint,
         target_user_id,
         || {
-            friend_log_delete_current_array(
-                deps.db,
-                owner_user_id.to_string(),
+            deps.store.delete_current_friend(
+                owner_user_id.as_str(),
                 vec![target_user_id.to_string()],
                 FriendLogDeleteOptionsInput {
                     history_entries: vec![history_entry],
@@ -284,7 +282,7 @@ fn fallback_unfriend(
 
 pub(in crate::social) fn apply_friend_request_accept_locally(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -321,7 +319,7 @@ pub(in crate::social) fn apply_friend_request_accept_locally(
 
 fn fallback_accept(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     target_user_id: &str,
     target_display_name: &str,
@@ -346,9 +344,8 @@ fn fallback_accept(
     let result =
         deps.realtime
             .run_scoped_friend_log_upsert(owner_user_id, endpoint, record, || {
-                friend_log_upsert_current(
-                    deps.db,
-                    owner_user_id.to_string(),
+                deps.store.upsert_current_friend(
+                    owner_user_id.as_str(),
                     FriendLogCurrentEntryInput {
                         user_id: target_user_id.to_string(),
                         display_name,
@@ -369,13 +366,16 @@ fn fallback_accept(
 
 fn write_friend_request_history(
     deps: &SocialMutationDeps<'_>,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     target_user_id: &str,
     target_display_name: &str,
     history_type: &str,
 ) -> SocialFriendMutationOutcome {
     let entry = history_entry(history_type, target_user_id, target_display_name);
-    match friend_log_history_add(deps.db, owner_user_id.to_string(), vec![entry]) {
+    match deps
+        .store
+        .add_friend_history(owner_user_id.as_str(), vec![entry])
+    {
         Ok(_) => SocialFriendMutationOutcome::applied(target_user_id),
         Err(error) => SocialFriendMutationOutcome::remote_ok_local_failed(target_user_id, error),
     }
@@ -426,7 +426,7 @@ async fn resolve_target_profile(
         return placeholder();
     };
     if !(200..300).contains(&response.status) {
-        let response = ApiJsonResponse::from(&response);
+        let response = VrchatJsonResponse::from(&response);
         let message = response
             .error_message()
             .unwrap_or_else(|| "VRChat social mutation request failed".to_string());
@@ -489,7 +489,7 @@ fn ensure_expected_auth_scope(
 async fn execute_vrchat_json_request(
     deps: &SocialMutationDeps<'_>,
     auth_scope: &RuntimeAuthScopeSnapshot,
-    mut request: HttpApiRequestInput,
+    mut request: VrchatApiRequest,
 ) -> Result<Value> {
     let path = request
         .path
@@ -506,10 +506,7 @@ async fn execute_vrchat_json_request(
     if request.url.is_none() {
         request.endpoint = Some(auth_scope.endpoint.clone());
     }
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db)
-        .await?;
+    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
     match validate_vrchat_mutation_response(response.status, &response.data) {
         Ok(payload) => Ok(payload),
         Err(error) => {
@@ -540,7 +537,7 @@ fn validate_vrchat_mutation_response(status: i32, data: &str) -> Result<Value> {
             Err(_) => Value::String(data.to_string()),
         }
     };
-    let response = ApiJsonResponse {
+    let response = VrchatJsonResponse {
         status,
         json: payload,
     };
@@ -572,7 +569,7 @@ fn emit_current_scope_auth_failure(
     }
     deps.realtime
         .emit_runtime_vrchat_auth_failure(RuntimeVrchatAuthFailurePayload {
-            owner_user_id: scope.current_user_id,
+            owner_user_id: OwnerId::new(scope.current_user_id),
             endpoint: scope.endpoint,
             path: path.to_string(),
             reason: reason.to_string(),

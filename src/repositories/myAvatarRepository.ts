@@ -8,6 +8,7 @@ import {
     type AvatarUpdateRequest,
     type HttpApiExecuteResponse
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import avatarLocalRepository from './avatarLocalRepository';
@@ -16,10 +17,6 @@ import { unwrapVrchatResponse } from './vrchatRequest';
 
 type AvatarRecord = Record<string, unknown>;
 type VrchatApiResult = HttpApiExecuteResponse;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function unwrapVrchatAvatarResponse<TJson = unknown>(
     response: VrchatApiResult,

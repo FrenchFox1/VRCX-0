@@ -1,5 +1,6 @@
 import type { DashboardPanel } from '@/repositories/dashboardRepository';
 import { DASHBOARD_BLOCKED_PANEL_KEYS } from '@/shared/constants/dashboard';
+import { isRecord } from '@/shared/utils/record';
 
 export type DashboardPanelDefinition = {
     key: string;
@@ -17,10 +18,6 @@ export type DashboardColumnDefinition = {
 };
 
 type TranslateKey = (key: string) => string;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function cloneDefaultConfig(value: unknown): Record<string, unknown> {
     if (!value || typeof value !== 'object') {
@@ -122,6 +119,13 @@ export const DASHBOARD_PAGE_DEFINITIONS: DashboardPanelDefinition[] = [
         labelKey: 'dashboard.registry.favorite_friends',
         path: '/favorites/friends',
         descriptionKey: 'dashboard.registry.favorite_friends_page'
+    },
+    {
+        key: 'favorite-groups',
+        category: 'page',
+        labelKey: 'saved_group_favorites.title',
+        path: '/favorites/groups',
+        descriptionKey: 'saved_group_favorites.description'
     },
     {
         key: 'favorite-worlds',

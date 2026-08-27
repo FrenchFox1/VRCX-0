@@ -1,4 +1,4 @@
-use crate::database::DatabaseService;
+use crate::database::{schema::add_column_if_missing, DatabaseService};
 use crate::Error;
 
 pub fn ensure_realtime_tables(db: &DatabaseService, user_prefix: &str) -> Result<(), Error> {
@@ -7,6 +7,17 @@ pub fn ensure_realtime_tables(db: &DatabaseService, user_prefix: &str) -> Result
         for sql in realtime_table_statements(user_prefix) {
             db.execute_non_query(&sql, &Default::default())?;
         }
+        let notification_v1_table = format!("{user_prefix}_notifications");
+        add_column_if_missing(
+            db,
+            &notification_v1_table,
+            "seen",
+            "INTEGER NOT NULL DEFAULT 0",
+        )?;
+        db.execute_non_query(
+            &format!("UPDATE {notification_v1_table} SET seen = 1 WHERE expired = 1 AND seen = 0"),
+            &Default::default(),
+        )?;
         Ok(())
     })
 }
@@ -65,15 +76,20 @@ fn realtime_table_statements(user_prefix: &str) -> Vec<String> {
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_feed_online_offline (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, type TEXT, location TEXT, world_name TEXT, time INTEGER, group_name TEXT)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_online_offline_user_created_idx ON {user_prefix}_feed_online_offline (user_id, created_at)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_online_offline_created_id_idx ON {user_prefix}_feed_online_offline (created_at DESC, id DESC)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_self_profile_log (id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT NOT NULL DEFAULT '', field TEXT NOT NULL DEFAULT '', value TEXT NOT NULL DEFAULT '', previous_value TEXT NOT NULL DEFAULT '')"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_self_profile_log_field_created_idx ON {user_prefix}_self_profile_log (field, created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_friend_log_current (user_id TEXT PRIMARY KEY, display_name TEXT, trust_level TEXT, friend_number INTEGER)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_friend_log_history (id INTEGER PRIMARY KEY, created_at TEXT, type TEXT, user_id TEXT, display_name TEXT, previous_display_name TEXT, trust_level TEXT, previous_trust_level TEXT, friend_number INTEGER)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_friend_log_history_user_id_idx ON {user_prefix}_friend_log_history (user_id)"),
-        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications (id TEXT PRIMARY KEY, created_at TEXT, type TEXT, sender_user_id TEXT, sender_username TEXT, receiver_user_id TEXT, message TEXT, world_id TEXT, world_name TEXT, image_url TEXT, invite_message TEXT, request_message TEXT, response_message TEXT, expired INTEGER)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications (id TEXT PRIMARY KEY, created_at TEXT, type TEXT, sender_user_id TEXT, sender_username TEXT, receiver_user_id TEXT, message TEXT, world_id TEXT, world_name TEXT, image_url TEXT, invite_message TEXT, request_message TEXT, response_message TEXT, expired INTEGER, seen INTEGER NOT NULL DEFAULT 0)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_created_id_idx ON {user_prefix}_notifications (created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications_v2 (id TEXT PRIMARY KEY, created_at TEXT, updated_at TEXT, expires_at TEXT, type TEXT, link TEXT, link_text TEXT, message TEXT, title TEXT, image_url TEXT, seen INTEGER, sender_user_id TEXT, sender_username TEXT, data TEXT, responses TEXT, details TEXT)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_created_id_idx ON {user_prefix}_notifications_v2 (created_at DESC, id DESC)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_seen_created_id_idx ON {user_prefix}_notifications_v2 (seen, created_at DESC, id DESC)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_type_created_id_idx ON {user_prefix}_notifications_v2 (type, created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_avatar_history (avatar_id TEXT PRIMARY KEY, created_at TEXT, time INTEGER)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_avatar_wear_log (id INTEGER PRIMARY KEY AUTOINCREMENT, avatar_id TEXT NOT NULL, started_at TEXT NOT NULL, ended_at TEXT NOT NULL, time INTEGER NOT NULL)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_avatar_wear_log_ended_idx ON {user_prefix}_avatar_wear_log (ended_at)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_avatar_wear_log_started_idx ON {user_prefix}_avatar_wear_log (started_at)"),
     ]
 }

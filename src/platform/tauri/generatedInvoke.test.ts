@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     invokeTauri: vi.fn(),
@@ -38,6 +38,15 @@ describe('generatedInvoke', () => {
         expect(mocks.notifySQLiteError).not.toHaveBeenCalled();
     });
 
+    it('types command promise rejections as Error', () => {
+        type RejectionHandler = NonNullable<
+            Parameters<ReturnType<typeof invoke>['catch']>[0]
+        >;
+        type Rejection = Parameters<RejectionHandler>[0];
+
+        expectTypeOf<Rejection>().toEqualTypeOf<Error>();
+    });
+
     it('notifies SQLite listeners and rethrows the normalized IPC error', async () => {
         const rawError = new Error('database is locked');
         const normalizedError = new Error(
@@ -68,5 +77,17 @@ describe('generatedInvoke', () => {
         );
         expect(mocks.recordErrorLog).not.toHaveBeenCalled();
         expect(mocks.notifySQLiteError).toHaveBeenCalledWith(normalizedError);
+    });
+
+    it('normalizes non-Error command rejections into Error', async () => {
+        const normalizedError = new Error('normalized command failure');
+        mocks.invokeTauri.mockRejectedValue('legacy command failure');
+        mocks.normalizePlatformError.mockReturnValue(normalizedError);
+
+        await expect(invoke('app__example')).rejects.toBe(normalizedError);
+        expect(mocks.normalizePlatformError).toHaveBeenCalledWith(
+            'legacy command failure',
+            'Tauri command failed: app__example'
+        );
     });
 });

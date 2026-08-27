@@ -39,6 +39,7 @@ pub(super) fn build_activity_content(
     let group_name = first_non_empty_owned([
         payload.trimmed_field("groupName").unwrap_or_default(),
         nested_str(payload, &["details", "groupName"]),
+        nested_str(payload, &["data", "groupName"]),
     ]);
     let parsed_location = parse_location(&location);
     let display_location = first_non_empty([
@@ -222,6 +223,27 @@ pub(super) fn build_activity_content(
             OverlayActivityText::message(OverlayMessage::notifications_group_queue_ready_title()),
             literal_body(payload.trimmed_text("message")),
         ),
+        "group.instanceOpened" => {
+            let body = match payload.get("count").and_then(Value::as_u64).unwrap_or(1) {
+                count if count > 1 => OverlayActivityText::message(
+                    OverlayMessage::notifications_group_instances_opened(count),
+                ),
+                _ if !display_location.is_empty() => OverlayActivityText::message(
+                    OverlayMessage::notifications_group_instance_opened_location(&display_location),
+                ),
+                _ => OverlayActivityText::message(
+                    OverlayMessage::notifications_group_instance_opened(),
+                ),
+            };
+            activity_content(
+                "group",
+                OverlayActivityText::literal(first_non_empty_owned([
+                    group_name.as_str(),
+                    payload.trimmed_field("groupId").unwrap_or_default(),
+                ])),
+                body,
+            )
+        }
         "instance.closed" => activity_content(
             "instance",
             OverlayActivityText::message(OverlayMessage::notifications_instance_closed_title()),

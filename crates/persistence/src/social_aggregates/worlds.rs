@@ -1,7 +1,7 @@
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
 use crate::favorites;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::Error;
 use vrcx_0_core::FavoriteEntityKind;
 
@@ -14,7 +14,7 @@ use super::types::{
 
 pub fn search_worlds_visited(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     input: SearchWorldsVisitedInput,
 ) -> Result<SearchWorldsVisitedOutput, Error> {
     let limit = input.limit.clamp(1, 100);
@@ -70,7 +70,7 @@ fn worlds_visited_summary(rows: &[VisitedWorldRow]) -> String {
 
 pub fn favorite_local(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     input: FavoriteLocalInput,
 ) -> Result<FavoriteOutput, Error> {
     let kind = input.kind;
@@ -93,7 +93,7 @@ pub fn favorite_local(
     let affected_rows = if input.dry_run {
         0
     } else {
-        action.apply(db, owner_user_id, kind, &entity_id, &group)?
+        apply_favorite_action(action, db, owner_user_id, kind, &entity_id, &group)?
     };
     Ok(FavoriteOutput {
         kind,
@@ -106,30 +106,28 @@ pub fn favorite_local(
     })
 }
 
-impl FavoriteAction {
-    fn apply(
-        self,
-        db: &DatabaseService,
-        owner_user_id: &str,
-        kind: FavoriteEntityKind,
-        entity_id: &str,
-        group: &str,
-    ) -> Result<i64, Error> {
-        match self {
-            Self::Add => favorites::favorite_add(
-                db,
-                Some(owner_user_id),
-                kind,
-                entity_id.to_string(),
-                group.to_string(),
-            ),
-            Self::Remove => favorites::favorite_remove(
-                db,
-                Some(owner_user_id),
-                kind,
-                entity_id.to_string(),
-                group.to_string(),
-            ),
-        }
+fn apply_favorite_action(
+    action: FavoriteAction,
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    kind: FavoriteEntityKind,
+    entity_id: &str,
+    group: &str,
+) -> Result<i64, Error> {
+    match action {
+        FavoriteAction::Add => favorites::favorite_add(
+            db,
+            Some(owner_user_id),
+            kind,
+            entity_id.to_string(),
+            group.to_string(),
+        ),
+        FavoriteAction::Remove => favorites::favorite_remove(
+            db,
+            Some(owner_user_id),
+            kind,
+            entity_id.to_string(),
+            group.to_string(),
+        ),
     }
 }

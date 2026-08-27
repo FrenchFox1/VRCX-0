@@ -1,43 +1,29 @@
 #![allow(non_snake_case)]
 
-use std::path::Path;
-
 use tauri::State;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_game as screenshot;
+use vrcx_0_core::screenshots::{
+    ScreenshotFolderTree, ScreenshotLibraryImage, ScreenshotLibraryScanStatus,
+    ScreenshotSearchResult,
+};
 
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
-use vrcx_0_host_desktop::vrchat_paths;
 
 fn ensure_screenshot_read_allowed(state: &AppState, path: &str) -> Result<(), AppError> {
     state
-        .desktop
-        .host_file_access
-        .ensure_read_allowed(path, &state.paths)?;
-    let path = Path::new(path);
-    let photos_root = vrchat_paths::vrchat_photos_location();
-    if !screenshot::is_vrchat_screenshot_file_path(path)
-        && !screenshot::is_screenshot_library_file_path(path, Path::new(&photos_root))
-    {
-        return Err(AppError::Custom(
-            "Screenshot metadata commands require a VRChat screenshot or library PNG path.".into(),
-        ));
-    }
+        .runtime_host()
+        .screenshots()
+        .ensure_read_allowed(path)?;
     Ok(())
 }
 
 fn ensure_screenshot_write_allowed(state: &AppState, path: &str) -> Result<(), AppError> {
     state
-        .desktop
-        .host_file_access
-        .ensure_write_allowed(path, &state.paths)?;
-    if !screenshot::is_vrchat_screenshot_file_path(Path::new(path)) {
-        return Err(AppError::Custom(
-            "Screenshot metadata commands require a VRChat PNG screenshot path.".into(),
-        ));
-    }
+        .runtime_host()
+        .screenshots()
+        .ensure_write_allowed(path)?;
     Ok(())
 }
 
@@ -50,12 +36,10 @@ pub fn app__get_extra_screenshot_data(
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_read_allowed(&state, &path)?;
-    Ok(screenshot::extra_screenshot_data(
-        &path,
-        carousel_cache,
-        &state.game.screenshot_cache,
-        &vrchat_paths::vrchat_photos_location(),
-    )?)
+    Ok(state
+        .runtime_host()
+        .screenshots()
+        .extra_data(&path, carousel_cache)?)
 }
 
 #[tauri::command]
@@ -66,7 +50,7 @@ pub fn app__get_screenshot_metadata(
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_read_allowed(&state, &path)?;
-    Ok(screenshot::screenshot_metadata_json(&path)?)
+    Ok(state.runtime_host().screenshots().metadata_json(&path)?)
 }
 
 #[tauri::command]
@@ -75,15 +59,12 @@ pub fn app__find_screenshots_by_search(
     state: State<'_, AppState>,
     search_query: String,
     search_type: Option<i32>,
-) -> Result<Vec<screenshot::ScreenshotSearchResult>, AppError> {
+) -> Result<Vec<ScreenshotSearchResult>, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    let cache = &state.game.screenshot_cache;
-    Ok(screenshot::find_screenshot_search_results(
-        &search_query,
-        search_type,
-        cache,
-        &vrchat_paths::vrchat_photos_location(),
-    ))
+    Ok(state
+        .runtime_host()
+        .screenshots()
+        .find(&search_query, search_type))
 }
 
 #[tauri::command]
@@ -91,39 +72,29 @@ pub fn app__find_screenshots_by_search(
 pub fn app__start_screenshot_library_scan(
     state: State<'_, AppState>,
     force: Option<bool>,
-) -> Result<screenshot::ScreenshotLibraryScanStatus, AppError> {
+) -> Result<ScreenshotLibraryScanStatus, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    let cache = &state.game.screenshot_cache;
-    Ok(screenshot::start_screenshot_library_scan(
-        cache,
-        state.paths.screenshot_thumbs.clone(),
-        state.runtime_context.event_bus.clone(),
-        state.runtime_context.tasks.clone(),
-        force.unwrap_or(false),
-        vrchat_paths::vrchat_photos_location(),
-    ))
+    Ok(state
+        .runtime_host()
+        .start_screenshot_library_scan(force.unwrap_or(false)))
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__get_screenshot_library_status(
     state: State<'_, AppState>,
-) -> Result<screenshot::ScreenshotLibraryScanStatus, AppError> {
+) -> Result<ScreenshotLibraryScanStatus, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    Ok(state.game.screenshot_cache.scan_status())
+    Ok(state.runtime_host().screenshots().scan_status())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__get_screenshot_folder_tree(
     state: State<'_, AppState>,
-) -> Result<screenshot::ScreenshotFolderTree, AppError> {
+) -> Result<ScreenshotFolderTree, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    let cache = &state.game.screenshot_cache;
-    Ok(screenshot::screenshot_folder_tree(
-        cache,
-        &vrchat_paths::vrchat_photos_location(),
-    )?)
+    Ok(state.runtime_host().screenshots().folder_tree()?)
 }
 
 #[tauri::command]
@@ -131,14 +102,12 @@ pub fn app__get_screenshot_folder_tree(
 pub fn app__get_screenshot_folder_images(
     state: State<'_, AppState>,
     folder_path: String,
-) -> Result<Vec<screenshot::ScreenshotLibraryImage>, AppError> {
+) -> Result<Vec<ScreenshotLibraryImage>, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    let cache = &state.game.screenshot_cache;
-    Ok(screenshot::list_screenshot_folder_images(
-        cache,
-        &folder_path,
-        &vrchat_paths::vrchat_photos_location(),
-    )?)
+    Ok(state
+        .runtime_host()
+        .screenshots()
+        .folder_images(&folder_path)?)
 }
 
 #[tauri::command]
@@ -146,14 +115,12 @@ pub fn app__get_screenshot_folder_images(
 pub fn app__get_world_screenshots(
     state: State<'_, AppState>,
     world_id: String,
-) -> Result<Vec<screenshot::ScreenshotLibraryImage>, AppError> {
+) -> Result<Vec<ScreenshotLibraryImage>, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    let cache = &state.game.screenshot_cache;
-    Ok(screenshot::list_world_screenshots(
-        cache,
-        &world_id,
-        &vrchat_paths::vrchat_photos_location(),
-    )?)
+    Ok(state
+        .runtime_host()
+        .screenshots()
+        .world_screenshots(&world_id)?)
 }
 
 #[tauri::command]
@@ -164,27 +131,19 @@ pub async fn app__ensure_screenshot_thumbnail(
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_read_allowed(&state, &path)?;
-    let cache = state.game.screenshot_cache.clone();
-    let cache_dir = state.paths.screenshot_thumbs.clone();
-    Ok(tauri::async_runtime::spawn_blocking(move || {
-        screenshot::ensure_screenshot_thumbnail(
-            &path,
-            &cache_dir,
-            &cache,
-            &vrchat_paths::vrchat_photos_location(),
-        )
-    })
-    .await
-    .map_err(|error| AppError::Custom(format!("thumbnail task failed: {error}")))??)
+    let screenshots = state.runtime_host().screenshots().clone();
+    Ok(
+        tauri::async_runtime::spawn_blocking(move || screenshots.ensure_thumbnail(&path))
+            .await
+            .map_err(|error| AppError::Custom(format!("thumbnail task failed: {error}")))??,
+    )
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__get_last_screenshot() -> Result<String, AppError> {
+pub fn app__get_last_screenshot(state: State<'_, AppState>) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    Ok(screenshot::last_screenshot(
-        &vrchat_paths::vrchat_photos_location(),
-    ))
+    Ok(state.runtime_host().screenshots().last())
 }
 
 #[tauri::command]
@@ -195,19 +154,14 @@ pub fn app__delete_screenshot_metadata(
 ) -> Result<bool, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_write_allowed(&state, &path)?;
-    Ok(screenshot::delete_text_metadata(&path, true))
+    Ok(state.runtime_host().screenshots().delete_metadata(&path))
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__delete_all_screenshot_metadata(state: State<'_, AppState>) -> Result<(), AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    let cache = &state.game.screenshot_cache;
-    screenshot::delete_all_screenshot_metadata(
-        cache,
-        &state.paths.screenshot_thumbs,
-        &vrchat_paths::vrchat_photos_location(),
-    );
+    state.runtime_host().screenshots().delete_all_metadata();
     Ok(())
 }
 
@@ -222,8 +176,9 @@ pub async fn app__add_screenshot_metadata(
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_write_allowed(&state, &path)?;
+    let screenshots = state.runtime_host().screenshots().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        screenshot::add_screenshot_metadata(
+        screenshots.add_metadata(
             &path,
             &metadata_string,
             &world_id,

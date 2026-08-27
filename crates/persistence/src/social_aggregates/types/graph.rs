@@ -1,9 +1,10 @@
+use crate::ownership::OwnerId;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialGraphInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub user_id: Option<String>,
     pub depth: u8,
@@ -13,7 +14,7 @@ pub struct SocialGraphInput {
     pub max_edges: Option<i64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialGraphOutput {
     pub nodes: Vec<SocialGraphNode>,
@@ -30,7 +31,7 @@ pub struct SocialGraphOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialGraphNode {
     pub user_id: String,
@@ -39,24 +40,24 @@ pub struct SocialGraphNode {
     pub connection_degree: usize,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialGraphEdge {
     pub source_user_id: String,
     pub target_user_id: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendCirclesInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub max_circles: Option<i64>,
     #[serde(default)]
     pub max_members_per_circle: Option<i64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendCirclesOutput {
     pub circles: Vec<FriendCircleRow>,
@@ -67,7 +68,7 @@ pub struct FriendCirclesOutput {
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendCircleRow {
     pub members: Vec<String>,
@@ -75,7 +76,7 @@ pub struct FriendCircleRow {
     pub sample_pairs: Vec<FriendCirclePair>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendCirclePair {
     pub a: String,

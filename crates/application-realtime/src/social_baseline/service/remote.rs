@@ -6,12 +6,8 @@ use futures_util::stream::{FuturesUnordered, StreamExt};
 use serde_json::Value;
 use tokio::time::{sleep, timeout_at, Instant};
 use vrcx_0_application_core::{Error, Result};
-use vrcx_0_vrchat_client::users::user_get_input;
 
-use super::{
-    object_field, remote_friends, ApiJsonResponse, ApiScope, HttpApiRequestInput,
-    SocialBaselineDeps,
-};
+use super::{object_field, ApiJsonResponse, ApiScope, HttpApiRequestInput, SocialBaselineDeps};
 
 #[cfg(test)]
 use std::sync::Arc;
@@ -23,13 +19,13 @@ const PAGED_ARRAY_CONCURRENCY: usize = 5;
 const PAGED_ARRAY_MAX_RETRIES: usize = 5;
 const FRIEND_STATUS_VERIFICATION_BUDGET: Duration = Duration::from_secs(2);
 #[cfg(not(test))]
-const PAGED_ARRAY_RETRY_BASE_DELAY_MS: u64 = 1_000;
+const PAGED_ARRAY_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);
 #[cfg(test)]
-const PAGED_ARRAY_RETRY_BASE_DELAY_MS: u64 = 1;
+const PAGED_ARRAY_RETRY_BASE_DELAY: Duration = Duration::from_millis(1);
 
 #[derive(Debug)]
 struct PageFetch {
-    offset: i64,
+    offset: i32,
     rows: Vec<Value>,
 }
 
@@ -59,10 +55,7 @@ pub(crate) async fn execute_vrchat_json_request(
     deps: &SocialBaselineDeps,
     request: HttpApiRequestInput,
 ) -> Result<Value> {
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
-        .await?;
+    let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
 
     let response = ApiJsonResponse::from(&response);
     if response.is_failure() {
@@ -78,17 +71,18 @@ pub(crate) async fn execute_vrchat_json_request(
 
 pub(super) async fn fetch_paged_array<F>(
     deps: &SocialBaselineDeps,
-    page_size: i64,
-    max_offset: Option<i64>,
+    page_size: i32,
+    max_offset: Option<i32>,
     build_request: F,
 ) -> Result<Vec<Value>>
 where
-    F: Fn(i64, i64) -> HttpApiRequestInput + Clone,
+    F: Fn(i32, i32) -> Result<HttpApiRequestInput> + Clone,
 {
     fetch_paged_array_with_page_fetcher(page_size, max_offset, |n, offset| {
         let build_request = build_request.clone();
         async move {
-            let json = execute_vrchat_json_page_request(deps, build_request(n, offset)).await?;
+            let request = build_request(n, offset).map_err(RemoteFetchError::from)?;
+            let json = execute_vrchat_json_page_request(deps, request).await?;
             Ok(match json {
                 Value::Array(rows) => rows,
                 _ => Vec::new(),
@@ -103,10 +97,7 @@ async fn execute_vrchat_json_page_request(
     deps: &SocialBaselineDeps,
     request: HttpApiRequestInput,
 ) -> RemoteFetchResult<Value> {
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
-        .await?;
+    let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
 
     let response = ApiJsonResponse::from(&response);
     if response.is_failure() {
@@ -127,12 +118,12 @@ async fn execute_vrchat_json_page_request(
 }
 
 async fn fetch_paged_array_with_page_fetcher<F, Fut>(
-    page_size: i64,
-    max_offset: Option<i64>,
+    page_size: i32,
+    max_offset: Option<i32>,
     fetch_page: F,
 ) -> RemoteFetchResult<Vec<Value>>
 where
-    F: Fn(i64, i64) -> Fut + Clone,
+    F: Fn(i32, i32) -> Fut + Clone,
     Fut: Future<Output = RemoteFetchResult<Vec<Value>>>,
 {
     if page_size <= 0 {
@@ -141,7 +132,7 @@ where
 
     let mut pages = Vec::<PageFetch>::new();
     let mut in_flight = FuturesUnordered::new();
-    let mut next_offset = 0i64;
+    let mut next_offset = 0i32;
     let mut should_stop_scheduling = false;
 
     while in_flight.len() < PAGED_ARRAY_CONCURRENCY && offset_allowed(next_offset, max_offset) {
@@ -179,11 +170,11 @@ where
 
 async fn fetch_page_with_backoff<F, Fut>(
     fetch_page: F,
-    page_size: i64,
-    offset: i64,
+    page_size: i32,
+    offset: i32,
 ) -> RemoteFetchResult<PageFetch>
 where
-    F: Fn(i64, i64) -> Fut,
+    F: Fn(i32, i32) -> Fut,
     Fut: Future<Output = RemoteFetchResult<Vec<Value>>>,
 {
     let mut attempt = 0usize;
@@ -199,7 +190,7 @@ where
     }
 }
 
-fn offset_allowed(offset: i64, max_offset: Option<i64>) -> bool {
+fn offset_allowed(offset: i32, max_offset: Option<i32>) -> bool {
     offset >= 0
         && max_offset
             .map(|max_offset| offset <= max_offset)
@@ -207,7 +198,7 @@ fn offset_allowed(offset: i64, max_offset: Option<i64>) -> bool {
 }
 
 fn backoff_delay(attempt: usize) -> Duration {
-    Duration::from_millis(PAGED_ARRAY_RETRY_BASE_DELAY_MS * 2u64.saturating_pow(attempt as u32))
+    PAGED_ARRAY_RETRY_BASE_DELAY.saturating_mul(2u32.saturating_pow(attempt as u32))
 }
 
 pub(crate) async fn refetch_users_concurrent(
@@ -216,7 +207,8 @@ pub(crate) async fn refetch_users_concurrent(
     user_ids: Vec<String>,
 ) -> HashMap<String, Value> {
     fetch_per_user_concurrent(deps, user_ids, |user_id| {
-        user_get_input(endpoint.to_string(), user_id.to_string())
+        deps.remote_requests
+            .user(endpoint.to_string(), user_id.to_string())
             .ok()
             .map(|(_, request)| request)
     })
@@ -233,7 +225,8 @@ pub(crate) async fn fetch_friend_statuses_concurrent(
         deps,
         user_ids,
         |user_id| {
-            remote_friends::friend_status_get_input(endpoint.to_string(), user_id.to_string())
+            deps.remote_requests
+                .friend_status(endpoint.to_string(), user_id.to_string())
                 .ok()
                 .map(|(_, request)| request)
         },
@@ -414,7 +407,7 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_paged_array_retries_rate_limited_pages_with_backoff() {
-        let attempts = Arc::new(std::sync::Mutex::new(HashMap::<i64, usize>::new()));
+        let attempts = Arc::new(std::sync::Mutex::new(HashMap::<i32, usize>::new()));
         let attempts_for_fetch = Arc::clone(&attempts);
 
         let rows = fetch_paged_array_with_page_fetcher(50, None, move |_, offset| {

@@ -1,14 +1,12 @@
 use std::time::Duration;
 
-use vrcx_0_persistence::storage::StorageService;
-use vrcx_0_vrchat_client::web_client::{WebClient as TransportWebClient, WebExecuteRequest};
+use async_trait::async_trait;
 
 use crate::Error;
 
 pub const PROXY_STORAGE_KEY: &str = "VRCX_ProxyServer";
 pub const PROXY_ENABLED_STORAGE_KEY: &str = "VRCX_ProxyEnabled";
 const PROXY_TEST_TIMEOUT: Duration = Duration::from_secs(10);
-const VRC_STATUS_TEST_URL: &str = "https://status.vrchat.com/api/v2/status.json";
 
 fn proxy_authority(candidate: &str) -> &str {
     let value = candidate
@@ -107,10 +105,8 @@ fn resolve_proxy_url(
     normalize_proxy_url(raw_proxy_url)
 }
 
-pub fn load_proxy_url(storage: &StorageService) -> Option<String> {
-    let raw_enabled = storage.get(PROXY_ENABLED_STORAGE_KEY);
-    let raw_proxy_url = storage.get(PROXY_STORAGE_KEY).unwrap_or_default();
-    match resolve_proxy_url(raw_enabled.as_deref(), &raw_proxy_url) {
+pub fn load_proxy_url(raw_enabled: Option<&str>, raw_proxy_url: &str) -> Option<String> {
+    match resolve_proxy_url(raw_enabled, raw_proxy_url) {
         Ok(proxy_url) => proxy_url,
         Err(error) => {
             tracing::warn!(
@@ -122,6 +118,15 @@ pub fn load_proxy_url(storage: &StorageService) -> Option<String> {
     }
 }
 
+#[async_trait]
+pub trait ProxyConnectivityPort: Send + Sync {
+    async fn execute(
+        &self,
+        normalized_proxy: Option<String>,
+        app_version: &str,
+    ) -> Result<(i32, String), Error>;
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProxySettingsTestResult {
     pub normalized_proxy: Option<String>,
@@ -129,15 +134,17 @@ pub struct ProxySettingsTestResult {
 }
 
 pub async fn test_proxy_connectivity(
+    port: &dyn ProxyConnectivityPort,
     proxy_url: &str,
     app_version: &str,
 ) -> Result<ProxySettingsTestResult, Error> {
     let normalized_proxy = normalize_proxy_url(proxy_url)?;
-    let client = TransportWebClient::new(normalized_proxy.clone(), None, app_version)?;
-    let request = WebExecuteRequest::new(VRC_STATUS_TEST_URL.into(), "GET".into());
-    let (status, data) = tokio::time::timeout(PROXY_TEST_TIMEOUT, client.execute(request))
-        .await
-        .map_err(|_| Error::Custom("Proxy test timed out.".into()))??;
+    let (status, data) = tokio::time::timeout(
+        PROXY_TEST_TIMEOUT,
+        port.execute(normalized_proxy.clone(), app_version),
+    )
+    .await
+    .map_err(|_| Error::Custom("Proxy test timed out.".into()))??;
     if status == -1 {
         return Err(Error::Custom(data));
     }
@@ -152,99 +159,33 @@ pub async fn test_proxy_connectivity(
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::*;
-
-    struct TestDir {
-        path: PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path =
-                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    fn storage(name: &str) -> (TestDir, StorageService) {
-        let dir = TestDir::new(name);
-        let path = dir.path.join("storage.json");
-        let storage = StorageService::new(&path).unwrap();
-        (dir, storage)
-    }
 
     #[test]
     fn load_proxy_url_uses_legacy_non_empty_address_when_enabled_key_is_missing() {
-        let (_dir, storage) = storage("legacy-proxy-enabled");
-        storage.set(PROXY_STORAGE_KEY.into(), "127.0.0.1:7890".into());
-
         assert_eq!(
-            load_proxy_url(&storage).as_deref(),
+            load_proxy_url(None, "127.0.0.1:7890").as_deref(),
             Some("http://127.0.0.1:7890")
         );
     }
 
     #[test]
     fn load_proxy_url_uses_direct_when_enabled_key_is_missing_and_address_is_empty() {
-        let (_dir, storage) = storage("legacy-proxy-empty");
-        storage.set(PROXY_STORAGE_KEY.into(), "".into());
-
-        assert_eq!(load_proxy_url(&storage), None);
+        assert_eq!(load_proxy_url(None, ""), None);
     }
 
     #[test]
     fn load_proxy_url_uses_direct_when_proxy_is_disabled_even_with_address() {
-        let (_dir, storage) = storage("proxy-disabled");
-        storage.set(PROXY_ENABLED_STORAGE_KEY.into(), "false".into());
-        storage.set(PROXY_STORAGE_KEY.into(), "127.0.0.1:7890".into());
-
-        assert_eq!(load_proxy_url(&storage), None);
-        assert_eq!(
-            storage.get(PROXY_STORAGE_KEY).as_deref(),
-            Some("127.0.0.1:7890")
-        );
+        assert_eq!(load_proxy_url(Some("false"), "127.0.0.1:7890"), None);
     }
 
     #[test]
     fn load_proxy_url_uses_direct_when_proxy_enabled_but_address_empty() {
-        let (_dir, storage) = storage("proxy-enabled-empty");
-        storage.set(PROXY_ENABLED_STORAGE_KEY.into(), "true".into());
-        storage.set(PROXY_STORAGE_KEY.into(), "".into());
-
-        assert_eq!(load_proxy_url(&storage), None);
-        assert_eq!(
-            storage.get(PROXY_ENABLED_STORAGE_KEY).as_deref(),
-            Some("true")
-        );
+        assert_eq!(load_proxy_url(Some("true"), ""), None);
     }
 
     #[test]
     fn load_proxy_url_keeps_invalid_address_configured() {
-        let (_dir, storage) = storage("proxy-invalid");
-        storage.set(PROXY_ENABLED_STORAGE_KEY.into(), "true".into());
-        storage.set(PROXY_STORAGE_KEY.into(), "https://127.0.0.1:7890".into());
-
-        assert_eq!(load_proxy_url(&storage), None);
-        assert_eq!(
-            storage.get(PROXY_STORAGE_KEY).as_deref(),
-            Some("https://127.0.0.1:7890")
-        );
-        assert_eq!(
-            storage.get(PROXY_ENABLED_STORAGE_KEY).as_deref(),
-            Some("true")
-        );
+        assert_eq!(load_proxy_url(Some("true"), "https://127.0.0.1:7890"), None);
     }
 }

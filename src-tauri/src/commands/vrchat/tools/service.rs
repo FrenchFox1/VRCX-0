@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::tools::{
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::tools::{
     following_calendars_get_input, group_calendar_get_input, group_calendar_ics_get_input,
     group_event_follow_input, invite_message_edit_input, invite_messages_get_input,
     user_note_save_input, user_report_input,
 };
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -130,9 +130,7 @@ pub async fn app__vrchat_tools_user_report(
     let (user_id, request) = user_report_input(
         VRCHAT_API_DEFAULT_ENDPOINT.into(),
         input.user_id,
-        input.content_type,
         input.reason,
-        input.type_name,
     )?;
     execute_tools_api(
         state,

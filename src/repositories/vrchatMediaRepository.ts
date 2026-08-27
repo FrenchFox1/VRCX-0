@@ -8,10 +8,12 @@ import type {
     EmojiUploadParams,
     HttpApiExecuteResponse,
     InventoryItemUpdateRequest,
+    InventoryItemsCollectInput,
     InventoryListParams,
     MediaAssetUploadRequest,
     MediaFileListParams,
     PrintUploadParams,
+    PrintFavoriteBulkResult,
     PrintFavoriteState,
     ProfileDecorationEquipSlot
 } from '@/platform/tauri/bindings';
@@ -518,6 +520,20 @@ async function setPrintFavorite(
     });
 }
 
+async function setPrintFavorites(
+    printIds: string[],
+    favoriteValue: boolean
+): Promise<PrintFavoriteBulkResult> {
+    const normalizedPrintIds = printIds
+        .map((printId) => printId.trim())
+        .filter((printId) => printId.length > 0);
+
+    return commands.appVrchatPrintsFavoritesSet({
+        printIds: normalizedPrintIds,
+        favorite: favoriteValue
+    });
+}
+
 async function getInventoryItems(
     params: InventoryListParams = {}
 ): Promise<VrchatRequestResponse<InventoryItemsResponse>> {
@@ -534,13 +550,11 @@ async function getInventoryItems(
 }
 
 async function collectInventoryItems(
-    params: InventoryListParams = {}
+    input: InventoryItemsCollectInput = {}
 ): Promise<InventoryItemsCollectResult> {
-    const normalizedParams = { ...params };
     try {
-        const result = await commands.appVrchatMediaInventoryItemsCollect({
-            params: normalizedParams
-        });
+        const result =
+            await commands.appVrchatMediaInventoryItemsCollect(input);
         const items = result.items.flatMap((value) => {
             if (!value || typeof value !== 'object' || Array.isArray(value)) {
                 return [];
@@ -832,6 +846,7 @@ const vrchatMediaRepository = Object.freeze({
     deletePrint,
     getPrintFavorites,
     setPrintFavorite,
+    setPrintFavorites,
     getInventoryItems,
     collectInventoryItems,
     getInventoryTemplate,
@@ -861,6 +876,7 @@ export {
     deletePrint,
     getPrintFavorites,
     setPrintFavorite,
+    setPrintFavorites,
     getInventoryItems,
     collectInventoryItems,
     getInventoryTemplate,

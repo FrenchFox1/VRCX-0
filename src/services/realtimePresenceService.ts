@@ -8,17 +8,21 @@ import type {
     RealtimeNotificationProjectionPayload,
     RealtimeUserProjectionPayload
 } from '@/services/runtime-event-bridge/realtimeProjectionTypes';
+import { isRecord } from '@/shared/utils/record';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
-import { useFriendLogStore } from '@/state/friendLogStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
-import { useUserFactsStore } from '@/state/userFactsStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { buildAvatarWearSnapshotUpdate } from './avatarWearTimeService';
 import { recordCurrentUserSnapshot } from './domainIngestionService';
 import { handleQueuedInstancePatch } from './realtimeInstanceQueueService';
+import {
+    flushRealtimeRosterUpdates,
+    queueRealtimeFriendRosterUpdate,
+    queueRealtimeUserFactsUpdate
+} from './realtimeRosterUpdateQueue';
 import { pushSharedFeedNotification } from './sharedFeedNotificationService';
 
 type ProjectionRecord = Record<string, unknown>;
@@ -29,10 +33,6 @@ const CURRENT_USER_FRIEND_ARRAY_FIELDS = [
     'activeFriends',
     'offlineFriends'
 ];
-
-function isRecord(value: unknown): value is ProjectionRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function hasOwn(record: ProjectionRecord, key: string): boolean {
     return Object.prototype.hasOwnProperty.call(record, key);
@@ -58,10 +58,7 @@ function getCurrentUserSnapshot(
         : null;
 }
 
-function currentUserDisplayName(
-    snapshot: ProjectionRecord,
-    fallback: unknown = ''
-) {
+function currentUserDisplayName(snapshot: ProjectionRecord, fallback = '') {
     return (
         normalizeUserId(snapshot.displayName) ||
         normalizeUserId(snapshot.username) ||
@@ -197,12 +194,14 @@ async function shouldNotifyInstanceClosed(): Promise<boolean> {
 function handleRealtimeFriendProjection(
     payload: RealtimeFriendProjectionPayload
 ) {
-    for (const userId of payload.removals) {
-        const normalizedUserId = normalizeUserId(userId);
-        if (!normalizedUserId) {
-            continue;
+    const removalIds = payload.removals
+        .map((userId) => normalizeUserId(userId))
+        .filter(Boolean);
+    if (removalIds.length) {
+        flushRealtimeRosterUpdates();
+        for (const userId of removalIds) {
+            useFriendRosterStore.getState().removeFriend(userId);
         }
-        useFriendRosterStore.getState().removeFriend(normalizedUserId);
     }
 
     const patchEntries = payload.patches.map((patchEntry) => {
@@ -215,20 +214,17 @@ function handleRealtimeFriendProjection(
             stateBucketAuthority: patchEntry.stateBucketAuthority
         };
     });
-    if (patchEntries.length) {
-        useFriendRosterStore.getState().applyFriendPatches(patchEntries);
-    }
-
-    if (payload.friendLogChanged) {
-        useShellStore.getState().notifyMenu('friend-log');
-        useFriendLogStore.getState().bumpRevision();
-    }
+    queueRealtimeFriendRosterUpdate(
+        patchEntries,
+        payload.friendLogChanged,
+        payload.locationTimeSnapshot ?? undefined
+    );
 }
 
 export function handleRealtimeUserCacheProjection(
     payload: RealtimeUserProjectionPayload
 ) {
-    useUserFactsStore.getState().replaceUserFacts(payload.users);
+    queueRealtimeUserFactsUpdate(payload.users);
 }
 
 async function handleRealtimeNotificationProjection(

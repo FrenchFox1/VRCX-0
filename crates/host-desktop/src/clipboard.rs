@@ -4,7 +4,7 @@ use std::process::Command;
 #[cfg(windows)]
 use std::time::Duration;
 
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 #[cfg(windows)]
 const WINDOWS_CLIPBOARD_OPEN_RETRY_COUNT: usize = 5;
@@ -218,8 +218,10 @@ mod tests {
         assert_eq!(u32::from_le_bytes(data[16..20].try_into().unwrap()), 1);
 
         let wide_path: Vec<u16> = data[20..]
-            .chunks_exact(2)
-            .map(|chunk| u16::from_le_bytes(chunk.try_into().unwrap()))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|chunk| u16::from_le_bytes(*chunk))
             .collect();
         let first_nul = wide_path.iter().position(|value| *value == 0).unwrap();
         let decoded_path = String::from_utf16(&wide_path[..first_nul])

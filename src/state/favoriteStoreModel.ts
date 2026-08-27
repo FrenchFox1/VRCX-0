@@ -110,8 +110,8 @@ export function normalizeFavoriteStoreId(value: unknown): string {
 
 export function removeFromFavoriteGroups(
     source: FavoriteGroupMap | null | undefined,
-    groupName: unknown,
-    entityId: unknown
+    groupName: string,
+    entityId: string
 ): FavoriteGroupMap {
     const normalizedGroupName = normalizeFavoriteStoreId(groupName);
     const normalizedEntityId = normalizeFavoriteStoreId(entityId);
@@ -133,7 +133,7 @@ export function removeFromFavoriteGroups(
 
 export function createLocalFavoriteGroupState(
     source: FavoriteGroupMap | null | undefined,
-    groupName: unknown
+    groupName: string
 ): FavoriteGroupMap {
     const normalizedGroupName = normalizeFavoriteStoreId(groupName);
     if (!normalizedGroupName) {
@@ -150,8 +150,8 @@ export function createLocalFavoriteGroupState(
 
 export function renameLocalFavoriteGroupState(
     source: FavoriteGroupMap | null | undefined,
-    groupName: unknown,
-    newGroupName: unknown
+    groupName: string,
+    newGroupName: string
 ): FavoriteGroupMap {
     const normalizedGroupName = normalizeFavoriteStoreId(groupName);
     const normalizedNewGroupName = normalizeFavoriteStoreId(newGroupName);
@@ -176,7 +176,7 @@ export function renameLocalFavoriteGroupState(
 
 export function deleteLocalFavoriteGroupState(
     source: FavoriteGroupMap | null | undefined,
-    groupName: unknown
+    groupName: string
 ): FavoriteGroupMap {
     const normalizedGroupName = normalizeFavoriteStoreId(groupName);
     if (!normalizedGroupName) {

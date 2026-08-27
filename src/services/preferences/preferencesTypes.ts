@@ -1,7 +1,8 @@
 import { ConfigKeys, type ConfigKeyName } from '@/repositories/configKeys';
 import type {
     PreferencesSnapshot,
-    TableLimitsPreference
+    TableLimitsPreference,
+    TranslationApiType
 } from '@/state/preferencesStore';
 
 export type ConfigKeyOfType<
@@ -37,14 +38,14 @@ export type ProxyPreferenceOptions = {
 };
 export type ProxyServerPreferenceOptions = ProxyPreferenceOptions;
 export type TranslationApiConfigPreferenceInput = {
-    bioLanguage?: unknown;
-    translationAPIType?: unknown;
-    translationAPIKey?: unknown;
-    translationEndpointId?: unknown;
-    translationAPIEndpoint?: unknown;
-    translationAPIModel?: unknown;
-    translationAPIPrompt?: unknown;
-    translationAPIReasoningEffort?: unknown;
+    bioLanguage?: string;
+    translationAPIType?: TranslationApiType;
+    translationAPIKey?: string;
+    translationEndpointId?: string;
+    translationAPIEndpoint?: string;
+    translationAPIModel?: string;
+    translationAPIPrompt?: string | null;
+    translationAPIReasoningEffort?: string;
 };
 
 export type { PreferencesSnapshot, TableLimitsPreference };

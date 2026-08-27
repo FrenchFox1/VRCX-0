@@ -2,6 +2,7 @@ use serde_json::json;
 
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn rejects_unknown_game_log_entry_kind() {
@@ -90,7 +91,7 @@ fn lookup_rows_limits_results_after_preserving_per_table_candidates() -> Result<
     let test_db = test_db("local-query-result-limit")?;
     write_game_log_batch(
         &test_db.db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         &GameLogWriteBatch {
             events: vec![
                 GameLogEventEntry {

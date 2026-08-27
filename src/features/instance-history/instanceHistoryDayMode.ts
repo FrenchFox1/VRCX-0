@@ -48,29 +48,26 @@ export function buildAvailableInstanceHistoryDays(
 }
 
 export function selectDefaultInstanceHistoryDay(
-    selectedDay: unknown,
+    selectedDay: string,
     availableDays: string[] = []
 ): string {
-    const normalizedSelectedDay = String(selectedDay || '');
-    if (
-        normalizedSelectedDay &&
-        availableDays.includes(normalizedSelectedDay)
-    ) {
-        return normalizedSelectedDay;
+    if (selectedDay && availableDays.includes(selectedDay)) {
+        return selectedDay;
     }
-    return availableDays[0] || normalizedSelectedDay || '';
+    return availableDays[0] || selectedDay;
 }
 
 export function filterPreviousInstanceRowsForDay(
     rows: InstanceHistoryEntryRow[] = [],
-    selectedDay: unknown
+    selectedDay: string
 ): InstanceHistoryEntryRow[] {
-    const dayKey = String(selectedDay || '');
-    if (!dayKey) {
+    if (!selectedDay) {
         return [];
     }
     return rows
-        .filter((row) => toLocalDayKey(previousInstanceLeaveMs(row)) === dayKey)
+        .filter(
+            (row) => toLocalDayKey(previousInstanceLeaveMs(row)) === selectedDay
+        )
         .sort(
             (left, right) =>
                 previousInstanceLeaveMs(right) - previousInstanceLeaveMs(left)

@@ -1,9 +1,10 @@
+use crate::ownership::OwnerId;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FadingFriendsInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub prior_from: String,
     pub pivot: String,
     pub now: String,
@@ -13,14 +14,14 @@ pub struct FadingFriendsInput {
     pub limit: Option<i64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FadingFriendsOutput {
     pub rows: Vec<FadingFriendRow>,
     pub caveats: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FadingFriendRow {
     pub user_id: String,

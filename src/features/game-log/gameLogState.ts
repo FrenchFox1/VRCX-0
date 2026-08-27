@@ -8,6 +8,7 @@ import {
     sanitizeTableColumnVisibility,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 
 export { safeJsonParse };
 
@@ -35,10 +36,6 @@ export function readPersistedGameLogState() {
 
 export function writePersistedGameLogState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
 }
 
 export function sanitizeGameLogSorting(value: unknown): SortingState {
@@ -105,15 +102,9 @@ export function sanitizeGameLogColumnSizing(value: unknown) {
 
 export function resolveGameLogPageSize(
     candidate: unknown,
-    allowed: unknown,
-    fallback: unknown = GAME_LOG_DEFAULT_PAGE_SIZES[1]
+    pageSizes: readonly number[],
+    fallback: number = GAME_LOG_DEFAULT_PAGE_SIZES[1]
 ) {
-    const pageSizes = Array.isArray(allowed)
-        ? allowed.filter(
-              (size): size is number =>
-                  typeof size === 'number' && Number.isFinite(size) && size > 0
-          )
-        : GAME_LOG_DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : GAME_LOG_DEFAULT_PAGE_SIZES[0];
@@ -130,9 +121,9 @@ export function resolveGameLogPageSize(
         return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
 
-    if (typeof fallback === 'number' && pageSizes.includes(fallback)) {
+    if (pageSizes.includes(fallback)) {
         return fallback;
     }
 
-    return nearestPageSize(Number(fallback) || fallbackPageSize);
+    return nearestPageSize(fallback);
 }

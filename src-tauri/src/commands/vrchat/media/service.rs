@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::media::{
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::media::{
     asset_upload_input, avatar_gallery_image_upload_input, file_delete_input, files_get_input,
     inventory_bundle_consume_input, inventory_item_equip_input, inventory_item_update_input,
     inventory_items_get_input, inventory_slot_unequip_input, inventory_template_get_input,
@@ -9,16 +10,14 @@ use vrcx_0_application_core::vrchat_api::media::{
     sticker_upload_input, tagged_image_upload_input, user_inventory_item_get_input,
     MediaAssetUploadRequest,
 };
-use vrcx_0_application_core::RuntimeOperationStatus;
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application::{
-    self as media_upload, collect_inventory_items, AuthenticatedMutationContext,
-    InventoryItemsCollectDeps, InventoryItemsCollectInput, InventoryItemsCollectOutput,
-    LegacyEntityImageKind, LegacyEntityImageUploadInput, LegacyMediaUploadDeps, PrintFavoriteState,
+use vrcx_0_application::media::{
+    InventoryItemsCollectInput, InventoryItemsCollectOutput, LegacyEntityImageKind,
+    LegacyEntityImageUploadInput,
 };
+use vrcx_0_application::social::{PrintFavoriteBulkResult, PrintFavoriteState};
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
 use super::types::{
@@ -28,7 +27,7 @@ use super::types::{
     VrchatMediaInventoryTemplateInput, VrchatMediaLegacyImageUploadInput, VrchatMediaPrintIdInput,
     VrchatMediaPrintUploadInput, VrchatMediaPrintsInput, VrchatMediaProfileDecorationEquipInput,
     VrchatMediaProfileDecorationUnequipInput, VrchatMediaRewardRedeemInput,
-    VrchatMediaUserInventoryItemInput, VrchatPrintFavoriteSetInput,
+    VrchatMediaUserInventoryItemInput, VrchatPrintFavoriteSetInput, VrchatPrintFavoritesSetInput,
 };
 
 async fn execute_media_api(
@@ -47,8 +46,14 @@ async fn execute_media_api(
     .await
 }
 
-fn prepare_media_upload_request(input: VrchatApiRequest) -> Result<VrchatApiRequest, AppError> {
-    Ok(media_upload::prepare_media_upload_request(input)?)
+fn prepare_media_upload_request(
+    state: &AppState,
+    input: VrchatApiRequest,
+) -> Result<VrchatApiRequest, AppError> {
+    Ok(state
+        .runtime_host()
+        .media()
+        .prepare_media_upload_request(input)?)
 }
 
 async fn run_legacy_entity_image_upload(
@@ -57,45 +62,20 @@ async fn run_legacy_entity_image_upload(
     kind: LegacyEntityImageKind,
     command: &str,
 ) -> Result<VrchatApiResponse, AppError> {
-    let diagnostics = state.runtime_context.diagnostics.clone();
-    let mutation = AuthenticatedMutationContext::capture(
-        &state.runtime_context.auth_scope,
-        &state.runtime_context.remote_mutations,
-        "Legacy media mutation",
-    )?;
-    diagnostics.record_command(
-        command,
-        RuntimeOperationStatus::Running,
-        format!("Uploading legacy {} image.", kind.label()),
-    );
-    let result = media_upload::upload_legacy_entity_image(
-        LegacyMediaUploadDeps {
-            db: state.db.as_ref(),
-            web: state.web.as_ref(),
-            mutation,
-        },
-        LegacyEntityImageUploadInput {
-            entity_id: input.entity_id,
-            image_url: input.image_url,
-            base64_file: input.base64_file,
-            file_size_in_bytes: input.file_size_in_bytes,
-        },
-        kind,
-    )
-    .await;
-    match &result {
-        Ok(response) => {
-            diagnostics.record_command(
-                command,
-                RuntimeOperationStatus::Ok,
-                format!("status={}", response.status),
-            );
-        }
-        Err(error) => {
-            diagnostics.record_command(command, RuntimeOperationStatus::Error, error.to_string())
-        }
-    }
-    Ok(result?)
+    Ok(state
+        .runtime_host()
+        .media()
+        .upload_legacy_entity_image(
+            LegacyEntityImageUploadInput {
+                entity_id: input.entity_id,
+                image_url: input.image_url,
+                base64_file: input.base64_file,
+                file_size_in_bytes: input.file_size_in_bytes,
+            },
+            kind,
+            command,
+        )
+        .await?)
 }
 
 #[tauri::command]
@@ -136,15 +116,18 @@ pub async fn app__vrchat_media_gallery_image_upload(
     input: VrchatMediaImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
-        state,
+        state.clone(),
         "app__vrchat_media_gallery_image_upload",
         "Uploading gallery image.",
-        prepare_media_upload_request(tagged_image_upload_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.image_data,
-            "gallery",
-            false,
-        )?)?,
+        prepare_media_upload_request(
+            &state,
+            tagged_image_upload_input(
+                VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                input.image_data,
+                "gallery",
+                false,
+            )?,
+        )?,
     )
     .await
 }
@@ -156,14 +139,17 @@ pub async fn app__vrchat_media_avatar_gallery_image_upload(
     input: VrchatMediaAvatarGalleryImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
-        state,
+        state.clone(),
         "app__vrchat_media_avatar_gallery_image_upload",
         "Uploading avatar gallery image.",
-        prepare_media_upload_request(avatar_gallery_image_upload_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.image_data,
-            input.avatar_id,
-        )?)?,
+        prepare_media_upload_request(
+            &state,
+            avatar_gallery_image_upload_input(
+                VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                input.image_data,
+                input.avatar_id,
+            )?,
+        )?,
     )
     .await
 }
@@ -175,15 +161,18 @@ pub async fn app__vrchat_media_vrc_plus_icon_upload(
     input: VrchatMediaImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
-        state,
+        state.clone(),
         "app__vrchat_media_vrc_plus_icon_upload",
         "Uploading VRC+ icon.",
-        prepare_media_upload_request(tagged_image_upload_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.image_data,
-            "icon",
-            true,
-        )?)?,
+        prepare_media_upload_request(
+            &state,
+            tagged_image_upload_input(
+                VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                input.image_data,
+                "icon",
+                true,
+            )?,
+        )?,
     )
     .await
 }
@@ -195,11 +184,12 @@ pub async fn app__vrchat_media_emoji_upload(
     input: VrchatMediaEmojiUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
-        state,
+        state.clone(),
         "app__vrchat_media_emoji_upload",
         "Uploading emoji.",
         prepare_media_upload_request(
-            vrcx_0_application_core::vrchat_api::media::image_upload_input(
+            &state,
+            vrcx_0_runtime_host_desktop::vrchat_api::protocol::media::image_upload_input(
                 VRCHAT_API_DEFAULT_ENDPOINT.into(),
                 "file/image",
                 input.image_data,
@@ -218,13 +208,13 @@ pub async fn app__vrchat_media_sticker_upload(
     input: VrchatMediaImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
-        state,
+        state.clone(),
         "app__vrchat_media_sticker_upload",
         "Uploading sticker.",
-        prepare_media_upload_request(sticker_upload_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.image_data,
-        )?)?,
+        prepare_media_upload_request(
+            &state,
+            sticker_upload_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.image_data)?,
+        )?,
     )
     .await
 }
@@ -236,15 +226,18 @@ pub async fn app__vrchat_media_print_upload(
     input: VrchatMediaPrintUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_media_api(
-        state,
+        state.clone(),
         "app__vrchat_media_print_upload",
         "Uploading print.",
-        prepare_media_upload_request(print_upload_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.image_data,
-            input.crop_white_border,
-            input.params,
-        )?)?,
+        prepare_media_upload_request(
+            &state,
+            print_upload_input(
+                VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                input.image_data,
+                input.crop_white_border,
+                input.params,
+            )?,
+        )?,
     )
     .await
 }
@@ -256,7 +249,7 @@ pub async fn app__vrchat_media_asset_upload(
     input: MediaAssetUploadRequest,
 ) -> Result<VrchatApiResponse, AppError> {
     let (asset_kind, request) = asset_upload_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input)?;
-    let request = prepare_media_upload_request(request)?;
+    let request = prepare_media_upload_request(&state, request)?;
 
     execute_media_api(
         state,
@@ -306,6 +299,10 @@ pub async fn app__vrchat_media_print_delete(
     input: VrchatMediaPrintIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
     let print_id = input.print_id.clone();
+    state
+        .runtime_host()
+        .media()
+        .ensure_print_deletable(&print_id)?;
     execute_media_api(
         state,
         "app__vrchat_media_print_delete",
@@ -320,7 +317,7 @@ pub async fn app__vrchat_media_print_delete(
 pub async fn app__vrchat_prints_favorites_list(
     state: State<'_, AppState>,
 ) -> Result<PrintFavoriteState, AppError> {
-    Ok(vrcx_0_application::favorite_state(state.db.as_ref())?)
+    Ok(state.runtime_host().media().print_favorites()?)
 }
 
 #[tauri::command]
@@ -329,11 +326,22 @@ pub async fn app__vrchat_prints_favorite_set(
     state: State<'_, AppState>,
     input: VrchatPrintFavoriteSetInput,
 ) -> Result<PrintFavoriteState, AppError> {
-    Ok(vrcx_0_application::set_print_favorite(
-        state.db.as_ref(),
-        &input.print_id,
-        input.favorite,
-    )?)
+    Ok(state
+        .runtime_host()
+        .media()
+        .set_print_favorite(&input.print_id, input.favorite)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_prints_favorites_set(
+    state: State<'_, AppState>,
+    input: VrchatPrintFavoritesSetInput,
+) -> Result<PrintFavoriteBulkResult, AppError> {
+    Ok(state
+        .runtime_host()
+        .media()
+        .set_print_favorites(&input.print_ids, input.favorite)?)
 }
 
 #[tauri::command]
@@ -357,15 +365,11 @@ pub async fn app__vrchat_media_inventory_items_collect(
     state: State<'_, AppState>,
     input: InventoryItemsCollectInput,
 ) -> Result<InventoryItemsCollectOutput, AppError> {
-    let expected_scope =
-        crate::commands::application::scope::require_active_scope(&state, "Inventory collect")?;
-    let deps = InventoryItemsCollectDeps {
-        db: state.db.as_ref(),
-        web: state.web.as_ref(),
-        auth_scope: &state.runtime_context.auth_scope,
-        expected_scope,
-    };
-    Ok(collect_inventory_items(&deps, input).await?)
+    Ok(state
+        .runtime_host()
+        .media()
+        .collect_inventory_items(input)
+        .await?)
 }
 
 #[tauri::command]

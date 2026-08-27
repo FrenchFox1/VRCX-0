@@ -1,13 +1,13 @@
 use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::Error;
 
 use super::{ensure_game_log_tables, PreviousInstanceEventRow};
 
 pub fn previous_instance_event_rows_query(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_id: &str,
     date_from: &str,
     date_to: &str,

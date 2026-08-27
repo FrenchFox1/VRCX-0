@@ -112,7 +112,7 @@ export function useFeedRows({
         }): FeedLiveMergeOptionsBuilder =>
             ({ rows }) => ({
                 rows,
-                userId: currentUserId,
+                userId: currentUserId || '',
                 search: deferredSearchQuery,
                 filters: activeFilters,
                 excludedFavoriteUserIds: excludedUserIds,
@@ -208,7 +208,7 @@ export function useFeedRows({
             .getAllUserStats({
                 userIds: missingUserIds
             })
-            .then((statsRows: unknown) => {
+            .then((statsRows) => {
                 if (!active) {
                     return;
                 }

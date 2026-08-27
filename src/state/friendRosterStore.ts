@@ -17,6 +17,7 @@ import type {
     FriendStateBucketAuthority
 } from '@/domain/friends/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
+import { isRecord } from '@/shared/utils/record';
 import {
     computeTrustLevel,
     computeUserPlatform
@@ -26,10 +27,6 @@ function normalizeUserId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function normalizeOptionalString(value: unknown): string | null | undefined {

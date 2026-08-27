@@ -15,7 +15,7 @@ pub fn get_friend_changes(
     db: &DatabaseService,
     input: FriendChangesInput,
 ) -> Result<FriendChangesOutput, Error> {
-    let user_prefix = normalize_user_table_prefix(&input.owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(input.owner_user_id.as_str())?;
     let (table_name, select_sql) = match input.kind {
         FriendChangeKind::Status => (
             format!("{user_prefix}_feed_status"),

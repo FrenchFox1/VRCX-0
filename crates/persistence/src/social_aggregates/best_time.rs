@@ -17,7 +17,7 @@ pub fn get_best_time_to_play(
     db: &DatabaseService,
     input: BestTimeToPlayInput,
 ) -> Result<BestTimeToPlayOutput, Error> {
-    let user_prefix = normalize_user_table_prefix(&input.owner_user_id)?;
+    let user_prefix = normalize_user_table_prefix(input.owner_user_id.as_str())?;
     let table_name = format!("{user_prefix}_feed_online_offline");
     if !table_exists(db, &table_name)? {
         return Ok(BestTimeToPlayOutput {

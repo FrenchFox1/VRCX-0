@@ -54,8 +54,8 @@ export function useGameLogPageController() {
             previousInstancesDialog.openPreviousInstancesForRow,
         shiftHeld
     });
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const table = useAppTable({
         data: annotations.annotatedRows,

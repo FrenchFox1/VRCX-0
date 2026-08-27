@@ -51,8 +51,8 @@ pub struct AvatarListByUserGetInput {
     pub endpoint: String,
     pub user_id: String,
     pub user: String,
-    pub n: i64,
-    pub offset: i64,
+    pub n: i32,
+    pub offset: i32,
     pub sort: AvatarListSort,
     pub order: QueryOrder,
     pub release_status: ReleaseStatusFilter,
@@ -225,19 +225,16 @@ pub fn avatar_impostor_delete_input(
 pub fn avatar_moderation_send_input(
     endpoint: String,
     avatar_id: String,
-    type_name: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarModerationSend requires avatarId.")?;
-    let type_name = moderation_type(type_name);
     Ok((
         avatar_id.clone(),
-        type_name.clone(),
         api_input(
             endpoint,
             "POST",
             "auth/user/avatarmoderations",
             Some(json!({
-                "avatarModerationType": type_name,
+                "avatarModerationType": "block",
                 "targetAvatarId": avatar_id,
             })),
         ),
@@ -247,32 +244,23 @@ pub fn avatar_moderation_send_input(
 pub fn avatar_moderation_delete_input(
     endpoint: String,
     avatar_id: String,
-    type_name: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarModerationDelete requires avatarId.")?;
-    let type_name = moderation_type(type_name);
     Ok((
         avatar_id.clone(),
-        type_name.clone(),
         query_input(
             endpoint,
             "DELETE",
             "auth/user/avatarmoderations",
             HashMap::from([
-                ("avatarModerationType".to_string(), Value::String(type_name)),
+                (
+                    "avatarModerationType".to_string(),
+                    Value::String("block".into()),
+                ),
                 ("targetAvatarId".to_string(), Value::String(avatar_id)),
             ]),
         ),
     ))
-}
-
-fn moderation_type(type_name: String) -> String {
-    let type_name = normalize_text(type_name);
-    if type_name.is_empty() {
-        "block".to_string()
-    } else {
-        type_name
-    }
 }
 
 #[cfg(test)]

@@ -3,11 +3,9 @@ import { CrownIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
+import { FriendLocationTimer } from '@/components/friends/FriendInstanceTimer';
 import {
-    getSharedSameInstanceFallbackJoinTimes,
     resolveSidebarStatusDotClassName,
-    sameInstanceFallbackKey,
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserDetailTile } from '@/components/UserDetailTile';
@@ -18,76 +16,33 @@ import {
     mergeInstanceUserRows,
     mergeInstanceUsers,
     normalizeInstanceUsers,
-    resolveInstanceDwellEpoch,
     type InstanceRosterRow
 } from '@/domain/instances/instanceRoster';
-import { timeToText } from '@/lib/dateTime';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
+import {
+    locationSentinel,
+    resolveFriendPresenceLocation
+} from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 export { firstText, isGroupId, mergeInstanceUsers, normalizeInstanceUsers };
 
 type InstanceUserSource = Record<string, unknown> | string | null | undefined;
 type Translate = NonNullable<Parameters<typeof userStatusLabel>[1]>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function record(value: unknown): Record<string, unknown> {
     return isRecord(value) ? value : {};
-}
-
-function timestampFromValue(value: unknown) {
-    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-        return value;
-    }
-    const text = firstText(value);
-    if (!text) {
-        return 0;
-    }
-    const numeric = Number(text);
-    if (Number.isFinite(numeric) && numeric > 0) {
-        return numeric;
-    }
-    const parsed = Date.parse(text);
-    return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function instanceUserTravelingTimestamp(user: InstanceRosterRow) {
-    if (firstText(user.location).toLowerCase() !== 'traveling') {
-        return 0;
-    }
-    return (
-        timestampFromValue(user.$travelingToTime) ||
-        timestampFromValue(user.travelingToTime) ||
-        timestampFromValue(user.traveling_to_time)
-    );
 }
 
 function instanceUserSubtitle(user: InstanceRosterRow, t: Translate) {
     if (user.$subtitle) {
         return user.$subtitle;
-    }
-    if (instanceUserTravelingTimestamp(user)) {
-        return '';
-    }
-    const timestamp =
-        timestampFromValue(user.$location_at) ||
-        timestampFromValue(user.locationAt) ||
-        timestampFromValue(user.location_at) ||
-        timestampFromValue(user.joinedAt) ||
-        timestampFromValue(user.joined_at) ||
-        timestampFromValue(user.created_at) ||
-        timestampFromValue(user.createdAt);
-    if (timestamp) {
-        return timeToText(Date.now() - timestamp);
     }
     return firstText(
         user.subtitle,
@@ -114,10 +69,12 @@ function firstDisplayName(userId: unknown, ...sources: unknown[]) {
 
 export function InstanceUserTiles({
     instance,
+    instanceLocation = '',
     visibleUserIds,
     showInstanceDuration = false
 }: {
     instance: unknown;
+    instanceLocation?: string;
     visibleUserIds?: ReadonlySet<string>;
     showInstanceDuration?: boolean;
 }) {
@@ -132,8 +89,6 @@ export function InstanceUserTiles({
         (state) => state.gameState.isGameRunning === true
     );
     const source = record(instance);
-    const instanceLocation = firstText(source.location, source.tag);
-    const fallbackJoinTimes = getSharedSameInstanceFallbackJoinTimes();
     const creatorUser = record(source.creatorUser);
     const creatorUserId = firstText(source.creatorUserId);
     const knownCreatorUser = useKnownUserFact(creatorUserId, {
@@ -269,17 +224,17 @@ export function InstanceUserTiles({
                             : undefined,
                     status:
                         typeof user.status === 'string' ? user.status : null,
-                    statusDescription: user.statusDescription,
-                    isFriend: user.isFriend,
+                    statusDescription:
+                        typeof user.statusDescription === 'string'
+                            ? user.statusDescription
+                            : undefined,
+                    isFriend:
+                        typeof user.isFriend === 'boolean'
+                            ? user.isFriend
+                            : undefined,
                     $userColour:
                         typeof user.$userColour === 'string'
                             ? user.$userColour
-                            : undefined,
-                    $location_at:
-                        typeof user.$location_at === 'string' ||
-                        typeof user.$location_at === 'number' ||
-                        user.$location_at === null
-                            ? user.$location_at
                             : undefined
                 };
                 const dotClassName = resolveSidebarStatusDotClassName(
@@ -297,41 +252,22 @@ export function InstanceUserTiles({
                     'User'
                 );
                 const subtitle = instanceUserSubtitle(user, t);
-                const travelingTimestamp = instanceUserTravelingTimestamp(user);
+                const isTraveling =
+                    locationSentinel(user.location) === 'traveling';
+                const timerLocation = isTraveling
+                    ? resolveFriendPresenceLocation(user)
+                    : instanceLocation.trim() ||
+                      resolveFriendPresenceLocation(user);
                 const isInstanceCreator = userId === creatorUserId;
-                const sharedFallbackEpoch =
-                    showInstanceDuration && instanceLocation
-                        ? fallbackJoinTimes.get(
-                              sameInstanceFallbackKey(
-                                  instanceLocation,
-                                  statusUser
-                              )
-                          )
-                        : 0;
-                const dwellEpoch = resolveInstanceDwellEpoch(user);
-                const timerEpoch =
-                    travelingTimestamp || sharedFallbackEpoch || dwellEpoch;
                 let subline: ReactNode;
-                if (showInstanceDuration) {
+                if (showInstanceDuration || isTraveling) {
                     subline = (
-                        <FriendInstanceTimer
-                            epoch={timerEpoch}
-                            traveling={Boolean(travelingTimestamp)}
+                        <FriendLocationTimer
+                            userId={userId}
+                            location={timerLocation}
+                            traveling={isTraveling}
+                            fallback={subtitle || undefined}
                         />
-                    );
-                } else if (isInstanceCreator) {
-                    subline = undefined;
-                } else if (travelingTimestamp) {
-                    subline = (
-                        <>
-                            <Spinner
-                                aria-hidden="true"
-                                aria-label={undefined}
-                                role="presentation"
-                                className="mr-1 inline-block size-3"
-                            />
-                            {timeToText(Date.now() - travelingTimestamp)}
-                        </>
                     );
                 } else {
                     subline = subtitle || undefined;

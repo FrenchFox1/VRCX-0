@@ -21,9 +21,9 @@ export function usePlayerListLogLocation({
     currentUserLocation,
     isGameRunning
 }: {
-    addGameLogEventCount?: unknown;
-    currentUserId?: unknown;
-    currentUserLocation?: unknown;
+    addGameLogEventCount?: number;
+    currentUserId?: string | null;
+    currentUserLocation?: string;
     isGameRunning: boolean;
 }) {
     const [logLocationSnapshot, setLogLocationSnapshot] =

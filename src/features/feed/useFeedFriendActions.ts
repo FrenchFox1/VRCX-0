@@ -98,12 +98,12 @@ export function useFeedFriendActions(): FeedFriendActions {
     const canBoopFromFeed = Boolean(currentUserSnapshot?.isBoopingEnabled);
 
     const isFeedUserHidden = useCallback(
-        (userId: unknown) => hiddenUserIdSet.has(normalizeId(userId)),
+        (userId: string) => hiddenUserIdSet.has(normalizeId(userId)),
         [hiddenUserIdSet]
     );
 
     const addFeedHiddenUser = useCallback(
-        async (userId: unknown) => {
+        async (userId: string) => {
             try {
                 await addFeedHiddenUserPreference(userId);
             } catch (error) {
@@ -118,7 +118,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const removeFeedHiddenUser = useCallback(
-        async (userId: unknown) => {
+        async (userId: string) => {
             try {
                 await removeFeedHiddenUserPreference(userId);
             } catch (error) {
@@ -133,7 +133,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const canUseFeedFriendLocation = useCallback(
-        (location: unknown) => {
+        (location: string) => {
             const normalizedLocation = normalizeId(location);
             const parsedLocation = parseLocation(normalizedLocation);
             if (
@@ -153,7 +153,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const launchFeedFriendLocation = useCallback(
-        async (location: unknown) => {
+        async (location: string) => {
             const normalizedLocation = normalizeId(location);
             const parsedLocation = parseLocation(normalizedLocation);
             if (
@@ -189,7 +189,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const selfInviteFeedFriendLocation = useCallback(
-        async (location: unknown) => {
+        async (location: string) => {
             const normalizedLocation = normalizeId(location);
             const parsedLocation = parseLocation(normalizedLocation);
             if (

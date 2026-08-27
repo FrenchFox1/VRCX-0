@@ -32,6 +32,7 @@ import {
     SECONDS_PER_MINUTE
 } from '@/shared/constants/time';
 import { getDateTimeFormatter } from '@/shared/utils/dateTimeFormatters';
+import { isRecord } from '@/shared/utils/record';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
@@ -61,10 +62,6 @@ const DEFAULT_VISIBILITY: StatusBarVisibility = {
     clocks: true,
     servers: true
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeUtcHour(value: unknown) {
     const numeric = Number(value);
@@ -120,7 +117,7 @@ function parseClockOffset(entry: unknown) {
     return 0;
 }
 
-function formatUtcHour(offset: unknown) {
+function formatUtcHour(offset: number) {
     const normalized = normalizeUtcHour(offset);
     return `UTC${normalized >= 0 ? '+' : ''}${normalized}`;
 }
@@ -184,7 +181,7 @@ function formatStatusDate(value: string | null | undefined) {
 
 export function AppStatusBar() {
     const { t } = useTranslation();
-    const appStartedAtRef = useRef(Date.now());
+    const [appStartedAt] = useState(Date.now);
     const observedMutualGraphRunRef = useRef(0);
     const notifiedMutualGraphRunRef = useRef(0);
     const [visibility, setVisibility] = useState(DEFAULT_VISIBILITY);
@@ -574,7 +571,7 @@ export function AppStatusBar() {
         persistVisibility(nextVisibility);
     }
 
-    function setClockCountValue(nextValue: unknown) {
+    function setClockCountValue(nextValue: number) {
         const parsed = Math.max(0, Math.min(3, Number(nextValue) || 0));
         setClockCount(parsed);
         if (parsed > 0 && !visibility.clocks) {
@@ -760,7 +757,7 @@ export function AppStatusBar() {
     }
 
     const footer = {
-        appStartedAt: appStartedAtRef.current,
+        appStartedAt,
         clockPopoverOpen,
         currentLocationStartedTimestamp,
         currentWorld,

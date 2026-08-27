@@ -21,8 +21,8 @@ function isCurrentUserResponse(value: unknown): boolean {
         typeof value === 'object' &&
         !Array.isArray(value) &&
         'id' in value &&
-        typeof (value as { id: unknown }).id === 'string' &&
-        (value as { id: string }).id.trim()
+        typeof value.id === 'string' &&
+        value.id.trim()
     );
 }
 

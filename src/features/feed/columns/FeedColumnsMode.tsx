@@ -45,7 +45,8 @@ import { FeedPersistenceDisabledIndicator } from '../components/FeedPersistenceD
 import {
     FEED_COLUMN_DENSITY_OPTIONS,
     type FeedColumnDensity,
-    getFeedColumnDensityConfig
+    getFeedColumnDensityConfig,
+    sanitizeFeedColumnDensity
 } from '../feedColumnsDensity';
 import {
     createFeedColumnsPresetConfig,
@@ -144,7 +145,7 @@ function FeedColumnsSettingsMenu({
                         onValueChange={(nextValue) => {
                             if (nextValue[0]) {
                                 onDensityChange(
-                                    nextValue[0] as FeedColumnDensity
+                                    sanitizeFeedColumnDensity(nextValue[0])
                                 );
                             }
                         }}
@@ -243,7 +244,9 @@ export function FeedColumnsMode({
         onColumnsChange(
             nextOrder
                 .map((columnId) => byId.get(columnId))
-                .filter(Boolean) as FeedColumnConfig[]
+                .filter(
+                    (column): column is FeedColumnConfig => column !== undefined
+                )
         );
     };
 

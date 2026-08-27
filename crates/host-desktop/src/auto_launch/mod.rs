@@ -24,8 +24,9 @@ use model::{
 };
 #[cfg(test)]
 use process::{
-    finish_stop_attempt, local_launch_strategy, normalized_process_path_for_platform,
-    process_name_for_run, process_name_from_target_for_platform,
+    child_start_time_matches_parent, finish_stop_attempt, is_protected_process_name,
+    local_launch_strategy, normalized_process_path_for_platform, process_name_for_run,
+    process_name_from_target_for_platform, shell_launch_pid_is_trackable,
     should_close_untracked_matching_processes, should_skip_entry, tracked_shell_process_id,
     tracked_stop_pids, LaunchFailure, LocalLaunchStrategy, ShellExecuteVerb,
 };

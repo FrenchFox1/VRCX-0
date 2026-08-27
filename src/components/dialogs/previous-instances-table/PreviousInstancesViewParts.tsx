@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
+import { CopyIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,9 +15,11 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import { Location } from '@/components/Location';
 import type { LoadStatus } from '@/domain/shared/types';
 import {
     formatClock,
+    formatCompactDateTime,
     formatDateFilterOrFallback,
     timeToText
 } from '@/lib/dateTime';
@@ -25,9 +28,16 @@ import { useKnownUserFact, useKnownUserFacts } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
-import { openUserDialog, openWorldDialog } from '@/services/dialogService';
+import { copyTextToClipboard } from '@/services/clipboardService';
+import { openUserDialog } from '@/services/dialogService';
 import { openGameLogUser } from '@/services/gameLogUserDialogService';
-import { parseLocation } from '@/shared/utils/location';
+import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
+import {
+    getLocationText,
+    parseLocation,
+    resolveRegion,
+    translateAccessType
+} from '@/shared/utils/location';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -50,9 +60,11 @@ import {
     TableRow
 } from '@/ui/shadcn/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { PreviousInstanceInfoChart } from './PreviousInstanceInfoChart';
 import {
+    createdTime,
     normalizePlayerRows,
     playerJoinMs,
     playerLeaveMs,
@@ -60,8 +72,7 @@ import {
     playerUserId,
     rowDuration,
     rowLocation,
-    rowOwnerUserId,
-    rowWorldId
+    rowOwnerUserId
 } from './previousInstancesRows';
 import type {
     PreviousInstanceKnownUser,
@@ -73,17 +84,38 @@ const DETAILS_LOADING_INDICATOR_DELAY_MS = 150;
 
 type PreviousInstancePlayerClockRow = Parameters<typeof playerJoinMs>[0];
 
-function playerJoinClock(player: PreviousInstancePlayerClockRow) {
-    const joinedMs = playerJoinMs(player);
-    if (!joinedMs) {
-        return '—';
-    }
-    return formatClock(joinedMs) || '—';
+function isSameLocalDay(leftMs: number, rightMs: number) {
+    const left = new Date(leftMs);
+    const right = new Date(rightMs);
+    return (
+        left.getFullYear() === right.getFullYear() &&
+        left.getMonth() === right.getMonth() &&
+        left.getDate() === right.getDate()
+    );
 }
 
-function playerLeaveClock(player: PreviousInstancePlayerClockRow) {
-    const leaveMs = playerLeaveMs(player);
-    return leaveMs ? formatClock(leaveMs) || '—' : '—';
+function playerTimestampText(timestampMs: number, instanceStartMs: number) {
+    if (!timestampMs) {
+        return '—';
+    }
+    if (instanceStartMs && isSameLocalDay(timestampMs, instanceStartMs)) {
+        return formatClock(timestampMs) || '—';
+    }
+    return formatCompactDateTime(timestampMs) || '—';
+}
+
+function playerJoinTimestamp(
+    player: PreviousInstancePlayerClockRow,
+    instanceStartMs: number
+) {
+    return playerTimestampText(playerJoinMs(player), instanceStartMs);
+}
+
+function playerLeaveTimestamp(
+    player: PreviousInstancePlayerClockRow,
+    instanceStartMs: number
+) {
+    return playerTimestampText(playerLeaveMs(player), instanceStartMs);
 }
 
 export function DialogEmptyState({
@@ -120,10 +152,35 @@ export function DialogErrorState({ children }: { children: ReactNode }) {
     );
 }
 
-function instanceDetailsSummary(row: PreviousInstanceRow | null, t: TFunction) {
-    const parts = [row?.worldName, row?.groupName].filter(Boolean);
+export function instanceDetailsSummary(
+    row: PreviousInstanceRow | null,
+    t: TFunction
+) {
+    const parsedLocation = parseLocation(rowLocation(row));
+    const worldName =
+        row?.worldName || row?.$location?.worldName || parsedLocation.worldId;
+    const groupName = row?.groupName || row?.$location?.groupName || '';
+    const accessTypeLabel = parsedLocation.instanceId
+        ? translateAccessType(
+              parsedLocation.accessTypeName,
+              t,
+              accessTypeLocaleKeyMap
+          )
+        : '';
+    const locationText = getLocationText(parsedLocation, {
+        hint: worldName,
+        worldName,
+        accessTypeLabel,
+        t
+    });
+    const parts = [
+        locationText || worldName,
+        parsedLocation.instanceName ? `#${parsedLocation.instanceName}` : '',
+        resolveRegion(parsedLocation).toUpperCase(),
+        groupName ? `(${groupName})` : ''
+    ].filter(Boolean);
     if (parts.length) {
-        return parts.join(' / ');
+        return parts.join(' · ');
     }
     const dateText = formatDateFilterOrFallback(
         row?.created_at || row?.createdAt,
@@ -238,32 +295,80 @@ function PreviousInstancePlayerNameButton({
     );
 }
 
-function InstanceWorldCell({ row }: { row: PreviousInstanceRow | null }) {
-    const worldId = rowWorldId(row);
-    const worldName = row?.worldName || '';
+export function CopyInstanceWorldNameButton({
+    worldName,
+    variant = 'ghost'
+}: {
+    worldName: string;
+    variant?: 'ghost' | 'outline';
+}) {
+    const { t } = useTranslation();
+    const normalizedWorldName = worldName.trim();
 
-    if (!worldId && !worldName) {
-        return <span className="text-muted-foreground">-</span>;
+    if (!normalizedWorldName) {
+        return null;
     }
 
-    if (!worldId) {
-        return <span>{worldName}</span>;
+    const label = t('dialog.previous_instances.action.copy_world_name');
+
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <Button
+                        type="button"
+                        size="icon-xs"
+                        variant={variant}
+                        className="shrink-0"
+                        aria-label={`${label}: ${normalizedWorldName}`}
+                        onClick={() => {
+                            void copyTextToClipboard(normalizedWorldName, {
+                                successMessage: t(
+                                    'dialog.world.dynamic.value_copied',
+                                    {
+                                        value: t('dialog.world.info.name')
+                                    }
+                                )
+                            });
+                        }}
+                    >
+                        <CopyIcon data-icon="icon" />
+                    </Button>
+                }
+            />
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
+    );
+}
+
+function InstanceSummaryHeading({
+    row,
+    endpoint
+}: {
+    row: PreviousInstanceRow | null;
+    endpoint: string;
+}) {
+    const { t } = useTranslation();
+    const location = rowLocation(row);
+
+    if (!location) {
+        return (
+            <PageDescription className="break-words">
+                {instanceDetailsSummary(row, t)}
+            </PageDescription>
+        );
     }
 
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="hover:text-primary h-auto max-w-full min-w-0 justify-start p-0 text-left font-normal"
-            onClick={() =>
-                openWorldDialog({
-                    worldId,
-                    title: worldName || undefined
-                })
-            }
-        >
-            <span className="truncate">{worldName || worldId}</span>
-        </Button>
+        <div className="text-muted-foreground min-w-0 text-sm">
+            <Location
+                location={location}
+                hint={row?.worldName || ''}
+                endpoint={endpoint}
+                showInstanceIdInLocation
+                className="max-w-full"
+            />
+        </div>
     );
 }
 
@@ -290,6 +395,7 @@ export function PreviousInstanceDetailsPanel({
     const localFriendFavoritesList = useFavoriteStore(
         (state) => state.localFriendFavoritesList
     );
+    const instanceStartMs = createdTime(row);
     const [detailsViewMode, setDetailsViewMode] = useState('players');
     const [infoData, setInfoData] = useState<{
         status: LoadStatus;
@@ -482,8 +588,6 @@ export function PreviousInstanceDetailsPanel({
         );
     }
 
-    const parsedLocation = parseLocation(rowLocation(row));
-
     return (
         <div
             className={[
@@ -493,30 +597,42 @@ export function PreviousInstanceDetailsPanel({
                 .filter(Boolean)
                 .join(' ')}
         >
-            {showTitle || onBack ? (
-                <PageToolbar className="pb-0">
-                    <PageToolbarRow className="items-center">
-                        {onBack ? (
-                            <PageBackButton
-                                label={t('common.actions.back')}
-                                onClick={onBack}
+            <PageToolbar className="pb-0">
+                <PageToolbarRow className="items-center">
+                    {onBack ? (
+                        <PageBackButton
+                            label={t('common.actions.back')}
+                            onClick={onBack}
+                        />
+                    ) : null}
+                    {showTitle ? (
+                        <PageHeader className="min-w-0 flex-1 p-0">
+                            <PageTitle>
+                                {t('dialog.previous_instances.info')}
+                            </PageTitle>
+                            <InstanceSummaryHeading
+                                row={row}
+                                endpoint={currentEndpoint}
                             />
-                        ) : null}
-                        {showTitle ? (
-                            <PageHeader className="min-w-0 p-0">
-                                <PageTitle>
-                                    {t('dialog.previous_instances.info')}
-                                </PageTitle>
-                                <PageDescription className="truncate">
-                                    {instanceDetailsSummary(row, t)}
-                                </PageDescription>
-                            </PageHeader>
-                        ) : null}
-                    </PageToolbarRow>
-                </PageToolbar>
-            ) : null}
+                        </PageHeader>
+                    ) : null}
+                    <div className="ml-auto flex shrink-0 items-center gap-1">
+                        <CopyInstanceWorldNameButton
+                            worldName={row?.worldName || ''}
+                        />
+                        <InstanceActionBar
+                            target={{
+                                location: rowLocation(row),
+                                worldName: row?.worldName || ''
+                            }}
+                            showRefresh={false}
+                            showInstanceInfo={false}
+                        />
+                    </div>
+                </PageToolbarRow>
+            </PageToolbar>
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pr-1">
-                <div className="grid gap-2 text-sm sm:grid-cols-2">
+                <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
                     <div>
                         <span className="text-muted-foreground">
                             {t('table.previous_instances.date')}
@@ -524,7 +640,8 @@ export function PreviousInstanceDetailsPanel({
                         <div>
                             {formatDateFilterOrFallback(
                                 row?.created_at || row?.createdAt,
-                                'long'
+                                'long',
+                                { empty: '—', invalid: '—' }
                             )}
                         </div>
                     </div>
@@ -536,57 +653,22 @@ export function PreviousInstanceDetailsPanel({
                     </div>
                     <div>
                         <span className="text-muted-foreground">
-                            {t('table.previous_instances.world')}
-                        </span>
-                        <div className="min-w-0">
-                            <InstanceWorldCell row={row} />
-                        </div>
-                    </div>
-                    <div>
-                        <span className="text-muted-foreground">
-                            {t('dialog.new_instance.group')}
-                        </span>
-                        <div>{row?.groupName || '-'}</div>
-                    </div>
-                    <div>
-                        <span className="text-muted-foreground">
                             {t('table.previous_instances.instance_creator')}
                         </span>
                         <div>
-                            <InstanceOwnerCell
-                                userId={rowOwnerUserId(row)}
-                                endpoint={currentEndpoint}
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <span className="text-muted-foreground">
-                            {t('dialog.new_instance.region')}
-                        </span>
-                        <div className="uppercase">
-                            {parsedLocation.region || '-'}
-                        </div>
-                    </div>
-                    <div>
-                        <span className="text-muted-foreground">
-                            {t('dialog.new_instance.instance_id')}
-                        </span>
-                        <div className="tabular-nums">
-                            {parsedLocation.instanceName
-                                ? `#${parsedLocation.instanceName}`
-                                : '-'}
+                            {rowOwnerUserId(row) ? (
+                                <InstanceOwnerCell
+                                    userId={rowOwnerUserId(row)}
+                                    endpoint={currentEndpoint}
+                                />
+                            ) : (
+                                <span className="text-muted-foreground">
+                                    {'—'}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
-                <InstanceActionBar
-                    target={{
-                        location: rowLocation(row),
-                        worldName: row?.worldName || ''
-                    }}
-                    showRefresh={false}
-                    showInstanceInfo={false}
-                    className="flex-wrap"
-                />
                 <Tabs
                     value={detailsViewMode}
                     onValueChange={setDetailsViewMode}
@@ -648,12 +730,12 @@ export function PreviousInstanceDetailsPanel({
                                                             'dialog.world.info.visits'
                                                         )}
                                                     </TableHead>
-                                                    <TableHead className="w-20">
+                                                    <TableHead className="w-32">
                                                         {t(
                                                             'table.previous_instances.joined'
                                                         )}
                                                     </TableHead>
-                                                    <TableHead className="w-20">
+                                                    <TableHead className="w-32">
                                                         {t(
                                                             'table.previous_instances.left'
                                                         )}
@@ -661,11 +743,6 @@ export function PreviousInstanceDetailsPanel({
                                                     <TableHead className="w-28">
                                                         {t(
                                                             'table.previous_instances.time'
-                                                        )}
-                                                    </TableHead>
-                                                    <TableHead className="w-44">
-                                                        {t(
-                                                            'table.previous_instances.date'
                                                         )}
                                                     </TableHead>
                                                 </TableRow>
@@ -713,13 +790,15 @@ export function PreviousInstanceDetailsPanel({
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                    {playerJoinClock(
-                                                                        player
+                                                                    {playerJoinTimestamp(
+                                                                        player,
+                                                                        instanceStartMs
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                    {playerLeaveClock(
-                                                                        player
+                                                                    {playerLeaveTimestamp(
+                                                                        player,
+                                                                        instanceStartMs
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell className="align-top text-xs tabular-nums">
@@ -734,13 +813,6 @@ export function PreviousInstanceDetailsPanel({
                                                                           )
                                                                         : '-'}
                                                                 </TableCell>
-                                                                <TableCell className="text-muted-foreground align-top text-xs">
-                                                                    {formatDateFilterOrFallback(
-                                                                        player?.created_at ||
-                                                                            player?.createdAt,
-                                                                        'long'
-                                                                    )}
-                                                                </TableCell>
                                                             </TableRow>
                                                         )
                                                     )
@@ -748,7 +820,7 @@ export function PreviousInstanceDetailsPanel({
                                                   'running' ? null : (
                                                     <TableRow>
                                                         <TableCell
-                                                            colSpan={6}
+                                                            colSpan={5}
                                                             className="py-6 text-center"
                                                         >
                                                             {t(

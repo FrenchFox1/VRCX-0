@@ -155,7 +155,6 @@
                 <div class="group">
                     <div class="label">Surface</div>
                     <select id="surface">
-                        <option value="friends">Friends panel</option>
                         <option value="toast">HMD toast</option>
                         <option value="wrist">Wrist feed</option>
                     </select>
@@ -193,8 +192,6 @@
                 </div>
                 <div class="group meta">
                     <div id="surface-meta"></div>
-                    <div id="input-meta"></div>
-                    <div id="stats-meta"></div>
                     <div id="mode-meta"></div>
                 </div>
             </aside>
@@ -216,12 +213,8 @@
             const autoRefresh = document.getElementById('auto-refresh');
             const statusLine = document.getElementById('status');
             const surfaceMeta = document.getElementById('surface-meta');
-            const inputMeta = document.getElementById('input-meta');
-            const statsMeta = document.getElementById('stats-meta');
             const modeMeta = document.getElementById('mode-meta');
             let state = null;
-            let moveTimer = null;
-            let pendingMove = null;
             let currentObjectUrl = null;
             let autoRefreshTimer = null;
 
@@ -258,9 +251,9 @@
                     })
                 );
                 scenarioSelect.value = state.scenario;
-                const friends = state.friends || {};
+
                 const toast = state.toast || {};
-                surfaceMeta.textContent = `scenario=${state.scenario} rows=${friends.rows ?? '-'} toasts=${toast.toasts ?? '-'}`;
+                surfaceMeta.textContent = `scenario=${state.scenario} toasts=${toast.toasts ?? '-'}`;
                 modeMeta.textContent = state.debug
                     ? 'debug build; performance numbers need --release'
                     : 'release build';
@@ -274,7 +267,6 @@
                     statusLine.textContent = await response.text();
                     return;
                 }
-                updateStats(response.headers);
                 const blob = await response.blob();
                 const nextUrl = URL.createObjectURL(blob);
                 frame.onload = () => {
@@ -284,71 +276,6 @@
                     currentObjectUrl = nextUrl;
                 };
                 frame.src = nextUrl;
-            }
-
-            function updateStats(headers) {
-                const elapsed = headers.get('X-Render-Elapsed-Us');
-                const dirtyArea = headers.get('X-Dirty-Area');
-                const dirtyRects = headers.get('X-Dirty-Rects');
-                if (elapsed === null) {
-                    statsMeta.textContent = 'stats=-';
-                    return;
-                }
-                statsMeta.textContent = `render=${elapsed}us dirty=${dirtyArea} rects=${dirtyRects}`;
-            }
-
-            function pointFromEvent(event) {
-                const rect = frame.getBoundingClientRect();
-                const width = frame.naturalWidth || rect.width || 1;
-                const height = frame.naturalHeight || rect.height || 1;
-                return {
-                    x: Math.max(
-                        0,
-                        Math.min(
-                            width,
-                            ((event.clientX - rect.left) / rect.width) * width
-                        )
-                    ),
-                    y: Math.max(
-                        0,
-                        Math.min(
-                            height,
-                            ((event.clientY - rect.top) / rect.height) * height
-                        )
-                    )
-                };
-            }
-
-            async function sendInput(action, point, extra = {}) {
-                if (!state || state.surface !== 'friends') {
-                    return;
-                }
-                const response = await api('/api/input', {
-                    action,
-                    x: point.x,
-                    y: point.y,
-                    ...extra
-                });
-                state = response.state;
-                renderControls();
-                const result = response.result || {};
-                inputMeta.textContent = `event=${result.event ?? '-'} x=${Math.round(result.x ?? 0)} y=${Math.round(result.y ?? 0)}`;
-                await refreshFrame();
-            }
-
-            function queueMove(event) {
-                pendingMove = pointFromEvent(event);
-                if (moveTimer) {
-                    return;
-                }
-                moveTimer = window.setTimeout(() => {
-                    const point = pendingMove;
-                    pendingMove = null;
-                    moveTimer = null;
-                    sendInput('move', point).catch((error) => {
-                        statusLine.textContent = error.message;
-                    });
-                }, 30);
             }
 
             function restartAutoRefresh() {
@@ -414,71 +341,6 @@
             applyBackdrop();
 
             autoRefresh.addEventListener('change', restartAutoRefresh);
-
-            frame.addEventListener('pointerdown', (event) => {
-                if (
-                    event.button !== 0 ||
-                    !state ||
-                    state.surface !== 'friends'
-                ) {
-                    return;
-                }
-                frame.setPointerCapture(event.pointerId);
-                event.preventDefault();
-                sendInput('down', pointFromEvent(event)).catch((error) => {
-                    statusLine.textContent = error.message;
-                });
-            });
-
-            frame.addEventListener('pointermove', (event) => {
-                queueMove(event);
-            });
-
-            frame.addEventListener('pointerup', (event) => {
-                if (
-                    event.button !== 0 ||
-                    !state ||
-                    state.surface !== 'friends'
-                ) {
-                    return;
-                }
-                if (frame.hasPointerCapture(event.pointerId)) {
-                    frame.releasePointerCapture(event.pointerId);
-                }
-                event.preventDefault();
-                sendInput('up', pointFromEvent(event)).catch((error) => {
-                    statusLine.textContent = error.message;
-                });
-            });
-
-            frame.addEventListener('pointercancel', (event) => {
-                if (frame.hasPointerCapture(event.pointerId)) {
-                    frame.releasePointerCapture(event.pointerId);
-                }
-                sendInput('exit', { x: 0, y: 0 }).catch((error) => {
-                    statusLine.textContent = error.message;
-                });
-            });
-
-            frame.addEventListener('mouseleave', () => {
-                sendInput('exit', { x: 0, y: 0 }).catch((error) => {
-                    statusLine.textContent = error.message;
-                });
-            });
-
-            frame.addEventListener(
-                'wheel',
-                (event) => {
-                    event.preventDefault();
-                    sendInput('wheel', pointFromEvent(event), {
-                        delta_x: event.deltaX,
-                        delta_y: event.deltaY
-                    }).catch((error) => {
-                        statusLine.textContent = error.message;
-                    });
-                },
-                { passive: false }
-            );
 
             loadState().catch((error) => {
                 statusLine.textContent = error.message;

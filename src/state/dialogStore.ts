@@ -40,10 +40,10 @@ interface ActiveDialog {
 }
 
 interface DialogMetadataPatch {
-    kind?: unknown;
-    entityId?: unknown;
-    title?: unknown;
-    description?: unknown;
+    kind?: DialogKind;
+    entityId?: string;
+    title?: string;
+    description?: string;
 }
 
 interface DialogStoreState {
@@ -53,7 +53,7 @@ interface DialogStoreState {
     setDialog: (dialog: ActiveDialog | null) => void;
     setDialogTrail: (
         dialog: ActiveDialog | null,
-        breadcrumbs: DialogBreadcrumb[] | unknown
+        breadcrumbs: DialogBreadcrumb[]
     ) => void;
     updateEntityDialogMetadata: (patch?: DialogMetadataPatch) => void;
     closeDialog: () => void;
@@ -82,14 +82,6 @@ function dialogFromBreadcrumb(crumb: DialogBreadcrumb): ActiveDialog | null {
     };
 }
 
-function isDialogBreadcrumb(value: unknown): value is DialogBreadcrumb {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function normalizeBreadcrumbs(value: unknown): DialogBreadcrumb[] {
-    return Array.isArray(value) ? value.filter(isDialogBreadcrumb) : [];
-}
-
 function isSameEntity(
     left: DialogBreadcrumb | ActiveDialog | null,
     rightKind: string,
@@ -97,7 +89,7 @@ function isSameEntity(
 ): boolean {
     return (
         left?.kind === rightKind &&
-        String(left?.entityId ?? '').trim() === rightEntityId
+        (left?.entityId?.trim() ?? '') === rightEntityId
     );
 }
 
@@ -119,15 +111,15 @@ export const useDialogStore = create<DialogStoreState>((set) => ({
     setDialogTrail(dialog, breadcrumbs) {
         set({
             activeDialog: dialog,
-            breadcrumbs: normalizeBreadcrumbs(breadcrumbs)
+            breadcrumbs
         });
     },
     updateEntityDialogMetadata(patch = {}) {
         const { kind, entityId, title = '', description = '' } = patch;
-        const normalizedKind = String(kind || '').trim();
-        const normalizedEntityId = String(entityId ?? '').trim();
-        const normalizedTitle = String(title || '').trim();
-        const normalizedDescription = String(description || '').trim();
+        const normalizedKind = kind?.trim() ?? '';
+        const normalizedEntityId = entityId?.trim() ?? '';
+        const normalizedTitle = title.trim();
+        const normalizedDescription = description.trim();
         if (
             !normalizedKind ||
             !normalizedEntityId ||

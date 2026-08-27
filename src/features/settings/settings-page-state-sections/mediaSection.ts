@@ -1,8 +1,26 @@
 import { openUGCPhotosFolder } from '@/services/shellIntegrationService';
 import { normalizeAutoDeletePrintsLimit } from '@/state/preferencesStore';
 
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
-import { normalizeCheckedState } from '../settingsValues';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type MediaSectionInput = SettingsSectionInput<
+    | 'prefs'
+    | 'commit'
+    | 'setScreenshotHelperPreference'
+    | 'setScreenshotHelperModifyFilenamePreference'
+    | 'setScreenshotHelperCopyToClipboardPreference'
+    | 'deleteAllScreenshotMetadata'
+    | 'openUgcFolderSelector'
+    | 'resetUgcFolder'
+    | 'setSaveInstancePrintsPreference'
+    | 'handleCropInstancePrintsChange'
+    | 'setSaveInstanceStickersPreference'
+    | 'setSaveInstanceEmojiPreference'
+    | 'setPrefs'
+    | 'savePreferenceValue'
+    | 'saveBoolPreference'
+    | 'setIntConfigPreference'
+>;
 
 export function buildMediaSection({
     prefs,
@@ -21,7 +39,7 @@ export function buildMediaSection({
     savePreferenceValue,
     saveBoolPreference,
     setIntConfigPreference
-}: BuildSettingsPageStateSectionsInput) {
+}: MediaSectionInput) {
     return {
         commit,
         setScreenshotHelperPreference,
@@ -35,24 +53,21 @@ export function buildMediaSection({
         setSaveInstanceStickersPreference,
         setSaveInstanceEmojiPreference,
         setPrefs,
-        onScreenshotHelperChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('screenshotHelper', enabled, () =>
-                setScreenshotHelperPreference(enabled)
+        onScreenshotHelperChange: (checked: boolean) => {
+            savePreferenceValue('screenshotHelper', checked, () =>
+                setScreenshotHelperPreference(checked)
             );
         },
-        onScreenshotHelperModifyFilenameChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('screenshotHelperModifyFilename', enabled, () =>
-                setScreenshotHelperModifyFilenamePreference(enabled)
+        onScreenshotHelperModifyFilenameChange: (checked: boolean) => {
+            savePreferenceValue('screenshotHelperModifyFilename', checked, () =>
+                setScreenshotHelperModifyFilenamePreference(checked)
             );
         },
-        onScreenshotHelperCopyToClipboardChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onScreenshotHelperCopyToClipboardChange: (checked: boolean) => {
             savePreferenceValue(
                 'screenshotHelperCopyToClipboard',
-                enabled,
-                () => setScreenshotHelperCopyToClipboardPreference(enabled)
+                checked,
+                () => setScreenshotHelperCopyToClipboardPreference(checked)
             );
         },
         onDeleteAllScreenshotMetadata: () => {
@@ -67,30 +82,28 @@ export function buildMediaSection({
         onResetUgcFolder: () => {
             resetUgcFolder();
         },
-        onSaveInstancePrintsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('saveInstancePrints', enabled, () =>
-                setSaveInstancePrintsPreference(enabled)
+        onSaveInstancePrintsChange: (checked: boolean) => {
+            savePreferenceValue('saveInstancePrints', checked, () =>
+                setSaveInstancePrintsPreference(checked)
             );
         },
-        onCropInstancePrintsChange: (checked: unknown) => {
-            handleCropInstancePrintsChange(normalizeCheckedState(checked));
+        onCropInstancePrintsChange: (checked: boolean) => {
+            handleCropInstancePrintsChange(checked);
         },
-        onAutoDeleteOldPrintsChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAutoDeleteOldPrintsChange: (checked: boolean) => {
             saveBoolPreference(
                 'autoDeleteOldPrints',
                 'autoDeleteOldPrints',
-                enabled
+                checked
             );
         },
-        onAutoDeletePrintsLimitChange: (value: unknown) => {
+        onAutoDeletePrintsLimitChange: (value: string) => {
             setPrefs((current) => ({
                 ...current,
                 autoDeletePrintsLimit: value
             }));
         },
-        onAutoDeletePrintsLimitBlur: (value: unknown) => {
+        onAutoDeletePrintsLimitBlur: (value: string) => {
             const nextValue = normalizeAutoDeletePrintsLimit(value);
             savePreferenceValue('autoDeletePrintsLimit', nextValue, () =>
                 setIntConfigPreference('autoDeletePrintsLimit', nextValue, {
@@ -100,16 +113,14 @@ export function buildMediaSection({
                 })
             );
         },
-        onSaveInstanceStickersChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('saveInstanceStickers', enabled, () =>
-                setSaveInstanceStickersPreference(enabled)
+        onSaveInstanceStickersChange: (checked: boolean) => {
+            savePreferenceValue('saveInstanceStickers', checked, () =>
+                setSaveInstanceStickersPreference(checked)
             );
         },
-        onSaveInstanceEmojiChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('saveInstanceEmoji', enabled, () =>
-                setSaveInstanceEmojiPreference(enabled)
+        onSaveInstanceEmojiChange: (checked: boolean) => {
+            savePreferenceValue('saveInstanceEmoji', checked, () =>
+                setSaveInstanceEmojiPreference(checked)
             );
         }
     };

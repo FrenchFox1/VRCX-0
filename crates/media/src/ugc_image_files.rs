@@ -102,22 +102,7 @@ pub fn default_image_extension(file_name: &str) -> &str {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum UgcCategory {
-    Prints,
-    Stickers,
-    Emoji,
-}
-
-impl UgcCategory {
-    pub fn folder_name(self) -> &'static str {
-        match self {
-            Self::Prints => "Prints",
-            Self::Stickers => "Stickers",
-            Self::Emoji => "Emoji",
-        }
-    }
-}
+pub use vrcx_0_contracts::UgcCategory;
 
 pub fn build_ugc_image_path(
     ugc_folder_path: &str,

@@ -5,9 +5,8 @@ export const DEFAULT_LANGUAGE_CODE = 'en';
 
 export { languageCodes };
 
-export function normalizeLanguageCode(language: unknown) {
-    const candidate =
-        typeof language === 'string' ? language.trim().replace(/_/g, '-') : '';
+export function normalizeLanguageCode(language: string | null | undefined) {
+    const candidate = language?.trim().replace(/_/g, '-') ?? '';
     if (languageCodes.includes(candidate)) {
         return candidate;
     }

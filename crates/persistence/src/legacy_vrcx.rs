@@ -2,89 +2,12 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
-use serde::Serialize;
+pub use vrcx_0_contracts::{LegacyVrcxDiscovery, LegacyVrcxMigrationStatus, LegacyVrcxSource};
 
 // Highest upstream VRCX schema generation VRCX-0 knows how to import directly.
 // This is intentionally separate from VRCX-0's own schema generation (see
 // `VRCX0_SCHEMA_VERSION`): the two version spaces must never be compared.
 pub const MAX_IMPORTABLE_UPSTREAM_VERSION: i64 = 16;
-
-#[derive(Clone, Debug)]
-pub struct LegacyVrcxSource {
-    pub db_path: PathBuf,
-    pub config_path: Option<PathBuf>,
-    pub version: i64,
-}
-
-#[derive(Clone, Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct LegacyVrcxMigrationStatus {
-    pub detected: bool,
-    pub available: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub db_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub config_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reason: Option<String>,
-}
-
-impl LegacyVrcxMigrationStatus {
-    pub fn unavailable() -> Self {
-        Self {
-            detected: false,
-            available: false,
-            version: None,
-            db_path: None,
-            config_path: None,
-            reason: None,
-        }
-    }
-
-    fn from_source(source: &LegacyVrcxSource) -> Self {
-        Self {
-            detected: true,
-            available: true,
-            version: Some(source.version),
-            db_path: Some(source.db_path.to_string_lossy().into_owned()),
-            config_path: source
-                .config_path
-                .as_ref()
-                .map(|path| path.to_string_lossy().into_owned()),
-            reason: None,
-        }
-    }
-
-    fn blocked(source: Option<&LegacyVrcxSource>, reason: String) -> Self {
-        Self {
-            detected: true,
-            available: false,
-            version: source.map(|source| source.version),
-            db_path: source.map(|source| source.db_path.to_string_lossy().into_owned()),
-            config_path: source
-                .and_then(|source| source.config_path.as_ref())
-                .map(|path| path.to_string_lossy().into_owned()),
-            reason: Some(reason),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct LegacyVrcxDiscovery {
-    pub importable_source: Option<LegacyVrcxSource>,
-    pub status: LegacyVrcxMigrationStatus,
-}
-
-impl LegacyVrcxDiscovery {
-    fn without_source(status: LegacyVrcxMigrationStatus) -> Self {
-        Self {
-            importable_source: None,
-            status,
-        }
-    }
-}
 
 pub fn discover_legacy_vrcx_migration(
     target_db: &Path,

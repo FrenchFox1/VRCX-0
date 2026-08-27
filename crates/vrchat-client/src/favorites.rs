@@ -16,7 +16,7 @@ pub fn favorite_limits_get_input(endpoint: String) -> HttpApiRequestInput {
     get_input(endpoint, "auth/user/favoritelimits", HashMap::new())
 }
 
-pub fn favorites_get_input(endpoint: String, n: i64, offset: i64) -> HttpApiRequestInput {
+pub fn favorites_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
     get_input(
         endpoint,
         "favorites",
@@ -29,8 +29,8 @@ pub fn favorites_get_input(endpoint: String, n: i64, offset: i64) -> HttpApiRequ
 
 pub fn favorite_worlds_get_input(
     endpoint: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     owner_id: String,
     user_id: String,
     tag: String,
@@ -56,8 +56,8 @@ pub fn favorite_worlds_get_input(
 
 pub fn favorite_avatars_get_input(
     endpoint: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     tag: String,
 ) -> HttpApiRequestInput {
     let tag = normalize_text(tag);
@@ -73,8 +73,8 @@ pub fn favorite_avatars_get_input(
 
 pub fn favorite_groups_get_input(
     endpoint: String,
-    n: i64,
-    offset: i64,
+    n: i32,
+    offset: i32,
     owner_id: String,
 ) -> HttpApiRequestInput {
     let owner_id = normalize_text(owner_id);

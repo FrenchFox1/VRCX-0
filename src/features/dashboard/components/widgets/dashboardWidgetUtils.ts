@@ -1,10 +1,13 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import type { DashboardConfig } from '@/features/dashboard/dashboardConfig';
 import { formatDateFilter } from '@/lib/dateTime';
 import { normalizeString } from '@/shared/utils/string';
 
+type WidgetTimestamp = string | null | undefined;
+
 export function buildFavoriteIdSet(
-    remoteFavoriteIds: readonly unknown[] | null | undefined,
-    localFriendFavorites: unknown
+    remoteFavoriteIds: readonly string[] | null | undefined,
+    localFriendFavorites: FavoriteGroupMap | null | undefined
 ): Set<string> {
     const ids = new Set<string>();
 
@@ -15,17 +18,7 @@ export function buildFavoriteIdSet(
         }
     }
 
-    const localGroups =
-        localFriendFavorites &&
-        typeof localFriendFavorites === 'object' &&
-        !Array.isArray(localFriendFavorites)
-            ? localFriendFavorites
-            : {};
-    for (const values of Object.values(localGroups)) {
-        if (!Array.isArray(values)) {
-            continue;
-        }
-
+    for (const values of Object.values(localFriendFavorites ?? {})) {
         for (const id of values) {
             const normalized = normalizeString(id);
             if (normalized) {
@@ -37,7 +30,7 @@ export function buildFavoriteIdSet(
     return ids;
 }
 
-export function formatWidgetTime(value: unknown) {
+export function formatWidgetTime(value: WidgetTimestamp) {
     if (!value) {
         return '--';
     }
@@ -45,11 +38,11 @@ export function formatWidgetTime(value: unknown) {
     try {
         return formatDateFilter(value, 'time');
     } catch {
-        return String(value);
+        return value;
     }
 }
 
-export function formatWidgetDate(value: unknown) {
+export function formatWidgetDate(value: WidgetTimestamp) {
     if (!value) {
         return '--';
     }
@@ -57,18 +50,14 @@ export function formatWidgetDate(value: unknown) {
     try {
         return formatDateFilter(value, 'date');
     } catch {
-        return String(value);
+        return value;
     }
 }
 
-export function getWidgetDayKey(value: unknown) {
-    const date = new Date(
-        typeof value === 'string' || typeof value === 'number'
-            ? value
-            : String(value || '')
-    );
+export function getWidgetDayKey(value: WidgetTimestamp) {
+    const date = new Date(value || '');
     if (Number.isNaN(date.getTime())) {
-        return String(value || '').slice(0, 10);
+        return (value || '').slice(0, 10);
     }
 
     return [
@@ -78,7 +67,7 @@ export function getWidgetDayKey(value: unknown) {
     ].join('-');
 }
 
-export function formatWidgetExactTime(value: unknown) {
+export function formatWidgetExactTime(value: WidgetTimestamp) {
     if (!value) {
         return '';
     }
@@ -86,11 +75,11 @@ export function formatWidgetExactTime(value: unknown) {
     try {
         return formatDateFilter(value, 'long');
     } catch {
-        return String(value);
+        return value;
     }
 }
 
-export function joinCompactParts(values: unknown[] = []) {
+export function joinCompactParts(values: readonly string[] = []) {
     return values.filter(Boolean).join(' • ');
 }
 

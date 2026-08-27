@@ -1,6 +1,4 @@
 use chrono::Utc;
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::DatabaseService;
 
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::runtime_state::parse_event_time_ms;
@@ -11,11 +9,11 @@ use crate::{
 };
 
 pub fn set_game_no_vr(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     side_effect_sink: &GameLogSideEffectSink,
     no_vr: bool,
 ) -> Result<()> {
-    config_store::set_bool(db, "isGameNoVR", no_vr)?;
+    store.set_bool("isGameNoVR", no_vr)?;
     side_effect_sink.emit(GameLogSideEffectEvent::GameNoVr(GameNoVrPayload {
         is_game_no_vr: no_vr,
     }));
@@ -23,7 +21,7 @@ pub fn set_game_no_vr(
 }
 
 pub fn handle_vrc_quit(
-    db: &DatabaseService,
+    store: &dyn crate::GameStateStore,
     host_actions: &dyn GameLogHostActions,
     side_effect_sink: &GameLogSideEffectSink,
     created_at: &str,
@@ -32,7 +30,7 @@ pub fn handle_vrc_quit(
     if !is_game_running {
         return;
     }
-    if !config_store::get_bool(db, "vrcQuitFix", true).unwrap_or(true) {
+    if !store.get_bool("vrcQuitFix", true).unwrap_or(true) {
         return;
     }
 

@@ -6,8 +6,8 @@ import { resolveUserByDisplayName } from '@/services/userIdentityService';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 
 type GameLogUserTarget = {
-    userId?: unknown;
-    displayName?: unknown;
+    userId?: string | null;
+    displayName?: string | null;
 };
 
 function recordOrNull(value: unknown): Record<string, unknown> | null {

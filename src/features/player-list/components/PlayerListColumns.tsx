@@ -252,19 +252,11 @@ function PlatformCell({ row }: { row: AppRow<PlayerListRow> }) {
     );
 }
 
-function normalizeTooltipText(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 export function languageTooltipLabel(
     entry: PlayerListLanguageRow | null | undefined,
     code: string
 ) {
-    const original = normalizeTooltipText(
-        entry?.value || entry?.label || entry?.name
-    );
+    const original = entry?.value?.trim() || '';
     return original || code;
 }
 

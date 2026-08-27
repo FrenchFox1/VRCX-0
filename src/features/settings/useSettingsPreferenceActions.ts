@@ -29,44 +29,20 @@ type BoolPreferenceKey = NormalizedConfigKey<BoolConfigPreferenceKey> &
     PreferenceKey;
 type StringPreferenceKey = NormalizedConfigKey<StringConfigPreferenceKey> &
     PreferenceKey;
-type PreferenceAction = () => unknown | Promise<unknown>;
+type PreferenceAction = () => void;
 type PreferenceRollback = void | (() => void);
-export type SettingsActionPrefs = Record<string, unknown> & {
-    appCjkFontPack: unknown;
-    appFontFamily: unknown;
-    autoLoginDelaySeconds: unknown;
-    customFontFamily: unknown;
-    customFontOverride: unknown;
-    customFontPrimary: unknown;
-    customFontSecondary: unknown;
-    desktopNotificationActivityFilters: PreferencesSnapshot['desktopNotificationActivityFilters'];
-    hmdNotificationActivityFilters: PreferencesSnapshot['hmdNotificationActivityFilters'];
-    notificationTTS: unknown;
-    notificationTTSNameMode: string;
-    notificationTTSVoiceNative: string;
-    overlayActivityFilters: PreferencesSnapshot['overlayActivityFilters'];
-    proxyServer: string;
-    ttsNotificationActivityFilters: PreferencesSnapshot['ttsNotificationActivityFilters'];
-    userGeneratedContentPath: string;
-    vrNotificationActivityFilters: PreferencesSnapshot['vrNotificationActivityFilters'];
-    webhookActivityFilters: PreferencesSnapshot['webhookActivityFilters'];
-    wristOverlayEnabled: boolean;
-};
+export type SettingsActionPrefs = PreferencesSnapshot;
 type SettingsPrefs = SettingsActionPrefs;
-type StateSetter<Value> = {
-    bivarianceHack(
-        value: Value | ((current: Value) => Value | Record<string, unknown>)
-    ): void;
-}['bivarianceHack'];
+type StateSetter<Value> = (value: Value | ((current: Value) => Value)) => void;
 type SettingsPreferenceActionsDeps = {
     APP_FONT_DEFAULT_KEY: string;
     DEFAULT_MAX_TABLE_SIZE: number;
     DEFAULT_SEARCH_LIMIT: number;
     applyAppFontPreferences: (preferences: {
-        fontFamily: unknown;
-        customFontFamily: unknown;
-        cjkFontPack: unknown;
-    }) => unknown;
+        fontFamily: string;
+        customFontFamily: string;
+        cjkFontPack: string;
+    }) => void;
     auth: {
         currentUserEndpoint?: string | null;
         currentUserId?: string | null;
@@ -82,12 +58,12 @@ type SettingsPreferenceActionsDeps = {
     databaseMaintenanceRepository: {
         getTableSizes(userId: string): Promise<Record<string, unknown>>;
     };
-    isValidFontFamilyList: (value: unknown) => boolean;
+    isValidFontFamilyList: (value: string) => boolean;
     loadTrustColorPreference: () => Promise<PreferencesSnapshot['trustColor']>;
     localFavoriteFriendsGroups: string[];
-    normalizeAppCjkFontPack: (value: unknown) => string;
-    normalizeAppFontFamily: (value: unknown) => string;
-    parseIntegerInput: (value: unknown, fallback: number) => number;
+    normalizeAppCjkFontPack: (value: string) => string;
+    normalizeAppFontFamily: (value: string) => string;
+    parseIntegerInput: (value: string | number, fallback: number) => number;
     prefs: SettingsPrefs;
     resetTrustColorsPreference: () => Promise<
         PreferencesSnapshot['trustColor']
@@ -95,7 +71,7 @@ type SettingsPreferenceActionsDeps = {
     setBoolConfigPreference: (
         key: BoolConfigPreferenceKey,
         value: boolean
-    ) => Promise<unknown>;
+    ) => Promise<void>;
     setConfigTreeData: (value: Record<string, unknown>) => void;
     setCustomFontDialogOpen: (value: boolean) => void;
     setCustomFontDraft: (value: CustomFontDraft) => void;
@@ -103,7 +79,7 @@ type SettingsPreferenceActionsDeps = {
     setCustomFontOptionsLoading: (value: boolean) => void;
     setLocalFavoriteFriendsGroups: (value: string[]) => void;
     setLocalFavoriteFriendsGroupsPreference: (
-        value: unknown
+        value: string[]
     ) => Promise<string[]>;
     setOnlineVisitCount: (value: number) => void;
     setPrefs: StateSetter<SettingsPrefs>;
@@ -112,7 +88,7 @@ type SettingsPreferenceActionsDeps = {
     setStringConfigPreference: (
         key: StringConfigPreferenceKey,
         value: string
-    ) => Promise<unknown>;
+    ) => Promise<void>;
     setTableLimitsDialogOpen: (value: boolean) => void;
     setTableLimitsDraft: (value: {
         maxTableSize: string;
@@ -125,26 +101,26 @@ type SettingsPreferenceActionsDeps = {
     setTablePageSizesDialogOpen: (value: boolean) => void;
     setTrustColorPreference: (
         key: TrustColorKey,
-        value: unknown
+        value: string
     ) => Promise<PreferencesSnapshot['trustColor']>;
     setOverlayActivityFiltersPreference: (
-        value: unknown,
+        value: PreferencesSnapshot['overlayActivityFilters'],
         definitions?: OverlayActivityTypeDefinition[]
     ) => Promise<PreferencesSnapshot['overlayActivityFilters']>;
     setVrNotificationActivityFiltersPreference: (
-        value: unknown
+        value: PreferencesSnapshot['vrNotificationActivityFilters']
     ) => Promise<PreferencesSnapshot['vrNotificationActivityFilters']>;
     setHmdNotificationActivityFiltersPreference: (
-        value: unknown
+        value: PreferencesSnapshot['hmdNotificationActivityFilters']
     ) => Promise<PreferencesSnapshot['hmdNotificationActivityFilters']>;
     setDesktopNotificationActivityFiltersPreference: (
-        value: unknown
+        value: PreferencesSnapshot['desktopNotificationActivityFilters']
     ) => Promise<PreferencesSnapshot['desktopNotificationActivityFilters']>;
     setWebhookActivityFiltersPreference: (
-        value: unknown
+        value: PreferencesSnapshot['webhookActivityFilters']
     ) => Promise<PreferencesSnapshot['webhookActivityFilters']>;
     setTtsNotificationActivityFiltersPreference: (
-        value: unknown
+        value: PreferencesSnapshot['ttsNotificationActivityFilters']
     ) => Promise<PreferencesSnapshot['ttsNotificationActivityFilters']>;
     setWristOverlayEnabledPreference: (value: boolean) => Promise<boolean>;
     t: (key: string) => string;
@@ -154,9 +130,9 @@ type SettingsPreferenceActionsDeps = {
     };
     tableLimitsSaveDisabled: boolean;
     toast: {
-        error(message: string): unknown;
-        success(message: string): unknown;
-        warning(message: string): unknown;
+        error(message: string): void;
+        success(message: string): void;
+        warning(message: string): void;
     };
     usePreferencesStore: {
         getState(): Pick<PreferencesStoreState, 'proxyServer' | 'tableLimits'>;
@@ -167,9 +143,9 @@ type SettingsPreferenceActionsDeps = {
 };
 
 type FontPreferencesInput = Partial<{
-    cjkFontPack: unknown;
-    customFontFamily: unknown;
-    fontFamily: unknown;
+    cjkFontPack: string;
+    customFontFamily: string;
+    fontFamily: string;
 }>;
 
 type ActivityFilterSurfaceField =
@@ -181,15 +157,9 @@ type ActivityFilterSurfaceField =
     | 'ttsNotificationActivityFilters';
 
 type ActivityFilterSurfaceSetter<Field extends ActivityFilterSurfaceField> = (
-    value: unknown,
+    value: PreferencesSnapshot[Field],
     definitions?: OverlayActivityTypeDefinition[]
 ) => Promise<PreferencesSnapshot[Field]>;
-
-function readCustomFontDraft(value: unknown): Partial<CustomFontDraft> {
-    return value && typeof value === 'object'
-        ? (value as Partial<CustomFontDraft>)
-        : {};
-}
 
 export function useSettingsPreferenceActions({
     APP_FONT_DEFAULT_KEY,
@@ -247,7 +217,7 @@ export function useSettingsPreferenceActions({
         action: PreferenceAction
     ) {
         return commit(action, () => {
-            const previous = prefs[key] as unknown as PreferencesSnapshot[K];
+            const previous = prefs[key];
             setPrefs((current) => ({
                 ...current,
                 [key]: value
@@ -265,10 +235,8 @@ export function useSettingsPreferenceActions({
         value: boolean
     ) {
         const enabled = value === true;
-        await savePreferenceValue(
-            key,
-            enabled as PreferencesSnapshot[typeof key],
-            () => setBoolConfigPreference(configKey, enabled)
+        await savePreferenceValue(key, enabled, () =>
+            setBoolConfigPreference(configKey, enabled)
         );
     }
     async function saveStringPreference(
@@ -276,10 +244,8 @@ export function useSettingsPreferenceActions({
         configKey: StringConfigPreferenceKey,
         value: string
     ) {
-        await savePreferenceValue(
-            key,
-            value as PreferencesSnapshot[typeof key],
-            () => setStringConfigPreference(configKey, value)
+        await savePreferenceValue(key, value, () =>
+            setStringConfigPreference(configKey, value)
         );
     }
     async function saveFontPreferences({
@@ -305,15 +271,15 @@ export function useSettingsPreferenceActions({
         });
     }
     async function saveFontFamilyPreference(
-        fontFamily: unknown,
-        customFontFamily: unknown = prefs.customFontFamily
+        fontFamily: string,
+        customFontFamily: string = prefs.customFontFamily
     ) {
         await saveFontPreferences({
             fontFamily,
             customFontFamily
         });
     }
-    async function selectCjkFontPack(cjkFontPack: unknown) {
+    async function selectCjkFontPack(cjkFontPack: string) {
         await saveFontPreferences({
             fontFamily:
                 prefs.appFontFamily === 'custom'
@@ -341,8 +307,10 @@ export function useSettingsPreferenceActions({
                 setCustomFontOptionsLoading(false);
             });
     }
-    async function saveCustomFontFamily(value: unknown = customFontDraft) {
-        const draft = readCustomFontDraft(value);
+    async function saveCustomFontFamily(
+        value: CustomFontDraft = customFontDraft
+    ) {
+        const draft = value;
         const nextDraft: CustomFontDraft = {
             primary: String(draft.primary ?? '').trim(),
             secondary: String(draft.secondary ?? '').trim(),
@@ -415,7 +383,7 @@ export function useSettingsPreferenceActions({
             trustColor: persisted
         }));
     }
-    async function saveTrustColor(key: TrustColorKey, value: unknown) {
+    async function saveTrustColor(key: TrustColorKey, value: string) {
         try {
             const nextTrustColor = await setTrustColorPreference(key, value);
             setPrefs((current) => ({
@@ -531,9 +499,7 @@ export function useSettingsPreferenceActions({
             tableLimitsDraft.searchLimit,
             10
         );
-        let savedLimits:
-            | Awaited<ReturnType<typeof setTableLimitsPreference>>
-            | undefined;
+        let savedLimits = prefs.tableLimits;
         const saved = await commit(async () => {
             savedLimits = await setTableLimitsPreference({
                 maxTableSize: nextMaxTableSize,
@@ -572,10 +538,10 @@ export function useSettingsPreferenceActions({
         Field extends ActivityFilterSurfaceField
     >(field: Field, setPreference: ActivityFilterSurfaceSetter<Field>) {
         return async function saveActivityFilterSurface(
-            value: unknown,
+            value: PreferencesSnapshot[Field],
             definitions?: OverlayActivityTypeDefinition[]
         ) {
-            let savedFilters: PreferencesSnapshot[Field] | undefined;
+            let savedFilters = prefs[field];
             const previousFilters = prefs[field];
             const saved = await commit(
                 async () => {
@@ -584,7 +550,7 @@ export function useSettingsPreferenceActions({
                 () => {
                     setPrefs((current) => ({
                         ...current,
-                        [field]: value as PreferencesSnapshot[Field]
+                        [field]: value
                     }));
                     return () =>
                         setPrefs((current) => ({
@@ -598,7 +564,7 @@ export function useSettingsPreferenceActions({
             }
             setPrefs((current) => ({
                 ...current,
-                [field]: savedFilters as PreferencesSnapshot[Field]
+                [field]: savedFilters
             }));
             toast.success(t('common.settings_saved'));
             return savedFilters;
@@ -662,8 +628,8 @@ export function useSettingsPreferenceActions({
         voiceId: string = prefs.notificationTTSVoiceNative
     ) {
         commands
-            .appHostTtsSpeak(text, voiceId || null)
-            .catch((error: unknown) => {
+            .appHostTtsSpeak(text, voiceId || null, prefs.notificationTTSVolume)
+            .catch((error) => {
                 console.warn('Failed to play notification TTS', error);
                 toast.warning(
                     t(

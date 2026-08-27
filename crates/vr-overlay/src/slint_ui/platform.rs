@@ -14,11 +14,6 @@ use slint::{
     },
     ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer,
 };
-#[cfg(feature = "friends-panel")]
-use slint::{
-    platform::{PointerEventButton, WindowEvent},
-    LogicalPosition,
-};
 
 use crate::{AvatarBitmap, OverlaySize, RgbaFrame};
 
@@ -42,30 +37,6 @@ impl Platform for OverlaySlintPlatform {
         });
         Ok(window)
     }
-}
-
-#[cfg(feature = "friends-panel")]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SlintPanelPointerEvent {
-    Moved {
-        x: f32,
-        y: f32,
-    },
-    Pressed {
-        x: f32,
-        y: f32,
-    },
-    Released {
-        x: f32,
-        y: f32,
-    },
-    Scrolled {
-        x: f32,
-        y: f32,
-        delta_x: f32,
-        delta_y: f32,
-    },
-    Exited,
 }
 
 pub(super) type AvatarImageCache = HashMap<usize, (Arc<[u8]>, Image)>;
@@ -143,34 +114,6 @@ where
     let window = take_last_created_window()
         .ok_or_else(|| "Slint platform did not create a software window".to_string())?;
     Ok((component, window))
-}
-
-#[cfg(feature = "friends-panel")]
-pub(super) fn to_window_event(event: SlintPanelPointerEvent) -> WindowEvent {
-    match event {
-        SlintPanelPointerEvent::Moved { x, y } => WindowEvent::PointerMoved {
-            position: LogicalPosition::new(x, y),
-        },
-        SlintPanelPointerEvent::Pressed { x, y } => WindowEvent::PointerPressed {
-            position: LogicalPosition::new(x, y),
-            button: PointerEventButton::Left,
-        },
-        SlintPanelPointerEvent::Released { x, y } => WindowEvent::PointerReleased {
-            position: LogicalPosition::new(x, y),
-            button: PointerEventButton::Left,
-        },
-        SlintPanelPointerEvent::Scrolled {
-            x,
-            y,
-            delta_x,
-            delta_y,
-        } => WindowEvent::PointerScrolled {
-            position: LogicalPosition::new(x, y),
-            delta_x,
-            delta_y,
-        },
-        SlintPanelPointerEvent::Exited => WindowEvent::PointerExited,
-    }
 }
 
 pub(super) fn pixel_count(size: OverlaySize) -> Result<usize, String> {

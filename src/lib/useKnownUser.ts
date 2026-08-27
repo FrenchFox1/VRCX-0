@@ -17,10 +17,12 @@ import {
 } from '@/state/userFactsStore';
 
 interface UseKnownUserOptions {
-    endpoint?: unknown;
+    endpoint?: string;
 }
 
-function normalizeUserIdList(userIds: unknown): string[] {
+function normalizeUserIdList(
+    userIds: readonly string[] | null | undefined
+): string[] {
     const seen = new Set<string>();
     const ids: string[] = [];
     for (const value of Array.isArray(userIds) ? userIds : []) {
@@ -36,8 +38,8 @@ function normalizeUserIdList(userIds: unknown): string[] {
 
 function currentSnapshotToUserFact(
     snapshot: CurrentUserSnapshotState | null | undefined,
-    userId: unknown,
-    endpoint: unknown
+    userId: string | null | undefined,
+    endpoint: string
 ): UserFact | null {
     if (!snapshot) {
         return null;
@@ -55,7 +57,10 @@ function currentSnapshotToUserFact(
     };
 }
 
-function useKnownUserFact(userId: unknown, options: UseKnownUserOptions = {}) {
+function useKnownUserFact(
+    userId: string | null | undefined,
+    options: UseKnownUserOptions = {}
+) {
     const storeEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -84,7 +89,7 @@ function useKnownUserFact(userId: unknown, options: UseKnownUserOptions = {}) {
 }
 
 function useKnownUserFacts(
-    userIds: unknown,
+    userIds: readonly string[] | null | undefined,
     options: UseKnownUserOptions = {}
 ) {
     const storeEndpoint = useRuntimeStore(

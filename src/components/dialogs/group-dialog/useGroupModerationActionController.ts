@@ -46,7 +46,7 @@ export function useGroupModerationActionController({
             description: label,
             confirmText: action.label,
             cancelText: t('common.actions.cancel'),
-            destructive: Boolean(action.destructive)
+            destructive: action.destructive ?? false
         });
         if (!result.ok) {
             return;

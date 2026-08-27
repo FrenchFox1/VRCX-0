@@ -1,25 +1,21 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
+use vrcx_0_core::OwnerId;
 
+pub(super) use serde_json::json;
 pub(super) use std::sync::Arc;
 #[cfg(test)]
 pub(super) use std::sync::Mutex;
-pub(super) use std::time::Duration;
-
 #[cfg(test)]
-pub(super) use serde_json::json;
-#[cfg(test)]
-pub(super) use vrcx_0_persistence::cache_entities::CacheEntityInput;
-#[cfg(test)]
-pub(super) use vrcx_0_persistence::notifications::{
-    notification_list_query, NotificationListQueryInput,
+pub(super) use vrcx_0_contracts::feed::{
+    FeedFilter, FeedLatestQueryInput, FeedQueryMode, FeedRowsQueryInput, FeedSearchQueryInput,
 };
 #[cfg(test)]
-pub(super) use vrcx_0_persistence::realtime::NotificationV2Update;
-pub(super) use vrcx_0_persistence::storage::StorageService;
+pub(super) use vrcx_0_contracts::friend_log::FriendLogHistoryQueryInput;
 #[cfg(test)]
-pub(super) use vrcx_0_persistence::worlds::world_cache_upsert;
-pub(super) use vrcx_0_persistence::DatabaseService;
+pub(super) use vrcx_0_contracts::notifications::NotificationListQueryInput;
+#[cfg(test)]
+pub(super) use vrcx_0_contracts::realtime::{FriendLogUpsert, NotificationV2Update};
 
 #[cfg(test)]
 pub(super) use crate::world_enrich::PendingEntryCorrection;
@@ -35,7 +31,8 @@ pub(super) use vrcx_0_application_core::{
 #[cfg(test)]
 pub(super) use vrcx_0_application_core::{LocalGameContextSnapshot, OverlayActivityInputSink};
 use vrcx_0_application_core::{
-    NoopPrintCleanupInputSink, Result, RuntimeAuthScope, RuntimeEventForTest, RuntimeTaskExecutor,
+    MemoryWorldCachePort, NoopPrintCleanupInputSink, NoopWebClientPort, Result, RuntimeAuthScope,
+    RuntimeEventForTest, RuntimeTaskExecutor,
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
@@ -47,13 +44,15 @@ pub(super) use super::state::{
 };
 use crate::realtime::notifications::apply_notification_ws_message;
 use crate::realtime::{
-    RealtimeSessionContext, RealtimeTransportStartResult, RealtimeTransportTermination,
+    RealtimeMessageSink, RealtimeSessionContext, RealtimeTransport, RealtimeTransportFuture,
+    RealtimeTransportStartResult, RealtimeTransportTermination,
 };
+pub(super) use crate::test_store::TestRealtimeStore;
 
 impl RealtimeHostRuntime {
     pub fn ingest_notification_ws_message_for_test(
         self: &Arc<Self>,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         endpoint: &str,
         generation: u64,
         payload: &RealtimeWsMessagePayload,
@@ -71,6 +70,8 @@ impl RealtimeHostRuntime {
 #[derive(Clone)]
 pub struct TestRealtimeHostRuntime {
     runtime: Arc<RealtimeHostRuntime>,
+    store: Arc<TestRealtimeStore>,
+    world_cache_port: MemoryWorldCachePort,
     #[cfg(test)]
     activity_sink: Arc<TestActivitySink>,
     #[cfg(test)]
@@ -82,12 +83,26 @@ impl TestRealtimeHostRuntime {
         &self.runtime
     }
 
-    pub fn database(&self) -> &DatabaseService {
-        self.runtime.deps.db.as_ref()
+    pub fn store(&self) -> &TestRealtimeStore {
+        self.store.as_ref()
+    }
+
+    pub fn database(&self) -> &TestRealtimeStore {
+        self.store()
     }
 
     pub fn web_client(&self) -> &WebClient {
         self.runtime.deps.web.as_ref()
+    }
+
+    pub fn cache_world_for_test(&self, id: &str, name: &str, updated_at: &str) {
+        self.world_cache_port.insert(json!({
+            "id": id,
+            "name": name,
+            "updatedAt": updated_at,
+            "imageUrl": "image.png",
+            "thumbnailImageUrl": "thumb.png"
+        }));
     }
 
     pub fn auth_scope(&self) -> &RuntimeAuthScope {
@@ -172,6 +187,60 @@ impl TestRealtimeHostRuntime {
 }
 
 #[cfg(test)]
+pub(super) mod config_store {
+    use vrcx_0_application_core::Result;
+
+    pub fn get_bool(store: &dyn crate::RealtimeStore, key: &str, default: bool) -> Result<bool> {
+        store.get_bool(key, default)
+    }
+
+    pub fn set_bool(store: &dyn crate::RealtimeStore, key: &str, value: bool) -> Result<()> {
+        store.set_bool(key, value)
+    }
+}
+
+#[cfg(test)]
+pub(super) fn write_realtime_batch(
+    store: &dyn crate::RealtimeStore,
+    owner: &OwnerId,
+    batch: &vrcx_0_contracts::realtime::RealtimePersistenceBatch,
+) -> Result<vrcx_0_contracts::realtime::RealtimeWriteCounts> {
+    store.write_realtime_batch(owner, batch)
+}
+
+#[cfg(test)]
+pub(super) fn notification_list_query(
+    store: &TestRealtimeStore,
+    query: NotificationListQueryInput,
+) -> Result<Vec<vrcx_0_contracts::notifications::NotificationListItemOutput>> {
+    store.notification_list(query)
+}
+
+#[cfg(test)]
+pub(super) fn friend_log_current_list(
+    store: &dyn crate::RealtimeStore,
+    user_id: String,
+) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogCurrentOutput>> {
+    store.friend_log_current_list(&user_id)
+}
+
+#[cfg(test)]
+pub(super) fn friend_log_history_query(
+    store: &dyn crate::RealtimeStore,
+    input: FriendLogHistoryQueryInput,
+) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogHistoryOutput>> {
+    store.friend_log_history(input)
+}
+
+#[cfg(test)]
+pub(super) fn feed_rows_query(
+    store: &TestRealtimeStore,
+    input: FeedRowsQueryInput,
+) -> Result<Vec<vrcx_0_contracts::feed::FeedRowOutput>> {
+    store.feed_rows(input)
+}
+
+#[cfg(test)]
 #[derive(Default)]
 pub(super) struct TestActivitySink {
     state: Mutex<TestActivitySinkState>,
@@ -207,7 +276,7 @@ impl TestActivitySink {
             .rev()
             .flat_map(|projection| projection.upserts.iter())
             .find(|upsert| upsert.notification["id"] == id)
-            .map(|upsert| upsert.notification.clone())
+            .map(|upsert| upsert.notification.as_value().clone())
     }
 }
 
@@ -315,6 +384,155 @@ impl Drop for TestDir {
     }
 }
 
+pub(super) struct TestRealtimeTransport;
+
+impl RealtimeTransport for TestRealtimeTransport {
+    fn run(
+        &self,
+        _message_sink: Arc<dyn RealtimeMessageSink>,
+        _client_run_id: u64,
+        _generation: u64,
+        _session_generation: u64,
+        _session: RealtimeSessionContext,
+        _cancel_rx: tokio::sync::watch::Receiver<u64>,
+    ) -> RealtimeTransportFuture {
+        Box::pin(async { RealtimeTransportTermination::Stopped })
+    }
+}
+
+pub(super) struct TestRealtimeRemoteRequests;
+
+impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
+    fn current_user(
+        &self,
+        endpoint: String,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(test_request(endpoint, "/auth/user"))
+    }
+
+    fn user(
+        &self,
+        endpoint: String,
+        user_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        let user_id = user_id.trim().to_string();
+        Ok((
+            user_id.clone(),
+            test_request(endpoint, &format!("/users/{user_id}")),
+        ))
+    }
+
+    fn friend_status(
+        &self,
+        endpoint: String,
+        user_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        let user_id = user_id.trim().to_string();
+        Ok((
+            user_id.clone(),
+            test_request(endpoint, &format!("/auth/user/friends/{user_id}")),
+        ))
+    }
+
+    fn favorite_limits(
+        &self,
+        endpoint: String,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(test_request(endpoint, "/auth/user/favoritelimits"))
+    }
+
+    fn favorites(
+        &self,
+        endpoint: String,
+        _n: i32,
+        _offset: i32,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(test_request(endpoint, "/favorites"))
+    }
+
+    fn favorite_groups(
+        &self,
+        endpoint: String,
+        _n: i32,
+        _offset: i32,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(test_request(endpoint, "/favorite/groups"))
+    }
+
+    fn friends(
+        &self,
+        endpoint: String,
+        _offline: bool,
+        _n: i32,
+        _offset: i32,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(test_request(endpoint, "/auth/user/friends"))
+    }
+
+    fn world(
+        &self,
+        endpoint: String,
+        world_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        let world_id = world_id.trim().to_string();
+        Ok((
+            world_id.clone(),
+            test_request(endpoint, &format!("/worlds/{world_id}")),
+        ))
+    }
+
+    fn invite_send(
+        &self,
+        endpoint: String,
+        receiver_user_id: String,
+        body: serde_json::Value,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        let mut request = test_request(endpoint, &format!("/invite/{receiver_user_id}"));
+        request.body = vrcx_0_contracts::vrchat_api::VrchatRequestBody::Json(body);
+        Ok((receiver_user_id, request))
+    }
+
+    fn notification_hide(
+        &self,
+        endpoint: String,
+        notification_id: String,
+        _version: i64,
+        _notification_type: String,
+        _sender_user_id: String,
+    ) -> Result<(
+        String,
+        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
+    )> {
+        Ok((
+            notification_id.clone(),
+            test_request(endpoint, &format!("/notifications/{notification_id}/hide")),
+        ))
+    }
+}
+
+fn test_request(
+    endpoint: String,
+    path: &str,
+) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+    vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+        endpoint: Some(endpoint),
+        path: Some(path.to_string()),
+        ..Default::default()
+    }
+}
+
 pub fn runtime_with_active_session(
     name: &str,
 ) -> Result<(TestDir, TestRealtimeHostRuntime, RealtimeSessionContext)> {
@@ -333,14 +551,8 @@ fn runtime_with_active_session_game_context(
     local_game_context_available: bool,
 ) -> Result<(TestDir, TestRealtimeHostRuntime, RealtimeSessionContext)> {
     let dir = TestDir::new(name);
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let storage = StorageService::new(&dir.path.join("storage.json"))?;
-    let web = Arc::new(WebClient::new(
-        &storage,
-        db.as_ref(),
-        "wss://pipeline.vrchat.cloud".to_string(),
-        env!("CARGO_PKG_VERSION"),
-    )?);
+    let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
+    let web = Arc::new(WebClient::new(NoopWebClientPort));
     let session = HostSessionRuntime::new();
     let host_session_generation =
         session.set_realtime_context(vrcx_0_application_core::HostRealtimeSessionContext::new(
@@ -348,10 +560,9 @@ fn runtime_with_active_session_game_context(
             "https://api.vrchat.cloud/api/1".into(),
             "wss://pipeline.vrchat.cloud".into(),
         ));
+    let world_cache_port = MemoryWorldCachePort::default();
     let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
-        Arc::clone(&db),
-        512,
-        Duration::from_secs(30 * 60),
+        world_cache_port.clone(),
     ));
     #[cfg(test)]
     let test_local_game_context = local_game_context_available
@@ -372,7 +583,9 @@ fn runtime_with_active_session_game_context(
     auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
     let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        db,
+        store: Arc::clone(&store) as Arc<dyn crate::RealtimeStore>,
+        transport: Arc::new(TestRealtimeTransport),
+        remote_requests: Arc::new(TestRealtimeRemoteRequests),
         web,
         event_bus: event_bus.clone(),
         backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
@@ -393,8 +606,8 @@ fn runtime_with_active_session_game_context(
         #[cfg(not(test))]
         activity_sink: None,
         world_cache,
+        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(NoopPrintCleanupInputSink),
-        friend_note_change_sink: None,
         current_user_snapshot_sink: None,
     }));
     let active_session = RealtimeSessionContext::new(
@@ -418,6 +631,8 @@ fn runtime_with_active_session_game_context(
         dir,
         TestRealtimeHostRuntime {
             runtime,
+            store,
+            world_cache_port,
             #[cfg(test)]
             activity_sink,
             #[cfg(test)]
@@ -425,21 +640,4 @@ fn runtime_with_active_session_game_context(
         },
         active_session,
     ))
-}
-
-#[cfg(test)]
-pub(super) fn cached_world_entry(id: &str, name: &str, updated_at: &str) -> CacheEntityInput {
-    CacheEntityInput {
-        id: json!(id),
-        author_id: json!(null),
-        author_name: json!(null),
-        created_at: json!("2026-01-01T00:00:00.000Z"),
-        description: json!(null),
-        image_url: json!("image.png"),
-        name: json!(name),
-        release_status: json!("public"),
-        thumbnail_image_url: json!("thumb.png"),
-        updated_at: json!(updated_at),
-        version: json!(1),
-    }
 }

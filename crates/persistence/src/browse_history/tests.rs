@@ -35,7 +35,7 @@ fn test_db(name: &str) -> TestDatabase {
 
 fn record_input(entity_id: &str) -> BrowseHistoryRecordInput {
     BrowseHistoryRecordInput {
-        owner_user_id: "usr_owner".into(),
+        owner_user_id: OwnerId::new("usr_owner"),
         entity_kind: BrowseHistoryEntityKind::World,
         entity_id: entity_id.into(),
         title: "World".into(),
@@ -52,7 +52,7 @@ fn query(
     browse_history_query(
         db,
         BrowseHistoryQueryInput {
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             entity_kind: None,
             search: String::new(),
             cursor,
@@ -86,7 +86,7 @@ fn enrichment_updates_snapshot_without_counting_a_visit() {
     browse_history_record(
         &test.db,
         BrowseHistoryRecordInput {
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             entity_kind: BrowseHistoryEntityKind::World,
             entity_id: "wrld_enrich".into(),
             title: "Resolved World".into(),
@@ -140,15 +140,15 @@ fn queries_and_clear_are_scoped_to_owner() {
     let test = test_db("owner");
     browse_history_record(&test.db, record_input("wrld_owner_a")).unwrap();
     let mut other = record_input("wrld_owner_b");
-    other.owner_user_id = "usr_other".into();
+    other.owner_user_id = OwnerId::new("usr_other");
     browse_history_record(&test.db, other).unwrap();
 
-    browse_history_clear(&test.db, "usr_owner".into(), None).unwrap();
+    browse_history_clear(&test.db, OwnerId::new("usr_owner"), None).unwrap();
     assert!(query(&test.db, None, 10).items.is_empty());
     let other_page = browse_history_query(
         &test.db,
         BrowseHistoryQueryInput {
-            owner_user_id: "usr_other".into(),
+            owner_user_id: OwnerId::new("usr_other"),
             entity_kind: None,
             search: String::new(),
             cursor: None,
@@ -167,7 +167,7 @@ fn own_profile_is_never_recorded() {
     browse_history_record(
         &test.db,
         BrowseHistoryRecordInput {
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             entity_kind: BrowseHistoryEntityKind::User,
             entity_id: "usr_owner".into(),
             title: "Me".into(),
@@ -214,7 +214,7 @@ fn date_range_filters_by_last_viewed_at() {
     let page = browse_history_query(
         &test.db,
         BrowseHistoryQueryInput {
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             entity_kind: None,
             search: String::new(),
             cursor: None,

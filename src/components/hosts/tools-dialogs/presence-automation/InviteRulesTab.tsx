@@ -20,7 +20,10 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { normalizeAutoAcceptMode } from '../toolsDialogUtils';
+import {
+    normalizeAutoAcceptMode,
+    type AutoAcceptInviteRequestValue
+} from '../toolsDialogUtils';
 import { CompactCheckList } from './AutomationRuleLayout';
 import { useFavoriteFriendGroupOptions } from './useFavoriteFriendGroupOptions';
 
@@ -28,7 +31,7 @@ const I18N_ROOT = 'view.tools.social_automation';
 
 export type InviteRulesTabValues = {
     autoAcceptInviteGroups: string[];
-    autoAcceptInviteRequests: string;
+    autoAcceptInviteRequests: AutoAcceptInviteRequestValue;
 };
 
 type InviteRulesTabProps = {
@@ -36,7 +39,7 @@ type InviteRulesTabProps = {
     onSaveValue: <K extends keyof InviteRulesTabValues>(
         key: K,
         value: InviteRulesTabValues[K]
-    ) => unknown;
+    ) => void;
     values: InviteRulesTabValues;
 };
 

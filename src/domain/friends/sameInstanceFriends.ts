@@ -1,29 +1,26 @@
-import {
-    isSameInstanceLocation,
-    resolveInstanceDwellEpoch
-} from '@/domain/instances/instanceRoster';
+import type {
+    FriendProfileFields,
+    FriendRecordInput,
+    FriendRosterBucket
+} from '@/domain/friends/types';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { isRealInstance } from '@/shared/utils/instance';
 import {
     getFriendsLocations,
-    normalizeLocationValue
+    normalizeLocationValue,
+    type FriendListMembership
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 
-type FriendPresenceRecord = Record<string, unknown> & {
-    ref?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-};
+type FriendPresenceRecord = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        ref?: FriendPresenceRecord | null;
+        stateBucket?: FriendRosterBucket;
+    };
 
 type SameInstanceLastLocation = {
-    dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
-    friendList?:
-        | Set<unknown>
-        | Map<unknown, unknown>
-        | readonly unknown[]
-        | Record<string, unknown>;
-    location?: unknown;
-    locationStartedAt?: unknown;
+    friendList?: FriendListMembership;
+    location?: string | null;
 };
 
 type SameInstanceFriendGroup<TFriend> = {
@@ -39,9 +36,7 @@ type SameInstanceFriendGroupOptions = {
 };
 
 function asRecord(value: unknown): FriendPresenceRecord | null {
-    return value && typeof value === 'object'
-        ? (value as FriendPresenceRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function friendPresenceSource(friend: unknown): FriendPresenceRecord | null {
@@ -140,29 +135,6 @@ function resolveObservedPlayerUserIds(
     return Array.from(userIds);
 }
 
-function resolveObservedPlayerDwellEpochs(
-    players: unknown,
-    friendsById: Record<string, unknown>,
-    currentLocation: unknown
-): Map<string, unknown> {
-    const dwellEpochsByUserId = new Map<string, unknown>();
-    for (const player of Array.isArray(players) ? players : []) {
-        const userId = resolveObservedPlayerUserId(player, friendsById);
-        const friend = userId ? friendsById[userId] : null;
-        const friendPresenceEpoch = isSameInstanceLocation(
-            resolveSameInstanceFriendLocation(friend, null),
-            currentLocation
-        )
-            ? resolveInstanceDwellEpoch(friend)
-            : '';
-        const epoch = friendPresenceEpoch || resolveInstanceDwellEpoch(player);
-        if (userId && epoch) {
-            dwellEpochsByUserId.set(userId, epoch);
-        }
-    }
-    return dwellEpochsByUserId;
-}
-
 function isOnlineSameInstanceFriend(friend: unknown): boolean {
     const source = friendPresenceSource(friend);
     return normalizeFriendState(source?.state) === 'online';
@@ -243,7 +215,6 @@ export {
     isOnlineSameInstanceFriend,
     resolveObservedPlayerUserId,
     resolveObservedPlayerUserIds,
-    resolveObservedPlayerDwellEpochs,
     resolveSameInstanceFriendLocation
 };
 export type { SameInstanceFriendGroup, SameInstanceLastLocation };

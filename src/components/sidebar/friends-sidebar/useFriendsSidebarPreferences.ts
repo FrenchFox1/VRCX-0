@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { normalizeSocialStatusPreset } from '@/components/dialogs/user-dialog/userProfileFields';
 import configRepository from '@/repositories/configRepository';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
@@ -22,6 +23,12 @@ const groupToggleKeys: Record<FriendsSidebarGroupKey, string> = {
     offline: 'isFriendsGroupOffline',
     sameInstance: 'sidebarGroupByInstanceCollapsed'
 };
+
+export function isFriendsSidebarGroupKey(
+    value: string
+): value is FriendsSidebarGroupKey {
+    return Object.prototype.hasOwnProperty.call(groupToggleKeys, value);
+}
 
 const defaultGroupState: FriendsSidebarOpenGroups = {
     me: true,
@@ -77,18 +84,11 @@ export function useFriendsSidebarPreferences() {
     useEffect(() => {
         let active = true;
         configRepository
-            .getArray('VRCX_statusPresets', [])
-            .then((nextPresets: unknown) => {
+            .getArray<unknown>('VRCX_statusPresets', [])
+            .then((nextPresets) => {
                 if (active) {
                     setStatusPresets(
-                        Array.isArray(nextPresets)
-                            ? nextPresets.filter(
-                                  (preset): preset is StatusPreset =>
-                                      Boolean(
-                                          preset && typeof preset === 'object'
-                                      )
-                              )
-                            : []
+                        (nextPresets ?? []).map(normalizeSocialStatusPreset)
                     );
                 }
             })

@@ -6,7 +6,7 @@ import {
 export async function saveCommunityThemeOverrideCss(
     cssText: string
 ): Promise<void> {
-    await saveCommunityThemeOverrideProjection(String(cssText || ''));
+    await saveCommunityThemeOverrideProjection(cssText);
 }
 
 export async function clearCommunityThemeOverrideCss(): Promise<void> {

@@ -167,7 +167,9 @@ fn resize_screenshot_pixels(
 fn rgba_has_transparency(image: &RgbaImage) -> bool {
     image
         .as_raw()
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .any(|pixel| pixel[3] != u8::MAX)
 }
 

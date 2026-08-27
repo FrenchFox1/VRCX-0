@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
             >
         >(),
     eventHandlers: new Map<string, () => void>(),
+    openGroupDialog: vi.fn(),
     openUserDialog: vi.fn(),
     subscribe: vi.fn(),
     unsubscribe: vi.fn()
@@ -30,6 +31,7 @@ vi.mock('@/platform/tauri/client', () => ({
 }));
 
 vi.mock('./dialogService', () => ({
+    openGroupDialog: mocks.openGroupDialog,
     openUserDialog: mocks.openUserDialog
 }));
 
@@ -39,6 +41,7 @@ import {
 } from './desktopNotificationActivationService';
 
 const USER_ID = 'usr_12345678-1234-1234-1234-1234567890ab';
+const GROUP_ID = 'grp_abcdefab-cdef-abcd-efab-cdefabcdefab';
 
 describe('desktopNotificationActivationService', () => {
     beforeEach(() => {
@@ -58,7 +61,7 @@ describe('desktopNotificationActivationService', () => {
     it('subscribes to activation wake events and takes the pending target', async () => {
         const unbind = await bindDesktopNotificationActivationEvents();
         mocks.appTakePendingDesktopNotificationActivation.mockResolvedValueOnce(
-            { userId: USER_ID }
+            { target: { kind: 'openUserProfile', userId: USER_ID } }
         );
 
         mocks.eventHandlers.get('desktopNotificationActivated')?.();
@@ -74,7 +77,9 @@ describe('desktopNotificationActivationService', () => {
 
     it('opens a canonical pending user profile only once', async () => {
         mocks.appTakePendingDesktopNotificationActivation
-            .mockResolvedValueOnce({ userId: USER_ID })
+            .mockResolvedValueOnce({
+                target: { kind: 'openUserProfile', userId: USER_ID }
+            })
             .mockResolvedValueOnce(null);
 
         await takePendingDesktopNotificationActivation();
@@ -86,11 +91,34 @@ describe('desktopNotificationActivationService', () => {
 
     it('ignores an invalid user id returned across the IPC boundary', async () => {
         mocks.appTakePendingDesktopNotificationActivation.mockResolvedValueOnce(
-            { userId: 'usr_invalid' }
+            {
+                target: {
+                    kind: 'openUserProfile',
+                    userId: 'usr_invalid'
+                }
+            }
         );
 
         await takePendingDesktopNotificationActivation();
 
+        expect(mocks.openUserDialog).not.toHaveBeenCalled();
+    });
+
+    it('opens the group dialog for a saved-group instance notification', async () => {
+        mocks.appTakePendingDesktopNotificationActivation.mockResolvedValueOnce(
+            {
+                target: {
+                    kind: 'openGroupProfile',
+                    groupId: GROUP_ID
+                }
+            }
+        );
+
+        await takePendingDesktopNotificationActivation();
+
+        expect(mocks.openGroupDialog).toHaveBeenCalledWith({
+            groupId: GROUP_ID
+        });
         expect(mocks.openUserDialog).not.toHaveBeenCalled();
     });
 });

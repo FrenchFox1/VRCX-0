@@ -8,8 +8,17 @@ import {
     subYears
 } from 'date-fns';
 import { ChevronDownIcon, RefreshCwIcon } from 'lucide-react';
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useEffectEvent,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 import type { ComponentProps } from 'react';
+import type { Locale } from 'react-day-picker';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -26,6 +35,7 @@ import vrchatToolsRepository, {
     type GroupCalendarEventRecord,
     type GroupCalendarGroupRecord
 } from '@/repositories/vrchatToolsRepository';
+import { isRecord } from '@/shared/utils/record';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -63,15 +73,15 @@ import {
 } from './toolsDialogUtils';
 
 type GroupCalendarEvent = GroupCalendarEventRecord;
-type GroupCalendarDayButtonProps = ComponentProps<typeof CalendarDayButton> & {
+type GroupCalendarDayButtonContextValue = {
     eventsByDate: Record<string, GroupCalendarEvent[]>;
     followedCountByDate: Record<string, number>;
+    locale: Partial<Locale>;
     timeZone: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
+const GroupCalendarDayButtonContext =
+    createContext<GroupCalendarDayButtonContextValue | null>(null);
 
 function getLocalTimeZone() {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -81,13 +91,16 @@ function GroupCalendarDayButton({
     className,
     day,
     modifiers,
-    locale,
-    eventsByDate,
-    followedCountByDate,
-    timeZone,
     ...props
-}: GroupCalendarDayButtonProps) {
+}: ComponentProps<typeof CalendarDayButton>) {
     const { t } = useTranslation();
+    const context = useContext(GroupCalendarDayButtonContext);
+    if (!context) {
+        throw new Error(
+            'GroupCalendarDayButton must be rendered inside its context provider'
+        );
+    }
+    const { eventsByDate, followedCountByDate, locale, timeZone } = context;
     const dateKey = calendarDateKey(day.date, timeZone);
     const eventCount = eventsByDate[dateKey]?.length ?? 0;
     const followedCount = followedCountByDate[dateKey] ?? 0;
@@ -140,6 +153,10 @@ function GroupCalendarDayButton({
         </CalendarDayButton>
     );
 }
+
+const GROUP_CALENDAR_COMPONENTS = {
+    DayButton: GroupCalendarDayButton
+};
 
 export function GroupCalendarDialog({
     open,
@@ -197,6 +214,15 @@ export function GroupCalendarDialog({
     const followedCountByDate = useMemo(
         () => buildFollowedCountByDate(events, followingIds, calendarTimeZone),
         [calendarTimeZone, events, followingIds]
+    );
+    const calendarDayButtonContextValue = useMemo(
+        () => ({
+            eventsByDate,
+            followedCountByDate,
+            locale: calendarLocale,
+            timeZone: calendarTimeZone
+        }),
+        [calendarLocale, calendarTimeZone, eventsByDate, followedCountByDate]
     );
     const selectedDayEvents = useMemo(
         () => eventsByDate[selectedDate] || [],
@@ -530,47 +556,39 @@ export function GroupCalendarDialog({
                                 </Empty>
                             )}
                         </ScrollArea>
-                        <Calendar
-                            mode="single"
-                            required
-                            selected={selectedDateValue}
-                            month={visibleMonthDate}
-                            onSelect={handleCalendarSelect}
-                            onMonthChange={handleCalendarMonthChange}
-                            captionLayout="dropdown"
-                            navLayout="after"
-                            startMonth={calendarNavigationRange.startMonth}
-                            endMonth={calendarNavigationRange.endMonth}
-                            timeZone={calendarTimeZone}
-                            locale={calendarLocale}
-                            weekStartsOn={weekStartsOn}
-                            className="mx-auto rounded-lg border p-2 [--cell-size:--spacing(10)] sm:p-3 sm:[--cell-size:--spacing(12)] lg:[--cell-size:--spacing(15)] xl:[--cell-size:--spacing(16)]"
-                            classNames={{
-                                month: 'flex w-full flex-col gap-3',
-                                dropdowns:
-                                    'flex h-(--cell-size) w-full items-center justify-center gap-1.5 text-sm font-semibold sm:text-base',
-                                caption_label:
-                                    '[&>svg]:text-muted-foreground flex items-center gap-1 rounded-(--cell-radius) text-sm font-semibold select-none [&>svg]:size-3.5 sm:text-base',
-                                weekdays: 'flex gap-0.5 sm:gap-1',
-                                weekday:
-                                    'text-muted-foreground/70 flex-1 rounded-md text-xs font-medium select-none',
-                                week: 'mt-1 flex w-full gap-0.5 sm:gap-1',
-                                today: 'rounded-(--cell-radius) bg-accent/30 text-foreground data-[selected=true]:bg-transparent'
-                            }}
-                            components={{
-                                DayButton: (props) => (
-                                    <GroupCalendarDayButton
-                                        {...props}
-                                        eventsByDate={eventsByDate}
-                                        followedCountByDate={
-                                            followedCountByDate
-                                        }
-                                        locale={calendarLocale}
-                                        timeZone={calendarTimeZone}
-                                    />
-                                )
-                            }}
-                        />
+                        <GroupCalendarDayButtonContext.Provider
+                            value={calendarDayButtonContextValue}
+                        >
+                            <Calendar
+                                mode="single"
+                                required
+                                selected={selectedDateValue}
+                                month={visibleMonthDate}
+                                onSelect={handleCalendarSelect}
+                                onMonthChange={handleCalendarMonthChange}
+                                captionLayout="dropdown"
+                                navLayout="after"
+                                startMonth={calendarNavigationRange.startMonth}
+                                endMonth={calendarNavigationRange.endMonth}
+                                timeZone={calendarTimeZone}
+                                locale={calendarLocale}
+                                weekStartsOn={weekStartsOn}
+                                className="mx-auto rounded-lg border p-2 [--cell-size:--spacing(10)] sm:p-3 sm:[--cell-size:--spacing(12)] lg:[--cell-size:--spacing(15)] xl:[--cell-size:--spacing(16)]"
+                                classNames={{
+                                    month: 'flex w-full flex-col gap-3',
+                                    dropdowns:
+                                        'flex h-(--cell-size) w-full items-center justify-center gap-1.5 text-sm font-semibold sm:text-base',
+                                    caption_label:
+                                        '[&>svg]:text-muted-foreground flex items-center gap-1 rounded-(--cell-radius) text-sm font-semibold select-none [&>svg]:size-3.5 sm:text-base',
+                                    weekdays: 'flex gap-0.5 sm:gap-1',
+                                    weekday:
+                                        'text-muted-foreground/70 flex-1 rounded-md text-xs font-medium select-none',
+                                    week: 'mt-1 flex w-full gap-0.5 sm:gap-1',
+                                    today: 'rounded-(--cell-radius) bg-accent/30 text-foreground data-[selected=true]:bg-transparent'
+                                }}
+                                components={GROUP_CALENDAR_COMPONENTS}
+                            />
+                        </GroupCalendarDayButtonContext.Provider>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">

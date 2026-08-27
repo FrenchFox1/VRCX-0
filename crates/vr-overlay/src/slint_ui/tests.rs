@@ -8,11 +8,6 @@ use crate::{
     FeedRelation, FeedSeverity, MainSurfaceModel, OverlayFooter, OverlaySize, RgbaFrame, ToastCard,
     WristSurfaceModel,
 };
-#[cfg(feature = "friends-panel")]
-use crate::{
-    FavoriteFriendsPanelModel, FriendPanelCategory, FriendPanelRow, FriendPanelRowActions,
-    FriendPanelRowPrimaryAction, FriendPanelStatusTone,
-};
 use std::{sync::Arc, thread};
 
 #[test]
@@ -25,24 +20,6 @@ fn slint_platform_init_is_available_on_each_render_thread() {
     })
     .join()
     .unwrap();
-}
-
-#[cfg(feature = "friends-panel")]
-#[test]
-fn slint_panel_host_renders_friends_model_and_dispatches_pointer_input() {
-    let mut host = SlintPanelHost::new(OverlaySize::new(1080, 720)).unwrap();
-    host.set_model(&sample_friends_model());
-    let initial = host.render_if_needed().unwrap().unwrap();
-    assert_eq!(initial.frame.size, OverlaySize::new(1080, 720));
-    assert_eq!(initial.frame.data[3], 240);
-    assert!(host.render_if_needed().unwrap().is_none());
-    host.dispatch(SlintPanelPointerEvent::Moved { x: 350.0, y: 190.0 })
-        .unwrap();
-    let hover = host.render_if_needed().unwrap().unwrap();
-
-    assert_ne!(initial.frame.data, hover.frame.data);
-    assert!(hover.stats.dirty_area > 0);
-    assert!(hover.stats.dirty_area < u64::from(1080_u32 * 720_u32));
 }
 
 #[test]
@@ -112,23 +89,6 @@ fn slint_hmd_renderer_hides_avatar_placeholder_when_avatar_slot_is_disabled() {
 
     assert_ne!(with_placeholder, without_slot);
     assert_eq!(renderer.render_count(), 2);
-}
-
-#[test]
-fn slint_hmd_card_alpha_tracks_toast_opacity_from_an_opaque_baseline() {
-    let mut renderer = SlintHmdRenderer::new();
-    let mut model = sample_main_model();
-    let pixel_alpha = |frame: &RgbaFrame| {
-        let index = ((440 * frame.size.width + 800) * 4 + 3) as usize;
-        frame.data[index]
-    };
-
-    let opaque = renderer.render(&model).unwrap();
-    assert_eq!(pixel_alpha(&opaque), 255);
-
-    model.toasts[0].opacity = 0.5;
-    let fading = renderer.render(&model).unwrap();
-    assert!((126..=129).contains(&pixel_alpha(&fading)));
 }
 
 #[test]
@@ -484,43 +444,7 @@ fn sample_main_model() -> MainSurfaceModel {
                 ]),
             }),
             show_avatar: true,
-            opacity: 1.0,
-            slide_offset: 0.0,
         }],
-    }
-}
-
-#[cfg(feature = "friends-panel")]
-fn sample_friends_model() -> FavoriteFriendsPanelModel {
-    FavoriteFriendsPanelModel {
-        categories: vec![FriendPanelCategory {
-            key: "all".to_string(),
-            label: "All".to_string(),
-            count: 1,
-        }],
-        rows: vec![FriendPanelRow {
-            section_label: None,
-            user_id: "usr_friend".to_string(),
-            display_name: "Ada".to_string(),
-            status: FriendPanelStatusTone::Online,
-            location_text: "测试世界 Public".to_string(),
-            is_traveling: false,
-            traveling_text: None,
-            note: Some("VRChat note".to_string()),
-            memo: Some("Local memo".to_string()),
-            avatar: Some(AvatarBitmap {
-                width: 2,
-                height: 2,
-                rgba: Arc::from(vec![
-                    255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
-                ]),
-            }),
-            actions: FriendPanelRowActions {
-                primary: Some(FriendPanelRowPrimaryAction::Open),
-                invite: true,
-            },
-        }],
-        ..FavoriteFriendsPanelModel::default()
     }
 }
 

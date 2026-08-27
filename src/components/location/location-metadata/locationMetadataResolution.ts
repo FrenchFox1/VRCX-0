@@ -37,7 +37,7 @@ function isRawWorldReference(value: unknown) {
 export function normalizeWorldNameHint(
     hint: unknown,
     parsedLocation: ParsedLocation | Record<string, unknown> | null | undefined,
-    currentLocation: unknown
+    currentLocation: string
 ) {
     const normalizedHint = normalizeString(hint);
     if (!normalizedHint) {
@@ -54,7 +54,7 @@ export function normalizeWorldNameHint(
     return normalizedHint;
 }
 
-export function normalizeGroupNameHint(hint: unknown, groupId: unknown) {
+export function normalizeGroupNameHint(hint: unknown, groupId: string) {
     const normalizedHint = normalizeString(hint);
     if (!normalizedHint) {
         return '';
@@ -75,7 +75,7 @@ function groupProfileName(group: LocationGroupProfile | undefined) {
 }
 
 export function createEmptyMetadata(
-    currentEndpoint: unknown = ''
+    currentEndpoint: string = ''
 ): LocationMetadata {
     return {
         currentEndpoint: normalizeString(currentEndpoint),

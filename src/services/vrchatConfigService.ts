@@ -1,4 +1,5 @@
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     useVrchatConfigStore,
@@ -6,9 +7,7 @@ import {
 } from '@/state/vrchatConfigStore';
 
 function configSnapshot(value: unknown): VrchatConfigSnapshot {
-    return value && typeof value === 'object' && !Array.isArray(value)
-        ? (value as VrchatConfigSnapshot)
-        : {};
+    return isRecord(value) ? value : {};
 }
 
 export async function loadVrchatConfigSnapshot({

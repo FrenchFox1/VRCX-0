@@ -23,6 +23,7 @@ import {
     normalizeGroupAccessType,
     normalizeInstanceAccessType,
     normalizeInstanceRegion,
+    normalizeMinimumAvatarPerformance,
     normalizeNewInstanceSeed
 } from './worldDialogHelpers';
 import {
@@ -104,6 +105,7 @@ export function useWorldInstanceActions({
             region,
             groupId,
             groupAccessType,
+            minimumAvatarPerformance,
             ageGate,
             queueEnabled,
             displayName,
@@ -116,6 +118,10 @@ export function useWorldInstanceActions({
             configRepository.getString('instanceRegion', 'US West'),
             configRepository.getString('instanceDialogGroupId', ''),
             configRepository.getString('instanceDialogGroupAccessType', 'plus'),
+            configRepository.getString(
+                'instanceDialogMinimumAvatarPerformance',
+                ''
+            ),
             configRepository.getBool('instanceDialogAgeGate', false),
             configRepository.getBool('instanceDialogQueueEnabled', true),
             configRepository.getString(INSTANCE_DIALOG_DISPLAY_NAME_KEY, ''),
@@ -146,6 +152,9 @@ export function useWorldInstanceActions({
                 seedDefaults.groupAccessType ||
                 normalizeGroupAccessType(groupAccessType) ||
                 'plus',
+            minimumAvatarPerformance: normalizeMinimumAvatarPerformance(
+                minimumAvatarPerformance
+            ),
             queueEnabled,
             ageGate,
             displayName,
@@ -216,6 +225,10 @@ export function useWorldInstanceActions({
                 'instanceDialogGroupAccessType',
                 form.groupAccessType || 'plus'
             ),
+            configRepository.setString(
+                'instanceDialogMinimumAvatarPerformance',
+                form.minimumAvatarPerformance
+            ),
             configRepository.setBool(
                 'instanceDialogQueueEnabled',
                 Boolean(form.queueEnabled)
@@ -231,7 +244,7 @@ export function useWorldInstanceActions({
         ]).catch(() => {});
     }
 
-    function saveNewInstanceDisplayNamePreset(value: unknown) {
+    function saveNewInstanceDisplayNamePreset(value: string) {
         const normalized = normalizeInstanceDialogDisplayName(value);
         if (!normalized) {
             return;
@@ -299,6 +312,10 @@ export function useWorldInstanceActions({
                     'instanceDialogGroupAccessType',
                     form.groupAccessType || 'plus'
                 ),
+                configRepository.setString(
+                    'instanceDialogMinimumAvatarPerformance',
+                    form.minimumAvatarPerformance
+                ),
                 configRepository.setBool(
                     'instanceDialogAgeGate',
                     Boolean(form.ageGate)
@@ -323,6 +340,7 @@ export function useWorldInstanceActions({
                 region: form.region || 'US West',
                 groupId: form.groupId || '',
                 groupAccessType: form.groupAccessType || 'plus',
+                minimumAvatarPerformance: form.minimumAvatarPerformance,
                 queueEnabled: Boolean(form.queueEnabled),
                 ageGate: Boolean(form.ageGate),
                 roleIds: parseRoleIds(form.roleIds),

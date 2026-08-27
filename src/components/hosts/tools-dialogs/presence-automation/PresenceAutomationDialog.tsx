@@ -38,7 +38,7 @@ type DialogOpenProps = {
     open: boolean;
 };
 type ConfigWriteQueueRef = {
-    current: Map<string, Promise<unknown>>;
+    current: Map<string, Promise<void>>;
 };
 
 async function saveConfigValue(key: string, value: string | string[]) {
@@ -48,12 +48,12 @@ async function saveConfigValue(key: string, value: string | string[]) {
     );
 }
 
-function enqueueConfigWrite(
+function enqueueConfigWrite<TResult>(
     queueRef: ConfigWriteQueueRef,
     key: string,
-    write: () => Promise<unknown>,
+    write: () => Promise<TResult>,
     onError: (error: unknown) => void
-) {
+): Promise<void> {
     const queues = queueRef.current;
     const previousWrite = queues.get(key) || Promise.resolve();
     const nextWrite = previousWrite
@@ -75,7 +75,7 @@ export function PresenceScheduleDialog({
     onOpenChange
 }: DialogOpenProps) {
     const { t } = useTranslation();
-    const writeQueuesRef = useRef(new Map<string, Promise<unknown>>());
+    const writeQueuesRef = useRef(new Map<string, Promise<void>>());
     const [timeRules, setTimeRules] = useState<TimeAutomationRule[]>([]);
     const [loading, setLoading] = useState(false);
 

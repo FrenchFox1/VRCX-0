@@ -1,3 +1,4 @@
+import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import {
@@ -10,11 +11,7 @@ import {
     DEFAULT_TRANSLATION_MODEL,
     DISCORD_BOOL_PREFERENCE_KEYS
 } from './preferencesConstants';
-import {
-    normalizeBioLanguage,
-    patchPreferences,
-    publishPreferenceChanged
-} from './preferencesCore';
+import { patchPreferences, publishPreferenceChanged } from './preferencesCore';
 import type { TranslationApiConfigPreferenceInput } from './preferencesTypes';
 
 export async function setYoutubeApiEnabledPreference(value: boolean) {
@@ -48,7 +45,7 @@ export async function setTranslationApiConfigPreference({
     translationAPIPrompt,
     translationAPIReasoningEffort
 }: TranslationApiConfigPreferenceInput) {
-    const nextBioLanguage = normalizeBioLanguage(bioLanguage);
+    const nextBioLanguage = normalizeLanguageCode(bioLanguage);
     const nextType = normalizeTranslationApiType(translationAPIType);
     const nextKey = String(translationAPIKey ?? '').trim();
     const nextEndpointId = String(translationEndpointId ?? '').trim();
@@ -116,7 +113,7 @@ export async function setDiscordBoolPreference(
     await configRepository.setBool(key, enabled);
     patchPreferences({ [key]: enabled });
     publishPreferenceChanged(key, enabled);
-    commands.appRuntimeDiscordReconcileRequest().catch((error: unknown) => {
+    commands.appRuntimeDiscordReconcileRequest().catch((error) => {
         console.warn(
             'Failed to reconcile Discord Rich Presence after setting change:',
             error

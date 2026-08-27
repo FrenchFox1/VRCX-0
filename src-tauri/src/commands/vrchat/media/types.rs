@@ -1,8 +1,9 @@
 use serde::Deserialize;
-use vrcx_0_application_core::vrchat_api::media::{
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::media::{
     EmojiUploadParams, InventoryItemUpdateRequest, InventoryListParams, MediaFileListParams,
     PrintUploadParams, ProfileDecorationEquipSlot,
 };
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::query::deserialize_nonnegative_i32;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -19,7 +20,7 @@ pub struct VrchatMediaInventoryItemsInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaFileIdInput {
     #[serde(default)]
     pub(crate) file_id: String,
@@ -59,23 +60,23 @@ pub struct VrchatMediaPrintUploadInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaPrintsInput {
     #[serde(default)]
     pub(crate) user_id: String,
-    #[serde(default)]
-    pub(crate) n: i64,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) n: i32,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaPrintIdInput {
     #[serde(default)]
     pub(crate) print_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatPrintFavoriteSetInput {
     #[serde(default)]
     pub(crate) print_id: String,
@@ -84,7 +85,16 @@ pub struct VrchatPrintFavoriteSetInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatPrintFavoritesSetInput {
+    #[serde(default)]
+    pub(crate) print_ids: Vec<String>,
+    #[serde(default)]
+    pub(crate) favorite: bool,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaUserInventoryItemInput {
     #[serde(default)]
     pub(crate) user_id: String,
@@ -93,7 +103,7 @@ pub struct VrchatMediaUserInventoryItemInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaInventoryItemInput {
     #[serde(default)]
     pub(crate) inventory_id: String,
@@ -108,7 +118,7 @@ pub struct VrchatMediaInventoryItemUpdateInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaInventoryTemplateInput {
     #[serde(default)]
     pub(crate) inventory_template_id: String,
@@ -129,14 +139,14 @@ pub struct VrchatMediaProfileDecorationUnequipInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaRewardRedeemInput {
     #[serde(default)]
     pub(crate) code: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaLegacyImageUploadInput {
     #[serde(default)]
     pub(crate) entity_id: String,

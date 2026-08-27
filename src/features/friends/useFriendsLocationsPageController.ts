@@ -7,6 +7,7 @@ import {
     type LocalInstanceActionGateTarget
 } from '@/shared/utils/invite';
 
+import type { FriendsLocationsSegment } from './friendsLocationsConfig';
 import {
     normalizeFriendsLocationId as normalizeId,
     resolvePresenceLocation
@@ -18,10 +19,10 @@ import { useFriendsLocationsRosterState } from './useFriendsLocationsRosterState
 import { useFriendsLocationsRuntime } from './useFriendsLocationsRuntime';
 
 type GateFriendRecord = Record<string, unknown> & {
-    id?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    userId?: unknown;
+    id?: string;
+    state?: string;
+    stateBucket?: string;
+    userId?: string;
 };
 
 function stringField(value: unknown): string {
@@ -58,7 +59,8 @@ function buildLocationGateTarget(
 export function useFriendsLocationsPageController() {
     const runtime = useFriendsLocationsRuntime();
     const roster = useFriendsLocationsRosterState();
-    const [activeSegment, setActiveSegment] = useState('online');
+    const [activeSegment, setActiveSegment] =
+        useState<FriendsLocationsSegment>('online');
     const [searchQuery, setSearchQuery] = useState('');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
         () => new Set<string>()

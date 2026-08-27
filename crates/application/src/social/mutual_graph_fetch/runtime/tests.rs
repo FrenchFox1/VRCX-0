@@ -1,11 +1,56 @@
 use super::*;
-use crate::{RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use crate::social::{MutualGraphLinkOutput, MutualGraphMetaOutput, MutualGraphSnapshotOutput};
 use serde_json::{json, Value};
 use std::sync::Condvar;
-use vrcx_0_persistence::mutual_graph::{
-    MutualGraphLinkOutput, MutualGraphMetaOutput, MutualGraphSnapshotOutput,
+use vrcx_0_application_core::{
+    NoopWebClientPort, RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
 };
-use vrcx_0_persistence::storage::StorageService;
+
+struct NoopMutualGraphStore;
+
+impl MutualGraphStore for NoopMutualGraphStore {
+    fn friend_refresh_commit(
+        &self,
+        _owner_user_id: String,
+        _friend_id: String,
+        _mutual_ids: Option<Vec<String>>,
+        _total_count: Option<usize>,
+        _opted_out: bool,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    fn snapshot_get(&self, _owner_user_id: String) -> Result<MutualGraphSnapshotOutput> {
+        Ok(MutualGraphSnapshotOutput {
+            friend_ids: Vec::new(),
+            links: Vec::new(),
+            meta: Vec::new(),
+        })
+    }
+
+    fn snapshot_commit(
+        &self,
+        _owner_user_id: String,
+        _entries: Vec<MutualGraphSnapshotEntryInput>,
+        _meta: Vec<MutualGraphMetaInput>,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
+
+struct NoopMutualGraphRemoteRequests;
+
+impl MutualGraphRemoteRequests for NoopMutualGraphRemoteRequests {
+    fn mutual_friends(
+        &self,
+        _endpoint: String,
+        _user_id: String,
+        _n: i32,
+        _offset: i32,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(Default::default())
+    }
+}
 
 #[derive(Clone)]
 struct DropTaskExecutor;
@@ -26,31 +71,6 @@ impl RuntimeTaskHandle for FinishedTaskHandle {
     }
 
     fn join_or_abort(&mut self, _timeout: Duration) {}
-}
-
-struct TestDir {
-    path: std::path::PathBuf,
-}
-
-impl TestDir {
-    fn new() -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-mutual-graph-events-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
 }
 
 #[derive(Default)]
@@ -131,7 +151,7 @@ fn fetch_scope_uses_the_authenticated_owner_and_endpoint() {
     let auth_scope = RuntimeAuthScope::new();
     let expected = auth_scope.set("usr_owner", "https://api.example.test/api/1");
     let input = MutualGraphFetchStartInput {
-        owner_user_id: "usr_owner".into(),
+        owner_user_id: OwnerId::new("usr_owner"),
         endpoint: "https://stale.example.test/api/1".into(),
         friend_ids: vec!["usr_friend".into()],
     };
@@ -148,7 +168,7 @@ fn fetch_scope_rejects_a_different_owner() {
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_owner", "");
     let input = MutualGraphFetchStartInput {
-        owner_user_id: "usr_other".into(),
+        owner_user_id: OwnerId::new("usr_other"),
         endpoint: String::new(),
         friend_ids: vec!["usr_friend".into()],
     };
@@ -158,12 +178,7 @@ fn fetch_scope_rejects_a_different_owner() {
 
 #[test]
 fn start_emits_a_running_status_before_the_job_is_spawned() {
-    let dir = TestDir::new();
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-    let storage = StorageService::new(&dir.path.join("VRCX-0.json")).unwrap();
-    let web = Arc::new(
-        WebClient::new(&storage, db.as_ref(), "https://app.example".into(), "test").unwrap(),
-    );
+    let web = Arc::new(WebClient::new(NoopWebClientPort));
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_owner", "https://api.example.test/api/1");
     let event_bus = RuntimeEventBus::new();
@@ -174,11 +189,12 @@ fn start_emits_a_running_status_before_the_job_is_spawned() {
     let started = runtime
         .start(
             MutualGraphFetchStartInput {
-                owner_user_id: "usr_owner".into(),
+                owner_user_id: OwnerId::new("usr_owner"),
                 endpoint: String::new(),
                 friend_ids: vec!["usr_friend".into()],
             },
-            db,
+            Arc::new(NoopMutualGraphStore),
+            Arc::new(NoopMutualGraphRemoteRequests),
             web,
             auth_scope,
             tasks.clone(),
@@ -206,7 +222,7 @@ fn cancel_active_marks_the_running_fetch_as_cancelling() {
             run_id: 7,
             revision: 1,
             status: MutualGraphFetchState::Running,
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             total_friends: 2,
             ..idle_status()
         };
@@ -236,7 +252,7 @@ fn progress_and_terminal_transitions_emit_typed_status_events() {
             run_id: 7,
             revision: 1,
             status: MutualGraphFetchState::Running,
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             total_friends: 2,
             ..idle_status()
         };
@@ -273,7 +289,7 @@ fn delayed_cancelling_event_has_an_older_revision_than_cancelled() {
             run_id: 7,
             revision: 1,
             status: MutualGraphFetchState::Running,
-            owner_user_id: "usr_owner".into(),
+            owner_user_id: OwnerId::new("usr_owner"),
             total_friends: 1,
             ..idle_status()
         };
@@ -307,6 +323,7 @@ fn failed_friends_keep_their_cached_snapshot_entries() {
         friend_id: "usr_ok".into(),
         last_fetched_at: "new".into(),
         opted_out: false,
+        total_count: Some(1),
     }];
     let failed_friend_ids = HashSet::from(["usr_failed".to_string()]);
     let cached = MutualGraphSnapshotOutput {
@@ -326,11 +343,13 @@ fn failed_friends_keep_their_cached_snapshot_entries() {
                 friend_id: "usr_failed".into(),
                 last_fetched_at: "old".into(),
                 opted_out: false,
+                total_count: Some(3),
             },
             MutualGraphMetaOutput {
                 friend_id: "usr_removed".into(),
                 last_fetched_at: "removed".into(),
                 opted_out: false,
+                total_count: Some(4),
             },
         ],
     };
@@ -343,4 +362,5 @@ fn failed_friends_keep_their_cached_snapshot_entries() {
     assert_eq!(meta_entries.len(), 2);
     assert_eq!(meta_entries[1].friend_id, "usr_failed");
     assert_eq!(meta_entries[1].last_fetched_at, "old");
+    assert_eq!(meta_entries[1].total_count, Some(3));
 }

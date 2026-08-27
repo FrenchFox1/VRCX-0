@@ -22,11 +22,9 @@ export async function getAvatarModerations() {
 }
 
 export async function sendAvatarModeration({
-    avatarId,
-    type = 'block'
+    avatarId
 }: AvatarModerationInput) {
     const normalizedAvatarId = avatarId?.trim() ?? '';
-    const normalizedType = type.trim() || 'block';
     if (!normalizedAvatarId) {
         throw new Error(
             'AvatarProfileRepository.sendAvatarModeration requires an avatar id.'
@@ -34,8 +32,7 @@ export async function sendAvatarModeration({
     }
 
     const input = {
-        avatarId: normalizedAvatarId,
-        type: normalizedType
+        avatarId: normalizedAvatarId
     } satisfies IpcVrchatAvatarModerationInput;
     return unwrapVrchatAvatarResponse<AvatarModerationRecord>(
         await commands.appVrchatAvatarModerationSend(input),
@@ -44,11 +41,9 @@ export async function sendAvatarModeration({
 }
 
 export async function deleteAvatarModeration({
-    avatarId,
-    type = 'block'
+    avatarId
 }: AvatarModerationInput) {
     const normalizedAvatarId = avatarId?.trim() ?? '';
-    const normalizedType = type.trim() || 'block';
     if (!normalizedAvatarId) {
         throw new Error(
             'AvatarProfileRepository.deleteAvatarModeration requires an avatar id.'
@@ -56,8 +51,7 @@ export async function deleteAvatarModeration({
     }
 
     const input = {
-        avatarId: normalizedAvatarId,
-        type: normalizedType
+        avatarId: normalizedAvatarId
     } satisfies IpcVrchatAvatarModerationInput;
     return unwrapVrchatAvatarResponse<AvatarModerationDeleteRecord>(
         await commands.appVrchatAvatarModerationDelete(input),

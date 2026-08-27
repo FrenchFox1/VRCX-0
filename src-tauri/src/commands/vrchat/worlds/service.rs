@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::worlds::{
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::worlds::{
     world_delete_input, world_list_by_user_get_input, world_persistent_data_delete_input,
     world_persistent_data_exists_input, world_publish_input, world_save_input,
     world_unpublish_input,
 };
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -82,18 +82,15 @@ pub async fn app__vrchat_world_save(
         input.world_id,
         input.params,
     )?;
-    let response = execute_world_api(
-        state.clone(),
-        "app__vrchat_world_save",
-        format!("Saving world {world_id}."),
-        request,
-    )
-    .await?;
     state
-        .runtime_context
-        .world_cache
-        .hydrate_response(&response);
-    Ok(response)
+        .runtime_host()
+        .execute_world_mutation(
+            "app__vrchat_world_save",
+            format!("Saving world {world_id}."),
+            request,
+        )
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -121,18 +118,15 @@ pub async fn app__vrchat_world_publish(
 ) -> Result<VrchatApiResponse, AppError> {
     let (world_id, request) =
         world_publish_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.world_id)?;
-    let response = execute_world_api(
-        state.clone(),
-        "app__vrchat_world_publish",
-        format!("Publishing world {world_id}."),
-        request,
-    )
-    .await?;
     state
-        .runtime_context
-        .world_cache
-        .hydrate_response(&response);
-    Ok(response)
+        .runtime_host()
+        .execute_world_mutation(
+            "app__vrchat_world_publish",
+            format!("Publishing world {world_id}."),
+            request,
+        )
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -143,18 +137,15 @@ pub async fn app__vrchat_world_unpublish(
 ) -> Result<VrchatApiResponse, AppError> {
     let (world_id, request) =
         world_unpublish_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.world_id)?;
-    let response = execute_world_api(
-        state.clone(),
-        "app__vrchat_world_unpublish",
-        format!("Unpublishing world {world_id}."),
-        request,
-    )
-    .await?;
     state
-        .runtime_context
-        .world_cache
-        .hydrate_response(&response);
-    Ok(response)
+        .runtime_host()
+        .execute_world_mutation(
+            "app__vrchat_world_unpublish",
+            format!("Unpublishing world {world_id}."),
+            request,
+        )
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

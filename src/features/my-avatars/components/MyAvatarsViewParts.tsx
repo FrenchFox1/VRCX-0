@@ -44,6 +44,9 @@ import {
 } from '../myAvatarsDisplay';
 import { toggleMyAvatarsTagFilter } from '../myAvatarsFilters';
 import {
+    isMyAvatarsGridDensity,
+    isMyAvatarsPlatformFilter,
+    isMyAvatarsReleaseStatusFilter,
     MY_AVATARS_GRID_DENSITY_OPTIONS,
     MY_AVATARS_PLATFORM_OPTIONS,
     MY_AVATARS_RELEASE_STATUS_OPTIONS
@@ -51,7 +54,9 @@ import {
 import type {
     MyAvatarActionHandler,
     MyAvatarRow,
-    MyAvatarsGridDensity
+    MyAvatarsGridDensity,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter
 } from '../myAvatarsTypes';
 import { AvatarActionMenuItems, MyAvatarGridCard } from './MyAvatarGridCard';
 
@@ -78,18 +83,18 @@ type AvatarActionsDropdownProps = {
 type MyAvatarFilterPopoverProps = {
     activeFilterCount: number;
     allTags: string[];
-    releaseStatusFilter: string;
-    platformFilter: string;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
+    platformFilter: MyAvatarsPlatformFilter;
     tagFilters: Set<string>;
-    onReleaseStatusChange: (value: string) => void;
-    onPlatformChange: (value: string) => void;
+    onReleaseStatusChange: (value: MyAvatarsReleaseStatusFilter) => void;
+    onPlatformChange: (value: MyAvatarsPlatformFilter) => void;
     onTagFiltersChange: Dispatch<SetStateAction<Set<string>>>;
     onClearFilters: () => void;
 };
 
 type GridSettingsMenuProps = {
     gridDensity: MyAvatarsGridDensity;
-    onGridDensityChange: (value: string) => void;
+    onGridDensityChange: (value: MyAvatarsGridDensity) => void;
 };
 
 function PlatformBadge({ children, label }: PlatformBadgeProps) {
@@ -141,10 +146,7 @@ export function MyAvatarsEmptyState({
 }
 
 export function openAvatarDetails(avatar: MyAvatarRow | null | undefined) {
-    const avatarId =
-        typeof avatar?.id === 'string'
-            ? avatar.id.trim()
-            : String(avatar?.id ?? '').trim();
+    const avatarId = avatar?.id?.trim() ?? '';
     if (!avatarId) {
         return;
     }
@@ -220,13 +222,13 @@ export function MyAvatarFilterPopover({
     onClearFilters
 }: MyAvatarFilterPopoverProps) {
     const { t } = useTranslation();
-    const visibilityFilterLabel = (option: string) =>
+    const visibilityFilterLabel = (option: MyAvatarsReleaseStatusFilter) =>
         option === 'all'
             ? t('view.search.avatar.all')
             : option === 'public'
               ? t('view.search.avatar.public')
               : t('view.search.avatar.private');
-    const platformFilterLabel = (option: string) =>
+    const platformFilterLabel = (option: MyAvatarsPlatformFilter) =>
         option === 'all'
             ? t('view.search.avatar.all')
             : option === 'pc'
@@ -261,7 +263,7 @@ export function MyAvatarFilterPopover({
                             }
                             onValueChange={(nextValue) => {
                                 const next = nextValue[0];
-                                if (next) {
+                                if (isMyAvatarsReleaseStatusFilter(next)) {
                                     onReleaseStatusChange(next);
                                 }
                             }}
@@ -292,7 +294,7 @@ export function MyAvatarFilterPopover({
                             value={platformFilter ? [platformFilter] : []}
                             onValueChange={(nextValue) => {
                                 const next = nextValue[0];
-                                if (next) {
+                                if (isMyAvatarsPlatformFilter(next)) {
                                     onPlatformChange(next);
                                 }
                             }}
@@ -396,7 +398,7 @@ export function GridSettingsMenu({
                         value={gridDensity ? [gridDensity] : []}
                         onValueChange={(nextValue) => {
                             const next = nextValue[0];
-                            if (next) {
+                            if (next && isMyAvatarsGridDensity(next)) {
                                 onGridDensityChange(next);
                             }
                         }}

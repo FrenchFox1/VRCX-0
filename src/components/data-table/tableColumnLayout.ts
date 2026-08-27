@@ -147,10 +147,9 @@ export function isColumnReorderable<TData extends RowData>(
 }
 
 export function getReorderableColumnIds<TData extends RowData>(
-    table: AppTable<TData>
+    columns: AppColumn<TData>[]
 ) {
-    return table
-        .getVisibleLeafColumns()
+    return columns
         .filter((column) => isColumnReorderable(column))
         .map((column) => column.id);
 }

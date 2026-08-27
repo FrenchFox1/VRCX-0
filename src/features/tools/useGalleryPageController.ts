@@ -9,7 +9,8 @@ import {
 } from './galleryConstants';
 import {
     getGalleryGridDensityConfig,
-    sanitizeGalleryGridDensity
+    sanitizeGalleryGridDensity,
+    type GalleryGridDensity
 } from './galleryDensity';
 import type {
     GalleryAuthTarget,
@@ -17,6 +18,7 @@ import type {
     GalleryCropRequest
 } from './galleryTypes';
 import { useGalleryActions } from './useGalleryActions';
+import { useGalleryBulkActions } from './useGalleryBulkActions';
 import { useGalleryRuntimeState } from './useGalleryRuntimeState';
 
 const GALLERY_GRID_DENSITY_STORAGE_KEY = 'VRCX_GalleryGridDensity';
@@ -35,7 +37,7 @@ function readGalleryGridDensityPreference() {
     }
 }
 
-function writeGalleryGridDensityPreference(value: string) {
+function writeGalleryGridDensityPreference(value: GalleryGridDensity) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -131,6 +133,8 @@ export function useGalleryPageController() {
         uploadInputRef,
         uploadTargetRef
     } satisfies GalleryControllerDeps);
+    const { bulkRunning, deleteSelection, setFavoriteSelection } =
+        useGalleryBulkActions({ setAssets });
     const refreshAllRef = useRef(refreshAll);
     useEffect(() => {
         refreshAllRef.current = refreshAll;
@@ -152,12 +156,11 @@ export function useGalleryPageController() {
         );
     }, [searchParams]);
 
-    function changeGridDensity(nextValue: unknown) {
-        const nextDensity = sanitizeGalleryGridDensity(nextValue);
-        setGridDensity(nextDensity);
-        writeGalleryGridDensityPreference(nextDensity);
+    function changeGridDensity(nextValue: GalleryGridDensity) {
+        setGridDensity(nextValue);
+        writeGalleryGridDensityPreference(nextValue);
     }
-    function setActiveTab(nextValue: unknown) {
+    function setActiveTab(nextValue: string) {
         const nextTab = sanitizeGalleryTab(nextValue);
         setActiveTabState(nextTab);
         setSearchParams(
@@ -174,6 +177,9 @@ export function useGalleryPageController() {
         );
     }
     return {
+        bulkRunning,
+        deleteSelection,
+        setFavoriteSelection,
         uploadInputRef,
         uploadingTab,
         uploadSelectedFile,

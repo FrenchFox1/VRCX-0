@@ -10,6 +10,7 @@ pub use vrcx_0_application_core::{
 };
 use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 use vrcx_0_core::json::RawJson;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -30,7 +31,7 @@ pub struct RealtimeFeedPatch {
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeFeedProjection {
     pub generation: u64,
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub upserts: Vec<RealtimeFeedUpsert>,
     #[serde(default)]

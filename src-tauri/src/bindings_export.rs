@@ -1,11 +1,17 @@
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
-use vrcx_0_application::{
+use vrcx_0_application::auth::AuthenticatedRuntimePhaseSnapshot;
+use vrcx_0_application::auth::AuthenticatedSessionProjection;
+use vrcx_0_application::collections::SharedCollectionImportStatus;
+use vrcx_0_application::favorites::FavoriteImportStatus;
+use vrcx_0_application::game::RuntimeGroupInstancesProjection;
+use vrcx_0_application::profile::{
     AppUpdateDownloadProgressPayload, AppUpdateInstalledPayload, AppUpdateStatusSnapshot,
-    AuthenticatedRuntimePhaseSnapshot, BackgroundImageProjection, CommunityThemeProjection,
-    DataDirMigrationStatus, FavoriteImportStatus, GroupBanImportStatus,
-    GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus, ProfileBackupStatus,
-    ProfileRestoreProgress, RealtimeFeedProjection, SharedCollectionImportStatus,
+    BackgroundImageProjection, CommunityThemeProjection, DataDirMigrationStatus,
+    ProfileBackupStatus, ProfileRestoreProgress,
+};
+use vrcx_0_application::social::{
+    GroupBanImportStatus, GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus,
 };
 use vrcx_0_application_core::{
     BackendRuntimeTelemetry, FavoritesChangedPayload, FriendProfileLoadStatusPayload,
@@ -18,6 +24,7 @@ use vrcx_0_application_game::{
     AddGameLogEventPayload, GameClientEvent, GameLogPersistenceFallbackPayload, GameLogProjection,
     GameLogSideEffectEvent, RuntimeWorkerErrorPayload,
 };
+use vrcx_0_application_realtime::RealtimeFeedProjection;
 use vrcx_0_assistant::{
     AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
     AssistantToolResultEvent, AssistantTurnEntitiesEvent,
@@ -27,7 +34,6 @@ use vrcx_0_core::screenshots::ScreenshotLibraryScanStatus;
 use vrcx_0_host_desktop::tts::TtsVoice;
 use vrcx_0_integration_api::{IntegrationApiStartFailedPayload, IntegrationApiStatus};
 use vrcx_0_mcp::McpServerStatus;
-use vrcx_0_runtime_host::{AuthenticatedSessionProjection, RuntimeGroupInstancesProjection};
 use vrcx_0_runtime_host_desktop::AppLauncherSnapshotEvent;
 
 use crate::commands;
@@ -225,6 +231,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::favorite_transfer::app__favorites_transfer_selection,
             commands::application::favorite_transfer::app__favorites_remove_selection,
             commands::application::vr_overlay::app__vr_overlay_enabled_set,
+            commands::application::vr_overlay::app__vr_overlay_test_mode_set,
             commands::application::vr_overlay::app__vr_overlay_config_reload,
             commands::application::registry_backup::app__registry_backup_list,
             commands::application::registry_backup::app__registry_backup_create,
@@ -264,6 +271,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::avatars::app__avatar_get,
             commands::local::avatars::app__avatar_find_by_image_url,
             commands::local::avatars::app__avatar_history_list,
+            commands::local::avatars::app__avatar_usage_ranking,
             commands::local::avatars::app__avatar_time_spent_add,
             commands::local::avatars::app__avatar_time_spent_get,
             commands::local::avatars::app__avatar_time_spent_list,
@@ -297,16 +305,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::player_list::app__instance_activity_dates_get,
             commands::local::player_list::app__instance_activity_rows_get,
             commands::local::player_list::app__world_summaries_get,
-            commands::local::activity::app__activity_self_source_bounds,
-            commands::local::activity::app__activity_self_sessions_refresh,
-            commands::local::activity::app__activity_sync_state_get,
-            commands::local::activity::app__activity_sync_state_upsert,
-            commands::local::activity::app__activity_sessions_get,
-            commands::local::activity::app__activity_sessions_replace,
-            commands::local::activity::app__activity_sessions_append,
-            commands::local::activity::app__activity_bucket_cache_get,
-            commands::local::activity::app__activity_bucket_cache_upsert,
             commands::local::activity::app__activity_view,
+            commands::local::activity::app__activity_page_view,
             commands::local::activity::app__activity_overlap_view,
             commands::local::mutual_graph::app__mutual_graph_snapshot_get,
             commands::local::mutual_graph::app__mutual_graph_fetch_status_get,
@@ -314,10 +314,14 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::mutual_graph::app__mutual_graph_fetch_start,
             commands::local::mutual_graph::app__mutual_graph_friend_refresh,
             commands::local::mutual_graph::app__user_mutual_friends_list_get,
-            commands::local::worlds::app__world_search,
             commands::local::worlds::app__world_get,
             commands::local::favorites::app__favorite_list,
             commands::local::favorites::app__favorite_local_snapshot,
+            commands::local::favorites::app__saved_group_favorites_get,
+            commands::local::favorites::app__saved_group_collection_create,
+            commands::local::favorites::app__saved_group_collection_delete,
+            commands::local::favorites::app__saved_group_favorite_add,
+            commands::local::favorites::app__saved_group_favorite_remove,
             commands::local::memos::app__memo_get_user,
             commands::local::memos::app__memo_list_users,
             commands::local::memos::app__memo_list_user_notes,
@@ -455,6 +459,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::media::service::app__vrchat_media_prints_get,
             commands::vrchat::media::service::app__vrchat_prints_favorites_list,
             commands::vrchat::media::service::app__vrchat_prints_favorite_set,
+            commands::vrchat::media::service::app__vrchat_prints_favorites_set,
             commands::vrchat::media::service::app__vrchat_media_reward_redeem,
             commands::vrchat::media::service::app__vrchat_media_sticker_upload,
             commands::vrchat::media::service::app__vrchat_media_user_inventory_item_get,
@@ -496,7 +501,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::users::service::app__vrchat_current_user_tags_remove,
             commands::vrchat::users::service::app__vrchat_current_user_update,
             commands::vrchat::users::service::app__vrchat_user_get,
-            commands::vrchat::users::service::app__vrchat_user_groups_get,
             commands::vrchat::users::service::app__vrchat_user_profile_get,
             commands::vrchat::users::service::app__vrchat_user_represented_group_get,
             commands::vrchat::worlds::service::app__vrchat_world_delete,
@@ -614,8 +618,8 @@ pub fn export_bindings() -> Result<(), String> {
                 env!("CARGO_MANIFEST_DIR"),
                 "/../src/platform/tauri/bindings.ts"
             );
-            std::fs::write(path, patch_bindings(&raw))
-                .map_err(|error| format!("write bindings.ts: {error}"))
+            let patched = patch_bindings(&raw)?;
+            std::fs::write(path, patched).map_err(|error| format!("write bindings.ts: {error}"))
         })
         .map_err(|error| format!("spawn export thread: {error}"))?
         .join()
@@ -624,13 +628,34 @@ pub fn export_bindings() -> Result<(), String> {
 
 // Post-process the tauri-specta output to fit this app's frontend bridge:
 // - route the generated invoke through the repo error-logging wrapper,
+// - preserve the generated command return type while exposing typed rejections,
 // - drop the placeholder `TAURI_CHANNEL` type and an unused Channel import,
-// - remove `any` from the generated event helper.
-fn patch_bindings(raw: &str) -> String {
+// - remove `any` from the generated event helper;
+// - fail before writing when the generated shape no longer satisfies these invariants.
+fn patch_bindings(raw: &str) -> Result<String, String> {
     let mut out: Vec<String> = Vec::new();
     let mut routed_invoke = false;
     for line in raw.lines() {
         let trimmed = line.trim();
+        if trimmed == "export const commands = {" {
+            out.push("const generatedCommands = {".to_string());
+            continue;
+        }
+        if trimmed == "/** user-defined events **/" {
+            out.extend([
+                "type TypedCommands<TCommands> = {".to_string(),
+                "    [TName in keyof TCommands]: TCommands[TName] extends (".to_string(),
+                "        ...args: infer TArgs".to_string(),
+                "    ) => Promise<infer TResult>".to_string(),
+                "        ? (...args: TArgs) => CommandPromise<TResult>".to_string(),
+                "        : TCommands[TName];".to_string(),
+                "};".to_string(),
+                "".to_string(),
+                "export const commands: TypedCommands<typeof generatedCommands> =".to_string(),
+                "    generatedCommands;".to_string(),
+                "".to_string(),
+            ]);
+        }
         if trimmed.starts_with("export type JsonValue =") {
             out.push("export type JsonValue = unknown;".to_string());
             continue;
@@ -703,7 +728,10 @@ fn patch_bindings(raw: &str) -> String {
         }
         out.push(line.to_string());
         if !routed_invoke && trimmed == r#"} from "@tauri-apps/api/core";"# {
-            out.push(r#"import { invoke as TAURI_INVOKE } from "./generatedInvoke";"#.to_string());
+            out.push(
+                r#"import { type CommandPromise, invoke as TAURI_INVOKE } from "./generatedInvoke";"#
+                    .to_string(),
+            );
             routed_invoke = true;
         }
     }
@@ -715,5 +743,88 @@ fn patch_bindings(raw: &str) -> String {
     }
     let mut result = out.join("\n");
     result.push('\n');
-    result
+    validate_patched_bindings(&result)?;
+    Ok(result)
+}
+
+fn validate_patched_bindings(result: &str) -> Result<(), String> {
+    let required_fragments = [
+        ("JsonValue unknown boundary", "export type JsonValue = unknown;"),
+        (
+            "generated invoke import",
+            r#"import { type CommandPromise, invoke as TAURI_INVOKE } from "./generatedInvoke";"#,
+        ),
+        ("generated commands owner", "const generatedCommands = {"),
+        (
+            "typed commands mapping",
+            "type TypedCommands<TCommands> = {",
+        ),
+        (
+            "typed commands export",
+            "export const commands: TypedCommands<typeof generatedCommands> =",
+        ),
+        (
+            "event record unknown boundary",
+            "function __makeEvents__<T extends Record<string, unknown>>(",
+        ),
+        (
+            "event proxy unknown boundary",
+            "return new Proxy((() => {}) as (...args: unknown[]) => unknown, {",
+        ),
+        (
+            "event object unknown boundary",
+            "get: (_, command: keyof __EventObj__<unknown>) => {",
+        ),
+        (
+            "window listen callback boundary",
+            "listen: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.listen<unknown>(name, arg),",
+        ),
+        (
+            "window once callback boundary",
+            "once: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.once<unknown>(name, arg),",
+        ),
+        (
+            "window emit boundary",
+            "emit: (arg: unknown) => window.emit(name, arg),",
+        ),
+        (
+            "event listen callback boundary",
+            "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.listen<unknown>(name, arg);",
+        ),
+        (
+            "event once callback boundary",
+            "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.once<unknown>(name, arg);",
+        ),
+        (
+            "event emit boundary",
+            "return (arg: unknown) => TAURI_API_EVENT.emit(name, arg);",
+        ),
+    ];
+    for (label, fragment) in required_fragments {
+        let count = result.matches(fragment).count();
+        if count != 1 {
+            return Err(format!(
+                "bindings patch invariant failed: expected exactly one {label}, found {count}"
+            ));
+        }
+    }
+
+    let forbidden_fragments = [
+        "invoke as TAURI_INVOKE,",
+        "Channel as TAURI_CHANNEL",
+        "export type TAURI_CHANNEL<TSend> = null",
+        "Record<string, any>",
+        "__EventObj__<any>",
+        "(arg: any)",
+        "as any",
+    ];
+    for fragment in forbidden_fragments {
+        if result.contains(fragment) {
+            return Err(format!(
+                "bindings patch invariant failed: generated output still contains {fragment:?}"
+            ));
+        }
+    }
+
+    Ok(())
 }

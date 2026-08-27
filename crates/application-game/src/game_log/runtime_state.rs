@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use chrono::DateTime;
 use serde::Serialize;
@@ -35,6 +36,30 @@ pub struct RuntimeSnapshot {
     pub destination: String,
     pub started_at: String,
     pub players: Vec<PlayerState>,
+}
+
+#[derive(Clone, Default)]
+pub struct RuntimeSnapshotStore {
+    snapshot: Arc<Mutex<Arc<RuntimeSnapshot>>>,
+}
+
+impl RuntimeSnapshotStore {
+    pub fn snapshot(&self) -> Arc<RuntimeSnapshot> {
+        match self.snapshot.lock() {
+            Ok(snapshot) => Arc::clone(&snapshot),
+            Err(error) => {
+                tracing::warn!("failed to lock game log snapshot: {error}");
+                Arc::new(RuntimeSnapshot::default())
+            }
+        }
+    }
+
+    pub fn replace(&self, snapshot: RuntimeSnapshot) {
+        match self.snapshot.lock() {
+            Ok(mut current) => *current = Arc::new(snapshot),
+            Err(error) => tracing::warn!("failed to lock game log snapshot: {error}"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]

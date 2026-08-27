@@ -13,6 +13,7 @@ import {
     handleRealtimeNotificationProjection,
     handleRealtimeUserCacheProjection
 } from '../realtimePresenceService';
+import { resetRealtimeRosterUpdates } from '../realtimeRosterUpdateQueue';
 import { showSQLiteErrorDialog } from '../sqliteErrorDialogService';
 import type { RuntimeEvent } from './types';
 
@@ -255,4 +256,5 @@ export function handleBackendRealtimeProjectionEvent(
 
 export function resetBackendRealtimeProjectionState(): void {
     pendingBackendRealtimeProjectionEvents = [];
+    resetRealtimeRosterUpdates();
 }

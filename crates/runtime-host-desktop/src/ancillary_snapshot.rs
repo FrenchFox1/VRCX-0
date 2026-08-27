@@ -1,9 +1,10 @@
 use serde::Serialize;
 
-use vrcx_0_application::{
+use vrcx_0_application::profile::{
     AppUpdateDownloadStatusSnapshot, AppUpdateStatusSnapshot, BackgroundImageProjection,
-    CommunityThemeProjection, DataDirMigrationStatus, MutualGraphFetchStatus, ProfileBackupStatus,
+    CommunityThemeProjection, DataDirMigrationStatus, ProfileBackupStatus,
 };
+use vrcx_0_application::social::MutualGraphFetchStatus;
 use vrcx_0_application_core::HostSessionProjection;
 use vrcx_0_application_game::DebugLoggingOutcome;
 use vrcx_0_host_desktop::host_capabilities::{is_host_capability_available, HostCapability};
@@ -27,7 +28,7 @@ pub struct AncillaryRuntimeSnapshot {
 pub async fn ancillary_runtime_snapshot(
     state: &DesktopRuntimeHostState,
 ) -> AncillaryRuntimeSnapshot {
-    let community_theme_state = match state.desktop.community_theme.initialize().await {
+    let community_theme_state = match state.initialize_community_theme().await {
         Ok(projection) => Some(projection),
         Err(error) => {
             tracing::warn!(
@@ -39,20 +40,20 @@ pub async fn ancillary_runtime_snapshot(
     };
     let game_process_snapshot = if is_host_capability_available(HostCapability::GameProcessMonitor)
     {
-        Some(state.runtime_context.session.projection_snapshot())
+        Some(state.host_session_projection())
     } else {
         None
     };
 
     AncillaryRuntimeSnapshot {
         community_theme_state,
-        profile_backup_current_status: state.profile_backup.current_status(),
-        data_dir_migration_current_status: state.data_dir_migration.current_status(),
-        mutual_graph_fetch_status: state.runtime_context.mutual_graph_fetch.status(),
-        app_update_status: state.desktop.app_update.hydration_snapshot(),
-        app_update_download_status: state.desktop.app_update.download_status(),
-        game_client_debug_logging_status: state.game.game_client_runtime.debug_logging_outcome(),
+        profile_backup_current_status: state.profile_backup_status(),
+        data_dir_migration_current_status: state.data_dir_migration_status(),
+        mutual_graph_fetch_status: state.mutual_graph_fetch_status(),
+        app_update_status: state.app_update_hydration_snapshot(),
+        app_update_download_status: state.app_update_download_status(),
+        game_client_debug_logging_status: state.game_client_debug_logging_status(),
         game_process_snapshot,
-        background_image_state: state.desktop.background_image.projection(),
+        background_image_state: state.background_image_projection(),
     }
 }
