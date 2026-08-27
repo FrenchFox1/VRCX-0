@@ -293,7 +293,7 @@ function ScreenshotGalleryGrid({
         <>
             <div
                 ref={viewportRef}
-                className="min-h-0 flex-1 overflow-auto pr-1"
+                className="min-h-0 flex-1 overflow-auto p-0.5 pr-1"
                 onScroll={(event) => {
                     if (selectedFolder) {
                         onScrollPositionChange?.(
