@@ -237,6 +237,7 @@ pub async fn app__export_screenshots_zip(
         tauri_plugin_dialog::FilePath::Path(path) => path,
         other => PathBuf::from(other.to_string()),
     };
+    state.runtime_host().register_host_file_access(&output_path);
 
     screenshots.emit_export_progress(ScreenshotExportProgress {
         running: true,
