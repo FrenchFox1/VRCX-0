@@ -1,5 +1,4 @@
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use constant_time_eq::constant_time_eq;
+use vrcx_0_local_server::{generate_token, is_allowed_authority, tokens_match};
 
 use crate::IntegrationApiError;
 
@@ -22,9 +21,7 @@ pub(crate) enum IntegrationApiAuthError {
 }
 
 pub(crate) fn generate_integration_api_token() -> Result<String, IntegrationApiError> {
-    let mut token_bytes = [0_u8; 32];
-    getrandom::fill(&mut token_bytes)?;
-    Ok(URL_SAFE_NO_PAD.encode(token_bytes))
+    generate_token().map_err(IntegrationApiError::from)
 }
 
 pub(crate) fn authorize_integration_api_request(
@@ -52,38 +49,10 @@ pub(crate) fn authorize_integration_api_request(
     }
     .ok_or(IntegrationApiAuthError::Unauthorized)?;
 
-    if !constant_time_eq(supplied_token.as_bytes(), policy.token.as_bytes()) {
+    if !tokens_match(supplied_token, &policy.token) {
         return Err(IntegrationApiAuthError::Unauthorized);
     }
     Ok(())
-}
-
-fn is_allowed_loopback_authority(authority: Option<&str>, port: u16) -> bool {
-    matches!(
-        authority.map(|value| value.to_ascii_lowercase()),
-        Some(value) if value == format!("127.0.0.1:{port}") || value == format!("localhost:{port}")
-    )
-}
-
-fn is_allowed_authority(authority: Option<&str>, port: u16, allow_lan_connections: bool) -> bool {
-    if is_allowed_loopback_authority(authority, port) {
-        return true;
-    }
-    let Some(authority) = authority else {
-        return false;
-    };
-    allow_lan_connections && authority_has_expected_port(authority, port)
-}
-
-fn authority_has_expected_port(authority: &str, port: u16) -> bool {
-    if authority.contains('@') {
-        return false;
-    }
-    authority
-        .parse::<http::uri::Authority>()
-        .ok()
-        .and_then(|value| value.port_u16())
-        == Some(port)
 }
 
 #[cfg(test)]

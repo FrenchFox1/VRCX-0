@@ -1,4 +1,3 @@
-use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::{atomic::AtomicU32, Arc, Mutex};
 
 use axum::body::Body;
@@ -10,12 +9,11 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
-use http::HeaderMap;
 use serde_json::json;
-use socket2::{Domain, Protocol, Socket, Type as SocketType};
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tokio_util::sync::CancellationToken;
+use vrcx_0_local_server::{bind_listener, header_to_str};
 
 use crate::auth::{
     authorize_integration_api_request, IntegrationApiAuthError, IntegrationApiAuthPolicy,
@@ -220,35 +218,11 @@ async fn integration_api_auth_middleware(
     }
 }
 
-fn header_to_str<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
-    headers.get(name).and_then(|value| value.to_str().ok())
-}
-
 pub(crate) fn bind_integration_api_listener(
     port: u16,
     allow_lan_connections: bool,
 ) -> Result<TcpListener, IntegrationApiError> {
-    let socket = Socket::new(Domain::IPV4, SocketType::STREAM, Some(Protocol::TCP))
-        .map_err(|error| bind_error(port, error))?;
-    #[cfg(not(windows))]
-    socket
-        .set_reuse_address(true)
-        .map_err(|error| bind_error(port, error))?;
-    let address = if allow_lan_connections {
-        [0, 0, 0, 0]
-    } else {
-        [127, 0, 0, 1]
-    };
-    socket
-        .bind(&SocketAddr::V4(SocketAddrV4::new(address.into(), port)).into())
-        .map_err(|error| bind_error(port, error))?;
-    socket
-        .listen(1024)
-        .map_err(|error| bind_error(port, error))?;
-    socket
-        .set_nonblocking(true)
-        .map_err(|error| bind_error(port, error))?;
-    TcpListener::from_std(socket.into()).map_err(|error| bind_error(port, error))
+    bind_listener(port, allow_lan_connections).map_err(|error| bind_error(port, error))
 }
 
 fn bind_error(port: u16, source: std::io::Error) -> IntegrationApiError {

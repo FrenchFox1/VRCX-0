@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
+use vrcx_0_local_server::bind_listener;
 
 use crate::auth::{client_config_snippets, generate_mcp_token, McpAuthPolicy};
 use crate::config::{
@@ -14,7 +15,7 @@ use crate::config::{
 };
 use crate::error::McpError;
 use crate::runtime::McpRuntime;
-use crate::transport::{bind_mcp_listener, build_mcp_router};
+use crate::transport::build_mcp_router;
 use crate::types::{McpServerState, McpServerStatus};
 
 pub struct McpServerController {
@@ -209,7 +210,7 @@ impl McpServerController {
         let port = self.configured_port()?;
         let token = self.ensure_token()?;
         let allow_lan_connections = self.configured_allow_lan_connections()?;
-        let listener = bind_mcp_listener(port, allow_lan_connections)?;
+        let listener = bind_listener(port, allow_lan_connections)?;
         let bound_port = listener.local_addr()?.port();
         self.runtime
             .config

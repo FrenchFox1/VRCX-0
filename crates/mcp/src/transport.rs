@@ -1,4 +1,3 @@
-use std::net::{SocketAddr, SocketAddrV4};
 use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicU32, Ordering},
@@ -14,14 +13,12 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
-use http::HeaderMap;
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, StreamableHttpServerConfig, StreamableHttpService,
 };
 use serde_json::json;
-use socket2::{Domain, Protocol, Socket, Type as SocketType};
-use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
+use vrcx_0_local_server::header_to_str;
 
 use crate::auth::{authorize_mcp_request, McpAuthError, McpAuthPolicy};
 use crate::runtime::McpRuntime;
@@ -148,28 +145,6 @@ impl Drop for ActiveConnectionGuard {
     fn drop(&mut self) {
         self.active_connections.fetch_sub(1, Ordering::Relaxed);
     }
-}
-
-fn header_to_str<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
-    headers.get(name).and_then(|value| value.to_str().ok())
-}
-
-pub(crate) fn bind_mcp_listener(
-    port: u16,
-    allow_lan_connections: bool,
-) -> Result<TcpListener, std::io::Error> {
-    let socket = Socket::new(Domain::IPV4, SocketType::STREAM, Some(Protocol::TCP))?;
-    #[cfg(not(windows))]
-    socket.set_reuse_address(true)?;
-    let address = if allow_lan_connections {
-        [0, 0, 0, 0]
-    } else {
-        [127, 0, 0, 1]
-    };
-    socket.bind(&SocketAddr::V4(SocketAddrV4::new(address.into(), port)).into())?;
-    socket.listen(1024)?;
-    socket.set_nonblocking(true)?;
-    TcpListener::from_std(socket.into())
 }
 
 #[cfg(test)]
