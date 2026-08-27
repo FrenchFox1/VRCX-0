@@ -2040,6 +2040,9 @@
                 "delete_locked": "選取的項目皆已鎖定。",
                 "delete_locked_favorite": "已收藏，取消收藏後才能刪除",
                 "delete_locked_in_use": "使用中，無法刪除",
+                "export_zip": "匯出 ZIP",
+                "export_grouped": "保留資料夾結構",
+                "export_flat": "全部放在一起",
                 "favorited_toast": "已收藏 {count} 張拍立得。",
                 "unfavorited_toast": "已取消收藏 {count} 張拍立得。",
                 "favorite_skipped_toast": "有 {count} 張拍立得未能收藏，上限為 {max} 張。"
@@ -4758,6 +4761,8 @@
             "scanning": "正在掃描螢幕截圖",
             "image_count": "{count} 張圖片",
             "feeling_lucky": "好手氣",
+            "exporting_progress": "正在匯出 {done}/{total}",
+            "export_finalizing": "正在收尾寫入",
             "empty_gallery": "此資料夾沒有螢幕截圖",
             "empty_gallery_description": "選擇其他資料夾，或重新整理螢幕截圖圖庫。",
             "empty_folders": "沒有螢幕截圖資料夾",
@@ -5515,6 +5520,10 @@
         "screenshot_metadata": {
             "deleted": "刪除截圖附加資料",
             "delete_failed": "刪除截圖附加資料失敗",
+            "export_done": "已匯出 {count} 張螢幕截圖。",
+            "export_partial": "匯出完成，略過了 {count} 個檔案。",
+            "export_failed": "匯出螢幕截圖失敗",
+            "export_cancelled": "已取消匯出。",
             "file_deleted": "螢幕截圖已移到資源回收筒",
             "file_delete_failed": "刪除螢幕截圖失敗"
         },

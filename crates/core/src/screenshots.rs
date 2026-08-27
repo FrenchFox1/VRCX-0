@@ -1,3 +1,6 @@
+use std::collections::{HashMap, HashSet};
+use std::path::Path;
+
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScreenshotMetadata {
@@ -31,6 +34,21 @@ pub struct ScreenshotLibraryScanStatus {
     pub deleted: u32,
     pub error: Option<String>,
     pub last_scan_at: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenshotExportProgress {
+    pub running: bool,
+    pub finalizing: bool,
+    pub total_files: u32,
+    pub written_files: u32,
+    pub skipped_files: u32,
+    pub total_bytes: u64,
+    pub written_bytes: u64,
+    pub cancelled: bool,
+    pub error: Option<String>,
+    pub output_path: Option<String>,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type)]
@@ -357,6 +375,103 @@ pub fn parse_lfs_picture(metadata_string: &str) -> ScreenshotMetadata {
     }
 
     metadata
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ScreenshotZipEntry {
+    pub source_path: String,
+    pub entry_name: String,
+}
+
+fn path_file_name(path: &str) -> Option<String> {
+    Path::new(path)
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .filter(|name| !name.is_empty())
+}
+
+fn path_parent_key(path: &str) -> String {
+    Path::new(path)
+        .parent()
+        .map(|parent| parent.to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
+
+fn unique_name(taken: &mut HashSet<String>, candidate: &str) -> String {
+    if taken.insert(candidate.to_string()) {
+        return candidate.to_string();
+    }
+    let path = Path::new(candidate);
+    let stem = path
+        .file_stem()
+        .map(|value| value.to_string_lossy().into_owned())
+        .unwrap_or_else(|| candidate.to_string());
+    let extension = path
+        .extension()
+        .map(|value| format!(".{}", value.to_string_lossy()))
+        .unwrap_or_default();
+    let mut suffix = 2;
+    loop {
+        let next = format!("{stem}-{suffix}{extension}");
+        if taken.insert(next.clone()) {
+            return next;
+        }
+        suffix += 1;
+    }
+}
+
+pub fn plan_screenshot_zip_entries(
+    paths: &[String],
+    group_by_folder: bool,
+) -> Vec<ScreenshotZipEntry> {
+    let mut folder_names: HashMap<String, String> = HashMap::new();
+    let mut taken_folder_names: HashSet<String> = HashSet::new();
+    let mut taken_entry_names: HashMap<String, HashSet<String>> = HashMap::new();
+    let mut entries = Vec::new();
+
+    for path in paths {
+        let Some(file_name) = path_file_name(path) else {
+            continue;
+        };
+
+        let folder_name = if group_by_folder {
+            let parent_key = path_parent_key(path);
+            match folder_names.get(&parent_key) {
+                Some(existing) => existing.clone(),
+                None => {
+                    let base = path_file_name(&parent_key).unwrap_or_default();
+                    let assigned = if base.is_empty() {
+                        String::new()
+                    } else {
+                        unique_name(&mut taken_folder_names, &base)
+                    };
+                    folder_names.insert(parent_key, assigned.clone());
+                    assigned
+                }
+            }
+        } else {
+            String::new()
+        };
+
+        let scope = taken_entry_names.entry(folder_name.clone()).or_default();
+        let unique_file_name = unique_name(scope, &file_name);
+        let entry_name = if folder_name.is_empty() {
+            unique_file_name
+        } else {
+            format!("{folder_name}/{unique_file_name}")
+        };
+
+        entries.push(ScreenshotZipEntry {
+            source_path: path.clone(),
+            entry_name,
+        });
+    }
+
+    entries
+}
+
+pub fn screenshot_export_file_name(timestamp: &str, count: usize) -> String {
+    format!("VRCX-0-Shots-{timestamp}-{count}.zip")
 }
 
 #[cfg(test)]

@@ -2558,6 +2558,18 @@ const generatedCommands = {
     async appDeleteScreenshotFile(path: string): Promise<null> {
         return await TAURI_INVOKE('app__delete_screenshot_file', { path });
     },
+    async appExportScreenshotsZip(
+        paths: string[],
+        groupByFolder: boolean
+    ): Promise<string> {
+        return await TAURI_INVOKE('app__export_screenshots_zip', {
+            paths,
+            groupByFolder
+        });
+    },
+    async appCancelScreenshotExport(): Promise<null> {
+        return await TAURI_INVOKE('app__cancel_screenshot_export');
+    },
     async appDeleteAllScreenshotMetadata(): Promise<null> {
         return await TAURI_INVOKE('app__delete_all_screenshot_metadata');
     },
@@ -3154,6 +3166,7 @@ export type BackendRuntimeEventPayloadMap = {
     groupModerationBatchProgress: GroupModerationBatchProgress;
     mutualGraphFetchStatus: MutualGraphFetchStatus;
     screenshotLibraryScanStatus: ScreenshotLibraryScanStatus;
+    screenshotExportProgress: ScreenshotExportProgress;
     sharedCollectionImportStatus: SharedCollectionImportStatus;
     noteExportStatus: NoteExportStatus;
     friendProfileLoadStatus: FriendProfileLoadStatusPayload;
@@ -5496,6 +5509,18 @@ export type SavedGroupFavoritesSnapshot = {
     collections: SavedGroupCollection[];
 };
 export type SavedLoginParamsSnapshot = { username: string };
+export type ScreenshotExportProgress = {
+    running: boolean;
+    finalizing: boolean;
+    totalFiles: number;
+    writtenFiles: number;
+    skippedFiles: number;
+    totalBytes: number;
+    writtenBytes: number;
+    cancelled: boolean;
+    error: string | null;
+    outputPath: string | null;
+};
 export type ScreenshotFolderInfo = {
     path: string;
     parentPath: string | null;

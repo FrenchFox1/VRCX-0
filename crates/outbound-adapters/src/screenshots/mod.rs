@@ -8,7 +8,7 @@ pub use service::{
     is_path_inside_directory, is_png_file, is_screenshot_library_file_path,
     is_vrchat_screenshot_file_path, last_screenshot, list_screenshot_folder_images,
     list_world_screenshots, read_png_dimensions, screenshot_folder_tree, screenshot_metadata_json,
-    start_screenshot_library_scan, write_vrcx_metadata, ScreenshotFolderTree,
-    ScreenshotLibraryImage, ScreenshotLibraryScanStatus, ScreenshotMetadata,
-    ScreenshotSearchResult, ScreenshotSearchType,
+    start_screenshot_library_scan, total_screenshot_export_bytes, write_screenshots_zip,
+    write_vrcx_metadata, ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
+    ScreenshotLibraryScanStatus, ScreenshotMetadata, ScreenshotSearchResult, ScreenshotSearchType,
 };

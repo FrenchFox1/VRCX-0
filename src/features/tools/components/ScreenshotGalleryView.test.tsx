@@ -194,6 +194,7 @@ function GalleryHarness({
             onSelectFolder={onSelectFolder}
             onScrollPositionChange={() => undefined}
             onDeleteSelection={onDeleteSelection}
+            onExportSelection={() => undefined}
             isDeleteRunning={false}
             restoreScrollTop={0}
             selection={selection}

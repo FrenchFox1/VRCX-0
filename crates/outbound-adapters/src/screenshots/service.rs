@@ -22,11 +22,13 @@ use vrcx_0_persistence::screenshot_cache::{
     ScreenshotLibraryEntry, SCREENSHOT_LIBRARY_INDEX_VERSION,
 };
 
+mod export;
 mod library;
 mod metadata;
 mod paths;
 mod thumbnail;
 
+pub use export::{total_screenshot_export_bytes, write_screenshots_zip, ScreenshotExportOutcome};
 pub use library::{
     find_screenshots, forget_screenshot_file, list_screenshot_folder_images,
     list_world_screenshots, screenshot_folder_tree, start_screenshot_library_scan,

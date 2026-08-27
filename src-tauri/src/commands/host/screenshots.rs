@@ -1,12 +1,14 @@
 #![allow(non_snake_case)]
 
-use tauri::State;
+use std::path::PathBuf;
+
+use tauri::{AppHandle, State};
 
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_core::screenshots::{
-    ScreenshotFolderTree, ScreenshotLibraryImage, ScreenshotLibraryScanStatus,
-    ScreenshotSearchResult,
+    ScreenshotExportProgress, ScreenshotFolderTree, ScreenshotLibraryImage,
+    ScreenshotLibraryScanStatus, ScreenshotSearchResult,
 };
 
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
@@ -201,4 +203,102 @@ pub async fn app__add_screenshot_metadata(
     })
     .await
     .map_err(|error| AppError::Custom(format!("screenshot metadata task failed: {error}")))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__export_screenshots_zip(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    paths: Vec<String>,
+    group_by_folder: bool,
+) -> Result<String, AppError> {
+    use tauri_plugin_dialog::DialogExt;
+
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    let plan = screenshots.plan_export(&paths, group_by_folder)?;
+    let total_files = plan.entries.len() as u32;
+    let total_bytes = plan.total_bytes;
+
+    let selected = super::dialog::save_file(
+        app_handle
+            .dialog()
+            .file()
+            .set_file_name(&plan.file_name)
+            .add_filter("Zip Archive", &["zip"]),
+    )
+    .await;
+
+    let Some(selected) = selected else {
+        return Ok(String::new());
+    };
+    let output_path = match selected {
+        tauri_plugin_dialog::FilePath::Path(path) => path,
+        other => PathBuf::from(other.to_string()),
+    };
+
+    screenshots.emit_export_progress(ScreenshotExportProgress {
+        running: true,
+        total_files,
+        total_bytes,
+        ..Default::default()
+    });
+
+    let export_screenshots = screenshots.clone();
+    let output_for_task = output_path.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        export_screenshots.export_zip(&plan, &output_for_task)
+    })
+    .await
+    .map_err(|error| AppError::Custom(format!("screenshot export task failed: {error}")));
+
+    let outcome = match result {
+        Ok(Ok(outcome)) => outcome,
+        Ok(Err(error)) => {
+            screenshots.emit_export_progress(ScreenshotExportProgress {
+                total_files,
+                total_bytes,
+                error: Some(error.to_string()),
+                ..Default::default()
+            });
+            return Err(error.into());
+        }
+        Err(error) => {
+            screenshots.emit_export_progress(ScreenshotExportProgress {
+                total_files,
+                total_bytes,
+                error: Some(error.to_string()),
+                ..Default::default()
+            });
+            return Err(error);
+        }
+    };
+
+    let output_display = output_path.to_string_lossy().into_owned();
+    screenshots.emit_export_progress(ScreenshotExportProgress {
+        running: false,
+        finalizing: false,
+        total_files,
+        written_files: outcome.written_files,
+        skipped_files: outcome.skipped_files,
+        total_bytes,
+        written_bytes: outcome.written_bytes,
+        cancelled: outcome.cancelled,
+        error: None,
+        output_path: Some(output_display.clone()),
+    });
+
+    if outcome.cancelled {
+        return Ok(String::new());
+    }
+    Ok(output_display)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__cancel_screenshot_export(state: State<'_, AppState>) -> Result<(), AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    state.runtime_host().screenshots().request_export_cancel();
+    Ok(())
 }

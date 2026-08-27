@@ -2040,6 +2040,9 @@
                 "delete_locked": "Todos los elementos seleccionados están bloqueados.",
                 "delete_locked_favorite": "Favorito: quítalo de favoritos para eliminar",
                 "delete_locked_in_use": "En uso: no se puede eliminar",
+                "export_zip": "Exportar ZIP",
+                "export_grouped": "Mantener la estructura de carpetas",
+                "export_flat": "Todo en una carpeta",
                 "favorited_toast": "{count} print(s) marcados como favoritos.",
                 "unfavorited_toast": "{count} print(s) eliminados de favoritos.",
                 "favorite_skipped_toast": "No se pudieron marcar {count} print(s) como favoritos. El límite es {max}."
@@ -4757,6 +4760,8 @@
             "scanning": "Escaneando capturas",
             "image_count": "{count} imágenes",
             "feeling_lucky": "Voy a tener suerte",
+            "exporting_progress": "Exportando {done}/{total}",
+            "export_finalizing": "Finalizando el archivo",
             "empty_gallery": "No hay capturas en esta carpeta",
             "empty_gallery_description": "Selecciona otra carpeta o actualiza la biblioteca de capturas.",
             "empty_folders": "No hay carpetas de capturas",
@@ -5514,6 +5519,10 @@
         "screenshot_metadata": {
             "deleted": "Metadatos de la captura eliminados",
             "delete_failed": "No se pudieron eliminar los metadatos de la captura",
+            "export_done": "{count} captura(s) exportada(s).",
+            "export_partial": "Exportación terminada, se omitieron {count} archivo(s).",
+            "export_failed": "No se pudieron exportar las capturas",
+            "export_cancelled": "Exportación cancelada.",
             "file_deleted": "Captura movida a la papelera",
             "file_delete_failed": "No se pudo eliminar la captura"
         },

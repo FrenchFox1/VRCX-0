@@ -2040,6 +2040,9 @@
                 "delete_locked": "Todos os itens selecionados estão bloqueados.",
                 "delete_locked_favorite": "Favorito - remova dos favoritos para excluir",
                 "delete_locked_in_use": "Em uso - não pode ser excluído",
+                "export_zip": "Exportar ZIP",
+                "export_grouped": "Manter a estrutura de pastas",
+                "export_flat": "Tudo em uma pasta",
                 "favorited_toast": "{count} print(s) favoritado(s).",
                 "unfavorited_toast": "{count} print(s) removido(s) dos favoritos.",
                 "favorite_skipped_toast": "{count} print(s) não puderam ser favoritados. O limite é {max}."
@@ -4758,6 +4761,8 @@
             "scanning": "Verificando capturas de tela",
             "image_count": "{count} imagens",
             "feeling_lucky": "Estou com sorte",
+            "exporting_progress": "Exportando {done}/{total}",
+            "export_finalizing": "Finalizando o arquivo",
             "empty_gallery": "Nenhuma captura de tela nesta pasta",
             "empty_gallery_description": "Selecione outra pasta ou atualize a biblioteca de capturas de tela.",
             "empty_folders": "Nenhuma pasta de capturas de tela",
@@ -5515,6 +5520,10 @@
         "screenshot_metadata": {
             "deleted": "Metadados de captura de tela excluídos",
             "delete_failed": "Falha ao excluir metadados de captura de tela",
+            "export_done": "{count} captura(s) exportada(s).",
+            "export_partial": "Exportação concluída, {count} arquivo(s) ignorado(s).",
+            "export_failed": "Falha ao exportar as capturas de tela",
+            "export_cancelled": "Exportação cancelada.",
             "file_deleted": "Captura de tela movida para a lixeira",
             "file_delete_failed": "Falha ao excluir a captura de tela"
         },

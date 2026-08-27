@@ -32,6 +32,14 @@ async function deleteScreenshotFile(path: string) {
     return commands.appDeleteScreenshotFile(path);
 }
 
+async function exportScreenshotsZip(paths: string[], groupByFolder: boolean) {
+    return commands.appExportScreenshotsZip(paths, groupByFolder);
+}
+
+async function cancelScreenshotExport() {
+    return commands.appCancelScreenshotExport();
+}
+
 async function addScreenshotMetadata(
     path: string,
     metadataString: string,
@@ -180,6 +188,8 @@ const mediaFileRepository = Object.freeze({
     getScreenshotMetadata,
     deleteScreenshotMetadata,
     deleteScreenshotFile,
+    exportScreenshotsZip,
+    cancelScreenshotExport,
     addScreenshotMetadata,
     getExtraScreenshotData,
     findScreenshotsBySearch,
@@ -209,6 +219,8 @@ export {
     getScreenshotMetadata,
     deleteScreenshotMetadata,
     deleteScreenshotFile,
+    exportScreenshotsZip,
+    cancelScreenshotExport,
     addScreenshotMetadata,
     getExtraScreenshotData,
     findScreenshotsBySearch,

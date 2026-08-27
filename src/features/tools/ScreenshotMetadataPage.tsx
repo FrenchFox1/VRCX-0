@@ -36,6 +36,7 @@ import { useScreenshotBulkDelete } from './useScreenshotBulkDelete';
 import { useScreenshotGalleryController } from './useScreenshotGalleryController';
 import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigation';
 import { useScreenshotMetadataSearch } from './useScreenshotMetadataSearch';
+import { useScreenshotZipExport } from './useScreenshotZipExport';
 
 function recordFromUnknown(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object' && !Array.isArray(value)
@@ -141,6 +142,7 @@ export function ScreenshotMetadataPage() {
         },
         refreshGalleryTree
     });
+    const { exportScreenshots } = useScreenshotZipExport();
 
     const updateRoutePath = useCallback(
         (path: string, folderPath?: string) => {
@@ -661,6 +663,9 @@ export function ScreenshotMetadataPage() {
                     onDeleteSelection={(paths) => {
                         deleteScreenshots(paths);
                     }}
+                    onExportSelection={(paths, groupByFolder) => {
+                        exportScreenshots(paths, groupByFolder);
+                    }}
                 />
             ) : isGalleryMode ? (
                 <ScreenshotGalleryView
@@ -685,6 +690,9 @@ export function ScreenshotMetadataPage() {
                     onSelectFolder={selectGalleryFolder}
                     onDeleteSelection={(paths) => {
                         deleteScreenshots(paths);
+                    }}
+                    onExportSelection={(paths, groupByFolder) => {
+                        exportScreenshots(paths, groupByFolder);
                     }}
                     onScrollPositionChange={updateGalleryScrollPosition}
                     isDeleteRunning={bulkDeleteRunning}

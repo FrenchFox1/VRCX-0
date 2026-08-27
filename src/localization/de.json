@@ -2040,6 +2040,9 @@
                 "delete_locked": "Alle ausgewählten Elemente sind gesperrt.",
                 "delete_locked_favorite": "Favorit - zum Löschen zuerst entfernen",
                 "delete_locked_in_use": "In Verwendung - kann nicht gelöscht werden",
+                "export_zip": "Als ZIP exportieren",
+                "export_grouped": "Ordnerstruktur behalten",
+                "export_flat": "Alles in einen Ordner",
                 "favorited_toast": "{count} Print(s) favorisiert.",
                 "unfavorited_toast": "Favorit von {count} Print(s) entfernt.",
                 "favorite_skipped_toast": "{count} Print(s) konnten nicht favorisiert werden. Das Limit ist {max}."
@@ -4757,6 +4760,8 @@
             "scanning": "Screenshots werden gescannt",
             "image_count": "{count} Bilder",
             "feeling_lucky": "Auf gut Glück!",
+            "exporting_progress": "Exportiere {done}/{total}",
+            "export_finalizing": "Archiv wird abgeschlossen",
             "empty_gallery": "Keine Screenshots in diesem Ordner",
             "empty_gallery_description": "Wähle einen anderen Ordner oder aktualisiere die Screenshot-Bibliothek.",
             "empty_folders": "Keine Screenshot-Ordner",
@@ -5514,6 +5519,10 @@
         "screenshot_metadata": {
             "deleted": "Screenshot-Metadaten gelöscht",
             "delete_failed": "Screenshot-Metadaten konnten nicht gelöscht werden",
+            "export_done": "{count} Screenshot(s) exportiert.",
+            "export_partial": "Export fertig, {count} Datei(en) übersprungen.",
+            "export_failed": "Screenshots konnten nicht exportiert werden",
+            "export_cancelled": "Export abgebrochen.",
             "file_deleted": "Screenshot in den Papierkorb verschoben",
             "file_delete_failed": "Screenshot konnte nicht gelöscht werden"
         },

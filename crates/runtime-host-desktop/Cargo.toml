@@ -23,6 +23,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 specta.workspace = true
 chrono = { workspace = true }
+fs4 = { workspace = true }
 sys-locale.workspace = true
 tokio = { workspace = true, features = ["time", "rt", "macros", "sync"] }
 tracing = { workspace = true }

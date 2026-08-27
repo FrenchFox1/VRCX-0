@@ -2042,6 +2042,9 @@
                 "delete_locked": "Všechny vybrané položky jsou zamčené.",
                 "delete_locked_favorite": "V oblíbených - nejprve odeberte z oblíbených",
                 "delete_locked_in_use": "Používá se - nelze smazat",
+                "export_zip": "Exportovat ZIP",
+                "export_grouped": "Zachovat strukturu složek",
+                "export_flat": "Vše do jedné složky",
                 "favorited_toast": "{count} tisků přidáno do oblíbených.",
                 "unfavorited_toast": "{count} tisků odebráno z oblíbených.",
                 "favorite_skipped_toast": "{count} tisků se nepodařilo přidat do oblíbených. Limit je {max}."
@@ -4761,6 +4764,8 @@
             "scanning": "Prohledávají se snímky obrazovky",
             "image_count": "{count} obrázků",
             "feeling_lucky": "Zkusím štěstí",
+            "exporting_progress": "Exportuji {done}/{total}",
+            "export_finalizing": "Dokončování archivu",
             "empty_gallery": "V této složce nejsou žádné snímky obrazovky",
             "empty_gallery_description": "Vyberte jinou složku nebo obnovte knihovnu snímků obrazovky.",
             "empty_folders": "Žádné složky se snímky obrazovky",
@@ -5518,6 +5523,10 @@
         "screenshot_metadata": {
             "deleted": "Metadata snímku obrazovky smazána",
             "delete_failed": "Smazání metadat snímku obrazovky se nezdařilo",
+            "export_done": "Exportováno snímků: {count}.",
+            "export_partial": "Export dokončen, přeskočeno souborů: {count}.",
+            "export_failed": "Export snímků obrazovky se nezdařil",
+            "export_cancelled": "Export zrušen.",
             "file_deleted": "Snímek obrazovky přesunut do koše",
             "file_delete_failed": "Smazání snímku obrazovky se nezdařilo"
         },

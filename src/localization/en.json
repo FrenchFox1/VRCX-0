@@ -2040,6 +2040,9 @@
                 "delete_locked": "Every selected item is locked.",
                 "delete_locked_favorite": "Favorited - unfavorite to delete",
                 "delete_locked_in_use": "In use - cannot delete",
+                "export_zip": "Export ZIP",
+                "export_grouped": "Keep folder structure",
+                "export_flat": "All in one folder",
                 "favorited_toast": "Favorited {count} print(s).",
                 "unfavorited_toast": "Unfavorited {count} print(s).",
                 "favorite_skipped_toast": "{count} print(s) were not favorited. The limit is {max}."
@@ -4757,6 +4760,8 @@
             "scanning": "Scanning screenshots",
             "image_count": "{count} images",
             "feeling_lucky": "I'm Feeling Lucky",
+            "exporting_progress": "Exporting {done}/{total}",
+            "export_finalizing": "Finishing the archive",
             "empty_gallery": "No screenshots in this folder",
             "empty_gallery_description": "Select another folder or refresh the screenshot library.",
             "empty_folders": "No screenshot folders",
@@ -5514,6 +5519,10 @@
         "screenshot_metadata": {
             "deleted": "Screenshot metadata deleted",
             "delete_failed": "Failed to delete screenshot metadata",
+            "export_done": "Exported {count} screenshot(s).",
+            "export_partial": "Export finished, {count} file(s) were skipped.",
+            "export_failed": "Failed to export the screenshots",
+            "export_cancelled": "Export cancelled.",
             "file_deleted": "Screenshot moved to the recycle bin",
             "file_delete_failed": "Failed to delete screenshot"
         },

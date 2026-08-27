@@ -1,3 +1,4 @@
+use super::super::export::write_screenshots_zip;
 use super::super::library::{
     find_screenshots, forget_screenshot_file, scan_screenshot_library_in,
     start_screenshot_library_scan,
@@ -6,6 +7,7 @@ use super::super::paths::unix_time_millis;
 use super::super::{is_managed_screenshot_file_path, is_screenshot_library_file_path};
 use super::*;
 use vrcx_0_application_core::{RuntimeEventBus, TaskSupervisor};
+use vrcx_0_core::screenshots::plan_screenshot_zip_entries;
 
 struct TestDir {
     path: PathBuf,
@@ -700,5 +702,132 @@ fn forget_screenshot_file_clears_index_metadata_and_thumbnail_cache() -> Result<
     let thumbnail_entries = cache.thumbnail_cache_entries();
     assert_eq!(thumbnail_entries.len(), 1);
     assert_eq!(thumbnail_entries[0].source_path, kept_path_string);
+    Ok(())
+}
+
+fn read_zip_entry_names(path: &Path) -> Vec<String> {
+    let file = std::fs::File::open(path).unwrap();
+    let mut archive = zip::ZipArchive::new(file).unwrap();
+    let mut names: Vec<String> = (0..archive.len())
+        .map(|index| archive.by_index(index).unwrap().name().to_string())
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn write_screenshots_zip_stores_entries_grouped_by_folder() -> Result<()> {
+    let dir = TestDir::new("screenshot-export-grouped");
+    let july = dir.path.join("2026-07");
+    let may = dir.path.join("2026-05");
+    std::fs::create_dir_all(&july)?;
+    std::fs::create_dir_all(&may)?;
+    write_test_png(&july.join("a.png"))?;
+    write_test_png(&july.join("b.png"))?;
+    write_test_png(&may.join("a.png"))?;
+    let output = dir.path.join("export.zip");
+
+    let entries = plan_screenshot_zip_entries(
+        &[
+            july.join("a.png").to_string_lossy().into_owned(),
+            july.join("b.png").to_string_lossy().into_owned(),
+            may.join("a.png").to_string_lossy().into_owned(),
+        ],
+        true,
+    );
+    let outcome = write_screenshots_zip(&entries, &output, &|_, _| {}, &|| {}, None)?;
+
+    assert_eq!(outcome.written_files, 3);
+    assert_eq!(outcome.skipped_files, 0);
+    assert!(!outcome.cancelled);
+    assert_eq!(
+        read_zip_entry_names(&output),
+        vec!["2026-05/a.png", "2026-07/a.png", "2026-07/b.png"]
+    );
+
+    let source = std::fs::read(july.join("a.png"))?;
+    let file = std::fs::File::open(&output)?;
+    let mut archive = zip::ZipArchive::new(file).unwrap();
+    let mut stored = Vec::new();
+    std::io::Read::read_to_end(&mut archive.by_name("2026-07/a.png").unwrap(), &mut stored)?;
+    assert_eq!(stored, source);
+    Ok(())
+}
+
+#[test]
+fn write_screenshots_zip_skips_unreadable_sources_and_reports_progress() -> Result<()> {
+    let dir = TestDir::new("screenshot-export-skip");
+    let folder = dir.path.join("2026-07");
+    std::fs::create_dir_all(&folder)?;
+    write_test_png(&folder.join("a.png"))?;
+    let output = dir.path.join("export.zip");
+
+    let entries = plan_screenshot_zip_entries(
+        &[
+            folder.join("a.png").to_string_lossy().into_owned(),
+            folder.join("missing.png").to_string_lossy().into_owned(),
+        ],
+        false,
+    );
+    let progress = std::sync::Mutex::new(Vec::new());
+    let outcome = write_screenshots_zip(
+        &entries,
+        &output,
+        &|written_bytes, written_files| {
+            progress
+                .lock()
+                .unwrap()
+                .push((written_bytes, written_files));
+        },
+        &|| {},
+        None,
+    )?;
+
+    assert_eq!(outcome.written_files, 1);
+    assert_eq!(outcome.skipped_files, 1);
+    assert_eq!(read_zip_entry_names(&output), vec!["a.png"]);
+    let observed = progress.lock().unwrap();
+    assert!(!observed.is_empty());
+    assert_eq!(observed.last().unwrap().1, 1);
+    Ok(())
+}
+
+#[test]
+fn write_screenshots_zip_removes_the_partial_archive_when_cancelled() -> Result<()> {
+    let dir = TestDir::new("screenshot-export-cancel");
+    let folder = dir.path.join("2026-07");
+    std::fs::create_dir_all(&folder)?;
+    write_test_png(&folder.join("a.png"))?;
+    write_test_png(&folder.join("b.png"))?;
+    let output = dir.path.join("export.zip");
+
+    let entries = plan_screenshot_zip_entries(
+        &[
+            folder.join("a.png").to_string_lossy().into_owned(),
+            folder.join("b.png").to_string_lossy().into_owned(),
+        ],
+        false,
+    );
+    let outcome = write_screenshots_zip(&entries, &output, &|_, _| {}, &|| {}, Some(&|| true))?;
+
+    assert!(outcome.cancelled);
+    assert!(!output.exists());
+    Ok(())
+}
+
+#[test]
+fn write_screenshots_zip_fails_when_the_target_cannot_be_created() -> Result<()> {
+    let dir = TestDir::new("screenshot-export-bad-target");
+    let folder = dir.path.join("2026-07");
+    std::fs::create_dir_all(&folder)?;
+    write_test_png(&folder.join("a.png"))?;
+
+    let entries = plan_screenshot_zip_entries(
+        &[folder.join("a.png").to_string_lossy().into_owned()],
+        false,
+    );
+    let output = dir.path.join("missing-dir").join("export.zip");
+
+    assert!(write_screenshots_zip(&entries, &output, &|_, _| {}, &|| {}, None).is_err());
     Ok(())
 }

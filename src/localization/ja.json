@@ -2036,6 +2036,9 @@
                 "delete_locked": "選択した項目はすべてロックされています。",
                 "delete_locked_favorite": "お気に入りを解除すると削除できます",
                 "delete_locked_in_use": "使用中のため削除できません",
+                "export_zip": "ZIP で書き出し",
+                "export_grouped": "フォルダー構成を保つ",
+                "export_flat": "すべてまとめる",
                 "favorited_toast": "{count} 件のプリントをお気に入りに追加しました。",
                 "unfavorited_toast": "{count} 件のプリントのお気に入りを解除しました。",
                 "favorite_skipped_toast": "{count} 件はお気に入りにできませんでした。上限は {max} 件です。"
@@ -4752,6 +4755,8 @@
             "scanning": "スクリーンショットをスキャン中",
             "image_count": "{count} 枚",
             "feeling_lucky": "I'm Feeling Lucky",
+            "exporting_progress": "書き出し中 {done}/{total}",
+            "export_finalizing": "書き込みを完了しています",
             "empty_gallery": "このフォルダにスクリーンショットはありません",
             "empty_gallery_description": "別のフォルダを選択するか、スクリーンショットライブラリを更新してください。",
             "empty_folders": "スクリーンショットフォルダがありません",
@@ -5507,6 +5512,10 @@
         "screenshot_metadata": {
             "deleted": "スクリーンショットのメタデータを削除しました",
             "delete_failed": "スクリーンショットのメタデータの削除に失敗しました",
+            "export_done": "スクリーンショット {count} 件を書き出しました。",
+            "export_partial": "書き出しが完了しました（{count} 件をスキップ）。",
+            "export_failed": "スクリーンショットの書き出しに失敗しました",
+            "export_cancelled": "書き出しを中止しました。",
             "file_deleted": "スクリーンショットをごみ箱に移動しました",
             "file_delete_failed": "スクリーンショットの削除に失敗しました"
         },

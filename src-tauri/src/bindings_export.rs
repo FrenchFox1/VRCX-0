@@ -30,7 +30,7 @@ use vrcx_0_assistant::{
     AssistantToolResultEvent, AssistantTurnEntitiesEvent,
 };
 use vrcx_0_core::realtime::RealtimeWsStatusPayload;
-use vrcx_0_core::screenshots::ScreenshotLibraryScanStatus;
+use vrcx_0_core::screenshots::{ScreenshotExportProgress, ScreenshotLibraryScanStatus};
 use vrcx_0_host_desktop::tts::TtsVoice;
 use vrcx_0_integration_api::{IntegrationApiStartFailedPayload, IntegrationApiStatus};
 use vrcx_0_mcp::McpServerStatus;
@@ -70,6 +70,7 @@ struct BackendRuntimeEventPayloadMap {
     group_moderation_batch_progress: GroupModerationBatchProgress,
     mutual_graph_fetch_status: MutualGraphFetchStatus,
     screenshot_library_scan_status: ScreenshotLibraryScanStatus,
+    screenshot_export_progress: ScreenshotExportProgress,
     shared_collection_import_status: SharedCollectionImportStatus,
     note_export_status: NoteExportStatus,
     friend_profile_load_status: FriendProfileLoadStatusPayload,
@@ -595,6 +596,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::screenshots::app__get_last_screenshot,
             commands::host::screenshots::app__delete_screenshot_metadata,
             commands::host::screenshots::app__delete_screenshot_file,
+            commands::host::screenshots::app__export_screenshots_zip,
+            commands::host::screenshots::app__cancel_screenshot_export,
             commands::host::screenshots::app__delete_all_screenshot_metadata,
             commands::host::screenshots::app__add_screenshot_metadata,
             commands::host::media::app__crop_all_prints,

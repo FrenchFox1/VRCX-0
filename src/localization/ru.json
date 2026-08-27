@@ -2042,6 +2042,9 @@
                 "delete_locked": "Все выбранные элементы заблокированы.",
                 "delete_locked_favorite": "В избранном - сначала уберите из избранного",
                 "delete_locked_in_use": "Используется - удалить нельзя",
+                "export_zip": "Экспорт в ZIP",
+                "export_grouped": "Сохранить структуру папок",
+                "export_flat": "Всё в одну папку",
                 "favorited_toast": "Добавлено в избранное принтов: {count}.",
                 "unfavorited_toast": "Убрано из избранного принтов: {count}.",
                 "favorite_skipped_toast": "Не удалось добавить в избранное: {count}. Лимит - {max}."
@@ -4762,6 +4765,8 @@
             "scanning": "Сканирование скриншотов",
             "image_count": "{count} изображения",
             "feeling_lucky": "Мне повезёт!",
+            "exporting_progress": "Экспорт {done}/{total}",
+            "export_finalizing": "Завершение архива",
             "empty_gallery": "Скриншоты в этой папке отсутствуют",
             "empty_gallery_description": "Выберите другую папку или обновите библиотеку скриншотов.",
             "empty_folders": "Скриншотные папки отсутствуют",
@@ -5519,6 +5524,10 @@
         "screenshot_metadata": {
             "deleted": "Метаданные скриншота удалены",
             "delete_failed": "Не удалось удалить метаданные скриншота",
+            "export_done": "Экспортировано скриншотов: {count}.",
+            "export_partial": "Экспорт завершён, пропущено файлов: {count}.",
+            "export_failed": "Не удалось экспортировать скриншоты",
+            "export_cancelled": "Экспорт отменён.",
             "file_deleted": "Скриншот перемещён в корзину",
             "file_delete_failed": "Не удалось удалить скриншот"
         },
