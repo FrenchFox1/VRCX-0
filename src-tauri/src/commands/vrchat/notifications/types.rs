@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::notifications::RequestInviteRequest;
+use vrcx_0_vrchat_client::notifications::RequestInviteRequest;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

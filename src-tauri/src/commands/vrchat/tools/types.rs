@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::tools::{
+use vrcx_0_vrchat_client::tools::{
     CalendarListParams, InviteMessageType,
 };
 

@@ -2,7 +2,7 @@
 
 use tauri::State;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::media::{
+use vrcx_0_vrchat_client::media::{
     asset_upload_input, avatar_gallery_image_upload_input, file_delete_input, files_get_input,
     inventory_bundle_consume_input, inventory_item_equip_input, inventory_item_update_input,
     inventory_items_get_input, inventory_slot_unequip_input, inventory_template_get_input,
@@ -189,7 +189,7 @@ pub async fn app__vrchat_media_emoji_upload(
         "Uploading emoji.",
         prepare_media_upload_request(
             &state,
-            vrcx_0_runtime_host_desktop::vrchat_api::protocol::media::image_upload_input(
+            vrcx_0_vrchat_client::media::image_upload_input(
                 VRCHAT_API_DEFAULT_ENDPOINT.into(),
                 "file/image",
                 input.image_data,

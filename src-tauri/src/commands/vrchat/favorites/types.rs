@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use vrcx_0_application_core::{FavoriteEntityKind, FavoriteGroupVisibility, VrchatFavoriteType};
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::query::deserialize_nonnegative_i32;
+use vrcx_0_vrchat_client::query::deserialize_nonnegative_i32;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

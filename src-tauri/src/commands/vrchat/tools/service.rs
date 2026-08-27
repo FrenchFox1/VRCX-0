@@ -2,7 +2,7 @@
 
 use tauri::State;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::tools::{
+use vrcx_0_vrchat_client::tools::{
     following_calendars_get_input, group_calendar_get_input, group_calendar_ics_get_input,
     group_event_follow_input, invite_message_edit_input, invite_messages_get_input,
     user_note_save_input, user_report_input,

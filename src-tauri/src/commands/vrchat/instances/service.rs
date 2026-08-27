@@ -4,7 +4,7 @@ use tauri::State;
 use vrcx_0_application::game::{InstanceLaunchInput, InstanceLaunchOutcome};
 use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::instances::{
+use vrcx_0_vrchat_client::instances::{
     instance_close_input, instance_create_input, instance_get_input, instance_self_invite_input,
     instance_short_name_get_input,
 };

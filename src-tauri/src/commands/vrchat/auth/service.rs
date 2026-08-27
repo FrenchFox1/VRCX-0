@@ -2,7 +2,7 @@
 
 use tauri::State;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::auth::{
+use vrcx_0_vrchat_client::auth::{
     current_user_get_input, file_analysis_get_input, visits_get_input,
 };
 

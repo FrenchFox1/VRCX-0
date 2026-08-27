@@ -2,7 +2,7 @@
 
 use tauri::State;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::search::{
+use vrcx_0_vrchat_client::search::{
     search_groups_get_input, search_groups_strict_get_input, search_instance_short_name_get_input,
     search_users_get_input, search_worlds_get_input,
 };
