@@ -5,7 +5,7 @@ import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadg
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import { LocationWorld } from '@/components/LocationWorld';
-import { ScreenshotThumbnailCard } from '@/features/tools/components/ScreenshotThumbnailGrid';
+import { ScreenshotThumbnailCard } from '@/features/tools/components/ScreenshotThumbnailCard';
 import { useScreenshotGalleryGrid } from '@/features/tools/useScreenshotGalleryGrid';
 import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
 import { openExternalLink } from '@/services/entityMediaService';

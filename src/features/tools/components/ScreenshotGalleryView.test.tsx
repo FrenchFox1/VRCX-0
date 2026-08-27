@@ -37,7 +37,7 @@ vi.mock('../useScreenshotGalleryGrid', () => ({
     })
 }));
 
-vi.mock('./ScreenshotThumbnailGrid', () => ({
+vi.mock('./ScreenshotThumbnailCard', () => ({
     ScreenshotThumbnailCard: ({
         item,
         selected,

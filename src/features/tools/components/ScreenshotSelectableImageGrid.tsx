@@ -7,7 +7,7 @@ import { useScreenshotGalleryGrid } from '../useScreenshotGalleryGrid';
 import {
     ScreenshotThumbnailCard,
     useScreenshotThumbnailTitleMap
-} from './ScreenshotThumbnailGrid';
+} from './ScreenshotThumbnailCard';
 
 export function ScreenshotSelectableImageGrid({
     images,
