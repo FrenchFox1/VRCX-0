@@ -2555,6 +2555,9 @@ const generatedCommands = {
     async appDeleteScreenshotMetadata(path: string): Promise<boolean> {
         return await TAURI_INVOKE('app__delete_screenshot_metadata', { path });
     },
+    async appDeleteScreenshotFile(path: string): Promise<null> {
+        return await TAURI_INVOKE('app__delete_screenshot_file', { path });
+    },
     async appDeleteAllScreenshotMetadata(): Promise<null> {
         return await TAURI_INVOKE('app__delete_all_screenshot_metadata');
     },

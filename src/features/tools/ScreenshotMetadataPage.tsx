@@ -24,11 +24,13 @@ import {
     getDroppedScreenshotPath,
     normalizeScreenshotMetadata,
     normalizeScreenshotSearchResult,
+    resolvePathAfterScreenshotDelete,
     SCREENSHOT_METADATA_SEARCH_TYPES,
     sortScreenshotRowsByNewest,
     type ScreenshotMetadataSearchType,
     type ScreenshotSearchRow
 } from './screenshotMetadataValues';
+import { useScreenshotBulkDelete } from './useScreenshotBulkDelete';
 import { useScreenshotGalleryController } from './useScreenshotGalleryController';
 import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigation';
 import { useScreenshotMetadataSearch } from './useScreenshotMetadataSearch';
@@ -109,6 +111,7 @@ export function ScreenshotMetadataPage() {
     const [isMetadataLoading, setIsMetadataLoading] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [isDeletingMetadata, setIsDeletingMetadata] = useState(false);
+    const [isDeletingFile, setIsDeletingFile] = useState(false);
     const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
     const [isDetailsVisible, setIsDetailsVisible] = useState(true);
     const dateLocale = i18n.resolvedLanguage || i18n.language;
@@ -120,6 +123,8 @@ export function ScreenshotMetadataPage() {
         isGalleryTreeLoading,
         openGalleryRoute,
         refreshGallery,
+        refreshGalleryTree,
+        removeGalleryImages,
         scanStatus,
         selectedGalleryFolder,
         selectedGalleryScrollTop,
@@ -132,6 +137,11 @@ export function ScreenshotMetadataPage() {
         routeFolder,
         screenshotCacheStatus,
         setSearchParams
+    });
+    const { bulkDeleteRunning, deleteScreenshots } = useScreenshotBulkDelete({
+        selectedFolder: selectedGalleryFolder,
+        removeGalleryImages,
+        refreshGalleryTree
     });
 
     const updateRoutePath = useCallback(
@@ -384,6 +394,47 @@ export function ScreenshotMetadataPage() {
         }
     }
 
+    async function deleteScreenshotFile() {
+        const filePath = metadata?.filePath || '';
+        if (!filePath) {
+            return;
+        }
+
+        const result = await confirm({
+            title: t('dialog.screenshot_metadata.delete_file_confirm_title'),
+            description: t(
+                'dialog.screenshot_metadata.delete_file_confirm_description'
+            ),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
+            destructive: true
+        });
+        if (!result.ok) {
+            return;
+        }
+
+        const nextTarget = resolvePathAfterScreenshotDelete(metadata);
+        setIsDeletingFile(true);
+
+        try {
+            await mediaRepository.deleteScreenshotFile(filePath);
+            toast.success(t('message.screenshot_metadata.file_deleted'));
+            if (nextTarget) {
+                updateRoutePath(nextTarget.filePath, nextTarget.folderPath);
+                return;
+            }
+            openGalleryRoute();
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('message.screenshot_metadata.file_delete_failed')
+            );
+        } finally {
+            setIsDeletingFile(false);
+        }
+    }
+
     async function uploadScreenshotToGallery() {
         if (!metadata?.filePath) {
             return;
@@ -551,9 +602,13 @@ export function ScreenshotMetadataPage() {
             <ScreenshotMetadataHeader
                 backLabel={t('nav_tooltip.tools')}
                 title={t('dialog.screenshot_metadata.header')}
-                deleting={isDeletingMetadata}
+                deleting={isDeletingMetadata || isDeletingFile}
                 uploading={isUploadingScreenshot}
-                deletingLabel={t('view.tools.loading.deleting_metadata')}
+                deletingLabel={
+                    isDeletingFile
+                        ? t('view.tools.loading.deleting_screenshot')
+                        : t('view.tools.loading.deleting_metadata')
+                }
                 uploadingLabel={t('view.tools.loading.uploading_screenshot')}
                 onBack={() =>
                     isGalleryMode ? navigate('/tools') : openGalleryRoute()
@@ -581,7 +636,11 @@ export function ScreenshotMetadataPage() {
                         refreshGallery(true);
                     }}
                     onSelectFolder={selectGalleryFolder}
+                    onDeleteSelection={(paths) => {
+                        deleteScreenshots(paths);
+                    }}
                     onScrollPositionChange={updateGalleryScrollPosition}
+                    isDeleteRunning={bulkDeleteRunning}
                     restoreScrollTop={selectedGalleryScrollTop}
                 />
             ) : (
@@ -591,6 +650,7 @@ export function ScreenshotMetadataPage() {
                         isVrcPlusSupporter={isVrcPlusSupporter}
                         isUploadingScreenshot={isUploadingScreenshot}
                         isDeletingMetadata={isDeletingMetadata}
+                        isDeletingFile={isDeletingFile}
                         searchQuery={searchQuery}
                         searchType={searchType}
                         searchViewMode={searchViewMode}
@@ -613,6 +673,9 @@ export function ScreenshotMetadataPage() {
                         }}
                         onDelete={() => {
                             deleteMetadata();
+                        }}
+                        onDeleteFile={() => {
+                            deleteScreenshotFile();
                         }}
                     />
 

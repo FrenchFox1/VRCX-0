@@ -1980,6 +1980,7 @@
             },
             "loading": {
                 "deleting_metadata": "Eliminando metadatos",
+                "deleting_screenshot": "Eliminando captura",
                 "uploading_screenshot": "Subiendo a la galería",
                 "searching_screenshots": "Buscando capturas",
                 "resolving_file_list_and_metadata_summaries": "Resolviendo la lista de archivos y los resúmenes de metadatos",
@@ -4718,6 +4719,10 @@
             "copy_image": "Copiar imagen",
             "open_folder": "Mostrar en el Explorador de archivos",
             "delete_metadata": "Eliminar metadatos",
+            "delete_file": "Eliminar captura",
+            "delete_file_confirm_title": "¿Eliminar esta captura?",
+            "delete_file_confirm_title_bulk": "¿Eliminar {count} captura(s)?",
+            "delete_file_confirm_description": "El archivo se moverá a la papelera.",
             "upload": "Subir a la galería",
             "search_placeholder": "Buscar",
             "search_type_placeholder": "Tipo de búsqueda",
@@ -5503,7 +5508,9 @@
         },
         "screenshot_metadata": {
             "deleted": "Metadatos de la captura eliminados",
-            "delete_failed": "No se pudieron eliminar los metadatos de la captura"
+            "delete_failed": "No se pudieron eliminar los metadatos de la captura",
+            "file_deleted": "Captura movida a la papelera",
+            "file_delete_failed": "No se pudo eliminar la captura"
         },
         "image": {
             "downloading": "Descargando imagen",

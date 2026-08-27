@@ -680,6 +680,21 @@ impl MetadataCacheDb {
         );
     }
 
+    pub fn delete_screenshot_entry(&self, path: &str) -> Result<()> {
+        let conn = self.inner.conn.lock().unwrap();
+        let tx = conn.unchecked_transaction().map_err(|error| {
+            Error::sqlite_with_context("start screenshot entry delete transaction", error)
+        })?;
+        tx.execute("DELETE FROM screenshot_files WHERE path = ?1", [path])
+            .map_err(|error| Error::sqlite_with_context("delete screenshot index row", error))?;
+        tx.execute("DELETE FROM cache WHERE file_path = ?1", [path])
+            .map_err(|error| Error::sqlite_with_context("delete screenshot cache row", error))?;
+        tx.commit().map_err(|error| {
+            Error::sqlite_with_context("commit screenshot entry delete transaction", error)
+        })?;
+        Ok(())
+    }
+
     pub fn clear_all(&self) {
         let conn = self.inner.conn.lock().unwrap();
         let _ = conn.execute("DELETE FROM cache", []);

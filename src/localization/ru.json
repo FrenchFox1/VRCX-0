@@ -1982,6 +1982,7 @@
             },
             "loading": {
                 "deleting_metadata": "Удаление метаданных",
+                "deleting_screenshot": "Удаление скриншота",
                 "uploading_screenshot": "Загрузка в галерею",
                 "searching_screenshots": "Поиск скриншотов",
                 "resolving_file_list_and_metadata_summaries": "Решение вопросов, связанных с перечнем файлов и резюме метаданных",
@@ -4723,6 +4724,10 @@
             "copy_image": "Скопировать изображение",
             "open_folder": "Открыть папку",
             "delete_metadata": "Удалить метаданные",
+            "delete_file": "Удалить скриншот",
+            "delete_file_confirm_title": "Удалить этот скриншот?",
+            "delete_file_confirm_title_bulk": "Удалить скриншотов: {count}?",
+            "delete_file_confirm_description": "Файл будет перемещён в корзину.",
             "upload": "Загрузить",
             "search_placeholder": "Поиск",
             "search_type_placeholder": "Тип поиска",
@@ -5508,7 +5513,9 @@
         },
         "screenshot_metadata": {
             "deleted": "Метаданные скриншота удалены",
-            "delete_failed": "Не удалось удалить метаданные скриншота"
+            "delete_failed": "Не удалось удалить метаданные скриншота",
+            "file_deleted": "Скриншот перемещён в корзину",
+            "file_delete_failed": "Не удалось удалить скриншот"
         },
         "image": {
             "downloading": "Загрузка изображения",

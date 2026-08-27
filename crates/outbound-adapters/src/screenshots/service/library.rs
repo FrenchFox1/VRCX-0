@@ -368,3 +368,13 @@ pub fn list_world_screenshots(
 ) -> Result<Vec<ScreenshotLibraryImage>> {
     Ok(cache.list_world_screenshots_for_root(root_path, world_id)?)
 }
+
+pub fn forget_screenshot_file(
+    cache: &MetadataCacheDb,
+    thumbnail_cache_dir: &Path,
+    path: &str,
+) -> Result<()> {
+    cache.delete_screenshot_entry(path)?;
+    delete_thumbnail_cache_for_source_paths(thumbnail_cache_dir, cache, &[path.to_owned()]);
+    Ok(())
+}

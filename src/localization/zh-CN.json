@@ -1980,6 +1980,7 @@
             },
             "loading": {
                 "deleting_metadata": "正在删除元数据",
+                "deleting_screenshot": "正在删除截图",
                 "uploading_screenshot": "正在上传到在线相册",
                 "searching_screenshots": "正在搜索截图",
                 "resolving_file_list_and_metadata_summaries": "正在解析文件列表和元数据摘要",
@@ -4719,6 +4720,10 @@
             "copy_image": "复制图片",
             "open_folder": "在资源管理器中显示",
             "delete_metadata": "删除当前图片的元数据",
+            "delete_file": "删除截图",
+            "delete_file_confirm_title": "删除这张截图？",
+            "delete_file_confirm_title_bulk": "删除 {count} 张截图？",
+            "delete_file_confirm_description": "文件会被移到系统回收站。",
             "upload": "上传到在线相册",
             "search_placeholder": "搜索",
             "search_type_placeholder": "搜索类型",
@@ -5504,7 +5509,9 @@
         },
         "screenshot_metadata": {
             "deleted": "已删除图片元数据",
-            "delete_failed": "删除图片元数据失败"
+            "delete_failed": "删除图片元数据失败",
+            "file_deleted": "截图已移到回收站",
+            "file_delete_failed": "删除截图失败"
         },
         "image": {
             "downloading": "正在下载图片",

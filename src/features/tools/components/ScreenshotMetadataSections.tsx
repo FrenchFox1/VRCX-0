@@ -103,6 +103,7 @@ export function ScreenshotMetadataToolbar({
     isVrcPlusSupporter,
     isUploadingScreenshot,
     isDeletingMetadata,
+    isDeletingFile,
     searchQuery,
     searchType,
     searchViewMode,
@@ -115,12 +116,14 @@ export function ScreenshotMetadataToolbar({
     onOpenFolder,
     onCopyImage,
     onUpload,
-    onDelete
+    onDelete,
+    onDeleteFile
 }: {
     metadata: NormalizedScreenshotMetadata | null;
     isVrcPlusSupporter: boolean;
     isUploadingScreenshot: boolean;
     isDeletingMetadata: boolean;
+    isDeletingFile: boolean;
     searchQuery: string;
     searchType: ScreenshotMetadataSearchType['value'];
     searchViewMode: 'detail' | 'table';
@@ -134,6 +137,7 @@ export function ScreenshotMetadataToolbar({
     onCopyImage: () => void;
     onUpload: () => void;
     onDelete: () => void;
+    onDeleteFile: () => void;
 }) {
     const { t } = useTranslation();
 
@@ -172,13 +176,22 @@ export function ScreenshotMetadataToolbar({
                     {t('dialog.screenshot_metadata.upload')}
                 </Button>
                 <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
                     disabled={!metadata?.filePath || isDeletingMetadata}
                     onClick={onDelete}
                 >
                     <Trash2Icon data-icon="inline-start" />
                     {t('dialog.screenshot_metadata.delete_metadata')}
+                </Button>
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={!metadata?.filePath || isDeletingFile}
+                    onClick={onDeleteFile}
+                >
+                    <Trash2Icon data-icon="inline-start" />
+                    {t('dialog.screenshot_metadata.delete_file')}
                 </Button>
             </div>
 

@@ -2,6 +2,8 @@ import { ChevronRightIcon, FolderIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isEditableTarget } from '@/components/layout/useGlobalKeyboardShortcuts';
+import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import { cn } from '@/lib/utils';
 import type {
     ScreenshotFolderInfo,
@@ -27,6 +29,7 @@ import {
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import { useScreenshotGalleryGrid } from '../useScreenshotGalleryGrid';
+import { GallerySelectionBar } from './GallerySelectionBar';
 import { EmptyState } from './ScreenshotMetadataParts';
 import {
     ScreenshotThumbnailCard,
@@ -192,7 +195,9 @@ function ScreenshotGalleryGrid({
     isLoading,
     selectedFolder,
     onOpen,
-    onScrollPositionChange
+    onDeleteSelection,
+    onScrollPositionChange,
+    isDeleteRunning
 }: {
     error: string;
     initialScrollTop: number;
@@ -200,7 +205,9 @@ function ScreenshotGalleryGrid({
     isLoading: boolean;
     selectedFolder: string;
     onOpen: (path: string) => void;
+    onDeleteSelection: (paths: string[]) => void;
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
+    isDeleteRunning: boolean;
 }) {
     const { t } = useTranslation();
     const {
@@ -220,6 +227,35 @@ function ScreenshotGalleryGrid({
         [visibleRows]
     );
     const titleMap = useScreenshotThumbnailTitleMap(visibleItems);
+    const imagePaths = useMemo(
+        () => images.map((image) => image.path),
+        [images]
+    );
+    const selection = useTileSelectionState({
+        keys: imagePaths,
+        resetToken: selectedFolder
+    });
+    const { clearSelection, hasSelection } = selection;
+    const selectedPaths = useMemo(
+        () => imagePaths.filter((path) => selection.selectedKeysSet.has(path)),
+        [imagePaths, selection.selectedKeysSet]
+    );
+
+    useEffect(() => {
+        if (!hasSelection) {
+            return undefined;
+        }
+        function handleKeyDown(event: KeyboardEvent) {
+            if (event.key !== 'Escape' || isEditableTarget(event.target)) {
+                return;
+            }
+            clearSelection();
+        }
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [clearSelection, hasSelection]);
 
     if (error) {
         return (
@@ -254,41 +290,65 @@ function ScreenshotGalleryGrid({
     }
 
     return (
-        <div
-            ref={viewportRef}
-            className="min-h-0 flex-1 overflow-auto pr-1"
-            onScroll={(event) => {
-                if (selectedFolder) {
-                    onScrollPositionChange?.(
-                        selectedFolder,
-                        event.currentTarget.scrollTop
-                    );
-                }
-            }}
-        >
-            <div className="relative" style={{ height: totalHeight }}>
-                {visibleRows.map((row) => (
-                    <div
-                        key={row.key}
-                        className="absolute right-0 left-0 grid"
-                        style={{
-                            top: row.top,
-                            gridTemplateColumns: `repeat(${gridColumnCount}, minmax(${gridMinWidth}px, 1fr))`,
-                            gap: gridGap
-                        }}
-                    >
-                        {row.items.map((item: ScreenshotLibraryImage) => (
-                            <ScreenshotThumbnailCard
-                                key={item.path}
-                                item={item}
-                                onOpen={onOpen}
-                                title={titleMap.get(item.path)}
-                            />
-                        ))}
-                    </div>
-                ))}
+        <>
+            <div
+                ref={viewportRef}
+                className="min-h-0 flex-1 overflow-auto pr-1"
+                onScroll={(event) => {
+                    if (selectedFolder) {
+                        onScrollPositionChange?.(
+                            selectedFolder,
+                            event.currentTarget.scrollTop
+                        );
+                    }
+                }}
+            >
+                <div className="relative" style={{ height: totalHeight }}>
+                    {visibleRows.map((row) => (
+                        <div
+                            key={row.key}
+                            className="absolute right-0 left-0 grid"
+                            style={{
+                                top: row.top,
+                                gridTemplateColumns: `repeat(${gridColumnCount}, minmax(${gridMinWidth}px, 1fr))`,
+                                gap: gridGap
+                            }}
+                        >
+                            {row.items.map((item: ScreenshotLibraryImage) => (
+                                <ScreenshotThumbnailCard
+                                    key={item.path}
+                                    item={item}
+                                    onOpen={onOpen}
+                                    title={titleMap.get(item.path)}
+                                    selectable
+                                    selected={selection.selectedKeysSet.has(
+                                        item.path
+                                    )}
+                                    selectionActive={hasSelection}
+                                    selectLabel={`${t('common.actions.select')} ${item.fileName}`}
+                                    onToggleSelect={(checked, shift) =>
+                                        selection.selectItem(
+                                            item.path,
+                                            checked,
+                                            { shift }
+                                        )
+                                    }
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
             </div>
-        </div>
+            <GallerySelectionBar
+                selectedCount={selectedPaths.length}
+                deletableCount={selectedPaths.length}
+                isAllSelected={selection.isAllSelected}
+                actionsDisabled={isDeleteRunning}
+                onSelectAll={selection.toggleSelectAll}
+                onClearSelection={clearSelection}
+                onDelete={() => onDeleteSelection(selectedPaths)}
+            />
+        </>
     );
 }
 
@@ -303,7 +363,9 @@ export function ScreenshotGalleryView({
     onOpenImage,
     onRefresh,
     onSelectFolder,
+    onDeleteSelection,
     onScrollPositionChange,
+    isDeleteRunning,
     restoreScrollTop
 }: {
     folderTree: ScreenshotFolderTree | null;
@@ -316,7 +378,9 @@ export function ScreenshotGalleryView({
     onOpenImage: (path: string) => void;
     onRefresh: () => void;
     onSelectFolder: (folder: string) => void;
+    onDeleteSelection: (paths: string[]) => void;
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
+    isDeleteRunning: boolean;
     restoreScrollTop: number;
 }) {
     const { t } = useTranslation();
@@ -382,7 +446,7 @@ export function ScreenshotGalleryView({
                     </CardContent>
                 </Card>
             </aside>
-            <section className="flex min-h-0 min-w-0 flex-col gap-3">
+            <section className="relative flex min-h-0 min-w-0 flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
                         <div className="text-sm font-medium">
@@ -405,7 +469,9 @@ export function ScreenshotGalleryView({
                     isLoading={isImagesLoading}
                     selectedFolder={selectedFolder}
                     onOpen={onOpenImage}
+                    onDeleteSelection={onDeleteSelection}
                     onScrollPositionChange={onScrollPositionChange}
+                    isDeleteRunning={isDeleteRunning}
                 />
             </section>
         </div>
