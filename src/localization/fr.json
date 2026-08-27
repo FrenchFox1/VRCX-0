@@ -1123,7 +1123,6 @@
                 "end": "Fin"
             },
             "action": {
-                "current_user": "Moi",
                 "open_full": "Ouvrir l'historique complet des instances"
             },
             "toast": {
@@ -4959,6 +4958,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Copier l'ID de l'instance",
+                "copy_world_name": "Copier le nom du monde",
                 "more_actions": "Plus d'actions"
             },
             "header": "Historique des instances",
