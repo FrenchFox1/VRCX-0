@@ -1980,6 +1980,7 @@
             },
             "loading": {
                 "deleting_metadata": "Deleting metadata",
+                "deleting_screenshot": "Deleting screenshot",
                 "uploading_screenshot": "Uploading to Gallery",
                 "searching_screenshots": "Searching screenshots",
                 "resolving_file_list_and_metadata_summaries": "Resolving file list and metadata summaries",
@@ -4718,6 +4719,10 @@
             "copy_image": "Copy Image",
             "open_folder": "Show in File Explorer",
             "delete_metadata": "Delete Metadata",
+            "delete_file": "Delete Screenshot",
+            "delete_file_confirm_title": "Delete this screenshot?",
+            "delete_file_confirm_title_bulk": "Delete {count} screenshot(s)?",
+            "delete_file_confirm_description": "The file will be moved to the recycle bin.",
             "upload": "Upload to Gallery",
             "search_placeholder": "Search",
             "search_type_placeholder": "Search Type",
@@ -5503,7 +5508,9 @@
         },
         "screenshot_metadata": {
             "deleted": "Screenshot metadata deleted",
-            "delete_failed": "Failed to delete screenshot metadata"
+            "delete_failed": "Failed to delete screenshot metadata",
+            "file_deleted": "Screenshot moved to the recycle bin",
+            "file_delete_failed": "Failed to delete screenshot"
         },
         "image": {
             "downloading": "Downloading image",

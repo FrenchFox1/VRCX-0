@@ -28,6 +28,10 @@ async function deleteScreenshotMetadata(path: string) {
     return commands.appDeleteScreenshotMetadata(path);
 }
 
+async function deleteScreenshotFile(path: string) {
+    return commands.appDeleteScreenshotFile(path);
+}
+
 async function addScreenshotMetadata(
     path: string,
     metadataString: string,
@@ -175,6 +179,7 @@ const mediaFileRepository = Object.freeze({
     getFileBase64,
     getScreenshotMetadata,
     deleteScreenshotMetadata,
+    deleteScreenshotFile,
     addScreenshotMetadata,
     getExtraScreenshotData,
     findScreenshotsBySearch,
@@ -203,6 +208,7 @@ export {
     getFileBase64,
     getScreenshotMetadata,
     deleteScreenshotMetadata,
+    deleteScreenshotFile,
     addScreenshotMetadata,
     getExtraScreenshotData,
     findScreenshotsBySearch,

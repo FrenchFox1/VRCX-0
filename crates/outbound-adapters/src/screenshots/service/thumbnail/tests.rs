@@ -1,8 +1,9 @@
-use super::super::is_screenshot_library_file_path;
 use super::super::library::{
-    find_screenshots, scan_screenshot_library_in, start_screenshot_library_scan,
+    find_screenshots, forget_screenshot_file, scan_screenshot_library_in,
+    start_screenshot_library_scan,
 };
 use super::super::paths::unix_time_millis;
+use super::super::{is_managed_screenshot_file_path, is_screenshot_library_file_path};
 use super::*;
 use vrcx_0_application_core::{RuntimeEventBus, TaskSupervisor};
 
@@ -620,5 +621,84 @@ fn screenshot_library_file_path_accepts_custom_png_names_only_inside_the_library
     assert!(!is_screenshot_library_file_path(&print_png, &root));
     assert!(!is_screenshot_library_file_path(&outside_png, &root));
     assert!(!is_screenshot_library_file_path(&non_png, &root));
+    Ok(())
+}
+
+#[test]
+fn is_managed_screenshot_file_path_accepts_library_and_vrchat_screenshots() -> Result<()> {
+    let dir = TestDir::new("screenshot-deletable-accept");
+    let photos_dir = dir.path.join("photos");
+    std::fs::create_dir_all(&photos_dir)?;
+    let library_image = photos_dir.join("holiday.png");
+    let vrchat_image = photos_dir.join("VRChat_2026-05-08_00-00-08.000_3840x2160.png");
+    write_test_png(&library_image)?;
+    write_test_png(&vrchat_image)?;
+
+    assert!(is_managed_screenshot_file_path(&library_image, &photos_dir));
+    assert!(is_managed_screenshot_file_path(&vrchat_image, &photos_dir));
+    Ok(())
+}
+
+#[test]
+fn is_managed_screenshot_file_path_rejects_content_assets_and_outside_files() -> Result<()> {
+    let dir = TestDir::new("screenshot-deletable-reject");
+    let photos_dir = dir.path.join("photos");
+    let prints_dir = photos_dir.join("Prints");
+    let other_dir = dir.path.join("other");
+    std::fs::create_dir_all(&prints_dir)?;
+    std::fs::create_dir_all(&other_dir)?;
+    let print_image = prints_dir.join("print.png");
+    let outside_image = other_dir.join("holiday.png");
+    write_test_png(&print_image)?;
+    write_test_png(&outside_image)?;
+
+    assert!(!is_managed_screenshot_file_path(&print_image, &photos_dir));
+    assert!(!is_managed_screenshot_file_path(
+        &outside_image,
+        &photos_dir
+    ));
+    Ok(())
+}
+
+#[test]
+fn forget_screenshot_file_clears_index_metadata_and_thumbnail_cache() -> Result<()> {
+    let dir = TestDir::new("screenshot-forget-file");
+    let photos_dir = dir.path.join("photos");
+    std::fs::create_dir_all(&photos_dir)?;
+    let thumbnail_dir = dir.path.join("ScreenshotThumbs");
+    let cache = MetadataCacheDb::new(&dir.path.join("metadataCache.db"))?;
+    let photos_root = photos_dir.to_string_lossy().into_owned();
+    let removed_path = photos_dir.join("VRChat_2026-05-08_00-00-09.000_3840x2160.png");
+    let kept_path = photos_dir.join("VRChat_2026-05-08_00-00-10.000_3840x2160.png");
+    write_test_png(&removed_path)?;
+    write_test_png(&kept_path)?;
+    let removed_path_string = removed_path.to_string_lossy().into_owned();
+    let kept_path_string = kept_path.to_string_lossy().into_owned();
+
+    scan_screenshot_library_in(&photos_dir, &cache, Some(&thumbnail_dir), true, None);
+    cache.bulk_add(&[
+        (removed_path_string.clone(), Some("{}".to_string())),
+        (kept_path_string.clone(), Some("{}".to_string())),
+    ]);
+    let removed_thumbnail = PathBuf::from(ensure_screenshot_thumbnail(
+        &removed_path_string,
+        &thumbnail_dir,
+        &cache,
+        &photos_root,
+    )?);
+    ensure_screenshot_thumbnail(&kept_path_string, &thumbnail_dir, &cache, &photos_root)?;
+    assert!(removed_thumbnail.is_file());
+
+    forget_screenshot_file(&cache, &thumbnail_dir, &removed_path_string)?;
+
+    assert!(!cache.is_cached(&removed_path_string));
+    assert!(cache.is_cached(&kept_path_string));
+    let folder_images = cache.list_screenshot_folder_images_for_root(&photos_root, &photos_root)?;
+    assert_eq!(folder_images.len(), 1);
+    assert_eq!(folder_images[0].path, kept_path_string);
+    assert!(!removed_thumbnail.is_file());
+    let thumbnail_entries = cache.thumbnail_cache_entries();
+    assert_eq!(thumbnail_entries.len(), 1);
+    assert_eq!(thumbnail_entries[0].source_path, kept_path_string);
     Ok(())
 }

@@ -1980,6 +1980,7 @@
             },
             "loading": {
                 "deleting_metadata": "Excluindo metadados",
+                "deleting_screenshot": "Excluindo captura de tela",
                 "uploading_screenshot": "Enviando para a Galeria",
                 "searching_screenshots": "Pesquisando capturas de tela",
                 "resolving_file_list_and_metadata_summaries": "Resolvendo lista de arquivos e resumos de metadados",
@@ -4719,6 +4720,10 @@
             "copy_image": "Copiar Imagem",
             "open_folder": "Abrir Pasta",
             "delete_metadata": "Excluir Metadados",
+            "delete_file": "Excluir Captura de Tela",
+            "delete_file_confirm_title": "Excluir esta captura de tela?",
+            "delete_file_confirm_title_bulk": "Excluir {count} captura(s) de tela?",
+            "delete_file_confirm_description": "O arquivo será movido para a lixeira.",
             "upload": "Enviar",
             "search_placeholder": "Pesquisar",
             "search_type_placeholder": "Tipo de Pesquisa",
@@ -5504,7 +5509,9 @@
         },
         "screenshot_metadata": {
             "deleted": "Metadados de captura de tela excluídos",
-            "delete_failed": "Falha ao excluir metadados de captura de tela"
+            "delete_failed": "Falha ao excluir metadados de captura de tela",
+            "file_deleted": "Captura de tela movida para a lixeira",
+            "file_delete_failed": "Falha ao excluir a captura de tela"
         },
         "image": {
             "downloading": "Baixando imagem...",

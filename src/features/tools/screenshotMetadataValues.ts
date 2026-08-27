@@ -163,6 +163,30 @@ export function getFolderLatestModifiedAt(folder: ScreenshotFolderInfo) {
     return folder.latestModifiedAt ?? 0;
 }
 
+export function resolvePathAfterScreenshotDelete(
+    metadata: Pick<
+        NormalizedScreenshotMetadata,
+        | 'nextFilePath'
+        | 'nextFolderPath'
+        | 'previousFilePath'
+        | 'previousFolderPath'
+    > | null
+) {
+    if (metadata?.nextFilePath) {
+        return {
+            filePath: metadata.nextFilePath,
+            folderPath: metadata.nextFolderPath
+        };
+    }
+    if (metadata?.previousFilePath) {
+        return {
+            filePath: metadata.previousFilePath,
+            folderPath: metadata.previousFolderPath
+        };
+    }
+    return null;
+}
+
 export function resolveGalleryFolder(
     folderTree: ScreenshotFolderTree | null | undefined,
     preferredFolders: string | readonly string[]

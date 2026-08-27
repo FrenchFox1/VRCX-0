@@ -14,6 +14,7 @@ import {
     normalizeScreenshotMetadata,
     normalizeScreenshotSearchResult,
     resolveGalleryFolder,
+    resolvePathAfterScreenshotDelete,
     SCREENSHOT_METADATA_SEARCH_TYPES,
     serializeGalleryScrollPositions,
     sortScreenshotRowsByNewest,
@@ -299,5 +300,44 @@ describe('screenshotMetadataValues', () => {
         expect(
             resolveGalleryFolder({ rootPath: 'D:\\Root', folders: [] }, '')
         ).toBe('D:\\Root');
+    });
+});
+
+describe('resolvePathAfterScreenshotDelete', () => {
+    it('prefers the next neighbour, falls back to the previous one, then to nothing', () => {
+        expect(
+            resolvePathAfterScreenshotDelete({
+                previousFilePath: 'D:\\Photos\\a.png',
+                previousFolderPath: 'D:\\Photos',
+                nextFilePath: 'D:\\Photos\\2026-05\\c.png',
+                nextFolderPath: 'D:\\Photos\\2026-05'
+            })
+        ).toEqual({
+            filePath: 'D:\\Photos\\2026-05\\c.png',
+            folderPath: 'D:\\Photos\\2026-05'
+        });
+
+        expect(
+            resolvePathAfterScreenshotDelete({
+                previousFilePath: 'D:\\Photos\\a.png',
+                previousFolderPath: 'D:\\Photos',
+                nextFilePath: '',
+                nextFolderPath: ''
+            })
+        ).toEqual({
+            filePath: 'D:\\Photos\\a.png',
+            folderPath: 'D:\\Photos'
+        });
+
+        expect(
+            resolvePathAfterScreenshotDelete({
+                previousFilePath: '',
+                previousFolderPath: '',
+                nextFilePath: '',
+                nextFolderPath: ''
+            })
+        ).toBeNull();
+
+        expect(resolvePathAfterScreenshotDelete(null)).toBeNull();
     });
 });

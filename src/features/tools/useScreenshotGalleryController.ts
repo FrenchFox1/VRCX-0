@@ -370,6 +370,17 @@ export function useScreenshotGalleryController({
             });
     }, [galleryRevision, isGalleryMode, selectedGalleryFolder, t]);
 
+    const removeGalleryImages = useCallback((paths: string[]) => {
+        const removedPaths = new Set(paths);
+        setGalleryImages((current) =>
+            current.filter((image) => !removedPaths.has(image.path))
+        );
+    }, []);
+
+    const refreshGalleryTree = useCallback(() => {
+        void loadGalleryTree();
+    }, [loadGalleryTree]);
+
     function selectGalleryFolder(folder: string) {
         setSelectedGalleryFolder(folder);
         const nextParams = new URLSearchParams();
@@ -418,6 +429,8 @@ export function useScreenshotGalleryController({
         isGalleryTreeLoading,
         openGalleryRoute,
         refreshGallery,
+        refreshGalleryTree,
+        removeGalleryImages,
         scanStatus,
         selectedGalleryFolder,
         selectedGalleryScrollTop,

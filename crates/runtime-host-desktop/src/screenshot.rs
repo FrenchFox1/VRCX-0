@@ -35,10 +35,17 @@ impl DesktopScreenshotRuntime {
     pub fn ensure_read_allowed(&self, path: &str) -> Result<()> {
         self.host_file_access
             .ensure_read_allowed(path, &self.paths)?;
-        let path = Path::new(path);
-        if !screenshot::is_vrchat_screenshot_file_path(path)
-            && !screenshot::is_screenshot_library_file_path(path, Path::new(&self.photos_root))
-        {
+        self.ensure_managed_screenshot(path)
+    }
+
+    pub fn ensure_delete_allowed(&self, path: &str) -> Result<()> {
+        self.host_file_access
+            .ensure_write_allowed(path, &self.paths)?;
+        self.ensure_managed_screenshot(path)
+    }
+
+    fn ensure_managed_screenshot(&self, path: &str) -> Result<()> {
+        if !screenshot::is_managed_screenshot_file_path(path, &self.photos_root) {
             return Err(crate::Error::Custom(
                 "Screenshot metadata commands require a VRChat screenshot or library PNG path."
                     .into(),
@@ -77,6 +84,13 @@ impl DesktopScreenshotRuntime {
 
     pub fn delete_metadata(&self, path: &str) -> bool {
         screenshot::delete_text_metadata(path, true)
+    }
+
+    pub fn delete_file(&self, path: &str) -> Result<()> {
+        self.ensure_delete_allowed(path)?;
+        vrcx_0_host_desktop::shell_actions::move_to_trash(Path::new(path))?;
+        screenshot::forget_screenshot_file(&self.cache, &self.paths.screenshot_thumbs, path)?;
+        Ok(())
     }
 
     pub fn add_metadata(

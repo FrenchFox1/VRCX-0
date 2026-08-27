@@ -159,6 +159,20 @@ pub fn app__delete_screenshot_metadata(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__delete_screenshot_file(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<(), AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    tauri::async_runtime::spawn_blocking(move || screenshots.delete_file(&path))
+        .await
+        .map_err(|error| AppError::Custom(format!("screenshot delete task failed: {error}")))??;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn app__delete_all_screenshot_metadata(state: State<'_, AppState>) -> Result<(), AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     state.runtime_host().screenshots().delete_all_metadata();

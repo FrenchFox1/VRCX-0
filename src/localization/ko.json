@@ -1954,6 +1954,7 @@
             },
             "loading": {
                 "deleting_metadata": "메타데이터 삭제",
+                "deleting_screenshot": "스크린샷 삭제 중",
                 "uploading_screenshot": "갤러리에 업로드 중",
                 "searching_screenshots": "스크린샷 검색 중",
                 "resolving_file_list_and_metadata_summaries": "파일 목록 및 메타데이터 요약 확인",
@@ -4668,6 +4669,10 @@
             "copy_image": "이미지 복사",
             "open_folder": "폴더 열기",
             "delete_metadata": "메타데이터 삭제",
+            "delete_file": "스크린샷 삭제",
+            "delete_file_confirm_title": "이 스크린샷을 삭제할까요?",
+            "delete_file_confirm_title_bulk": "스크린샷 {count}개를 삭제할까요?",
+            "delete_file_confirm_description": "파일은 휴지통으로 이동됩니다.",
             "upload": "업로드",
             "search_placeholder": "검색",
             "search_type_placeholder": "검색 유형",
@@ -5430,7 +5435,9 @@
         },
         "screenshot_metadata": {
             "deleted": "스크린샷 메타데이터가 삭제되었습니다.",
-            "delete_failed": "스크린샷 메타데이터를 삭제하지 못했습니다."
+            "delete_failed": "스크린샷 메타데이터를 삭제하지 못했습니다.",
+            "file_deleted": "스크린샷을 휴지통으로 옮겼습니다.",
+            "file_delete_failed": "스크린샷을 삭제하지 못했습니다."
         },
         "image": {
             "downloading": "이미지 다운로드 중",

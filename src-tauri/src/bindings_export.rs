@@ -594,6 +594,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::screenshots::app__ensure_screenshot_thumbnail,
             commands::host::screenshots::app__get_last_screenshot,
             commands::host::screenshots::app__delete_screenshot_metadata,
+            commands::host::screenshots::app__delete_screenshot_file,
             commands::host::screenshots::app__delete_all_screenshot_metadata,
             commands::host::screenshots::app__add_screenshot_metadata,
             commands::host::media::app__crop_all_prints,
