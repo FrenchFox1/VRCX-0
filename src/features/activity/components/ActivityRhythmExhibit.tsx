@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { HeatmapChart } from '@/components/dialogs/user-dialog/components/UserActivityPanelParts';
 import { USER_ACTIVITY_HOUR_LABELS } from '@/components/dialogs/user-dialog/userActivityPanelModel';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { hourTotals, lateNightShare, peakHour } from '../activityPageModel';
 import {
@@ -18,33 +19,47 @@ const HEAT_STEPS = [
     'var(--act-heat-4)'
 ];
 
+function heatStep(value: number, peak: number) {
+    if (value <= 0 || peak <= 0) {
+        return 'var(--act-track)';
+    }
+    const index = Math.floor((value / peak) * HEAT_STEPS.length);
+    return HEAT_STEPS[Math.min(index, HEAT_STEPS.length - 1)];
+}
+
 function HourStrip({ totals }: { totals: number[] }) {
+    const { t } = useTranslation();
     const peak = totals.reduce((best, value) => Math.max(best, value), 0);
+    const total = totals.reduce((sum, value) => sum + value, 0);
+    const hoursUnit = t('view.activity.unit.hours');
 
     return (
         <div>
-            <div className="flex h-12 items-end gap-[3px]">
-                {totals.map((value, hour) => (
-                    <span
-                        key={hour}
-                        className="flex-1"
-                        style={{
-                            height: `${peak > 0 ? Math.max((value / peak) * 100, 3) : 3}%`,
-                            backgroundColor:
-                                value > 0 && peak > 0
-                                    ? HEAT_STEPS[
-                                          Math.min(
-                                              HEAT_STEPS.length - 1,
-                                              Math.floor(
-                                                  (value / peak) *
-                                                      HEAT_STEPS.length
-                                              )
-                                          )
-                                      ]
-                                    : 'var(--act-track)'
-                        }}
-                    />
-                ))}
+            <div className="flex h-12 gap-[3px]">
+                {totals.map((value, hour) => {
+                    const fill =
+                        peak > 0 ? Math.max((value / peak) * 100, 3) : 3;
+                    const tint = heatStep(value, peak);
+                    const share =
+                        total > 0 ? Math.round((value / total) * 100) : 0;
+                    return (
+                        <Tooltip key={hour}>
+                            <TooltipTrigger
+                                render={
+                                    <span
+                                        className="flex-1"
+                                        style={{
+                                            backgroundImage: `linear-gradient(to top, ${tint} ${fill}%, transparent ${fill}%)`
+                                        }}
+                                    />
+                                }
+                            />
+                            <TooltipContent>
+                                {`${USER_ACTIVITY_HOUR_LABELS[hour]} · ${share}% · ${(value / 60).toFixed(1)}${hoursUnit}`}
+                            </TooltipContent>
+                        </Tooltip>
+                    );
+                })}
             </div>
             <div className="text-muted-foreground mt-2 flex justify-between text-[11px] tabular-nums">
                 <span>00</span>

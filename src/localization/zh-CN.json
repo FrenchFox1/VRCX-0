@@ -1123,7 +1123,6 @@
                 "end": "结束"
             },
             "action": {
-                "current_user": "自己",
                 "open_full": "打开完整房间历史"
             },
             "toast": {
@@ -4960,6 +4959,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "复制房间 ID",
+                "copy_world_name": "复制世界名称",
                 "more_actions": "更多操作"
             },
             "header": "游玩过的房间",

@@ -1123,7 +1123,6 @@
                 "end": "Конец"
             },
             "action": {
-                "current_user": "Я",
                 "open_full": "Открыть полную историю инстансов"
             },
             "toast": {
@@ -4964,6 +4963,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Копировать ID инстанса",
+                "copy_world_name": "Копировать название мира",
                 "more_actions": "Ещё действия"
             },
             "header": "История случая",

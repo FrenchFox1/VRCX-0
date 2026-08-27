@@ -1119,7 +1119,6 @@
                 "end": "終了"
             },
             "action": {
-                "current_user": "自分",
                 "open_full": "完全なインスタンス履歴を開く"
             },
             "toast": {
@@ -4954,6 +4953,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "インスタンスIDをコピー",
+                "copy_world_name": "ワールド名をコピー",
                 "more_actions": "その他の操作"
             },
             "header": "インスタンス履歴",

@@ -37,8 +37,47 @@ vi.mock('@/components/sidebar/useVirtualSidebarRows', () => ({
 import {
     InstanceHistoryList,
     InstanceHistoryRow,
+    resolveGrouping,
     rowKey
 } from './InstanceHistoryList';
+
+describe('resolveGrouping', () => {
+    function rowsOnDays(days: string[]) {
+        return days.map((day, index) => ({
+            createdAt: `${day}T10:0${index}:00Z`,
+            location: `wrld_test:${index}`,
+            time: 60_000,
+            events: [1]
+        }));
+    }
+
+    it('groups by month when most days hold a single visit', () => {
+        const rows = rowsOnDays([
+            '2026-06-29',
+            '2026-05-11',
+            '2026-05-10',
+            '2026-04-30'
+        ]);
+
+        expect(resolveGrouping(rows, true)).toBe('month');
+    });
+
+    it('groups by day when days hold several visits', () => {
+        const rows = rowsOnDays([
+            '2026-06-29',
+            '2026-06-29',
+            '2026-06-28',
+            '2026-06-28'
+        ]);
+
+        expect(resolveGrouping(rows, true)).toBe('day');
+    });
+
+    it('disables grouping when the caller opts out', () => {
+        expect(resolveGrouping(rowsOnDays(['2026-06-29']), false)).toBe('none');
+        expect(resolveGrouping([], true)).toBe('none');
+    });
+});
 
 describe('InstanceHistoryRow', () => {
     it('keeps row selection and deletion as separate native buttons', async () => {
@@ -56,6 +95,7 @@ describe('InstanceHistoryRow', () => {
             <InstanceHistoryRow
                 row={row}
                 selected={false}
+                showDate={false}
                 onOpenDetails={onOpenDetails}
                 onDeleteRow={onDeleteRow}
             />

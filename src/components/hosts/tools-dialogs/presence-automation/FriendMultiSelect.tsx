@@ -173,7 +173,7 @@ export function FriendMultiSelect({
                             })}
                             {!visibleOptions.length ? (
                                 <div className="text-muted-foreground p-3 text-xs">
-                                    {t('common.search_no_results')}
+                                    {t('empty_state.search_no_results')}
                                 </div>
                             ) : null}
                         </div>

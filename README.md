@@ -4,7 +4,7 @@
 
 ### The fast, lightweight VRCX.
 
-English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
+English | [Français](README.fr-FR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
 
 [![Release](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/version.json&style=flat&color=4c566a&labelColor=1f2328&logo=github&logoColor=white)](https://github.com/Map1en/VRCX-0/releases/latest)
 [![Downloads](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/downloads.json&style=flat&color=4c566a&labelColor=1f2328)](https://github.com/Map1en/VRCX-0/releases)
@@ -23,11 +23,11 @@ Windows · macOS · Linux
 
 </div>
 
-VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers, rebuilt on a native Rust core (Tauri + React) with significantly improved performance: years of accumulated history stay smooth, and both memory usage and install size are far below the original.
+VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers, with a Rust backend (Tauri + React) and significantly improved performance: years of accumulated history stay smooth, and both memory usage and install size are far below the original.
 
 On first launch it automatically imports your existing VRCX data and settings. The original data is never modified — you can switch back at any time.
 
-The upstream VRCX project has shifted toward maintenance; VRCX-0 is where new features are being built.
+VRCX is a mature, stable release; VRCX-0 is where new features are being built.
 
 ## Install
 
@@ -48,7 +48,7 @@ You only need to do this once — VRCX-0 updates itself from then on.
   sluggish stays smooth in VRCX-0; it runs fine even on a potato PC or a home
   server
 - **About 50%–70% less memory than VRCX** in normal use
-- **Background mode** brings it down to just tens of MB while all core
+- **Background mode** brings memory down to just tens of MB while all core
   features keep running
 - **Smaller than a single avatar bundle** — just over 10 MB to download, just
   over 30 MB on disk; over 10× smaller than VRCX
@@ -65,8 +65,9 @@ Beyond that:
 - **Per-account local history** — game logs and account-specific history are
   stored separately, so activity no longer gets mixed into a single timeline
   when you use multiple accounts
-- **Backup & restore** — one-click compressed backup with scheduled automatic
-  backups and multiple versions; restore from any backup at any time
+- **Backup & restore** — one-click compressed backup of your database, with
+  scheduled automatic backups and multiple versions; restore from any backup at
+  any time
 - **Shareable world collections** — turn your favorite worlds into a shareable
   page others can browse, open, or import; also supports share links for
   individual worlds and avatars
@@ -77,11 +78,11 @@ Beyond that:
   **OpenXR on Linux (tested with WiVRn)**
 - **Community Themes** — browse and install themes from a catalog, set a custom
   background image, and layer your own CSS on top
-- **Notifications** — desktop, text-to-speech, VR overlay, and webhooks — four
-  channels independently configured per event type; webhooks use a
-  Discord-compatible format
+- **Notifications** — desktop, text-to-speech, VR overlay, wrist overlay, and
+  webhooks — five channels independently configured per event type; webhooks
+  use a Discord-compatible format
 - Full keyboard navigation
-- Integration API for third-party apps — currently room data, expanding over time
+- Integration API for third-party apps — real-time room data while in-game, expanding over time
 - Headless mode for advanced setups — see `crates/headless`
 
 ## License

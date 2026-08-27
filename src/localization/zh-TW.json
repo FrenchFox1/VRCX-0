@@ -1123,7 +1123,6 @@
                 "end": "結束"
             },
             "action": {
-                "current_user": "自己",
                 "open_full": "開啟完整房間歷史"
             },
             "toast": {
@@ -4960,6 +4959,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "複製房間 ID",
+                "copy_world_name": "複製世界名稱",
                 "more_actions": "更多操作"
             },
             "header": "過去的房間",

@@ -91,7 +91,7 @@ describe('instanceHistoryDateRange', () => {
         });
     });
 
-    it('adds the bounded default for every search scope with no user date', () => {
+    it('bounds the self scope by default and leaves other users unbounded', () => {
         const now = new Date('2026-07-03T12:00:00.000Z');
 
         expect(
@@ -122,11 +122,8 @@ describe('instanceHistoryDateRange', () => {
                 now
             })
         ).toEqual({
-            range: {
-                from: new Date('2026-06-03T12:00:00.000Z'),
-                to: now
-            },
-            source: 'default'
+            range: { from: null, to: null },
+            source: 'unbounded'
         });
         expect(
             resolveScopedInstanceHistoryDateRange({
@@ -144,7 +141,7 @@ describe('instanceHistoryDateRange', () => {
         });
     });
 
-    it('preserves defaults and user dates but restores the self bound after an unbounded user search', () => {
+    it('keeps user dates, drops the self default when scoping to another user, and restores it on the way back', () => {
         const userRange = {
             from: new Date('2026-01-01T00:00:00.000Z'),
             to: new Date('2026-01-02T00:00:00.000Z')
@@ -160,8 +157,8 @@ describe('instanceHistoryDateRange', () => {
                 }
             })
         ).toEqual({
-            range: userRange,
-            source: 'default'
+            range: { from: null, to: null },
+            source: 'unbounded'
         });
         expect(
             resolveScopedInstanceHistoryDateRange({

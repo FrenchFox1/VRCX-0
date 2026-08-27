@@ -362,7 +362,7 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                     )}
                     description={
                         search.trim()
-                            ? t('common.search_no_results')
+                            ? t('empty_state.search_no_results')
                             : undefined
                     }
                     className="min-h-40 flex-none"

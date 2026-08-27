@@ -1123,7 +1123,6 @@
                 "end": "Fim"
             },
             "action": {
-                "current_user": "Eu",
                 "open_full": "Abrir histórico completo de instâncias"
             },
             "toast": {
@@ -4960,6 +4959,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Copiar ID da instância",
+                "copy_world_name": "Copiar nome do mundo",
                 "more_actions": "Mais ações"
             },
             "header": "Histórico de Instâncias",

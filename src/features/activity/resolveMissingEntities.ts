@@ -9,19 +9,16 @@ export async function resolveMissingEntities<T>({
     fetchOne: (id: string) => Promise<T | null>;
     onResolved: (id: string, value: T) => void;
 }): Promise<void> {
-    const resolved = await Promise.all(
-        ids.map((id) =>
-            fetchOne(id)
-                .then((value) => [id, value] as const)
-                .catch(() => [id, null] as const)
-        )
+    await Promise.all(
+        ids.map(async (id) => {
+            try {
+                const value = await fetchOne(id);
+                if (value && isActive()) {
+                    onResolved(id, value);
+                }
+            } catch {
+                return;
+            }
+        })
     );
-    if (!isActive()) {
-        return;
-    }
-    for (const [id, value] of resolved) {
-        if (value) {
-            onResolved(id, value);
-        }
-    }
 }
