@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_assistant_tables;
 use crate::database::DatabaseService;
-use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert};
+use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert, OwnerId};
 use crate::Error;
 
 #[derive(Debug, Clone)]
@@ -17,7 +15,7 @@ pub struct PersistedMessage {
 
 #[derive(Debug, Clone)]
 pub struct PersistedSession {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub id: String,
     pub title: String,
     pub created_at: String,
@@ -28,24 +26,23 @@ pub struct PersistedSession {
     pub model: String,
     pub allow_writes: bool,
     pub playbook_mode: String,
-    pub messages: Vec<PersistedMessage>,
 }
 
 pub fn assistant_sessions_load(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Vec<PersistedSession>, Error> {
     ensure_assistant_tables(db)?;
     let owner_id = owner_id_for_filter(db, owner_user_id)?;
     let params = ParamsBuilder::new().set("owner_id", owner_id).build();
-    let mut sessions: Vec<PersistedSession> = db
+    let sessions = db
         .execute(
             "SELECT s.id, s.title, s.created_at, s.updated_at, s.entity_panel_open, s.surfaced_entities, s.endpoint_id, s.model, s.allow_writes, s.playbook_mode, COALESCE(o.user_id, '') FROM assistant_session s LEFT JOIN owners o ON o.id = s.owner_id WHERE s.owner_id IN (0, @owner_id) ORDER BY s.updated_at DESC",
             &params,
         )?
         .into_iter()
         .map(|row| PersistedSession {
-            owner_user_id: row_string(&row, 10),
+            owner_user_id: OwnerId::new(row_string(&row, 10)),
             id: row_string(&row, 0),
             title: row_string(&row, 1),
             created_at: row_string(&row, 2),
@@ -56,35 +53,42 @@ pub fn assistant_sessions_load(
             model: row_string(&row, 7),
             allow_writes: row_i64(&row, 8) != 0,
             playbook_mode: row_string(&row, 9),
-            messages: Vec::new(),
         })
         .collect();
-
-    let mut messages_by_session: HashMap<String, Vec<PersistedMessage>> = HashMap::new();
-    for row in db.execute(
-        "SELECT m.id, m.session_id, m.seq, m.role, m.content, m.created_at FROM assistant_message m JOIN assistant_session s ON s.id = m.session_id WHERE s.owner_id IN (0, @owner_id) ORDER BY m.session_id, m.seq ASC",
-        &params,
-    )? {
-        messages_by_session
-            .entry(row_string(&row, 1))
-            .or_default()
-            .push(PersistedMessage {
-                id: row_string(&row, 0),
-                seq: row_i64(&row, 2),
-                role: row_string(&row, 3),
-                content: row_string(&row, 4),
-                created_at: row_string(&row, 5),
-            });
-    }
-    for session in &mut sessions {
-        session.messages = messages_by_session.remove(&session.id).unwrap_or_default();
-    }
     Ok(sessions)
+}
+
+pub fn assistant_session_messages_load(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    session_id: &str,
+) -> Result<Vec<PersistedMessage>, Error> {
+    ensure_assistant_tables(db)?;
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
+    let params = ParamsBuilder::new()
+        .set("owner_id", owner_id)
+        .set("session_id", session_id.to_string())
+        .build();
+    let messages = db
+        .execute(
+            "SELECT m.id, m.seq, m.role, m.content, m.created_at FROM assistant_message m JOIN assistant_session s ON s.id = m.session_id WHERE m.session_id = @session_id AND s.owner_id IN (0, @owner_id) ORDER BY m.seq ASC",
+            &params,
+        )?
+        .into_iter()
+        .map(|row| PersistedMessage {
+            id: row_string(&row, 0),
+            seq: row_i64(&row, 1),
+            role: row_string(&row, 2),
+            content: row_string(&row, 3),
+            created_at: row_string(&row, 4),
+        })
+        .collect();
+    Ok(messages)
 }
 
 pub fn assistant_session_upsert(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     id: &str,
     title: &str,
     created_at: &str,
@@ -149,7 +153,7 @@ pub fn assistant_session_set_runtime(
 
 pub fn assistant_session_delete(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     id: &str,
 ) -> Result<(), Error> {
     ensure_assistant_tables(db)?;
@@ -223,14 +227,14 @@ mod tests {
     #[test]
     fn round_trips_sessions_and_messages() {
         let db = test_db("assistant-roundtrip");
-        assistant_session_upsert(&db, "usr_a", "ses_1", "", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, &OwnerId::new("usr_a"), "ses_1", "", "t0", "t0").unwrap();
         assistant_session_set_runtime(&db, "ses_1", Some("ep_1"), Some("model-a"), true, "guided")
             .unwrap();
         assistant_message_insert(&db, "msg_1", "ses_1", 1, "user", "hi", "t1").unwrap();
-        assistant_session_upsert(&db, "usr_a", "ses_1", "hi", "t0", "t1").unwrap();
+        assistant_session_upsert(&db, &OwnerId::new("usr_a"), "ses_1", "hi", "t0", "t1").unwrap();
         assistant_message_insert(&db, "msg_2", "ses_1", 2, "assistant", "hello", "t2").unwrap();
 
-        let loaded = assistant_sessions_load(&db, "usr_a").unwrap();
+        let loaded = assistant_sessions_load(&db, &OwnerId::new("usr_a")).unwrap();
         assert_eq!(loaded.len(), 1);
         let session = &loaded[0];
         assert_eq!(session.title, "hi");
@@ -238,20 +242,22 @@ mod tests {
         assert_eq!(session.model, "model-a");
         assert!(session.allow_writes);
         assert_eq!(session.playbook_mode, "guided");
-        assert_eq!(session.messages.len(), 2);
-        assert_eq!(session.messages[0].seq, 1);
-        assert_eq!(session.messages[1].role, "assistant");
+        let messages =
+            assistant_session_messages_load(&db, &OwnerId::new("usr_a"), "ses_1").unwrap();
+        assert_eq!(messages.len(), 2);
+        assert_eq!(messages[0].seq, 1);
+        assert_eq!(messages[1].role, "assistant");
     }
 
     #[test]
     fn delete_removes_session_and_messages() {
         let db = test_db("assistant-delete");
-        assistant_session_upsert(&db, "usr_a", "ses_1", "x", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, &OwnerId::new("usr_a"), "ses_1", "x", "t0", "t0").unwrap();
         assistant_message_insert(&db, "msg_1", "ses_1", 1, "user", "hi", "t1").unwrap();
 
-        assistant_session_delete(&db, "usr_a", "ses_1").unwrap();
+        assistant_session_delete(&db, &OwnerId::new("usr_a"), "ses_1").unwrap();
 
-        assert!(assistant_sessions_load(&db, "usr_a")
+        assert!(assistant_sessions_load(&db, &OwnerId::new("usr_a"))
             .unwrap()
             .is_empty());
         let remaining = db
@@ -266,11 +272,12 @@ mod tests {
     #[test]
     fn sessions_are_scoped_and_cross_owner_delete_is_ignored() {
         let db = test_db("assistant-owner-scope");
-        assistant_session_upsert(&db, "usr_a", "ses_a", "a", "t0", "t0").unwrap();
-        assistant_session_upsert(&db, "usr_b", "ses_b", "b", "t0", "t0").unwrap();
-        assistant_session_upsert(&db, "", "ses_shared", "shared", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, &OwnerId::new("usr_a"), "ses_a", "a", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, &OwnerId::new("usr_b"), "ses_b", "b", "t0", "t0").unwrap();
+        assistant_session_upsert(&db, &OwnerId::new(""), "ses_shared", "shared", "t0", "t0")
+            .unwrap();
 
-        let mut a_ids = assistant_sessions_load(&db, "usr_a")
+        let mut a_ids = assistant_sessions_load(&db, &OwnerId::new("usr_a"))
             .unwrap()
             .into_iter()
             .map(|session| session.id)
@@ -278,8 +285,8 @@ mod tests {
         a_ids.sort();
         assert_eq!(a_ids, vec!["ses_a", "ses_shared"]);
 
-        assistant_session_delete(&db, "usr_b", "ses_a").unwrap();
-        assert!(assistant_sessions_load(&db, "usr_a")
+        assistant_session_delete(&db, &OwnerId::new("usr_b"), "ses_a").unwrap();
+        assert!(assistant_sessions_load(&db, &OwnerId::new("usr_a"))
             .unwrap()
             .iter()
             .any(|session| session.id == "ses_a"));

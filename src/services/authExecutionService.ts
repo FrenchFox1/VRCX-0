@@ -11,11 +11,14 @@ import authRepository, {
     type SavedCredentialRecord
 } from '@/repositories/authRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { clearUserDialogCaches } from '@/services/userDialogSessionCacheService';
+import { isRecord } from '@/shared/utils/record';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useNotificationStore } from '@/state/notificationStore';
@@ -51,14 +54,20 @@ type AuthExecutionError = Error & {
     authSnapshot?: SavedAuthSnapshot | null;
 };
 
+export function getAuthSnapshotFromExecutionError(
+    error: unknown
+): SavedAuthSnapshot | null {
+    if (!(error instanceof Error)) {
+        return null;
+    }
+    const authError: AuthExecutionError = error;
+    return authError.authSnapshot ?? null;
+}
+
 type AuthUserRecord = Record<string, unknown> & {
     id?: string;
     displayName?: string;
     username?: string;
-};
-type LoginParams = {
-    username: string;
-    password: string;
 };
 type TwoFactorMode = 'emailOtp' | 'otp' | 'totp';
 type RestartLoginChallenge = (attemptId: string) => Promise<LoginSessionState>;
@@ -67,27 +76,10 @@ type ResolvedLoginSession = {
     snapshot: SavedAuthSnapshot;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function normalizeText(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-function normalizeLoginParams(
-    loginParams: Record<string, unknown> = {}
-): LoginParams {
-    return {
-        username:
-            typeof loginParams.username === 'string'
-                ? loginParams.username.trim()
-                : '',
-        password:
-            typeof loginParams.password === 'string' ? loginParams.password : ''
-    };
 }
 
 function createAuthExecutionError(
@@ -172,9 +164,11 @@ export function setAuthenticatingSessionState() {
 
 function resetCurrentUserRuntimeCaches() {
     clearEntityQueryCache();
+    clearUserDialogCaches();
     resetVrchatConfigSnapshot();
     useAssistantChatStore.getState().resetAssistantChatState();
     useFriendRosterStore.getState().resetRoster();
+    useFriendLocationTimeStore.getState().reset();
     useFavoriteStore.getState().resetFavorites();
     useFavoriteRevisionStore.getState().reset();
     useFeedLiveStore.getState().resetFeedLive();
@@ -518,14 +512,14 @@ export async function executeManualLogin({
     password,
     saveCredentials = false
 }: {
-    username?: unknown;
-    password?: unknown;
+    username?: string;
+    password?: string;
     saveCredentials?: boolean;
 }) {
-    const loginParams = normalizeLoginParams({
-        username,
-        password
-    });
+    const loginParams = {
+        username: username?.trim() ?? '',
+        password: password ?? ''
+    };
 
     if (!loginParams.username || !loginParams.password) {
         throw createAuthExecutionError(

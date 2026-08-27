@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use std::ops::{Deref, DerefMut};
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize, specta::Type)]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, specta::Type)]
 #[serde(transparent)]
 pub struct RawJson(pub Value);
 
@@ -15,9 +16,57 @@ impl RawJson {
     }
 }
 
+impl Deref for RawJson {
+    type Target = Value;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_value()
+    }
+}
+
+impl DerefMut for RawJson {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl From<Value> for RawJson {
     fn from(value: Value) -> Self {
         Self(value)
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, specta::Type)]
+#[serde(transparent)]
+pub struct RawJsonObject(pub Map<String, Value>);
+
+impl RawJsonObject {
+    pub fn as_map(&self) -> &Map<String, Value> {
+        &self.0
+    }
+
+    pub fn into_map(self) -> Map<String, Value> {
+        self.0
+    }
+}
+
+impl From<Map<String, Value>> for RawJsonObject {
+    fn from(value: Map<String, Value>) -> Self {
+        Self(value)
+    }
+}
+
+impl Deref for RawJsonObject {
+    type Target = Map<String, Value>;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_map()
+    }
+}
+
+impl DerefMut for RawJsonObject {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -49,6 +98,44 @@ pub fn scalar_text_of(value: Option<&Value>) -> Option<String> {
         _ => None,
     }
     .filter(|text| !text.is_empty())
+}
+
+pub fn scalar_text_array(value: Option<&Value>) -> Vec<String> {
+    match value {
+        Some(Value::Array(values)) => values
+            .iter()
+            .filter_map(|value| scalar_text_of(Some(value)))
+            .collect(),
+        Some(value) => scalar_text_of(Some(value))
+            .map(|text| vec![text])
+            .unwrap_or_default(),
+        None => Vec::new(),
+    }
+}
+
+pub fn object_scalar_text(value: &Value, keys: &[&str]) -> String {
+    let Some(object) = value.as_object() else {
+        return String::new();
+    };
+    for key in keys {
+        let text = scalar_text(object.get(*key));
+        if !text.is_empty() {
+            return text;
+        }
+    }
+    String::new()
+}
+
+pub fn result_rows(value: &Value) -> Vec<Value> {
+    if let Some(rows) = value.as_array() {
+        return rows.clone();
+    }
+    value
+        .as_object()
+        .and_then(|object| object.get("results"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
 }
 
 fn i64_of(value: Option<&Value>) -> Option<i64> {

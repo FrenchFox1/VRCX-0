@@ -4,59 +4,22 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use vrcx_0_contracts::world_collections::{
+    WorldCollectionCreatePayload, WorldCollectionPayloadWorld,
+};
+use vrcx_0_contracts::WorldSummaryOutput;
 use vrcx_0_core::vrchat_ids::is_world_id;
-use vrcx_0_integrations::world_collections::{
-    create_world_collection, mint_world_collection_token, WorldCollectionCreatePayload,
-    WorldCollectionCreateResponse, WorldCollectionPayloadWorld, WorldCollectionShareError,
-    WorldCollectionTokenMintResponse, WORLD_COLLECTIONS_SITE_ORIGIN,
-};
-use vrcx_0_persistence::{
-    config::{get_json, set_json},
-    memos::memo_get_worlds_many,
-    worlds::{world_cache_get_many, WorldSummaryOutput},
-    DatabaseService,
-};
 
-use crate::Error;
+use super::blocking_db::run_blocking_db;
+use super::ports::{WorldCollectionRemote, WorldCollectionStore};
+use vrcx_0_application_core::Error;
 
 pub const SHARE_COLLECTION_MAX_WORLDS: usize = 1_000;
 const SHARE_COLLECTION_WORLD_BATCH_SIZE: usize = 500;
-const SHARE_OWNER_TOKENS_CONFIG_KEY: &str = "VRCX_ShareOwnerKeys";
 const SHARE_OWNER_TOKEN_PREFIX: &str = "w1.";
 const SHARE_OWNER_TOKEN_BYTES: usize = 32;
+const WORLD_COLLECTIONS_SITE_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 static SHARE_OWNER_TOKENS_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
-
-trait WorldCollectionShareApi {
-    async fn mint_token(
-        &self,
-        owner_hint: &str,
-    ) -> Result<WorldCollectionTokenMintResponse, WorldCollectionShareError>;
-
-    async fn create_collection(
-        &self,
-        token: &str,
-        payload: &WorldCollectionCreatePayload,
-    ) -> Result<WorldCollectionCreateResponse, WorldCollectionShareError>;
-}
-
-struct LiveWorldCollectionShareApi;
-
-impl WorldCollectionShareApi for LiveWorldCollectionShareApi {
-    async fn mint_token(
-        &self,
-        owner_hint: &str,
-    ) -> Result<WorldCollectionTokenMintResponse, WorldCollectionShareError> {
-        mint_world_collection_token(owner_hint).await
-    }
-
-    async fn create_collection(
-        &self,
-        token: &str,
-        payload: &WorldCollectionCreatePayload,
-    ) -> Result<WorldCollectionCreateResponse, WorldCollectionShareError> {
-        create_world_collection(token, payload).await
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -68,9 +31,26 @@ pub struct ShareCollectionCreateInput {
 }
 
 pub struct ShareCollectionDeps<'a> {
-    pub db: &'a DatabaseService,
+    pub(crate) store: &'a dyn WorldCollectionStore,
+    pub(crate) remote: &'a dyn WorldCollectionRemote,
     pub current_user_id: &'a str,
     pub current_user_display_name: &'a str,
+}
+
+impl<'a> ShareCollectionDeps<'a> {
+    pub fn new(
+        store: &'a dyn WorldCollectionStore,
+        remote: &'a dyn WorldCollectionRemote,
+        current_user_id: &'a str,
+        current_user_display_name: &'a str,
+    ) -> Self {
+        Self {
+            store,
+            remote,
+            current_user_id,
+            current_user_display_name,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -118,7 +98,7 @@ pub fn prepare_share_collection_payload(
 
     let mut rows = Vec::new();
     for world_id_batch in capped_world_ids.chunks(SHARE_COLLECTION_WORLD_BATCH_SIZE) {
-        rows.extend(world_cache_get_many(deps.db, world_id_batch)?);
+        rows.extend(deps.store.world_summaries(world_id_batch)?);
     }
     let rows_by_id = rows
         .into_iter()
@@ -128,7 +108,7 @@ pub fn prepare_share_collection_payload(
     let mut memos_by_id: HashMap<String, String> = HashMap::new();
     if input.include_notes {
         for world_id_batch in capped_world_ids.chunks(SHARE_COLLECTION_WORLD_BATCH_SIZE) {
-            for memo in memo_get_worlds_many(deps.db, world_id_batch)? {
+            for memo in deps.store.world_memos(world_id_batch)? {
                 memos_by_id.insert(memo.world_id, memo.memo);
             }
         }
@@ -144,7 +124,7 @@ pub fn prepare_share_collection_payload(
             });
             continue;
         };
-        if !row.release_status.eq_ignore_ascii_case("public") {
+        if !row.release_status.as_str().eq_ignore_ascii_case("public") {
             continue;
         }
         if row.id.trim().is_empty()
@@ -187,22 +167,21 @@ pub async fn share_collection_create(
     deps: ShareCollectionDeps<'_>,
     input: ShareCollectionCreateInput,
 ) -> Result<ShareCollectionCreateResult, Error> {
-    share_collection_create_with_api(deps, input, &LiveWorldCollectionShareApi).await
+    share_collection_create_with_remote(deps, input).await
 }
 
-async fn share_collection_create_with_api(
+async fn share_collection_create_with_remote(
     deps: ShareCollectionDeps<'_>,
     input: ShareCollectionCreateInput,
-    api: &impl WorldCollectionShareApi,
 ) -> Result<ShareCollectionCreateResult, Error> {
-    let db = deps.db;
+    let store = deps.store;
+    let remote = deps.remote;
     let current_user_id = deps.current_user_id;
-    let prepared = prepare_share_collection_payload(deps, input)?;
-    let owner_token = get_or_create_share_owner_token_with_api(db, current_user_id, api).await?;
-    let response = api
+    let prepared = run_blocking_db(move || prepare_share_collection_payload(deps, input))?;
+    let owner_token = get_or_create_share_owner_token(store, remote, current_user_id).await?;
+    let response = remote
         .create_collection(&owner_token, &prepared.payload)
-        .await
-        .map_err(|error| Error::Custom(error.to_string()))?;
+        .await?;
     let server_skipped_count = response.skipped_worlds.len();
     let world_count = prepared
         .payload
@@ -241,48 +220,38 @@ pub(crate) fn payload_world_from_row(
         author_id: row.author_id.clone(),
         name: row.name.clone(),
         author_name: row.author_name.clone(),
-        created_at: row.created_at.clone(),
+        created_at: row.created_at.to_string(),
         image_url: row.image_url.clone(),
         description: row.description.clone(),
         release_status: row.release_status.clone(),
         thumbnail_image_url,
         comment,
-        updated_at: row.updated_at.clone(),
+        updated_at: row.updated_at.to_string(),
         version: row.version,
     }
 }
 
 pub async fn get_or_create_share_owner_token(
-    db: &DatabaseService,
+    store: &dyn WorldCollectionStore,
+    remote: &dyn WorldCollectionRemote,
     user_id: &str,
-) -> Result<String, Error> {
-    get_or_create_share_owner_token_with_api(db, user_id, &LiveWorldCollectionShareApi).await
-}
-
-async fn get_or_create_share_owner_token_with_api(
-    db: &DatabaseService,
-    user_id: &str,
-    api: &impl WorldCollectionShareApi,
 ) -> Result<String, Error> {
     let user_id = require_current_user_id(user_id)?;
     let _guard = SHARE_OWNER_TOKENS_LOCK.lock().await;
-    let mut owner_tokens = read_share_owner_tokens(db)?;
+    let mut owner_tokens = run_blocking_db(|| read_share_owner_tokens(store))?;
     if let Some(owner_token) = share_owner_token_for_user(&owner_tokens, user_id)? {
         return Ok(owner_token);
     }
 
     let owner_hint = share_collection_owner_hint(user_id);
-    let response = api
-        .mint_token(&owner_hint)
-        .await
-        .map_err(|error| Error::Custom(error.to_string()))?;
+    let response = remote.mint_token(&owner_hint).await?;
     if !is_valid_share_owner_token(&response.token) {
         return Err(Error::Custom(
             "Share collection token service returned an invalid token.".into(),
         ));
     }
     set_share_owner_token(&mut owner_tokens, user_id, &response.token)?;
-    set_json(db, SHARE_OWNER_TOKENS_CONFIG_KEY, &owner_tokens)?;
+    run_blocking_db(|| store.write_owner_tokens(&owner_tokens))?;
     Ok(response.token)
 }
 
@@ -310,8 +279,8 @@ fn require_current_user_id(user_id: &str) -> Result<&str, Error> {
     Ok(user_id)
 }
 
-fn read_share_owner_tokens(db: &DatabaseService) -> Result<serde_json::Value, Error> {
-    let raw = get_json(db, SHARE_OWNER_TOKENS_CONFIG_KEY, serde_json::json!({}))?;
+fn read_share_owner_tokens(store: &dyn WorldCollectionStore) -> Result<serde_json::Value, Error> {
+    let raw = store.read_owner_tokens()?;
     if raw.is_object() {
         Ok(raw)
     } else {
@@ -376,66 +345,111 @@ fn normalize_world_ids(world_ids: &[String]) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        path::PathBuf,
-        sync::atomic::{AtomicUsize, Ordering},
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Mutex,
     };
 
-    use serde_json::json;
-    use vrcx_0_persistence::{
-        cache_entities::CacheEntityInput, worlds::world_cache_upsert, DatabaseService,
+    use serde_json::{json, Value};
+    use vrcx_0_contracts::world_collections::{
+        WorldCollectionCreateResponse, WorldCollectionSnapshotResponse,
+        WorldCollectionTokenMintResponse, WorldOpenRegisterPayload,
     };
+    use vrcx_0_core::ReleaseStatus;
 
     use super::*;
 
-    struct TestDir(PathBuf);
+    struct FakeStore {
+        tokens: Mutex<Value>,
+        worlds: Vec<WorldSummaryOutput>,
+    }
 
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!(
-                "vrcx0-share-contract-{name}-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&path).unwrap();
-            Self(path)
+    impl WorldCollectionStore for FakeStore {
+        fn world_summaries(&self, world_ids: &[String]) -> Result<Vec<WorldSummaryOutput>, Error> {
+            Ok(self
+                .worlds
+                .iter()
+                .filter(|world| world_ids.contains(&world.id))
+                .cloned()
+                .collect())
+        }
+
+        fn world_memos(
+            &self,
+            _world_ids: &[String],
+        ) -> Result<Vec<super::super::WorldMemo>, Error> {
+            Ok(Vec::new())
+        }
+
+        fn world_summary(&self, world_id: &str) -> Result<Option<WorldSummaryOutput>, Error> {
+            Ok(self
+                .worlds
+                .iter()
+                .find(|world| world.id == world_id)
+                .cloned())
+        }
+
+        fn read_owner_tokens(&self) -> Result<Value, Error> {
+            Ok(self
+                .tokens
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .clone())
+        }
+
+        fn write_owner_tokens(&self, owner_tokens: &Value) -> Result<(), Error> {
+            *self
+                .tokens
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()) = owner_tokens.clone();
+            Ok(())
         }
     }
 
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-
-    struct RejectingShareApi {
+    struct RejectingRemote {
         mint_calls: AtomicUsize,
         create_calls: AtomicUsize,
     }
 
-    impl WorldCollectionShareApi for RejectingShareApi {
-        async fn mint_token(
-            &self,
-            _owner_hint: &str,
-        ) -> Result<WorldCollectionTokenMintResponse, WorldCollectionShareError> {
-            self.mint_calls.fetch_add(1, Ordering::SeqCst);
-            Ok(WorldCollectionTokenMintResponse {
-                token: valid_token(),
+    impl WorldCollectionRemote for RejectingRemote {
+        fn mint_token<'a>(
+            &'a self,
+            _owner_hint: &'a str,
+        ) -> super::super::WorldCollectionFuture<'a, WorldCollectionTokenMintResponse> {
+            Box::pin(async move {
+                self.mint_calls.fetch_add(1, Ordering::SeqCst);
+                Ok(WorldCollectionTokenMintResponse {
+                    token: valid_token(),
+                })
             })
         }
 
-        async fn create_collection(
-            &self,
-            _token: &str,
-            _payload: &WorldCollectionCreatePayload,
-        ) -> Result<WorldCollectionCreateResponse, WorldCollectionShareError> {
-            self.create_calls.fetch_add(1, Ordering::SeqCst);
-            Err(WorldCollectionShareError::Custom(
-                "share collection upload returned HTTP 401 Unauthorized".into(),
-            ))
+        fn create_collection<'a>(
+            &'a self,
+            _token: &'a str,
+            _payload: &'a WorldCollectionCreatePayload,
+        ) -> super::super::WorldCollectionFuture<'a, WorldCollectionCreateResponse> {
+            Box::pin(async move {
+                self.create_calls.fetch_add(1, Ordering::SeqCst);
+                Err(Error::Custom(
+                    "share collection upload returned HTTP 401 Unauthorized".into(),
+                ))
+            })
+        }
+
+        fn fetch_collection<'a>(
+            &'a self,
+            _id: &'a str,
+        ) -> super::super::WorldCollectionFuture<'a, WorldCollectionSnapshotResponse> {
+            Box::pin(async { unreachable!() })
+        }
+
+        fn register_world<'a>(
+            &'a self,
+            _token: &'a str,
+            _payload: &'a WorldOpenRegisterPayload,
+        ) -> super::super::WorldCollectionFuture<'a, ()> {
+            Box::pin(async { unreachable!() })
         }
     }
 
@@ -476,40 +490,31 @@ mod tests {
 
     #[tokio::test]
     async fn create_401_preserves_valid_token_without_mint_or_retry() {
-        let dir = TestDir::new("create-401");
-        let db = DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap();
-        let token = valid_token();
-        set_json(
-            &db,
-            SHARE_OWNER_TOKENS_CONFIG_KEY,
-            &json!({ "usr_current": token }),
-        )
-        .unwrap();
-        world_cache_upsert(
-            &db,
-            CacheEntityInput {
-                id: json!("wrld_11111111-1111-1111-1111-111111111111"),
-                author_id: json!("usr_author"),
-                author_name: json!("World Author"),
-                created_at: json!("2026-01-01T00:00:00.000Z"),
-                description: json!("Description"),
-                image_url: json!("https://images.example/world.png"),
-                name: json!("World"),
-                release_status: json!("public"),
-                thumbnail_image_url: json!(""),
-                updated_at: json!("2026-01-02T00:00:00.000Z"),
-                version: json!(1),
-            },
-        )
-        .unwrap();
-        let api = RejectingShareApi {
+        let store = FakeStore {
+            tokens: Mutex::new(json!({ "usr_current": valid_token() })),
+            worlds: vec![WorldSummaryOutput {
+                id: "wrld_11111111-1111-1111-1111-111111111111".into(),
+                author_id: "usr_author".into(),
+                author_name: "World Author".into(),
+                created_at: "2026-01-01T00:00:00.000Z".into(),
+                description: "Description".into(),
+                image_url: "https://images.example/world.png".into(),
+                name: "World".into(),
+                release_status: ReleaseStatus::Public,
+                thumbnail_image_url: String::new(),
+                updated_at: "2026-01-02T00:00:00.000Z".into(),
+                version: 1,
+            }],
+        };
+        let remote = RejectingRemote {
             mint_calls: AtomicUsize::new(0),
             create_calls: AtomicUsize::new(0),
         };
 
-        let error = share_collection_create_with_api(
+        let error = share_collection_create_with_remote(
             ShareCollectionDeps {
-                db: &db,
+                store: &store,
+                remote: &remote,
                 current_user_id: "usr_current",
                 current_user_display_name: "Current User",
             },
@@ -519,16 +524,15 @@ mod tests {
                 include_notes: false,
                 world_ids: vec!["wrld_11111111-1111-1111-1111-111111111111".into()],
             },
-            &api,
         )
         .await
         .unwrap_err();
 
         assert!(error.to_string().contains("401 Unauthorized"));
-        assert_eq!(api.create_calls.load(Ordering::SeqCst), 1);
-        assert_eq!(api.mint_calls.load(Ordering::SeqCst), 0);
+        assert_eq!(remote.create_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(remote.mint_calls.load(Ordering::SeqCst), 0);
         assert_eq!(
-            get_json(&db, SHARE_OWNER_TOKENS_CONFIG_KEY, json!({})).unwrap(),
+            store.read_owner_tokens().unwrap(),
             json!({ "usr_current": valid_token() })
         );
     }

@@ -6,7 +6,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { PreviousInstanceRow } from './instance-activity/instanceActivityTypes';
+import type { InstanceHistoryEntryRow } from './instance-activity/instanceActivityTypes';
 
 const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
@@ -83,10 +83,10 @@ vi.mock('@/components/layout/PageScaffold', () => ({
 }));
 
 vi.mock('@/components/layout/ToolbarControls', () => ({
-    toolbarDateRangeTrigger: () => <button type="button" />,
     ToolbarActions: ({ children }: { children?: ReactNode }) => (
         <div>{children}</div>
     ),
+    ToolbarDivider: () => null,
     ToolbarRefreshButton: () => null,
     ToolbarSearch: () => null,
     ToolbarSegmented: () => null,
@@ -155,8 +155,8 @@ vi.mock('./components/InstanceHistoryList', () => ({
         onDeleteRow,
         dateRangeControl
     }: {
-        visibleRows: PreviousInstanceRow[];
-        onDeleteRow: (row: PreviousInstanceRow) => void;
+        visibleRows: InstanceHistoryEntryRow[];
+        onDeleteRow: (row: InstanceHistoryEntryRow) => void;
         dateRangeControl?: ReactNode;
     }) => (
         <div data-testid="history-list">
@@ -271,12 +271,12 @@ import { InstanceHistoryPage } from './InstanceHistoryPage';
 type Deferred<T> = {
     promise: Promise<T>;
     resolve: (value: T) => void;
-    reject: (reason?: unknown) => void;
+    reject: (reason?: Error) => void;
 };
 
 function deferred<T>(): Deferred<T> {
     let resolve!: (value: T) => void;
-    let reject!: (reason?: unknown) => void;
+    let reject!: (reason?: Error) => void;
     const promise = new Promise<T>((resolvePromise, rejectPromise) => {
         resolve = resolvePromise;
         reject = rejectPromise;
@@ -288,7 +288,7 @@ function row(
     location: string,
     events: number[] = [1],
     createdAt = new Date(Date.now() - 60_000).toISOString()
-): PreviousInstanceRow {
+): InstanceHistoryEntryRow {
     return {
         id: location,
         createdAt,
@@ -323,10 +323,10 @@ describe('InstanceHistoryPage', () => {
 
     it('ignores stale failures after a user switch and stale successes after a range switch', async () => {
         const user = userEvent.setup();
-        const selfRequest = deferred<PreviousInstanceRow[]>();
-        const otherRequest = deferred<PreviousInstanceRow[]>();
-        const firstRangeRequest = deferred<PreviousInstanceRow[]>();
-        const secondRangeRequest = deferred<PreviousInstanceRow[]>();
+        const selfRequest = deferred<InstanceHistoryEntryRow[]>();
+        const otherRequest = deferred<InstanceHistoryEntryRow[]>();
+        const firstRangeRequest = deferred<InstanceHistoryEntryRow[]>();
+        const secondRangeRequest = deferred<InstanceHistoryEntryRow[]>();
         mocks.getPreviousInstancesByUserId
             .mockImplementationOnce(() => selfRequest.promise)
             .mockImplementationOnce(() => otherRequest.promise)
@@ -418,7 +418,6 @@ describe('InstanceHistoryPage', () => {
 
         await waitFor(() =>
             expect(mocks.deleteGameLogInstance).toHaveBeenCalledWith({
-                id: 'usr_self',
                 location: 'wrld_delete:1',
                 events: [41, 42]
             })

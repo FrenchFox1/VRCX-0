@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
+import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { useKnownUserFacts } from '@/lib/useKnownUser';
+import type { AvatarCacheOutput } from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -13,10 +16,9 @@ import {
     buildFavoriteRemoteGroupEntityIds,
     selectFavoritesCollectionsState
 } from './favoritesCollectionsState';
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type { FavoriteSource } from './favoritesTypes';
 import { useAvatarDetailFallbacks } from './useAvatarDetailFallbacks';
 import { useFavoriteRemoteDetails } from './useFavoriteRemoteDetails';
-import { useLocalWorldFavorites } from './useLocalWorldFavorites';
 import { useWorldDetailFallbacks } from './useWorldDetailFallbacks';
 
 function selectRequestedRemoteEntityIds({
@@ -72,7 +74,7 @@ export function useFavoritesCollectionsState({
     const localWorldFavorites = useLocalWorldFavorites(kind === 'world');
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const [avatarHistoryLoading, setAvatarHistoryLoading] = useState(false);
-    const [avatarHistory, setAvatarHistory] = useState<unknown[]>([]);
+    const [avatarHistory, setAvatarHistory] = useState<AvatarCacheOutput[]>([]);
     const friendsMap = useMemo(
         () => new Map(Object.entries(friendsById || {})),
         [friendsById]

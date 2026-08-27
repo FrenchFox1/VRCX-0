@@ -1,5 +1,5 @@
-import type { TFunction } from 'i18next';
 import { useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { buildFavoriteCollectionFriendIdSet } from '@/components/sidebar/friends-sidebar/favoriteCollectionSidebarRows';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -22,15 +22,14 @@ type SidePanelTabDataInput = {
     activeTab: string;
     prefs: SidePanelPreferences;
     setActiveTab: Dispatch<SetStateAction<string>>;
-    t: TFunction;
 };
 
 export function useSidePanelTabData({
     activeTab,
     prefs,
-    setActiveTab,
-    t
+    setActiveTab
 }: SidePanelTabDataInput) {
+    const { t } = useTranslation();
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const onlineIds = useFriendRosterStore((state) => state.onlineIds);
     const favoriteLoadStatus = useFavoriteStore((state) => state.loadStatus);
@@ -119,35 +118,42 @@ export function useSidePanelTabData({
             visibleTabLayout.map((item) => {
                 if (item.type === 'favoriteCollection') {
                     const count = customTabCountById.get(item.id) || 0;
-                    const label = `${item.name} (${count})`;
+                    const countLabel = `(${count})`;
+                    const title = `${item.name} ${countLabel}`;
                     return {
                         value: item.id,
-                        label,
-                        title: label,
+                        label: item.name,
+                        countLabel,
+                        title,
                         icon: item.icon,
                         layoutItem: item
                     };
                 }
                 if (item.systemTab === 'groups') {
-                    const label = t(
+                    const label = t('side_panel.groups');
+                    const countLabel = `(${groupInstances.length})`;
+                    const title = t(
                         'component.side_panel.dynamic.value_value',
                         {
-                            value: t('side_panel.groups'),
+                            value: label,
                             value2: groupInstances.length
                         }
                     );
                     return {
                         value: 'groups',
                         label,
-                        title: label,
+                        countLabel,
+                        title,
                         icon: item.icon,
                         layoutItem: item
                     };
                 }
-                const label = t(
+                const label = t('side_panel.friends');
+                const countLabel = `(${onlineIds.length}/${totalFriendCount})`;
+                const title = t(
                     'component.side_panel.dynamic.value_value_value',
                     {
-                        value: t('side_panel.friends'),
+                        value: label,
                         value2: onlineIds.length,
                         value3: totalFriendCount
                     }
@@ -155,7 +161,8 @@ export function useSidePanelTabData({
                 return {
                     value: 'friends',
                     label,
-                    title: label,
+                    countLabel,
+                    title,
                     icon: item.icon,
                     layoutItem: item
                 };

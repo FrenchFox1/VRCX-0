@@ -27,24 +27,29 @@ type GroupPermissionRecord = Record<string, unknown> & {
 };
 
 export type InstanceActionRecord = Record<string, unknown> & {
-    userCount?: unknown;
-    occupants?: unknown;
-    n_users?: unknown;
-    users?: unknown[];
-    ref?: Partial<InstanceActionRecord>;
+    userCount?: number | null;
+    occupants?: number | null;
+    n_users?: number | null;
+    users?: Array<Record<string, unknown> | string>;
+    ref?: Partial<InstanceActionRecord> | null;
     $disabledContentSettings?: string[];
     group?: GroupPermissionRecord;
     owner?: GroupPermissionRecord;
-    capacity?: unknown;
-    world?: { capacity?: unknown };
-    platforms?: Record<string, unknown>;
-    ownerId?: unknown;
-    closedAt?: unknown;
-    gameServerVersion?: unknown;
-    queueEnabled?: unknown;
-    queueSize?: unknown;
-    ageGate?: unknown;
+    capacity?: number | null;
+    world?: { capacity?: number | null };
+    platforms?: Record<string, number>;
+    ownerId?: string | null;
+    closedAt?: string | null;
+    gameServerVersion?: number | null;
+    queueEnabled?: boolean;
+    queueSize?: number | null;
+    ageGate?: boolean;
 };
+type InstanceRefreshResult = InstanceActionRecord | null | void;
+
+function isInstanceActionRecord(value: unknown): value is InstanceActionRecord {
+    return Boolean(value && typeof value === 'object');
+}
 
 function instanceUserCount(instance: InstanceActionRecord | null) {
     if (!instance) {
@@ -71,10 +76,10 @@ function instanceCapacity(instance: InstanceActionRecord | null) {
 export function resolveInstanceSource(
     instance: unknown
 ): InstanceActionRecord | null {
-    if (!instance || typeof instance !== 'object') {
+    if (!isInstanceActionRecord(instance)) {
         return null;
     }
-    const source = instance as InstanceActionRecord;
+    const source = instance;
     const ref = source.ref;
     if (!ref || typeof ref !== 'object') {
         return source;
@@ -129,10 +134,12 @@ export interface InstanceActionBarControllerInput {
     target: LocationObjectRecord | null;
     instance: unknown;
     friendCount?: number;
-    playerCount?: unknown;
-    providedCapacity?: unknown;
+    playerCount?: number | string | null;
+    providedCapacity?: number | string | null;
     showLaunch: boolean;
-    onRefresh?: (location: string) => unknown | Promise<unknown>;
+    onRefresh?: (
+        location: string
+    ) => InstanceRefreshResult | Promise<InstanceRefreshResult>;
 }
 
 export function useInstanceActionBarController({
@@ -147,8 +154,8 @@ export function useInstanceActionBarController({
     const { t } = useTranslation();
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const confirm = useModalStore((state) => state.confirm);
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);

@@ -1,26 +1,24 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use vrcx_0_application_core::RuntimeOperationStatus;
+use vrcx_0_core::text::normalize_text;
 
 use serde_json::Value;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiJsonResponse};
-
-use crate::{Error, Result};
-use vrcx_0_application_core::vrchat_api::groups::{
-    user_group_permissions_get_input, user_groups_get_input,
-};
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
-use vrcx_0_application_core::{HostSessionRuntime, RuntimeAuthScope};
-use vrcx_0_core::json::scalar_text as value_as_string;
+use vrcx_0_application_core::RuntimeAuthScope;
+use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::VrchatJsonResponse;
+use vrcx_0_core::json::{object_scalar_text, result_rows};
+use vrcx_0_core::GroupPermission;
 
 use super::super::permissions::{parse_permission_map, permissions_for_group};
-use super::super::service::{execute_group_api_raw, GroupApiDeps};
+use super::super::service::{execute_group_api_raw, GroupApiDeps, GroupMembershipRemoteRequests};
 use super::types::{UserGroupsOverviewGroup, UserGroupsOverviewInput, UserGroupsOverviewOutput};
 
 #[derive(Clone)]
 pub struct UserGroupsOverviewDeps {
     pub groups: GroupApiDeps,
     pub auth_scope: RuntimeAuthScope,
-    pub session: HostSessionRuntime,
+    pub remote_requests: Arc<dyn GroupMembershipRemoteRequests>,
 }
 
 pub async fn get_user_groups_overview(
@@ -87,10 +85,11 @@ async fn load_user_groups_overview(
         });
     }
 
-    let group_rows = array_rows(
+    let group_rows = result_rows(
         &execute_vrchat_json_request(
             &deps,
-            user_groups_get_input(endpoint.clone(), current_user_id.clone())?.1,
+            deps.remote_requests
+                .user_groups(endpoint.clone(), current_user_id.clone())?,
             "VRChat user groups overview groups request failed",
         )
         .await?,
@@ -98,7 +97,8 @@ async fn load_user_groups_overview(
 
     let (permission_map, permissions_degraded) = match execute_vrchat_json_request(
         &deps,
-        user_group_permissions_get_input(endpoint.clone(), current_user_id.clone())?.1,
+        deps.remote_requests
+            .user_permissions(endpoint.clone(), current_user_id.clone())?,
         "VRChat user groups overview permissions request failed",
     )
     .await
@@ -116,7 +116,7 @@ async fn load_user_groups_overview(
 
 fn build_overview_groups(
     group_rows: &[Value],
-    permission_map: &HashMap<String, Vec<String>>,
+    permission_map: &HashMap<String, Vec<GroupPermission>>,
 ) -> Vec<UserGroupsOverviewGroup> {
     let mut groups = group_rows
         .iter()
@@ -128,15 +128,15 @@ fn build_overview_groups(
 
 fn group_overview_from_value(
     group: &Value,
-    permission_map: &HashMap<String, Vec<String>>,
+    permission_map: &HashMap<String, Vec<GroupPermission>>,
 ) -> Option<UserGroupsOverviewGroup> {
-    let group_id = object_string(group, &["groupId", "id"]);
+    let group_id = object_scalar_text(group, &["groupId", "id"]);
     if group_id.is_empty() {
         return None;
     }
-    let name = object_string(group, &["name", "displayName"]);
-    let short_code = object_string(group, &["shortCode", "shortcode"]);
-    let icon_url = object_string(
+    let name = object_scalar_text(group, &["name", "displayName"]);
+    let short_code = object_scalar_text(group, &["shortCode", "shortcode"]);
+    let icon_url = object_scalar_text(
         group,
         &["iconUrl", "imageUrl", "thumbnailImageUrl", "bannerUrl"],
     );
@@ -144,7 +144,10 @@ fn group_overview_from_value(
         .as_object()
         .and_then(|object| object.get("memberCount"))
         .and_then(Value::as_i64);
-    let permissions = permissions_for_group(group, permission_map, &group_id);
+    let permissions = permissions_for_group(group, permission_map, &group_id)
+        .into_iter()
+        .map(|permission| permission.as_str().to_string())
+        .collect();
 
     Some(UserGroupsOverviewGroup {
         name: if name.is_empty() {
@@ -166,8 +169,8 @@ async fn execute_vrchat_json_request(
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
-    if response.is_failure() {
-        return Err(Error::Custom(response.error_message_or(fallback)));
+    if let Some(failure) = response.failure_or(fallback) {
+        return Err(failure.into());
     }
     Ok(response.json)
 }
@@ -175,46 +178,17 @@ async fn execute_vrchat_json_request(
 async fn execute_vrchat_api(
     deps: &UserGroupsOverviewDeps,
     request: VrchatApiRequest,
-) -> Result<ApiJsonResponse> {
+) -> Result<VrchatJsonResponse> {
     let response = execute_group_api_raw(&deps.groups, request).await?;
-    Ok(ApiJsonResponse::from(&response))
-}
-
-fn object_string(value: &Value, keys: &[&str]) -> String {
-    let Some(object) = value.as_object() else {
-        return String::new();
-    };
-    for key in keys {
-        let text = value_as_string(object.get(*key));
-        if !text.is_empty() {
-            return text;
-        }
-    }
-    String::new()
-}
-
-fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
+    Ok(VrchatJsonResponse::from(&response))
 }
 
 fn normalize_endpoint(value: &str) -> String {
-    normalize_vrchat_api_endpoint(Some(value))
+    vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint(Some(value))
 }
 
 fn auth_scope_matches(deps: &UserGroupsOverviewDeps, user_id: &str, endpoint: &str) -> bool {
-    vrcx_0_application_core::auth_scope_matches(&deps.auth_scope, &deps.session, user_id, endpoint)
-}
-
-fn array_rows(value: &Value) -> Vec<Value> {
-    if let Some(rows) = value.as_array() {
-        return rows.clone();
-    }
-    value
-        .as_object()
-        .and_then(|object| object.get("results"))
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default()
+    deps.auth_scope.matches(user_id, endpoint)
 }
 
 #[cfg(test)]

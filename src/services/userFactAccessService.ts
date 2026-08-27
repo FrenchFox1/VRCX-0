@@ -6,6 +6,7 @@ import {
     type UserFactMergeOptions
 } from '@/domain/users/userFacts';
 import { commands } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { useUserFactsStore } from '@/state/userFactsStore';
 
 type UserFactIngestEntry = {
@@ -13,16 +14,13 @@ type UserFactIngestEntry = {
     source?: string;
     isFriend?: boolean;
     isCurrentUser?: boolean;
-    stateBucket?: string;
 };
 
 const pendingUserFactEntries = new Map<string, UserFactIngestEntry>();
 let userFactFlushScheduled = false;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function userIdFromRecord(source: Record<string, unknown>): string {
@@ -35,7 +33,7 @@ function userIdFromRecord(source: Record<string, unknown>): string {
     );
 }
 
-function getKnownUserFact(endpoint: unknown, userId: unknown): UserFact | null {
+function getKnownUserFact(endpoint: string, userId: string): UserFact | null {
     const key = userFactKey(endpoint, userId);
     return key ? useUserFactsStore.getState().usersByKey[key] || null : null;
 }
@@ -57,8 +55,7 @@ function ingestUserFactEntries(entries: UserFactIngestEntry[]): void {
             userId,
             entry.source || '',
             entry.isFriend === true ? 'friend' : '',
-            entry.isCurrentUser === true ? 'current' : '',
-            entry.stateBucket || ''
+            entry.isCurrentUser === true ? 'current' : ''
         ].join('\u0000');
         const existing = pendingUserFactEntries.get(key);
         pendingUserFactEntries.set(key, {
@@ -80,7 +77,7 @@ function mergeUserFactInput(
     incoming: Record<string, unknown>,
     userId: string
 ): Record<string, unknown> {
-    const merged = { ...(existing || {}) };
+    const merged = { ...existing };
     for (const [field, value] of Object.entries(incoming)) {
         if (
             value === null ||
@@ -105,7 +102,7 @@ async function flushPendingUserFactEntries(): Promise<void> {
     if (!entries.length) {
         return;
     }
-    await commands.appIngestUserFacts(entries).catch((error: unknown) => {
+    await commands.appIngestUserFacts(entries).catch((error) => {
         console.warn('Failed to ingest user facts:', error);
     });
 }
@@ -136,24 +133,11 @@ function recordUserProfile(
             source:
                 typeof options.source === 'string' ? options.source : 'profile',
             isFriend: Boolean(options.isFriend),
-            isCurrentUser: Boolean(options.isCurrentUser),
-            stateBucket:
-                typeof options.stateBucket === 'string'
-                    ? options.stateBucket
-                    : ''
+            isCurrentUser: Boolean(options.isCurrentUser)
         }
     ]);
 
     return getKnownUserFact(endpoint, id);
-}
-
-function recordUserProfiles(
-    profiles: Array<Record<string, unknown> | null | undefined>,
-    options: UserFactMergeOptions = {}
-): void {
-    for (const profile of Array.isArray(profiles) ? profiles : []) {
-        recordUserProfile(profile, options);
-    }
 }
 
 export {
@@ -163,7 +147,6 @@ export {
     normalizeEndpoint,
     normalizeUserId,
     recordUserProfile,
-    recordUserProfiles,
     resetPendingUserFactEntries,
     userFactKey
 };

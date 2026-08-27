@@ -40,8 +40,13 @@ function pushFriendRows(
     sectionRows: readonly SidebarFriendRecord[],
     {
         currentUserId,
-        isGroupByInstance = false
-    }: { currentUserId?: string; isGroupByInstance?: boolean } = {}
+        isGroupByInstance = false,
+        instanceLocation
+    }: {
+        currentUserId?: string;
+        isGroupByInstance?: boolean;
+        instanceLocation?: string;
+    } = {}
 ) {
     for (const friend of sectionRows) {
         const friendId = normalizeId(friend?.id);
@@ -50,7 +55,8 @@ function pushFriendRows(
             key: `friend:${sectionKey}:${friendId}`,
             friend,
             isCurrentUser: friendId === normalizeId(currentUserId),
-            isGroupByInstance: Boolean(isGroupByInstance)
+            isGroupByInstance: Boolean(isGroupByInstance),
+            instanceLocation
         });
     }
 }
@@ -95,23 +101,16 @@ export function buildFavoriteCollectionFriendIdSet({
 export function buildFavoriteCollectionSameInstanceGroups({
     rows,
     prefs,
-    currentLocationSnapshot,
-    fallbackJoinTimes
+    currentLocationSnapshot
 }: {
     rows: readonly SidebarFriendRecord[];
     prefs: SidebarPreferences;
     currentLocationSnapshot: LastLocationSnapshot;
-    fallbackJoinTimes: Map<string, number>;
 }): SameInstanceGroup[] {
     if (!prefs?.sidebarGroupByInstance) {
         return [];
     }
-    return buildSameInstanceGroups(
-        rows,
-        prefs,
-        currentLocationSnapshot,
-        fallbackJoinTimes
-    );
+    return buildSameInstanceGroups(rows, prefs, currentLocationSnapshot);
 }
 
 export function buildFavoriteCollectionSidebarVirtualRows({
@@ -165,7 +164,11 @@ export function buildFavoriteCollectionSidebarVirtualRows({
                     nextRows,
                     `favoriteCollection:sameInstance:${group.location}:${index}`,
                     group.rows,
-                    { currentUserId, isGroupByInstance: true }
+                    {
+                        currentUserId,
+                        isGroupByInstance: true,
+                        instanceLocation: group.location
+                    }
                 );
             });
         }

@@ -17,12 +17,16 @@ import {
     RECENT_WINDOW_MS,
     shouldMarkSeenRemotely
 } from '@/shared/utils/notificationSeen';
+import { isRecord } from '@/shared/utils/record';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
 const pendingSeenIds = new Set<string>();
+let notificationScopeGeneration = 0;
 
-export type LoadStatus = 'idle' | 'running' | 'ready' | 'error';
+import type { LoadStatus } from '@/domain/shared/types';
+
+export type { LoadStatus };
 export type NotificationCategoryKey = 'friend' | 'group' | 'other';
 type NotificationPatch = Partial<{
     displayName: string;
@@ -41,6 +45,12 @@ type NotificationStateSnapshot = {
     unseenCount: number;
     detail: string;
 };
+type NotificationDerivedState = Pick<
+    NotificationStateSnapshot,
+    'categories' | 'unseenCount'
+>;
+const NOTIFICATION_ROWS_MAX_ENTRIES = 2000;
+
 const NOTIFICATION_DETAILS_PATCH_KEYS = [
     'worldName',
     'displayLocation'
@@ -53,20 +63,14 @@ const NOTIFICATION_PATCH_KEYS = [
     'displayLocation'
 ] as const;
 
-function normalizeNotificationId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeNotificationId(value: string | null | undefined): string {
+    return value?.trim() ?? '';
 }
 
-function normalizeNotificationIds(value: unknown | unknown[]): string[] {
+function normalizeNotificationIds(value: string | string[]): string[] {
     return (Array.isArray(value) ? value : [value])
         .map((entry) => normalizeNotificationId(entry))
         .filter(Boolean);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function nonEmptyNotificationPatch(
@@ -102,6 +106,11 @@ type RuntimeAuthSnapshot = {
     currentUserId?: string | null;
     currentUserEndpoint?: string;
 };
+type NotificationOperationScope = {
+    currentUserId: string;
+    currentUserEndpoint: string;
+    generation: number;
+};
 type VrcNotificationStore = {
     rows: NotificationRow[];
     categories: NotificationCategories;
@@ -111,12 +120,12 @@ type VrcNotificationStore = {
     detail: string;
     loadForCurrentUser(): Promise<NotificationRow[]>;
     refreshForCurrentUser(): Promise<NotificationRow[]>;
-    setCenterOpen(isCenterOpen: unknown): void;
+    setCenterOpen(isCenterOpen: boolean): void;
     openCenter(): void;
     upsertNotification(notification: NotificationRow): void;
-    patchNotification(id: unknown, fields: NotificationPatch): void;
-    expireNotifications(ids: unknown | unknown[]): void;
-    markNotificationsSeen(ids: unknown | unknown[]): void;
+    patchNotification(id: string, fields: NotificationPatch): void;
+    expireNotifications(ids: string | string[]): void;
+    markNotificationsSeen(ids: string | string[]): void;
     markNotificationSeen(notification?: NotificationRow | null): Promise<void>;
     markAllSeen(): Promise<void>;
     resetVrcNotificationState(): void;
@@ -130,9 +139,12 @@ function createEmptyCategories(): NotificationCategories {
     };
 }
 
-function buildCategories(rows: NotificationRow[]): NotificationCategories {
+function buildNotificationDerivedState(
+    rows: NotificationRow[]
+): NotificationDerivedState {
     const categories = createEmptyCategories();
     const recentCutoff = Date.now() - RECENT_WINDOW_MS;
+    let unseenCount = 0;
 
     for (const notification of rows) {
         const category = getNotificationCategory(
@@ -141,6 +153,7 @@ function buildCategories(rows: NotificationRow[]): NotificationCategories {
         const bucket = categories[category] || categories.other;
         if (isUnseenNotification(notification)) {
             bucket.unseen.push(notification);
+            unseenCount += 1;
             continue;
         }
         if (
@@ -151,16 +164,11 @@ function buildCategories(rows: NotificationRow[]): NotificationCategories {
         }
     }
 
-    for (const bucket of Object.values(categories)) {
-        bucket.unseen.sort(
-            (left, right) => getNotificationTs(right) - getNotificationTs(left)
-        );
-        bucket.recent.sort(
-            (left, right) => getNotificationTs(right) - getNotificationTs(left)
-        );
-    }
+    return { categories, unseenCount };
+}
 
-    return categories;
+function notificationRowsCapacity(currentLength: number): number {
+    return Math.max(NOTIFICATION_ROWS_MAX_ENTRIES, currentLength);
 }
 
 function sortRows(rows: NotificationRow[]): NotificationRow[] {
@@ -174,21 +182,57 @@ function sortRows(rows: NotificationRow[]): NotificationRow[] {
     });
 }
 
-function createNotificationState(
+function createNotificationStateFromSortedRows(
     rows: NotificationRow[],
-    detail = ''
+    detail = '',
+    capacity = Number.POSITIVE_INFINITY
 ): NotificationStateSnapshot {
-    const sortedRows = sortRows(rows);
+    const cappedRows = rows.length > capacity ? rows.slice(0, capacity) : rows;
     return {
-        rows: sortedRows,
-        categories: buildCategories(sortedRows),
-        unseenCount: getUnseenRows(sortedRows).length,
+        rows: cappedRows,
+        ...buildNotificationDerivedState(cappedRows),
         detail
     };
 }
 
+function createNotificationState(
+    rows: NotificationRow[],
+    detail = '',
+    capacity = Number.POSITIVE_INFINITY
+): NotificationStateSnapshot {
+    return createNotificationStateFromSortedRows(
+        sortRows(rows),
+        detail,
+        capacity
+    );
+}
+
 function getCurrentAuth(): RuntimeAuthSnapshot {
-    return (useRuntimeStore.getState().auth || {}) as RuntimeAuthSnapshot;
+    return useRuntimeStore.getState().auth;
+}
+
+function captureNotificationScope(): NotificationOperationScope | null {
+    const auth = getCurrentAuth();
+    const currentUserId = String(auth.currentUserId || '');
+    if (!currentUserId) {
+        return null;
+    }
+    return {
+        currentUserId,
+        currentUserEndpoint: String(auth.currentUserEndpoint || ''),
+        generation: notificationScopeGeneration
+    };
+}
+
+function isCurrentNotificationScope(
+    scope: NotificationOperationScope
+): boolean {
+    const auth = getCurrentAuth();
+    return (
+        notificationScopeGeneration === scope.generation &&
+        String(auth.currentUserId || '') === scope.currentUserId &&
+        String(auth.currentUserEndpoint || '') === scope.currentUserEndpoint
+    );
 }
 
 function getUnseenRows(rows: NotificationRow[]): NotificationRow[] {
@@ -215,31 +259,19 @@ function applyMarkSeenResults(
     rows: NotificationRow[],
     results: NotificationMarkSeenItemResult[]
 ): NotificationRow[] {
-    const effects = new Map(
+    const seenIds = new Set(
         results.flatMap((result) =>
-            result.state === 'succeeded' && result.effect
-                ? [[result.id, result.effect] as const]
+            result.state === 'succeeded' && result.effect === 'seen'
+                ? [result.id]
                 : []
         )
     );
-    if (!effects.size) {
+    if (!seenIds.size) {
         return rows;
     }
-    return rows.map((row) => {
-        const effect = row.id ? effects.get(row.id) : undefined;
-        if (effect === 'seen') {
-            return { ...row, seen: true };
-        }
-        if (effect === 'expired') {
-            return {
-                ...row,
-                $isExpired: true,
-                expired: true,
-                seen: false
-            };
-        }
-        return row;
-    });
+    return rows.map((row) =>
+        row.id && seenIds.has(row.id) ? { ...row, seen: true } : row
+    );
 }
 
 function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {
@@ -256,7 +288,7 @@ function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {
     );
 }
 
-function syncShellUnseenCount(unseenCount: unknown) {
+function syncShellUnseenCount(unseenCount: number) {
     useShellStore.getState().setVrcUnseenNotificationCount(unseenCount);
 }
 
@@ -269,8 +301,8 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
         loadStatus: 'idle',
         detail: '',
         async loadForCurrentUser() {
-            const auth = getCurrentAuth();
-            if (!auth.currentUserId) {
+            const scope = captureNotificationScope();
+            if (!scope) {
                 set({
                     rows: [],
                     categories: createEmptyCategories(),
@@ -286,9 +318,12 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             try {
                 const rows = applyPendingSeenRows(
                     await notificationPersistenceRepository.queryNotifications({
-                        userId: auth.currentUserId
+                        userId: scope.currentUserId
                     })
                 );
+                if (!isCurrentNotificationScope(scope)) {
+                    return rows;
+                }
                 set({
                     ...createNotificationState(rows),
                     loadStatus: 'ready'
@@ -296,6 +331,9 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 syncShellUnseenCount(get().unseenCount);
                 return rows;
             } catch (error) {
+                if (!isCurrentNotificationScope(scope)) {
+                    return [];
+                }
                 const message =
                     error instanceof Error
                         ? error.message
@@ -312,8 +350,8 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             }
         },
         async refreshForCurrentUser() {
-            const auth = getCurrentAuth();
-            if (!auth.currentUserId) {
+            const scope = captureNotificationScope();
+            if (!scope) {
                 return get().loadForCurrentUser();
             }
             set({ loadStatus: 'running', detail: '' });
@@ -325,7 +363,13 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 syncFailed = true;
                 syncError = error;
             }
+            if (!isCurrentNotificationScope(scope)) {
+                return [];
+            }
             const rows = await get().loadForCurrentUser();
+            if (!isCurrentNotificationScope(scope)) {
+                return rows;
+            }
             if (syncFailed) {
                 set({
                     loadStatus: 'error',
@@ -338,10 +382,9 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             }
             return rows;
         },
-        setCenterOpen(isCenterOpen: unknown) {
-            const nextOpen = Boolean(isCenterOpen);
-            set({ isCenterOpen: nextOpen });
-            if (nextOpen) {
+        setCenterOpen(isCenterOpen) {
+            set({ isCenterOpen });
+            if (isCenterOpen) {
                 get()
                     .refreshForCurrentUser()
                     .catch(() => {});
@@ -357,17 +400,29 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             set((state) => {
                 const existing =
                     state.rows.find((row) => row.id === notification.id) || {};
+                const merged = { ...existing, ...notification };
                 const rows = [
-                    { ...existing, ...notification },
+                    merged,
                     ...state.rows.filter((row) => row.id !== notification.id)
                 ];
-                return createNotificationState(rows, state.detail);
+                const next = createNotificationState(
+                    rows,
+                    state.detail,
+                    notificationRowsCapacity(state.rows.length)
+                );
+                if (next.rows.some((row) => row.id === notification.id)) {
+                    return next;
+                }
+                return createNotificationState(
+                    [merged, ...next.rows.slice(0, -1)],
+                    state.detail
+                );
             });
             syncShellUnseenCount(get().unseenCount);
         },
-        patchNotification(id: unknown, fields: NotificationPatch) {
+        patchNotification(id, fields) {
             const normalizedId = normalizeNotificationId(id);
-            if (!normalizedId || !isRecord(fields)) {
+            if (!normalizedId) {
                 return;
             }
             set((state) => {
@@ -392,12 +447,12 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     };
                 });
                 return changed
-                    ? createNotificationState(rows, state.detail)
+                    ? createNotificationStateFromSortedRows(rows, state.detail)
                     : state;
             });
             syncShellUnseenCount(get().unseenCount);
         },
-        expireNotifications(ids: unknown | unknown[]) {
+        expireNotifications(ids) {
             const idSet = new Set(normalizeNotificationIds(ids));
             if (!idSet.size) {
                 return;
@@ -414,11 +469,14 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                           }
                         : row
                 );
-                return createNotificationState(rows, state.detail);
+                return createNotificationStateFromSortedRows(
+                    rows,
+                    state.detail
+                );
             });
             syncShellUnseenCount(get().unseenCount);
         },
-        markNotificationsSeen(ids: unknown | unknown[]) {
+        markNotificationsSeen(ids) {
             const idSet = new Set(normalizeNotificationIds(ids));
             if (!idSet.size) {
                 return;
@@ -432,7 +490,10 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                           }
                         : row
                 );
-                return createNotificationState(rows, state.detail);
+                return createNotificationStateFromSortedRows(
+                    rows,
+                    state.detail
+                );
             });
             syncShellUnseenCount(get().unseenCount);
         },
@@ -462,7 +523,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     pendingSeenIds.delete(resultItem.id);
                 }
                 set((state) =>
-                    createNotificationState(
+                    createNotificationStateFromSortedRows(
                         applyMarkSeenResults(state.rows, result.items),
                         state.detail
                     )
@@ -517,7 +578,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     pendingSeenIds.delete(item.id);
                 }
                 set((state) =>
-                    createNotificationState(
+                    createNotificationStateFromSortedRows(
                         applyMarkSeenResults(state.rows, result.items),
                         state.detail
                     )
@@ -554,6 +615,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             }
         },
         resetVrcNotificationState() {
+            notificationScopeGeneration += 1;
             set({
                 rows: [],
                 categories: createEmptyCategories(),

@@ -8,7 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { formatDateFilter } from '@/lib/dateTime';
 import { userImage } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';

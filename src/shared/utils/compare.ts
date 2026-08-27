@@ -56,54 +56,6 @@ function compareByName(a: ComparableRecord, b: ComparableRecord): number {
     return a.name.localeCompare(b.name);
 }
 
-function compareByCreatedAt(a: ComparableRecord, b: ComparableRecord): number {
-    if (typeof a.created_at !== 'string' || typeof b.created_at !== 'string') {
-        return 0;
-    }
-    const A = a.created_at.toUpperCase();
-    const B = b.created_at.toUpperCase();
-    if (A < B) {
-        return 1;
-    }
-    if (A > B) {
-        return -1;
-    }
-    return 0;
-}
-
-function compareByCreatedAtAscending(
-    a: ComparableRecord,
-    b: ComparableRecord
-): number {
-    if (typeof a.created_at !== 'string' || typeof b.created_at !== 'string') {
-        return 0;
-    }
-    const A = a.created_at;
-    const B = b.created_at;
-    if (A < B) {
-        return -1;
-    }
-    if (A > B) {
-        return 1;
-    }
-    return 0;
-}
-
-function compareByUpdatedAt(a: ComparableRecord, b: ComparableRecord): number {
-    if (typeof a.updated_at !== 'string' || typeof b.updated_at !== 'string') {
-        return 0;
-    }
-    const A = a.updated_at.toUpperCase();
-    const B = b.updated_at.toUpperCase();
-    if (A < B) {
-        return 1;
-    }
-    if (A > B) {
-        return -1;
-    }
-    return 0;
-}
-
 function compareByDisplayName(
     a: ComparableRecord,
     b: ComparableRecord
@@ -115,13 +67,6 @@ function compareByDisplayName(
         return 0;
     }
     return a.displayName.localeCompare(b.displayName);
-}
-
-function compareById(a: ComparableRecord, b: ComparableRecord): number {
-    if (typeof a.id !== 'string' || typeof b.id !== 'string') {
-        return 0;
-    }
-    return a.id.localeCompare(b.id);
 }
 
 function compareByMemberCount(
@@ -269,11 +214,7 @@ function compareByFriendOrder(
 
 export {
     compareByName,
-    compareByCreatedAt,
-    compareByCreatedAtAscending,
-    compareByUpdatedAt,
     compareByDisplayName,
-    compareById,
     compareByMemberCount,
     compareByPrivate,
     compareByStatus,

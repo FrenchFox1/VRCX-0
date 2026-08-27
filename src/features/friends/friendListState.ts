@@ -140,15 +140,9 @@ export function sanitizeFriendListColumnSizing(value: unknown) {
 
 export function resolveFriendListPageSize(
     candidate: unknown,
-    allowed: unknown,
+    pageSizes: readonly number[],
     fallback: number = FRIEND_LIST_DEFAULT_PAGE_SIZES[1]
 ) {
-    const pageSizes = Array.isArray(allowed)
-        ? allowed.filter(
-              (size): size is number =>
-                  typeof size === 'number' && Number.isFinite(size) && size > 0
-          )
-        : FRIEND_LIST_DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : FRIEND_LIST_DEFAULT_PAGE_SIZES[0];
@@ -169,5 +163,5 @@ export function resolveFriendListPageSize(
         return fallback;
     }
 
-    return nearestPageSize(Number(fallback) || fallbackPageSize);
+    return nearestPageSize(fallback);
 }

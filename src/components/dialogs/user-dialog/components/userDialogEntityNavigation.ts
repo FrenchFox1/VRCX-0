@@ -1,4 +1,4 @@
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import {
     openAvatarDialog,
     openGroupDialog,
@@ -11,26 +11,25 @@ import {
     hasUserIdPrefix,
     hasWorldIdPrefix
 } from '@/shared/constants/vrchatIds';
+import { isRecord } from '@/shared/utils/record';
 
 import type { UserDialogEntityKind } from './userDialogEntityImages';
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 export function openRow(
     row: string | EntityRecord,
     kind: UserDialogEntityKind
 ) {
     const source = isRecord(row) ? row : {};
-    const id =
+    const id = String(
         typeof row === 'string'
             ? row
             : source.id ||
-              source.userId ||
-              source.worldId ||
-              source.avatarId ||
-              source.groupId;
+                  source.userId ||
+                  source.worldId ||
+                  source.avatarId ||
+                  source.groupId ||
+                  ''
+    ).trim();
     if (!id) {
         return;
     }

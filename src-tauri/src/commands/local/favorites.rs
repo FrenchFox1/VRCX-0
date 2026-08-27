@@ -5,28 +5,100 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use vrcx_0_application::{FavoriteRow, LocalFavoriteSnapshot};
-use vrcx_0_application_core::{FavoriteEntityKind, FavoritesChangedPayload};
+use vrcx_0_application::favorites::{FavoriteRow, LocalFavoriteSnapshot};
+use vrcx_0_application_core::FavoriteEntityKind;
+use vrcx_0_contracts::{
+    SavedGroupCollectionCreateInput, SavedGroupCollectionDeleteInput, SavedGroupFavoriteAddInput,
+    SavedGroupFavoriteRemoveInput, SavedGroupFavoritesSnapshot,
+};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_list(
     state: State<'_, AppState>,
     kind: FavoriteEntityKind,
 ) -> Result<Vec<FavoriteRow>, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    vrcx_0_application::list_local_favorites(state.db.as_ref(), &owner_user_id, kind)
+    state
+        .runtime_host()
+        .local_data()
+        .favorite_list(kind)
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_local_snapshot(
     state: State<'_, AppState>,
     kind: FavoriteEntityKind,
 ) -> Result<LocalFavoriteSnapshot, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    vrcx_0_application::get_local_favorite_snapshot(state.db.as_ref(), &owner_user_id, kind)
+    state
+        .runtime_host()
+        .local_data()
+        .favorite_snapshot(kind)
+        .map_err(AppError::from)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__saved_group_favorites_get(
+    state: State<'_, AppState>,
+) -> Result<SavedGroupFavoritesSnapshot, AppError> {
+    state
+        .runtime_host()
+        .local_data()
+        .saved_group_favorites_snapshot()
+        .map_err(AppError::from)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__saved_group_collection_create(
+    state: State<'_, AppState>,
+    input: SavedGroupCollectionCreateInput,
+) -> Result<i64, AppError> {
+    state
+        .runtime_host()
+        .local_data()
+        .saved_group_collection_create(input)
+        .map_err(AppError::from)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__saved_group_collection_delete(
+    state: State<'_, AppState>,
+    input: SavedGroupCollectionDeleteInput,
+) -> Result<i64, AppError> {
+    state
+        .runtime_host()
+        .local_data()
+        .saved_group_collection_delete(input)
+        .map_err(AppError::from)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__saved_group_favorite_add(
+    state: State<'_, AppState>,
+    input: SavedGroupFavoriteAddInput,
+) -> Result<i64, AppError> {
+    state
+        .runtime_host()
+        .local_data()
+        .saved_group_favorite_add(input)
+        .map_err(AppError::from)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__saved_group_favorite_remove(
+    state: State<'_, AppState>,
+    input: SavedGroupFavoriteRemoveInput,
+) -> Result<i64, AppError> {
+    state
+        .runtime_host()
+        .local_data()
+        .saved_group_favorite_remove(input)
         .map_err(AppError::from)
 }
 
@@ -36,23 +108,11 @@ pub fn favorite_add(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_application::add_local_favorite(
-        state.db.as_ref(),
-        &owner_user_id,
-        kind,
-        entity_id,
-        group_name,
-    )
-    .map_err(AppError::from)?;
     state
-        .realtime_runtime
-        .notify_favorites_changed(FavoritesChangedPayload {
-            kind: kind.into(),
-            local: true,
-            remote: false,
-        });
-    Ok(affected)
+        .runtime_host()
+        .local_data()
+        .favorite_add_local(kind, entity_id, group_name)
+        .map_err(AppError::from)
 }
 
 pub fn favorite_remove(
@@ -61,21 +121,9 @@ pub fn favorite_remove(
     entity_id: String,
     group_name: String,
 ) -> Result<i64, AppError> {
-    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_application::remove_local_favorite(
-        state.db.as_ref(),
-        &owner_user_id,
-        kind,
-        entity_id,
-        group_name,
-    )
-    .map_err(AppError::from)?;
     state
-        .realtime_runtime
-        .notify_favorites_changed(FavoritesChangedPayload {
-            kind: kind.into(),
-            local: true,
-            remote: false,
-        });
-    Ok(affected)
+        .runtime_host()
+        .local_data()
+        .favorite_remove_local(kind, entity_id, group_name)
+        .map_err(AppError::from)
 }

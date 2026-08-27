@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import {
@@ -27,8 +28,10 @@ import {
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { parseLocation, translateAccessType } from '@/shared/utils/location';
-import { normalizeString } from '@/shared/utils/string';
-import { useLaunchStore } from '@/state/launchStore';
+import {
+    useLaunchStore,
+    type LaunchCreatedInstance
+} from '@/state/launchStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -55,11 +58,13 @@ const emptyDetails: LaunchDialogDetails = {
     worldName: '',
     parsed: parseLocation('')
 };
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
 type LaunchActionKey =
     | 'attach'
     | 'launch-vr'
     | 'launch-desktop'
     | 'self-invite';
+type LaunchAction = () => boolean | void | Promise<boolean | void>;
 const closeAfterAction = new Set<LaunchActionKey>([
     'attach',
     'launch-vr',
@@ -67,28 +72,24 @@ const closeAfterAction = new Set<LaunchActionKey>([
 ]);
 
 type CreatedInstanceRecord = Record<string, unknown> & {
-    location?: unknown;
-    tag?: unknown;
-    launchToken?: unknown;
-    secureOrShortName?: unknown;
-    shortName?: unknown;
-    closedAt?: unknown;
-    accessType?: unknown;
-    ownerId?: unknown;
-    creatorId?: unknown;
-    owner?: { id?: unknown };
+    location?: string | null;
+    tag?: string | null;
+    closedAt?: string | null;
     instance?: CreatedInstanceRecord;
-    $location?: { tag?: unknown };
+    $location?: { tag?: string | null };
 };
 
-function createdInstanceRecord(value: unknown): CreatedInstanceRecord | null {
-    return value && typeof value === 'object'
-        ? (value as CreatedInstanceRecord)
-        : null;
+function isCreatedInstanceRecord(
+    value: unknown
+): value is CreatedInstanceRecord {
+    return Boolean(value && typeof value === 'object');
 }
 
-function normalizeInstanceLocation(value: unknown) {
-    const instance = createdInstanceRecord(value);
+function createdInstanceRecord(value: unknown): CreatedInstanceRecord | null {
+    return isCreatedInstanceRecord(value) ? value : null;
+}
+
+function normalizeInstanceLocation(instance: CreatedInstanceRecord | null) {
     return String(
         instance?.location ||
             instance?.instance?.location ||
@@ -98,51 +99,27 @@ function normalizeInstanceLocation(value: unknown) {
     ).trim();
 }
 
-function normalizeInstanceLaunchToken(value: unknown) {
-    const instance = createdInstanceRecord(value);
-    return normalizeString(
-        instance?.launchToken ||
-            instance?.instance?.launchToken ||
-            instance?.secureOrShortName ||
-            instance?.instance?.secureOrShortName ||
-            instance?.shortName ||
-            instance?.instance?.shortName
-    );
-}
-
 function canInviteCreatedInstance(
-    value: unknown,
+    instance: LaunchCreatedInstance | null,
     currentUserId: string | null
 ) {
-    const instance = createdInstanceRecord(value);
-    const location = normalizeInstanceLocation(instance);
-    if (!location || instance?.closedAt || instance?.instance?.closedAt) {
+    const location = instance?.location.trim() ?? '';
+    if (!instance || !location) {
         return false;
     }
     const parsed = parseLocation(location);
     if (!parsed.worldId || !parsed.instanceId) {
         return false;
     }
-    const accessType = normalizeString(
-        instance?.accessType ||
-            instance?.instance?.accessType ||
-            parsed.accessType
-    );
-    const ownerId =
-        normalizeString(instance?.ownerId) ||
-        normalizeString(instance?.instance?.ownerId) ||
-        normalizeString(instance?.owner?.id) ||
-        normalizeString(instance?.instance?.owner?.id) ||
-        normalizeString(instance?.creatorId) ||
-        normalizeString(instance?.instance?.creatorId) ||
-        normalizeString(parsed.userId);
+    const accessType = instance.accessType.trim() || parsed.accessType;
+    const ownerId = instance.ownerId.trim() || parsed.userId || '';
     if (accessType === 'public' || accessType === 'group') {
         return true;
     }
     return Boolean(ownerId && currentUserId && ownerId === currentUserId);
 }
 
-function buildCachedInstanceMap(instances: unknown[]) {
+function buildCachedInstanceMap(instances: readonly GroupInstanceRecord[]) {
     const map = new Map<string, CreatedInstanceRecord>();
     for (const value of instances) {
         const instance = createdInstanceRecord(value);
@@ -279,8 +256,8 @@ export function LaunchDialogHost() {
             state.auth.currentUserSnapshot?.location ||
             ''
     );
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const groupInstancesState = useRuntimeStore(
         (state) => state.groupInstances
@@ -289,7 +266,7 @@ export function LaunchDialogHost() {
         groupInstancesState.userId === currentUserId &&
         groupInstancesState.endpoint === currentEndpoint
             ? groupInstancesState.instances
-            : [];
+            : EMPTY_GROUP_INSTANCES;
     const confirm = useModalStore((state) => state.confirm);
     const [details, setDetails] = useState(emptyDetails);
     const [loading, setLoading] = useState(false);
@@ -351,7 +328,8 @@ export function LaunchDialogHost() {
         launchDialog.launchToken,
         launchDialog.open,
         launchDialog.shortName,
-        launchDialog.tag
+        launchDialog.tag,
+        t
     ]);
 
     async function copyField(value: string, label: string) {
@@ -366,10 +344,7 @@ export function LaunchDialogHost() {
         });
     }
 
-    async function runAction(
-        key: LaunchActionKey,
-        action: () => unknown | Promise<unknown>
-    ) {
+    async function runAction(key: LaunchActionKey, action: LaunchAction) {
         if (busy || loading) {
             return;
         }
@@ -413,11 +388,13 @@ export function LaunchDialogHost() {
     const actionTag =
         details.location ||
         details.tag ||
-        normalizeInstanceLocation(launchDialog.createdInstance);
+        launchDialog.createdInstance?.location.trim() ||
+        '';
     const actionLaunchToken =
         details.launchToken ||
         details.shortName ||
-        normalizeInstanceLaunchToken(launchDialog.createdInstance) ||
+        launchDialog.createdInstance?.secureOrShortName.trim() ||
+        launchDialog.createdInstance?.shortName.trim() ||
         launchDialog.launchToken ||
         launchDialog.shortName ||
         '';
@@ -456,16 +433,16 @@ export function LaunchDialogHost() {
                 onOpenChange={setLaunchDialogOpen}
             >
                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
+                    <DialogHeader className="min-w-0">
                         <DialogTitle>{t('dialog.launch.header')}</DialogTitle>
-                        <DialogDescription className="truncate">
+                        <DialogDescription className="min-w-0 break-words whitespace-normal">
                             {subtitle}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div
                         className={cn(
-                            'grid grid-cols-3 gap-2',
+                            'grid min-w-0 grid-cols-3 gap-2',
                             loading && 'opacity-60'
                         )}
                     >

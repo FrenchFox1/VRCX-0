@@ -4,6 +4,7 @@ use std::path::{Component, Path, PathBuf};
 use sha2::{Digest, Sha256};
 
 use crate::error::Error;
+use crate::ugc_image_files::is_windows_reserved_name;
 
 pub struct ImageCache {
     cache_dir: PathBuf,
@@ -15,7 +16,7 @@ impl ImageCache {
         Ok(Self { cache_dir })
     }
 
-    pub async fn get_image_with_fetch<F, Fut>(
+    pub async fn get_image_with_fetch<F, Fut, B>(
         &self,
         file_id: &str,
         version: &str,
@@ -23,7 +24,8 @@ impl ImageCache {
     ) -> Result<String, Error>
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<Vec<u8>, Error>>,
+        Fut: Future<Output = Result<B, Error>>,
+        B: AsRef<[u8]>,
     {
         let file_id = safe_cache_component(file_id);
         let version = safe_cache_component(version);
@@ -47,28 +49,29 @@ impl ImageCache {
         std::fs::create_dir_all(&dir)?;
 
         let bytes = fetch_image().await?;
-        validate_image_bytes(&bytes)?;
-        std::fs::write(&file_path, &bytes)?;
+        validate_image_bytes(bytes.as_ref())?;
+        std::fs::write(&file_path, bytes.as_ref())?;
 
         self.clean_cache_if_needed();
 
         Ok(file_path.to_string_lossy().into_owned())
     }
 
-    pub async fn save_image_to_file_with_fetch<F, Fut>(
+    pub async fn save_image_to_file_with_fetch<F, Fut, B>(
         &self,
         path: &str,
         fetch_image: F,
     ) -> Result<(), Error>
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<Vec<u8>, Error>>,
+        Fut: Future<Output = Result<B, Error>>,
+        B: AsRef<[u8]>,
     {
         let bytes = fetch_image().await?;
         if let Some(parent) = Path::new(path).parent() {
             std::fs::create_dir_all(parent)?;
         }
-        std::fs::write(path, &bytes)?;
+        std::fs::write(path, bytes.as_ref())?;
         Ok(())
     }
 
@@ -141,39 +144,6 @@ fn is_safe_path_component(value: &str) -> bool {
     }
 }
 
-fn is_windows_reserved_name(value: &str) -> bool {
-    let upper = value
-        .split('.')
-        .next()
-        .unwrap_or_default()
-        .to_ascii_uppercase();
-    matches!(
-        upper.as_str(),
-        "CON"
-            | "PRN"
-            | "AUX"
-            | "NUL"
-            | "COM1"
-            | "COM2"
-            | "COM3"
-            | "COM4"
-            | "COM5"
-            | "COM6"
-            | "COM7"
-            | "COM8"
-            | "COM9"
-            | "LPT1"
-            | "LPT2"
-            | "LPT3"
-            | "LPT4"
-            | "LPT5"
-            | "LPT6"
-            | "LPT7"
-            | "LPT8"
-            | "LPT9"
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -226,7 +196,7 @@ mod tests {
 
         let second =
             runtime.block_on(cache.get_image_with_fetch("avatar-file", "1", || async {
-                Err(Error::Custom("unexpected cache miss".into()))
+                Err::<Vec<u8>, _>(Error::Custom("unexpected cache miss".into()))
             }))?;
         assert_eq!(second, first);
         assert_eq!(std::fs::read(&second)?, SMALL_PNG);

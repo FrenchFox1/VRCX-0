@@ -4,10 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
-import {
-    resolveObservedPlayerDwellEpochs,
-    resolveObservedPlayerUserIds
-} from '@/domain/friends/sameInstanceFriends';
+import type { FavoriteGroup } from '@/domain/favorites/types';
+import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import {
     buildLocalInstanceActionGateMap,
@@ -16,7 +15,6 @@ import {
     type LocalInstanceActionGateTarget
 } from '@/shared/utils/invite';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
-import type { FavoriteGroup } from '@/state/favoriteStoreTypes';
 import { useModalStore } from '@/state/modalStore';
 
 import {
@@ -27,8 +25,6 @@ import {
 import {
     buildFavoriteIdSet,
     buildSameInstanceGroups,
-    getSharedSameInstanceFallbackJoinTimes,
-    normalizeLocationStatus,
     readFriendStatusSource,
     readFriendRefLocation,
     resolveCurrentInviteLocation,
@@ -101,9 +97,7 @@ function buildInstanceActionGateTarget(
         key: friendId,
         userId: friendId,
         location: String(readFriendRefLocation(friend) ?? ''),
-        stateBucket: normalizeLocationStatus(
-            source?.stateBucket || source?.state
-        ),
+        stateBucket: normalizeStateBucket(source?.state),
         isCurrentUser: friendId === normalizeId(currentUserId)
     };
 }
@@ -148,8 +142,6 @@ export function FriendsSidebar({
     const { openGroups, statusPresets, toggleSection } =
         useFriendsSidebarPreferences();
     const [recentActionVersion, setRecentActionVersion] = useState(0);
-    const sameInstanceFallbackJoinTimes =
-        getSharedSameInstanceFallbackJoinTimes();
     const currentInviteLocation = useMemo(
         () => resolveCurrentInviteLocation(gameState, currentUser),
         [currentUser, gameState]
@@ -157,12 +149,6 @@ export function FriendsSidebar({
     const currentLocationSnapshot = useMemo<LastLocationSnapshot>(
         () => ({
             location: currentInviteLocation,
-            locationStartedAt: gameState.currentLocationStartedAt,
-            dwellEpochsByUserId: resolveObservedPlayerDwellEpochs(
-                currentLocationPlayers,
-                friendsById,
-                currentInviteLocation
-            ),
             friendList: new Set(
                 resolveObservedPlayerUserIds(
                     effectiveCurrentLocationPlayerIds,
@@ -175,8 +161,7 @@ export function FriendsSidebar({
             currentInviteLocation,
             currentLocationPlayers,
             effectiveCurrentLocationPlayerIds,
-            friendsById,
-            gameState.currentLocationStartedAt
+            friendsById
         ]
     );
     const canInviteFromCurrentLocation = useMemo(
@@ -365,12 +350,7 @@ export function FriendsSidebar({
         if (!prefs.sidebarGroupByInstance) {
             return [];
         }
-        return buildSameInstanceGroups(
-            rows,
-            prefs,
-            currentLocationSnapshot,
-            sameInstanceFallbackJoinTimes
-        );
+        return buildSameInstanceGroups(rows, prefs, currentLocationSnapshot);
     }, [currentLocationSnapshot, favoriteCollectionTab, prefs, rows]);
     const favoriteCollectionSameInstanceGroups = useMemo(() => {
         if (!favoriteCollectionTab) {
@@ -379,8 +359,7 @@ export function FriendsSidebar({
         return buildFavoriteCollectionSameInstanceGroups({
             rows: favoriteCollectionRows,
             prefs,
-            currentLocationSnapshot,
-            fallbackJoinTimes: sameInstanceFallbackJoinTimes
+            currentLocationSnapshot
         });
     }, [
         currentLocationSnapshot,
@@ -455,9 +434,7 @@ export function FriendsSidebar({
         return sortRows(
             rows.filter((friend) => {
                 const source = readFriendStatusSource(friend);
-                const state = normalizeLocationStatus(
-                    source?.stateBucket || source?.state
-                );
+                const state = normalizeStateBucket(source?.state);
                 return (
                     selectedFavoriteIds.has(normalizeId(friend?.id)) &&
                     state === 'online' &&
@@ -679,9 +656,7 @@ export function FriendsSidebar({
         offlineRows,
         onlineRows,
         openGroups,
-        prefs.isShowCurrentUserInSameInstance,
-        prefs.isSameInstanceAboveFavorites,
-        prefs.isSidebarDivideByFriendGroup,
+        prefs,
         rows.length,
         sameInstanceGroups,
         t

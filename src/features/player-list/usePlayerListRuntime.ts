@@ -1,4 +1,5 @@
 import { parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 export function usePlayerListRuntime() {
@@ -15,21 +16,21 @@ export function usePlayerListRuntime() {
     const currentUserLocation = useRuntimeStore((state) => {
         return (
             state.gameState.currentLocation ||
-            state.auth.currentUserSnapshot?.location ||
+            normalizeString(state.auth.currentUserSnapshot?.location) ||
             ''
         );
     });
     const currentUserWorldId = useRuntimeStore(
         (state) =>
             parseLocation(state.gameState.currentLocation || '').worldId ||
-            state.auth.currentUserSnapshot?.worldId ||
+            normalizeString(state.auth.currentUserSnapshot?.worldId) ||
             ''
     );
     const currentLocationStartedAt = useRuntimeStore(
         (state) => state.gameState.currentLocationStartedAt
     );
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.runtimeEvents.addGameLogEvent.count

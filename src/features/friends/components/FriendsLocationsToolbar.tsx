@@ -13,24 +13,32 @@ import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Switch } from '@/ui/shadcn/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
-import { FRIENDS_LOCATIONS_DENSITY_OPTIONS } from '../friendsLocationsDensity';
+import {
+    isFriendsLocationsSegment,
+    type FriendsLocationsSegment
+} from '../friendsLocationsConfig';
+import {
+    FRIENDS_LOCATIONS_DENSITY_OPTIONS,
+    sanitizeFriendsLocationsDensity,
+    type FriendsLocationsDensity
+} from '../friendsLocationsDensity';
 
 type FriendsLocationsSegmentOption = {
-    value: string;
+    value: FriendsLocationsSegment;
     labelKey: string;
     count: number;
 };
 
 type FriendsLocationsToolbarProps = {
-    activeSegment: string;
+    activeSegment: FriendsLocationsSegment;
     segmentOptions: FriendsLocationsSegmentOption[];
     searchQuery: string;
     showSameInstanceInOnline: boolean;
-    density: string;
-    onActiveSegmentChange: (value: string) => void;
+    density: FriendsLocationsDensity;
+    onActiveSegmentChange: (value: FriendsLocationsSegment) => void;
     onSearchQueryChange: (value: string) => void;
     onShowSameInstanceInOnlineChange: (value: boolean) => void;
-    onDensityChange: (value: string) => void;
+    onDensityChange: (value: FriendsLocationsDensity) => void;
 };
 
 export function FriendsLocationsToolbar({
@@ -45,13 +53,12 @@ export function FriendsLocationsToolbar({
     onDensityChange
 }: FriendsLocationsToolbarProps) {
     const { t } = useTranslation();
-    const options: ToolbarSegmentOption<string>[] = segmentOptions.map(
-        (segment) => ({
+    const options: ToolbarSegmentOption<FriendsLocationsSegment>[] =
+        segmentOptions.map((segment) => ({
             value: segment.value,
             label: t(segment.labelKey),
             count: segment.count
-        })
-    );
+        }));
 
     return (
         <PageToolbar>
@@ -59,7 +66,11 @@ export function FriendsLocationsToolbar({
                 <ToolbarViews>
                     <ToolbarSegmented
                         value={activeSegment}
-                        onValueChange={onActiveSegmentChange}
+                        onValueChange={(value) => {
+                            if (isFriendsLocationsSegment(value)) {
+                                onActiveSegmentChange(value);
+                            }
+                        }}
                         options={options}
                     />
                 </ToolbarViews>
@@ -104,7 +115,11 @@ export function FriendsLocationsToolbar({
                                     value={density ? [density] : []}
                                     onValueChange={(nextValue) => {
                                         if (nextValue[0]) {
-                                            onDensityChange(nextValue[0]);
+                                            onDensityChange(
+                                                sanitizeFriendsLocationsDensity(
+                                                    nextValue[0]
+                                                )
+                                            );
                                         }
                                     }}
                                     className="grid w-full grid-cols-3"

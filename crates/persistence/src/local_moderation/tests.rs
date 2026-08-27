@@ -68,7 +68,7 @@ fn snapshot_merges_block_and_mute_and_ignores_invalid_rows() -> Result<(), Error
 
     let rows = local_moderation_sync_snapshot(
         &test_db.db,
-        "usr_owner".into(),
+        OwnerId::new("usr_owner"),
         vec![
             remote_entry(
                 "block",
@@ -89,7 +89,10 @@ fn snapshot_merges_block_and_mute_and_ignores_invalid_rows() -> Result<(), Error
     assert_eq!(row.updated_at, "2026-07-01T00:02:00Z");
     assert!(row.block);
     assert!(row.mute);
-    assert!(local_moderation_get(&test_db.db, "usr_owner".into(), "usr_unknown".into())?.is_none());
+    assert!(
+        local_moderation_get(&test_db.db, OwnerId::new("usr_owner"), "usr_unknown".into())?
+            .is_none()
+    );
     Ok(())
 }
 
@@ -100,13 +103,16 @@ fn snapshot_metadata_uses_latest_valid_created_row_regardless_of_input_order() -
     let newer = remote_entry("block", "usr_target", "New Name", "2026-07-02T00:00:00Z");
     let older = remote_entry("mute", "usr_target", "Old Name", "2026-07-01T00:00:00Z");
 
-    let first =
-        local_moderation_sync_snapshot(&test_db.db, "usr_owner_a".into(), vec![newer, older])?
-            .pop()
-            .expect("merged moderation");
+    let first = local_moderation_sync_snapshot(
+        &test_db.db,
+        OwnerId::new("usr_owner_a"),
+        vec![newer, older],
+    )?
+    .pop()
+    .expect("merged moderation");
     let second = local_moderation_sync_snapshot(
         &test_db.db,
-        "usr_owner_b".into(),
+        OwnerId::new("usr_owner_b"),
         vec![
             remote_entry("mute", "usr_target", "Old Name", "2026-07-01T00:00:00Z"),
             remote_entry("block", "usr_target", "New Name", "2026-07-02T00:00:00Z"),
@@ -129,18 +135,18 @@ fn snapshot_deletes_stale_rows_and_empty_snapshot_clears_owner() -> Result<(), E
     let test_db = test_db("replacement")?;
     local_moderation_set(
         &test_db.db,
-        "usr_owner".into(),
+        OwnerId::new("usr_owner"),
         local_entry("usr_stale", true, false),
     )?;
     local_moderation_set(
         &test_db.db,
-        "usr_owner".into(),
+        OwnerId::new("usr_owner"),
         local_entry("usr_kept", false, true),
     )?;
 
     local_moderation_sync_snapshot(
         &test_db.db,
-        "usr_owner".into(),
+        OwnerId::new("usr_owner"),
         vec![remote_entry(
             "block",
             "usr_kept",
@@ -148,12 +154,16 @@ fn snapshot_deletes_stale_rows_and_empty_snapshot_clears_owner() -> Result<(), E
             "2026-07-02T00:00:00Z",
         )],
     )?;
-    assert!(local_moderation_get(&test_db.db, "usr_owner".into(), "usr_stale".into())?.is_none());
-    assert!(local_moderation_get(&test_db.db, "usr_owner".into(), "usr_kept".into())?.is_some());
+    assert!(
+        local_moderation_get(&test_db.db, OwnerId::new("usr_owner"), "usr_stale".into())?.is_none()
+    );
+    assert!(
+        local_moderation_get(&test_db.db, OwnerId::new("usr_owner"), "usr_kept".into())?.is_some()
+    );
 
-    let rows = local_moderation_sync_snapshot(&test_db.db, "usr_owner".into(), Vec::new())?;
+    let rows = local_moderation_sync_snapshot(&test_db.db, OwnerId::new("usr_owner"), Vec::new())?;
     assert!(rows.is_empty());
-    assert!(local_moderation_list(&test_db.db, "usr_owner".into())?.is_empty());
+    assert!(local_moderation_list(&test_db.db, OwnerId::new("usr_owner"))?.is_empty());
     Ok(())
 }
 
@@ -162,31 +172,49 @@ fn set_get_delete_are_normalized_and_isolated_by_owner() -> Result<(), Error> {
     let test_db = test_db("owner-isolation")?;
     local_moderation_set(
         &test_db.db,
-        " usr_owner_a ".into(),
+        OwnerId::new(" usr_owner_a "),
         local_entry(" usr_target ", true, false),
     )?;
     local_moderation_set(
         &test_db.db,
-        "usr_owner_b".into(),
+        OwnerId::new("usr_owner_b"),
         local_entry("usr_target", false, true),
     )?;
 
-    let owner_a =
-        local_moderation_get(&test_db.db, "usr_owner_a".into(), " usr_target ".into())?.unwrap();
-    let owner_b =
-        local_moderation_get(&test_db.db, "usr_owner_b".into(), "usr_target".into())?.unwrap();
+    let owner_a = local_moderation_get(
+        &test_db.db,
+        OwnerId::new("usr_owner_a"),
+        " usr_target ".into(),
+    )?
+    .unwrap();
+    let owner_b = local_moderation_get(
+        &test_db.db,
+        OwnerId::new("usr_owner_b"),
+        "usr_target".into(),
+    )?
+    .unwrap();
     assert!(owner_a.block);
     assert!(!owner_a.mute);
     assert!(!owner_b.block);
     assert!(owner_b.mute);
 
-    local_moderation_delete(&test_db.db, "usr_owner_a".into(), " usr_target ".into())?;
-    assert!(
-        local_moderation_get(&test_db.db, "usr_owner_a".into(), "usr_target".into())?.is_none()
-    );
-    assert!(
-        local_moderation_get(&test_db.db, "usr_owner_b".into(), "usr_target".into())?.is_some()
-    );
-    assert!(local_moderation_list(&test_db.db, "   ".into())?.is_empty());
+    local_moderation_delete(
+        &test_db.db,
+        OwnerId::new("usr_owner_a"),
+        " usr_target ".into(),
+    )?;
+    assert!(local_moderation_get(
+        &test_db.db,
+        OwnerId::new("usr_owner_a"),
+        "usr_target".into()
+    )?
+    .is_none());
+    assert!(local_moderation_get(
+        &test_db.db,
+        OwnerId::new("usr_owner_b"),
+        "usr_target".into()
+    )?
+    .is_some());
+    assert!(local_moderation_list(&test_db.db, OwnerId::new("   "))?.is_empty());
     Ok(())
 }

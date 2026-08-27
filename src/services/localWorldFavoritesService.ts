@@ -1,15 +1,13 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { commands } from '@/platform/tauri/bindings';
-import type { FavoriteGroupMap } from '@/state/favoriteStoreTypes';
 
 export interface LocalWorldFavoritesSnapshot {
     favoritesByGroup: FavoriteGroupMap;
     groupNames: string[];
 }
 
-function normalize(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalize(value: string | null | undefined): string {
+    return (value ?? '').trim();
 }
 
 export async function loadLocalWorldFavoritesSnapshot(): Promise<LocalWorldFavoritesSnapshot> {

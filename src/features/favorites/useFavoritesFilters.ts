@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
+
 import type {
-    FavoriteGroup,
-    FavoriteKind,
+    FavoriteGroupView,
+    FavoriteSearchMode,
     FavoriteSource
 } from './favoritesTypes';
 
 export function useFavoritesFilters({ kind }: { kind: FavoriteKind }) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchMode, setSearchMode] = useState('name');
+    const [searchMode, setSearchMode] = useState<FavoriteSearchMode>('name');
     const [selectedSource, setSelectedSource] =
         useState<FavoriteSource>('remote');
     const [selectedGroupKey, setSelectedGroupKey] = useState('');
@@ -41,9 +43,9 @@ export function useFavoritesSelectedGroupSync({
     setSelectedGroupKey,
     setSelectedSource
 }: {
-    avatarHistoryGroups: FavoriteGroup[];
-    localGroups: FavoriteGroup[];
-    remoteGroups: FavoriteGroup[];
+    avatarHistoryGroups: FavoriteGroupView[];
+    localGroups: FavoriteGroupView[];
+    remoteGroups: FavoriteGroupView[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
     setSelectedGroupKey(value: string): void;

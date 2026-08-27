@@ -3,7 +3,7 @@ import type {
     PaginationState,
     Updater
 } from '@tanstack/react-table';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { usePersistedTableColumnSizing } from '@/components/data-table/dataTablePersistence';
 import {
@@ -17,21 +17,20 @@ import {
     MY_AVATARS_DEFAULT_COLUMN_VISIBILITY,
     MY_AVATARS_DEFAULT_PAGE_SIZES,
     readPersistedMyAvatarsState,
+    resolveMyAvatarsColumnOrder,
     resolveMyAvatarsColumnVisibility,
     resolveMyAvatarsPageSize,
-    sanitizeMyAvatarsColumnOrder,
     sanitizeMyAvatarsColumnSizing,
     sanitizeMyAvatarsColumnVisibility,
     sanitizeMyAvatarsPageSizes,
     sanitizeMyAvatarsSorting,
     writePersistedMyAvatarsState
 } from './myAvatarsState';
-import type { MyAvatarsViewMode } from './myAvatarsTypes';
-
-function resolveTableColumnOrder(columnOrder: unknown): ColumnOrderState {
-    const ordered = sanitizeMyAvatarsColumnOrder(columnOrder);
-    return [...ordered.filter((columnId) => columnId !== 'actions'), 'actions'];
-}
+import type {
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter,
+    MyAvatarsViewMode
+} from './myAvatarsTypes';
 
 export function useMyAvatarsTableState({
     deferredSearchQuery,
@@ -43,8 +42,8 @@ export function useMyAvatarsTableState({
 }: {
     deferredSearchQuery: string;
     filteredCount: number;
-    platformFilter: string;
-    releaseStatusFilter: string;
+    platformFilter: MyAvatarsPlatformFilter;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
     tagFilters: Set<string>;
     viewMode: MyAvatarsViewMode;
 }) {
@@ -66,7 +65,7 @@ export function useMyAvatarsTableState({
         resolveMyAvatarsColumnVisibility(persistedState)
     );
     const [columnOrder, setColumnOrder] = useState(() =>
-        sanitizeMyAvatarsColumnOrder(persistedState.columnOrder)
+        resolveMyAvatarsColumnOrder(persistedState.columnOrder)
     );
     const [columnSizing, setColumnSizing] = usePersistedTableColumnSizing({
         columnIds: MY_AVATARS_COLUMN_IDS,
@@ -86,11 +85,6 @@ export function useMyAvatarsTableState({
             MY_AVATARS_DEFAULT_PAGE_SIZES[1]
         )
     }));
-    const tableColumnOrder = useMemo(
-        () => resolveTableColumnOrder(columnOrder),
-        [columnOrder]
-    );
-
     useEffect(() => {
         let active = true;
         Promise.all([
@@ -184,7 +178,7 @@ export function useMyAvatarsTableState({
         writePersistedMyAvatarsState({
             columnVisibility:
                 sanitizeMyAvatarsColumnVisibility(columnVisibility),
-            columnOrder: sanitizeMyAvatarsColumnOrder(columnOrder),
+            columnOrder: resolveMyAvatarsColumnOrder(columnOrder),
             columnOrderLocked
         });
     }, [columnOrder, columnOrderLocked, columnVisibility]);
@@ -217,15 +211,15 @@ export function useMyAvatarsTableState({
 
     function handleColumnOrderChange(updater: Updater<ColumnOrderState>) {
         setColumnOrder((current) =>
-            resolveTableColumnOrder(
+            resolveMyAvatarsColumnOrder(
                 typeof updater === 'function'
-                    ? updater(resolveTableColumnOrder(current))
+                    ? updater(resolveMyAvatarsColumnOrder(current))
                     : updater
             )
         );
     }
 
-    function handlePageSizeChange(value: unknown) {
+    function handlePageSizeChange(value: string) {
         const nextPageSize = resolveMyAvatarsPageSize(
             value,
             pageSizes,
@@ -238,7 +232,7 @@ export function useMyAvatarsTableState({
     }
 
     return {
-        columnOrder: tableColumnOrder,
+        columnOrder,
         columnOrderLocked,
         columnSizing,
         columnVisibility,

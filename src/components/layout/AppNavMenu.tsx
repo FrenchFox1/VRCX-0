@@ -11,7 +11,7 @@ import { useDashboardStore } from '@/state/dashboardStore';
 import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useSessionStore } from '@/state/sessionStore';
+import { useSessionStore, type SessionPhase } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
@@ -41,12 +41,11 @@ import {
     type NavMenuModel
 } from './navMenuModel';
 
-type Translate = ReturnType<typeof useTranslation>['t'];
 type Navigation = ReturnType<typeof useNavigate>;
 type RouteLocation = ReturnType<typeof useLocation>;
 type SaveAndApplyNavLayout = (
-    layout: unknown,
-    hiddenKeys: unknown
+    layout: CustomNavLayout,
+    hiddenKeys: string[]
 ) => Promise<NavMenuModel>;
 
 function resolveActiveIndex(menuItems: NavMenuItem[], pathname: string) {
@@ -70,14 +69,13 @@ function resolveActiveIndex(menuItems: NavMenuItem[], pathname: string) {
 function useAppNavModel({
     dashboards,
     notificationLayout,
-    preferencesHydrated,
-    t
+    preferencesHydrated
 }: {
     dashboards: Dashboard[];
     notificationLayout: string;
     preferencesHydrated: boolean;
-    t: Translate;
 }) {
+    const { t } = useTranslation();
     const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
     const [navLayout, setNavLayout] = useState<NavLayoutEntry[]>([]);
     const [navHiddenKeys, setNavHiddenKeys] = useState<string[]>([]);
@@ -137,8 +135,8 @@ function useAppNavModel({
     }, [dashboards, notificationLayout, preferencesHydrated, t]);
 
     async function saveAndApplyNavLayout(
-        nextLayout: unknown,
-        nextHiddenKeys: unknown
+        nextLayout: CustomNavLayout,
+        nextHiddenKeys: string[]
     ) {
         const model = await saveNavMenuModel({
             layout: nextLayout,
@@ -164,14 +162,13 @@ function useAppNavModel({
 function useAppNavNotifications({
     activeIndex,
     currentUserId,
-    sessionPhase,
-    t
+    sessionPhase
 }: {
     activeIndex: string;
     currentUserId: string | null;
-    sessionPhase: string;
-    t: Translate;
+    sessionPhase: SessionPhase;
 }) {
+    const { t } = useTranslation();
     const notifiedMenus = useShellStore((state) => state.notifiedMenus);
     const removeNavNotification = useShellStore((state) => state.removeNotify);
     const vrcUnseenNotificationCount = useVrcNotificationStore(
@@ -231,13 +228,12 @@ function useAppNavNotifications({
 
 function useAppNavDashboardActions({
     location,
-    navigate,
-    t
+    navigate
 }: {
     location: RouteLocation;
     navigate: Navigation;
-    t: Translate;
 }) {
+    const { t } = useTranslation();
     const createDashboard = useDashboardStore((state) => state.createDashboard);
     const deleteDashboard = useDashboardStore((state) => state.deleteDashboard);
     const setEditingDashboardId = useDashboardStore(
@@ -331,14 +327,13 @@ function useAppNavDashboardActions({
 function useAppNavToolActions({
     navHiddenKeys,
     navLayout,
-    saveAndApplyNavLayout,
-    t
+    saveAndApplyNavLayout
 }: {
     navHiddenKeys: string[];
     navLayout: NavLayoutEntry[];
     saveAndApplyNavLayout: SaveAndApplyNavLayout;
-    t: Translate;
 }) {
+    const { t } = useTranslation();
     async function unpinToolEntry(entry: NavMenuItem) {
         if (!isToolEntry(entry)) {
             return;
@@ -395,16 +390,14 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
     } = useAppNavModel({
         dashboards,
         notificationLayout,
-        preferencesHydrated,
-        t
+        preferencesHydrated
     });
     const activeIndex = resolveActiveIndex(menuItems, location.pathname);
     const { hasNotifications, markAllRead, notifiedKeys } =
         useAppNavNotifications({
             activeIndex,
             currentUserId,
-            sessionPhase,
-            t
+            sessionPhase
         });
     const {
         createDashboardFromNav,
@@ -412,12 +405,11 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
         editDashboard,
         isCreatingDashboard,
         setEditingDashboardId
-    } = useAppNavDashboardActions({ location, navigate, t });
+    } = useAppNavDashboardActions({ location, navigate });
     const { unpinToolEntry } = useAppNavToolActions({
         navHiddenKeys,
         navLayout,
-        saveAndApplyNavLayout,
-        t
+        saveAndApplyNavLayout
     });
 
     useEffect(() => {
@@ -458,7 +450,7 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
     async function handleCustomNavSave(
         nextLayout: CustomNavLayout,
-        nextHiddenKeys: unknown[]
+        nextHiddenKeys: string[]
     ) {
         try {
             await saveAndApplyNavLayout(nextLayout, nextHiddenKeys);
@@ -478,7 +470,7 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
     async function handleDashboardCreatedFromCustomNav(
         dashboardId: string,
         nextLayout: CustomNavLayout,
-        nextHiddenKeys: unknown[]
+        nextHiddenKeys: string[]
     ) {
         try {
             await saveAndApplyNavLayout(nextLayout, nextHiddenKeys);

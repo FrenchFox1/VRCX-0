@@ -19,9 +19,10 @@ import {
     type FriendBootstrapOptions,
     type FriendBootstrapResult,
     type FriendBootstrapSnapshot,
-    type FriendLogRow
+    type FriendLogBootstrapRow
 } from './friendBootstrapModel';
 import { signalFriendLogChanged } from './friendLogMutationService';
+import { flushRealtimeRosterUpdates } from './realtimeRosterUpdateQueue';
 import { syncStartupServicesTask } from './startupServicesStatus';
 
 const activeBootstraps = new Map<string, Promise<FriendBootstrapResult>>();
@@ -44,7 +45,7 @@ async function seedFriendRosterFromCurrentUserSnapshot({
     }
 
     const stateById = buildFriendStateMap(currentUserSnapshot);
-    let friendLogRows: FriendLogRow[] = [];
+    let friendLogRows: FriendLogBootstrapRow[] = [];
     try {
         friendLogRows =
             await friendLogRepository.getFriendLogCurrent(normalizedUserId);
@@ -65,29 +66,26 @@ async function seedFriendRosterFromCurrentUserSnapshot({
 }
 
 function bootstrapTargetKey(
-    userId: unknown,
-    endpoint: unknown = '',
-    websocket: unknown = ''
+    userId: string,
+    endpoint: string = '',
+    websocket: string = ''
 ) {
     const normalizedUserId = normalizeUserId(userId);
-    const normalizedEndpoint = String(endpoint || '');
-    const normalizedWebsocket = String(websocket || '');
-    return `${normalizedUserId}\u0000${normalizedEndpoint}\u0000${normalizedWebsocket}`;
+    return `${normalizedUserId}\u0000${endpoint}\u0000${websocket}`;
 }
 
 function isCurrentBootstrapTarget(
-    userId: unknown,
-    endpoint: unknown = '',
-    websocket: unknown = null
+    userId: string,
+    endpoint: string = '',
+    websocket: string | null = null
 ) {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
-    const expectedWebsocket =
-        websocket === null ? null : String(websocket || '');
+    const expectedWebsocket = websocket;
 
     return (
         runtimeState.auth.currentUserId === userId &&
-        runtimeState.auth.currentUserEndpoint === String(endpoint || '') &&
+        runtimeState.auth.currentUserEndpoint === endpoint &&
         (expectedWebsocket === null ||
             runtimeState.auth.currentUserWebsocket === expectedWebsocket) &&
         sessionState.isLoggedIn &&
@@ -98,7 +96,7 @@ function isCurrentBootstrapTarget(
 async function runFriendBootstrap({
     userId,
     endpoint = '',
-    websocket = null,
+    websocket,
     currentUserSnapshot,
     preserveLoadedState = false
 }: FriendBootstrapOptions): Promise<FriendBootstrapResult> {
@@ -150,7 +148,17 @@ async function runFriendBootstrap({
         });
 
     const snapshot: FriendBootstrapSnapshot | null = isRecord(result.snapshot)
-        ? result.snapshot
+        ? {
+              ...result.snapshot,
+              friendsById: normalizeFriendsById(result.snapshot.friendsById),
+              orderedFriendIds: normalizeStringArray(
+                  result.snapshot.orderedFriendIds
+              ),
+              onlineIds: normalizeStringArray(result.snapshot.onlineIds),
+              activeIds: normalizeStringArray(result.snapshot.activeIds),
+              offlineIds: normalizeStringArray(result.snapshot.offlineIds),
+              detail: normalizeUserId(result.snapshot.detail)
+          }
         : null;
     const detail = String(result.detail || snapshot?.detail || '');
 
@@ -197,14 +205,14 @@ async function runFriendBootstrap({
     if (preserveLoadedState) {
         useFriendRosterStore.getState().setRosterReady(detail);
     } else {
-        const friendsById = normalizeFriendsById(snapshot.friendsById);
+        flushRealtimeRosterUpdates();
         useFriendRosterStore.getState().setRosterSnapshot({
             currentUserId: normalizedUserId,
-            friendsById,
-            orderedFriendIds: normalizeStringArray(snapshot.orderedFriendIds),
-            onlineIds: normalizeStringArray(snapshot.onlineIds),
-            activeIds: normalizeStringArray(snapshot.activeIds),
-            offlineIds: normalizeStringArray(snapshot.offlineIds),
+            friendsById: snapshot.friendsById ?? {},
+            orderedFriendIds: snapshot.orderedFriendIds ?? [],
+            onlineIds: snapshot.onlineIds ?? [],
+            activeIds: snapshot.activeIds ?? [],
+            offlineIds: snapshot.offlineIds ?? [],
             detail
         });
     }

@@ -1,26 +1,43 @@
-import type { ParsedLocation as BackendParsedLocation } from '@/platform/tauri/bindings';
-
 import { isRealInstance } from './instance';
+import { normalizeString } from './string';
 
-export type ParsedLocation = BackendParsedLocation & Record<string, unknown>;
+export interface ParsedLocation extends Record<string, unknown> {
+    tag: string;
+    isOffline: boolean;
+    isPrivate: boolean;
+    isTraveling: boolean;
+    isRealInstance: boolean;
+    worldId: string;
+    instanceId: string;
+    instanceName: string;
+    accessType: string;
+    accessTypeName: string;
+    region: string;
+    shortName: string;
+    userId: string | null;
+    hiddenId: string | null;
+    privateId: string | null;
+    friendsId: string | null;
+    groupId: string | null;
+    groupAccessType: string | null;
+    canRequestInvite: boolean;
+    strict: boolean;
+    ageGate: boolean;
+}
 
 interface LocationRecord extends Record<string, unknown> {
-    tag?: unknown;
-    location?: unknown;
-    ref?: LocationRecord;
-    $location?: {
-        tag?: unknown;
-        worldId?: unknown;
-        instanceId?: unknown;
-    };
-    worldId?: unknown;
-    world_id?: unknown;
-    instanceId?: unknown;
-    instance_id?: unknown;
-    id?: unknown;
-    isOffline?: unknown;
-    isPrivate?: unknown;
-    isTraveling?: unknown;
+    tag?: string | null;
+    location?: string | null;
+    ref?: LocationRecord | null;
+    $location?: LocationRecord | null;
+    worldId?: string | null;
+    world_id?: string | null;
+    instanceId?: string | null;
+    instance_id?: string | null;
+    id?: string | null;
+    isOffline?: boolean | null;
+    isPrivate?: boolean | null;
+    isTraveling?: boolean | null;
 }
 
 type ParsedStringField =
@@ -434,13 +451,16 @@ function translateAccessType(
 
 export { parseLocation, displayLocation, resolveRegion, translateAccessType };
 
+type FriendListMembershipValue = boolean | object | null | undefined;
+type FriendListMembership =
+    | ReadonlySet<string>
+    | ReadonlyMap<string, FriendListMembershipValue>
+    | readonly string[]
+    | Readonly<Record<string, FriendListMembershipValue>>;
+
 interface LastLocation {
-    friendList?:
-        | Set<unknown>
-        | Map<unknown, unknown>
-        | readonly unknown[]
-        | Record<string, unknown>;
-    location?: unknown;
+    friendList?: FriendListMembership;
+    location?: string | null;
 }
 
 interface ResolveFriendPresenceOptions {
@@ -495,7 +515,41 @@ function normalizeLocationValue(value: unknown): string {
     return '';
 }
 
-export { normalizeLocationValue };
+function normalizeLocationStatus(value: unknown): string {
+    const normalized = normalizeString(value).toLowerCase();
+    if (normalized === 'offline:offline') {
+        return 'offline';
+    }
+    if (normalized === 'private:private') {
+        return 'private';
+    }
+    if (normalized === 'traveling:traveling') {
+        return 'traveling';
+    }
+    return normalized;
+}
+
+const LOCATION_SENTINELS = ['offline', 'private', 'traveling'] as const;
+
+type LocationSentinel = (typeof LOCATION_SENTINELS)[number];
+
+function isLocationSentinel(value: string): value is LocationSentinel {
+    return LOCATION_SENTINELS.some((sentinel) => sentinel === value);
+}
+
+function locationSentinel(value: unknown): LocationSentinel | '' {
+    const status = normalizeLocationStatus(value);
+    return isLocationSentinel(status) ? status : '';
+}
+
+export {
+    isLocationSentinel,
+    LOCATION_SENTINELS,
+    locationSentinel,
+    normalizeLocationStatus,
+    normalizeLocationValue
+};
+export type { FriendListMembership, LocationSentinel };
 
 function getObject(value: unknown): LocationRecord | null {
     return value && typeof value === 'object'
@@ -576,10 +630,7 @@ function isLastLocationFriend(
         return false;
     }
     const friendList = lastLocation?.friendList;
-    if (friendList instanceof Set) {
-        return friendList.has(friendId);
-    }
-    if (friendList instanceof Map) {
+    if (friendList instanceof Set || friendList instanceof Map) {
         return friendList.has(friendId);
     }
     if (Array.isArray(friendList)) {
@@ -587,10 +638,11 @@ function isLastLocationFriend(
             (candidate) => normalizeLocationValue(candidate) === friendId
         );
     }
-    if (friendList && typeof friendList === 'object') {
-        return Boolean((friendList as Record<string, unknown>)[friendId]);
-    }
-    return false;
+    return Boolean(
+        friendList &&
+        typeof friendList === 'object' &&
+        Reflect.get(friendList, friendId)
+    );
 }
 
 function resolveFriendPresenceLocation(

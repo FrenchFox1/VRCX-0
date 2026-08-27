@@ -5,10 +5,11 @@ use serde_json::Value;
 use crate::common::{normalize_text, now_iso, strict_row_i64, strict_row_string, ParamsBuilder};
 use crate::database::schema::ensure_moderation_table;
 use crate::database::DatabaseService;
+use crate::ownership::OwnerId;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalModerationInput {
     #[serde(default)]
@@ -23,7 +24,7 @@ pub struct LocalModerationInput {
     pub mute: bool,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteModerationInput {
     #[serde(default)]
@@ -56,9 +57,9 @@ struct ModerationMetadataCandidate {
 
 pub fn local_moderation_list(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
 ) -> Result<Vec<LocalModerationOutput>, Error> {
-    let owner_user_id = normalize_text(&owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     if owner_user_id.is_empty() {
         return Ok(Vec::new());
     }
@@ -89,10 +90,10 @@ impl LocalModerationOutput {
 
 pub fn local_moderation_get(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     user_id: String,
 ) -> Result<Option<LocalModerationOutput>, Error> {
-    let owner_user_id = normalize_text(&owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     let user_id = normalize_text(user_id);
     if owner_user_id.is_empty() || user_id.is_empty() {
         return Ok(None);
@@ -111,7 +112,7 @@ pub fn local_moderation_get(
 
 pub fn local_moderation_set(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     entry: LocalModerationInput,
 ) -> Result<(), Error> {
     set_local_moderation_row(db, &owner_user_id, &entry)
@@ -119,7 +120,7 @@ pub fn local_moderation_set(
 
 pub fn local_moderation_delete(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     user_id: String,
 ) -> Result<(), Error> {
     delete_local_moderation_row(db, &owner_user_id, &user_id)
@@ -127,12 +128,12 @@ pub fn local_moderation_delete(
 
 pub fn local_moderation_sync_snapshot(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     rows: Vec<RemoteModerationInput>,
 ) -> Result<Vec<LocalModerationOutput>, Error> {
     use std::collections::{HashMap, HashSet};
 
-    let owner_user_id = normalize_text(&owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     if owner_user_id.is_empty() {
         return Ok(Vec::new());
     }
@@ -232,10 +233,10 @@ pub fn local_moderation_sync_snapshot(
 
 pub(crate) fn set_local_moderation_row(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     entry: &LocalModerationInput,
 ) -> Result<(), Error> {
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     let user_id = normalize_text(&entry.user_id);
     if owner_user_id.is_empty() || user_id.is_empty() {
         return Ok(());
@@ -257,10 +258,10 @@ pub(crate) fn set_local_moderation_row(
 
 pub(crate) fn delete_local_moderation_row(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_id: &str,
 ) -> Result<(), Error> {
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     let user_id = normalize_text(user_id);
     if owner_user_id.is_empty() || user_id.is_empty() {
         return Ok(());

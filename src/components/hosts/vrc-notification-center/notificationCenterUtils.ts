@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { formatDateTime } from '@/lib/dateTime';
 import type {
     NotificationResponse,
@@ -17,23 +18,17 @@ import {
     openExternalLink
 } from '@/services/entityMediaService';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
+import { isRecord } from '@/shared/utils/record';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
 
-export const categoryOrder = ['friend', 'group', 'other'];
-
 type CachedInstanceLike = Record<string, unknown> & {
-    closedAt?: unknown;
+    closedAt?: string | null;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function normalizeWorldTarget(value: unknown) {
-    const text =
-        typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+function normalizeWorldTarget(value: string) {
+    const text = value.trim();
     const parsed = parseLocation(text);
     if (parsed.isRealInstance && parsed.tag) {
         return parsed.tag;
@@ -154,10 +149,7 @@ export function getResponseLabel(
     return response?.text || response?.type || 'Respond';
 }
 
-function getCachedInstanceLocation(instance: unknown) {
-    if (!isRecord(instance)) {
-        return '';
-    }
+function getCachedInstanceLocation(instance: GroupInstanceRecord) {
     return String(
         instance.location ||
             instance.$location ||
@@ -168,13 +160,10 @@ function getCachedInstanceLocation(instance: unknown) {
 }
 
 export function buildCachedInstanceMap(
-    instances: readonly unknown[] | null | undefined
+    instances: readonly GroupInstanceRecord[]
 ) {
     const map = new Map<string, CachedInstanceLike>();
-    for (const instance of Array.isArray(instances) ? instances : []) {
-        if (!isRecord(instance)) {
-            continue;
-        }
+    for (const instance of instances) {
         const location = getCachedInstanceLocation(instance);
         if (location) {
             const entry = isRecord(instance.instance)

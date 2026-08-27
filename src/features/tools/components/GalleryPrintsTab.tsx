@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import mediaRepository from '@/repositories/vrchatMediaRepository';
 import {
     printCleanupWarningMessageKey,
@@ -20,7 +21,10 @@ import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import { TabsContent } from '@/ui/shadcn/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
+import type { GalleryBulkCommands } from '../galleryTypes';
+import { GallerySelectionBar } from './GallerySelectionBar';
 import { EmptyState, LoadingState } from './GalleryViewParts';
 import { MediaAssetTile } from './MediaAssetTile';
 import { MediaLibraryToolbar } from './MediaLibraryToolbar';
@@ -37,18 +41,27 @@ type GridDensityConfig = {
     printsGridClass: string;
 };
 
+type PrintFavoriteFilter = 'all' | 'favorites' | 'others';
+
+const PRINT_FAVORITE_FILTERS: PrintFavoriteFilter[] = [
+    'all',
+    'favorites',
+    'others'
+];
+
 export type GalleryPrintsTabState = {
+    activeTab: string;
     gridDensityConfig: GridDensityConfig;
     isVrcPlusSupporter: boolean;
     loading: boolean;
     mutatingKey?: string;
-    onBeginUpload: (tab: 'prints') => unknown;
-    onDeletePrint: (printId: string) => unknown;
-    onPreview: (preview: { id: string; title: string; url: string }) => unknown;
-    onRefresh: (tab: 'prints') => unknown;
+    onBeginUpload: (tab: 'prints') => void;
+    onDeletePrint: (printId: string) => void;
+    onPreview: (preview: { id: string; title: string; url: string }) => void;
+    onRefresh: (tab: 'prints') => void;
     prints: GalleryPrint[];
     uploadingTab?: string;
-};
+} & GalleryBulkCommands;
 
 type GalleryPrintsTabProps = {
     printsTab: GalleryPrintsTabState;
@@ -56,6 +69,8 @@ type GalleryPrintsTabProps = {
 
 export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
     const {
+        activeTab,
+        bulkRunning,
         prints,
         loading,
         uploadingTab,
@@ -65,10 +80,14 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
         onRefresh,
         onBeginUpload,
         onPreview,
+        onBulkDelete,
+        onBulkSetFavorite,
         onDeletePrint
     } = printsTab;
     const { t } = useTranslation();
     const [favoriteMutatingId, setFavoriteMutatingId] = useState('');
+    const [favoriteFilter, setFavoriteFilter] =
+        useState<PrintFavoriteFilter>('all');
     const favoriteIds = usePrintFavoriteStore((state) => state.favoriteIds);
     const maxFavorites = usePrintFavoriteStore((state) => state.maxFavorites);
     const favoriteWarning = usePrintFavoriteStore((state) => state.warning);
@@ -77,6 +96,34 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
         (state) => state.hydratePrintFavorites
     );
     const favoritePrintIds = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+    const visiblePrints = useMemo(() => {
+        const withId = prints.filter((print) =>
+            Boolean(String(print.id || '').trim())
+        );
+        if (favoriteFilter === 'favorites') {
+            return withId.filter((print) => favoritePrintIds.has(print.id));
+        }
+        if (favoriteFilter === 'others') {
+            return withId.filter((print) => !favoritePrintIds.has(print.id));
+        }
+        return withId;
+    }, [favoriteFilter, favoritePrintIds, prints]);
+    const visiblePrintIds = useMemo(
+        () => visiblePrints.map((print) => print.id),
+        [visiblePrints]
+    );
+    const selection = useTileSelectionState({
+        keys: visiblePrintIds,
+        resetToken: `${activeTab}:${favoriteFilter}`
+    });
+    const selectedPrintIds = useMemo(
+        () => visiblePrintIds.filter((id) => selection.selectedKeysSet.has(id)),
+        [selection.selectedKeysSet, visiblePrintIds]
+    );
+    const deletablePrintIds = useMemo(
+        () => selectedPrintIds.filter((id) => !favoritePrintIds.has(id)),
+        [favoritePrintIds, selectedPrintIds]
+    );
     const warningKey = printFavoriteWarningMessageKey(favoriteWarning);
     const cleanupWarningKey = printCleanupWarningMessageKey(
         lastCleanup?.warning
@@ -173,8 +220,29 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
             value="prints"
             className="mt-2 flex min-h-0 flex-1 data-hidden:hidden"
         >
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
                 <MediaLibraryToolbar
+                    leading={
+                        <ToggleGroup
+                            value={[favoriteFilter]}
+                            onValueChange={(next) => {
+                                const selected = PRINT_FAVORITE_FILTERS.find(
+                                    (filter) => filter === next[0]
+                                );
+                                if (selected) {
+                                    setFavoriteFilter(selected);
+                                }
+                            }}
+                            variant="outline"
+                            size="sm"
+                        >
+                            {PRINT_FAVORITE_FILTERS.map((filter) => (
+                                <ToggleGroupItem key={filter} value={filter}>
+                                    {t(`view.tools.prints_filter.${filter}`)}
+                                </ToggleGroupItem>
+                            ))}
+                        </ToggleGroup>
+                    }
                     actions={
                         <>
                             <Button
@@ -213,19 +281,17 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                 <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                     {loading ? (
                         <LoadingState />
-                    ) : prints.length > 0 ? (
+                    ) : visiblePrints.length > 0 ? (
                         <div
                             className={`${gridDensityConfig.printsGridClass} p-1`}
                         >
-                            {prints.map((print) => {
-                                const printId = String(print.id || '').trim();
-                                if (!printId) {
-                                    return null;
-                                }
+                            {visiblePrints.map((print) => {
+                                const printId = print.id;
                                 const imageUrl = print?.files?.image || '';
                                 const isMutating =
                                     mutatingKey === `prints:${printId}` ||
-                                    favoriteMutatingId === printId;
+                                    favoriteMutatingId === printId ||
+                                    bulkRunning;
                                 const isFavorite =
                                     favoritePrintIds.has(printId);
 
@@ -238,6 +304,19 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                                         imageFit="contain"
                                         imagePosition="top"
                                         hideContent
+                                        selectable
+                                        selected={selection.selectedKeysSet.has(
+                                            printId
+                                        )}
+                                        selectionActive={selection.hasSelection}
+                                        selectLabel={`${t('common.actions.select')} ${print.note || printId}`}
+                                        onToggleSelect={(checked, shift) =>
+                                            selection.selectItem(
+                                                printId,
+                                                checked,
+                                                { shift }
+                                            )
+                                        }
                                         badges={
                                             isFavorite
                                                 ? [
@@ -287,12 +366,17 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                                             },
                                             {
                                                 key: 'delete',
-                                                label: t(
-                                                    'common.actions.delete'
-                                                ),
+                                                label: isFavorite
+                                                    ? t(
+                                                          'view.tools.gallery_selection.delete_locked_favorite'
+                                                      )
+                                                    : t(
+                                                          'common.actions.delete'
+                                                      ),
                                                 icon: Trash2Icon,
                                                 destructive: true,
-                                                disabled: isMutating,
+                                                disabled:
+                                                    isMutating || isFavorite,
                                                 onSelect: () =>
                                                     onDeletePrint(printId)
                                             }
@@ -303,13 +387,49 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                         </div>
                     ) : (
                         <EmptyState
-                            title={t('view.tools.empty.no_prints_loaded')}
-                            description={t(
-                                'view.tools.action.refresh_this_tab_to_load_your_vrchat_prints'
-                            )}
-                        />
+                            icon={ImageIcon}
+                            title={t('empty_state.prints_title')}
+                            description={t('empty_state.prints_description')}
+                        >
+                            <Button
+                                type="button"
+                                variant="link"
+                                onClick={() => onRefresh('prints')}
+                            >
+                                {t('dialog.gallery_icons.refresh')}
+                            </Button>
+                        </EmptyState>
                     )}
                 </div>
+                <GallerySelectionBar
+                    selectedCount={selectedPrintIds.length}
+                    deletableCount={deletablePrintIds.length}
+                    isAllSelected={selection.isAllSelected}
+                    actionsDisabled={bulkRunning}
+                    favoriteActions={{
+                        onFavorite: () =>
+                            onBulkSetFavorite({
+                                printIds: selectedPrintIds,
+                                favorite: true
+                            }),
+                        onUnfavorite: () =>
+                            onBulkSetFavorite({
+                                printIds: selectedPrintIds,
+                                favorite: false
+                            })
+                    }}
+                    onSelectAll={selection.toggleSelectAll}
+                    onClearSelection={selection.clearSelection}
+                    onDelete={() =>
+                        onBulkDelete({
+                            tab: 'prints',
+                            assetIds: deletablePrintIds,
+                            lockedCount:
+                                selectedPrintIds.length -
+                                deletablePrintIds.length
+                        })
+                    }
+                />
             </div>
         </TabsContent>
     );

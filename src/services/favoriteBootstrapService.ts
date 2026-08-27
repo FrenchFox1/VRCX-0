@@ -1,7 +1,5 @@
-import {
-    commands,
-    type SocialFavoritesBaselineOutput
-} from '@/platform/tauri/bindings';
+import { commands, type RawJson } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -9,13 +7,10 @@ import { useSessionStore } from '@/state/sessionStore';
 
 import { syncStartupServicesTask } from './startupServicesStatus';
 
-type FavoriteSnapshotRecord = Record<string, unknown> & {
-    detail?: unknown;
-};
 type FavoriteBootstrapOptions = {
-    userId?: unknown;
-    endpoint?: unknown;
-    currentUserSnapshot?: unknown;
+    userId?: string;
+    endpoint?: string;
+    currentUserSnapshot?: RawJson;
 };
 type FavoriteBootstrapResult = {
     userId: string;
@@ -28,10 +23,6 @@ type ActiveFavoriteHydration = {
 };
 
 const activeHydrations = new Map<string, ActiveFavoriteHydration>();
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeUserId(value: unknown) {
     return typeof value === 'string'
@@ -47,20 +38,17 @@ function getDisplayName(user: Record<string, unknown> | null | undefined) {
     );
 }
 
-function favoriteBootstrapKey(userId: unknown, endpoint: unknown = '') {
-    return `${normalizeUserId(userId)}\u0000${String(endpoint || '')}`;
+function favoriteBootstrapKey(userId: string, endpoint = '') {
+    return `${userId}\u0000${endpoint}`;
 }
 
-function isCurrentFavoriteBootstrapTarget(
-    userId: string,
-    endpoint: unknown = ''
-) {
+function isCurrentFavoriteBootstrapTarget(userId: string, endpoint = '') {
     const runtimeState = useRuntimeStore.getState();
     const sessionState = useSessionStore.getState();
 
     return (
         runtimeState.auth.currentUserId === userId &&
-        runtimeState.auth.currentUserEndpoint === String(endpoint || '') &&
+        runtimeState.auth.currentUserEndpoint === endpoint &&
         sessionState.isLoggedIn &&
         sessionState.sessionPhase === 'ready'
     );
@@ -102,16 +90,13 @@ async function runFavoriteBootstrap({
             `Loading favorites baseline for ${displayName}.`
         );
 
-    const result: SocialFavoritesBaselineOutput =
-        await commands.appSocialFavoritesBaselineGet({
-            userId: normalizedUserId,
-            endpoint: String(endpoint || ''),
-            currentUserSnapshot: currentSnapshot,
-            friendRosterById
-        });
-    const snapshot: FavoriteSnapshotRecord | null = isRecord(result.snapshot)
-        ? result.snapshot
-        : null;
+    const result = await commands.appSocialFavoritesBaselineGet({
+        userId: normalizedUserId,
+        endpoint,
+        currentUserSnapshot: currentSnapshot,
+        friendRosterById
+    });
+    const snapshot = result.snapshot;
 
     if (result.stale || !snapshot) {
         if (isCurrentTarget()) {
@@ -123,7 +108,7 @@ async function runFavoriteBootstrap({
         return {
             userId: normalizedUserId,
             stale: true,
-            count: result.count ?? 0
+            count: result.count
         };
     }
 
@@ -131,22 +116,18 @@ async function runFavoriteBootstrap({
         return {
             userId: normalizedUserId,
             stale: true,
-            count: result.count ?? 0
+            count: result.count
         };
     }
 
-    const favoriteSnapshot = {
-        ...snapshot,
-        detail: String(snapshot.detail || '')
-    };
-    useFavoriteStore.getState().setFavoritesSnapshot(favoriteSnapshot);
+    useFavoriteStore.getState().setFavoritesSnapshot(snapshot);
     useSessionStore.getState().setFavoritesLoaded(true);
-    syncStartupServicesTask([String(snapshot.detail || '')]);
+    syncStartupServicesTask([snapshot.detail]);
 
     return {
         userId: normalizedUserId,
         stale: false,
-        count: result.count ?? 0
+        count: result.count
     };
 }
 
@@ -154,12 +135,12 @@ export function bootstrapFavorites(
     options: FavoriteBootstrapOptions
 ): Promise<FavoriteBootstrapResult> {
     const normalizedUserId = normalizeUserId(
-        options?.userId ||
-            (isRecord(options?.currentUserSnapshot)
+        options.userId ||
+            (isRecord(options.currentUserSnapshot)
                 ? options.currentUserSnapshot.id
                 : '')
     );
-    const currentUserSnapshot = isRecord(options?.currentUserSnapshot)
+    const currentUserSnapshot = isRecord(options.currentUserSnapshot)
         ? options.currentUserSnapshot
         : null;
 
@@ -169,7 +150,7 @@ export function bootstrapFavorites(
         );
     }
 
-    const activeKey = favoriteBootstrapKey(normalizedUserId, options?.endpoint);
+    const activeKey = favoriteBootstrapKey(normalizedUserId, options.endpoint);
     const activeHydration = activeHydrations.get(activeKey);
     if (activeHydration && !activeHydration.invalidated) {
         return activeHydration.promise;
@@ -185,13 +166,10 @@ export function bootstrapFavorites(
     };
     const isCurrentTarget = () =>
         !hydration.invalidated &&
-        isCurrentFavoriteBootstrapTarget(normalizedUserId, options?.endpoint);
+        isCurrentFavoriteBootstrapTarget(normalizedUserId, options.endpoint);
     const invalidateIfStale = () => {
         if (
-            isCurrentFavoriteBootstrapTarget(
-                normalizedUserId,
-                options?.endpoint
-            )
+            isCurrentFavoriteBootstrapTarget(normalizedUserId, options.endpoint)
         ) {
             return;
         }

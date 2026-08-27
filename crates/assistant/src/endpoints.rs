@@ -4,14 +4,15 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
-use vrcx_0_integrations::llm::{
-    is_openrouter_base_url, ChatMessage, LlmClient, LlmEndpointDetectModelsResult,
-    LlmModelReasoning, LlmRequestOptions,
+use vrcx_0_contracts::llm::{
+    ChatMessage, LlmEndpointDetectModelsResult, LlmModelReasoning, LlmRequestOptions,
 };
-use vrcx_0_persistence::config::ConfigRepository;
 
 use crate::config::{deobfuscate_api_key, normalize_llm_base_url, obfuscate_api_key, PlaybookMode};
 use crate::error::AssistantError;
+use crate::ports::{
+    AssistantConfig, AssistantLlmClient, AssistantLlmClientFactory, AssistantLlmClientInput,
+};
 use crate::session::random_hex;
 
 mod migration;
@@ -67,6 +68,7 @@ pub struct LlmEndpointDto {
     pub id: String,
     pub name: String,
     pub base_url: String,
+    pub api_key: String,
     pub has_key: bool,
     pub models: Vec<String>,
     pub model_reasoning: Vec<LlmModelReasoning>,
@@ -132,16 +134,22 @@ impl Default for AssistantRuntimeSelection {
 }
 
 pub struct EndpointStore {
-    config: ConfigRepository,
+    config: AssistantConfig,
+    llm_factory: AssistantLlmClientFactory,
     custom_proxy_url: Option<String>,
     write_lock: Mutex<()>,
     migrated: AtomicBool,
 }
 
 impl EndpointStore {
-    pub fn new(config: ConfigRepository, custom_proxy_url: Option<String>) -> Self {
+    pub fn new(
+        config: AssistantConfig,
+        llm_factory: AssistantLlmClientFactory,
+        custom_proxy_url: Option<String>,
+    ) -> Self {
         Self {
             config,
+            llm_factory,
             custom_proxy_url,
             write_lock: Mutex::new(()),
             migrated: AtomicBool::new(false),
@@ -201,11 +209,7 @@ impl EndpointStore {
         let last_detected_at = existing
             .as_ref()
             .filter(|endpoint| {
-                endpoint_matches_detect_target(
-                    endpoint,
-                    &base_url,
-                    &deobfuscate_api_key(&api_key),
-                )
+                endpoint_matches_detect_target(endpoint, &base_url, &deobfuscate_api_key(&api_key))
             })
             .and_then(|endpoint| endpoint.last_detected_at.clone());
 
@@ -380,8 +384,14 @@ impl EndpointStore {
         base_url: &str,
         api_key: &str,
         model: &str,
-    ) -> Result<LlmClient, AssistantError> {
-        LlmClient::new(base_url, api_key, model, self.explicit_proxy_url()?)
+    ) -> Result<AssistantLlmClient, AssistantError> {
+        self.llm_factory
+            .create(AssistantLlmClientInput {
+                base_url: base_url.to_string(),
+                api_key: api_key.to_string(),
+                model: model.to_string(),
+                proxy_url: self.explicit_proxy_url()?.map(str::to_string),
+            })
             .map_err(AssistantError::from)
     }
 
@@ -471,11 +481,13 @@ impl EndpointStore {
 }
 
 fn to_dto(endpoint: StoredLlmEndpoint) -> LlmEndpointDto {
+    let api_key = deobfuscate_api_key(&endpoint.api_key);
     LlmEndpointDto {
         id: endpoint.id,
         name: endpoint.name,
         base_url: endpoint.base_url,
-        has_key: !deobfuscate_api_key(&endpoint.api_key).is_empty(),
+        has_key: !api_key.is_empty(),
+        api_key,
         models: endpoint.models,
         model_reasoning: endpoint.model_reasoning,
         last_detected_at: endpoint.last_detected_at,
@@ -586,7 +598,9 @@ pub fn resolve_reasoning_effort(
     model: &str,
     stored_effort: &str,
 ) -> Option<String> {
-    if !is_openrouter_base_url(base_url) || stored_effort.is_empty() {
+    if normalize_llm_base_url(base_url) != "https://openrouter.ai/api/v1"
+        || stored_effort.is_empty()
+    {
         return None;
     }
     let reasoning = model_reasoning.iter().find(|r| r.model_id == model)?;

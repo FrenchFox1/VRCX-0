@@ -1,19 +1,15 @@
-use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 
-use vrcx_0_persistence::friends::{friend_log_history_query, FriendLogHistoryQueryInput};
-use vrcx_0_persistence::storage::StorageService;
-use vrcx_0_persistence::DatabaseService;
-
-use crate::{RuntimeAuthScope, RuntimeEventBus, UnavailableLocalGameContextSource};
-use vrcx_0_application_core::{
-    HostSessionRuntime, NoopPrintCleanupInputSink, RuntimeSyncEngine, TaskSupervisor, WebClient,
-    WorldCache,
+use vrcx_0_application_core::{RemoteMutationGate, RuntimeAuthScope};
+use vrcx_0_application_realtime::test_support::{
+    runtime_with_active_session, TestDir, TestRealtimeHostRuntime,
 };
-use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
+use vrcx_0_application_realtime::RealtimeStore;
+use vrcx_0_contracts::friend_log::{
+    FriendLogCurrentEntryInput, FriendLogHistoryQueryInput, FriendLogUpsertOptionsInput,
+};
 
-use super::super::types::SocialFriendMutationStatus;
+use super::super::types::{SocialFriendMutationStatus, TestSocialMutationRemoteRequests};
 use super::*;
 
 #[test]
@@ -27,114 +23,62 @@ fn mutation_response_requires_2xx_and_strict_non_empty_json() {
     assert!(validate_vrchat_mutation_response(200, r#"{"error":{"message":"denied"}}"#).is_err());
 }
 
-struct TestDir {
-    path: PathBuf,
-}
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-social-mutation-{name}-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
-}
-
 struct Fixture {
     _dir: TestDir,
-    runtime: Arc<RealtimeHostRuntime>,
-    db: Arc<DatabaseService>,
-    web: Arc<WebClient>,
+    runtime: TestRealtimeHostRuntime,
     auth_scope: RuntimeAuthScope,
-    event_bus: RuntimeEventBus,
+    remote_mutations: Arc<RemoteMutationGate>,
+    remote_requests: TestSocialMutationRemoteRequests,
 }
 
 fn fixture(name: &str) -> Fixture {
-    let dir = TestDir::new(name);
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-    let storage = StorageService::new(&dir.path.join("storage.json")).unwrap();
-    let web = Arc::new(
-        WebClient::new(
-            &storage,
-            db.as_ref(),
-            "wss://pipeline.vrchat.cloud".to_string(),
-            env!("CARGO_PKG_VERSION"),
-        )
-        .unwrap(),
-    );
-    let auth_scope = RuntimeAuthScope::new();
-    let event_bus = RuntimeEventBus::new();
-    let world_cache = Arc::new(WorldCache::new(
-        Arc::clone(&db),
-        512,
-        Duration::from_secs(30 * 60),
-    ));
-    let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        db: Arc::clone(&db),
-        web: Arc::clone(&web),
-        event_bus: event_bus.clone(),
-        sync: RuntimeSyncEngine::new(),
-        tasks: TaskSupervisor::new(),
-        session: HostSessionRuntime::new(),
-        auth_scope: auth_scope.clone(),
-        local_game_context: Arc::new(UnavailableLocalGameContextSource),
-        activity_sink: None,
-        world_cache,
-        print_cleanup: Arc::new(NoopPrintCleanupInputSink),
-        friend_note_change_sink: None,
-    }));
+    let (dir, runtime, _) = runtime_with_active_session(name).unwrap();
+    let auth_scope = runtime.auth_scope().clone();
+    auth_scope.set("", "");
+    let remote_mutations = Arc::new(RemoteMutationGate::default());
     Fixture {
         _dir: dir,
         runtime,
-        db,
-        web,
         auth_scope,
-        event_bus,
+        remote_mutations,
+        remote_requests: TestSocialMutationRemoteRequests,
     }
 }
 
 impl Fixture {
     fn deps(&self) -> SocialMutationDeps<'_> {
         SocialMutationDeps {
-            db: self.db.as_ref(),
-            web: self.web.as_ref(),
+            store: self.runtime.store(),
+            remote_requests: &self.remote_requests,
+            web: self.runtime.web_client(),
             auth_scope: &self.auth_scope,
-            realtime: &self.runtime,
+            remote_mutations: self.remote_mutations.as_ref(),
+            realtime: self.runtime.runtime(),
         }
     }
 }
 
-fn history_rows(db: &DatabaseService, owner: &str, target: &str, r#type: &str) -> usize {
-    friend_log_history_query(
-        db,
-        FriendLogHistoryQueryInput {
+fn history_rows(
+    runtime: &TestRealtimeHostRuntime,
+    owner: &str,
+    target: &str,
+    r#type: &str,
+) -> usize {
+    runtime
+        .store()
+        .friend_log_history(FriendLogHistoryQueryInput {
             user_id: owner.to_string(),
             target_user_id: target.to_string(),
             types: vec![r#type.to_string()],
-        },
-    )
-    .expect("history query")
-    .len()
+        })
+        .expect("history query")
+        .len()
 }
 
 #[tokio::test]
 async fn unfriend_rejects_stale_auth_scope_with_zero_side_effects() {
     let fixture = fixture("unfriend-auth-scope-mismatch");
     let input = SocialFriendMutationInput {
-        owner_user_id: "usr_self".into(),
-        endpoint: String::new(),
         target_user_id: "usr_target".into(),
         target_display_name: "Target".into(),
     };
@@ -143,7 +87,7 @@ async fn unfriend_rejects_stale_auth_scope_with_zero_side_effects() {
 
     assert!(result.is_err());
     assert_eq!(
-        history_rows(fixture.db.as_ref(), "usr_self", "usr_target", "Unfriend"),
+        history_rows(&fixture.runtime, "usr_self", "usr_target", "Unfriend"),
         0
     );
 }
@@ -152,8 +96,6 @@ async fn unfriend_rejects_stale_auth_scope_with_zero_side_effects() {
 async fn accept_friend_request_rejects_stale_auth_scope_with_zero_side_effects() {
     let fixture = fixture("accept-auth-scope-mismatch");
     let input = SocialFriendRequestAcceptInput {
-        owner_user_id: "usr_self".into(),
-        endpoint: String::new(),
         notification_id: "not_1".into(),
         target_user_id: "usr_target".into(),
         target_display_name: "Target".into(),
@@ -163,7 +105,7 @@ async fn accept_friend_request_rejects_stale_auth_scope_with_zero_side_effects()
 
     assert!(result.is_err());
     assert_eq!(
-        history_rows(fixture.db.as_ref(), "usr_self", "usr_target", "Friend"),
+        history_rows(&fixture.runtime, "usr_self", "usr_target", "Friend"),
         0
     );
 }
@@ -171,54 +113,68 @@ async fn accept_friend_request_rejects_stale_auth_scope_with_zero_side_effects()
 #[test]
 fn apply_unfriend_locally_without_baseline_falls_back_to_direct_persistence_write() {
     let fixture = fixture("unfriend-missing-baseline-fallback");
-    friend_log_upsert_current(
-        fixture.db.as_ref(),
-        "usr_self".into(),
-        FriendLogCurrentEntryInput {
-            user_id: "usr_target".into(),
-            display_name: "Target".into(),
-            trust_level: Some("Visitor".into()),
-            friend_number: Value::from(1),
-        },
-        FriendLogUpsertOptionsInput {
-            history_entry: None,
-            force_history: false,
-        },
-    )
-    .expect("seed friend_log_current");
-    let watermark_before = fixture.runtime.capture_friend_baseline_watermark().unwrap();
+    fixture
+        .runtime
+        .store()
+        .friend_log_upsert_current(
+            "usr_self",
+            FriendLogCurrentEntryInput {
+                user_id: "usr_target".into(),
+                display_name: "Target".into(),
+                trust_level: Some("Visitor".into()),
+                friend_number: Value::from(1),
+            },
+            FriendLogUpsertOptionsInput {
+                history_entry: None,
+                force_history: false,
+            },
+        )
+        .expect("seed friend_log_current");
+    let watermark_before = fixture
+        .runtime
+        .runtime()
+        .capture_friend_baseline_watermark()
+        .unwrap();
 
     let outcome = apply_unfriend_locally(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
     );
 
     assert_eq!(outcome.status, SocialFriendMutationStatus::Applied);
-    assert!(vrcx_0_persistence::friends::friend_log_current_list(
-        fixture.db.as_ref(),
-        "usr_self".into()
-    )
-    .unwrap()
-    .is_empty());
+    assert!(fixture
+        .runtime
+        .store()
+        .friend_log_current_list("usr_self")
+        .unwrap()
+        .is_empty());
     assert_eq!(
-        history_rows(fixture.db.as_ref(), "usr_self", "usr_target", "Unfriend"),
+        history_rows(&fixture.runtime, "usr_self", "usr_target", "Unfriend"),
         1
     );
-    let watermark_after = fixture.runtime.capture_friend_baseline_watermark().unwrap();
+    let watermark_after = fixture
+        .runtime
+        .runtime()
+        .capture_friend_baseline_watermark()
+        .unwrap();
     assert!(watermark_after.friend_log_sequence > watermark_before.friend_log_sequence);
 }
 
 #[test]
 fn apply_friend_request_accept_locally_without_baseline_falls_back_and_creates_friend_row() {
     let fixture = fixture("accept-missing-baseline-fallback");
-    let watermark_before = fixture.runtime.capture_friend_baseline_watermark().unwrap();
+    let watermark_before = fixture
+        .runtime
+        .runtime()
+        .capture_friend_baseline_watermark()
+        .unwrap();
 
     let outcome = apply_friend_request_accept_locally(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
@@ -226,17 +182,21 @@ fn apply_friend_request_accept_locally_without_baseline_falls_back_and_creates_f
     );
 
     assert_eq!(outcome.status, SocialFriendMutationStatus::Applied);
-    let current = vrcx_0_persistence::friends::friend_log_current_list(
-        fixture.db.as_ref(),
-        "usr_self".into(),
-    )
-    .unwrap();
+    let current = fixture
+        .runtime
+        .store()
+        .friend_log_current_list("usr_self")
+        .unwrap();
     assert!(current.iter().any(|row| row.user_id == "usr_target"));
     assert_eq!(
-        history_rows(fixture.db.as_ref(), "usr_self", "usr_target", "Friend"),
+        history_rows(&fixture.runtime, "usr_self", "usr_target", "Friend"),
         1
     );
-    let watermark_after = fixture.runtime.capture_friend_baseline_watermark().unwrap();
+    let watermark_after = fixture
+        .runtime
+        .runtime()
+        .capture_friend_baseline_watermark()
+        .unwrap();
     assert!(watermark_after.friend_log_sequence > watermark_before.friend_log_sequence);
 }
 
@@ -246,7 +206,7 @@ fn apply_unfriend_locally_reports_remote_ok_local_failed_when_persistence_write_
 
     let outcome = apply_unfriend_locally(
         &fixture.deps(),
-        "usr_self;DROP TABLE",
+        &OwnerId::new("usr_self;DROP TABLE"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
@@ -266,7 +226,7 @@ fn apply_friend_request_accept_locally_reports_remote_ok_local_failed_when_persi
 
     let outcome = apply_friend_request_accept_locally(
         &fixture.deps(),
-        "usr_self;DROP TABLE",
+        &OwnerId::new("usr_self;DROP TABLE"),
         "https://api.vrchat.cloud/api/1",
         "usr_target",
         "Target",
@@ -286,7 +246,7 @@ fn write_friend_request_history_records_friend_request_type() {
 
     let outcome = write_friend_request_history(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "usr_target",
         "Target",
         "FriendRequest",
@@ -294,46 +254,40 @@ fn write_friend_request_history_records_friend_request_type() {
 
     assert_eq!(outcome.status, SocialFriendMutationStatus::Applied);
     assert_eq!(
-        history_rows(
-            fixture.db.as_ref(),
-            "usr_self",
-            "usr_target",
-            "FriendRequest"
-        ),
+        history_rows(&fixture.runtime, "usr_self", "usr_target", "FriendRequest"),
         1
     );
 }
 
 #[test]
-fn error_message_with_status_suffix_appends_status_for_error_message_payload() {
-    let message = ApiJsonResponse::parse(
+fn mutation_response_returns_typed_not_found_failure() {
+    let error = validate_vrchat_mutation_response(
         404,
         r#"{"error":{"message":"The specified friend request was not found."}}"#,
     )
-    .error_message_or("VRChat social mutation request failed");
+    .unwrap_err();
 
-    let message = error_message_with_status_suffix(message, 404);
-
-    assert!(message.ends_with("(404)"));
-}
-
-#[test]
-fn error_message_with_status_suffix_does_not_double_append_fallback_message() {
-    let message =
-        ApiJsonResponse::parse(404, "{}").error_message_or("VRChat social mutation request failed");
-
-    let message = error_message_with_status_suffix(message, 404);
-
-    assert_eq!(message.matches("(404)").count(), 1);
+    assert!(matches!(
+        error,
+        Error::VrchatApi {
+            status_code: 404,
+            message
+        } if message == "The specified friend request was not found."
+    ));
 }
 
 #[test]
 fn friend_request_accept_only_treats_status_404_as_not_found() {
-    assert!(is_not_found_error(&Error::Custom(
-        "The specified friend request was not found. (404)".into()
-    )));
+    assert!(is_not_found_error(&Error::VrchatApi {
+        status_code: 404,
+        message: "opaque not found response".into(),
+    }));
+    assert!(!is_not_found_error(&Error::VrchatApi {
+        status_code: 500,
+        message: "The specified friend request was not found. (404)".into(),
+    }));
     assert!(!is_not_found_error(&Error::Custom(
-        "The specified friend request was not found. (500)".into()
+        "The specified friend request was not found. (404)".into(),
     )));
 }
 
@@ -352,7 +306,7 @@ fn current_scope_401_emits_structured_auth_failure() {
         401,
     );
 
-    let events = fixture.event_bus.take_events_for_test();
+    let events = fixture.runtime.take_events_for_test();
     let event = events
         .iter()
         .find(|event| event.name == "runtimeVrchatAuthFailure")
@@ -382,7 +336,7 @@ fn stale_scope_401_does_not_emit_auth_failure() {
     );
 
     assert!(fixture
-        .event_bus
+        .runtime
         .take_events_for_test()
         .iter()
         .all(|event| event.name != "runtimeVrchatAuthFailure"));
@@ -409,7 +363,7 @@ fn previous_generation_401_does_not_invalidate_reauthenticated_same_scope() {
     );
 
     assert!(fixture
-        .event_bus
+        .runtime
         .take_events_for_test()
         .iter()
         .all(|event| event.name != "runtimeVrchatAuthFailure"));
@@ -421,7 +375,7 @@ fn write_friend_request_history_records_cancel_friend_request_type() {
 
     let outcome = write_friend_request_history(
         &fixture.deps(),
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "usr_target",
         "Target",
         "CancelFriendRequest",
@@ -430,7 +384,7 @@ fn write_friend_request_history_records_cancel_friend_request_type() {
     assert_eq!(outcome.status, SocialFriendMutationStatus::Applied);
     assert_eq!(
         history_rows(
-            fixture.db.as_ref(),
+            &fixture.runtime,
             "usr_self",
             "usr_target",
             "CancelFriendRequest"

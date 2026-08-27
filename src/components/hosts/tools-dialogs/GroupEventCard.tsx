@@ -153,8 +153,8 @@ function formatEventTimeRange(
     return end ? `${start} - ${end}` : start;
 }
 
-function capitalizeFirst(value: unknown) {
-    const text = String(value || '');
+function capitalizeFirst(value: string | undefined) {
+    const text = value ?? '';
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '\u2014';
 }
 

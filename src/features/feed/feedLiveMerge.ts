@@ -2,16 +2,19 @@ import type {
     FeedLiveEntry,
     FeedLiveEntryPayload,
     FeedLivePatch
-} from '@/domain/feed/feedLiveTypes';
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
-import type { FeedFilterType } from '@/repositories/feedRepository';
+} from '@/domain/feed/live';
+import type { FeedReadModelResult } from '@/domain/feed/readModel';
+import {
+    isFeedFilterType,
+    type FeedFilterType
+} from '@/repositories/feedRepository';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 
 import type { FeedRow } from './feedTypes';
 
 type FeedLiveMergeOptions = {
     rows: FeedRow[];
-    userId: unknown;
+    userId: string;
     filters?: readonly FeedFilterType[];
     favoriteUserIds?: readonly string[];
     scopedUserIds?: readonly string[];
@@ -31,15 +34,6 @@ export type FeedLiveMergeOptionsBuilder = (input: {
 type FeedDelta =
     | { kind: 'upsert'; sequence: number; entry: FeedLiveEntry }
     | { kind: 'patch'; sequence: number; patch: FeedLivePatch };
-
-const FEED_ROW_TYPES: ReadonlySet<string> = new Set([
-    'GPS',
-    'Online',
-    'Offline',
-    'Status',
-    'Avatar',
-    'Bio'
-]);
 
 function normalizeText(value: unknown): string {
     return typeof value === 'string'
@@ -176,7 +170,7 @@ function liveRowMatches(
     excludedUserIds: ReadonlySet<string>
 ): boolean {
     const entryType = normalizeText(row.type);
-    if (!FEED_ROW_TYPES.has(entryType)) {
+    if (!isFeedFilterType(entryType)) {
         return false;
     }
     const currentUserId = normalizeText(options.userId);
@@ -184,10 +178,7 @@ function liveRowMatches(
     if (ownerUserId && ownerUserId !== currentUserId) {
         return false;
     }
-    if (
-        options.filters?.length &&
-        !options.filters.includes(entryType as FeedFilterType)
-    ) {
+    if (options.filters?.length && !options.filters.includes(entryType)) {
         return false;
     }
     const userId = normalizeText(row.userId);

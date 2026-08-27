@@ -6,6 +6,7 @@ import {
     createTimeRule,
     hasGameRunningCondition,
     normalizeContextRule,
+    normalizeTimeRule,
     priorityLabelKeyFromNumber,
     priorityNumberFromValue,
     priorityValueFromNumber,
@@ -62,6 +63,46 @@ describe('presenceAutomationDialogUtils priority mapping', () => {
 });
 
 describe('presenceAutomationDialogUtils rule contracts', () => {
+    it('normalizes time rules while preserving future fields', () => {
+        expect(
+            normalizeTimeRule({
+                id: 'time-rule',
+                domain: 'time',
+                futureRuleField: { enabled: true },
+                conditions: [
+                    {
+                        type: 'timeWindow',
+                        start: '21:00',
+                        end: '02:00',
+                        days: [1, 2],
+                        futureConditionField: 'keep'
+                    }
+                ],
+                actions: {
+                    status: 'join me',
+                    futureActionField: 7
+                }
+            })
+        ).toMatchObject({
+            id: 'time-rule',
+            domain: 'time',
+            futureRuleField: { enabled: true },
+            conditions: [
+                {
+                    type: 'timeWindow',
+                    start: '21:00',
+                    end: '02:00',
+                    days: [1, 2],
+                    futureConditionField: 'keep'
+                }
+            ],
+            actions: {
+                status: 'join me',
+                futureActionField: 7
+            }
+        });
+    });
+
     it.each([
         ['alone', {}, { type: 'isAlone' }],
         ['withAnyone', {}, { type: 'withCompany' }],

@@ -1,40 +1,40 @@
 use serde::Deserialize;
-use serde_json::Value;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::query::{
+    deserialize_nonnegative_i32, QueryOrder, ReleaseStatusFilter, WorldSearchSort,
+};
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::worlds::WorldUpdateRequest;
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatWorldIdInput {
     #[serde(default)]
     pub(crate) world_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatWorldListByUserInput {
     #[serde(default)]
     pub(crate) user_id: String,
-    #[serde(default)]
-    pub(crate) n: i64,
-    #[serde(default)]
-    pub(crate) offset: i64,
-    #[serde(default)]
-    pub(crate) sort: String,
-    #[serde(default)]
-    pub(crate) order: String,
-    #[serde(default)]
-    pub(crate) release_status: String,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) n: i32,
+    #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
+    pub(crate) offset: i32,
+    pub(crate) sort: WorldSearchSort,
+    pub(crate) order: QueryOrder,
+    pub(crate) release_status: ReleaseStatusFilter,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatWorldSaveInput {
     #[serde(default)]
     pub(crate) world_id: String,
-    pub(crate) params: Option<Value>,
+    pub(crate) params: WorldUpdateRequest,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatWorldPersistentDataDeleteInput {
     #[serde(default)]
     pub(crate) user_id: String,

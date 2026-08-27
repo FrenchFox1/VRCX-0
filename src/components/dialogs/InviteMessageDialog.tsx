@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { InviteMessageType } from '@/platform/tauri/bindings';
 import {
     Dialog,
     DialogContent,
@@ -16,7 +17,7 @@ import {
     dialogDescription,
     dialogTitle,
     getInviteCooldownLabel,
-    isInviteMessageMode,
+    isInviteMessageType,
     normalizeInviteMessageRows,
     type InviteMessageMode,
     type InviteMessageSavePayload,
@@ -28,8 +29,8 @@ type InviteMessageDialogProps = {
     onOpenChange?: ((open: boolean) => void) | null;
     currentUserId?: string | null;
     endpoint?: string | null;
-    messageType?: string | null;
-    mode?: InviteMessageMode | string | null;
+    messageType?: InviteMessageType | null;
+    mode?: InviteMessageMode | null;
     targetLabel?: string | null;
     allowEdit?: boolean;
     allowImageUpload?: boolean;
@@ -38,7 +39,9 @@ type InviteMessageDialogProps = {
               payload: InviteMessageUsePayload
           ) => boolean | void | Promise<boolean | void>)
         | null;
-    onSave?: ((payload: InviteMessageSavePayload) => unknown) | null;
+    onSave?:
+        | ((payload: InviteMessageSavePayload) => void | Promise<void>)
+        | null;
     onClose?: (() => void) | null;
     title?: ReactNode;
     description?: ReactNode;
@@ -68,8 +71,8 @@ function InviteMessageDialog({
     description
 }: InviteMessageDialogProps) {
     const { t } = useTranslation();
-    const resolvedMode = isInviteMessageMode(mode) ? mode : 'select';
-    const resolvedMessageType = messageType || 'message';
+    const resolvedMode = mode ?? 'select';
+    const resolvedMessageType = messageType ?? 'message';
 
     function close() {
         onClose?.();
@@ -130,7 +133,7 @@ function InviteMessageTemplatesDialog({
 }: InviteMessageTemplatesDialogProps) {
     const { t } = useTranslation();
 
-    const [activeType, setActiveType] = useState('message');
+    const [activeType, setActiveType] = useState<InviteMessageType>('message');
 
     useEffect(() => {
         if (!open) {
@@ -156,7 +159,11 @@ function InviteMessageTemplatesDialog({
                 {open ? (
                     <Tabs
                         value={activeType}
-                        onValueChange={setActiveType}
+                        onValueChange={(value) => {
+                            if (isInviteMessageType(value)) {
+                                setActiveType(value);
+                            }
+                        }}
                         className="min-h-0"
                     >
                         <TabsList className="flex-wrap">

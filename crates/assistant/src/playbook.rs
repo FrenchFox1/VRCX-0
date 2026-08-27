@@ -5,7 +5,9 @@
 //! semantically in any language. Unmatched queries fall through to the normal
 //! agent loop.
 
-use vrcx_0_integrations::llm::{ChatMessage, LlmClient, LlmRequestOptions, ToolDefinition};
+use vrcx_0_contracts::llm::{ChatMessage, LlmRequestOptions, ToolDefinition};
+
+use crate::ports::AssistantLlmClientPort;
 
 #[derive(Clone, Copy)]
 pub(crate) struct Playbook {
@@ -212,10 +214,16 @@ pub(crate) fn classify_keyword(user_text: &str) -> Option<Playbook> {
 /// intent semantically in any language. It never enters the main conversation
 /// history and emits no events; any error or no-match returns None so the caller
 /// falls back to the full toolset.
-pub(crate) async fn classify_llm(client: &LlmClient, user_text: &str) -> Option<Playbook> {
+pub(crate) async fn classify_llm(
+    client: &dyn AssistantLlmClientPort,
+    user_text: &str,
+) -> Option<Playbook> {
     let messages = classify_messages(user_text);
     let options = LlmRequestOptions::default();
-    let turn = match client.stream_chat(&messages, &[], &options, |_| {}).await {
+    let turn = match client
+        .stream_chat(&messages, &[], &options, Box::new(|_| {}))
+        .await
+    {
         Ok(turn) => turn,
         Err(error) => {
             tracing::warn!(%error, "assistant: intent classify call failed");

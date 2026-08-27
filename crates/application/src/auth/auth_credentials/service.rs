@@ -1,5 +1,5 @@
+use super::storage::AuthCredentialStore;
 use vrcx_0_application_core::WebClient;
-use vrcx_0_persistence::config::ConfigRepository;
 
 use super::compat::{
     normalize_text, saved_credential_user_from_value, saved_login_params_from_value,
@@ -10,10 +10,10 @@ use super::storage::{
     write_saved_credentials, LAST_USER_LOGGED_IN_KEY,
 };
 use super::types::{LoginSuccessRecordInput, LogoutRecordInput, SavedAuthSnapshot};
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
 
 pub fn delete_saved_credential(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     user_id: String,
 ) -> Result<SavedAuthSnapshot> {
     let user_id = normalize_text(user_id);
@@ -30,17 +30,21 @@ pub fn delete_saved_credential(
 }
 
 pub fn record_login_success(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     input: LoginSuccessRecordInput,
 ) -> Result<SavedAuthSnapshot> {
-    let Some(user) = saved_credential_user_from_value(&input.user, "") else {
+    let Some(user) = saved_credential_user_from_value(input.user.as_value(), "") else {
         return Err(Error::Custom(
             "VrchatAuthLoginSuccessRecord requires a user id.".into(),
         ));
     };
     let user_id = user.id.clone();
     let mut saved_credentials = read_saved_credentials(config)?;
+    let cookies = match web.get_cookies() {
+        cookies if cookies.is_empty() => None,
+        cookies => Some(cookies),
+    };
 
     if input.save_credentials {
         let login_params = input
@@ -51,16 +55,13 @@ pub fn record_login_success(
             user_id.clone(),
             super::types::SavedCredential {
                 user,
-                login_params: saved_login_params_from_value(login_params),
-                cookies: None,
+                login_params: saved_login_params_from_value(login_params.as_value()),
+                cookies,
             },
         );
     } else if let Some(existing_record) = saved_credentials.get_mut(&user_id) {
         existing_record.user = user;
-        existing_record.cookies = match web.get_cookies() {
-            cookies if cookies.is_empty() => None,
-            cookies => Some(cookies),
-        };
+        existing_record.cookies = cookies;
     }
 
     write_saved_credentials(config, &saved_credentials)?;
@@ -69,25 +70,36 @@ pub fn record_login_success(
 }
 
 pub fn record_logout(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     input: LogoutRecordInput,
 ) -> Result<SavedAuthSnapshot> {
     let user_id = normalize_text(input.user_id);
 
-    if !user_id.is_empty() {
-        let mut saved_credentials = read_saved_credentials(config)?;
-        if let Some(existing_record) = saved_credentials.get_mut(&user_id) {
-            let cookies = web.get_cookies();
-            existing_record.cookies = (!cookies.is_empty()).then_some(cookies);
-            write_saved_credentials(config, &saved_credentials)?;
-        }
-    }
+    sync_saved_credential_cookies(config, web, &user_id)?;
 
     if input.clear_last_user_logged_in {
         remove_config_value(config, LAST_USER_LOGGED_IN_KEY)?;
     }
     build_saved_auth_snapshot(config)
+}
+
+pub(super) fn sync_saved_credential_cookies(
+    config: &dyn AuthCredentialStore,
+    web: &WebClient,
+    user_id: &str,
+) -> Result<()> {
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(());
+    }
+    let mut saved_credentials = read_saved_credentials(config)?;
+    if let Some(existing_record) = saved_credentials.get_mut(&user_id) {
+        let cookies = web.get_cookies();
+        existing_record.cookies = (!cookies.is_empty()).then_some(cookies);
+        write_saved_credentials(config, &saved_credentials)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

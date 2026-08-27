@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 
-import { userDialogGroupSortingOptions } from '@/shared/constants/user';
 import {
     Select,
     SelectContent,
@@ -14,6 +13,10 @@ import {
     EntityBlank,
     EntityDialogTabContent
 } from '../../EntityDialogScaffold';
+import {
+    userDialogGroupSortingOptions,
+    type UserDialogGroupSort
+} from '../userDialogListOptions';
 import type { buildUserDialogProfileSummary } from '../userDialogViewData';
 import { EntityList, UserGroupSection } from '../UserDialogViewParts';
 import type { useUserDialogTabData } from '../useUserDialogTabData';
@@ -75,36 +78,36 @@ export function UserDialogGroupsTab({
                 <span className="text-muted-foreground text-sm">
                     {t('dialog.user.groups.sort_by')}
                 </span>
-                <Select
+                <Select<UserDialogGroupSort>
                     value={effectiveGroupSort}
-                    onValueChange={(value) => setGroupSort(value ?? '')}
+                    onValueChange={(value) => {
+                        if (value) {
+                            setGroupSort(value);
+                        }
+                    }}
                     disabled={remoteStatus.groups === 'running'}
-                    items={Object.values(userDialogGroupSortingOptions).map(
-                        (option) => ({
-                            value: option.value,
-                            label: t(option.name)
-                        })
-                    )}
+                    items={userDialogGroupSortingOptions.map((option) => ({
+                        value: option.value,
+                        label: t(option.name)
+                    }))}
                 >
                     <SelectTrigger size="sm" className="w-36">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
-                            {Object.entries(userDialogGroupSortingOptions).map(
-                                ([key, option]) => (
-                                    <SelectItem
-                                        key={key}
-                                        value={option.value}
-                                        disabled={
-                                            option.value === 'inGame' &&
-                                            !isCurrentUser
-                                        }
-                                    >
-                                        {t(option.name)}
-                                    </SelectItem>
-                                )
-                            )}
+                            {userDialogGroupSortingOptions.map((option) => (
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                    disabled={
+                                        option.value === 'inGame' &&
+                                        !isCurrentUser
+                                    }
+                                >
+                                    {t(option.name)}
+                                </SelectItem>
+                            ))}
                         </SelectGroup>
                     </SelectContent>
                 </Select>

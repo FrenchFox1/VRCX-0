@@ -6,7 +6,7 @@ import {
     TriangleAlertIcon,
     XIcon
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ import { commands, type NoteExportStatus } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
 import { subscribeRuntimeEvent } from '@/services/runtime-event-bridge/subscription';
+import { isRecord } from '@/shared/utils/record';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { Alert, AlertAction, AlertDescription } from '@/ui/shadcn/alert';
@@ -56,9 +57,7 @@ type NoteExportDialogProps = {
 };
 
 function asObjectRecord(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function memoCounterClass(length: number) {
@@ -196,11 +195,11 @@ export function NoteExportDialog({
         }
     }
 
-    useEffect(() => {
+    const initializeExportDialog = useEffectEvent(() => {
         if (!open) {
             refreshRequestRef.current += 1;
             if (activeRunIdRef.current) {
-                void commands.appNoteExportCancel().catch((error: unknown) => {
+                void commands.appNoteExportCancel().catch((error) => {
                     console.warn('Failed to cancel note export:', error);
                 });
             }
@@ -245,7 +244,9 @@ export function NoteExportDialog({
             unsubscribe?.();
             refreshRequestRef.current += 1;
         };
-    }, [open]);
+    });
+
+    useEffect(() => initializeExportDialog(), [open]);
 
     async function exportNotes() {
         const snapshot = [...rows]

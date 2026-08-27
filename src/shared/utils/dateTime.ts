@@ -11,6 +11,7 @@ import {
 import {
     formatDateTimeValue,
     formatIsoDateTime,
+    getRelativeTimeFormatter,
     normalizeDateLocale
 } from './dateTimeFormatters';
 
@@ -22,14 +23,16 @@ export const DEFAULT_TIME_UNIT_LABELS = Object.freeze({
     s: 's'
 });
 
-type DateFilterFormat = 'long' | 'short' | 'time' | 'date' | string;
-type TimeUnitLabels = typeof DEFAULT_TIME_UNIT_LABELS;
+type DateFilterFormat = 'long' | 'short' | 'time' | 'date';
+type TimeUnitLabels = {
+    -readonly [Unit in keyof typeof DEFAULT_TIME_UNIT_LABELS]: string;
+};
 
 type DateFilterPreferences = {
-    appLocale?: unknown;
-    dateCulture?: unknown;
-    dateIsoFormat?: unknown;
-    dateHour12?: unknown;
+    appLocale?: string | null;
+    dateCulture?: string | null;
+    dateIsoFormat?: boolean;
+    dateHour12?: boolean;
 };
 
 type DateTimeFormatPreferences = Pick<
@@ -58,6 +61,18 @@ export function dateFromUnknown(value: unknown): Date | null {
 
     const date = new Date(input);
     return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function timestampMsFromValue(value: unknown) {
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue) && numberValue > 0) {
+        return numberValue;
+    }
+    const parsed = Date.parse(String(value));
+    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function toLocalClock(
@@ -126,8 +141,8 @@ export function formatDateFilterWithPreferences(
         return '-';
     }
 
-    const dateIsoFormat = Boolean(preferences.dateIsoFormat);
-    const dateHour12 = Boolean(preferences.dateHour12);
+    const dateIsoFormat = preferences.dateIsoFormat ?? false;
+    const dateHour12 = preferences.dateHour12 ?? false;
     const dateFormat = normalizeDateLocale(
         preferences.appLocale || preferences.dateCulture
     );
@@ -168,10 +183,7 @@ export function formatDateTimeWithPreferences(
     const locale = normalizeDateLocale(
         preferences.appLocale || preferences.dateCulture
     );
-    const hour12 =
-        typeof preferences.hour12 === 'boolean'
-            ? preferences.hour12
-            : Boolean(preferences.dateHour12);
+    const hour12 = preferences.hour12 ?? preferences.dateHour12 ?? false;
     const formatOptions = { ...options };
     if (
         typeof formatOptions.hour !== 'undefined' ||
@@ -245,7 +257,7 @@ export function formatRelativeTimeWithPreferences(
     );
 
     try {
-        return new Intl.RelativeTimeFormat(locale, {
+        return getRelativeTimeFormatter(locale, {
             numeric: 'auto',
             style: preferences.style || 'long'
         }).format(amount, unit);
@@ -274,7 +286,7 @@ export function timeToTextWithLabels(
     }
     const labels: TimeUnitLabels = {
         ...DEFAULT_TIME_UNIT_LABELS,
-        ...(unitLabels || {})
+        ...unitLabels
     };
     if (n >= SECONDS_PER_YEAR) {
         arr.push(`${Math.floor(n / SECONDS_PER_YEAR)}${labels.y}`);

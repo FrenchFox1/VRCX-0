@@ -6,7 +6,7 @@ import {
     SparklesIcon,
     Trash2Icon
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -124,8 +124,8 @@ export function VRChatConfigDialog({
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const loadRequestRef = useRef(0);
     const [config, setConfig] = useState<VrchatConfig>({
@@ -214,9 +214,11 @@ export function VRChatConfigDialog({
         }
     }
 
+    const loadConfigForOpen = useEffectEvent(loadConfig);
+
     useEffect(() => {
         if (open) {
-            loadConfig();
+            loadConfigForOpen();
         } else {
             loadRequestRef.current += 1;
         }
@@ -486,8 +488,14 @@ export function VRChatConfigDialog({
                                         'dialog.config_json.camera_resolution'
                                     )}
                                     value={getResolutionKey({
-                                        width: config.camera_res_width,
-                                        height: config.camera_res_height
+                                        width: getConfigFieldValue(
+                                            config,
+                                            'camera_res_width'
+                                        ),
+                                        height: getConfigFieldValue(
+                                            config,
+                                            'camera_res_height'
+                                        )
                                     })}
                                     rows={VRChatCameraResolutions}
                                     onValueChange={(value) =>
@@ -505,8 +513,14 @@ export function VRChatConfigDialog({
                                         'dialog.config_json.spout_resolution'
                                     )}
                                     value={getResolutionKey({
-                                        width: config.camera_spout_res_width,
-                                        height: config.camera_spout_res_height
+                                        width: getConfigFieldValue(
+                                            config,
+                                            'camera_spout_res_width'
+                                        ),
+                                        height: getConfigFieldValue(
+                                            config,
+                                            'camera_spout_res_height'
+                                        )
                                     })}
                                     rows={VRChatScreenshotResolutions}
                                     onValueChange={(value) =>
@@ -524,8 +538,14 @@ export function VRChatConfigDialog({
                                         'dialog.config_json.screenshot_resolution'
                                     )}
                                     value={getResolutionKey({
-                                        width: config.screenshot_res_width,
-                                        height: config.screenshot_res_height
+                                        width: getConfigFieldValue(
+                                            config,
+                                            'screenshot_res_width'
+                                        ),
+                                        height: getConfigFieldValue(
+                                            config,
+                                            'screenshot_res_height'
+                                        )
                                     })}
                                     rows={VRChatScreenshotResolutions}
                                     onValueChange={(value) =>

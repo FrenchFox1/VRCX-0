@@ -110,6 +110,7 @@ export function ScreenshotMetadataPage() {
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [isDeletingMetadata, setIsDeletingMetadata] = useState(false);
     const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
+    const [isDetailsVisible, setIsDetailsVisible] = useState(true);
     const dateLocale = i18n.resolvedLanguage || i18n.language;
     const {
         folderTree,
@@ -130,15 +131,14 @@ export function ScreenshotMetadataPage() {
         isGalleryMode,
         routeFolder,
         screenshotCacheStatus,
-        setSearchParams,
-        t
+        setSearchParams
     });
 
     const updateRoutePath = useCallback(
-        (path: string) => {
+        (path: string, folderPath?: string) => {
             const nextParams = new URLSearchParams();
             nextParams.set('path', path);
-            const folder = selectedGalleryFolder || routeFolder;
+            const folder = folderPath || selectedGalleryFolder || routeFolder;
             if (folder) {
                 nextParams.set('folder', folder);
             }
@@ -178,81 +178,86 @@ export function ScreenshotMetadataPage() {
         }
     }
 
-    async function loadScreenshot(path: string, withCarousel = true) {
-        if (!path) {
-            return;
-        }
-
-        const requestId = metadataRequestRef.current + 1;
-        metadataRequestRef.current = requestId;
-        setIsMetadataLoading(true);
-        setMetadataError('');
-
-        try {
-            const rawMetadata = recordFromUnknown(
-                await mediaRepository.getScreenshotMetadata(path)
-            );
-
-            if (metadataRequestRef.current !== requestId) {
+    const loadScreenshot = useCallback(
+        async (path: string, withCarousel = true) => {
+            if (!path) {
                 return;
             }
 
-            const sourceFile =
-                typeof rawMetadata.sourceFile === 'string'
-                    ? rawMetadata.sourceFile
+            const requestId = metadataRequestRef.current + 1;
+            metadataRequestRef.current = requestId;
+            setIsMetadataLoading(true);
+            setMetadataError('');
+
+            try {
+                const rawMetadata = recordFromUnknown(
+                    await mediaRepository.getScreenshotMetadata(path)
+                );
+
+                if (metadataRequestRef.current !== requestId) {
+                    return;
+                }
+
+                const sourceFile =
+                    typeof rawMetadata.sourceFile === 'string'
+                        ? rawMetadata.sourceFile
+                        : '';
+                if (!sourceFile) {
+                    const message = t(
+                        'dialog.screenshot_metadata.invalid_file'
+                    );
+                    setMetadata(null);
+                    setImageUrl('');
+                    setMetadataError(message);
+                    toast.error(message);
+                    return;
+                }
+
+                const extra = await mediaRepository.getExtraScreenshotData(
+                    sourceFile,
+                    withCarousel
+                );
+
+                if (metadataRequestRef.current !== requestId) {
+                    return;
+                }
+
+                const nextMetadata = normalizeScreenshotMetadata(
+                    rawMetadata,
+                    extra
+                );
+                const nextMetadataError = rawMetadata?.error
+                    ? String(rawMetadata.error)
                     : '';
-            if (!sourceFile) {
-                const message = t('dialog.screenshot_metadata.invalid_file');
+                imageVersionRef.current += 1;
+
+                setMetadata(nextMetadata);
+                setMetadataError(nextMetadataError);
+                setSelectedPath(nextMetadata.filePath);
+                setImageUrl(
+                    `${convertFileSrc(nextMetadata.filePath, 'vrcx-0-img')}?v=${imageVersionRef.current}`
+                );
+            } catch (error) {
+                if (metadataRequestRef.current !== requestId) {
+                    return;
+                }
+
                 setMetadata(null);
                 setImageUrl('');
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to load screenshot metadata.';
                 setMetadataError(message);
                 toast.error(message);
-                return;
+            } finally {
+                if (metadataRequestRef.current === requestId) {
+                    setIsMetadataLoading(false);
+                }
             }
-
-            const extra = await mediaRepository.getExtraScreenshotData(
-                sourceFile,
-                withCarousel
-            );
-
-            if (metadataRequestRef.current !== requestId) {
-                return;
-            }
-
-            const nextMetadata = normalizeScreenshotMetadata(
-                rawMetadata,
-                extra
-            );
-            const nextMetadataError = rawMetadata?.error
-                ? String(rawMetadata.error)
-                : '';
-            imageVersionRef.current += 1;
-
-            setMetadata(nextMetadata);
-            setMetadataError(nextMetadataError);
-            setSelectedPath(nextMetadata.filePath);
-            setImageUrl(
-                `${convertFileSrc(nextMetadata.filePath, 'vrcx-0-img')}?v=${imageVersionRef.current}`
-            );
-        } catch (error) {
-            if (metadataRequestRef.current !== requestId) {
-                return;
-            }
-
-            setMetadata(null);
-            setImageUrl('');
-            const message =
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to load screenshot metadata.';
-            setMetadataError(message);
-            toast.error(message);
-        } finally {
-            if (metadataRequestRef.current === requestId) {
-                setIsMetadataLoading(false);
-            }
-        }
-    }
+        },
+        [setSelectedPath, t]
+    );
 
     useEffect(() => {
         if (!routePath) {
@@ -260,16 +265,48 @@ export function ScreenshotMetadataPage() {
         }
         setSearchViewMode('detail');
         loadScreenshot(routePath, true);
-    }, [routePath]);
+    }, [loadScreenshot, routePath, setSearchViewMode]);
 
-    const { navigateNext, navigatePrev } = useScreenshotMetadataNavigation({
-        loadScreenshot,
-        metadata,
-        onPathChange: updateRoutePath,
-        searchNavigationPaths,
-        selectedPath,
-        setSelectedPath
-    });
+    const { canNavigateNext, canNavigatePrev, navigateNext, navigatePrev } =
+        useScreenshotMetadataNavigation({
+            enabled: !isGalleryMode && searchViewMode === 'detail',
+            loadScreenshot,
+            metadata,
+            onPathChange: updateRoutePath,
+            searchNavigationPaths,
+            selectedPath,
+            setSelectedPath
+        });
+
+    useEffect(() => {
+        function handleDetailsShortcut(event: KeyboardEvent) {
+            const target = event.target;
+            if (
+                isGalleryMode ||
+                searchViewMode !== 'detail' ||
+                event.altKey ||
+                event.ctrlKey ||
+                event.metaKey ||
+                event.shiftKey ||
+                event.key.toLowerCase() !== 'i' ||
+                (target instanceof HTMLElement &&
+                    (target.isContentEditable ||
+                        target.tagName === 'INPUT' ||
+                        target.tagName === 'TEXTAREA' ||
+                        target.tagName === 'SELECT'))
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            setIsDetailsVisible((visible) => !visible);
+        }
+
+        window.addEventListener('keydown', handleDetailsShortcut);
+        return () => {
+            window.removeEventListener('keydown', handleDetailsShortcut);
+        };
+    }, [isGalleryMode, searchViewMode]);
 
     async function openFolder() {
         if (!metadata?.filePath) {
@@ -355,7 +392,7 @@ export function ScreenshotMetadataPage() {
             toast.error(t('message.vrcplus.required'));
             return;
         }
-        if (Number(metadata.fileSizeBytes) > 10_000_000) {
+        if (metadata.fileSizeBytes > 10_000_000) {
             toast.error(t('message.file.too_large'));
             return;
         }
@@ -536,7 +573,10 @@ export function ScreenshotMetadataPage() {
                     }
                     scanStatus={scanStatus}
                     selectedFolder={selectedGalleryFolder}
-                    onOpenImage={openDetailPath}
+                    onOpenImage={(path) => {
+                        resetSearchContext();
+                        openDetailPath(path);
+                    }}
                     onRefresh={() => {
                         refreshGallery(true);
                     }}
@@ -593,16 +633,28 @@ export function ScreenshotMetadataPage() {
                             }
                         />
                     ) : (
-                        <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
+                        <div
+                            className={
+                                isDetailsVisible
+                                    ? 'grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]'
+                                    : 'grid min-h-0 flex-1'
+                            }
+                        >
                             <ScreenshotMetadataPreviewCard
                                 metadata={metadata}
                                 imageUrl={imageUrl}
                                 isMetadataLoading={isMetadataLoading}
+                                canNavigatePrev={canNavigatePrev}
+                                canNavigateNext={canNavigateNext}
+                                isDetailsVisible={isDetailsVisible}
                                 onNavigatePrev={() => {
                                     navigatePrev();
                                 }}
                                 onNavigateNext={() => {
                                     navigateNext();
+                                }}
+                                onToggleDetails={() => {
+                                    setIsDetailsVisible((visible) => !visible);
                                 }}
                                 onImagePreview={() =>
                                     openImagePreview({
@@ -620,14 +672,16 @@ export function ScreenshotMetadataPage() {
                                 }}
                             />
 
-                            <ScreenshotMetadataDetailsCard
-                                metadata={metadata}
-                                metadataError={metadataError}
-                                searchRowsCount={searchRows.length}
-                                onBackToResults={() =>
-                                    setSearchViewMode('table')
-                                }
-                            />
+                            {isDetailsVisible ? (
+                                <ScreenshotMetadataDetailsCard
+                                    metadata={metadata}
+                                    metadataError={metadataError}
+                                    searchRowsCount={searchRows.length}
+                                    onBackToResults={() =>
+                                        setSearchViewMode('table')
+                                    }
+                                />
+                            ) : null}
                         </div>
                     )}
                 </>

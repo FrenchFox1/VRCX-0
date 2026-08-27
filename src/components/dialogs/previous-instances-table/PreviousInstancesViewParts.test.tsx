@@ -7,7 +7,7 @@ import {
     screen,
     waitFor
 } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type QueryOptions = {
@@ -16,10 +16,16 @@ type QueryOptions = {
 };
 
 const mocks = vi.hoisted(() => ({
+    copyTextToClipboard: vi.fn().mockResolvedValue(true),
     getUserProfile: vi.fn(() => Promise.resolve({})),
     knownUser: null as Record<string, unknown> | null,
     openUserDialog: vi.fn(),
     queryData: null as Record<string, unknown> | null
+}));
+
+vi.mock('react-i18next', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-i18next')>()),
+    useTranslation: () => ({ t: (key: string) => key })
 }));
 
 vi.mock('@tanstack/react-query', async (importOriginal) => {
@@ -29,18 +35,19 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
     return {
         ...actual,
         useQuery: (options: QueryOptions) => {
+            const { enabled, queryFn } = options;
             useEffect(() => {
-                if (options.enabled) {
-                    void options.queryFn();
+                if (enabled) {
+                    void queryFn();
                 }
-            }, [options.enabled]);
+            }, [enabled, queryFn]);
             return { data: mocks.queryData };
         }
     };
 });
 
 vi.mock('@/components/layout/PageScaffold', () => ({}));
-vi.mock('@/features/game-log/gameLogUserLookup', () => ({
+vi.mock('@/services/gameLogUserDialogService', () => ({
     openGameLogUser: vi.fn()
 }));
 vi.mock('@/lib/useKnownUser', () => ({
@@ -55,15 +62,21 @@ vi.mock('@/services/dialogService', () => ({
     openUserDialog: mocks.openUserDialog,
     openWorldDialog: vi.fn()
 }));
+vi.mock('@/services/clipboardService', () => ({
+    copyTextToClipboard: mocks.copyTextToClipboard
+}));
 vi.mock('@/ui/shadcn/button', () => ({
     Button: ({
         children,
-        onClick
-    }: {
+        size: _size,
+        variant: _variant,
+        ...props
+    }: ComponentProps<'button'> & {
         children: ReactNode;
-        onClick?: () => void;
+        size?: string;
+        variant?: string;
     }) => (
-        <button type="button" onClick={onClick}>
+        <button type="button" {...props}>
             {children}
         </button>
     )
@@ -72,7 +85,75 @@ vi.mock('./PreviousInstanceInfoChart', () => ({
     PreviousInstanceInfoChart: () => null
 }));
 
-import { InstanceOwnerCell } from './PreviousInstancesViewParts';
+import {
+    CopyInstanceWorldNameButton,
+    InstanceOwnerCell,
+    instanceDetailsSummary
+} from './PreviousInstancesViewParts';
+
+describe('instanceDetailsSummary', () => {
+    it('includes the complete instance identity', () => {
+        const translations: Record<string, string> = {
+            'dialog.new_instance.access_type_group': 'Group',
+            'dialog.new_instance.group_access_type_plus': 'Plus'
+        };
+        const t = ((key: string) => translations[key] || key) as Parameters<
+            typeof instanceDetailsSummary
+        >[1];
+
+        expect(
+            instanceDetailsSummary(
+                {
+                    location:
+                        'wrld_test:12345~region(jp)~group(grp_test)~groupAccessType(plus)',
+                    worldName: 'Test World',
+                    groupName: 'Group Alpha'
+                },
+                t
+            )
+        ).toBe('Test World · Group Plus · #12345 · JP · (Group Alpha)');
+    });
+
+    it('includes the default US region when the location omits it', () => {
+        const translations: Record<string, string> = {
+            'dialog.new_instance.access_type_public': 'Public'
+        };
+        const t = ((key: string) => translations[key] || key) as Parameters<
+            typeof instanceDetailsSummary
+        >[1];
+
+        expect(
+            instanceDetailsSummary(
+                {
+                    location: 'wrld_test:12345',
+                    worldName: 'Test World'
+                },
+                t
+            )
+        ).toBe('Test World · Public · #12345 · US');
+    });
+});
+
+describe('CopyInstanceWorldNameButton', () => {
+    afterEach(cleanup);
+
+    it('copies the provided world name', () => {
+        render(<CopyInstanceWorldNameButton worldName="Test World" />);
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'dialog.previous_instances.action.copy_world_name: Test World'
+            })
+        );
+
+        expect(mocks.copyTextToClipboard).toHaveBeenCalledWith(
+            'Test World',
+            expect.objectContaining({
+                successMessage: 'dialog.world.dynamic.value_copied'
+            })
+        );
+    });
+});
 
 describe('InstanceOwnerCell', () => {
     afterEach(cleanup);

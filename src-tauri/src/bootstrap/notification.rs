@@ -11,9 +11,9 @@ use vrcx_0_application_core::{
 use vrcx_0_application_core::{BackendRuntimeGameLogStatus, BackendRuntimeProcessStatus};
 use vrcx_0_application_core::{RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload};
 use vrcx_0_application_realtime::RealtimeTransportStartResult;
+use vrcx_0_composition::Error as RuntimeHostError;
 #[cfg(test)]
 use vrcx_0_core::realtime::RealtimeWsStatus;
-use vrcx_0_runtime_host::Error as RuntimeHostError;
 
 use crate::localization::shell_locale::{
     self, AuthFailureNotificationLabels, BackgroundModeNotificationLabels, TrayLabels,
@@ -38,7 +38,7 @@ pub(super) fn handle_runtime_auth_failure_notification(
         return;
     }
     let reason = &failure.reason;
-    let snapshot = state.snapshot_backend_runtime();
+    let snapshot = state.runtime_host().backend_runtime_snapshot();
     if !should_show_runtime_auth_failure_notification(&snapshot, failure.status_code) {
         return;
     }
@@ -71,6 +71,7 @@ pub(super) fn handle_runtime_auth_failure_recovery(
             return;
         }
         state
+            .runtime_host()
             .recover_background_auth_after_failure(failure.reason)
             .await;
     });
@@ -85,9 +86,9 @@ fn runtime_auth_failure_matches_scope(
     state: &AppState,
     failure: &RuntimeVrchatAuthFailurePayload,
 ) -> bool {
-    let scope = state.runtime.runtime_context.auth_scope.snapshot();
+    let scope = state.runtime_host().auth_scope_snapshot();
     scope.active
-        && scope.current_user_id == failure.owner_user_id
+        && scope.current_user_id == failure.owner_user_id.as_str()
         && scope.endpoint == failure.endpoint
         && scope.generation == failure.auth_scope_generation
 }
@@ -98,12 +99,7 @@ fn runtime_auth_failure_matches_active_source(
 ) -> bool {
     runtime_auth_failure_matches_scope(state, failure)
         && runtime_auth_failure_transport_matches(
-            state
-                .runtime
-                .authenticated_runtime
-                .snapshot()
-                .realtime_transport
-                .as_ref(),
+            state.runtime_host().active_realtime_transport().as_ref(),
             failure.realtime_transport.as_ref(),
         )
 }
@@ -184,7 +180,7 @@ pub(crate) fn show_auth_failure_notification_after_backend_start_error(
     state: &AppState,
     error: &RuntimeHostError,
 ) {
-    let snapshot = state.snapshot_backend_runtime();
+    let snapshot = state.runtime_host().backend_runtime_snapshot();
     if !should_show_backend_start_auth_notification(&snapshot, error) {
         return;
     }
@@ -207,7 +203,7 @@ pub(crate) fn show_background_mode_started_notification(app: &tauri::AppHandle, 
 }
 
 pub(super) fn is_background_mode_active(state: &AppState) -> bool {
-    let snapshot = state.snapshot_backend_runtime();
+    let snapshot = state.runtime_host().backend_runtime_snapshot();
     snapshot.mode == BackendRuntimeMode::Background
         && snapshot.phase == BackendRuntimePhase::Running
 }
@@ -234,6 +230,8 @@ pub(super) fn tray_labels(state: &AppState) -> TrayLabels {
 
 #[cfg(test)]
 mod tests {
+    use vrcx_0_core::OwnerId;
+
     use super::*;
 
     fn backend_snapshot(
@@ -263,7 +261,7 @@ mod tests {
         realtime_transport: Option<RuntimeRealtimeTransportEpoch>,
     ) -> RuntimeVrchatAuthFailurePayload {
         RuntimeVrchatAuthFailurePayload {
-            owner_user_id: "usr_1".into(),
+            owner_user_id: OwnerId::new("usr_1"),
             endpoint: "https://api.example.test/api/1".into(),
             path: "runtime/social-baseline/friends".into(),
             reason: "Missing Credentials (401)".into(),

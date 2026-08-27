@@ -3,7 +3,7 @@ mod tests {
     use super::super::*;
 
     fn runtime_with_friend(record: FriendRecord) -> RealtimeFriendsRuntime {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -17,7 +17,7 @@ mod tests {
     }
 
     fn empty_runtime() -> RealtimeFriendsRuntime {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -42,7 +42,6 @@ mod tests {
             id: "usr_friend".into(),
             display_name: "Friend".into(),
             state: state.into(),
-            state_bucket: state.into(),
             location: location.into(),
             ..FriendRecord::default()
         }
@@ -87,7 +86,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "wrld_home:42~region(jp)");
         assert_eq!(patch.patch.world_id, "wrld_home");
@@ -104,7 +103,7 @@ mod tests {
             .any(|entry| entry["type"] == "Online"));
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "wrld_home:42~region(jp)");
     }
 
@@ -131,7 +130,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "traveling");
         assert_eq!(patch.patch.traveling_to_location, "wrld_dest:7~region(us)");
         assert!(output
@@ -172,7 +171,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(
             patch.state_bucket_authority,
             FriendStateBucketAuthority::Explicit
@@ -192,6 +191,75 @@ mod tests {
     }
 
     #[test]
+    fn friend_location_top_level_traveling_overrides_stale_embedded_location() {
+        let runtime = runtime_with_friend(friend_record("online", "wrld_old:1~region(jp)"));
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-location",
+            "content": {
+                "userId": "usr_friend",
+                "location": "traveling",
+                "travelingToLocation": "wrld_dest:7~region(us)",
+                "worldId": "wrld_dest",
+                "user": {
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "state": "offline",
+                    "location": "wrld_old:1~region(jp)",
+                    "travelingToLocation": "wrld_old:1~region(jp)",
+                    "worldId": "wrld_old"
+                }
+            }
+        }))) else {
+            panic!("friend-location should produce an output");
+        };
+
+        let patch = &output.projection.patches[0];
+        assert_eq!(patch.patch.location, "traveling");
+        assert_eq!(patch.patch.traveling_to_location, "wrld_dest:7~region(us)");
+        assert_eq!(patch.patch.world_id, "wrld_dest");
+
+        let friend = snapshot_friend(&runtime);
+        assert_eq!(friend.location, "traveling");
+        assert_eq!(friend.traveling_to_location, "wrld_dest:7~region(us)");
+        assert_eq!(friend.world_id, "wrld_dest");
+    }
+
+    #[test]
+    fn friend_location_top_level_presence_ignores_stale_embedded_presence_fields() {
+        let runtime = runtime_with_friend(friend_record("online", "traveling"));
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-location",
+            "content": {
+                "userId": "usr_friend",
+                "location": "wrld_new:2~region(jp)",
+                "travelingToLocation": "",
+                "user": {
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "state": "offline",
+                    "location": "traveling",
+                    "travelingToLocation": "wrld_old:1~region(jp)",
+                    "worldId": "wrld_old"
+                }
+            }
+        }))) else {
+            panic!("friend-location should produce an output");
+        };
+
+        let patch = &output.projection.patches[0].patch;
+        assert_eq!(patch.location, "wrld_new:2~region(jp)");
+        assert!(patch.traveling_to_location.is_empty());
+        assert_eq!(patch.world_id, "wrld_new");
+
+        let friend = snapshot_friend(&runtime);
+        assert_eq!(friend.location, "wrld_new:2~region(jp)");
+        assert!(friend.traveling_to_location.is_empty());
+        assert_eq!(friend.world_id, "wrld_new");
+    }
+
+    #[test]
     fn friend_location_without_user_updates_location_from_content_top_level() {
         let runtime = runtime_with_friend(friend_record("online", "wrld_old:1~region(jp)"));
 
@@ -206,7 +274,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(
             patch.state_bucket_authority,
             FriendStateBucketAuthority::Preserve
@@ -242,13 +310,13 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "active");
+        assert_eq!(patch.patch.state, "active");
         assert_eq!(patch.patch.location, "offline");
         assert_eq!(patch.patch.status, "busy");
         assert_eq!(patch.patch.display_name, "Friend");
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "active");
+        assert_eq!(friend.state, "active");
         assert_eq!(friend.state, "active");
         assert_eq!(friend.location, "offline");
         assert_eq!(friend.status, "busy");
@@ -271,7 +339,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.extra["pendingOffline"], true);
         assert!(output.persistence.feed_entries.is_empty());
         let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
@@ -279,14 +347,14 @@ mod tests {
         };
 
         let debounced = snapshot_friend(&runtime);
-        assert_eq!(debounced.state_bucket, "online");
+        assert_eq!(debounced.state, "online");
         assert_eq!(debounced.status, "join me");
         assert_eq!(debounced.location, "wrld_1:123~region(jp)");
 
         let fired = runtime
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .unwrap();
-        assert_eq!(fired.projection.patches[0].state_bucket, "offline");
+        assert_eq!(fired.projection.patches[0].patch.state, "offline");
         assert_eq!(snapshot_friend(&runtime).status, "join me");
     }
 
@@ -314,15 +382,15 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "online");
-        assert_eq!(patch.patch.state_bucket, "online");
+        assert_eq!(patch.patch.state, "online");
+        assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.state, "online");
         assert_eq!(patch.patch.location, "wrld_1:123~region(jp)");
         assert_eq!(patch.patch.status, "active");
         assert_eq!(patch.patch.status_description, "fresh");
 
         let friend = snapshot_friend(&runtime);
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
         assert_eq!(friend.location, "wrld_1:123~region(jp)");
     }
 
@@ -345,7 +413,7 @@ mod tests {
         };
 
         let patch = &output.projection.patches[0];
-        assert_eq!(patch.state_bucket, "offline");
+        assert_eq!(patch.patch.state, "offline");
         assert_eq!(output.persistence.friend_log_upserts.len(), 1);
         assert!(output
             .persistence
@@ -353,12 +421,13 @@ mod tests {
             .iter()
             .any(|entry| entry["type"] == "Friend" && entry["displayName"] == "Added"));
 
-        assert_eq!(snapshot_friend(&runtime).state_bucket, "offline");
+        assert_eq!(snapshot_friend(&runtime).state, "offline");
     }
 
     #[test]
     fn friend_delete_removes_from_roster() {
         let runtime = runtime_with_friend(friend_record("online", "wrld_1:123~region(jp)"));
+        let friend_user_ids = runtime.friend_user_ids_snapshot();
 
         let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
             "type": "friend-delete",
@@ -368,6 +437,7 @@ mod tests {
         };
 
         assert_eq!(output.projection.removals, vec!["usr_friend"]);
+        assert_eq!(output.projection.location_time_snapshot, Some(vec![]));
         assert_eq!(output.persistence.friend_log_deletes.len(), 1);
         assert!(output
             .persistence
@@ -380,6 +450,12 @@ mod tests {
             .unwrap()
             .friends_by_id
             .contains_key("usr_friend"));
+        let empty_friend_user_ids = runtime.friend_user_ids_snapshot();
+        assert!(!std::sync::Arc::ptr_eq(
+            &friend_user_ids,
+            &empty_friend_user_ids
+        ));
+        assert!(empty_friend_user_ids.is_empty());
     }
 
     #[test]

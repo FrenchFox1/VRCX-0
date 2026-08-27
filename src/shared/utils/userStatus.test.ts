@@ -1,25 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeUserStatus, userStatusSortRank } from './userStatus';
+import { resolveUserPresenceStatus, userStatusSortRank } from './userStatus';
 
 describe('userStatus', () => {
     it('normalizes legacy compact status strings', () => {
-        expect(normalizeUserStatus('joinme')).toBe('join me');
-        expect(normalizeUserStatus('askme')).toBe('ask me');
-        expect(normalizeUserStatus('offline:offline')).toBe('offline');
-        expect(normalizeUserStatus('private:private')).toBe('private');
-        expect(normalizeUserStatus('traveling:traveling')).toBe('traveling');
+        expect(resolveUserPresenceStatus('joinme')).toBe('join me');
+        expect(resolveUserPresenceStatus('askme')).toBe('ask me');
+        expect(resolveUserPresenceStatus('offline:offline')).toBe('offline');
+        expect(resolveUserPresenceStatus('private:private')).toBe('private');
+        expect(resolveUserPresenceStatus('traveling:traveling')).toBe(
+            'traveling'
+        );
     });
 
     it('treats pending offline and offline fields as offline', () => {
         expect(
-            normalizeUserStatus({ pendingOffline: true, status: 'join me' })
+            resolveUserPresenceStatus({
+                pendingOffline: true,
+                status: 'join me'
+            })
         ).toBe('offline');
         expect(
-            normalizeUserStatus({ state: 'active', location: 'offline' })
+            resolveUserPresenceStatus({ state: 'active', location: 'offline' })
         ).toBe('offline');
         expect(
-            normalizeUserStatus({
+            resolveUserPresenceStatus({
                 ref: { state: 'online', location: 'offline:offline' }
             })
         ).toBe('offline');
@@ -27,19 +32,32 @@ describe('userStatus', () => {
 
     it('prioritizes explicit social status before active location', () => {
         expect(
-            normalizeUserStatus({ status: 'join me', location: 'wrld_123:1' })
+            resolveUserPresenceStatus({
+                status: 'join me',
+                location: 'wrld_123:1'
+            })
         ).toBe('join me');
         expect(
-            normalizeUserStatus({ status: 'ask me', location: 'wrld_123:1' })
+            resolveUserPresenceStatus({
+                status: 'ask me',
+                location: 'wrld_123:1'
+            })
         ).toBe('ask me');
         expect(
-            normalizeUserStatus({ status: 'busy', location: 'wrld_123:1' })
+            resolveUserPresenceStatus({
+                status: 'busy',
+                location: 'wrld_123:1'
+            })
         ).toBe('busy');
-        expect(normalizeUserStatus({ location: 'wrld_123:1' })).toBe('active');
+        expect(resolveUserPresenceStatus({ location: 'wrld_123:1' })).toBe(
+            'active'
+        );
     });
 
     it('keeps state active distinct from online active for presence ordering', () => {
-        expect(normalizeUserStatus({ state: 'active' })).toBe('state-active');
+        expect(resolveUserPresenceStatus({ state: 'active' })).toBe(
+            'state-active'
+        );
     });
 
     it('orders statuses by joinability and availability', () => {

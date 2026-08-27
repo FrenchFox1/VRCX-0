@@ -6,26 +6,27 @@ import {
     DEFAULT_FOLDER_ICON,
     normalizeNavIconKey
 } from '@/shared/constants/navIcons';
+import { isRecord } from '@/shared/utils/record';
 
 export type CustomNavFolderItem =
     | string
     | {
-          key?: unknown;
-          icon?: unknown;
+          key: string;
+          icon?: string;
       };
 
 export type CustomNavItemEntry = {
     type: 'item';
-    key?: unknown;
-    icon?: unknown;
+    key: string;
+    icon?: string;
 };
 
 export type CustomNavFolderEntry = {
     type: 'folder';
-    id?: unknown;
-    name?: unknown;
-    nameKey?: unknown;
-    icon?: unknown;
+    id: string;
+    name?: string;
+    nameKey?: string | null;
+    icon?: string;
     items: CustomNavFolderItem[];
 };
 
@@ -36,7 +37,7 @@ export type CustomNavLayout = CustomNavLayoutEntry[];
 export type CustomNavHiddenPlacement = {
     parentId: string | null;
     index: number;
-    icon?: unknown;
+    icon?: string;
 };
 
 export type CustomNavDefinition = {
@@ -48,14 +49,21 @@ export type CustomNavDefinition = {
     tooltip?: string;
 };
 
-export type VisibleNode = {
-    type: 'folder' | 'item';
-    id: string;
-    key?: unknown;
-    icon?: unknown;
-    sortableId: string;
-    parentId: string | null;
-};
+export type VisibleNode =
+    | {
+          type: 'folder';
+          id: string;
+          sortableId: string;
+          parentId: null;
+      }
+    | {
+          type: 'item';
+          id: string;
+          key: string;
+          icon?: string;
+          sortableId: string;
+          parentId: string | null;
+      };
 
 export type CustomNavDragNode =
     | VisibleNode
@@ -66,51 +74,55 @@ export type CustomNavDragNode =
           sortableId: string;
       };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
+function stringValue(value: unknown): string {
+    return typeof value === 'string' ? value : '';
 }
 
-export function getFolderItemKey(item: unknown) {
+function rawFolderItemKey(item: unknown): string {
     return typeof item === 'string'
         ? item
         : isRecord(item)
-          ? item.key
-          : undefined;
+          ? stringValue(item.key)
+          : '';
 }
 
-export function getFolderItemIcon(item: unknown) {
-    return isRecord(item) ? item.icon : undefined;
+function rawFolderItemIcon(item: unknown): string | undefined {
+    const icon = isRecord(item) ? stringValue(item.icon) : '';
+    return icon || undefined;
 }
 
-function getLayoutItemKey(entry: unknown): unknown {
-    return isRecord(entry) ? entry.key : undefined;
+export function getFolderItemKey(item: CustomNavFolderItem): string {
+    return typeof item === 'string' ? item : item.key;
+}
+
+export function getFolderItemIcon(
+    item: CustomNavFolderItem
+): string | undefined {
+    return typeof item === 'string' ? undefined : item.icon;
 }
 
 export function createFolderItem(
-    key: unknown,
-    icon: unknown = ''
+    key: string,
+    icon: string = ''
 ): CustomNavFolderItem {
     const normalizedIcon = normalizeNavIconKey(icon, '');
-    return normalizedIcon ? { key, icon: normalizedIcon } : String(key);
+    return normalizedIcon ? { key, icon: normalizedIcon } : key;
 }
 
-export function getItemSortableId(key: unknown) {
+export function getItemSortableId(key: string) {
     return `item:${key}`;
 }
 
-export function getFolderSortableId(id: unknown) {
+export function getFolderSortableId(id: string) {
     return `folder:${id}`;
 }
 
-export function getFolderDropId(id: unknown) {
+export function getFolderDropId(id: string) {
     return `folder-drop:${id}`;
 }
 
-export function getFolderIdFromDropId(id: unknown) {
-    const value = String(id || '');
-    return value.startsWith('folder-drop:')
-        ? value.slice('folder-drop:'.length)
-        : '';
+export function getFolderIdFromDropId(id: string) {
+    return id.startsWith('folder-drop:') ? id.slice('folder-drop:'.length) : '';
 }
 
 export function cloneLayout(source: unknown): CustomNavLayout {
@@ -123,20 +135,24 @@ export function cloneLayout(source: unknown): CustomNavLayout {
                 return null;
             }
             if (entry.type === 'folder') {
+                const id = stringValue(entry.id);
+                if (!id) {
+                    return null;
+                }
                 return {
                     type: 'folder',
-                    id: entry.id,
-                    name: entry.name,
-                    nameKey: entry.nameKey || null,
+                    id,
+                    name: stringValue(entry.name),
+                    nameKey: stringValue(entry.nameKey) || null,
                     icon: normalizeNavIconKey(entry.icon, DEFAULT_FOLDER_ICON),
                     items: Array.isArray(entry.items)
                         ? entry.items
                               .map((item) => {
-                                  const key = getFolderItemKey(item);
+                                  const key = rawFolderItemKey(item);
                                   return key
                                       ? createFolderItem(
                                             key,
-                                            getFolderItemIcon(item)
+                                            rawFolderItemIcon(item)
                                         )
                                       : null;
                               })
@@ -147,10 +163,14 @@ export function cloneLayout(source: unknown): CustomNavLayout {
                 };
             }
             if (entry.type === 'item') {
+                const key = stringValue(entry.key);
+                if (!key) {
+                    return null;
+                }
                 const icon = normalizeNavIconKey(entry.icon, '');
                 return {
                     type: 'item',
-                    key: entry.key,
+                    key,
                     ...(icon ? { icon } : {})
                 };
             }
@@ -176,20 +196,15 @@ export function definitionLabel(
     if (!definition) {
         return '';
     }
-    if (definition.titleIsCustom || definition.isDashboard) {
-        return String(
-            definition.labelKey || definition.tooltip || definition.key || ''
-        );
-    }
-    return t(
-        String(
-            definition.labelKey || definition.tooltip || definition.key || ''
-        )
-    );
+    const label =
+        definition.labelKey || definition.tooltip || definition.key || '';
+    return definition.titleIsCustom || definition.isDashboard
+        ? label
+        : t(label);
 }
 
-export function removeKeyFromLayout(layout: unknown, key: unknown) {
-    const normalizedKey = String(key || '');
+export function removeKeyFromLayout(layout: CustomNavLayout, key: string) {
+    const normalizedKey = key;
     let removed = false;
     let placement: CustomNavHiddenPlacement | null = null;
     const next: CustomNavLayout = [];
@@ -216,7 +231,7 @@ export function removeKeyFromLayout(layout: unknown, key: unknown) {
             if (itemKey === normalizedKey) {
                 removed = true;
                 placement = {
-                    parentId: String(entry.id),
+                    parentId: entry.id,
                     index: itemIndex,
                     icon: getFolderItemIcon(item)
                 };
@@ -238,8 +253,8 @@ export function removeKeyFromLayout(layout: unknown, key: unknown) {
 }
 
 export function insertKeyIntoLayout(
-    layout: unknown,
-    key: unknown,
+    layout: CustomNavLayout,
+    key: string,
     placement: CustomNavHiddenPlacement | null | undefined
 ) {
     const icon = normalizeNavIconKey(placement?.icon, '');
@@ -253,8 +268,7 @@ export function insertKeyIntoLayout(
     if (placement?.parentId) {
         const folder = next.find(
             (item): item is CustomNavFolderEntry =>
-                item.type === 'folder' &&
-                String(item.id) === String(placement.parentId)
+                item.type === 'folder' && item.id === placement.parentId
         );
         if (folder) {
             const index = Math.max(
@@ -275,17 +289,16 @@ export function insertKeyIntoLayout(
     return [...next, entry];
 }
 
-export function buildHiddenPlacementMap(layout: unknown, hiddenKeys: unknown) {
-    const hiddenKeySet = new Set(
-        Array.isArray(hiddenKeys)
-            ? hiddenKeys.map((key) => String(key || '')).filter(Boolean)
-            : []
-    );
+export function buildHiddenPlacementMap(
+    layout: unknown,
+    hiddenKeys: readonly string[] = []
+) {
+    const hiddenKeySet = new Set(hiddenKeys);
     const placements = new Map<string, CustomNavHiddenPlacement>();
 
     for (const [index, entry] of cloneLayout(layout).entries()) {
         if (entry.type === 'item') {
-            const key = String(getLayoutItemKey(entry) || '');
+            const key = entry.key;
             if (hiddenKeySet.has(key)) {
                 placements.set(key, {
                     parentId: null,
@@ -297,12 +310,12 @@ export function buildHiddenPlacementMap(layout: unknown, hiddenKeys: unknown) {
         }
 
         for (const [itemIndex, item] of (entry.items || []).entries()) {
-            const key = String(getFolderItemKey(item) || '');
+            const key = getFolderItemKey(item);
             if (!hiddenKeySet.has(key)) {
                 continue;
             }
             placements.set(key, {
-                parentId: String(entry.id),
+                parentId: entry.id,
                 index: itemIndex,
                 icon: getFolderItemIcon(item)
             });
@@ -312,21 +325,21 @@ export function buildHiddenPlacementMap(layout: unknown, hiddenKeys: unknown) {
     return placements;
 }
 
-export function cleanLayout(layout: unknown) {
+export function cleanLayout(layout: CustomNavLayout) {
     return cloneLayout(layout).filter(
         (entry) => entry.type !== 'folder' || entry.items.length
     );
 }
 
-export function isDashboardKey(key: unknown) {
-    return String(key || '').startsWith(DASHBOARD_NAV_KEY_PREFIX);
+export function isDashboardKey(key: string) {
+    return key.startsWith(DASHBOARD_NAV_KEY_PREFIX);
 }
 
-export function buildVisibleNodes(layout: unknown) {
+export function buildVisibleNodes(layout: CustomNavLayout) {
     const nodes: VisibleNode[] = [];
     for (const entry of cloneLayout(layout)) {
         if (entry.type === 'folder') {
-            const folderId = String(entry.id);
+            const folderId = entry.id;
             nodes.push({
                 type: 'folder',
                 id: folderId,
@@ -340,7 +353,7 @@ export function buildVisibleNodes(layout: unknown) {
                 }
                 nodes.push({
                     type: 'item',
-                    id: String(key),
+                    id: key,
                     key,
                     icon: getFolderItemIcon(item),
                     sortableId: getItemSortableId(key),
@@ -349,22 +362,20 @@ export function buildVisibleNodes(layout: unknown) {
             }
             continue;
         }
-        if (entry.key) {
-            nodes.push({
-                type: 'item',
-                id: String(entry.key),
-                key: entry.key,
-                icon: entry.icon,
-                sortableId: getItemSortableId(entry.key),
-                parentId: null
-            });
-        }
+        nodes.push({
+            type: 'item',
+            id: entry.key,
+            key: entry.key,
+            icon: entry.icon,
+            sortableId: getItemSortableId(entry.key),
+            parentId: null
+        });
     }
     return nodes;
 }
 
 export function resolveDragNode(
-    id: unknown,
+    id: string | number | null | undefined,
     nodes: readonly VisibleNode[]
 ): CustomNavDragNode | null {
     const value = String(id || '');
@@ -400,12 +411,12 @@ export function sameDragNode(
 
 export function removeLayoutItem(
     entries: CustomNavLayout,
-    key: unknown
-): { key: unknown; icon?: unknown } | null {
-    const normalizedKey = String(key || '');
+    key: string
+): { key: string; icon?: string } | null {
+    const normalizedKey = key;
     for (let index = 0; index < entries.length; index += 1) {
         const entry = entries[index];
-        if (entry.type === 'item' && String(entry.key) === normalizedKey) {
+        if (entry.type === 'item' && entry.key === normalizedKey) {
             const removedKey = entry.key;
             const removedIcon = entry.icon;
             entries.splice(index, 1);
@@ -416,7 +427,7 @@ export function removeLayoutItem(
         }
         if (entry.type === 'folder') {
             const itemIndex = (entry.items || []).findIndex(
-                (item) => String(getFolderItemKey(item)) === normalizedKey
+                (item) => getFolderItemKey(item) === normalizedKey
             );
             if (itemIndex >= 0) {
                 const [removed] = entry.items.splice(itemIndex, 1);
@@ -439,16 +450,16 @@ export function findTopLevelIndex(
     }
     return entries.findIndex((entry) => {
         if (node.type === 'folder') {
-            return entry.type === 'folder' && String(entry.id) === node.id;
+            return entry.type === 'folder' && entry.id === node.id;
         }
-        return entry.type === 'item' && String(entry.key) === node.id;
+        return entry.type === 'item' && entry.key === node.id;
     });
 }
 
-export function findFolder(entries: CustomNavLayout, folderId: unknown) {
+export function findFolder(entries: CustomNavLayout, folderId: string) {
     return entries.find(
         (entry): entry is CustomNavFolderEntry =>
-            entry.type === 'folder' && String(entry.id) === folderId
+            entry.type === 'folder' && entry.id === folderId
     );
 }
 
@@ -460,7 +471,7 @@ export function findFolderItemIndex(
         return -1;
     }
     return (folder.items || []).findIndex(
-        (item) => String(getFolderItemKey(item)) === node.id
+        (item) => getFolderItemKey(item) === node.id
     );
 }
 

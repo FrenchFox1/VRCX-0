@@ -4,13 +4,9 @@ use super::{
     wrist::{wrist_device_item, wrist_device_tokens, wrist_feed_item, wrist_muted_text},
 };
 use crate::{
-    AvatarBitmap, DeviceChip, DeviceRole, DeviceStatus, FeedKind, FeedLine, FeedRelation,
-    FeedSeverity, MainSurfaceModel, OverlayFooter, RgbaFrame, ToastCard, WristSurfaceModel,
-};
-#[cfg(feature = "friends-panel")]
-use crate::{
-    FavoriteFriendsPanelModel, FriendPanelCategory, FriendPanelRow, FriendPanelRowActions,
-    FriendPanelRowPrimaryAction, FriendPanelStatusTone,
+    AvatarBitmap, DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine,
+    FeedRelation, FeedSeverity, MainSurfaceModel, OverlayFooter, OverlaySize, RgbaFrame, ToastCard,
+    WristSurfaceModel,
 };
 use std::{sync::Arc, thread};
 
@@ -24,24 +20,6 @@ fn slint_platform_init_is_available_on_each_render_thread() {
     })
     .join()
     .unwrap();
-}
-
-#[cfg(feature = "friends-panel")]
-#[test]
-fn slint_panel_host_renders_friends_model_and_dispatches_pointer_input() {
-    let mut host = SlintPanelHost::new(OverlaySize::new(1080, 720)).unwrap();
-    host.set_model(&sample_friends_model());
-    let initial = host.render_if_needed().unwrap().unwrap();
-    assert_eq!(initial.frame.size, OverlaySize::new(1080, 720));
-    assert_eq!(initial.frame.data[3], 240);
-    assert!(host.render_if_needed().unwrap().is_none());
-    host.dispatch(SlintPanelPointerEvent::Moved { x: 350.0, y: 190.0 })
-        .unwrap();
-    let hover = host.render_if_needed().unwrap().unwrap();
-
-    assert_ne!(initial.frame.data, hover.frame.data);
-    assert!(hover.stats.dirty_area > 0);
-    assert!(hover.stats.dirty_area < u64::from(1080_u32 * 720_u32));
 }
 
 #[test]
@@ -111,23 +89,6 @@ fn slint_hmd_renderer_hides_avatar_placeholder_when_avatar_slot_is_disabled() {
 
     assert_ne!(with_placeholder, without_slot);
     assert_eq!(renderer.render_count(), 2);
-}
-
-#[test]
-fn slint_hmd_card_alpha_tracks_toast_opacity_from_an_opaque_baseline() {
-    let mut renderer = SlintHmdRenderer::new();
-    let mut model = sample_main_model();
-    let pixel_alpha = |frame: &RgbaFrame| {
-        let index = ((440 * frame.size.width + 800) * 4 + 3) as usize;
-        frame.data[index]
-    };
-
-    let opaque = renderer.render(&model).unwrap();
-    assert_eq!(pixel_alpha(&opaque), 255);
-
-    model.toasts[0].opacity = 0.5;
-    let fading = renderer.render(&model).unwrap();
-    assert!((126..=129).contains(&pixel_alpha(&fading)));
 }
 
 #[test]
@@ -364,6 +325,7 @@ fn wrist_feed_item_preserves_actor_detail_and_muted_media_detail() {
         detail: "Ada invited you".to_string(),
         relation: FeedRelation::Favorite,
         severity: FeedSeverity::Important,
+        accent: FeedAccent::None,
     };
     let media = FeedLine {
         time_text: String::new(),
@@ -372,6 +334,7 @@ fn wrist_feed_item_preserves_actor_detail_and_muted_media_detail() {
         detail: "Muted media row".to_string(),
         relation: FeedRelation::None,
         severity: FeedSeverity::Normal,
+        accent: FeedAccent::None,
     };
 
     let favorite_item = wrist_feed_item(&favorite, true);
@@ -380,12 +343,46 @@ fn wrist_feed_item_preserves_actor_detail_and_muted_media_detail() {
     assert!(favorite_item.has_actor);
     assert_eq!(favorite_item.actor.to_string(), "Ada");
     assert_eq!(favorite_item.detail.to_string(), "invited you");
-    assert!(favorite_item.show_severity);
+    assert!(favorite_item.show_accent);
     assert!(!media_item.has_actor);
     assert_eq!(media_item.detail.to_string(), "Muted media row");
     assert_eq!(
         media_item.detail_color,
         to_slint_color(wrist_muted_text(true))
+    );
+}
+
+#[test]
+fn wrist_feed_item_uses_feed_type_accents_and_keeps_severity_precedence() {
+    let mut row = FeedLine {
+        time_text: "16:31".to_string(),
+        kind: FeedKind::Friend,
+        actor_text: "Ada".to_string(),
+        detail: "Ada is online".to_string(),
+        relation: FeedRelation::Friend,
+        severity: FeedSeverity::Normal,
+        accent: FeedAccent::Online,
+    };
+
+    let online = wrist_feed_item(&row, true);
+    assert!(online.show_accent);
+    assert_eq!(
+        online.accent_color,
+        to_slint_color(crate::Color::rgba(46, 211, 25, 255))
+    );
+
+    row.accent = FeedAccent::Location;
+    let location = wrist_feed_item(&row, true);
+    assert_eq!(
+        location.accent_color,
+        to_slint_color(crate::Color::rgba(14, 165, 233, 255))
+    );
+
+    row.severity = FeedSeverity::Warning;
+    let warning = wrist_feed_item(&row, true);
+    assert_eq!(
+        warning.accent_color,
+        to_slint_color(crate::Color::rgba(239, 68, 68, 255))
     );
 }
 
@@ -419,6 +416,7 @@ fn sample_wrist_model() -> WristSurfaceModel {
             detail: "Ada invited you to 测试世界".to_string(),
             relation: FeedRelation::Favorite,
             severity: FeedSeverity::Important,
+            accent: FeedAccent::None,
         }],
         footer: OverlayFooter {
             left: "8 players".to_string(),
@@ -446,43 +444,7 @@ fn sample_main_model() -> MainSurfaceModel {
                 ]),
             }),
             show_avatar: true,
-            opacity: 1.0,
-            slide_offset: 0.0,
         }],
-    }
-}
-
-#[cfg(feature = "friends-panel")]
-fn sample_friends_model() -> FavoriteFriendsPanelModel {
-    FavoriteFriendsPanelModel {
-        categories: vec![FriendPanelCategory {
-            key: "all".to_string(),
-            label: "All".to_string(),
-            count: 1,
-        }],
-        rows: vec![FriendPanelRow {
-            section_label: None,
-            user_id: "usr_friend".to_string(),
-            display_name: "Ada".to_string(),
-            status: FriendPanelStatusTone::Online,
-            location_text: "测试世界 Public".to_string(),
-            is_traveling: false,
-            traveling_text: None,
-            note: Some("VRChat note".to_string()),
-            memo: Some("Local memo".to_string()),
-            avatar: Some(AvatarBitmap {
-                width: 2,
-                height: 2,
-                rgba: Arc::from(vec![
-                    255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
-                ]),
-            }),
-            actions: FriendPanelRowActions {
-                primary: Some(FriendPanelRowPrimaryAction::Open),
-                invite: true,
-            },
-        }],
-        ..FavoriteFriendsPanelModel::default()
     }
 }
 
@@ -494,6 +456,7 @@ fn feed_row(index: u32) -> FeedLine {
         detail: format!("row {index}"),
         relation: FeedRelation::None,
         severity: FeedSeverity::Normal,
+        accent: FeedAccent::None,
     }
 }
 

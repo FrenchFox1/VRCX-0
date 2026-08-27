@@ -109,6 +109,14 @@
     );
 }
 
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        color-scheme: dark;
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+    }
+}
+
 .dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
@@ -271,6 +279,89 @@
 }
 
 @layer components {
+    .entity-json-view {
+        min-width: max-content;
+        color: var(--foreground);
+        font-family:
+            ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+            'Liberation Mono', monospace;
+        line-height: 1.55;
+        white-space: pre;
+    }
+
+    .entity-json-view-fields {
+        margin: 0;
+        padding: 0 0 0 1.25rem;
+        list-style: none;
+    }
+
+    .entity-json-view-row {
+        min-height: 1.35rem;
+    }
+
+    .entity-json-view-collapse,
+    .entity-json-view-expand {
+        display: inline-block;
+        width: 1rem;
+        color: var(--muted-foreground);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .entity-json-view-collapse::after {
+        content: '\25BE';
+    }
+
+    .entity-json-view-expand::after {
+        content: '\25B8';
+    }
+
+    .entity-json-view-collapse:hover,
+    .entity-json-view-expand:hover,
+    .entity-json-view-collapse:focus-visible,
+    .entity-json-view-expand:focus-visible {
+        color: var(--foreground);
+    }
+
+    .entity-json-view-collapsed {
+        margin: 0 0.25rem;
+        color: var(--muted-foreground);
+        cursor: pointer;
+    }
+
+    .entity-json-view-collapsed::after {
+        content: '...';
+    }
+
+    .entity-json-view-label,
+    .entity-json-view-clickable-label {
+        margin-right: 0.375rem;
+        color: var(--foreground);
+        font-weight: 600;
+    }
+
+    .entity-json-view-clickable-label {
+        cursor: pointer;
+    }
+
+    .entity-json-view-string {
+        color: color-mix(in oklch, var(--foreground) 72%, var(--status-online));
+    }
+
+    .entity-json-view-number {
+        color: color-mix(in oklch, var(--foreground) 68%, var(--platform-pc));
+    }
+
+    .entity-json-view-boolean {
+        color: color-mix(in oklch, var(--foreground) 72%, var(--status-askme));
+    }
+
+    .entity-json-view-null,
+    .entity-json-view-value,
+    .entity-json-view-punctuation {
+        color: var(--muted-foreground);
+    }
+
     body:has(.vrcx-0-custom-window-frame) {
         --vrcx-0-overlay-gutter: 0.375rem;
         --vrcx-0-overlay-bottom-radius: 1rem;
@@ -300,6 +391,23 @@
         position: relative;
         isolation: isolate;
         background: var(--vrcx-0-app-surface);
+    }
+
+    .vrcx-0-background-image-transition-layer {
+        position: absolute;
+        z-index: 0;
+        inset: 0;
+        pointer-events: none;
+        background-position: var(--vrcx-0-wallpaper-position);
+        background-size: var(--vrcx-0-wallpaper-size);
+        background-repeat: var(--vrcx-0-wallpaper-repeat);
+        opacity: 0;
+        filter: var(--vrcx-0-wallpaper-filter);
+        transition: opacity 280ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .vrcx-0-background-image-transition-layer[data-active] {
+        opacity: var(--vrcx-0-wallpaper-opacity);
     }
 
     .vrcx-0-custom-window-frame {
@@ -489,16 +597,19 @@
         background: var(--status-offline-alt);
     }
 
-    .accessible-status-indicators i.x-user-status.joinme {
-        mask-image: url('../assets/masks/joinme.svg');
+    .accessible-status-indicators i.x-user-status.joinme,
+    .accessible-status-indicators .user-status-indicator.joinme {
+        mask: url('../assets/masks/joinme.svg') center / contain no-repeat;
     }
 
-    .accessible-status-indicators i.x-user-status.askme {
-        mask-image: url('../assets/masks/askme.svg');
+    .accessible-status-indicators i.x-user-status.askme,
+    .accessible-status-indicators .user-status-indicator.askme {
+        mask: url('../assets/masks/askme.svg') center / contain no-repeat;
     }
 
-    .accessible-status-indicators i.x-user-status.busy {
-        mask-image: url('../assets/masks/busy.svg');
+    .accessible-status-indicators i.x-user-status.busy,
+    .accessible-status-indicators .user-status-indicator.busy {
+        mask: url('../assets/masks/busy.svg') center / contain no-repeat;
     }
 
     .is-compact-table [data-slot='table'] {
@@ -606,6 +717,102 @@
 
         to {
             background-color: transparent;
+        }
+    }
+
+    .activity-skin {
+        --act-surface: oklch(1 0 0 / 0.66);
+        --act-edge: oklch(0.2 0 0 / 0.1);
+        --act-track: oklch(0.2 0 0 / 0.06);
+        --act-axis: oklch(0.55 0 0);
+        --act-accent: var(--primary);
+        --act-mark: color-mix(in oklab, var(--primary) 86%, transparent);
+        --act-mark-soft: color-mix(in oklab, var(--primary) 34%, transparent);
+        --act-heat-empty: oklch(0.2 0 0 / 0.05);
+        --act-heat-min: color-mix(in oklab, var(--primary) 8%, transparent);
+        --act-heat-0: color-mix(in oklab, var(--primary) 16%, transparent);
+        --act-heat-1: color-mix(in oklab, var(--primary) 34%, transparent);
+        --act-heat-2: color-mix(in oklab, var(--primary) 54%, transparent);
+        --act-heat-3: color-mix(in oklab, var(--primary) 76%, transparent);
+        --act-heat-4: var(--primary);
+    }
+
+    .dark .activity-skin {
+        --act-surface: oklch(0.24 0 0 / 0.66);
+        --act-edge: oklch(1 0 0 / 0.09);
+        --act-track: oklch(1 0 0 / 0.07);
+        --act-axis: oklch(0.62 0 0);
+        --act-heat-empty: oklch(1 0 0 / 0.04);
+        --act-heat-min: color-mix(in oklab, var(--primary) 7%, transparent);
+        --act-heat-0: color-mix(in oklab, var(--primary) 14%, transparent);
+        --act-heat-1: color-mix(in oklab, var(--primary) 30%, transparent);
+        --act-heat-2: color-mix(in oklab, var(--primary) 50%, transparent);
+        --act-heat-3: color-mix(in oklab, var(--primary) 74%, transparent);
+        --act-heat-4: var(--primary);
+    }
+
+    .activity-card {
+        border-radius: 1rem;
+        background: var(--act-surface);
+        backdrop-filter: blur(24px) saturate(150%);
+        -webkit-backdrop-filter: blur(24px) saturate(150%);
+        box-shadow: inset 0 0 0 1px var(--act-edge);
+    }
+
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+        .activity-skin {
+            --act-surface: var(--card);
+            --act-edge: var(--border);
+        }
+
+        .activity-card {
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+    }
+
+    .activity-fold {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 320ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .activity-fold[data-open='true'] {
+        grid-template-rows: 1fr;
+    }
+
+    .activity-fold > * {
+        overflow: hidden;
+        min-height: 0;
+    }
+
+    @keyframes activity-section-enter {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .activity-enter {
+        animation: activity-section-enter 420ms cubic-bezier(0.32, 0.72, 0, 1)
+            both;
+        animation-delay: calc(var(--activity-enter-index, 0) * 70ms);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .activity-enter {
+            animation-duration: 180ms;
+            animation-delay: 0ms;
+            transform: none;
+        }
+
+        .activity-fold {
+            transition: none;
         }
     }
 }

@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn friend_location_with_state_change_does_not_emit_gps_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -14,7 +14,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "active".into(),
-                        state_bucket: "active".into(),
                         location: "wrld_old:123".into(),
                         ..FriendRecord::default()
                     },
@@ -48,7 +47,7 @@ mod tests {
             panic!("friend-location should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(output.projection.patches[0].patch.location, "wrld_new:456");
         assert!(output.persistence.feed_entries.is_empty());
         assert!(output.projection.feed_entries.is_empty());
@@ -56,7 +55,7 @@ mod tests {
 
     #[test]
     fn duplicate_friend_location_payload_after_repeat_window_does_not_write_gps_again() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -66,7 +65,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         ..FriendRecord::default()
                     },
@@ -118,7 +116,7 @@ mod tests {
 
     #[test]
     fn friend_update_status_visibility_changes_emit_private_and_restored_gps() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -128,7 +126,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         ..FriendRecord::default()
@@ -228,15 +225,23 @@ mod tests {
             restored.projection.patches[0].patch.extra["$location"]["worldId"],
             "wrld_current"
         );
-        assert_eq!(
-            restored.projection.patches[0].patch.extra["$location_at"],
-            1_778_803_320_000i64
-        );
+        assert!(!restored.projection.patches[0]
+            .patch
+            .extra
+            .contains_key("$location_at"));
+        let location_time = restored
+            .projection
+            .location_time_snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.iter().find(|entry| entry.user_id == "usr_friend"))
+            .expect("restored location time");
+        assert_eq!(location_time.location, "wrld_current:456");
+        assert_eq!(location_time.since_ms, Some(1_778_803_320_000));
     }
 
     #[test]
-    fn friend_location_embedded_user_location_matches_vue_spread_order() {
-        let runtime = RealtimeFriendsRuntime::new();
+    fn friend_location_top_level_offline_overrides_stale_embedded_location() {
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -246,7 +251,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_1:123".into(),
                         ..FriendRecord::default()
                     },
@@ -281,24 +285,34 @@ mod tests {
             panic!("friend-location should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
-        assert_eq!(output.persistence.feed_entries[0]["type"], "GPS");
-        assert_eq!(output.profile_refetch_user_ids, vec!["usr_friend"]);
+        assert_eq!(output.projection.patches[0].patch.state, "online");
+        assert_eq!(output.projection.patches[0].patch.location, "offline");
         assert_eq!(
-            runtime
-                .snapshot()
-                .unwrap()
-                .friends_by_id
-                .get("usr_friend")
-                .unwrap()
-                .state_bucket,
-            "online"
+            output.projection.patches[0].patch.extra["pendingOffline"],
+            true
         );
+        assert!(output.persistence.feed_entries.is_empty());
+        assert!(matches!(
+            output.timer_action,
+            PendingOfflineTimerAction::Schedule { .. }
+        ));
+        assert_eq!(output.profile_refetch_user_ids, vec!["usr_friend"]);
+
+        let friend = runtime
+            .snapshot()
+            .unwrap()
+            .friends_by_id
+            .get("usr_friend")
+            .cloned()
+            .unwrap();
+        assert_eq!(friend.state, "online");
+        assert_eq!(friend.location, "offline");
+        assert_eq!(friend.extra["pendingOffline"], true);
     }
 
     #[test]
     fn entering_traveling_emits_one_ephemeral_player_joining_entry() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -308,7 +322,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         ..FriendRecord::default()
                     },
@@ -361,7 +374,7 @@ mod tests {
 
     #[test]
     fn persisted_feed_precedes_ephemeral_joining_projection() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -371,7 +384,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         ..FriendRecord::default()
                     },

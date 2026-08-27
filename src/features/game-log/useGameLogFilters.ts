@@ -9,7 +9,10 @@ import {
 
 import { useTodayDate } from '@/lib/useTodayDate';
 import configRepository from '@/repositories/configRepository';
-import { GAME_LOG_FILTER_TYPES } from '@/repositories/gameLogRepository';
+import {
+    GAME_LOG_FILTER_TYPES,
+    isGameLogFilterType
+} from '@/repositories/gameLogRepository';
 
 import {
     GAME_LOG_SESSION_FILTER_TYPES,
@@ -19,19 +22,17 @@ import {
 
 function normalizeFilters(
     filters: unknown,
-    allowedFilters: readonly string[]
+    allowedFilters: readonly GameLogFilterType[]
 ): GameLogFilterType[] {
     if (!Array.isArray(filters)) {
         return [];
     }
     return filters.filter(
-        (entry): entry is string =>
-            typeof entry === 'string' && allowedFilters.includes(entry)
+        (entry): entry is GameLogFilterType =>
+            typeof entry === 'string' &&
+            isGameLogFilterType(entry) &&
+            allowedFilters.includes(entry)
     );
-}
-
-function normalizeViewMode(value: unknown): GameLogViewMode {
-    return value === 'sessions' || value === 'table' ? value : 'table';
 }
 
 export function useGameLogFilters() {
@@ -90,11 +91,15 @@ export function useGameLogFilters() {
                             GAME_LOG_SESSION_FILTER_TYPES
                         )
                     );
-                    setTableFavoritesOnly(Boolean(nextTableFavoritesOnly));
-                    setSessionFavoritesOnly(Boolean(nextSessionFavoritesOnly));
-                    setSessionDateFrom(String(nextSessionDateFrom || ''));
-                    setSessionDateTo(String(nextSessionDateTo || ''));
-                    setViewMode(normalizeViewMode(nextViewMode));
+                    setTableFavoritesOnly(nextTableFavoritesOnly);
+                    setSessionFavoritesOnly(nextSessionFavoritesOnly);
+                    setSessionDateFrom(nextSessionDateFrom);
+                    setSessionDateTo(nextSessionDateTo);
+                    setViewMode(
+                        nextViewMode === 'sessions' || nextViewMode === 'table'
+                            ? nextViewMode
+                            : 'table'
+                    );
                     preferencesReadyRef.current = true;
                     setPreferencesReady(true);
                 }
@@ -180,18 +185,18 @@ export function useGameLogFilters() {
     );
 
     const tableQueryFilterTypes = useMemo(
-        () =>
-            tableSelectedTypes.filter((type) =>
-                (GAME_LOG_FILTER_TYPES as readonly string[]).includes(type)
-            ),
+        () => tableSelectedTypes.filter(isGameLogFilterType),
         [tableSelectedTypes]
     );
     const sessionQueryFilterTypes = useMemo(
         () =>
-            sessionSelectedTypes.filter((type) =>
-                (GAME_LOG_SESSION_FILTER_TYPES as readonly string[]).includes(
+            sessionSelectedTypes.filter(
+                (
                     type
-                )
+                ): type is (typeof GAME_LOG_SESSION_FILTER_TYPES)[number] =>
+                    type === 'OnPlayerJoined' ||
+                    type === 'OnPlayerLeft' ||
+                    type === 'VideoPlay'
             ),
         [sessionSelectedTypes]
     );

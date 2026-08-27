@@ -1,4 +1,4 @@
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -24,21 +24,30 @@ export function DashboardAddRowControl({
 
     if (!showOptions) {
         return (
-            <Button
-                type="button"
-                variant="ghost"
-                className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-center justify-center rounded-md border-2 border-dashed transition-colors"
-                aria-label={t('view.dashboard.action.add_row')}
-                onClick={() => setShowOptions(true)}
-            >
-                <PlusIcon data-icon="icon" className="opacity-50" />
-            </Button>
+            <div className="group flex h-11 items-center gap-3">
+                <div className="bg-border/80 group-hover:bg-primary/40 h-px flex-1 transition-colors duration-150 ease-out" />
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="bg-card text-foreground hover:bg-accent hover:border-primary/50 h-8 rounded-md px-4 shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.98] motion-reduce:transform-none"
+                    aria-label={t('view.dashboard.action.add_row')}
+                    onClick={() => setShowOptions(true)}
+                >
+                    <PlusIcon
+                        data-icon="inline-start"
+                        className="text-primary"
+                    />
+                    {t('view.dashboard.action.add_row')}
+                </Button>
+                <div className="bg-border/80 group-hover:bg-primary/40 h-px flex-1 transition-colors duration-150 ease-out" />
+            </div>
         );
     }
 
     return (
-        <div className="border-muted-foreground/20 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 mt-auto flex min-h-[80px] flex-1 items-start justify-center rounded-md border-2 border-dashed p-4 transition-colors">
-            <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-dashed px-3 py-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
                 <span className="text-muted-foreground text-xs">
                     {t('view.dashboard.action.add_row')}
                 </span>
@@ -48,15 +57,15 @@ export function DashboardAddRowControl({
                             <Button
                                 type="button"
                                 variant="outline"
-                                size="icon"
-                                className="h-10 w-16 border-2 border-dashed"
+                                size="icon-sm"
+                                className="h-8 w-12 border-dashed"
                                 aria-label={t('dashboard.actions.add_full_row')}
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     addRow(1);
                                 }}
                             >
-                                <div className="bg-muted-foreground/20 h-6 w-12 rounded" />
+                                <div className="bg-muted-foreground/25 h-4 w-7 rounded-[3px]" />
                             </Button>
                         }
                     />
@@ -70,8 +79,8 @@ export function DashboardAddRowControl({
                             <Button
                                 type="button"
                                 variant="outline"
-                                size="icon"
-                                className="h-10 w-16 gap-1 border-2 border-dashed"
+                                size="icon-sm"
+                                className="h-8 w-12 gap-0.5 border-dashed"
                                 aria-label={t(
                                     'dashboard.actions.add_split_row'
                                 )}
@@ -80,8 +89,8 @@ export function DashboardAddRowControl({
                                     addRow(2);
                                 }}
                             >
-                                <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
-                                <div className="bg-muted-foreground/20 h-6 w-5 rounded" />
+                                <div className="bg-muted-foreground/25 h-4 w-3 rounded-[2px]" />
+                                <div className="bg-muted-foreground/25 h-4 w-3 rounded-[2px]" />
                             </Button>
                         }
                     />
@@ -95,8 +104,8 @@ export function DashboardAddRowControl({
                             <Button
                                 type="button"
                                 variant="outline"
-                                size="icon"
-                                className="h-10 w-16 gap-1 border-2 border-dashed"
+                                size="icon-sm"
+                                className="h-8 w-12 border-dashed"
                                 aria-label={t(
                                     'dashboard.actions.add_vertical_row'
                                 )}
@@ -106,8 +115,8 @@ export function DashboardAddRowControl({
                                 }}
                             >
                                 <div className="flex flex-col gap-0.5">
-                                    <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
-                                    <div className="bg-muted-foreground/20 h-2.5 w-10 rounded" />
+                                    <div className="bg-muted-foreground/25 h-1.5 w-7 rounded-[2px]" />
+                                    <div className="bg-muted-foreground/25 h-1.5 w-7 rounded-[2px]" />
                                 </div>
                             </Button>
                         }
@@ -116,6 +125,16 @@ export function DashboardAddRowControl({
                         {t('dashboard.actions.add_vertical_row')}
                     </TooltipContent>
                 </Tooltip>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground"
+                    aria-label={t('common.actions.cancel')}
+                    onClick={() => setShowOptions(false)}
+                >
+                    <XIcon data-icon="icon" />
+                </Button>
             </div>
         </div>
     );

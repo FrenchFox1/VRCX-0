@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 
-type PreferenceAction = () => unknown | Promise<unknown>;
+type PreferenceAction = () => void;
 type PreferenceRollback = void | (() => void);
 type AvatarProviderConfigDeps = {
     commit: (
@@ -12,9 +12,7 @@ type AvatarProviderConfigDeps = {
 };
 type AvatarProviderConfig = Awaited<
     ReturnType<typeof avatarSearchProviderRepository.saveConfig>
-> & {
-    [key: string]: unknown;
-};
+>;
 
 export type { AvatarProviderConfig };
 
@@ -26,15 +24,16 @@ export function useAvatarProviderConfig({ commit }: AvatarProviderConfigDeps) {
             selectedProvider: ''
         });
     const avatarProviderConfigRef = useRef(avatarProviderConfig);
-    const avatarProviderSaveQueueRef = useRef<Promise<unknown>>(
-        Promise.resolve()
-    );
+    const avatarProviderSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
     const avatarProviderSaveSeqRef = useRef(0);
 
-    function applyAvatarProviderConfig(nextConfig: AvatarProviderConfig) {
-        avatarProviderConfigRef.current = nextConfig;
-        setAvatarProviderConfig(nextConfig);
-    }
+    const applyAvatarProviderConfig = useCallback(
+        (nextConfig: AvatarProviderConfig) => {
+            avatarProviderConfigRef.current = nextConfig;
+            setAvatarProviderConfig(nextConfig);
+        },
+        []
+    );
 
     async function saveAvatarProviderConfig(nextConfig: AvatarProviderConfig) {
         const saveSeq = avatarProviderSaveSeqRef.current + 1;
@@ -43,7 +42,10 @@ export function useAvatarProviderConfig({ commit }: AvatarProviderConfigDeps) {
             .catch(() => {})
             .then(() => avatarSearchProviderRepository.saveConfig(nextConfig));
 
-        avatarProviderSaveQueueRef.current = saveTask.catch(() => {});
+        avatarProviderSaveQueueRef.current = saveTask.then(
+            () => undefined,
+            () => undefined
+        );
         const saved = await saveTask;
         if (saveSeq === avatarProviderSaveSeqRef.current) {
             applyAvatarProviderConfig(saved);

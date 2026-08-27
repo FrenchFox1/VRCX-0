@@ -1,5 +1,4 @@
 import { commands } from '@/platform/tauri/bindings';
-import gameLogRepository from '@/repositories/gameLogRepository';
 
 type ActivityBuckets = {
     rawBuckets: number[];
@@ -31,16 +30,6 @@ type LoadOverlapViewOptions = {
     targetUserId: string;
 };
 
-type LoadTopWorldsViewOptions = {
-    excludeWorldId?: string;
-    limit?: number;
-    rangeDays?: number;
-    sortBy?: string;
-};
-type TopWorldRows = Awaited<
-    ReturnType<typeof gameLogRepository.getMyTopWorlds>
->;
-
 type UserActivityViewService = {
     loadActivityView(options: LoadActivityViewOptions): Promise<
         ActivityBuckets & {
@@ -57,16 +46,14 @@ type UserActivityViewService = {
             overlapPercent?: number;
         }
     >;
-    loadTopWorldsView(options: LoadTopWorldsViewOptions): Promise<TopWorldRows>;
 };
 
-function normalizeNumber(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
+function normalizeNumber(value: number): number {
+    return Number.isFinite(value) ? value : 0;
 }
 
-function normalizeNumberArray(value: unknown): number[] {
-    return Array.isArray(value) ? value.map(normalizeNumber) : [];
+function normalizeNumberArray(value: readonly number[]): number[] {
+    return value.map(normalizeNumber);
 }
 
 function utcOffsetMinutes() {
@@ -104,9 +91,8 @@ function formatBestOverlapTime(
     return `${label}, ${hourLabel(startHour)}-${hourLabel(endHour)}`;
 }
 
-function optionalHour(value: unknown): number | null {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
+function optionalHour(value: number | undefined): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 async function loadActivityView({
@@ -132,7 +118,7 @@ async function loadActivityView({
     const peakTime = formatPeakTime(output.peakHourStart, output.peakHourEnd);
 
     return {
-        hasAnyData: Boolean(output.hasAnyData),
+        hasAnyData: output.hasAnyData,
         filteredEventCount: normalizeNumber(output.filteredEventCount),
         peakDay,
         peakTime,
@@ -169,7 +155,7 @@ async function loadOverlapView({
     });
 
     return {
-        hasOverlapData: Boolean(output.hasOverlapData),
+        hasOverlapData: output.hasOverlapData,
         overlapPercent: normalizeNumber(output.overlapPercent),
         bestOverlapTime: formatBestOverlapTime(
             dayLabels,
@@ -182,24 +168,9 @@ async function loadOverlapView({
     };
 }
 
-async function loadTopWorldsView({
-    rangeDays = 30,
-    limit = 5,
-    sortBy = 'time',
-    excludeWorldId = ''
-}: LoadTopWorldsViewOptions) {
-    return gameLogRepository.getMyTopWorlds(
-        rangeDays,
-        limit,
-        sortBy,
-        excludeWorldId
-    );
-}
-
 const userActivityViewService: UserActivityViewService = {
     loadActivityView,
-    loadOverlapView,
-    loadTopWorldsView
+    loadOverlapView
 };
 
 export { userActivityViewService };

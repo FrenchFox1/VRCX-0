@@ -118,9 +118,8 @@ describe('useInventoryPageState', () => {
             equipSlot: 'iconFrame'
         });
         expect(mediaMocks.collectInventoryItems).toHaveBeenCalledWith({
-            order: 'newest',
-            types: 'iconFrame,profileEffect,nameplateEffect',
-            notFlags: 'ugc',
+            types: ['iconFrame', 'profileEffect', 'nameplateEffect'],
+            notFlags: ['ugc'],
             archived: false
         });
         expect(maintenanceMocks.refreshCurrentUser).toHaveBeenCalledWith({

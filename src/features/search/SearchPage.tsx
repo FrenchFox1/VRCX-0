@@ -11,11 +11,11 @@ import {
 } from './components/SearchTabPanels';
 import { useSearchPageController } from './useSearchPageController';
 
-export function SearchPage() {
+export function SearchPage({ embedded = false }: { embedded?: boolean } = {}) {
     const { config, filters, results } = useSearchPageController();
 
     return (
-        <PageScaffold className="flex-1">
+        <PageScaffold embedded={embedded} className="flex-1">
             <Tabs
                 value={filters.activeTab}
                 onValueChange={filters.setActiveTab}
@@ -55,21 +55,36 @@ export function SearchPage() {
                     results={results.userResults}
                     languageOptionsMap={config.languageOptionsMap}
                     pagination={results.pagination}
+                    searched={results.hasUserSearched}
+                    onClear={results.handleClearSearch}
                 />
                 <SearchWorldTabPanel
                     isLoading={results.isWorldLoading}
                     results={results.worldResults}
                     pagination={results.pagination}
+                    searched={results.hasWorldSearched}
+                    onClear={results.handleClearSearch}
                 />
                 <SearchAvatarTabPanel
                     isLoading={results.isAvatarLoading}
                     results={results.avatarPageResults}
                     pagination={results.pagination}
+                    searched={results.hasAvatarSearched}
+                    avatarProviderConfigured={
+                        config.avatarProviderEnabled &&
+                        Boolean(config.selectedAvatarProvider)
+                    }
+                    onClear={results.handleClearSearch}
+                    onConfigureAvatarProvider={() =>
+                        config.setIsAvatarProviderDialogOpen(true)
+                    }
                 />
                 <SearchGroupTabPanel
                     isLoading={results.isGroupLoading}
                     results={results.groupResults}
                     pagination={results.pagination}
+                    searched={results.hasGroupSearched}
+                    onClear={results.handleClearSearch}
                 />
             </Tabs>
             <AvatarProviderSettingsDialog

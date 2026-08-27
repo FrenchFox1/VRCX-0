@@ -5,7 +5,6 @@ export {
     estimateFriendSidebarRowSize
 } from './FriendsSidebarHeaders';
 export {
-    FriendInstanceTimer,
     StaticSidebarLocation,
     buildSidebarLocationMetadataEntry
 } from './FriendsSidebarLocation';

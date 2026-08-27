@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Component, Path};
 
 use crate::vrchat_paths;
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 // VRChat stores per-user Hide Avatar / Show Avatar overrides in this local file.
 pub fn get_vrchat_moderations(current_user_id: &str) -> Result<HashMap<String, i16>, Error> {

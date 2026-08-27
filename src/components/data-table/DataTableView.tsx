@@ -7,6 +7,7 @@ import {
     useSensor,
     useSensors
 } from '@dnd-kit/core';
+import type { UniqueIdentifier } from '@dnd-kit/core';
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
     SortableContext,
@@ -64,8 +65,8 @@ import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu';
 
 function moveColumnByDrag<TData extends RowData>(
     table: AppTable<TData>,
-    activeId: unknown,
-    overId: unknown
+    activeId: UniqueIdentifier,
+    overId: UniqueIdentifier | undefined
 ) {
     if (!activeId || !overId || activeId === overId) {
         return;
@@ -85,8 +86,9 @@ function moveColumnByDrag<TData extends RowData>(
 }
 
 function getColumnId<TData extends RowData>(column: AppColumnDef<TData>) {
-    const source = column as { id?: unknown; accessorKey?: unknown };
-    const columnId = source.id ?? source.accessorKey ?? null;
+    const columnId =
+        ('id' in column ? column.id : undefined) ??
+        ('accessorKey' in column ? column.accessorKey : null);
     return typeof columnId === 'string' ? columnId : null;
 }
 
@@ -146,19 +148,27 @@ export function DataTableColumnDndProvider<TData extends RowData>({
     children: ReactNode;
 }) {
     const columnOrderLocked = getColumnOrderLocked(table);
-    const reorderableColumnIds = getReorderableColumnIds(table);
+    const visibleLeafColumns = table.getVisibleLeafColumns();
+    const reorderableColumnIds = useMemo(
+        () => getReorderableColumnIds(visibleLeafColumns),
+        [visibleLeafColumns]
+    );
     const canReorder =
         enableColumnReorder &&
         !columnOrderLocked &&
         reorderableColumnIds.length > 1;
     const sensors = useColumnDndSensors();
-    const contextValue = canReorder
-        ? {
-              enabled: true,
-              items: reorderableColumnIds,
-              table
-          }
-        : dataTableColumnDndDefaultState;
+    const contextValue = useMemo(
+        () =>
+            canReorder
+                ? {
+                      enabled: true,
+                      items: reorderableColumnIds,
+                      table
+                  }
+                : dataTableColumnDndDefaultState,
+        [canReorder, reorderableColumnIds, table]
+    );
 
     if (!canReorder) {
         return (
@@ -349,7 +359,7 @@ export function DataTablePagination<TData extends RowData>({
     pageIndex?: number;
     pageCount?: number;
     pageSize?: number;
-    pageSizes?: unknown[];
+    pageSizes?: readonly number[];
     pageSizeLabel?: string;
     onPageSizeChange?: (value: string) => void;
     previousLabel?: string;
@@ -377,11 +387,9 @@ export function DataTablePagination<TData extends RowData>({
         typeof pageSize === 'number' && Number.isFinite(pageSize)
             ? pageSize
             : table.state.pagination?.pageSize;
-    const pageSizeOptions = Array.isArray(pageSizes)
-        ? pageSizes
-              .map((value) => Number.parseInt(String(value), 10))
-              .filter((value) => Number.isFinite(value) && value > 0)
-        : [];
+    const pageSizeOptions = pageSizes.filter(
+        (value) => Number.isFinite(value) && value > 0
+    );
     const pageSizeSelectVisible = Boolean(
         pageSizeOptions.length &&
         Number.isFinite(resolvedPageSize) &&
@@ -395,11 +403,13 @@ export function DataTablePagination<TData extends RowData>({
                     <span className="text-muted-foreground text-sm">
                         {resolvedPageSizeLabel}
                     </span>
-                    <Select
+                    <Select<string>
                         value={String(resolvedPageSize)}
-                        onValueChange={(value) =>
-                            onPageSizeChange?.(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onPageSizeChange?.(value);
+                            }
+                        }}
                     >
                         <SelectTrigger size="sm" className="w-20">
                             <SelectValue placeholder={resolvedPageSizeLabel} />
@@ -476,7 +486,13 @@ export function DataTableView<TData extends RowData>({
                 .filter((columnId): columnId is string => Boolean(columnId)),
         [columns]
     );
-    const tableLayout = usePersistedDataTableLayout({
+    const {
+        columnOrder,
+        columnSizing,
+        setColumnOrder,
+        setColumnSizing,
+        writePersistedState
+    } = usePersistedDataTableLayout({
         tableId: persistKey,
         columnIds
     });
@@ -492,34 +508,22 @@ export function DataTableView<TData extends RowData>({
             return;
         }
 
-        tableLayout.writePersistedState({
-            columnOrder: sanitizeTableColumnOrder(
-                tableLayout.columnOrder,
-                columnIds
-            )
+        writePersistedState({
+            columnOrder: sanitizeTableColumnOrder(columnOrder, columnIds)
         });
-    }, [
-        columnIds,
-        persistTableLayout,
-        tableLayout.columnOrder,
-        tableLayout.writePersistedState
-    ]);
+    }, [columnIds, columnOrder, persistTableLayout, writePersistedState]);
 
     const table = useAppTable<TData>({
         columns,
         data,
         state: persistTableLayout
             ? {
-                  columnOrder: tableLayout.columnOrder,
-                  columnSizing: tableLayout.columnSizing
+                  columnOrder,
+                  columnSizing
               }
             : undefined,
-        onColumnOrderChange: persistTableLayout
-            ? tableLayout.setColumnOrder
-            : undefined,
-        onColumnSizingChange: persistTableLayout
-            ? tableLayout.setColumnSizing
-            : undefined,
+        onColumnOrderChange: persistTableLayout ? setColumnOrder : undefined,
+        onColumnSizingChange: persistTableLayout ? setColumnSizing : undefined,
         enableColumnResizing: persistTableLayout,
         columnResizeMode: 'onChange'
     });

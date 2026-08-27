@@ -1,5 +1,7 @@
 import { isRealInstance } from './instance';
 import {
+    locationSentinel,
+    normalizeLocationStatus,
     normalizeLocationValue,
     parseLocation,
     resolveFriendPresenceLocation
@@ -9,10 +11,10 @@ import { normalizeString } from './string';
 export type CurrentUserPresenceRecord = Record<string, unknown>;
 
 export interface CurrentUserPresenceGameState {
-    isGameRunning?: boolean;
-    currentLocation?: unknown;
-    currentDestination?: unknown;
-    currentWorldId?: unknown;
+    isGameRunning?: boolean | null;
+    currentLocation?: string | null;
+    currentDestination?: string | null;
+    currentWorldId?: string | null;
 }
 
 export interface CurrentUserPresenceOptions {
@@ -22,8 +24,8 @@ export interface CurrentUserPresenceOptions {
 
 export interface CurrentUserPresencePatch extends CurrentUserPresenceRecord {
     location: string;
-    worldId: unknown;
-    instanceId: unknown;
+    worldId: string;
+    instanceId: string;
     travelingToLocation: string;
     travelingToWorld: string;
     travelingToInstance: string;
@@ -51,20 +53,6 @@ const CURRENT_USER_PRESENCE_FIELDS = [
     'statusDescription',
     'pendingOffline'
 ];
-
-function normalizeLocationStatus(value: unknown): string {
-    const normalized = normalizeString(value).toLowerCase();
-    if (normalized === 'offline:offline') {
-        return 'offline';
-    }
-    if (normalized === 'private:private') {
-        return 'private';
-    }
-    if (normalized === 'traveling:traveling') {
-        return 'traveling';
-    }
-    return normalized;
-}
 
 export function isVisibleCurrentUserLocation(value: unknown): boolean {
     const location = normalizeLocationStatus(value);
@@ -98,12 +86,12 @@ function buildPresenceLocationTag(world: unknown, instance: unknown): string {
         : worldId;
 }
 
-function preferVisibleLocation(primary: unknown, fallback: unknown): unknown {
+function preferVisibleLocation(primary: unknown, fallback: unknown): string {
     if (isVisibleCurrentUserLocation(primary)) {
-        return primary;
+        return normalizeLocationValue(primary);
     }
     if (isVisibleCurrentUserLocation(fallback)) {
-        return fallback;
+        return normalizeLocationValue(fallback);
     }
     return normalizeString(primary) || normalizeString(fallback);
 }
@@ -130,16 +118,16 @@ function buildPresencePatch({
     instanceId = '',
     source = null
 }: {
-    location: unknown;
-    travelingToLocation?: unknown;
-    worldId?: unknown;
-    instanceId?: unknown;
+    location: string | null | undefined;
+    travelingToLocation?: string | null;
+    worldId?: string | null;
+    instanceId?: string | null;
     source?: CurrentUserPresenceRecord | null;
 }): CurrentUserPresencePatch | null {
     const normalizedLocation = normalizeLocationValue(location);
     const normalizedTraveling = normalizeLocationValue(travelingToLocation);
     const targetLocation =
-        normalizeLocationStatus(normalizedLocation) === 'traveling'
+        locationSentinel(normalizedLocation) === 'traveling'
             ? normalizedTraveling
             : normalizedLocation;
     if (!isVisibleCurrentUserLocation(targetLocation)) {
@@ -147,7 +135,7 @@ function buildPresencePatch({
     }
 
     const displayTraveling =
-        normalizeLocationStatus(normalizedLocation) === 'traveling'
+        locationSentinel(normalizedLocation) === 'traveling'
             ? normalizedTraveling
             : '';
     const parsedLocation = parseLocation(normalizedLocation);
@@ -159,12 +147,12 @@ function buildPresencePatch({
             normalizeString(worldId) ||
             parsedLocation.worldId ||
             parsedTraveling.worldId ||
-            source?.worldId ||
+            normalizeString(source?.worldId) ||
             '',
         instanceId:
             parsedLocation.instanceId ||
             normalizeString(instanceId) ||
-            source?.instanceId ||
+            normalizeString(source?.instanceId) ||
             '',
         travelingToLocation: displayTraveling,
         travelingToWorld: parsedTraveling.worldId || '',
@@ -233,8 +221,8 @@ export function buildCurrentUserApiPresencePatch(
     return buildPresencePatch({
         location,
         travelingToLocation,
-        worldId: presence.world,
-        instanceId: presence.instance,
+        worldId: normalizeLocationValue(presence.world),
+        instanceId: normalizeLocationValue(presence.instance),
         source: currentUser
     });
 }

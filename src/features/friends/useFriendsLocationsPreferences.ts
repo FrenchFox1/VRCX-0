@@ -6,7 +6,8 @@ import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { parseConfigArray } from './friendsLocationsConfig';
 import {
     DEFAULT_FRIENDS_LOCATIONS_DENSITY,
-    sanitizeFriendsLocationsDensity
+    sanitizeFriendsLocationsDensity,
+    type FriendsLocationsDensity
 } from './friendsLocationsDensity';
 
 type FriendsLocationsSidebarFavoritePrefs = {
@@ -71,12 +72,10 @@ export function useFriendsLocationsPreferences() {
                     }
 
                     setDensity(sanitizeFriendsLocationsDensity(nextDensity));
-                    setShowSameInstanceInOnline(Boolean(nextShowSameInstance));
-                    setShowCurrentUserInSameInstance(
-                        Boolean(nextShowCurrentUser)
-                    );
+                    setShowSameInstanceInOnline(nextShowSameInstance);
+                    setShowCurrentUserInSameInstance(nextShowCurrentUser);
                     setSidebarFavoritePrefs({
-                        isDivideByGroup: Boolean(nextDivideByGroup),
+                        isDivideByGroup: nextDivideByGroup,
                         selectedGroups: parseConfigArray(nextSelectedGroups),
                         groupOrder: parseConfigArray(nextGroupOrder)
                     });
@@ -149,11 +148,9 @@ export function useFriendsLocationsPreferences() {
                         configRepository.getString('sidebarSortMethod3', '')
                     ]);
                     if (active) {
-                        setShowCurrentUserInSameInstance(
-                            Boolean(nextShowCurrentUser)
-                        );
+                        setShowCurrentUserInSameInstance(nextShowCurrentUser);
                         setSidebarFavoritePrefs({
-                            isDivideByGroup: Boolean(nextDivideByGroup),
+                            isDivideByGroup: nextDivideByGroup,
                             selectedGroups:
                                 parseConfigArray(nextSelectedGroups),
                             groupOrder: parseConfigArray(nextGroupOrder)
@@ -176,16 +173,14 @@ export function useFriendsLocationsPreferences() {
         };
     }, []);
 
-    function changeShowSameInstanceInOnline(value: unknown) {
-        const nextValue = Boolean(value);
-        setShowSameInstanceInOnline(nextValue);
-        configRepository.setBool('FriendLocationShowSameInstance', nextValue);
+    function changeShowSameInstanceInOnline(value: boolean) {
+        setShowSameInstanceInOnline(value);
+        configRepository.setBool('FriendLocationShowSameInstance', value);
     }
 
-    function changeDensityPreference(value: unknown) {
-        const nextValue = sanitizeFriendsLocationsDensity(value);
-        setDensity(nextValue);
-        configRepository.setString('FriendLocationDensity', nextValue);
+    function changeDensityPreference(value: FriendsLocationsDensity) {
+        setDensity(value);
+        configRepository.setString('FriendLocationDensity', value);
     }
 
     return {

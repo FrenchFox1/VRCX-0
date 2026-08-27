@@ -44,7 +44,7 @@ function getBrowserLocalStorage() {
     return window.localStorage;
 }
 
-export function getDataTableStorageKey(tableId: unknown): string {
+export function getDataTableStorageKey(tableId: string): string {
     return `${DATA_TABLE_STORAGE_PREFIX}${tableId}`;
 }
 
@@ -61,7 +61,7 @@ export function safeJsonParse(value: unknown): unknown | null {
 }
 
 export function readPersistedTableState(
-    storageKey: unknown
+    storageKey: string | null
 ): PersistedTableState {
     if (!storageKey) {
         return {};
@@ -73,7 +73,7 @@ export function readPersistedTableState(
     }
 
     try {
-        const parsed = safeJsonParse(localStorage.getItem(String(storageKey)));
+        const parsed = safeJsonParse(localStorage.getItem(storageKey));
         return parsed && typeof parsed === 'object'
             ? Object.fromEntries(Object.entries(parsed))
             : {};
@@ -83,7 +83,7 @@ export function readPersistedTableState(
 }
 
 export function writePersistedTableState(
-    storageKey: unknown,
+    storageKey: string | null,
     patch: PersistedTableState
 ): void {
     if (!storageKey) {
@@ -98,7 +98,7 @@ export function writePersistedTableState(
     try {
         const current = readPersistedTableState(storageKey);
         localStorage.setItem(
-            String(storageKey),
+            storageKey,
             JSON.stringify({
                 ...current,
                 ...patch,
@@ -162,24 +162,13 @@ export function sanitizeTableColumnOrder(
     );
 }
 
-export function createPersistedTableStateHelpers(tableId: unknown) {
-    const storageKey = getDataTableStorageKey(tableId);
-
-    return {
-        storageKey,
-        read: () => readPersistedTableState(storageKey),
-        write: (patch: PersistedTableState) =>
-            writePersistedTableState(storageKey, patch)
-    };
-}
-
 export function usePersistedDataTableLayout({
     tableId,
     columnIds = [],
     initialColumnOrder = [],
     initialColumnVisibility = {}
 }: {
-    tableId?: unknown;
+    tableId?: string;
     columnIds?: string[];
     initialColumnOrder?: string[];
     initialColumnVisibility?: TableColumnVisibility;

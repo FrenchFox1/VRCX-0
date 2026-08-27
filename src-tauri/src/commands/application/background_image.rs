@@ -1,14 +1,14 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::{BackgroundImageConfigureInput, BackgroundImageProjection};
+use vrcx_0_application::profile::{BackgroundImageConfigureInput, BackgroundImageProjection};
 
 use crate::{error::AppError, state::AppState};
 
 #[tauri::command]
 #[specta::specta]
 pub fn app__background_image_state_get(state: State<'_, AppState>) -> BackgroundImageProjection {
-    state.desktop.background_image.projection()
+    state.runtime_host().background_image_projection()
 }
 
 #[tauri::command]
@@ -18,8 +18,7 @@ pub async fn app__background_image_configure(
     input: BackgroundImageConfigureInput,
 ) -> Result<BackgroundImageProjection, AppError> {
     Ok(state
-        .desktop
-        .community_theme
+        .runtime_host()
         .configure_background_image(input)
         .await?)
 }
@@ -29,9 +28,5 @@ pub async fn app__background_image_configure(
 pub async fn app__background_image_refresh(
     state: State<'_, AppState>,
 ) -> Result<BackgroundImageProjection, AppError> {
-    Ok(state
-        .desktop
-        .community_theme
-        .refresh_background_image(true)
-        .await?)
+    Ok(state.runtime_host().refresh_background_image(true).await?)
 }

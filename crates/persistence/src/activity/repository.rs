@@ -6,6 +6,7 @@ use std::{
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde_json::{json, Value};
+use vrcx_0_core::activity_sessions::{span_duration_ms, SpanEnd};
 
 use crate::common::{
     normalize_text, parse_json_value, row_i64, row_json, row_string, row_value, value_as_i64,
@@ -14,7 +15,7 @@ use crate::common::{
 use crate::database::schema::ensure_user_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::ensure_game_log_tables;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -62,13 +63,13 @@ fn activity_now_ms(input: Option<i64>) -> i64 {
     input.unwrap_or_else(|| Utc::now().timestamp_millis())
 }
 
-pub(super) fn activity_iso_from_ms(ms: i64) -> String {
+pub(crate) fn activity_iso_from_ms(ms: i64) -> String {
     DateTime::<Utc>::from_timestamp_millis(ms)
         .unwrap_or_else(Utc::now)
         .to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
-pub(super) fn parse_activity_time_ms(value: &str) -> Option<i64> {
+pub(crate) fn parse_activity_time_ms(value: &str) -> Option<i64> {
     DateTime::parse_from_rfc3339(value)
         .map(|value| value.timestamp_millis())
         .ok()
@@ -157,7 +158,7 @@ fn default_activity_sync_state(user_id: &str) -> ActivitySyncStateOutput {
 
 fn read_self_activity_source_slice(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     from_date: &str,
     to_date: &str,
 ) -> Result<Vec<ActivitySourceLocationRow>, Error> {
@@ -228,7 +229,7 @@ fn read_self_activity_source_slice(
 
 fn read_self_activity_source_after(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     after_created_at: &str,
     inclusive: bool,
 ) -> Result<Vec<ActivitySourceLocationRow>, Error> {
@@ -296,17 +297,14 @@ fn build_sessions_from_gamelog(
         let Some(start) = parse_activity_time_ms(&row.created_at) else {
             continue;
         };
-        let mut duration = row.time;
-        if duration == 0 {
-            duration = if let Some(next) = rows.get(index + 1) {
-                parse_activity_time_ms(&next.created_at)
-                    .map(|next_start| next_start - start)
-                    .unwrap_or(0)
-            } else {
-                now_ms - start
-            };
-            duration = duration.min(ACTIVITY_MAX_INFERRED_SESSION_MS);
-        }
+        let end = match rows.get(index + 1) {
+            Some(next) => match parse_activity_time_ms(&next.created_at) {
+                Some(next_start) => SpanEnd::NextStart(next_start),
+                None => SpanEnd::UnknownNextStart,
+            },
+            None => SpanEnd::OpenTail,
+        };
+        let duration = span_duration_ms(start, row.time, end, now_ms);
         if duration > 0 {
             raw_sessions.push(ActivitySessionRow {
                 start,
@@ -408,7 +406,7 @@ pub fn activity_friend_presence_slice(
     db: &DatabaseService,
     query: ActivityFriendPresenceSliceInput,
 ) -> Result<Vec<ActivityPresenceOutput>, Error> {
-    let owner_user_id = normalize_text(query.owner_user_id);
+    let owner_user_id = normalize_text(query.owner_user_id.as_str());
     let user_id = normalize_text(query.user_id);
     if owner_user_id.is_empty() || user_id.is_empty() {
         return Ok(Vec::new());
@@ -483,11 +481,11 @@ pub fn activity_friend_presence_slice(
 
 fn activity_friend_presence_bound(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_id: &str,
     aggregate: &str,
 ) -> Result<String, Error> {
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     let user_id = normalize_text(user_id);
     if owner_user_id.is_empty() || user_id.is_empty() {
         return Ok(String::new());
@@ -507,7 +505,7 @@ fn activity_friend_presence_bound(
 
 pub fn activity_friend_presence_first_created_at(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_id: &str,
 ) -> Result<String, Error> {
     activity_friend_presence_bound(db, owner_user_id, user_id, "MIN")
@@ -515,7 +513,7 @@ pub fn activity_friend_presence_first_created_at(
 
 pub fn activity_friend_presence_last_created_at(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_id: &str,
 ) -> Result<String, Error> {
     activity_friend_presence_bound(db, owner_user_id, user_id, "MAX")
@@ -523,7 +521,7 @@ pub fn activity_friend_presence_last_created_at(
 
 pub(super) fn activity_self_source_first_created_at(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<String, Error> {
     ensure_game_log_tables(db)?;
     let owner_id = owner_id_for_filter(db, owner_user_id)?;
@@ -539,7 +537,7 @@ pub(super) fn activity_self_source_first_created_at(
 
 pub fn activity_self_source_bounds(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<ActivitySelfSourceBoundsOutput, Error> {
     ensure_game_log_tables(db)?;
     let owner_id = owner_id_for_filter(db, owner_user_id)?;
@@ -566,10 +564,10 @@ pub fn activity_self_source_bounds(
 
 pub fn activity_self_sessions_refresh(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     mut input: ActivitySelfSessionsRefreshInput,
 ) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
-    let user_id = normalize_text(owner_user_id);
+    let user_id = normalize_text(owner_user_id.as_str());
     if user_id.is_empty() {
         return Err(Error::Custom(
             "ActivitySelfSessionsRefresh requires userId.".into(),
@@ -577,18 +575,18 @@ pub fn activity_self_sessions_refresh(
     }
     input.user_id = user_id.clone();
     with_activity_refresh_lock(db, &user_id, || {
-        activity_self_sessions_refresh_inner(db, input, user_id.clone())
+        activity_self_sessions_refresh_inner(db, input, OwnerId::new(user_id.clone()))
     })
 }
 
 pub(super) fn activity_self_sessions_refresh_auto(
     db: &DatabaseService,
-    user_id: &str,
+    owner_user_id: &OwnerId,
     range_days: i64,
     now_ms: Option<i64>,
     force_refresh: bool,
 ) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
-    let user_id = normalize_text(user_id);
+    let user_id = normalize_text(owner_user_id.as_str());
     if user_id.is_empty() {
         return Err(Error::Custom(
             "ActivitySelfSessionsRefresh requires userId.".into(),
@@ -626,7 +624,7 @@ pub(super) fn activity_self_sessions_refresh_auto(
                 range_days: json!(range_days),
                 now_ms,
             },
-            user_id.clone(),
+            OwnerId::new(user_id.clone()),
         )
     })
 }
@@ -634,49 +632,54 @@ pub(super) fn activity_self_sessions_refresh_auto(
 fn activity_self_sessions_refresh_inner(
     db: &DatabaseService,
     input: ActivitySelfSessionsRefreshInput,
-    user_id: String,
+    owner_user_id: OwnerId,
 ) -> Result<ActivitySelfSessionsRefreshOutput, Error> {
-    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    let user_id = owner_user_id.as_str();
+    let user_prefix = normalize_user_table_prefix(user_id)?;
     ensure_game_log_tables(db)?;
     ensure_user_store_tables(db, &user_prefix)?;
 
     let now_ms = activity_now_ms(input.now_ms);
     let now_iso = activity_iso_from_ms(now_ms);
-    let mut sync = read_activity_sync_state(db, &user_prefix, &user_id)?
-        .unwrap_or_else(|| default_activity_sync_state(&user_id));
-    let mut sessions = read_activity_sessions_data(db, &user_prefix, &user_id)?;
+    let mut sync = read_activity_sync_state(db, &user_prefix, user_id)?
+        .unwrap_or_else(|| default_activity_sync_state(user_id));
+    let mut sessions = read_activity_sessions_data(db, &user_prefix, user_id)?;
 
     match input.mode {
         ActivityRefreshMode::Full => {
             let range_days =
                 clamp_activity_range_days(&input.range_days, ACTIVITY_INITIAL_RANGE_DAYS);
             let from_date = activity_iso_from_ms(now_ms - range_days * ACTIVITY_DAY_MS);
-            let rows = read_self_activity_source_slice(db, &user_id, &from_date, "")?;
+            let rows = read_self_activity_source_slice(db, &owner_user_id, &from_date, "")?;
             let source_last_created_at = rows
                 .last()
                 .map(|row| row.created_at.clone())
                 .unwrap_or_default();
             sessions = build_sessions_from_gamelog(&rows, now_ms, true, &source_last_created_at);
             sync = ActivitySyncStateOutput {
-                user_id: user_id.clone(),
+                user_id: user_id.to_string(),
                 updated_at: now_iso,
                 is_self: true,
                 source_last_created_at,
                 pending_session_start_at: Value::Null,
                 cached_range_days: range_days,
             };
-            write_activity_snapshot(db, &user_prefix, &user_id, &sync, &sessions, None)?;
+            write_activity_snapshot(db, &user_prefix, user_id, &sync, &sessions, None)?;
             Ok(activity_refresh_output(sync, sessions, rows.len()))
         }
         ActivityRefreshMode::Incremental => {
             if sync.source_last_created_at.is_empty() {
                 return Ok(activity_refresh_output(sync, sessions, 0));
             }
-            let rows =
-                read_self_activity_source_after(db, &user_id, &sync.source_last_created_at, true)?;
+            let rows = read_self_activity_source_after(
+                db,
+                &owner_user_id,
+                &sync.source_last_created_at,
+                true,
+            )?;
             if rows.is_empty() {
                 sync.updated_at = now_iso;
-                write_activity_sync_state_data(db, &user_prefix, &user_id, &sync)?;
+                write_activity_sync_state_data(db, &user_prefix, user_id, &sync)?;
                 return Ok(activity_refresh_output(sync, sessions, 0));
             }
             let source_last_created_at = rows
@@ -701,7 +704,7 @@ fn activity_self_sessions_refresh_inner(
             write_activity_snapshot(
                 db,
                 &user_prefix,
-                &user_id,
+                user_id,
                 &sync,
                 &tail_sessions,
                 replace_from_start_at,
@@ -724,7 +727,7 @@ fn activity_self_sessions_refresh_inner(
             } else {
                 String::new()
             };
-            let rows = read_self_activity_source_slice(db, &user_id, &from_date, &to_date)?;
+            let rows = read_self_activity_source_slice(db, &owner_user_id, &from_date, &to_date)?;
             let computed =
                 build_sessions_from_gamelog(&rows, now_ms, false, &sync.source_last_created_at);
             if !computed.is_empty() {
@@ -732,7 +735,7 @@ fn activity_self_sessions_refresh_inner(
             }
             sync.cached_range_days = range_days;
             sync.updated_at = now_iso;
-            write_activity_snapshot(db, &user_prefix, &user_id, &sync, &sessions, None)?;
+            write_activity_snapshot(db, &user_prefix, user_id, &sync, &sessions, None)?;
             Ok(activity_refresh_output(sync, sessions, rows.len()))
         }
     }
@@ -788,7 +791,7 @@ pub fn activity_bucket_cache_get(
     db: &DatabaseService,
     query: ActivityBucketCacheQueryInput,
 ) -> Result<Option<ActivityBucketCacheOutput>, Error> {
-    let owner_user_id = normalize_text(query.owner_user_id);
+    let owner_user_id = normalize_text(query.owner_user_id.as_str());
     if owner_user_id.is_empty() {
         return Ok(None);
     }
@@ -811,7 +814,7 @@ pub fn activity_bucket_cache_get(
         )?
         .first()
         .map(|row| ActivityBucketCacheOutput {
-            owner_user_id: row_string(row, 0),
+            owner_user_id: OwnerId::new(row_string(row, 0)),
             target_user_id: row_string(row, 1),
             range_days: row_i64(row, 2),
             view_kind,
@@ -915,7 +918,7 @@ pub fn activity_bucket_cache_upsert(
     db: &DatabaseService,
     entry: ActivityBucketCacheInput,
 ) -> Result<(), Error> {
-    let owner_user_id = normalize_text(&entry.owner_user_id);
+    let owner_user_id = normalize_text(entry.owner_user_id.as_str());
     let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
     ensure_user_store_tables(db, &user_prefix)?;
     db.execute_non_query(
@@ -939,10 +942,9 @@ pub fn activity_bucket_cache_upsert(
 
 pub(crate) const ACTIVITY_FULL_CACHE_BATCH_DAYS: i64 = 30;
 pub(crate) const ACTIVITY_INITIAL_RANGE_DAYS: i64 = 90;
-pub(crate) const ACTIVITY_MAX_RANGE_DAYS: i64 = 3650;
+pub(super) const ACTIVITY_MAX_RANGE_DAYS: i64 = 3650;
 pub(crate) const ACTIVITY_ONLINE_SESSION_MERGE_GAP_MS: i64 = 5 * 60 * 1000;
 pub(crate) const ACTIVITY_DAY_MS: i64 = 86_400_000;
-pub(crate) const ACTIVITY_MAX_INFERRED_SESSION_MS: i64 = 24 * 60 * 60 * 1000;
 
 fn activity_presence_from_row(row: &[Value]) -> ActivityPresenceOutput {
     ActivityPresenceOutput {

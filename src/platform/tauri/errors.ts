@@ -1,3 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
+
 import type {
     AppErrorCode,
     AppErrorPayload,
@@ -16,18 +18,18 @@ export class PlatformUnavailableError extends Error {
 export class PlatformCommandError extends Error {
     readonly code: AppErrorCode;
     readonly sqliteCategory?: SqliteErrorCategory;
+    readonly statusCode?: number;
+    readonly port?: number;
 
     constructor(payload: AppErrorPayload, cause?: unknown) {
         super(payload.message);
         this.name = 'PlatformCommandError';
         this.code = payload.code;
         this.sqliteCategory = payload.sqliteCategory ?? undefined;
+        this.statusCode = payload.statusCode ?? undefined;
+        this.port = payload.port ?? undefined;
         this.cause = cause;
     }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
 }
 
 function appErrorCode(value: unknown): AppErrorCode | null {
@@ -35,11 +37,29 @@ function appErrorCode(value: unknown): AppErrorCode | null {
         case 'database':
         case 'io':
         case 'json':
+        case 'persistence_invalid_data':
+        case 'registry_policy_invalid':
+        case 'web_client':
+        case 'update_artifact_invalid':
+        case 'vrchat_api':
+        case 'auth_interaction_required':
+        case 'auth_session_invalidated':
+        case 'integration_api_port_in_use':
+        case 'integration_api_bind':
         case 'custom':
             return value;
         default:
             return null;
     }
+}
+
+function vrchatApiStatusCode(value: unknown): number | undefined {
+    return typeof value === 'number' &&
+        Number.isInteger(value) &&
+        value >= 100 &&
+        value <= 599
+        ? value
+        : undefined;
 }
 
 function sqliteErrorCategory(value: unknown): SqliteErrorCategory | undefined {
@@ -62,10 +82,16 @@ function structuredPlatformError(error: unknown): AppErrorPayload | null {
     if (!code || typeof error.message !== 'string') {
         return null;
     }
+    const statusCode = vrchatApiStatusCode(error.statusCode);
+    if (code === 'vrchat_api' && statusCode === undefined) {
+        return null;
+    }
     return {
         code,
         message: error.message,
-        sqliteCategory: sqliteErrorCategory(error.sqliteCategory)
+        sqliteCategory: sqliteErrorCategory(error.sqliteCategory),
+        statusCode,
+        port: typeof error.port === 'number' ? error.port : undefined
     };
 }
 

@@ -11,19 +11,9 @@ const BACKOFF_CANCELLED_MESSAGE = 'cancelled';
 const BACKOFF_CANCEL_CHECK_INTERVAL_MS = 100;
 
 function createBackoffCancelledError() {
-    const error = new Error(BACKOFF_CANCELLED_MESSAGE) as Error & {
-        cancelled?: boolean;
-    };
-    error.cancelled = true;
-    return error;
-}
-
-export function isBackoffCancelledError(error: unknown) {
-    return Boolean(
-        error &&
-        typeof error === 'object' &&
-        (error as { cancelled?: unknown }).cancelled === true
-    );
+    return Object.assign(new Error(BACKOFF_CANCELLED_MESSAGE), {
+        cancelled: true
+    });
 }
 
 type CancelCheck = (() => boolean) | null;

@@ -1,13 +1,5 @@
-import {
-    useRuntimeStore,
-    type CurrentUserSnapshotState
-} from '@/state/runtimeStore';
-
-type AvatarSnapshot = Record<string, unknown> & {
-    id?: string;
-    currentAvatar?: unknown;
-    $previousAvatarSwapTime?: unknown;
-};
+import { isRecord } from '@/shared/utils/record';
+import { useRuntimeStore } from '@/state/runtimeStore';
 
 type AvatarWearSnapshotUpdateOptions = {
     previousSnapshot?: unknown;
@@ -16,17 +8,12 @@ type AvatarWearSnapshotUpdateOptions = {
     now?: number;
 };
 
-type RuntimeAvatarSnapshot = CurrentUserSnapshotState & {
-    currentAvatar?: string;
-    $previousAvatarSwapTime?: number | null;
-};
-
 type TimerOptions = {
     now?: number;
 };
 
 type StopTimerOptions = TimerOptions & {
-    fallbackStartedAt?: unknown;
+    fallbackStartedAt?: number;
 };
 
 function normalizeAvatarId(value: unknown): string {
@@ -48,12 +35,7 @@ function buildAvatarWearSnapshotUpdate({
 }: AvatarWearSnapshotUpdateOptions): {
     snapshot: unknown;
 } {
-    const next =
-        nextSnapshot && typeof nextSnapshot === 'object'
-            ? ({
-                  ...(nextSnapshot as Record<string, unknown>)
-              } as AvatarSnapshot)
-            : null;
+    const next = isRecord(nextSnapshot) ? { ...nextSnapshot } : null;
 
     if (!next) {
         return {
@@ -62,11 +44,9 @@ function buildAvatarWearSnapshotUpdate({
     }
 
     const previous =
-        previousSnapshot &&
-        typeof previousSnapshot === 'object' &&
-        normalizeAvatarId((previousSnapshot as AvatarSnapshot).id) ===
-            normalizeAvatarId(next.id)
-            ? (previousSnapshot as AvatarSnapshot)
+        isRecord(previousSnapshot) &&
+        normalizeAvatarId(previousSnapshot.id) === normalizeAvatarId(next.id)
+            ? previousSnapshot
             : null;
     const previousAvatarId = normalizeAvatarId(previous?.currentAvatar);
     const nextAvatarId = normalizeAvatarId(next.currentAvatar);
@@ -115,10 +95,7 @@ function buildAvatarWearSnapshotUpdate({
 
 function startCurrentAvatarWearTimer({ now = Date.now() }: TimerOptions = {}) {
     const runtimeStore = useRuntimeStore.getState();
-    const snapshot = runtimeStore.auth.currentUserSnapshot as
-        | RuntimeAvatarSnapshot
-        | null
-        | undefined;
+    const snapshot = runtimeStore.auth.currentUserSnapshot;
     if (!snapshot || typeof snapshot !== 'object') {
         return;
     }
@@ -136,10 +113,7 @@ async function stopCurrentAvatarWearTimer(
     _options: StopTimerOptions = {}
 ): Promise<void> {
     const runtimeStore = useRuntimeStore.getState();
-    const snapshot = runtimeStore.auth.currentUserSnapshot as
-        | RuntimeAvatarSnapshot
-        | null
-        | undefined;
+    const snapshot = runtimeStore.auth.currentUserSnapshot;
     if (!snapshot || typeof snapshot !== 'object') {
         return;
     }
@@ -153,32 +127,29 @@ async function stopCurrentAvatarWearTimer(
 }
 
 function getCurrentAvatarLiveWearTime(
-    avatarId: unknown,
-    baseTimeSpent: unknown = 0
+    avatarId: string,
+    baseTimeSpent = 0
 ): number {
     const normalizedAvatarId = normalizeAvatarId(avatarId);
     const runtimeState = useRuntimeStore.getState();
-    const currentUserSnapshot = runtimeState.auth.currentUserSnapshot as
-        | AvatarSnapshot
-        | null
-        | undefined;
+    const currentUserSnapshot = runtimeState.auth.currentUserSnapshot;
     if (
         !normalizedAvatarId ||
         runtimeState.gameState.isGameRunning !== true ||
         normalizeAvatarId(currentUserSnapshot?.currentAvatar) !==
             normalizedAvatarId
     ) {
-        return Number(baseTimeSpent) || 0;
+        return baseTimeSpent || 0;
     }
 
     const startedAt = normalizeTimestamp(
         currentUserSnapshot?.$previousAvatarSwapTime
     );
     if (!startedAt) {
-        return Number(baseTimeSpent) || 0;
+        return baseTimeSpent || 0;
     }
 
-    return (Number(baseTimeSpent) || 0) + Math.max(0, Date.now() - startedAt);
+    return (baseTimeSpent || 0) + Math.max(0, Date.now() - startedAt);
 }
 
 export {

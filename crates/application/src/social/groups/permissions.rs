@@ -1,15 +1,18 @@
 use std::collections::HashMap;
 
 use serde_json::Value;
-use vrcx_0_core::json::scalar_text as value_as_string;
+use vrcx_0_core::json::scalar_text_array;
+use vrcx_0_core::GroupPermission;
 
-pub(super) fn parse_permission_map(value: &Value) -> HashMap<String, Vec<String>> {
+pub(super) fn parse_permission_map(value: &Value) -> HashMap<String, Vec<GroupPermission>> {
     value
         .as_object()
         .map(|object| {
             object
                 .iter()
-                .map(|(group_id, permissions)| (group_id.clone(), string_array(Some(permissions))))
+                .map(|(group_id, permissions)| {
+                    (group_id.clone(), parse_permissions(Some(permissions)))
+                })
                 .collect()
         })
         .unwrap_or_default()
@@ -17,9 +20,9 @@ pub(super) fn parse_permission_map(value: &Value) -> HashMap<String, Vec<String>
 
 pub(super) fn permissions_for_group(
     group: &Value,
-    permission_map: &HashMap<String, Vec<String>>,
+    permission_map: &HashMap<String, Vec<GroupPermission>>,
     group_id: &str,
-) -> Vec<String> {
+) -> Vec<GroupPermission> {
     if let Some(permissions) = permission_map.get(group_id) {
         return permissions.clone();
     }
@@ -27,35 +30,24 @@ pub(super) fn permissions_for_group(
         .as_object()
         .and_then(|object| object.get("myMember"))
         .and_then(Value::as_object)
-        .map(|member| string_array(member.get("permissions")))
+        .map(|member| parse_permissions(member.get("permissions")))
         .unwrap_or_default()
 }
 
-pub(super) fn has_permission(permissions: &[String], permission: &str) -> bool {
-    permissions
-        .iter()
-        .any(|value| value == "*" || value == permission)
+fn parse_permissions(value: Option<&Value>) -> Vec<GroupPermission> {
+    scalar_text_array(value)
+        .into_iter()
+        .map(GroupPermission::from)
+        .collect()
 }
 
-fn string_array(value: Option<&Value>) -> Vec<String> {
-    match value {
-        Some(Value::Array(values)) => values
-            .iter()
-            .filter_map(|value| {
-                let text = value_as_string(Some(value));
-                (!text.is_empty()).then_some(text)
-            })
-            .collect(),
-        Some(value) => {
-            let text = value_as_string(Some(value));
-            if text.is_empty() {
-                Vec::new()
-            } else {
-                vec![text]
-            }
-        }
-        None => Vec::new(),
-    }
+pub(super) fn has_permission(
+    permissions: &[GroupPermission],
+    permission: &GroupPermission,
+) -> bool {
+    permissions
+        .iter()
+        .any(|value| value == &GroupPermission::All || value == permission)
 }
 
 #[cfg(test)]
@@ -73,7 +65,7 @@ mod tests {
 
         assert_eq!(
             permissions_for_group(&group, &permission_map, "grp_1"),
-            vec!["group-bans-manage".to_string()]
+            vec![GroupPermission::BansManage]
         );
     }
 
@@ -87,7 +79,7 @@ mod tests {
 
         assert_eq!(
             permissions_for_group(&group, &permission_map, "grp_1"),
-            vec!["group-members-remove".to_string()]
+            vec![GroupPermission::MembersRemove]
         );
     }
 
@@ -99,14 +91,17 @@ mod tests {
 
     #[test]
     fn has_permission_matches_wildcard_and_exact_values() {
-        assert!(has_permission(&["*".to_string()], "group-bans-manage"));
         assert!(has_permission(
-            &["group-bans-manage".to_string()],
-            "group-bans-manage"
+            &[GroupPermission::All],
+            &GroupPermission::BansManage
+        ));
+        assert!(has_permission(
+            &[GroupPermission::BansManage],
+            &GroupPermission::BansManage
         ));
         assert!(!has_permission(
-            &["group-invites-manage".to_string()],
-            "group-bans-manage"
+            &[GroupPermission::InvitesManage],
+            &GroupPermission::BansManage
         ));
     }
 }

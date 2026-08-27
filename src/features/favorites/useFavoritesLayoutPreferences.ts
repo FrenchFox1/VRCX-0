@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { FAVORITES_LAYOUT_CONFIG_KEYS } from '@/repositories/configKeys';
 import configRepository from '@/repositories/configRepository';
 
@@ -8,16 +9,14 @@ import {
     sanitizeFavoritesDensity,
     type FavoritesDensity
 } from './favoritesDensity';
-import type { FavoriteKind } from './favoritesTypes';
+import {
+    normalizeFavoriteSortValue,
+    type FavoriteSortValue
+} from './favoritesItems';
 
 const SPLITTER_DEFAULT_SIZE_PX = 260;
 const SPLITTER_MIN_SIZE_PX = 0;
-const SORT_VALUES_BY_KIND: Record<FavoriteKind, Set<string>> = {
-    friend: new Set(['name', 'date']),
-    world: new Set(['name', 'date', 'players']),
-    avatar: new Set(['name', 'date'])
-};
-const DEFAULT_SORT_VALUE = 'date';
+const DEFAULT_SORT_VALUE: FavoriteSortValue = 'date';
 
 type SplitterPanelSize = {
     inPixels?: unknown;
@@ -31,23 +30,11 @@ function normalizeSplitterSizePx(value: unknown): number {
     return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
 }
 
-function normalizeFavoriteSortValue(
-    kind: FavoriteKind,
-    value: unknown
-): string {
-    const normalizedValue = String(value ?? '').trim();
-    const allowedValues =
-        SORT_VALUES_BY_KIND[kind] || SORT_VALUES_BY_KIND.friend;
-    return allowedValues.has(normalizedValue)
-        ? normalizedValue
-        : DEFAULT_SORT_VALUE;
-}
-
 function usePersistedPreference<T extends string>(
     configKey: string,
     fallback: T,
     sanitize: (value: unknown) => T
-): [T, (value: unknown) => void] {
+): [T, (value: T) => void] {
     const [value, setValue] = useState<T>(fallback);
     const loadVersionRef = useRef(0);
     const sanitizeRef = useRef(sanitize);
@@ -79,7 +66,7 @@ function usePersistedPreference<T extends string>(
         };
     }, [configKey]);
 
-    const handleChange = (next: unknown) => {
+    const handleChange = (next: T) => {
         const nextValue = sanitizeRef.current(next);
         loadVersionRef.current += 1;
         setValue(nextValue);
@@ -137,7 +124,7 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
         };
     }, [kind]);
 
-    function persistSplitterSizePx(nextSizePx: unknown): void {
+    function persistSplitterSizePx(nextSizePx: number): void {
         const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
         setSplitterSizePx(normalizedSizePx);
         configRepository.setString(

@@ -7,7 +7,7 @@ import {
 import { toLocalDayKey } from './instance-activity/instanceActivityDate';
 import type {
     InstanceActivityChartRow,
-    PreviousInstanceRow
+    InstanceHistoryEntryRow
 } from './instance-activity/instanceActivityTypes';
 
 export type InstanceHistoryMode = 'search' | 'day';
@@ -18,7 +18,7 @@ export function sanitizeInstanceHistoryMode(
     return value === 'day' ? 'day' : 'search';
 }
 
-export function previousInstanceLeaveMs(row: PreviousInstanceRow): number {
+export function previousInstanceLeaveMs(row: InstanceHistoryEntryRow): number {
     const groupedLeaveValue = row.last_ts ?? row.lastTs ?? 0;
     const groupedLeaveMs =
         typeof groupedLeaveValue === 'string'
@@ -30,13 +30,13 @@ export function previousInstanceLeaveMs(row: PreviousInstanceRow): number {
     return createdTime(row);
 }
 
-export function previousInstanceJoinMs(row: PreviousInstanceRow): number {
+export function previousInstanceJoinMs(row: InstanceHistoryEntryRow): number {
     const leaveMs = previousInstanceLeaveMs(row);
     return leaveMs - rowDurationValue(row);
 }
 
 export function buildAvailableInstanceHistoryDays(
-    rows: PreviousInstanceRow[] = []
+    rows: InstanceHistoryEntryRow[] = []
 ): string[] {
     return Array.from(
         new Set(
@@ -48,29 +48,26 @@ export function buildAvailableInstanceHistoryDays(
 }
 
 export function selectDefaultInstanceHistoryDay(
-    selectedDay: unknown,
+    selectedDay: string,
     availableDays: string[] = []
 ): string {
-    const normalizedSelectedDay = String(selectedDay || '');
-    if (
-        normalizedSelectedDay &&
-        availableDays.includes(normalizedSelectedDay)
-    ) {
-        return normalizedSelectedDay;
+    if (selectedDay && availableDays.includes(selectedDay)) {
+        return selectedDay;
     }
-    return availableDays[0] || normalizedSelectedDay || '';
+    return availableDays[0] || selectedDay;
 }
 
 export function filterPreviousInstanceRowsForDay(
-    rows: PreviousInstanceRow[] = [],
-    selectedDay: unknown
-): PreviousInstanceRow[] {
-    const dayKey = String(selectedDay || '');
-    if (!dayKey) {
+    rows: InstanceHistoryEntryRow[] = [],
+    selectedDay: string
+): InstanceHistoryEntryRow[] {
+    if (!selectedDay) {
         return [];
     }
     return rows
-        .filter((row) => toLocalDayKey(previousInstanceLeaveMs(row)) === dayKey)
+        .filter(
+            (row) => toLocalDayKey(previousInstanceLeaveMs(row)) === selectedDay
+        )
         .sort(
             (left, right) =>
                 previousInstanceLeaveMs(right) - previousInstanceLeaveMs(left)
@@ -116,8 +113,8 @@ function matchByLocationAndJoin<T>(
 
 export function findPreviousInstanceRowForActivityRow(
     activityRow: InstanceActivityChartRow,
-    rows: PreviousInstanceRow[] = []
-): PreviousInstanceRow | null {
+    rows: InstanceHistoryEntryRow[] = []
+): InstanceHistoryEntryRow | null {
     return matchByLocationAndJoin(
         rows,
         String(activityRow?.location || ''),
@@ -128,7 +125,7 @@ export function findPreviousInstanceRowForActivityRow(
 }
 
 export function findActivityRowForPreviousInstanceRow(
-    previousRow: PreviousInstanceRow,
+    previousRow: InstanceHistoryEntryRow,
     activityRows: InstanceActivityChartRow[] = []
 ): InstanceActivityChartRow | null {
     return matchByLocationAndJoin(

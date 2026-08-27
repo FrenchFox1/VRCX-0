@@ -39,49 +39,89 @@ export function sanitizeUserJson(
     return json;
 }
 
+export type TrustRank =
+    | 'visitor'
+    | 'newUser'
+    | 'user'
+    | 'knownUser'
+    | 'trustedUser';
+
+const TRUST_RANKS: Readonly<
+    Record<
+        TrustRank,
+        {
+            level: string;
+            className: string;
+            colorKey: string;
+            sortNum: number;
+        }
+    >
+> = Object.freeze({
+    visitor: {
+        level: 'Visitor',
+        className: 'x-tag-untrusted',
+        colorKey: 'untrusted',
+        sortNum: 1
+    },
+    newUser: {
+        level: 'New User',
+        className: 'x-tag-basic',
+        colorKey: 'basic',
+        sortNum: 2
+    },
+    user: {
+        level: 'User',
+        className: 'x-tag-known',
+        colorKey: 'known',
+        sortNum: 3
+    },
+    knownUser: {
+        level: 'Known User',
+        className: 'x-tag-trusted',
+        colorKey: 'trusted',
+        sortNum: 4
+    },
+    trustedUser: {
+        level: 'Trusted User',
+        className: 'x-tag-veteran',
+        colorKey: 'veteran',
+        sortNum: 5
+    }
+});
+
+export function trustRankFromTags(tags: string[]): TrustRank {
+    if (tags.includes('system_trust_veteran')) {
+        return 'trustedUser';
+    }
+    if (tags.includes('system_trust_trusted')) {
+        return 'knownUser';
+    }
+    if (tags.includes('system_trust_known')) {
+        return 'user';
+    }
+    if (tags.includes('system_trust_basic')) {
+        return 'newUser';
+    }
+    return 'visitor';
+}
+
+export function trustRankDetails(rank: TrustRank) {
+    return TRUST_RANKS[rank];
+}
+
 export function computeTrustLevel(
     tags: string[],
     developerType: string
 ): TrustLevelInfo {
-    let isModerator = Boolean(developerType) && developerType !== 'none';
-    let isTroll = false;
-    let isProbableTroll = false;
-    let trustLevel = 'Visitor';
-    let trustClass = 'x-tag-untrusted';
-    let trustColorKey = 'untrusted';
-    let trustSortNum = 1;
+    const isModerator =
+        (Boolean(developerType) && developerType !== 'none') ||
+        tags.includes('admin_moderator');
+    const isTroll = tags.includes('system_troll');
+    const isProbableTroll = tags.includes('system_probable_troll') && !isTroll;
 
-    if (tags.includes('admin_moderator')) {
-        isModerator = true;
-    }
-    if (tags.includes('system_troll')) {
-        isTroll = true;
-    }
-    if (tags.includes('system_probable_troll') && !isTroll) {
-        isProbableTroll = true;
-    }
-
-    if (tags.includes('system_trust_veteran')) {
-        trustLevel = 'Trusted User';
-        trustClass = 'x-tag-veteran';
-        trustColorKey = 'veteran';
-        trustSortNum = 5;
-    } else if (tags.includes('system_trust_trusted')) {
-        trustLevel = 'Known User';
-        trustClass = 'x-tag-trusted';
-        trustColorKey = 'trusted';
-        trustSortNum = 4;
-    } else if (tags.includes('system_trust_known')) {
-        trustLevel = 'User';
-        trustClass = 'x-tag-known';
-        trustColorKey = 'known';
-        trustSortNum = 3;
-    } else if (tags.includes('system_trust_basic')) {
-        trustLevel = 'New User';
-        trustClass = 'x-tag-basic';
-        trustColorKey = 'basic';
-        trustSortNum = 2;
-    }
+    const rank = TRUST_RANKS[trustRankFromTags(tags)];
+    let trustColorKey = rank.colorKey;
+    let trustSortNum = rank.sortNum;
 
     if (isTroll || isProbableTroll) {
         trustColorKey = 'troll';
@@ -93,8 +133,8 @@ export function computeTrustLevel(
     }
 
     return {
-        trustLevel,
-        trustClass,
+        trustLevel: rank.level,
+        trustClass: rank.className,
         trustSortNum,
         isModerator,
         isTroll,

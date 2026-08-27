@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { GroupMemberPatch } from '@/platform/tauri/bindings';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
@@ -13,13 +15,14 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import type { GroupActionStatus } from './groupDialogTypes';
 import { buildGroupDialogViewState } from './groupDialogViewState';
 import { normalizeEntityId } from './groupInstances';
 import { useGroupDialogActiveInstances } from './useGroupDialogActiveInstances';
 import { useGroupOwnerProfile } from './useGroupOwnerProfile';
 
 interface GroupDialogStateInput {
-    groupId: unknown;
+    groupId?: string;
     seedData?: EntityRecord | null;
 }
 
@@ -55,7 +58,7 @@ export function useGroupDialogState({
 }: GroupDialogStateInput) {
     const { t } = useTranslation();
 
-    const normalizedGroupId = normalizeEntityId(groupId);
+    const normalizedGroupId = groupId?.trim() ?? '';
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
@@ -74,20 +77,24 @@ export function useGroupDialogState({
     const [group, setGroup] = useState(() =>
         seedData ? groupProfileRepository.normalize(seedData) : null
     );
-    const [loadStatus, setLoadStatus] = useState(
+    const [loadStatus, setLoadStatus] = useState<LoadStatus>(
         normalizedGroupId ? 'running' : 'idle'
     );
-    const [actionStatus, setActionStatus] = useState('idle');
+    const [actionStatus, setActionStatus] = useState<GroupActionStatus>('idle');
     const [detail, setDetail] = useState('');
     const [previousInstances, setPreviousInstances] = useState<
         GroupPreviousInstanceRow[]
     >([]);
-    const actionStatusRef = useRef('idle');
+    const actionStatusRef = useRef<GroupActionStatus>('idle');
     const activeGroupTargetRef = useRef<ActiveGroupTarget>({
         groupId: normalizedGroupId,
         endpoint: currentEndpoint
     });
-    const { activeInstances, setRawActiveInstances } =
+    const activeInstancesTargetRef = useRef<ActiveGroupTarget>({
+        groupId: '',
+        endpoint: ''
+    });
+    const { activeInstances, rawActiveInstances, setRawActiveInstances } =
         useGroupDialogActiveInstances({
             groupId: normalizedGroupId,
             friendsById,
@@ -240,6 +247,10 @@ export function useGroupDialogState({
 
     useEffect(() => {
         let active = true;
+        activeInstancesTargetRef.current = {
+            groupId: '',
+            endpoint: ''
+        };
 
         if (!normalizedGroupId || !currentUserId) {
             setRawActiveInstances([]);
@@ -262,14 +273,10 @@ export function useGroupDialogState({
                     : Array.isArray(response.json.instances)
                       ? response.json.instances
                       : [];
-                recordLocationHintsFromInstances({
+                activeInstancesTargetRef.current = {
                     endpoint: currentEndpoint,
-                    instances: rows.map((row) => ({
-                        ...row,
-                        groupId: normalizedGroupId,
-                        groupName: group?.name || group?.displayName || ''
-                    }))
-                });
+                    groupId: normalizedGroupId
+                };
                 setRawActiveInstances(rows);
             })
             .catch(() => {
@@ -284,10 +291,34 @@ export function useGroupDialogState({
     }, [
         currentEndpoint,
         currentUserId,
+        normalizedGroupId,
+        setRawActiveInstances
+    ]);
+
+    useEffect(() => {
+        const target = activeInstancesTargetRef.current;
+        if (
+            !rawActiveInstances.length ||
+            target.endpoint !== currentEndpoint ||
+            target.groupId !== normalizedGroupId
+        ) {
+            return;
+        }
+
+        recordLocationHintsFromInstances({
+            endpoint: currentEndpoint,
+            instances: rawActiveInstances.map((row) => ({
+                ...row,
+                groupId: normalizedGroupId,
+                groupName: group?.name || group?.displayName || ''
+            }))
+        });
+    }, [
+        currentEndpoint,
         group?.displayName,
         group?.name,
         normalizedGroupId,
-        setRawActiveInstances
+        rawActiveInstances
     ]);
 
     if (loadStatus === 'running' && !group) {
@@ -518,7 +549,7 @@ export function useGroupDialogState({
     }
 
     async function updateGroupMemberProps(
-        params: Record<string, unknown>,
+        params: GroupMemberPatch,
         label: string
     ) {
         if (

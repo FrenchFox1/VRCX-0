@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::Result;
-use vrcx_0_persistence::game_log::{previous_instance_event_rows_query, PreviousInstanceEventRow};
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_contracts::game_log::PreviousInstanceEventRow;
+use vrcx_0_core::OwnerId;
 
 const INSTANCE_HISTORY_GROUPING_TOLERANCE_MS: i64 = 3_600_000;
 const INSTANCE_HISTORY_LIMIT_MAX: u32 = 1_000;
@@ -31,13 +31,12 @@ pub struct InstanceHistoryEntryOutput {
 }
 
 pub fn instance_history_query(
-    db: &DatabaseService,
-    owner_user_id: &str,
+    store: &dyn crate::GameStateStore,
+    owner_user_id: &OwnerId,
     input: InstanceHistoryQueryInput,
 ) -> Result<Vec<InstanceHistoryEntryOutput>> {
     let limit = input.limit.min(INSTANCE_HISTORY_LIMIT_MAX) as usize;
-    let rows = previous_instance_event_rows_query(
-        db,
+    let rows = store.previous_instance_events(
         owner_user_id,
         &input.user_id,
         &input.date_from,

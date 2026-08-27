@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
 import {
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
@@ -19,6 +20,7 @@ function createMaintenanceActions({
     isGameRunning = false,
     setGameLogPersistenceDisabledPreference = async () => undefined,
     setFeedPersistenceDisabledPreference = async () => undefined,
+    setAvatarFeedPersistenceDisabledPreference = async () => undefined,
     setPurgeDialogOpen = () => undefined,
     toastWarning = () => undefined
 }: {
@@ -36,9 +38,13 @@ function createMaintenanceActions({
         disabled: boolean
     ) => Promise<void>;
     setFeedPersistenceDisabledPreference?: (disabled: boolean) => Promise<void>;
+    setAvatarFeedPersistenceDisabledPreference?: (
+        disabled: boolean
+    ) => Promise<void>;
     setPurgeDialogOpen?: (open: boolean) => void;
     toastWarning?: (message: string) => void;
 }) {
+    const prefs = createDefaultSettingsPrefs();
     return createSettingsMaintenanceActions({
         alert: async () => ({ ok: true, reason: 'ok' }),
         avatarFeedHistoryRepository: {
@@ -50,33 +56,22 @@ function createMaintenanceActions({
             isGameRunning
         },
         mediaRepository: {
-            cropAllPrints: async () => undefined,
+            cropAllPrints: async () => null,
             getUgcPhotoLocation: async () => ''
         },
         prefs: {
-            appCjkFontPack: null,
-            appFontFamily: null,
-            autoLoginDelaySeconds: 0,
-            customFontFamily: null,
-            customFontOverride: null,
-            customFontPrimary: null,
-            customFontSecondary: null,
+            ...prefs,
             desktopNotificationActivityFilters:
                 DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
             hmdNotificationActivityFilters:
                 DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
             notificationTTS: 'Never',
-            notificationTTSNameMode: '',
-            notificationTTSVoiceNative: '',
             overlayActivityFilters: DEFAULT_OVERLAY_ACTIVITY_FILTERS,
-            proxyServer: '',
             ttsNotificationActivityFilters:
                 DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
-            userGeneratedContentPath: '',
             vrNotificationActivityFilters:
                 DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
-            webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
-            wristOverlayEnabled: false
+            webhookActivityFilters: DEFAULT_WEBHOOK_ACTIVITY_FILTERS
         },
         prompt: async () => ({ ok: false }),
         purgePeriod: '180',
@@ -89,7 +84,8 @@ function createMaintenanceActions({
         setCropInstancePrintsPreference: async () => undefined,
         setGameLogPersistenceDisabledPreference,
         setFeedPersistenceDisabledPreference,
-        setIntConfigPreference: async () => undefined,
+        setAvatarFeedPersistenceDisabledPreference,
+        setIntConfigPreference: async () => 0,
         setPrefs: () => undefined,
         setPurgeDialogOpen,
         setPurgeInProgress: () => undefined,
@@ -97,7 +93,6 @@ function createMaintenanceActions({
         speakNotificationTts: async () => undefined,
         t: (key) => key,
         toast: {
-            dismiss: () => undefined,
             error: () => undefined,
             success: () => undefined,
             warning: toastWarning
@@ -186,6 +181,26 @@ describe('handleFeedPersistenceDisabledChange', () => {
         await actions.handleFeedPersistenceDisabledChange(true);
 
         expect(setFeedPersistenceDisabledPreference).toHaveBeenCalledWith(true);
+    });
+});
+
+describe('handleAvatarFeedPersistenceDisabledChange', () => {
+    it('switches avatar Feed persistence without confirmation', async () => {
+        const confirm = vi.fn(async () => ({ ok: false }));
+        const setAvatarFeedPersistenceDisabledPreference = vi.fn(
+            async () => undefined
+        );
+        const actions = createMaintenanceActions({
+            confirm,
+            setAvatarFeedPersistenceDisabledPreference
+        });
+
+        await actions.handleAvatarFeedPersistenceDisabledChange(true);
+
+        expect(confirm).not.toHaveBeenCalled();
+        expect(setAvatarFeedPersistenceDisabledPreference).toHaveBeenCalledWith(
+            true
+        );
     });
 });
 

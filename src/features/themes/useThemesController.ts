@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type {
+    CommunityThemeInstallMetadata,
+    CommunityThemeManifest,
+    CommunityThemeStatsById
+} from '@/domain/themes/types';
 import { commands } from '@/platform/tauri/bindings';
 import type { BackgroundImageMode } from '@/platform/tauri/bindings';
 import {
@@ -31,12 +36,8 @@ import {
 } from '@/services/preferencesService';
 import { isDevToolsBuild } from '@/shared/buildLabel';
 import { communityThemeControlsAccent } from '@/state/communityThemeStore';
+import type { ThemeMode } from '@/state/shellStore';
 
-import type {
-    CommunityThemeInstallMetadata,
-    CommunityThemeManifest,
-    CommunityThemeStatsById
-} from './communityThemeTypes';
 import { resolveActiveThemeSource, type ThemeSource } from './themeHelpers';
 import { useThemesRuntimeState } from './useThemesRuntimeState';
 
@@ -378,7 +379,7 @@ export function useThemesController() {
         ? t('view.themes.summary.custom_css_on')
         : '';
 
-    async function updateThemeMode(nextThemeMode: string) {
+    async function updateThemeMode(nextThemeMode: ThemeMode) {
         if (appearanceControlled) {
             return;
         }

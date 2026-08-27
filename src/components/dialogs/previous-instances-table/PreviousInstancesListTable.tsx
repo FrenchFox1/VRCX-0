@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
+import { normalizeLocationText } from '@/components/location/locationModel';
 import { StaticLocation } from '@/components/location/StaticLocation';
 import { LocationWorld } from '@/components/LocationWorld';
 import { formatDateFilterOrFallback } from '@/lib/dateTime';
@@ -85,16 +86,17 @@ function renderLocationCell(
                 locationObject={locationObject}
                 grouphint={row?.groupName}
                 currentUserId={currentUserId}
-                worldDialogShortName={locationObject.shortName || ''}
+                worldDialogShortName={normalizeLocationText(
+                    locationObject.shortName
+                )}
                 instanceOwner={
                     locationObject.ownerUserId || locationObject.userId || ''
                 }
-                instanceOwnerName={
+                instanceOwnerName={normalizeLocationText(
                     locationObject.ownerDisplayName ||
-                    row?.ownerDisplayName ||
-                    row?.ownerName ||
-                    ''
-                }
+                        row?.ownerDisplayName ||
+                        row?.ownerName
+                )}
                 interactive={false}
                 hint={row?.worldName || ''}
                 className="max-w-full"
@@ -360,7 +362,7 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                     )}
                     description={
                         search.trim()
-                            ? t('common.search_no_results')
+                            ? t('empty_state.search_no_results')
                             : undefined
                     }
                     className="min-h-40 flex-none"

@@ -1,3 +1,6 @@
+import type { TranslationProvider } from '@/platform/tauri/bindings';
+import { AVATAR_AUTO_CLEANUP_OPTIONS } from '@/shared/constants/settings';
+
 export const notificationLayoutOptions = [
     [
         'notification-center',
@@ -63,7 +66,7 @@ export const notificationTtsNameModeOptions = [
     ]
 ] as const;
 
-export const avatarAutoCleanupOptions = ['Off', '30', '90', '180', '365'];
+export const avatarAutoCleanupOptions = AVATAR_AUTO_CLEANUP_OPTIONS;
 
 export const sqliteTableSizeRows = [
     ['gps', 'view.settings.advanced.advanced.sqlite_table_size.gps'],
@@ -111,7 +114,11 @@ export const translationProviderOptions = [
         value: 'deepl',
         labelKey: 'dialog.translation_api.mode_deepl'
     }
-];
+] satisfies ReadonlyArray<{
+    value: TranslationProvider;
+    label?: string;
+    labelKey?: string;
+}>;
 
 export const settingsTabs = [
     ['system', 'view.settings.category.system'],

@@ -5,7 +5,8 @@ const serviceMocks = vi.hoisted(() => ({
     getFriendLogCurrent: vi.fn(),
     socialFriendRosterBaselineGet: vi.fn(),
     vrchatUserGet: vi.fn(),
-    vrchatFriendStatusGet: vi.fn()
+    vrchatFriendStatusGet: vi.fn(),
+    signalFriendLogChanged: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -25,6 +26,10 @@ vi.mock('@/repositories/friendLogRepository', () => ({
 
 vi.mock('./domainIngestionService', () => ({
     recordFriendPatch: serviceMocks.recordFriendPatch
+}));
+
+vi.mock('./friendLogMutationService', () => ({
+    signalFriendLogChanged: serviceMocks.signalFriendLogChanged
 }));
 
 function deferred<T>() {
@@ -156,7 +161,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                     usr_online: {
                         id: 'usr_online',
                         displayName: 'Online Final',
-                        stateBucket: 'online',
+                        state: 'online',
                         location: 'wrld_live:123'
                     }
                 }
@@ -177,17 +182,17 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_online: {
                     displayName: 'Online Cache',
-                    stateBucket: 'online',
+                    state: 'online',
                     $trustLevel: 'Trusted User'
                 },
                 usr_active: {
                     displayName: 'Active Cache',
-                    stateBucket: 'active',
+                    state: 'active',
                     $trustLevel: 'Known User'
                 },
                 usr_offline: {
                     displayName: 'usr_offline',
-                    stateBucket: 'offline'
+                    state: 'offline'
                 }
             }
         });
@@ -223,14 +228,14 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                     usr_online: {
                         id: 'usr_online',
                         displayName: 'Online Fast',
-                        stateBucket: 'online',
+                        state: 'online',
                         platform: 'standalonewindows',
                         location: 'wrld_live:123'
                     },
                     usr_traveling: {
                         id: 'usr_traveling',
                         displayName: 'Traveling Fast',
-                        stateBucket: 'online',
+                        state: 'online',
                         platform: 'standalonewindows',
                         location: 'traveling'
                     }
@@ -267,6 +272,74 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
         });
     });
 
+    it('signals the friend log store when the baseline reports a friend-log change', async () => {
+        const { bootstrapFriendRoster } =
+            await import('./friendBootstrapService');
+        serviceMocks.socialFriendRosterBaselineGet.mockResolvedValue({
+            stale: false,
+            count: 1,
+            detail: 'fast roster',
+            friendLogChanged: true,
+            snapshot: {
+                friendsById: {
+                    usr_online: {
+                        id: 'usr_online',
+                        displayName: 'Online Fast',
+                        state: 'online'
+                    }
+                }
+            }
+        });
+
+        await bootstrapFriendRoster({
+            userId: 'usr_self',
+            endpoint: 'https://api.example.test',
+            currentUserSnapshot: {
+                id: 'usr_self',
+                friends: ['usr_online'],
+                offlineFriends: [],
+                activeFriends: [],
+                onlineFriends: ['usr_online']
+            }
+        });
+
+        expect(serviceMocks.signalFriendLogChanged).toHaveBeenCalledOnce();
+    });
+
+    it('does not signal the friend log store when the baseline reports no friend-log change', async () => {
+        const { bootstrapFriendRoster } =
+            await import('./friendBootstrapService');
+        serviceMocks.socialFriendRosterBaselineGet.mockResolvedValue({
+            stale: false,
+            count: 1,
+            detail: 'fast roster',
+            friendLogChanged: false,
+            snapshot: {
+                friendsById: {
+                    usr_online: {
+                        id: 'usr_online',
+                        displayName: 'Online Fast',
+                        state: 'online'
+                    }
+                }
+            }
+        });
+
+        await bootstrapFriendRoster({
+            userId: 'usr_self',
+            endpoint: 'https://api.example.test',
+            currentUserSnapshot: {
+                id: 'usr_self',
+                friends: ['usr_online'],
+                offlineFriends: [],
+                activeFriends: [],
+                onlineFriends: ['usr_online']
+            }
+        });
+
+        expect(serviceMocks.signalFriendLogChanged).not.toHaveBeenCalled();
+    });
+
     it('keeps realtime patches authoritative when refreshing a loaded roster', async () => {
         const { useFriendRosterStore } =
             await import('@/state/friendRosterStore');
@@ -278,7 +351,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                 usr_live: {
                     id: 'usr_live',
                     displayName: 'Live Friend',
-                    stateBucket: 'online',
+                    state: 'online',
                     location: 'wrld_new:456'
                 }
             }
@@ -292,7 +365,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                     usr_stale: {
                         id: 'usr_stale',
                         displayName: 'Stale Friend',
-                        stateBucket: 'offline'
+                        state: 'offline'
                     }
                 }
             }
@@ -312,7 +385,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_live: {
                     displayName: 'Live Friend',
-                    stateBucket: 'online',
+                    state: 'online',
                     location: 'wrld_new:456'
                 }
             }
@@ -333,7 +406,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
                 usr_live: {
                     id: 'usr_live',
                     displayName: 'Live Friend',
-                    stateBucket: 'online'
+                    state: 'online'
                 }
             }
         });
@@ -402,7 +475,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_online: {
                     displayName: 'Online Cache',
-                    stateBucket: 'online'
+                    state: 'online'
                 }
             }
         });
@@ -451,7 +524,7 @@ describe('friendBootstrapService startup seed and reconciliation', () => {
             friendsById: {
                 usr_active: {
                     displayName: 'Active Cache',
-                    stateBucket: 'active'
+                    state: 'active'
                 }
             }
         });

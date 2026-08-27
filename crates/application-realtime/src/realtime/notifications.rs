@@ -1,29 +1,42 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_contracts::realtime::{NotificationExpiration, NotificationV2Update};
 use vrcx_0_core::json::{text_of, JsonExt};
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use vrcx_0_core::text::first_non_empty;
 use vrcx_0_core::text::first_owned;
-use vrcx_0_persistence::realtime::{NotificationExpiration, NotificationV2Update};
 
+use super::event_kind::RealtimeWsEventKind;
 use super::{
     RealtimeInstanceClosedOutput, RealtimeInstanceClosedProjection, RealtimeNotificationOutput,
     RealtimeNotificationProjection, RealtimeNotificationUpsert,
 };
+use vrcx_0_core::OwnerId;
 
+#[cfg(any(test, feature = "test-utils"))]
 pub fn apply_notification_ws_message(
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     endpoint: &str,
     generation: u64,
     payload: &RealtimeWsMessagePayload,
 ) -> Option<RealtimeNotificationOutput> {
-    let message_type = payload.json.get("type").and_then(Value::as_str)?;
-    if !is_notification_event_type(message_type) {
+    let event_kind = RealtimeWsEventKind::from_payload(payload)?;
+    apply_notification_ws_event(owner_user_id, endpoint, generation, &event_kind, payload)
+}
+
+pub(crate) fn apply_notification_ws_event(
+    owner_user_id: &OwnerId,
+    endpoint: &str,
+    generation: u64,
+    event_kind: &RealtimeWsEventKind,
+    payload: &RealtimeWsMessagePayload,
+) -> Option<RealtimeNotificationOutput> {
+    if !event_kind.is_notification() {
         return None;
     }
     let content = payload.json.get("content").unwrap_or(&Value::Null);
     let now = payload.received_at.clone();
     let mut output = RealtimeNotificationOutput {
-        owner_user_id: owner_user_id.trim().to_string(),
+        owner_user_id: OwnerId::new(owner_user_id.as_str().trim()),
         projection: RealtimeNotificationProjection {
             generation,
             ..RealtimeNotificationProjection::default()
@@ -31,10 +44,10 @@ pub fn apply_notification_ws_message(
         ..RealtimeNotificationOutput::default()
     };
 
-    match message_type {
-        "notification" => {
+    match event_kind {
+        RealtimeWsEventKind::Notification => {
             let notification = normalize_v1_notification(content, &now);
-            if should_persist_v1(&notification, owner_user_id) {
+            if should_persist_v1(&notification, owner_user_id.as_str()) {
                 output
                     .persistence
                     .notification_v1_upserts
@@ -45,10 +58,10 @@ pub fn apply_notification_ws_message(
                 notify_menu: true,
                 deliver_runtime: true,
                 run_automation: true,
-                notification,
+                notification: notification.into(),
             });
         }
-        "notification-v2" => {
+        RealtimeWsEventKind::NotificationV2 => {
             let notification = normalize_v2_notification(content, endpoint, &now);
             output
                 .persistence
@@ -59,10 +72,10 @@ pub fn apply_notification_ws_message(
                 notify_menu: should_notify_menu(&notification),
                 deliver_runtime: true,
                 run_automation: true,
-                notification,
+                notification: notification.into(),
             });
         }
-        "notification-v2-update" => {
+        RealtimeWsEventKind::NotificationV2Update => {
             let id = content.text_field("id");
             if id.is_empty() {
                 return Some(output);
@@ -85,18 +98,21 @@ pub fn apply_notification_ws_message(
                 output.projection.clear_menu_if_no_unseen = true;
             }
             output.projection.upserts.push(RealtimeNotificationUpsert {
-                insert_defaults: Some(json!({
-                    "createdAt": now,
-                    "created_at": now,
-                    "seen": false,
-                })),
+                insert_defaults: Some(
+                    json!({
+                        "createdAt": now,
+                        "created_at": now,
+                        "seen": false,
+                    })
+                    .into(),
+                ),
                 notify_menu: should_notify_menu(&notification),
                 deliver_runtime: false,
                 run_automation: false,
-                notification,
+                notification: notification.into(),
             });
         }
-        "notification-v2-delete" => {
+        RealtimeWsEventKind::NotificationV2Delete => {
             let ids = content
                 .get("ids")
                 .and_then(Value::as_array)
@@ -119,7 +135,7 @@ pub fn apply_notification_ws_message(
             output.projection.seen_ids = ids;
             output.projection.clear_menu_if_no_unseen = true;
         }
-        "see-notification" => {
+        RealtimeWsEventKind::SeeNotification => {
             let id = content_id(content);
             if !id.is_empty() {
                 output.persistence.notification_seen.push(id.clone());
@@ -127,7 +143,7 @@ pub fn apply_notification_ws_message(
                 output.projection.clear_menu_if_no_unseen = true;
             }
         }
-        "hide-notification" | "response-notification" => {
+        RealtimeWsEventKind::HideNotification | RealtimeWsEventKind::ResponseNotification => {
             let direct_id = content_id(content);
             let notification_id = content.text_field("notificationId");
             let id = first_non_empty([direct_id.as_str(), notification_id.as_str()]).to_string();
@@ -157,25 +173,21 @@ pub fn apply_notification_ws_message(
     Some(output)
 }
 
-pub fn is_notification_event_type(message_type: &str) -> bool {
-    matches!(
-        message_type,
-        "notification"
-            | "notification-v2"
-            | "notification-v2-delete"
-            | "notification-v2-update"
-            | "see-notification"
-            | "hide-notification"
-            | "response-notification"
-    )
-}
-
+#[cfg(test)]
 pub fn apply_instance_closed_ws_message(
     generation: u64,
     payload: &RealtimeWsMessagePayload,
 ) -> Option<RealtimeInstanceClosedOutput> {
-    let message_type = payload.json.get("type").and_then(Value::as_str)?;
-    if message_type != "instance-closed" {
+    let event_kind = RealtimeWsEventKind::from_payload(payload)?;
+    apply_instance_closed_ws_event(generation, &event_kind, payload)
+}
+
+pub(crate) fn apply_instance_closed_ws_event(
+    generation: u64,
+    event_kind: &RealtimeWsEventKind,
+    payload: &RealtimeWsMessagePayload,
+) -> Option<RealtimeInstanceClosedOutput> {
+    if event_kind != &RealtimeWsEventKind::InstanceClosed {
         return None;
     }
     let content = payload.json.get("content").unwrap_or(&Value::Null);
@@ -195,12 +207,12 @@ pub fn apply_instance_closed_ws_message(
     Some(RealtimeInstanceClosedOutput {
         projection: RealtimeInstanceClosedProjection {
             generation,
-            notification: notification.clone(),
+            notification: notification.clone().into(),
         },
-        feed_entry: notification.clone(),
-        persistence: vrcx_0_persistence::realtime::RealtimePersistenceBatch {
+        feed_entry: notification.clone().into(),
+        persistence: vrcx_0_contracts::realtime::RealtimePersistenceBatch {
             notification_v1_upserts: vec![notification],
-            ..vrcx_0_persistence::realtime::RealtimePersistenceBatch::default()
+            ..vrcx_0_contracts::realtime::RealtimePersistenceBatch::default()
         },
     })
 }

@@ -1,6 +1,6 @@
 import { formatCsvField } from '@/shared/utils/csv';
 
-import type { GroupAuditLogRow } from './GroupModerationLogsPanel';
+import type { GroupModerationLogRow } from './GroupModerationLogsPanel';
 
 export interface GroupAuditLogExportColumn {
     key:
@@ -31,7 +31,7 @@ export const GROUP_AUDIT_LOG_EXPORT_COLUMNS: readonly GroupAuditLogExportColumn[
     ];
 
 function groupAuditLogFieldValue(
-    row: GroupAuditLogRow,
+    row: GroupModerationLogRow,
     key: GroupAuditLogExportColumn['key']
 ): string {
     if (key === 'data') {
@@ -48,7 +48,7 @@ function groupAuditLogFieldValue(
 }
 
 export function buildGroupAuditLogCsv(
-    rows: GroupAuditLogRow[],
+    rows: GroupModerationLogRow[],
     selectedColumns: readonly string[]
 ): string {
     const columns = GROUP_AUDIT_LOG_EXPORT_COLUMNS.filter((column) =>

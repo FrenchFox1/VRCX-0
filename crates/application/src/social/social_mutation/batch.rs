@@ -1,17 +1,18 @@
-use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
+
+use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, RemoteMutationGate, Result, RuntimeAuthScopeSnapshot};
+use vrcx_0_application_core::{Error, Result, RuntimeAuthScopeSnapshot};
 
 use super::{
     service::unfriend_with_expected_scope,
     types::{SocialFriendMutationOutcome, SocialFriendMutationStatus, SocialMutationDeps},
 };
+use vrcx_0_core::OwnerId;
 
 pub const SOCIAL_UNFRIEND_BATCH_MAX_ITEMS: usize = 250;
-const SOCIAL_UNFRIEND_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
-
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialUnfriendBatchTarget {
@@ -23,8 +24,6 @@ pub struct SocialUnfriendBatchTarget {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialUnfriendBatchInput {
-    pub expected_owner_user_id: String,
-    pub expected_endpoint: String,
     #[serde(default)]
     pub targets: Vec<SocialUnfriendBatchTarget>,
 }
@@ -49,11 +48,11 @@ pub struct SocialUnfriendBatchItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialUnfriendBatchResult {
-    pub owner_user_id: String,
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
-    pub local_failed: usize,
+    pub owner_user_id: OwnerId,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
+    pub local_failed: u32,
     pub scope_changed: bool,
     pub items: Vec<SocialUnfriendBatchItemResult>,
     pub last_error: Option<String>,
@@ -63,24 +62,20 @@ trait SocialUnfriendBatchActions: Send + Sync {
     fn unfriend<'a>(
         &'a self,
         target: &'a SocialUnfriendBatchTarget,
-    ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>>;
     fn scope_matches(&self) -> bool;
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async {})
-    }
 }
 
 struct VrchatSocialUnfriendBatchActions<'a> {
     deps: SocialMutationDeps<'a>,
     expected_scope: RuntimeAuthScopeSnapshot,
-    remote_mutation_gate: &'a RemoteMutationGate,
 }
 
 impl SocialUnfriendBatchActions for VrchatSocialUnfriendBatchActions<'_> {
     fn unfriend<'a>(
         &'a self,
         target: &'a SocialUnfriendBatchTarget,
-    ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>> {
         Box::pin(async move {
             unfriend_with_expected_scope(
                 &self.deps,
@@ -98,19 +93,10 @@ impl SocialUnfriendBatchActions for VrchatSocialUnfriendBatchActions<'_> {
             .snapshot()
             .generation_matches(&self.expected_scope)
     }
-
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move {
-            self.remote_mutation_gate
-                .wait(&self.expected_scope, SOCIAL_UNFRIEND_REMOTE_INTERVAL)
-                .await;
-        })
-    }
 }
 
 pub async fn unfriend_batch(
     deps: SocialMutationDeps<'_>,
-    remote_mutation_gate: &RemoteMutationGate,
     input: SocialUnfriendBatchInput,
 ) -> Result<SocialUnfriendBatchResult> {
     let expected_scope = deps.auth_scope.snapshot();
@@ -119,33 +105,38 @@ pub async fn unfriend_batch(
             "Backend social unfriend batch requires an authenticated session.".into(),
         ));
     }
-    if input.expected_owner_user_id.trim() != expected_scope.current_user_id
-        || input.expected_endpoint.trim() != expected_scope.endpoint
-    {
-        return Err(Error::Custom(
-            "Backend social unfriend batch is stale for the current auth scope.".into(),
-        ));
-    }
+    unfriend_batch_for_scope(deps, &expected_scope, input.targets).await
+}
+
+async fn unfriend_batch_for_scope(
+    deps: SocialMutationDeps<'_>,
+    expected_scope: &RuntimeAuthScopeSnapshot,
+    targets: Vec<SocialUnfriendBatchTarget>,
+) -> Result<SocialUnfriendBatchResult> {
     let owner_user_id = expected_scope.current_user_id.clone();
-    let targets = normalize_targets(input.targets)?;
+    let targets = normalize_targets(targets)?;
     let actions = VrchatSocialUnfriendBatchActions {
         deps,
-        expected_scope,
-        remote_mutation_gate,
+        expected_scope: expected_scope.clone(),
     };
-    Ok(run_social_unfriend_batch(&actions, owner_user_id, targets).await)
+    Ok(run_social_unfriend_batch(&actions, OwnerId::new(owner_user_id), targets).await)
 }
 
 pub async fn unfriend_selection(
     deps: SocialMutationDeps<'_>,
-    remote_mutation_gate: &RemoteMutationGate,
     input: SocialUnfriendBatchInput,
 ) -> Result<SocialUnfriendBatchResult> {
     if input.targets.len() <= SOCIAL_UNFRIEND_BATCH_MAX_ITEMS {
-        return unfriend_batch(deps, remote_mutation_gate, input).await;
+        return unfriend_batch(deps, input).await;
+    }
+    let expected_scope = deps.auth_scope.snapshot();
+    if !expected_scope.active {
+        return Err(Error::Custom(
+            "Backend social unfriend batch requires an authenticated session.".into(),
+        ));
     }
     let mut result = SocialUnfriendBatchResult {
-        owner_user_id: input.expected_owner_user_id.clone(),
+        owner_user_id: OwnerId::new(expected_scope.current_user_id.clone()),
         total: 0,
         succeeded: 0,
         failed: 0,
@@ -155,16 +146,7 @@ pub async fn unfriend_selection(
         last_error: None,
     };
     for targets in input.targets.chunks(SOCIAL_UNFRIEND_BATCH_MAX_ITEMS) {
-        let chunk = unfriend_batch(
-            deps,
-            remote_mutation_gate,
-            SocialUnfriendBatchInput {
-                expected_owner_user_id: input.expected_owner_user_id.clone(),
-                expected_endpoint: input.expected_endpoint.clone(),
-                targets: targets.to_vec(),
-            },
-        )
-        .await?;
+        let chunk = unfriend_batch_for_scope(deps, &expected_scope, targets.to_vec()).await?;
         result.owner_user_id = chunk.owner_user_id;
         result.total += chunk.total;
         result.succeeded += chunk.succeeded;
@@ -173,10 +155,11 @@ pub async fn unfriend_selection(
         result.scope_changed |= chunk.scope_changed;
         result.items.extend(chunk.items);
         result.last_error = chunk.last_error.or(result.last_error);
-        let scope = deps.auth_scope.snapshot();
         if result.scope_changed
-            || scope.current_user_id != input.expected_owner_user_id
-            || scope.endpoint != input.expected_endpoint
+            || !deps
+                .auth_scope
+                .snapshot()
+                .generation_matches(&expected_scope)
         {
             break;
         }
@@ -186,7 +169,7 @@ pub async fn unfriend_selection(
 
 async fn run_social_unfriend_batch(
     actions: &dyn SocialUnfriendBatchActions,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     targets: Vec<SocialUnfriendBatchTarget>,
 ) -> SocialUnfriendBatchResult {
     let mut items = targets
@@ -208,7 +191,6 @@ async fn run_social_unfriend_batch(
             scope_changed = true;
             break;
         }
-        actions.wait_for_remote_slot().await;
         match actions.unfriend(target).await {
             Ok(outcome) => {
                 items[index] = match outcome.status {
@@ -276,10 +258,10 @@ async fn run_social_unfriend_batch(
     }
     SocialUnfriendBatchResult {
         owner_user_id,
-        total: items.len(),
-        succeeded,
-        failed: items.len() - succeeded,
-        local_failed,
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(succeeded),
+        failed: crate::wire_count(items.len() - succeeded),
+        local_failed: crate::wire_count(local_failed),
         scope_changed,
         items,
         last_error,
@@ -356,8 +338,7 @@ mod tests {
         fn unfriend<'a>(
             &'a self,
             target: &'a SocialUnfriendBatchTarget,
-        ) -> Pin<Box<dyn Future<Output = Result<SocialFriendMutationOutcome>> + Send + 'a>>
-        {
+        ) -> BoxFuture<'a, Result<SocialFriendMutationOutcome>> {
             Box::pin(async move {
                 let outcome = self
                     .outcomes
@@ -398,7 +379,7 @@ mod tests {
 
         let result = run_social_unfriend_batch(
             &actions,
-            "usr_self".into(),
+            OwnerId::new("usr_self"),
             vec![
                 target("usr_a"),
                 target("usr_b"),
@@ -438,7 +419,7 @@ mod tests {
 
         let result = run_social_unfriend_batch(
             &actions,
-            "usr_self".into(),
+            OwnerId::new("usr_self"),
             vec![target("usr_a"), target("usr_b")],
         )
         .await;

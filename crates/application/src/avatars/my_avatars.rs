@@ -1,25 +1,41 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use vrcx_0_core::derived_keys;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
-use vrcx_0_persistence::avatars::{avatar_tags_list, avatar_time_spent_list};
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::{
-    avatars::{avatar_list_by_user_get_input, AvatarListByUserGetInput},
-    http_api::{ApiScope, HttpApiRequestInput},
+use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+use vrcx_0_application_core::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
-
-const MY_AVATARS_PAGE_SIZE: i64 = 50;
-const MY_AVATARS_MAX_OFFSET: i64 = 5_000;
+const MY_AVATARS_PAGE_SIZE: i32 = 50;
+const MY_AVATARS_MAX_OFFSET: i32 = 5_000;
 
 pub struct MyAvatarsDeps<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) store: &'a dyn super::MyAvatarsStore,
+    pub(crate) remote_requests: &'a dyn super::AvatarRemoteRequests,
+    pub(crate) web: &'a WebClient,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
+}
+
+impl<'a> MyAvatarsDeps<'a> {
+    pub fn new(
+        store: &'a dyn super::MyAvatarsStore,
+        remote_requests: &'a dyn super::AvatarRemoteRequests,
+        web: &'a WebClient,
+        auth_scope: &'a RuntimeAuthScope,
+        expected_scope: RuntimeAuthScopeSnapshot,
+    ) -> Self {
+        Self {
+            store,
+            remote_requests,
+            web,
+            auth_scope,
+            expected_scope,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, specta::Type)]
@@ -39,12 +55,13 @@ pub struct MyAvatarByIdInput {
 
 pub async fn get_my_avatars(deps: &MyAvatarsDeps<'_>, input: MyAvatarsInput) -> Result<Vec<Value>> {
     let avatars = fetch_my_avatar_pages(deps, None).await?;
-    let tags_by_avatar = collect_tags_by_avatar(deps.db)?;
-    let time_spent_by_avatar: HashMap<String, i64> =
-        avatar_time_spent_list(deps.db, deps.expected_scope.current_user_id.clone())?
-            .into_iter()
-            .map(|row| (row.avatar_id, row.time_spent))
-            .collect();
+    let tags_by_avatar = collect_tags_by_avatar(deps.store)?;
+    let time_spent_by_avatar: HashMap<String, i64> = deps
+        .store
+        .avatar_time_spent(deps.expected_scope.current_user_id.clone())?
+        .into_iter()
+        .map(|row| (row.avatar_id, row.time_spent))
+        .collect();
 
     let current_avatar_id = input.current_avatar_id.trim().to_string();
     let swap_delta = live_swap_delta_ms(input.previous_avatar_swap_time);
@@ -59,10 +76,10 @@ pub async fn get_my_avatars(deps: &MyAvatarsDeps<'_>, input: MyAvatarsInput) -> 
             }
             if let Some(object) = avatar.as_object_mut() {
                 object.insert(
-                    "$tags".into(),
+                    derived_keys::TAGS.into(),
                     Value::Array(tags_by_avatar.get(&avatar_id).cloned().unwrap_or_default()),
                 );
-                object.insert("$timeSpent".into(), json!(time_spent));
+                object.insert(derived_keys::TIME_SPENT.into(), json!(time_spent));
             }
             avatar
         })
@@ -91,28 +108,23 @@ async fn fetch_my_avatar_pages(
     let mut offset = 0;
 
     while offset <= MY_AVATARS_MAX_OFFSET {
-        let (_, request) = avatar_list_by_user_get_input(AvatarListByUserGetInput {
-            endpoint: deps.expected_scope.endpoint.clone(),
-            user_id: String::new(),
-            user: "me".into(),
-            n: MY_AVATARS_PAGE_SIZE,
+        let request = deps.remote_requests.my_avatar_page(
+            deps.expected_scope.endpoint.clone(),
+            MY_AVATARS_PAGE_SIZE,
             offset,
-            sort: "updated".into(),
-            order: "descending".into(),
-            release_status: "all".into(),
-        })?;
+        )?;
         let page = execute_json_array(deps, request).await?;
-        let page_len = page.len() as i64;
+        let page_len = page.len();
 
         if let Some(target) = target_avatar_id {
-            if let Some(found) = page.iter().find(|avatar| record_id(avatar) == target) {
-                return Ok(vec![found.clone()]);
+            if let Some(found) = page.into_iter().find(|avatar| record_id(avatar) == target) {
+                return Ok(vec![found]);
             }
         } else {
             avatars.extend(page);
         }
 
-        if page_len < MY_AVATARS_PAGE_SIZE {
+        if page_len < MY_AVATARS_PAGE_SIZE as usize {
             break;
         }
         offset += MY_AVATARS_PAGE_SIZE;
@@ -123,13 +135,10 @@ async fn fetch_my_avatar_pages(
 
 async fn execute_json_array(
     deps: &MyAvatarsDeps<'_>,
-    request: HttpApiRequestInput,
+    request: VrchatApiRequest,
 ) -> Result<Vec<Value>> {
     ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db)
-        .await?;
+    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
     ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
     let payload = serde_json::from_str::<Value>(&response.data)
         .unwrap_or_else(|_| Value::String(response.data.clone()));
@@ -139,7 +148,10 @@ async fn execute_json_array(
             response.status,
         )));
     }
-    Ok(payload.as_array().cloned().unwrap_or_default())
+    match payload {
+        Value::Array(rows) => Ok(rows),
+        _ => Ok(Vec::new()),
+    }
 }
 
 fn response_error_message(payload: &Value, status: i32) -> String {
@@ -152,9 +164,11 @@ fn response_error_message(payload: &Value, status: i32) -> String {
     format!("My avatars request failed: {detail}")
 }
 
-fn collect_tags_by_avatar(db: &DatabaseService) -> Result<HashMap<String, Vec<Value>>> {
+fn collect_tags_by_avatar(
+    store: &dyn super::MyAvatarsStore,
+) -> Result<HashMap<String, Vec<Value>>> {
     let mut tags_by_avatar: HashMap<String, Vec<Value>> = HashMap::new();
-    for row in avatar_tags_list(db)? {
+    for row in store.avatar_tags()? {
         let tag = row.tag.trim().to_string();
         if tag.is_empty() {
             continue;
@@ -234,7 +248,7 @@ mod tests {
             .as_millis() as f64
             - 60_000.0;
         let delta = live_swap_delta_ms(one_minute_ago);
-        assert!(delta >= 60_000 && delta < 120_000);
+        assert!((60_000..120_000).contains(&delta));
     }
 
     #[test]

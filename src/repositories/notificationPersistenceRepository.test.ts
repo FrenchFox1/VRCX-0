@@ -66,7 +66,7 @@ describe('notificationPersistenceRepository', () => {
         await queryNotifications({
             userId: 'usr_1',
             search: ' sender ',
-            filters: [' invite ', '', null]
+            filters: [' invite ', '']
         });
 
         expect(commandMocks.appNotificationListQuery).toHaveBeenCalledWith({

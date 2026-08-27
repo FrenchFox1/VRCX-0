@@ -4,8 +4,10 @@ import { instanceLocationKey } from '@/domain/presence/instancePresence';
 
 interface InstanceJoinHistoryStoreState {
     joinedAtByLocation: Record<string, number>;
-    setInstanceJoinHistory: (entries: Iterable<[unknown, unknown]>) => void;
-    recordInstanceJoin: (location: unknown, joinedAt: unknown) => void;
+    setInstanceJoinHistory: (
+        entries: Iterable<[string, string | number]>
+    ) => void;
+    recordInstanceJoin: (location: string, joinedAt: string | number) => void;
     resetInstanceJoinHistory: () => void;
 }
 
@@ -14,7 +16,7 @@ const initialState: Pick<InstanceJoinHistoryStoreState, 'joinedAtByLocation'> =
         joinedAtByLocation: {}
     };
 
-function epochMs(value: unknown): number {
+function epochMs(value: string | number): number {
     const parsed =
         typeof value === 'number' ? value : Date.parse(String(value ?? ''));
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;

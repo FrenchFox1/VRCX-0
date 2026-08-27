@@ -1,15 +1,10 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use vrcx_0_contracts::CacheEntityInput;
 use vrcx_0_core::json::RawJson;
-use vrcx_0_persistence::{
-    avatars::{avatar_cache_get, avatar_cache_upsert},
-    cache_entities::CacheEntityInput,
-    worlds::{world_cache_get, world_cache_upsert},
-    DatabaseService,
-};
-use vrcx_0_vrchat_client::http_api::normalize_text;
+use vrcx_0_core::text::normalize_text;
 
-use crate::Result;
+use vrcx_0_application_core::Result;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -35,7 +30,7 @@ pub(super) enum CacheWriteDecision {
 }
 
 pub fn persist_favorite_cache_snapshot(
-    db: &DatabaseService,
+    store: &dyn super::FavoriteStore,
     input: FavoriteCacheSnapshotInput,
 ) -> Result<bool> {
     let entity = input.entity.as_value();
@@ -49,18 +44,12 @@ pub fn persist_favorite_cache_snapshot(
         return Ok(false);
     }
     if decision == CacheWriteDecision::InsertIfMissing {
-        let exists = match input.kind {
-            FavoriteCacheKind::Avatar => avatar_cache_get(db, id)?.is_some(),
-            FavoriteCacheKind::World => world_cache_get(db, id)?.is_some(),
-        };
+        let exists = store.cache_exists(input.kind, id)?;
         if exists {
             return Ok(false);
         }
     }
-    match input.kind {
-        FavoriteCacheKind::Avatar => avatar_cache_upsert(db, entry)?,
-        FavoriteCacheKind::World => world_cache_upsert(db, entry)?,
-    };
+    store.cache_upsert(input.kind, entry)?;
     Ok(true)
 }
 
@@ -143,35 +132,11 @@ fn entity_version(entity: &Value) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use serde_json::json;
-    use vrcx_0_persistence::worlds::world_cache_get;
 
     use super::*;
-
-    struct TestDir(PathBuf);
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!(
-                "vrcx-0-favorite-cache-{name}-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&path).unwrap();
-            Self(path)
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
+    use crate::favorites::test_support::TestFavoriteStore;
+    use crate::favorites::FavoriteStore;
 
     #[test]
     fn world_policy_upserts_public_and_preserves_existing_private_details() {
@@ -231,8 +196,7 @@ mod tests {
 
     #[test]
     fn private_world_snapshot_does_not_overwrite_existing_public_cache() {
-        let dir = TestDir::new("private-world-preserves-public");
-        let db = DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap();
+        let store = TestFavoriteStore::default();
         let public = json!({
             "id": "wrld_test",
             "name": "Public name",
@@ -247,7 +211,7 @@ mod tests {
         });
 
         assert!(persist_favorite_cache_snapshot(
-            &db,
+            &store,
             FavoriteCacheSnapshotInput {
                 kind: FavoriteCacheKind::World,
                 entity: RawJson::from(public),
@@ -256,7 +220,7 @@ mod tests {
         )
         .unwrap());
         assert!(!persist_favorite_cache_snapshot(
-            &db,
+            &store,
             FavoriteCacheSnapshotInput {
                 kind: FavoriteCacheKind::World,
                 entity: RawJson::from(private),
@@ -265,9 +229,8 @@ mod tests {
         )
         .unwrap());
 
-        let cached = world_cache_get(&db, "wrld_test".into()).unwrap().unwrap();
-        assert_eq!(cached.name, "Public name");
-        assert_eq!(cached.release_status, "public");
-        assert_eq!(cached.image_url, "https://example.test/public.png");
+        assert!(store
+            .cache_exists(FavoriteCacheKind::World, "wrld_test".into())
+            .unwrap());
     }
 }

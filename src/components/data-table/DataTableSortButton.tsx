@@ -8,7 +8,7 @@ import { Button } from '@/ui/shadcn/button';
 
 type SortDirection = 'asc' | 'desc' | false;
 
-function normalizeDirection(value: unknown): SortDirection {
+function normalizeDirection(value: SortDirection | undefined): SortDirection {
     return value === 'asc' || value === 'desc' ? value : false;
 }
 
@@ -39,7 +39,7 @@ export function DataTableSortButton<TData extends RowData>({
     className?: string;
     column?: AppColumn<TData> | null;
     descFirst?: boolean;
-    direction?: unknown;
+    direction?: SortDirection;
     label: ReactNode;
     labelClassName?: string;
     onSort?: (

@@ -4,20 +4,11 @@ import {
     buildInstanceRosterRows,
     mergeInstanceUser,
     mergeInstanceUsers,
-    resolveInstanceDwellEpoch,
     type InstanceRosterRow,
     userHasExplicitSameInstance
 } from './instanceRoster';
 
 describe('instanceRoster', () => {
-    it('reads dwell epochs from nested friend presence records', () => {
-        expect(
-            resolveInstanceDwellEpoch({
-                ref: { $location_at: 1_700_000_000_000 }
-            })
-        ).toBe(1_700_000_000_000);
-    });
-
     it('keeps a user owner first and does not duplicate the owner row', () => {
         const roster = buildInstanceRosterRows({
             instanceCreatorLabel: 'Creator',
@@ -74,7 +65,7 @@ describe('instanceRoster', () => {
         expect(roster.rows.map((row) => row.id)).toEqual(['usr_friend']);
     });
 
-    it('merges duplicate user rows while preserving richer existing data', () => {
+    it('merges duplicate rows without carrying a legacy dwell timestamp', () => {
         const users = mergeInstanceUsers(
             [
                 {
@@ -97,7 +88,7 @@ describe('instanceRoster', () => {
         expect(users[0].displayName).toBe('Friend');
         expect(users[0].profilePicOverrideThumbnail).toBe('avatar.webp');
         expect(users[0].status).toBe('ask me');
-        expect(users[0].$location_at).toBe('2026-01-01T00:00:00.000Z');
+        expect(users[0].$location_at).toBeUndefined();
     });
 
     it('allows a realtime snapshot to replace only existing presence fields', () => {

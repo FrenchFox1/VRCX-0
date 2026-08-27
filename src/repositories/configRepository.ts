@@ -1,41 +1,29 @@
 import { commands } from '@/platform/tauri/bindings';
-import type { ConfigReadEntry } from '@/platform/tauri/bindings';
-import { ConfigKeys, type ConfigDefaultValue } from '@/repositories/configKeys';
+import type {
+    ConfigReadEntry,
+    ConfigWriteEntry
+} from '@/platform/tauri/bindings';
+import {
+    ConfigKeys,
+    type ConfigDefaultValue,
+    type ConfigKeyDefinition
+} from '@/repositories/configKeys';
 
 import { asString, safeJsonParse, safeJsonStringify } from './baseRepository';
 
-type ConfigEntries = Array<[string, unknown]>;
+type ConfigEntries = Array<[string, string]>;
 type ConfigObject = Record<string, unknown> | unknown[] | null;
 
 const HIDDEN_VR_PANEL_CONFIG_DB_KEYS = new Set([
     'config:vrcx_vroverlaypanelenabled',
     'config:vrcx_vroverlaypanelallfriendsincludesfavorites'
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
+const CONFIG_KEYS_BY_NAME = new Map<string, ConfigKeyDefinition>(
+    Object.entries(ConfigKeys)
+);
 
 function isHiddenVrPanelConfigDbKey(key: string): boolean {
     return HIDDEN_VR_PANEL_CONFIG_DB_KEYS.has(key);
-}
-
-function normalizeConfigReadEntry(row: unknown): [string, string] | null {
-    if (Array.isArray(row)) {
-        const [key, value] = row;
-        return typeof key === 'string' && value != null
-            ? [key, String(value)]
-            : null;
-    }
-
-    if (!isRecord(row)) {
-        return null;
-    }
-
-    const { key, value } = row;
-    return typeof key === 'string' && value != null
-        ? [key, String(value)]
-        : null;
 }
 
 class ConfigRepository {
@@ -56,11 +44,7 @@ class ConfigRepository {
 
     #getSchemaDefault(key: string): ConfigDefaultValue {
         const stripped = key.startsWith('VRCX_') ? key.slice(5) : key;
-        return (
-            (ConfigKeys as Record<string, { default?: ConfigDefaultValue }>)[
-                stripped
-            ]?.default ?? null
-        );
+        return CONFIG_KEYS_BY_NAME.get(stripped)?.default ?? null;
     }
 
     async init(prefetchedRows?: ConfigReadEntry[]): Promise<void> {
@@ -70,13 +54,10 @@ class ConfigRepository {
 
         const rows = prefetchedRows ?? (await commands.appConfigListValues());
         for (const row of rows) {
-            const entry = normalizeConfigReadEntry(row);
-            if (entry) {
-                if (isHiddenVrPanelConfigDbKey(entry[0])) {
-                    continue;
-                }
-                this.#cache.set(entry[0], entry[1]);
+            if (isHiddenVrPanelConfigDbKey(row.key)) {
+                continue;
             }
+            this.#cache.set(row.key, row.value);
         }
 
         this.#ready = true;
@@ -195,7 +176,7 @@ class ConfigRepository {
         defaultValue: T | null = null
     ): Promise<T | null> {
         const value = await this.getString(key, null);
-        return safeJsonParse(value, defaultValue) as T | null;
+        return safeJsonParse(value, defaultValue);
     }
 
     async getArray<T = unknown>(
@@ -206,76 +187,66 @@ class ConfigRepository {
         return Array.isArray(value) ? value : defaultValue;
     }
 
-    async setString(key: string, value: unknown): Promise<unknown> {
+    async setString(key: string, value: string): Promise<null> {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
         if (isHiddenVrPanelConfigDbKey(dbKey)) {
             this.#cache.delete(dbKey);
             return null;
         }
-        const stringValue = String(value);
         const result = await commands.appConfigSetValues([
-            { key: dbKey, value: stringValue }
+            { key: dbKey, value }
         ]);
-        this.#cache.set(dbKey, stringValue);
+        this.#cache.set(dbKey, value);
         return result;
     }
 
-    async set(key: string, value: unknown): Promise<unknown> {
+    async set(key: string, value: string): Promise<null> {
         return this.setString(key, value);
     }
 
-    async setBool(key: string, value: boolean): Promise<unknown> {
+    async setBool(key: string, value: boolean): Promise<null> {
         return this.setString(key, value ? 'true' : 'false');
     }
 
-    async setInt(key: string, value: number): Promise<unknown> {
-        return this.setString(key, value);
+    async setInt(key: string, value: number): Promise<null> {
+        return this.setString(key, String(value));
     }
 
-    async setFloat(key: string, value: number): Promise<unknown> {
-        return this.setString(key, value);
+    async setFloat(key: string, value: number): Promise<null> {
+        return this.setString(key, String(value));
     }
 
-    async setObject(key: string, value: unknown): Promise<unknown> {
+    async setObject(key: string, value: unknown): Promise<null> {
         return this.setString(key, safeJsonStringify(value));
     }
 
     async setMany(entries: ConfigEntries): Promise<void> {
         await this.#ensureReady();
-        const normalizedEntries = entries.map(
-            ([key, value]) =>
-                [this.#resolveKey(key), String(value)] satisfies [
-                    string,
-                    string
-                ]
+        const normalizedEntries: ConfigWriteEntry[] = entries.map(
+            ([key, value]) => ({ key: this.#resolveKey(key), value })
         );
 
-        for (const [dbKey] of normalizedEntries) {
-            if (isHiddenVrPanelConfigDbKey(dbKey)) {
-                this.#cache.delete(dbKey);
+        for (const entry of normalizedEntries) {
+            if (isHiddenVrPanelConfigDbKey(entry.key)) {
+                this.#cache.delete(entry.key);
             }
         }
         const writableEntries = normalizedEntries.filter(
-            ([dbKey]) => !isHiddenVrPanelConfigDbKey(dbKey)
+            (entry) => !isHiddenVrPanelConfigDbKey(entry.key)
         );
         if (writableEntries.length === 0) {
             return;
         }
 
-        await commands.appConfigSetValues(
-            writableEntries.map(([key, value]) => ({
-                key,
-                value
-            }))
-        );
+        await commands.appConfigSetValues(writableEntries);
 
-        for (const [dbKey, stringValue] of writableEntries) {
-            this.#cache.set(dbKey, stringValue);
+        for (const entry of writableEntries) {
+            this.#cache.set(entry.key, entry.value);
         }
     }
 
-    async setArray(key: string, value: unknown[]): Promise<unknown> {
+    async setArray(key: string, value: unknown[]): Promise<null> {
         return this.setObject(key, value);
     }
 
@@ -290,7 +261,7 @@ class ConfigRepository {
         this.#cache.set(dbKey, value);
     }
 
-    async remove(key: string): Promise<unknown> {
+    async remove(key: string): Promise<number> {
         await this.#ensureReady();
         const dbKey = this.#resolveKey(key);
         const result = await commands.appConfigRemoveValue(dbKey);

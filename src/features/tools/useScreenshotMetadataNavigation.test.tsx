@@ -7,14 +7,19 @@ import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigati
 
 function createProps() {
     return {
+        enabled: true,
         loadScreenshot: vi.fn<
             (path: string, withCarousel: boolean) => Promise<void>
         >(async () => {}),
         metadata: {
             nextFilePath: 'metadata-next.png',
-            previousFilePath: 'metadata-prev.png'
+            nextFolderPath: 'next-folder',
+            previousFilePath: 'metadata-prev.png',
+            previousFolderPath: 'previous-folder'
         },
-        onPathChange: undefined as ((path: string) => void) | undefined,
+        onPathChange: undefined as
+            | ((path: string, folderPath?: string) => void)
+            | undefined,
         searchNavigationPaths: [] as string[],
         selectedPath: '',
         setSelectedPath: vi.fn<(path: string) => void>()
@@ -65,6 +70,61 @@ describe('useScreenshotMetadataNavigation', () => {
         );
     });
 
+    it('routes across folders using global metadata neighbors', async () => {
+        const props = createProps();
+        props.onPathChange = vi.fn();
+        const { result } = renderHook(() =>
+            useScreenshotMetadataNavigation(props)
+        );
+
+        expect(result.current.canNavigatePrev).toBe(true);
+        expect(result.current.canNavigateNext).toBe(true);
+        await act(() => result.current.navigatePrev());
+        await act(() => result.current.navigateNext());
+
+        expect(props.onPathChange).toHaveBeenNthCalledWith(
+            1,
+            'metadata-prev.png',
+            'previous-folder'
+        );
+        expect(props.onPathChange).toHaveBeenNthCalledWith(
+            2,
+            'metadata-next.png',
+            'next-folder'
+        );
+    });
+
+    it('disables navigation at the global first and last screenshots', async () => {
+        const props = createProps();
+        props.metadata.previousFilePath = '';
+        props.metadata.previousFolderPath = '';
+        props.onPathChange = vi.fn();
+        const { result, rerender } = renderHook(
+            (currentProps) => useScreenshotMetadataNavigation(currentProps),
+            { initialProps: props }
+        );
+
+        expect(result.current.canNavigatePrev).toBe(false);
+        expect(result.current.canNavigateNext).toBe(true);
+        await act(() => result.current.navigatePrev());
+        expect(props.onPathChange).not.toHaveBeenCalled();
+
+        rerender({
+            ...props,
+            metadata: {
+                nextFilePath: '',
+                nextFolderPath: '',
+                previousFilePath: 'metadata-prev.png',
+                previousFolderPath: 'previous-folder'
+            }
+        });
+        expect(result.current.canNavigatePrev).toBe(true);
+        expect(result.current.canNavigateNext).toBe(false);
+        await act(() => result.current.navigateNext());
+
+        expect(props.onPathChange).not.toHaveBeenCalled();
+    });
+
     it('falls back to metadata when the selected search path is stale', async () => {
         const props = createProps();
         props.searchNavigationPaths = ['a.png', 'b.png'];
@@ -100,19 +160,17 @@ describe('useScreenshotMetadataNavigation', () => {
         expect(nextLoad).toHaveBeenCalledWith('metadata-next.png', true);
     });
 
-    it('handles Alt+Arrow shortcuts and removes listeners on unmount', () => {
+    it('handles unmodified Arrow shortcuts and removes listeners on unmount', () => {
         const props = createProps();
         props.onPathChange = vi.fn();
         const { unmount } = renderHook(() =>
             useScreenshotMetadataNavigation(props)
         );
         const left = new KeyboardEvent('keydown', {
-            altKey: true,
             cancelable: true,
             key: 'ArrowLeft'
         });
         const right = new KeyboardEvent('keydown', {
-            altKey: true,
             cancelable: true,
             key: 'ArrowRight'
         });
@@ -125,20 +183,57 @@ describe('useScreenshotMetadataNavigation', () => {
         expect(right.defaultPrevented).toBe(true);
         expect(props.onPathChange).toHaveBeenNthCalledWith(
             1,
-            'metadata-prev.png'
+            'metadata-prev.png',
+            'previous-folder'
         );
         expect(props.onPathChange).toHaveBeenNthCalledWith(
             2,
-            'metadata-next.png'
+            'metadata-next.png',
+            'next-folder'
         );
 
         unmount();
         window.dispatchEvent(
             new KeyboardEvent('keydown', {
-                altKey: true,
                 key: 'ArrowRight'
             })
         );
         expect(props.onPathChange).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores shortcuts while disabled, modified, or editing text', () => {
+        const props = createProps();
+        props.onPathChange = vi.fn();
+        const { rerender } = renderHook(
+            (currentProps) => useScreenshotMetadataNavigation(currentProps),
+            { initialProps: props }
+        );
+
+        act(() => {
+            window.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    altKey: true,
+                    key: 'ArrowRight'
+                })
+            );
+            const input = document.createElement('input');
+            document.body.append(input);
+            input.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    bubbles: true,
+                    key: 'ArrowRight'
+                })
+            );
+            input.remove();
+        });
+
+        rerender({ ...props, enabled: false });
+        act(() => {
+            window.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'ArrowRight' })
+            );
+        });
+
+        expect(props.onPathChange).not.toHaveBeenCalled();
     });
 });

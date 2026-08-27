@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
+import type { SearchGroupJson } from '@/repositories/vrchatSearchRepository';
+import { openGroupDialog } from '@/services/dialogService';
 
-import { WorldCard } from './SearchResultParts';
+import { GroupRow, WorldCard } from './SearchResultParts';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -48,10 +50,45 @@ const world = {
     visits: 0
 } satisfies WorldProfileRecord;
 
+const group = {
+    bannerId: null,
+    description: 'A group from search',
+    discriminator: '1234',
+    iconUrl: '',
+    id: 'grp_search',
+    memberCount: 42,
+    name: 'Search Group',
+    shortCode: 'SEARCH'
+} satisfies SearchGroupJson;
+
+beforeEach(() => {
+    vi.clearAllMocks();
+});
+
 describe('SearchResultParts WorldCard', () => {
     it('uses occupants from the requested world result', () => {
         render(<WorldCard world={world} />);
 
         expect(screen.getByText('Author (4)')).toBeTruthy();
+    });
+});
+
+describe('SearchResultParts GroupRow', () => {
+    it('opens the group dialog from the shared group card', () => {
+        render(<GroupRow group={group} />);
+
+        expect(screen.getByText('42')).toBeTruthy();
+        expect(screen.getByText('SEARCH.1234')).toBeTruthy();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: /Search Group/
+            })
+        );
+
+        expect(openGroupDialog).toHaveBeenCalledWith({
+            groupId: group.id,
+            title: group.name,
+            seedData: group
+        });
     });
 });

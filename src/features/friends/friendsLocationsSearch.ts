@@ -1,11 +1,13 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
+
 import {
     normalizeFriendsLocationId,
     resolveLocationSummary
 } from './friendsLocationsRows';
 
 export function buildFriendsLocationsFavoriteIdSet(
-    remoteFavoriteIds: readonly unknown[] = [],
-    localFriendFavorites: Record<string, readonly unknown[]> = {}
+    remoteFavoriteIds: readonly string[] = [],
+    localFriendFavorites: FavoriteGroupMap = {}
 ): Set<string> {
     const ids = new Set<string>();
 
@@ -17,10 +19,6 @@ export function buildFriendsLocationsFavoriteIdSet(
     }
 
     for (const groupIds of Object.values(localFriendFavorites ?? {})) {
-        if (!Array.isArray(groupIds)) {
-            continue;
-        }
-
         for (const id of groupIds) {
             const normalized = normalizeFriendsLocationId(id);
             if (normalized) {

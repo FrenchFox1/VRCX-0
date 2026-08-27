@@ -7,7 +7,7 @@ import {
     stopCurrentAvatarWearTimer
 } from '@/services/avatarWearTimeService';
 import { resetGameLogSessionState } from '@/services/gameLogIngestService';
-import { normalizeBoolean } from '@/shared/utils/coerce';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -16,12 +16,6 @@ import { useSessionStore } from '@/state/sessionStore';
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
 type GameState = RuntimeState['gameState'];
 type GameStatePatch = Parameters<RuntimeState['setGameState']>[0];
-type GameRunningPayload = Partial<HostSessionProjection> &
-    Record<string, unknown>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 async function handleGameStopped(
     previousGameState: GameState,
@@ -33,14 +27,12 @@ async function handleGameStopped(
     resetGameLogSessionState(stoppedAt);
 
     clearStoppedGameLocationSnapshot(previousGameState, currentUserSnapshot);
-    await commands
-        .appRuntimeDiscordReconcileRequest()
-        .catch((error: unknown) => {
-            console.warn(
-                'Discord presence reconcile after game stop failed:',
-                error
-            );
-        });
+    await commands.appRuntimeDiscordReconcileRequest().catch((error) => {
+        console.warn(
+            'Discord presence reconcile after game stop failed:',
+            error
+        );
+    });
 
     const startedAt = Date.parse(previousGameState.lastGameStartedAt || '');
     try {
@@ -124,24 +116,22 @@ function clearStoppedGameLocationSnapshot(
     }
 }
 
-export async function handleGameRunningUpdate(payload: unknown = {}) {
-    const projection: GameRunningPayload = isRecord(payload)
-        ? (payload as GameRunningPayload)
-        : {};
+export async function handleGameRunningUpdate(
+    projection: HostSessionProjection
+) {
     const runtimeStore = useRuntimeStore.getState();
     const previousGameState = runtimeStore.gameState;
     const currentUserSnapshot = runtimeStore.auth.currentUserSnapshot;
     const previousGameRunning = runtimeStore.gameState.isGameRunning;
     const previousSteamVrRunning = runtimeStore.gameState.isSteamVRRunning;
-    const nextGameRunning = normalizeBoolean(projection?.isGameRunning);
-    const nextSteamVrRunning = normalizeBoolean(projection?.isSteamVRRunning);
+    const nextGameRunning = projection.isGameRunning;
+    const nextSteamVrRunning = projection.isSteamVRRunning;
     const gameRunningChanged = previousGameRunning !== nextGameRunning;
     const steamVrRunningChanged = previousSteamVrRunning !== nextSteamVrRunning;
     const changed = gameRunningChanged || steamVrRunningChanged;
     const payloadChangedAt =
-        normalizeString(projection?.lastGameStateChangedAt) ||
-        normalizeString(projection?.changedAt);
-    const payloadStartedAt = normalizeString(projection?.lastGameStartedAt);
+        projection.lastGameStateChangedAt || projection.changedAt;
+    const payloadStartedAt = projection.lastGameStartedAt || '';
     const shouldRefreshDiscordPresence =
         gameRunningChanged ||
         (nextGameRunning === true &&
@@ -196,13 +186,11 @@ export async function handleGameRunningUpdate(payload: unknown = {}) {
     }
 
     if (shouldRefreshDiscordPresence) {
-        await commands
-            .appRuntimeDiscordReconcileRequest()
-            .catch((error: unknown) => {
-                console.warn(
-                    'Discord presence reconcile after game state update failed:',
-                    error
-                );
-            });
+        await commands.appRuntimeDiscordReconcileRequest().catch((error) => {
+            console.warn(
+                'Discord presence reconcile after game state update failed:',
+                error
+            );
+        });
     }
 }

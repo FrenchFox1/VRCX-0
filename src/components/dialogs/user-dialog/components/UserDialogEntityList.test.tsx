@@ -2,18 +2,27 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 const mocks = vi.hoisted(() => ({
+    getGroupProfile: vi.fn(),
     openRow: vi.fn()
 }));
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) =>
-            key === 'dialog.user.mutual_friends.undisclosed_friend'
-                ? 'Localized Undisclosed Mutual Friend'
-                : key
+        t: (key: string) => {
+            if (key === 'dialog.user.mutual_friends.undisclosed_friend') {
+                return 'Localized Undisclosed Mutual Friend';
+            }
+            if (key === 'common.error.failed_to_load_data') {
+                return "Couldn't load the data";
+            }
+            return key;
+        }
     })
 }));
 
@@ -35,15 +44,15 @@ vi.mock('@/components/sidebar/friends-sidebar/friendsSidebarModel', () => ({
     resolveSidebarStatusDotClassName: () => ''
 }));
 
-vi.mock('@/components/sidebar/friends-sidebar/FriendsSidebarLocation', () => ({
-    FriendInstanceTimer: ({ epoch }: { epoch?: unknown }) => (
-        <span data-testid="instance-timer" data-epoch={String(epoch)} />
-    )
-}));
-
 vi.mock('@/services/entityMediaService', () => ({
     convertFileUrlToImageUrl: () => '',
     userImage: () => ''
+}));
+
+vi.mock('@/repositories/groupProfileRepository', () => ({
+    default: {
+        getGroupProfile: mocks.getGroupProfile
+    }
 }));
 
 vi.mock('@/state/runtimeStore', () => ({
@@ -72,9 +81,30 @@ vi.mock('./userDialogEntityNavigation', () => ({
 import { EntityList } from './UserDialogEntityList';
 
 describe('UserDialog EntityList', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(1_700_000_600_000);
+        useFriendRosterStore.getState().resetRoster();
+        useFriendLocationTimeStore.getState().reset();
+    });
+
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+        vi.useRealTimers();
+    });
+
+    it('replaces internal Tauri command errors with a friendly message', () => {
+        render(
+            <EntityList
+                kind="user"
+                rows={[]}
+                error="Tauri command failed: app__user_mutual_friends_list_get: network request failed"
+            />
+        );
+
+        expect(screen.getByText("Couldn't load the data")).toBeTruthy();
+        expect(screen.queryByText(/Tauri command failed/)).toBeNull();
     });
 
     it('localizes undisclosed mutual friends and prevents opening them', () => {
@@ -113,6 +143,23 @@ describe('UserDialog EntityList', () => {
     });
 
     it('shows the instance timer instead of the status signature', () => {
+        useFriendRosterStore.getState().applyFriendPatch({
+            userId: 'usr_friend',
+            patch: {
+                id: 'usr_friend',
+                displayName: 'Friend',
+                state: 'online',
+                location: 'wrld_test:1'
+            },
+            stateBucketAuthority: 'explicit'
+        });
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
         render(
             <EntityList
                 kind="user"
@@ -120,18 +167,56 @@ describe('UserDialog EntityList', () => {
                     {
                         id: 'usr_friend',
                         displayName: 'Friend',
-                        statusDescription: 'World hopping',
-                        $location_at: 1_700_000_000_000
+                        state: 'online',
+                        location: 'wrld_test:1',
+                        statusDescription: 'World hopping'
                     }
                 ]}
                 showInstanceDuration
             />
         );
 
-        expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
-            '1700000000000'
-        );
+        expect(screen.getByText('10m')).toBeTruthy();
         expect(screen.queryByText('World hopping')).toBeNull();
+    });
+
+    it('uses the displayed instance for an online friend with a hidden presence location', () => {
+        useFriendRosterStore.getState().applyFriendPatch({
+            userId: 'usr_friend',
+            patch: {
+                id: 'usr_friend',
+                displayName: 'Friend',
+                state: 'online',
+                location: 'private'
+            },
+            stateBucketAuthority: 'explicit'
+        });
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
+        render(
+            <EntityList
+                kind="user"
+                rows={[
+                    {
+                        id: 'usr_friend',
+                        displayName: 'Friend',
+                        state: 'online',
+                        location: 'private',
+                        statusDescription: 'Do not disturb'
+                    }
+                ]}
+                instanceLocation="wrld_test:1"
+                showInstanceDuration
+            />
+        );
+
+        expect(screen.getByText('10m')).toBeTruthy();
+        expect(screen.queryByText('Do not disturb')).toBeNull();
     });
 
     it('shows a creator icon and label without a timer for a friend creator', () => {
@@ -163,7 +248,7 @@ describe('UserDialog EntityList', () => {
         expect(screen.queryByText('Friend signature')).toBeNull();
     });
 
-    it('shows a creator icon and signature for a non-friend creator', () => {
+    it('shows a creator icon and label for a non-friend creator', () => {
         render(
             <EntityList
                 kind="user"
@@ -184,11 +269,14 @@ describe('UserDialog EntityList', () => {
         expect(
             screen.getByLabelText('dialog.user.info.instance_creator')
         ).toBeTruthy();
-        expect(screen.getByText('Owner signature')).toBeTruthy();
+        expect(
+            screen.getByText('dialog.user.info.instance_creator')
+        ).toBeTruthy();
+        expect(screen.queryByText('Owner signature')).toBeNull();
         expect(screen.queryByTestId('instance-timer')).toBeNull();
     });
 
-    it('shows the localized status when a non-friend creator has no signature', () => {
+    it('keeps the Creator label when a non-friend creator has no signature', () => {
         render(
             <EntityList
                 kind="user"
@@ -206,7 +294,10 @@ describe('UserDialog EntityList', () => {
             />
         );
 
-        expect(screen.getByText('dialog.user.status.offline')).toBeTruthy();
+        expect(
+            screen.getByText('dialog.user.info.instance_creator')
+        ).toBeTruthy();
+        expect(screen.queryByText('dialog.user.status.offline')).toBeNull();
         expect(screen.queryByTestId('instance-timer')).toBeNull();
     });
 
@@ -218,6 +309,7 @@ describe('UserDialog EntityList', () => {
                     {
                         id: 'usr_friend',
                         displayName: 'Friend',
+                        statusDescription: 'No dwell time',
                         locationUpdatedAt: 1_700_000_000_000
                     }
                 ]}
@@ -225,7 +317,26 @@ describe('UserDialog EntityList', () => {
             />
         );
 
-        const timer = screen.getByTestId('instance-timer');
-        expect(timer.dataset.epoch).toBe('');
+        expect(screen.getByText('No dwell time')).toBeTruthy();
+        expect(screen.queryByText('10m')).toBeNull();
+    });
+
+    it('renders group list data without requesting every group profile', () => {
+        render(
+            <EntityList
+                kind="group"
+                rows={[
+                    {
+                        id: 'grp_test',
+                        name: 'Group from membership list',
+                        memberCount: 42
+                    }
+                ]}
+            />
+        );
+
+        expect(screen.getByText('Group from membership list')).toBeTruthy();
+        expect(screen.getByText('42')).toBeTruthy();
+        expect(mocks.getGroupProfile).not.toHaveBeenCalled();
     });
 });

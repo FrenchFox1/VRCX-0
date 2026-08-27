@@ -36,12 +36,12 @@ export type TranslationDetailedResult = {
 
 export async function translateTextDetailed(
     text: string,
-    targetLanguage: unknown = '',
+    targetLanguage: string = '',
     overrides: TranslationOverrides | null = null
 ): Promise<TranslationDetailedResult> {
     const result: TranslationResult = await commands.appTranslationTranslate({
         text,
-        targetLanguage: String(targetLanguage || '') || null,
+        targetLanguage: targetLanguage || null,
         overrides
     });
     return {
@@ -52,7 +52,7 @@ export async function translateTextDetailed(
 
 export async function translateText(
     text: string,
-    targetLanguage: unknown = ''
+    targetLanguage: string = ''
 ): Promise<string> {
     const result = await translateTextDetailed(text, targetLanguage);
     return result.text;

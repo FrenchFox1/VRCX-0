@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     getString:
-        vi.fn<(key: string, fallback: string | null) => Promise<unknown>>(),
+        vi.fn<(key: string, fallback: string | null) => Promise<string>>(),
     setString: vi.fn<(key: string, value: string) => Promise<void>>()
 }));
 
@@ -25,7 +25,7 @@ describe('dashboardRepository persistence', () => {
 
     it('returns an empty list for missing, malformed, and invalid stored data', async () => {
         mocks.getString
-            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce('')
             .mockResolvedValueOnce('{broken')
             .mockResolvedValueOnce(JSON.stringify({ dashboards: [null, {}] }));
 

@@ -11,7 +11,11 @@ use crate::state::AppState;
 pub async fn app__mcp_server_status(
     state: State<'_, AppState>,
 ) -> Result<McpServerStatus, AppError> {
-    state.mcp_controller.status().await.map_err(AppError::from)
+    state
+        .mcp_controller()
+        .status()
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -21,7 +25,7 @@ pub async fn app__mcp_server_set_enabled(
     enabled: bool,
 ) -> Result<McpServerStatus, AppError> {
     state
-        .mcp_controller
+        .mcp_controller()
         .set_enabled(enabled)
         .await
         .map_err(AppError::from)
@@ -34,7 +38,7 @@ pub async fn app__mcp_server_set_allow_vrchat_writes(
     enabled: bool,
 ) -> Result<McpServerStatus, AppError> {
     state
-        .mcp_controller
+        .mcp_controller()
         .set_allow_vrchat_writes(enabled)
         .await
         .map_err(AppError::from)
@@ -47,7 +51,7 @@ pub async fn app__mcp_server_set_allow_lan_connections(
     enabled: bool,
 ) -> Result<McpServerStatus, AppError> {
     state
-        .mcp_controller
+        .mcp_controller()
         .set_allow_lan_connections(enabled)
         .await
         .map_err(AppError::from)
@@ -60,7 +64,7 @@ pub async fn app__mcp_server_set_port(
     port: u16,
 ) -> Result<McpServerStatus, AppError> {
     state
-        .mcp_controller
+        .mcp_controller()
         .set_port(port)
         .await
         .map_err(AppError::from)
@@ -72,7 +76,7 @@ pub async fn app__mcp_server_rotate_token(
     state: State<'_, AppState>,
 ) -> Result<McpServerStatus, AppError> {
     state
-        .mcp_controller
+        .mcp_controller()
         .rotate_token()
         .await
         .map_err(AppError::from)

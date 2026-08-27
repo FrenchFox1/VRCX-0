@@ -5,10 +5,9 @@ import {
     writeTextFile
 } from '@tauri-apps/plugin-fs';
 
-import type {
-    QuickSearchEntityType,
-    QuickSearchResult
-} from '../quickSearchCatalog';
+import { isRecord } from '@/shared/utils/record';
+
+import type { QuickSearchEntityType, QuickSearchResult } from '../quickSearch';
 
 const HISTORY_FILE_NAME = 'quick-search-history.json';
 const HISTORY_LIMIT = 5;
@@ -35,10 +34,6 @@ function emptyHistoryFile(): QuickSearchHistoryFile {
         version: HISTORY_VERSION,
         accounts: {}
     };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isEntityType(value: unknown): value is QuickSearchEntityType {

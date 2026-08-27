@@ -94,8 +94,8 @@ function hueToHex(hue: number, isDarkMode: boolean) {
     return hsvToRgb(hue / 65535, 1, 0.7);
 }
 
-export function getNameColour(userId: unknown, isDarkMode: boolean) {
-    return hueToHex(getColourFromUserID(String(userId || '')), isDarkMode);
+export function getNameColour(userId: string, isDarkMode: boolean) {
+    return hueToHex(getColourFromUserID(userId), isDarkMode);
 }
 
 export function userImage(

@@ -348,6 +348,38 @@ fn app_launcher_stop_policy_uses_only_tracked_pids() {
 }
 
 #[test]
+fn app_launcher_shell_launch_skips_reused_shell_process() {
+    assert!(shell_launch_pid_is_trackable("Tool.exe", 1_000, 1_000));
+    assert!(shell_launch_pid_is_trackable("Tool.exe", 999, 1_000));
+    assert!(!shell_launch_pid_is_trackable("Tool.exe", 900, 1_000));
+    assert!(!shell_launch_pid_is_trackable("explorer.exe", 1_000, 1_000));
+    assert!(!shell_launch_pid_is_trackable("", 1_000, 1_000));
+}
+
+#[test]
+fn app_launcher_protected_process_names_are_never_closed() {
+    assert!(is_protected_process_name("explorer.exe"));
+    assert!(is_protected_process_name("Explorer"));
+    assert!(is_protected_process_name("dwm.exe"));
+    assert!(is_protected_process_name("svchost.exe"));
+    assert!(is_protected_process_name("   "));
+    assert!(!is_protected_process_name("VRCVideoCacher.exe"));
+
+    assert!(!should_close_untracked_matching_processes(
+        Some("explorer.exe"),
+        &[],
+        &[]
+    ));
+}
+
+#[test]
+fn app_launcher_child_tracking_ignores_recycled_parent_pid() {
+    assert!(child_start_time_matches_parent(1_000, 1_000));
+    assert!(child_start_time_matches_parent(1_001, 1_000));
+    assert!(!child_start_time_matches_parent(900, 1_000));
+}
+
+#[test]
 fn app_launcher_steam_url_uses_launch_scheme() {
     assert_eq!(
         steam_launch_url("438100"),
@@ -424,7 +456,8 @@ fn app_launcher_disabling_entry_preserves_started_session_run_tracking() {
 
     assert_eq!(runs.len(), 1);
     assert_eq!(runs[0].status, AppLauncherRunStatus::Running);
-    assert_eq!(runs[0].tracked_pids, vec![pid]);
+    assert_eq!(runs[0].root_pid, Some(pid));
+    assert!(runs[0].tracked_pids.contains(&pid));
 }
 
 #[test]
@@ -441,7 +474,8 @@ fn app_launcher_editing_entry_preserves_old_run_tracking_while_starting_new_conf
 
     assert_eq!(runs.len(), 2);
     assert_eq!(runs[0].status, AppLauncherRunStatus::Running);
-    assert_eq!(runs[0].tracked_pids, vec![pid]);
+    assert_eq!(runs[0].root_pid, Some(pid));
+    assert!(runs[0].tracked_pids.contains(&pid));
     assert_eq!(runs[1].target, "C:\\Tools\\Edited.exe");
 }
 

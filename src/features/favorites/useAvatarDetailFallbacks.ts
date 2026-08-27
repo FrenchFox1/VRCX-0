@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
+import type { LoadStatus } from '@/domain/shared/types';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 
 import {
@@ -11,10 +13,10 @@ import {
 } from './remoteEntityCacheFallbacks';
 
 type AvatarDetailFallbackInput = {
-    avatarIds?: unknown;
-    kind: unknown;
+    avatarIds: string[];
+    kind: FavoriteKind;
     remoteEntityDetailsData?: DetailMap;
-    remoteEntityDetailsStatus?: unknown;
+    remoteEntityDetailsStatus: LoadStatus;
 };
 
 const fetchAvatarById = (avatarId: string) =>
@@ -42,17 +44,21 @@ export function loadAvatarDetailFallbacksById(
     return loadRemoteEntityCacheFallbacksById(avatarIds, fetchAvatarById);
 }
 
-export function useAvatarDetailFallbacks(
-    input: AvatarDetailFallbackInput
-): DetailMap {
+export function useAvatarDetailFallbacks({
+    avatarIds,
+    kind,
+    remoteEntityDetailsData,
+    remoteEntityDetailsStatus
+}: AvatarDetailFallbackInput): DetailMap {
     const fallbackAvatarIds = useMemo(
-        () => getAvatarDetailFallbackIds(input),
-        [
-            input.avatarIds,
-            input.kind,
-            input.remoteEntityDetailsData,
-            input.remoteEntityDetailsStatus
-        ]
+        () =>
+            getAvatarDetailFallbackIds({
+                avatarIds,
+                kind,
+                remoteEntityDetailsData,
+                remoteEntityDetailsStatus
+            }),
+        [avatarIds, kind, remoteEntityDetailsData, remoteEntityDetailsStatus]
     );
 
     return useRemoteEntityCacheFallbackLoader(

@@ -5,14 +5,13 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
-use vrcx_0_integrations::llm::{
-    ChatMessage, LlmClient, LlmError, LlmRequestOptions, ToolDefinition,
-};
+use vrcx_0_contracts::llm::{ChatMessage, LlmRequestOptions, ToolDefinition};
 use vrcx_0_mcp::{InProcessMcpTools, McpError, ToolCallOutcome};
 
 use crate::entities::{extract_entities, surfaced_entities, Entity};
 use crate::events::AssistantEmitter;
 use crate::playbook;
+use crate::ports::{AssistantLlmClient, AssistantLlmError};
 use crate::session::{ActiveTurn, Role, SessionStore, TurnStatus};
 
 use super::context::{build_context, latest_user_message};
@@ -104,11 +103,13 @@ broad questions.
 more tools to enumerate everyone. Mention truncation or limited coverage when it \
 matters.
 - Never repeat a tool call with the same arguments.
-- When the question names a time period, set `timeWindow`. Prefer a relative string: \
-\"today\", \"yesterday\", \"this week\", \"last week\", \"this month\", \"last month\", \
-\"7d\", \"2w\", \"3mo\", \"24h\", \"1y\". Use {from, to} in RFC3339 only for a custom \
-range. Windows resolve in UTC; weeks start Monday. Omit `timeWindow` only when the \
-user means all history (\"ever\", \"so far\").
+- When the question names a time period, set `timeWindow`. Pass a four-digit calendar \
+year such as 2026 for a whole UTC year. Otherwise prefer a relative string: \"today\", \
+\"yesterday\", \"this week\", \"last week\", \"this month\", \"last month\", \"7d\", \"2w\", \
+\"3mo\", \"24h\", \"1y\". Use {from, to} in RFC3339 only for a custom range. Windows \
+resolve in UTC; weeks start Monday. Omit `timeWindow` only when the \
+user means all history (\"ever\", \"so far\"), and follow the selected tool's \
+all-history guard.
 - If a tool returns `needsDisambiguation`, ask the user to choose. Never invent a \
 usr_ id.
 
@@ -130,7 +131,7 @@ pub(crate) struct TurnContext {
     pub tools: Arc<InProcessMcpTools>,
     pub sessions: Arc<SessionStore>,
     pub emitter: AssistantEmitter,
-    pub client: LlmClient,
+    pub client: AssistantLlmClient,
     pub tool_defs: Arc<Vec<ToolDefinition>>,
     pub session_id: String,
     pub turn_id: String,
@@ -146,7 +147,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         match playbook::classify_keyword(&user_text) {
             Some(pb) => Some(pb),
             None => tokio::select! {
-                pb = playbook::classify_llm(&ctx.client, &user_text) => pb,
+                pb = playbook::classify_llm(ctx.client.as_ref(), &user_text) => pb,
                 _ = ctx.cancel.cancelled() => return finish_cancelled(&ctx),
             },
         }
@@ -184,11 +185,14 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
         let turn = {
             let emitter = &ctx.emitter;
-            let stream = ctx
-                .client
-                .stream_chat(&working, tool_defs, &ctx.options, |delta| {
+            let stream = ctx.client.stream_chat(
+                &working,
+                tool_defs,
+                &ctx.options,
+                Box::new(|delta| {
                     emitter.delta(delta);
-                });
+                }),
+            );
             tokio::pin!(stream);
             tokio::select! {
                 result = &mut stream => result,
@@ -226,8 +230,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
                 ))))
             } else if dispatched_tools.insert(signature) {
                 let outcome = match await_tool_call(
-                    ctx.tools
-                        .call_tool(call.function.name.clone(), arguments),
+                    ctx.tools.call_tool(call.function.name.clone(), arguments),
                     &ctx.cancel,
                     TOOL_CALL_TIMEOUT,
                 )
@@ -279,11 +282,14 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         working.push(ChatMessage::user(final_answer_retry_prompt(used_tools)));
         let turn = {
             let emitter = &ctx.emitter;
-            let stream = ctx
-                .client
-                .stream_chat(&working, &[], &ctx.options, |delta| {
+            let stream = ctx.client.stream_chat(
+                &working,
+                &[],
+                &ctx.options,
+                Box::new(|delta| {
                     emitter.delta(delta);
-                });
+                }),
+            );
             tokio::pin!(stream);
             tokio::select! {
                 result = &mut stream => result,
@@ -336,8 +342,21 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
     ctx.emitter.answer(&final_answer);
 
-    ctx.sessions
-        .push_message(&ctx.session_id, Role::Assistant, final_answer.clone());
+    match ctx
+        .sessions
+        .push_message(&ctx.session_id, Role::Assistant, final_answer.clone())
+    {
+        Ok(true) => {}
+        Ok(false) => return,
+        Err(error) => {
+            tracing::warn!(%error, "assistant: failed to load session history before reply write");
+            return finish_error(
+                &ctx,
+                "persistence",
+                "Assistant history could not be loaded. Try again.",
+            );
+        }
+    }
 
     let surfaced = surfaced_entities(dedup_entities(collected), &final_answer);
     ctx.sessions
@@ -401,14 +420,14 @@ fn finish_cancelled(ctx: &TurnContext) {
     ctx.emitter.error("cancelled", "Turn cancelled.");
 }
 
-fn finish_llm_error(ctx: &TurnContext, error: &LlmError) {
+fn finish_llm_error(ctx: &TurnContext, error: &AssistantLlmError) {
     let message = llm_error_summary(error);
     finish_error(ctx, "llm", &message);
 }
 
-fn llm_error_summary(error: &LlmError) -> String {
+fn llm_error_summary(error: &AssistantLlmError) -> String {
     match error {
-        LlmError::Api { status, .. } => format!("LLM API error ({status})"),
+        AssistantLlmError::Api { status, .. } => format!("LLM API error ({status})"),
         _ => error.to_string(),
     }
 }
@@ -597,263 +616,4 @@ fn dedup_entities(entities: Vec<Entity>) -> Vec<Entity> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn tool_wait_stops_when_the_turn_is_cancelled() {
-        let cancel = CancellationToken::new();
-        cancel.cancel();
-
-        let result = await_tool_call(
-            std::future::pending::<()>(),
-            &cancel,
-            Duration::from_secs(1),
-        )
-        .await;
-
-        assert!(matches!(result, AwaitToolCall::Cancelled));
-    }
-
-    #[tokio::test]
-    async fn tool_wait_returns_when_the_budget_expires() {
-        let result = await_tool_call(
-            std::future::pending::<()>(),
-            &CancellationToken::new(),
-            Duration::from_millis(1),
-        )
-        .await;
-
-        assert!(matches!(result, AwaitToolCall::TimedOut));
-    }
-
-    #[test]
-    fn hidden_tools_are_not_dispatchable() {
-        let tool_defs = vec![crate::test_support::tool_def(
-            "get_online_friends",
-            serde_json::json!({"type": "object"}),
-        )];
-
-        assert!(tool_is_available(&tool_defs, "get_online_friends"));
-        assert!(!tool_is_available(&tool_defs, "favorite_vrchat"));
-    }
-
-    #[test]
-    fn system_prompt_keeps_core_boundaries_and_schema_field_names() {
-        for phrase in [
-            "not observed",
-            "private instances",
-            "not my own friend",
-            "caveats",
-            "needsDisambiguation",
-            "`timeWindow`",
-        ] {
-            assert!(SYSTEM_PROMPT.contains(phrase), "missing phrase: {phrase}");
-        }
-        assert!(!SYSTEM_PROMPT.contains("time_window"));
-    }
-
-    #[test]
-    fn utc_offset_acceptance_is_read_from_the_tool_schema() {
-        let tool_defs = vec![
-            crate::test_support::tool_def(
-                "get_best_time_to_play",
-                serde_json::json!({
-                    "type": "object",
-                    "properties": { "utcOffsetMinutes": { "type": "integer" } }
-                }),
-            ),
-            crate::test_support::tool_def(
-                "get_copresence_summary",
-                serde_json::json!({
-                    "type": "object",
-                    "properties": { "limit": { "type": "integer" } }
-                }),
-            ),
-        ];
-
-        assert!(tool_accepts_utc_offset(&tool_defs, "get_best_time_to_play"));
-        assert!(!tool_accepts_utc_offset(
-            &tool_defs,
-            "get_copresence_summary"
-        ));
-        assert!(!tool_accepts_utc_offset(&tool_defs, "unknown_tool"));
-    }
-
-    #[test]
-    fn empty_final_answer_falls_back_to_last_tool_summary() {
-        let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-            is_error: false,
-            text: String::new(),
-            structured: Some(serde_json::json!({
-                "summary": "Alice is your top companion.",
-                "rows": []
-            })),
-        }));
-        let mut final_answer = String::new();
-
-        assert!(apply_tool_summary_fallback(
-            &mut final_answer,
-            resolved.fallback_summary
-        ));
-        assert_eq!(final_answer, "Alice is your top companion.");
-    }
-
-    #[test]
-    fn duplicate_tool_call_summary_does_not_replace_real_fallback_summary() {
-        let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-            is_error: false,
-            text: String::new(),
-            structured: Some(serde_json::json!({
-                "summary": "Alice is your top companion.",
-                "rows": []
-            })),
-        }));
-        let duplicate = duplicate_tool_call_result("get_copresence_summary");
-        let mut last_success_tool_summary = None;
-        let mut last_error_tool_summary = None;
-        let mut final_answer = String::new();
-
-        remember_resolved_tool_summary(
-            &resolved,
-            &mut last_success_tool_summary,
-            &mut last_error_tool_summary,
-        );
-        remember_resolved_tool_summary(
-            &duplicate,
-            &mut last_success_tool_summary,
-            &mut last_error_tool_summary,
-        );
-
-        assert!(apply_tool_summary_fallback(
-            &mut final_answer,
-            last_success_tool_summary.or(last_error_tool_summary)
-        ));
-        assert_eq!(final_answer, "Alice is your top companion.");
-    }
-
-    #[test]
-    fn tool_without_top_level_summary_builds_readable_fallback_summary() {
-        let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-            is_error: false,
-            text: String::new(),
-            structured: Some(serde_json::json!({
-                "rows": [{
-                    "label": "21:00",
-                    "distinctFriends": 3,
-                    "onlineEvents": 9,
-                    "topFriends": []
-                }],
-                "caveats": []
-            })),
-        }));
-        let mut final_answer = String::new();
-
-        assert!(apply_tool_summary_fallback(
-            &mut final_answer,
-            resolved.fallback_summary
-        ));
-        assert_eq!(
-            final_answer,
-            "The tool returned 1 row. Top result: 21:00 (3 friends, 9 online events)."
-        );
-    }
-
-    #[test]
-    fn raw_tool_fallback_is_not_accepted_as_supported_facts() {
-        let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-            is_error: false,
-            text: String::new(),
-            structured: Some(serde_json::json!({
-                "nodes": [{ "displayName": "Alice", "connectionDegree": 37 }],
-                "edges": []
-            })),
-        }));
-
-        assert!(resolved.fallback_summary.is_some());
-        assert!(resolved.supported_summary.is_none());
-    }
-
-    #[test]
-    fn empty_final_answer_can_fall_back_to_tool_error_summary() {
-        let resolved =
-            resolve_tool_outcome(Err(vrcx_0_mcp::McpError::Custom("db unavailable".into())));
-        let mut final_answer = String::new();
-
-        assert!(apply_tool_summary_fallback(
-            &mut final_answer,
-            resolved.fallback_summary
-        ));
-        assert_eq!(final_answer, "tool error: db unavailable");
-    }
-
-    #[test]
-    fn llm_api_error_summary_omits_provider_response_body() {
-        let error = LlmError::Api {
-            status: 429,
-            message: "rate limited for org_TESTPROVIDER123456789 req_TESTREQUEST123 model qwen"
-                .into(),
-        };
-
-        assert_eq!(llm_error_summary(&error), "LLM API error (429)");
-    }
-
-    #[test]
-    fn empty_final_answer_after_tools_uses_generic_fallback_when_summary_is_missing() {
-        let mut final_answer = String::new();
-
-        assert!(apply_empty_tool_answer_fallback(&mut final_answer, true));
-        assert_eq!(final_answer, EMPTY_TOOL_FALLBACK_ANSWER);
-    }
-
-    #[test]
-    fn empty_final_answer_without_tools_still_allows_no_answer_error() {
-        let mut final_answer = String::new();
-
-        assert!(!apply_empty_tool_answer_fallback(&mut final_answer, false));
-        assert!(final_answer.is_empty());
-    }
-
-    #[test]
-    fn empty_answer_retry_prompt_matches_available_context() {
-        assert_eq!(final_answer_retry_prompt(true), FINAL_ANSWER_PROMPT);
-        assert_eq!(final_answer_retry_prompt(false), DIRECT_ANSWER_RETRY_PROMPT);
-        assert!(!DIRECT_ANSWER_RETRY_PROMPT.contains("tool results"));
-    }
-
-    #[test]
-    fn unfinished_placeholders_are_rejected_without_supported_tool_facts() {
-        let mut answer = "| 1 | [Friend Name 1] | [Time Minutes] |".to_string();
-
-        assert_eq!(
-            guard_final_answer(&mut answer, None),
-            FinalAnswerGuard::Rejected("placeholder")
-        );
-        assert!(answer.is_empty());
-    }
-
-    #[test]
-    fn unfinished_answer_is_replaced_by_supported_tool_summary() {
-        let mut answer = "请稍等，我正在为您查询。".to_string();
-
-        assert_eq!(
-            guard_final_answer(&mut answer, Some("Alice has the most mutual connections.")),
-            FinalAnswerGuard::Corrected("deferred")
-        );
-        assert_eq!(answer, "Alice has the most mutual connections.");
-    }
-
-    #[test]
-    fn completed_ranked_answer_passes_the_guard() {
-        let mut answer = "| Rank | Friend | Connections |\n| 1 | Alice | 37 |".to_string();
-
-        assert_eq!(
-            guard_final_answer(&mut answer, None),
-            FinalAnswerGuard::Valid
-        );
-        assert_eq!(
-            answer,
-            "| Rank | Friend | Connections |\n| 1 | Alice | 37 |"
-        );
-    }
-}
+mod tests;

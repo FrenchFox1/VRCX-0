@@ -173,10 +173,9 @@ export function useUserDialogModerationState({
                 if (!active) {
                     return;
                 }
-                const moderationType = Number(value);
                 setAvatarOverrideState({
-                    hideAvatar: moderationType === 4,
-                    showAvatar: moderationType === 5
+                    hideAvatar: value === 4,
+                    showAvatar: value === 5
                 });
             })
             .catch(() => {

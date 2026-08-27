@@ -3,12 +3,13 @@ import {
     type LocalFavoriteGroupInput as IpcLocalFavoriteGroupInput,
     type LocalFavoriteGroupRenameInput as IpcLocalFavoriteGroupRenameInput,
     type LocalFavoriteInput as IpcLocalFavoriteInput,
+    type FavoriteEntityKind,
     type FavoriteRow
 } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';
 
-export type LocalFavoriteKind = 'friend' | 'avatar' | 'world';
+export type LocalFavoriteKind = FavoriteEntityKind;
 
 export interface WorldFavoriteRow {
     created_at: string;
@@ -29,18 +30,18 @@ export interface FriendFavoriteRow {
 }
 
 interface LocalFavoriteInput {
-    kind?: LocalFavoriteKind;
-    entityId?: unknown;
-    groupName?: unknown;
+    kind: LocalFavoriteKind;
+    entityId?: string;
+    groupName?: string;
 }
 
 interface LocalFavoriteGroupInput {
-    kind?: LocalFavoriteKind;
-    groupName?: unknown;
+    kind: LocalFavoriteKind;
+    groupName?: string;
 }
 
 interface RenameLocalFavoriteGroupInput extends LocalFavoriteGroupInput {
-    newGroupName?: unknown;
+    newGroupName?: string;
 }
 
 const LOCAL_FAVORITE_GROUP_CONFIG_KEYS = Object.freeze({
@@ -49,14 +50,8 @@ const LOCAL_FAVORITE_GROUP_CONFIG_KEYS = Object.freeze({
     world: 'localFavoriteWorldGroups'
 } satisfies Record<LocalFavoriteKind, string>);
 
-function isLocalFavoriteKind(kind: unknown): kind is LocalFavoriteKind {
-    return kind === 'friend' || kind === 'avatar' || kind === 'world';
-}
-
-function getLocalFavoriteGroupConfigKey(kind: unknown): string | undefined {
-    return isLocalFavoriteKind(kind)
-        ? LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind]
-        : undefined;
+function getLocalFavoriteGroupConfigKey(kind: LocalFavoriteKind): string {
+    return LOCAL_FAVORITE_GROUP_CONFIG_KEYS[kind];
 }
 
 function applyLocalFavoriteGroupWrite(write: {
@@ -93,16 +88,12 @@ function normalizeFriendFavoriteRow(row: FavoriteRow): FriendFavoriteRow {
     };
 }
 
-function normalizeEntityId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeEntityId(value?: string | null) {
+    return value?.trim() ?? '';
 }
 
-function normalizeGroupName(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeGroupName(value?: string | null) {
+    return value?.trim() ?? '';
 }
 
 function normalizeGroupList(values: unknown) {
@@ -116,14 +107,10 @@ function normalizeGroupList(values: unknown) {
 }
 
 async function getExplicitLocalFavoriteGroups(
-    kind: unknown,
-    currentUserId?: unknown
+    kind: LocalFavoriteKind,
+    currentUserId?: string | null
 ) {
     const key = getLocalFavoriteGroupConfigKey(kind);
-    if (!key) {
-        return [];
-    }
-
     if (kind !== 'friend') {
         return normalizeGroupList(await configRepository.getArray(key, []));
     }
@@ -145,17 +132,12 @@ async function createLocalFavoriteGroup({
     kind,
     groupName
 }: LocalFavoriteGroupInput) {
-    const key = getLocalFavoriteGroupConfigKey(kind);
     const normalizedGroupName = normalizeGroupName(groupName);
-    if (!key || !normalizedGroupName) {
+    if (!normalizedGroupName) {
         throw new Error(
             'LocalFavoritesRepository.createLocalFavoriteGroup requires kind and groupName.'
         );
     }
-    if (!isLocalFavoriteKind(kind)) {
-        throw new Error('Local favorite kind is invalid.');
-    }
-
     const input = {
         kind,
         groupName: normalizedGroupName
@@ -189,11 +171,10 @@ async function addLocalFavorite({
     entityId,
     groupName
 }: LocalFavoriteInput) {
-    const validKind = isLocalFavoriteKind(kind);
     const normalizedEntityId = normalizeEntityId(entityId);
     const normalizedGroupName = normalizeGroupName(groupName);
 
-    if (!validKind || !normalizedEntityId || !normalizedGroupName) {
+    if (!normalizedEntityId || !normalizedGroupName) {
         throw new Error(
             'LocalFavoritesRepository.addLocalFavorite requires kind, entityId, and groupName.'
         );
@@ -208,7 +189,7 @@ async function addLocalFavorite({
     return commands.appLocalFavoriteAdd(input);
 }
 
-function addAvatarToFavorites(avatarId: unknown, groupName: unknown) {
+function addAvatarToFavorites(avatarId: string, groupName: string) {
     return addLocalFavorite({
         kind: 'avatar',
         entityId: avatarId,
@@ -216,7 +197,7 @@ function addAvatarToFavorites(avatarId: unknown, groupName: unknown) {
     });
 }
 
-function addWorldToFavorites(worldId: unknown, groupName: unknown) {
+function addWorldToFavorites(worldId: string, groupName: string) {
     return addLocalFavorite({
         kind: 'world',
         entityId: worldId,
@@ -224,7 +205,7 @@ function addWorldToFavorites(worldId: unknown, groupName: unknown) {
     });
 }
 
-function addFriendToLocalFavorites(userId: unknown, groupName: unknown) {
+function addFriendToLocalFavorites(userId: string, groupName: string) {
     return addLocalFavorite({
         kind: 'friend',
         entityId: userId,
@@ -237,11 +218,10 @@ async function removeLocalFavorite({
     entityId,
     groupName
 }: LocalFavoriteInput) {
-    const validKind = isLocalFavoriteKind(kind);
     const normalizedEntityId = normalizeEntityId(entityId);
-    const normalizedGroupName = normalizeEntityId(groupName);
+    const normalizedGroupName = normalizeGroupName(groupName);
 
-    if (!validKind || !normalizedEntityId || !normalizedGroupName) {
+    if (!normalizedEntityId || !normalizedGroupName) {
         throw new Error(
             'LocalFavoritesRepository.removeLocalFavorite requires kind, entityId, and groupName.'
         );
@@ -261,11 +241,10 @@ async function renameLocalFavoriteGroup({
     groupName,
     newGroupName
 }: RenameLocalFavoriteGroupInput) {
-    const validKind = isLocalFavoriteKind(kind);
     const normalizedGroupName = normalizeGroupName(groupName);
     const normalizedNewGroupName = normalizeGroupName(newGroupName);
 
-    if (!validKind || !normalizedGroupName || !normalizedNewGroupName) {
+    if (!normalizedGroupName || !normalizedNewGroupName) {
         throw new Error(
             'LocalFavoritesRepository.renameLocalFavoriteGroup requires kind, groupName, and newGroupName.'
         );
@@ -286,10 +265,9 @@ async function deleteLocalFavoriteGroup({
     kind,
     groupName
 }: LocalFavoriteGroupInput) {
-    const validKind = isLocalFavoriteKind(kind);
     const normalizedGroupName = normalizeGroupName(groupName);
 
-    if (!validKind || !normalizedGroupName) {
+    if (!normalizedGroupName) {
         throw new Error(
             'LocalFavoritesRepository.deleteLocalFavoriteGroup requires kind and groupName.'
         );

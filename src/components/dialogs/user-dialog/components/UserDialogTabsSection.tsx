@@ -14,6 +14,7 @@ import {
     UserDialogMutualTab,
     UserDialogWorldsTab
 } from './UserDialogDataTabs';
+import { UserDialogFeedTab } from './UserDialogFeedTab';
 import { UserDialogGroupsTab } from './UserDialogGroupsTab';
 import {
     UserDialogInfoTab,
@@ -32,7 +33,6 @@ type FavoriteWorldsTabProps = ComponentProps<
 >;
 type AvatarsTabProps = ComponentProps<typeof UserDialogAvatarsTab>;
 type HistoryTabProps = ComponentProps<typeof UserDialogInstanceHistoryTab>;
-type JsonTabProps = ComponentProps<typeof UserDialogJsonTab>;
 
 type UserDialogTabsSectionProps = {
     tabsModel: {
@@ -46,7 +46,7 @@ type UserDialogTabsSectionProps = {
             UserDialogBioSectionProps &
             Omit<
                 UserDialogActivitySummarySectionProps,
-                'onOpenInstanceHistory' | 'previousInstances'
+                'onOpenFeed' | 'onOpenInstanceHistory' | 'previousInstances'
             >;
         presence: Omit<
             UserDialogPresenceSectionProps['presence'],
@@ -102,7 +102,6 @@ type UserDialogTabsSectionProps = {
             | 'previousInstancesError'
             | 'previousInstancesStatus'
         >;
-        json: Pick<JsonTabProps, 'isFavorite' | 'isFriend' | 'moderationState'>;
     };
     tabsCommands: Pick<MutualTabProps, 'setMutualSort' | 'setSearch'> &
         Pick<GroupsTabProps, 'setGroupSort'> &
@@ -113,6 +112,7 @@ type UserDialogTabsSectionProps = {
         > & {
             changeTab: (value: string) => void;
             onEditMemo: UserDialogNotesSectionProps['onEditMemo'];
+            onOpenFeed: () => void;
             onOpenInstanceHistory: () => void;
             onPreviousInstancesChange: HistoryTabProps['onPreviousInstancesChange'];
             onRefreshLocation: UserDialogPresenceSectionProps['actions']['onRefreshLocation'];
@@ -134,8 +134,7 @@ export function UserDialogTabsSection({
         worlds,
         favoriteWorlds,
         avatars,
-        history,
-        json
+        history
     } = model;
     const { activeTab, tabCounts = {}, tabs = [] } = root;
     const {
@@ -144,6 +143,7 @@ export function UserDialogTabsSection({
         hideUserMemos,
         hideUserNotes,
         isCurrentUser,
+        isFriend,
         lastSeen,
         memo,
         friendedAt,
@@ -187,7 +187,6 @@ export function UserDialogTabsSection({
         previousInstancesError = '',
         previousInstancesStatus = 'idle'
     } = history;
-    const { isFavorite, isFriend, moderationState } = json;
     const {
         changeAvatarReleaseStatus,
         changeAvatarSort,
@@ -195,6 +194,7 @@ export function UserDialogTabsSection({
         changeWorldOrder,
         changeWorldSort,
         onEditMemo,
+        onOpenFeed,
         onOpenInstanceHistory,
         onPreviousInstancesChange,
         onRefreshLocation,
@@ -286,7 +286,9 @@ export function UserDialogTabsSection({
     const activitySummarySection: UserDialogActivitySummarySectionProps = {
         friendedAt,
         isCurrentUser,
+        isFriend,
         lastSeen,
+        onOpenFeed,
         onOpenInstanceHistory,
         presenceActivityAt,
         profile,
@@ -380,18 +382,16 @@ export function UserDialogTabsSection({
                 profile={profile}
                 onPreviousInstancesChange={onPreviousInstancesChange}
             />
+            <UserDialogFeedTab
+                active={activeTab === 'feed'}
+                currentUserId={presence.currentUserId || null}
+                profile={profile}
+            />
             <UserDialogActivityTab
                 profile={profile}
-                isCurrentUser={isCurrentUser}
                 active={activeTab === 'activity'}
             />
-            <UserDialogJsonTab
-                profile={profile}
-                memo={memo}
-                moderationState={moderationState}
-                isFriend={isFriend}
-                isFavorite={isFavorite}
-            />
+            <UserDialogJsonTab profile={profile} />
         </EntityDialogTabs>
     );
 }

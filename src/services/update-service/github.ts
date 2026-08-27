@@ -1,9 +1,10 @@
 import externalApiRepository from '@/repositories/externalApiRepository';
 import { isPreviewBuildLabel } from '@/shared/buildLabel';
 import { branches } from '@/shared/constants/settings';
+import type { ReleaseBranchKey } from '@/shared/constants/settings';
 
 import { normalizeReleaseList, sanitizeBranch } from './release';
-import type { NormalizedRelease, UpdateOptions } from './types';
+import type { NormalizedRelease } from './types';
 
 type PreviewStableReleaseUpdateMode = {
     enabled: boolean;
@@ -16,8 +17,7 @@ export function getPreviewStableReleaseUpdateMode(): PreviewStableReleaseUpdateM
 }
 
 export async function fetchBranchReleases(
-    branch: unknown,
-    options: UpdateOptions = {}
+    branch: ReleaseBranchKey
 ): Promise<NormalizedRelease[]> {
     const normalizedBranch = sanitizeBranch(branch);
     const response = await externalApiRepository.fetchGithubReleases({
@@ -38,13 +38,12 @@ export async function fetchBranchReleases(
         throw new Error(data.message);
     }
 
-    return normalizeReleaseList(normalizedBranch, data, options);
+    return normalizeReleaseList(normalizedBranch, data);
 }
 
 export async function fetchLatestBranchRelease(
-    branch: unknown,
-    options: UpdateOptions = {}
+    branch: ReleaseBranchKey
 ): Promise<NormalizedRelease | null> {
-    const releases = await fetchBranchReleases(branch, options);
+    const releases = await fetchBranchReleases(branch);
     return releases[0] || null;
 }

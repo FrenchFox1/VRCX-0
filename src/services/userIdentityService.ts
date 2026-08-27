@@ -6,19 +6,19 @@ import {
     normalizeUserId,
     recordUserProfile
 } from '@/services/userFactAccessService';
+import { isRecord } from '@/shared/utils/record';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useUserFactsStore } from '@/state/userFactsStore';
 
 type UserIdentityRecord = Record<string, unknown> & {
-    id?: unknown;
-    userId?: unknown;
-    displayName?: unknown;
-    username?: unknown;
-    name?: unknown;
-    isFriend?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
+    id?: string;
+    userId?: string;
+    displayName?: string;
+    username?: string;
+    name?: string;
+    isFriend?: boolean;
+    state?: string;
 };
 type ResolvedUserSource =
     | 'currentUser'
@@ -28,7 +28,7 @@ type ResolvedUserSource =
     | 'search';
 type UserIdentityRepositories = {
     gameLogRepository?: {
-        getUserIdFromDisplayName?: (displayName: string) => Promise<unknown>;
+        getUserIdFromDisplayName?: (displayName: string) => Promise<string>;
     };
     vrchatSearchRepository?: {
         getUsers?: (
@@ -39,9 +39,7 @@ type UserIdentityRepositories = {
 };
 
 function asUserRecord(value: unknown): UserIdentityRecord | null {
-    return value && typeof value === 'object'
-        ? (value as UserIdentityRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function text(value: unknown): string {
@@ -55,7 +53,7 @@ function displayNameOf(user: unknown): string {
     return text(record?.displayName || record?.username || record?.name);
 }
 
-function titleForUser(user: unknown, fallback: unknown = ''): string {
+function titleForUser(user: unknown, fallback: string = ''): string {
     const record = asUserRecord(user);
     return (
         displayNameOf(user) ||
@@ -69,7 +67,7 @@ function displayNameMatches(user: unknown, targetDisplayName: string): boolean {
     return Boolean(name && name === targetDisplayName);
 }
 
-function resolvedEndpoint(endpoint: unknown): string {
+function resolvedEndpoint(endpoint: string): string {
     return normalizeEndpoint(
         endpoint || useRuntimeStore.getState().auth.currentUserEndpoint
     );
@@ -78,7 +76,7 @@ function resolvedEndpoint(endpoint: unknown): string {
 function resolvedUser(
     user: unknown,
     source: ResolvedUserSource,
-    fallbackTitle: unknown = ''
+    fallbackTitle: string = ''
 ) {
     const record = asUserRecord(user);
     const userId = normalizeUserId(record?.id || record?.userId);
@@ -95,7 +93,7 @@ function resolvedUser(
 }
 
 function findKnownUserByDisplayName(
-    displayName: unknown,
+    displayName: string,
     { endpoint = '' }: { endpoint?: string } = {}
 ) {
     const targetDisplayName = text(displayName).toLowerCase();
@@ -117,7 +115,7 @@ function findKnownUserByDisplayName(
 }
 
 function findFriendByDisplayName(
-    displayName: unknown
+    displayName: string
 ): UserIdentityRecord | null {
     const targetDisplayName = text(displayName).toLowerCase();
     if (!targetDisplayName) {
@@ -125,15 +123,15 @@ function findFriendByDisplayName(
     }
 
     const { friendsById } = useFriendRosterStore.getState();
-    return (
-        (Object.values(friendsById || {}).find((friend) =>
+    return asUserRecord(
+        Object.values(friendsById || {}).find((friend) =>
             displayNameMatches(friend, targetDisplayName)
-        ) as UserIdentityRecord | undefined) || null
+        )
     );
 }
 
 async function resolveUserByDisplayName(
-    displayName: unknown,
+    displayName: string,
     {
         endpoint = '',
         repositories = {},
@@ -175,8 +173,7 @@ async function resolveUserByDisplayName(
         recordUserProfile(friend, {
             endpoint: normalizedEndpoint,
             source: 'friend',
-            isFriend: true,
-            stateBucket: friend.stateBucket || friend.state
+            isFriend: true
         });
         return resolvedUser(friend, 'friend', normalizedDisplayName);
     }

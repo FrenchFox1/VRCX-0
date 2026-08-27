@@ -3,12 +3,11 @@ import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { LocationWorld } from '@/components/LocationWorld';
-import type {
-    EntityRecord,
-    GroupDialogInstanceRow
-} from '@/domain/entities/profileEntities';
+import type { GroupDialogInstanceRow } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import {
     Empty,
     EmptyDescription,
@@ -19,10 +18,6 @@ import {
 
 import { InstanceUserTiles } from '../world-dialog/WorldDialogViewParts';
 import { firstArray, firstText } from './groupDialogUtils';
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object');
-}
 
 function nestedRecord(value: unknown): EntityRecord {
     return isRecord(value) ? value : {};
@@ -116,18 +111,30 @@ function getInstanceUsers(instance: GroupDialogInstanceRow) {
         Array.isArray(ref.players) ? ref.players : undefined
     );
     if (users.length) {
-        return users;
+        return users.filter(
+            (user): user is EntityRecord | string =>
+                typeof user === 'string' || isRecord(user)
+        );
     }
     const usersById = instance.usersById || ref.usersById;
     return usersById && typeof usersById === 'object'
-        ? Object.values(usersById)
+        ? Object.values(usersById).filter(
+              (user): user is EntityRecord | string =>
+                  typeof user === 'string' || isRecord(user)
+          )
         : [];
 }
 
-function firstKnownValue(...values: unknown[]) {
+function firstKnownValue(...values: unknown[]): number | undefined {
     for (const value of values) {
-        if (value !== null && typeof value !== 'undefined' && value !== '') {
-            return value;
+        const numeric = Number(value);
+        if (
+            value !== null &&
+            typeof value !== 'undefined' &&
+            value !== '' &&
+            Number.isFinite(numeric)
+        ) {
+            return numeric;
         }
     }
     return undefined;
@@ -140,7 +147,7 @@ function isUserId(value: unknown) {
 function normalizeGroupInstance(
     instance: GroupDialogInstanceRow,
     location: string,
-    users: unknown[]
+    users: Array<EntityRecord | string>
 ) {
     const ownerId = getInstanceOwnerId(instance);
     const ownerName = isUserId(ownerId) ? getInstanceOwnerName(instance) : '';
@@ -148,7 +155,7 @@ function normalizeGroupInstance(
     const title = getInstanceTitle(instance);
 
     return {
-        ...(instance.ref || {}),
+        ...instance.ref,
         ...instance,
         location,
         tag: location,
@@ -168,7 +175,7 @@ function normalizeGroupInstance(
                       displayName: ownerName || ownerId
                   }
                 : null,
-        worldName: title || instance.worldName || instance.world?.name || ''
+        worldName: firstText(title, instance.worldName, instance.world?.name)
     };
 }
 

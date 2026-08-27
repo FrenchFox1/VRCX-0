@@ -134,7 +134,6 @@ export function AppMenuBar({
     );
     const hostCapabilities = useRuntimeStore((state) => state.hostCapabilities);
     const currentZoom = normalizeZoomLevel(zoomLevel);
-    // oxlint-disable-next-line no-undef
     const appVersion = formatReleaseDisplayVersion(VERSION || '') || '-';
     const buildBadgeLabel = getBuildBadgeLabel(t);
     const developerToolsAvailable = isDeveloperToolsBuild();
@@ -144,7 +143,7 @@ export function AppMenuBar({
                 .map((category) => ({
                     ...category,
                     tools: getToolsByCategory(category.key).filter((tool) =>
-                        isToolCapabilityAvailable(tool)
+                        isToolCapabilityAvailable(tool, hostCapabilities)
                     )
                 }))
                 .filter((category) => category.tools.length > 0),

@@ -1,7 +1,7 @@
 const emojiAnimationStyleUrl =
     'https://assets.vrchat.com/www/images/emoji-previews/';
 
-const emojiAnimationStyleList: Record<string, string> = {
+const emojiAnimationStyleList = {
     Aura: 'Preview_B2-Aura.gif',
     Bats: 'Preview_B2-Fall_Bats.gif',
     Bees: 'Preview_B2-Bees.gif',
@@ -29,6 +29,16 @@ const emojiAnimationStyleList: Record<string, string> = {
     Splash: 'Preview_B2-SummerSplash.gif',
     Stop: 'Preview_B2-Stop.gif',
     ZZZ: 'Preview_B2-ZZZ.gif'
-};
+} as const;
 
-export { emojiAnimationStyleUrl, emojiAnimationStyleList };
+export type EmojiAnimationStyleName = keyof typeof emojiAnimationStyleList;
+
+const emojiAnimationStyleNames = Object.keys(
+    emojiAnimationStyleList
+) as EmojiAnimationStyleName[];
+
+export {
+    emojiAnimationStyleList,
+    emojiAnimationStyleNames,
+    emojiAnimationStyleUrl
+};

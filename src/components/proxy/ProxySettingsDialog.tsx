@@ -20,7 +20,7 @@ import { ProxySettingsEditor } from './ProxySettingsEditor';
 
 type ProxySettingsDialogProps = {
     open: boolean;
-    onOpenChange: (open: boolean) => unknown;
+    onOpenChange: (open: boolean) => void;
 };
 
 export function ProxySettingsDialog({

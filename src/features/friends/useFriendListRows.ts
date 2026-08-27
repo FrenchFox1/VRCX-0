@@ -5,6 +5,7 @@ import { useKnownUserFacts } from '@/lib/useKnownUser';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import mutualGraphPersistenceRepository from '@/repositories/mutualGraphPersistenceRepository';
+import { isRecord } from '@/shared/utils/record';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -16,9 +17,6 @@ import {
     filterFriendListRows,
     type FriendListRow,
     type FriendListStatsPatch,
-    type FriendListUserStatsRow,
-    type FriendMemoRow,
-    type FriendNoteRow,
     normalizeFriendListId as normalizeId
 } from './friendListRows';
 
@@ -26,22 +24,6 @@ const STATS_HYDRATION_DEBOUNCE_MS = 400;
 
 function isPresent<T>(value: T | null | undefined): value is T {
     return value != null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
-function normalizeStatsRows(value: unknown): FriendListUserStatsRow[] {
-    return Array.isArray(value) ? value.filter(isRecord) : [];
-}
-
-function normalizeMemoRows(value: unknown): FriendMemoRow[] {
-    return Array.isArray(value) ? value.filter(isRecord) : [];
-}
-
-function normalizeNoteRows(value: unknown): FriendNoteRow[] {
-    return Array.isArray(value) ? value.filter(isRecord) : [];
 }
 
 function readMutualOptedOut(value: unknown): boolean {
@@ -132,6 +114,10 @@ export function useFriendListRows({
                 .join('\u0001'),
         [rosterRows]
     );
+    const rosterRowsRef = useRef(rosterRows);
+    useEffect(() => {
+        rosterRowsRef.current = rosterRows;
+    }, [rosterRows]);
     const filteredRows = useMemo(() => {
         return filterFriendListRows({
             rosterRows,
@@ -163,17 +149,17 @@ export function useFriendListRows({
                     return;
                 }
                 const nextMemos = new Map<string, string>();
-                for (const row of normalizeMemoRows(memoRows)) {
-                    const userId = normalizeId(row?.userId);
+                for (const row of memoRows) {
+                    const userId = normalizeId(row.userId);
                     if (userId) {
-                        nextMemos.set(userId, String(row?.memo || ''));
+                        nextMemos.set(userId, row.memo);
                     }
                 }
                 const nextNotes = new Map<string, string>();
-                for (const row of normalizeNoteRows(noteRows)) {
-                    const userId = normalizeId(row?.userId);
+                for (const row of noteRows) {
+                    const userId = normalizeId(row.userId);
                     if (userId) {
-                        nextNotes.set(userId, String(row?.note || ''));
+                        nextNotes.set(userId, row.note);
                     }
                 }
                 setUserMemoById(nextMemos);
@@ -186,17 +172,18 @@ export function useFriendListRows({
     }, [currentUserId]);
 
     useEffect(() => {
-        if (!rosterRows.length) {
+        if (!rosterStatsKey) {
             return undefined;
         }
         let active = true;
         const requestId = statsHydrationRequestRef.current + 1;
         statsHydrationRequestRef.current = requestId;
         const timer = setTimeout(() => {
-            const userIds = rosterRows
+            const requestedRows = rosterRowsRef.current;
+            const userIds = requestedRows
                 .map((friend) => normalizeId(friend?.id))
                 .filter(Boolean);
-            const displayNames = rosterRows
+            const displayNames = requestedRows
                 .map((friend) => String(friend?.displayName || '').trim())
                 .filter(Boolean);
             const mutualSnapshotPromise = currentUserId
@@ -206,6 +193,14 @@ export function useFriendListRows({
                           const countMap = new Map<string, number>();
                           for (const [friendId, mutualIds] of snapshot) {
                               countMap.set(friendId, mutualIds.length);
+                          }
+                          for (const [friendId, metadata] of meta) {
+                              if (Number.isFinite(metadata.totalCount)) {
+                                  countMap.set(
+                                      friendId,
+                                      Number(metadata.totalCount)
+                                  );
+                              }
                           }
                           return [countMap, meta];
                       })
@@ -224,13 +219,13 @@ export function useFriendListRows({
                     ) {
                         return;
                     }
-                    const normalizedStatsRows = normalizeStatsRows(statsRows);
+                    const currentRosterRows = rosterRowsRef.current;
                     const statsById = buildUserStatsById(
-                        normalizedStatsRows,
-                        rosterRows
+                        statsRows,
+                        currentRosterRows
                     );
                     const patches: FriendListStatsPatch[] = [];
-                    for (const friend of rosterRows) {
+                    for (const friend of currentRosterRows) {
                         const friendId = normalizeId(friend?.id);
                         if (!friendId) {
                             continue;
@@ -267,10 +262,7 @@ export function useFriendListRows({
                             patches.push({
                                 userId: friendId,
                                 patch,
-                                stateBucket:
-                                    friend.stateBucket ||
-                                    friend.state ||
-                                    'offline'
+                                stateBucketAuthority: 'preserve'
                             });
                         }
                     }

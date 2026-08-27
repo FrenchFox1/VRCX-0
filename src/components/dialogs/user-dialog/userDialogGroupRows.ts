@@ -1,6 +1,7 @@
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { compareByMemberCount, compareByName } from '@/shared/utils/compare';
 
+import type { UserDialogGroupSort } from './userDialogListOptions';
 import { firstArray, normalizedText } from './userDialogRows';
 
 type UserGroupRow = Record<string, unknown> & {
@@ -9,8 +10,6 @@ type UserGroupRow = Record<string, unknown> & {
     memberCount?: number;
     name?: string;
 };
-
-type UserGroupSort = 'alphabetical' | 'members' | 'inGame';
 
 function record(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object'
@@ -65,21 +64,18 @@ function compareGroupRowsByInGameOrder(groupOrder: string[] = []) {
 
 export function sortUserGroupRows(
     rows: UserGroupRow[],
-    sortBy: UserGroupSort | string,
+    sortBy: UserDialogGroupSort,
     groupOrder: string[] = []
 ) {
     const comparers: Record<
-        UserGroupSort,
+        UserDialogGroupSort,
         (left: UserGroupRow, right: UserGroupRow) => number
     > = {
         alphabetical: compareByName,
         members: compareByMemberCount,
         inGame: compareGroupRowsByInGameOrder(groupOrder)
     };
-    const comparer =
-        sortBy === 'members' || sortBy === 'inGame'
-            ? comparers[sortBy]
-            : comparers.alphabetical;
+    const comparer = comparers[sortBy];
     return [...rows].sort((left, right) => {
         const result = comparer(left, right);
         return Number.isFinite(result) && result !== 0
@@ -240,7 +236,7 @@ function roleNameContainsOwner(value: unknown): boolean {
     return normalizedText(value).toLowerCase().includes('owner');
 }
 
-function isOwnedGroupForUser(source: unknown, userId: unknown) {
+function isOwnedGroupForUser(source: unknown, userId: string | undefined) {
     const group = record(source);
     const membership = record(group.membership);
     const member = record(group.member);
@@ -347,7 +343,7 @@ export function normalizeUserGroupMembershipRows(groups: unknown) {
 
 export function splitUserGroups(
     groups: UserGroupRow[],
-    userId: unknown,
+    userId: string | undefined,
     isCurrentUser: boolean
 ) {
     const ownGroups: UserGroupRow[] = [];

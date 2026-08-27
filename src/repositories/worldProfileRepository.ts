@@ -1,4 +1,4 @@
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -8,11 +8,16 @@ import {
 import {
     commands,
     type HttpApiExecuteResponse,
+    type QueryOrder,
+    type ReleaseStatusFilter,
     type VrchatWorldIdInput as IpcVrchatWorldIdInput,
     type VrchatWorldListByUserInput,
     type VrchatWorldPersistentDataDeleteInput,
-    type VrchatWorldSaveInput
+    type VrchatWorldSaveInput,
+    type WorldUpdateRequest,
+    type WorldSearchSort
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { collectPages } from './pagination';
@@ -23,16 +28,16 @@ interface WorldRepositoryOptions {
 }
 
 interface WorldsByUserOptions extends WorldRepositoryOptions {
-    userId?: unknown;
+    userId?: string;
     n?: number;
     offset?: number;
-    sort?: string;
-    order?: string;
-    releaseStatus?: string;
+    sort?: WorldSearchSort;
+    order?: QueryOrder;
+    releaseStatus?: ReleaseStatusFilter;
 }
 
 interface WorldIdInput extends WorldRepositoryOptions {
-    worldId?: unknown;
+    worldId?: string;
 }
 
 interface WorldProfileInput extends WorldIdInput {
@@ -41,15 +46,11 @@ interface WorldProfileInput extends WorldIdInput {
 }
 
 interface WorldSaveInput extends WorldIdInput {
-    params?: Record<string, unknown>;
+    params: WorldUpdateRequest;
 }
 
 interface WorldPersistentDataInput extends WorldIdInput {
-    userId?: unknown;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
+    userId?: string;
 }
 
 function unwrapVrchatWorldResponse<TJson = unknown>(
@@ -223,7 +224,7 @@ async function getWorldProfile({
     dialog = false,
     full = false
 }: WorldProfileInput): Promise<WorldProfileRecord> {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.getWorldProfile requires a world id.'
@@ -241,15 +242,6 @@ async function getWorldProfile({
     return normalize(response.json);
 }
 
-async function searchWorlds(query: unknown): Promise<WorldProfileRecord[]> {
-    const normalizedQuery = String(query ?? '').trim();
-    if (!normalizedQuery) {
-        return [];
-    }
-    const worlds = await commands.appWorldSearch(normalizedQuery);
-    return worlds.map((world) => normalize(world));
-}
-
 async function getWorldsByUser({
     userId,
     n = 50,
@@ -259,14 +251,14 @@ async function getWorldsByUser({
     releaseStatus = 'all',
     force = false
 }: WorldsByUserOptions = {}): Promise<WorldProfileRecord[]> {
-    const normalizedUserId = normalizeEntityId(userId);
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'WorldProfileRepository.getWorldsByUser requires a user id.'
         );
     }
 
-    const params: Record<string, unknown> = {
+    const params: VrchatWorldListByUserInput = {
         n,
         offset,
         sort,
@@ -297,8 +289,8 @@ async function getWorldsByUser({
     return rows.map((world) => normalize(world));
 }
 
-async function saveWorld({ worldId, params = {} }: WorldSaveInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+async function saveWorld({ worldId, params }: WorldSaveInput) {
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.saveWorld requires a world id.'
@@ -317,7 +309,7 @@ async function saveWorld({ worldId, params = {} }: WorldSaveInput) {
 }
 
 async function deleteWorld({ worldId }: WorldIdInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.deleteWorld requires a world id.'
@@ -331,7 +323,7 @@ async function deleteWorld({ worldId }: WorldIdInput) {
 }
 
 async function publishWorld({ worldId }: WorldIdInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.publishWorld requires a world id.'
@@ -347,7 +339,7 @@ async function publishWorld({ worldId }: WorldIdInput) {
 }
 
 async function unpublishWorld({ worldId }: WorldIdInput) {
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.unpublishWorld requires a world id.'
@@ -366,8 +358,8 @@ async function deleteWorldPersistentData({
     userId,
     worldId
 }: WorldPersistentDataInput) {
-    const normalizedUserId = normalizeEntityId(userId);
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedUserId = userId?.trim() ?? '';
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedUserId || !normalizedWorldId) {
         throw new Error(
             'WorldProfileRepository.deleteWorldPersistentData requires user and world ids.'
@@ -397,8 +389,8 @@ async function hasWorldPersistentData({
     worldId,
     force = false
 }: WorldPersistentDataInput) {
-    const normalizedUserId = normalizeEntityId(userId);
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedUserId = userId?.trim() ?? '';
+    const normalizedWorldId = worldId?.trim() ?? '';
     if (!normalizedUserId || !normalizedWorldId) {
         return false;
     }
@@ -440,8 +432,8 @@ async function hasWorldPersistentData({
     });
 }
 
-function registerWorldOpenShare(worldId: unknown): void {
-    const normalizedWorldId = normalizeEntityId(worldId);
+function registerWorldOpenShare(worldId: string): void {
+    const normalizedWorldId = worldId.trim();
     if (!normalizedWorldId) {
         return;
     }
@@ -472,7 +464,6 @@ async function getAllWorldsByUser({
 const worldProfileRepository = Object.freeze({
     normalize,
     getWorldProfile,
-    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,
@@ -487,7 +478,6 @@ const worldProfileRepository = Object.freeze({
 export {
     normalize,
     getWorldProfile,
-    searchWorlds,
     getWorldsByUser,
     saveWorld,
     deleteWorld,
@@ -498,5 +488,5 @@ export {
     getAllWorldsByUser,
     registerWorldOpenShare
 };
-export type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+export type { WorldProfileRecord } from '@/domain/entities/world';
 export default worldProfileRepository;

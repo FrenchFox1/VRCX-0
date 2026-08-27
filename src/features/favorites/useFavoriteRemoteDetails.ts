@@ -1,16 +1,18 @@
-import {
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    useSyncExternalStore
-} from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { commands } from '@/platform/tauri/bindings';
-import type { FavoriteEntityDetail } from '@/state/favoriteStoreTypes';
+import type { FavoriteEntityDetail } from '@/domain/favorites/types';
+import type { LoadStatus } from '@/domain/shared/types';
+import {
+    commands,
+    type FavoriteDetailsHydrateInput,
+    type FavoriteDetailsHydrateKind,
+    type FavoriteDetailsHydrateOutput
+} from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-type FavoriteRemoteDetailKind = 'avatar' | 'world';
+type FavoriteRemoteDetailKind = FavoriteDetailsHydrateKind;
 
 type FavoriteRemoteEntityDetail = FavoriteEntityDetail & {
     id: string;
@@ -20,33 +22,12 @@ type FavoriteRemoteDetailsById = Record<string, FavoriteRemoteEntityDetail>;
 
 interface UseFavoriteRemoteDetailsOptions {
     type: FavoriteRemoteDetailKind;
-    favoriteIds?: unknown;
-    requestedIds?: unknown;
-    avatarTags?: unknown;
+    favoriteIds?: string[];
+    requestedIds?: string[];
+    avatarTags?: string[];
     cacheKey?: string;
     enabled?: boolean;
     refreshToken?: number;
-}
-
-let remoteDetailsRefreshGeneration = 0;
-const remoteDetailsRefreshListeners = new Set<() => void>();
-
-export function bumpFavoriteRemoteDetailsRefresh(): void {
-    remoteDetailsRefreshGeneration += 1;
-    for (const listener of [...remoteDetailsRefreshListeners]) {
-        listener();
-    }
-}
-
-function subscribeToRemoteDetailsRefresh(listener: () => void) {
-    remoteDetailsRefreshListeners.add(listener);
-    return () => {
-        remoteDetailsRefreshListeners.delete(listener);
-    };
-}
-
-function getRemoteDetailsRefreshGeneration() {
-    return remoteDetailsRefreshGeneration;
 }
 
 function favoriteRemoteDetailsLoadingDetail(
@@ -64,7 +45,7 @@ const inflightHydrations = new Map<
 
 function hydrateFavoriteDetails(
     requestKey: string,
-    input: Parameters<typeof commands.appFavoriteDetailsHydrate>[0]
+    input: FavoriteDetailsHydrateInput
 ) {
     const inflight = inflightHydrations.get(requestKey);
     if (inflight) {
@@ -77,17 +58,9 @@ function hydrateFavoriteDetails(
     return request;
 }
 
-function normalizeValues(values: unknown): string[] {
+function normalizeValues(values: readonly string[]): string[] {
     return Array.from(
-        new Set(
-            (Array.isArray(values) ? values : [])
-                .map((value) =>
-                    typeof value === 'string'
-                        ? value.trim()
-                        : String(value ?? '').trim()
-                )
-                .filter(Boolean)
-        )
+        new Set(values.map((value) => value.trim()).filter(Boolean))
     );
 }
 
@@ -105,13 +78,9 @@ function normalizeOptionalString(value: unknown): string | undefined {
     return normalized || undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
 interface RemoteDetailsState {
     requestKey: string;
-    status: string;
+    status: LoadStatus;
     detail: string;
     data: FavoriteRemoteDetailsById;
     availabilityById: Record<string, string>;
@@ -120,7 +89,7 @@ interface RemoteDetailsState {
 
 function buildInitialState(
     requestKey: string = '',
-    status: string = 'idle',
+    status: LoadStatus = 'idle',
     detail: string = ''
 ): RemoteDetailsState {
     return {
@@ -134,12 +103,9 @@ function buildInitialState(
 }
 
 function mapAvailabilityById(
-    availabilityById: unknown
+    availabilityById: FavoriteDetailsHydrateOutput['availabilityById']
 ): Record<string, string> {
     const byId: Record<string, string> = {};
-    if (!isRecord(availabilityById)) {
-        return byId;
-    }
     for (const [key, value] of Object.entries(availabilityById)) {
         const id = normalizeEntityId(key);
         const status = normalizeOptionalString(value);
@@ -220,9 +186,8 @@ export function useFavoriteRemoteDetails({
 }: UseFavoriteRemoteDetailsOptions) {
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const refreshGeneration = useSyncExternalStore(
-        subscribeToRemoteDetailsRefresh,
-        getRemoteDetailsRefreshGeneration
+    const remoteDetailsRevision = useFavoriteRevisionStore(
+        (state) => state.remoteDetailsRevisionByKind[type]
     );
     const normalizedIds = useMemo(
         () => normalizeValues(favoriteIds),
@@ -245,14 +210,14 @@ export function useFavoriteRemoteDetails({
         normalizedTags.join('|'),
         cacheKey,
         String(refreshToken),
-        String(refreshGeneration)
+        String(remoteDetailsRevision)
     ].join('::');
     const hasIds =
         normalizedIds.length > 0 && normalizedRequestedIds.length > 0;
     const refreshKey = [
         cacheKey,
         String(refreshToken),
-        String(refreshGeneration)
+        String(remoteDetailsRevision)
     ].join('::');
     const [state, setState] = useState(() => buildInitialState());
     const requestParamsRef = useRef({

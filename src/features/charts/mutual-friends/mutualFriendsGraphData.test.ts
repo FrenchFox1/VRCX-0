@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 
 import { buildMutualFriendsBaseGraph } from './mutualFriendsGraphData';
 import { MUTUAL_GRAPH_EMPTY_USER_ID } from './mutualFriendsSettings';
@@ -40,7 +40,8 @@ describe('mutualFriendsGraphData', () => {
                     'usr_c',
                     {
                         lastFetchedAt: '2026-04-01T00:00:00.000Z',
-                        optedOut: true
+                        optedOut: true,
+                        totalCount: 4
                     }
                 ]
             ]),
@@ -70,7 +71,11 @@ describe('mutualFriendsGraphData', () => {
         ]);
         expect(graph.nodes.find((node) => node.id === 'usr_c')).toMatchObject({
             lastFetchedAt: '2026-04-01T00:00:00.000Z',
-            optedOut: true
+            optedOut: true,
+            mutualCount: 4
+        });
+        expect(graph.nodes.find((node) => node.id === 'usr_a')).toMatchObject({
+            mutualCount: 2
         });
     });
 

@@ -1,10 +1,10 @@
 import { ImageIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
 import { cn } from '@/lib/utils';
 import mediaRepository from '@/repositories/mediaRepository';
 import { Button } from '@/ui/shadcn/button';
@@ -62,7 +62,7 @@ export function GroupPostEditorDialog({
     const [galleryError, setGalleryError] = useState('');
     const galleryRequestIdRef = useRef(0);
 
-    async function loadGalleryRows() {
+    const loadGalleryRows = useCallback(async () => {
         if (!open) {
             return;
         }
@@ -94,7 +94,7 @@ export function GroupPostEditorDialog({
                     : 'Failed to load gallery images.'
             );
         }
-    }
+    }, [open]);
 
     useEffect(() => {
         if (open) {
@@ -105,7 +105,7 @@ export function GroupPostEditorDialog({
             setGalleryStatus('idle');
             setGalleryError('');
         }
-    }, [open]);
+    }, [loadGalleryRows, open]);
 
     if (!form) {
         return null;
@@ -204,7 +204,10 @@ export function GroupPostEditorDialog({
                             value={form.visibility ? [form.visibility] : []}
                             onValueChange={(value) => {
                                 const visibility = value[0];
-                                if (visibility) {
+                                if (
+                                    visibility === 'group' ||
+                                    visibility === 'public'
+                                ) {
                                     updateForm({ visibility });
                                 }
                             }}

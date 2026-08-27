@@ -26,7 +26,7 @@ pub fn get_social_graph(
     db: &DatabaseService,
     input: SocialGraphInput,
 ) -> Result<SocialGraphOutput, Error> {
-    let owner_user_id = input.owner_user_id;
+    let owner_user_id = input.owner_user_id.into_inner();
     let snapshot = mutual_graph_snapshot_get(db, owner_user_id.clone())?;
     let friends = friend_log_current_list(db, owner_user_id)?;
     let friend_ids = friends
@@ -169,7 +169,7 @@ pub fn get_friend_circles(
     db: &DatabaseService,
     input: FriendCirclesInput,
 ) -> Result<FriendCirclesOutput, Error> {
-    let owner_user_id = input.owner_user_id;
+    let owner_user_id = input.owner_user_id.into_inner();
     let snapshot = mutual_graph_snapshot_get(db, owner_user_id.clone())?;
     let friends = friend_log_current_list(db, owner_user_id)?;
     let friend_ids = friends

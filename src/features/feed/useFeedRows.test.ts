@@ -3,6 +3,11 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type {
+    FavoriteGroupMap,
+    FavoriteRecord
+} from '@/domain/favorites/types';
+
 const mocks = vi.hoisted(() => ({
     queryFeedLatest: vi.fn(),
     queryFeed: vi.fn(),
@@ -11,8 +16,8 @@ const mocks = vi.hoisted(() => ({
     runtime: { auth: { currentUserId: 'usr_self' } },
     session: { isFavoritesLoaded: true },
     favorites: {
-        remoteFavoritesById: {} as Record<string, unknown>,
-        localFriendFavorites: {} as Record<string, unknown>
+        remoteFavoritesById: {} as Record<string, FavoriteRecord>,
+        localFriendFavorites: {} as FavoriteGroupMap
     },
     preferences: {
         localFavoriteFriendsGroups: [] as string[],
@@ -23,7 +28,8 @@ const mocks = vi.hoisted(() => ({
     friendLog: { revision: 0 }
 }));
 
-vi.mock('@/repositories/feedRepository', () => ({
+vi.mock('@/repositories/feedRepository', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/repositories/feedRepository')>()),
     default: {
         queryFeedLatest: mocks.queryFeedLatest,
         queryFeed: mocks.queryFeed
@@ -219,7 +225,32 @@ describe('useFeedRows', () => {
 
         expect(result.current.rows).toEqual([{ userId: 'usr_search' }]);
         expect(mocks.queryFeed).toHaveBeenCalledWith(
-            expect.objectContaining({ search: 'needle', maxEntries: 100 })
+            expect.objectContaining({ search: 'needle' })
+        );
+        expect(mocks.queryFeed.mock.calls[0]?.[0]).not.toHaveProperty(
+            'maxEntries'
+        );
+        expect(mocks.queryFeedLatest).not.toHaveBeenCalled();
+    });
+
+    it('uses the search query path for a selected friend scope', async () => {
+        const { result } = renderHook(
+            (props: FeedRowsProps) => useFeedRows(props),
+            {
+                initialProps: {
+                    ...BASE_PROPS,
+                    scopedUserIds: ['usr_friend']
+                }
+            }
+        );
+        await flush();
+
+        expect(result.current.loadStatus).toBe('ready');
+        expect(mocks.queryFeed).toHaveBeenCalledWith(
+            expect.objectContaining({ scopedUserIds: ['usr_friend'] })
+        );
+        expect(mocks.queryFeed.mock.calls[0]?.[0]).not.toHaveProperty(
+            'maxEntries'
         );
         expect(mocks.queryFeedLatest).not.toHaveBeenCalled();
     });

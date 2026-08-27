@@ -109,10 +109,12 @@ fn friend_log_current_list_orders_by_friend_number_then_name_then_id() {
 fn friend_display_names_returns_empty_when_owner_or_ids_are_missing() {
     let (_dir, db) = test_db("display-names-empty");
 
-    assert!(friend_display_names(&db, "".into(), &["usr_a".into()])
-        .unwrap()
-        .is_empty());
-    assert!(friend_display_names(&db, "usr_self".into(), &[])
+    assert!(
+        friend_display_names(&db, OwnerId::new(""), &["usr_a".into()])
+            .unwrap()
+            .is_empty()
+    );
+    assert!(friend_display_names(&db, OwnerId::new("usr_self"), &[])
         .unwrap()
         .is_empty());
 }
@@ -131,7 +133,8 @@ fn friend_display_names_scopes_to_requested_ids_only() {
     )
     .unwrap();
 
-    let names = friend_display_names(&db, "usr_self".into(), &["usr_a".to_string()]).unwrap();
+    let names =
+        friend_display_names(&db, OwnerId::new("usr_self"), &["usr_a".to_string()]).unwrap();
 
     assert_eq!(names.len(), 1);
     assert_eq!(names.get("usr_a").map(String::as_str), Some("Alice"));
@@ -389,7 +392,7 @@ fn friend_log_upsert_current_skips_history_on_update_unless_forced() {
 }
 
 #[test]
-fn friend_log_delete_current_deletes_the_target_row() {
+fn friend_log_delete_current_array_deletes_the_only_target_row() {
     let (_dir, db) = test_db("delete-current-single");
     friend_log_replace_current(
         &db,
@@ -399,9 +402,15 @@ fn friend_log_delete_current_deletes_the_target_row() {
     )
     .unwrap();
 
-    let affected = friend_log_delete_current(&db, "usr_self".into(), "usr_alice".into()).unwrap();
+    let result = friend_log_delete_current_array(
+        &db,
+        "usr_self".into(),
+        vec!["usr_alice".into()],
+        FriendLogDeleteOptionsInput::default(),
+    )
+    .unwrap();
 
-    assert_eq!(affected, 1);
+    assert_eq!(result.count, 1);
     assert!(friend_log_current_list(&db, "usr_self".into())
         .unwrap()
         .is_empty());

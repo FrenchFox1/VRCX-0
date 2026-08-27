@@ -36,7 +36,6 @@ vi.mock('@/repositories/notificationPersistenceRepository', () => ({
     }
 }));
 
-const endpoint = 'https://api.example.test/api/1';
 const notification = {
     id: 'notif_target',
     version: 2,
@@ -268,14 +267,18 @@ describe('notificationActionService', () => {
         mocks.appNotificationInviteResponseSend.mockReturnValue(
             pending.promise
         );
-        const withUploadTimeout = vi.fn((promise: Promise<unknown>) => promise);
+        const withUploadTimeout = vi.fn(
+            (
+                promise: Promise<NotificationActionOutcome>
+            ): Promise<NotificationActionOutcome> => promise
+        );
         const { sendInviteResponseNotification } =
             await import('./notificationActionService');
 
         const action = sendInviteResponseNotification({
             currentUserId: 'usr_self',
             notification,
-            responseSlot: '1',
+            responseSlot: 1,
             imageData: 'base64data',
             withUploadTimeout
         });
@@ -297,7 +300,11 @@ describe('notificationActionService', () => {
     });
 
     it('sends a plain invite response without the upload timeout', async () => {
-        const withUploadTimeout = vi.fn((promise: Promise<unknown>) => promise);
+        const withUploadTimeout = vi.fn(
+            (
+                promise: Promise<NotificationActionOutcome>
+            ): Promise<NotificationActionOutcome> => promise
+        );
         const { sendInviteResponseNotification } =
             await import('./notificationActionService');
 
@@ -328,8 +335,6 @@ describe('notificationActionService', () => {
             await import('./notificationActionService');
 
         const action = acceptFriendRequestNotification({
-            currentUserId: 'usr_self',
-            endpoint,
             notification
         });
 
@@ -345,8 +350,6 @@ describe('notificationActionService', () => {
         expect(
             mocks.appSocialFriendRequestNotificationAccept
         ).toHaveBeenCalledWith({
-            ownerUserId: 'usr_self',
-            endpoint,
             notificationId: 'notif_target',
             targetUserId: 'usr_sender',
             targetDisplayName: 'Sender'
@@ -364,8 +367,6 @@ describe('notificationActionService', () => {
 
         await expect(
             acceptFriendRequestNotification({
-                currentUserId: 'usr_self',
-                endpoint,
                 notification
             })
         ).resolves.toEqual({ status: 'not-found' });
@@ -387,8 +388,6 @@ describe('notificationActionService', () => {
 
         await expect(
             acceptFriendRequestNotification({
-                currentUserId: 'usr_self',
-                endpoint,
                 notification
             })
         ).resolves.toEqual({
@@ -406,8 +405,7 @@ describe('notificationActionService', () => {
         const {
             expireNotificationLocally,
             findIncomingFriendRequestNotification,
-            sendBoopReplyNotification,
-            sendInviteResponseNotification
+            sendBoopReplyNotification
         } = await import('./notificationActionService');
 
         await expect(
@@ -422,13 +420,6 @@ describe('notificationActionService', () => {
                 notification: { id: 'notif_without_sender' }
             })
         ).rejects.toThrow('Cannot send boop: no sender user id is available.');
-        await expect(
-            sendInviteResponseNotification({
-                currentUserId: 'usr_self',
-                notification,
-                responseSlot: 'invalid'
-            })
-        ).rejects.toThrow('Response slot must be a number.');
         await expect(
             findIncomingFriendRequestNotification({
                 currentUserId: ' ',

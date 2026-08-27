@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::common::{row_string, ParamsBuilder};
 use crate::database::DatabaseService;
-use crate::ownership::owner_id_for_filter;
+use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
@@ -12,7 +12,7 @@ use super::types::{ActivityBucket, TimeWindow};
 /// log, so aggregations can surface readable world names instead of raw ids.
 pub(crate) fn world_names_for_ids(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     world_ids: &BTreeSet<String>,
 ) -> Result<HashMap<String, String>, Error> {
     if world_ids.is_empty() {
@@ -54,7 +54,7 @@ pub(crate) fn world_names_for_ids(
 /// just the bounded result set instead of carrying names through the fold.
 pub(crate) fn latest_display_names_for_users(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
     user_ids: &[String],
 ) -> Result<HashMap<String, String>, Error> {
     if user_ids.is_empty() {
@@ -95,9 +95,9 @@ pub(crate) fn latest_display_names_for_users(
 /// unknown or the table has not been created yet.
 pub(crate) fn friend_current_table_name(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<Option<String>, Error> {
-    let owner = owner_user_id.trim();
+    let owner = owner_user_id.as_str().trim();
     if owner.is_empty() {
         return Ok(None);
     }
@@ -108,7 +108,7 @@ pub(crate) fn friend_current_table_name(
 
 pub(crate) fn current_friend_id_set(
     db: &DatabaseService,
-    owner_user_id: &str,
+    owner_user_id: &OwnerId,
 ) -> Result<HashSet<String>, Error> {
     let Some(table_name) = friend_current_table_name(db, owner_user_id)? else {
         return Ok(HashSet::new());
@@ -184,6 +184,91 @@ pub(crate) fn table_exists(db: &DatabaseService, table_name: &str) -> Result<boo
             &ParamsBuilder::new().set("name", table_name).build(),
         )?
         .is_empty())
+}
+
+fn window_bound_ms_sql(param: &str) -> String {
+    format!("(CAST(strftime('%s', @{param}) AS INTEGER) * 1000)")
+}
+
+/// Co-presence rows carry the whole shared interval, so a window has to clip the
+/// stored duration instead of counting rows that merely end inside it.
+pub(crate) fn clipped_millis_sql(time_window: &TimeWindow) -> String {
+    let leave_ms = "(CAST(strftime('%s', g.created_at) AS INTEGER) * 1000)";
+    let enter_ms = format!("({leave_ms} - COALESCE(g.time, 0))");
+    let mut start = enter_ms.clone();
+    let mut end = leave_ms.to_string();
+    if window_bound(time_window, WindowBound::From).is_some() {
+        start = format!("MAX({start}, {})", window_bound_ms_sql("from"));
+    }
+    if window_bound(time_window, WindowBound::To).is_some() {
+        end = format!("MIN({end}, {})", window_bound_ms_sql("to"));
+    }
+    if start == enter_ms && end == leave_ms {
+        return "COALESCE(g.time, 0)".to_string();
+    }
+    format!("MAX(0, {end} - {start})")
+}
+
+pub(crate) fn append_copresence_window_filter(
+    sql: &mut String,
+    params: &mut ParamsBuilder,
+    time_window: &TimeWindow,
+) {
+    let leave_ms = "(CAST(strftime('%s', g.created_at) AS INTEGER) * 1000)";
+    let enter_ms = format!("({leave_ms} - COALESCE(g.time, 0))");
+    if let Some(from) = window_bound(time_window, WindowBound::From) {
+        sql.push_str(&format!(
+            " AND {leave_ms} > {}",
+            window_bound_ms_sql("from")
+        ));
+        *params = std::mem::take(params).set("from", from);
+    }
+    if let Some(to) = window_bound(time_window, WindowBound::To) {
+        sql.push_str(&format!(" AND {enter_ms} < {}", window_bound_ms_sql("to")));
+        *params = std::mem::take(params).set("to", to);
+    }
+}
+
+enum WindowBound {
+    From,
+    To,
+}
+
+fn window_bound(time_window: &TimeWindow, bound: WindowBound) -> Option<&str> {
+    let value = match bound {
+        WindowBound::From => &time_window.from,
+        WindowBound::To => &time_window.to,
+    };
+    value
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+}
+
+pub(crate) fn access_bucket_sql(location_column: &str) -> String {
+    format!(
+        "CASE
+            WHEN {location_column} LIKE '%~private(%' AND {location_column} LIKE '%~canRequestInvite%' THEN 'invitePlus'
+            WHEN {location_column} LIKE '%~private(%' THEN 'invite'
+            WHEN {location_column} LIKE '%~friends(%' THEN 'friends'
+            WHEN {location_column} LIKE '%~hidden(%' THEN 'friendsPlus'
+            WHEN {location_column} LIKE '%~group(%' THEN 'group'
+            WHEN substr({location_column}, 1, 5) = 'wrld_' AND instr({location_column}, ':') > 0 THEN 'public'
+            ELSE 'unknown'
+         END"
+    )
+}
+
+pub(crate) fn world_id_from_location_sql(location_column: &str) -> String {
+    format!(
+        "CASE
+            WHEN substr({location_column}, 1, 5) = 'wrld_' AND instr({location_column}, ':') > 0
+                THEN substr({location_column}, 1, instr({location_column}, ':') - 1)
+            WHEN substr({location_column}, 1, 5) = 'wrld_' AND instr({location_column}, ':') = 0
+                THEN {location_column}
+            ELSE ''
+         END"
+    )
 }
 
 pub fn normalize_access_bucket(access_type: &str) -> String {

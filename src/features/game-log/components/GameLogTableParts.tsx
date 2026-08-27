@@ -15,12 +15,10 @@ const SESSION_FILTER_TYPES = GAME_LOG_SESSION_FILTER_TYPES;
 
 function GameLogEmptyState({
     title,
-    description
-}: {
-    description?: string;
-    title: string;
-}) {
-    return <EmptyState title={title} description={description} />;
+    description,
+    ...props
+}: ComponentProps<typeof EmptyState>) {
+    return <EmptyState {...props} title={title} description={description} />;
 }
 
 function EmptyTableValue(): null {
@@ -36,7 +34,7 @@ function GameLogLocationDetail({
     detailValue: GameLogDetailValue;
     onPreviousInstances?(row: GameLogRow): void;
     row: GameLogRow;
-    worldTarget?: unknown;
+    worldTarget?: string;
 }) {
     const location = getGameLogLocationTarget(row);
     const targetLocation = location || worldTarget;
@@ -104,3 +102,4 @@ export {
     SESSION_FILTER_TYPES,
     DataTableSortButton as SortButton
 };
+import type { ComponentProps } from 'react';

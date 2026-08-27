@@ -2,9 +2,9 @@ const SCREENSHOT_FILE_NAME_REGEX =
     /VRChat_((\d{3,})x(\d{3,})_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.(\d{1,})|(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.(\d{3})_(\d{3,})x(\d{3,}))/;
 
 function parseVrchatScreenshotDateFromFileName(
-    fileName: unknown
+    fileName: string
 ): number | null {
-    const match = String(fileName || '').match(SCREENSHOT_FILE_NAME_REGEX);
+    const match = fileName.match(SCREENSHOT_FILE_NAME_REGEX);
     if (!match) {
         return null;
     }

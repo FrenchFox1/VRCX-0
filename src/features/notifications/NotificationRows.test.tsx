@@ -39,6 +39,32 @@ function friendRequest(): NotificationRecord {
     };
 }
 
+function boop(): NotificationRecord {
+    return {
+        id: 'notif_boop',
+        type: 'boop',
+        version: 1,
+        senderUserId: 'usr_sender',
+        senderUsername: 'Sender',
+        seen: false,
+        created_at: '2026-08-05T00:00:00.000Z',
+        responses: []
+    };
+}
+
+function invite(): NotificationRecord {
+    return {
+        id: 'notif_invite',
+        type: 'invite',
+        version: 1,
+        senderUserId: 'usr_sender',
+        senderUsername: 'Sender',
+        seen: false,
+        created_at: '2026-08-05T00:00:00.000Z',
+        responses: []
+    };
+}
+
 function actionHandlers() {
     return {
         onAcceptFriendRequest: vi.fn(),
@@ -125,5 +151,53 @@ describe('friend request notification rows', () => {
 
         fireEvent.click(actionButtons[2]);
         expect(handlers.onMarkSeen).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('boop notification rows', () => {
+    it('uses a distinct violet badge in the notification drawer', () => {
+        const handlers: NotificationDrawerHandlers = {
+            ...actionHandlers(),
+            onDeleteNotification: vi.fn(),
+            onJoinQueueReady: vi.fn()
+        };
+
+        render(
+            <NotificationDrawerRow
+                notification={boop()}
+                isUnseen
+                currentUserId="usr_self"
+                canInviteFromCurrentLocation={false}
+                handlers={handlers}
+            />
+        );
+
+        expect(
+            screen.getByText('view.notification.filters.boop').className
+        ).toContain('bg-violet-500/15');
+    });
+});
+
+describe('action notification badge colors', () => {
+    it('uses a visible status foreground for invite badges', () => {
+        const handlers: NotificationDrawerHandlers = {
+            ...actionHandlers(),
+            onDeleteNotification: vi.fn(),
+            onJoinQueueReady: vi.fn()
+        };
+
+        render(
+            <NotificationDrawerRow
+                notification={invite()}
+                isUnseen
+                currentUserId="usr_self"
+                canInviteFromCurrentLocation={false}
+                handlers={handlers}
+            />
+        );
+
+        expect(
+            screen.getByText('view.notification.filters.invite').className
+        ).toContain('text-[var(--status-joinme)]');
     });
 });

@@ -12,7 +12,7 @@ import { toast, type ToasterProps } from 'sonner';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import i18n from '@/services/i18nService';
 import { links } from '@/shared/constants/link';
-import { useShellStore } from '@/state/shellStore';
+import { useShellStore, type ThemeMode } from '@/state/shellStore';
 import { Toaster } from '@/ui/shadcn/sonner';
 import { Spinner } from '@/ui/shadcn/spinner';
 
@@ -104,7 +104,7 @@ function patchSonnerErrorToast() {
 
 patchSonnerErrorToast();
 
-function resolveSonnerTheme(themeMode: unknown): ToasterProps['theme'] {
+function resolveSonnerTheme(themeMode: ThemeMode): ToasterProps['theme'] {
     if (themeMode === 'dark') {
         return 'dark';
     }

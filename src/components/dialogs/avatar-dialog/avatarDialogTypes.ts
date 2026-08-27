@@ -3,10 +3,12 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
 import type {
     AvatarLocalTag,
-    AvatarProfileRecord,
-    EntityRecord,
-    PlatformFileAnalysis
-} from '@/domain/entities/profileEntities';
+    AvatarProfileRecord
+} from '@/domain/entities/avatar';
+import type { EntityRecord } from '@/domain/entities/shared';
+import type { PlatformFileAnalysis } from '@/domain/entities/world';
+import type { LoadStatus } from '@/domain/shared/types';
+import type { AvatarReleaseStatus as GeneratedAvatarReleaseStatus } from '@/platform/tauri/bindings';
 import type { AvatarGalleryFile } from '@/repositories/avatarProfileRepository';
 import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
 import { useDialogStore } from '@/state/dialogStore';
@@ -26,10 +28,10 @@ export type AvatarActionStatus =
     | 'imposter'
     | 'avatar-block';
 
-export type AvatarLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+export type AvatarLoadStatus = LoadStatus;
 export type AvatarOwnerEditor = 'content-tags' | 'details' | null;
 export type AvatarImposterAction = 'create' | 'delete' | 'regenerate';
-export type AvatarReleaseStatus = 'public' | 'private';
+export type AvatarReleaseStatus = GeneratedAvatarReleaseStatus;
 export type AvatarDialogTab = 'info' | 'gallery' | 'json';
 
 export type AvatarTarget = {
@@ -99,6 +101,7 @@ export type AvatarViewState = {
     canSelectFallbackAvatar: boolean;
     detail: string;
     fileAnalysis: PlatformFileAnalysis;
+    galleryStatus: LoadStatus;
     isCurrentAvatar: boolean;
     memo: string;
 };
@@ -123,7 +126,7 @@ export type AvatarControls = {
 };
 
 export type AvatarDialogInput = {
-    avatarId: unknown;
+    avatarId?: string;
     seedData?: unknown;
 };
 

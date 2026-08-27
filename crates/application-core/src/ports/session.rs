@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::process_monitor::{GameProcessEvent, GameProcessEventSink};
-use crate::event_bus::RuntimeEventBus;
+use crate::BackendRuntimeStatusPublisher;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GameProcessStatus {
@@ -22,10 +22,175 @@ pub struct HostRealtimeSessionContext {
 
 #[derive(Clone, Debug, Default)]
 pub struct BackgroundCapabilitySession {
+    pub auth_scope_generation: u64,
     pub current_user_id: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user_snapshot: Value,
+    pub current_user_snapshot: CurrentUserSnapshot,
+}
+
+#[derive(Clone, Debug, specta::Type)]
+#[specta(transparent)]
+pub struct CurrentUserSnapshot(Arc<Value>);
+
+impl CurrentUserSnapshot {
+    pub fn from_value(value: Value) -> Self {
+        Self(Arc::new(value))
+    }
+
+    pub fn as_value(&self) -> &Value {
+        self.0.as_ref()
+    }
+
+    pub fn shared_value(&self) -> Arc<Value> {
+        Arc::clone(&self.0)
+    }
+
+    pub fn id(&self) -> &str {
+        self.string_field("id")
+    }
+
+    pub fn display_name(&self) -> &str {
+        let display_name = self.string_field("displayName");
+        if display_name.is_empty() {
+            self.string_field("username")
+        } else {
+            display_name
+        }
+    }
+
+    pub fn location(&self) -> &str {
+        self.string_field(vrcx_0_core::derived_keys::LOCATION_TAG)
+    }
+
+    pub fn raw_location(&self) -> &str {
+        self.string_field("location")
+    }
+
+    pub fn world_id(&self) -> &str {
+        self.string_field("worldId")
+    }
+
+    pub fn with_fallback_id(&self, current_user_id: &str) -> Self {
+        let current_user_id = current_user_id.trim();
+        if current_user_id.is_empty() || !self.id().is_empty() || !self.as_value().is_object() {
+            return self.clone();
+        }
+        let mut value = self.as_value().clone();
+        value
+            .as_object_mut()
+            .expect("current user snapshot was checked as an object")
+            .insert("id".into(), Value::String(current_user_id.to_string()));
+        Self::from_value(value)
+    }
+
+    pub fn shares_storage_with(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    fn string_field(&self, key: &str) -> &str {
+        self.as_value()
+            .get(key)
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+    }
+}
+
+impl Default for CurrentUserSnapshot {
+    fn default() -> Self {
+        Self::from_value(Value::Null)
+    }
+}
+
+impl Serialize for CurrentUserSnapshot {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.as_value().serialize(serializer)
+    }
+}
+
+impl From<Value> for CurrentUserSnapshot {
+    fn from(value: Value) -> Self {
+        Self::from_value(value)
+    }
+}
+
+impl From<Arc<Value>> for CurrentUserSnapshot {
+    fn from(value: Arc<Value>) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct BackgroundCapabilitySessionIdentity {
+    pub auth_scope_generation: u64,
+    pub current_user_id: String,
+    pub endpoint: String,
+    pub websocket: String,
+}
+
+impl BackgroundCapabilitySession {
+    pub fn identity(&self) -> BackgroundCapabilitySessionIdentity {
+        BackgroundCapabilitySessionIdentity {
+            auth_scope_generation: self.auth_scope_generation,
+            current_user_id: self.current_user_id.clone(),
+            endpoint: self.endpoint.clone(),
+            websocket: self.websocket.clone(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod background_capability_session_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn identity_is_independent_of_the_current_user_snapshot() {
+        let first = BackgroundCapabilitySession {
+            auth_scope_generation: 7,
+            current_user_id: "usr_owner".into(),
+            endpoint: "https://api.example.test/api/1".into(),
+            websocket: "wss://pipeline.example.test".into(),
+            current_user_snapshot: json!({"large": [1, 2, 3]}).into(),
+        };
+        let second = BackgroundCapabilitySession {
+            current_user_snapshot: json!({"different": true}).into(),
+            ..first.clone()
+        };
+
+        assert_eq!(first.identity(), second.identity());
+    }
+
+    #[test]
+    fn cloning_a_capability_session_shares_the_current_user_snapshot() {
+        let first = BackgroundCapabilitySession {
+            current_user_snapshot: json!({"large": [1, 2, 3]}).into(),
+            ..BackgroundCapabilitySession::default()
+        };
+        let second = first.clone();
+
+        assert!(first
+            .current_user_snapshot
+            .shares_storage_with(&second.current_user_snapshot));
+    }
+
+    #[test]
+    fn current_user_snapshot_preserves_raw_json_while_exposing_typed_facts() {
+        let snapshot = CurrentUserSnapshot::from_value(json!({
+            "id": "usr_owner",
+            "displayName": "Owner",
+            "location": "wrld_test:1",
+            "unknownFutureField": { "nested": true }
+        }));
+
+        assert_eq!(snapshot.id(), "usr_owner");
+        assert_eq!(snapshot.display_name(), "Owner");
+        assert_eq!(snapshot.raw_location(), "wrld_test:1");
+        assert_eq!(
+            serde_json::to_value(&snapshot).unwrap()["unknownFutureField"]["nested"],
+            true
+        );
+    }
 }
 
 impl HostRealtimeSessionContext {
@@ -176,12 +341,15 @@ impl HostSessionRuntime {
 #[derive(Clone)]
 pub struct SessionHostRuntime {
     session: HostSessionRuntime,
-    event_bus: RuntimeEventBus,
+    backend_status: BackendRuntimeStatusPublisher,
 }
 
 impl SessionHostRuntime {
-    pub fn new(session: HostSessionRuntime, event_bus: RuntimeEventBus) -> Self {
-        Self { session, event_bus }
+    pub fn new(session: HostSessionRuntime, backend_status: BackendRuntimeStatusPublisher) -> Self {
+        Self {
+            session,
+            backend_status,
+        }
     }
 }
 
@@ -196,7 +364,7 @@ impl GameProcessEventSink for SessionHostRuntime {
         });
 
         if projection.game_changed || projection.steamvr_changed {
-            self.event_bus.emit_game_process_status(projection);
+            self.backend_status.publish_game_process_status(projection);
         }
 
         Ok(())

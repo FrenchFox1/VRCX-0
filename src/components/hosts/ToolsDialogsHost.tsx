@@ -65,61 +65,61 @@ export function ToolsDialogsHost() {
     return (
         <>
             <AppLauncherDialog
-                open={Boolean(appLauncherOpen)}
+                open={appLauncherOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('appLauncherOpen', open)
                 }
             />
             <PresenceScheduleDialog
-                open={Boolean(presenceScheduleOpen)}
+                open={presenceScheduleOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('presenceScheduleOpen', open)
                 }
             />
             <PresenceRoomRulesDialog
-                open={Boolean(presenceRoomRulesOpen)}
+                open={presenceRoomRulesOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('presenceRoomRulesOpen', open)
                 }
             />
             <PresenceInviteRequestsDialog
-                open={Boolean(presenceInviteRequestsOpen)}
+                open={presenceInviteRequestsOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('presenceInviteRequestsOpen', open)
                 }
             />
             <GroupCalendarDialog
-                open={Boolean(groupCalendarOpen)}
+                open={groupCalendarOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('groupCalendarOpen', open)
                 }
             />
             <ExportDiscordNamesDialog
-                open={Boolean(exportDiscordNamesOpen)}
+                open={exportDiscordNamesOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('exportDiscordNamesOpen', open)
                 }
             />
             <NoteExportDialog
-                open={Boolean(noteExportOpen)}
+                open={noteExportOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('noteExportOpen', open)
                 }
             />
             <ExportFriendsListDialog
-                open={Boolean(exportFriendsListOpen)}
+                open={exportFriendsListOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('exportFriendsListOpen', open)
                 }
             />
             <ExportAvatarsListDialog
-                open={Boolean(exportAvatarsListOpen)}
+                open={exportAvatarsListOpen}
                 onOpenChange={(open: boolean) =>
                     setSystemHostOpen('exportAvatarsListOpen', open)
                 }
             />
             <InviteMessageTemplatesDialog
-                open={Boolean(editInviteMessagesOpen)}
+                open={editInviteMessagesOpen}
                 onOpenChange={(open) =>
                     setSystemHostOpen('editInviteMessagesOpen', open)
                 }
@@ -127,13 +127,13 @@ export function ToolsDialogsHost() {
                 endpoint={getEndpoint()}
             />
             <LlmEndpointsDialog
-                open={Boolean(llmEndpointsOpen)}
+                open={llmEndpointsOpen}
                 onOpenChange={(open) =>
                     setSystemHostOpen('llmEndpointsOpen', open)
                 }
             />
             <ProfileBackupDialog
-                open={Boolean(profileBackupOpen)}
+                open={profileBackupOpen}
                 onOpenChange={(open) =>
                     setSystemHostOpen('profileBackupOpen', open)
                 }

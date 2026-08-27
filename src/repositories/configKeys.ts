@@ -125,6 +125,7 @@ export const ConfigKeys = defineConfigKeys({
     screenshotHelperCopyToClipboard: { type: 'bool', default: false },
     gameLogDisabled: { type: 'bool', default: false },
     feedPersistenceDisabled: { type: 'bool', default: false },
+    avatarFeedPersistenceDisabled: { type: 'bool', default: false },
     avatarAutoCleanup: { type: 'string', default: 'Off' },
     anonymousUsageTelemetry: { type: 'bool', default: true },
     userGeneratedContentPath: { type: 'string', default: '' },
@@ -152,6 +153,7 @@ export const ConfigKeys = defineConfigKeys({
     notificationLayout: { type: 'string', default: null },
     notificationTTS: { type: 'string', default: 'Never' },
     notificationTTSVoiceNative: { type: 'string', default: '' },
+    notificationTTSVolume: { type: 'int', default: 100 },
     notificationTTSNameMode: { type: 'string', default: 'username' },
     notificationTTSNickName: { type: 'bool', default: false },
     notificationIconDot: { type: 'bool', default: true },
@@ -266,6 +268,7 @@ export const ConfigKeys = defineConfigKeys({
     InstanceActivityBarWidth: { type: 'int', default: 25 },
     groupCalendarShowFeaturedEvents: { type: 'bool', default: false },
     toolsCategoryCollapsed: { type: 'string', default: null },
+    toolsRecentList: { type: 'string', default: '[]' },
     screenshotGalleryFolder: { type: 'string', default: '' },
     screenshotGalleryScrollPositions: { type: 'string', default: '{}' },
 
@@ -276,10 +279,10 @@ export const ConfigKeys = defineConfigKeys({
     MutualGraphCommunitySeparation: { type: 'float', default: null },
 
     // ── Activity ─────────────────────────────────────
-    activitySelfPeriodDays: { type: 'string', default: null },
+    activityPageRange: { type: 'string', default: null },
+    activityPageShowHomeWorld: { type: 'bool', default: false },
+    activityPageCompanionOrder: { type: 'string', default: null },
     activityFriendPeriodDays: { type: 'string', default: null },
-    activitySelfTopWorldsSortBy: { type: 'string', default: null },
-    activitySelfExcludeHomeWorld: { type: 'bool', default: false },
     overlapExcludeEnabled: { type: 'bool', default: false },
     overlapExcludeStart: { type: 'string', default: '1' },
     overlapExcludeEnd: { type: 'string', default: '6' },
@@ -311,25 +314,11 @@ export const ConfigKeys = defineConfigKeys({
 
 export type ConfigKeyName = keyof typeof ConfigKeys;
 
-export const DB_KEY_PREFIX = 'config:vrcx_';
-
 export const APP_THEME_CONFIG_KEYS = Object.freeze({
     themeMode: 'ThemeMode',
     themeColor: 'VRCX_themeColor',
     zoomLevel: 'VRCX_ZoomLevel',
     fontFamily: 'VRCX_fontFamily'
-});
-
-export const COMMUNITY_THEME_CONFIG_KEYS = Object.freeze({
-    enabled: 'VRCX_communityThemeEnabled',
-    id: 'VRCX_communityThemeId',
-    version: 'VRCX_communityThemeVersion',
-    cssSnapshot: 'VRCX_communityThemeCssSnapshot',
-    overrideCss: 'VRCX_communityThemeOverrideCss',
-    overrideCssEnabled: 'VRCX_communityThemeOverrideEnabled',
-    installMetadata: 'VRCX_communityThemeInstallMetadata',
-    installedThemes: 'VRCX_communityThemeInstalledThemes',
-    legacyMarketplaceCatalogUrl: 'VRCX_themeMarketplaceCatalogUrl'
 });
 
 export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
@@ -350,11 +339,14 @@ export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
     })
 });
 
+export const ACTIVITY_PAGE_CONFIG_KEYS = Object.freeze({
+    range: 'activityPageRange',
+    showHomeWorld: 'activityPageShowHomeWorld',
+    companionOrder: 'activityPageCompanionOrder'
+});
+
 export const USER_ACTIVITY_CONFIG_KEYS = Object.freeze({
-    selfPeriodDays: 'activitySelfPeriodDays',
     friendPeriodDays: 'activityFriendPeriodDays',
-    selfTopWorldsSortBy: 'activitySelfTopWorldsSortBy',
-    selfExcludeHomeWorld: 'activitySelfExcludeHomeWorld',
     overlapExcludeEnabled: 'overlapExcludeEnabled',
     overlapExcludeStart: 'overlapExcludeStart',
     overlapExcludeEnd: 'overlapExcludeEnd'
@@ -370,7 +362,3 @@ export const STATUS_BAR_CONFIG_KEYS = Object.freeze({
     clocks: 'VRCX_statusBarClocks',
     clockCount: 'VRCX_statusBarClockCount'
 });
-
-export function toDbKey(name: string): string {
-    return `${DB_KEY_PREFIX}${name.toLowerCase()}`;
-}

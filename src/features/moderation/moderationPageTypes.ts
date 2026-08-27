@@ -1,14 +1,9 @@
-export type ModerationLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+import type { LoadStatus } from '@/domain/shared/types';
+import type { RemoteModerationRow } from '@/platform/tauri/bindings';
 
-export type ModerationRow = {
-    id?: string;
-    type?: string;
-    sourceUserId?: string;
-    sourceDisplayName?: string;
-    targetUserId?: string;
-    targetDisplayName?: string;
-    created?: string;
-};
+export type ModerationLoadStatus = LoadStatus;
+
+export type ModerationRow = RemoteModerationRow;
 
 export type ModerationPaginationState = {
     pageIndex: number;

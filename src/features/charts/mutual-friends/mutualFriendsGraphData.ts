@@ -1,7 +1,4 @@
-import type {
-    FriendRecord,
-    FriendRosterById
-} from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
 
 import {
     isValidMutualFriendId,
@@ -26,6 +23,7 @@ export function buildMutualFriendsBaseGraph(
     excludedFriendIds: readonly string[] = []
 ): MutualFriendGraph {
     const nodeMap = new Map<string, MutualFriendNode>();
+    const totalCountById = new Map<string, number>();
     const edgeMap = new Map<string, MutualFriendLink>();
     const metaMap = meta instanceof Map ? meta : new Map();
     const friends = friendsById ?? {};
@@ -55,8 +53,12 @@ export function buildMutualFriendsBaseGraph(
                 normalizedId,
             lastFetchedAt: metadata?.lastFetchedAt ?? null,
             optedOut: Boolean(metadata?.optedOut),
-            degree: 0
+            degree: 0,
+            mutualCount: 0
         };
+        if (Number.isFinite(metadata?.totalCount)) {
+            totalCountById.set(normalizedId, Number(metadata?.totalCount));
+        }
         nodeMap.set(normalizedId, node);
         return node;
     }
@@ -89,6 +91,10 @@ export function buildMutualFriendsBaseGraph(
         if (target) {
             target.degree += 1;
         }
+    }
+
+    for (const node of nodeMap.values()) {
+        node.mutualCount = totalCountById.get(node.id) ?? node.degree;
     }
 
     return {

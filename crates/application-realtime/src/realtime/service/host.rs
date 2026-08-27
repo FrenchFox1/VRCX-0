@@ -1,6 +1,5 @@
 use serde_json::Value;
-
-use vrcx_0_persistence::realtime::{lookup_game_log_world_name, RealtimePersistenceBatch};
+use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
 
 use crate::realtime::{
     RealtimeCurrentUserOutput, RealtimeEntryCorrectionStream, RealtimeInstanceQueueProjection,
@@ -8,16 +7,11 @@ use crate::realtime::{
 };
 #[cfg(test)]
 use crate::social_baseline::service::friend_log_relationship_candidates;
-use crate::world_enrich::is_meaningful_world_name;
 
 #[cfg(test)]
 use vrcx_0_application_core::Result;
 #[cfg(test)]
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
-#[cfg(test)]
-use vrcx_0_persistence::config as config_store;
-#[cfg(test)]
-use vrcx_0_persistence::realtime::write_realtime_batch;
 
 #[cfg(test)]
 use crate::realtime::connection::RealtimeMessageSink;
@@ -59,9 +53,10 @@ mod world_cache;
 #[cfg(test)]
 mod world_cache_tests;
 
-use world_cache::WorldNameFetchOutcome;
-
 pub use current_user::RealtimeCurrentUserRefreshExpectation;
 pub use friend_mutation::SyntheticFriendEventOutcome;
 pub use friend_profile_bulk_load::{FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload};
-pub use state::{RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeStopRequest};
+pub use state::{
+    RealtimeCurrentUserSnapshotSink, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
+    RealtimeStopRequest,
+};

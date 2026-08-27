@@ -14,7 +14,7 @@ describe('favorite item helpers', () => {
         expect(normalizeFavoriteSearchValue('  Rooftop Club  ')).toBe(
             'rooftop club'
         );
-        expect(normalizeFavoriteSearchValue(null)).toBe('');
+        expect(normalizeFavoriteSearchValue('')).toBe('');
         expect(normalizeFavoriteEntityId('  wrld_123  ')).toBe('wrld_123');
         expect(normalizeFavoriteEntityId(42)).toBe('42');
         expect(normalizeFavoriteEntityId(null)).toBe('');

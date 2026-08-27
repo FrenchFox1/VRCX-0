@@ -34,6 +34,10 @@ import { handleFavoriteImportStatusEvent } from './favoriteImportService';
 import { applyFriendProfileLoadStatusPayload } from './friendProfileLoadService';
 import { handleGroupBanImportStatusEvent } from './groupBanImportService';
 import { isHostCapabilityAvailable } from './hostCapabilityService';
+import {
+    handleIntegrationApiStartFailed,
+    hydrateIntegrationApiStatus
+} from './integrationApiService';
 import { handleMutualGraphFetchStatusEvent } from './mutualGraphFetchService';
 import { handleRealtimeEntryCorrection } from './realtimePresenceService';
 import { runForegroundUpdateRegistryBackupMaintenance } from './registryBackupMaintenanceService';
@@ -50,6 +54,7 @@ import {
     resetBackendRealtimeProjectionState
 } from './runtime-event-bridge/backendRealtimeProjection';
 import {
+    handleAuthenticatedSessionProjection,
     handleBackendRuntimeSyncSnapshot,
     hydrateBackendRuntimeSnapshot
 } from './runtime-event-bridge/backendRuntimeHydration';
@@ -71,9 +76,15 @@ import type {
 import { handleScreenshotLibraryScanStatusEvent } from './screenshotLibraryScanService';
 import {
     handleAppUpdateDownloadProgressEvent,
+    handleAppUpdateDownloadStatusSnapshot,
     handleAppUpdateInstalledEvent
 } from './updateInstallService';
 import { applyVrcStatusSnapshot } from './vrcStatusService';
+
+function reconcilePendingBackendRealtimeProjectionEvents(): void {
+    prunePendingBackendRealtimeProjectionEvents();
+    flushPendingBackendRealtimeProjectionEvents();
+}
 
 type RuntimeEventUnsubscribe = () => void;
 
@@ -189,6 +200,15 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'authenticatedSessionProjection') {
+        runtimeStore.recordRuntimeEvent(event.name, event.payload);
+        handleAuthenticatedSessionProjection(
+            event.payload,
+            reconcilePendingBackendRealtimeProjectionEvents
+        );
+        return;
+    }
+
     if (event.name === 'realtimeWsStatus') {
         handleAuthenticatedRuntimeRealtimeStatus(event.payload);
         return;
@@ -196,10 +216,9 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
 
     if (event.name === 'realtimeProjectionSync') {
         const snapshot = event.payload.snapshot;
-        prunePendingBackendRealtimeProjectionEvents(snapshot);
         handleBackendRuntimeSyncSnapshot(
             snapshot,
-            flushPendingBackendRealtimeProjectionEvents
+            reconcilePendingBackendRealtimeProjectionEvents
         );
         return;
     }
@@ -250,14 +269,19 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'integrationApiStartFailed') {
+        handleIntegrationApiStartFailed(event.payload);
+        return;
+    }
+
     if (event.name === 'browserFocus') {
         handleBrowserFocusEvent();
     }
 }
 
-async function hydrateRuntimeState(
+async function hydrateRuntimeState<TResult>(
     failureMessage: string,
-    hydrate: () => Promise<unknown>
+    hydrate: () => TResult | PromiseLike<TResult>
 ): Promise<void> {
     try {
         await hydrate();
@@ -363,11 +387,9 @@ async function hydrateAncillaryRuntimeState(): Promise<void> {
         hydrateRuntimeState(
             'Failed to hydrate app update download status:',
             async () => {
-                useRuntimeStore.getState().setUpdateLoopState({
-                    autoDownloadState: snapshot.appUpdateDownloadStatus.phase,
-                    downloadedVersion: snapshot.appUpdateDownloadStatus.version,
-                    downloadProgress: snapshot.appUpdateDownloadStatus.percent
-                });
+                handleAppUpdateDownloadStatusSnapshot(
+                    snapshot.appUpdateDownloadStatus
+                );
             }
         )
     ]);
@@ -379,6 +401,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
     const unsubscribers: RuntimeEventUnsubscribe[] = [];
     const events: RuntimeEventName[] = [
         'addGameLogEvent',
+        'authenticatedSessionProjection',
         'authenticatedRuntimePhase',
         'appUpdateStatus',
         'appUpdateDownloadProgress',
@@ -417,6 +440,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'realtimeInstanceQueueProjection',
         'realtimeProjectionSync',
         'updateIsGameRunning',
+        'integrationApiStartFailed',
         'browserFocus'
     ];
 
@@ -450,6 +474,14 @@ export async function bindRuntimeEvents(): Promise<() => void> {
     }
 
     useSessionStore.getState().setTransportStatus('runtime-subscribed');
+    await hydrateRuntimeState(
+        'Failed to hydrate Integration API status:',
+        async () => {
+            hydrateIntegrationApiStatus(
+                await commands.appIntegrationApiStatus()
+            );
+        }
+    );
     let combinedSnapshot: BackendRuntimeCombinedSnapshot | null = null;
     try {
         combinedSnapshot =
@@ -468,7 +500,8 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         }
         await hydrateBackendRuntimeSnapshot(
             combinedSnapshot.backendRuntime,
-            flushPendingBackendRealtimeProjectionEvents
+            combinedSnapshot.authenticatedSession,
+            reconcilePendingBackendRealtimeProjectionEvents
         );
     } catch (error) {
         useRuntimeStore.getState().setShellState({

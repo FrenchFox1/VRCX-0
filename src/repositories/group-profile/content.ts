@@ -1,3 +1,4 @@
+import type { GroupPostRecord } from '@/domain/entities/group';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -15,7 +16,7 @@ import {
     type GroupIdInput,
     type GroupPageInput,
     type GroupPostInput,
-    type GroupRecord,
+    type GroupPostMutationInput,
     normalizeEntityId,
     responseRows,
     unwrapVrchatGroupResponse
@@ -41,7 +42,7 @@ export async function getGroupPosts({
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/posts`
     );
-    return responseRows<GroupRecord>(response.json, 'posts');
+    return responseRows<GroupPostRecord>(response.json, 'posts');
 }
 
 export async function getAllGroupPosts({ groupId }: GroupIdInput) {
@@ -52,8 +53,8 @@ export async function getAllGroupPosts({ groupId }: GroupIdInput) {
 
 export async function createGroupPost({
     groupId,
-    params = {}
-}: Pick<GroupPostInput, 'groupId' | 'params'>) {
+    params
+}: Pick<GroupPostMutationInput, 'groupId' | 'params'>) {
     const normalizedGroupId = normalizeEntityId(groupId);
     if (!normalizedGroupId) {
         throw new Error(
@@ -73,8 +74,8 @@ export async function createGroupPost({
 export async function editGroupPost({
     groupId,
     postId,
-    params = {}
-}: GroupPostInput) {
+    params
+}: GroupPostMutationInput) {
     const normalizedGroupId = normalizeEntityId(groupId);
     const normalizedPostId = normalizeEntityId(postId);
     if (!normalizedGroupId || !normalizedPostId) {

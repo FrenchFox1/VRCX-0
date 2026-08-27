@@ -1,4 +1,5 @@
 import type { KeyboardEvent, SyntheticEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { LocationContextMenu } from '@/components/location/LocationContextMenu';
@@ -15,12 +16,11 @@ import { useLaunchStore } from '@/state/launchStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 export type LocationNewInstanceTarget = {
-    location?: unknown;
-    worldId?: unknown;
-    worldName?: unknown;
-    groupName?: unknown;
-    selfInvite?: boolean;
-    [key: string]: unknown;
+    location: string;
+    worldId: string;
+    worldName: string;
+    groupName: string;
+    selfInvite: boolean;
 };
 
 type PreviousInstancesCallback = NonNullable<
@@ -30,18 +30,18 @@ type PreviousInstancesCallback = NonNullable<
 >;
 
 export type LocationProps = {
-    location?: unknown;
-    traveling?: unknown;
-    hint?: unknown;
-    grouphint?: unknown;
-    groupHint?: unknown;
+    location?: string | null;
+    traveling?: string | null;
+    hint?: string | null;
+    grouphint?: string | null;
+    groupHint?: string | null;
     link?: boolean;
     disableTooltip?: boolean;
     isOpenPreviousInstanceInfoDialog?: boolean;
     enableContextMenu?: boolean;
     showInstanceIdInLocation?: boolean;
     showLaunchActions?: boolean;
-    endpoint?: unknown;
+    endpoint?: string;
     onShowPreviousInstances?: PreviousInstancesCallback;
     onNewInstance?: (target: LocationNewInstanceTarget) => void;
     previousInstancesDisabled?: boolean;
@@ -74,12 +74,12 @@ export function Location({
     className = '',
     worldNameClassName = ''
 }: LocationProps) {
+    const { t } = useTranslation();
     const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
-    const isGameRunning = useRuntimeStore((state) =>
-        Boolean(state.gameState.isGameRunning)
+    const isGameRunning = useRuntimeStore(
+        (state) => state.gameState.isGameRunning === true
     );
     const {
-        t,
         currentLocation,
         parsedLocation,
         region,
@@ -132,7 +132,6 @@ export function Location({
         groupName,
         onShowPreviousInstances,
         parsedLocation,
-        t,
         worldName,
         worldNameHint
     });

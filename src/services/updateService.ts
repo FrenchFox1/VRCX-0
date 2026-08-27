@@ -1,7 +1,6 @@
 export type {
     NormalizedRelease,
-    UpdateDownloadProgress,
-    UpdateOptions
+    UpdateDownloadProgress
 } from './update-service/types';
 
 export type {
@@ -10,10 +9,7 @@ export type {
 } from './update-service/appUpdateSnapshot';
 export { toNormalizedReleaseFromSnapshot } from './update-service/appUpdateSnapshot';
 
-export {
-    canInstallUpdatesOnPlatform,
-    sanitizeBranch
-} from './update-service/release';
+export { sanitizeBranch } from './update-service/release';
 export {
     fetchBranchReleases,
     fetchLatestBranchRelease,

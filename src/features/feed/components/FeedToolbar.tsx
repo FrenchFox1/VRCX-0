@@ -11,6 +11,7 @@ import {
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
 import type { FeedFilterType } from '@/repositories/feedRepository';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Calendar } from '@/ui/shadcn/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
@@ -49,7 +50,7 @@ type FeedToolbarProps = {
         todayDate: Date;
     };
     modeToggle: ReactNode;
-    feedPersistenceDisabled: boolean;
+    isSearching: boolean;
 };
 
 function FeedTypeFilterChips({
@@ -168,9 +169,12 @@ export const FeedToolbar = memo(function FeedToolbar({
     filterCommands,
     filterModel,
     modeToggle,
-    feedPersistenceDisabled
+    isSearching
 }: FeedToolbarProps) {
     const { t } = useTranslation();
+    const feedPersistenceDisabled = usePreferencesStore(
+        (state) => state.feedPersistenceDisabled
+    );
     const {
         activeFilters,
         dateDraftFrom,
@@ -234,6 +238,7 @@ export const FeedToolbar = memo(function FeedToolbar({
                 </ToolbarViews>
 
                 <FeedSearchBox
+                    isSearching={isSearching}
                     scopedUserIds={scopedUserIds}
                     searchDraft={searchDraft}
                     onClearSearch={onClearSearch}

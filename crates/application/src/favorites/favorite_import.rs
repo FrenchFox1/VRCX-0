@@ -11,33 +11,29 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_application_core::{
-    read_config_string_array, FavoriteEntityKind, FavoritesChangedPayload, TaskStopToken,
+    vrchat_api::{VrchatApiRequest, VrchatScope},
+    FavoriteEntityKind, TaskStopToken, VrchatFavoriteType,
 };
+use vrcx_0_contracts::CacheEntityInput;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_ids::{is_avatar_id, is_user_id, is_world_id};
-use vrcx_0_persistence::{
-    avatars::avatar_cache_upsert, cache_entities::CacheEntityInput, favorites::favorite_add,
-    DatabaseService,
-};
-use vrcx_0_vrchat_client::{
-    avatars::avatar_get_input,
-    favorites::{favorite_add_input, favorites_get_input},
-    http_api::ApiScope,
-    users::user_get_input,
-    worlds::world_get_input,
-};
+use vrcx_0_core::vrchat_json::response_error_message;
 
-use crate::{
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
-    WebClient, WorldCache,
+use super::local_favorites::read_config_string_array;
+
+use vrcx_0_application_core::{
+    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
+    TaskSupervisor, WebClient, WorldCache,
 };
 
 use super::local_favorites::local_group_config_key;
+use super::FavoriteMutationCoordinator;
+use vrcx_0_core::OwnerId;
 
 pub const FAVORITE_IMPORT_MAX_ITEMS: usize = 1_000;
 const FAVORITE_IMPORT_INTERVAL: Duration = Duration::from_millis(500);
 const FAVORITE_IMPORT_CANCEL_POLL: Duration = Duration::from_millis(50);
-const FAVORITE_IMPORT_PAGE_SIZE: i64 = 300;
+const FAVORITE_IMPORT_PAGE_SIZE: i32 = 300;
 const FAVORITE_IMPORT_MAX_PAGES: usize = 50;
 
 pub type FavoriteImportKind = FavoriteEntityKind;
@@ -62,8 +58,7 @@ pub struct FavoriteImportTarget {
     pub location: FavoriteImportLocation,
     #[serde(default)]
     pub group: String,
-    #[serde(default)]
-    pub favorite_type: String,
+    pub favorite_type: Option<VrchatFavoriteType>,
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -112,10 +107,10 @@ pub struct FavoriteImportStatus {
     pub operation: FavoriteImportOperation,
     pub kind: FavoriteImportKind,
     pub auth_scope_generation: u64,
-    pub total: usize,
-    pub processed: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub processed: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub cancel_requested: bool,
     pub items: Vec<FavoriteImportItemResult>,
     pub started_at: Option<String>,
@@ -147,12 +142,54 @@ impl Default for FavoriteImportStatus {
 #[derive(Clone)]
 pub struct FavoriteImportRuntime {
     shared: Arc<FavoriteImportRuntimeShared>,
-    db: Arc<DatabaseService>,
+    store: Arc<dyn super::FavoriteStore>,
+    remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
     web: Arc<WebClient>,
     world_cache: Arc<WorldCache>,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     auth_scope: RuntimeAuthScope,
+    remote_mutations: Arc<RemoteMutationGate>,
+    favorite_mutations: FavoriteMutationCoordinator,
+}
+
+pub struct FavoriteImportRuntimeDeps {
+    pub store: Arc<dyn super::FavoriteStore>,
+    pub remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
+    pub(crate) web: Arc<WebClient>,
+    pub world_cache: Arc<WorldCache>,
+    pub event_bus: RuntimeEventBus,
+    pub tasks: TaskSupervisor,
+    pub auth_scope: RuntimeAuthScope,
+    pub remote_mutations: Arc<RemoteMutationGate>,
+    pub favorite_mutations: FavoriteMutationCoordinator,
+}
+
+impl FavoriteImportRuntimeDeps {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        store: Arc<dyn super::FavoriteStore>,
+        remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
+        web: Arc<WebClient>,
+        world_cache: Arc<WorldCache>,
+        event_bus: RuntimeEventBus,
+        tasks: TaskSupervisor,
+        auth_scope: RuntimeAuthScope,
+        remote_mutations: Arc<RemoteMutationGate>,
+        favorite_mutations: FavoriteMutationCoordinator,
+    ) -> Self {
+        Self {
+            store,
+            remote_requests,
+            web,
+            world_cache,
+            event_bus,
+            tasks,
+            auth_scope,
+            remote_mutations,
+            favorite_mutations,
+        }
+    }
 }
 
 struct FavoriteImportRuntimeShared {
@@ -164,6 +201,7 @@ struct FavoriteImportRuntimeShared {
 struct FavoriteImportRuntimeInner {
     status: FavoriteImportStatus,
     cancel: Option<Arc<AtomicBool>>,
+    scope: Option<RuntimeAuthScopeSnapshot>,
 }
 
 struct PreparedFavoriteImport {
@@ -174,25 +212,21 @@ struct PreparedFavoriteImport {
 }
 
 impl FavoriteImportRuntime {
-    pub fn new(
-        db: Arc<DatabaseService>,
-        web: Arc<WebClient>,
-        world_cache: Arc<WorldCache>,
-        event_bus: RuntimeEventBus,
-        tasks: TaskSupervisor,
-        auth_scope: RuntimeAuthScope,
-    ) -> Self {
+    pub fn new(deps: FavoriteImportRuntimeDeps) -> Self {
         Self {
             shared: Arc::new(FavoriteImportRuntimeShared {
                 state: Mutex::new(FavoriteImportRuntimeInner::default()),
                 generation: AtomicU64::new(0),
             }),
-            db,
-            web,
-            world_cache,
-            event_bus,
-            tasks,
-            auth_scope,
+            store: deps.store,
+            remote_requests: deps.remote_requests,
+            web: deps.web,
+            world_cache: deps.world_cache,
+            event_bus: deps.event_bus,
+            tasks: deps.tasks,
+            auth_scope: deps.auth_scope,
+            remote_mutations: deps.remote_mutations,
+            favorite_mutations: deps.favorite_mutations,
         }
     }
 
@@ -219,12 +253,13 @@ impl FavoriteImportRuntime {
                 operation: prepared.operation,
                 kind: prepared.kind,
                 auth_scope_generation: scope.generation,
-                total: prepared.ids.len(),
+                total: crate::wire_count(prepared.ids.len()),
                 started_at: Some(Utc::now().to_rfc3339()),
                 ..Default::default()
             };
             inner.status = status.clone();
             inner.cancel = Some(Arc::clone(&cancel));
+            inner.scope = Some(scope.clone());
             status
         };
         self.emit_status(status.clone());
@@ -262,6 +297,7 @@ impl FavoriteImportRuntime {
             return false;
         }
         inner.cancel = None;
+        inner.scope = None;
         true
     }
 
@@ -388,10 +424,20 @@ impl FavoriteImportRuntime {
         ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
         let request = match kind {
             FavoriteImportKind::Avatar => {
-                avatar_get_input(scope.endpoint.clone(), id.to_string())?.1
+                self.remote_requests
+                    .avatar(scope.endpoint.clone(), id.to_string())?
+                    .1
             }
-            FavoriteImportKind::World => world_get_input(scope.endpoint.clone(), id.to_string())?.1,
-            FavoriteImportKind::Friend => user_get_input(scope.endpoint.clone(), id.to_string())?.1,
+            FavoriteImportKind::World => {
+                self.remote_requests
+                    .world(scope.endpoint.clone(), id.to_string())?
+                    .1
+            }
+            FavoriteImportKind::Friend => {
+                self.remote_requests
+                    .user(scope.endpoint.clone(), id.to_string())?
+                    .1
+            }
         };
         let payload = self
             .execute_json(scope, request, "favorite import profile lookup")
@@ -407,7 +453,10 @@ impl FavoriteImportRuntime {
         }
         match hydration_cache(kind) {
             FavoriteImportHydrationCache::Avatar => {
-                avatar_cache_upsert(self.db.as_ref(), cache_entity_from_payload(&payload))?;
+                self.store.cache_upsert(
+                    super::FavoriteCacheKind::Avatar,
+                    cache_entity_from_payload(&payload),
+                )?;
             }
             FavoriteImportHydrationCache::World => {
                 self.world_cache
@@ -430,9 +479,8 @@ impl FavoriteImportRuntime {
         ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
         match target.location {
             FavoriteImportLocation::Local => {
-                let affected = favorite_add(
-                    self.db.as_ref(),
-                    Some(&scope.current_user_id),
+                let affected = self.store.add(
+                    Some(&OwnerId::new(scope.current_user_id.clone())),
                     kind,
                     id.to_string(),
                     target.group.clone(),
@@ -454,12 +502,21 @@ impl FavoriteImportRuntime {
                         kind_label(kind)
                     )));
                 }
-                let (_, _, request) = favorite_add_input(
+                let favorite_type = target.favorite_type.ok_or_else(|| {
+                    Error::Custom("Remote favorite import requires a favorite type.".into())
+                })?;
+                let (_, _, request) = self.remote_requests.add(
                     scope.endpoint.clone(),
-                    target.favorite_type.clone(),
-                    id.to_string(),
-                    target.group.clone(),
+                    super::FavoriteRemoteAddInput {
+                        kind: favorite_type,
+                        entity_id: id.to_string(),
+                        tags: target.group.clone(),
+                    },
                 )?;
+                self.remote_mutations
+                    .wait(scope, FAVORITE_IMPORT_INTERVAL)
+                    .await;
+                ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
                 self.execute_json(scope, request, "favorite import remote add")
                     .await?;
                 remote_ids.insert(id.to_string());
@@ -485,8 +542,11 @@ impl FavoriteImportRuntime {
                 return Err(Error::Custom("Favorite import was cancelled.".into()));
             }
             ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
-            let request =
-                favorites_get_input(scope.endpoint.clone(), FAVORITE_IMPORT_PAGE_SIZE, offset);
+            let request = self.remote_requests.list(
+                scope.endpoint.clone(),
+                FAVORITE_IMPORT_PAGE_SIZE,
+                offset,
+            );
             let payload = self
                 .execute_json(scope, request, "favorite import remote validation")
                 .await?;
@@ -513,7 +573,7 @@ impl FavoriteImportRuntime {
         kind: FavoriteImportKind,
         target: &FavoriteImportTarget,
     ) -> Result<()> {
-        let groups = read_config_string_array(self.db.as_ref(), local_group_config_key(kind))?;
+        let groups = read_config_string_array(self.store.as_ref(), local_group_config_key(kind))?;
         if groups.iter().any(|group| group == &target.group) {
             Ok(())
         } else {
@@ -527,14 +587,11 @@ impl FavoriteImportRuntime {
     async fn execute_json(
         &self,
         scope: &RuntimeAuthScopeSnapshot,
-        request: vrcx_0_vrchat_client::http_api::HttpApiRequestInput,
+        request: VrchatApiRequest,
         action: &str,
     ) -> Result<Value> {
         ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
-        let response = self
-            .web
-            .execute_api(request, ApiScope::Vrchat, self.db.as_ref())
-            .await?;
+        let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
         ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
         let payload = serde_json::from_str::<Value>(&response.data)
             .unwrap_or_else(|_| Value::String(response.data.clone()));
@@ -603,7 +660,7 @@ impl FavoriteImportRuntime {
         error: Option<String>,
         location: Option<FavoriteImportLocation>,
     ) {
-        let status = {
+        let (status, scope) = {
             let mut inner = self.lock_inner();
             if inner.status.run_id != run_id || !is_active_state(inner.status.status) {
                 return;
@@ -615,15 +672,12 @@ impl FavoriteImportRuntime {
                 inner.status.last_error = error;
             }
             inner.cancel = None;
-            inner.status.clone()
+            let scope = inner.scope.take();
+            (inner.status.clone(), scope)
         };
-        if status.operation == FavoriteImportOperation::Import && status.succeeded > 0 {
-            self.event_bus
-                .emit_favorites_changed(FavoritesChangedPayload {
-                    kind: status.kind.into(),
-                    local: location == Some(FavoriteImportLocation::Local),
-                    remote: location == Some(FavoriteImportLocation::Remote),
-                });
+        if let Some(scope) = scope {
+            self.favorite_mutations
+                .complete_import(&scope, &status, location);
         }
         self.emit_status(status);
     }
@@ -666,20 +720,20 @@ fn prepare_favorite_import(input: FavoriteImportStartInput) -> Result<PreparedFa
                 .target
                 .ok_or_else(|| Error::Custom("Favorite import requires a target group.".into()))?;
             target.group = target.group.trim().to_string();
-            target.favorite_type = target.favorite_type.trim().to_string();
             if target.group.is_empty() {
                 return Err(Error::Custom(
                     "Favorite import requires a target group.".into(),
                 ));
             }
-            if target.location == FavoriteImportLocation::Remote && target.favorite_type.is_empty()
-            {
+            if target.location == FavoriteImportLocation::Remote && target.favorite_type.is_none() {
                 return Err(Error::Custom(
                     "Remote favorite import requires a favorite type.".into(),
                 ));
             }
             if target.location == FavoriteImportLocation::Remote
-                && !favorite_type_matches_kind(input.kind, &target.favorite_type)
+                && !target.favorite_type.is_some_and(|favorite_type| {
+                    favorite_type_matches_kind(input.kind, favorite_type)
+                })
             {
                 return Err(Error::Custom(
                     "Remote favorite type does not match the imported entity kind.".into(),
@@ -781,8 +835,8 @@ fn kind_label(kind: FavoriteImportKind) -> &'static str {
     }
 }
 
-fn favorite_type_matches_kind(kind: FavoriteImportKind, favorite_type: &str) -> bool {
-    kind.matches_remote_type(favorite_type)
+fn favorite_type_matches_kind(kind: FavoriteImportKind, favorite_type: VrchatFavoriteType) -> bool {
+    FavoriteEntityKind::from(favorite_type) == kind
 }
 
 fn is_entity_id(kind: FavoriteImportKind, value: &str) -> bool {
@@ -820,17 +874,6 @@ fn cache_entity_from_payload(payload: &Value) -> CacheEntityInput {
     }
 }
 
-fn response_error_message(payload: &Value, status: i32, action: &str) -> String {
-    payload
-        .get("error")
-        .and_then(Value::as_object)
-        .and_then(|error| error.get("message"))
-        .and_then(Value::as_str)
-        .or_else(|| payload.get("message").and_then(Value::as_str))
-        .map(str::to_string)
-        .unwrap_or_else(|| format!("VRChat {action} failed with HTTP {status}."))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -846,19 +889,22 @@ mod tests {
                 FavoriteImportKind::Avatar,
                 FavoriteImportHydrationCache::Avatar,
                 "avatar",
+                VrchatFavoriteType::Avatar,
             ),
             (
                 FavoriteImportKind::World,
                 FavoriteImportHydrationCache::World,
                 "world",
+                VrchatFavoriteType::World,
             ),
             (
                 FavoriteImportKind::Friend,
                 FavoriteImportHydrationCache::None,
                 "friend",
+                VrchatFavoriteType::Friend,
             ),
         ];
-        for (kind, expected_cache, expected_kind) in rows {
+        for (kind, expected_cache, expected_kind, favorite_type) in rows {
             assert_eq!(hydration_cache(kind), expected_cache);
             assert_eq!(kind_name(kind), expected_kind);
             for location in [
@@ -877,7 +923,7 @@ mod tests {
                     target: Some(FavoriteImportTarget {
                         location,
                         group: "target".into(),
-                        favorite_type: expected_kind.into(),
+                        favorite_type: Some(favorite_type),
                     }),
                 })
                 .unwrap();
@@ -909,7 +955,7 @@ mod tests {
             target: Some(FavoriteImportTarget {
                 location,
                 group: "target".into(),
-                favorite_type: String::new(),
+                favorite_type: None,
             }),
         };
 
@@ -926,7 +972,7 @@ mod tests {
             target: Some(FavoriteImportTarget {
                 location: FavoriteImportLocation::Remote,
                 group: "avatars1".into(),
-                favorite_type: "friend".into(),
+                favorite_type: Some(VrchatFavoriteType::Friend),
             }),
         })
         .is_err());

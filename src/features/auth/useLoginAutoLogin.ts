@@ -18,10 +18,7 @@ type LoginAutoLoginOptions = {
 };
 
 function getAutoLoginSnapshotKey(snapshot: SavedAuthSnapshot | null): string {
-    const userId =
-        typeof snapshot?.lastUserLoggedIn === 'string'
-            ? snapshot.lastUserLoggedIn
-            : '';
+    const userId = snapshot?.lastUserLoggedIn ?? '';
     if (!snapshot || !userId) {
         return '';
     }
@@ -32,11 +29,11 @@ function getAutoLoginSnapshotKey(snapshot: SavedAuthSnapshot | null): string {
     return JSON.stringify({
         userId,
         username: savedCredential?.loginParams?.username || '',
-        hasCookies: Boolean(savedCredential?.hasCookies),
+        hasCookies: savedCredential?.hasCookies ?? false,
         hasSavedCredential: Boolean(savedCredential),
         autoLoginStatus: snapshot.autoLoginStatus,
-        autoLoginDelayEnabled: Boolean(snapshot.autoLoginDelayEnabled),
-        autoLoginDelaySeconds: snapshot.autoLoginDelaySeconds || 0
+        autoLoginDelayEnabled: snapshot.autoLoginDelayEnabled,
+        autoLoginDelaySeconds: snapshot.autoLoginDelaySeconds
     });
 }
 
@@ -138,7 +135,8 @@ export function useLoginAutoLogin({
                     getErrorMessage(
                         error,
                         t('view.auth.toast.automatic_login_failed_unexpectedly')
-                    )
+                    ),
+                    { duration: Infinity, closeButton: true }
                 );
             });
 
@@ -152,7 +150,7 @@ export function useLoginAutoLogin({
                 autoLoginInFlightKeyRef.current = '';
             }
         };
-    }, [isAutoLoginStartBlocked, isLoading, snapshot, t]);
+    }, [applySnapshot, isAutoLoginStartBlocked, isLoading, snapshot, t]);
 
     useEffect(
         () => () => {

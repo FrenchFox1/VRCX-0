@@ -1,8 +1,7 @@
 import { AlertTriangleIcon, LockIcon } from 'lucide-react';
 import {
-    useEffect,
     useMemo,
-    useState,
+    type HTMLAttributes,
     type KeyboardEvent,
     type ReactElement,
     type ReactNode,
@@ -11,103 +10,35 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
-import { timeToText } from '@/lib/dateTime';
+import type { LocationMetadata } from '@/components/location/useLocationMetadata';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import {
     getLocationText,
+    locationSentinel,
     parseLocation,
     translateAccessType
 } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
-import { useShellStore } from '@/state/shellStore';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     clearStaleOfflineLocation,
-    normalizeLocationStatus,
-    readFriendInstanceEpoch,
     readFriendRef,
     readFriendRefLocation,
     readFriendRefTravelingLocation,
     readFriendStatusSource,
     resolvePresenceLocation,
-    timestampMsFromValue,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
 
-type SidebarLocationMetadata = Record<string, unknown> & {
-    groupName?: unknown;
-    instanceName?: unknown;
-    isClosed?: unknown;
-    region?: unknown;
-    worldName?: unknown;
-    worldNameHint?: unknown;
-};
-
-const FRIEND_INSTANCE_TIMER_FIRST_STEP_MS = 30_000;
-const FRIEND_INSTANCE_TIMER_STEP_MS = 60_000;
-
 function recordValue(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
-}
-
-export function FriendInstanceTimer({
-    epoch,
-    traveling = false
-}: {
-    epoch?: unknown;
-    traveling?: boolean;
-}) {
-    const timeUnitLabels = useShellStore((state) => state.timeUnitLabels);
-    const [now, setNow] = useState(() => Date.now());
-    const normalizedEpoch = timestampMsFromValue(epoch);
-    const elapsedMs = normalizedEpoch ? Math.max(0, now - normalizedEpoch) : 0;
-    const isFirstStep = elapsedMs < FRIEND_INSTANCE_TIMER_FIRST_STEP_MS;
-    const displayedMinutes =
-        Math.floor(
-            Math.max(0, elapsedMs - FRIEND_INSTANCE_TIMER_FIRST_STEP_MS) /
-                FRIEND_INSTANCE_TIMER_STEP_MS
-        ) + 1;
-    const nextStepMs = isFirstStep
-        ? FRIEND_INSTANCE_TIMER_FIRST_STEP_MS
-        : FRIEND_INSTANCE_TIMER_FIRST_STEP_MS +
-          displayedMinutes * FRIEND_INSTANCE_TIMER_STEP_MS;
-    let text = '-';
-    if (normalizedEpoch) {
-        text = isFirstStep
-            ? `<${timeToText(FRIEND_INSTANCE_TIMER_FIRST_STEP_MS, true, timeUnitLabels)}`
-            : timeToText(
-                  displayedMinutes * FRIEND_INSTANCE_TIMER_STEP_MS,
-                  false,
-                  timeUnitLabels
-              );
-    }
-
-    useEffect(() => {
-        if (!normalizedEpoch) {
-            return;
-        }
-        const timeoutId = window.setTimeout(
-            () => {
-                setNow(Date.now());
-            },
-            Math.max(1, nextStepMs - elapsedMs)
-        );
-        return () => window.clearTimeout(timeoutId);
-    }, [elapsedMs, normalizedEpoch]);
-
-    return (
-        <span className="inline-flex min-w-0 items-center">
-            {traveling ? <Spinner className="mr-1 size-3 shrink-0" /> : null}
-            <span className="truncate">{text}</span>
-        </span>
-    );
+    return isRecord(value) ? value : null;
 }
 
 function sidebarLocationTarget(location: unknown, traveling: unknown = '') {
@@ -124,12 +55,11 @@ function sidebarLocationTarget(location: unknown, traveling: unknown = '') {
 function friendLocationHint(
     displaySource: SidebarFriendRecord | null | undefined
 ) {
-    return (
+    return normalizeId(
         displaySource?.worldName ||
-        displaySource?.$worldName ||
-        displaySource?.travelingToWorld ||
-        displaySource?.$travelingToWorld ||
-        ''
+            displaySource?.$worldName ||
+            displaySource?.travelingToWorld ||
+            displaySource?.$travelingToWorld
     );
 }
 
@@ -139,15 +69,14 @@ function friendGroupHint(
     const location = recordValue(displaySource?.$location);
     const group = recordValue(location?.group);
     const sourceGroup = recordValue(displaySource?.group);
-    return (
+    return normalizeId(
         displaySource?.groupName ||
-        displaySource?.$groupName ||
-        location?.groupName ||
-        group?.name ||
-        group?.displayName ||
-        sourceGroup?.name ||
-        sourceGroup?.displayName ||
-        ''
+            displaySource?.$groupName ||
+            location?.groupName ||
+            group?.name ||
+            group?.displayName ||
+            sourceGroup?.name ||
+            sourceGroup?.displayName
     );
 }
 
@@ -162,12 +91,8 @@ export function resolveFriendRowLocationState({
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeLocationStatus(
-        statusSource?.stateBucket || statusSource?.state
-    );
-    const friendStateBucket = normalizeLocationStatus(
-        statusSource?.stateBucket
-    );
+    const friendState = normalizeStateBucket(statusSource?.state);
+    const friendStateBucket = friendState;
     const rawFriendLocation = isCurrentUser
         ? resolvePresenceLocation(friend)
         : readFriendRefLocation(friend);
@@ -176,7 +101,7 @@ export function resolveFriendRowLocationState({
         friendState
     );
     const parsedFriendLocation = parseLocation(friendLocation);
-    const isTraveling = normalizeLocationStatus(friendLocation) === 'traveling';
+    const isTraveling = locationSentinel(friendLocation) === 'traveling';
     const displayLocation = isTraveling ? 'traveling' : friendLocation;
     const displayTraveling = isTraveling
         ? readFriendRefTravelingLocation(friend) || undefined
@@ -187,11 +112,7 @@ export function resolveFriendRowLocationState({
         friendStateBucket === 'active' ||
         friendStateBucket === 'offline';
     const groupByInstanceTimerVisible = Boolean(
-        isGroupByInstance && !isActiveOrOffline && !statusSource?.pendingOffline
-    );
-    const groupByInstanceEpoch = readFriendInstanceEpoch(
-        statusSource,
-        isTraveling
+        isGroupByInstance && !isActiveOrOffline
     );
     const showLocationSubline = Boolean(
         displayLocation &&
@@ -212,7 +133,6 @@ export function resolveFriendRowLocationState({
         displayLocation,
         displayTraveling,
         groupByInstanceTimerVisible,
-        groupByInstanceEpoch,
         showLocationSubline,
         metadataCurrentLocation: sidebarLocationTarget(
             displayLocation,
@@ -230,14 +150,14 @@ function StaticLocationTooltip({
 }: {
     disabled?: boolean;
     content?: ReactNode;
-    children: ReactNode;
+    children: ReactElement;
 }) {
     if (disabled || !content) {
         return children;
     }
     return (
         <Tooltip>
-            <TooltipTrigger render={children as ReactElement} />
+            <TooltipTrigger render={children} />
             <TooltipContent>{content}</TooltipContent>
         </Tooltip>
     );
@@ -255,13 +175,13 @@ export function StaticSidebarLocation({
     ageGatedInstancesVisible = false,
     className = ''
 }: {
-    location?: unknown;
-    traveling?: unknown;
-    hint?: unknown;
+    location?: string | null;
+    traveling?: string | null;
+    hint?: string | null;
     link?: boolean;
     showGroupLink?: boolean;
     tooltips?: boolean;
-    metadata?: SidebarLocationMetadata | null;
+    metadata?: LocationMetadata | null;
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
     className?: string;
@@ -325,6 +245,16 @@ export function StaticSidebarLocation({
         openWorld(event);
     }
 
+    const locationInteractionProps: HTMLAttributes<HTMLSpanElement> =
+        isLocationLink
+            ? {
+                  role: 'button',
+                  tabIndex: 0,
+                  onClick: openWorld,
+                  onKeyDown: openWorldFromKeyboard
+              }
+            : {};
+
     function openGroup(event: Pick<SyntheticEvent, 'stopPropagation'>) {
         event?.stopPropagation?.();
         const groupId = normalizeId(parsedLocation.groupId);
@@ -384,20 +314,15 @@ export function StaticSidebarLocation({
                 content={tooltipContent}
             >
                 <span
-                    role={isLocationLink ? 'button' : undefined}
-                    tabIndex={isLocationLink ? 0 : undefined}
+                    {...locationInteractionProps}
                     className={cn(
                         'x-location inline-flex max-w-full min-w-0 flex-nowrap items-center truncate overflow-hidden text-left',
                         isLocationLink
                             ? 'hover:text-primary cursor-pointer text-inherit underline-offset-4'
                             : 'cursor-default'
                     )}
-                    onClick={isLocationLink ? openWorld : undefined}
-                    onKeyDown={
-                        isLocationLink ? openWorldFromKeyboard : undefined
-                    }
                 >
-                    {normalizeLocationStatus(location) === 'traveling' ? (
+                    {locationSentinel(location) === 'traveling' ? (
                         <Spinner
                             aria-hidden="true"
                             aria-label={undefined}
@@ -466,7 +391,7 @@ export function buildSidebarLocationMetadataEntry(row: SidebarVirtualRow) {
         key: row.key,
         locationInfo: parseLocation(locationState.metadataCurrentLocation),
         currentLocation: locationState.metadataCurrentLocation,
-        hint: locationState.metadataHint,
-        groupHint: locationState.metadataGroupHint
+        hint: normalizeId(locationState.metadataHint),
+        groupHint: normalizeId(locationState.metadataGroupHint)
     };
 }

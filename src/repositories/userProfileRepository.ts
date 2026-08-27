@@ -1,7 +1,7 @@
 import type {
     UserProfileEntity,
     UserProfileRecord
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/user';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -9,8 +9,14 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type CurrentUserProfileUpdateRequest,
+    type CurrentUserUpdateRequest,
+    type HttpApiExecuteResponse
+} from '@/platform/tauri/bindings';
 import { stripDefaultAvatarImage } from '@/shared/utils/avatar';
+import { isRecord } from '@/shared/utils/record';
 import {
     computeTrustLevel,
     computeUserPlatform,
@@ -21,10 +27,7 @@ import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { unwrapVrchatResponse } from './vrchatRequest';
 
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 type UserFriendStatus = {
     incomingRequest: boolean;
@@ -68,7 +71,7 @@ type UserMutualFriendRow = UserRecord & {
 };
 
 interface UserEndpointInput {
-    userId?: unknown;
+    userId?: string;
 }
 
 interface UserProfileInput extends UserEndpointInput {
@@ -86,31 +89,24 @@ interface UserGroupsInput extends UserEndpointInput {
 }
 
 interface CurrentUserUpdateInput extends UserEndpointInput {
-    params?: UserRecord;
+    params?: CurrentUserUpdateRequest;
 }
 
-type ProfileBackgroundUpdate =
-    | { backgroundType: 'default' }
-    | {
-          backgroundType: 'gradient';
-          backgroundGradientBottom: string;
-          backgroundGradientTop: string;
-      }
-    | { backgroundType: 'texture'; backgroundTextureId: string };
+export type ProfileBackgroundUpdate = CurrentUserProfileUpdateRequest;
 
 interface CurrentUserProfileUpdateInput {
-    expectedUserId?: unknown;
-    params: ProfileBackgroundUpdate;
+    expectedUserId?: string;
+    params: CurrentUserProfileUpdateRequest;
 }
 
 interface CurrentUserBadgeInput extends UserEndpointInput {
-    badgeId?: unknown;
+    badgeId?: string;
     hidden?: boolean;
     showcased?: boolean;
 }
 
 interface CurrentUserTagsInput extends UserEndpointInput {
-    tags?: unknown;
+    tags?: string[];
 }
 
 function normalizeUserProfile(user: unknown): UserProfileRecord {
@@ -173,8 +169,8 @@ function hasOwnField(source: unknown, field: PropertyKey) {
     );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
+function isUserMutualFriendRow(value: unknown): value is UserMutualFriendRow {
+    return isRecord(value) && typeof value.id === 'string' && Boolean(value.id);
 }
 
 function unwrapVrchatUserResponse<TJson = unknown>(
@@ -188,11 +184,11 @@ function unwrapVrchatUserResponse<TJson = unknown>(
 function mergeCurrentUserUpdateResponse(
     responseJson: unknown,
     cachedUser: unknown,
-    params: UserRecord = {}
+    params: CurrentUserUpdateRequest = {}
 ): UserRecord {
     const responseUser: UserRecord = isRecord(responseJson) ? responseJson : {};
     const cachedUserRecord = isRecord(cachedUser) ? cachedUser : {};
-    const paramsRecord = isRecord(params) ? params : {};
+    const paramsRecord = params;
     let nextUser: UserRecord = responseUser;
 
     if (
@@ -225,10 +221,7 @@ async function getUserProfile({
     dialog = false,
     isFriend = null
 }: UserProfileInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getUserProfile requires a user id.'
@@ -251,10 +244,7 @@ async function getUserProfile({
 async function getFriendStatus({
     userId
 }: UserEndpointInput): Promise<UserFriendStatus> {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getFriendStatus requires a user id.'
@@ -281,10 +271,7 @@ async function getUserAppearanceProfile({
     userId,
     asSelf = false
 }: UserAppearanceProfileInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getUserAppearanceProfile requires a user id.'
@@ -294,7 +281,7 @@ async function getUserAppearanceProfile({
     const requestProfile = async () => {
         const response = await commands.appVrchatUserProfileGet({
             userId: normalizedUserId,
-            asSelf: asSelf === true
+            asSelf
         });
         const json = unwrapVrchatUserResponse<UserProfileEntity>(
             response,
@@ -317,41 +304,8 @@ async function getUserAppearanceProfile({
     });
 }
 
-async function getUserGroups({ userId }: UserEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
-    if (!normalizedUserId) {
-        throw new Error(
-            'UserProfileRepository.getUserGroups requires a user id.'
-        );
-    }
-
-    return fetchCachedData({
-        queryKey: queryKeys.userGroups(
-            normalizedUserId,
-            DEFAULT_VRCHAT_API_ENDPOINT
-        ),
-        policy: entityQueryPolicies.groupCollection,
-        queryFn: async () => {
-            const response = await commands.appVrchatUserGroupsGet({
-                userId: normalizedUserId
-            });
-            const json = unwrapVrchatUserResponse(
-                response,
-                `users/${encodeURIComponent(normalizedUserId)}/groups`
-            ).json;
-            return Array.isArray(json) ? json : [];
-        }
-    });
-}
-
 async function getRepresentedGroup({ userId, force = false }: UserGroupsInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getRepresentedGroup requires a user id.'
@@ -379,30 +333,28 @@ async function getRepresentedGroup({ userId, force = false }: UserGroupsInput) {
 }
 
 async function getAllMutualFriends({ userId }: UserEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.getAllMutualFriends requires a user id.'
         );
     }
 
-    const rows = await commands.appUserMutualFriendsListGet({
+    const { rows, persisted } = await commands.appUserMutualFriendsListGet({
         userId: normalizedUserId
     });
-    return Array.isArray(rows) ? (rows as UserMutualFriendRow[]) : [];
+    const candidates: unknown[] = rows;
+    return {
+        rows: candidates.filter(isUserMutualFriendRow),
+        persisted
+    };
 }
 
 async function updateCurrentUser({
     userId,
     params = {}
 }: CurrentUserUpdateInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.updateCurrentUser requires a user id.'
@@ -415,7 +367,6 @@ async function updateCurrentUser({
     );
     const cachedUser = getCachedQueryData(queryKey);
     const response = await commands.appVrchatCurrentUserUpdate({
-        userId: normalizedUserId,
         params
     });
     const json = unwrapVrchatUserResponse<UserRecord>(
@@ -432,10 +383,7 @@ async function updateCurrentUserProfile({
     expectedUserId,
     params
 }: CurrentUserProfileUpdateInput) {
-    const normalizedUserId =
-        typeof expectedUserId === 'string'
-            ? expectedUserId.trim()
-            : String(expectedUserId ?? '').trim();
+    const normalizedUserId = expectedUserId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.updateCurrentUserProfile requires a user id.'
@@ -443,7 +391,6 @@ async function updateCurrentUserProfile({
     }
 
     const response = await commands.appVrchatCurrentUserProfileUpdate({
-        expectedUserId: normalizedUserId,
         params
     });
     return unwrapVrchatUserResponse<UserProfileEntity>(
@@ -458,14 +405,8 @@ async function updateCurrentUserBadge({
     hidden = false,
     showcased = false
 }: CurrentUserBadgeInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
-    const normalizedBadgeId =
-        typeof badgeId === 'string'
-            ? badgeId.trim()
-            : String(badgeId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
+    const normalizedBadgeId = badgeId.trim();
     if (!normalizedUserId || !normalizedBadgeId) {
         throw new Error(
             'UserProfileRepository.updateCurrentUserBadge requires a user id and badge id.'
@@ -473,10 +414,9 @@ async function updateCurrentUserBadge({
     }
 
     const response = await commands.appVrchatCurrentUserBadgeUpdate({
-        userId: normalizedUserId,
         badgeId: normalizedBadgeId,
-        hidden: Boolean(hidden),
-        showcased: Boolean(showcased)
+        hidden,
+        showcased
     });
     unwrapVrchatUserResponse(
         response,
@@ -487,10 +427,7 @@ async function updateCurrentUserBadge({
 }
 
 async function addCurrentUserTags({ userId, tags = [] }: CurrentUserTagsInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.addCurrentUserTags requires a user id.'
@@ -498,8 +435,7 @@ async function addCurrentUserTags({ userId, tags = [] }: CurrentUserTagsInput) {
     }
 
     const response = await commands.appVrchatCurrentUserTagsAdd({
-        userId: normalizedUserId,
-        tags: Array.isArray(tags) ? tags.map(String) : []
+        tags
     });
     const json = unwrapVrchatUserResponse(
         response,
@@ -512,10 +448,7 @@ async function removeCurrentUserTags({
     userId,
     tags = []
 }: CurrentUserTagsInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error(
             'UserProfileRepository.removeCurrentUserTags requires a user id.'
@@ -523,8 +456,7 @@ async function removeCurrentUserTags({
     }
 
     const response = await commands.appVrchatCurrentUserTagsRemove({
-        userId: normalizedUserId,
-        tags: Array.isArray(tags) ? tags.map(String) : []
+        tags
     });
     const json = unwrapVrchatUserResponse(
         response,
@@ -538,7 +470,6 @@ const userProfileRepository = Object.freeze({
     getUserProfile,
     getFriendStatus,
     getUserAppearanceProfile,
-    getUserGroups,
     getRepresentedGroup,
     getAllMutualFriends,
     updateCurrentUserProfile,
@@ -553,7 +484,6 @@ export {
     getUserProfile,
     getFriendStatus,
     getUserAppearanceProfile,
-    getUserGroups,
     getRepresentedGroup,
     getAllMutualFriends,
     updateCurrentUserProfile,
@@ -562,6 +492,5 @@ export {
     addCurrentUserTags,
     removeCurrentUserTags
 };
-export type { UserProfileRecord } from '@/domain/entities/profileEntities';
-export type { ProfileBackgroundUpdate };
+export type { UserProfileRecord } from '@/domain/entities/user';
 export default userProfileRepository;

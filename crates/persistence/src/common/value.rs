@@ -5,9 +5,7 @@ use super::DbParams;
 
 pub(crate) use vrcx_0_core::time::now_iso;
 
-pub(crate) fn normalize_text(value: impl AsRef<str>) -> String {
-    value.as_ref().trim().to_string()
-}
+pub(crate) use vrcx_0_core::text::normalize_text;
 
 pub(crate) fn value_as_string(value: &Value) -> String {
     text_of(Some(value))

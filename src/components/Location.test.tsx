@@ -2,6 +2,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Button } from '@/ui/shadcn/button';
+
 const mocks = vi.hoisted(() => ({
     metadata: {
         currentEndpoint: 'https://api.example.test/api/1',
@@ -131,7 +133,8 @@ vi.mock('@/ui/shadcn/button', async () => {
             children,
             variant: _variant,
             ...props
-        }: React.ComponentProps<'button'> & { variant?: unknown }) =>
+        }: React.ComponentProps<'button'> &
+            Pick<React.ComponentProps<typeof Button>, 'variant'>) =>
             React.createElement('button', props, children)
     };
 });

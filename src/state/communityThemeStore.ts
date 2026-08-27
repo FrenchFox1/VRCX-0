@@ -4,7 +4,7 @@ import type {
     CommunityThemeInstallMetadata,
     CommunityThemeLocalPreview,
     CommunityThemeManifest
-} from '@/features/themes/communityThemeTypes';
+} from '@/domain/themes/types';
 
 interface CommunityThemeLocalPreviewWatch {
     enabled: boolean;
@@ -54,7 +54,7 @@ export function communityThemeControlsAccent(
     if (localPreview) {
         return !localPreview.accentMode;
     }
-    return Boolean(enabled && installedTheme && !installedTheme.accentMode);
+    return enabled && installedTheme !== null && !installedTheme.accentMode;
 }
 
 export function communityThemeControlsAppearance(
@@ -62,7 +62,7 @@ export function communityThemeControlsAppearance(
     installedTheme: CommunityThemeInstallMetadata | null,
     localPreview: CommunityThemeLocalPreview | null = null
 ): boolean {
-    return Boolean(localPreview || (enabled && installedTheme));
+    return localPreview !== null || (enabled && installedTheme !== null);
 }
 
 export function resolveCommunityThemeBaseMode(
@@ -95,7 +95,7 @@ export const useCommunityThemeStore = create<CommunityThemeStore>((set) => ({
     loading: false,
     error: null,
     setCatalog(catalogUrl, catalog) {
-        set({ catalogUrl, catalog: Array.isArray(catalog) ? catalog : [] });
+        set({ catalogUrl, catalog });
     },
     hydrate({
         catalogUrl,
@@ -107,29 +107,25 @@ export const useCommunityThemeStore = create<CommunityThemeStore>((set) => ({
     }) {
         set({
             catalogUrl,
-            enabled: Boolean(enabled && installedTheme),
+            enabled: enabled && installedTheme !== null,
             installedTheme,
-            installedThemes: Array.isArray(installedThemes)
-                ? installedThemes
-                : installedTheme
-                  ? [installedTheme]
-                  : [],
+            installedThemes:
+                installedThemes ??
+                (installedTheme !== null ? [installedTheme] : []),
             localPreview: localPreview ?? null,
             localPreviewWatch: {
                 enabled: false,
                 folderPath: '',
                 error: null
             },
-            overrideCssLength: Math.max(0, Number(overrideCssLength) || 0)
+            overrideCssLength: Math.max(0, overrideCssLength || 0)
         });
     },
     setInstalledState({ enabled, installedTheme, installedThemes }) {
         set({
-            enabled: Boolean(enabled && installedTheme),
+            enabled: enabled && installedTheme !== null,
             installedTheme,
-            ...(installedThemes
-                ? { installedThemes: installedThemes.filter(Boolean) }
-                : {})
+            ...(installedThemes !== undefined ? { installedThemes } : {})
         });
     },
     setLocalPreview(localPreview) {
@@ -144,10 +140,10 @@ export const useCommunityThemeStore = create<CommunityThemeStore>((set) => ({
         }));
     },
     setOverrideCssLength(length) {
-        set({ overrideCssLength: Math.max(0, Number(length) || 0) });
+        set({ overrideCssLength: Math.max(0, length || 0) });
     },
     setLoading(loading) {
-        set({ loading: Boolean(loading) });
+        set({ loading });
     },
     setError(error) {
         set({ error });

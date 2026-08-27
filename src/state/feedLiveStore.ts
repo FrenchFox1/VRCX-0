@@ -6,7 +6,8 @@ import type {
     FeedLiveEntry,
     FeedLivePatch,
     FeedLiveEntryPayload
-} from '@/domain/feed/feedLiveTypes';
+} from '@/domain/feed/live';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
@@ -51,10 +52,6 @@ function feedLiveMaxEntries() {
     return preferences.feedPersistenceDisabled
         ? preferences.tableLimits.maxTableSize
         : PERSISTED_FEED_LIVE_MAX_ENTRIES;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 export function feedEntryCorrectionId(row: FeedLiveEntryPayload): string {

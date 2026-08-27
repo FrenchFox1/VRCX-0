@@ -12,7 +12,6 @@ pub(super) fn resolve_state_bucket(
     for value in [
         content.text_field("state"),
         content.text_field("stateBucket"),
-        patch.text_field("state"),
         patch.text_field("stateBucket"),
         previous
             .map(|previous| previous.text_field("stateBucket"))
@@ -41,22 +40,6 @@ pub(super) fn normalize_id(value: &str) -> String {
 
 pub(super) fn first_positive(values: impl IntoIterator<Item = i64>) -> i64 {
     values.into_iter().find(|value| *value > 0).unwrap_or(0)
-}
-
-pub(super) fn is_real_instance(location: &str) -> bool {
-    let location = location.trim().to_ascii_lowercase();
-    if location.is_empty() || location.starts_with("local") {
-        return false;
-    }
-    !matches!(
-        location.as_str(),
-        ":" | "offline"
-            | "offline:offline"
-            | "traveling"
-            | "traveling:traveling"
-            | "private"
-            | "private:private"
-    )
 }
 
 pub(super) fn is_offline_location(location: &str) -> bool {

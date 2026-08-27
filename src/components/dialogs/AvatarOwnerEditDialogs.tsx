@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { commands } from '@/platform/tauri/bindings';
+import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Button } from '@/ui/shadcn/button';
@@ -28,6 +29,12 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Textarea } from '@/ui/shadcn/textarea';
 
+import {
+    CONTENT_TAG_OPTIONS,
+    contentTagsCsv,
+    contentTagsFromCsv
+} from './contentTags';
+
 export { AvatarDetailsDialog } from './AvatarDetailsDialog';
 
 type OwnAvatar = Awaited<
@@ -41,40 +48,6 @@ type EditableAvatar = Partial<OwnAvatar> & {
     tags?: string[];
     thumbnailImageUrl?: string;
 };
-
-const contentTagOptions = [
-    { value: 'content_horror', label: 'Horror' },
-    { value: 'content_gore', label: 'Gore' },
-    { value: 'content_violence', label: 'Violence' },
-    { value: 'content_adult', label: 'Adult' },
-    { value: 'content_sex', label: 'Sex' }
-];
-
-function normalizeTagName(value: unknown, prefix: string) {
-    const normalized = String(value || '')
-        .trim()
-        .toLowerCase()
-        .replace(new RegExp(`^${prefix}`), '');
-    return normalized ? `${prefix}${normalized}` : '';
-}
-
-function contentTagsFromCsv(value: unknown) {
-    return Array.from(
-        new Set(
-            String(value || '')
-                .split(',')
-                .map((entry) => normalizeTagName(entry, 'content_'))
-                .filter(Boolean)
-        )
-    );
-}
-
-function contentTagsCsv(tags: string[]) {
-    return tags
-        .filter((tag) => tag.startsWith('content_'))
-        .map((tag) => tag.replace(/^content_/, ''))
-        .join(',');
-}
 
 function mergeAvatars(currentAvatar: EditableAvatar, rows: OwnAvatar[]) {
     const avatars: EditableAvatar[] = [];
@@ -221,7 +194,7 @@ export function AvatarContentTagsDialog({
         return () => {
             active = false;
         };
-    }, [avatar, open]);
+    }, [avatar, open, t]);
 
     function toggleBuiltInTag(tag: string) {
         const nextTags = new Set(selectedTags);
@@ -266,11 +239,13 @@ export function AvatarContentTagsDialog({
             const currentAvatarResult = result.items.find(
                 (item) => item.id === avatar.id
             );
-            if (
-                currentAvatarResult?.entity &&
-                typeof currentAvatarResult.entity === 'object'
-            ) {
-                onSavedCurrentAvatar(currentAvatarResult.entity as OwnAvatar);
+            if (currentAvatarResult?.entity) {
+                const nextAvatar = avatarProfileRepository.normalize(
+                    currentAvatarResult.entity
+                );
+                if (nextAvatar.id) {
+                    onSavedCurrentAvatar(nextAvatar);
+                }
             }
             if (result.failed) {
                 const baseMessage =
@@ -341,7 +316,7 @@ export function AvatarContentTagsDialog({
                             data-slot="checkbox-group"
                             className="grid gap-2 sm:grid-cols-2"
                         >
-                            {contentTagOptions.map((option) => (
+                            {CONTENT_TAG_OPTIONS.map((option) => (
                                 <Field
                                     key={option.value}
                                     orientation="horizontal"
@@ -358,7 +333,7 @@ export function AvatarContentTagsDialog({
                                     <FieldLabel
                                         htmlFor={`avatar-content-tag-${option.value}`}
                                     >
-                                        {option.label}
+                                        {t(option.labelKey)}
                                     </FieldLabel>
                                 </Field>
                             ))}

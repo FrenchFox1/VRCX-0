@@ -3,12 +3,7 @@ import {
     type VrchatAvatarModerationInput as IpcVrchatAvatarModerationInput
 } from '@/platform/tauri/bindings';
 
-import {
-    isRecord,
-    normalizeEntityId,
-    normalizeString,
-    unwrapVrchatAvatarResponse
-} from './shared';
+import { isRecord, unwrapVrchatAvatarResponse } from './shared';
 import type {
     AvatarModerationDeleteRecord,
     AvatarModerationInput,
@@ -27,11 +22,9 @@ export async function getAvatarModerations() {
 }
 
 export async function sendAvatarModeration({
-    avatarId,
-    type = 'block'
+    avatarId
 }: AvatarModerationInput) {
-    const normalizedAvatarId = normalizeEntityId(avatarId);
-    const normalizedType = normalizeString(type) || 'block';
+    const normalizedAvatarId = avatarId?.trim() ?? '';
     if (!normalizedAvatarId) {
         throw new Error(
             'AvatarProfileRepository.sendAvatarModeration requires an avatar id.'
@@ -39,8 +32,7 @@ export async function sendAvatarModeration({
     }
 
     const input = {
-        avatarId: normalizedAvatarId,
-        type: normalizedType
+        avatarId: normalizedAvatarId
     } satisfies IpcVrchatAvatarModerationInput;
     return unwrapVrchatAvatarResponse<AvatarModerationRecord>(
         await commands.appVrchatAvatarModerationSend(input),
@@ -49,11 +41,9 @@ export async function sendAvatarModeration({
 }
 
 export async function deleteAvatarModeration({
-    avatarId,
-    type = 'block'
+    avatarId
 }: AvatarModerationInput) {
-    const normalizedAvatarId = normalizeEntityId(avatarId);
-    const normalizedType = normalizeString(type) || 'block';
+    const normalizedAvatarId = avatarId?.trim() ?? '';
     if (!normalizedAvatarId) {
         throw new Error(
             'AvatarProfileRepository.deleteAvatarModeration requires an avatar id.'
@@ -61,8 +51,7 @@ export async function deleteAvatarModeration({
     }
 
     const input = {
-        avatarId: normalizedAvatarId,
-        type: normalizedType
+        avatarId: normalizedAvatarId
     } satisfies IpcVrchatAvatarModerationInput;
     return unwrapVrchatAvatarResponse<AvatarModerationDeleteRecord>(
         await commands.appVrchatAvatarModerationDelete(input),

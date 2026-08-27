@@ -19,16 +19,16 @@ interface LocationHint {
 }
 
 interface LocationHintInput {
-    endpoint?: unknown;
-    location?: unknown;
-    worldId?: unknown;
-    groupId?: unknown;
-    worldName?: unknown;
-    groupName?: unknown;
-    instanceName?: unknown;
-    region?: unknown;
-    isClosed?: unknown;
-    ageGate?: unknown;
+    endpoint?: string;
+    location?: string;
+    worldId?: string;
+    groupId?: string;
+    worldName?: string;
+    groupName?: string;
+    instanceName?: string;
+    region?: string;
+    isClosed?: boolean;
+    ageGate?: boolean;
 }
 
 interface LocationHintStoreState {
@@ -50,13 +50,14 @@ const initialState: Pick<
     order: []
 };
 
-function text(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function text(value: string | undefined): string {
+    return value?.trim() ?? '';
 }
 
-function hintKey(endpoint: unknown, location: unknown): string {
+function hintKey(
+    endpoint: string | undefined,
+    location: string | undefined
+): string {
     const key = instanceLocationKey(location);
     return key ? `${text(endpoint) || 'default'}::${key}` : '';
 }

@@ -89,8 +89,8 @@ describe('myAvatarsGrid', () => {
             viewportHeight: 400
         });
 
-        expect(visibleRows[0].top).toBeLessThanOrEqual(400);
-        expect(visibleRows.at(-1).top).toBeGreaterThanOrEqual(1400);
+        expect(visibleRows[0]?.top).toBeLessThanOrEqual(400);
+        expect(visibleRows.at(-1)?.top).toBeGreaterThanOrEqual(1400);
         expect(visibleRows.length).toBeLessThan(gridRows.length);
     });
 

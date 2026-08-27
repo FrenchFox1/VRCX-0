@@ -4,13 +4,9 @@ import { safeJsonParse } from '@/repositories/baseRepository';
 
 export type ScreenshotLibraryStatus = ScreenshotLibraryScanStatus;
 
-function parseResponseValue(data: unknown): unknown {
-    if (data === null || data === undefined || data === '') {
-        return data ?? null;
-    }
-
-    if (typeof data !== 'string') {
-        return data;
+function parseResponseValue(data: string): unknown {
+    if (data === '') {
+        return '';
     }
 
     return safeJsonParse(data, data);

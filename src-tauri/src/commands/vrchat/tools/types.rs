@@ -1,24 +1,24 @@
-use std::collections::HashMap;
-
 use serde::Deserialize;
-use serde_json::Value;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::tools::{
+    CalendarListParams, InviteMessageType,
+};
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsCalendarListInput {
     #[serde(default)]
-    pub(crate) params: HashMap<String, Value>,
+    pub(crate) params: CalendarListParams,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsCalendarGroupInput {
     #[serde(default)]
     pub(crate) group_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsCalendarEventInput {
     #[serde(default)]
     pub(crate) group_id: String,
@@ -27,7 +27,7 @@ pub struct VrchatToolsCalendarEventInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsFollowGroupEventInput {
     #[serde(default)]
     pub(crate) group_id: String,
@@ -38,7 +38,7 @@ pub struct VrchatToolsFollowGroupEventInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsUserNoteSaveInput {
     #[serde(default)]
     pub(crate) target_user_id: String,
@@ -47,36 +47,29 @@ pub struct VrchatToolsUserNoteSaveInput {
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsUserReportInput {
     #[serde(default)]
     pub(crate) user_id: String,
     #[serde(default)]
-    pub(crate) content_type: String,
-    #[serde(default)]
     pub(crate) reason: String,
-    #[serde(default, rename = "type")]
-    pub(crate) type_name: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsInviteMessagesInput {
     #[serde(default)]
     pub(crate) current_user_id: String,
-    #[serde(default)]
-    pub(crate) message_type: String,
+    pub(crate) message_type: InviteMessageType,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatToolsInviteMessageEditInput {
     #[serde(default)]
     pub(crate) current_user_id: String,
-    #[serde(default)]
-    pub(crate) message_type: String,
-    #[serde(default)]
-    pub(crate) slot: String,
+    pub(crate) message_type: InviteMessageType,
+    pub(crate) slot: i32,
     #[serde(default)]
     pub(crate) message: String,
 }

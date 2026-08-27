@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 
 use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt as _;
@@ -12,6 +13,19 @@ use vrcx_0_runtime_host_desktop::AutostartPlatform;
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../../icons/icon.png");
 const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");
 static APPLICATION_EXIT_STARTED: AtomicBool = AtomicBool::new(false);
+static TRAY_ICON_DEFAULT_IMAGE: OnceLock<Option<tauri::image::Image<'static>>> = OnceLock::new();
+static TRAY_ICON_NOTIFY_IMAGE: OnceLock<Option<tauri::image::Image<'static>>> = OnceLock::new();
+
+fn tray_icon_image(notify: bool) -> Option<&'static tauri::image::Image<'static>> {
+    let (cache, bytes) = if notify {
+        (&TRAY_ICON_NOTIFY_IMAGE, TRAY_ICON_NOTIFY)
+    } else {
+        (&TRAY_ICON_DEFAULT_IMAGE, TRAY_ICON_DEFAULT)
+    };
+    cache
+        .get_or_init(|| tauri::image::Image::from_bytes(bytes).ok())
+        .as_ref()
+}
 
 fn request_application_exit_with(
     exit_started: &AtomicBool,
@@ -68,29 +82,31 @@ fn finish_application_exit(app_handle: &AppHandle) {
 pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
     use tauri::Manager;
     if let Some(state) = app_handle.try_state::<AppState>() {
-        state.log_watcher_compat_bridge.stop();
-        state.stop_backend_runtime("application-exit");
-        flush_telemetry_before_task_shutdown(&state);
-        state.runtime_context.tasks.stop_all();
+        state.log_watcher_compat_bridge().stop();
+        state
+            .runtime_host()
+            .stop_for_application_exit("application-exit", || {
+                flush_telemetry_before_task_shutdown(&state);
+            });
     }
 }
 
 fn flush_telemetry_before_task_shutdown(state: &AppState) {
-    let telemetry = state.desktop.telemetry.clone();
     match tokio::runtime::Handle::try_current() {
         Ok(handle) if handle.runtime_flavor() == tokio::runtime::RuntimeFlavor::MultiThread => {
-            tokio::task::block_in_place(|| handle.block_on(telemetry.shutdown_flush()));
+            tokio::task::block_in_place(|| {
+                handle.block_on(state.runtime_host().shutdown_telemetry_flush())
+            });
         }
         Ok(_) => {}
         Err(_) => {
-            tauri::async_runtime::block_on(telemetry.shutdown_flush());
+            tauri::async_runtime::block_on(state.runtime_host().shutdown_telemetry_flush());
         }
     }
 }
 
 #[tauri::command]
 #[specta::specta]
-#[allow(unused_variables)]
 pub fn app__language_changed(app_handle: AppHandle, language: String) -> Result<(), AppError> {
     #[cfg(target_os = "macos")]
     let _ = crate::macos_menu::configure_macos_app_menu(&app_handle, &language);
@@ -104,13 +120,12 @@ pub fn app__language_changed(app_handle: AppHandle, language: String) -> Result<
 pub fn app__set_tray_icon_notification(app_handle: AppHandle, notify: Option<bool>) {
     let notify = notify.unwrap_or(false);
     if let Some(tray) = app_handle.tray_by_id("main") {
-        let icon_result = tauri::image::Image::from_bytes(if notify {
-            TRAY_ICON_NOTIFY
-        } else {
-            TRAY_ICON_DEFAULT
-        });
-        if let Ok(icon) = icon_result {
-            let _ = tray.set_icon(Some(icon));
+        if let Some(icon) = tray_icon_image(notify) {
+            let _ = tray.set_icon(Some(tauri::image::Image::new(
+                icon.rgba(),
+                icon.width(),
+                icon.height(),
+            )));
         }
         let tooltip = if notify {
             "VRCX-0 (new notification)"
@@ -194,7 +209,7 @@ pub fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
 
         stop_runtime_services(&app_handle);
         if let Some(state) = app_handle.try_state::<AppState>() {
-            state.release_profile_lock();
+            state.runtime_host().release_profile_lock();
         }
         app_handle.request_restart();
         Ok(())
@@ -225,7 +240,7 @@ pub fn app__set_startup(
             {
                 return Err(format!(
                     "Autostart is not supported on {}",
-                    vrcx_0_host::host_capabilities::current_platform()
+                    vrcx_0_platform::host_capabilities::current_platform()
                 ));
             }
             let autolaunch = self.0.autolaunch();
@@ -241,11 +256,9 @@ pub fn app__set_startup(
         }
     }
 
-    Ok(vrcx_0_runtime_host_desktop::set_autostart_preference(
-        state.runtime_context.config(),
-        &TauriAutostartPlatform(app_handle),
-        enabled,
-    )?)
+    Ok(state
+        .runtime_host()
+        .set_autostart_preference(&TauriAutostartPlatform(app_handle), enabled)?)
 }
 
 #[tauri::command]
@@ -314,7 +327,19 @@ mod tests {
     use std::cell::{Cell, RefCell};
     use std::sync::atomic::AtomicBool;
 
-    use super::request_application_exit_with;
+    use super::{request_application_exit_with, tray_icon_image};
+
+    #[test]
+    fn tray_icon_images_are_decoded_once_and_reused() {
+        let default_first = tray_icon_image(false).unwrap();
+        let default_second = tray_icon_image(false).unwrap();
+        let notify_first = tray_icon_image(true).unwrap();
+        let notify_second = tray_icon_image(true).unwrap();
+
+        assert!(std::ptr::eq(default_first, default_second));
+        assert!(std::ptr::eq(notify_first, notify_second));
+        assert!(!std::ptr::eq(default_first, notify_first));
+    }
 
     #[test]
     fn request_application_exit_hides_window_and_tray_before_shutdown() {

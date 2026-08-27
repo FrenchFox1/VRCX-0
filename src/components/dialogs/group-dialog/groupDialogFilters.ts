@@ -1,9 +1,7 @@
 import type { TFunction } from 'i18next';
 
-import type {
-    EntityRecord,
-    GroupMemberRow
-} from '@/domain/entities/profileEntities';
+import type { GroupMemberRow } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
 
 import type { EntityDialogTab } from '../EntityDialogScaffold';
 

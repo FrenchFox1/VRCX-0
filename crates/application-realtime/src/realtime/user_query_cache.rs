@@ -5,18 +5,19 @@ use std::time::{Duration, Instant};
 use moka::future::Cache;
 use moka::Expiry;
 
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Error;
 
-const QUERY_CAPACITY: u64 = 256;
+const QUERY_CAPACITY: u64 = 128;
+const NEGATIVE_ENTRY_WEIGHT: u32 = 4;
 
-const TTL_DIALOG_SECS: u64 = 60;
-const TTL_LIVE_FRIEND_SECS: u64 = 300;
-const TTL_LIVE_NONFRIEND_SECS: u64 = 120;
-const TTL_NEGATIVE_NOT_FOUND_SECS: u64 = 900;
-const TTL_NEGATIVE_FORBIDDEN_SECS: u64 = 60;
+const TTL_DIALOG: Duration = Duration::from_secs(60);
+const TTL_LIVE_FRIEND: Duration = Duration::from_secs(300);
+const TTL_LIVE_NONFRIEND: Duration = Duration::from_secs(120);
+const TTL_NEGATIVE_NOT_FOUND: Duration = Duration::from_secs(900);
+const TTL_NEGATIVE_FORBIDDEN: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UserQueryKind {
@@ -52,9 +53,9 @@ impl UserQueryKind {
 
     fn positive_ttl(self) -> Duration {
         match self {
-            Self::Dialog => Duration::from_secs(TTL_DIALOG_SECS),
-            Self::LiveFriend => Duration::from_secs(TTL_LIVE_FRIEND_SECS),
-            Self::LiveNonFriend => Duration::from_secs(TTL_LIVE_NONFRIEND_SECS),
+            Self::Dialog => TTL_DIALOG,
+            Self::LiveFriend => TTL_LIVE_FRIEND,
+            Self::LiveNonFriend => TTL_LIVE_NONFRIEND,
         }
     }
 }
@@ -79,9 +80,17 @@ fn kind_from_key(key: &str) -> Option<UserQueryKind> {
 
 fn negative_ttl(status: i32) -> Option<Duration> {
     match status {
-        404 => Some(Duration::from_secs(TTL_NEGATIVE_NOT_FOUND_SECS)),
-        403 => Some(Duration::from_secs(TTL_NEGATIVE_FORBIDDEN_SECS)),
+        404 => Some(TTL_NEGATIVE_NOT_FOUND),
+        403 => Some(TTL_NEGATIVE_FORBIDDEN),
         _ => None,
+    }
+}
+
+fn cache_entry_weight(_key: &String, value: &Arc<VrchatApiResponse>) -> u32 {
+    if negative_ttl(value.status).is_some() {
+        NEGATIVE_ENTRY_WEIGHT
+    } else {
+        1
     }
 }
 
@@ -120,6 +129,7 @@ impl UserQueryCache {
         Self {
             cache: Cache::builder()
                 .max_capacity(QUERY_CAPACITY)
+                .weigher(cache_entry_weight)
                 .expire_after(UserQueryExpiry)
                 .build(),
         }
@@ -156,5 +166,56 @@ impl UserQueryCache {
 
     pub(crate) fn clear(&self) {
         self.cache.invalidate_all();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn negative_query_results_use_quarter_capacity_weight() {
+        let key = cache_key(
+            UserQueryKind::Dialog,
+            "https://api.vrchat.cloud/api/1",
+            "usr_test",
+        );
+        let success = Arc::new(VrchatApiResponse {
+            status: 200,
+            data: "{}".into(),
+        });
+        let failure = Arc::new(VrchatApiResponse {
+            status: 404,
+            data: "{}".into(),
+        });
+
+        assert_eq!(cache_entry_weight(&key, &success), 1);
+        assert_eq!(cache_entry_weight(&key, &failure), NEGATIVE_ENTRY_WEIGHT);
+        assert_eq!(QUERY_CAPACITY / u64::from(NEGATIVE_ENTRY_WEIGHT), 32);
+    }
+
+    #[tokio::test]
+    async fn negative_query_results_are_bounded_to_quarter_capacity() {
+        let cache = UserQueryCache::new();
+        for index in 0..QUERY_CAPACITY {
+            cache
+                .cache
+                .insert(
+                    cache_key(
+                        UserQueryKind::Dialog,
+                        "https://api.vrchat.cloud/api/1",
+                        &format!("usr_{index}"),
+                    ),
+                    Arc::new(VrchatApiResponse {
+                        status: 404,
+                        data: "{}".into(),
+                    }),
+                )
+                .await;
+        }
+        cache.cache.run_pending_tasks().await;
+
+        assert!(cache.cache.entry_count() <= 32);
+        assert!(cache.cache.weighted_size() <= QUERY_CAPACITY);
     }
 }

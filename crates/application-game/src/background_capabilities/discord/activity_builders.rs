@@ -1,12 +1,12 @@
 use serde_json::{json, Map, Value};
-use vrcx_0_core::location::{launch_url, ParsedLocation};
+use vrcx_0_core::friends::UserStatus;
+use vrcx_0_core::location::{launch_url, GroupAccessType, ParsedLocation};
 
 use super::super::presence_facts::BackgroundPresenceFacts;
 use super::super::shared::{non_empty, string_field};
 use super::{
     BackgroundDiscordActivityPayload, DiscordConfig, DiscordLocationDetails, DiscordPresenceLabels,
 };
-use vrcx_0_core::json::JsonExt;
 
 pub(super) const DEFAULT_APP_ID: &str = "1510639562177642557";
 
@@ -24,13 +24,13 @@ pub(super) fn build_running_fallback_activity(
     labels: &DiscordPresenceLabels,
 ) -> BackgroundDiscordActivityPayload {
     let status_info = status_info(
-        string_field(&facts.current_user, "status").as_deref(),
+        string_field(facts.current_user.as_value(), "status").as_deref(),
         config.discord_hide_invite,
         labels,
     );
     let platform = if config.discord_show_platform {
         platform_label(
-            current_user_platform(&facts.current_user)
+            current_user_platform(facts.current_user.as_value())
                 .as_deref()
                 .unwrap_or_default(),
             facts.is_game_running,
@@ -57,7 +57,7 @@ pub(super) fn build_running_fallback_activity(
         } else {
             format!("{details} - {}", platform.trim())
         },
-        activity,
+        activity: activity.into(),
     }
 }
 
@@ -70,7 +70,7 @@ pub(super) fn build_discord_activity(
 ) -> BackgroundDiscordActivityPayload {
     let platform = if config.discord_show_platform {
         platform_label(
-            current_user_platform(&facts.current_user)
+            current_user_platform(facts.current_user.as_value())
                 .as_deref()
                 .unwrap_or_default(),
             facts.is_game_running,
@@ -82,14 +82,17 @@ pub(super) fn build_discord_activity(
     };
     let access_name = build_access_name(parsed, &details.group_name, &platform, labels);
     let status_info = status_info(
-        string_field(&facts.current_user, "status").as_deref(),
+        string_field(facts.current_user.as_value(), "status").as_deref(),
         config.discord_hide_invite,
         labels,
     );
     let mut hide_private = config.discord_hide_invite
         && (parsed.access_type == "invite"
             || parsed.access_type == "invite+"
-            || parsed.group_access_type.as_deref() == Some("members"));
+            || matches!(
+                parsed.group_access_type.as_ref(),
+                Some(GroupAccessType::Members)
+            ));
     if status_info.hide_private {
         hide_private = true;
     }
@@ -146,15 +149,16 @@ pub(super) fn build_discord_activity(
             status_display_type = rpc_config.status_display_type;
             app_id = rpc_config.app_id.into();
             big_icon = rpc_config.big_icon.into();
-            if is_popcorn_palace_world(&parsed.world_id) && !config.discord_hide_image {
-                if let Some(thumbnail_url) = string_field(&facts.now_playing, "thumbnailUrl") {
-                    big_icon = thumbnail_url;
-                }
+            if is_popcorn_palace_world(&parsed.world_id)
+                && !config.discord_hide_image
+                && !facts.now_playing.thumbnail_url.trim().is_empty()
+            {
+                big_icon = facts.now_playing.thumbnail_url.trim().to_string();
             }
-            if let Some(now_playing_name) = string_field(&facts.now_playing, "name") {
-                details_text = now_playing_name;
+            if !facts.now_playing.name.trim().is_empty() {
+                details_text = facts.now_playing.name.trim().to_string();
             }
-            if now_playing_has_content(&facts.now_playing) {
+            if facts.now_playing.has_content() {
                 let now_playing_times = now_playing_activity_times(&facts.now_playing);
                 if !now_playing_times.start_time.is_empty() {
                     start_time = now_playing_times.start_time;
@@ -210,7 +214,7 @@ pub(super) fn build_discord_activity(
     );
     BackgroundDiscordActivityPayload {
         app_id,
-        activity,
+        activity: activity.into(),
         detail,
     }
 }
@@ -259,28 +263,28 @@ fn status_info<'a>(
     hide_invite: bool,
     labels: &'a DiscordPresenceLabels,
 ) -> StatusInfo<'a> {
-    match status.unwrap_or_default() {
-        "active" => StatusInfo {
+    match UserStatus::normalize(status.unwrap_or_default()) {
+        Some(UserStatus::Active) => StatusInfo {
             status_name: &labels.status_active,
             status_image: "active",
             hide_private: false,
         },
-        "join me" => StatusInfo {
+        Some(UserStatus::JoinMe) => StatusInfo {
             status_name: &labels.status_join_me,
             status_image: "joinme",
             hide_private: false,
         },
-        "ask me" => StatusInfo {
+        Some(UserStatus::AskMe) => StatusInfo {
             status_name: &labels.status_ask_me,
             status_image: "askme",
             hide_private: hide_invite,
         },
-        "busy" => StatusInfo {
+        Some(UserStatus::Busy) => StatusInfo {
             status_name: &labels.status_busy,
             status_image: "busy",
             hide_private: true,
         },
-        _ => StatusInfo {
+        Some(UserStatus::Offline) | None => StatusInfo {
             status_name: &labels.status_offline,
             status_image: "offline",
             hide_private: true,
@@ -302,10 +306,10 @@ pub(super) fn build_access_name(
         "friends" => format!("{} {suffix}", labels.access_friends),
         "friends+" => format!("{} {suffix}", labels.access_friends_plus),
         "group" => {
-            let group_access = match parsed.group_access_type.as_deref() {
-                Some("public") => labels.group_access_public.as_str(),
-                Some("plus") => labels.group_access_plus.as_str(),
-                Some("members") => labels.group_access_members.as_str(),
+            let group_access = match parsed.group_access_type.as_ref() {
+                Some(GroupAccessType::Public) => labels.group_access_public.as_str(),
+                Some(GroupAccessType::Plus) => labels.group_access_plus.as_str(),
+                Some(GroupAccessType::Members) => labels.group_access_members.as_str(),
                 _ => "",
             };
             let group_suffix = if !group_name.is_empty() && !group_access.is_empty() {
@@ -439,18 +443,15 @@ fn compact_object(value: Value) -> Value {
     Value::Object(compacted)
 }
 
-fn now_playing_has_content(now_playing: &Value) -> bool {
-    string_field(now_playing, "url").is_some() || string_field(now_playing, "name").is_some()
-}
-
 struct NowPlayingActivityTimes {
     start_time: String,
     end_time: String,
 }
 
-fn now_playing_activity_times(now_playing: &Value) -> NowPlayingActivityTimes {
-    let start_time = string_field(now_playing, "startedAt")
-        .or_else(|| string_field(now_playing, "created_at"))
+fn now_playing_activity_times(now_playing: &crate::NowPlayingSnapshot) -> NowPlayingActivityTimes {
+    let start_time = trimmed_non_empty(now_playing.started_at.as_deref())
+        .or_else(|| trimmed_non_empty(now_playing.created_at.as_deref()))
+        .map(str::to_string)
         .unwrap_or_default();
     let Some(start_seconds) = timestamp_seconds(&start_time).filter(|value| *value > 0) else {
         return NowPlayingActivityTimes {
@@ -458,7 +459,7 @@ fn now_playing_activity_times(now_playing: &Value) -> NowPlayingActivityTimes {
             end_time: String::new(),
         };
     };
-    let length = now_playing.i64_field("length").unwrap_or(0);
+    let length = now_playing.length;
     let end_time = if length > 0 {
         (start_seconds + length).to_string()
     } else {
@@ -468,6 +469,10 @@ fn now_playing_activity_times(now_playing: &Value) -> NowPlayingActivityTimes {
         start_time,
         end_time,
     }
+}
+
+fn trimmed_non_empty(value: Option<&str>) -> Option<&str> {
+    value.map(str::trim).filter(|value| !value.is_empty())
 }
 
 fn is_popcorn_palace_world(world_id: &str) -> bool {

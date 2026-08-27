@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { commands } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
 import { useModalStore } from '@/state/modalStore';
+import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 
 import { assignMutualFriendCommunities } from './mutualFriendsCommunities';
 import {
@@ -44,6 +45,9 @@ export function useMutualFriendsPageState() {
     );
     const [nodeRefreshId, setNodeRefreshId] = useState('');
     const [reloadToken, setReloadToken] = useState(0);
+    const backfillRevision = useMutualGraphRevisionStore((state) =>
+        state.ownerUserId === currentUserId ? state.revision : 0
+    );
     const { layoutSettings, resetLayoutSettings, setLayoutSetting } =
         useMutualFriendsLayoutSettings();
     const {
@@ -61,7 +65,7 @@ export function useMutualFriendsPageState() {
     const snapshot = useMutualFriendsSnapshot({
         currentUserId,
         currentUserIdRef,
-        reloadToken
+        reloadToken: reloadToken + backfillRevision
     });
 
     useEffect(() => {

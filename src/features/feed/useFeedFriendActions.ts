@@ -39,9 +39,6 @@ function resolveActionFriendId(friend: FeedFriendActionTarget) {
 export function useFeedFriendActions(): FeedFriendActions {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
@@ -101,12 +98,12 @@ export function useFeedFriendActions(): FeedFriendActions {
     const canBoopFromFeed = Boolean(currentUserSnapshot?.isBoopingEnabled);
 
     const isFeedUserHidden = useCallback(
-        (userId: unknown) => hiddenUserIdSet.has(normalizeId(userId)),
+        (userId: string) => hiddenUserIdSet.has(normalizeId(userId)),
         [hiddenUserIdSet]
     );
 
     const addFeedHiddenUser = useCallback(
-        async (userId: unknown) => {
+        async (userId: string) => {
             try {
                 await addFeedHiddenUserPreference(userId);
             } catch (error) {
@@ -121,7 +118,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const removeFeedHiddenUser = useCallback(
-        async (userId: unknown) => {
+        async (userId: string) => {
             try {
                 await removeFeedHiddenUserPreference(userId);
             } catch (error) {
@@ -136,7 +133,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const canUseFeedFriendLocation = useCallback(
-        (location: unknown) => {
+        (location: string) => {
             const normalizedLocation = normalizeId(location);
             const parsedLocation = parseLocation(normalizedLocation);
             if (
@@ -156,7 +153,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const launchFeedFriendLocation = useCallback(
-        async (location: unknown) => {
+        async (location: string) => {
             const normalizedLocation = normalizeId(location);
             const parsedLocation = parseLocation(normalizedLocation);
             if (
@@ -192,7 +189,7 @@ export function useFeedFriendActions(): FeedFriendActions {
     );
 
     const selfInviteFeedFriendLocation = useCallback(
-        async (location: unknown) => {
+        async (location: string) => {
             const normalizedLocation = normalizeId(location);
             const parsedLocation = parseLocation(normalizedLocation);
             if (
@@ -283,7 +280,6 @@ export function useFeedFriendActions(): FeedFriendActions {
         [
             canInviteFromCurrentLocation,
             confirm,
-            currentEndpoint,
             currentInviteLocation,
             normalizedCurrentUserId,
             t
@@ -329,13 +325,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 );
             }
         },
-        [
-            confirm,
-            currentEndpoint,
-            currentUserSnapshot,
-            normalizedCurrentUserId,
-            t
-        ]
+        [confirm, currentUserSnapshot, normalizedCurrentUserId, t]
     );
 
     const sendFeedFriendBoop = useCallback(
@@ -394,7 +384,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 initialNewInstanceDefaults: {
                     groupId: parsedLocation.groupId || '',
                     groupAccessType: parsedLocation.groupAccessType || '',
-                    groupName,
+                    groupName: normalizeId(groupName),
                     region: parsedLocation.region || ''
                 }
             });

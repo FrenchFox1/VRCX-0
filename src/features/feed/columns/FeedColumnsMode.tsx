@@ -26,6 +26,7 @@ import {
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
 import { cn } from '@/lib/utils';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -44,7 +45,8 @@ import { FeedPersistenceDisabledIndicator } from '../components/FeedPersistenceD
 import {
     FEED_COLUMN_DENSITY_OPTIONS,
     type FeedColumnDensity,
-    getFeedColumnDensityConfig
+    getFeedColumnDensityConfig,
+    sanitizeFeedColumnDensity
 } from '../feedColumnsDensity';
 import {
     createFeedColumnsPresetConfig,
@@ -62,7 +64,6 @@ type FeedColumnsModeProps = {
     modeToggle: ReactNode;
     onColumnsChange(columns: FeedColumnConfig[]): void;
     onDensityChange(value: FeedColumnDensity): void;
-    feedPersistenceDisabled: boolean;
 };
 
 type SortableFeedColumnProps = {
@@ -144,7 +145,7 @@ function FeedColumnsSettingsMenu({
                         onValueChange={(nextValue) => {
                             if (nextValue[0]) {
                                 onDensityChange(
-                                    nextValue[0] as FeedColumnDensity
+                                    sanitizeFeedColumnDensity(nextValue[0])
                                 );
                             }
                         }}
@@ -174,10 +175,12 @@ export function FeedColumnsMode({
     density,
     modeToggle,
     onColumnsChange,
-    onDensityChange,
-    feedPersistenceDisabled
+    onDensityChange
 }: FeedColumnsModeProps) {
     const { t } = useTranslation();
+    const feedPersistenceDisabled = usePreferencesStore(
+        (state) => state.feedPersistenceDisabled
+    );
     const friendActions = useFeedFriendActions();
     const previousInstancesDialog = useFeedPreviousInstancesDialog();
     const timeDisplayMode = useFeedTimeDisplayMode();
@@ -241,7 +244,9 @@ export function FeedColumnsMode({
         onColumnsChange(
             nextOrder
                 .map((columnId) => byId.get(columnId))
-                .filter(Boolean) as FeedColumnConfig[]
+                .filter(
+                    (column): column is FeedColumnConfig => column !== undefined
+                )
         );
     };
 

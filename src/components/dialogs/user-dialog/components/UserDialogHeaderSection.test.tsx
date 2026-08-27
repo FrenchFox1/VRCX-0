@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render,
+    screen
+} from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { InventoryItemRecord } from '@/repositories/vrchatMediaRepository';
@@ -15,6 +21,20 @@ vi.mock('react-i18next', async (importOriginal) => ({
     ...(await importOriginal<typeof import('react-i18next')>()),
     useTranslation: () => ({ t: (key: string) => key })
 }));
+
+let notifyResize: (() => void) | null = null;
+
+class ResizeObserverMock {
+    constructor(callback: ResizeObserverCallback) {
+        notifyResize = () => callback([], this as unknown as ResizeObserver);
+    }
+
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}
+
+vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
 afterEach(cleanup);
 
@@ -73,7 +93,6 @@ function createHeaderModel(effect?: InventoryItemRecord): UserHeaderModel {
         },
         PlatformIcon: null,
         previousDisplayNames: [],
-        previousInstances: [],
         profile: {
             displayName: 'Map1en_',
             id: 'usr_test'
@@ -96,6 +115,7 @@ function createHeaderCommands(): UserHeaderCommands {
     return {
         onAvatarOverride: noop,
         onBoop: noop,
+        onCopyDisplayName: noop,
         onCopyUserId: noop,
         onCopyUserUrl: noop,
         onEditMemo: noop,
@@ -133,6 +153,74 @@ function createHeaderCommands(): UserHeaderCommands {
 }
 
 describe('UserDialogHeaderSection nameplate', () => {
+    it('copies the current display name from the title', () => {
+        const headerCommands = createHeaderCommands();
+        headerCommands.onCopyDisplayName = vi.fn();
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={createHeaderModel()}
+                headerCommands={headerCommands}
+            />
+        );
+
+        const displayNameButton = screen.getByText('Map1en_').closest('button');
+        expect(displayNameButton).not.toBeNull();
+        fireEvent.click(displayNameButton as HTMLButtonElement);
+
+        expect(headerCommands.onCopyDisplayName).toHaveBeenCalledOnce();
+        expect(headerCommands.onCopyDisplayName).toHaveBeenCalledWith(
+            'Map1en_'
+        );
+    });
+
+    it('keeps only the tooltip hover treatment on the display name', () => {
+        render(
+            <UserDialogHeaderSection
+                headerModel={createHeaderModel()}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        const displayNameButton = screen.getByText('Map1en_').closest('button');
+        expect(displayNameButton).not.toBeNull();
+
+        expect(
+            displayNameButton?.classList.contains('hover:bg-transparent')
+        ).toBe(true);
+        expect(displayNameButton?.classList.contains('hover:bg-muted')).toBe(
+            false
+        );
+        expect(displayNameButton?.getAttribute('title')).toBeNull();
+    });
+
+    it('shrinks a long display name to the available width', () => {
+        const headerModel = createHeaderModel();
+        headerModel.profile.displayName = 'A very long display name';
+        headerModel.profileTitle = 'A very long display name';
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        const displayName = screen.getByText('A very long display name');
+        Object.defineProperty(displayName, 'clientWidth', {
+            configurable: true,
+            value: 150
+        });
+        Object.defineProperty(displayName, 'scrollWidth', {
+            configurable: true,
+            value: 180
+        });
+
+        act(() => notifyResize?.());
+
+        expect(displayName.style.fontSize).toBe('15px');
+    });
+
     it('aligns a decorated nameplate with the action button', () => {
         render(
             <UserDialogHeaderSection
@@ -223,6 +311,31 @@ describe('UserDialogHeaderSection friend number', () => {
 });
 
 describe('UserDialogHeaderSection friend actions', () => {
+    it('opens instance history before its rows have been loaded', async () => {
+        const headerModel = createHeaderModel();
+        headerModel.isCurrentUser = false;
+        const headerCommands = createHeaderCommands();
+        headerCommands.onShowInstanceHistory = vi.fn();
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={headerCommands}
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Open entity actions' })
+        );
+
+        const label = await screen.findByText(
+            'dialog.user.actions.show_previous_instances'
+        );
+        fireEvent.click(label);
+
+        expect(headerCommands.onShowInstanceHistory).toHaveBeenCalledOnce();
+    });
+
     it('offers cancellation for an outgoing friend request', async () => {
         const headerModel = createHeaderModel();
         headerModel.isCurrentUser = false;

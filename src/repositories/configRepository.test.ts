@@ -10,7 +10,6 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: commandMocks
 }));
 
-import { ConfigKeys } from './configKeys';
 import { ConfigRepository } from './configRepository';
 
 function createRepository() {
@@ -20,14 +19,17 @@ function createRepository() {
 describe('ConfigRepository', () => {
     beforeEach(() => {
         vi.resetAllMocks();
-        commandMocks.appConfigSetValues.mockResolvedValue(undefined);
+        commandMocks.appConfigSetValues.mockResolvedValue(null);
         commandMocks.appConfigListValues.mockResolvedValue([]);
         commandMocks.appConfigRemoveValue.mockResolvedValue(undefined);
     });
 
-    it('loads tuple and object rows into the cache and resolves VRCX config keys', async () => {
+    it('loads generated config rows into the cache and resolves VRCX config keys', async () => {
         commandMocks.appConfigListValues.mockResolvedValueOnce([
-            ['config:vrcx_thememode', 'dark'],
+            {
+                key: 'config:vrcx_thememode',
+                value: 'dark'
+            },
             {
                 key: 'config:vrcx_logresourceload',
                 value: 'true'
@@ -63,37 +65,6 @@ describe('ConfigRepository', () => {
         );
     });
 
-    it('keeps hidden VR friends panel keys out of the config schema', () => {
-        expect(ConfigKeys).not.toHaveProperty('vrOverlayPanelEnabled');
-        expect(ConfigKeys).not.toHaveProperty(
-            'vrOverlayPanelAllFriendsIncludesFavorites'
-        );
-    });
-
-    it('does not write hidden VR friends panel keys into config storage', async () => {
-        const repository = createRepository();
-
-        await repository.setBool('vrOverlayPanelEnabled', false);
-        await repository.setMany([
-            ['vrOverlayPanelAllFriendsIncludesFavorites', false],
-            ['ThemeMode', 'dark']
-        ]);
-
-        expect(commandMocks.appConfigSetValues).toHaveBeenNthCalledWith(1, [
-            {
-                key: 'config:vrcx_thememode',
-                value: 'dark'
-            }
-        ]);
-        expect(commandMocks.appConfigSetValues).toHaveBeenCalledTimes(1);
-        await expect(
-            repository.getRawValue('vrOverlayPanelEnabled')
-        ).resolves.toBeNull();
-        await expect(
-            repository.getRawValue('vrOverlayPanelAllFriendsIncludesFavorites')
-        ).resolves.toBeNull();
-    });
-
     it('updates the cache after set, setMany, and remove operations', async () => {
         const repository = createRepository();
 
@@ -101,7 +72,7 @@ describe('ConfigRepository', () => {
         await expect(repository.getString('ThemeMode')).resolves.toBe('light');
 
         await repository.setMany([
-            ['VRCX_ZoomLevel', 125],
+            ['VRCX_ZoomLevel', '125'],
             ['config:vrcx_custom', 'value']
         ]);
         await expect(repository.getInt('ZoomLevel')).resolves.toBe(125);
@@ -135,8 +106,14 @@ describe('ConfigRepository', () => {
 
     it('returns JSON fallbacks for invalid object and array values', async () => {
         commandMocks.appConfigListValues.mockResolvedValueOnce([
-            ['config:vrcx_savedcredentials', '{bad-json'],
-            ['config:vrcx_sidebarfavoritegroups', '{"not":"array"}']
+            {
+                key: 'config:vrcx_savedcredentials',
+                value: '{bad-json'
+            },
+            {
+                key: 'config:vrcx_sidebarfavoritegroups',
+                value: '{"not":"array"}'
+            }
         ]);
         const repository = createRepository();
 

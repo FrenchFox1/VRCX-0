@@ -1,10 +1,12 @@
 import { useQueries } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { parseLocation, type ParsedLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useLocationHintStore } from '@/state/locationHintStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -20,19 +22,20 @@ import {
     uniqueIds
 } from './location-metadata/locationMetadataResolution';
 import type {
-    GroupProfileRecord,
+    LocationGroupProfile,
     LocationMetadata,
     LocationMetadataEntry,
-    WorldProfileRecord
+    LocationWorldProfile
 } from './location-metadata/locationMetadataTypes';
 
 export type { LocationMetadata, LocationMetadataEntry };
 
 const WORLD_PROFILE_REQUEST_KEY_SEPARATOR = '\u0000';
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
 
 export function useLocationMetadataBatch(
     entries: readonly (LocationMetadataEntry | null | undefined)[] = [],
-    { endpoint = '' }: { endpoint?: unknown } = {}
+    { endpoint = '' }: { endpoint?: string } = {}
 ) {
     const storeEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -49,7 +52,7 @@ export function useLocationMetadataBatch(
         groupInstancesState.userId === currentUserId &&
         groupInstancesState.endpoint === currentEndpoint
             ? groupInstancesState.instances
-            : [];
+            : EMPTY_GROUP_INSTANCES;
     const groupInstancesRevision =
         groupInstancesState.userId === currentUserId &&
         groupInstancesState.endpoint === currentEndpoint
@@ -57,10 +60,14 @@ export function useLocationMetadataBatch(
               groupInstancesState.fetchedAt ||
               groupInstancesState.status
             : '';
-    const cachedInstances = useMemo(
-        () => buildCachedInstanceMap(groupInstances),
+    const cachedInstanceSnapshot = useMemo(
+        () => ({
+            revision: groupInstancesRevision,
+            instances: buildCachedInstanceMap(groupInstances)
+        }),
         [groupInstances, groupInstancesRevision]
     );
+    const cachedInstances = cachedInstanceSnapshot.instances;
     const normalizedEntries = useMemo(
         () =>
             (Array.isArray(entries) ? entries : []).map((entry, index) =>
@@ -100,12 +107,12 @@ export function useLocationMetadataBatch(
         [normalizedEntries]
     );
     const [worldProfilesById, setWorldProfilesById] = useState(
-        () => new Map<string, WorldProfileRecord>()
+        () => new Map<string, LocationWorldProfile>()
     );
     const worldProfilesByIdRef = useRef(worldProfilesById);
     const worldProfilesEndpointRef = useRef(currentEndpoint);
     const worldProfileRequestsRef = useRef(
-        new Map<string, Promise<WorldProfileRecord | null>>()
+        new Map<string, Promise<LocationWorldProfile | null>>()
     );
     const worldIdsKey = [...worldIds]
         .sort()
@@ -122,7 +129,7 @@ export function useLocationMetadataBatch(
             worldProfilesByIdRef.current = new Map();
         }
 
-        const retainedProfiles = new Map<string, WorldProfileRecord>();
+        const retainedProfiles = new Map<string, LocationWorldProfile>();
         for (const worldId of requestedWorldIds) {
             const profile = worldProfilesByIdRef.current.get(worldId);
             if (profile) {
@@ -167,13 +174,13 @@ export function useLocationMetadataBatch(
             if (!active) {
                 return;
             }
-            const resolvedProfiles = new Map<string, WorldProfileRecord>();
+            const resolvedProfiles = new Map<string, LocationWorldProfile>();
             profiles.forEach((profile, index) => {
                 if (profile) {
                     resolvedProfiles.set(missingWorldIds[index], profile);
                 }
             });
-            const nextProfiles = new Map<string, WorldProfileRecord>();
+            const nextProfiles = new Map<string, LocationWorldProfile>();
             for (const worldId of requestedWorldIds) {
                 const profile =
                     resolvedProfiles.get(worldId) ||
@@ -204,7 +211,7 @@ export function useLocationMetadataBatch(
             refetchOnWindowFocus: entityQueryPolicies.group.refetchOnWindowFocus
         })),
         combine: (results) =>
-            mapQueryResults<GroupProfileRecord>(groupIds, results)
+            mapQueryResults<LocationGroupProfile>(groupIds, results)
     });
     const localWorldNameRequestIdsRef = useRef(new Set<string>());
     const mountedRef = useRef(true);
@@ -290,7 +297,7 @@ export function useLocationMetadataBatch(
     ]);
 
     return useMemo(() => {
-        const metadataByKey = new Map<unknown, LocationMetadata>();
+        const metadataByKey = new Map<string, LocationMetadata>();
         for (const entry of normalizedEntries) {
             metadataByKey.set(
                 entry.key,
@@ -325,24 +332,24 @@ export function useLocationMetadata({
     groupHint = '',
     instanceName = ''
 }: {
-    locationInfo?: unknown;
-    currentLocation?: unknown;
-    endpoint?: unknown;
-    hint?: unknown;
-    worldNameHint?: unknown;
-    groupHint?: unknown;
-    instanceName?: unknown;
+    locationInfo?: ParsedLocation | string | null;
+    currentLocation?: string;
+    endpoint?: string;
+    hint?: string | null;
+    worldNameHint?: string;
+    groupHint?: string;
+    instanceName?: string;
 }) {
     const entry = useMemo(
         () => [
             {
                 key: 'location',
-                locationInfo,
-                currentLocation,
-                hint,
-                worldNameHint: providedWorldNameHint,
-                groupHint,
-                instanceName
+                locationInfo: parseLocation(locationInfo || currentLocation),
+                currentLocation: normalizeString(currentLocation),
+                hint: normalizeString(hint),
+                worldNameHint: normalizeString(providedWorldNameHint),
+                groupHint: normalizeString(groupHint),
+                instanceName: normalizeString(instanceName)
             }
         ],
         [

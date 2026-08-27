@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { isOnlineFriend } from './friends-locations-rows/presence';
 import * as friendsLocationsRows from './friendsLocationsRows';
 import {
     buildFavoriteGroupLabelsByFriendId,
     buildSameInstanceGroups,
     compareFavoriteGroups,
     isFriendInPrivateLocation,
-    isOnlineFriend,
     normalizeDisplayText,
     normalizeFriendsLocationId,
     partitionFriendsByPrivateLocation,
@@ -15,6 +15,7 @@ import {
     resolveFriendsLocationsCurrentInviteLocation,
     resolveFriendGroupName,
     resolveLocationSummary,
+    resolveLocationTarget,
     resolveWorldDialogTarget,
     uniqueFriendsById
 } from './friendsLocationsRows';
@@ -32,7 +33,6 @@ describe('friends locations row helpers', () => {
             'buildSameInstanceSections',
             'compareFavoriteGroups',
             'isFriendInPrivateLocation',
-            'isOnlineFriend',
             'isRawWorldReference',
             'isSentinelLocationValue',
             'isShareableInstanceLocation',
@@ -113,11 +113,11 @@ describe('friends locations row helpers', () => {
                 { $locationTag: 'wrld_profile:456' }
             )
         ).toBe('wrld_profile:456');
-        expect(isOnlineFriend({ stateBucket: 'online' })).toBe(true);
-        expect(isOnlineFriend({ stateBucket: 'active' })).toBe(false);
+        expect(isOnlineFriend({ state: 'online' })).toBe(true);
+        expect(isOnlineFriend({ state: 'active' })).toBe(false);
         expect(
             isOnlineFriend({
-                stateBucket: 'offline',
+                state: 'offline',
                 status: 'active',
                 location: 'wrld_stale:123'
             })
@@ -254,13 +254,44 @@ describe('friends locations row helpers', () => {
         expect(resolveWorldDialogTarget({ rawLocation: 'wrld_123:456' })).toBe(
             'wrld_123:456'
         );
+
+        // The friend's `location` still holds a real instance tag but a known
+        // travelingToLocation destination takes priority for the summary.
+        const travelingWithDestination = resolveLocationSummary({
+            location: 'traveling',
+            travelingToLocation: 'wrld_456:789~region(use)',
+            travelingToWorld: 'New World'
+        });
+        expect(travelingWithDestination).toEqual({
+            label: 'New World',
+            meta: '789'
+        });
+
+        // No destination is known yet (just the bare sentinel) — falls back to
+        // a generic "Traveling" label with the raw sentinel as the meta text.
+        const travelingWithoutDestination = resolveLocationSummary({
+            location: 'traveling'
+        });
+        expect(travelingWithoutDestination).toEqual({
+            label: 'Traveling',
+            meta: 'traveling'
+        });
+
+        // resolveLocationTarget resolves the destination world id from
+        // travelingToWorld when the location is still the bare sentinel, so
+        // routing/section grouping can key off the world the friend is
+        // heading to instead of losing the location entirely.
+        const travelingTarget = resolveLocationTarget({
+            location: 'traveling',
+            travelingToWorld: 'wrld_456'
+        });
+        expect(travelingTarget.isTraveling).toBe(true);
+        expect(travelingTarget.worldId).toBe('wrld_456');
     });
 
     it('separates private locations from visible or unknown locations', () => {
         expect(isFriendInPrivateLocation({ location: 'private' })).toBe(true);
-        expect(isFriendInPrivateLocation({ stateBucket: 'online' })).toBe(
-            false
-        );
+        expect(isFriendInPrivateLocation({ state: 'online' })).toBe(false);
         expect(isFriendInPrivateLocation({ location: 'wrld_123:456' })).toBe(
             false
         );

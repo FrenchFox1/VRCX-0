@@ -67,21 +67,39 @@ type SidePanelProps = {
 
 function parseConfigArray(value: unknown): string[] {
     if (Array.isArray(value)) {
-        return value as string[];
+        return value.filter(
+            (entry): entry is string => typeof entry === 'string'
+        );
     }
     if (typeof value !== 'string' || !value.trim()) {
         return [];
     }
     try {
         const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? (parsed as string[]) : [];
+        return Array.isArray(parsed)
+            ? parsed.filter(
+                  (entry): entry is string => typeof entry === 'string'
+              )
+            : [];
     } catch {
         return [];
     }
 }
 
 function toSidePanelSortMethod(value: string): SidePanelSortMethod {
-    return value as SidePanelSortMethod;
+    switch (value) {
+        case 'Sort Alphabetically':
+        case 'Sort Private to Bottom':
+        case 'Sort by Status':
+        case 'Sort by Last Active':
+        case 'Sort by Last Seen':
+        case 'Sort by Time in Instance':
+        case 'Sort by Location':
+        case 'None':
+            return value;
+        default:
+            return '';
+    }
 }
 
 export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
@@ -202,11 +220,11 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             tabLayout,
             visibleFavoriteCollectionSourceGroupKeys,
             visibleTabLayout
-        } = useSidePanelTabData({ activeTab, prefs, setActiveTab, t });
+        } = useSidePanelTabData({ activeTab, prefs, setActiveTab });
         const { showTabText, tabListRef, tabViewportRef } =
             useResponsiveSidePanelTabText(
                 tabDisplayMode,
-                tabItems.map((item) => item.label)
+                tabItems.map((item) => item.title)
             );
 
         const {
@@ -380,7 +398,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                             'min-w-0 flex-none',
                                                             showTabText
                                                                 ? 'max-w-40'
-                                                                : 'w-8 px-1'
+                                                                : 'px-1'
                                                         )}
                                                     >
                                                         <Icon data-icon="inline-start" />
@@ -392,6 +410,9 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                             )}
                                                         >
                                                             {item.label}
+                                                        </span>
+                                                        <span className="shrink-0 tabular-nums">
+                                                            {item.countLabel}
                                                         </span>
                                                     </TabsTrigger>
                                                 }

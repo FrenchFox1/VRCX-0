@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { SidebarFriendRecord } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
+import { useNowMs } from '@/lib/useNowMs';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
@@ -11,7 +13,6 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { getEstimatedDwellSince } from './friendDwellTracker';
 import {
     buildUserHoverCardModel,
     normalizeInstanceCounts
@@ -23,7 +24,7 @@ type UserHoverCardProfile = Awaited<
 type UserHoverCardPopulation = ReturnType<typeof normalizeInstanceCounts>;
 
 type UserHoverCardDataInput = {
-    userId: unknown;
+    userId: string;
     seed?: SidebarFriendRecord | Record<string, unknown> | null;
 };
 
@@ -52,14 +53,23 @@ export function useUserHoverCardData({
     const [population, setPopulation] = useState<UserHoverCardPopulation>(null);
     const [populationLoading, setPopulationLoading] = useState(false);
     const [profileLoading, setProfileLoading] = useState(true);
+    const nowMs = useNowMs();
     const [worldProfile, setWorldProfile] = useState<Awaited<
         ReturnType<typeof worldProfileRepository.getWorldProfile>
     > | null>(null);
 
-    const nowMs = useMemo(() => Date.now(), [profile, effectiveSeed]);
     const model = useMemo(
-        () => buildUserHoverCardModel({ seed: effectiveSeed, profile, nowMs }),
-        [effectiveSeed, profile, nowMs]
+        () =>
+            buildUserHoverCardModel({
+                seed: effectiveSeed,
+                profile,
+                nowMs
+            }),
+        [effectiveSeed, nowMs, profile]
+    );
+    const instanceEpoch = useFriendLocationTimeEpoch(
+        normalizedUserId,
+        model.location.effectiveLocation
     );
 
     useEffect(() => {
@@ -88,13 +98,9 @@ export function useUserHoverCardData({
             });
         memoPersistenceRepository
             .getUserMemo(normalizedUserId)
-            .then((entry: unknown) => {
+            .then((entry) => {
                 if (active) {
-                    const memoEntry =
-                        entry && typeof entry === 'object'
-                            ? (entry as { memo?: unknown })
-                            : null;
-                    setMemo(String(memoEntry?.memo || '').trim());
+                    setMemo(entry.memo.trim());
                 }
             })
             .catch(() => {});
@@ -142,17 +148,9 @@ export function useUserHoverCardData({
         setPopulationLoading(true);
         vrchatInstanceRepository
             .getInstance({ worldId, instanceId })
-            .then((response: unknown) => {
+            .then((response) => {
                 if (active) {
-                    const responseRecord =
-                        response && typeof response === 'object'
-                            ? (response as { json?: unknown })
-                            : null;
-                    setPopulation(
-                        normalizeInstanceCounts(
-                            responseRecord?.json ?? response
-                        )
-                    );
+                    setPopulation(normalizeInstanceCounts(response.json));
                 }
             })
             .catch(() => {})
@@ -166,15 +164,6 @@ export function useUserHoverCardData({
         };
     }, [worldId, instanceId, isRealInstance, endpoint]);
 
-    const instanceEpoch =
-        model.instanceEpoch ||
-        (model.variant === 'in-instance'
-            ? getEstimatedDwellSince(
-                  normalizedUserId,
-                  model.location.effectiveLocation
-              )
-            : 0);
-
     return {
         model,
         worldThumb,
@@ -182,7 +171,7 @@ export function useUserHoverCardData({
         populationLoading,
         memo,
         trustColor,
-        instanceEpoch,
+        instanceEpoch: model.variant === 'in-instance' ? instanceEpoch : 0,
         loading: profileLoading && !profile
     };
 }

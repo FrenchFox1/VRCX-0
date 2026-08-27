@@ -3,9 +3,10 @@ import { commands } from '@/platform/tauri/bindings';
 type MutualGraphMeta = {
     lastFetchedAt: string | null;
     optedOut: boolean;
+    totalCount: number | null;
 };
 
-async function getSnapshot(userId: unknown): Promise<{
+async function getSnapshot(userId: string): Promise<{
     snapshot: Map<string, string[]>;
     meta: Map<string, MutualGraphMeta>;
 }> {
@@ -13,17 +14,14 @@ async function getSnapshot(userId: unknown): Promise<{
         friendIds,
         links,
         meta: metaRows
-    } = await commands.appMutualGraphSnapshotGet(
-        typeof userId === 'string' ? userId.trim() : String(userId ?? '').trim()
-    );
+    } = await commands.appMutualGraphSnapshotGet(userId.trim());
 
     const snapshot = new Map<string, string[]>();
     const meta = new Map<string, MutualGraphMeta>();
 
     for (const friendId of friendIds) {
-        const normalizedFriendId = String(friendId || '');
-        if (normalizedFriendId && !snapshot.has(normalizedFriendId)) {
-            snapshot.set(normalizedFriendId, []);
+        if (friendId && !snapshot.has(friendId)) {
+            snapshot.set(friendId, []);
         }
     }
 
@@ -34,10 +32,9 @@ async function getSnapshot(userId: unknown): Promise<{
             continue;
         }
 
-        const normalizedFriendId = String(friendId);
-        const mutualIds = snapshot.get(normalizedFriendId) ?? [];
-        mutualIds.push(String(mutualId));
-        snapshot.set(normalizedFriendId, mutualIds);
+        const mutualIds = snapshot.get(friendId) ?? [];
+        mutualIds.push(mutualId);
+        snapshot.set(friendId, mutualIds);
     }
 
     for (const row of metaRows) {
@@ -46,9 +43,10 @@ async function getSnapshot(userId: unknown): Promise<{
             continue;
         }
 
-        meta.set(String(friendId), {
-            lastFetchedAt: String(row.lastFetchedAt || '') || null,
-            optedOut: Boolean(row.optedOut)
+        meta.set(friendId, {
+            lastFetchedAt: row.lastFetchedAt || null,
+            optedOut: row.optedOut,
+            totalCount: row.totalCount
         });
     }
 

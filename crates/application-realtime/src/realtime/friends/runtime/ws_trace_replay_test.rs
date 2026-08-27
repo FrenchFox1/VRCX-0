@@ -38,11 +38,10 @@ mod tests {
         let uid = entry.get("uid").and_then(Value::as_str)?.to_string();
         let record = FriendRecord {
             id: uid.clone(),
-            display_name: field_str(entry.get("dn")),
-            state: field_str(entry.get("state")),
-            state_bucket: field_str(entry.get("state")),
+            display_name: field_str(entry.get("dn")).into(),
+            state: field_str(entry.get("state")).into(),
             location: field_str(entry.get("loc")),
-            status: field_str(entry.get("status")),
+            status: field_str(entry.get("status")).into(),
             ..FriendRecord::default()
         };
         Some((uid, record))
@@ -99,12 +98,12 @@ mod tests {
             PendingOfflineTimerAction::Schedule {
                 user_id,
                 token,
-                delay_ms,
+                delay,
             } => json!({
                 "kind": "schedule",
                 "userId": user_id,
                 "token": token,
-                "delayMs": delay_ms,
+                "delayMs": delay.as_millis(),
             }),
         }
     }
@@ -138,7 +137,6 @@ mod tests {
             "persistence": persistence,
             "timer": timer_summary(&output.timer_action),
             "profileRefetchUserIds": output.profile_refetch_user_ids,
-            "friendNoteChanged": output.friend_note_changed,
         })
     }
 
@@ -241,7 +239,7 @@ mod tests {
         let mut event_index = 0usize;
         let mut first_expect_diff: Option<String> = None;
 
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         let mut latest_token: HashMap<String, u64> = HashMap::new();
 
         let mut baselines = 0usize;
@@ -594,7 +592,7 @@ mod tests {
         if after_state != record.state {
             fields.push("state");
         }
-        if after_bucket != record.state_bucket {
+        if after_bucket != record.state {
             fields.push("stateBucket");
         }
         if field_str(after.get("status")) != record.status {
@@ -619,7 +617,7 @@ mod tests {
             after_location,
             after_traveling,
             after_pending,
-            record_state: record.state.clone(),
+            record_state: record.state.to_string(),
             record_location: record.location.clone(),
             record_traveling: record.traveling_to_location.clone(),
             record_pending,

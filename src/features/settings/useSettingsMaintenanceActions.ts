@@ -18,14 +18,14 @@ import {
 } from '@/services/shellIntegrationService';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { normalizeBackgroundModeDelayMinutes } from '@/state/preferencesStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { normalizeCheckedState } from './settingsValues';
 import type {
     SettingsActionPrefs,
     useSettingsPreferenceActions
 } from './useSettingsPreferenceActions';
 
-type PreferenceAction = () => unknown | Promise<unknown>;
+type PreferenceAction = () => void;
 type PreferenceRollback = void | (() => void);
 type PreferenceActions = ReturnType<typeof useSettingsPreferenceActions>;
 type SettingsPrefs = SettingsActionPrefs;
@@ -37,7 +37,7 @@ type StateSetter<Value> = {
 type SettingsDialogResult = {
     ok: boolean;
     reason?: string;
-    value?: unknown;
+    value?: string;
 };
 type SettingsConfirmOptions = {
     title: string;
@@ -54,10 +54,9 @@ type SettingsPromptOptions = SettingsConfirmOptions & {
     errorMessage?: string;
 };
 type SettingsToast = {
-    dismiss(id: unknown): unknown;
-    error(message: string): unknown;
-    success(message: string): unknown;
-    warning(message: string, options?: { duration?: number }): unknown;
+    error(message: string): void;
+    success(message: string): void;
+    warning(message: string, options?: { duration?: number }): void;
 };
 type SettingsMaintenanceActionsDeps = {
     alert: (options: SettingsConfirmOptions) => Promise<SettingsDialogResult>;
@@ -76,8 +75,8 @@ type SettingsMaintenanceActionsDeps = {
     };
     language?: string;
     mediaRepository: {
-        cropAllPrints(path: string): Promise<unknown>;
-        getUgcPhotoLocation(path: unknown): Promise<string>;
+        cropAllPrints(path: string): Promise<null>;
+        getUgcPhotoLocation(path: string): Promise<string>;
     };
     prefs: SettingsPrefs;
     prompt: (options: SettingsPromptOptions) => Promise<SettingsDialogResult>;
@@ -85,18 +84,19 @@ type SettingsMaintenanceActionsDeps = {
     savePreferenceValue: PreferenceActions['savePreferenceValue'];
     saveStringPreference: PreferenceActions['saveStringPreference'];
     setAppDataDirState: (value: AppDataDirState | null) => void;
-    setCropInstancePrintsPreference: (value: boolean) => Promise<unknown>;
+    setCropInstancePrintsPreference: (value: boolean) => Promise<void>;
     setGameLogPersistenceDisabledPreference: (
         disabled: boolean
-    ) => Promise<unknown>;
-    setFeedPersistenceDisabledPreference: (
+    ) => Promise<void>;
+    setFeedPersistenceDisabledPreference: (disabled: boolean) => Promise<void>;
+    setAvatarFeedPersistenceDisabledPreference: (
         disabled: boolean
-    ) => Promise<unknown>;
+    ) => Promise<void>;
     setIntConfigPreference: (
         key: IntConfigPreferenceKey,
         value: string | number,
         options?: { min?: number; max?: number; fallback?: number }
-    ) => Promise<unknown>;
+    ) => Promise<number>;
     setPrefs: StateSetter<SettingsPrefs>;
     setPurgeDialogOpen: (value: boolean) => void;
     setPurgeInProgress: (value: boolean) => void;
@@ -123,6 +123,7 @@ export function createSettingsMaintenanceActions({
     setCropInstancePrintsPreference,
     setGameLogPersistenceDisabledPreference,
     setFeedPersistenceDisabledPreference,
+    setAvatarFeedPersistenceDisabledPreference,
     setIntConfigPreference,
     setPrefs,
     setPurgeDialogOpen,
@@ -350,20 +351,12 @@ export function createSettingsMaintenanceActions({
                       return cutoff.toJSON();
                   })();
         setPurgeInProgress(true);
-        const toastId = toast.warning(
-            t(
-                'view.settings.advanced.advanced.database_cleanup.purge_in_progress'
-            ),
-            {
-                duration: Infinity
-            }
-        );
+        useRuntimeStore.getState().setDatabaseMaintenanceActive(true);
         try {
             const outcome =
                 await avatarFeedHistoryRepository.cleanupAvatarFeedHistory(
                     cutoffDate
                 );
-            toast.dismiss(toastId);
             setPurgeDialogOpen(false);
             if (outcome.status === 'optimizationFailed') {
                 toast.warning(
@@ -384,7 +377,6 @@ export function createSettingsMaintenanceActions({
             );
             await restartApplication();
         } catch (error) {
-            toast.dismiss(toastId);
             toast.error(
                 t(
                     'view.settings.advanced.advanced.database_cleanup.purge_failed',
@@ -397,6 +389,7 @@ export function createSettingsMaintenanceActions({
                 )
             );
         } finally {
+            useRuntimeStore.getState().setDatabaseMaintenanceActive(false);
             setPurgeInProgress(false);
         }
     }
@@ -437,8 +430,7 @@ export function createSettingsMaintenanceActions({
         await mediaRepository.cropAllPrints(ugcFolderPath);
         toast.success(t('view.settings.label.existing_saved_prints_cropped'));
     }
-    async function handleCropInstancePrintsChange(checked: unknown) {
-        const enabled = normalizeCheckedState(checked);
+    async function handleCropInstancePrintsChange(enabled: boolean) {
         const saved = await commit(
             () => setCropInstancePrintsPreference(enabled),
             () => {
@@ -465,8 +457,7 @@ export function createSettingsMaintenanceActions({
             });
         }
     }
-    async function handleGameLogDisabledChange(checked: unknown) {
-        const disabled = normalizeCheckedState(checked);
+    async function handleGameLogDisabledChange(disabled: boolean) {
         if (gameState.isGameRunning) {
             toast.error(t('message.gamelog.vrchat_must_be_closed'));
             return;
@@ -484,8 +475,7 @@ export function createSettingsMaintenanceActions({
             setGameLogPersistenceDisabledPreference(disabled)
         );
     }
-    async function handleFeedPersistenceDisabledChange(checked: unknown) {
-        const disabled = normalizeCheckedState(checked);
+    async function handleFeedPersistenceDisabledChange(disabled: boolean) {
         if (disabled) {
             const result = await confirm({
                 title: t('confirm.title'),
@@ -497,6 +487,15 @@ export function createSettingsMaintenanceActions({
         }
         await savePreferenceValue('feedPersistenceDisabled', disabled, () =>
             setFeedPersistenceDisabledPreference(disabled)
+        );
+    }
+    async function handleAvatarFeedPersistenceDisabledChange(
+        disabled: boolean
+    ) {
+        await savePreferenceValue(
+            'avatarFeedPersistenceDisabled',
+            disabled,
+            () => setAvatarFeedPersistenceDisabledPreference(disabled)
         );
     }
     return {
@@ -515,6 +514,7 @@ export function createSettingsMaintenanceActions({
         handleCropInstancePrintsChange,
         handleGameLogDisabledChange,
         handleFeedPersistenceDisabledChange,
+        handleAvatarFeedPersistenceDisabledChange,
         migrateLegacyVrcxData
     };
 }

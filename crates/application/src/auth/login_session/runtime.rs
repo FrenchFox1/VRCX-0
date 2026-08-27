@@ -1,18 +1,18 @@
 use std::sync::{Arc, Mutex};
 
+use crate::auth::AuthCredentialStore;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::{Mutex as AsyncMutex, OwnedMutexGuard};
 use vrcx_0_application_core::RuntimeRealtimeTransportEpoch;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_core::TwoFactorMethod;
 
-use crate::{
+use crate::auth::{
     delete_saved_credential, record_login_success, record_logout, saved_snapshot,
-    AuthenticatedRuntimeSession, Error, LoginSuccessRecordInput, LogoutRecordInput,
-    SavedAuthSnapshot, WebClient,
+    AuthenticatedRuntimeSession, LoginSuccessRecordInput, LogoutRecordInput, SavedAuthSnapshot,
 };
+use vrcx_0_application_core::{Error, WebClient};
 
 use super::auto_login::{
     drive_auto_login, AutoLoginDrive, AutoLoginOutcome, AutoLoginStartInput,
@@ -46,7 +46,8 @@ pub struct LoginSessionRespondInput {
     #[serde(default)]
     pub attempt_id: String,
     #[serde(default)]
-    pub method: String,
+    #[specta(type = String)]
+    pub method: TwoFactorMethod,
     #[serde(default)]
     pub code: String,
 }
@@ -111,8 +112,7 @@ type TransitionSink<'a> = dyn Fn(LoginRuntimeTransition) -> Result<(), String> +
 
 struct LoginRuntimeDeps<'a> {
     web: &'a WebClient,
-    db: &'a DatabaseService,
-    config: &'a ConfigRepository,
+    config: &'a dyn AuthCredentialStore,
     transition: &'a TransitionSink<'a>,
 }
 
@@ -138,8 +138,8 @@ struct ActiveChallenge {
     attempt_id: String,
     api: Arc<dyn LoginApi>,
     endpoint: String,
-    methods: Vec<String>,
-    mode: String,
+    methods: Vec<TwoFactorMethod>,
+    mode: TwoFactorMethod,
     error: Option<String>,
     policy: LoginAttemptPolicy,
 }
@@ -163,14 +163,14 @@ pub(super) struct LoginSessionOperation {
 }
 
 impl LoginSessionOperation {
-    pub(super) fn ensure_current(&self) -> crate::Result<()> {
+    pub(super) fn ensure_current(&self) -> vrcx_0_application_core::Result<()> {
         self.run_if_current(|| Ok(()))
     }
 
     pub(super) fn run_if_current<T>(
         &self,
-        operation: impl FnOnce() -> crate::Result<T>,
-    ) -> crate::Result<T> {
+        operation: impl FnOnce() -> vrcx_0_application_core::Result<T>,
+    ) -> vrcx_0_application_core::Result<T> {
         let inner = self
             .inner
             .lock()
@@ -208,52 +208,46 @@ impl LoginSessionRuntime {
         }
     }
 
-    fn login_api(web: &Arc<WebClient>, db: &Arc<DatabaseService>) -> Arc<dyn LoginApi> {
-        Arc::new(WebClientLoginApi::new(Arc::clone(web), Arc::clone(db)))
+    fn login_api(
+        web: &Arc<WebClient>,
+        requests: Arc<dyn crate::auth::AuthRemoteRequests>,
+    ) -> Arc<dyn LoginApi> {
+        Arc::new(WebClientLoginApi::new(Arc::clone(web), requests))
     }
 
     pub async fn auto_login_start(
         &self,
         web: Arc<WebClient>,
-        db: Arc<DatabaseService>,
-        config: &ConfigRepository,
+        requests: Arc<dyn crate::auth::AuthRemoteRequests>,
+        config: &dyn AuthCredentialStore,
         input: AutoLoginStartInput,
         transition: &TransitionSink<'_>,
-    ) -> crate::Result<AutoLoginOutcome> {
-        let api = Self::login_api(&web, &db);
-        self.auto_login_start_with_transition(
-            api,
-            config,
-            web.as_ref(),
-            db.as_ref(),
-            input,
-            transition,
-        )
-        .await
+    ) -> vrcx_0_application_core::Result<AutoLoginOutcome> {
+        let api = Self::login_api(&web, requests);
+        self.auto_login_start_with_transition(api, config, web.as_ref(), input, transition)
+            .await
     }
 
     #[cfg(test)]
     pub(super) async fn auto_login_start_with(
         &self,
         api: Arc<dyn LoginApi>,
-        config: &ConfigRepository,
+        config: &dyn AuthCredentialStore,
         web: &WebClient,
-        db: &DatabaseService,
         input: AutoLoginStartInput,
-    ) -> crate::Result<AutoLoginOutcome> {
-        self.auto_login_start_with_transition(api, config, web, db, input, &|_| Ok(()))
+    ) -> vrcx_0_application_core::Result<AutoLoginOutcome> {
+        self.auto_login_start_with_transition(api, config, web, input, &|_| Ok(()))
             .await
     }
 
     pub(super) async fn auto_login_start_with_transition(
         &self,
         api: Arc<dyn LoginApi>,
-        config: &ConfigRepository,
+        config: &dyn AuthCredentialStore,
         web: &WebClient,
-        db: &DatabaseService,
         input: AutoLoginStartInput,
         transition: &TransitionSink<'_>,
-    ) -> crate::Result<AutoLoginOutcome> {
+    ) -> vrcx_0_application_core::Result<AutoLoginOutcome> {
         let operation = self.begin_operation(transition)?;
         let _network = match self.acquire_network(&operation).await {
             Ok(guard) => guard,
@@ -265,7 +259,6 @@ impl LoginSessionRuntime {
             api.as_ref(),
             config,
             web,
-            db,
             &self.auto_login_throttle,
             &operation,
             input,
@@ -295,7 +288,6 @@ impl LoginSessionRuntime {
                     },
                     LoginRuntimeDeps {
                         web,
-                        db,
                         config,
                         transition,
                     },
@@ -318,12 +310,11 @@ impl LoginSessionRuntime {
     pub async fn end_session(
         &self,
         web: &WebClient,
-        db: &DatabaseService,
-        config: &ConfigRepository,
+        config: &dyn AuthCredentialStore,
         request: LoginSessionEndRequest,
         invalidation_matches: &(dyn Fn(&LoginSessionEnd) -> bool + Send + Sync),
         transition: &TransitionSink<'_>,
-    ) -> crate::Result<Option<SavedAuthSnapshot>> {
+    ) -> vrcx_0_application_core::Result<Option<SavedAuthSnapshot>> {
         let operation = {
             let mut inner = self
                 .inner
@@ -374,12 +365,12 @@ impl LoginSessionRuntime {
                     },
                 );
                 web.clear_cookies();
-                web.save_cookies(db);
+                web.save_cookies();
                 self.auto_login_throttle.reset_all();
                 snapshot
             }
             LoginSessionEnd::Invalidated { .. } => {
-                clear_auth_cookies_and_save(web, db);
+                clear_auth_cookies_and_save(web);
                 record_logout(
                     config,
                     web,
@@ -411,13 +402,13 @@ impl LoginSessionRuntime {
     pub async fn start(
         &self,
         web: Arc<WebClient>,
-        db: Arc<DatabaseService>,
-        config: &ConfigRepository,
+        requests: Arc<dyn crate::auth::AuthRemoteRequests>,
+        config: &dyn AuthCredentialStore,
         input: LoginSessionStartInput,
         transition: &TransitionSink<'_>,
     ) -> LoginSessionState {
-        let api = Self::login_api(&web, &db);
-        self.start_with_transition(api, web.as_ref(), db.as_ref(), config, input, transition)
+        let api = Self::login_api(&web, requests);
+        self.start_with_transition(api, web.as_ref(), config, input, transition)
             .await
     }
 
@@ -426,11 +417,10 @@ impl LoginSessionRuntime {
         &self,
         api: Arc<dyn LoginApi>,
         web: &WebClient,
-        db: &DatabaseService,
-        config: &ConfigRepository,
+        config: &dyn AuthCredentialStore,
         input: LoginSessionStartInput,
     ) -> LoginSessionState {
-        self.start_with_transition(api, web, db, config, input, &|_| Ok(()))
+        self.start_with_transition(api, web, config, input, &|_| Ok(()))
             .await
     }
 
@@ -438,8 +428,7 @@ impl LoginSessionRuntime {
         &self,
         api: Arc<dyn LoginApi>,
         web: &WebClient,
-        db: &DatabaseService,
-        config: &ConfigRepository,
+        config: &dyn AuthCredentialStore,
         input: LoginSessionStartInput,
         transition: &TransitionSink<'_>,
     ) -> LoginSessionState {
@@ -458,7 +447,7 @@ impl LoginSessionRuntime {
                 save_credentials,
             } => {
                 let endpoint = VRCHAT_API_DEFAULT_ENDPOINT.to_string();
-                clear_auth_cookies_and_save(web, db);
+                clear_auth_cookies_and_save(web);
                 let login_params = json!({
                     "username": username,
                     "password": password,
@@ -499,7 +488,6 @@ impl LoginSessionRuntime {
             policy,
             LoginRuntimeDeps {
                 web,
-                db,
                 config,
                 transition,
             },
@@ -512,10 +500,9 @@ impl LoginSessionRuntime {
         &self,
         input: LoginSessionRespondInput,
         web: &WebClient,
-        db: &DatabaseService,
-        config: &ConfigRepository,
+        config: &dyn AuthCredentialStore,
     ) -> LoginSessionState {
-        self.respond_and_transition(input, web, db, config, &|_| Ok(()))
+        self.respond_and_transition(input, web, config, &|_| Ok(()))
             .await
     }
 
@@ -523,8 +510,7 @@ impl LoginSessionRuntime {
         &self,
         input: LoginSessionRespondInput,
         web: &WebClient,
-        db: &DatabaseService,
-        config: &ConfigRepository,
+        config: &dyn AuthCredentialStore,
         transition: &TransitionSink<'_>,
     ) -> LoginSessionState {
         let (operation, active) = match self.take_active(&input.attempt_id) {
@@ -552,7 +538,6 @@ impl LoginSessionRuntime {
             active.policy,
             LoginRuntimeDeps {
                 web,
-                db,
                 config,
                 transition,
             },
@@ -564,7 +549,6 @@ impl LoginSessionRuntime {
         &self,
         attempt_id: String,
         web: &WebClient,
-        db: &DatabaseService,
         transition: &TransitionSink<'_>,
     ) -> LoginSessionState {
         let operation = {
@@ -602,7 +586,7 @@ impl LoginSessionRuntime {
         if current.generation != operation.generation {
             return LoginSessionState::Cancelled;
         }
-        clear_auth_cookies_and_save(web, db);
+        clear_auth_cookies_and_save(web);
         let _ = transition(LoginRuntimeTransition::Unauthenticated(
             "Frontend login was cancelled.".into(),
         ));
@@ -612,7 +596,7 @@ impl LoginSessionRuntime {
     pub(super) fn begin_operation(
         &self,
         transition: &TransitionSink<'_>,
-    ) -> crate::Result<LoginSessionOperation> {
+    ) -> vrcx_0_application_core::Result<LoginSessionOperation> {
         let mut inner = self
             .inner
             .lock()
@@ -631,7 +615,7 @@ impl LoginSessionRuntime {
     async fn acquire_network(
         &self,
         operation: &LoginSessionOperation,
-    ) -> crate::Result<OwnedMutexGuard<()>> {
+    ) -> vrcx_0_application_core::Result<OwnedMutexGuard<()>> {
         let guard = Arc::clone(&self.network_gate).lock_owned().await;
         operation.ensure_current()?;
         Ok(guard)
@@ -669,7 +653,7 @@ impl LoginSessionRuntime {
         endpoint: String,
         policy: LoginAttemptPolicy,
         deps: LoginRuntimeDeps<'_>,
-    ) -> crate::Result<LoginSessionState> {
+    ) -> vrcx_0_application_core::Result<LoginSessionState> {
         let mut inner = self
             .inner
             .lock()
@@ -681,7 +665,7 @@ impl LoginSessionRuntime {
         let state = with_attempt_id(state, &operation.attempt_id);
         let state = finalize_authenticated_state(state, &policy, deps.config, deps.web);
         let state = apply_terminal_transition(state, deps.transition);
-        let state = cleanup_failed_state(state, &policy, deps.config, deps.web, deps.db);
+        let state = cleanup_failed_state(state, &policy, deps.config, deps.web);
         inner.active = match &state {
             LoginSessionState::Challenge {
                 attempt_id,
@@ -757,7 +741,7 @@ fn superseded_error() -> Error {
 fn finalize_authenticated_state(
     state: LoginSessionState,
     policy: &LoginAttemptPolicy,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
 ) -> LoginSessionState {
     let LoginSessionState::Authenticated { session, .. } = &state else {
@@ -772,7 +756,7 @@ fn finalize_authenticated_state(
             web,
             LoginSuccessRecordInput {
                 user: session.current_user.clone(),
-                login_params: login_params.clone(),
+                login_params: login_params.clone().into(),
                 stored_login_params: None,
                 save_credentials: *save_credentials,
             },
@@ -782,7 +766,7 @@ fn finalize_authenticated_state(
             web,
             LoginSuccessRecordInput {
                 user: session.current_user.clone(),
-                login_params: Value::Null,
+                login_params: Value::Null.into(),
                 stored_login_params: None,
                 save_credentials: false,
             },
@@ -800,14 +784,13 @@ fn finalize_authenticated_state(
 fn cleanup_failed_state(
     state: LoginSessionState,
     policy: &LoginAttemptPolicy,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
-    db: &DatabaseService,
 ) -> LoginSessionState {
     let LoginSessionState::Failed { reason, kind, .. } = state else {
         return state;
     };
-    match apply_login_failure_cleanup(web, db, config, policy, kind) {
+    match apply_login_failure_cleanup(web, config, policy, kind) {
         Ok(snapshot) => LoginSessionState::Failed {
             reason,
             kind,
@@ -840,8 +823,8 @@ fn with_attempt_id(state: LoginSessionState, attempt_id: &str) -> LoginSessionSt
 
 fn auto_login_outcome_from_state(
     state: LoginSessionState,
-    config: &ConfigRepository,
-) -> crate::Result<AutoLoginOutcome> {
+    config: &dyn AuthCredentialStore,
+) -> vrcx_0_application_core::Result<AutoLoginOutcome> {
     match state {
         LoginSessionState::Authenticated { session, snapshot } => {
             let snapshot = snapshot
@@ -879,19 +862,18 @@ fn auto_login_outcome_from_state(
 
 pub(super) fn apply_login_failure_cleanup(
     web: &WebClient,
-    db: &DatabaseService,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     policy: &LoginAttemptPolicy,
     kind: LoginFailureKind,
-) -> crate::Result<SavedAuthSnapshot> {
+) -> vrcx_0_application_core::Result<SavedAuthSnapshot> {
     let LoginAttemptPolicy::SavedCredential { user_id } = policy else {
-        clear_auth_cookies_and_save(web, db);
+        clear_auth_cookies_and_save(web);
         return saved_snapshot(config);
     };
 
     if kind == LoginFailureKind::InvalidCredentials {
         web.clear_cookies();
-        web.save_cookies(db);
+        web.save_cookies();
         return if user_id.trim().is_empty() {
             saved_snapshot(config)
         } else {
@@ -899,7 +881,7 @@ pub(super) fn apply_login_failure_cleanup(
         };
     }
 
-    clear_auth_cookies_and_save(web, db);
+    clear_auth_cookies_and_save(web);
     match kind {
         LoginFailureKind::SessionInvalidated | LoginFailureKind::MissingCredentials => {
             clear_last_login_target(config, web, user_id.trim().to_string())
@@ -911,16 +893,16 @@ pub(super) fn apply_login_failure_cleanup(
     }
 }
 
-pub(super) fn clear_auth_cookies_and_save(web: &WebClient, db: &DatabaseService) {
+pub(super) fn clear_auth_cookies_and_save(web: &WebClient) {
     web.clear_auth_cookies();
-    web.save_cookies(db);
+    web.save_cookies();
 }
 
 fn clear_last_login_target(
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     user_id: String,
-) -> crate::Result<SavedAuthSnapshot> {
+) -> vrcx_0_application_core::Result<SavedAuthSnapshot> {
     record_logout(
         config,
         web,

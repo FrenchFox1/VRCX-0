@@ -52,7 +52,7 @@ export function BrowseHistoryRetentionField() {
         return null;
     }
 
-    function changeRetention(value: unknown) {
+    function changeRetention(value: string | null) {
         const next = Number(value);
         if (!isRetentionOption(next)) {
             return;

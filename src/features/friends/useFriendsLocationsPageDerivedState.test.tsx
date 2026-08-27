@@ -3,7 +3,7 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 
 import { useFriendsLocationsPageDerivedState } from './useFriendsLocationsPageDerivedState';
 
@@ -31,7 +31,7 @@ function friendAt(location: string): FriendRecord {
 }
 
 describe('useFriendsLocationsPageDerivedState', () => {
-    it('carries observed current-instance dwell epochs into searched card rows', () => {
+    it('does not synthesize a friend dwell start from the local roster', () => {
         const location = 'wrld_test:123';
         const joinedAtMs = 1_700_000_000_000;
         const friend = friendAt(location);
@@ -49,7 +49,15 @@ describe('useFriendsLocationsPageDerivedState', () => {
                 gameState: {
                     currentLocation: location,
                     currentLocationPlayerIds: [friend.id],
-                    currentLocationPlayers: [{ id: friend.id, joinedAtMs }],
+                    currentLocationPlayers: [
+                        {
+                            id: friend.id,
+                            userId: friend.id,
+                            displayName: friend.displayName,
+                            joinedAt: new Date(joinedAtMs).toISOString(),
+                            joinedAtMs
+                        }
+                    ],
                     isGameRunning: true
                 },
                 groupedFavoriteFriendIdsByGroupKey: {},
@@ -82,6 +90,6 @@ describe('useFriendsLocationsPageDerivedState', () => {
         if (cardRow?.type !== 'cards') {
             return;
         }
-        expect(cardRow.friends[0]?.$location_at).toBe(joinedAtMs);
+        expect(cardRow.friends[0]?.$location_at).toBeUndefined();
     });
 });

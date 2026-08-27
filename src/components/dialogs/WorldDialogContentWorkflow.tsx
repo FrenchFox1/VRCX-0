@@ -5,11 +5,12 @@ import { useNavigate } from 'react-router';
 
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
-import type { EntityRecord } from '@/domain/entities/profileEntities';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
+import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -31,12 +32,12 @@ import {
 } from './WorldOwnerEditDialogs';
 
 export interface WorldDialogWorkflowProps {
-    worldId?: unknown;
+    worldId?: string;
     seedData?: unknown;
-    initialAction?: unknown;
-    openNonce?: unknown;
-    initialActionNonce?: unknown;
-    initialNewInstanceDefaults?: unknown;
+    initialAction?: string;
+    openNonce?: number;
+    initialActionNonce?: number;
+    initialNewInstanceDefaults?: WorldNewInstanceDefaults | null;
 }
 
 type NewInstanceDialogProps = ComponentProps<typeof WorldNewInstanceDialog>;
@@ -45,10 +46,6 @@ type WorldTagsDialogProps = ComponentProps<typeof WorldTagsDialog>;
 type WorldAllowedDomainsDialogProps = ComponentProps<
     typeof WorldAllowedDomainsDialog
 >;
-
-function isRecord(value: unknown): value is EntityRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function WorldDialogEmptyState({
     title,
@@ -84,11 +81,8 @@ export function WorldDialogContentWorkflow({
     const { t } = useTranslation();
     const navigate = useNavigate();
 
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const normalizedWorldId = worldId?.trim() ?? '';
     const normalizedSeedData = isRecord(seedData) ? seedData : null;
-    const normalizedOpenNonce = typeof openNonce === 'number' ? openNonce : 0;
-    const normalizedInitialActionNonce =
-        typeof initialActionNonce === 'number' ? initialActionNonce : 0;
     const profileWorldId = normalizedWorldId.split(':')[0] || normalizedWorldId;
     const {
         closeDialog,
@@ -117,12 +111,11 @@ export function WorldDialogContentWorkflow({
     const handledInitialActionRef = useRef('');
 
     function isCurrentWorldTarget(
-        targetWorldId: unknown,
+        targetWorldId: string,
         targetEndpoint: string
     ) {
         return (
-            activeWorldTargetRef.current.worldId ===
-                normalizeEntityId(targetWorldId) &&
+            activeWorldTargetRef.current.worldId === targetWorldId.trim() &&
             activeWorldTargetRef.current.endpoint === targetEndpoint
         );
     }
@@ -141,7 +134,8 @@ export function WorldDialogContentWorkflow({
         setHasPersistData,
         worldSideData,
         setWorldSideData,
-        newInstanceGroups
+        newInstanceGroups,
+        loadNewInstanceGroups
     } = useWorldDialogData({
         normalizedWorldId,
         profileWorldId,
@@ -194,11 +188,13 @@ export function WorldDialogContentWorkflow({
         isGameRunning,
         profileWorldId,
         newInstanceGroups,
+        loadNewInstanceGroups,
         actionStatusRef,
         setActionStatus,
         isCurrentWorldTarget,
         showLaunchDialog
     });
+    const { openNewInstanceDialog } = instanceActions;
 
     const imageUpload = useWorldImageUpload({
         world,
@@ -265,33 +261,27 @@ export function WorldDialogContentWorkflow({
     }, [profileWorldId]);
 
     useEffect(() => {
-        const normalizedInitialAction = normalizeEntityId(initialAction);
-        const actionKey = `${profileWorldId}:${normalizedInitialAction}:${normalizedInitialActionNonce}`;
+        const actionKey = `${profileWorldId}:${initialAction}:${initialActionNonce}`;
         if (
             !world?.id ||
-            !normalizedInitialAction ||
+            !initialAction ||
             handledInitialActionRef.current === actionKey
         ) {
             return;
         }
 
         handledInitialActionRef.current = actionKey;
-        if (normalizedInitialAction === 'newInstanceSelfInvite') {
-            instanceActions.openNewInstanceDialog(
-                true,
-                initialNewInstanceDefaults
-            );
-        } else if (normalizedInitialAction === 'newInstance') {
-            instanceActions.openNewInstanceDialog(
-                false,
-                initialNewInstanceDefaults
-            );
+        if (initialAction === 'newInstanceSelfInvite') {
+            openNewInstanceDialog(true, initialNewInstanceDefaults);
+        } else if (initialAction === 'newInstance') {
+            openNewInstanceDialog(false, initialNewInstanceDefaults);
         }
     }, [
         initialAction,
         initialActionNonce,
         initialNewInstanceDefaults,
         newInstanceGroups,
+        openNewInstanceDialog,
         profileWorldId,
         world?.id
     ]);
@@ -311,9 +301,6 @@ export function WorldDialogContentWorkflow({
             <WorldDialogEmptyState
                 loading
                 title={t('dialog.world.loading.loading_world_profile')}
-                description={t(
-                    'dialog.world.loading.fetching_the_current_vrchat_world_snapshot_for_this_dialog'
-                )}
             />
         );
     }
@@ -369,7 +356,7 @@ export function WorldDialogContentWorkflow({
                     imageUrl,
                     actionStatus,
                     normalizedWorldId,
-                    openNonce: normalizedOpenNonce,
+                    openNonce,
                     previousInstances
                 }}
                 permissions={{
@@ -532,9 +519,9 @@ export function WorldDialogContentWorkflow({
                 world={world}
                 saving={actionStatus === 'save-world'}
                 onSave={(
-                    tags: Parameters<WorldTagsDialogProps['onSave']>[0]
+                    update: Parameters<WorldTagsDialogProps['onSave']>[0]
                 ) => {
-                    ownerActions.saveWorldTags(tags);
+                    ownerActions.saveWorldTags(update);
                 }}
             />
             <WorldAllowedDomainsDialog

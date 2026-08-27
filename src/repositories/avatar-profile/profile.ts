@@ -1,4 +1,4 @@
-import type { AvatarProfileRecord } from '@/domain/entities/profileEntities';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -33,7 +33,7 @@ import type {
 
 async function getLocalMetadata(
     avatarId: string,
-    currentUserId: unknown
+    currentUserId: string | null
 ): Promise<AvatarProfileExtras> {
     const [localTags, timeSpentEntry, memoEntry] = await Promise.all([
         avatarLocalRepository
@@ -64,7 +64,7 @@ async function getLocalMetadata(
     ]);
 
     return {
-        cachedAvatar: null,
+        cachedAvatar: false,
         localTags: normalizeLocalTags(localTags),
         timeSpent: parseInteger(timeSpentEntry?.timeSpent),
         memo: normalizeString(memoEntry?.memo)
@@ -100,7 +100,7 @@ export async function getAvatarProfile({
     const localMetadataPromise = dialog
         ? getLocalMetadata(normalizedAvatarId, currentUserId)
         : Promise.resolve<AvatarProfileExtras>({
-              cachedAvatar: null,
+              cachedAvatar: false,
               localTags: [],
               timeSpent: 0,
               memo: ''
@@ -114,7 +114,7 @@ export async function getAvatarProfile({
 
         return normalize(json, {
             ...localMetadata,
-            cachedAvatar: json
+            cachedAvatar: true
         });
     } catch (error) {
         if (allowLocalFallback) {
@@ -127,7 +127,7 @@ export async function getAvatarProfile({
             if (cachedAvatar) {
                 return normalize(cachedAvatar, {
                     ...localMetadata,
-                    cachedAvatar
+                    cachedAvatar: true
                 });
             }
         }
@@ -137,7 +137,7 @@ export async function getAvatarProfile({
 }
 
 export async function findAvatarByImageUrl(
-    imageUrl: unknown
+    imageUrl: string
 ): Promise<AvatarProfileRecord | null> {
     const normalizedImageUrl = normalizeString(imageUrl);
     if (!normalizedImageUrl) {

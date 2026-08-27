@@ -4,6 +4,10 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const mocks = vi.hoisted(() => ({
+    getPlayerDetailFromInstance: vi.fn().mockResolvedValue([])
+}));
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, values?: { count?: number }) =>
@@ -47,11 +51,11 @@ vi.mock('@/ui/shadcn/avatar', () => ({
 
 vi.mock('@/repositories/gameLogRepository', () => ({
     default: {
-        getPlayerDetailFromInstance: vi.fn().mockResolvedValue([])
+        getPlayerDetailFromInstance: mocks.getPlayerDetailFromInstance
     }
 }));
 
-vi.mock('../gameLogUserLookup', () => ({
+vi.mock('@/services/gameLogUserDialogService', () => ({
     openGameLogUser: vi.fn()
 }));
 
@@ -82,8 +86,11 @@ vi.mock('./GameLogSessionEventRow', () => ({
 
 import { GameLogSessionsView } from './GameLogSessionsView';
 
-describe('GameLogSessionsView friend overflow', () => {
-    afterEach(cleanup);
+describe('GameLogSessionsView', () => {
+    afterEach(() => {
+        cleanup();
+        vi.clearAllMocks();
+    });
 
     it('shows every session friend with an avatar below the +n trigger', () => {
         const friends = [
@@ -102,7 +109,10 @@ describe('GameLogSessionsView friend overflow', () => {
                         created_at: '2026-08-10T00:00:00.000Z',
                         duration: 60_000,
                         location: 'wrld_test:1',
+                        worldId: 'wrld_test',
                         worldName: 'Test World',
+                        groupName: '',
+                        playerDurationRows: [],
                         events: friends.map(([userId, displayName], index) => ({
                             type: 'OnPlayerJoined',
                             created_at: `2026-08-10T00:0${index}:00.000Z`,
@@ -128,5 +138,40 @@ describe('GameLogSessionsView friend overflow', () => {
                 `https://example.test/${userId}.png`
             );
         }
+    });
+
+    it('uses the batched duration rows without querying each session', () => {
+        render(
+            <GameLogSessionsView
+                isGameRunning={false}
+                sessions={[
+                    {
+                        id: 1,
+                        created_at: '2026-08-10T00:00:00.000Z',
+                        duration: 0,
+                        location: 'wrld_test:1',
+                        worldId: 'wrld_test',
+                        worldName: 'Test World',
+                        groupName: '',
+                        playerDurationRows: [
+                            {
+                                displayName: 'Alice',
+                                userId: 'usr_alice',
+                                time: 60_000
+                            },
+                            {
+                                displayName: 'Alice',
+                                userId: 'usr_alice',
+                                time: 90_000
+                            }
+                        ],
+                        events: []
+                    }
+                ]}
+            />
+        );
+
+        expect(screen.getByText(/2m/)).not.toBeNull();
+        expect(mocks.getPlayerDetailFromInstance).not.toHaveBeenCalled();
     });
 });

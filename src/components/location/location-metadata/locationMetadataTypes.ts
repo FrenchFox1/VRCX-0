@@ -11,17 +11,17 @@ export type LocationMetadata = {
 };
 
 export type LocationMetadataEntry = {
-    key?: unknown;
-    locationInfo?: unknown;
-    currentLocation?: unknown;
-    hint?: unknown;
-    worldNameHint?: unknown;
-    groupHint?: unknown;
-    instanceName?: unknown;
+    key?: string;
+    locationInfo?: ParsedLocation;
+    currentLocation?: string;
+    hint?: string;
+    worldNameHint?: string;
+    groupHint?: string;
+    instanceName?: string;
 };
 
 export type NormalizedLocationMetadataEntry = {
-    key: unknown;
+    key: string;
     locationInfo: ParsedLocation;
     currentLocation: string;
     locationTag: string;
@@ -35,47 +35,47 @@ export type NormalizedLocationMetadataEntry = {
 };
 
 export type LocationCacheRecord = Record<string, unknown> & {
-    $location?: unknown;
-    closedAt?: unknown;
-    closed_at?: unknown;
-    displayName?: unknown;
-    group?: unknown;
-    groupName?: unknown;
-    group_name?: unknown;
-    isClosed?: unknown;
-    instanceDisplayName?: unknown;
-    location?: unknown;
-    name?: unknown;
-    ref?: unknown;
-    tag?: unknown;
-    world?: unknown;
-    worldName?: unknown;
-    world_name?: unknown;
+    $location?: LocationCacheRecord | null;
+    closedAt?: string | null;
+    closed_at?: string | null;
+    displayName?: string | null;
+    group?: LocationCacheRecord | null;
+    groupName?: string | null;
+    group_name?: string | null;
+    isClosed?: boolean;
+    instanceDisplayName?: string | null;
+    location?: string | null;
+    name?: string | null;
+    ref?: LocationCacheRecord | null;
+    tag?: string | null;
+    world?: LocationCacheRecord | null;
+    worldName?: string | null;
+    world_name?: string | null;
 };
 
-export type GroupProfileRecord = Record<string, unknown> & {
-    displayName?: unknown;
-    name?: unknown;
-    shortCode?: unknown;
+export type LocationGroupProfile = Record<string, unknown> & {
+    displayName?: string;
+    name?: string;
+    shortCode?: string;
 };
 
-export type WorldProfileRecord = Record<string, unknown> & {
-    name?: unknown;
+export type LocationWorldProfile = Record<string, unknown> & {
+    name?: string;
 };
 
 export type LocationHintRecord = {
-    groupName?: unknown;
-    instanceName?: unknown;
-    isClosed?: unknown;
-    region?: unknown;
-    worldName?: unknown;
+    groupName?: string;
+    instanceName?: string;
+    isClosed?: boolean;
+    region?: string;
+    worldName?: string;
 };
 
 export type MetadataContext = {
     cachedInstances: Map<string, LocationCacheRecord>;
     currentEndpoint: string;
-    groupProfilesById: Map<string, GroupProfileRecord>;
+    groupProfilesById: Map<string, LocationGroupProfile>;
     locationHintsByKey: Record<string, LocationHintRecord | undefined>;
     localWorldNamesById: Map<string, string>;
-    worldProfilesById: Map<string, WorldProfileRecord>;
+    worldProfilesById: Map<string, LocationWorldProfile>;
 };

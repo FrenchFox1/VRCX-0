@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
     appSetStartup: vi.fn(),
     appVrOverlayConfigReload: vi.fn(),
     appFeedPersistenceSetDisabled: vi.fn(),
+    appAvatarFeedPersistenceSetDisabled: vi.fn(),
     getBool: vi.fn(),
     getString: vi.fn(),
     getInt: vi.fn(),
@@ -36,7 +37,9 @@ vi.mock('@/platform/tauri/bindings', () => ({
         appRestartApplication: mocks.appRestartApplication,
         appSetStartup: mocks.appSetStartup,
         appVrOverlayConfigReload: mocks.appVrOverlayConfigReload,
-        appFeedPersistenceSetDisabled: mocks.appFeedPersistenceSetDisabled
+        appFeedPersistenceSetDisabled: mocks.appFeedPersistenceSetDisabled,
+        appAvatarFeedPersistenceSetDisabled:
+            mocks.appAvatarFeedPersistenceSetDisabled
     }
 }));
 
@@ -114,7 +117,7 @@ import { useShellStore } from '@/state/shellStore';
 import {
     addFeedHiddenUserPreference,
     removeFeedHiddenUserPreference,
-    setBoolConfigPreference,
+    setAvatarFeedPersistenceDisabledPreference,
     setFeedPersistenceDisabledPreference,
     setIntConfigPreference,
     setStartAtWindowsStartupPreference,
@@ -153,6 +156,7 @@ describe('preferenceGenericSetters', () => {
         mocks.appRestartApplication.mockResolvedValue(undefined);
         mocks.appVrOverlayConfigReload.mockResolvedValue(undefined);
         mocks.appFeedPersistenceSetDisabled.mockResolvedValue(undefined);
+        mocks.appAvatarFeedPersistenceSetDisabled.mockResolvedValue(undefined);
         useFeedLiveStore.getState().resetFeedLive();
         mocks.readRecentActionCooldown.mockReturnValue({
             enabled: false,
@@ -213,7 +217,7 @@ describe('preferenceGenericSetters', () => {
 
         expect(mocks.setMany).toHaveBeenCalledWith([
             ['VRCX_tablePageSizes', '[10,25,50]'],
-            ['VRCX_tablePageSize', 25]
+            ['VRCX_tablePageSize', '25']
         ]);
         expect(usePreferencesStore.getState()).toMatchObject({
             tablePageSize: 25,
@@ -241,8 +245,8 @@ describe('preferenceGenericSetters', () => {
         });
 
         expect(mocks.setMany).toHaveBeenCalledWith([
-            ['maxTableSize_v2', 750],
-            ['searchLimit', 25000]
+            ['maxTableSize_v2', '750'],
+            ['searchLimit', '25000']
         ]);
         expect(usePreferencesStore.getState().tableLimits).toEqual({
             maxTableSize: 750,
@@ -282,6 +286,25 @@ describe('preferenceGenericSetters', () => {
         );
     });
 
+    it('keeps live Feed entries when avatar history persistence changes', async () => {
+        useFeedLiveStore.getState().pushEntries([
+            {
+                sequence: 1,
+                entry: { id: 'avatar-change', type: 'Avatar' }
+            }
+        ]);
+
+        await setAvatarFeedPersistenceDisabledPreference(true);
+
+        expect(mocks.appAvatarFeedPersistenceSetDisabled).toHaveBeenCalledWith(
+            true
+        );
+        expect(useFeedLiveStore.getState().entries).toHaveLength(1);
+        expect(
+            usePreferencesStore.getState().avatarFeedPersistenceDisabled
+        ).toBe(true);
+    });
+
     it('keeps compound table preferences unchanged when the transaction fails', async () => {
         mocks.setMany.mockRejectedValueOnce(new Error('write failed'));
 
@@ -310,38 +333,6 @@ describe('preferenceGenericSetters', () => {
             'notificationTimeout',
             10000
         );
-    });
-
-    it('does not persist the hidden interactive panel switch', async () => {
-        await setBoolConfigPreference('vrOverlayPanelEnabled', false);
-
-        expect(mocks.setBool).not.toHaveBeenCalled();
-        expect(usePreferencesStore.getState().vrOverlayPanelEnabled).toBe(
-            false
-        );
-        expect(mocks.publishPreferenceChanged).not.toHaveBeenCalledWith(
-            'vrOverlayPanelEnabled',
-            expect.anything()
-        );
-        expect(mocks.appVrOverlayConfigReload).not.toHaveBeenCalled();
-    });
-
-    it('does not persist the hidden interactive panel all-friends setting', async () => {
-        await setBoolConfigPreference(
-            'vrOverlayPanelAllFriendsIncludesFavorites',
-            false
-        );
-
-        expect(mocks.setBool).not.toHaveBeenCalled();
-        expect(
-            usePreferencesStore.getState()
-                .vrOverlayPanelAllFriendsIncludesFavorites
-        ).toBe(false);
-        expect(mocks.publishPreferenceChanged).not.toHaveBeenCalledWith(
-            'vrOverlayPanelAllFriendsIncludesFavorites',
-            expect.anything()
-        );
-        expect(mocks.appVrOverlayConfigReload).not.toHaveBeenCalled();
     });
 
     it('adds and removes hidden feed users through the normalized JSON preference', async () => {

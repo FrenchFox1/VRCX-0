@@ -14,14 +14,14 @@ import {
     readInstanceWorldName
 } from './locationMetadataCache';
 import type {
-    GroupProfileRecord,
+    LocationGroupProfile,
     LocationCacheRecord,
     LocationHintRecord,
     LocationMetadata,
     LocationMetadataEntry,
     MetadataContext,
     NormalizedLocationMetadataEntry,
-    WorldProfileRecord
+    LocationWorldProfile
 } from './locationMetadataTypes';
 
 const WORLD_ID_PATTERN =
@@ -37,7 +37,7 @@ function isRawWorldReference(value: unknown) {
 export function normalizeWorldNameHint(
     hint: unknown,
     parsedLocation: ParsedLocation | Record<string, unknown> | null | undefined,
-    currentLocation: unknown
+    currentLocation: string
 ) {
     const normalizedHint = normalizeString(hint);
     if (!normalizedHint) {
@@ -54,7 +54,7 @@ export function normalizeWorldNameHint(
     return normalizedHint;
 }
 
-export function normalizeGroupNameHint(hint: unknown, groupId: unknown) {
+export function normalizeGroupNameHint(hint: unknown, groupId: string) {
     const normalizedHint = normalizeString(hint);
     if (!normalizedHint) {
         return '';
@@ -68,14 +68,14 @@ export function normalizeGroupNameHint(hint: unknown, groupId: unknown) {
     return normalizedHint;
 }
 
-function groupProfileName(group: GroupProfileRecord | undefined) {
+function groupProfileName(group: LocationGroupProfile | undefined) {
     return normalizeString(
         group?.name || group?.displayName || group?.shortCode
     );
 }
 
 export function createEmptyMetadata(
-    currentEndpoint: unknown = ''
+    currentEndpoint: string = ''
 ): LocationMetadata {
     return {
         currentEndpoint: normalizeString(currentEndpoint),
@@ -274,7 +274,7 @@ export function resolveEntryMetadata(
 export function entryHasWorldNameFromQueryOrCache(
     entry: NormalizedLocationMetadataEntry,
     cachedInstances: Map<string, LocationCacheRecord>,
-    worldProfilesById: Map<string, WorldProfileRecord>
+    worldProfilesById: Map<string, LocationWorldProfile>
 ) {
     const cachedInstance = resolveEntryCachedInstance(entry, cachedInstances);
     const cachedWorldName = normalizeWorldNameHint(

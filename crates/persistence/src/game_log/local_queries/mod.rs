@@ -20,6 +20,7 @@ use super::{
 };
 
 mod mutations;
+mod params;
 mod query;
 mod rows;
 mod sql;
@@ -31,6 +32,7 @@ mod recent_lookup_tests;
 #[cfg(test)]
 mod test_support;
 
+use params::{scoped_param_map, scoped_params};
 use rows::{
     game_log_base_columns, game_log_batch_for_kind, game_log_filter_flags,
     game_log_row_from_unified_row,
@@ -42,14 +44,6 @@ use sql::{
     game_log_resource_load_union_select, game_log_video_play_union_select,
     GAME_LOG_RECENT_DESCRIPTORS,
 };
-
-fn scoped_params(owner_id: i64) -> ParamsBuilder {
-    ParamsBuilder::new().set("owner_id", owner_id)
-}
-
-fn scoped_param_map(owner_id: i64) -> HashMap<String, Value> {
-    HashMap::from([("@owner_id".into(), Value::from(owner_id))])
-}
 
 pub use mutations::{
     game_log_entries_add, game_log_entry_delete, game_log_instance_delete,

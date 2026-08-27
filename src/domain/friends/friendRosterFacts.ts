@@ -1,6 +1,6 @@
 import type { UserFact } from '@/domain/users/userFacts';
 
-import type { FriendRecord, FriendRosterById } from './friendRosterTypes';
+import type { FriendRecord, FriendRosterById } from './types';
 
 const FACT_DERIVED_FIELDS = [
     '$trustLevel',
@@ -28,7 +28,7 @@ function applyFactDerivedFields(
         if (!next) {
             next = { ...friend };
         }
-        (next as Record<string, unknown>)[field] = value;
+        Object.assign(next, { [field]: value });
     }
     return next ?? friend;
 }

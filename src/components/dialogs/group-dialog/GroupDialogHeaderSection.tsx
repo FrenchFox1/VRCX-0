@@ -8,10 +8,10 @@ import {
     LogOutIcon,
     MessageSquareIcon,
     RefreshCwIcon,
+    SettingsIcon,
     Share2Icon,
     ShieldIcon,
     ShieldOffIcon,
-    ShieldUserIcon,
     TagIcon,
     TicketIcon,
     UserIcon,
@@ -26,8 +26,9 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { GroupProfileRecord } from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -43,11 +44,12 @@ import {
     EntityActionSub,
     EntityOverviewCard
 } from '../EntityDialogScaffold';
-import type { GroupRemoteStatus } from './groupDialogTypes';
+import type { GroupActionStatus, GroupRemoteStatus } from './groupDialogTypes';
 import { GroupTitleLanguages } from './GroupDialogViewParts';
+import { SavedGroupFavoriteButton } from './SavedGroupFavoriteButton';
 
 interface GroupHeaderModel {
-    actionStatus: string;
+    actionStatus: GroupActionStatus;
     canInviteToGroup: boolean;
     canJoin: boolean;
     canManagePosts: boolean;
@@ -90,7 +92,7 @@ interface GroupHeaderCommands {
     onRepresentToggle: () => void;
     onSubscribeToggle: () => void;
     onInviteUserToGroup: () => void;
-    onVisibilityChange: (visibility: string) => void;
+    onVisibilityChange: (visibility: GroupMemberVisibility) => void;
 }
 
 function GroupRailMetric({
@@ -296,16 +298,8 @@ export function GroupDialogHeaderSection({
                         </Tooltip>
                     ) : null}
                 </div>
-                {canModerateGroup ? (
-                    <Button
-                        type="button"
-                        size="lg"
-                        variant="outline"
-                        onClick={onOpenModeration}
-                    >
-                        <ShieldUserIcon data-icon="inline-start" />
-                        {t('dialog.group.actions.moderation_tools')}
-                    </Button>
+                {group.id ? (
+                    <SavedGroupFavoriteButton groupId={group.id} />
                 ) : null}
                 <EntityActionDropdown busy={actionStatus !== 'idle'}>
                     <EntityActionItem
@@ -395,6 +389,14 @@ export function GroupDialogHeaderSection({
                                     }}
                                 >
                                     {t('dialog.group.actions.create_post')}
+                                </EntityActionItem>
+                            ) : null}
+                            {canModerateGroup ? (
+                                <EntityActionItem
+                                    icon={SettingsIcon}
+                                    onClick={onOpenModeration}
+                                >
+                                    {t('dialog.group.actions.moderation_tools')}
                                 </EntityActionItem>
                             ) : null}
                             {canSetVisibility ? (

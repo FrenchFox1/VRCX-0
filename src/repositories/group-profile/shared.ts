@@ -1,8 +1,17 @@
 import type {
     GroupAuditLogRow,
+    GroupGalleryFileRow,
     GroupInstanceRecord,
     GroupMemberRow
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/group';
+import type {
+    GroupMemberPatch,
+    GroupMemberSort,
+    GroupPostMutation,
+    GroupJoinRequestAction,
+    HttpApiExecuteResponse
+} from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 import {
@@ -13,19 +22,6 @@ import {
 import { unwrapVrchatResponse } from '../vrchatRequest';
 
 export type GroupRecord = Record<string, unknown>;
-
-export type GroupGalleryFileRow = GroupRecord & {
-    approved?: boolean;
-    approvedAt?: string | null;
-    approvedByUserId?: string | null;
-    createdAt?: string;
-    fileId: string;
-    galleryId: string;
-    groupId: string;
-    id: string;
-    imageUrl?: string;
-    submittedByUserId?: string;
-};
 
 export type GroupUserGroupRow = GroupRecord & {
     bannerId?: string;
@@ -67,35 +63,35 @@ export type GroupModerationRow = Partial<GroupMemberRow> & {
     userId: string;
 };
 
-export type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+export type VrchatApiResult = HttpApiExecuteResponse;
 
-export type { CollectPagesOptions, PageRequest };
+export type { CollectPagesOptions, GroupGalleryFileRow, PageRequest };
 
 export interface GroupProfileInput {
-    groupId?: unknown;
+    groupId?: string;
     includeRoles?: boolean;
     force?: boolean;
     dialog?: boolean;
 }
 
 export interface GroupIdInput {
-    groupId?: unknown;
+    groupId?: string;
 }
 
 export interface GroupUserInput extends GroupIdInput {
-    userId?: unknown;
+    userId?: string;
 }
 
 export interface GroupUserRoleInput extends GroupUserInput {
-    roleId?: unknown;
+    roleId?: string;
 }
 
 export interface GroupPostInput extends GroupIdInput {
-    postId?: unknown;
-    params?: Record<string, unknown>;
+    postId?: string;
+}
+
+export interface GroupPostMutationInput extends GroupPostInput {
+    params: GroupPostMutation;
 }
 
 export interface GroupPageInput extends GroupIdInput {
@@ -104,17 +100,17 @@ export interface GroupPageInput extends GroupIdInput {
 }
 
 export interface GroupMembersInput extends GroupPageInput {
-    sort?: string;
+    sort?: GroupMemberSort;
     roleId?: string;
     force?: boolean;
 }
 
 export interface GroupMembersSearchInput extends GroupPageInput {
-    query?: unknown;
+    query?: string;
 }
 
 export interface GroupGalleryInput extends GroupPageInput {
-    galleryId?: unknown;
+    galleryId?: string;
     force?: boolean;
 }
 
@@ -123,25 +119,23 @@ export interface GroupJoinRequestInput extends GroupPageInput {
 }
 
 export interface GroupJoinRequestResponseInput extends GroupUserInput {
-    action?: unknown;
+    action: GroupJoinRequestAction;
     block?: boolean;
 }
 
 export interface GroupLogsInput extends GroupPageInput {
-    eventTypes?: unknown;
+    eventTypes?: string[];
 }
 
 export interface GroupRepresentationInput extends GroupIdInput {
-    isRepresenting?: unknown;
+    isRepresenting?: boolean;
 }
 
 export interface GroupMemberPropsInput extends GroupUserInput {
-    params?: Record<string, unknown>;
+    params: GroupMemberPatch;
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
+export { isRecord };
 
 export function unwrapVrchatGroupResponse<TJson = GroupRecord>(
     response: VrchatApiResult,

@@ -2,13 +2,17 @@ import type { TFunction } from 'i18next';
 import {
     CloudIcon,
     HardDriveIcon,
+    HeartIcon,
     HistoryIcon,
+    SearchXIcon,
     Share2Icon
 } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router';
 
 import { isEditableTarget } from '@/components/layout/useGlobalKeyboardShortcuts';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import { Button } from '@/ui/shadcn/button';
 import {
     Popover,
@@ -20,11 +24,7 @@ import {
 } from '@/ui/shadcn/popover';
 
 import { getFavoritesDensityConfig } from '../favoritesDensity';
-import type {
-    FavoriteGroup,
-    FavoriteItem,
-    FavoriteKind
-} from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteItem } from '../favoritesTypes';
 import type { useFavoritesPageController } from '../useFavoritesPageController';
 import { useFavoritesVirtualGrid } from '../useFavoritesVirtualGrid';
 import { useStableEvent } from '../useStableEvent';
@@ -55,7 +55,7 @@ type FavoritesGroupRailPanelProps = {
     kind: FavoriteKind;
     newLocalGroupName: string;
     onNewGroupNameChange(value: string): void;
-    onShareCollectionGroup?(group: FavoriteGroup): void;
+    onShareCollectionGroup?(group: FavoriteGroupView): void;
     setCreatingLocalGroup: FavoritesController['setCreatingLocalGroup'];
     viewData: FavoritesController['viewData'];
 };
@@ -68,16 +68,16 @@ type FavoritesContentPanelProps = {
     layout: FavoritesController['layout'];
     selection: FavoritesController['selection'];
     viewData: FavoritesController['viewData'];
-    onShareCollectionGroup?(group: FavoriteGroup): void;
+    onShareCollectionGroup?(group: FavoriteGroupView): void;
     shareCoachmarkOpen?: boolean;
     onDismissShareCoachmark?(): void;
     instanceActionGatesByItemKey: FavoritesController['instanceActionGatesByItemKey'];
 };
 
 type ShareCollectionButtonProps = {
-    group: FavoriteGroup;
+    group: FavoriteGroupView;
     coachmarkOpen: boolean;
-    onShare(group: FavoriteGroup): void;
+    onShare(group: FavoriteGroupView): void;
     onDismissCoachmark?(): void;
 };
 
@@ -158,7 +158,7 @@ export function FavoritesGroupRailPanel({
         collections.favoriteLoadStatus === 'running' ||
         favoriteCommands.refreshing;
 
-    const selectGroup = useStableEvent((group: FavoriteGroup) => {
+    const selectGroup = useStableEvent((group: FavoriteGroupView) => {
         filters.setSearchQuery('');
         filters.setSelectedSource(group.source);
         filters.setSelectedGroupKey(group.key);
@@ -179,6 +179,10 @@ export function FavoritesGroupRailPanel({
             <GroupRailSection
                 title={viewData.pageConfig.remoteSectionTitle}
                 icon={CloudIcon}
+                emptyTitle={t('empty_state.favorite_remote_groups_title')}
+                emptyDescription={t(
+                    'empty_state.favorite_remote_groups_description'
+                )}
                 groups={viewData.remoteGroups}
                 selectedSource={activeSource}
                 selectedGroupKey={activeGroupKey}
@@ -197,6 +201,10 @@ export function FavoritesGroupRailPanel({
             <GroupRailSection
                 title={viewData.pageConfig.localSectionTitle}
                 icon={HardDriveIcon}
+                emptyTitle={t('empty_state.favorite_local_groups_title')}
+                emptyDescription={t(
+                    'empty_state.favorite_local_groups_description'
+                )}
                 groups={viewData.localGroups}
                 selectedSource={activeSource}
                 selectedGroupKey={activeGroupKey}
@@ -224,6 +232,10 @@ export function FavoritesGroupRailPanel({
                 <GroupRailSection
                     title={t('view.favorite.avatars.local_history')}
                     icon={HistoryIcon}
+                    emptyTitle={t('empty_state.avatar_history_title')}
+                    emptyDescription={t(
+                        'empty_state.avatar_history_description'
+                    )}
                     groups={viewData.avatarHistoryGroups}
                     selectedSource={activeSource}
                     selectedGroupKey={activeGroupKey}
@@ -258,6 +270,7 @@ export function FavoritesContentPanel({
     instanceActionGatesByItemKey
 }: FavoritesContentPanelProps) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const remoteDetails = collections.remoteEntityDetails || {};
     const remoteDetailsData = remoteDetails.data || {};
     const isRemoteDetailsLoading =
@@ -295,6 +308,16 @@ export function FavoritesContentPanel({
               ? `${viewData.selectedGroup.count}/${viewData.selectedGroup.capacity}`
               : String(viewData.selectedGroup.count)
           : '';
+    let emptyTitle = t(`empty_state.favorite_${kind}s_title`);
+    let emptyDescription = t(`empty_state.favorite_${kind}s_description`);
+    if (viewData.isSearchActive) {
+        emptyTitle = t('common.no_matching_records');
+        emptyDescription = t('view.favorite.label.try_a_different_search_term');
+    } else if (!viewData.selectedGroup) {
+        emptyTitle = t('view.favorites.empty.no_group_selected');
+        emptyDescription = t('empty_state.favorite_choose_group_description');
+    }
+    const searchTab = kind === 'friend' ? 'user' : kind;
 
     const handleToggleSelect = useStableEvent(
         (itemKey: string, checked: boolean, shift: boolean) => {
@@ -419,21 +442,34 @@ export function FavoritesContentPanel({
                         />
                     ) : !viewData.contentItems.length ? (
                         <FavoritesEmptyState
-                            title={
+                            icon={
                                 viewData.isSearchActive
-                                    ? t('common.no_matching_records')
-                                    : t('common.no_data')
+                                    ? SearchXIcon
+                                    : HeartIcon
                             }
-                            description={
-                                viewData.isSearchActive
-                                    ? t(
-                                          'view.favorite.label.try_a_different_search_term'
-                                      )
-                                    : t(
-                                          'view.favorite.empty.the_selected_group_currently_has_no_items'
-                                      )
-                            }
-                        />
+                            title={emptyTitle}
+                            description={emptyDescription}
+                        >
+                            {viewData.isSearchActive ? (
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    onClick={() => filters.setSearchQuery('')}
+                                >
+                                    {t('empty_state.clear_search')}
+                                </Button>
+                            ) : viewData.selectedGroup ? (
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    onClick={() =>
+                                        navigate(`/search?tab=${searchTab}`)
+                                    }
+                                >
+                                    {t(`empty_state.find_more_${kind}s`)}
+                                </Button>
+                            ) : null}
+                        </FavoritesEmptyState>
                     ) : (
                         <div
                             className="relative min-w-0"

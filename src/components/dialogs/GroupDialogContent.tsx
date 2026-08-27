@@ -1,3 +1,5 @@
+import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
+
 import { GroupDialogEmptyState } from './group-dialog/GroupDialogEmptyState';
 import { GroupDialogTabbedView } from './group-dialog/GroupDialogTabbedView';
 import { useGroupDialogState } from './group-dialog/useGroupDialogState';
@@ -10,7 +12,7 @@ export function GroupDialogContent({
     groupId,
     seedData = null
 }: {
-    groupId: unknown;
+    groupId?: string;
     seedData?: unknown;
 }) {
     const normalizedSeedData = isEntityRecord(seedData) ? seedData : null;
@@ -70,7 +72,7 @@ export function GroupDialogContent({
                             : labels.unsubscribedAnnouncements
                     );
                 },
-                onVisibility: (visibility: string) => {
+                onVisibility: (visibility: GroupMemberVisibility) => {
                     actions.updateGroupMemberProps(
                         { visibility },
                         labels.visibilityUpdated

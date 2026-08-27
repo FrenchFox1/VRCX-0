@@ -4,24 +4,23 @@ import { toast } from 'sonner';
 
 import {
     UPDATE_AVAILABLE_TOAST_ID,
-    openOrInstallLatestAvailableUpdate
+    openOrInstallLatestAvailableUpdate,
+    shouldShowUpdateUi
 } from '@/services/updateInstallService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-function getReleaseProperty(release: unknown, key: string): unknown {
-    return release && typeof release === 'object'
-        ? Reflect.get(release, key)
-        : undefined;
-}
+type UpdateLoopState = ReturnType<
+    typeof useRuntimeStore.getState
+>['updateLoop'];
+type UpdateLoopRelease = NonNullable<UpdateLoopState['latestUpdaterRelease']>;
 
-function getLatestUpdaterDisplayVersion(release: unknown) {
+function getLatestUpdaterDisplayVersion(release: UpdateLoopRelease) {
     return (
-        String(
-            getReleaseProperty(release, 'latestVersion') ||
-                getReleaseProperty(release, 'displayVersion') ||
-                getReleaseProperty(release, 'canonicalVersion') ||
-                getReleaseProperty(release, 'tagName') ||
-                ''
+        (
+            release.latestVersion ||
+            release.displayVersion ||
+            release.canonicalVersion ||
+            release.tagName
         ).trim() || '-'
     );
 }
@@ -33,20 +32,16 @@ function formatUpdateVersion(version: string) {
     return version.replace(/^v/i, '');
 }
 
-function getReleaseCanonicalVersion(release: unknown) {
-    return String(getReleaseProperty(release, 'canonicalVersion') || '');
-}
-
 function isDownloadedUpdateReady({
     latestUpdaterRelease,
     autoDownloadState,
     downloadedVersion
 }: {
-    latestUpdaterRelease: unknown;
-    autoDownloadState: string;
-    downloadedVersion: string | null;
+    latestUpdaterRelease: UpdateLoopRelease;
+    autoDownloadState: UpdateLoopState['autoDownloadState'];
+    downloadedVersion: UpdateLoopState['downloadedVersion'];
 }) {
-    const latestVersion = getReleaseCanonicalVersion(latestUpdaterRelease);
+    const latestVersion = latestUpdaterRelease.canonicalVersion;
     return (
         autoDownloadState === 'downloaded' &&
         Boolean(latestVersion) &&
@@ -59,7 +54,7 @@ export function showUpdateAvailableToast({
     t,
     onUpdate
 }: {
-    latestUpdaterRelease: unknown;
+    latestUpdaterRelease: UpdateLoopRelease;
     t: (key: string, values?: Record<string, unknown>) => string;
     onUpdate: () => void;
 }) {
@@ -88,7 +83,7 @@ export function showUpdateReadyToast({
     t,
     onUpdate
 }: {
-    latestUpdaterRelease: unknown;
+    latestUpdaterRelease: UpdateLoopRelease;
     t: (key: string, values?: Record<string, unknown>) => string;
     onUpdate: () => void;
 }) {
@@ -116,8 +111,8 @@ export function showUpdateReadyToast({
 
 export function UpdateAvailableToastHost(): null {
     const { t } = useTranslation();
-    const hasAvailableUpdate = useRuntimeStore((state) =>
-        Boolean(state.updateLoop.hasAvailableUpdate)
+    const showUpdateUi = useRuntimeStore((state) =>
+        shouldShowUpdateUi(state.updateLoop)
     );
     const latestUpdaterRelease = useRuntimeStore(
         (state) => state.updateLoop.latestUpdaterRelease
@@ -130,7 +125,7 @@ export function UpdateAvailableToastHost(): null {
     );
 
     useEffect(() => {
-        if (!hasAvailableUpdate || !latestUpdaterRelease) {
+        if (!showUpdateUi || !latestUpdaterRelease) {
             toast.dismiss(UPDATE_AVAILABLE_TOAST_ID);
             return undefined;
         }
@@ -157,7 +152,7 @@ export function UpdateAvailableToastHost(): null {
     }, [
         autoDownloadState,
         downloadedVersion,
-        hasAvailableUpdate,
+        showUpdateUi,
         latestUpdaterRelease,
         t
     ]);

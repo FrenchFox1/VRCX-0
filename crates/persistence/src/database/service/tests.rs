@@ -71,13 +71,108 @@ fn executes_daily_named_parameter_reads_and_writes() -> Result<(), Error> {
 }
 
 #[test]
-fn configured_writer_enables_secure_delete() -> Result<(), Error> {
+fn interruptible_read_stops_work_and_releases_its_reader() -> Result<(), Error> {
+    let dir = TestDir::new("sqlite-interruptible-read");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let empty = HashMap::new();
+
+    let interrupted = db.execute_interruptible(
+        "WITH RECURSIVE numbers(value) AS (VALUES(1) UNION ALL SELECT value + 1 FROM numbers WHERE value < 1000000) SELECT SUM(value) FROM numbers",
+        &empty,
+        || true,
+    );
+    assert!(matches!(
+        interrupted,
+        Err(Error::Sqlite { ref message, .. }) if message.contains("interrupted")
+    ));
+
+    assert_eq!(
+        db.execute("SELECT 1", &empty)?,
+        vec![vec![serde_json::json!(1)]]
+    );
+    assert_eq!(
+        db.execute("SELECT 2", &empty)?,
+        vec![vec![serde_json::json!(2)]]
+    );
+    Ok(())
+}
+
+#[test]
+fn interruptible_read_can_cancel_while_all_readers_are_busy() -> Result<(), Error> {
+    let dir = TestDir::new("sqlite-interruptible-reader-wait");
+    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+    let (ready_tx, ready_rx) = std::sync::mpsc::channel();
+    let (release_tx, release_rx) = std::sync::mpsc::channel();
+    let held_db = Arc::clone(&db);
+    let holder = std::thread::spawn(move || {
+        let inner = held_db.inner.read().unwrap();
+        let DatabaseMode::Main(main) = &*inner else {
+            panic!("expected main database");
+        };
+        let _first = main.readers[0].lock().unwrap();
+        let _second = main.readers[1].lock().unwrap();
+        ready_tx.send(()).unwrap();
+        release_rx.recv().unwrap();
+    });
+    ready_rx.recv().unwrap();
+
+    let cancelled = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let cancel_flag = Arc::clone(&cancelled);
+    let canceller = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(20));
+        cancel_flag.store(true, Ordering::Release);
+    });
+    let empty = HashMap::new();
+    let wait_started = std::time::Instant::now();
+    let query_cancelled = Arc::clone(&cancelled);
+    let result = db.execute_interruptible("SELECT 1", &empty, move || {
+        query_cancelled.load(Ordering::Acquire)
+    });
+
+    release_tx.send(()).unwrap();
+    holder.join().unwrap();
+    canceller.join().unwrap();
+    assert!(matches!(
+        result,
+        Err(Error::Database(ref message)) if message.contains("interrupted")
+    ));
+    assert!(wait_started.elapsed() < Duration::from_secs(1));
+    Ok(())
+}
+
+#[test]
+fn configured_writer_trades_secure_delete_and_full_sync_for_write_throughput() -> Result<(), Error>
+{
     let conn = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
     configure_connection(&conn)?;
-    let enabled = conn
+    let secure_delete = conn
         .query_row("PRAGMA secure_delete;", [], |row| row.get::<_, i64>(0))
         .map_err(|e| Error::Database(e.to_string()))?;
-    assert_eq!(enabled, 1);
+    let synchronous = conn
+        .query_row("PRAGMA synchronous;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+    assert_eq!(secure_delete, 0);
+    assert_eq!(synchronous, 1);
+    Ok(())
+}
+
+#[test]
+fn configured_reader_sorts_in_memory_while_the_writer_keeps_spilling_to_disk() -> Result<(), Error>
+{
+    let reader = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
+    configure_read_connection(&reader)?;
+    let writer = Connection::open_in_memory().map_err(|e| Error::Database(e.to_string()))?;
+    configure_connection(&writer)?;
+
+    let reader_temp_store = reader
+        .query_row("PRAGMA temp_store;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+    let writer_temp_store = writer
+        .query_row("PRAGMA temp_store;", [], |row| row.get::<_, i64>(0))
+        .map_err(|e| Error::Database(e.to_string()))?;
+
+    assert_eq!(reader_temp_store, 2);
+    assert_ne!(writer_temp_store, 2);
     Ok(())
 }
 
@@ -280,6 +375,69 @@ fn upgrade_backup_continues_when_source_checkpoint_is_busy() -> Result<(), Error
 }
 
 #[test]
+fn passive_checkpoint_reports_partial_progress_and_truncate_reports_busy() -> Result<(), Error> {
+    let dir = TestDir::new("wal-checkpoint-modes");
+    let db_path = dir.path.join("VRCX-0.sqlite3");
+    let db = DatabaseService::new(&db_path)?;
+    let empty = HashMap::new();
+    db.execute_non_query(
+        "CREATE TABLE checkpoint_items (value TEXT NOT NULL)",
+        &empty,
+    )?;
+    db.execute_non_query(
+        "INSERT INTO checkpoint_items (value) VALUES ('before-reader')",
+        &empty,
+    )?;
+
+    let mut reader = Connection::open(&db_path).map_err(Error::sqlite)?;
+    let reader_tx = reader.transaction().map_err(Error::sqlite)?;
+    let _: i64 = reader_tx
+        .query_row("SELECT COUNT(*) FROM checkpoint_items", [], |row| {
+            row.get(0)
+        })
+        .map_err(Error::sqlite)?;
+    db.execute_non_query(
+        "INSERT INTO checkpoint_items (value) VALUES ('after-reader')",
+        &empty,
+    )?;
+
+    let passive = db.checkpoint_wal_passive()?;
+    assert!(!passive.busy);
+    assert!(!passive.is_complete());
+    assert!(passive.log_frames > passive.checkpointed_frames);
+
+    let truncate_started = std::time::Instant::now();
+    let truncate = db.truncate_wal()?;
+    assert!(truncate.busy);
+    assert!(!truncate.is_complete());
+    assert!(truncate_started.elapsed() < Duration::from_secs(1));
+
+    {
+        let inner = db
+            .inner
+            .read()
+            .map_err(|error| Error::Database(error.to_string()))?;
+        let DatabaseMode::Main(main) = &*inner else {
+            unreachable!();
+        };
+        let busy_timeout_millis: i64 = main
+            .writer
+            .lock()
+            .map_err(|error| Error::Database(error.to_string()))?
+            .query_row("PRAGMA busy_timeout", [], |row| row.get(0))
+            .map_err(Error::sqlite)?;
+        assert_eq!(busy_timeout_millis, 5_000);
+    }
+
+    reader_tx.rollback().map_err(Error::sqlite)?;
+    drop(reader);
+
+    assert!(db.checkpoint_wal_passive()?.is_complete());
+    assert!(db.truncate_wal()?.is_complete());
+    Ok(())
+}
+
+#[test]
 fn failed_upgraded_database_reopen_restores_original_and_preserves_work_copy() -> Result<(), Error>
 {
     let dir = TestDir::new("database-upgrade-reopen-rollback");
@@ -372,15 +530,23 @@ fn discarding_failed_upgrade_preserves_main_database_and_allows_retry() -> Resul
 }
 
 #[test]
-fn set_upgrade_stage_persists_the_in_flight_stage_for_diagnosing_a_crash() -> Result<(), Error> {
+fn set_upgrade_context_persists_the_in_flight_operation_for_diagnosing_a_crash() -> Result<(), Error>
+{
     let dir = TestDir::new("database-upgrade-stage-crash");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     db.begin_upgrade(17, 18)?;
 
-    db.set_upgrade_stage("legacySchemaMigration")?;
+    db.set_upgrade_context(
+        "legacySchemaMigration",
+        "database_maintenance_run:fixNegativeGPS",
+    )?;
 
     let blocked = db.get_failed_upgrade()?.expect("unfinished upgrade status");
     assert_eq!(blocked.stage.as_deref(), Some("legacySchemaMigration"));
+    assert_eq!(
+        blocked.operation.as_deref(),
+        Some("database_maintenance_run:fixNegativeGPS")
+    );
     let reason = blocked.reason.expect("reason for the unfinished upgrade");
     assert!(
         reason.contains("during 'legacySchemaMigration'"),
@@ -411,11 +577,13 @@ fn get_failed_upgrade_reports_no_stage_when_the_process_died_before_the_first_st
 }
 
 #[test]
-fn set_upgrade_stage_fails_when_no_upgrade_is_running() -> Result<(), Error> {
+fn set_upgrade_context_fails_when_no_upgrade_is_running() -> Result<(), Error> {
     let dir = TestDir::new("database-upgrade-stage-no-session");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
 
-    assert!(db.set_upgrade_stage("preflight").is_err());
+    assert!(db
+        .set_upgrade_context("preflight", "database_upgrade_preflight")
+        .is_err());
     Ok(())
 }
 
@@ -567,7 +735,14 @@ fn failed_status_write_keeps_active_journal_for_recovery() -> Result<(), Error> 
 fn status_reader_recovers_a_synced_temporary_journal() -> Result<(), Error> {
     let dir = TestDir::new("database-upgrade-temporary-status");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-    db.begin_upgrade(17, 18)?;
+    db.begin_upgrade_with_progress(
+        17,
+        18,
+        Some("2.23.0"),
+        Some("createWorkCopy"),
+        Some("begin_upgrade_with_progress"),
+        |_, _| {},
+    )?;
     let active_path = db.active_status_path();
     let temporary_path = status_temporary_path(&active_path)?;
     fs::rename(&active_path, &temporary_path)?;
@@ -576,6 +751,12 @@ fn status_reader_recovers_a_synced_temporary_journal() -> Result<(), Error> {
 
     assert_eq!(status.from_version, 17);
     assert_eq!(status.to_version, 18);
+    assert_eq!(status.app_version.as_deref(), Some("2.23.0"));
+    assert_eq!(status.stage.as_deref(), Some("createWorkCopy"));
+    assert_eq!(
+        status.operation.as_deref(),
+        Some("begin_upgrade_with_progress")
+    );
     assert!(Path::new(&status.work_db_path).exists());
     db.fail_upgrade("test complete".into())?;
     Ok(())

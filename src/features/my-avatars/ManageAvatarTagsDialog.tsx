@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { TAG_COLORS, getTagColor } from '@/shared/constants/tags';
+import { isRecord } from '@/shared/utils/record';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -28,10 +29,6 @@ type ManageAvatarTagsDialogProps = {
     onOpenChange: (open: boolean) => void;
     onSave: (payload: { avatarId: string; tags: MyAvatarTag[] }) => void;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
 
 function normalizeTagName(value: unknown) {
     return typeof value === 'string'

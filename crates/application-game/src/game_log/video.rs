@@ -1,17 +1,17 @@
 use chrono::Utc;
 use serde_json::Value;
 use url::Url;
-use vrcx_0_integrations::external_api::{youtube_video_metadata_get_input, ExternalApiScope};
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::game_log::{self, GameLogVideoPlayEntry, GameLogWriteBatch};
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_contracts::game_log::{GameLogVideoPlayEntry, GameLogWriteBatch};
 
 use crate::Result;
 use crate::RuntimeGameEventBusExt;
 use crate::{
-    GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, NowPlayingPayload, RuntimeEventBus,
-    RuntimeGameLogEventPayload, WebClient,
+    GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, GameLogSideEffectSink,
+    NowPlayingPayload, RuntimeEventBus, RuntimeGameLogEventPayload, VideoMetadataPort,
 };
+use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_core::location::world_id_from_location;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct VideoInput {
@@ -44,10 +44,12 @@ struct YouTubeMetadata {
 }
 
 pub async fn handle_video_play(
-    db: &DatabaseService,
-    web: &WebClient,
+    store: &dyn crate::GameStateStore,
+    video_metadata: &dyn VideoMetadataPort,
     event_bus: &RuntimeEventBus,
-    owner_user_id: &str,
+    backend_status: &BackendRuntimeStatusPublisher,
+    side_effect_sink: &GameLogSideEffectSink,
+    owner_user_id: &OwnerId,
     mut input: VideoInput,
 ) -> Result<()> {
     if input.video_url.trim().is_empty() {
@@ -70,7 +72,7 @@ pub async fn handle_video_play(
     }
 
     if !youtube_id.is_empty() {
-        if let Some(metadata) = lookup_youtube_video(db, web, &youtube_id).await? {
+        if let Some(metadata) = lookup_youtube_video(store, video_metadata, &youtube_id).await? {
             if !metadata.video_name.is_empty() {
                 input.video_name = metadata.video_name;
             }
@@ -84,8 +86,7 @@ pub async fn handle_video_play(
     }
 
     if input.user_id.is_empty() && !input.display_name.is_empty() {
-        input.user_id =
-            game_log::get_user_id_from_display_name(db, owner_user_id, &input.display_name)?;
+        input.user_id = store.user_id_from_display_name(owner_user_id, &input.display_name)?;
     }
 
     let raw_row = vec![
@@ -107,7 +108,7 @@ pub async fn handle_video_play(
         }],
         ..Default::default()
     };
-    let affected_count = match game_log::write_batch(db, owner_user_id, &batch) {
+    let affected_count = match store.write_game_log(owner_user_id, &batch) {
         Ok(affected_count) => affected_count,
         Err(error) => {
             let message = error.to_string();
@@ -122,13 +123,13 @@ pub async fn handle_video_play(
         }
     };
 
-    event_bus.emit_game_log_persisted(affected_count);
+    backend_status.publish_game_log_persisted(affected_count);
     event_bus.emit_runtime_game_log_event(RuntimeGameLogEventPayload {
         runtime_persisted: true,
         raw: raw_row,
     });
 
-    event_bus.emit_game_log_side_effect(GameLogSideEffectEvent::NowPlaying(Box::new(
+    side_effect_sink.emit(GameLogSideEffectEvent::NowPlaying(Box::new(
         NowPlayingPayload {
             url: Some(input.video_url.clone()),
             name: Some(input.video_name.clone()),
@@ -153,27 +154,22 @@ pub async fn handle_video_play(
 }
 
 async fn lookup_youtube_video(
-    db: &DatabaseService,
-    web: &WebClient,
+    store: &dyn crate::GameStateStore,
+    video_metadata: &dyn VideoMetadataPort,
     youtube_id: &str,
 ) -> Result<Option<YouTubeMetadata>> {
-    let enabled = config_store::get_bool(db, "youtubeAPI", false)?;
-    let api_key = config_store::get_string(db, "youtubeAPIKey", "")?;
+    let enabled = store.get_bool("youtubeAPI", false)?;
+    let api_key = store.get_string("youtubeAPIKey", "")?;
     if !enabled || api_key.trim().is_empty() {
         return Ok(None);
     }
 
-    let response = web
-        .execute_external_api(
-            youtube_video_metadata_get_input(youtube_id, &api_key),
-            ExternalApiScope::Youtube,
-        )
-        .await?;
-    if response.status != 200 {
+    let Some(payload) = video_metadata
+        .youtube_metadata(youtube_id, &api_key)
+        .await?
+    else {
         return Ok(None);
-    }
-
-    let payload: Value = serde_json::from_str(&response.data).unwrap_or(Value::Null);
+    };
     let Some(item) = payload
         .get("items")
         .and_then(|items| items.as_array())
@@ -224,6 +220,25 @@ pub fn parse_provider_video(created_at: &str, location: &str, data: &str) -> Pro
         return parse_popcorn_palace(created_at, location, trimmed);
     }
     ProviderVideoEvent::NotProvider
+}
+
+pub(super) fn uses_provider_video_events(location: &str) -> bool {
+    matches!(
+        world_id_from_location(location).as_str(),
+        "wrld_f20326da-f1ac-45fc-a062-609723b097b1"
+            | "wrld_10e5e467-fc65-42ed-8957-f02cace1398c"
+            | "wrld_04899f23-e182-4a8d-b2c7-2c74c7c15534"
+            | "wrld_42377cf1-c54f-45ed-8996-5875b0573a83"
+            | "wrld_dd6d2888-dbdc-47c2-bc98-3d631b2acd7c"
+            | "wrld_52bdcdab-11cd-4325-9655-0fb120846945"
+            | "wrld_2d40da63-8f1f-4011-8a9e-414eb8530acd"
+            | "wrld_74970324-58e8-4239-a17b-2c59dfdf00db"
+            | "wrld_db9d878f-6e76-4776-8bf2-15bcdd7fc445"
+            | "wrld_435bbf25-f34f-4b8b-82c6-cd809057eb8e"
+            | "wrld_f767d1c8-b249-4ecc-a56f-614e433682c8"
+            | "wrld_266523e8-9161-40da-acd0-6bd82e075833"
+            | "wrld_27c7e6b2-d938-447e-a270-3d1a873e2cf3"
+    )
 }
 
 fn parse_pypy_dance(created_at: &str, location: &str, data: &str) -> Option<VideoInput> {

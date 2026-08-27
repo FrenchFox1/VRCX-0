@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use crate::NowPlayingSnapshot;
 use serde_json::{json, Value};
 use vrcx_0_core::location::parse_location;
 
@@ -75,13 +76,14 @@ fn discord_rpc_world_uses_now_playing_details_and_thumbnail() {
         is_game_running: true,
         is_steamvr_running: true,
         current_location_started_at: "2026-05-19T00:00:00Z".into(),
-        current_user: json!({ "status": "active" }),
-        now_playing: json!({
-            "url": "https://video.example/watch",
-            "name": "Example Movie",
-            "thumbnailUrl": "https://image.example/thumb.jpg",
-            "startedAt": "2026-05-19T01:00:00Z",
-            "length": 120,
+        current_user: json!({ "status": "active" }).into(),
+        now_playing: std::sync::Arc::new(NowPlayingSnapshot {
+            url: "https://video.example/watch".into(),
+            name: "Example Movie".into(),
+            thumbnail_url: "https://image.example/thumb.jpg".into(),
+            started_at: Some("2026-05-19T01:00:00Z".into()),
+            length: 120,
+            ..Default::default()
         }),
         ..Default::default()
     };
@@ -139,7 +141,7 @@ fn discord_payload_keeps_platform_spacing_labels_and_session_floor() {
         is_steamvr_running: true,
         last_game_started_at: Some("2026-05-19T02:00:00Z".into()),
         current_location_started_at: "2026-05-19T01:00:00Z".into(),
-        current_user: json!({ "status": "active" }),
+        current_user: json!({ "status": "active" }).into(),
         player_count: 2,
         ..Default::default()
     };
@@ -187,7 +189,7 @@ fn discord_platform_uses_vrchat_launch_mode_instead_of_steamvr_process() {
         is_game_running: true,
         is_steamvr_running: true,
         is_game_no_vr: true,
-        current_user: json!({ "status": "active" }),
+        current_user: json!({ "status": "active" }).into(),
         ..Default::default()
     };
     let parsed = parse_location("wrld_test:12345");
@@ -235,7 +237,7 @@ fn discord_unknown_status_preserves_private_fallback() {
     };
     let facts = BackgroundPresenceFacts {
         is_game_running: true,
-        current_user: json!({ "status": "unknown" }),
+        current_user: json!({ "status": "unknown" }).into(),
         ..Default::default()
     };
     let parsed = parse_location("wrld_test:12345");
@@ -265,10 +267,48 @@ fn discord_unknown_status_preserves_private_fallback() {
 }
 
 #[test]
+fn discord_status_image_accepts_spaceless_status_aliases() {
+    let parsed = parse_location("wrld_266523e8-9161-40da-acd0-6bd82e075833:12345");
+    let details = DiscordLocationDetails {
+        world_name: "Popcorn Palace".into(),
+        parsed: Some(parsed.clone()),
+        ..Default::default()
+    };
+    let labels = DiscordPresenceLabels::default();
+
+    for (status, expected_image) in [
+        ("join me", "joinme"),
+        ("joinme", "joinme"),
+        ("ask me", "askme"),
+        ("askme", "askme"),
+        ("JoinMe", "joinme"),
+    ] {
+        let config = DiscordConfig {
+            discord_world_integration: true,
+            ..Default::default()
+        };
+        let facts = BackgroundPresenceFacts {
+            is_game_running: true,
+            current_user: json!({ "status": status }).into(),
+            ..Default::default()
+        };
+        let payload = build_discord_activity(&config, &facts, &labels, &details, &parsed);
+        assert_eq!(
+            payload
+                .activity
+                .get("assets")
+                .and_then(|value| value.get("small_image")),
+            Some(&Value::String(expected_image.into())),
+            "status {status} should map to {expected_image}"
+        );
+    }
+}
+
+#[test]
 fn discord_unchanged_payload_is_not_published_twice() {
     let payload = BackgroundDiscordActivityPayload {
         app_id: DEFAULT_APP_ID.into(),
-        activity: json!({ "details": "VRChat" }),
+        activity: json!({ "details": "VRChat" }).into(),
         detail: "VRChat".into(),
     };
     let mut state = BackgroundDiscordPresenceState::default();

@@ -1,4 +1,70 @@
 {
+    "empty_state": {
+        "dashboard_title": "Crea tu panel",
+        "dashboard_description": "Añade las vistas que consultas más a menudo para tenerlas listas en un solo lugar.",
+        "theme_catalog_title": "No hay temas disponibles ahora mismo",
+        "theme_catalog_description": "Los temas de la comunidad aparecerán aquí cuando el catálogo esté disponible.",
+        "installed_themes_title": "Todavía no has instalado temas de la comunidad",
+        "installed_themes_description": "Explora el catálogo e instala un tema para darle otro aspecto a VRCX-0.",
+        "browse_themes": "Explorar temas",
+        "app_launcher_title": "Elige qué se inicia con VRChat",
+        "app_launcher_description": "Añade una aplicación o un acceso directo y elige cuándo quieres que se abra.",
+        "app_launcher_selection_title": "Elige una aplicación o un acceso directo",
+        "app_launcher_selection_description": "Selecciona un elemento de la lista para ver o cambiar cuándo se inicia.",
+        "game_log_title": "Todavía no hay actividad de VRChat",
+        "game_log_description": "Los mundos que visites, los jugadores y otras actividades de VRChat aparecerán aquí mientras juegas.",
+        "my_avatars_title": "Todavía no has subido avatares",
+        "my_avatars_description": "Los avatares que subas a VRChat aparecerán aquí.",
+        "search_no_results": "No se encontraron resultados",
+        "search_try_another": "Prueba con otro nombre o una búsqueda más amplia.",
+        "search_user_title": "Buscar personas",
+        "search_user_description": "Busca por nombre visible para encontrar a alguien y abrir su perfil.",
+        "search_world_title": "Buscar un mundo",
+        "search_world_description": "Busca por nombre o elige una categoría para descubrir un lugar nuevo.",
+        "search_group_title": "Buscar un grupo",
+        "search_group_description": "Busca por el nombre del grupo para encontrar una comunidad.",
+        "search_avatar_title": "Buscar un avatar",
+        "search_avatar_description": "Escribe al menos tres caracteres para buscar un avatar.",
+        "search_avatar_provider_description": "Elige un proveedor de búsqueda de avatares antes de empezar.",
+        "clear_search": "Borrar búsqueda",
+        "set_up_avatar_search": "Configurar búsqueda de avatares",
+        "favorite_remote_groups_title": "Todavía no hay grupos de favoritos de VRChat",
+        "favorite_remote_groups_description": "Los grupos de favoritos de tu cuenta de VRChat aparecerán aquí.",
+        "favorite_local_groups_title": "Todavía no hay grupos locales",
+        "favorite_local_groups_description": "Crea un grupo local para organizar tus favoritos a tu manera.",
+        "avatar_history_title": "Todavía no hay historial de avatares",
+        "avatar_history_description": "Los avatares que uses aparecerán aquí para que puedas volver a ellos rápidamente.",
+        "favorite_choose_group_description": "Elige un grupo para ver los favoritos guardados en él.",
+        "favorite_friends_title": "Todavía no hay amigos favoritos en este grupo",
+        "favorite_friends_description": "Las personas que añadas a este grupo de favoritos aparecerán aquí.",
+        "favorite_worlds_title": "Todavía no hay mundos favoritos en este grupo",
+        "favorite_worlds_description": "Los mundos que guardes en este grupo de favoritos aparecerán aquí.",
+        "favorite_avatars_title": "Todavía no hay avatares favoritos en este grupo",
+        "favorite_avatars_description": "Los avatares que guardes en este grupo de favoritos aparecerán aquí.",
+        "find_more_friends": "Buscar personas",
+        "find_more_worlds": "Explorar mundos",
+        "find_more_avatars": "Buscar avatares",
+        "friend_history_title": "Todavía no hay historial de amigos",
+        "friend_history_description": "Los amigos nuevos o eliminados, las solicitudes y los cambios de perfil aparecerán aquí.",
+        "notifications_title": "Todavía no hay notificaciones",
+        "notifications_description": "Las invitaciones, solicitudes de amistad, novedades de grupos y otras notificaciones de VRChat aparecerán aquí.",
+        "notifications_filter_description": "Prueba con otra búsqueda o muestra más tipos de notificaciones.",
+        "clear_search_and_filters": "Borrar búsqueda y filtros",
+        "mutual_friends_title": "Descubre cómo se conectan tus amigos",
+        "mutual_friends_description": "Carga los amigos en común para crear un mapa de las comunidades de tu lista de amigos.",
+        "load_mutual_friends": "Cargar amigos en común",
+        "gallery_images_title": "Todavía no hay imágenes",
+        "gallery_images_description": "Las imágenes que subas a VRChat aparecerán aquí.",
+        "inventory_title": "Todavía no hay objetos en el inventario",
+        "inventory_description": "Los objetos y regalos de tu inventario de VRChat aparecerán aquí.",
+        "prints_title": "Todavía no hay VRChat Prints",
+        "prints_description": "Los Prints que crees en VRChat aparecerán aquí.",
+        "world_screenshots_description": "Las capturas que hagas en este mundo aparecerán aquí.",
+        "schedule_rules_title": "Todavía no hay reglas horarias",
+        "schedule_rules_description": "Añade reglas horarias para cambiar automáticamente tu estado o mensaje.",
+        "context_rules_title": "Todavía no hay reglas de instancia",
+        "context_rules_description": "Añade reglas que adapten tu estado a la instancia, al mundo o a los amigos presentes."
+    },
     "browse_history": {
         "title": "Historial",
         "description": "Usuarios, mundos, avatares y grupos vistos recientemente.",
@@ -25,7 +91,10 @@
             "avatar": "Avatares",
             "group": "Grupos"
         },
-        "date": { "today": "Hoy", "yesterday": "Ayer" },
+        "date": {
+            "today": "Hoy",
+            "yesterday": "Ayer"
+        },
         "retention": {
             "label": "Conservación del historial",
             "description": "Las entradas más antiguas se eliminan automáticamente.",
@@ -391,22 +460,6 @@
             "instance_duration": "Instancia {duration}"
         },
         "generic_instance_location": "una instancia",
-        "friends_panel": {
-            "title": "Amigos favoritos",
-            "all": "Todos",
-            "empty": "No hay amigos favoritos en línea",
-            "note": "Nota",
-            "memo": "Nota local",
-            "open": "Abrir",
-            "request": "Solicitar",
-            "invite": "Invitar",
-            "favorites_online": "Favoritos en línea",
-            "same_instance": "Misma instancia",
-            "local_favorites": "Favoritos locales",
-            "traveling": "Viajando",
-            "private": "Privado",
-            "offline": "Sin conexión"
-        },
         "discord": {
             "title": {
                 "invite": "Invitación de {name}",
@@ -669,10 +722,12 @@
             "instance_duration": "Duración de la instancia",
             "last_game_event": "Último evento del juego",
             "last_event_type": "Tipo del último evento",
-            "minimize_window": "Minimizar ventana"
+            "minimize_window": "Minimizar",
+            "maximize_window": "Maximizar",
+            "restore_window": "Restaurar"
         },
         "action": {
-            "close_window": "Cerrar ventana"
+            "close_window": "Cerrar"
         }
     },
     "shortcuts": {
@@ -687,6 +742,8 @@
         "search_input_placeholder": "Buscar o ir a una página…",
         "search_pages": "Páginas",
         "search_scope_pages": "Ir a una página",
+        "search_pages_and_tools": "Páginas y herramientas",
+        "search_scope_pages_and_tools": "Ir a una página o abrir una herramienta",
         "search_no_results": "No se encontraron resultados",
         "search_categories": "Buscar...",
         "search_recent": "Abiertos recientemente",
@@ -1066,7 +1123,6 @@
                 "end": "Fin"
             },
             "action": {
-                "current_user": "Yo",
                 "open_full": "Abrir historial completo de instancias"
             },
             "toast": {
@@ -1697,6 +1753,19 @@
         },
         "tools": {
             "header": "Herramientas",
+            "recent": "Usadas recientemente",
+            "status": {
+                "rules_enabled": "Reglas activadas: {count}",
+                "rules_enabled_of_total": "{enabled} de {total} reglas activadas",
+                "rules_configured_off": "Reglas configuradas: {count} · Desactivadas",
+                "auto_reply_enabled": "Respuesta automática activada",
+                "apps_enabled": "Aplicaciones configuradas: {count} · Activadas",
+                "apps_configured_off": "Aplicaciones configuradas: {count} · Desactivadas",
+                "last_backup": "Última copia de seguridad: {date}",
+                "automatic_backup_enabled": "Copia de seguridad automática activada",
+                "automatic_backup_configured_off": "Copia de seguridad automática configurada · Desactivada",
+                "connections_configured": "Conexiones de IA configuradas: {count}"
+            },
             "quick_access": {
                 "header": "Acceso rápido",
                 "edit": "Editar acceso rápido",
@@ -1705,9 +1774,13 @@
                 "remove": "Quitar del acceso rápido",
                 "already_added": "Ya está en el acceso rápido",
                 "empty": "Arrastra herramientas aquí, o añádelas desde un menú de herramientas.",
-                "actions": "Acciones de herramienta"
+                "actions": "Acciones de herramienta",
+                "shortcut_menu": "Añadir acceso directo…",
+                "tools_page_shortcut": "Acceso rápido de la página Herramientas",
+                "sidebar_shortcut": "Navegación lateral"
             },
             "category": {
+                "automation": "Automatización",
                 "social": "Social",
                 "vrchat": "Configuración e inicio de VRChat",
                 "data": "Datos y copias de seguridad",
@@ -1728,7 +1801,7 @@
             "export": {
                 "header": "Exportar",
                 "export_notes": "Exportar notas locales de usuario",
-                "export_notes_description": "Exporta las notas locales de VRCX-0 a las notas de VRChat",
+                "export_notes_description": "Exporta tus notas de VRCX-0 a las notas de VRChat",
                 "discord_names": "Nombres de Discord",
                 "export_friend_list": "Exportar Lista de amigos",
                 "export_own_avatars": "Exportar avatares Propios"
@@ -1742,9 +1815,9 @@
                 },
                 "header": "Multimedia",
                 "screenshot": "Captura",
-                "screenshot_description": "Ver y gestionar capturas",
+                "screenshot_description": "Explora tus fotos de VRChat y los detalles de cada toma",
                 "gallery": "Galería",
-                "gallery_description": "Gestiona fotos, iconos y prints",
+                "gallery_description": "Gestiona tu Galería de VRChat — fotos, iconos de perfil y prints",
                 "inventory": "Inventario",
                 "inventory_description": "Gestiona emojis, stickers, objetos y cosméticos"
             },
@@ -1760,7 +1833,7 @@
             "system_tools": {
                 "header": "VRChat y sistema",
                 "vrchat_config": "Configuración de VRChat",
-                "vrchat_config_description": "Abre los ajustes de config.json de VRChat",
+                "vrchat_config_description": "Abre los ajustes de configuración de VRChat",
                 "vrchat_log": "Visor de registros de VRChat",
                 "vrchat_log_description": "Lee los registros de salida locales de VRChat",
                 "launch_options_description": "Edita las opciones de inicio de VRChat",
@@ -1768,8 +1841,8 @@
                 "app_launcher_description": "Inicia apps automáticamente al abrir VRChat.",
                 "registry_backup": "Copia de seguridad del registro de VRChat",
                 "registry_backup_description": "Crea o restaura una copia de seguridad del registro de VRChat",
-                "llm_endpoints": "Endpoints LLM",
-                "llm_endpoints_description": "Gestiona las conexiones compatibles con OpenAI para Social AI y la traducción."
+                "llm_endpoints": "Conexiones de IA",
+                "llm_endpoints_description": "Gestiona las conexiones de servicios de IA para Social AI y la traducción."
             },
             "vrchat_log": {
                 "title": "Visor de registros de VRChat",
@@ -1807,16 +1880,16 @@
                 "header": "Automatización social",
                 "status_schedule": "Programación de estado",
                 "status_schedule_description": "Programa cambios de estado, opcionalmente solo mientras VRChat esté abierto.",
-                "room_status_rules": "Reglas de estado por sala y mundo",
-                "room_status_rules_description": "Cambia el estado automáticamente según la sala, el mundo o los amigos.",
+                "room_status_rules": "Reglas de estado por instancia y mundo",
+                "room_status_rules_description": "Cambia el estado automáticamente según la instancia, el mundo o los amigos.",
                 "invite_request_auto_reply": "Respuesta automática a solicitudes de unión",
-                "invite_request_auto_reply_description": "Invita automáticamente a los amigos en la lista de permitidos que pidan unirse mientras VRChat está en ejecución.",
+                "invite_request_auto_reply_description": "Invita automáticamente a los amigos aprobados que pidan unirse mientras VRChat esté abierto.",
                 "schedule_rules": "Reglas de programación",
                 "schedule_rules_description": "Los intervalos horarios pueden cambiar el estado, el mensaje de estado o ambos.",
                 "add_rule": "Añadir regla",
                 "scheduled_presence_default": "Estado programado",
                 "schedule_rule_default": "Regla de programación",
-                "room_rule_default": "Regla de sala",
+                "room_rule_default": "Regla de instancia",
                 "rule_name": "Nombre de la regla",
                 "priority": "Prioridad",
                 "priority_high": "Alta",
@@ -1836,9 +1909,9 @@
                 "signature": "Mensaje de estado",
                 "do_not_change": "No cambiar",
                 "remove_schedule_rule": "Eliminar regla de programación",
-                "remove_room_rule": "Eliminar regla de sala",
+                "remove_room_rule": "Eliminar regla de instancia",
                 "no_schedule_rules": "No hay reglas de programación configuradas.",
-                "room_social_rules": "Reglas personalizadas de sala y amigos",
+                "room_social_rules": "Reglas personalizadas de instancia y amigos",
                 "room_social_rules_description": "Reglas adicionales pueden cambiar el estado o el mensaje de estado según la prioridad.",
                 "when": "Condición",
                 "friend_groups": "Grupos de amigos",
@@ -1846,9 +1919,9 @@
                 "world_groups_hint": "Déjalo vacío para incluir cualquier grupo de favoritos.",
                 "minimum_friends": "Mínimo de amigos",
                 "minimum_players": "Mínimo de jugadores",
-                "room_types": "Tipos de sala",
-                "room_types_hint": "Déjalo vacío para cualquier tipo de sala. Las reglas con estado abierto a unirse deberían limitarse a tipos específicos.",
-                "no_custom_room_rules": "No hay reglas de sala personalizadas configuradas.",
+                "room_types": "Tipos de instancia",
+                "room_types_hint": "Déjalo vacío para cualquier tipo de instancia. Las reglas con estado abierto a unirse deberían limitarse a tipos específicos.",
+                "no_custom_room_rules": "No hay reglas de instancia personalizadas configuradas.",
                 "preset_alone": "Solo",
                 "preset_with_anyone": "Con cualquiera",
                 "preset_with_any_friend": "Con cualquier amigo",
@@ -1856,21 +1929,21 @@
                 "preset_player_count_at_least": "Cantidad de jugadores, al menos",
                 "preset_with_selected_groups": "Con los grupos seleccionados",
                 "preset_with_selected_friend": "Con el amigo seleccionado",
-                "preset_in_selected_room_types": "En los tipos de sala seleccionados",
+                "preset_in_selected_room_types": "En los tipos de instancia seleccionados",
                 "preset_in_favorite_worlds": "En un mundo favorito",
                 "preset_custom": "Personalizado",
                 "auto_send_invites_for_request_invite": "Responder automáticamente a las solicitudes de unión",
                 "auto_send_invites_description": "Solo se gestionan automáticamente los amigos favoritos de la lista de permitidos.",
                 "allowlist_mode": "Modo lista de permitidos",
-                "allowlist_mode_description": "Las respuestas automáticas requieren igualmente que tu sala actual permita invitaciones.",
+                "allowlist_mode_description": "Las respuestas automáticas requieren igualmente que tu instancia actual permita invitaciones.",
                 "all_favorite_friends": "Todos los amigos favoritos",
                 "selected_favorite_groups": "Grupos de favoritos seleccionados",
                 "selected_favorite_groups_label": "Grupos de favoritos seleccionados",
                 "automatic_replies_note": "Solo funciona mientras VRChat esté abierto y tu ubicación permita enviar invitaciones. Cada remitente tiene un tiempo de espera.",
                 "failed_to_load_schedule_rules": "No se pudieron cargar las reglas de programación.",
                 "failed_to_save_schedule_rules": "No se pudieron guardar las reglas de programación.",
-                "failed_to_load_room_rules": "No se pudieron cargar las reglas de sala.",
-                "failed_to_save_room_rules": "No se pudieron guardar las reglas de sala.",
+                "failed_to_load_room_rules": "No se pudieron cargar las reglas de instancia.",
+                "failed_to_save_room_rules": "No se pudieron guardar las reglas de instancia.",
                 "failed_to_load_invite_settings": "No se pudieron cargar los ajustes de respuesta automática a solicitudes de unión.",
                 "failed_to_save_invite_settings": "No se pudieron guardar los ajustes de respuesta automática a solicitudes de unión."
             },
@@ -1951,6 +2024,29 @@
                     "too_many_favorites": "{favorites} print(s) favoritos superan el límite de {max} por {over}. La autoeliminación no eliminará los prints favoritos.",
                     "too_many_favorites_event": "La autoeliminación no pudo bajar del límite configurado porque los prints favoritos están llenando la lista. Quedan {remaining} print(s)."
                 }
+            },
+            "gallery_selection": {
+                "count": "{count} seleccionado(s)",
+                "select_all": "Seleccionar todo",
+                "deselect_all": "Deseleccionar todo",
+                "confirm_delete_title": "¿Eliminar {count} elemento(s)?",
+                "confirm_delete_locked": "Se omitirán {count} elemento(s) bloqueado(s). Esta acción no se puede deshacer.",
+                "deleting_progress": "Eliminando {done}/{total}",
+                "deleted_toast": "Se eliminaron {count} elemento(s).",
+                "delete_partial_toast": "Se eliminaron {succeeded} elemento(s); {failed} fallaron. {reason}",
+                "delete_cancelled_toast": "Cancelado. Se eliminaron {count} elemento(s).",
+                "delete_unlocked": "Eliminar {count}",
+                "delete_locked": "Todos los elementos seleccionados están bloqueados.",
+                "delete_locked_favorite": "Favorito: quítalo de favoritos para eliminar",
+                "delete_locked_in_use": "En uso: no se puede eliminar",
+                "favorited_toast": "{count} print(s) marcados como favoritos.",
+                "unfavorited_toast": "{count} print(s) eliminados de favoritos.",
+                "favorite_skipped_toast": "No se pudieron marcar {count} print(s) como favoritos. El límite es {max}."
+            },
+            "prints_filter": {
+                "all": "Todos",
+                "favorites": "Favoritos",
+                "others": "No favoritos"
             },
             "llm_endpoints": {
                 "title": "Endpoints LLM",
@@ -2068,13 +2164,6 @@
                     "opacity": "Opacidad",
                     "filters": "Filtros de notificaciones del visor"
                 },
-                "interactive_panel": {
-                    "header": "Panel interactivo de amigos",
-                    "enabled": "Activar el panel interactivo de amigos",
-                    "all_friends_include_favorites": "Incluir favoritos en Todos",
-                    "summon_hint": "Gesto de invocación",
-                    "openvr_required": "Mantén pulsado el grip derecho unos 2 segundos para invocarlo. Requiere el backend de superposición SteamVR/OpenVR; OpenXR todavía no ofrece el panel interactivo."
-                },
                 "wrist_overlay": {
                     "header": "Overlay de muñeca",
                     "wrist_feed_overlay": "Overlay de feed de muñeca",
@@ -2097,6 +2186,12 @@
                     "vr_device_status": "Estado de los dispositivos VR",
                     "battery_percentage": "Porcentaje de batería",
                     "wrist_feed_notifications": "Filtros de notificaciones del overlay de muñeca"
+                },
+                "test_mode": {
+                    "header": "Prueba de overlay",
+                    "description": "Fuerza el overlay de muñeca y la notificación del visor a mostrar una tarjeta de prueba para que puedas comprobar la posición, el tamaño y la opacidad con el visor puesto. No se guarda y se desactiva al reiniciar VRCX-0.",
+                    "force_display": "Forzar la visualización del overlay",
+                    "requires_steamvr": "Requiere que SteamVR esté en ejecución."
                 }
             },
             "interface": {
@@ -2110,7 +2205,7 @@
             },
             "integrations": {
                 "mcp_server": {
-                    "header": "Servidor MCP de VRCX-0",
+                    "header": "Servidor MCP",
                     "description": "Permite que clientes MCP de confianza accedan a tus datos de VRCX-0. Solo localhost de forma predeterminada.",
                     "enable": "Activar el servidor MCP",
                     "enable_description": "Inicia un servidor MCP protegido por token en localhost.",
@@ -2139,6 +2234,40 @@
                         "starting": "Iniciando",
                         "running": "En ejecución",
                         "stopping": "Deteniendo"
+                    }
+                },
+                "integration_api": {
+                    "header": "API de integración",
+                    "description": "Comparte información seleccionada de VRCX-0 con aplicaciones de confianza. El puerto solo permanece abierto mientras VRChat está en ejecución.",
+                    "enable": "Activar la API de integración",
+                    "enable_description": "Inicia un flujo WebSocket protegido por token mientras VRChat está en ejecución.",
+                    "information_types": "Información compartida",
+                    "information_types_description": "Elige qué pueden leer las aplicaciones conectadas.",
+                    "information_type_fixed": "Fijo por ahora",
+                    "room_information": "Información de la sala",
+                    "room_information_description": "Sala actual, lista de jugadores, etiquetas de idioma y notas. Aún no se pueden cambiar campos individuales.",
+                    "allow_lan_connections": "Permitir conexiones LAN",
+                    "allow_lan_connections_description": "Permite que otros dispositivos de la red local lean este flujo. Déjalo desactivado en redes que no sean de confianza.",
+                    "port_label": "Puerto del servidor",
+                    "port_description": "Predeterminado: 8799. Después de cambiarlo, actualiza todos los clientes.",
+                    "port_apply": "Aplicar",
+                    "port_invalid": "El puerto debe estar entre 1024 y 65535",
+                    "port_in_use": "Otro programa ya está usando el puerto {port}. Elige otro puerto.",
+                    "bind_failed": "La API de integración no pudo escuchar en el puerto {port}.",
+                    "start_failed": "La API de integración no pudo iniciarse automáticamente: {reason}",
+                    "status_label": "Estado",
+                    "port_active_connections": "Puerto {port} · {count} conexiones activas",
+                    "token": "Token de acceso",
+                    "token_description": "El token permite leer la información habilitada arriba. Compártelo solo con software de confianza.",
+                    "token_copied": "Token de la API de integración copiado",
+                    "rotate_token": "Renovar token",
+                    "token_rotated": "Token de la API de integración renovado",
+                    "status": {
+                        "loading": "Cargando",
+                        "disabled": "Detenida",
+                        "waitingForGame": "Esperando a VRChat",
+                        "running": "En ejecución",
+                        "error": "Error"
                     }
                 }
             },
@@ -2437,6 +2566,7 @@
                         "header": "Texto a Voz",
                         "when_to_play": "TTS de notificaciones",
                         "tts_voice": "Voz de TTS",
+                        "tts_volume": "Volumen de TTS",
                         "system_default_voice": "Voz del sistema predeterminada",
                         "notification_filters": "Filtros de notificaciones TTS",
                         "name_mode": "Nombre leído",
@@ -2508,6 +2638,8 @@
                         "gamelog_description": "Al desactivarlo, no se guarda nuevo historial. Funciones en tiempo real como Lista de jugadores y Reproduciendo ahora siguen disponibles.",
                         "feed_history": "Guardar historial del Feed",
                         "feed_history_description": "Al desactivarlo, el Feed empieza vacío en cada sesión. Funciones en tiempo real como la barra lateral de amigos siguen disponibles.",
+                        "avatar_feed_history": "Guardar historial de cambios de avatar",
+                        "avatar_feed_history_description": "Al desactivarlo, los nuevos cambios de avatar no se escriben en la base de datos. El Feed y la entrega de notificaciones siguen funcionando.",
                         "tools": "Diagnóstico",
                         "database_usage": "Uso de la base de datos",
                         "refresh_database_usage": "Actualizar uso de la base de datos",
@@ -2672,7 +2804,6 @@
                         "purge_confirm_description_3": "VRCX-0 se reiniciará cuando finalice la operación.",
                         "purge_confirm_alert": "¡Se recomienda encarecidamente hacer una copia de seguridad del archivo de tu base de datos antes de continuar!",
                         "purge_confirm_button": "Purgar y reiniciar",
-                        "purge_in_progress": "Purgando datos de avatar",
                         "purge_complete": "Datos de avatar purgados correctamente. Reiniciando",
                         "purge_failed": "Error al purgar: {error}",
                         "purge_optimization_failed": "Los datos de avatar se purgaron, pero no se pudo optimizar la base de datos: {error}",
@@ -2832,7 +2963,7 @@
                 "no_current_instance_detected": "No se detectó ninguna instancia actual",
                 "no_players_reconstructed_for_this_instance_yet": "Aún no se encontraron jugadores actuales",
                 "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Activa el registro de juego en Ajustes para ver los jugadores actuales.",
-                "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Inicia VRChat y deja que VRCX-0 reciba los eventos del registro de juego para que esta página pueda reconstruir la instancia actual.",
+                "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Inicia VRChat y entra en una instancia. Aquí aparecerán los jugadores que estén contigo, y la lista se actualizará cuando alguien entre o salga.",
                 "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Permanece en la instancia hasta que VRCX-0 detecte actividad de jugadores. Esta lista se actualizará automáticamente.",
                 "current_players_follow_live_instance_locations": "Los jugadores actuales aparecerán cuando VRCX-0 detecte tu próxima ubicación.",
                 "local_join_leave_history_has_no_current_players": "El historial local de entradas/salidas aún no tiene jugadores actuales para la ubicación activa."
@@ -3115,17 +3246,18 @@
                 "community": "Tema de la comunidad"
             },
             "accent": {
-                "header": "Color de acento"
+                "header": "Color de acento",
+                "custom": "Personalizado",
+                "hex_label": "Color hexadecimal"
             },
             "custom_css": {
+                "status_on": "Encendido",
+                "status_off": "Apagado",
                 "header": "CSS personalizado",
-                "enabled_summary": "El CSS de anulación está activo ({count} bytes).",
-                "disabled_summary": "Capa final de CSS opcional. Actualmente está desactivada.",
                 "edit": "Editar",
                 "hide_editor": "Ocultar editor"
             },
             "developer": {
-                "summary": "Herramientas de vista previa de tema local para compilaciones de desarrollo de temas.",
                 "preview_active": "Previsualizando {name}.",
                 "show": "Mostrar herramientas",
                 "hide": "Ocultar herramientas"
@@ -3144,16 +3276,11 @@
         "background_image": {
             "settings": {
                 "header": "Imagen de fondo",
-                "description": "Usa una fuente de imagen diaria o tu propia fuente de imagen local.",
                 "apod_note": "NASA APOD solo usa imágenes sin campo de copyright.",
-                "custom_source": "Imagen local",
-                "custom_source_description": "Selecciona una imagen para un fondo fijo, o selecciona varias imágenes o una carpeta para la rotación.",
-                "folder_first_level_note": "Las carpetas se analizan solo en un nivel. No se leen las subcarpetas.",
-                "selected_files": "{count} imagen seleccionada",
+                "folder_recursive_note": "También se incluyen las imágenes de las subcarpetas.",
                 "current_image": "Imagen actual",
-                "image_count": "{count} imagen",
+                "image_count": "{count} imágenes",
                 "rotation": "Rotación",
-                "no_custom_source": "Ninguna imagen local seleccionada",
                 "no_image": "Ninguna imagen cargada",
                 "no_image_description": "Actualiza o elige una fuente para cargar una imagen.",
                 "source_type_file": "Archivo local",
@@ -3166,11 +3293,13 @@
                 "custom": "Imagen local"
             },
             "rotation": {
-                "daily": "Diaria",
-                "hourly": "Cada hora"
+                "minutes": "min",
+                "custom": "Personalizado"
             },
             "action": {
                 "refresh": "Actualizar",
+                "change_image": "Cambiar imagen",
+                "show_in_folder": "Mostrar en la carpeta",
                 "select_images": "Seleccionar imágenes",
                 "select_folder": "Seleccionar carpeta"
             },
@@ -3178,6 +3307,7 @@
                 "enabled": "Imagen de fondo activada.",
                 "refreshed": "Imagen de fondo actualizada.",
                 "failed": "No se pudo actualizar la imagen de fondo.",
+                "failed_to_open_folder": "No se pudo mostrar la imagen en la carpeta.",
                 "no_images": "No se encontraron imágenes compatibles."
             }
         },
@@ -3187,6 +3317,88 @@
             "contributors_error": "No se pudo cargar la lista de colaboradores.",
             "thanks": "Cada traducción, prueba, informe de error e idea viene de la comunidad. Gracias.",
             "license_line": "Libre y de código abierto bajo GPL-3.0"
+        },
+        "activity": {
+            "title": "Actividad",
+            "description": "En qué se fue tu tiempo, resumido por periodo",
+            "range": {
+                "all": "Todo",
+                "days": "Últimos {days} días"
+            },
+            "stat": {
+                "total_time": "Tiempo total",
+                "daily_average": "Media diaria",
+                "active_days": "Días jugados",
+                "longest_session": "Sesión más larga",
+                "change_up": "+{percent}% respecto al anterior",
+                "change_down": "-{percent}% respecto al anterior"
+            },
+            "unit": {
+                "hours": "h",
+                "minutes": "minutos"
+            },
+            "section": {
+                "instance_types": "Preferencias de instancia",
+                "daily_time": "Tiempo por día",
+                "weekly_time": "Tiempo por semana",
+                "when_you_play": "Cuándo juegas",
+                "top_worlds": "Donde pasas más tiempo",
+                "companions": "Con quién pasas el tiempo",
+                "highlights": "Para destacar",
+                "avatars": "Avatares que más usas"
+            },
+            "access": {
+                "unknown": "Desconocido",
+                "public": "Público",
+                "friendsPlus": "Amigos+",
+                "friends": "Amigos",
+                "invitePlus": "Invitación+",
+                "invite": "Invitación",
+                "group": "Grupo"
+            },
+            "empty": {
+                "title": "Aún no hay registros",
+                "description": "Juega un rato a VRChat y tu actividad aparecerá aquí."
+            },
+            "error": {
+                "failed_to_load": "No se pudo cargar tu actividad"
+            },
+            "caveat": {
+                "recorded_since": "Solo se registra mientras la app está abierta."
+            },
+            "worlds": {
+                "visit_count": "{count} visitas",
+                "open_ranking": "Detalles",
+                "total": "{count} mundos en total",
+                "show_home": "Incluir Mundo de Inicio"
+            },
+            "people": {
+                "co_days": "{count} días",
+                "lead_caption": "{days} días · {hours} h",
+                "fading_title": "Se ven menos",
+                "fading_caveat": "Menos coincidencia que en el periodo anterior. Puede ser cuestión de horarios.",
+                "encountered_total": "{count} en total",
+                "fading_last_seen": "visto por última vez {date}",
+                "order_minutes": "Por tiempo",
+                "order_days": "Por días"
+            },
+            "hero": {
+                "per_day": "al día",
+                "days_played": "días jugados",
+                "sessions": "sesiones",
+                "longest": "sesión más larga"
+            },
+            "action": {
+                "show_all": "Ver los {count}",
+                "show_less": "Ver menos"
+            },
+            "rhythm": {
+                "late_night_share": "{percent}% entre medianoche y las 6",
+                "open_heatmap": "Por día y por hora"
+            },
+            "avatars": {
+                "all_time": "Todo el tiempo"
+            }
         }
     },
     "dialog": {
@@ -3303,7 +3515,6 @@
                 "edit_note_memo": "Editar nota y nota local"
             },
             "group_invite": {
-                "description": "Elige el grupo al que quieres invitar a {value}.",
                 "select_group": "Selecciona un grupo...",
                 "loading": "Cargando los grupos para los que puedes enviar invitaciones...",
                 "no_groups": "No tienes ningún grupo para el que puedas enviar invitaciones",
@@ -3657,7 +3868,8 @@
                 "content_gore": "Sangriento",
                 "content_violence": "Violencia",
                 "content_adult": "Adulto",
-                "content_sex": "Sexual"
+                "content_sex": "Sexual",
+                "pedestals": "Pedestales"
             },
             "actions": {
                 "delete_cache_tooltip": "Eliminar mundo del caché",
@@ -3771,7 +3983,11 @@
                 "change_world_image": "Cambiar la imagen del mundo",
                 "reset_your_vrchat_home_location": "Restablecer tu ubicación de inicio de VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Editar las etiquetas de contenido gestionado, autor y funciones de este mundo",
+                "enable_avatar_scaling": "Activar escalado de avatar",
+                "enable_focus_view": "Activar vista de enfoque",
                 "enable_debugging": "Activar depuración",
+                "enable_third_person_view": "Activar vista en tercera persona",
+                "allow_props_to_modify_player_movement": "Permitir que los objetos modifiquen el movimiento del jugador",
                 "add_domain": "Añadir dominio"
             },
             "loading": {
@@ -4221,6 +4437,11 @@
             "group_access_type_members": "Miembros",
             "group_access_type_plus": "Plus",
             "group_access_type_public": "Público",
+            "minimum_avatar_performance": "Rendimiento mínimo del avatar",
+            "minimum_avatar_performance_none": "Sin restricciones",
+            "minimum_avatar_performance_poor": "Bajo",
+            "minimum_avatar_performance_medium": "Medio",
+            "minimum_avatar_performance_good": "Bueno",
             "region": "Región",
             "region_usw": "Oeste de EE. UU.",
             "region_use": "Este de EE. UU.",
@@ -4534,7 +4755,9 @@
             "loading_gallery_description": "Leyendo la lista de capturas indexadas.",
             "gallery_load_failed": "No se pudo cargar la galería de capturas",
             "scan_failed": "No se pudo escanear la biblioteca de capturas",
-            "thumbnail_failed": "Miniatura no disponible"
+            "thumbnail_failed": "Miniatura no disponible",
+            "hide_details": "Ocultar información",
+            "show_details": "Mostrar información"
         },
         "set_avatar_styles": {
             "header": "Establecer estilos del avatar",
@@ -4735,6 +4958,7 @@
         "previous_instances": {
             "action": {
                 "copy_instance_id": "Copiar ID de instancia",
+                "copy_world_name": "Copiar nombre del mundo",
                 "more_actions": "Más acciones"
             },
             "header": "Historial de instancias",
@@ -5205,6 +5429,8 @@
             "migration_restarting_title": "Migrando datos",
             "migration_restarting": "VRCX-0 se reiniciará para completar la migración...",
             "upgrade_in_progress_title": "Actualización de la base de datos en curso",
+            "maintenance_in_progress_title": "Mantenimiento de la base de datos en curso",
+            "maintenance_in_progress_description": "Se está liberando espacio en disco. El acceso a la base de datos se pausa hasta que termine.",
             "upgrade_stage": {
                 "preflight": "Comprobando la base de datos",
                 "prepare_legacy_snapshot": "Creando una copia coherente de la base de datos de VRCX",
@@ -5328,6 +5554,9 @@
         "update_success": "Actualización correcta"
     },
     "notifications": {
+        "group_instance_opened": "Ha creado una nueva instancia",
+        "group_instance_opened_location": "Ha creado una nueva instancia: {location}",
+        "group_instances_opened": "Ha creado {count} instancias nuevas",
         "has_joined": "se ha unido",
         "has_left": "se ha ido",
         "joined_with_others": "y {count} más se han unido",
@@ -5829,6 +6058,27 @@
         "error_generic": "La traducción falló",
         "error_network": "Error de red, inténtalo de nuevo",
         "error_unsupported": "La traducción no está configurada"
+    },
+    "saved_group_favorites": {
+        "title": "Grupos favoritos",
+        "description": "Guarda los grupos que usas con frecuencia en colecciones locales y úsalos para recibir avisos de nuevas instancias.",
+        "new_collection": "Nueva colección",
+        "empty_collections": "Crea una colección para empezar a guardar grupos.",
+        "empty_group": "No hay grupos guardados en esta colección.",
+        "delete_title": "¿Eliminar esta colección?",
+        "delete_description": "Al eliminar {name} también se quitarán sus {count} grupos guardados.",
+        "choose_collection": "Guardar en una colección",
+        "remove": "Quitar de grupos guardados",
+        "toggle": "Guardar grupo",
+        "sidebar_saved": "Grupos favoritos",
+        "sidebar_none": "Aún no hay grupos guardados",
+        "sidebar_other": "Otros grupos activos",
+        "sidebar_failed": "No se pudieron cargar las instancias de grupos",
+        "sidebar_no_active": "No hay otras instancias de grupos activas",
+        "scope_all": "Todos los grupos guardados",
+        "scope_selected": "Colecciones de grupos seleccionadas",
+        "notification_type": "Nueva instancia de grupo",
+        "notification_empty": "No hay colecciones de grupos guardados disponibles."
     },
     "app": {
         "routes": {

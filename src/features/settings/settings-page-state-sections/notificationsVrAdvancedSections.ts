@@ -5,11 +5,59 @@ import {
     notificationTtsOptions,
     sqliteTableSizeRows
 } from '../settingsOptions';
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
-import { normalizeCheckedState } from '../settingsValues';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type NotificationsSectionInput = SettingsSectionInput<
+    | 'ttsVoices'
+    | 'notificationTtsTestVisible'
+    | 'notificationTtsTest'
+    | 'setDesktopNotificationsDialogOpen'
+    | 'setTtsNotificationsDialogOpen'
+    | 'saveStringPreference'
+    | 'saveBoolPreference'
+    | 'savePreferenceValue'
+    | 'setIntConfigPreference'
+    | 'saveNotificationTtsMode'
+    | 'saveNotificationTtsVoice'
+    | 'setNotificationTtsTestVisible'
+    | 'setNotificationTtsTest'
+    | 'speakNotificationTts'
+>;
+
+type VrSectionInput = SettingsSectionInput<
+    | 'setVrNotificationsDialogOpen'
+    | 'setHmdNotificationsDialogOpen'
+    | 'setWristFeedNotificationsDialogOpen'
+    | 'savePreferenceValue'
+    | 'saveStringPreference'
+    | 'saveBoolPreference'
+    | 'setIntConfigPreference'
+    | 'saveWristOverlayEnabled'
+>;
+
+type AdvancedSectionInput = SettingsSectionInput<
+    | 'sqliteTableSizes'
+    | 'onlineVisitCount'
+    | 'configTreeData'
+    | 'appDataDirState'
+    | 'saveBoolPreference'
+    | 'handleGameLogDisabledChange'
+    | 'handleFeedPersistenceDisabledChange'
+    | 'handleAvatarFeedPersistenceDisabledChange'
+    | 'saveStringPreference'
+    | 'setPurgeDialogOpen'
+    | 'refreshSqliteTableSizes'
+    | 'refreshOnlineVisits'
+    | 'refreshConfigTreeData'
+    | 'openAppDataDirSelector'
+    | 'resetAppDataDir'
+    | 'cleanupAppDataDir'
+    | 'dismissAppDataDirCleanup'
+    | 'setConfigTreeData'
+    | 'migrateLegacyVrcxData'
+>;
 
 export function buildNotificationsSection({
-    prefs,
     ttsVoices,
     notificationTtsTestVisible,
     notificationTtsTest,
@@ -17,14 +65,15 @@ export function buildNotificationsSection({
     setTtsNotificationsDialogOpen,
     saveStringPreference,
     saveBoolPreference,
+    savePreferenceValue,
+    setIntConfigPreference,
     saveNotificationTtsMode,
     saveNotificationTtsVoice,
     setNotificationTtsTestVisible,
     setNotificationTtsTest,
     speakNotificationTts
-}: BuildSettingsPageStateSectionsInput) {
+}: NotificationsSectionInput) {
     return {
-        prefs,
         desktopToastOptions,
         notificationTtsOptions,
         notificationTtsNameModeOptions,
@@ -35,6 +84,8 @@ export function buildNotificationsSection({
         setTtsNotificationsDialogOpen,
         saveStringPreference,
         saveBoolPreference,
+        savePreferenceValue,
+        setIntConfigPreference,
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
         setNotificationTtsTestVisible,
@@ -44,7 +95,6 @@ export function buildNotificationsSection({
 }
 
 export function buildVrSection({
-    prefs,
     setVrNotificationsDialogOpen,
     setHmdNotificationsDialogOpen,
     setWristFeedNotificationsDialogOpen,
@@ -53,9 +103,8 @@ export function buildVrSection({
     saveBoolPreference,
     setIntConfigPreference,
     saveWristOverlayEnabled
-}: BuildSettingsPageStateSectionsInput) {
+}: VrSectionInput) {
     return {
-        prefs,
         setVrNotificationsDialogOpen,
         setHmdNotificationsDialogOpen,
         setWristFeedNotificationsDialogOpen,
@@ -68,7 +117,6 @@ export function buildVrSection({
 }
 
 export function buildAdvancedSection({
-    prefs,
     sqliteTableSizes,
     onlineVisitCount,
     configTreeData,
@@ -76,6 +124,7 @@ export function buildAdvancedSection({
     saveBoolPreference,
     handleGameLogDisabledChange,
     handleFeedPersistenceDisabledChange,
+    handleAvatarFeedPersistenceDisabledChange,
     saveStringPreference,
     setPurgeDialogOpen,
     refreshSqliteTableSizes,
@@ -87,9 +136,8 @@ export function buildAdvancedSection({
     dismissAppDataDirCleanup,
     setConfigTreeData,
     migrateLegacyVrcxData
-}: BuildSettingsPageStateSectionsInput) {
+}: AdvancedSectionInput) {
     return {
-        prefs,
         avatarAutoCleanupOptions,
         sqliteTableSizes,
         sqliteTableSizeRows,
@@ -99,6 +147,7 @@ export function buildAdvancedSection({
         saveBoolPreference,
         handleGameLogDisabledChange,
         handleFeedPersistenceDisabledChange,
+        handleAvatarFeedPersistenceDisabledChange,
         saveStringPreference,
         setPurgeDialogOpen,
         refreshSqliteTableSizes,
@@ -110,12 +159,11 @@ export function buildAdvancedSection({
         dismissAppDataDirCleanup,
         setConfigTreeData,
         migrateLegacyVrcxData,
-        onAnonymousUsageTelemetryChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
+        onAnonymousUsageTelemetryChange: (checked: boolean) => {
             saveBoolPreference(
                 'anonymousUsageTelemetry',
                 'anonymousUsageTelemetry',
-                enabled
+                checked
             );
         }
     };

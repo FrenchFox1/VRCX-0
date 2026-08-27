@@ -10,12 +10,9 @@ import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { CommandGroup, CommandItem } from '@/ui/shadcn/command';
 
-import type {
-    QuickSearchEntityType,
-    QuickSearchResult
-} from './quickSearchCatalog';
+import type { QuickSearchEntityType, QuickSearchResult } from './quickSearch';
 
-export function entityTypeLabel(type: QuickSearchEntityType | string) {
+export function entityTypeLabel(type: QuickSearchEntityType) {
     switch (type) {
         case 'friend':
             return 'User';

@@ -2,7 +2,7 @@ import { ChevronDownIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -32,11 +32,13 @@ import {
 } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
+import { normalizeMinimumAvatarPerformance } from './worldDialogHelpers';
 import {
     normalizeInstanceDialogDisplayName,
     prependInstanceDialogDisplayNamePreset
 } from './worldInstanceDisplayNamePresets';
 import { buildLegacyCreatedInstance } from './worldInstances';
+import { isWorldNewInstanceTab } from './worldNewInstanceTypes';
 import type {
     CreatedWorldInstance,
     InstanceGroupOption,
@@ -74,6 +76,24 @@ const groupAccessTypeOptions = [
     {
         value: 'members',
         labelKey: 'dialog.new_instance.group_access_type_members'
+    }
+];
+const minimumAvatarPerformanceOptions = [
+    {
+        value: 'none',
+        labelKey: 'dialog.new_instance.minimum_avatar_performance_none'
+    },
+    {
+        value: 'Poor',
+        labelKey: 'dialog.new_instance.minimum_avatar_performance_poor'
+    },
+    {
+        value: 'Medium',
+        labelKey: 'dialog.new_instance.minimum_avatar_performance_medium'
+    },
+    {
+        value: 'Good',
+        labelKey: 'dialog.new_instance.minimum_avatar_performance_good'
     }
 ];
 
@@ -147,6 +167,7 @@ export function WorldNewInstanceDialog({
         region: 'US West',
         groupId: '',
         groupAccessType: 'plus',
+        minimumAvatarPerformance: '',
         queueEnabled: true,
         ageGate: false,
         displayName: '',
@@ -171,6 +192,7 @@ export function WorldNewInstanceDialog({
                 region: 'US West',
                 groupId: '',
                 groupAccessType: 'plus',
+                minimumAvatarPerformance: '',
                 queueEnabled: true,
                 ageGate: false,
                 displayName: '',
@@ -248,7 +270,7 @@ export function WorldNewInstanceDialog({
     }
 
     function commitDisplayNamePreset(
-        value: unknown = form.displayName
+        value: string = form.displayName
     ): string | null {
         const displayName = normalizeInstanceDialogDisplayName(value);
         if (!displayName) {
@@ -336,7 +358,11 @@ export function WorldNewInstanceDialog({
                 </DialogHeader>
                 <Tabs
                     value={form.selectedTab}
-                    onValueChange={(value) => patchForm({ selectedTab: value })}
+                    onValueChange={(value) => {
+                        if (isWorldNewInstanceTab(value)) {
+                            patchForm({ selectedTab: value });
+                        }
+                    }}
                 >
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="Normal">
@@ -359,7 +385,9 @@ export function WorldNewInstanceDialog({
                                         label: t(option.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ accessType: value || '' })
+                                        patchForm({
+                                            accessType: value || 'public'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -390,7 +418,9 @@ export function WorldNewInstanceDialog({
                                         label: t(region.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ region: value || '' })
+                                        patchForm({
+                                            region: value || 'US West'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -421,6 +451,59 @@ export function WorldNewInstanceDialog({
                                         )}
                                     </Field>
                                     <Field>
+                                        <FieldLabel htmlFor="world-instance-minimum-avatar-performance">
+                                            {t(
+                                                'dialog.new_instance.minimum_avatar_performance'
+                                            )}
+                                        </FieldLabel>
+                                        <Select
+                                            value={
+                                                form.minimumAvatarPerformance ||
+                                                'none'
+                                            }
+                                            items={minimumAvatarPerformanceOptions.map(
+                                                (option) => ({
+                                                    value: option.value,
+                                                    label: t(option.labelKey)
+                                                })
+                                            )}
+                                            onValueChange={(value) =>
+                                                patchForm({
+                                                    minimumAvatarPerformance:
+                                                        normalizeMinimumAvatarPerformance(
+                                                            value === 'none'
+                                                                ? ''
+                                                                : value
+                                                        )
+                                                })
+                                            }
+                                        >
+                                            <SelectTrigger id="world-instance-minimum-avatar-performance">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {minimumAvatarPerformanceOptions.map(
+                                                        (option) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    option.value
+                                                                }
+                                                                value={
+                                                                    option.value
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    option.labelKey
+                                                                )}
+                                                            </SelectItem>
+                                                        )
+                                                    )}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </Field>
+                                    <Field>
                                         <FieldLabel>
                                             {t(
                                                 'dialog.new_instance.group_access_type'
@@ -436,7 +519,8 @@ export function WorldNewInstanceDialog({
                                             )}
                                             onValueChange={(value) =>
                                                 patchForm({
-                                                    groupAccessType: value || ''
+                                                    groupAccessType:
+                                                        value || 'plus'
                                                 })
                                             }
                                         >
@@ -602,7 +686,9 @@ export function WorldNewInstanceDialog({
                                         label: t(option.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ accessType: value || '' })
+                                        patchForm({
+                                            accessType: value || 'public'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -633,7 +719,9 @@ export function WorldNewInstanceDialog({
                                         label: t(region.labelKey)
                                     }))}
                                     onValueChange={(value) =>
-                                        patchForm({ region: value || '' })
+                                        patchForm({
+                                            region: value || 'US West'
+                                        })
                                     }
                                 >
                                     <SelectTrigger>
@@ -716,7 +804,8 @@ export function WorldNewInstanceDialog({
                                             )}
                                             onValueChange={(value) =>
                                                 patchForm({
-                                                    groupAccessType: value || ''
+                                                    groupAccessType:
+                                                        value || 'plus'
                                                 })
                                             }
                                         >

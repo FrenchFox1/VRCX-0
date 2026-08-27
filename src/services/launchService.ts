@@ -14,13 +14,6 @@ import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
-type InstanceShortNameResponse = {
-    json?: {
-        shortName?: unknown;
-        secureName?: unknown;
-    };
-};
-
 export type LaunchDialogDetails = {
     tag: string;
     location: string;
@@ -34,7 +27,7 @@ export type LaunchDialogDetails = {
     parsed: ReturnType<typeof parseLocation>;
 };
 
-function resolveLaunchLocation(location: unknown): string {
+function resolveLaunchLocation(location: string): string {
     const parsed = parseLocation(location);
     if (!parsed.worldId) {
         return normalizeString(location);
@@ -46,9 +39,9 @@ function resolveLaunchLocation(location: unknown): string {
 }
 
 export async function resolveLaunchDialogDetails(
-    tag: unknown,
-    shortName: unknown = '',
-    launchToken: unknown = ''
+    tag: string,
+    shortName: string = '',
+    launchToken: string = ''
 ): Promise<LaunchDialogDetails> {
     const normalizedTag = normalizeString(tag);
     const parsed = parseLocation(normalizedTag);
@@ -77,10 +70,10 @@ export async function resolveLaunchDialogDetails(
     if (!secureOrShortName) {
         try {
             const response =
-                (await vrchatInstanceRepository.getInstanceShortName({
+                await vrchatInstanceRepository.getInstanceShortName({
                     worldId: parsed.worldId,
                     instanceId: parsed.instanceId
-                })) as InstanceShortNameResponse;
+                });
             nextShortName = normalizeString(response.json?.shortName);
             secureOrShortName =
                 nextShortName || normalizeString(response.json?.secureName);
@@ -112,8 +105,8 @@ export async function resolveLaunchDialogDetails(
 }
 
 export async function attachRunningVrchat(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName: string = ''
 ): Promise<void> {
     const parsed = parseLocation(location);
     const launchLocation = resolveLaunchLocation(location);
@@ -138,8 +131,8 @@ export async function attachRunningVrchat(
 }
 
 export async function selfInviteToInstance(
-    location: unknown,
-    shortName: unknown = ''
+    location: string,
+    shortName: string = ''
 ): Promise<void> {
     const parsed = parseLocation(location);
     if (!parsed.worldId || !parsed.instanceId) {
@@ -153,9 +146,9 @@ export async function selfInviteToInstance(
 }
 
 export async function launchVrchat(
-    location: unknown,
-    shortName: unknown = '',
-    desktopMode: unknown = false
+    location: string,
+    shortName: string = '',
+    desktopMode: boolean = false
 ): Promise<void> {
     requireHostCapabilitySupported('gameLaunch');
     const launchLocation = normalizeString(location);

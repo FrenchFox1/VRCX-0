@@ -3,9 +3,8 @@ import {
     type InstanceActivityRowOutput,
     type WorldSummaryOutput
 } from '@/platform/tauri/bindings';
-import { normalizeString } from '@/shared/utils/string';
 
-interface InstanceActivityRow {
+export interface InstanceActivityRow {
     id: number;
     created_at: string;
     type: string;
@@ -23,16 +22,16 @@ function normalizeInstanceActivityRow(
     return {
         id: row.id,
         created_at: row.createdAt,
-        type: normalizeString(row.type),
+        type: row.type,
         display_name: row.displayName,
-        location: normalizeString(row.location),
+        location: row.location,
         user_id: row.userId,
-        time: Number(row?.time ?? 0) || 0
+        time: row.time
     };
 }
 
-async function getAvailableDates(userId: unknown): Promise<string[]> {
-    const normalizedUserId = normalizeString(userId);
+async function getAvailableDates(userId: string): Promise<string[]> {
+    const normalizedUserId = userId.trim();
     if (!normalizedUserId) {
         return [];
     }
@@ -51,14 +50,10 @@ async function getInstanceActivityRows(
 }
 
 async function getWorldSummariesByIds(
-    worldIds: unknown
+    worldIds: readonly string[]
 ): Promise<Record<string, WorldSummary>> {
     const ids = Array.from(
-        new Set(
-            (Array.isArray(worldIds) ? worldIds : [])
-                .map(normalizeString)
-                .filter(Boolean)
-        )
+        new Set(worldIds.map((worldId) => worldId.trim()).filter(Boolean))
     );
     if (!ids.length) {
         return {};
@@ -67,7 +62,7 @@ async function getWorldSummariesByIds(
     const rows = await commands.appWorldSummariesGet(ids);
 
     const map: Record<string, WorldSummary> = {};
-    for (const [worldId, row] of Object.entries(rows || {})) {
+    for (const [worldId, row] of Object.entries(rows)) {
         if (!row) {
             continue;
         }

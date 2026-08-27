@@ -3,11 +3,12 @@ use specta::Type;
 use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 
 use crate::entities::Entity;
+use vrcx_0_core::OwnerId;
 
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantDeltaEvent {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub session_id: String,
     pub turn_id: String,
     pub text: String,
@@ -17,7 +18,7 @@ pub struct AssistantDeltaEvent {
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantToolCallEvent {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub session_id: String,
     pub turn_id: String,
     pub tool_call_id: String,
@@ -28,7 +29,7 @@ pub struct AssistantToolCallEvent {
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantToolResultEvent {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub session_id: String,
     pub turn_id: String,
     pub tool_call_id: String,
@@ -40,7 +41,7 @@ pub struct AssistantToolResultEvent {
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantTurnEntitiesEvent {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub session_id: String,
     pub turn_id: String,
     pub entities: Vec<Entity>,
@@ -49,7 +50,7 @@ pub struct AssistantTurnEntitiesEvent {
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantDoneEvent {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub session_id: String,
     pub turn_id: String,
 }
@@ -57,7 +58,7 @@ pub struct AssistantDoneEvent {
 #[derive(Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantErrorEvent {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub session_id: String,
     pub turn_id: String,
     pub code: String,
@@ -91,7 +92,7 @@ impl RuntimeEventPayload for AssistantErrorEvent {
 #[derive(Clone)]
 pub struct AssistantEmitter {
     bus: RuntimeEventBus,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     session_id: String,
     turn_id: String,
 }
@@ -99,7 +100,7 @@ pub struct AssistantEmitter {
 impl AssistantEmitter {
     pub fn new(
         bus: RuntimeEventBus,
-        owner_user_id: String,
+        owner_user_id: OwnerId,
         session_id: String,
         turn_id: String,
     ) -> Self {
@@ -188,6 +189,7 @@ mod tests {
 
     use serde_json::Value;
     use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventSink};
+    use vrcx_0_core::OwnerId;
 
     use super::AssistantEmitter;
 
@@ -195,7 +197,7 @@ mod tests {
     struct CapturingSink(Arc<Mutex<Vec<(String, Value)>>>);
 
     impl RuntimeEventSink for CapturingSink {
-        fn emit(&self, event: &str, payload: Value, _typed_payload: &dyn std::any::Any) {
+        fn emit(&self, event: &str, payload: Value) {
             self.0.lock().unwrap().push((event.to_string(), payload));
         }
     }
@@ -207,7 +209,7 @@ mod tests {
         bus.set_sink(sink.clone());
         let emitter = AssistantEmitter::new(
             bus.clone(),
-            "usr_self".into(),
+            OwnerId::new("usr_self"),
             "session-1".into(),
             "turn-1".into(),
         );

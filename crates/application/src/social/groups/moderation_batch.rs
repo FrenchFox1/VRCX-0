@@ -1,26 +1,20 @@
+use futures_util::future::BoxFuture;
+
 use std::{
     collections::{HashMap, HashSet},
-    future::Future,
-    pin::Pin,
     sync::Mutex,
     time::Duration,
 };
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::{
-    groups::{
-        member_ban_input, member_kick_input, member_props_set_input, member_role_add_input,
-        member_role_remove_input, member_unban_input,
-    },
-    http_api::{ApiScope, HttpApiRequestInput},
-};
+use serde_json::Value;
 
-use crate::{
+use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
     WebClient,
 };
+use vrcx_0_core::OwnerId;
 
 pub const GROUP_MODERATION_BATCH_MAX_TARGETS: usize = 250;
 pub const GROUP_MODERATION_BATCH_MAX_OPERATIONS: usize = 1_000;
@@ -39,7 +33,7 @@ struct GroupModerationBatchGuard<'a> {
 impl GroupModerationBatchCoordinator {
     fn try_begin(
         &self,
-        owner_user_id: &str,
+        owner_user_id: &OwnerId,
         group_id: &str,
     ) -> Result<GroupModerationBatchGuard<'_>> {
         let key = (owner_user_id.to_string(), group_id.to_string());
@@ -88,7 +82,7 @@ pub struct GroupModerationBatchTarget {
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchInput {
-    pub expected_owner_user_id: String,
+    pub expected_owner_user_id: OwnerId,
     pub expected_endpoint: String,
     pub group_id: String,
     pub action: GroupModerationBatchAction,
@@ -119,14 +113,14 @@ pub struct GroupModerationBatchItemResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchResult {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
-    pub total: usize,
-    pub succeeded: usize,
-    pub failed: usize,
-    pub skipped: usize,
-    pub applied_operations: usize,
-    pub failed_operations: usize,
+    pub total: u32,
+    pub succeeded: u32,
+    pub failed: u32,
+    pub skipped: u32,
+    pub applied_operations: u32,
+    pub failed_operations: u32,
     pub items: Vec<GroupModerationBatchItemResult>,
     pub last_error: Option<String>,
 }
@@ -134,11 +128,11 @@ pub struct GroupModerationBatchResult {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupModerationBatchProgress {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub endpoint: String,
     pub group_id: String,
-    pub completed: usize,
-    pub total: usize,
+    pub completed: u32,
+    pub total: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -181,37 +175,80 @@ trait GroupModerationBatchActions: Send + Sync {
     fn execute<'a>(
         &'a self,
         operation: GroupModerationOperation<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<GroupModerationRemoteOutcome>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<GroupModerationRemoteOutcome>>;
     fn scope_matches(&self) -> bool;
     fn current_user_id(&self) -> &str;
     fn current_endpoint(&self) -> &str;
     fn report_progress(&self, _progress: GroupModerationBatchProgress) {}
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+    fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async {})
     }
 }
 
+pub trait GroupModerationRemoteRequests: Send + Sync {
+    fn kick(&self, endpoint: String, group_id: String, user_id: String)
+        -> Result<VrchatApiRequest>;
+    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn unban(&self, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn save_note(
+        &self,
+        endpoint: String,
+        group_id: String,
+        user_id: String,
+        note: String,
+    ) -> Result<VrchatApiRequest>;
+    fn add_role(
+        &self,
+        group_id: String,
+        user_id: String,
+        role_id: String,
+    ) -> Result<VrchatApiRequest>;
+    fn remove_role(
+        &self,
+        group_id: String,
+        user_id: String,
+        role_id: String,
+    ) -> Result<VrchatApiRequest>;
+}
+
 pub struct VrchatGroupModerationBatchActions<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) web: &'a WebClient,
+    remote_requests: &'a dyn GroupModerationRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
     pub event_bus: RuntimeEventBus,
     pub remote_mutation_gate: &'a RemoteMutationGate,
 }
 
+impl<'a> VrchatGroupModerationBatchActions<'a> {
+    pub fn new(
+        web: &'a WebClient,
+        remote_requests: &'a dyn GroupModerationRemoteRequests,
+        auth_scope: &'a RuntimeAuthScope,
+        expected_scope: RuntimeAuthScopeSnapshot,
+        event_bus: RuntimeEventBus,
+        remote_mutation_gate: &'a RemoteMutationGate,
+    ) -> Self {
+        Self {
+            web,
+            remote_requests,
+            auth_scope,
+            expected_scope,
+            event_bus,
+            remote_mutation_gate,
+        }
+    }
+}
+
 impl VrchatGroupModerationBatchActions<'_> {
     async fn execute_request(
         &self,
-        mut request: HttpApiRequestInput,
+        mut request: VrchatApiRequest,
         action: &str,
     ) -> Result<GroupModerationRemoteOutcome> {
         ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
         request.endpoint = Some(self.expected_scope.endpoint.clone());
-        let response = self
-            .web
-            .execute_api(request, ApiScope::Vrchat, self.db)
-            .await?;
+        let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
         let fallback_payload = Value::String(response.data.clone());
         if !(200..300).contains(&response.status) {
             return Err(Error::Custom(response_error_message(
@@ -250,11 +287,11 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
     fn execute<'a>(
         &'a self,
         operation: GroupModerationOperation<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<GroupModerationRemoteOutcome>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<GroupModerationRemoteOutcome>> {
         Box::pin(async move {
             let (request, action) = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
-                    let (_, _, request) = member_kick_input(
+                    let request = self.remote_requests.kick(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
@@ -262,7 +299,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     (request, "group member kick")
                 }
                 GroupModerationOperation::Ban { group_id, user_id } => {
-                    let (_, _, request) = member_ban_input(
+                    let request = self.remote_requests.ban(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
@@ -270,8 +307,9 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     (request, "group member ban")
                 }
                 GroupModerationOperation::Unban { group_id, user_id } => {
-                    let (_, _, request) =
-                        member_unban_input(group_id.to_string(), user_id.to_string())?;
+                    let request = self
+                        .remote_requests
+                        .unban(group_id.to_string(), user_id.to_string())?;
                     (request, "group member unban")
                 }
                 GroupModerationOperation::SaveNote {
@@ -279,11 +317,11 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     note,
                 } => {
-                    let (_, _, request) = member_props_set_input(
+                    let request = self.remote_requests.save_note(
                         self.expected_scope.endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                        Some(json!({ "managerNotes": note })),
+                        note.to_string(),
                     )?;
                     (request, "group member note update")
                 }
@@ -292,7 +330,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let (_, _, _, request) = member_role_add_input(
+                    let request = self.remote_requests.add_role(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
@@ -304,7 +342,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let (_, _, _, request) = member_role_remove_input(
+                    let request = self.remote_requests.remove_role(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
@@ -334,7 +372,7 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
         self.event_bus.emit(progress);
     }
 
-    fn wait_for_remote_slot<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+    fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             self.remote_mutation_gate
                 .wait(&self.expected_scope, GROUP_MODERATION_REMOTE_INTERVAL)
@@ -348,7 +386,7 @@ pub async fn run_group_moderation_batch(
     actions: &VrchatGroupModerationBatchActions<'_>,
     input: GroupModerationBatchInput,
 ) -> Result<GroupModerationBatchResult> {
-    if input.expected_owner_user_id.trim() != actions.expected_scope.current_user_id
+    if input.expected_owner_user_id.as_str().trim() != actions.expected_scope.current_user_id
         || input.expected_endpoint.trim() != actions.expected_scope.endpoint
     {
         return Err(Error::Custom(
@@ -356,7 +394,7 @@ pub async fn run_group_moderation_batch(
         ));
     }
     let _guard = coordinator.try_begin(
-        &actions.expected_scope.current_user_id,
+        &OwnerId::new(actions.expected_scope.current_user_id.clone()),
         input.group_id.trim(),
     )?;
     run_group_moderation_batch_with_actions(actions, input).await
@@ -395,11 +433,11 @@ async fn run_group_moderation_batch_with_actions(
                 message: "The authenticated user cannot be targeted by this action.".into(),
             };
             actions.report_progress(GroupModerationBatchProgress {
-                owner_user_id: owner_user_id.clone(),
+                owner_user_id: OwnerId::new(owner_user_id.clone()),
                 endpoint: endpoint.clone(),
                 group_id: prepared.group_id.clone(),
-                completed: index + 1,
-                total,
+                completed: crate::wire_count(index + 1),
+                total: crate::wire_count(total),
             });
             completed = index + 1;
             continue;
@@ -441,11 +479,11 @@ async fn run_group_moderation_batch_with_actions(
         }
 
         actions.report_progress(GroupModerationBatchProgress {
-            owner_user_id: owner_user_id.clone(),
+            owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
-            completed: index + 1,
-            total,
+            completed: crate::wire_count(index + 1),
+            total: crate::wire_count(total),
         });
         completed = index + 1;
         if stop_after.is_some() {
@@ -461,15 +499,15 @@ async fn run_group_moderation_batch_with_actions(
     });
     if completed < total {
         actions.report_progress(GroupModerationBatchProgress {
-            owner_user_id: owner_user_id.clone(),
+            owner_user_id: OwnerId::new(owner_user_id.clone()),
             endpoint: endpoint.clone(),
             group_id: prepared.group_id.clone(),
-            completed: total,
-            total,
+            completed: crate::wire_count(total),
+            total: crate::wire_count(total),
         });
     }
     Ok(summarize(
-        owner_user_id,
+        OwnerId::new(owner_user_id),
         endpoint,
         items,
         scope_error,
@@ -645,7 +683,7 @@ async fn run_role_target(
 }
 
 fn summarize(
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     endpoint: String,
     items: Vec<GroupModerationBatchItemResult>,
     scope_error: Option<String>,
@@ -682,12 +720,12 @@ fn summarize(
     GroupModerationBatchResult {
         owner_user_id,
         endpoint,
-        total: items.len(),
-        succeeded,
-        failed: items.len() - succeeded - skipped,
-        skipped,
-        applied_operations,
-        failed_operations,
+        total: crate::wire_count(items.len()),
+        succeeded: crate::wire_count(succeeded),
+        failed: crate::wire_count(items.len() - succeeded - skipped),
+        skipped: crate::wire_count(skipped),
+        applied_operations: crate::wire_count(applied_operations),
+        failed_operations: crate::wire_count(failed_operations),
         items,
         last_error,
     }
@@ -769,260 +807,4 @@ fn response_error_message(payload: &Value, status: i32, action: &str) -> String 
 }
 
 #[cfg(test)]
-mod tests {
-    use std::{
-        collections::VecDeque,
-        sync::{
-            atomic::{AtomicBool, Ordering},
-            Mutex,
-        },
-    };
-
-    use super::*;
-
-    struct FakeActions {
-        calls: Mutex<Vec<String>>,
-        outcomes: Mutex<VecDeque<Result<GroupModerationRemoteOutcome>>>,
-        progress: Mutex<Vec<(usize, usize)>>,
-        scope_current: AtomicBool,
-    }
-
-    impl FakeActions {
-        fn new(outcomes: Vec<Result<GroupModerationRemoteOutcome>>) -> Self {
-            Self {
-                calls: Mutex::new(Vec::new()),
-                outcomes: Mutex::new(outcomes.into()),
-                progress: Mutex::new(Vec::new()),
-                scope_current: AtomicBool::new(true),
-            }
-        }
-
-        fn run(&self, call: String) -> Result<GroupModerationRemoteOutcome> {
-            self.calls.lock().unwrap().push(call);
-            self.outcomes
-                .lock()
-                .unwrap()
-                .pop_front()
-                .unwrap_or(Ok(GroupModerationRemoteOutcome::Applied))
-        }
-    }
-
-    impl GroupModerationBatchActions for FakeActions {
-        fn execute<'a>(
-            &'a self,
-            operation: GroupModerationOperation<'a>,
-        ) -> Pin<Box<dyn Future<Output = Result<GroupModerationRemoteOutcome>> + Send + 'a>>
-        {
-            Box::pin(async move {
-                let call = match operation {
-                    GroupModerationOperation::Kick { group_id, user_id } => {
-                        format!("kick:{group_id}:{user_id}")
-                    }
-                    GroupModerationOperation::Ban { group_id, user_id } => {
-                        format!("ban:{group_id}:{user_id}")
-                    }
-                    GroupModerationOperation::Unban { group_id, user_id } => {
-                        format!("unban:{group_id}:{user_id}")
-                    }
-                    GroupModerationOperation::SaveNote {
-                        group_id,
-                        user_id,
-                        note,
-                    } => format!("note:{group_id}:{user_id}:{note}"),
-                    GroupModerationOperation::AddRole {
-                        group_id,
-                        user_id,
-                        role_id,
-                    } => format!("add:{group_id}:{user_id}:{role_id}"),
-                    GroupModerationOperation::RemoveRole {
-                        group_id,
-                        user_id,
-                        role_id,
-                    } => format!("remove:{group_id}:{user_id}:{role_id}"),
-                };
-                self.run(call)
-            })
-        }
-
-        fn scope_matches(&self) -> bool {
-            self.scope_current.load(Ordering::SeqCst)
-        }
-
-        fn current_user_id(&self) -> &str {
-            "usr_self"
-        }
-
-        fn current_endpoint(&self) -> &str {
-            ""
-        }
-
-        fn report_progress(&self, progress: GroupModerationBatchProgress) {
-            self.progress
-                .lock()
-                .unwrap()
-                .push((progress.completed, progress.total));
-        }
-    }
-
-    fn input(
-        action: GroupModerationBatchAction,
-        targets: Vec<GroupModerationBatchTarget>,
-    ) -> GroupModerationBatchInput {
-        GroupModerationBatchInput {
-            expected_owner_user_id: "usr_self".into(),
-            expected_endpoint: String::new(),
-            group_id: "grp_test".into(),
-            action,
-            targets,
-        }
-    }
-
-    fn target(user_id: &str, role_ids: &[&str]) -> GroupModerationBatchTarget {
-        GroupModerationBatchTarget {
-            user_id: user_id.into(),
-            role_ids: role_ids.iter().map(|value| (*value).to_string()).collect(),
-        }
-    }
-
-    #[tokio::test]
-    async fn irreversible_batch_continues_after_item_failure_without_rollback() {
-        let actions = FakeActions::new(vec![
-            Ok(GroupModerationRemoteOutcome::Applied),
-            Err(Error::Custom("denied".into())),
-            Ok(GroupModerationRemoteOutcome::Applied),
-        ]);
-
-        let result = run_group_moderation_batch_with_actions(
-            &actions,
-            input(
-                GroupModerationBatchAction::Kick,
-                vec![
-                    target("usr_a", &[]),
-                    target("usr_b", &[]),
-                    target("usr_c", &[]),
-                ],
-            ),
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(result.succeeded, 2);
-        assert_eq!(result.failed, 1);
-        assert_eq!(
-            result
-                .items
-                .iter()
-                .map(|item| item.state)
-                .collect::<Vec<_>>(),
-            vec![
-                GroupModerationBatchItemState::Applied,
-                GroupModerationBatchItemState::Failed,
-                GroupModerationBatchItemState::Applied,
-            ]
-        );
-        assert_eq!(actions.calls.lock().unwrap().len(), 3);
-        assert_eq!(
-            *actions.progress.lock().unwrap(),
-            vec![(1, 3), (2, 3), (3, 3)]
-        );
-    }
-
-    #[tokio::test]
-    async fn role_batch_reports_partial_target_and_keeps_explicit_operation_order() {
-        let actions = FakeActions::new(vec![
-            Ok(GroupModerationRemoteOutcome::Applied),
-            Err(Error::Custom("role denied".into())),
-            Ok(GroupModerationRemoteOutcome::Applied),
-        ]);
-
-        let result = run_group_moderation_batch_with_actions(
-            &actions,
-            input(
-                GroupModerationBatchAction::AddRoles,
-                vec![target(
-                    "usr_target",
-                    &["grol_one", "grol_two", "grol_three"],
-                )],
-            ),
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(result.succeeded, 0);
-        assert_eq!(result.failed, 1);
-        assert_eq!(result.applied_operations, 2);
-        assert_eq!(result.failed_operations, 1);
-        assert_eq!(
-            result.items[0].state,
-            GroupModerationBatchItemState::PartiallyApplied
-        );
-        assert_eq!(
-            result.items[0].applied_role_ids,
-            vec!["grol_one", "grol_three"]
-        );
-        assert_eq!(result.items[0].failed_role_ids, vec!["grol_two"]);
-        assert_eq!(
-            *actions.calls.lock().unwrap(),
-            vec![
-                "add:grp_test:usr_target:grol_one",
-                "add:grp_test:usr_target:grol_two",
-                "add:grp_test:usr_target:grol_three",
-            ]
-        );
-    }
-
-    #[tokio::test]
-    async fn scope_change_after_remote_success_stops_remaining_targets() {
-        let actions = FakeActions::new(vec![Ok(GroupModerationRemoteOutcome::AppliedScopeChanged)]);
-
-        let result = run_group_moderation_batch_with_actions(
-            &actions,
-            input(
-                GroupModerationBatchAction::Ban,
-                vec![target("usr_a", &[]), target("usr_b", &[])],
-            ),
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(
-            result.items[0].state,
-            GroupModerationBatchItemState::Applied
-        );
-        assert_eq!(
-            result.items[1].state,
-            GroupModerationBatchItemState::NotAttempted
-        );
-        assert_eq!(actions.calls.lock().unwrap().len(), 1);
-    }
-
-    #[test]
-    fn input_rejects_more_than_the_operation_limit() {
-        let role_ids = (0..=GROUP_MODERATION_BATCH_MAX_OPERATIONS)
-            .map(|index| format!("grol_{index}"))
-            .collect();
-
-        let result = prepare_input(GroupModerationBatchInput {
-            expected_owner_user_id: "usr_self".into(),
-            expected_endpoint: String::new(),
-            group_id: "grp_test".into(),
-            action: GroupModerationBatchAction::RemoveRoles,
-            targets: vec![GroupModerationBatchTarget {
-                user_id: "usr_target".into(),
-                role_ids,
-            }],
-        });
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn coordinator_rejects_overlapping_batches_for_the_same_owner_and_group() {
-        let coordinator = GroupModerationBatchCoordinator::default();
-        let _running = coordinator.try_begin("usr_self", "grp_test").unwrap();
-
-        assert!(coordinator.try_begin("usr_self", "grp_test").is_err());
-        assert!(coordinator.try_begin("usr_other", "grp_test").is_ok());
-        assert!(coordinator.try_begin("usr_self", "grp_other").is_ok());
-    }
-}
+mod tests;

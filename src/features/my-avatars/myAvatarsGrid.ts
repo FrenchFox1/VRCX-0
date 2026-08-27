@@ -3,10 +3,6 @@ import {
     positionKnownSizeRows
 } from '@/lib/knownSizeVirtualRows';
 
-import {
-    MY_AVATARS_DEFAULT_GRID_DENSITY,
-    sanitizeMyAvatarsGridDensity
-} from './myAvatarsState';
 import type {
     MyAvatarRow,
     MyAvatarsGridDensity,
@@ -65,18 +61,10 @@ const MY_AVATARS_GRID_DENSITY_CONFIGS = Object.freeze({
     })
 });
 
-type MyAvatarsGridDensityKey = keyof typeof MY_AVATARS_GRID_DENSITY_CONFIGS;
-
 export function getMyAvatarsGridDensityConfig(
-    value: unknown
+    value: MyAvatarsGridDensity
 ): MyAvatarsGridDensityConfig {
-    const densityKey = sanitizeMyAvatarsGridDensity(
-        value
-    ) as MyAvatarsGridDensityKey;
-    return (
-        MY_AVATARS_GRID_DENSITY_CONFIGS[densityKey] ||
-        MY_AVATARS_GRID_DENSITY_CONFIGS[MY_AVATARS_DEFAULT_GRID_DENSITY]
-    );
+    return MY_AVATARS_GRID_DENSITY_CONFIGS[value];
 }
 
 type MyAvatarsGridMetricsInput = {
@@ -148,8 +136,8 @@ export function buildMyAvatarsGridRows({
 
 type VisibleMyAvatarsGridRowsInput = {
     gridRows: readonly MyAvatarsGridRow[] | null | undefined;
-    scrollTop: unknown;
-    viewportHeight: unknown;
+    scrollTop: number;
+    viewportHeight: number;
 };
 
 export function getVisibleMyAvatarsGridRows({
@@ -157,7 +145,7 @@ export function getVisibleMyAvatarsGridRows({
     scrollTop,
     viewportHeight
 }: VisibleMyAvatarsGridRowsInput) {
-    const overscan = Math.max(480, Number(viewportHeight) || 0);
+    const overscan = Math.max(480, viewportHeight);
     return getVisibleKnownSizeRows({
         rows: gridRows,
         scrollTop,

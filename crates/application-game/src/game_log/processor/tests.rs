@@ -1,18 +1,17 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+use vrcx_0_application_core::NoopWorldCachePort;
+use vrcx_0_contracts::game_log::{GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::storage::StorageService;
-use vrcx_0_persistence::DatabaseService;
 
-use crate::game_log::runtime_state::RuntimeSnapshot;
+use crate::game_log::runtime_state::RuntimeSnapshotStore;
 use crate::game_log::NoopGameLogHostActions;
-use crate::ImageCache;
+use crate::ports::{TestGameMediaPort, TestGameStateStore};
 use crate::Result;
 use crate::RuntimeAuthScope;
 use crate::RuntimeEventBus;
-use crate::{RuntimeSyncEngine, TaskSupervisor, WebClient};
+use crate::{GameStateStore, RuntimeSyncEngine, TaskSupervisor};
 use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivityFilters, OverlayActivityRuntime, OverlayActivitySink,
     OverlayActivitySnapshot, OverlayFavoriteGroups,
@@ -21,6 +20,7 @@ use vrcx_0_application_core::FriendProjection;
 use vrcx_0_core::game_process::GameProcessEvent;
 
 use super::{GameLogProcessEvent, GameLogProcessor, GameLogProcessorDeps, GameLogWorkerJob};
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Default)]
 struct RecordingOverlaySink {
@@ -72,37 +72,51 @@ fn event(created_at: &str, kind: GameLogEventKind) -> GameLogEvent {
     }
 }
 
-fn test_processor(name: &str) -> Result<(TestDir, Arc<DatabaseService>, GameLogProcessor)> {
+fn test_processor(name: &str) -> Result<(TestDir, Arc<TestGameStateStore>, GameLogProcessor)> {
     let dir = TestDir::new(name);
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    let processor = build_test_processor(&dir, Arc::clone(&db))?;
-    Ok((dir, db, processor))
+    let store = Arc::new(TestGameStateStore::default());
+    let processor = build_test_processor(Arc::clone(&store))?;
+    Ok((dir, store, processor))
 }
 
-fn build_test_processor(dir: &TestDir, db: Arc<DatabaseService>) -> Result<GameLogProcessor> {
-    let storage = StorageService::new(&dir.path.join("VRCX-0.json"))?;
-    let web = Arc::new(WebClient::new(
-        &storage,
-        &db,
-        "https://app.example".into(),
-        env!("CARGO_PKG_VERSION"),
-    )?);
-    let image_fetcher = web.image_fetcher()?;
-    let image_cache = Arc::new(ImageCache::new(dir.path.join("ImageCache"), image_fetcher)?);
-    let world_cache = Arc::new(crate::WorldCache::new(
-        Arc::clone(&db),
-        512,
-        std::time::Duration::from_secs(30 * 60),
-    ));
+#[test]
+fn side_effect_dependencies_capture_the_authenticated_identity() -> Result<()> {
+    let (_dir, _db, processor) = test_processor("runtime-gamelog-captured-identity")?;
+    processor
+        .deps
+        .auth_scope
+        .set_identity("usr_first", "First User", "");
+
+    let captured = processor.side_effect_deps();
+    processor
+        .deps
+        .auth_scope
+        .set_identity("usr_second", "Second User", "");
+
+    assert_eq!(captured.auth_identity.user_id, "usr_first");
+    assert_eq!(captured.auth_identity.display_name, "First User");
+    Ok(())
+}
+
+fn build_test_processor(store: Arc<TestGameStateStore>) -> Result<GameLogProcessor> {
+    let world_cache = Arc::new(crate::WorldCache::new(NoopWorldCachePort));
+    let event_bus = RuntimeEventBus::new();
     let processor = GameLogProcessor::new(GameLogProcessorDeps {
-        db: Arc::clone(&db),
-        web,
-        image_cache,
-        event_bus: RuntimeEventBus::new(),
+        store,
+        instance_media: Arc::new(TestGameMediaPort),
+        video_metadata: Arc::new(TestGameMediaPort),
+        event_bus: event_bus.clone(),
+        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
+            vrcx_0_application_core::BackendRuntime::new(
+                vrcx_0_application_core::RuntimeHostProfile::Desktop,
+            ),
+            event_bus.clone(),
+        ),
+        side_effect_sink: crate::GameLogSideEffectSink::new(event_bus, None),
         tasks: TaskSupervisor::new(),
         sync: RuntimeSyncEngine::new(),
         auth_scope: RuntimeAuthScope::new(),
-        snapshot: Arc::new(Mutex::new(RuntimeSnapshot::default())),
+        snapshot: RuntimeSnapshotStore::default(),
         host_actions: Arc::new(NoopGameLogHostActions),
         overlay_activity: OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(
             serde_json::json!({
@@ -122,13 +136,14 @@ fn build_test_processor(dir: &TestDir, db: Arc<DatabaseService>) -> Result<GameL
             }),
         )),
         world_cache,
+        instance_roster_observer: None,
     });
     Ok(processor)
 }
 
 #[test]
 fn tracks_location_players_and_session_duration() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-ingest")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-ingest")?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -153,9 +168,9 @@ fn tracks_location_players_and_session_duration() -> Result<()> {
         )),
     ])?;
 
-    let locations = vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?;
+    let locations = store.locations(&OwnerId::new(""));
     assert_eq!(locations[0].time, 40000);
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
+    let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 2);
     assert_eq!(join_leave[0].event_type, "OnPlayerJoined");
     assert_eq!(join_leave[1].event_type, "OnPlayerLeft");
@@ -166,7 +181,7 @@ fn tracks_location_players_and_session_duration() -> Result<()> {
 
 #[test]
 fn enabled_initial_scan_keeps_persistence_and_side_effects() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-enabled-initial")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-enabled-initial")?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::InitialEvent(event(
@@ -182,11 +197,8 @@ fn enabled_initial_scan_keeps_persistence_and_side_effects() -> Result<()> {
         )),
     ])?;
 
-    assert_eq!(
-        vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?.len(),
-        1
-    );
-    assert!(config_store::get_bool(&db, "isGameNoVR", false)?);
+    assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
+    assert!(store.get_bool("isGameNoVR", false)?);
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
         event.name == "backendRuntimeTelemetry"
@@ -198,7 +210,7 @@ fn enabled_initial_scan_keeps_persistence_and_side_effects() -> Result<()> {
 
 #[test]
 fn enabled_process_stop_keeps_session_closure_and_side_effect_order() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-enabled-stop")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-enabled-stop")?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -218,9 +230,9 @@ fn enabled_process_stop_keeps_session_closure_and_side_effect_order() -> Result<
         }),
     ])?;
 
-    let locations = vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?;
+    let locations = store.locations(&OwnerId::new(""));
     assert_eq!(locations[0].time, 300_000);
-    assert!(processor.deps.snapshot.lock().unwrap().location.is_empty());
+    assert!(processor.deps.snapshot.snapshot().location.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     let persisted_index = events
         .iter()
@@ -244,8 +256,8 @@ fn enabled_process_stop_keeps_session_closure_and_side_effect_order() -> Result<
 
 #[test]
 fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-disabled")?;
-    config_store::set_bool(&db, "gameLogDisabled", true)?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-disabled")?;
+    store.set_bool("gameLogDisabled", true)?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -268,11 +280,11 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
         )),
     ])?;
 
-    assert!(vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?.is_empty());
-    let snapshot = processor.deps.snapshot.lock().unwrap().clone();
+    assert!(store.locations(&OwnerId::new("")).is_empty());
+    let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_disabled:1");
     assert_eq!(snapshot.players[0].user_id, "usr_live");
-    assert!(config_store::get_bool(&db, "isGameNoVR", false)?);
+    assert!(store.get_bool("isGameNoVR", false)?);
     assert_eq!(
         processor.deps.overlay_activity.snapshot().entries[0].actor_user_id,
         "usr_live"
@@ -290,8 +302,8 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
 
 #[test]
 fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-disabled-replay")?;
-    config_store::set_bool(&db, "gameLogDisabled", true)?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-disabled-replay")?;
+    store.set_bool("gameLogDisabled", true)?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::InitialEvent(event(
@@ -314,11 +326,11 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         )),
     ])?;
 
-    assert!(!vrcx_0_persistence::game_log::game_log_location_table_exists(&db)?);
-    let snapshot = processor.deps.snapshot.lock().unwrap().clone();
+    assert!(!store.tables_exist());
+    let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_replay:1");
     assert_eq!(snapshot.players[0].user_id, "usr_replay");
-    assert!(!config_store::get_bool(&db, "isGameNoVR", false)?);
+    assert!(!store.get_bool("isGameNoVR", false)?);
     assert!(processor
         .deps
         .overlay_activity
@@ -330,7 +342,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
 
 #[test]
 fn resume_cutoff_splits_queued_live_events_without_backfilling() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-resume-cutoff")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-resume-cutoff")?;
     processor.set_persistence_resume_after("2026-05-14T05:20:30.000Z");
 
     processor.handle_jobs(vec![
@@ -349,17 +361,17 @@ fn resume_cutoff_splits_queued_live_events_without_backfilling() -> Result<()> {
             },
         )),
     ])?;
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
+    let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 1);
     assert_eq!(join_leave[0].user_id, "usr_after_resume");
-    assert!(vrcx_0_persistence::game_log::get_game_log_locations(&db, "")?.is_empty());
+    assert!(store.locations(&OwnerId::new("")).is_empty());
     Ok(())
 }
 
 #[test]
 fn disabled_process_stop_clears_memory_without_persisting_session_closure() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-disabled-stop")?;
-    config_store::set_bool(&db, "gameLogDisabled", true)?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-disabled-stop")?;
+    store.set_bool("gameLogDisabled", true)?;
     processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
         "2026-05-14T05:30:00.000Z",
         GameLogEventKind::Location {
@@ -378,8 +390,8 @@ fn disabled_process_stop_clears_memory_without_persisting_session_closure() -> R
         changed_at: "2026-05-14T05:35:00.000Z".into(),
     })])?;
 
-    assert!(processor.deps.snapshot.lock().unwrap().location.is_empty());
-    assert!(!vrcx_0_persistence::game_log::game_log_location_table_exists(&db)?);
+    assert!(processor.deps.snapshot.snapshot().location.is_empty());
+    assert!(!store.tables_exist());
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
         event.name == "gameLogSideEffect"
@@ -390,7 +402,7 @@ fn disabled_process_stop_clears_memory_without_persisting_session_closure() -> R
 
 #[test]
 fn resume_cutoff_skips_a_queued_process_stop_closure() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-resume-stop")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-resume-stop")?;
     processor.set_persistence_resume_after("2026-05-14T05:45:00.000Z");
     processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
         "2026-05-14T05:40:00.000Z",
@@ -410,8 +422,8 @@ fn resume_cutoff_skips_a_queued_process_stop_closure() -> Result<()> {
         changed_at: "2026-05-14T05:44:00.000Z".into(),
     })])?;
 
-    assert!(!vrcx_0_persistence::game_log::game_log_location_table_exists(&db)?);
-    assert!(processor.deps.snapshot.lock().unwrap().location.is_empty());
+    assert!(!store.tables_exist());
+    assert!(processor.deps.snapshot.snapshot().location.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
         event.name == "gameLogSideEffect"
@@ -446,14 +458,8 @@ fn emits_runtime_persisted_mirror_after_worker_write() -> Result<()> {
 
 #[test]
 fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-write-failure")?;
-    let connection = rusqlite::Connection::open(db.db_path()).unwrap();
-    connection
-        .execute(
-            "CREATE TABLE gamelog_location (id INTEGER PRIMARY KEY, broken TEXT)",
-            [],
-        )
-        .unwrap();
+    let (_dir, store, processor) = test_processor("runtime-gamelog-write-failure")?;
+    store.set_fail_writes(true);
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -469,7 +475,7 @@ fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<
         )),
     ])?;
 
-    assert!(config_store::get_bool(&db, "isGameNoVR", false)?);
+    assert!(store.get_bool("isGameNoVR", false)?);
     assert!(processor
         .deps
         .overlay_activity
@@ -530,7 +536,7 @@ fn join_leave_events_reuse_current_world_name_for_overlay_content() -> Result<()
 
 #[test]
 fn suppresses_initial_current_instance_join_overlay_notifications() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-join-suppress")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-join-suppress")?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -549,7 +555,7 @@ fn suppresses_initial_current_instance_join_overlay_notifications() -> Result<()
         )),
     ])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
+    let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 1);
     assert!(processor
         .deps
@@ -562,13 +568,12 @@ fn suppresses_initial_current_instance_join_overlay_notifications() -> Result<()
 
 #[test]
 fn suppresses_seeded_location_join_overlay_notifications() -> Result<()> {
-    let dir = TestDir::new("runtime-gamelog-seeded-join-suppress");
-    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-    vrcx_0_persistence::game_log::write_batch(
-        &db,
-        "",
-        &vrcx_0_persistence::game_log::GameLogWriteBatch {
-            locations: vec![vrcx_0_persistence::game_log::GameLogLocationEntry {
+    let _dir = TestDir::new("runtime-gamelog-seeded-join-suppress");
+    let store = Arc::new(TestGameStateStore::default());
+    store.write_game_log(
+        &OwnerId::new(""),
+        &GameLogWriteBatch {
+            locations: vec![GameLogLocationEntry {
                 created_at: "2026-05-14T08:05:00.000Z".into(),
                 location: "wrld_seeded:123".into(),
                 world_id: "wrld_seeded".into(),
@@ -576,10 +581,10 @@ fn suppresses_seeded_location_join_overlay_notifications() -> Result<()> {
                 time: 0,
                 group_name: String::new(),
             }],
-            ..vrcx_0_persistence::game_log::GameLogWriteBatch::default()
+            ..GameLogWriteBatch::default()
         },
     )?;
-    let processor = build_test_processor(&dir, Arc::clone(&db))?;
+    let processor = build_test_processor(Arc::clone(&store))?;
 
     processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
         "2026-05-14T08:05:10.000Z",
@@ -589,7 +594,7 @@ fn suppresses_seeded_location_join_overlay_notifications() -> Result<()> {
         },
     ))])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
+    let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 1);
     assert!(processor
         .deps
@@ -697,7 +702,8 @@ fn game_log_presence_enables_current_instance_gps_surface_filtering() -> Result<
             "userId": "usr_selected",
             "displayName": "Selected Friend",
             "location": "wrld_current:123"
-        })],
+        })
+        .into()],
         ..FriendProjection::new(0, 0)
     });
 
@@ -714,7 +720,7 @@ fn game_log_presence_enables_current_instance_gps_surface_filtering() -> Result<
 
 #[test]
 fn suppresses_leave_overlay_notifications_right_after_destination() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-leave-suppress")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-leave-suppress")?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -739,7 +745,7 @@ fn suppresses_leave_overlay_notifications_right_after_destination() -> Result<()
         )),
     ])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "")?;
+    let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 2);
     let entries = processor.deps.overlay_activity.snapshot().entries;
     assert_eq!(entries.len(), 1);
@@ -749,7 +755,7 @@ fn suppresses_leave_overlay_notifications_right_after_destination() -> Result<()
 
 #[test]
 fn suppresses_current_user_join_leave_overlay_notifications() -> Result<()> {
-    let (_dir, db, processor) = test_processor("runtime-gamelog-current-user-suppress")?;
+    let (_dir, store, processor) = test_processor("runtime-gamelog-current-user-suppress")?;
     processor
         .deps
         .auth_scope
@@ -778,7 +784,7 @@ fn suppresses_current_user_join_leave_overlay_notifications() -> Result<()> {
         )),
     ])?;
 
-    let join_leave = vrcx_0_persistence::game_log::get_game_log_join_leave(&db, "usr_self")?;
+    let join_leave = store.join_leave(&OwnerId::new("usr_self"));
     assert_eq!(join_leave.len(), 2);
     assert!(processor
         .deps

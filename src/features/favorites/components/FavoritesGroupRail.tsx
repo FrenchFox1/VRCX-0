@@ -12,7 +12,9 @@ import type { LucideIcon } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { EmptyState } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
+import type { FavoriteGroupVisibility } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -30,13 +32,12 @@ import { Input } from '@/ui/shadcn/input';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
 
-import type { FavoriteGroup, FavoriteSource } from '../favoritesTypes';
+import type { FavoriteGroupView, FavoriteSource } from '../favoritesTypes';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'] as const;
-type FavoriteVisibility = (typeof VISIBILITY_OPTIONS)[number];
 
 const VISIBILITY_META: Record<
-    FavoriteVisibility,
+    FavoriteGroupVisibility,
     { labelKey: string; icon: LucideIcon }
 > = {
     public: { labelKey: 'view.favorite.visibility.public', icon: GlobeIcon },
@@ -44,12 +45,19 @@ const VISIBILITY_META: Record<
     private: { labelKey: 'view.favorite.visibility.private', icon: LockIcon }
 };
 
+function isFavoriteGroupVisibility(
+    visibility: string
+): visibility is FavoriteGroupVisibility {
+    return VISIBILITY_OPTIONS.some((option) => option === visibility);
+}
+
 function getVisibilityLabel(
     t: ReturnType<typeof useTranslation>['t'],
     visibility: string
 ) {
-    const meta = VISIBILITY_META[visibility as FavoriteVisibility];
-    return meta ? t(meta.labelKey) : visibility;
+    return isFavoriteGroupVisibility(visibility)
+        ? t(VISIBILITY_META[visibility].labelKey)
+        : visibility;
 }
 
 function GroupVisibilityIcon({
@@ -59,14 +67,14 @@ function GroupVisibilityIcon({
     visibility: string;
     label: string;
 }) {
-    const meta = VISIBILITY_META[visibility as FavoriteVisibility];
-    if (!meta) {
+    if (!isFavoriteGroupVisibility(visibility)) {
         return (
             <span className="text-muted-foreground shrink-0 text-xs">
                 {label}
             </span>
         );
     }
+    const meta = VISIBILITY_META[visibility];
     return (
         <span className="shrink-0" title={label}>
             <meta.icon
@@ -111,18 +119,18 @@ function GroupCapacityMeter({
     );
 }
 
-type FavoriteGroupHandler = (group: FavoriteGroup) => void | Promise<void>;
+type FavoriteGroupHandler = (group: FavoriteGroupView) => void | Promise<void>;
 
 type GroupMenuProps = {
-    group: FavoriteGroup;
-    onRemoteRename: FavoriteGroupHandler;
-    onRemoteVisibility(
-        group: FavoriteGroup,
-        visibility: FavoriteVisibility
+    group: FavoriteGroupView;
+    onRemoteRename?: FavoriteGroupHandler;
+    onRemoteVisibility?(
+        group: FavoriteGroupView,
+        visibility: FavoriteGroupVisibility
     ): void | Promise<void>;
-    onRemoteClear: FavoriteGroupHandler;
-    onLocalRename: FavoriteGroupHandler;
-    onLocalDelete: FavoriteGroupHandler;
+    onRemoteClear?: FavoriteGroupHandler;
+    onLocalRename?: FavoriteGroupHandler;
+    onLocalDelete?: FavoriteGroupHandler;
     onHistoryClear?: FavoriteGroupHandler;
     onShareCollection?: FavoriteGroupHandler;
 };
@@ -207,44 +215,54 @@ function GroupMenu({
                                 )}
                             </DropdownMenuItem>
                         ) : null}
-                        <DropdownMenuItem onClick={() => onRemoteRename(group)}>
-                            {t('view.favorite.rename_tooltip')}
-                        </DropdownMenuItem>
+                        {onRemoteRename ? (
+                            <DropdownMenuItem
+                                onClick={() => onRemoteRename(group)}
+                            >
+                                {t('view.favorite.rename_tooltip')}
+                            </DropdownMenuItem>
+                        ) : null}
                     </DropdownMenuGroup>
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                            {t('view.favorite.label.visibility')}
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="w-40">
+                    {onRemoteVisibility ? (
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                {t('view.favorite.label.visibility')}
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="w-40">
+                                <DropdownMenuGroup>
+                                    {VISIBILITY_OPTIONS.map((visibility) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={visibility}
+                                            checked={
+                                                group.visibility === visibility
+                                            }
+                                            onClick={() =>
+                                                onRemoteVisibility(
+                                                    group,
+                                                    visibility
+                                                )
+                                            }
+                                        >
+                                            {getVisibilityLabel(t, visibility)}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuGroup>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                    ) : null}
+                    {onRemoteClear ? (
+                        <>
+                            <DropdownMenuSeparator />
                             <DropdownMenuGroup>
-                                {VISIBILITY_OPTIONS.map((visibility) => (
-                                    <DropdownMenuCheckboxItem
-                                        key={visibility}
-                                        checked={
-                                            group.visibility === visibility
-                                        }
-                                        onClick={() =>
-                                            onRemoteVisibility(
-                                                group,
-                                                visibility
-                                            )
-                                        }
-                                    >
-                                        {getVisibilityLabel(t, visibility)}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={() => onRemoteClear(group)}
+                                >
+                                    {t('common.actions.clear')}
+                                </DropdownMenuItem>
                             </DropdownMenuGroup>
-                        </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
-                        <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => onRemoteClear(group)}
-                        >
-                            {t('common.actions.clear')}
-                        </DropdownMenuItem>
-                    </DropdownMenuGroup>
+                        </>
+                    ) : null}
                 </DropdownMenuContent>
             </DropdownMenu>
         );
@@ -276,15 +294,19 @@ function GroupMenu({
                             {t('view.favorite.share_collection.action.menu')}
                         </DropdownMenuItem>
                     ) : null}
-                    <DropdownMenuItem onClick={() => onLocalRename(group)}>
-                        {t('view.favorite.rename_tooltip')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => onLocalDelete(group)}
-                    >
-                        {t('common.actions.delete')}
-                    </DropdownMenuItem>
+                    {onLocalRename ? (
+                        <DropdownMenuItem onClick={() => onLocalRename(group)}>
+                            {t('view.favorite.rename_tooltip')}
+                        </DropdownMenuItem>
+                    ) : null}
+                    {onLocalDelete ? (
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => onLocalDelete(group)}
+                        >
+                            {t('common.actions.delete')}
+                        </DropdownMenuItem>
+                    ) : null}
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
@@ -294,7 +316,9 @@ function GroupMenu({
 type GroupRailSectionProps = {
     title: string;
     icon: LucideIcon;
-    groups: FavoriteGroup[];
+    emptyTitle: string;
+    emptyDescription: string;
+    groups: FavoriteGroupView[];
     selectedSource: FavoriteSource | '';
     selectedGroupKey: string;
     loading?: boolean;
@@ -302,20 +326,20 @@ type GroupRailSectionProps = {
     newGroupName?: string;
     newGroupLabel?: string;
     showNewGroup?: boolean;
-    onRefresh?(): void | Promise<unknown>;
+    onRefresh?(): void;
     onSelect: FavoriteGroupHandler;
     onStartCreate?(): void;
     onNewGroupNameChange?(value: string): void;
     onConfirmCreate?(): void | Promise<void>;
     onCancelCreate?(): void;
-    onRemoteRename: FavoriteGroupHandler;
-    onRemoteVisibility(
-        group: FavoriteGroup,
-        visibility: FavoriteVisibility
+    onRemoteRename?: FavoriteGroupHandler;
+    onRemoteVisibility?(
+        group: FavoriteGroupView,
+        visibility: FavoriteGroupVisibility
     ): void | Promise<void>;
-    onRemoteClear: FavoriteGroupHandler;
-    onLocalRename: FavoriteGroupHandler;
-    onLocalDelete: FavoriteGroupHandler;
+    onRemoteClear?: FavoriteGroupHandler;
+    onLocalRename?: FavoriteGroupHandler;
+    onLocalDelete?: FavoriteGroupHandler;
     onHistoryClear?: FavoriteGroupHandler;
     onShareCollection?: FavoriteGroupHandler;
 };
@@ -323,6 +347,8 @@ type GroupRailSectionProps = {
 const GroupRailSection = memo(function GroupRailSection({
     title,
     icon: SectionIcon,
+    emptyTitle,
+    emptyDescription,
     groups,
     selectedSource,
     selectedGroupKey,
@@ -395,6 +421,19 @@ const GroupRailSection = memo(function GroupRailSection({
                         const isActive =
                             selectedSource === group.source &&
                             selectedGroupKey === group.key;
+                        let hasMenu = Boolean(
+                            onShareCollection || onLocalRename || onLocalDelete
+                        );
+                        if (group.source === 'history') {
+                            hasMenu = Boolean(onHistoryClear);
+                        } else if (group.source === 'remote') {
+                            hasMenu = Boolean(
+                                onShareCollection ||
+                                onRemoteRename ||
+                                onRemoteVisibility ||
+                                onRemoteClear
+                            );
+                        }
                         const visibilityLabel = group.visibility
                             ? getVisibilityLabel(t, group.visibility)
                             : null;
@@ -441,25 +480,36 @@ const GroupRailSection = memo(function GroupRailSection({
                                         ) : null}
                                     </span>
                                 </Button>
-                                <div className="shrink-0 pr-1">
-                                    <GroupMenu
-                                        group={group}
-                                        onRemoteRename={onRemoteRename}
-                                        onRemoteVisibility={onRemoteVisibility}
-                                        onRemoteClear={onRemoteClear}
-                                        onLocalRename={onLocalRename}
-                                        onLocalDelete={onLocalDelete}
-                                        onHistoryClear={onHistoryClear}
-                                        onShareCollection={onShareCollection}
-                                    />
-                                </div>
+                                {hasMenu ? (
+                                    <div className="shrink-0 pr-1">
+                                        <GroupMenu
+                                            group={group}
+                                            onRemoteRename={onRemoteRename}
+                                            onRemoteVisibility={
+                                                onRemoteVisibility
+                                            }
+                                            onRemoteClear={onRemoteClear}
+                                            onLocalRename={onLocalRename}
+                                            onLocalDelete={onLocalDelete}
+                                            onHistoryClear={onHistoryClear}
+                                            onShareCollection={
+                                                onShareCollection
+                                            }
+                                        />
+                                    </div>
+                                ) : null}
                             </div>
                         );
                     })
                 ) : (
-                    <div className="text-muted-foreground py-3 text-center text-xs">
-                        {t('common.no_data')}
-                    </div>
+                    <EmptyState
+                        variant="inline"
+                        title={emptyTitle}
+                        description={emptyDescription}
+                        className="min-h-24 border-0 px-2 py-4"
+                        contentClassName="gap-1"
+                        descriptionClassName="text-xs"
+                    />
                 )}
                 {showNewGroup && !creating ? (
                     <Button

@@ -3,7 +3,7 @@ mod tests {
     use super::super::*;
 
     fn runtime_with_online_status(status: &str) -> RealtimeFriendsRuntime {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -13,7 +13,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         status: status.into(),
                         ..FriendRecord::default()
                     },
@@ -30,7 +29,7 @@ mod tests {
 
     #[test]
     fn refetched_profile_trust_change_upserts_and_projects_once() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -40,7 +39,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "offline".into(),
                         extra: [
                             ("$trustLevel".into(), json!("User")),
@@ -128,7 +126,7 @@ mod tests {
 
     #[test]
     fn refetched_friend_profile_updates_offline_real_location_to_online() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -138,7 +136,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "offline".into(),
-                        state_bucket: "offline".into(),
                         location: "wrld_2:456".into(),
                         ..FriendRecord::default()
                     },
@@ -171,7 +168,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(
             runtime
                 .snapshot()
@@ -179,14 +176,14 @@ mod tests {
                 .friends_by_id
                 .get("usr_friend")
                 .unwrap()
-                .state_bucket,
+                .state,
             "online"
         );
     }
 
     #[test]
     fn refetched_friend_profile_does_not_emit_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -196,7 +193,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         status_description: "Old status".into(),
@@ -233,7 +229,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "offline");
+        assert_eq!(output.projection.patches[0].patch.state, "offline");
         assert!(output.persistence.feed_entries.is_empty());
         assert!(output.projection.feed_entries.is_empty());
         assert_eq!(
@@ -243,14 +239,14 @@ mod tests {
                 .friends_by_id
                 .get("usr_friend")
                 .unwrap()
-                .state_bucket,
+                .state,
             "offline"
         );
     }
 
     #[test]
     fn refetched_offline_profile_finalizes_pending_offline_without_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -260,7 +256,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         status_description: "Old status".into(),
@@ -321,7 +316,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "offline");
+        assert_eq!(output.projection.patches[0].patch.state, "offline");
         assert!(output.persistence.feed_entries.is_empty());
         assert_eq!(
             output.projection.patches[0].patch.extra["pendingOffline"],
@@ -334,7 +329,7 @@ mod tests {
 
     #[test]
     fn refetched_online_profile_cancels_pending_offline_timer() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -344,7 +339,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         ..FriendRecord::default()
                     },
@@ -401,7 +395,7 @@ mod tests {
             panic!("refetched friend profile should produce an output");
         };
 
-        assert_eq!(output.projection.patches[0].state_bucket, "online");
+        assert_eq!(output.projection.patches[0].patch.state, "online");
         assert_eq!(
             output.projection.patches[0].patch.extra["pendingOffline"],
             false
@@ -561,7 +555,7 @@ mod tests {
         let snapshot = runtime.snapshot().unwrap();
         let friend = &snapshot.friends_by_id["usr_friend"];
         assert_eq!(friend.location, "wrld_new:123");
-        assert_eq!(friend.state_bucket, "online");
+        assert_eq!(friend.state, "online");
     }
 
     #[test]
@@ -597,7 +591,7 @@ mod tests {
 
     #[test]
     fn refetched_profile_does_not_add_unknown_friend() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),

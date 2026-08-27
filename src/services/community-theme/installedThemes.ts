@@ -3,7 +3,7 @@ import type {
     CommunityThemeInstallMetadata,
     CommunityThemeManifest,
     CommunityThemeStatsById
-} from '@/features/themes/communityThemeTypes';
+} from '@/domain/themes/types';
 import {
     commands,
     type CommunityThemeConfigureInput,

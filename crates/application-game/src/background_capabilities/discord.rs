@@ -1,16 +1,11 @@
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
-use serde_json::Value;
+use vrcx_0_core::json::RawJson;
 use vrcx_0_core::location::{parse_location, ParsedLocation};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::groups::profile_get_input as group_profile_get_input;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
-use vrcx_0_vrchat_client::worlds::world_get_input;
 
-use crate::{Result, WebClient};
+use crate::{BackgroundRemoteApi, GameStateStore, Result};
 
 use super::presence_facts::BackgroundPresenceFacts;
 use super::shared::{parse_response_json, string_field};
@@ -62,7 +57,7 @@ impl BackgroundDiscordPresenceState {
 #[serde(rename_all = "camelCase")]
 pub struct BackgroundDiscordActivityPayload {
     pub app_id: String,
-    pub activity: Value,
+    pub activity: RawJson,
     pub detail: String,
 }
 
@@ -185,9 +180,8 @@ impl DiscordLocationDetails {
 }
 
 pub async fn build_background_discord_presence_command(
-    config: &ConfigRepository,
-    web: &WebClient,
-    db: &DatabaseService,
+    config: &dyn GameStateStore,
+    remote: &dyn BackgroundRemoteApi,
     facts: &BackgroundPresenceFacts,
     labels: &DiscordPresenceLabels,
     state: &mut BackgroundDiscordPresenceState,
@@ -251,7 +245,7 @@ pub async fn build_background_discord_presence_command(
     }
 
     let location_details =
-        load_discord_location_details(web, db, facts, state, discord_location).await?;
+        load_discord_location_details(remote, facts, state, discord_location).await?;
     let Some(parsed) = location_details.parsed.clone() else {
         return Ok(BackgroundDiscordPresenceCommand::Clear {
             detail: "Current location is not a Discord instance.".into(),
@@ -276,7 +270,7 @@ fn set_assets_or_noop(
     BackgroundDiscordPresenceCommand::SetAssets { payload }
 }
 
-fn load_discord_config(config: &ConfigRepository) -> Result<DiscordConfig> {
+fn load_discord_config(config: &dyn GameStateStore) -> Result<DiscordConfig> {
     Ok(DiscordConfig {
         discord_active: config.get_bool("discordActive", false)?,
         discord_instance: config.get_bool("discordInstance", true)?,
@@ -291,8 +285,7 @@ fn load_discord_config(config: &ConfigRepository) -> Result<DiscordConfig> {
 }
 
 async fn load_discord_location_details(
-    web: &WebClient,
-    db: &DatabaseService,
+    remote: &dyn BackgroundRemoteApi,
     facts: &BackgroundPresenceFacts,
     state: &mut BackgroundDiscordPresenceState,
     current_location: &str,
@@ -314,11 +307,7 @@ async fn load_discord_location_details(
     };
     details.enrichment_retry_at = None;
     if !parsed.world_id.is_empty() && !details.world_lookup_complete {
-        let (_, request) = world_get_input(
-            normalize_vrchat_api_endpoint(Some(&facts.endpoint)),
-            parsed.world_id.clone(),
-        )?;
-        match web.execute_api(request, ApiScope::Vrchat, db).await {
+        match remote.get_world(&facts.endpoint, &parsed.world_id).await {
             Ok(response) if (200..=299).contains(&response.status) => {
                 if let Some(world) = parse_response_json(&response.data) {
                     details.world_name =
@@ -366,12 +355,7 @@ async fn load_discord_location_details(
         .as_ref()
         .filter(|value| !value.is_empty() && !details.group_lookup_complete)
     {
-        let (_, request) = group_profile_get_input(
-            normalize_vrchat_api_endpoint(Some(&facts.endpoint)),
-            group_id.clone(),
-            false,
-        )?;
-        match web.execute_api(request, ApiScope::Vrchat, db).await {
+        match remote.get_group(&facts.endpoint, group_id).await {
             Ok(response) if (200..=299).contains(&response.status) => {
                 if let Some(group) = parse_response_json(&response.data) {
                     details.group_name = string_field(&group, "name").unwrap_or_default();

@@ -14,11 +14,6 @@ use slint::{
     },
     ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer,
 };
-#[cfg(feature = "friends-panel")]
-use slint::{
-    platform::{PointerEventButton, WindowEvent},
-    LogicalPosition,
-};
 
 use crate::{AvatarBitmap, OverlaySize, RgbaFrame};
 
@@ -42,30 +37,6 @@ impl Platform for OverlaySlintPlatform {
         });
         Ok(window)
     }
-}
-
-#[cfg(feature = "friends-panel")]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SlintPanelPointerEvent {
-    Moved {
-        x: f32,
-        y: f32,
-    },
-    Pressed {
-        x: f32,
-        y: f32,
-    },
-    Released {
-        x: f32,
-        y: f32,
-    },
-    Scrolled {
-        x: f32,
-        y: f32,
-        delta_x: f32,
-        delta_y: f32,
-    },
-    Exited,
 }
 
 pub(super) type AvatarImageCache = HashMap<usize, (Arc<[u8]>, Image)>;
@@ -145,49 +116,24 @@ where
     Ok((component, window))
 }
 
-#[cfg(feature = "friends-panel")]
-pub(super) fn to_window_event(event: SlintPanelPointerEvent) -> WindowEvent {
-    match event {
-        SlintPanelPointerEvent::Moved { x, y } => WindowEvent::PointerMoved {
-            position: LogicalPosition::new(x, y),
-        },
-        SlintPanelPointerEvent::Pressed { x, y } => WindowEvent::PointerPressed {
-            position: LogicalPosition::new(x, y),
-            button: PointerEventButton::Left,
-        },
-        SlintPanelPointerEvent::Released { x, y } => WindowEvent::PointerReleased {
-            position: LogicalPosition::new(x, y),
-            button: PointerEventButton::Left,
-        },
-        SlintPanelPointerEvent::Scrolled {
-            x,
-            y,
-            delta_x,
-            delta_y,
-        } => WindowEvent::PointerScrolled {
-            position: LogicalPosition::new(x, y),
-            delta_x,
-            delta_y,
-        },
-        SlintPanelPointerEvent::Exited => WindowEvent::PointerExited,
-    }
-}
-
 pub(super) fn pixel_count(size: OverlaySize) -> Result<usize, String> {
     RgbaFrame::expected_byte_len(size)
         .map(|bytes| bytes / 4)
         .ok_or_else(|| format!("invalid Slint panel size {}x{}", size.width, size.height))
 }
 
-pub(super) fn pixels_to_rgba(pixels: &[PremultipliedRgbaColor]) -> Vec<u8> {
-    let mut rgba = Vec::with_capacity(pixels.len() * 4);
-    for pixel in pixels {
-        rgba.push(pixel.red);
-        rgba.push(pixel.green);
-        rgba.push(pixel.blue);
-        rgba.push(pixel.alpha);
-    }
-    rgba
+pub(super) fn pixels_to_rgba(pixels: &[PremultipliedRgbaColor]) -> Arc<[u8]> {
+    (0..pixels.len() * 4)
+        .map(|index| {
+            let pixel = &pixels[index / 4];
+            match index % 4 {
+                0 => pixel.red,
+                1 => pixel.green,
+                2 => pixel.blue,
+                _ => pixel.alpha,
+            }
+        })
+        .collect()
 }
 
 pub(super) fn to_slint_color(color: crate::Color) -> slint::Color {
@@ -220,4 +166,26 @@ fn avatar_image(avatar: Option<&AvatarBitmap>) -> (bool, Image) {
         avatar.height,
     );
     (true, Image::from_rgba8(buffer))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pixels_to_rgba_produces_shared_frame_storage_directly() {
+        let pixels = [PremultipliedRgbaColor {
+            red: 1,
+            green: 2,
+            blue: 3,
+            alpha: 4,
+        }];
+
+        let rgba: Arc<[u8]> = pixels_to_rgba(&pixels);
+        let data_ptr = rgba.as_ptr();
+        let frame = RgbaFrame::new(OverlaySize::new(1, 1), rgba);
+
+        assert_eq!(frame.data.as_ptr(), data_ptr);
+        assert_eq!(frame.data.as_ref(), &[1, 2, 3, 4]);
+    }
 }

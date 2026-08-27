@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 
-type FavoriteImportType = 'avatar' | 'world' | 'friend';
+import type { FavoriteEntityKind } from '@/platform/tauri/bindings';
+
+type FavoriteImportType = FavoriteEntityKind;
 export type FavoriteImportRow = {
     id: string;
     [key: string]: unknown;
 };
 type FavoriteImportOpenOptions = {
-    type?: unknown;
-    input?: unknown;
+    type?: FavoriteImportType;
+    input?: string;
 };
 type FavoriteImportStore = {
     open: boolean;
@@ -26,16 +28,16 @@ type FavoriteImportStore = {
     openDialog(options?: FavoriteImportOpenOptions): void;
     closeDialog(): void;
     cancelActiveWork(): void;
-    setInput(input: unknown): void;
-    setLoading(loading: unknown): void;
+    setInput(input: string): void;
+    setLoading(loading: boolean): void;
     setProgress(progress: number, progressTotal: number): void;
     setImportProgress(
         importProgress: number,
         importProgressTotal: number
     ): void;
-    setErrors(errors: unknown): void;
-    appendError(error: unknown): void;
-    setRows(rows: unknown): void;
+    setErrors(errors: string): void;
+    appendError(error: string): void;
+    setRows(rows: FavoriteImportRow[]): void;
     addRow(row: FavoriteImportRow | null | undefined): void;
     removeRow(id: string): void;
     clearRows(): void;
@@ -77,24 +79,6 @@ const initialState: FavoriteImportState = {
     sessionId: 0
 };
 
-function normalizeType(value: unknown): FavoriteImportType {
-    return value === 'avatar' || value === 'world' || value === 'friend'
-        ? value
-        : 'avatar';
-}
-
-function isFavoriteImportRow(value: unknown): value is FavoriteImportRow {
-    return Boolean(
-        value &&
-        typeof value === 'object' &&
-        typeof Reflect.get(value, 'id') === 'string'
-    );
-}
-
-function normalizeRows(value: unknown): FavoriteImportRow[] {
-    return Array.isArray(value) ? value.filter(isFavoriteImportRow) : [];
-}
-
 export const useFavoriteImportStore = create<FavoriteImportStore>((set) => ({
     ...initialState,
     openDialog({ type, input = '' }: FavoriteImportOpenOptions = {}) {
@@ -102,8 +86,8 @@ export const useFavoriteImportStore = create<FavoriteImportStore>((set) => ({
             return {
                 ...initialState,
                 open: true,
-                type: normalizeType(type),
-                input: typeof input === 'string' ? input : String(input ?? ''),
+                type: type ?? 'avatar',
+                input,
                 sessionId: state.sessionId + 1
             };
         });
@@ -126,12 +110,10 @@ export const useFavoriteImportStore = create<FavoriteImportStore>((set) => ({
         }));
     },
     setInput(input) {
-        set({
-            input: typeof input === 'string' ? input : String(input ?? '')
-        });
+        set({ input });
     },
     setLoading(loading) {
-        set({ loading: Boolean(loading) });
+        set({ loading });
     },
     setProgress(progress, progressTotal) {
         set({ progress, progressTotal });
@@ -140,21 +122,18 @@ export const useFavoriteImportStore = create<FavoriteImportStore>((set) => ({
         set({ importProgress, importProgressTotal });
     },
     setErrors(errors) {
-        set({
-            errors: typeof errors === 'string' ? errors : String(errors ?? '')
-        });
+        set({ errors });
     },
     appendError(error) {
-        const text = typeof error === 'string' ? error : String(error ?? '');
-        if (!text) {
+        if (!error) {
             return;
         }
         set((state) => ({
-            errors: `${state.errors || ''}${text}${text.endsWith('\n') ? '' : '\n'}`
+            errors: `${state.errors || ''}${error}${error.endsWith('\n') ? '' : '\n'}`
         }));
     },
     setRows(rows) {
-        set({ rows: normalizeRows(rows) });
+        set({ rows });
     },
     addRow(row) {
         if (!row?.id) {

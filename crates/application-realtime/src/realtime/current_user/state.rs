@@ -1,4 +1,5 @@
 use serde_json::{Map, Value};
+use vrcx_0_core::derived_keys;
 use vrcx_0_core::json::JsonExt;
 
 use crate::realtime::PendingOfflineTimerAction;
@@ -34,6 +35,7 @@ pub(super) struct RemoteGameLogInterval {
 pub(super) struct CurrentUserPatchOptions {
     pub(super) applies_local_game_authority: bool,
     pub(super) reconciles_remote_location: bool,
+    pub(super) records_remote_game_log: bool,
     pub(super) records_current_avatar_history: bool,
     pub(super) timer_action: PendingOfflineTimerAction,
 }
@@ -88,7 +90,7 @@ impl RealtimeCurrentUserStateSnapshot {
     pub(super) fn set_previous_avatar_swap_time(&mut self, value: Option<i64>) {
         self.previous_avatar_swap_time = value.unwrap_or_default();
         self.raw.insert(
-            "$previousAvatarSwapTime".into(),
+            derived_keys::PREVIOUS_AVATAR_SWAP_TIME.into(),
             value.map(Value::from).unwrap_or(Value::Null),
         );
     }
@@ -109,7 +111,7 @@ impl RealtimeCurrentUserStateSnapshot {
         self.world_name = self.raw.text_field("worldName");
         self.previous_avatar_swap_time = self
             .raw
-            .i64_field("$previousAvatarSwapTime")
+            .i64_field(derived_keys::PREVIOUS_AVATAR_SWAP_TIME)
             .unwrap_or_default();
     }
 }
@@ -125,19 +127,19 @@ pub(super) const CURRENT_USER_REFRESH_LOCAL_AUTHORITY_FIELDS: &[&str] = &[
     "stateBucket",
     "pendingOffline",
     "location",
-    "$location",
-    "$location_at",
+    derived_keys::LOCATION_PROJECTION,
+    derived_keys::LOCATION_UPDATED_AT,
     "locationUpdatedAt",
     "worldId",
     "instanceId",
     "travelingToLocation",
     "travelingToWorld",
     "travelingToInstance",
-    "$travelingToLocation",
-    "$travelingToTime",
+    derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+    derived_keys::TRAVELING_TO_TIME,
     "travelingToTime",
-    "$previousLocation",
-    "$previousLocation_at",
+    derived_keys::PREVIOUS_LOCATION,
+    derived_keys::PREVIOUS_LOCATION_UPDATED_AT,
 ];
 
 pub const CURRENT_USER_AVATAR_RESPONSE_AUTHORITY_FIELDS: &[&str] = &[
@@ -152,16 +154,16 @@ pub const CURRENT_USER_FALLBACK_AVATAR_RESPONSE_AUTHORITY_FIELDS: &[&str] = &["f
 
 pub(super) const CURRENT_USER_REMOTE_PRESENCE_FIELDS: &[&str] = &[
     "location",
-    "$location",
-    "$location_at",
+    derived_keys::LOCATION_PROJECTION,
+    derived_keys::LOCATION_UPDATED_AT,
     "locationUpdatedAt",
     "worldId",
     "instanceId",
     "travelingToLocation",
     "travelingToWorld",
     "travelingToInstance",
-    "$travelingToLocation",
-    "$travelingToTime",
+    derived_keys::TRAVELING_TO_LOCATION_PROJECTION,
+    derived_keys::TRAVELING_TO_TIME,
     "worldName",
     "state",
     "stateBucket",

@@ -1,4 +1,3 @@
-import type { TFunction } from 'i18next';
 import {
     useEffect,
     useRef,
@@ -7,9 +6,9 @@ import {
     type RefObject,
     type SetStateAction
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -34,27 +33,20 @@ type MemoDialogState = ReturnType<typeof createMemoDialogState>;
 
 type UseUserDialogMemoStateProps = {
     activeUserTargetRef: RefObject<{ userId: string; endpoint?: string }>;
-    applyFriendPatch: ReturnType<
-        typeof useFriendRosterStore.getState
-    >['applyFriendPatch'];
     currentEndpoint: string;
-    friendsById: FriendRosterById;
     normalizedUserId: string;
     profile: UserDialogProfileRecord | null;
     setBaseProfile: Dispatch<SetStateAction<UserDialogProfileRecord | null>>;
-    t: TFunction;
 };
 
 export function useUserDialogMemoState({
     activeUserTargetRef,
-    applyFriendPatch,
     currentEndpoint,
-    friendsById,
     normalizedUserId,
     profile,
-    setBaseProfile,
-    t
+    setBaseProfile
 }: UseUserDialogMemoStateProps) {
+    const { t } = useTranslation();
     const [memo, setMemo] = useState('');
     const [memoDialog, setMemoDialog] = useState(createMemoDialogState);
     const memoRevisionRef = useRef(0);
@@ -201,13 +193,11 @@ export function useUserDialogMemoState({
                       }
                     : currentProfile
             );
-            if (friendsById[targetUserId]) {
-                applyFriendPatch({
+            if (useFriendRosterStore.getState().friendsById[targetUserId]) {
+                useFriendRosterStore.getState().applyFriendPatch({
                     userId: targetUserId,
                     patch: savedFields,
-                    stateBucket:
-                        friendsById[targetUserId]?.stateBucket ||
-                        friendsById[targetUserId]?.state
+                    stateBucketAuthority: 'preserve'
                 });
             }
         }

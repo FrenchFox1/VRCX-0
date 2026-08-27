@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import {
     getCurrentScreenshotLibraryScanStatus,
@@ -13,29 +14,7 @@ import {
     isSameWorldDialogRequestContext
 } from './worldDialogRequestContext';
 
-export type WorldWorldScreenshots = Array<{
-    path: string;
-    folderPath: string;
-    fileName: string;
-    sizeBytes: number;
-    modifiedAt: number;
-    createdAt: number;
-    width: number;
-    height: number;
-    worldId: string;
-    worldName: string | null;
-    capturedAt: string | null;
-    metadata: {
-        application: string;
-        version: number;
-        author: { id: string; displayName?: string };
-        world: { id: string; name?: string; instanceId: string };
-        players: Array<{ id: string; displayName: string }>;
-        sourceFile: string;
-        timestamp?: string;
-    };
-    error: string | null;
-}>;
+export type WorldWorldScreenshots = ScreenshotLibraryImage[];
 
 type ScreenshotScanStatus = Awaited<
     ReturnType<typeof mediaRepository.getScreenshotLibraryStatus>
@@ -103,7 +82,7 @@ export function useWorldDialogScreenshots({
                     return;
                 }
                 const screenshotList = Array.isArray(nextScreenshots)
-                    ? (nextScreenshots as WorldWorldScreenshots)
+                    ? nextScreenshots
                     : [];
                 setScreenshots(screenshotList);
                 if (scanError) {

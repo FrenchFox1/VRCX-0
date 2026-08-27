@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
-import { Field, FieldLabel } from '@/ui/shadcn/field';
 import {
     Select,
     SelectContent,
@@ -16,11 +15,9 @@ import { Switch } from '@/ui/shadcn/switch';
 import {
     OVERLAP_RENDER_DELAY_MS,
     USER_ACTIVITY_HOUR_LABELS,
-    type ActivityHeatmapData,
-    type TopWorldsSort,
-    type UserActivityTopWorld
+    type ActivityHeatmapData
 } from '../userActivityPanelModel';
-import { HeatmapChart, TopWorldRows } from './UserActivityPanelParts';
+import { HeatmapChart } from './UserActivityPanelParts';
 
 export function UserActivityOverlapSection({
     bestOverlapTime,
@@ -42,7 +39,7 @@ export function UserActivityOverlapSection({
     weekStartsOn
 }: {
     bestOverlapTime: string;
-    changeExcludeHours: (value: unknown) => void;
+    changeExcludeHours: (value: boolean) => void;
     changeExcludeRange: (kind: 'start' | 'end', value: string) => void;
     dayLabels: string[];
     emptyColor: string;
@@ -212,130 +209,6 @@ export function UserActivityOverlapSection({
                     {t('dialog.user.activity.overlap.no_data')}
                 </div>
             ) : null}
-        </div>
-    );
-}
-
-export function UserActivityTopWorldsSection({
-    changeExcludeHomeWorld,
-    changeTopWorldsSort,
-    currentHomeWorldId,
-    excludeHomeWorldEnabled,
-    loading,
-    topWorlds,
-    topWorldsLoading,
-    topWorldsLoadingVisible,
-    topWorldsSortBy
-}: {
-    changeExcludeHomeWorld: (value: unknown) => void;
-    changeTopWorldsSort: (value: unknown) => void;
-    currentHomeWorldId: string;
-    excludeHomeWorldEnabled: boolean;
-    loading: boolean;
-    topWorlds: UserActivityTopWorld[];
-    topWorldsLoading: boolean;
-    topWorldsLoadingVisible: boolean;
-    topWorldsSortBy: TopWorldsSort;
-}) {
-    const { t } = useTranslation();
-
-    return (
-        <div className="border-border mt-4 border-t pt-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                        {t('dialog.user.activity.most_visited_worlds.header')}
-                    </span>
-                    {topWorldsLoadingVisible ? (
-                        <Spinner className="size-3.5" />
-                    ) : null}
-                </div>
-                <div className="flex items-center gap-4">
-                    {currentHomeWorldId ? (
-                        <Field
-                            orientation="horizontal"
-                            className="text-muted-foreground w-auto gap-1.5"
-                        >
-                            <Switch
-                                id="activity-exclude-home-world"
-                                checked={excludeHomeWorldEnabled}
-                                onCheckedChange={(value) => {
-                                    changeExcludeHomeWorld(value);
-                                }}
-                                className="scale-75"
-                            />
-                            <FieldLabel
-                                htmlFor="activity-exclude-home-world"
-                                className="text-muted-foreground text-sm font-normal whitespace-nowrap"
-                            >
-                                {t(
-                                    'dialog.user.activity.most_visited_worlds.exclude_home_world'
-                                )}
-                            </FieldLabel>
-                        </Field>
-                    ) : null}
-                    {topWorlds.length > 0 ? (
-                        <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground text-sm">
-                                {t('common.sort_by')}
-                            </span>
-                            <Select
-                                value={topWorldsSortBy}
-                                onValueChange={(value) => {
-                                    changeTopWorldsSort(value);
-                                }}
-                                disabled={topWorldsLoading}
-                                items={[
-                                    {
-                                        value: 'time',
-                                        label: t(
-                                            'dialog.user.activity.most_visited_worlds.sort_by_time'
-                                        )
-                                    },
-                                    {
-                                        value: 'count',
-                                        label: t(
-                                            'dialog.user.activity.most_visited_worlds.sort_by_count'
-                                        )
-                                    }
-                                ]}
-                            >
-                                <SelectTrigger size="sm" className="w-32">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="time">
-                                            {t(
-                                                'dialog.user.activity.most_visited_worlds.sort_by_time'
-                                            )}
-                                        </SelectItem>
-                                        <SelectItem value="count">
-                                            {t(
-                                                'dialog.user.activity.most_visited_worlds.sort_by_count'
-                                            )}
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    ) : null}
-                </div>
-            </div>
-            {topWorldsLoadingVisible && !topWorlds.length ? (
-                <div className="text-muted-foreground flex items-center gap-2 py-2 text-sm">
-                    <Spinner className="size-4" />
-                    <span>
-                        {t('dialog.user.activity.most_visited_worlds.loading')}
-                    </span>
-                </div>
-            ) : topWorlds.length === 0 && !loading && !topWorldsLoading ? (
-                <div className="text-muted-foreground py-2 text-sm">
-                    {t('dialog.user.activity.no_data_in_period')}
-                </div>
-            ) : (
-                <TopWorldRows worlds={topWorlds} sortBy={topWorldsSortBy} />
-            )}
         </div>
     );
 }

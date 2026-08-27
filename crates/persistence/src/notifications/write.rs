@@ -39,6 +39,8 @@ fn notification_v1_params(notification: &Value, force_active: bool) -> Result<Db
     let details = object_field(notification, "details").unwrap_or(&Value::Null);
     let image_url = object_field_string(notification, &["imageUrl"]);
     let detail_image_url = object_field_string(details, &["imageUrl"]);
+    let expired = !force_active && object_field_bool(notification, "$isExpired");
+    let seen = object_field_bool(notification, "seen") || expired;
     Ok(ParamsBuilder::new()
         .set("id", id)
         .set("created_at", created_at)
@@ -78,14 +80,8 @@ fn notification_v1_params(notification: &Value, force_active: bool) -> Result<Db
             "response_message",
             object_field_string(details, &["responseMessage"]),
         )
-        .set(
-            "expired",
-            if !force_active && object_field_bool(notification, "$isExpired") {
-                1
-            } else {
-                0
-            },
-        )
+        .set("expired", if expired { 1 } else { 0 })
+        .set("seen", if seen { 1 } else { 0 })
         .build())
 }
 
@@ -104,8 +100,11 @@ fn write_notification_v1(
         );
         let updates = NOTIFICATION_V1_COLUMNS
             .iter()
-            .filter(|column| **column != "id")
+            .filter(|column| **column != "id" && **column != "seen")
             .map(|column| format!("{column} = excluded.{column}"))
+            .chain(std::iter::once(format!(
+                "seen = MAX({table}.seen, excluded.seen)"
+            )))
             .collect::<Vec<_>>()
             .join(", ");
         format!("{insert} ON CONFLICT(id) DO UPDATE SET {updates}")
@@ -312,8 +311,28 @@ pub fn notification_mark_seen(
     if version >= 2 {
         notification_v2_mark_seen(db, user_id, id)
     } else {
-        notification_update_expired(db, user_id, id, true)
+        notification_v1_mark_seen(db, user_id, id)
     }
+}
+
+fn notification_v1_mark_seen(
+    db: &DatabaseService,
+    user_id: String,
+    id: String,
+) -> Result<(), Error> {
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_realtime_tables(db, &user_prefix)?;
+    let id = normalize_text(id);
+    if id.is_empty() {
+        return Ok(());
+    }
+    let table = format!("{user_prefix}_notifications");
+    let sql = update_by_key_sql(&table, &["seen"], "id");
+    db.execute_non_query(
+        &sql,
+        &ParamsBuilder::new().set("id", id).set("seen", 1).build(),
+    )?;
+    Ok(())
 }
 
 pub fn notification_update_expired(

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
+import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
@@ -28,10 +29,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 import { BrowseHistoryRetentionField } from '../BrowseHistoryRetentionField';
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
+import { useSettingsAdvancedTabState } from '../useSettingsAdvancedTabState';
 import { AdvancedTroubleshootingGroup } from './AdvancedTroubleshootingGroup';
 import type { SettingsAdvancedModel } from './settingsAdvancedTypes';
 
-type SettingsAdvancedTabProps = {
+type SettingsAdvancedTabContentProps = {
     advanced: SettingsAdvancedModel;
 };
 
@@ -39,10 +41,25 @@ type DataDirectoryPathProps = {
     value?: string | null;
 };
 
+const WINDOWS_EXTENDED_PATH_PREFIX = '\\\\?\\';
+const WINDOWS_EXTENDED_UNC_PATH_PREFIX = `${WINDOWS_EXTENDED_PATH_PREFIX}UNC\\`;
+
+function dataDirectoryPathForDisplay(value?: string | null) {
+    if (!value) {
+        return '-';
+    }
+    if (value.startsWith(WINDOWS_EXTENDED_UNC_PATH_PREFIX)) {
+        return `\\\\${value.slice(WINDOWS_EXTENDED_UNC_PATH_PREFIX.length)}`;
+    }
+    if (value.startsWith(WINDOWS_EXTENDED_PATH_PREFIX)) {
+        return value.slice(WINDOWS_EXTENDED_PATH_PREFIX.length);
+    }
+    return value;
+}
 function DataDirectoryPath({ value }: DataDirectoryPathProps) {
     return (
         <div className="bg-muted/40 text-muted-foreground w-full min-w-0 rounded-md border px-2 py-1 font-mono text-xs break-all">
-            {value || '-'}
+            {dataDirectoryPathForDisplay(value)}
         </div>
     );
 }
@@ -128,7 +145,14 @@ function DeepLinkRegistrationField() {
     );
 }
 
-export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
+export function SettingsAdvancedTab() {
+    const state = useSettingsAdvancedTabState();
+    return <SettingsAdvancedTabContent advanced={state} />;
+}
+
+export function SettingsAdvancedTabContent({
+    advanced
+}: SettingsAdvancedTabContentProps) {
     const gameLogPersistenceSupported = useRuntimeStore(
         (state) => state.hostCapabilities.runtimeGameLogIngest.supported
     );
@@ -149,6 +173,7 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
         onLogResourceLoadChange,
         onGameLogDisabledChange,
         onFeedPersistenceDisabledChange,
+        onAvatarFeedPersistenceDisabledChange,
         onAvatarAutoCleanupChange,
         onOpenPurgeDialog,
         onMigrateLegacyVrcxData,
@@ -400,7 +425,9 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                                       )
                         }))}
                         onValueChange={(value) =>
-                            onAvatarAutoCleanupChange(value ?? '')
+                            onAvatarAutoCleanupChange(
+                                normalizeAvatarAutoCleanupPreference(value)
+                            )
                         }
                     >
                         <SelectTrigger
@@ -456,6 +483,23 @@ export function SettingsAdvancedTab({ advanced }: SettingsAdvancedTabProps) {
                         checked={!prefs.feedPersistenceDisabled}
                         onCheckedChange={(checked) =>
                             onFeedPersistenceDisabledChange(!checked)
+                        }
+                    />
+                </Field>
+                <Field
+                    label={t(
+                        'view.settings.advanced.advanced_ui.troubleshooting.avatar_feed_history'
+                    )}
+                    description={t(
+                        'view.settings.advanced.advanced_ui.troubleshooting.avatar_feed_history_description'
+                    )}
+                    disabled={prefs.feedPersistenceDisabled}
+                >
+                    <Switch
+                        checked={!prefs.avatarFeedPersistenceDisabled}
+                        disabled={prefs.feedPersistenceDisabled}
+                        onCheckedChange={(checked) =>
+                            onAvatarFeedPersistenceDisabledChange(!checked)
                         }
                     />
                 </Field>

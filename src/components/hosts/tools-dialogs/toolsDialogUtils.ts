@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import { formatCsvField } from '@/shared/utils/csv';
-import { windowDelay } from '@/shared/utils/delays';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 export const statusOptions = ['join me', 'active', 'ask me', 'busy'];
@@ -18,6 +17,11 @@ export const instanceTypes = [
     'groupPlus',
     'groupOnly'
 ];
+
+export type AutoAcceptInviteRequestValue =
+    | 'Off'
+    | 'All Favorites'
+    | 'Selected Favorites';
 
 export function getAuthSnapshot(): ReturnType<
     typeof useRuntimeStore.getState
@@ -92,11 +96,9 @@ export async function getUserMemoMap() {
     );
 }
 
-export function delay(ms: number) {
-    return windowDelay(Number(ms) || 0);
-}
-
-export function normalizeAutoAcceptValue(value: unknown) {
+export function normalizeAutoAcceptValue(
+    value: unknown
+): AutoAcceptInviteRequestValue {
     if (value === true || value === 'true' || value === 'All Favorites') {
         return 'All Favorites';
     }
@@ -106,7 +108,9 @@ export function normalizeAutoAcceptValue(value: unknown) {
     return 'Off';
 }
 
-export function normalizeAutoAcceptMode(value: unknown) {
+export function normalizeAutoAcceptMode(
+    value: string
+): Exclude<AutoAcceptInviteRequestValue, 'Off'> {
     return value === 'Selected Favorites'
         ? 'Selected Favorites'
         : 'All Favorites';

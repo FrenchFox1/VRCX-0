@@ -1,52 +1,125 @@
+use futures_util::future::BoxFuture;
+
 use std::collections::HashSet;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::stream::{self, StreamExt};
 use moka::future::Cache;
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use url::Url;
-use uuid::Uuid;
-use vrcx_0_application_core::vrchat_api::avatars::{
-    avatar_list_by_user_get_input, AvatarListByUserGetInput,
+use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
+    RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
 };
-use vrcx_0_application_core::vrchat_api::favorites::{
-    favorite_groups_get_input, favorite_worlds_get_input,
-};
-use vrcx_0_application_core::vrchat_api::groups::user_groups_get_input;
-use vrcx_0_application_core::vrchat_api::users::user_mutual_counts_get_input;
-use vrcx_0_application_core::vrchat_api::worlds::world_list_by_user_get_input;
-use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
-use vrcx_0_integrations::external_api::{self, ExternalApiScope, ExternalHttpRequestInput};
-use vrcx_0_persistence::{config, DatabaseService};
-use vrcx_0_vrchat_client::http_api::{ApiJsonResponse, ApiScope, HttpApiRequestInput};
+use vrcx_0_contracts::VrchatJsonResponse;
 
-use crate::{Error, Result};
+use vrcx_0_application_core::{Error, Result};
+use vrcx_0_core::json::RawJson;
 
 const MAX_PROFILE_PAGES: usize = 50;
-const TAB_COUNTS_CACHE_CAPACITY: u64 = 256;
+const TAB_COUNTS_CACHE_CAPACITY: u64 = 32;
 const TAB_COUNTS_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const WORLD_PAGE_SIZE: usize = 100;
-const WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * WORLD_PAGE_SIZE) as i64;
+const WORLD_MAX_OFFSET: i32 = ((MAX_PROFILE_PAGES - 1) * WORLD_PAGE_SIZE) as i32;
 const FAVORITE_GROUP_PAGE_SIZE: usize = 50;
+const FAVORITE_GROUP_FETCH_CONCURRENCY: usize = 8;
 const FAVORITE_WORLD_PAGE_SIZE: usize = 300;
-const FAVORITE_WORLD_MAX_OFFSET: i64 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i64;
+const FAVORITE_WORLD_MAX_OFFSET: i32 = ((MAX_PROFILE_PAGES - 1) * FAVORITE_WORLD_PAGE_SIZE) as i32;
 const MY_AVATAR_PAGE_SIZE: usize = 50;
-const MY_AVATAR_MAX_OFFSET: i64 = 5_000;
-const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
-const AVATAR_PROVIDER_ENABLED_KEY: &str = "avatarRemoteDatabase";
-const AVATAR_PROVIDER_LIST_KEY: &str = "VRCX_avatarRemoteDatabaseProviderList";
-const AVATAR_PROVIDER_SELECTED_KEY: &str = "VRCX_avatarRemoteDatabaseProvider";
-const VRCX_ID_KEY: &str = "id";
+const MY_AVATAR_MAX_OFFSET: i32 = 5_000;
+pub const DEFAULT_AVATAR_PROVIDER: &str = "https://api.avtrdb.com/v3/avatar/search/vrcx";
 
 #[derive(Clone)]
 pub struct UserDialogTabCountsDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
+    source: Arc<dyn UserDialogTabCountsSource>,
+    pub(crate) web: Arc<WebClient>,
     pub auth_scope: RuntimeAuthScope,
+}
+
+impl UserDialogTabCountsDeps {
+    pub fn new(
+        source: Arc<dyn UserDialogTabCountsSource>,
+        web: Arc<WebClient>,
+        auth_scope: RuntimeAuthScope,
+    ) -> Self {
+        Self {
+            source,
+            web,
+            auth_scope,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct AvatarProviderConfig {
+    pub enabled: bool,
+    pub providers: RawJson,
+    pub selected: String,
+}
+
+pub type UserDialogExternalFuture<'a> = BoxFuture<'a, Result<(i32, String)>>;
+
+pub trait UserDialogTabCountsSource: Send + Sync {
+    fn avatar_provider_config(&self) -> Result<AvatarProviderConfig>;
+    fn mutual_friends(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn groups(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn worlds(
+        &self,
+        endpoint: String,
+        user_id: String,
+        n: i32,
+        offset: i32,
+        release_status: AvatarReleaseStatus,
+    ) -> Result<VrchatApiRequest>;
+    fn favorite_worlds(
+        &self,
+        endpoint: String,
+        user_id: String,
+        group_name: String,
+        n: i32,
+        offset: i32,
+    ) -> Result<VrchatApiRequest>;
+    fn favorite_groups(
+        &self,
+        endpoint: String,
+        user_id: String,
+        n: i32,
+        offset: i32,
+    ) -> Result<VrchatApiRequest>;
+    fn my_avatars(&self, endpoint: String, n: i32, offset: i32) -> Result<VrchatApiRequest>;
+    fn external_avatar_search<'a>(
+        &'a self,
+        provider: &'a str,
+        target_user_id: &'a str,
+    ) -> UserDialogExternalFuture<'a>;
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[specta(rename = "UserDialogAvatarReleaseStatus")]
+pub enum AvatarReleaseStatus {
+    #[serde(rename = "all")]
+    All,
+    #[serde(rename = "hidden")]
+    Hidden,
+    #[serde(rename = "private")]
+    Private,
+    #[serde(rename = "public")]
+    Public,
+}
+
+impl AvatarReleaseStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::All => "all",
+            Self::Hidden => "hidden",
+            Self::Private => "private",
+            Self::Public => "public",
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -119,14 +192,11 @@ pub async fn get_user_dialog_tab_counts(
             "User dialog tab counts require a user id.".into(),
         ));
     }
-    let avatar_release_status = match input.avatar_release_status.trim() {
-        "" => "all".to_string(),
-        value => value.to_string(),
-    };
+    let avatar_release_status = input.avatar_release_status;
     let avatar_provider = if target_user_id == scope.current_user_id {
         Ok(None)
     } else {
-        selected_avatar_provider(deps.db.as_ref())
+        selected_avatar_provider(deps.source.as_ref())
     };
     let avatar_provider_key = match &avatar_provider {
         Ok(Some(provider)) => provider.clone(),
@@ -138,7 +208,7 @@ pub async fn get_user_dialog_tab_counts(
         current_user_id: scope.current_user_id.clone(),
         endpoint: scope.endpoint.clone(),
         target_user_id: target_user_id.clone(),
-        avatar_release_status: avatar_release_status.clone(),
+        avatar_release_status: avatar_release_status.as_str().to_string(),
         avatar_provider: avatar_provider_key,
         include_mutual_friends: input.include_mutual_friends,
     };
@@ -166,26 +236,31 @@ async fn load_user_dialog_tab_counts(
     deps: UserDialogTabCountsDeps,
     scope: RuntimeAuthScopeSnapshot,
     target_user_id: String,
-    avatar_release_status: String,
+    avatar_release_status: AvatarReleaseStatus,
     avatar_provider: Result<Option<String>>,
     include_mutual_friends: bool,
 ) -> Result<UserDialogTabCountsOutput> {
-    let mutual_friends = if include_mutual_friends {
-        Some(count_mutual_friends(&deps, &scope, &target_user_id).await)
-    } else {
-        None
+    let mutual_friends = async {
+        if include_mutual_friends {
+            Some(count_mutual_friends(&deps, &scope, &target_user_id).await)
+        } else {
+            None
+        }
     };
-    let groups = count_groups(&deps, &scope, &target_user_id).await;
-    let worlds = count_worlds(&deps, &scope, &target_user_id).await;
-    let favorite_worlds = count_favorite_worlds(&deps, &scope, &target_user_id).await;
     let avatars = count_avatars(
         &deps,
         &scope,
         &target_user_id,
-        &avatar_release_status,
+        avatar_release_status,
         avatar_provider,
-    )
-    .await;
+    );
+    let (mutual_friends, groups, worlds, favorite_worlds, avatars) = tokio::join!(
+        mutual_friends,
+        count_groups(&deps, &scope, &target_user_id),
+        count_worlds(&deps, &scope, &target_user_id),
+        count_favorite_worlds(&deps, &scope, &target_user_id),
+        avatars,
+    );
     Ok(counts_from_results(
         mutual_friends,
         groups,
@@ -200,7 +275,9 @@ async fn count_mutual_friends(
     scope: &RuntimeAuthScopeSnapshot,
     target_user_id: &str,
 ) -> Result<usize> {
-    let (_, request) = user_mutual_counts_get_input(scope.endpoint.clone(), target_user_id.into())?;
+    let request = deps
+        .source
+        .mutual_friends(scope.endpoint.clone(), target_user_id.into())?;
     let payload = execute_vrchat_payload(deps, scope, request, "mutual friends").await?;
     let value = serde_json::from_str::<Value>(&payload)?;
     value
@@ -215,7 +292,9 @@ async fn count_groups(
     scope: &RuntimeAuthScopeSnapshot,
     target_user_id: &str,
 ) -> Result<usize> {
-    let (_, request) = user_groups_get_input(scope.endpoint.clone(), target_user_id.into())?;
+    let request = deps
+        .source
+        .groups(scope.endpoint.clone(), target_user_id.into())?;
     let payload = execute_vrchat_payload(deps, scope, request, "groups").await?;
     json_array_len(&payload)
 }
@@ -226,22 +305,20 @@ async fn count_worlds(
     target_user_id: &str,
 ) -> Result<usize> {
     let release_status = if target_user_id == scope.current_user_id {
-        "all"
+        AvatarReleaseStatus::All
     } else {
-        "public"
+        AvatarReleaseStatus::Public
     };
     count_payload_pages_bounded(
         WORLD_PAGE_SIZE,
         WORLD_MAX_OFFSET,
         |offset| async move {
-            let (_, request) = world_list_by_user_get_input(
+            let request = deps.source.worlds(
                 scope.endpoint.clone(),
                 target_user_id.into(),
-                WORLD_PAGE_SIZE as i64,
+                WORLD_PAGE_SIZE as i32,
                 offset,
-                "updated".into(),
-                "descending".into(),
-                release_status.into(),
+                release_status,
             )?;
             execute_vrchat_payload(deps, scope, request, "worlds").await
         },
@@ -256,28 +333,33 @@ async fn count_favorite_worlds(
     target_user_id: &str,
 ) -> Result<usize> {
     let group_names = collect_world_favorite_group_names(deps, scope, target_user_id).await?;
-    let mut count = 0;
-    for group_name in group_names {
-        let result = count_payload_pages_bounded(
-            FAVORITE_WORLD_PAGE_SIZE,
-            FAVORITE_WORLD_MAX_OFFSET,
-            |offset| {
-                let group_name = group_name.clone();
-                async move {
-                    let request = favorite_worlds_get_input(
-                        scope.endpoint.clone(),
-                        FAVORITE_WORLD_PAGE_SIZE as i64,
-                        offset,
-                        target_user_id.into(),
-                        target_user_id.into(),
-                        group_name,
-                    );
-                    execute_vrchat_payload(deps, scope, request, "favorite worlds").await
-                }
-            },
-            count_all_rows,
-        )
+    let results = stream::iter(group_names)
+        .map(|group_name| async move {
+            count_payload_pages_bounded(
+                FAVORITE_WORLD_PAGE_SIZE,
+                FAVORITE_WORLD_MAX_OFFSET,
+                |offset| {
+                    let group_name = group_name.clone();
+                    async move {
+                        let request = deps.source.favorite_worlds(
+                            scope.endpoint.clone(),
+                            target_user_id.into(),
+                            group_name,
+                            FAVORITE_WORLD_PAGE_SIZE as i32,
+                            offset,
+                        );
+                        execute_vrchat_payload(deps, scope, request?, "favorite worlds").await
+                    }
+                },
+                count_all_rows,
+            )
+            .await
+        })
+        .buffer_unordered(FAVORITE_GROUP_FETCH_CONCURRENCY)
+        .collect::<Vec<_>>()
         .await;
+    let mut count = 0;
+    for result in results {
         match result {
             Ok(group_count) => count += group_count,
             Err(error) => tracing::debug!(%error, "favorite world count source failed"),
@@ -293,12 +375,12 @@ async fn collect_world_favorite_group_names(
 ) -> Result<Vec<String>> {
     let mut group_names = Vec::new();
     for page in 0..MAX_PROFILE_PAGES {
-        let request = favorite_groups_get_input(
+        let request = deps.source.favorite_groups(
             scope.endpoint.clone(),
-            FAVORITE_GROUP_PAGE_SIZE as i64,
-            (page * FAVORITE_GROUP_PAGE_SIZE) as i64,
             target_user_id.into(),
-        );
+            FAVORITE_GROUP_PAGE_SIZE as i32,
+            (page * FAVORITE_GROUP_PAGE_SIZE) as i32,
+        )?;
         let payload = execute_vrchat_payload(deps, scope, request, "favorite groups").await?;
         let page_len = json_array_len(&payload)?;
         group_names.extend(world_favorite_group_names(&payload)?);
@@ -313,7 +395,7 @@ async fn count_avatars(
     deps: &UserDialogTabCountsDeps,
     scope: &RuntimeAuthScopeSnapshot,
     target_user_id: &str,
-    release_status: &str,
+    release_status: AvatarReleaseStatus,
     avatar_provider: Result<Option<String>>,
 ) -> Result<usize> {
     if target_user_id == scope.current_user_id {
@@ -321,16 +403,11 @@ async fn count_avatars(
             MY_AVATAR_PAGE_SIZE,
             MY_AVATAR_MAX_OFFSET,
             |offset| async move {
-                let (_, request) = avatar_list_by_user_get_input(AvatarListByUserGetInput {
-                    endpoint: scope.endpoint.clone(),
-                    user_id: String::new(),
-                    user: "me".into(),
-                    n: MY_AVATAR_PAGE_SIZE as i64,
+                let request = deps.source.my_avatars(
+                    scope.endpoint.clone(),
+                    MY_AVATAR_PAGE_SIZE as i32,
                     offset,
-                    sort: "updated".into(),
-                    order: "descending".into(),
-                    release_status: "all".into(),
-                })?;
+                )?;
                 execute_vrchat_payload(deps, scope, request, "my avatars").await
             },
             |payload| {
@@ -344,10 +421,10 @@ async fn count_avatars(
     let Some(provider) = avatar_provider? else {
         return Ok(0);
     };
-    let request = external_avatar_search_request(deps.db.as_ref(), &provider, target_user_id)?;
-    let request = external_api::build_web_execute_request(request, ExternalApiScope::AvatarSearch)
-        .map_err(|error| Error::Custom(error.to_string()))?;
-    let (status, payload) = deps.web.execute_external(request).await?;
+    let (status, payload) = deps
+        .source
+        .external_avatar_search(&provider, target_user_id)
+        .await?;
     if status != 200 {
         return Err(Error::Custom(format!(
             "Avatar search count request failed with status {status}."
@@ -359,17 +436,14 @@ async fn count_avatars(
 async fn execute_vrchat_payload(
     deps: &UserDialogTabCountsDeps,
     scope: &RuntimeAuthScopeSnapshot,
-    request: HttpApiRequestInput,
+    request: VrchatApiRequest,
     source: &str,
 ) -> Result<String> {
     ensure_scope_matches(&deps.auth_scope, scope)?;
-    let response = deps
-        .web
-        .execute_api(request, ApiScope::Vrchat, deps.db.as_ref())
-        .await?;
+    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
     ensure_scope_matches(&deps.auth_scope, scope)?;
     if response.status >= 400 || response.data.trim_start().starts_with('{') {
-        let parsed = ApiJsonResponse::parse(response.status, &response.data);
+        let parsed = VrchatJsonResponse::parse(response.status, &response.data);
         if parsed.is_failure() {
             return Err(Error::Custom(format!(
                 "User dialog {source} count request failed: {}",
@@ -391,22 +465,16 @@ fn ensure_scope_matches(
     crate::scope_gate::ensure_scope_matches(auth_scope, expected, "User dialog tab counts")
 }
 
-fn selected_avatar_provider(db: &DatabaseService) -> Result<Option<String>> {
-    if !config::get_bool(db, AVATAR_PROVIDER_ENABLED_KEY, true)? {
+fn selected_avatar_provider(source: &dyn UserDialogTabCountsSource) -> Result<Option<String>> {
+    let config = source.avatar_provider_config()?;
+    if !config.enabled {
         return Ok(None);
     }
-    let configured = config::get_json(
-        db,
-        AVATAR_PROVIDER_LIST_KEY,
-        serde_json::json!([DEFAULT_AVATAR_PROVIDER]),
-    )?;
-    let mut provider_values = match configured {
+    let mut provider_values = match config.providers.into_value() {
         Value::Array(values) => values,
         _ => vec![Value::String(DEFAULT_AVATAR_PROVIDER.into())],
     };
-    let selected = config::get_string(db, AVATAR_PROVIDER_SELECTED_KEY, "")?
-        .trim()
-        .to_string();
+    let selected = config.selected.trim().to_string();
     if !selected.is_empty()
         && !provider_values
             .iter()
@@ -434,37 +502,6 @@ fn normalize_avatar_provider(value: &str) -> Option<String> {
         | "https://api.avtrdb.com/v2/avatar/search/vrcx" => Some(DEFAULT_AVATAR_PROVIDER.into()),
         value => Some(value.to_string()),
     }
-}
-
-fn external_avatar_search_request(
-    db: &DatabaseService,
-    provider: &str,
-    target_user_id: &str,
-) -> Result<ExternalHttpRequestInput> {
-    let mut url = Url::parse(provider)
-        .map_err(|error| Error::Custom(format!("Invalid avatar provider URL: {error}")))?;
-    let retained_query = url
-        .query_pairs()
-        .filter(|(key, _)| key != "search" && key != "n")
-        .map(|(key, value)| (key.into_owned(), value.into_owned()))
-        .collect::<Vec<_>>();
-    url.set_query(None);
-    {
-        let mut query = url.query_pairs_mut();
-        query.extend_pairs(retained_query);
-        query.append_pair("search", target_user_id);
-        query.append_pair("n", "5000");
-    }
-
-    let mut vrcx_id = config::get_string(db, VRCX_ID_KEY, "")?.trim().to_string();
-    if vrcx_id.is_empty() {
-        vrcx_id = Uuid::new_v4().to_string();
-        config::set_string(db, VRCX_ID_KEY, &vrcx_id)?;
-    }
-    Ok(external_api::avatar_search_get_input(
-        url.as_str(),
-        &vrcx_id,
-    ))
 }
 
 fn json_array_len(payload: &str) -> Result<usize> {
@@ -498,31 +535,35 @@ fn count_all_rows(payload: &str) -> Result<(usize, usize)> {
     Ok((page_len, page_len))
 }
 
-#[derive(Clone, Debug, Default, Deserialize, specta::Type)]
+#[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDialogTabCountsInput {
     pub user_id: String,
-    #[serde(default)]
-    pub avatar_release_status: String,
+    #[serde(default = "default_avatar_release_status")]
+    pub avatar_release_status: AvatarReleaseStatus,
     #[serde(default)]
     pub include_mutual_friends: bool,
     #[serde(default)]
     pub force: bool,
 }
 
+fn default_avatar_release_status() -> AvatarReleaseStatus {
+    AvatarReleaseStatus::All
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDialogTabCountsOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub mutual_friends: Option<usize>,
+    pub mutual_friends: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub groups: Option<usize>,
+    pub groups: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub worlds: Option<usize>,
+    pub worlds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub favorite_worlds: Option<usize>,
+    pub favorite_worlds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatars: Option<usize>,
+    pub avatars: Option<u32>,
 }
 
 impl UserDialogTabCountsOutput {
@@ -551,9 +592,9 @@ fn counts_from_results(
     }
 }
 
-fn resolved_count(source: &str, result: Result<usize>) -> Option<usize> {
+fn resolved_count(source: &str, result: Result<usize>) -> Option<u32> {
     match result {
-        Ok(count) => Some(count),
+        Ok(count) => Some(crate::wire_count(count)),
         Err(error) => {
             tracing::debug!(%error, source, "user dialog tab count source failed");
             None
@@ -639,25 +680,25 @@ struct MyAvatarCountRow {
     release_status: Value,
 }
 
-fn count_my_avatars(payload: &str, release_status: &str) -> Result<usize> {
+fn count_my_avatars(payload: &str, release_status: AvatarReleaseStatus) -> Result<usize> {
     let rows = serde_json::from_str::<Vec<MyAvatarCountRow>>(payload)?;
-    if release_status == "all" {
+    if release_status == AvatarReleaseStatus::All {
         return Ok(rows.len());
     }
     Ok(rows
         .iter()
-        .filter(|row| row.release_status.as_str() == Some(release_status))
+        .filter(|row| row.release_status.as_str() == Some(release_status.as_str()))
         .count())
 }
 
 async fn count_payload_pages_bounded<F, Fut, C>(
     page_size: usize,
-    max_offset: i64,
+    max_offset: i32,
     fetch_page: F,
     count_page: C,
 ) -> Result<usize>
 where
-    F: FnMut(i64) -> Fut,
+    F: FnMut(i32) -> Fut,
     Fut: Future<Output = Result<String>>,
     C: Fn(&str) -> Result<(usize, usize)>,
 {
@@ -671,7 +712,7 @@ where
         if page_len < page_size || offset >= max_offset {
             return Ok(count);
         }
-        offset += page_size as i64;
+        offset += page_size as i32;
     }
 }
 
@@ -743,9 +784,48 @@ mod tests {
         ])
         .to_string();
 
-        assert_eq!(count_my_avatars(&payload, "all").unwrap(), 3);
-        assert_eq!(count_my_avatars(&payload, "public").unwrap(), 2);
-        assert_eq!(count_my_avatars(&payload, "private").unwrap(), 1);
+        assert_eq!(
+            count_my_avatars(&payload, AvatarReleaseStatus::All).unwrap(),
+            3
+        );
+        assert_eq!(
+            count_my_avatars(&payload, AvatarReleaseStatus::Public).unwrap(),
+            2
+        );
+        assert_eq!(
+            count_my_avatars(&payload, AvatarReleaseStatus::Private).unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn tab_counts_input_uses_the_release_status_enum() {
+        let default_input = serde_json::from_value::<UserDialogTabCountsInput>(
+            serde_json::json!({ "userId": "usr_target" }),
+        )
+        .unwrap();
+        assert_eq!(
+            default_input.avatar_release_status,
+            AvatarReleaseStatus::All
+        );
+
+        let public_input = serde_json::from_value::<UserDialogTabCountsInput>(serde_json::json!({
+            "userId": "usr_target",
+            "avatarReleaseStatus": "public"
+        }))
+        .unwrap();
+        assert_eq!(
+            public_input.avatar_release_status,
+            AvatarReleaseStatus::Public
+        );
+
+        assert!(
+            serde_json::from_value::<UserDialogTabCountsInput>(serde_json::json!({
+                "userId": "usr_target",
+                "avatarReleaseStatus": "invalid"
+            }))
+            .is_err()
+        );
     }
 
     #[tokio::test]

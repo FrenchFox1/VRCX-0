@@ -9,7 +9,8 @@ import type {
 } from '@/repositories/authRepository';
 import {
     executeManualLogin,
-    executeSavedCredentialLogin
+    executeSavedCredentialLogin,
+    getAuthSnapshotFromExecutionError
 } from '@/services/authExecutionService';
 import {
     deleteSavedAuthSnapshot,
@@ -50,16 +51,6 @@ type LoginErrors = {
     password: string;
     username: string;
 };
-
-function getAuthSnapshotFromError(error: unknown): SavedAuthSnapshot | null {
-    if (!error || typeof error !== 'object' || !('authSnapshot' in error)) {
-        return null;
-    }
-    const candidate = error.authSnapshot;
-    return candidate && typeof candidate === 'object'
-        ? (candidate as SavedAuthSnapshot)
-        : null;
-}
 
 export function useLoginPageState() {
     const { t } = useTranslation();
@@ -102,13 +93,9 @@ export function useLoginPageState() {
         setProxyInput(proxyServer || '');
     }, [proxyEnabled, proxyServer]);
 
-    function applySnapshot(nextSnapshot: SavedAuthSnapshot): void {
-        setSnapshot(nextSnapshot);
-    }
-
     const { cancelPendingAutoLogin } = useLoginAutoLogin({
         activeSavedUserId,
-        applySnapshot,
+        applySnapshot: setSnapshot,
         databaseReady,
         isLoading,
         isSubmitting,
@@ -128,7 +115,7 @@ export function useLoginPageState() {
 
         const cachedSnapshot = getCachedAuthSnapshot();
         if (cachedSnapshot) {
-            applySnapshot(cachedSnapshot);
+            setSnapshot(cachedSnapshot);
             setIsLoading(false);
             return;
         }
@@ -136,7 +123,7 @@ export function useLoginPageState() {
         refreshSavedAuthSnapshot()
             .then((nextSnapshot) => {
                 if (active) {
-                    applySnapshot(nextSnapshot);
+                    setSnapshot(nextSnapshot);
                 }
             })
             .catch((error: unknown) => {
@@ -157,7 +144,7 @@ export function useLoginPageState() {
         return () => {
             active = false;
         };
-    }, []);
+    }, [t]);
 
     async function handleLanguageChange(nextLanguage: string) {
         cancelPendingAutoLogin();
@@ -268,7 +255,7 @@ export function useLoginPageState() {
         setIsDeleting(true);
         try {
             const nextSnapshot = await deleteSavedAuthSnapshot(deleteUserId);
-            applySnapshot(nextSnapshot);
+            setSnapshot(nextSnapshot);
             toast.success(t('message.auth.account_removed'));
         } catch (error) {
             toast.error(
@@ -318,20 +305,21 @@ export function useLoginPageState() {
                 password: loginForm.password,
                 saveCredentials: loginForm.saveCredentials
             });
-            applySnapshot(nextSnapshot);
+            setSnapshot(nextSnapshot);
             toast.success(
                 t('common.label.authenticated_and_prepared_the_session')
             );
         } catch (error) {
-            const failureSnapshot = getAuthSnapshotFromError(error);
+            const failureSnapshot = getAuthSnapshotFromExecutionError(error);
             if (failureSnapshot) {
-                applySnapshot(failureSnapshot);
+                setSnapshot(failureSnapshot);
             }
             toast.error(
                 getErrorMessage(
                     error,
                     t('view.auth.toast.failed_to_authenticate')
-                )
+                ),
+                { duration: Infinity, closeButton: true }
             );
         } finally {
             setIsSubmitting(false);
@@ -355,7 +343,7 @@ export function useLoginPageState() {
         setActiveSavedUserId(userId);
         try {
             const nextSnapshot = await executeSavedCredentialLogin(entry);
-            applySnapshot(nextSnapshot);
+            setSnapshot(nextSnapshot);
             toast.success(
                 t(
                     'view.auth.dynamic.authenticated_and_prepared_the_session_for_value',
@@ -363,15 +351,16 @@ export function useLoginPageState() {
                 )
             );
         } catch (error) {
-            const failureSnapshot = getAuthSnapshotFromError(error);
+            const failureSnapshot = getAuthSnapshotFromExecutionError(error);
             if (failureSnapshot) {
-                applySnapshot(failureSnapshot);
+                setSnapshot(failureSnapshot);
             }
             toast.error(
                 getErrorMessage(
                     error,
                     t('view.auth.toast.failed_to_restore_the_saved_account')
-                )
+                ),
+                { duration: Infinity, closeButton: true }
             );
         } finally {
             setActiveSavedUserId('');
@@ -394,9 +383,7 @@ export function useLoginPageState() {
         setLoginErrors({ password: '', username: '' });
     }
 
-    const savedAccounts = Array.isArray(snapshot?.savedCredentialsList)
-        ? snapshot.savedCredentialsList
-        : [];
+    const savedAccounts = snapshot?.savedCredentialsList ?? [];
     const hasSavedAccounts = !isLoading && savedAccounts.length > 0;
     const showLegacyMigrationAction = shouldShowLegacyMigrationAction(
         isLoading,

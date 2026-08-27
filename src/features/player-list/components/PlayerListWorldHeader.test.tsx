@@ -4,6 +4,17 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import type { ComponentProps, PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { WorldProfileRecord } from '@/domain/entities/world';
+import type { Badge } from '@/ui/shadcn/badge';
+import type { Button } from '@/ui/shadcn/button';
+
+type BadgeMockProps = PropsWithChildren<
+    ComponentProps<'span'> & Pick<ComponentProps<typeof Badge>, 'variant'>
+>;
+type ButtonMockProps = PropsWithChildren<
+    ComponentProps<'button'> & Pick<ComponentProps<typeof Button>, 'variant'>
+>;
+
 const mocks = vi.hoisted(() => ({
     getFileAnalysis: vi.fn(),
     getInstance: vi.fn(),
@@ -77,21 +88,13 @@ vi.mock('@/components/LocationWorld', () => ({
 }));
 
 vi.mock('@/ui/shadcn/badge', () => ({
-    Badge: ({
-        children,
-        variant: _variant,
-        ...props
-    }: PropsWithChildren<ComponentProps<'span'> & { variant?: unknown }>) => (
+    Badge: ({ children, variant: _variant, ...props }: BadgeMockProps) => (
         <span {...props}>{children}</span>
     )
 }));
 
 vi.mock('@/ui/shadcn/button', () => ({
-    Button: ({
-        children,
-        variant: _variant,
-        ...props
-    }: PropsWithChildren<ComponentProps<'button'> & { variant?: unknown }>) => (
+    Button: ({ children, variant: _variant, ...props }: ButtonMockProps) => (
         <button {...props}>{children}</button>
     )
 }));
@@ -115,12 +118,31 @@ describe('PlayerListWorldHeader', () => {
         mocks.getInstance.mockResolvedValue({
             json: { capacity: 100 }
         });
-        mocks.getWorldProfile.mockResolvedValue({
+        const worldProfile: WorldProfileRecord = {
             id: 'wrld_test',
             name: 'Test World',
+            description: '',
+            authorId: 'usr_author',
+            authorName: 'Test Author',
             capacity: 80,
-            unityPackages: []
-        });
+            createdAt: '',
+            favorites: 0,
+            heat: 0,
+            imageUrl: '',
+            isLabs: false,
+            occupants: 0,
+            platforms: [],
+            popularity: 0,
+            publicationDate: null,
+            recommendedCapacity: 80,
+            releaseStatus: 'public',
+            tags: [],
+            thumbnailImageUrl: '',
+            unityPackages: [],
+            updatedAt: '',
+            visits: 0
+        };
+        mocks.getWorldProfile.mockResolvedValue(worldProfile);
         mocks.readWorldCacheInfo.mockResolvedValue({
             cacheSize: '',
             inCache: false

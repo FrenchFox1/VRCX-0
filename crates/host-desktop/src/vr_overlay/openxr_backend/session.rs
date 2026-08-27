@@ -280,7 +280,8 @@ impl SessionContext {
                     let present = self
                         .input
                         .hand_located(hand, &self.local_space, display_time);
-                    surface.visible = surface.policy.evaluate(now, present);
+                    surface.visible = surface.policy.evaluate(now, present)
+                        || (surface.config.force_visible && present);
                 }
             }
             if surface.visible && surface.pending_frame.is_some() {
@@ -369,6 +370,7 @@ impl SessionContext {
                     surface.requested_visible = false;
                     surface.policy.close();
                     surface.visible = false;
+                    surface.pending_frame = None;
                 }
             }
             SessionCommand::SnapshotDevices { reply } => {
@@ -606,9 +608,6 @@ fn parse_attachment(placement: &OverlayPlacement) -> Result<Attachment, String> 
             value if value.starts_with("hmd:") => Ok(Attachment::Head),
             _ => Err(format!("unknown tracked device hint '{device_hint}'")),
         },
-        OverlayPlacement::Absolute { .. } => {
-            Err("OpenXR overlay backend does not support Absolute placement".to_string())
-        }
     }
 }
 
@@ -647,26 +646,6 @@ fn placement_pose(placement: &OverlayPlacement) -> xr::Posef {
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.035],
             [0.0, 0.0, 1.0, 0.055],
-        ]),
-        OverlayPlacement::Absolute { transform } => matrix3x4_to_posef([
-            [
-                transform.rotation[0][0],
-                transform.rotation[0][1],
-                transform.rotation[0][2],
-                transform.translation[0],
-            ],
-            [
-                transform.rotation[1][0],
-                transform.rotation[1][1],
-                transform.rotation[1][2],
-                transform.translation[1],
-            ],
-            [
-                transform.rotation[2][0],
-                transform.rotation[2][1],
-                transform.rotation[2][2],
-                transform.translation[2],
-            ],
         ]),
     }
 }

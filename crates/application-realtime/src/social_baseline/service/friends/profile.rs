@@ -4,8 +4,8 @@ use serde_json::Value;
 use vrcx_0_application_core::Result;
 
 use super::super::{
-    fetch_paged_array, json, object_field_normalized, object_field_string, remote_friends,
-    unique_push, Number, SocialBaselineDeps, FRIEND_PAGE_SIZE,
+    fetch_paged_array, json, object_field_normalized, object_field_string, unique_push, Number,
+    SocialBaselineDeps, FRIEND_PAGE_SIZE,
 };
 
 pub(super) struct RemoteFriendProfile {
@@ -41,7 +41,8 @@ pub(super) async fn fetch_all_friends(
     offline: bool,
 ) -> Result<Vec<Value>> {
     let rows = fetch_paged_array(deps, FRIEND_PAGE_SIZE, None, |n, offset| {
-        remote_friends::friends_get_input(endpoint.to_string(), offline, n, offset)
+        deps.remote_requests
+            .friends(endpoint.to_string(), offline, n, offset)
     })
     .await?;
     Ok(rows.into_iter().filter(is_valid_friend_user).collect())

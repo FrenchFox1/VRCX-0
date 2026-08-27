@@ -80,20 +80,36 @@ export function VrchatLogTable({
                             <ContextMenuTrigger
                                 render={
                                     <div
+                                        role="checkbox"
+                                        aria-checked={selected}
+                                        tabIndex={0}
                                         style={{
                                             height: `${LOG_ROW_HEIGHT}px`,
                                             transform: `translateY(${row.start + LOG_HEADER_HEIGHT}px)`
                                         }}
                                         onClick={(event) => {
-                                            const target =
-                                                event.target as HTMLElement;
+                                            const target = event.target;
                                             if (
+                                                target instanceof Element &&
                                                 target.closest(
                                                     '[data-log-select-control]'
                                                 )
                                             ) {
                                                 return;
                                             }
+                                            toggleEntrySelected(
+                                                entry,
+                                                !selected
+                                            );
+                                        }}
+                                        onKeyDown={(event) => {
+                                            if (
+                                                event.key !== 'Enter' &&
+                                                event.key !== ' '
+                                            ) {
+                                                return;
+                                            }
+                                            event.preventDefault();
                                             toggleEntrySelected(
                                                 entry,
                                                 !selected

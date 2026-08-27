@@ -6,6 +6,11 @@ import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 
+import type {
+    UserDialogDataTab,
+    UserDialogRemoteStatus
+} from '../userDialogTabService';
+
 export function UserDialogSearchHeader<TSearch extends Record<string, string>>({
     searchKey,
     tab,
@@ -19,13 +24,13 @@ export function UserDialogSearchHeader<TSearch extends Record<string, string>>({
     setSearch
 }: {
     searchKey: keyof TSearch & string;
-    tab?: string;
+    tab?: UserDialogDataTab;
     rows: readonly unknown[];
     filteredRows: readonly unknown[];
     placeholder?: string;
     children?: ReactNode;
-    remoteStatus: Record<string, string>;
-    loadTab: (tab: string, options: { force?: boolean }) => void;
+    remoteStatus: UserDialogRemoteStatus;
+    loadTab: (tab: UserDialogDataTab, options: { force?: boolean }) => void;
     search: TSearch;
     setSearch: Dispatch<SetStateAction<TSearch>>;
 }) {

@@ -79,9 +79,20 @@ import type {
     SavedAuthSnapshot,
     SavedCredentialSnapshot
 } from '@/platform/tauri/bindings';
+import {
+    cachePreviousInstances,
+    cacheUserStats,
+    dialogTargetKey,
+    readCachedPreviousInstances,
+    readCachedUserStats
+} from '@/services/userDialogSessionCacheService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useModalStore } from '@/state/modalStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
+import {
+    type CurrentUserSnapshotState,
+    useRuntimeStore
+} from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import {
@@ -198,6 +209,7 @@ describe('authExecutionService characterization', () => {
         useRuntimeStore.getState().resetRuntimeState();
         useSessionStore.getState().resetSessionState();
         useAssistantChatStore.getState().resetAssistantChatState();
+        useFriendLocationTimeStore.getState().reset();
         useModalStore.getState().resetModalState();
         useModalStore.setState({
             confirm: mocks.confirm,
@@ -211,16 +223,17 @@ describe('authExecutionService characterization', () => {
         mocks.respondLoginSession.mockResolvedValue(authenticatedState());
         mocks.cancelLoginSession.mockResolvedValue({ status: 'cancelled' });
         mocks.applySavedAuthSnapshot.mockImplementation(
-            (snapshot: unknown) => snapshot
+            (snapshot: SavedAuthSnapshot) => snapshot
         );
         mocks.buildAvatarWearSnapshotUpdate.mockImplementation(
-            ({ nextSnapshot }: { nextSnapshot: unknown }) => ({
-                snapshot: nextSnapshot
-            })
+            ({
+                nextSnapshot
+            }: {
+                nextSnapshot: CurrentUserSnapshotState | null;
+            }) => ({ snapshot: nextSnapshot })
         );
-        mocks.t.mockImplementation(
-            (key: string, values?: Record<string, unknown>) =>
-                Promise.resolve(values?.name ? `${key}:${values.name}` : key)
+        mocks.t.mockImplementation((key: string, values?: { name?: string }) =>
+            Promise.resolve(values?.name ? `${key}:${values.name}` : key)
         );
         mocks.bootstrapAuthenticatedSession.mockResolvedValue(undefined);
         mocks.loadVrchatConfigSnapshot.mockResolvedValue({});
@@ -411,6 +424,13 @@ describe('authExecutionService characterization', () => {
     });
 
     it('records logout and returns to a signed-out session', async () => {
+        useFriendLocationTimeStore.getState().replaceSnapshot([
+            {
+                userId: 'usr_friend',
+                location: 'wrld_test:1',
+                sinceMs: 1_700_000_000_000
+            }
+        ]);
         useRuntimeStore.getState().setAuthBootstrap({
             currentUserId: 'usr_self',
             currentUserDisplayName: 'Self'
@@ -426,10 +446,38 @@ describe('authExecutionService characterization', () => {
         );
         expect(useRuntimeStore.getState().auth.currentUserId).toBe(null);
         expect(useSessionStore.getState().sessionPhase).toBe('signed_out');
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({});
         expect(mocks.resetVrchatConfigSnapshot).toHaveBeenCalled();
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
             'message.auth.logout_greeting:Self'
         );
+    });
+
+    it('drops per-account user dialog caches on logout', async () => {
+        const targetKey = dialogTargetKey(
+            'https://api.vrchat.cloud/api/1',
+            'usr_friend'
+        );
+        cacheUserStats(targetKey, {
+            timeSpent: 1234,
+            lastSeen: '2026-08-18T00:00:00Z',
+            joinCount: 7
+        });
+        cachePreviousInstances(targetKey, [
+            { location: 'wrld_stale:123' } as never
+        ]);
+        expect(readCachedUserStats(targetKey).joinCount).toBe(7);
+        expect(readCachedPreviousInstances(targetKey)).toHaveLength(1);
+
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_self',
+            currentUserDisplayName: 'Self'
+        });
+
+        await expect(logoutFromReactShell()).resolves.toBe(true);
+
+        expect(readCachedUserStats(targetKey).joinCount).toBe(0);
+        expect(readCachedPreviousInstances(targetKey)).toEqual([]);
     });
 
     it('ends the backend session when logout supersedes an in-flight login', async () => {

@@ -2,15 +2,19 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { WorldUpdateRequest } from '@/platform/tauri/bindings';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
-import type { WorldDetailsDraft } from '../WorldOwnerEditDialogs';
+import type {
+    WorldDetailsDraft,
+    WorldTagsUpdate
+} from '../WorldOwnerEditDialogs';
 import type { useWorldDialogRuntimeState } from './useWorldDialogRuntimeState';
 
 type RuntimeState = ReturnType<typeof useWorldDialogRuntimeState>;
-type WorldPatch = Record<string, unknown>;
+type WorldPatch = Omit<WorldUpdateRequest, 'id'>;
 type CapacityField = 'capacity' | 'recommendedCapacity';
 
 interface SaveWorldPatchMessages {
@@ -25,7 +29,7 @@ interface UseWorldDialogOwnerActionsInput {
     confirm: RuntimeState['confirm'];
     currentEndpoint: string;
     currentUserId: string | null;
-    isCurrentWorldTarget: (worldId: unknown, endpoint: string) => boolean;
+    isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
     prompt: RuntimeState['prompt'];
     setActionStatus: Dispatch<SetStateAction<string>>;
     setHasPersistData: Dispatch<SetStateAction<boolean>>;
@@ -223,7 +227,7 @@ export function useWorldDialogOwnerActions({
         });
         if (result.ok) {
             await saveWorldPatch(
-                { name: result.value },
+                { name: String(result.value ?? '') },
                 {
                     successMessage: t('prompt.rename_world.message.success'),
                     errorMessage: t('dialog.world.toast.failed_to_rename_world')
@@ -243,7 +247,7 @@ export function useWorldDialogOwnerActions({
         });
         if (result.ok) {
             await saveWorldPatch(
-                { description: result.value },
+                { description: String(result.value ?? '') },
                 {
                     successMessage: t(
                         'dialog.world.success.world_description_updated'
@@ -325,9 +329,12 @@ export function useWorldDialogOwnerActions({
         setOwnerEditor('tags');
     }
 
-    async function saveWorldTags(tags: string[]) {
+    async function saveWorldTags(update: WorldTagsUpdate) {
         const saved = await saveWorldPatch(
-            { tags },
+            {
+                tags: update.tags,
+                disabledPropAbilities: update.disabledPropAbilities
+            },
             {
                 successMessage: t('dialog.world.success.world_tags_updated'),
                 errorMessage: t(

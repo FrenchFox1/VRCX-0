@@ -93,7 +93,7 @@ function sectionedNotificationTypes() {
 export function NotificationTypeFilterDropdown({
     value,
     onChange,
-    getTypeLabel = (type: unknown) => String(type)
+    getTypeLabel = (type) => type
 }: {
     getTypeLabel?: (type: string) => string;
     onChange: (value: string[]) => void;

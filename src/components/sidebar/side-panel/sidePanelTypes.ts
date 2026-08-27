@@ -1,5 +1,5 @@
+import type { FavoriteLoadStatus } from '@/domain/favorites/types';
 import type { FriendSortMethod } from '@/shared/utils/friend';
-import type { FavoriteLoadStatus } from '@/state/favoriteStoreTypes';
 
 import type { SidebarPreferences } from '../friends-sidebar/friendsSidebarModel';
 import type {
@@ -48,6 +48,7 @@ export type SidePanelArrayPreferenceKey =
 export type SidePanelTabItem = {
     value: string;
     label: string;
+    countLabel: string;
     title: string;
     icon: string;
     layoutItem: SidebarTabLayoutItem;

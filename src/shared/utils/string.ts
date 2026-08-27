@@ -1,40 +1,3 @@
-function escapeTag(tag: unknown): string {
-    const s = String(tag);
-    return s.replace(/["&'<>]/g, (c) => `&#${c.charCodeAt(0)};`);
-}
-
-function escapeTagRecursive<T>(obj: T): T {
-    if (typeof obj === 'string') {
-        return escapeTag(obj) as T;
-    }
-    if (obj && typeof obj === 'object') {
-        for (const key in obj) {
-            obj[key] = escapeTagRecursive(obj[key]);
-        }
-    }
-    return obj;
-}
-
-function textToHex(text: unknown): string {
-    const s = String(text);
-    return s
-        .split('')
-        .map((c) => c.charCodeAt(0).toString(16).toUpperCase())
-        .join(' ');
-}
-
-function commaNumber(num: unknown): string {
-    if (!num) {
-        return '0';
-    }
-    const numValue = Number(num);
-    if (isNaN(numValue)) {
-        return '0';
-    }
-    const s = String(numValue);
-    return s.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-}
-
 function localeIncludes(
     str: unknown,
     search: unknown,
@@ -126,13 +89,4 @@ function removeEmojis(text: unknown): string {
         .trim();
 }
 
-export {
-    escapeTag,
-    escapeTagRecursive,
-    textToHex,
-    commaNumber,
-    localeIncludes,
-    normalizeString,
-    replaceBioSymbols,
-    removeEmojis
-};
+export { localeIncludes, normalizeString, replaceBioSymbols, removeEmojis };

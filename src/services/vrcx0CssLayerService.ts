@@ -55,7 +55,7 @@ function renderCssLayers(): void {
 }
 
 export function setVrcxCssLayer(layer: VrcxCssLayer, cssText: string): void {
-    layerSnapshots[layer] = String(cssText || '');
+    layerSnapshots[layer] = cssText;
     renderCssLayers();
 }
 
@@ -64,14 +64,10 @@ export function setVrcxCssLayers(
 ): void {
     Object.entries(layers).forEach(([layer, cssText]) => {
         if (isKnownLayer(layer)) {
-            layerSnapshots[layer] = String(cssText || '');
+            layerSnapshots[layer] = cssText ?? '';
         }
     });
     renderCssLayers();
-}
-
-export function clearVrcxCssLayer(layer: VrcxCssLayer): void {
-    setVrcxCssLayer(layer, '');
 }
 
 export function setVrcxCssLayersSuppressed(

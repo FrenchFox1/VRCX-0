@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use chrono::{Local, NaiveDateTime, Utc};
 use vrcx_0_core::game_log_parser::LogLocationSnapshot;
 
-use crate::game_log_parser::{self, GameLogEvent, LogContext};
+use crate::game_log_parser::{self, GameLogEvent, LogContext, LogReader};
 
 use super::queue;
 use super::sink::GameLogEventSink;
@@ -22,10 +22,6 @@ pub struct LogWatcher {
 
 pub trait LogLocationSnapshotScanner: Send + Sync {
     fn scan_current_location_snapshot(&self, log_dir: &Path) -> Option<LogLocationSnapshot>;
-
-    fn scan_latest_vr_mode(&self, _log_dir: &Path) -> Option<bool> {
-        None
-    }
 }
 
 #[derive(Default)]
@@ -180,13 +176,6 @@ impl LogWatcher {
             .scan_current_location_snapshot(&log_dir)
     }
 
-    pub fn current_vr_mode(&self) -> Option<bool> {
-        let log_dir = self.inner.log_dir.read().unwrap().clone()?;
-        self.inner
-            .location_snapshot_scanner
-            .scan_latest_vr_mode(&log_dir)
-    }
-
     pub fn set_game_running(&self, running: bool) {
         *self.inner.game_running.lock().unwrap() = running;
         if !running {
@@ -198,6 +187,7 @@ impl LogWatcher {
 
 fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, generation: u64) {
     let mut contexts: HashMap<String, LogContext> = HashMap::new();
+    let mut reader = LogReader::new();
     let mut first_run = true;
 
     while !inner.stop_requested.load(Ordering::Acquire)
@@ -231,7 +221,7 @@ fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, generation: u64) {
         };
 
         if should_poll {
-            let saw_new_data = update(&inner, &log_dir, &mut contexts, &mut first_run);
+            let saw_new_data = update(&inner, &log_dir, &mut reader, &mut contexts, &mut first_run);
             if saw_new_data {
                 *inner.keep_polling_until.lock().unwrap() =
                     Some(Instant::now() + INACTIVE_POLL_KEEPALIVE);
@@ -252,6 +242,7 @@ fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, generation: u64) {
 pub(super) fn update(
     inner: &Inner,
     log_dir: &Path,
+    reader: &mut LogReader,
     contexts: &mut HashMap<String, LogContext>,
     first_run: &mut bool,
 ) -> bool {
@@ -293,8 +284,7 @@ pub(super) fn update(
             .expect("multiple GameLog entries");
         entries = vec![latest];
     } else {
-        entries
-            .sort_by_key(|(entry, _, _)| entry.metadata().and_then(|meta| meta.created()).ok());
+        entries.sort_by_key(|(entry, _, _)| entry.metadata().and_then(|meta| meta.created()).ok());
     }
 
     let mut sink = queue::WatcherParseSink {
@@ -323,7 +313,8 @@ pub(super) fn update(
             .get_mut(&name)
             .expect("GameLog context was inserted");
 
-        saw_new_data |= game_log_parser::parse_log(&mut sink, &entry.path(), &name, ctx, till_date);
+        saw_new_data |=
+            game_log_parser::parse_log(reader, &mut sink, &entry.path(), &name, ctx, till_date);
         present.insert(name);
     }
 

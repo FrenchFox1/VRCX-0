@@ -12,6 +12,7 @@ import {
     sanitizeTableColumnVisibility,
     usePersistedDataTableLayout
 } from '@/components/data-table/dataTablePersistence';
+import { isRecord } from '@/shared/utils/record';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 const GROUP_MODERATION_DEFAULT_PAGE_SIZE = 25;
@@ -25,8 +26,8 @@ function sanitizeSorting(
         return [];
     }
     return value.reduce<SortingState>((result, entry) => {
-        const id = (entry as { id?: unknown })?.id;
-        const desc = (entry as { desc?: unknown })?.desc;
+        const id = isRecord(entry) ? entry.id : undefined;
+        const desc = isRecord(entry) ? entry.desc : undefined;
         if (
             typeof id === 'string' &&
             typeof desc === 'boolean' &&
@@ -51,7 +52,18 @@ export function useGroupModerationTable<TData extends RowData>({
     rows: TData[];
     tableId: string;
 }) {
-    const tableLayout = usePersistedDataTableLayout({ tableId, columnIds });
+    const {
+        columnOrder,
+        columnOrderLocked,
+        columnSizing,
+        columnVisibility,
+        persistedState,
+        setColumnOrder,
+        setColumnOrderLocked,
+        setColumnSizing,
+        setColumnVisibility,
+        writePersistedState
+    } = usePersistedDataTableLayout({ tableId, columnIds });
     const preferencesHydrated = usePreferencesStore(
         (state) => state.preferencesHydrated
     );
@@ -64,7 +76,7 @@ export function useGroupModerationTable<TData extends RowData>({
     const hasWrittenLayoutRef = useRef(false);
     const appliedPreferredPageSizeRef = useRef(false);
     const [sorting, setSorting] = useState<SortingState>(() =>
-        sanitizeSorting(tableLayout.persistedState.sorting, columnIds)
+        sanitizeSorting(persistedState.sorting, columnIds)
     );
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
@@ -106,23 +118,20 @@ export function useGroupModerationTable<TData extends RowData>({
             hasWrittenLayoutRef.current = true;
             return;
         }
-        tableLayout.writePersistedState({
-            columnOrder: sanitizeTableColumnOrder(
-                tableLayout.columnOrder,
-                columnIds
-            ),
+        writePersistedState({
+            columnOrder: sanitizeTableColumnOrder(columnOrder, columnIds),
             columnVisibility: sanitizeTableColumnVisibility(
-                tableLayout.columnVisibility,
+                columnVisibility,
                 columnIds
             ),
             sorting: sanitizeSorting(sorting, columnIds)
         });
     }, [
         columnIds,
+        columnOrder,
+        columnVisibility,
         sorting,
-        tableLayout.columnOrder,
-        tableLayout.columnVisibility,
-        tableLayout.writePersistedState
+        writePersistedState
     ]);
 
     useEffect(() => {
@@ -145,14 +154,14 @@ export function useGroupModerationTable<TData extends RowData>({
         columns,
         data: rows,
         state: {
-            columnOrder: tableLayout.columnOrder,
-            columnSizing: tableLayout.columnSizing,
-            columnVisibility: tableLayout.columnVisibility,
+            columnOrder,
+            columnSizing,
+            columnVisibility,
             ...(paged ? { sorting, pagination } : {})
         },
-        onColumnOrderChange: tableLayout.setColumnOrder,
-        onColumnSizingChange: tableLayout.setColumnSizing,
-        onColumnVisibilityChange: tableLayout.setColumnVisibility,
+        onColumnOrderChange: setColumnOrder,
+        onColumnSizingChange: setColumnSizing,
+        onColumnVisibilityChange: setColumnVisibility,
         onSortingChange: paged ? setSorting : undefined,
         onPaginationChange: paged ? setPagination : undefined,
         manualSorting: !paged,
@@ -160,8 +169,8 @@ export function useGroupModerationTable<TData extends RowData>({
         enableColumnResizing: true,
         columnResizeMode: 'onChange',
         meta: {
-            columnOrderLocked: tableLayout.columnOrderLocked,
-            setColumnOrderLocked: tableLayout.setColumnOrderLocked
+            columnOrderLocked,
+            setColumnOrderLocked
         }
     });
 

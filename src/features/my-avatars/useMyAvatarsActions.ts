@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { AvatarUpdateRequest } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { selectAvatar as selectCurrentAvatar } from '@/services/avatarSelectionService';
@@ -41,9 +42,17 @@ type MyAvatarsActionsOptions = {
 };
 
 function avatarIdFromValue(avatar: MyAvatarRow | null | undefined) {
-    return typeof avatar?.id === 'string'
-        ? avatar.id.trim()
-        : String(avatar?.id ?? '').trim();
+    return avatar?.id?.trim() ?? '';
+}
+
+function isMyAvatarRow(value: unknown): value is MyAvatarRow & { id: string } {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'id' in value &&
+        typeof value.id === 'string' &&
+        Boolean(value.id.trim())
+    );
 }
 
 function isRuntimeAuthTarget(authTarget: MyAvatarsAuthTarget) {
@@ -89,7 +98,7 @@ export function useMyAvatarsActions({
         const { activeDialog, closeDialog } = useDialogStore.getState();
         if (
             activeDialog?.kind === 'avatar' &&
-            String(activeDialog.entityId ?? '').trim() === avatarId
+            activeDialog.entityId.trim() === avatarId
         ) {
             closeDialog();
         }
@@ -139,21 +148,15 @@ export function useMyAvatarsActions({
     }
 
     function applyAvatarUpdate(nextAvatar: unknown) {
-        if (
-            !nextAvatar ||
-            typeof nextAvatar !== 'object' ||
-            !('id' in nextAvatar) ||
-            !nextAvatar.id
-        ) {
+        if (!isMyAvatarRow(nextAvatar)) {
             return;
         }
-        const nextAvatarRow = nextAvatar as MyAvatarRow;
         setAvatars((currentAvatars) =>
             currentAvatars.map((entry) =>
-                entry.id === nextAvatarRow.id
+                entry.id === nextAvatar.id
                     ? {
                           ...entry,
-                          ...nextAvatarRow,
+                          ...nextAvatar,
                           $tags: entry.$tags || [],
                           $timeSpent: entry.$timeSpent || 0
                       }
@@ -164,7 +167,7 @@ export function useMyAvatarsActions({
 
     async function saveAvatarPatch(
         avatar: MyAvatarRow,
-        params: Record<string, unknown>,
+        params: Omit<AvatarUpdateRequest, 'id'>,
         successMessage: string
     ) {
         const avatarId = avatarIdFromValue(avatar);

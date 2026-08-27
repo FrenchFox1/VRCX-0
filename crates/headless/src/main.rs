@@ -14,16 +14,16 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
 use vrcx_0_application_core::{
     format_runtime_output_event, recommended_tokio_max_blocking_threads,
-    recommended_tokio_worker_threads, BackendRuntimeMode, BackendRuntimeTelemetry,
-    BackendRuntimeTelemetryKind, RuntimeEventSink, RuntimeOutputLevel, RuntimeOutputLine,
+    recommended_tokio_worker_threads, BackendRuntimeTelemetry, BackendRuntimeTelemetryKind,
+    RuntimeEventPayload, RuntimeEventSink, RuntimeOutputLevel, RuntimeOutputLine,
     RuntimeOutputMode, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
 };
-use vrcx_0_host::app_paths::resolve_app_data_dir;
-use vrcx_0_host::error_log::{
-    append_headless_error_log, default_app_data_dir, ErrorLogWriter, HEADLESS_ERROR_LOG_FILE,
-};
-use vrcx_0_runtime_host::{
+use vrcx_0_composition::{
     CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState,
+};
+use vrcx_0_platform::app_paths::resolve_app_data_dir;
+use vrcx_0_platform::error_log::{
+    append_headless_error_log, default_app_data_dir, ErrorLogWriter, HEADLESS_ERROR_LOG_FILE,
 };
 
 fn main() -> ExitCode {
@@ -73,6 +73,7 @@ async fn async_main() -> ExitCode {
         app_data_dir: app_data_dir.clone(),
         app_version: product_app_version(),
         profile: RuntimeHostProfile::HeadlessData,
+        database_maintenance_cache_dir: None,
     }) {
         Ok(state) => state,
         Err(error) => {
@@ -88,15 +89,9 @@ async fn async_main() -> ExitCode {
     let (fatal_tx, mut fatal_rx) = mpsc::unbounded_channel();
     let console_sink = ConsoleRuntimeEventSink::new(fatal_tx, app_data_dir.current_dir.clone());
     state.set_event_sink(console_sink.clone());
-    state
-        .runtime_context
-        .tasks
-        .set_executor(TokioRuntimeTaskExecutor);
+    state.set_task_executor(TokioRuntimeTaskExecutor);
 
-    match state
-        .start_backend_runtime(BackendRuntimeMode::Headless, cli_login_prompt)
-        .await
-    {
+    match state.start_headless_backend_runtime(cli_login_prompt).await {
         Ok(_) => {}
         Err(error) => {
             report_headless_error(
@@ -140,7 +135,7 @@ async fn async_main() -> ExitCode {
 
 fn shutdown_runtime(state: &RuntimeHostState, reason: &str) {
     state.stop_backend_runtime(reason);
-    state.runtime_context.tasks.stop_all();
+    state.stop_runtime_tasks();
 }
 
 fn product_app_version() -> String {
@@ -272,8 +267,8 @@ impl ConsoleRuntimeEventSink {
 }
 
 impl RuntimeEventSink for ConsoleRuntimeEventSink {
-    fn emit(&self, _event: &str, _payload: Value, typed_payload: &dyn std::any::Any) {
-        let allow_during_shutdown = is_runtime_stopped_event(typed_payload);
+    fn emit(&self, event: &str, payload: Value) {
+        let allow_during_shutdown = is_runtime_stopped_event(event, &payload);
         let _guard = self
             .output_lock
             .lock()
@@ -282,7 +277,8 @@ impl RuntimeEventSink for ConsoleRuntimeEventSink {
             return;
         }
 
-        let Some(output) = format_runtime_output_event(RuntimeOutputMode::Headless, typed_payload)
+        let Some(output) =
+            format_runtime_output_event(RuntimeOutputMode::Headless, event, &payload)
         else {
             return;
         };
@@ -370,8 +366,11 @@ where
     }
 }
 
-fn is_runtime_stopped_event(payload: &dyn std::any::Any) -> bool {
-    payload
-        .downcast_ref::<BackendRuntimeTelemetry>()
+fn is_runtime_stopped_event(event: &str, payload: &Value) -> bool {
+    if event != BackendRuntimeTelemetry::EVENT_NAME {
+        return false;
+    }
+    serde_json::from_value::<BackendRuntimeTelemetry>(payload.clone())
+        .ok()
         .is_some_and(|telemetry| telemetry.kind == BackendRuntimeTelemetryKind::RuntimeStopped)
 }

@@ -5,21 +5,23 @@ import { tauriClient } from '@/platform/tauri/client';
 import { setWindowTheme, type WindowTheme } from '@/platform/tauri/webview';
 import {
     DEFAULT_THEME_COLOR_KEY,
-    THEME_COLOR_CONFIG,
     THEME_COLOR_STYLE_PROPERTIES
 } from '@/shared/constants/themes';
-import { useShellStore } from '@/state/shellStore';
+import {
+    normalizeThemeColor,
+    resolveThemeColorConfig
+} from '@/shared/utils/themeColor';
+import { useShellStore, type ThemeMode } from '@/state/shellStore';
 
-type ThemeMode = 'light' | 'dark' | 'system';
 type ResolvedThemeMode = 'light' | 'dark';
 type AppFontPreferenceInput = {
-    fontFamily?: unknown;
-    customFontFamily?: unknown;
-    cjkFontPack?: unknown;
-    locale?: unknown;
+    fontFamily?: string;
+    customFontFamily?: string;
+    cjkFontPack?: string;
+    locale?: string;
 };
+type ZoomLevelInput = string | number | null | undefined;
 
-const VALID_THEME_MODES = new Set<ThemeMode>(['light', 'dark', 'system']);
 const NATIVE_THEME_VALUES: Readonly<Record<ThemeMode, WindowTheme | null>> =
     Object.freeze({
         system: null,
@@ -28,7 +30,6 @@ const NATIVE_THEME_VALUES: Readonly<Record<ThemeMode, WindowTheme | null>> =
     });
 let nativeThemeSyncQueue: Promise<void> = Promise.resolve();
 let themeApplySequence = 0;
-const VALID_THEME_COLORS = new Set<string>(Object.keys(THEME_COLOR_CONFIG));
 export const DEFAULT_ZOOM_LEVEL = 100;
 export const MIN_ZOOM_LEVEL = 30;
 export const MAX_ZOOM_LEVEL = 300;
@@ -147,6 +148,17 @@ type AppFontKey = keyof typeof APP_FONT_CONFIG;
 type AppCjkFontPackKey = keyof typeof APP_CJK_FONT_PACK_CONFIG;
 type ThemeColorStyleToken = keyof typeof THEME_COLOR_STYLE_PROPERTIES;
 
+function isAppFontKey(value: string): value is AppFontKey {
+    return Object.prototype.hasOwnProperty.call(APP_FONT_CONFIG, value);
+}
+
+function isAppCjkFontPackKey(value: string): value is AppCjkFontPackKey {
+    return Object.prototype.hasOwnProperty.call(
+        APP_CJK_FONT_PACK_CONFIG,
+        value
+    );
+}
+
 const THEME_COLOR_STYLE_ENTRIES: Array<[ThemeColorStyleToken, string]> = [
     ['primary', THEME_COLOR_STYLE_PROPERTIES.primary],
     ['primaryDark', THEME_COLOR_STYLE_PROPERTIES.primaryDark],
@@ -156,22 +168,17 @@ const THEME_COLOR_STYLE_ENTRIES: Array<[ThemeColorStyleToken, string]> = [
     ['ringDark', THEME_COLOR_STYLE_PROPERTIES.ringDark]
 ];
 
-export function resolveThemeColor(value: unknown): string {
-    const normalized = String(value || '')
-        .trim()
-        .toLowerCase();
-    return VALID_THEME_COLORS.has(normalized)
-        ? normalized
-        : DEFAULT_THEME_COLOR_KEY;
+export function resolveThemeColor(value: string): string {
+    return normalizeThemeColor(value);
 }
 
-export function resolveThemeMode(value: unknown): ThemeMode {
+export function resolveThemeMode(value: string): ThemeMode {
     if (value === 'midnight') {
         return 'dark';
     }
 
-    if (VALID_THEME_MODES.has(value as ThemeMode)) {
-        return value as ThemeMode;
+    if (value === 'system' || value === 'light' || value === 'dark') {
+        return value;
     }
 
     return 'system';
@@ -200,7 +207,7 @@ export function getCommunityThemeAppearanceThemeMode(): ThemeMode {
         : COMMUNITY_THEME_FIXED_THEME_MODE;
 }
 
-function resolveEffectiveThemeMode(themeMode: unknown): ThemeMode {
+function resolveEffectiveThemeMode(themeMode: ThemeMode): ThemeMode {
     if (isCommunityThemeAppearanceControlled()) {
         return getCommunityThemeAppearanceThemeMode();
     }
@@ -208,7 +215,7 @@ function resolveEffectiveThemeMode(themeMode: unknown): ThemeMode {
     return resolveThemeMode(themeMode);
 }
 
-export function getResolvedThemeMode(themeMode: unknown): ResolvedThemeMode {
+export function getResolvedThemeMode(themeMode: ThemeMode): ResolvedThemeMode {
     const normalized = resolveEffectiveThemeMode(themeMode);
     if (normalized === 'system') {
         return window.matchMedia?.('(prefers-color-scheme: dark)').matches
@@ -243,7 +250,7 @@ export function useResolvedThemeMode(): ResolvedThemeMode {
 }
 
 export function normalizeZoomLevel(
-    value: unknown,
+    value: ZoomLevelInput,
     fallback: number = DEFAULT_ZOOM_LEVEL
 ): number {
     if (value === null || value === undefined || value === '') {
@@ -261,7 +268,7 @@ export function normalizeZoomLevel(
     );
 }
 
-export function formatZoomPercentage(value: unknown): string {
+export function formatZoomPercentage(value: string | number): string {
     return `${normalizeZoomLevel(value)}%`;
 }
 
@@ -278,9 +285,9 @@ export function clearThemeColorInlineProperties(): void {
     clearThemeColorProperties(document.documentElement);
 }
 
-export function applyThemeColor(themeColor: unknown): string {
+export function applyThemeColor(themeColor: string): string {
     const normalized = resolveThemeColor(themeColor);
-    const theme = THEME_COLOR_CONFIG[normalized];
+    const theme = resolveThemeColorConfig(normalized);
 
     if (typeof document === 'undefined') {
         useShellStore.getState().setThemeColor(normalized);
@@ -334,41 +341,34 @@ function ensureDynamicStyle(
     document.head.appendChild(styleElement);
 }
 
-export function normalizeAppFontFamily(value: unknown): AppFontKey {
-    const normalized = String(value || '')
-        .trim()
-        .toLowerCase();
-    return Object.prototype.hasOwnProperty.call(APP_FONT_CONFIG, normalized)
-        ? (normalized as AppFontKey)
-        : APP_FONT_DEFAULT_KEY;
+export function normalizeAppFontFamily(value: string): AppFontKey {
+    const normalized = value.trim().toLowerCase();
+    return isAppFontKey(normalized) ? normalized : APP_FONT_DEFAULT_KEY;
 }
 
-export function normalizeAppCjkFontPack(value: unknown): AppCjkFontPackKey {
-    const normalized = String(value || '')
-        .trim()
-        .toLowerCase();
-    return Object.prototype.hasOwnProperty.call(
-        APP_CJK_FONT_PACK_CONFIG,
-        normalized
-    )
-        ? (normalized as AppCjkFontPackKey)
+export function normalizeAppCjkFontPack(value: string): AppCjkFontPackKey {
+    const normalized = value.trim().toLowerCase();
+    return isAppCjkFontPackKey(normalized)
+        ? normalized
         : APP_CJK_FONT_PACK_DEFAULT_KEY;
 }
 
-function normalizeFontLocale(locale: unknown): string {
-    const rawLocale = String(
-        locale || useShellStore.getState().locale || 'en'
+function normalizeFontLocale(locale: string | undefined): string {
+    const rawLocale = (
+        locale ||
+        useShellStore.getState().locale ||
+        'en'
     ).trim();
     return normalizeLanguageCode(rawLocale || 'en');
 }
 
-export function supportsConfigurableCjkFontPack(locale: unknown): boolean {
+export function supportsConfigurableCjkFontPack(locale: string): boolean {
     return CONFIGURABLE_CJK_FONT_LOCALES.has(normalizeFontLocale(locale));
 }
 
 export function resolveAppCjkFontPackForLocale(
-    cjkFontPack: unknown,
-    locale: unknown
+    cjkFontPack: string,
+    locale: string
 ): AppCjkFontPackKey {
     const normalizedCjk = normalizeAppCjkFontPack(cjkFontPack);
     return supportsConfigurableCjkFontPack(locale) ? normalizedCjk : 'system';
@@ -521,7 +521,7 @@ export function applyAppFontPreferences({
     };
 }
 
-export function syncNativeTheme(themeMode: unknown): Promise<void> {
+export function syncNativeTheme(themeMode: ThemeMode): Promise<void> {
     const normalized = resolveEffectiveThemeMode(themeMode);
     const sync = nativeThemeSyncQueue.then(async () => {
         await setWindowTheme(NATIVE_THEME_VALUES[normalized]);
@@ -531,7 +531,7 @@ export function syncNativeTheme(themeMode: unknown): Promise<void> {
     return sync;
 }
 
-export async function applyThemeMode(themeMode: unknown): Promise<void> {
+export async function applyThemeMode(themeMode: string): Promise<void> {
     const sequence = ++themeApplySequence;
     const normalized = resolveThemeMode(themeMode);
     const effectiveThemeMode = resolveEffectiveThemeMode(normalized);
@@ -557,8 +557,8 @@ export async function applyThemeMode(themeMode: unknown): Promise<void> {
 
 export async function setCommunityThemeAppearanceControl(
     enabled: boolean,
-    restoredThemeMode: unknown = useShellStore.getState().themeMode,
-    controlledThemeMode: unknown = COMMUNITY_THEME_FIXED_THEME_MODE
+    restoredThemeMode: ThemeMode = useShellStore.getState().themeMode,
+    controlledThemeMode: ThemeMode = COMMUNITY_THEME_FIXED_THEME_MODE
 ): Promise<void> {
     if (typeof document === 'undefined') {
         return;
@@ -582,7 +582,7 @@ export async function setCommunityThemeAppearanceControl(
     await applyThemeMode(restoredThemeMode);
 }
 
-export async function applyZoomLevel(savedZoom: unknown): Promise<void> {
+export async function applyZoomLevel(savedZoom: ZoomLevelInput): Promise<void> {
     if (savedZoom === null || savedZoom === undefined) {
         return;
     }

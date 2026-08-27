@@ -1,18 +1,16 @@
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 
 import type { LocationCacheRecord } from './locationMetadataTypes';
 
 function recordValue(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function cacheRecord(value: unknown): LocationCacheRecord | null {
-    return value && typeof value === 'object'
-        ? (value as LocationCacheRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function instanceLocation(instance: LocationCacheRecord | null | undefined) {
@@ -30,12 +28,10 @@ function locationCacheKey(location: unknown) {
     return `${parsed.worldId}:${parsed.instanceId}`;
 }
 
-export function buildCachedInstanceMap(instances: unknown) {
+export function buildCachedInstanceMap(
+    instances: readonly GroupInstanceRecord[]
+) {
     const map = new Map<string, LocationCacheRecord>();
-    if (!Array.isArray(instances)) {
-        return map;
-    }
-
     for (const value of instances) {
         const instance = cacheRecord(value);
         if (!instance) {

@@ -1,14 +1,14 @@
-import type { DashboardPanelDefinition } from '@/components/dashboard/dashboardRegistry';
-import {
-    getDashboardPanelDefinition,
-    resolveDashboardPanelKey
-} from '@/components/dashboard/dashboardRegistry';
 import type { DashboardPanel } from '@/repositories/dashboardRepository';
 
 import {
     createDashboardWidgetPanelValue,
     getDashboardPanelConfig
 } from './dashboardConfig';
+import type { DashboardPanelDefinition } from './dashboardRegistry';
+import {
+    getDashboardPanelDefinition,
+    resolveDashboardPanelKey
+} from './dashboardRegistry';
 
 export type DashboardPageMetrics = {
     friendCount: number;
@@ -38,7 +38,7 @@ export function createDashboardPanelPreviewProps({
 }): DashboardPanelPreviewProps {
     const panelKey = resolveDashboardPanelKey(panel);
     const definition = getDashboardPanelDefinition(panelKey);
-    const config = getDashboardPanelConfig(panel) as Record<string, unknown>;
+    const config = getDashboardPanelConfig(panel);
     const onConfigChange =
         definition?.category === 'widget' && onPanelChange
             ? (nextConfig: Record<string, unknown>) =>

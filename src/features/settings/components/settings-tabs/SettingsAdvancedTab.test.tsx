@@ -7,12 +7,10 @@ import type { AppDataDirState } from '@/platform/tauri/bindings';
 import { Tabs } from '@/ui/shadcn/tabs';
 import { TooltipProvider } from '@/ui/shadcn/tooltip';
 
-import { SettingsAdvancedTab } from './SettingsAdvancedTab';
+import { SettingsAdvancedTabContent as SettingsAdvancedTab } from './SettingsAdvancedTab';
 import type { SettingsAdvancedModel } from './settingsAdvancedTypes';
 
 const labels: Record<string, string> = {
-    'view.settings.advanced.advanced_ui.behavior.deep_links':
-        'Open VRCX-0 from links',
     'view.settings.advanced.advanced_ui.behavior.deep_link_registration':
         'Open VRCX-0 links',
     'view.settings.advanced.advanced_ui.storage.change_folder':
@@ -27,7 +25,9 @@ const labels: Record<string, string> = {
         'custom directory',
     'view.settings.advanced.advanced_ui.behavior.deep_link_repair': 'Fix',
     'view.settings.advanced.advanced_ui.behavior.focus_on_join_header':
-        'Bring VRChat to the front'
+        'Bring VRChat to the front',
+    'view.settings.advanced.advanced_ui.troubleshooting.avatar_feed_history':
+        'Save avatar change history'
 };
 
 const commandMocks = vi.hoisted(() => ({
@@ -82,6 +82,7 @@ function createModel(
         onClearConfigTreeData: vi.fn(),
         onGameLogDisabledChange: vi.fn(),
         onFeedPersistenceDisabledChange: vi.fn(),
+        onAvatarFeedPersistenceDisabledChange: vi.fn(),
         onFocusVrchatOnJoinChange: vi.fn(),
         onLogResourceLoadChange: vi.fn(),
         onMigrateLegacyVrcxData: vi.fn(),
@@ -103,6 +104,7 @@ function createModel(
             avatarAutoCleanup: 'Off',
             gameLogDisabled: false,
             feedPersistenceDisabled: false,
+            avatarFeedPersistenceDisabled: false,
             focusVrchatOnJoin: false,
             logResourceLoad: false,
             relaunchVRChatAfterCrash: false,
@@ -148,7 +150,7 @@ describe('SettingsAdvancedTab data directory states', () => {
         );
     });
 
-    it('shows the cross-platform Fix action without a separate heading', async () => {
+    it('shows the cross-platform Fix action for registration errors', async () => {
         commandMocks.appDeepLinkRegistrationStatus.mockRejectedValueOnce(
             new Error('registry value is malformed')
         );
@@ -161,7 +163,6 @@ describe('SettingsAdvancedTab data directory states', () => {
             })
         ).not.toBeNull();
         expect(screen.getByText('Open VRCX-0 links')).not.toBeNull();
-        expect(screen.queryByText('Open VRCX-0 from links')).toBeNull();
     });
 
     it('keeps the repair action hidden on unsupported platforms', async () => {
@@ -194,6 +195,20 @@ describe('SettingsAdvancedTab data directory states', () => {
                 name: 'More data location actions'
             })
         ).toBeNull();
+    });
+
+    it.each([
+        ['\\\\?\\C:\\VRCX-0', 'C:\\VRCX-0'],
+        ['\\\\?\\UNC\\server\\share\\VRCX-0', '\\\\server\\share\\VRCX-0']
+    ])('displays the extended path %s as %s', (currentDir, displayedPath) => {
+        renderTab(
+            createModel({
+                appDataDirState: appDataDirState({ currentDir })
+            })
+        );
+
+        expect(screen.getByText(displayedPath)).toBeTruthy();
+        expect(screen.queryByText(currentDir)).toBeNull();
     });
 
     it('shows the More menu for a custom directory', () => {
@@ -262,5 +277,32 @@ describe('SettingsAdvancedTab data directory states', () => {
                 name: 'Bring VRChat to the front'
             })
         ).toBeNull();
+    });
+
+    it('disables avatar history persistence while Feed persistence is off', () => {
+        const model = createModel();
+        model.prefs.feedPersistenceDisabled = true;
+
+        renderTab(model);
+
+        const toggle = screen.getByRole('switch', {
+            name: 'Save avatar change history'
+        });
+        expect(toggle.hasAttribute('data-disabled')).toBe(true);
+    });
+
+    it('changes avatar history persistence without changing Feed persistence', () => {
+        const onAvatarFeedPersistenceDisabledChange = vi.fn();
+        renderTab(createModel({ onAvatarFeedPersistenceDisabledChange }));
+
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Save avatar change history'
+            })
+        );
+
+        expect(onAvatarFeedPersistenceDisabledChange).toHaveBeenCalledWith(
+            true
+        );
     });
 });

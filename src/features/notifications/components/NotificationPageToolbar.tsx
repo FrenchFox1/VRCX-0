@@ -29,7 +29,7 @@ const QUICK_FILTERS: { value: NotificationQuickFilter; labelKey: string }[] = [
 type NotificationPageToolbarProps = {
     activeTypes: string[];
     loadStatus: NotificationLoadStatus;
-    notificationTypeLabel: (type: unknown) => string;
+    notificationTypeLabel: (type: string) => string;
     onActiveTypesChange: (types: string[]) => void;
     onClearFilters: () => void;
     onMarkAllSeen: () => void;
@@ -61,7 +61,10 @@ export function NotificationPageToolbar({
             value: entry.value,
             label: t(entry.labelKey)
         }));
-    const hasActiveFilters = activeTypes.length > 0 || quickFilter !== 'all';
+    const hasActiveFilters =
+        activeTypes.length > 0 ||
+        quickFilter !== 'all' ||
+        Boolean(searchQuery.trim());
 
     return (
         <PageToolbar>

@@ -46,11 +46,8 @@ export function useGalleryInventoryActions({
     toast,
     useRuntimeStore
 }: GalleryInventoryActionDeps) {
-    async function deletePrint(printId: unknown) {
-        const normalizedPrintId =
-            typeof printId === 'string'
-                ? printId.trim()
-                : String(printId ?? '').trim();
+    async function deletePrint(printId: string) {
+        const normalizedPrintId = printId.trim();
         if (!normalizedPrintId) {
             return;
         }
@@ -113,16 +110,13 @@ export function useGalleryInventoryActions({
     }
     async function setProfileField(
         fieldName: GalleryProfileField,
-        fileId: unknown
+        fileId: string
     ) {
         if (!currentUserId) {
             toast.error(t('view.tools.empty.no_current_user_is_available'));
             return;
         }
-        const normalizedFileId =
-            typeof fileId === 'string'
-                ? fileId.trim()
-                : String(fileId ?? '').trim();
+        const normalizedFileId = fileId.trim();
         const nextValue = buildProfilePicOverride(
             currentEndpoint,
             normalizedFileId
@@ -178,11 +172,8 @@ export function useGalleryInventoryActions({
             );
         }
     }
-    async function consumeInventoryBundle(inventoryId: unknown) {
-        const normalizedInventoryId =
-            typeof inventoryId === 'string'
-                ? inventoryId.trim()
-                : String(inventoryId ?? '').trim();
+    async function consumeInventoryBundle(inventoryId: string) {
+        const normalizedInventoryId = inventoryId.trim();
         if (!normalizedInventoryId) {
             return;
         }
@@ -227,7 +218,8 @@ export function useGalleryInventoryActions({
             confirmText: t('prompt.redeem.redeem'),
             cancelText: t('prompt.redeem.cancel')
         });
-        if (!result.ok || !String(result.value || '').trim()) {
+        const code = result.value?.trim();
+        if (!result.ok || !code) {
             return;
         }
         if (!isRuntimeAuthTarget(authTarget)) {
@@ -235,7 +227,7 @@ export function useGalleryInventoryActions({
         }
         setMutatingKey('inventory:redeem');
         try {
-            await mediaRepository.redeemReward(result.value);
+            await mediaRepository.redeemReward(code);
             if (isRuntimeAuthTarget(authTarget)) {
                 toast.success(t('prompt.redeem.success'));
                 await refreshInventory();

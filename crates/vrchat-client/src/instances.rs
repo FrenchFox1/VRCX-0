@@ -4,7 +4,14 @@ use serde_json::{json, Value};
 
 use crate::http_api::{
     api_input_skip_empty_query_string as api_input, get_input_skip_empty_query_string as get_input,
-    object_body, query_input, require_text, HttpApiError, HttpApiRequestInput,
+    query_input, require_text, HttpApiError, HttpApiRequestInput,
+};
+
+mod request;
+
+pub use request::{
+    InstanceCreateGroupAccessType, InstanceCreateMinimumAvatarPerformance, InstanceCreateRegion,
+    InstanceCreateRequest, InstanceCreateType,
 };
 
 pub fn instance_get_input(
@@ -51,8 +58,12 @@ pub fn instance_short_name_get_input(
     ))
 }
 
-pub fn instance_create_input(endpoint: String, params: Option<Value>) -> HttpApiRequestInput {
-    api_input(endpoint, "POST", "instances", object_body(params))
+pub fn instance_create_input(
+    endpoint: String,
+    params: InstanceCreateRequest,
+) -> Result<HttpApiRequestInput, HttpApiError> {
+    let params = params.validated()?;
+    Ok(api_input(endpoint, "POST", "instances", json!(params)))
 }
 
 pub fn instance_self_invite_input(
@@ -100,6 +111,91 @@ pub fn instance_close_input(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn public_instance() -> InstanceCreateRequest {
+        InstanceCreateRequest {
+            r#type: InstanceCreateType::Public,
+            can_request_invite: false,
+            world_id: "wrld_123".into(),
+            owner_id: None,
+            region: InstanceCreateRegion::Us,
+            group_access_type: None,
+            queue_enabled: None,
+            role_ids: None,
+            age_gate: None,
+            display_name: None,
+            minimum_avatar_performance: None,
+        }
+    }
+
+    #[test]
+    fn create_instance_serializes_only_valid_typed_options() {
+        let request = instance_create_input("endpoint".into(), public_instance()).unwrap();
+
+        assert_eq!(
+            request.body.as_json(),
+            Some(&json!({
+                "type": "public",
+                "canRequestInvite": false,
+                "worldId": "wrld_123",
+                "region": "us",
+            }))
+        );
+    }
+
+    #[test]
+    fn create_instance_rejects_cross_field_mismatches() {
+        let mut request = public_instance();
+        request.owner_id = Some("usr_owner".into());
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.r#type = InstanceCreateType::Group;
+        request.owner_id = Some("grp_owner".into());
+        request.group_access_type = Some(InstanceCreateGroupAccessType::Plus);
+        request.role_ids = Some(vec!["grol_role".into()]);
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.can_request_invite = true;
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.minimum_avatar_performance = Some(InstanceCreateMinimumAvatarPerformance::Good);
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+    }
+
+    #[test]
+    fn create_group_instance_serializes_minimum_avatar_performance() {
+        let mut request = public_instance();
+        request.r#type = InstanceCreateType::Group;
+        request.owner_id = Some("grp_owner".into());
+        request.group_access_type = Some(InstanceCreateGroupAccessType::Plus);
+        request.minimum_avatar_performance = Some(InstanceCreateMinimumAvatarPerformance::Medium);
+
+        let request = instance_create_input("endpoint".into(), request).unwrap();
+
+        assert_eq!(
+            request.body.as_json(),
+            Some(&json!({
+                "type": "group",
+                "canRequestInvite": false,
+                "worldId": "wrld_123",
+                "ownerId": "grp_owner",
+                "region": "us",
+                "groupAccessType": "plus",
+                "minimumAvatarPerformance": "Medium",
+            }))
+        );
+    }
+
+    #[test]
+    fn create_instance_rejects_none_as_a_minimum_avatar_performance_value() {
+        assert!(
+            serde_json::from_value::<InstanceCreateMinimumAvatarPerformance>(json!("None"))
+                .is_err()
+        );
+    }
 
     #[test]
     fn short_name_lookup_keeps_instance_tag_unescaped_like_legacy_api() {

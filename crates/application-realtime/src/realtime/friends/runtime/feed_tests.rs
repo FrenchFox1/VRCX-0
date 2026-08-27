@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn websocket_friend_update_still_emits_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -14,7 +14,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         status_description: "Old status".into(),
@@ -57,7 +56,7 @@ mod tests {
 
     #[test]
     fn websocket_friend_update_with_offline_status_does_not_emit_status_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -67,7 +66,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         status_description: "Old status".into(),
@@ -115,7 +113,7 @@ mod tests {
 
     #[test]
     fn duplicate_friend_update_status_payload_only_writes_status_feed_once() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -125,7 +123,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "join me".into(),
                         status_description: "Old status".into(),
@@ -180,7 +177,7 @@ mod tests {
 
     #[test]
     fn friend_update_status_a_b_a_writes_each_real_diff() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -190,7 +187,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         status: "active".into(),
                         status_description: "A".into(),
@@ -257,7 +253,7 @@ mod tests {
 
     #[test]
     fn websocket_friend_update_avatar_tags_change_emits_avatar_feed() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -267,7 +263,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         current_avatar_image_url: "https://avatar.example/image.png".into(),
                         current_avatar_thumbnail_image_url: "https://avatar.example/thumb.png"
@@ -325,7 +320,7 @@ mod tests {
 
     #[test]
     fn duplicate_friend_update_avatar_payload_only_writes_avatar_feed_once() {
-        let runtime = RealtimeFriendsRuntime::new();
+        let runtime = RealtimeFriendsRuntime::default();
         runtime.set_baseline(
             FriendRosterBaseline {
                 current_user_id: "usr_self".into(),
@@ -335,7 +330,6 @@ mod tests {
                         id: "usr_friend".into(),
                         display_name: "Friend".into(),
                         state: "online".into(),
-                        state_bucket: "online".into(),
                         location: "wrld_old:123".into(),
                         current_avatar_image_url: "https://avatar.example/a.png".into(),
                         current_avatar_thumbnail_image_url: "https://avatar.example/a-thumb.png"

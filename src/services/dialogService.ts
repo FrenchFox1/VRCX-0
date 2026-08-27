@@ -6,10 +6,12 @@ import {
 } from '@/repositories/browseHistoryRepository';
 import i18n from '@/services/i18nService';
 import { recordUserProfile } from '@/services/userFactAccessService';
+import { isRecord } from '@/shared/utils/record';
 import {
     useDialogStore,
     type ActiveDialog,
-    type DialogBreadcrumb
+    type DialogBreadcrumb,
+    type WorldNewInstanceDefaults
 } from '@/state/dialogStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -22,7 +24,7 @@ type EntityDialogPayload =
           seedData?: DialogRecord | null;
           initialAction?: string;
           initialActionNonce?: number;
-          initialNewInstanceDefaults?: DialogRecord | null;
+          initialNewInstanceDefaults?: WorldNewInstanceDefaults | null;
       })
     | null;
 type EntityDialog = ActiveDialog & {
@@ -43,40 +45,40 @@ type EntityDialogBreadcrumb = DialogBreadcrumb & {
 
 type OpenEntityDialogOptions = {
     kind?: EntityDialogKind;
-    entityId?: unknown;
-    title?: unknown;
-    description?: unknown;
+    entityId?: string | null;
+    title?: string;
+    description?: string;
     payload?: EntityDialogPayload;
 };
 
 type OpenUserDialogOptions = {
-    userId?: unknown;
-    title?: unknown;
-    description?: unknown;
+    userId?: string | null;
+    title?: string;
+    description?: string;
     seedData?: DialogRecord | null;
     initialAction?: string;
 };
 
 type OpenWorldDialogOptions = {
-    worldId?: unknown;
-    title?: unknown;
-    description?: unknown;
+    worldId?: string | null;
+    title?: string;
+    description?: string;
     seedData?: DialogRecord | null;
     initialAction?: string;
-    initialNewInstanceDefaults?: DialogRecord | null;
+    initialNewInstanceDefaults?: WorldNewInstanceDefaults | null;
 };
 
 type OpenAvatarDialogOptions = {
-    avatarId?: unknown;
-    title?: unknown;
-    description?: unknown;
+    avatarId?: string | null;
+    title?: string;
+    description?: string;
     seedData?: DialogRecord | null;
 };
 
 type OpenGroupDialogOptions = {
-    groupId?: unknown;
-    title?: unknown;
-    description?: unknown;
+    groupId?: string | null;
+    title?: string;
+    description?: string;
     seedData?: DialogRecord | null;
 };
 
@@ -105,14 +107,8 @@ const historyImageKeys: Record<BrowseHistoryEntityKind, readonly string[]> = {
     group: ['iconUrl', 'bannerUrl']
 };
 
-function isRecord(value: unknown): value is DialogRecord {
-    return Boolean(value && typeof value === 'object');
-}
-
-function normalizeEntityId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeEntityId(value: string | null | undefined) {
+    return value?.trim() ?? '';
 }
 
 function normalizeTitle(value: unknown) {
@@ -220,13 +216,13 @@ function readSeedTitle(kind: EntityDialogKind, seedData: unknown) {
 }
 
 function recordUserDialogSeed(
-    userId: unknown,
-    title: unknown,
+    userId: string | null | undefined,
+    title: string,
     seedData: DialogRecord | null
 ) {
-    const normalizedUserId = normalizeEntityId(
-        userId || seedData?.id || seedData?.userId
-    );
+    const normalizedUserId =
+        normalizeEntityId(userId) ||
+        normalizeTitle(seedData?.id || seedData?.userId);
     if (!normalizedUserId) {
         return;
     }
@@ -256,8 +252,8 @@ function recordUserDialogSeed(
 
 function sanitizeEntityTitle(
     kind: EntityDialogKind,
-    entityId: unknown,
-    title: unknown,
+    entityId: string,
+    title: string,
     payload: EntityDialogPayload
 ) {
     const normalizedTitle = normalizeTitle(title);

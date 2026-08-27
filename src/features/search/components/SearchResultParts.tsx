@@ -1,6 +1,7 @@
 import {
     GlobeIcon,
     PersonStandingIcon,
+    SearchXIcon,
     UserIcon,
     UsersIcon
 } from 'lucide-react';
@@ -8,13 +9,12 @@ import type { LucideIcon } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { GroupCard } from '@/components/groups/GroupCard';
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import type {
-    AvatarProfileRecord,
-    UserProfileRecord,
-    WorldProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { AvatarProfileRecord } from '@/domain/entities/avatar';
+import type { UserProfileRecord } from '@/domain/entities/user';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import { cn } from '@/lib/utils';
 import type { SearchGroupJson } from '@/repositories/vrchatSearchRepository';
 import {
@@ -23,11 +23,7 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
-import {
-    convertFileUrlToImageUrl,
-    getNameColour,
-    userImage
-} from '@/services/entityMediaService';
+import { getNameColour, userImage } from '@/services/entityMediaService';
 import {
     languageOptionLabel,
     type LanguageOption,
@@ -38,10 +34,62 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-export function SearchEmptyState() {
-    const { t } = useTranslation();
+import type { SearchActiveTab } from '../searchTypes';
 
-    return <EmptyState variant="panel" title={t('common.no_data')} />;
+const SEARCH_EMPTY_ICONS: Record<SearchActiveTab, LucideIcon> = {
+    avatar: PersonStandingIcon,
+    group: UsersIcon,
+    user: UserIcon,
+    world: GlobeIcon
+};
+
+export function SearchEmptyState({
+    kind,
+    searched,
+    avatarProviderConfigured = true,
+    onClear,
+    onConfigureAvatarProvider
+}: {
+    kind: SearchActiveTab;
+    searched: boolean;
+    avatarProviderConfigured?: boolean;
+    onClear: () => void;
+    onConfigureAvatarProvider?: () => void;
+}) {
+    const { t } = useTranslation();
+    const EmptyIcon = searched ? SearchXIcon : SEARCH_EMPTY_ICONS[kind];
+    const needsAvatarProvider = kind === 'avatar' && !avatarProviderConfigured;
+    let titleKey = `empty_state.search_${kind}_title`;
+    let descriptionKey = `empty_state.search_${kind}_description`;
+    if (searched) {
+        titleKey = 'empty_state.search_no_results';
+        descriptionKey = 'empty_state.search_try_another';
+    } else if (needsAvatarProvider) {
+        descriptionKey = 'empty_state.search_avatar_provider_description';
+    }
+
+    return (
+        <EmptyState
+            variant="panel"
+            icon={EmptyIcon}
+            title={t(titleKey)}
+            description={t(descriptionKey)}
+        >
+            {searched ? (
+                <Button type="button" variant="link" onClick={onClear}>
+                    {t('empty_state.clear_search')}
+                </Button>
+            ) : needsAvatarProvider && onConfigureAvatarProvider ? (
+                <Button
+                    type="button"
+                    variant="link"
+                    onClick={onConfigureAvatarProvider}
+                >
+                    {t('empty_state.set_up_avatar_search')}
+                </Button>
+            ) : null}
+        </EmptyState>
+    );
 }
 
 export function SearchLoadingState() {
@@ -116,7 +164,6 @@ function SearchMediaCard({
 function SearchEntityCard({
     imageUrl,
     imageAlt,
-    imageShape = 'user',
     FallbackIcon,
     title,
     titleStyle,
@@ -127,7 +174,6 @@ function SearchEntityCard({
 }: {
     imageUrl?: string | null;
     imageAlt: string;
-    imageShape?: 'group' | 'user';
     FallbackIcon: LucideIcon;
     title?: ReactNode;
     titleStyle?: CSSProperties;
@@ -136,11 +182,6 @@ function SearchEntityCard({
     description?: ReactNode;
     onClick: () => void;
 }) {
-    const imageClassName =
-        imageShape === 'group' ? 'rounded-lg' : 'rounded-full';
-    const frameClassName =
-        imageShape === 'group' ? 'after:rounded-lg' : 'after:rounded-full';
-
     return (
         <Button
             type="button"
@@ -148,18 +189,16 @@ function SearchEntityCard({
             className="h-auto w-full min-w-0 items-start justify-start gap-3 overflow-hidden p-3 text-left font-normal whitespace-normal"
             onClick={onClick}
         >
-            <Avatar className={cn('size-14', imageClassName, frameClassName)}>
+            <Avatar className="size-14 rounded-full after:rounded-full">
                 {imageUrl ? (
                     <AvatarImage
                         src={imageUrl}
                         alt={imageAlt}
                         loading="lazy"
-                        className={imageClassName}
+                        className="rounded-full"
                     />
                 ) : null}
-                <AvatarFallback
-                    className={cn(imageClassName, '[&>svg]:size-5')}
-                >
+                <AvatarFallback className="rounded-full [&>svg]:size-5">
                     <FallbackIcon aria-hidden="true" />
                 </AvatarFallback>
             </Avatar>
@@ -324,7 +363,6 @@ export function UserRow({
         <SearchEntityCard
             imageUrl={imageUrl}
             imageAlt={user.displayName || user.id || 'User'}
-            imageShape="user"
             FallbackIcon={UserIcon}
             title={user.displayName || ''}
             titleMeta={
@@ -358,39 +396,9 @@ export function UserRow({
 }
 
 export function GroupRow({ group }: { group: SearchGroupJson }) {
-    const imageUrl = convertFileUrlToImageUrl(group.iconUrl);
-    const groupCode =
-        group.shortCode && group.discriminator
-            ? `${group.shortCode}.${group.discriminator}`
-            : group.shortCode || group.discriminator || null;
-
     return (
-        <SearchEntityCard
-            imageUrl={imageUrl}
-            imageAlt={group.name || 'Group'}
-            imageShape="group"
-            FallbackIcon={UsersIcon}
-            title={group.name || ''}
-            titleMeta={
-                <Badge
-                    variant="secondary"
-                    className="shrink-0 rounded-sm px-1.5 tabular-nums"
-                >
-                    <UsersIcon data-icon="inline-start" />
-                    {group.memberCount ?? 0}
-                </Badge>
-            }
-            meta={
-                groupCode ? (
-                    <TruncatedBadge
-                        className="max-w-full font-mono"
-                        tooltip={groupCode}
-                    >
-                        {groupCode}
-                    </TruncatedBadge>
-                ) : null
-            }
-            description={group.description || ''}
+        <GroupCard
+            group={group}
             onClick={() =>
                 openGroupDialog({
                     groupId: group.id,

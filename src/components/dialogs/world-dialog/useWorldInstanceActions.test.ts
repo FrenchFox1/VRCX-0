@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
     resolveCreatedInstanceDetails: vi.fn(),
     selfInviteToInstance: vi.fn(),
     tryOpenLaunchLocation: vi.fn(),
-    showLaunchDialog: vi.fn()
+    showLaunchDialog: vi.fn(),
+    loadNewInstanceGroups: vi.fn().mockResolvedValue([])
 }));
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -32,7 +33,8 @@ vi.mock('@/repositories/configRepository', () => ({
         setString: vi.fn().mockResolvedValue(undefined),
         setBool: vi.fn().mockResolvedValue(undefined),
         getString: vi.fn().mockResolvedValue(''),
-        getBool: vi.fn().mockResolvedValue(false)
+        getBool: vi.fn().mockResolvedValue(false),
+        getArray: vi.fn().mockResolvedValue([])
     }
 }));
 
@@ -52,45 +54,39 @@ vi.mock('./worldInstanceResolver', () => ({
     resolveCreatedInstanceDetails: mocks.resolveCreatedInstanceDetails
 }));
 
+import configRepository from '@/repositories/configRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import {
-    isNewInstanceOpenInGameRequest,
-    isNewInstanceSelfInviteRequest,
     resolveNewInstanceAfterCreateAction,
     useWorldInstanceActions
 } from './useWorldInstanceActions';
-import type { NewInstanceAfterCreateAction } from './worldNewInstanceTypes';
+import { normalizeMinimumAvatarPerformance } from './worldDialogHelpers';
+import type {
+    NewInstanceAfterCreateAction,
+    WorldNewInstanceForm
+} from './worldNewInstanceTypes';
 
 describe('useWorldInstanceActions helpers', () => {
     it('maps the follow-up new-instance action to open in-game while VRChat is running', () => {
         expect(resolveNewInstanceAfterCreateAction(true, true)).toBe(
             'openInGame'
         );
-        expect(
-            isNewInstanceOpenInGameRequest({ afterCreateAction: 'openInGame' })
-        ).toBe(true);
-        expect(
-            isNewInstanceSelfInviteRequest({ afterCreateAction: 'openInGame' })
-        ).toBe(false);
     });
 
     it('keeps the follow-up new-instance action as self-invite when VRChat is not running', () => {
         expect(resolveNewInstanceAfterCreateAction(true, false)).toBe(
             'selfInvite'
         );
-        expect(
-            isNewInstanceSelfInviteRequest({ afterCreateAction: 'selfInvite' })
-        ).toBe(true);
-        expect(
-            isNewInstanceOpenInGameRequest({ afterCreateAction: 'selfInvite' })
-        ).toBe(false);
     });
 
     it('does not attach a follow-up action for a plain new instance', () => {
         expect(resolveNewInstanceAfterCreateAction(false, true)).toBe('');
-        expect(isNewInstanceSelfInviteRequest(null)).toBe(false);
-        expect(isNewInstanceOpenInGameRequest({})).toBe(false);
+    });
+
+    it('accepts API avatar-performance values and treats legacy None as no limit', () => {
+        expect(normalizeMinimumAvatarPerformance('Medium')).toBe('Medium');
+        expect(normalizeMinimumAvatarPerformance('None')).toBe('');
     });
 });
 
@@ -121,6 +117,7 @@ function renderCreateFlow(
             isGameRunning,
             profileWorldId: 'wrld_test',
             newInstanceGroups: [],
+            loadNewInstanceGroups: mocks.loadNewInstanceGroups,
             actionStatusRef,
             setActionStatus: vi.fn(),
             isCurrentWorldTarget: () => true,
@@ -137,9 +134,10 @@ function renderCreateFlow(
     return result;
 }
 
-async function submit(result: {
-    current: ReturnType<typeof useWorldInstanceActions>;
-}) {
+async function submit(
+    result: { current: ReturnType<typeof useWorldInstanceActions> },
+    overrides: Partial<WorldNewInstanceForm> = {}
+) {
     await act(async () => {
         await result.current.createWorldInstance({
             selectedTab: 'Normal',
@@ -147,6 +145,7 @@ async function submit(result: {
             region: 'US West',
             groupId: '',
             groupAccessType: 'plus',
+            minimumAvatarPerformance: '',
             queueEnabled: true,
             ageGate: false,
             displayName: '',
@@ -154,7 +153,8 @@ async function submit(result: {
             roleIds: '',
             instanceName: '',
             legacyUserId: '',
-            strict: false
+            strict: false,
+            ...overrides
         });
     });
 }
@@ -170,6 +170,20 @@ describe('useWorldInstanceActions createWorldInstance', () => {
         mocks.tryOpenLaunchLocation.mockResolvedValue(true);
     });
 
+    it('loads current-user groups when opening the new-instance dialog', async () => {
+        const result = renderCreateFlow('');
+        act(() => {
+            result.current.setNewInstanceRequest(null);
+        });
+
+        await act(async () => {
+            await result.current.openNewInstanceDialog();
+        });
+
+        expect(mocks.loadNewInstanceGroups).toHaveBeenCalledOnce();
+        expect(result.current.newInstanceRequest).not.toBeNull();
+    });
+
     it('closes the dialog and hands a plain new instance to the launch dialog', async () => {
         const result = renderCreateFlow('');
         await submit(result);
@@ -180,6 +194,23 @@ describe('useWorldInstanceActions createWorldInstance', () => {
             created.shortName,
             created.secureOrShortName,
             expect.objectContaining({ createdInstance: created })
+        );
+    });
+
+    it('persists and forwards the group avatar-performance limit', async () => {
+        const result = renderCreateFlow('');
+        await submit(result, {
+            accessType: 'group',
+            groupId: 'grp_test',
+            minimumAvatarPerformance: 'Good'
+        });
+
+        expect(configRepository.setString).toHaveBeenCalledWith(
+            'instanceDialogMinimumAvatarPerformance',
+            'Good'
+        );
+        expect(mocks.createInstance).toHaveBeenCalledWith(
+            expect.objectContaining({ minimumAvatarPerformance: 'Good' })
         );
     });
 

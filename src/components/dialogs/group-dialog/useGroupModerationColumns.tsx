@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 import type { AppColumn, AppColumnDef } from '@/components/data-table/appTable';
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
-import type {
-    EntityRecord,
-    GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+import type { GroupProfileRecord } from '@/domain/entities/group';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { formatDateFilter } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';

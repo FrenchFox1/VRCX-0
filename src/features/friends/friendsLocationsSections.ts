@@ -1,5 +1,8 @@
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { getFriendsSortFunction, sortStatus } from '@/shared/utils/friend';
 import type { FriendSortMethod } from '@/shared/utils/friend';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
+import { isRecord } from '@/shared/utils/record';
 
 import {
     type FriendLocationFriend,
@@ -9,32 +12,29 @@ import {
     resolveLocationTarget
 } from './friendsLocationsRows';
 
-type TranslationFn = (
-    key: string,
-    options?: Record<string, unknown>
-) => unknown;
+type TranslationFn = (key: string, options?: Record<string, unknown>) => string;
 
 type FriendSectionRecord = Record<string, unknown> & {
-    displayName?: unknown;
-    id?: unknown;
-    name?: unknown;
+    displayName?: string | null;
+    id?: string | null;
+    name?: string | null;
     ref?: FriendSectionRecord | null;
-    status?: unknown;
-    username?: unknown;
+    status?: string | null;
+    username?: string | null;
 };
 
 type FavoriteGroupOption = {
-    key?: unknown;
-    displayName?: unknown;
-    name?: unknown;
+    key?: string;
+    displayName?: string;
+    name?: string;
 };
 
 type FavoriteGroupLabelsByFriendId = Map<string, string[]>;
 
 type FavoriteGroupLabelsInput = {
     favoriteFriendGroups?: FavoriteGroupOption[] | null;
-    groupedFavoriteFriendIdsByGroupKey?: Record<string, unknown>;
-    localFriendFavorites?: Record<string, unknown>;
+    groupedFavoriteFriendIdsByGroupKey?: Record<string, string[]>;
+    localFriendFavorites?: FavoriteGroupMap;
     t?: TranslationFn | null;
 };
 
@@ -79,10 +79,6 @@ type BuildFriendSectionsInput<
     t?: TranslationFn | null;
 };
 
-function isRecord(value: unknown): value is FriendSectionRecord {
-    return typeof value === 'object' && value !== null;
-}
-
 const FRIEND_SORT_METHODS = new Set<string>([
     'Sort Alphabetically',
     'Sort Private to Bottom',
@@ -125,12 +121,11 @@ function localized(
 
 function appendLabel(
     labelsByFriendId: FavoriteGroupLabelsByFriendId,
-    friendId: unknown,
-    label: unknown
+    friendId: string,
+    label: string
 ) {
     const normalizedFriendId = normalizeId(friendId);
-    const normalizedLabel =
-        typeof label === 'string' ? label.trim() : String(label ?? '').trim();
+    const normalizedLabel = label.trim();
     if (!normalizedFriendId || !normalizedLabel) {
         return;
     }
@@ -158,20 +153,14 @@ export function buildFavoriteGroupLabelsByFriendId({
 
         const label = group?.displayName || group?.name || groupKey;
         const friendIds = groupedFavoriteFriendIdsByGroupKey?.[groupKey];
-        if (Array.isArray(friendIds)) {
-            for (const friendId of friendIds) {
-                appendLabel(labelsByFriendId, friendId, label);
-            }
+        for (const friendId of friendIds ?? []) {
+            appendLabel(labelsByFriendId, friendId, label);
         }
     }
 
     for (const [groupName, friendIds] of Object.entries(
         localFriendFavorites ?? {}
     )) {
-        if (!Array.isArray(friendIds)) {
-            continue;
-        }
-
         const label = localized(
             t,
             'view.friends_locations.local_group',
@@ -235,25 +224,9 @@ function readFriendStatusSource(
     };
 }
 
-function normalizeStatusText(value: unknown) {
-    const status =
-        typeof value === 'string'
-            ? value.trim().toLowerCase()
-            : String(value ?? '')
-                  .trim()
-                  .toLowerCase();
-    if (status === 'joinme') {
-        return 'join me';
-    }
-    if (status === 'askme') {
-        return 'ask me';
-    }
-    return status;
-}
-
 function activeStatusSortValue(friend: FriendLocationFriend) {
     const source = readFriendStatusSource(friend);
-    const status = normalizeStatusText(source?.status);
+    const status = userStatusFromValue(source?.status);
     if (status === 'join me' || status === 'ask me' || status === 'busy') {
         return status;
     }

@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use serde::Serialize;
 use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
 use vrcx_0_application_core::WebClient;
-use vrcx_0_core::json::JsonExt;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, HttpApiExecuteResponse};
-use vrcx_0_vrchat_client::realtime::normalize_websocket_domain;
+use vrcx_0_contracts::vrchat_api::vrchat_auth_error_message;
+use vrcx_0_core::json::{JsonExt, RawJson};
+use vrcx_0_core::vrchat_endpoints::{
+    normalize_vrchat_api_endpoint, normalize_vrchat_websocket_endpoint,
+};
 
 use crate::auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage};
 use crate::auth::{LoginApi, WebClientLoginApi};
@@ -18,7 +20,7 @@ pub struct AuthenticatedRuntimeSession {
     pub display_name: String,
     pub endpoint: String,
     pub websocket: String,
-    pub current_user: Value,
+    pub current_user: RawJson,
 }
 
 impl AuthenticatedRuntimeSession {
@@ -32,8 +34,8 @@ impl AuthenticatedRuntimeSession {
             user_id,
             display_name,
             endpoint: normalize_vrchat_api_endpoint(Some(&endpoint)),
-            websocket: normalize_websocket_domain(&websocket),
-            current_user: user,
+            websocket: normalize_vrchat_websocket_endpoint(&websocket),
+            current_user: RawJson::from(user),
         }
     }
 }
@@ -56,12 +58,12 @@ pub enum CookieSessionProbe {
 
 pub async fn probe_current_user_from_cookie(
     web: Arc<WebClient>,
-    db: Arc<DatabaseService>,
+    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, db);
+    let api = WebClientLoginApi::new(web, requests);
     probe_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
 }
 
@@ -82,12 +84,12 @@ pub(crate) async fn probe_current_user_from_cookie_with_api(
 
 pub async fn probe_saved_current_user_from_cookie(
     web: Arc<WebClient>,
-    db: Arc<DatabaseService>,
+    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, db);
+    let api = WebClientLoginApi::new(web, requests);
     probe_saved_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
 }
 
@@ -119,7 +121,7 @@ fn map_fallback_probe(
         CookieProbeResult::Authenticated { user, .. } => Ok(CookieSessionProbe::Authenticated(
             AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
         )),
-        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch => {
+        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch { .. } => {
             Ok(CookieSessionProbe::Fallback)
         }
         CookieProbeResult::RequiresTwoFactor(_) => unreachable!(),
@@ -134,12 +136,12 @@ fn map_fallback_probe(
 
 pub async fn current_user_from_cookie(
     web: Arc<WebClient>,
-    db: Arc<DatabaseService>,
+    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, db);
+    let api = WebClientLoginApi::new(web, requests);
     current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
 }
 
@@ -172,11 +174,13 @@ pub(crate) async fn current_user_from_cookie_with_api(
                 ),
             })
         }
-        CookieProbeResult::UserMismatch => Err(NonInteractiveAuthError::SessionInvalidated {
-            user_id,
-            reason: "The stored browser session belongs to a different account.".into(),
-            status_code: None,
-        }),
+        CookieProbeResult::UserMismatch { .. } => {
+            Err(NonInteractiveAuthError::SessionInvalidated {
+                user_id,
+                reason: "The stored browser session belongs to a different account.".into(),
+                status_code: None,
+            })
+        }
         CookieProbeResult::Rejected { stage, response } => {
             rejected_probe_error(user_id, stage, response)
         }
@@ -211,22 +215,7 @@ fn rejected_probe_error<T>(
 }
 
 pub fn auth_response_error_message(response: &HttpApiExecuteResponse, fallback: String) -> String {
-    let Ok(json) = serde_json::from_str::<Value>(&response.data) else {
-        return fallback;
-    };
-    json.as_str()
-        .map(ToOwned::to_owned)
-        .or_else(|| json.scalar_field("message"))
-        .or_else(|| {
-            json.get("error").and_then(|error| {
-                if let Some(message) = error.scalar_field("message") {
-                    Some(message)
-                } else {
-                    error.as_str().map(ToOwned::to_owned)
-                }
-            })
-        })
-        .unwrap_or(fallback)
+    vrchat_auth_error_message(response).unwrap_or(fallback)
 }
 
 pub fn parse_current_user_response(
@@ -265,7 +254,7 @@ mod tests {
     use super::*;
 
     fn response(status: i32, data: serde_json::Value) -> HttpApiExecuteResponse {
-        vrcx_0_vrchat_client::http_api::execute_response(status, data.to_string())
+        vrcx_0_contracts::vrchat_api::vrchat_response(status, data.to_string())
     }
 
     #[test]

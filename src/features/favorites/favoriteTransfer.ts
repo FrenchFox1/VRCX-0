@@ -1,3 +1,5 @@
+import type { FavoriteRecord } from '@/domain/favorites/types';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import type {
     FavoriteTransferInput,
     FavoriteTransferItemResult,
@@ -5,31 +7,28 @@ import type {
     FavoriteTransferLocation,
     FavoriteTransferMode
 } from '@/platform/tauri/bindings';
-import type { FavoriteRecord } from '@/state/favoriteStoreTypes';
 
 import { favoriteGroupType, normalizeFavoriteEntityId } from './favoritesItems';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 
 export const FAVORITE_TRANSFER_RECOVERED_GROUP_NAME = 'Recovered';
 
 type BuildFavoriteTransferTargetsInput = {
-    remoteGroups: FavoriteGroup[];
-    localGroups: FavoriteGroup[];
+    remoteGroups: FavoriteGroupView[];
+    localGroups: FavoriteGroupView[];
     selectedSource: FavoriteSource;
     selectedGroupKey: string;
 };
 
 type BuildFavoriteTransferInputOptions = {
-    endpoint: string;
     kind: FavoriteKind;
     mode?: FavoriteTransferMode;
-    sourceGroup: FavoriteGroup;
-    targetGroup: FavoriteGroup;
+    sourceGroup: FavoriteGroupView;
+    targetGroup: FavoriteGroupView;
     selectedItems: FavoriteItem[];
 };
 
@@ -58,7 +57,7 @@ function favoriteTransferLocation(
     return 'local';
 }
 
-function remoteGroupName(group: FavoriteGroup): string {
+function remoteGroupName(group: FavoriteGroupView): string {
     return (
         normalizeFavoriteEntityId(group.name) ||
         normalizeFavoriteEntityId(group.key).split(':').pop() ||
@@ -66,7 +65,7 @@ function remoteGroupName(group: FavoriteGroup): string {
     );
 }
 
-function transferGroupName(group: FavoriteGroup): string {
+function transferGroupName(group: FavoriteGroupView): string {
     return group.source === 'remote'
         ? remoteGroupName(group)
         : normalizeFavoriteEntityId(group.key);
@@ -111,7 +110,7 @@ export function buildFavoriteTransferFailureDescription({
 }
 
 export function isFavoriteMoveTargetOverCapacity(
-    target: FavoriteGroup,
+    target: FavoriteGroupView,
     additionalCount: number
 ): boolean {
     if (typeof target.capacity !== 'number' || target.capacity <= 0) {
@@ -147,9 +146,9 @@ export function resolveFavoriteSourceGroup({
     localGroups
 }: {
     item: FavoriteItem;
-    remoteGroups: FavoriteGroup[];
-    localGroups: FavoriteGroup[];
-}): FavoriteGroup {
+    remoteGroups: FavoriteGroupView[];
+    localGroups: FavoriteGroupView[];
+}): FavoriteGroupView {
     const candidates = item.source === 'remote' ? remoteGroups : localGroups;
     const matched = candidates.find((group) => group.key === item.groupKey);
     if (matched) {
@@ -167,7 +166,7 @@ export function buildFavoriteTransferTargets({
     localGroups,
     selectedSource,
     selectedGroupKey
-}: BuildFavoriteTransferTargetsInput): FavoriteGroup[] {
+}: BuildFavoriteTransferTargetsInput): FavoriteGroupView[] {
     return [...remoteGroups, ...localGroups].filter(
         (group) =>
             group.source !== 'history' &&
@@ -176,7 +175,6 @@ export function buildFavoriteTransferTargets({
 }
 
 export function buildFavoriteTransferInput({
-    endpoint,
     kind,
     mode = 'move',
     sourceGroup,
@@ -184,7 +182,6 @@ export function buildFavoriteTransferInput({
     selectedItems
 }: BuildFavoriteTransferInputOptions): FavoriteTransferInput {
     return {
-        endpoint,
         kind,
         mode,
         source: {
@@ -197,7 +194,7 @@ export function buildFavoriteTransferInput({
             favoriteType:
                 targetGroup.source === 'remote'
                     ? favoriteGroupType(kind, targetGroup)
-                    : ''
+                    : null
         },
         items: selectedItems.map((item) => buildTransferItem(item))
     };
@@ -230,9 +227,9 @@ export function filterFavoriteTransferTargetsForOnlineUniqueness({
     targets,
     hasOnlineConflict
 }: {
-    targets: FavoriteGroup[];
+    targets: FavoriteGroupView[];
     hasOnlineConflict: boolean;
-}): FavoriteGroup[] {
+}): FavoriteGroupView[] {
     if (!hasOnlineConflict) {
         return targets;
     }
@@ -249,7 +246,7 @@ export function buildFavoriteCopyTargets({
 }: BuildFavoriteTransferTargetsInput & {
     selectedItems: FavoriteItem[];
     remoteFavoritesByObjectId: Record<string, FavoriteRecord | undefined>;
-}): FavoriteGroup[] {
+}): FavoriteGroupView[] {
     const baseTargets = buildFavoriteTransferTargets({
         remoteGroups,
         localGroups,
@@ -280,7 +277,7 @@ export function buildFavoriteMoveTargets({
 }: BuildFavoriteTransferTargetsInput & {
     selectedItems: FavoriteItem[];
     remoteFavoritesByObjectId: Record<string, FavoriteRecord | undefined>;
-}): FavoriteGroup[] {
+}): FavoriteGroupView[] {
     const baseTargets = buildFavoriteTransferTargets({
         remoteGroups,
         localGroups,

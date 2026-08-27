@@ -1,3 +1,4 @@
+import type { MediaFileTag } from '@/platform/tauri/bindings';
 import type {
     InventoryItemRecord,
     MediaFileRecord,
@@ -9,7 +10,7 @@ export type GalleryAssetTab = GalleryTab | 'inventory';
 export type GalleryUploadTarget = GalleryTab | 'emojis' | 'stickers';
 export type FileAssetTab = Exclude<GalleryTab, 'prints'>;
 export type FileTabDefinition = {
-    tag: string;
+    tag: MediaFileTag;
     titleKey: string;
     aspectClass: string;
     max: number;
@@ -53,8 +54,10 @@ export const UPLOAD_ASPECT_RATIOS: Record<GalleryTab, number> = {
     prints: 16 / 9
 };
 
-export function sanitizeGalleryTab(value: unknown): GalleryTab {
-    const normalized = String(value || '');
+export function sanitizeGalleryTab(
+    value: string | null | undefined
+): GalleryTab {
+    const normalized = value || '';
     return normalized === 'gallery' ||
         normalized === 'icons' ||
         normalized === 'prints'

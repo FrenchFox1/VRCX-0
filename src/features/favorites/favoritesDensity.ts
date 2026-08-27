@@ -1,4 +1,4 @@
-import type { FavoriteKind } from './favoritesTypes';
+import type { FavoriteKind } from '@/domain/favorites/types';
 
 export type FavoritesDensity = 'standard' | 'compact';
 
@@ -102,18 +102,15 @@ const DENSITY_CONFIGS_BY_KIND: Readonly<
     avatar: WORLD_AVATAR_DENSITY_CONFIGS
 });
 
-const DENSITY_VALUES: ReadonlySet<string> = new Set(
-    FAVORITES_DENSITY_OPTIONS.map((option) => option.value)
-);
-
 export function sanitizeFavoritesDensity(
     kind: FavoriteKind,
     value: unknown
 ): FavoritesDensity {
     const normalizedValue = typeof value === 'string' ? value.trim() : '';
-    return DENSITY_VALUES.has(normalizedValue)
-        ? (normalizedValue as FavoritesDensity)
-        : DEFAULT_FAVORITES_DENSITY_BY_KIND[kind];
+    if (normalizedValue === 'standard' || normalizedValue === 'compact') {
+        return normalizedValue;
+    }
+    return DEFAULT_FAVORITES_DENSITY_BY_KIND[kind];
 }
 
 export function getFavoritesDensityConfig(

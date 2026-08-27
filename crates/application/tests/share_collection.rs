@@ -1,7 +1,7 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use serde_json::json;
-use vrcx_0_application::{
+use vrcx_0_application::collections::{
     get_or_create_share_owner_token, is_valid_share_owner_token, prepare_share_collection_payload,
     share_collection_owner_hint, ShareCollectionCreateInput, ShareCollectionDeps,
     SHARE_COLLECTION_MAX_WORLDS,
@@ -36,10 +36,17 @@ impl Drop for TestDir {
     }
 }
 
-fn test_services(name: &str) -> (TestDir, DatabaseService) {
+fn test_services(
+    name: &str,
+) -> (
+    TestDir,
+    Arc<DatabaseService>,
+    vrcx_0_outbound_adapters::LocalWorldCollectionAdapter,
+) {
     let dir = TestDir::new(name);
-    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
-    (dir, db)
+    let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
+    let adapter = vrcx_0_outbound_adapters::LocalWorldCollectionAdapter::new(Arc::clone(&db));
+    (dir, db, adapter)
 }
 
 fn world_entry(id: &str, release_status: &str, name: &str) -> CacheEntityInput {
@@ -80,9 +87,9 @@ fn owner_token_requires_versioned_32_byte_base64url_format() {
 
 #[tokio::test]
 async fn owner_token_requires_authenticated_user_before_mint() {
-    let (_dir, db) = test_services("owner-key-empty");
+    let (_dir, _db, adapter) = test_services("owner-key-empty");
 
-    let error = get_or_create_share_owner_token(&db, "  ")
+    let error = get_or_create_share_owner_token(&adapter, &adapter, "  ")
         .await
         .unwrap_err();
     assert!(error
@@ -108,7 +115,7 @@ fn owner_hint_is_deterministic_and_isolated_across_users() {
 
 #[test]
 fn prepare_payload_keeps_only_public_worlds_in_input_order() {
-    let (_dir, db) = test_services("payload");
+    let (_dir, db, adapter) = test_services("payload");
     world_cache_upsert(
         &db,
         world_entry(
@@ -144,11 +151,7 @@ fn prepare_payload_keeps_only_public_worlds_in_input_order() {
     .unwrap();
 
     let prepared = prepare_share_collection_payload(
-        ShareCollectionDeps {
-            db: &db,
-            current_user_id: "usr_current",
-            current_user_display_name: " Scenic Curator ",
-        },
+        ShareCollectionDeps::new(&adapter, &adapter, "usr_current", " Scenic Curator "),
         ShareCollectionCreateInput {
             title: " Scenic picks ".to_string(),
             listed: true,
@@ -186,7 +189,10 @@ fn prepare_payload_keeps_only_public_worlds_in_input_order() {
         prepared.payload.worlds[0].created_at,
         "2026-01-01T00:00:00.000Z"
     );
-    assert_eq!(prepared.payload.worlds[0].release_status, "public");
+    assert_eq!(
+        prepared.payload.worlds[0].release_status,
+        vrcx_0_core::ReleaseStatus::Public
+    );
     assert_eq!(prepared.payload.worlds[0].version, 1);
     assert_eq!(prepared.payload.worlds[0].comment, "Bring friends");
     assert_eq!(
@@ -202,7 +208,7 @@ fn prepare_payload_keeps_only_public_worlds_in_input_order() {
 
 #[test]
 fn prepare_payload_skips_worlds_missing_required_share_information() {
-    let (_dir, db) = test_services("incomplete");
+    let (_dir, db, adapter) = test_services("incomplete");
     let complete_id = "wrld_aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     let missing_author_id = "wrld_bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
     let missing_name_id = "wrld_cccccccc-cccc-cccc-cccc-cccccccccccc";
@@ -225,11 +231,7 @@ fn prepare_payload_skips_worlds_missing_required_share_information() {
     world_cache_upsert(&db, missing_image).unwrap();
 
     let prepared = prepare_share_collection_payload(
-        ShareCollectionDeps {
-            db: &db,
-            current_user_id: "usr_current",
-            current_user_display_name: "Current User",
-        },
+        ShareCollectionDeps::new(&adapter, &adapter, "usr_current", "Current User"),
         ShareCollectionCreateInput {
             title: "Mixed group".to_string(),
             listed: false,
@@ -266,7 +268,7 @@ fn prepare_payload_skips_worlds_missing_required_share_information() {
 
 #[test]
 fn prepare_payload_requires_current_user_id_for_owner_hint() {
-    let (_dir, db) = test_services("owner-key-payload");
+    let (_dir, db, adapter) = test_services("owner-key-payload");
     world_cache_upsert(
         &db,
         world_entry(
@@ -278,11 +280,7 @@ fn prepare_payload_requires_current_user_id_for_owner_hint() {
     .unwrap();
 
     let prepared = prepare_share_collection_payload(
-        ShareCollectionDeps {
-            db: &db,
-            current_user_id: " ",
-            current_user_display_name: "",
-        },
+        ShareCollectionDeps::new(&adapter, &adapter, " ", ""),
         ShareCollectionCreateInput {
             title: "Worlds".to_string(),
             listed: false,
@@ -299,7 +297,7 @@ fn prepare_payload_requires_current_user_id_for_owner_hint() {
 
 #[test]
 fn prepare_payload_limits_large_groups_to_the_share_cap() {
-    let (_dir, db) = test_services("cap");
+    let (_dir, db, adapter) = test_services("cap");
     let world_ids = (0..(SHARE_COLLECTION_MAX_WORLDS + 3))
         .map(|index| format!("wrld_{index:08x}-1111-1111-1111-111111111111"))
         .collect::<Vec<_>>();
@@ -308,11 +306,7 @@ fn prepare_payload_limits_large_groups_to_the_share_cap() {
     }
 
     let prepared = prepare_share_collection_payload(
-        ShareCollectionDeps {
-            db: &db,
-            current_user_id: "usr_current",
-            current_user_display_name: "Current User",
-        },
+        ShareCollectionDeps::new(&adapter, &adapter, "usr_current", "Current User"),
         ShareCollectionCreateInput {
             title: "Large group".to_string(),
             listed: false,

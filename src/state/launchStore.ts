@@ -1,30 +1,41 @@
 import { create } from 'zustand';
 
+interface LaunchCreatedInstance {
+    location: string;
+    shortName: string;
+    secureOrShortName: string;
+    accessType: string;
+    ownerId: string;
+    groupId: string;
+    group: unknown;
+    url: string;
+}
+
 interface LaunchDialogState {
     open: boolean;
     loading: boolean;
     tag: string;
     shortName: string;
     launchToken: string;
-    createdInstance: unknown;
+    createdInstance: LaunchCreatedInstance | null;
     worldName: string;
 }
 
 interface LaunchDialogOptions {
-    createdInstance?: unknown;
-    worldName?: unknown;
+    createdInstance?: LaunchCreatedInstance | null;
+    worldName?: string;
 }
 
 interface LaunchStoreState {
     launchDialog: LaunchDialogState;
     showLaunchDialog: (
-        tag: unknown,
-        shortName?: unknown,
-        launchToken?: unknown,
+        tag: string,
+        shortName?: string,
+        launchToken?: string,
         options?: LaunchDialogOptions
     ) => void;
     closeLaunchDialog: () => void;
-    setLaunchDialogOpen: (open: unknown) => void;
+    setLaunchDialogOpen: (open: boolean) => void;
 }
 
 const emptyLaunchDialog: LaunchDialogState = {
@@ -44,11 +55,11 @@ export const useLaunchStore = create<LaunchStoreState>((set) => ({
             launchDialog: {
                 open: true,
                 loading: true,
-                tag: String(tag || '').trim(),
-                shortName: String(shortName || '').trim(),
-                launchToken: String(launchToken || '').trim(),
+                tag: tag.trim(),
+                shortName: shortName.trim(),
+                launchToken: launchToken.trim(),
                 createdInstance: options?.createdInstance || null,
-                worldName: String(options?.worldName || '').trim()
+                worldName: options.worldName?.trim() ?? ''
             }
         });
         queueMicrotask(() => {
@@ -74,4 +85,9 @@ export const useLaunchStore = create<LaunchStoreState>((set) => ({
         }));
     }
 }));
-export type { LaunchDialogOptions, LaunchDialogState, LaunchStoreState };
+export type {
+    LaunchCreatedInstance,
+    LaunchDialogOptions,
+    LaunchDialogState,
+    LaunchStoreState
+};

@@ -1,6 +1,7 @@
-use vrcx_0_persistence::realtime::{
+use vrcx_0_contracts::realtime::{
     AvatarHistoryUpsert, AvatarTimeSpentUpsert, RealtimePersistenceBatch,
 };
+use vrcx_0_core::derived_keys;
 
 use crate::realtime::RealtimeCurrentUserAuthority;
 
@@ -21,12 +22,17 @@ pub(super) fn apply_avatar_wear_transition(
 
     if !authority.is_available() {
         next.previous_avatar_swap_time = previous_swap_time;
-        match previous.raw.get("$previousAvatarSwapTime").cloned() {
+        match previous
+            .raw
+            .get(derived_keys::PREVIOUS_AVATAR_SWAP_TIME)
+            .cloned()
+        {
             Some(value) => {
-                next.raw.insert("$previousAvatarSwapTime".into(), value);
+                next.raw
+                    .insert(derived_keys::PREVIOUS_AVATAR_SWAP_TIME.into(), value);
             }
             None => {
-                next.raw.remove("$previousAvatarSwapTime");
+                next.raw.remove(derived_keys::PREVIOUS_AVATAR_SWAP_TIME);
             }
         }
         return (next, persistence);
@@ -40,6 +46,8 @@ pub(super) fn apply_avatar_wear_transition(
                     avatar_id: previous_avatar_id,
                     created_at: now.iso.clone(),
                     time_spent: now.timestamp_ms.saturating_sub(previous_swap_time),
+                    started_at_ms: previous_swap_time,
+                    ended_at_ms: now.timestamp_ms,
                 });
         }
         next.set_previous_avatar_swap_time(None);
@@ -75,6 +83,8 @@ pub(super) fn apply_avatar_wear_transition(
                     avatar_id: previous_avatar_id,
                     created_at: now.iso.clone(),
                     time_spent: now.timestamp_ms.saturating_sub(previous_swap_time),
+                    started_at_ms: previous_swap_time,
+                    ended_at_ms: now.timestamp_ms,
                 });
         }
         return (next, persistence);

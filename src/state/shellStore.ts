@@ -4,19 +4,19 @@ import {
     setTaskbarOverlayNotification,
     setTrayIconNotification
 } from '@/services/shellIntegrationService';
+import { DEFAULT_THEME_COLOR_KEY } from '@/shared/constants/themes';
 import {
-    DEFAULT_THEME_COLOR_KEY,
-    THEME_COLOR_CONFIG
-} from '@/shared/constants/themes';
-import { DEFAULT_TIME_UNIT_LABELS } from '@/shared/utils/dateTime';
+    DEFAULT_TIME_UNIT_LABELS,
+    type TimeUnitLabels
+} from '@/shared/utils/dateTime';
+import { normalizeThemeColor } from '@/shared/utils/themeColor';
 
 const MIN_NAV_WIDTH = 64;
 const MAX_NAV_WIDTH = 480;
 
-type ThemeMode = 'system' | 'light' | 'dark';
-type TableDensity = 'standard' | 'compact';
-type NotificationLayout = 'notification-center' | 'table';
-type TimeUnitLabels = typeof DEFAULT_TIME_UNIT_LABELS;
+export type ThemeMode = 'system' | 'light' | 'dark';
+export type TableDensity = 'standard' | 'compact';
+export type NotificationLayout = 'notification-center' | 'table';
 type ShellStore = {
     sidebarOpen: boolean;
     rightSidebarOpen: boolean;
@@ -30,7 +30,7 @@ type ShellStore = {
     taskbarIconDot: boolean;
     displayVRCPlusIconsAsAvatar: boolean;
     hideNicknames: boolean;
-    zoomLevel: unknown;
+    zoomLevel: number | null;
     dateCulture: string;
     dateIsoFormat: boolean;
     dateHour12: boolean;
@@ -39,30 +39,30 @@ type ShellStore = {
     vrcUnseenNotificationCount: number;
     trayIconNotify: boolean;
     taskbarIconNotify: boolean;
-    setSidebarOpen(sidebarOpen: unknown): void;
-    setNavWidth(navWidth: unknown): void;
+    setSidebarOpen(sidebarOpen: boolean): void;
+    setNavWidth(navWidth: number): void;
     toggleSidebar(): void;
-    setRightSidebarOpen(rightSidebarOpen: unknown): void;
+    setRightSidebarOpen(rightSidebarOpen: boolean): void;
     toggleRightSidebar(): void;
     setLocale(locale: string): void;
-    setThemeMode(themeMode: unknown): void;
-    setThemeColor(themeColor: unknown): void;
-    setTableDensity(tableDensity: unknown): void;
-    setNotificationLayout(notificationLayout: unknown): void;
-    setNotificationIconDot(notificationIconDot: unknown): void;
-    setTaskbarIconDot(taskbarIconDot: unknown): void;
+    setThemeMode(themeMode: ThemeMode): void;
+    setThemeColor(themeColor: string): void;
+    setTableDensity(tableDensity: TableDensity): void;
+    setNotificationLayout(notificationLayout: NotificationLayout): void;
+    setNotificationIconDot(notificationIconDot: boolean): void;
+    setTaskbarIconDot(taskbarIconDot: boolean): void;
     setAppearancePreferences(options?: {
-        displayVRCPlusIconsAsAvatar?: unknown;
-        hideNicknames?: unknown;
+        displayVRCPlusIconsAsAvatar?: boolean;
+        hideNicknames?: boolean;
     }): void;
-    setZoomLevel(zoomLevel: unknown): void;
+    setZoomLevel(zoomLevel: number): void;
     setDatePreferences(options: {
-        dateCulture?: string;
-        dateIsoFormat?: unknown;
-        dateHour12?: unknown;
+        dateCulture: string;
+        dateIsoFormat: boolean;
+        dateHour12: boolean;
     }): void;
-    setTimeUnitLabels(labels: unknown): void;
-    setVrcUnseenNotificationCount(unseenCount: unknown): void;
+    setTimeUnitLabels(labels: TimeUnitLabels): void;
+    setVrcUnseenNotificationCount(unseenCount: number): void;
     updateTrayIconNotification(force?: boolean): void;
     notifyMenu(index: string): void;
     removeNotify(index: string): void;
@@ -118,31 +118,11 @@ const initialState: ShellStoreState = {
     taskbarIconNotify: false
 };
 
-const themeModeValues = new Set<unknown>(['system', 'light', 'dark']);
-const themeColorValues = new Set(Object.keys(THEME_COLOR_CONFIG));
-const tableDensityValues = new Set<unknown>(['standard', 'compact']);
-
-function normalizeThemeMode(value: unknown): ThemeMode {
-    if (value === 'midnight') {
-        return 'dark';
-    }
-    return themeModeValues.has(value) ? (value as ThemeMode) : 'system';
-}
-
-function normalizeThemeColor(value: unknown): string {
-    const normalized = String(value || '')
-        .trim()
-        .toLowerCase();
-    return themeColorValues.has(normalized)
-        ? normalized
-        : DEFAULT_THEME_COLOR_KEY;
-}
-
 export function normalizeTableDensity(value: unknown): TableDensity {
     if (value === 'comfortable') {
         return 'standard';
     }
-    return tableDensityValues.has(value) ? (value as TableDensity) : 'standard';
+    return value === 'standard' || value === 'compact' ? value : 'standard';
 }
 
 export function normalizeNavWidth(value: unknown): number {
@@ -191,7 +171,7 @@ function notificationDotActive(state: ShellStore): boolean {
 export const useShellStore = create<ShellStore>((set, get) => ({
     ...initialState,
     setSidebarOpen(sidebarOpen) {
-        set({ sidebarOpen: Boolean(sidebarOpen) });
+        set({ sidebarOpen });
     },
     setNavWidth(navWidth) {
         set({ navWidth: normalizeNavWidth(navWidth) });
@@ -200,7 +180,7 @@ export const useShellStore = create<ShellStore>((set, get) => ({
         set((state) => ({ sidebarOpen: !state.sidebarOpen }));
     },
     setRightSidebarOpen(rightSidebarOpen) {
-        set({ rightSidebarOpen: Boolean(rightSidebarOpen) });
+        set({ rightSidebarOpen });
     },
     toggleRightSidebar() {
         set((state) => ({ rightSidebarOpen: !state.rightSidebarOpen }));
@@ -209,27 +189,24 @@ export const useShellStore = create<ShellStore>((set, get) => ({
         set({ locale: locale || 'en' });
     },
     setThemeMode(themeMode) {
-        set({ themeMode: normalizeThemeMode(themeMode) });
+        set({ themeMode });
     },
     setThemeColor(themeColor) {
         set({ themeColor: normalizeThemeColor(themeColor) });
     },
     setTableDensity(tableDensity) {
-        set({ tableDensity: normalizeTableDensity(tableDensity) });
+        set({ tableDensity });
     },
     setNotificationLayout(notificationLayout) {
-        set({
-            notificationLayout:
-                notificationLayout === 'table' ? 'table' : 'notification-center'
-        });
+        set({ notificationLayout });
         get().updateTrayIconNotification(true);
     },
     setNotificationIconDot(notificationIconDot) {
-        set({ notificationIconDot: Boolean(notificationIconDot) });
+        set({ notificationIconDot });
         get().updateTrayIconNotification(true);
     },
     setTaskbarIconDot(taskbarIconDot) {
-        set({ taskbarIconDot: Boolean(taskbarIconDot) });
+        set({ taskbarIconDot });
         get().updateTrayIconNotification(true);
     },
     setAppearancePreferences({
@@ -240,11 +217,11 @@ export const useShellStore = create<ShellStore>((set, get) => ({
             displayVRCPlusIconsAsAvatar:
                 displayVRCPlusIconsAsAvatar === undefined
                     ? state.displayVRCPlusIconsAsAvatar
-                    : Boolean(displayVRCPlusIconsAsAvatar),
+                    : displayVRCPlusIconsAsAvatar,
             hideNicknames:
                 hideNicknames === undefined
                     ? state.hideNicknames
-                    : Boolean(hideNicknames)
+                    : hideNicknames
         }));
     },
     setZoomLevel(zoomLevel) {
@@ -253,25 +230,15 @@ export const useShellStore = create<ShellStore>((set, get) => ({
     setDatePreferences({ dateCulture, dateIsoFormat, dateHour12 }) {
         set({
             dateCulture: dateCulture || 'en-gb',
-            dateIsoFormat: Boolean(dateIsoFormat),
-            dateHour12: Boolean(dateHour12)
+            dateIsoFormat,
+            dateHour12
         });
     },
     setTimeUnitLabels(labels) {
-        set({
-            timeUnitLabels: {
-                ...DEFAULT_TIME_UNIT_LABELS,
-                ...(labels && typeof labels === 'object' ? labels : {})
-            }
-        });
+        set({ timeUnitLabels: labels });
     },
     setVrcUnseenNotificationCount(unseenCount) {
-        const nextCount = Number.parseInt(String(unseenCount), 10);
-        set({
-            vrcUnseenNotificationCount: Number.isFinite(nextCount)
-                ? nextCount
-                : 0
-        });
+        set({ vrcUnseenNotificationCount: unseenCount });
         get().updateTrayIconNotification();
     },
     updateTrayIconNotification(force = false) {

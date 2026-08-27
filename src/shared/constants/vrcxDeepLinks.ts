@@ -6,12 +6,10 @@ function entityRelayLink(entity: 'avatar' | 'world', entityId: string): string {
     return `${VRCX_OPEN_RELAY_ORIGIN}/${entity}/${entityId.trim()}`;
 }
 
-export function vrcxWorldDeepLink(worldId: unknown): string {
-    return isWorldId(worldId) ? entityRelayLink('world', String(worldId)) : '';
+export function vrcxWorldDeepLink(worldId: string): string {
+    return isWorldId(worldId) ? entityRelayLink('world', worldId) : '';
 }
 
-export function vrcxAvatarDeepLink(avatarId: unknown): string {
-    return isAvatarId(avatarId)
-        ? entityRelayLink('avatar', String(avatarId))
-        : '';
+export function vrcxAvatarDeepLink(avatarId: string): string {
+    return isAvatarId(avatarId) ? entityRelayLink('avatar', avatarId) : '';
 }

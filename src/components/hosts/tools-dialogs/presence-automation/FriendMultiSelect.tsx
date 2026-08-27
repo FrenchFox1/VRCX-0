@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { UserPickerRow } from '@/components/search/UserPickerRow';
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldLabel } from '@/ui/shadcn/field';
@@ -173,7 +173,7 @@ export function FriendMultiSelect({
                             })}
                             {!visibleOptions.length ? (
                                 <div className="text-muted-foreground p-3 text-xs">
-                                    {t('common.search_no_results')}
+                                    {t('empty_state.search_no_results')}
                                 </div>
                             ) : null}
                         </div>

@@ -11,16 +11,14 @@ import { normalizeOverlayActivityFilters } from '@/state/preferencesStore';
 import { patchPreferences, publishPreferenceChanged } from './preferencesCore';
 
 async function loadOverlayActivityTypeDefinitionsForSave() {
-    return commands
-        .appOverlayActivityDefinitionsGet()
-        .catch((error: unknown) => {
-            const fallbackDefinitions: OverlayActivityTypeDefinition[] = [];
-            console.warn(
-                'Failed to load overlay activity definitions for save:',
-                error
-            );
-            return fallbackDefinitions;
-        });
+    return commands.appOverlayActivityDefinitionsGet().catch((error) => {
+        const fallbackDefinitions: OverlayActivityTypeDefinition[] = [];
+        console.warn(
+            'Failed to load overlay activity definitions for save:',
+            error
+        );
+        return fallbackDefinitions;
+    });
 }
 
 export async function setOverlayActivityFiltersPreference(
@@ -123,7 +121,7 @@ export function setTtsNotificationActivityFiltersPreference(value: unknown) {
 
 export async function setWristOverlayEnabledPreference(value: boolean) {
     const snapshot = await commands.appVrOverlayEnabledSet(value);
-    const wristOverlayEnabled = Boolean(snapshot.enabled);
+    const wristOverlayEnabled = snapshot.enabled;
     patchPreferences({ wristOverlayEnabled });
     publishPreferenceChanged('wristOverlayEnabled', wristOverlayEnabled);
     return wristOverlayEnabled;

@@ -18,6 +18,10 @@ vi.mock('sonner', () => ({
     }
 }));
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({ t: (key: string) => key })
+}));
+
 vi.mock('@/repositories/memoPersistenceRepository', () => ({
     default: {
         getUserMemo: mocks.getUserMemo,
@@ -30,6 +34,8 @@ vi.mock('@/repositories/vrchatToolsRepository', () => ({
         saveUserNote: mocks.saveUserNote
     }
 }));
+
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 import { useUserDialogMemoState } from './useUserDialogMemoState';
 
@@ -58,17 +64,14 @@ describe('useUserDialogMemoState', () => {
                     endpoint: 'https://api.vrchat.cloud/api/1'
                 }
             },
-            applyFriendPatch: vi.fn(),
             currentEndpoint: 'https://api.vrchat.cloud/api/1',
-            friendsById: {},
             normalizedUserId: 'usr_self',
             profile: {
                 id: 'usr_self',
                 displayName: 'Current User',
                 note: 'Existing VRChat note'
             },
-            setBaseProfile: vi.fn(),
-            t: ((key: string) => key) as HookProps['t']
+            setBaseProfile: vi.fn()
         };
     }
 
@@ -84,6 +87,10 @@ describe('useUserDialogMemoState', () => {
             memo: 'Updated local note'
         });
         mocks.saveUserNote.mockResolvedValue(undefined);
+        useFriendRosterStore.setState({
+            applyFriendPatch: vi.fn(),
+            friendsById: {}
+        });
     });
 
     afterEach(() => {
@@ -180,5 +187,54 @@ describe('useUserDialogMemoState', () => {
         expect(mocks.saveUserNote).toHaveBeenCalledTimes(1);
         expect(mocks.saveUserMemo).toHaveBeenCalledTimes(2);
         expect(value().memoDialog.open).toBe(false);
+    });
+
+    it('preserves current presence when saving a friend note', async () => {
+        const applyFriendPatch = vi.fn();
+        useFriendRosterStore.setState({
+            applyFriendPatch,
+            friendsById: {
+                usr_self: {
+                    id: 'usr_self',
+                    displayName: 'Current User',
+                    tags: [],
+                    state: 'online',
+                    stateBucket: 'online',
+                    $trustLevel: 'Visitor',
+                    $friendNumber: 0,
+                    $trustClass: 'x-tag-untrusted',
+                    $trustSortNum: 0,
+                    $isModerator: false,
+                    $isTroll: false,
+                    $isProbableTroll: false,
+                    $platform: ''
+                }
+            }
+        });
+        const props = createProps();
+        render(
+            <HookHarness
+                onValue={(nextValue) => {
+                    current = nextValue;
+                }}
+                props={props}
+            />
+        );
+        await waitFor(() => {
+            expect(value().memo).toBe('Existing local note');
+        });
+
+        editBothNotes();
+        await saveNotes();
+
+        expect(applyFriendPatch).toHaveBeenCalledWith({
+            userId: 'usr_self',
+            patch: {
+                note: 'Updated VRChat note',
+                memo: 'Updated local note',
+                $nickName: 'Updated local note'
+            },
+            stateBucketAuthority: 'preserve'
+        });
     });
 });

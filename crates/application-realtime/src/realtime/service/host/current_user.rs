@@ -3,8 +3,7 @@ use std::sync::Arc;
 use serde_json::Value;
 use tokio::sync::watch;
 use vrcx_0_application_core::{Error, LocalGameContextSnapshot, Result};
-use vrcx_0_vrchat_client::auth::current_user_get_input;
-use vrcx_0_vrchat_client::http_api::ApiScope;
+use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
 
 use crate::realtime::{
     PendingOfflineTimerAction, RealtimeCurrentUserAuthority, RealtimeCurrentUserGameLogContext,
@@ -27,15 +26,12 @@ impl RealtimeHostRuntime {
         generation: u64,
         timer_action: PendingOfflineTimerAction,
     ) {
-        let PendingOfflineTimerAction::Schedule {
-            token, delay_ms, ..
-        } = timer_action
-        else {
+        let PendingOfflineTimerAction::Schedule { token, delay, .. } = timer_action else {
             return;
         };
         let runtime = Arc::clone(self);
         self.deps.tasks.spawn(async move {
-            tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+            tokio::time::sleep(delay).await;
             let now = chrono::Utc::now().to_rfc3339();
             let Some(output) = runtime.current_user.fire_pending_offline(
                 generation,
@@ -51,14 +47,12 @@ impl RealtimeHostRuntime {
 
     pub fn sync_current_user_snapshot(
         &self,
-        user_id: String,
-        endpoint: String,
-        websocket: String,
+        requested_session: RealtimeSessionContext,
+        auth_scope_generation: u64,
         generation: Option<u64>,
         snapshot: serde_json::Value,
         overlay_patch: serde_json::Value,
     ) -> Result<bool> {
-        let requested_session = RealtimeSessionContext::new(user_id, endpoint, websocket);
         let active = {
             let state = self
                 .state
@@ -67,7 +61,13 @@ impl RealtimeHostRuntime {
             let Some(active) = state.connection.active_context.clone() else {
                 return Ok(false);
             };
-            if active.session != requested_session
+            let auth_scope = self.deps.auth_scope.snapshot();
+            if active.auth_scope_generation != auth_scope_generation
+                || !auth_scope.active
+                || auth_scope.generation != auth_scope_generation
+                || auth_scope.current_user_id != requested_session.user_id
+                || auth_scope.endpoint != requested_session.endpoint
+                || active.session != requested_session
                 || generation
                     .map(|generation| generation != active.generation)
                     .unwrap_or(false)
@@ -101,14 +101,21 @@ impl RealtimeHostRuntime {
     ) {
         let runtime = Arc::clone(self);
         self.deps.tasks.spawn(async move {
+            let request = match runtime
+                .deps
+                .remote_requests
+                .current_user(session.endpoint.clone())
+            {
+                Ok(request) => request,
+                Err(error) => {
+                    tracing::warn!("Realtime current user refresh input failed: {error}");
+                    return;
+                }
+            };
             let response = match runtime
                 .deps
                 .web
-                .execute_api(
-                    current_user_get_input(session.endpoint.clone()),
-                    ApiScope::Vrchat,
-                    &runtime.deps.db,
-                )
+                .execute_api(request, ApiScope::Vrchat)
                 .await
             {
                 Ok(result) => result,
@@ -238,9 +245,10 @@ impl RealtimeHostRuntime {
             .deps
             .web
             .execute_api(
-                current_user_get_input(active.session.endpoint.clone()),
+                self.deps
+                    .remote_requests
+                    .current_user(active.session.endpoint.clone())?,
                 ApiScope::Vrchat,
-                &self.deps.db,
             )
             .await?;
         if !(200..300).contains(&response.status) {
@@ -276,7 +284,7 @@ impl RealtimeHostRuntime {
         Ok(true)
     }
 
-    fn active_current_user_context(&self) -> Option<ActiveRealtimeContext> {
+    pub(super) fn active_current_user_context(&self) -> Option<ActiveRealtimeContext> {
         let active = {
             let state = self.state.lock().ok()?;
             state.connection.active_context.clone()?
@@ -359,5 +367,89 @@ impl RealtimeHostRuntime {
     ) -> Option<RealtimeCurrentUserOutput> {
         self.current_user
             .interrupt_transport(generation, self.current_user_authority())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::realtime::service::host::test_support::runtime_with_active_session;
+    use serde_json::json;
+
+    #[test]
+    fn sync_accepts_a_snapshot_for_the_current_auth_scope_generation() -> Result<()> {
+        let (_dir, test_runtime, session) = runtime_with_active_session("current-user-auth-scope")?;
+        let runtime = test_runtime.runtime();
+        let auth_scope_generation = test_runtime.auth_scope().snapshot().generation;
+        let generation = runtime
+            .state
+            .lock()
+            .unwrap()
+            .connection
+            .active_context
+            .as_ref()
+            .expect("active realtime context")
+            .generation;
+        runtime.current_user.set_snapshot(
+            session.user_id.clone(),
+            generation,
+            json!({ "id": session.user_id, "displayName": "Current User" }),
+        );
+
+        let accepted = runtime.sync_current_user_snapshot(
+            session.clone(),
+            auth_scope_generation,
+            None,
+            json!({ "id": session.user_id, "displayName": "Updated User" }),
+            Value::Null,
+        )?;
+
+        assert!(accepted);
+        assert_eq!(
+            runtime.current_user_snapshot().unwrap()["displayName"],
+            "Updated User"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn sync_rejects_a_snapshot_from_a_previous_auth_scope_generation() -> Result<()> {
+        let (_dir, test_runtime, session) =
+            runtime_with_active_session("stale-current-user-auth-scope")?;
+        let runtime = test_runtime.runtime();
+        let stale_auth_scope_generation = test_runtime.auth_scope().snapshot().generation;
+        test_runtime.auth_scope().set("", "");
+        let replacement_scope = test_runtime
+            .auth_scope()
+            .set(&session.user_id, &session.endpoint);
+        {
+            let mut state = runtime.state.lock().unwrap();
+            let active = state
+                .connection
+                .active_context
+                .as_mut()
+                .expect("active realtime context");
+            active.auth_scope_generation = replacement_scope.generation;
+            runtime.current_user.set_snapshot(
+                session.user_id.clone(),
+                active.generation,
+                json!({ "id": session.user_id, "displayName": "Current User" }),
+            );
+        }
+
+        let accepted = runtime.sync_current_user_snapshot(
+            session.clone(),
+            stale_auth_scope_generation,
+            None,
+            json!({ "id": session.user_id, "displayName": "Stale User" }),
+            Value::Null,
+        )?;
+
+        assert!(!accepted);
+        assert_eq!(
+            runtime.current_user_snapshot().unwrap()["displayName"],
+            "Current User"
+        );
+        Ok(())
     }
 }

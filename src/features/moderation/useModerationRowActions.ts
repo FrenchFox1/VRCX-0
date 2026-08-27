@@ -10,10 +10,7 @@ import {
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import {
-    getModerationRowKey,
-    isSameModerationRow
-} from './moderationPageState';
+import { getModerationRowKey } from './moderationPageState';
 import type {
     DeleteModerationOptions,
     ModerationRow,
@@ -21,13 +18,11 @@ import type {
 } from './moderationPageTypes';
 
 type ModerationRowActionsOptions = {
-    rows: ModerationRow[];
     setDetail: Dispatch<SetStateAction<string>>;
     setRows: Dispatch<SetStateAction<ModerationRow[]>>;
 };
 
 export function useModerationRowActions({
-    rows,
     setDetail,
     setRows
 }: ModerationRowActionsOptions) {
@@ -44,7 +39,7 @@ export function useModerationRowActions({
         { skipConfirm = false }: DeleteModerationOptions = {}
     ) => {
         const ownerUserId = currentUserId;
-        if (!ownerUserId || row?.sourceUserId !== ownerUserId) {
+        if (!ownerUserId || row.sourceUserId !== ownerUserId) {
             return;
         }
         const result = skipConfirm
@@ -60,7 +55,9 @@ export function useModerationRowActions({
               });
         if (
             !result.ok ||
-            useRuntimeStore.getState().auth.currentUserId !== ownerUserId
+            useRuntimeStore.getState().auth.currentUserId !== ownerUserId ||
+            useRuntimeStore.getState().auth.currentUserEndpoint !==
+                currentEndpoint
         ) {
             return;
         }
@@ -72,24 +69,23 @@ export function useModerationRowActions({
         setDeletingModerationKey(rowKey);
         try {
             await updateModerationSync({
-                ownerUserId,
-                endpoint: currentEndpoint,
                 targetUserId,
                 targetDisplayName: row.targetDisplayName || targetUserId,
                 type,
                 enabled: false
             });
-            if (useRuntimeStore.getState().auth.currentUserId !== ownerUserId) {
+            if (
+                useRuntimeStore.getState().auth.currentUserId !== ownerUserId ||
+                useRuntimeStore.getState().auth.currentUserEndpoint !==
+                    currentEndpoint
+            ) {
                 return;
             }
             const response = await refreshModerationSync({
                 userId: ownerUserId,
                 endpoint: currentEndpoint
             });
-            const nextRows = Array.isArray(response?.rows)
-                ? response.rows
-                : rows.filter((entry) => !isSameModerationRow(entry, row));
-            setRows(nextRows);
+            setRows(response.rows);
             setDetail(
                 t('view.moderation.dynamic.deleted_value_for_value', {
                     value: row.type || 'moderation',

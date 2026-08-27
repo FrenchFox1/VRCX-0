@@ -6,7 +6,6 @@ import { commands } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/entityMediaService';
 import { restartApplication } from '@/services/shellIntegrationService';
 import {
-    canInstallUpdatesOnPlatform,
     confirmInstall,
     formatReleaseDisplayVersion,
     getPreviewStableReleaseUpdateMode,
@@ -35,10 +34,6 @@ type UpdaterDialogProps = {
 
 export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     const { t } = useTranslation();
-    const hostPlatform = useRuntimeStore(
-        (state) => state.hostCapabilities.platform
-    );
-    const canInstallUpdates = canInstallUpdatesOnPlatform(hostPlatform);
     const isPreviewUpdateCheck = getPreviewStableReleaseUpdateMode().enabled;
     const updateCheckDisabled = isUpdateCheckDisabledBuild();
 
@@ -48,6 +43,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [detail, setDetail] = useState('');
+    const canInstallUpdate = latestRelease?.updaterType === 'tauri';
     const autoDownloadState = useRuntimeStore(
         (state) => state.updateLoop.autoDownloadState
     );
@@ -61,11 +57,10 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         latestRelease?.canonicalVersion === downloadedVersion;
     const progress = hasMatchingDownload ? downloadProgress : 0;
     const showDownloadProgress =
-        canInstallUpdates &&
+        canInstallUpdate &&
         (downloading ||
             (autoDownloadState === 'downloading' && hasMatchingDownload));
     const currentVersionText =
-        // oxlint-disable-next-line no-undef
         formatReleaseDisplayVersion(VERSION || '') || '-';
     const latestVersionText =
         latestRelease?.displayVersion ||
@@ -73,11 +68,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
             ? formatReleaseDisplayVersion(latestRelease.canonicalVersion)
             : '') ||
         '-';
-    const visibleDetail =
-        detail ||
-        (latestRelease && !hasNewerRelease
-            ? t('dialog.vrcx_updater.latest_version')
-            : '');
+    const isUpToDate = Boolean(latestRelease && !hasNewerRelease);
 
     useEffect(() => {
         if (!open || updateCheckDisabled) {
@@ -117,7 +108,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                 setDetail(
                     nextRelease
                         ? ''
-                        : canInstallUpdates && !isPreviewUpdateCheck
+                        : !isPreviewUpdateCheck
                           ? t(
                                 'message.vrcx_updater.no_downloadable_releases_found'
                             )
@@ -145,11 +136,11 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         return () => {
             active = false;
         };
-    }, [canInstallUpdates, isPreviewUpdateCheck, open, t, updateCheckDisabled]);
+    }, [isPreviewUpdateCheck, open, t, updateCheckDisabled]);
 
     async function handleInstallUpdate() {
         if (
-            !canInstallUpdates ||
+            !canInstallUpdate ||
             !latestRelease ||
             !hasNewerRelease ||
             downloading
@@ -223,19 +214,25 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                         {t('dialog.system.label.vrcx_0_update')}
                     </DialogTitle>
                     <DialogDescription>
-                        {t('dialog.system.dynamic.version_summary', {
-                            current: currentVersionText,
-                            latest: latestVersionText
-                        })}
+                        {isUpToDate
+                            ? t('dialog.vrcx_updater.latest_version')
+                            : t('dialog.system.dynamic.version_summary', {
+                                  current: currentVersionText,
+                                  latest: latestVersionText
+                              })}
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <div className="border-input bg-background flex w-full flex-col gap-1 rounded-md border px-3 py-2 text-sm">
                         <div className="text-muted-foreground text-xs">
-                            {t('dialog.system.action.update_path')}
+                            {isUpToDate
+                                ? t('message.vrcx_updater.current_version')
+                                : t('dialog.system.action.update_path')}
                         </div>
                         <div className="text-foreground truncate font-medium tabular-nums">
-                            {currentVersionText} -&gt; {latestVersionText}
+                            {isUpToDate
+                                ? currentVersionText
+                                : `${currentVersionText} -> ${latestVersionText}`}
                         </div>
                     </div>
                     {showDownloadProgress ? (
@@ -256,17 +253,17 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                             </div>
                         </div>
                     ) : null}
-                    {visibleDetail ? (
+                    {detail ? (
                         <div className="text-muted-foreground text-sm">
                             {userFacingErrorMessage(
-                                visibleDetail,
+                                detail,
                                 t('message.vrcx_updater.failed_install')
                             )}
                         </div>
                     ) : null}
                 </FieldGroup>
                 <DialogFooter>
-                    {canInstallUpdates && !isPreviewUpdateCheck ? (
+                    {canInstallUpdate && !isPreviewUpdateCheck ? (
                         <Button
                             type="button"
                             disabled={
@@ -284,10 +281,7 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                     ) : (
                         <Button
                             type="button"
-                            disabled={
-                                loading ||
-                                (isPreviewUpdateCheck && !latestRelease)
-                            }
+                            disabled={loading || !latestRelease}
                             onClick={() => {
                                 handleOpenReleasePage();
                             }}

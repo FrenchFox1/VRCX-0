@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+import type {
+    NotificationWebhookFormat,
+    TranslationProvider
+} from '@/platform/tauri/bindings';
 import {
     DEFAULT_OVERLAY_ACTIVITY_FILTERS,
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
@@ -12,6 +16,7 @@ import {
     parseOverlayActivityFilters
 } from '@/shared/constants/overlayActivityFilters';
 import {
+    normalizeAvatarAutoCleanupPreference,
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT,
     SEARCH_LIMIT_MAX,
@@ -20,6 +25,7 @@ import {
     TABLE_MAX_SIZE_MIN
 } from '@/shared/constants/settings';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
+import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 import {
     TRUST_COLOR_DEFAULTS,
     normalizeTrustColors
@@ -39,10 +45,8 @@ const DEFAULT_TRANSLATION_ENDPOINT =
     'https://api.openai.com/v1/chat/completions';
 const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 
-export type NotificationLayoutPreference = 'notification-center' | 'table';
-export type TableDensityPreference = 'standard' | 'compact';
 export type FeedTimeDisplayModePreference = 'exact' | 'relative';
-export type TranslationApiType = 'google' | 'openai' | 'deepl';
+export type TranslationApiType = TranslationProvider;
 export type WeekStartsOnPreference = 0 | 1 | 6;
 export type WristOverlayHandPreference = 'left' | 'right' | 'both';
 export type WristOverlaySizePreference = 'compact' | 'normal' | 'large';
@@ -55,7 +59,6 @@ export type HmdNotificationPositionPreference =
     | 'left'
     | 'right';
 export type TrustColorKey = keyof typeof TRUST_COLOR_DEFAULTS;
-export type TrustColorsPreference = Record<TrustColorKey, string>;
 export type DiscordPreferenceKey =
     | 'discordActive'
     | 'discordInstance'
@@ -169,6 +172,12 @@ export function normalizeTranslationApiType(
     value: unknown
 ): TranslationApiType {
     return value === 'openai' || value === 'deepl' ? value : 'google';
+}
+
+export function normalizeNotificationWebhookFormat(
+    value: unknown
+): NotificationWebhookFormat {
+    return value === 'discord' ? 'discord' : 'generic';
 }
 
 export function normalizeWristOverlayHand(
@@ -298,7 +307,7 @@ export function normalizeFeedHiddenUsers(value: unknown): string[] {
     return userIds;
 }
 
-export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
+export const DEFAULT_PREFERENCES = Object.freeze({
     notificationLayout: 'notification-center',
     dataTableStriped: false,
     tableDensity: 'standard',
@@ -340,6 +349,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     notificationTTSNameMode: 'username',
     notificationTTSNickName: false,
     notificationTTSVoiceNative: '',
+    notificationTTSVolume: 100,
     xsNotifications: false,
     ovrtHudNotifications: false,
     ovrtWristNotifications: false,
@@ -355,8 +365,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     webhookAuthEventsEnabled: true,
     webhookUrl: '',
     webhookFormat: 'generic',
-    vrOverlayPanelEnabled: false,
-    vrOverlayPanelAllFriendsIncludesFavorites: false,
+    webhookFields: DEFAULT_GENERIC_WEBHOOK_FIELDS,
     wristOverlayEnabled: false,
     wristOverlayStartMode: 'vrchatVrMode',
     wristOverlayButton: 'grip',
@@ -372,6 +381,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     autoSweepVRChatCache: false,
     gameLogDisabled: false,
     feedPersistenceDisabled: false,
+    avatarFeedPersistenceDisabled: false,
     avatarAutoCleanup: 'Off',
     anonymousUsageTelemetry: true,
     udonExceptionLogging: false,
@@ -415,6 +425,9 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     translationAPIModel: DEFAULT_TRANSLATION_MODEL,
     translationAPIPrompt: '',
     translationAPIReasoningEffort: '',
+    appFontFamily: 'geist',
+    appCjkFontPack: 'noto',
+    customFontFamily: '',
     customFontPrimary: '',
     customFontSecondary: '',
     customFontOverride: '',
@@ -426,7 +439,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     discordShowPlatform: true,
     discordWorldIntegration: true,
     discordWorldNameAsDiscordStatus: false
-});
+} satisfies PreferenceInputSnapshot);
 
 export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
     const snapshotRecord = asRecord(snapshot);
@@ -496,10 +509,10 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         autoInstallUpdatesOnStartup: normalizeBool(
             next.autoInstallUpdatesOnStartup
         ),
-        desktopToast: next.desktopToast || 'Never',
+        desktopToast: String(next.desktopToast || 'Never'),
         afkDesktopToast: normalizeBool(next.afkDesktopToast),
         desktopNotificationSound: normalizeBool(next.desktopNotificationSound),
-        notificationTTS: next.notificationTTS || 'Never',
+        notificationTTS: String(next.notificationTTS || 'Never'),
         notificationTTSNameMode: normalizeNotificationTtsNameMode(
             next.notificationTTSNameMode,
             next.notificationTTSNickName
@@ -508,6 +521,11 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         notificationTTSVoiceNative: String(
             next.notificationTTSVoiceNative ?? ''
         ),
+        notificationTTSVolume: normalizeBoundedInt(next.notificationTTSVolume, {
+            min: 0,
+            max: 100,
+            fallback: 100
+        }),
         xsNotifications: normalizeBool(next.xsNotifications),
         ovrtHudNotifications: normalizeBool(next.ovrtHudNotifications),
         ovrtWristNotifications: normalizeBool(next.ovrtWristNotifications),
@@ -548,9 +566,10 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         webhookEnabled: normalizeBool(next.webhookEnabled),
         webhookAuthEventsEnabled: normalizeBool(next.webhookAuthEventsEnabled),
         webhookUrl: String(next.webhookUrl || ''),
-        webhookFormat: next.webhookFormat === 'discord' ? 'discord' : 'generic',
-        vrOverlayPanelEnabled: false,
-        vrOverlayPanelAllFriendsIncludesFavorites: false,
+        webhookFormat: normalizeNotificationWebhookFormat(next.webhookFormat),
+        webhookFields: String(
+            next.webhookFields || DEFAULT_GENERIC_WEBHOOK_FIELDS
+        ),
         wristOverlayEnabled: normalizeBool(next.wristOverlayEnabled),
         wristOverlayStartMode: normalizeWristOverlayStartMode(
             next.wristOverlayStartMode
@@ -576,7 +595,12 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         autoSweepVRChatCache: normalizeBool(next.autoSweepVRChatCache),
         gameLogDisabled: normalizeBool(next.gameLogDisabled),
         feedPersistenceDisabled: normalizeBool(next.feedPersistenceDisabled),
-        avatarAutoCleanup: next.avatarAutoCleanup || 'Off',
+        avatarFeedPersistenceDisabled: normalizeBool(
+            next.avatarFeedPersistenceDisabled
+        ),
+        avatarAutoCleanup: normalizeAvatarAutoCleanupPreference(
+            next.avatarAutoCleanup
+        ),
         anonymousUsageTelemetry: normalizeBool(next.anonymousUsageTelemetry),
         udonExceptionLogging: normalizeBool(next.udonExceptionLogging),
         logResourceLoad: normalizeBool(next.logResourceLoad),
@@ -607,7 +631,10 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         localFavoriteFriendsGroups: Array.isArray(
             next.localFavoriteFriendsGroups
         )
-            ? next.localFavoriteFriendsGroups.filter(Boolean)
+            ? next.localFavoriteFriendsGroups.filter(
+                  (groupKey): groupKey is string =>
+                      typeof groupKey === 'string' && Boolean(groupKey)
+              )
             : [],
         feedHiddenUsers: normalizeFeedHiddenUsers(next.feedHiddenUsers),
         overlayActivityFilters: parseOverlayActivityFiltersPreference(
@@ -635,19 +662,24 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         trustColor: normalizeTrustColors(next.trustColor),
         youtubeAPI: normalizeBool(next.youtubeAPI),
         translationAPI: normalizeBool(next.translationAPI),
-        bioLanguage: next.bioLanguage || 'en',
+        bioLanguage: String(next.bioLanguage || 'en'),
         translationAPIType: normalizeTranslationApiType(
             next.translationAPIType
         ),
         translationEndpointId: String(next.translationEndpointId || ''),
-        translationAPIEndpoint:
-            next.translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT,
-        translationAPIModel:
-            next.translationAPIModel || DEFAULT_TRANSLATION_MODEL,
+        translationAPIEndpoint: String(
+            next.translationAPIEndpoint || DEFAULT_TRANSLATION_ENDPOINT
+        ),
+        translationAPIModel: String(
+            next.translationAPIModel || DEFAULT_TRANSLATION_MODEL
+        ),
         translationAPIPrompt: String(next.translationAPIPrompt || ''),
         translationAPIReasoningEffort: String(
             next.translationAPIReasoningEffort || ''
         ),
+        appFontFamily: String(next.appFontFamily || 'geist'),
+        appCjkFontPack: String(next.appCjkFontPack || 'noto'),
+        customFontFamily: String(next.customFontFamily || ''),
         customFontPrimary: String(next.customFontPrimary || ''),
         customFontSecondary: String(next.customFontSecondary || ''),
         customFontOverride: String(next.customFontOverride || ''),

@@ -3,15 +3,13 @@ import {
     resolveObservedPlayerUserId
 } from '@/domain/friends/sameInstanceFriends';
 import {
-    applyInstanceDwellEpochs,
     buildInstanceRosterRows,
     firstText,
     isSameInstanceLocation,
     resolvePresenceLocation
 } from '@/domain/instances/instanceRoster';
 import { parseLocation } from '@/shared/utils/location';
-
-const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<string, unknown>();
+import { isRecord } from '@/shared/utils/record';
 
 function shouldIncludeUserDialogLocationFriend({
     currentLocationMatches,
@@ -22,10 +20,7 @@ function shouldIncludeUserDialogLocationFriend({
     currentLocationPlayerIds: ReadonlySet<string>;
     friend: unknown;
 }): boolean {
-    const friendRecord =
-        friend && typeof friend === 'object'
-            ? (friend as Record<string, unknown>)
-            : {};
+    const friendRecord = isRecord(friend) ? friend : {};
     const friendId = firstText(
         friendRecord.id,
         friendRecord.userId,
@@ -58,11 +53,11 @@ function filterVisibleUserDialogLocationUsers<TUser>({
     ownerId,
     users
 }: {
-    currentUserId: unknown;
+    currentUserId: string | null;
     friendsById: unknown;
     location?: unknown;
     memberUserIds?: ReadonlySet<string>;
-    ownerId?: unknown;
+    ownerId?: string;
     users: readonly TUser[];
 }): TUser[] {
     const friendDirectory =
@@ -72,10 +67,7 @@ function filterVisibleUserDialogLocationUsers<TUser>({
     const normalizedCurrentUserId = firstText(currentUserId);
     const normalizedOwnerId = firstText(ownerId);
     return users.filter((user) => {
-        const userRecord =
-            user && typeof user === 'object'
-                ? (user as Record<string, unknown>)
-                : {};
+        const userRecord: Record<string, unknown> = isRecord(user) ? user : {};
         const userId = firstText(userRecord.id, userRecord.userId);
         const friend = userId ? friendDirectory[userId] : null;
         const friendLocation = resolvePresenceLocation(friend);
@@ -98,7 +90,6 @@ function filterVisibleUserDialogLocationUsers<TUser>({
 
 export function buildUserDialogLocationUsers({
     currentUserId,
-    dwellEpochsByUserId = EMPTY_DWELL_EPOCHS_BY_USER_ID,
     friendsById,
     locationInstance,
     locationOwnerGroup,
@@ -108,8 +99,7 @@ export function buildUserDialogLocationUsers({
     t,
     visiblePresenceParsedLocation
 }: {
-    currentUserId: unknown;
-    dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
+    currentUserId: string | null;
     friendsById: unknown;
     locationInstance: unknown;
     locationOwnerGroup: unknown;
@@ -193,7 +183,7 @@ export function buildUserDialogLocationUsers({
         location: parsedLocation.tag,
         memberUserIds,
         ownerId: roster.ownerId,
-        users: applyInstanceDwellEpochs(rowsWithCreator, dwellEpochsByUserId)
+        users: rowsWithCreator
     });
 
     return {

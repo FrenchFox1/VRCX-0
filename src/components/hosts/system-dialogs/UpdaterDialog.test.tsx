@@ -6,7 +6,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    canInstallUpdatesOnPlatform: vi.fn(),
     previewStableReleaseCheck: vi.fn(),
     getPreviewStableReleaseUpdateMode: vi.fn(),
     appAppUpdateCheckRun: vi.fn(),
@@ -23,7 +22,6 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@/services/updateService', () => ({
-    canInstallUpdatesOnPlatform: mocks.canInstallUpdatesOnPlatform,
     getPreviewStableReleaseUpdateMode: mocks.getPreviewStableReleaseUpdateMode,
     confirmInstall: mocks.confirmInstall,
     formatReleaseDisplayVersion: (value: unknown) => String(value || ''),
@@ -109,11 +107,11 @@ describe('UpdaterDialog', () => {
         vi.stubGlobal('VERSION', '2.6.0');
         useRuntimeStore.getState().resetRuntimeState();
         useRuntimeStore.getState().setHostCapabilities({
+            ...useRuntimeStore.getState().hostCapabilities,
             platform: 'windows',
             arch: 'x86_64',
-            linuxPackageKind: ''
+            linuxPackageKind: 'unknown'
         });
-        mocks.canInstallUpdatesOnPlatform.mockReturnValue(true);
         mocks.getPreviewStableReleaseUpdateMode.mockReturnValue({
             enabled: false,
             check: mocks.previewStableReleaseCheck
@@ -146,15 +144,72 @@ describe('UpdaterDialog', () => {
         expect(html).not.toContain('dialog.system.action.install_and_restart');
     });
 
-    it('keeps the install action for stable installable updates', () => {
-        const html = renderToStaticMarkup(
-            React.createElement(UpdaterDialog, {
-                open: true,
-                onOpenChange: vi.fn()
-            })
-        );
+    it('uses the install action for a stable Tauri update', async () => {
+        mocks.toNormalizedReleaseFromSnapshot.mockReturnValue({
+            canonicalVersion: '2.7.0',
+            displayVersion: '2.7.0',
+            updaterType: 'tauri'
+        });
+        mocks.appAppUpdateCheckRun.mockResolvedValue({
+            hasAvailableUpdate: true,
+            error: null,
+            release: {}
+        });
 
-        expect(html).toContain('dialog.system.action.install_and_restart');
+        render(<UpdaterDialog open onOpenChange={vi.fn()} />);
+
+        expect(
+            await screen.findByText('dialog.system.action.install_and_restart')
+        ).toBeTruthy();
+    });
+
+    it('uses the release page action for a stable manual update', async () => {
+        mocks.toNormalizedReleaseFromSnapshot.mockReturnValue({
+            canonicalVersion: '2.7.0',
+            displayVersion: '2.7.0',
+            updaterType: 'manual'
+        });
+        mocks.appAppUpdateCheckRun.mockResolvedValue({
+            hasAvailableUpdate: true,
+            error: null,
+            release: {}
+        });
+
+        render(<UpdaterDialog open onOpenChange={vi.fn()} />);
+
+        const updateButton = screen.getByRole('button', {
+            name: 'nav_menu.update'
+        }) as HTMLButtonElement;
+        await waitFor(() => {
+            expect(updateButton.disabled).toBe(false);
+        });
+        expect(
+            screen.queryByText('dialog.system.action.install_and_restart')
+        ).toBeNull();
+    });
+
+    it('shows the checked version as up to date when no newer release exists', async () => {
+        mocks.toNormalizedReleaseFromSnapshot.mockReturnValue({
+            canonicalVersion: '2.6.0',
+            displayVersion: '2.6.0',
+            updaterType: 'tauri'
+        });
+        mocks.appAppUpdateCheckRun.mockResolvedValue({
+            hasAvailableUpdate: false,
+            error: null,
+            release: {}
+        });
+
+        render(<UpdaterDialog open onOpenChange={vi.fn()} />);
+
+        expect(
+            await screen.findByText('dialog.vrcx_updater.latest_version')
+        ).toBeTruthy();
+        expect(
+            screen.getByText('message.vrcx_updater.current_version')
+        ).toBeTruthy();
+        expect(screen.getByText('2.6.0')).toBeTruthy();
+        expect(screen.queryByText('2.6.0 -> 2.6.0')).toBeNull();
     });
 
     it('shows matching background download progress when opened mid-download', async () => {

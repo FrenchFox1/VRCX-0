@@ -9,16 +9,17 @@ import { useTranslation } from 'react-i18next';
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
-import { readFriendInstanceEpoch } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FriendRecord } from '@/domain/friends/types';
 import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
+import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
+import { isOnlineFriend } from '../friends-locations-rows/presence';
+import type { FriendLocationRecord } from '../friends-locations-rows/types';
 import type { getFriendsLocationsDensityConfig } from '../friendsLocationsDensity';
 import {
-    isOnlineFriend,
     normalizeFriendsLocationId as normalizeId,
     resolveFriendGroupName,
     resolveLocationSummary,
@@ -32,22 +33,14 @@ type BivariantCallback<Args extends unknown[]> = {
 }['bivarianceHack'];
 
 type FriendsLocationsFriend = FriendRecord & {
-    $travelingToLocation?: unknown;
     ref?: FriendLocationSource | null;
-    travelingToLocation?: unknown;
-    userId?: unknown;
+    travelingToLocation?: string | null;
 };
 
-type FriendLocationSource = {
-    $location_at?: unknown;
-    $travelingToLocation?: unknown;
-    $travelingToTime?: unknown;
-    location?: unknown;
-    pendingOffline?: unknown;
-    travelingToLocation?: unknown;
-    travelingToTime?: unknown;
-    traveling_to_time?: unknown;
-};
+type FriendLocationSource = Pick<
+    FriendLocationRecord,
+    '$travelingToLocation' | 'location' | 'travelingToLocation'
+>;
 
 type FriendsLocationsEmptyStateProps = {
     title: string;
@@ -217,26 +210,28 @@ export function FriendsLocationCardItem({
     const source = isFriendLocationSource(friend.ref) ? friend.ref : friend;
     const isTravelingLocation =
         normalizeId(source?.location).toLowerCase() === 'traveling';
-    const travelingLocation =
-        source?.travelingToLocation || source?.$travelingToLocation || '';
+    const travelingLocation = normalizeLocationValue(
+        source?.travelingToLocation || source?.$travelingToLocation
+    );
     const friendIsCurrentUser =
         normalizeId(friend?.id || friend?.userId) ===
         normalizeId(currentUserId);
     const friendIsOnline = isOnlineFriend(friend);
     const friendLocationAvailable = canUseFriendLocation(rawLocation);
-    const instanceEpoch =
+    const sectionLocation = normalizeLocationValue(section.rawLocation);
+    const sectionInstanceLocation = parseLocation(sectionLocation)
+        .isRealInstance
+        ? sectionLocation
+        : '';
+    const timerLocation =
         friendIsOnline &&
-        !friend.pendingOffline &&
-        !source.pendingOffline &&
-        (target.parsed.isRealInstance || isTravelingLocation)
-            ? readFriendInstanceEpoch(
-                  {
-                      ...source,
-                      $location_at: friend.$location_at || source.$location_at
-                  },
-                  isTravelingLocation
-              )
-            : 0;
+        (sectionInstanceLocation ||
+            target.parsed.isRealInstance ||
+            isTravelingLocation)
+            ? isTravelingLocation
+                ? travelingLocation
+                : sectionInstanceLocation || rawLocation
+            : '';
 
     return (
         <FriendLocationCard
@@ -247,7 +242,7 @@ export function FriendsLocationCardItem({
                 raw: rawLocation,
                 traveling: isTravelingLocation,
                 travelingTo: travelingLocation,
-                instanceEpoch
+                timerLocation
             }}
             presentation={{
                 density: densityConfig,

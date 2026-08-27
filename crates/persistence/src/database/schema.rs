@@ -19,6 +19,9 @@ pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Err
             "CREATE TABLE IF NOT EXISTS favorite_world (id INTEGER PRIMARY KEY, created_at TEXT, world_id TEXT, group_name TEXT)",
             "CREATE TABLE IF NOT EXISTS favorite_avatar (id INTEGER PRIMARY KEY, created_at TEXT, avatar_id TEXT, group_name TEXT)",
             "CREATE TABLE IF NOT EXISTS favorite_friend (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, group_name TEXT, owner_id INTEGER NOT NULL DEFAULT 0)",
+            "CREATE TABLE IF NOT EXISTS favorite_group_collection (id TEXT PRIMARY KEY, owner_id INTEGER NOT NULL, name TEXT NOT NULL, group_ids TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS favorite_group_collection_owner_name_idx ON favorite_group_collection (owner_id, name)",
+            "CREATE INDEX IF NOT EXISTS favorite_group_collection_owner_created_idx ON favorite_group_collection (owner_id, created_at, id)",
             "CREATE TABLE IF NOT EXISTS memos (user_id TEXT PRIMARY KEY, edited_at TEXT, memo TEXT)",
             "CREATE TABLE IF NOT EXISTS world_memos (world_id TEXT PRIMARY KEY, edited_at TEXT, memo TEXT)",
             "CREATE TABLE IF NOT EXISTS avatar_memos (avatar_id TEXT PRIMARY KEY, edited_at TEXT, memo TEXT)",
@@ -269,6 +272,17 @@ pub(crate) fn ensure_user_store_tables(
             )"
         ),
         format!(
+            "CREATE TABLE IF NOT EXISTS {user_prefix}_activity_page_cache (
+                user_id TEXT NOT NULL,
+                range_days INTEGER NOT NULL,
+                payload_version INTEGER NOT NULL DEFAULT 1,
+                built_from_cursor TEXT NOT NULL DEFAULT '',
+                payload_json TEXT NOT NULL DEFAULT '{{}}',
+                built_at TEXT NOT NULL DEFAULT '',
+                PRIMARY KEY (user_id, range_days)
+            )"
+        ),
+        format!(
             "CREATE TABLE IF NOT EXISTS {user_prefix}_moderation (user_id TEXT PRIMARY KEY, updated_at TEXT, display_name TEXT, block INTEGER, mute INTEGER)"
         ),
         format!(
@@ -281,11 +295,17 @@ pub(crate) fn ensure_user_store_tables(
             "CREATE TABLE IF NOT EXISTS {user_prefix}_mutual_graph_links (friend_id TEXT NOT NULL, mutual_id TEXT NOT NULL, PRIMARY KEY(friend_id, mutual_id))"
         ),
         format!(
-            "CREATE TABLE IF NOT EXISTS {user_prefix}_mutual_graph_meta (friend_id TEXT PRIMARY KEY, last_fetched_at TEXT, opted_out INTEGER DEFAULT 0)"
+            "CREATE TABLE IF NOT EXISTS {user_prefix}_mutual_graph_meta (friend_id TEXT PRIMARY KEY, last_fetched_at TEXT, opted_out INTEGER DEFAULT 0, total_count INTEGER)"
         ),
     ] {
         db.execute_non_query(&sql, &Default::default())?;
     }
+    add_column_if_missing(
+        db,
+        &format!("{user_prefix}_mutual_graph_meta"),
+        "total_count",
+        "INTEGER",
+    )?;
     Ok(())
 }
 

@@ -10,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import mediaRepository from '@/repositories/mediaRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import {

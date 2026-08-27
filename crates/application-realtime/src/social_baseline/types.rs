@@ -110,7 +110,7 @@ pub struct SocialFavoritesBaselineRequest {
 pub struct SocialFavoritesBaselineOutput {
     pub user_id: String,
     pub stale: bool,
-    pub count: usize,
+    pub count: u32,
     pub snapshot: Option<FavoriteBaselineSnapshot>,
 }
 
@@ -134,7 +134,7 @@ pub struct SocialFriendRosterBaselineInput {
 pub struct SocialFriendRosterBaselineOutput {
     pub user_id: String,
     pub stale: bool,
-    pub count: usize,
+    pub count: u32,
     pub detail: String,
     pub snapshot: Option<RawJson>,
     pub friend_log_changed: bool,

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use vrcx_0_persistence::config as config_store;
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_application_core::{BackendRuntimeStatusPublisher, RuntimeAuthIdentity};
 
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::ingest::GameLogSideEffect;
@@ -12,47 +11,51 @@ use crate::game_log::lifecycle as runtime_lifecycle;
 use crate::game_log::screenshot as runtime_screenshot;
 use crate::game_log::video as runtime_video;
 use crate::RuntimeEventBus;
-use crate::RuntimeGameEventBusExt;
-use crate::{EmptyEventPayload, GameLogSideEffectEvent};
-use crate::{ImageCache, TaskSupervisor, WebClient};
+use crate::{EmptyEventPayload, GameLogSideEffectEvent, GameLogSideEffectSink};
+use crate::{InstanceMediaPort, TaskSupervisor, VideoMetadataPort};
 
 use super::GameLogProcessorDeps;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone)]
 pub(super) struct GameLogSideEffectDeps {
-    db: Arc<DatabaseService>,
-    web: Arc<WebClient>,
-    image_cache: Arc<ImageCache>,
+    store: Arc<dyn crate::GameStateStore>,
+    instance_media: Arc<dyn InstanceMediaPort>,
+    video_metadata: Arc<dyn VideoMetadataPort>,
     event_bus: RuntimeEventBus,
+    backend_status: BackendRuntimeStatusPublisher,
+    side_effect_sink: GameLogSideEffectSink,
     tasks: TaskSupervisor,
     media_queue: InstanceMediaQueue,
     host_actions: Arc<dyn GameLogHostActions>,
-    pub(super) owner_user_id: String,
+    pub(super) auth_identity: RuntimeAuthIdentity,
 }
 
 impl GameLogSideEffectDeps {
     pub(super) fn new(deps: &GameLogProcessorDeps, media_queue: InstanceMediaQueue) -> Self {
+        let auth_identity = deps.auth_scope.identity();
         Self {
-            db: Arc::clone(&deps.db),
-            web: Arc::clone(&deps.web),
-            image_cache: Arc::clone(&deps.image_cache),
+            store: Arc::clone(&deps.store),
+            instance_media: Arc::clone(&deps.instance_media),
+            video_metadata: Arc::clone(&deps.video_metadata),
             event_bus: deps.event_bus.clone(),
+            backend_status: deps.backend_status.clone(),
+            side_effect_sink: deps.side_effect_sink.clone(),
             tasks: deps.tasks.clone(),
             media_queue,
             host_actions: Arc::clone(&deps.host_actions),
-            owner_user_id: deps.auth_scope.snapshot().current_user_id,
+            auth_identity,
         }
     }
 
     fn emit_side_effect(&self, event: GameLogSideEffectEvent) {
-        self.event_bus.emit_game_log_side_effect(event);
+        self.side_effect_sink.emit(event);
     }
 
     fn instance_media_deps(&self) -> InstanceMediaDeps {
         InstanceMediaDeps {
-            db: Arc::clone(&self.db),
-            web: Arc::clone(&self.web),
-            image_cache: Arc::clone(&self.image_cache),
+            store: Arc::clone(&self.store),
+            media: Arc::clone(&self.instance_media),
             queue: self.media_queue.clone(),
             host_actions: Arc::clone(&self.host_actions),
         }
@@ -64,10 +67,12 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
         GameLogSideEffect::Video(input) => {
             deps.tasks.clone().spawn(async move {
                 if let Err(error) = runtime_video::handle_video_play(
-                    deps.db.as_ref(),
-                    deps.web.as_ref(),
+                    deps.store.as_ref(),
+                    deps.video_metadata.as_ref(),
                     &deps.event_bus,
-                    &deps.owner_user_id,
+                    &deps.backend_status,
+                    &deps.side_effect_sink,
+                    &OwnerId::new(deps.auth_identity.user_id),
                     input,
                 )
                 .await
@@ -80,7 +85,7 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
             timestamp,
             created_at,
         } => {
-            runtime_lifecycle::emit_video_sync(&deps.event_bus, &timestamp, &created_at);
+            runtime_lifecycle::emit_video_sync(&deps.side_effect_sink, &timestamp, &created_at);
         }
         GameLogSideEffect::NowPlayingReset => {
             deps.emit_side_effect(GameLogSideEffectEvent::NowPlayingReset(
@@ -90,10 +95,10 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
         GameLogSideEffect::Screenshot(input) => {
             deps.tasks.clone().spawn(async move {
                 if let Err(error) = runtime_screenshot::handle_screenshot(
-                    deps.db.as_ref(),
-                    deps.host_actions.as_ref(),
-                    &deps.event_bus,
-                    &deps.owner_user_id,
+                    deps.store.as_ref(),
+                    Arc::clone(&deps.host_actions),
+                    &deps.side_effect_sink,
+                    &deps.auth_identity,
                     input,
                 )
                 .await
@@ -135,22 +140,28 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
             is_game_running,
         } => {
             runtime_lifecycle::handle_vrc_quit(
-                deps.db.as_ref(),
+                deps.store.as_ref(),
                 deps.host_actions.as_ref(),
-                &deps.event_bus,
+                &deps.side_effect_sink,
                 &created_at,
                 is_game_running,
             );
         }
         GameLogSideEffect::NoVr { no_vr } => {
-            if let Err(error) =
-                runtime_lifecycle::set_game_no_vr(deps.db.as_ref(), &deps.event_bus, no_vr)
-            {
+            if let Err(error) = runtime_lifecycle::set_game_no_vr(
+                deps.store.as_ref(),
+                &deps.side_effect_sink,
+                no_vr,
+            ) {
                 tracing::warn!("GameLog NoVR side effect failed: {error}");
             }
         }
         GameLogSideEffect::UdonException { data } => {
-            if config_store::get_bool(&deps.db, "udonExceptionLogging", false).unwrap_or(false) {
+            if deps
+                .store
+                .get_bool("udonExceptionLogging", false)
+                .unwrap_or(false)
+            {
                 tracing::warn!(data, "VRChat Udon exception");
             }
         }

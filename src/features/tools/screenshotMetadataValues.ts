@@ -2,6 +2,7 @@ import type {
     AuthorDetail,
     PlayerDetail,
     ScreenshotFolderInfo,
+    ScreenshotFolderTree,
     ScreenshotMetadata,
     ScreenshotSearchResult,
     WorldDetail
@@ -12,6 +13,7 @@ import {
     formatIsoDateTime,
     normalizeDateLocale
 } from '@/shared/utils/dateTimeFormatters';
+import { isRecord } from '@/shared/utils/record';
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot';
 import { useShellStore } from '@/state/shellStore';
 
@@ -61,7 +63,9 @@ export type NormalizedScreenshotMetadata = {
     filePath: string;
     fileName: string;
     previousFilePath: string;
+    previousFolderPath: string;
     nextFilePath: string;
+    nextFolderPath: string;
     resolution: string;
     fileSizeBytes: number;
     dateTime: Date | null;
@@ -73,27 +77,16 @@ export type NormalizedScreenshotMetadata = {
 };
 
 type ScreenshotExtraData = Record<string, unknown> & {
-    filePath?: unknown;
-    fileName?: unknown;
-    previousFilePath?: unknown;
-    nextFilePath?: unknown;
-    resolution?: unknown;
-    fileSizeBytes?: unknown;
-    creationDate?: unknown;
+    filePath?: string | null;
+    fileName?: string | null;
+    previousFilePath?: string | null;
+    previousFolderPath?: string | null;
+    nextFilePath?: string | null;
+    nextFolderPath?: string | null;
+    resolution?: string | null;
+    fileSizeBytes?: number | null;
+    creationDate?: string | null;
 };
-
-export type ScreenshotFolderTreeInput = {
-    rootPath?: string;
-    folders?: Array<
-        Partial<ScreenshotFolderInfo> & {
-            path: string;
-        }
-    >;
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function stringValue(value: unknown): string {
     return typeof value === 'string' ? value : String(value ?? '');
@@ -146,38 +139,33 @@ export function normalizeGalleryScrollPositions(
 }
 
 export function serializeGalleryScrollPositions(
-    positions: Map<unknown, unknown>
+    positions: Map<string, number>
 ): Record<string, number> {
     const result: Record<string, number> = {};
     const entries = Array.from(positions.entries())
-        .filter(
-            (entry): entry is [unknown, unknown] =>
-                Array.isArray(entry) && Boolean(entry[0])
-        )
+        .filter(([path]) => Boolean(path))
         .slice(-MAX_SCREENSHOT_GALLERY_SCROLL_POSITIONS);
     for (const [path, scrollTop] of entries) {
-        result[String(path)] = normalizeGalleryScrollTop(scrollTop);
+        result[path] = normalizeGalleryScrollTop(scrollTop);
     }
     return result;
 }
 
 export function getGalleryFolderPathSet(
-    folderTree: ScreenshotFolderTreeInput | null | undefined
+    folderTree: ScreenshotFolderTree | null | undefined
 ) {
     return new Set(
         (folderTree?.folders ?? []).map((folder) => folder.path).filter(Boolean)
     );
 }
 
-export function getFolderLatestModifiedAt(
-    folder: Partial<ScreenshotFolderInfo>
-) {
-    return Number(folder?.latestModifiedAt) || 0;
+export function getFolderLatestModifiedAt(folder: ScreenshotFolderInfo) {
+    return folder.latestModifiedAt ?? 0;
 }
 
 export function resolveGalleryFolder(
-    folderTree: ScreenshotFolderTreeInput | null | undefined,
-    preferredFolders: unknown
+    folderTree: ScreenshotFolderTree | null | undefined,
+    preferredFolders: string | readonly string[]
 ) {
     const folders = folderTree?.folders ?? [];
     const preferredList = Array.isArray(preferredFolders)
@@ -192,18 +180,18 @@ export function resolveGalleryFolder(
         }
     }
     const latestFolder = folders
-        .filter((folder) => Number(folder.imageCount) > 0)
+        .filter((folder) => folder.imageCount > 0)
         .sort(
             (left, right) =>
                 getFolderLatestModifiedAt(right) -
                     getFolderLatestModifiedAt(left) ||
-                String(right.path || '').localeCompare(String(left.path || ''))
+                right.path.localeCompare(left.path)
         )[0];
     return latestFolder?.path || folderTree?.rootPath || folders[0]?.path || '';
 }
 
-export function normalizeDroppedFilePath(value: unknown) {
-    const text = String(value || '')
+export function normalizeDroppedFilePath(value: string) {
+    const text = value
         .split(/\r?\n/)
         .map((line) => line.trim())
         .find(Boolean);
@@ -251,20 +239,20 @@ export function getScreenshotSearchSortValue(
     key: string
 ) {
     if (key === 'dateTime') {
-        return row?.dateTime?.getTime?.() ?? 0;
+        return row.dateTime?.getTime() ?? 0;
     }
     if (key === 'playerCount') {
-        return Number(row?.playerCount) || 0;
+        return row.playerCount;
     }
-    return String(row?.[key] || '').toLowerCase();
+    return String(row[key] || '').toLowerCase();
 }
 
 export function sortScreenshotSearchRows(
     rows: ScreenshotSearchRow[],
     sort: ScreenshotSearchSort
 ): ScreenshotSearchRow[] {
-    const sortKey = sort?.key || DEFAULT_SCREENSHOT_SEARCH_SORT.key;
-    const direction = sort?.asc ? 1 : -1;
+    const sortKey = sort.key || DEFAULT_SCREENSHOT_SEARCH_SORT.key;
+    const direction = sort.asc ? 1 : -1;
     return [...rows].sort((left, right) => {
         const leftValue = getScreenshotSearchSortValue(left, sortKey);
         const rightValue = getScreenshotSearchSortValue(right, sortKey);
@@ -274,20 +262,19 @@ export function sortScreenshotSearchRows(
         if (leftValue > rightValue) {
             return 1 * direction;
         }
-        const leftTime = left?.dateTime?.getTime?.() ?? 0;
-        const rightTime = right?.dateTime?.getTime?.() ?? 0;
+        const leftTime = left.dateTime?.getTime() ?? 0;
+        const rightTime = right.dateTime?.getTime() ?? 0;
         return rightTime - leftTime;
     });
 }
 
-export function formatScreenshotBytes(bytes: unknown): string {
-    const sizeInBytes = Number(bytes);
-    if (!Number.isFinite(sizeInBytes) || sizeInBytes <= 0) {
+export function formatScreenshotBytes(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
         return '';
     }
 
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let size = sizeInBytes;
+    let size = bytes;
     let unitIndex = 0;
 
     while (size >= 1024 && unitIndex < units.length - 1) {
@@ -300,21 +287,14 @@ export function formatScreenshotBytes(bytes: unknown): string {
 }
 
 export function formatScreenshotDateTime(
-    value: unknown,
-    locale: unknown = undefined
+    value: Date | string | number | null | undefined,
+    locale?: string
 ) {
     if (!value) {
         return '—';
     }
 
-    const date =
-        value instanceof Date
-            ? value
-            : new Date(
-                  typeof value === 'string' || typeof value === 'number'
-                      ? value
-                      : String(value)
-              );
+    const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) {
         return '—';
     }
@@ -355,7 +335,7 @@ export function getFileNameFromPath(path: unknown) {
 export function resolveScreenshotMetadataDate(
     metadata: Partial<ScreenshotMetadata>,
     extra: ScreenshotExtraData,
-    fileName: unknown
+    fileName: string
 ) {
     if (metadata?.timestamp) {
         const parsed = Date.parse(metadata.timestamp);
@@ -370,7 +350,7 @@ export function resolveScreenshotMetadataDate(
     }
 
     if (extra?.creationDate) {
-        const parsed = Date.parse(stringValue(extra.creationDate));
+        const parsed = Date.parse(extra.creationDate);
         if (Number.isFinite(parsed)) {
             return new Date(parsed);
         }
@@ -430,9 +410,11 @@ export function normalizeScreenshotMetadata(
         filePath: stringValue(extraData.filePath || source.sourceFile),
         fileName,
         previousFilePath: stringValue(extraData.previousFilePath),
+        previousFolderPath: stringValue(extraData.previousFolderPath),
         nextFilePath: stringValue(extraData.nextFilePath),
+        nextFolderPath: stringValue(extraData.nextFolderPath),
         resolution: stringValue(extraData.resolution),
-        fileSizeBytes: Number(extraData.fileSizeBytes) || 0,
+        fileSizeBytes: extraData.fileSizeBytes ?? 0,
         dateTime,
         world,
         author,
@@ -447,13 +429,13 @@ export function normalizeScreenshotSearchResult(
         metadata: ScreenshotMetadata | null;
     }
 ) {
-    const width = Number(result?.width) || 0;
-    const height = Number(result?.height) || 0;
-    return normalizeScreenshotMetadata(result?.metadata ?? {}, {
-        filePath: result?.filePath || '',
-        fileName: result?.fileName || '',
-        fileSizeBytes: result?.fileSizeBytes ?? 0,
-        creationDate: result?.creationDate || '',
+    const width = result.width ?? 0;
+    const height = result.height ?? 0;
+    return normalizeScreenshotMetadata(result.metadata ?? {}, {
+        filePath: result.filePath,
+        fileName: result.fileName,
+        fileSizeBytes: result.fileSizeBytes,
+        creationDate: result.creationDate || '',
         resolution: width > 0 && height > 0 ? `${width}x${height}` : ''
     });
 }
@@ -461,21 +443,21 @@ export function normalizeScreenshotSearchResult(
 export function buildScreenshotSearchRow(
     normalized: NormalizedScreenshotMetadata,
     selectedSearchType: ScreenshotMetadataSearchType,
-    query: unknown,
-    locale: unknown = undefined
+    query: string,
+    locale?: string
 ): ScreenshotSearchRow {
     let match = '';
-    if (selectedSearchType?.index === 0) {
-        const normalizedQuery = String(query || '').toLowerCase();
+    if (selectedSearchType.index === 0) {
+        const normalizedQuery = query.toLowerCase();
         const hits = normalized.players
             .filter((player) =>
-                String(player.displayName || '')
+                (player.displayName ?? '')
                     .toLowerCase()
                     .includes(normalizedQuery)
             )
             .map((player) => player.displayName || '');
         match = hits.join(', ');
-    } else if (selectedSearchType?.index === 1) {
+    } else if (selectedSearchType.index === 1) {
         match =
             normalized.players.find((player) => player.id === query)
                 ?.displayName || '';
@@ -494,13 +476,11 @@ export function buildScreenshotSearchRow(
 }
 
 export function sortScreenshotRowsByNewest(
-    rows: Array<ScreenshotSearchRow | null>
+    rows: ScreenshotSearchRow[]
 ): ScreenshotSearchRow[] {
-    return (Array.isArray(rows) ? rows : [])
-        .filter((row): row is ScreenshotSearchRow => Boolean(row))
-        .sort((left, right) => {
-            const leftTime = left?.dateTime?.getTime?.() ?? 0;
-            const rightTime = right?.dateTime?.getTime?.() ?? 0;
-            return rightTime - leftTime;
-        });
+    return [...rows].sort((left, right) => {
+        const leftTime = left.dateTime?.getTime() ?? 0;
+        const rightTime = right.dateTime?.getTime() ?? 0;
+        return rightTime - leftTime;
+    });
 }

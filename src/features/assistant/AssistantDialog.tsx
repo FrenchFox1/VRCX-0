@@ -98,17 +98,6 @@ function selectionFromSession(session: Session): AssistantRuntimeSelection {
     };
 }
 
-function parsePlaybookMode(value: string): PlaybookMode {
-    switch (value) {
-        case 'guided':
-            return 'guided';
-        case 'open':
-            return 'open';
-        default:
-            return 'auto';
-    }
-}
-
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
@@ -648,7 +637,7 @@ function RuntimeSettings({
                     }))}
                     onValueChange={(value) =>
                         onSelectionChange({
-                            playbookMode: parsePlaybookMode(value ?? '')
+                            playbookMode: value ?? 'auto'
                         })
                     }
                 >

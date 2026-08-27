@@ -1,20 +1,23 @@
-import type { MutableRefObject } from 'react';
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
+import type {
+    AvatarCacheOutput,
+    FavoriteGroupVisibility
+} from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService';
-import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import { favoriteGroupType } from './favoritesItems';
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 
@@ -41,15 +44,13 @@ export function useFavoritesCollectionActions({
     currentUserId: string;
     currentUserSnapshot: CurrentUserSnapshotState | null;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
-    reloadLocalWorldFavorites(): Promise<unknown>;
+    localGroups: FavoriteGroupView[];
+    reloadLocalWorldFavorites(): Promise<boolean>;
     refreshing: boolean;
     removingFavoriteKeyRef: MutableRefObject<string>;
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    setAvatarHistory(
-        value: unknown[] | ((current: unknown[]) => unknown[])
-    ): void;
+    setAvatarHistory: Dispatch<SetStateAction<AvatarCacheOutput[]>>;
     setExportDialogOpen(value: boolean): void;
     setRefreshing(value: boolean): void;
     setRemovingFavoriteKey(value: string | ((current: string) => string)): void;
@@ -58,19 +59,6 @@ export function useFavoritesCollectionActions({
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
-    const removeLocalFavorite = useFavoriteStore(
-        (state) => state.removeLocalFavorite
-    );
-    const removeRemoteFavorite = useFavoriteStore(
-        (state) => state.removeRemoteFavorite
-    );
-    const renameLocalFavoriteGroup = useFavoriteStore(
-        (state) => state.renameLocalFavoriteGroup
-    );
-    const deleteLocalFavoriteGroup = useFavoriteStore(
-        (state) => state.deleteLocalFavoriteGroup
-    );
-
     const refreshFavorites = async ({
         silent = false
     }: { silent?: boolean } = {}): Promise<boolean> => {
@@ -101,7 +89,7 @@ export function useFavoritesCollectionActions({
                     currentUserId,
                     100
                 );
-                setAvatarHistory(Array.isArray(rows) ? rows : []);
+                setAvatarHistory(rows);
             }
             if (!silent) {
                 toast.success(t('view.favorite.success.favorites_refreshed'));
@@ -162,15 +150,6 @@ export function useFavoritesCollectionActions({
                 entityId: item.id,
                 groupName: item.groupKey
             });
-            if (item.kind === 'world') {
-                await reloadLocalWorldFavorites();
-            } else {
-                removeLocalFavorite({
-                    kind: item.kind,
-                    entityId: item.id,
-                    groupName: item.groupKey
-                });
-            }
             if (!silent) {
                 toast.success(
                     t('view.favorite.success.local_favorite_removed')
@@ -238,7 +217,6 @@ export function useFavoritesCollectionActions({
             await vrchatFavoriteRepository.deleteFavorite({
                 objectId: item.id
             });
-            removeRemoteFavorite(item.id);
             if (!silent) {
                 toast.success(
                     t('view.favorite.success.vrchat_favorite_removed')
@@ -275,7 +253,7 @@ export function useFavoritesCollectionActions({
         setExportDialogOpen(true);
     }
 
-    async function handleRemoteGroupRename(group: FavoriteGroup) {
+    async function handleRemoteGroupRename(group: FavoriteGroupView) {
         const result = await prompt({
             title: t('view.favorites.modal.change_favorite_group_name'),
             description: t('view.favorites.modal.enter_the_new_display_name'),
@@ -293,12 +271,10 @@ export function useFavoritesCollectionActions({
         }
         try {
             await vrchatFavoriteRepository.saveFavoriteGroup({
-                ownerId: currentUserId,
                 type: favoriteGroupType(kind, group),
                 group: group.name,
                 displayName: nextName
             });
-            await refreshFavorites();
             toast.success(t('view.favorite.label.favorite_group_renamed'));
         } catch (error) {
             toast.error(
@@ -310,20 +286,18 @@ export function useFavoritesCollectionActions({
     }
 
     async function handleRemoteGroupVisibility(
-        group: FavoriteGroup,
-        visibility: string
+        group: FavoriteGroupView,
+        visibility: FavoriteGroupVisibility
     ) {
         if (group.visibility === visibility) {
             return;
         }
         try {
             await vrchatFavoriteRepository.saveFavoriteGroup({
-                ownerId: currentUserId,
                 type: favoriteGroupType(kind, group),
                 group: group.name,
                 visibility
             });
-            await refreshFavorites();
             toast.success(t('view.favorite.label.group_visibility_changed'));
         } catch (error) {
             toast.error(
@@ -336,7 +310,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleRemoteGroupClear(group: FavoriteGroup) {
+    async function handleRemoteGroupClear(group: FavoriteGroupView) {
         const result = await confirm({
             title: t('view.favorites.modal.clear_favorite_group'),
             description: t(
@@ -351,11 +325,9 @@ export function useFavoritesCollectionActions({
         }
         try {
             await vrchatFavoriteRepository.clearFavoriteGroup({
-                ownerId: currentUserId,
                 type: favoriteGroupType(kind, group),
                 group: group.name
             });
-            await refreshFavorites();
             toast.success(t('view.favorite.success.favorite_group_cleared'));
         } catch (error) {
             toast.error(
@@ -366,7 +338,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleLocalGroupRename(group: FavoriteGroup) {
+    async function handleLocalGroupRename(group: FavoriteGroupView) {
         const result = await prompt({
             title: t('view.favorites.modal.rename_local_favorite_group'),
             description: t(
@@ -398,15 +370,6 @@ export function useFavoritesCollectionActions({
                 groupName: group.key,
                 newGroupName: nextName
             });
-            if (kind === 'world') {
-                await reloadLocalWorldFavorites();
-            } else {
-                renameLocalFavoriteGroup({
-                    kind,
-                    groupName: group.key,
-                    newGroupName: nextName
-                });
-            }
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey(nextName);
             }
@@ -424,7 +387,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleLocalGroupDelete(group: FavoriteGroup) {
+    async function handleLocalGroupDelete(group: FavoriteGroupView) {
         const result = await confirm({
             title: t('view.favorites.modal.delete_local_favorite_group'),
             description: t('view.favorites.modal.delete_value', {
@@ -442,14 +405,6 @@ export function useFavoritesCollectionActions({
                 kind,
                 groupName: group.key
             });
-            if (kind === 'world') {
-                await reloadLocalWorldFavorites();
-            } else {
-                deleteLocalFavoriteGroup({
-                    kind,
-                    groupName: group.key
-                });
-            }
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey('');
             }

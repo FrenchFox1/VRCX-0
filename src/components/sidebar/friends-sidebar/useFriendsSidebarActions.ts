@@ -3,6 +3,10 @@ import { toast } from 'sonner';
 
 import { useCurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/useCurrentUserSocialStatusDialog';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type {
+    CurrentUserUpdateRequest,
+    UserStatus
+} from '@/platform/tauri/bindings';
 import currentUserProfileService from '@/services/currentUserProfileService';
 import { openUserDialog } from '@/services/dialogService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
@@ -28,7 +32,7 @@ type CurrentUserRecord = Record<string, unknown>;
 type FriendsSidebarActionsInput = {
     canInviteFromCurrentLocation?: boolean;
     confirm: ModalStoreActions['confirm'];
-    currentInviteLocation?: unknown;
+    currentInviteLocation?: string;
     currentUser?: CurrentUserRecord | null;
     currentUserId?: string | null;
 };
@@ -72,7 +76,7 @@ export function useFriendsSidebarActions({
         });
     }
 
-    async function launchFriendLocation(location: unknown) {
+    async function launchFriendLocation(location: string) {
         const parsedLocation = parseLocation(location);
         if (
             !parsedLocation.isRealInstance ||
@@ -83,7 +87,7 @@ export function useFriendsSidebarActions({
         }
         try {
             const opened = await tryOpenLaunchLocation(
-                location,
+                parsedLocation.tag,
                 parsedLocation.shortName
             );
             if (opened) {
@@ -106,7 +110,7 @@ export function useFriendsSidebarActions({
         }
     }
 
-    async function selfInviteToFriendLocation(location: unknown) {
+    async function selfInviteToFriendLocation(location: string) {
         const parsedLocation = parseLocation(location);
         if (
             !parsedLocation.isRealInstance ||
@@ -116,7 +120,10 @@ export function useFriendsSidebarActions({
             return;
         }
         try {
-            await selfInviteToInstance(location, parsedLocation.shortName);
+            await selfInviteToInstance(
+                parsedLocation.tag,
+                parsedLocation.shortName
+            );
             toast.success(t('message.invite.self_sent'));
         } catch (error) {
             toast.error(
@@ -169,11 +176,13 @@ export function useFriendsSidebarActions({
             return;
         }
         try {
-            const inviteLocation = parsedLocation.tag || currentInviteLocation;
+            const inviteLocation =
+                normalizeId(parsedLocation.tag) ||
+                normalizeId(currentInviteLocation);
             await sendInviteToLocation({
                 receiverUserId: friendId,
                 instanceId: inviteLocation,
-                worldId: parsedLocation.worldId,
+                worldId: normalizeId(parsedLocation.worldId),
                 rsvp: true
             });
             recordRecentAction(friendId, 'Invite');
@@ -245,7 +254,7 @@ export function useFriendsSidebarActions({
     }
 
     async function saveCurrentUserPatch(
-        patch: Record<string, unknown>,
+        patch: CurrentUserUpdateRequest,
         { successMessage, errorMessage }: SaveCurrentUserPatchMessages
     ) {
         if (!currentUserId) {
@@ -284,7 +293,7 @@ export function useFriendsSidebarActions({
         }
     }
 
-    async function changeCurrentUserStatus(status: string) {
+    async function changeCurrentUserStatus(status: UserStatus) {
         await saveCurrentUserPatch(
             { status },
             {
@@ -313,12 +322,13 @@ export function useFriendsSidebarActions({
     }
 
     async function applyCurrentUserStatusPreset(preset: StatusPreset) {
-        if (!preset?.status) {
+        const status = preset.status;
+        if (!status) {
             return;
         }
-        const patch: Record<string, unknown> = { status: preset.status };
-        if (Object.prototype.hasOwnProperty.call(preset, 'statusDescription')) {
-            patch.statusDescription = preset.statusDescription || '';
+        const patch: CurrentUserUpdateRequest = { status };
+        if (preset.statusDescription !== undefined) {
+            patch.statusDescription = preset.statusDescription;
         }
         await saveCurrentUserPatch(patch, {
             successMessage: t(

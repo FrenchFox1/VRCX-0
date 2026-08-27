@@ -1,10 +1,12 @@
 use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::{
+    VrchatApiResponse as HttpApiExecuteResponse, VrchatScope as ApiScope,
+};
+use vrcx_0_contracts::vrchat_api::{classify_vrchat_auth_failure, VrchatAuthFailureKind};
 use vrcx_0_core::json::JsonExt;
-use vrcx_0_vrchat_client::auth::{config_get_input, current_user_get_input};
-use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse};
 
-use super::{auth_response_error_message, LoginApi};
-use crate::{Error, Result};
+use super::LoginApi;
+use vrcx_0_application_core::{Error, Result};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum CookieProbeStage {
@@ -19,7 +21,9 @@ pub(super) enum CookieProbeResult {
     },
     MissingCredentials(HttpApiExecuteResponse),
     RequiresTwoFactor(HttpApiExecuteResponse),
-    UserMismatch,
+    UserMismatch {
+        actual_user_id: String,
+    },
     Rejected {
         stage: CookieProbeStage,
         response: HttpApiExecuteResponse,
@@ -32,7 +36,7 @@ pub(super) async fn probe_cookie_session(
     expected_user_id: &str,
 ) -> Result<CookieProbeResult> {
     let config_response = api
-        .execute(config_get_input(endpoint.to_string()), ApiScope::Vrchat)
+        .execute(api.config(endpoint.to_string()), ApiScope::Vrchat)
         .await?;
     if response_is_missing_credentials(&config_response) {
         return Ok(CookieProbeResult::MissingCredentials(config_response));
@@ -45,10 +49,7 @@ pub(super) async fn probe_cookie_session(
     }
 
     let response = api
-        .execute(
-            current_user_get_input(endpoint.to_string()),
-            ApiScope::Vrchat,
-        )
+        .execute(api.current_user(endpoint.to_string()), ApiScope::Vrchat)
         .await?;
     if response_is_missing_credentials(&response) {
         return Ok(CookieProbeResult::MissingCredentials(response));
@@ -78,13 +79,12 @@ pub(super) async fn probe_cookie_session(
     }
     let expected_user_id = expected_user_id.trim();
     if !expected_user_id.is_empty() && actual_user_id != expected_user_id {
-        return Ok(CookieProbeResult::UserMismatch);
+        return Ok(CookieProbeResult::UserMismatch { actual_user_id });
     }
 
     Ok(CookieProbeResult::Authenticated { response, user })
 }
 
 fn response_is_missing_credentials(response: &HttpApiExecuteResponse) -> bool {
-    response.status == 401
-        && auth_response_error_message(response, String::new()).contains("Missing Credentials")
+    classify_vrchat_auth_failure(response) == VrchatAuthFailureKind::MissingCredentials
 }

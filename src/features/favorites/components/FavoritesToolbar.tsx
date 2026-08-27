@@ -15,6 +15,7 @@ import {
     ToolbarViewMenu,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
+import type { FavoriteKind } from '@/domain/favorites/types';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -36,19 +37,23 @@ import {
     FAVORITES_DENSITY_OPTIONS,
     type FavoritesDensity
 } from '../favoritesDensity';
-import type { FavoriteKind } from '../favoritesTypes';
+import {
+    normalizeFavoriteSortValue,
+    type FavoriteSortValue
+} from '../favoritesItems';
+import type { FavoriteSearchMode } from '../favoritesTypes';
 
 type FavoritesToolbarProps = {
     kind: FavoriteKind;
-    sortValue: string;
+    sortValue: FavoriteSortValue;
     searchQuery: string;
     searchPlaceholder: string;
-    searchMode: string;
+    searchMode: FavoriteSearchMode;
     density: FavoritesDensity;
     refreshing: boolean;
-    onSortValueChange: (value: string) => void;
+    onSortValueChange: (value: FavoriteSortValue) => void;
     onSearchChange: (value: string) => void;
-    onSearchModeChange: (mode: string) => void;
+    onSearchModeChange: (mode: FavoriteSearchMode) => void;
     onDensityChange: (value: FavoritesDensity) => void;
     onRefresh: () => void;
     onImport: () => void;
@@ -74,18 +79,16 @@ function FavoritesToolbar({
     onManageShares
 }: FavoritesToolbarProps) {
     const { t } = useTranslation();
-    const sortItems = [
+    const sortItems: Array<{ value: FavoriteSortValue; label: string }> = [
         { value: 'name', label: t('view.search.avatar.sort_name') },
-        { value: 'date', label: t('view.favorite.label.sort_by_date') },
-        ...(kind === 'world'
-            ? [
-                  {
-                      value: 'players',
-                      label: t('view.favorite.label.sort_by_players')
-                  }
-              ]
-            : [])
+        { value: 'date', label: t('view.favorite.label.sort_by_date') }
     ];
+    if (kind === 'world') {
+        sortItems.push({
+            value: 'players',
+            label: t('view.favorite.label.sort_by_players')
+        });
+    }
 
     return (
         <PageToolbar>
@@ -95,7 +98,9 @@ function FavoritesToolbar({
                         value={sortValue}
                         items={sortItems}
                         onValueChange={(value) =>
-                            onSortValueChange(value ?? '')
+                            onSortValueChange(
+                                normalizeFavoriteSortValue(kind, value)
+                            )
                         }
                     >
                         <SelectTrigger className="max-w-56 min-w-40 shrink-0">
@@ -179,10 +184,14 @@ function FavoritesToolbar({
                                     spacing={1}
                                     value={density ? [density] : []}
                                     onValueChange={(nextValue) => {
-                                        if (nextValue[0]) {
-                                            onDensityChange(
-                                                nextValue[0] as FavoritesDensity
+                                        const option =
+                                            FAVORITES_DENSITY_OPTIONS.find(
+                                                (candidate) =>
+                                                    candidate.value ===
+                                                    nextValue[0]
                                             );
+                                        if (option) {
+                                            onDensityChange(option.value);
                                         }
                                     }}
                                     className="grid w-full grid-cols-2"

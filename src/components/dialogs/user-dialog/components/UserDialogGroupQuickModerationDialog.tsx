@@ -309,7 +309,7 @@ export function UserDialogGroupQuickModerationDialog({
                             )}
                         />
                         <div className="bg-muted/30 mx-6 rounded-lg">
-                            {moderation.groupsStatus === 'loading' ? (
+                            {moderation.groupsStatus === 'running' ? (
                                 moderation.groupsLoadingVisible ? (
                                     <LoadingPanel
                                         className="h-[132px]"
@@ -456,7 +456,7 @@ export function UserDialogGroupQuickModerationDialog({
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
-                            {moderation.groupsStatus === 'loading' ? (
+                            {moderation.groupsStatus === 'running' ? (
                                 moderation.groupsLoadingVisible ? (
                                     <LoadingPanel
                                         label={t(

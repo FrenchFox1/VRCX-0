@@ -20,13 +20,26 @@ import {
 } from '../vrcx0CssLayerService';
 
 const BACKGROUND_IMAGE_LAYER = 'background-image';
+const BACKGROUND_IMAGE_TRANSITION_LAYER_SELECTOR =
+    '.vrcx-0-background-image-transition-layer';
+const BACKGROUND_IMAGE_TRANSITION_ACTIVE_ATTR = 'data-active';
+const BACKGROUND_IMAGE_TRANSITION_DURATION_MS = 280;
+const BACKGROUND_IMAGE_PRELOAD_TIMEOUT_MS = 3000;
 const COMMUNITY_CSS_LAYERS: VrcxCssLayer[] = [
     'installed-theme',
     'local-theme-preview'
 ];
+let appliedImageUrl: string | null = null;
+let transitionGeneration = 0;
+let pendingTransition:
+    | {
+          imageUrl: string;
+          promise: Promise<void>;
+      }
+    | undefined;
 
 function toCssString(value: string): string {
-    return `"${String(value || '')
+    return `"${value
         .replace(/\\/g, '\\\\')
         .replace(/"/g, '\\"')
         .replace(/\n/g, '\\A ')}"`;
@@ -72,6 +85,153 @@ export function buildBackgroundImageCss(
 `;
 }
 
+function getBackgroundImageTransitionLayer(): HTMLElement | null {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+    return document.querySelector<HTMLElement>(
+        BACKGROUND_IMAGE_TRANSITION_LAYER_SELECTOR
+    );
+}
+
+function reduceBackgroundImageMotion(): boolean {
+    if (typeof document === 'undefined') {
+        return true;
+    }
+    if (document.documentElement.classList.contains('reduce-effects')) {
+        return true;
+    }
+    return (
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+}
+
+function resetBackgroundImageTransitionLayer(
+    transitionLayer: HTMLElement
+): void {
+    transitionLayer.style.transition = 'none';
+    transitionLayer.removeAttribute(BACKGROUND_IMAGE_TRANSITION_ACTIVE_ATTR);
+    transitionLayer.style.backgroundImage = '';
+    void transitionLayer.offsetWidth;
+    transitionLayer.style.removeProperty('transition');
+}
+
+async function preloadBackgroundImage(imageUrl: string): Promise<void> {
+    if (typeof Image === 'undefined' || typeof window === 'undefined') {
+        return;
+    }
+
+    await new Promise<void>((resolve) => {
+        const image = new Image();
+        let settled = false;
+        const timeoutId = window.setTimeout(
+            finish,
+            BACKGROUND_IMAGE_PRELOAD_TIMEOUT_MS
+        );
+
+        function finish(): void {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            window.clearTimeout(timeoutId);
+            image.onload = null;
+            image.onerror = null;
+            resolve();
+        }
+
+        image.onload = finish;
+        image.onerror = finish;
+        image.src = imageUrl;
+        if (image.complete) {
+            finish();
+        }
+    });
+}
+
+function waitForBackgroundImageTransition(): Promise<void> {
+    return new Promise((resolve) => {
+        window.setTimeout(resolve, BACKGROUND_IMAGE_TRANSITION_DURATION_MS);
+    });
+}
+
+async function applyBackgroundImageSnapshot(
+    snapshot: BackgroundImageSnapshot,
+    generation: number
+): Promise<void> {
+    const cssText = buildBackgroundImageCss(snapshot);
+    const transitionLayer = getBackgroundImageTransitionLayer();
+    if (
+        appliedImageUrl === null ||
+        transitionLayer === null ||
+        reduceBackgroundImageMotion()
+    ) {
+        setVrcxCssLayer(BACKGROUND_IMAGE_LAYER, cssText);
+        appliedImageUrl = snapshot.imageUrl;
+        if (transitionLayer) {
+            resetBackgroundImageTransitionLayer(transitionLayer);
+        }
+        return;
+    }
+
+    await preloadBackgroundImage(snapshot.imageUrl);
+    if (generation !== transitionGeneration) {
+        return;
+    }
+
+    resetBackgroundImageTransitionLayer(transitionLayer);
+    transitionLayer.style.backgroundImage = `url(${toCssString(snapshot.imageUrl)})`;
+    void transitionLayer.offsetWidth;
+    transitionLayer.setAttribute(BACKGROUND_IMAGE_TRANSITION_ACTIVE_ATTR, '');
+    await waitForBackgroundImageTransition();
+    if (generation !== transitionGeneration) {
+        return;
+    }
+
+    setVrcxCssLayer(BACKGROUND_IMAGE_LAYER, cssText);
+    appliedImageUrl = snapshot.imageUrl;
+    resetBackgroundImageTransitionLayer(transitionLayer);
+}
+
+function transitionToBackgroundImage(
+    snapshot: BackgroundImageSnapshot
+): Promise<void> {
+    if (appliedImageUrl === snapshot.imageUrl) {
+        return Promise.resolve();
+    }
+    if (pendingTransition?.imageUrl === snapshot.imageUrl) {
+        return pendingTransition.promise;
+    }
+
+    transitionGeneration += 1;
+    const generation = transitionGeneration;
+    const promise = applyBackgroundImageSnapshot(snapshot, generation).finally(
+        () => {
+            if (pendingTransition?.promise === promise) {
+                pendingTransition = undefined;
+            }
+        }
+    );
+    pendingTransition = {
+        imageUrl: snapshot.imageUrl,
+        promise
+    };
+    return promise;
+}
+
+function clearBackgroundImageAppearance(): void {
+    transitionGeneration += 1;
+    pendingTransition = undefined;
+    appliedImageUrl = null;
+    const transitionLayer = getBackgroundImageTransitionLayer();
+    if (transitionLayer) {
+        resetBackgroundImageTransitionLayer(transitionLayer);
+    }
+    setVrcxCssLayer(BACKGROUND_IMAGE_LAYER, '');
+}
+
 async function applySavedThemeMode(): Promise<void> {
     const savedThemeMode = await configRepository.getString(
         APP_THEME_CONFIG_KEYS.themeMode,
@@ -104,14 +264,13 @@ export async function syncBackgroundImageAppearance(
     restoreAppTheme = true
 ): Promise<void> {
     const state = useBackgroundImageStore.getState();
-    const suppressCommunityLayers = Boolean(state.enabled);
-    const shouldApply = Boolean(state.enabled && state.snapshot);
-    setVrcxCssLayer(
-        BACKGROUND_IMAGE_LAYER,
-        shouldApply && state.snapshot
-            ? buildBackgroundImageCss(state.snapshot)
-            : ''
-    );
+    const suppressCommunityLayers = state.enabled;
+    const shouldApply = state.enabled && state.snapshot !== null;
+    if (shouldApply && state.snapshot) {
+        await transitionToBackgroundImage(state.snapshot);
+    } else {
+        clearBackgroundImageAppearance();
+    }
     setVrcxCssLayersSuppressed(COMMUNITY_CSS_LAYERS, suppressCommunityLayers);
 
     if (shouldApply) {

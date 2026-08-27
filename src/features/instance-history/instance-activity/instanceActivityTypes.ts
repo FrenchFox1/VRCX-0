@@ -1,4 +1,5 @@
 import type { InstanceHistoryEntryOutput } from '@/platform/tauri/bindings';
+import type { InstanceActivityRow } from '@/repositories/instanceActivityRepository';
 import type { parseLocation } from '@/shared/utils/location';
 
 export type ActivityLocation = ReturnType<typeof parseLocation>;
@@ -11,7 +12,7 @@ export type WorldDetailsById = Record<
     }
 >;
 
-export type PreviousInstanceRow = Partial<InstanceHistoryEntryOutput> & {
+export type InstanceHistoryEntryRow = Partial<InstanceHistoryEntryOutput> & {
     id?: string | number;
     created_at?: string | number | Date;
     last_ts?: string | number | Date;
@@ -30,14 +31,7 @@ export type PreviousInstanceRow = Partial<InstanceHistoryEntryOutput> & {
     };
 };
 
-export type InstanceActivityRawRow = object & {
-    id?: unknown;
-    user_id?: unknown;
-    display_name?: unknown;
-    location?: unknown;
-    created_at?: unknown;
-    time?: unknown;
-};
+export type InstanceActivityRawRow = InstanceActivityRow;
 
 export type InstanceActivityChartRow = {
     id: string;
@@ -56,7 +50,7 @@ export type InstanceActivityChartRow = {
     activityKey: string;
 };
 
-export type InstanceActivityDetailRow = InstanceActivityRawRow & {
+export type InstanceActivityDetailRow = Omit<InstanceActivityRawRow, 'id'> & {
     id: string;
     displayName: string;
     userId: string;

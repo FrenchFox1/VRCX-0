@@ -4,6 +4,7 @@ use serde_json::Value;
 use vrcx_0_core::json::RawJson;
 
 use super::*;
+use crate::ownership::OwnerId;
 
 pub(super) struct TestDir {
     path: PathBuf,
@@ -47,7 +48,7 @@ pub(super) fn query(
 ) -> Result<Value, Error> {
     game_log_query(
         db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         GameLogQueryInput {
             kind: kind.into(),
             params: RawJson::from(params),
@@ -72,7 +73,7 @@ pub(super) fn row_texts(rows: &[Value], key: &str) -> Vec<String> {
 pub(super) fn seed_fixture(db: &DatabaseService) -> Result<(), Error> {
     write_game_log_batch(
         db,
-        "usr_test",
+        &OwnerId::new("usr_test"),
         &GameLogWriteBatch {
             locations: vec![
                 GameLogLocationEntry {

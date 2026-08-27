@@ -9,10 +9,9 @@ import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type {
-    GroupDialogJson,
-    GroupProfileRecord,
-    UserProfileEntity
-} from '@/domain/entities/profileEntities';
+    GroupAnnouncementRecord,
+    GroupProfileRecord
+} from '@/domain/entities/group';
 import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateFilter } from '@/lib/dateTime';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
@@ -47,11 +46,10 @@ import {
     announcementRoleNames,
     announcementTimestamp,
     announcementUserId,
-    announcementUserLabel,
-    firstArray
+    announcementUserLabel
 } from './groupDialogUtils';
 import { GroupInstanceRows } from './GroupInstanceRows';
-import { RowList } from './GroupRowList';
+import { GroupPostUserButton, RowList } from './GroupRowList';
 
 type GroupRoleOption = {
     id?: string;
@@ -87,26 +85,23 @@ function GroupOverviewSection({
 }
 
 function GroupAnnouncementPanel({
+    announcement,
     group,
     onPreviewImage,
-    onOpenUser
+    children
 }: {
+    announcement: GroupAnnouncementRecord;
     group: GroupProfileRecord;
     onPreviewImage: (url: string, title: string) => void;
-    onOpenUser: (
-        userId: string,
-        title?: string,
-        seedData?: UserProfileEntity | null
-    ) => void;
+    children: ReactNode;
 }) {
     const { t } = useTranslation();
 
-    const announcement = group.announcement;
     const roleNames = announcementRoleNames(announcement, group);
-
-    if (!announcement?.id && !announcement?.title) {
-        return null;
-    }
+    const authorId = announcementUserId(announcement, 'author');
+    const authorLabel = announcementUserLabel(announcement, 'author');
+    const editorId = announcementUserId(announcement, 'editor');
+    const editorLabel = announcementUserLabel(announcement, 'editor');
 
     return (
         <div className="min-w-0 text-sm">
@@ -145,9 +140,7 @@ function GroupAnnouncementPanel({
                         />
                     </Button>
                 ) : null}
-                <pre className="text-muted-foreground max-h-40 min-w-0 flex-1 overflow-auto font-sans text-xs whitespace-pre-wrap">
-                    {announcement.text || '\u2014'}
-                </pre>
+                {children}
             </div>
             <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                 {roleNames.length ? (
@@ -165,70 +158,36 @@ function GroupAnnouncementPanel({
                         <TooltipContent>{roleNames.join(', ')}</TooltipContent>
                     </Tooltip>
                 ) : null}
-                {announcementUserId(announcement, 'author') ||
-                announcementUserLabel(announcement, 'author') ? (
-                    announcementUserId(announcement, 'author') ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="hover:text-primary h-auto gap-1 p-0 text-xs font-normal"
-                            onClick={() =>
-                                onOpenUser(
-                                    announcementUserId(announcement, 'author'),
-                                    announcementUserLabel(
-                                        announcement,
-                                        'author'
-                                    ) || undefined
-                                )
-                            }
-                        >
-                            <span>{t('table.import.author')}</span>
-                            <span className="text-foreground font-medium">
-                                {announcementUserLabel(
-                                    announcement,
-                                    'author'
-                                ) || announcementUserId(announcement, 'author')}
-                            </span>
-                        </Button>
+                {authorId || authorLabel ? (
+                    authorId ? (
+                        <GroupPostUserButton
+                            userId={authorId}
+                            displayName={authorLabel}
+                            label={<span>{t('table.import.author')}</span>}
+                        />
                     ) : (
                         <span className="inline-flex items-center gap-1">
                             <span>{t('table.import.author')}</span>
                             <span className="text-foreground font-medium">
-                                {announcementUserLabel(announcement, 'author')}
+                                {authorLabel}
                             </span>
                         </span>
                     )
                 ) : null}
-                {announcementUserId(announcement, 'editor') ||
-                announcementUserLabel(announcement, 'editor') ? (
-                    announcementUserId(announcement, 'editor') ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="hover:text-primary h-auto gap-1 p-0 text-xs font-normal"
-                            onClick={() =>
-                                onOpenUser(
-                                    announcementUserId(announcement, 'editor'),
-                                    announcementUserLabel(
-                                        announcement,
-                                        'editor'
-                                    ) || undefined
-                                )
+                {editorId || editorLabel ? (
+                    editorId ? (
+                        <GroupPostUserButton
+                            userId={editorId}
+                            displayName={editorLabel}
+                            label={
+                                <span>{t('dialog.group.posts.edited_by')}</span>
                             }
-                        >
-                            <span>{t('dialog.group.posts.edited_by')}</span>
-                            <span className="text-foreground font-medium">
-                                {announcementUserLabel(
-                                    announcement,
-                                    'editor'
-                                ) || announcementUserId(announcement, 'editor')}
-                            </span>
-                        </Button>
+                        />
                     ) : (
                         <span className="inline-flex items-center gap-1">
                             <span>{t('dialog.group.posts.edited_by')}</span>
                             <span className="text-foreground font-medium">
-                                {announcementUserLabel(announcement, 'editor')}
+                                {editorLabel}
                             </span>
                         </span>
                     )
@@ -266,6 +225,7 @@ export function GroupDialogTabPanels({
     const {
         activeInstances,
         activeTab,
+        announcement,
         bannerUrl,
         canManagePosts,
         currentUserId,
@@ -300,7 +260,6 @@ export function GroupDialogTabPanels({
         onMemberSortChange,
         onOpenLink,
         onOpenOwner,
-        onOpenUser,
         onPreviousInstancesChange,
         onPreviewImage,
         onPreviewRowImage,
@@ -381,16 +340,33 @@ export function GroupDialogTabPanels({
                     />
                 </GroupOverviewSection>
 
-                {group.announcement?.id || group.announcement?.title ? (
-                    <GroupOverviewSection
-                        title={t('dialog.group.info.announcement')}
+                {announcement?.id || announcement?.title ? (
+                    <TranslatableText
+                        source={announcement.text || ''}
+                        entityId={announcement.id || group.id || ''}
+                        density="button"
                     >
-                        <GroupAnnouncementPanel
-                            group={group}
-                            onPreviewImage={onPreviewImage}
-                            onOpenUser={onOpenUser}
-                        />
-                    </GroupOverviewSection>
+                        {({ action, meta, error, text }) => (
+                            <GroupOverviewSection
+                                title={t('dialog.group.info.announcement')}
+                                action={action}
+                            >
+                                <GroupAnnouncementPanel
+                                    announcement={announcement}
+                                    group={group}
+                                    onPreviewImage={onPreviewImage}
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        {meta}
+                                        <pre className="text-muted-foreground max-h-40 min-w-0 overflow-auto font-sans text-xs whitespace-pre-wrap">
+                                            {text || '\u2014'}
+                                        </pre>
+                                        {error}
+                                    </div>
+                                </GroupAnnouncementPanel>
+                            </GroupOverviewSection>
+                        )}
+                    </TranslatableText>
                 ) : null}
 
                 {group.rules ? (
@@ -671,19 +647,13 @@ export function GroupDialogTabPanels({
                             {
                                 value: 'joinedAt:asc',
                                 label: t('dialog.group.success.joined_oldest')
-                            },
-                            {
-                                value: 'user.displayName:asc',
-                                label: t('dialog.group.label.name_a_z')
-                            },
-                            {
-                                value: 'user.displayName:desc',
-                                label: t('dialog.group.label.name_z_a')
                             }
                         ]}
-                        onValueChange={(value) =>
-                            onMemberSortChange(value ?? '')
-                        }
+                        onValueChange={(value) => {
+                            if (value) {
+                                onMemberSortChange(value);
+                            }
+                        }}
                         disabled={remoteStatus.members === 'running'}
                     >
                         <SelectTrigger size="sm" className="w-44">
@@ -698,12 +668,6 @@ export function GroupDialogTabPanels({
                                 </SelectItem>
                                 <SelectItem value="joinedAt:asc">
                                     {t('dialog.group.success.joined_oldest')}
-                                </SelectItem>
-                                <SelectItem value="user.displayName:asc">
-                                    {t('dialog.group.label.name_a_z')}
-                                </SelectItem>
-                                <SelectItem value="user.displayName:desc">
-                                    {t('dialog.group.label.name_z_a')}
                                 </SelectItem>
                             </SelectGroup>
                         </SelectContent>
@@ -777,20 +741,7 @@ export function GroupDialogTabPanels({
                 />
             </EntityDialogTabContent>
             <EntityDialogTabContent value="json">
-                <EntityRawJson
-                    value={
-                        {
-                            group,
-                            posts,
-                            events: groupEvents,
-                            instances: activeInstances,
-                            members,
-                            galleries: firstArray(group.galleries),
-                            photos,
-                            activeInstances
-                        } satisfies GroupDialogJson
-                    }
-                />
+                <EntityRawJson value={group} />
             </EntityDialogTabContent>
         </EntityDialogTabs>
     );

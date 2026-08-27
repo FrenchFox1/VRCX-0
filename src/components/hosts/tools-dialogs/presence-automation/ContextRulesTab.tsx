@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { FriendRosterById } from '@/domain/friends/friendRosterTypes';
+import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
+import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 import {
     Empty,
     EmptyDescription,
@@ -25,6 +28,7 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 
+import { instanceTypes } from '../toolsDialogUtils';
 import {
     AutomationSplitLayout,
     CompactCheckList,
@@ -37,11 +41,12 @@ import { FriendMultiSelect } from './FriendMultiSelect';
 import {
     contextPresetLabelKeyFromValue,
     contextPresetOptions,
+    createGroupOptions,
+    createInstanceOptions,
     createContextRule,
     hasRuleAction,
     normalizeContextRule,
     type ContextAutomationRule,
-    type PresenceOption,
     priorityLabelKeyFromNumber,
     priorityNumberFromValue,
     priorityOptions,
@@ -53,6 +58,7 @@ import {
     updateRuleAction
 } from './presenceAutomationDialogUtils';
 import { PresenceRuleActionFields } from './PresenceRuleActionFields';
+import { useFavoriteFriendGroupOptions } from './useFavoriteFriendGroupOptions';
 import { useRuleSelection } from './useRuleSelection';
 
 const I18N_ROOT = 'view.tools.social_automation';
@@ -60,26 +66,37 @@ const TITLE_FALLBACK_KEY = `${I18N_ROOT}.room_rule_default`;
 
 type ContextRulesTabProps = {
     contextRules: ContextAutomationRule[];
-    friendsById: FriendRosterById;
-    groupOptions: PresenceOption[];
-    instanceOptions: PresenceOption[];
     loading: boolean;
-    onRulesChange: (rules: ContextAutomationRule[]) => unknown;
-    orderedFriendIds: string[];
-    worldGroupOptions: PresenceOption[];
+    onRulesChange: (rules: ContextAutomationRule[]) => void;
 };
 
 export function ContextRulesTab({
     loading,
-    groupOptions,
-    worldGroupOptions,
-    instanceOptions,
-    friendsById,
-    orderedFriendIds,
     contextRules,
     onRulesChange
 }: ContextRulesTabProps) {
     const { t } = useTranslation();
+    const favoriteWorldGroups = useFavoriteStore(
+        (state) => state.favoriteWorldGroups
+    );
+    const localWorldFavorites = useLocalWorldFavorites();
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const orderedFriendIds = useFriendRosterStore(
+        (state) => state.orderedFriendIds
+    );
+    const groupOptions = useFavoriteFriendGroupOptions();
+    const worldGroupOptions = useMemo(
+        () =>
+            createGroupOptions({
+                remoteGroups: favoriteWorldGroups,
+                localGroups: localWorldFavorites.groupNames
+            }),
+        [favoriteWorldGroups, localWorldFavorites.groupNames]
+    );
+    const instanceOptions = useMemo(
+        () => createInstanceOptions(instanceTypes, t),
+        [t]
+    );
     const rules = Array.isArray(contextRules) ? contextRules : [];
     const {
         selectedRule,
@@ -116,8 +133,8 @@ export function ContextRulesTab({
             addLabel={t(`${I18N_ROOT}.add_rule`)}
             disabled={loading}
             isEmpty={!rules.length}
-            emptyTitle={t(`${I18N_ROOT}.no_custom_room_rules`)}
-            emptyDescription={t(`${I18N_ROOT}.room_social_rules_description`)}
+            emptyTitle={t('empty_state.context_rules_title')}
+            emptyDescription={t('empty_state.context_rules_description')}
             onAdd={addRule}
         >
             {rules.map((rule) => (
@@ -162,7 +179,7 @@ export function ContextRulesTab({
             description={
                 selectedRule
                     ? t(contextPresetLabelKeyFromValue(selectedRule.preset))
-                    : t(`${I18N_ROOT}.no_custom_room_rules`)
+                    : t('empty_state.context_rules_title')
             }
         >
             {selectedRule ? (
@@ -463,10 +480,10 @@ export function ContextRulesTab({
                 <Empty className="min-h-[18rem] border">
                     <EmptyHeader>
                         <EmptyTitle>
-                            {t(`${I18N_ROOT}.no_custom_room_rules`)}
+                            {t('empty_state.context_rules_title')}
                         </EmptyTitle>
                         <EmptyDescription>
-                            {t(`${I18N_ROOT}.room_social_rules_description`)}
+                            {t('empty_state.context_rules_description')}
                         </EmptyDescription>
                     </EmptyHeader>
                 </Empty>

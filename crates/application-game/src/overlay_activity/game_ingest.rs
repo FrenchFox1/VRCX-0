@@ -1,19 +1,45 @@
 use serde_json::{json, Value};
 use vrcx_0_application_activity::{
-    OverlayActivityCandidate, OverlayActivityEntry, OverlayActivityRuntime,
+    OverlayActivityCandidate, OverlayActivityEntry, OverlayActivityFavoriteSubject,
+    OverlayActivityRuntime,
 };
+use vrcx_0_contracts::game_log::GameLogJoinLeaveEntry;
 use vrcx_0_core::location::world_id_from_location as world_id_from_location_or_id;
 
 use crate::game_log::{GameLogIngestOutput, GameLogSideEffect};
 
 pub trait OverlayActivityGameIngestExt {
     fn ingest_game_log_output(&self, output: &GameLogIngestOutput) -> Vec<OverlayActivityEntry>;
+
+    fn ingest_game_log_output_with_join_leave_filter<F>(
+        &self,
+        output: &GameLogIngestOutput,
+        include_join_leave: F,
+    ) -> Vec<OverlayActivityEntry>
+    where
+        F: FnMut(&GameLogJoinLeaveEntry) -> bool;
 }
 
 impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
     fn ingest_game_log_output(&self, output: &GameLogIngestOutput) -> Vec<OverlayActivityEntry> {
+        self.ingest_game_log_output_with_join_leave_filter(output, |_| true)
+    }
+
+    fn ingest_game_log_output_with_join_leave_filter<F>(
+        &self,
+        output: &GameLogIngestOutput,
+        mut include_join_leave: F,
+    ) -> Vec<OverlayActivityEntry>
+    where
+        F: FnMut(&GameLogJoinLeaveEntry) -> bool,
+    {
         let mut entries = Vec::new();
-        for entry in &output.batch.join_leave {
+        for entry in output
+            .batch
+            .join_leave
+            .iter()
+            .filter(|entry| include_join_leave(entry))
+        {
             let candidate = OverlayActivityCandidate {
                 source_id: format!(
                     "game-log:{}:{}:{}:{}",
@@ -24,12 +50,14 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: entry.user_id.clone(),
                 actor_display_name: entry.display_name.clone(),
                 current_instance: true,
+                favorite_subject: OverlayActivityFavoriteSubject::UserId(entry.user_id.clone()),
                 payload: json!({
                     "location": entry.location,
                     "worldId": world_id_from_location_or_id(&entry.location),
                     "worldName": entry.world_name,
                     "time": entry.time,
-                }),
+                })
+                .into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);
@@ -61,7 +89,8 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: input.user_id.clone(),
                 actor_display_name: input.display_name.clone(),
                 current_instance: true,
-                payload,
+                favorite_subject: OverlayActivityFavoriteSubject::UserId(input.user_id.clone()),
+                payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);
@@ -82,7 +111,8 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: String::new(),
                 actor_display_name: "Event".to_string(),
                 current_instance: false,
-                payload,
+                favorite_subject: OverlayActivityFavoriteSubject::None,
+                payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);
@@ -106,7 +136,8 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 actor_user_id: entry.user_id.clone(),
                 actor_display_name: entry.display_name.clone(),
                 current_instance: false,
-                payload,
+                favorite_subject: OverlayActivityFavoriteSubject::UserId(entry.user_id.clone()),
+                payload: payload.into(),
             };
             if let Some(entry) = self.ingest_candidate(candidate) {
                 entries.push(entry);

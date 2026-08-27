@@ -1,14 +1,12 @@
 import type { TFunction } from 'i18next';
 import { EyeIcon, TagIcon, UsersIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
-import groupProfileRepository from '@/repositories/groupProfileRepository';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 
-import { groupIdForRow, groupMemberVisibility } from '../userDialogGroupRows';
+import { groupMemberVisibility } from '../userDialogGroupRows';
 import { groupDisplayName } from '../userDialogRows';
 import { rowImage } from './userDialogEntityImages';
 import { openRow } from './userDialogEntityNavigation';
@@ -23,50 +21,11 @@ function visibilityLabel(visibility: string, t: TFunction) {
     return t('dialog.user.label.visibility_everyone');
 }
 
-export function UserGroupCard({
-    group,
-    currentEndpoint
-}: {
-    group: EntityRecord;
-    currentEndpoint: string;
-}) {
+export function UserGroupCard({ group }: { group: EntityRecord }) {
     const { t } = useTranslation();
 
-    const groupId = groupIdForRow(group);
-    const [profile, setProfile] = useState<Awaited<
-        ReturnType<typeof groupProfileRepository.getGroupProfile>
-    > | null>(null);
-
-    useEffect(() => {
-        let active = true;
-        setProfile(null);
-
-        if (!groupId) {
-            return () => {
-                active = false;
-            };
-        }
-
-        groupProfileRepository
-            .getGroupProfile({
-                groupId,
-                includeRoles: false
-            })
-            .then((groupProfile) => {
-                if (active) {
-                    setProfile(groupProfile);
-                }
-            })
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, groupId]);
-
-    const displayGroup = profile ? { ...group, ...profile } : group;
-    const image = rowImage(displayGroup, 'group');
-    const label = groupDisplayName(displayGroup);
+    const image = rowImage(group, 'group');
+    const label = groupDisplayName(group);
     const visibility = groupMemberVisibility(group);
     const isRepresenting = Boolean(
         group?.isRepresenting || group?.is_representing
@@ -86,7 +45,7 @@ export function UserGroupCard({
                 type="button"
                 variant="ghost"
                 className="h-auto min-w-0 flex-1 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
-                onClick={() => openRow(displayGroup, 'group')}
+                onClick={() => openRow(group, 'group')}
             >
                 <Avatar className="size-9 rounded-md after:rounded-md">
                     {image ? (

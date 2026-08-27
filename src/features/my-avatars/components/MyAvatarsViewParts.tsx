@@ -3,7 +3,12 @@ import {
     MoreHorizontalIcon,
     RectangleGogglesIcon
 } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
+import type {
+    ComponentProps,
+    Dispatch,
+    ReactNode,
+    SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
@@ -22,6 +27,7 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
@@ -29,6 +35,7 @@ import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     MY_AVATAR_TAG_BADGE_CLASS_NAME,
@@ -37,6 +44,9 @@ import {
 } from '../myAvatarsDisplay';
 import { toggleMyAvatarsTagFilter } from '../myAvatarsFilters';
 import {
+    isMyAvatarsGridDensity,
+    isMyAvatarsPlatformFilter,
+    isMyAvatarsReleaseStatusFilter,
     MY_AVATARS_GRID_DENSITY_OPTIONS,
     MY_AVATARS_PLATFORM_OPTIONS,
     MY_AVATARS_RELEASE_STATUS_OPTIONS
@@ -44,7 +54,9 @@ import {
 import type {
     MyAvatarActionHandler,
     MyAvatarRow,
-    MyAvatarsGridDensity
+    MyAvatarsGridDensity,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter
 } from '../myAvatarsTypes';
 import { AvatarActionMenuItems, MyAvatarGridCard } from './MyAvatarGridCard';
 
@@ -56,9 +68,9 @@ type PlatformBadgesProps = {
     unityPackages?: MyAvatarRow['unityPackages'];
 };
 
-type MyAvatarsEmptyStateProps = {
-    title?: string;
-    description?: string;
+type PlatformBadgeProps = {
+    children: ReactNode;
+    label: string;
 };
 
 type AvatarActionsDropdownProps = {
@@ -71,19 +83,34 @@ type AvatarActionsDropdownProps = {
 type MyAvatarFilterPopoverProps = {
     activeFilterCount: number;
     allTags: string[];
-    releaseStatusFilter: string;
-    platformFilter: string;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
+    platformFilter: MyAvatarsPlatformFilter;
     tagFilters: Set<string>;
-    onReleaseStatusChange: (value: string) => void;
-    onPlatformChange: (value: string) => void;
+    onReleaseStatusChange: (value: MyAvatarsReleaseStatusFilter) => void;
+    onPlatformChange: (value: MyAvatarsPlatformFilter) => void;
     onTagFiltersChange: Dispatch<SetStateAction<Set<string>>>;
     onClearFilters: () => void;
 };
 
 type GridSettingsMenuProps = {
     gridDensity: MyAvatarsGridDensity;
-    onGridDensityChange: (value: string) => void;
+    onGridDensityChange: (value: MyAvatarsGridDensity) => void;
 };
+
+function PlatformBadge({ children, label }: PlatformBadgeProps) {
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <Badge variant="outline" aria-label={label}>
+                        {children}
+                    </Badge>
+                }
+            />
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
+    );
+}
 
 export function PlatformBadges({ unityPackages }: PlatformBadgesProps) {
     const platforms = getAvailablePlatforms(unityPackages);
@@ -91,32 +118,35 @@ export function PlatformBadges({ unityPackages }: PlatformBadgesProps) {
     return (
         <div className="flex items-center gap-1">
             {platforms?.isPC ? (
-                <Badge variant="outline">
-                    <MonitorIcon className="size-3.5" />
-                </Badge>
+                <PlatformBadge label="PC">
+                    <MonitorIcon aria-hidden="true" className="size-3.5" />
+                </PlatformBadge>
             ) : null}
             {platforms?.isQuest ? (
-                <Badge variant="outline">
-                    <RectangleGogglesIcon className="size-3.5" />
-                </Badge>
+                <PlatformBadge label="Android">
+                    <RectangleGogglesIcon
+                        aria-hidden="true"
+                        className="size-3.5"
+                    />
+                </PlatformBadge>
             ) : null}
-            {platforms?.isIos ? <Badge variant="outline">iOS</Badge> : null}
+            {platforms?.isIos ? (
+                <PlatformBadge label="iOS">iOS</PlatformBadge>
+            ) : null}
         </div>
     );
 }
 
 export function MyAvatarsEmptyState({
     title,
-    description
-}: MyAvatarsEmptyStateProps) {
-    return <EmptyState title={title} description={description} />;
+    description,
+    ...props
+}: ComponentProps<typeof EmptyState>) {
+    return <EmptyState {...props} title={title} description={description} />;
 }
 
 export function openAvatarDetails(avatar: MyAvatarRow | null | undefined) {
-    const avatarId =
-        typeof avatar?.id === 'string'
-            ? avatar.id.trim()
-            : String(avatar?.id ?? '').trim();
+    const avatarId = avatar?.id?.trim() ?? '';
     if (!avatarId) {
         return;
     }
@@ -163,7 +193,7 @@ export function AvatarActionsDropdown({
             />
             <DropdownMenuContent
                 align="end"
-                className="w-max max-w-[90vw] min-w-52"
+                className="bg-popover! w-max max-w-[90vw] min-w-52"
             >
                 <AvatarActionMenuItems
                     avatar={avatar}
@@ -171,6 +201,7 @@ export function AvatarActionsDropdown({
                     disabled={disabled}
                     Item={DropdownMenuItem}
                     Group={DropdownMenuGroup}
+                    Label={DropdownMenuLabel}
                     Separator={DropdownMenuSeparator}
                     onAction={onAction}
                 />
@@ -191,13 +222,13 @@ export function MyAvatarFilterPopover({
     onClearFilters
 }: MyAvatarFilterPopoverProps) {
     const { t } = useTranslation();
-    const visibilityFilterLabel = (option: string) =>
+    const visibilityFilterLabel = (option: MyAvatarsReleaseStatusFilter) =>
         option === 'all'
             ? t('view.search.avatar.all')
             : option === 'public'
               ? t('view.search.avatar.public')
               : t('view.search.avatar.private');
-    const platformFilterLabel = (option: string) =>
+    const platformFilterLabel = (option: MyAvatarsPlatformFilter) =>
         option === 'all'
             ? t('view.search.avatar.all')
             : option === 'pc'
@@ -232,7 +263,7 @@ export function MyAvatarFilterPopover({
                             }
                             onValueChange={(nextValue) => {
                                 const next = nextValue[0];
-                                if (next) {
+                                if (isMyAvatarsReleaseStatusFilter(next)) {
                                     onReleaseStatusChange(next);
                                 }
                             }}
@@ -263,7 +294,7 @@ export function MyAvatarFilterPopover({
                             value={platformFilter ? [platformFilter] : []}
                             onValueChange={(nextValue) => {
                                 const next = nextValue[0];
-                                if (next) {
+                                if (isMyAvatarsPlatformFilter(next)) {
                                     onPlatformChange(next);
                                 }
                             }}
@@ -367,7 +398,7 @@ export function GridSettingsMenu({
                         value={gridDensity ? [gridDensity] : []}
                         onValueChange={(nextValue) => {
                             const next = nextValue[0];
-                            if (next) {
+                            if (next && isMyAvatarsGridDensity(next)) {
                                 onGridDensityChange(next);
                             }
                         }}

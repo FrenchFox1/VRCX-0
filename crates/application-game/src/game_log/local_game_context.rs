@@ -1,35 +1,29 @@
-use std::sync::{Arc, Mutex};
-
 use crate::{
-    HostSessionRuntime, LocalGameContextSnapshot, LocalGameContextSource, RuntimeSnapshot,
+    HostSessionRuntime, LocalGameContextSnapshot, LocalGameContextSource, RuntimeSnapshotStore,
 };
 
 pub struct GameLogLocalGameContextSource {
     session: HostSessionRuntime,
-    snapshot: Arc<Mutex<RuntimeSnapshot>>,
+    snapshot: RuntimeSnapshotStore,
 }
 
 impl GameLogLocalGameContextSource {
-    pub fn new(session: HostSessionRuntime, snapshot: Arc<Mutex<RuntimeSnapshot>>) -> Self {
+    pub fn new(session: HostSessionRuntime, snapshot: RuntimeSnapshotStore) -> Self {
         Self { session, snapshot }
     }
 }
 
 impl LocalGameContextSource for GameLogLocalGameContextSource {
     fn snapshot(&self) -> LocalGameContextSnapshot {
-        let game_log = self
-            .snapshot
-            .lock()
-            .map(|snapshot| snapshot.clone())
-            .unwrap_or_default();
+        let game_log = self.snapshot.snapshot();
         LocalGameContextSnapshot::Available {
             is_game_running: self.session.snapshot().is_game_running,
-            location: game_log.location,
-            destination: game_log.destination,
-            world_name: game_log.world_name,
+            location: game_log.location.clone(),
+            destination: game_log.destination.clone(),
+            world_name: game_log.world_name.clone(),
             player_user_ids: game_log
                 .players
-                .into_iter()
+                .iter()
                 .map(|player| player.user_id.trim().to_string())
                 .filter(|user_id| !user_id.is_empty())
                 .collect(),
@@ -40,7 +34,7 @@ impl LocalGameContextSource for GameLogLocalGameContextSource {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PlayerState;
+    use crate::{PlayerState, RuntimeSnapshot};
     use vrcx_0_application_core::HostSessionGameProcessStatus;
 
     #[test]
@@ -51,7 +45,8 @@ mod tests {
             is_steamvr_running: false,
             changed_at: "2026-07-17T00:00:00.000Z".into(),
         });
-        let snapshot = Arc::new(Mutex::new(RuntimeSnapshot {
+        let snapshot = RuntimeSnapshotStore::default();
+        snapshot.replace(RuntimeSnapshot {
             location: "wrld_test:123".into(),
             destination: "wrld_next:456".into(),
             world_name: "Test World".into(),
@@ -68,7 +63,7 @@ mod tests {
                 },
             ],
             ..RuntimeSnapshot::default()
-        }));
+        });
         let source = GameLogLocalGameContextSource::new(session, snapshot);
 
         assert_eq!(

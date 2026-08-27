@@ -1,10 +1,10 @@
 use serde::Serialize;
 
-pub use vrcx_0_host::host_capabilities::{
+pub use vrcx_0_platform::host_capabilities::{
     current_arch, current_host_architecture, current_host_platform, current_platform,
     HostArchitecture, HostPlatform,
 };
-use vrcx_0_host::Error;
+use vrcx_0_platform::Error;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -278,7 +278,7 @@ fn linux_host_capabilities(
         Ok(_) => available.clone(),
         Err(reason) => CapabilityStatus::unavailable(&reason),
     };
-    let vrchat_launch_pipe = match crate::linux_registry::discover_linux_registry_context() {
+    let vrchat_launch_pipe = match crate::vrchat_paths::discover_linux_instance_launch() {
         Ok(_) => available.clone(),
         Err(reason) => CapabilityStatus::unavailable(&format!(
             "VRChat launch pipe bridge unavailable: {reason}"

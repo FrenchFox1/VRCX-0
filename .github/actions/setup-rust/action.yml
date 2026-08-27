@@ -28,7 +28,9 @@ runs:
           with:
               components: ${{ inputs.components }}
         - if: inputs.target != ''
-          run: rustup target add "${{ inputs.target }}"
+          env:
+              RUST_TARGET: ${{ inputs.target }}
+          run: rustup target add "$RUST_TARGET"
           shell: bash
         - uses: Swatinem/rust-cache@v2
           with:

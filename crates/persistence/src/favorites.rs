@@ -1,12 +1,12 @@
-use serde::Serialize;
 use serde_json::json;
+pub use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::FavoriteEntityKind;
 
 use crate::common::{normalize_text, now_iso, row_string, ParamsBuilder};
 use crate::config::{ensure_config_table, resolve_config_key};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
-use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert};
+use crate::ownership::{owner_id_for_filter, owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 
 const LOCAL_GROUP_CONFIG_UPSERT_SQL: &str =
@@ -18,53 +18,9 @@ pub struct FavoriteMoveResult {
     pub added: i64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FavoriteRow {
-    pub created_at: String,
-    pub group_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub user_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatar_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub world_id: Option<String>,
-}
-
-impl FavoriteRow {
-    fn new(
-        kind: FavoriteEntityKind,
-        created_at: String,
-        entity_id: String,
-        group_name: String,
-    ) -> Self {
-        let mut row = Self {
-            created_at,
-            group_name,
-            user_id: None,
-            avatar_id: None,
-            world_id: None,
-        };
-        match kind {
-            FavoriteEntityKind::Friend => row.user_id = Some(entity_id),
-            FavoriteEntityKind::Avatar => row.avatar_id = Some(entity_id),
-            FavoriteEntityKind::World => row.world_id = Some(entity_id),
-        }
-        row
-    }
-
-    pub fn entity_id(&self) -> &str {
-        self.user_id
-            .as_deref()
-            .or(self.avatar_id.as_deref())
-            .or(self.world_id.as_deref())
-            .unwrap_or_default()
-    }
-}
-
 pub fn favorite_list(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
 ) -> Result<Vec<FavoriteRow>, Error> {
     ensure_global_store_tables(db)?;
@@ -92,7 +48,7 @@ pub fn favorite_list(
 
 pub fn favorite_add(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
     group_name: String,
@@ -120,7 +76,7 @@ pub fn favorite_add(
 
 pub fn favorite_remove(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
     group_name: String,
@@ -143,7 +99,7 @@ pub fn favorite_remove(
 
 pub fn favorite_move(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     entity_id: String,
     source_group_name: String,
@@ -200,7 +156,7 @@ pub fn favorite_move(
 
 pub fn favorite_group_rename(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     group_name: String,
     new_group_name: String,
@@ -242,7 +198,7 @@ fn delete_rows_already_in_group(
     group_name: &str,
     new_group_name: &str,
     owner_scope: &str,
-    owner_id: i64,
+    owner_id: OwnerRowId,
 ) -> Result<i64, Error> {
     tx.execute_non_query(
         &format!(
@@ -258,7 +214,7 @@ fn delete_rows_already_in_group(
 
 pub fn favorite_group_delete(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     group_name: String,
 ) -> Result<i64, Error> {
@@ -279,7 +235,7 @@ pub fn favorite_group_delete(
 
 pub fn favorite_group_rename_with_config(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     config_key: &str,
     group_name: &str,
@@ -327,7 +283,7 @@ pub fn favorite_group_rename_with_config(
 
 pub fn favorite_group_delete_with_config(
     db: &DatabaseService,
-    owner_user_id: Option<&str>,
+    owner_user_id: Option<&OwnerId>,
     kind: FavoriteEntityKind,
     config_key: &str,
     group_name: &str,
@@ -361,24 +317,26 @@ pub fn favorite_group_delete_with_config(
 fn owner_id_for_kind_read(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
-    owner_user_id: Option<&str>,
-) -> Result<i64, Error> {
-    if kind == FavoriteEntityKind::Friend {
-        owner_id_for_filter(db, owner_user_id.unwrap_or_default())
-    } else {
-        Ok(0)
+    owner_user_id: Option<&OwnerId>,
+) -> Result<OwnerRowId, Error> {
+    match owner_user_id {
+        Some(owner_user_id) if kind == FavoriteEntityKind::Friend => {
+            owner_id_for_filter(db, owner_user_id)
+        }
+        _ => Ok(OwnerRowId::UNASSIGNED),
     }
 }
 
 fn owner_id_for_kind_write(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
-    owner_user_id: Option<&str>,
-) -> Result<i64, Error> {
-    if kind == FavoriteEntityKind::Friend {
-        owner_id_get_or_insert(db, owner_user_id.unwrap_or_default())
-    } else {
-        Ok(0)
+    owner_user_id: Option<&OwnerId>,
+) -> Result<OwnerRowId, Error> {
+    match owner_user_id {
+        Some(owner_user_id) if kind == FavoriteEntityKind::Friend => {
+            owner_id_get_or_insert(db, owner_user_id)
+        }
+        _ => Ok(OwnerRowId::UNASSIGNED),
     }
 }
 
@@ -421,13 +379,13 @@ fn config_realm_owner_scope(
     db: &DatabaseService,
     kind: FavoriteEntityKind,
     config_key: &str,
-    owner_user_id: Option<&str>,
-) -> Result<(&'static str, i64), Error> {
+    owner_user_id: Option<&OwnerId>,
+) -> Result<(&'static str, OwnerRowId), Error> {
     if kind != FavoriteEntityKind::Friend {
-        return Ok(("", 0));
+        return Ok(("", OwnerRowId::UNASSIGNED));
     }
     if config_key == "localFavoriteFriendGroups" {
-        Ok(("AND owner_id = 0", 0))
+        Ok(("AND owner_id = 0", OwnerRowId::UNASSIGNED))
     } else {
         Ok((
             "AND owner_id = @owner_id",
@@ -447,433 +405,4 @@ pub(crate) const fn normalize_kind(
 }
 
 #[cfg(test)]
-mod tests {
-    use std::path::PathBuf;
-    use std::sync::Arc;
-
-    use super::*;
-    use crate::config::get_json;
-
-    struct TestDir {
-        path: PathBuf,
-    }
-
-    impl TestDir {
-        fn new(name: &str) -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path =
-                std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-            std::fs::create_dir_all(&path).unwrap();
-            Self { path }
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    fn test_db(name: &str) -> (TestDir, Arc<DatabaseService>) {
-        let dir = TestDir::new(name);
-        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-        (dir, db)
-    }
-
-    fn group_names(db: &DatabaseService, kind: FavoriteEntityKind) -> Vec<String> {
-        favorite_list(db, None, kind)
-            .unwrap()
-            .into_iter()
-            .map(|row| row.group_name)
-            .collect()
-    }
-
-    fn config_array(db: &DatabaseService, key: &str) -> Vec<String> {
-        get_json(db, key, serde_json::Value::Null)
-            .unwrap()
-            .as_array()
-            .map(|items| {
-                items
-                    .iter()
-                    .filter_map(|value| value.as_str().map(str::to_string))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
-
-    #[test]
-    fn rename_updates_favorites_and_config_atomically() {
-        let (_dir, db) = test_db("favorite-rename-with-config");
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "usr_1".into(),
-            "old".into(),
-        )
-        .unwrap();
-
-        let affected = favorite_group_rename_with_config(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "localFavoriteFriendGroups",
-            "old",
-            "new",
-            &["new".to_string()],
-        )
-        .unwrap();
-
-        assert_eq!(affected, 1);
-        assert_eq!(
-            group_names(&db, FavoriteEntityKind::Friend),
-            vec!["new".to_string()]
-        );
-        assert_eq!(
-            config_array(&db, "localFavoriteFriendGroups"),
-            vec!["new".to_string()]
-        );
-    }
-
-    #[test]
-    fn rename_merges_into_existing_group_despite_unique_index() {
-        let (_dir, db) = test_db("favorite-rename-merge");
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::World,
-            "wrld_1".into(),
-            "a".into(),
-        )
-        .unwrap();
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::World,
-            "wrld_1".into(),
-            "b".into(),
-        )
-        .unwrap();
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::World,
-            "wrld_2".into(),
-            "a".into(),
-        )
-        .unwrap();
-
-        favorite_group_rename(&db, None, FavoriteEntityKind::World, "a".into(), "b".into())
-            .unwrap();
-
-        let mut groups = group_names(&db, FavoriteEntityKind::World);
-        groups.sort();
-        assert_eq!(groups, vec!["b".to_string(), "b".to_string()]);
-    }
-
-    #[test]
-    fn rename_with_config_merges_into_existing_group_despite_unique_index() {
-        let (_dir, db) = test_db("favorite-rename-merge-with-config");
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "usr_1".into(),
-            "a".into(),
-        )
-        .unwrap();
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "usr_1".into(),
-            "b".into(),
-        )
-        .unwrap();
-
-        favorite_group_rename_with_config(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "localFavoriteFriendGroups",
-            "a",
-            "b",
-            &["b".to_string()],
-        )
-        .unwrap();
-
-        assert_eq!(
-            group_names(&db, FavoriteEntityKind::Friend),
-            vec!["b".to_string()]
-        );
-        assert_eq!(
-            config_array(&db, "localFavoriteFriendGroups"),
-            vec!["b".to_string()]
-        );
-    }
-
-    #[test]
-    fn write_transaction_rolls_back_favorite_write_on_error() {
-        let (_dir, db) = test_db("favorite-tx-rollback");
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "usr_1".into(),
-            "keep".into(),
-        )
-        .unwrap();
-
-        let result = db.write_transaction(|tx| {
-            tx.execute_non_query(
-                "UPDATE favorite_friend SET group_name = @new WHERE group_name = @old",
-                &ParamsBuilder::new()
-                    .set("new", "changed")
-                    .set("old", "keep")
-                    .build(),
-            )?;
-            Err::<(), Error>(Error::Custom("forced failure".into()))
-        });
-
-        assert!(result.is_err());
-        assert_eq!(
-            group_names(&db, FavoriteEntityKind::Friend),
-            vec!["keep".to_string()]
-        );
-    }
-
-    #[test]
-    fn delete_removes_favorites_and_rewrites_config_atomically() {
-        let (_dir, db) = test_db("favorite-delete-with-config");
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "usr_1".into(),
-            "doomed".into(),
-        )
-        .unwrap();
-
-        favorite_group_delete_with_config(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "localFavoriteFriendGroups",
-            "doomed",
-            &[],
-        )
-        .unwrap();
-
-        assert!(group_names(&db, FavoriteEntityKind::Friend).is_empty());
-        assert!(config_array(&db, "localFavoriteFriendGroups").is_empty());
-    }
-
-    #[test]
-    fn favorite_add_is_idempotent_for_same_entity_and_group() {
-        let (_dir, db) = test_db("favorite-add-idempotent");
-
-        let first = favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::World,
-            "wrld_1".into(),
-            "group".into(),
-        )
-        .unwrap();
-        let second = favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::World,
-            "wrld_1".into(),
-            "group".into(),
-        )
-        .unwrap();
-
-        assert_eq!(first, 1);
-        assert_eq!(second, 0);
-        assert_eq!(
-            favorite_list(&db, None, FavoriteEntityKind::World)
-                .unwrap()
-                .len(),
-            1
-        );
-    }
-
-    #[test]
-    fn friend_favorites_are_owner_scoped_with_shared_legacy_rows() {
-        let (_dir, db) = test_db("favorite-owner-scope");
-
-        assert_eq!(
-            favorite_add(
-                &db,
-                Some("usr_a"),
-                FavoriteEntityKind::Friend,
-                "usr_same".into(),
-                "group".into(),
-            )
-            .unwrap(),
-            1
-        );
-        assert_eq!(
-            favorite_add(
-                &db,
-                Some("usr_b"),
-                FavoriteEntityKind::Friend,
-                "usr_same".into(),
-                "group".into(),
-            )
-            .unwrap(),
-            1
-        );
-        assert_eq!(
-            favorite_add(
-                &db,
-                Some("usr_a"),
-                FavoriteEntityKind::Friend,
-                "usr_same".into(),
-                "group".into(),
-            )
-            .unwrap(),
-            0
-        );
-        favorite_add(
-            &db,
-            None,
-            FavoriteEntityKind::Friend,
-            "usr_shared".into(),
-            "legacy".into(),
-        )
-        .unwrap();
-
-        let a = favorite_list(&db, Some("usr_a"), FavoriteEntityKind::Friend).unwrap();
-        let b = favorite_list(&db, Some("usr_b"), FavoriteEntityKind::Friend).unwrap();
-        assert_eq!(a.len(), 2);
-        assert_eq!(b.len(), 2);
-
-        let first_world = favorite_add(
-            &db,
-            Some("usr_a"),
-            FavoriteEntityKind::World,
-            "wrld_1".into(),
-            "group".into(),
-        )
-        .unwrap();
-        let duplicate_world = favorite_add(
-            &db,
-            Some("usr_b"),
-            FavoriteEntityKind::World,
-            "wrld_1".into(),
-            "group".into(),
-        )
-        .unwrap();
-        assert_eq!((first_world, duplicate_world), (1, 0));
-    }
-
-    #[test]
-    fn favorite_list_upgrades_legacy_friend_table_before_owner_scoped_read() {
-        let (_dir, db) = test_db("favorite-legacy-owner-upgrade");
-        db.execute_non_query(
-            "CREATE TABLE favorite_friend (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, group_name TEXT)",
-            &Default::default(),
-        )
-        .unwrap();
-        db.execute_non_query(
-            "CREATE UNIQUE INDEX favorite_friend_user_id_group_idx ON favorite_friend (user_id, group_name)",
-            &Default::default(),
-        )
-        .unwrap();
-        db.execute_non_query(
-            "INSERT INTO favorite_friend (created_at, user_id, group_name) VALUES ('2026-07-01T00:00:00.000Z', 'usr_legacy', 'legacy')",
-            &Default::default(),
-        )
-        .unwrap();
-
-        let rows = favorite_list(&db, Some("usr_owner"), FavoriteEntityKind::Friend).unwrap();
-
-        assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].user_id.as_deref(), Some("usr_legacy"));
-        assert_eq!(rows[0].group_name, "legacy");
-        let columns = crate::database::schema::table_column_names(&db, "favorite_friend").unwrap();
-        assert!(columns.contains("owner_id"));
-    }
-
-    #[test]
-    fn ensure_global_store_tables_preserves_dirty_duplicates_and_promotes_unique_index_once_clean()
-    {
-        let (_dir, db) = test_db("favorite-dirty-duplicate-index");
-        db.execute_non_query(
-            "CREATE TABLE IF NOT EXISTS favorite_world (id INTEGER PRIMARY KEY, created_at TEXT, world_id TEXT, group_name TEXT)",
-            &Default::default(),
-        )
-        .unwrap();
-        db.execute_non_query(
-            "INSERT INTO favorite_world (created_at, world_id, group_name) VALUES ('2026-01-01T00:00:00.000Z', 'wrld_1', 'group')",
-            &Default::default(),
-        )
-        .unwrap();
-        db.execute_non_query(
-            "INSERT INTO favorite_world (created_at, world_id, group_name) VALUES ('2026-01-02T00:00:00.000Z', 'wrld_1', 'group')",
-            &Default::default(),
-        )
-        .unwrap();
-
-        ensure_global_store_tables(&db).unwrap();
-
-        assert_eq!(
-            favorite_list(&db, None, FavoriteEntityKind::World)
-                .unwrap()
-                .len(),
-            2
-        );
-
-        assert_eq!(
-            favorite_add(
-                &db,
-                None,
-                FavoriteEntityKind::World,
-                "wrld_1".into(),
-                "group".into(),
-            )
-            .unwrap(),
-            0
-        );
-        assert_eq!(
-            favorite_list(&db, None, FavoriteEntityKind::World)
-                .unwrap()
-                .len(),
-            2
-        );
-        assert!(!db
-            .execute(
-                "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'favorite_world_world_id_group_lookup_idx'",
-                &Default::default(),
-            )
-            .unwrap()
-            .is_empty());
-
-        db.execute_non_query(
-            "DELETE FROM favorite_world WHERE created_at = '2026-01-02T00:00:00.000Z'",
-            &Default::default(),
-        )
-        .unwrap();
-        ensure_global_store_tables(&db).unwrap();
-
-        assert!(db
-            .execute(
-                "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'favorite_world_world_id_group_lookup_idx'",
-                &Default::default(),
-            )
-            .unwrap()
-            .is_empty());
-        assert!(!db
-            .execute(
-                "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'favorite_world_world_id_group_idx'",
-                &Default::default(),
-            )
-            .unwrap()
-            .is_empty());
-    }
-}
+mod tests;

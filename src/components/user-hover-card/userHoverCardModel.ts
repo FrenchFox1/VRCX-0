@@ -1,14 +1,23 @@
 import {
-    normalizeLocationStatus,
-    readFriendInstanceEpoch,
     readFriendRef,
     readFriendStatusSource,
     resolveSidebarStatusDotClassName,
-    timestampMsFromValue,
     type SidebarFriendRecord
 } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import type {
+    FriendProfileFields,
+    FriendRecordInput
+} from '@/domain/friends/types';
+import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { userImage } from '@/services/entityMediaService';
-import { parseLocation } from '@/shared/utils/location';
+import { timestampMsFromValue } from '@/shared/utils/dateTime';
+import { userStatusFromValue } from '@/shared/utils/friendStatus';
+import {
+    locationSentinel,
+    normalizeLocationStatus,
+    parseLocation
+} from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { resolveTrustColorKey } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
@@ -20,27 +29,13 @@ export type UserHoverCardVariant =
     | 'offline'
     | 'profile-only';
 
-type HoverCardRecord = Record<string, unknown> & {
-    $location?: unknown;
-    $travelingToLocation?: unknown;
-    $trustClass?: unknown;
-    $isModerator?: unknown;
-    $isTroll?: unknown;
-    $isProbableTroll?: unknown;
-    $userColour?: unknown;
-    developerType?: unknown;
-    displayName?: unknown;
-    id?: unknown;
-    last_login?: unknown;
-    location?: unknown;
-    note?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    status?: unknown;
-    statusDescription?: unknown;
-    tags?: unknown;
-    username?: unknown;
-};
+type HoverCardRecord = FriendRecordInput &
+    Partial<FriendProfileFields> & {
+        $userColour?: string;
+        last_login?: number | string | null;
+        note?: string | null;
+        stateBucket?: string;
+    };
 
 type UserHoverCardModelInput = {
     seed?: HoverCardRecord | SidebarFriendRecord | null;
@@ -49,27 +44,23 @@ type UserHoverCardModelInput = {
 };
 
 function recordOrEmpty(value: unknown): HoverCardRecord {
-    return value && typeof value === 'object' ? (value as HoverCardRecord) : {};
+    return isRecord(value) ? value : {};
 }
 
 function locationTag(value: unknown) {
-    return value && typeof value === 'object'
-        ? (value as { tag?: unknown }).tag
-        : undefined;
+    return isRecord(value) ? value.tag : undefined;
 }
 
 function sidebarSeed(value: unknown): SidebarFriendRecord | null {
-    return value && typeof value === 'object'
-        ? (value as SidebarFriendRecord)
-        : null;
+    return isRecord(value) ? value : null;
 }
 
 function statusKeyFromStatus(status: unknown) {
-    const normalized = normalizeLocationStatus(status);
-    if (normalized === 'join me' || normalized === 'joinme') {
+    const normalized = userStatusFromValue(status);
+    if (normalized === 'join me') {
         return 'join_me';
     }
-    if (normalized === 'ask me' || normalized === 'askme') {
+    if (normalized === 'ask me') {
         return 'ask_me';
     }
     if (normalized === 'busy') {
@@ -82,7 +73,7 @@ function statusKeyFromStatus(status: unknown) {
 }
 
 function statusKeyFromPresence(status: unknown, state: unknown) {
-    if (normalizeLocationStatus(state) === 'active') {
+    if (normalizeStateBucket(state) === 'active') {
         return 'active';
     }
     const statusKey = statusKeyFromStatus(status);
@@ -110,7 +101,7 @@ function resolveTrust(identity: HoverCardRecord) {
 }
 
 function estimatedOnlineMs(state: unknown, lastLogin: unknown, nowMs: number) {
-    if (normalizeLocationStatus(state) !== 'online') {
+    if (normalizeStateBucket(state) !== 'online') {
         return 0;
     }
     const lastLoginMs = timestampMsFromValue(lastLogin);
@@ -121,10 +112,10 @@ function estimatedOnlineMs(state: unknown, lastLogin: unknown, nowMs: number) {
 }
 
 export function normalizeInstanceCounts(json: unknown) {
-    if (!json || typeof json !== 'object') {
+    if (!isRecord(json)) {
         return null;
     }
-    const source = json as Record<string, unknown>;
+    const source = json;
     const nUsers = Number(source.n_users ?? source.userCount);
     if (!Number.isFinite(nUsers)) {
         return null;
@@ -144,11 +135,8 @@ export function buildUserHoverCardModel({
     const profileRecord = recordOrEmpty(profile);
     const identity = profile ? profileRecord : ref;
 
-    const state = normalizeLocationStatus(
-        statusSource?.stateBucket ||
-            statusSource?.state ||
-            profileRecord?.stateBucket ||
-            profileRecord?.state
+    const state = normalizeStateBucket(
+        statusSource?.state || profileRecord?.state
     );
     const hasPresence = Boolean(statusSource) && Boolean(state);
 
@@ -157,7 +145,7 @@ export function buildUserHoverCardModel({
             locationTag(statusSource?.$location) ||
             profileRecord?.location
     );
-    const isTraveling = normalizeLocationStatus(rawLocation) === 'traveling';
+    const isTraveling = locationSentinel(rawLocation) === 'traveling';
     const travelingTo = normalizeId(
         statusSource?.travelingToLocation || statusSource?.$travelingToLocation
     );
@@ -214,12 +202,6 @@ export function buildUserHoverCardModel({
         ).trim(),
         note: String(profileRecord?.note || '').trim(),
         onlineForMs: estimatedOnlineMs(state, identity?.last_login, nowMs),
-        instanceEpoch:
-            variant === 'in-instance'
-                ? timestampMsFromValue(
-                      readFriendInstanceEpoch(statusSource, isTraveling)
-                  )
-                : 0,
         lastOnlineAgoMs:
             variant === 'offline'
                 ? (() => {

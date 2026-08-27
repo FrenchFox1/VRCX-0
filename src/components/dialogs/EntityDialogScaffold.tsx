@@ -1,23 +1,19 @@
+import { ChevronRightIcon, CopyIcon, MoreHorizontalIcon } from 'lucide-react';
 import {
-    ChevronRightIcon,
-    MoreHorizontalIcon,
-    RefreshCwIcon
-} from 'lucide-react';
-import {
-    isValidElement,
-    useEffect,
-    useState,
     type ComponentProps,
     type ComponentType,
     type CSSProperties,
-    type ReactNode
+    type ReactNode,
+    useEffect,
+    useState
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { collapseAllNested, JsonView } from 'react-json-view-lite';
 import { toast } from 'sonner';
 
-import { FadeInImage } from '@/components/media/FadeInImage';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader } from '@/ui/shadcn/card';
 import {
@@ -141,160 +137,6 @@ function EntityOverviewCard({
                 {children}
             </CardContent>
         </Card>
-    );
-}
-
-function EntityDialogHeader({
-    imageUrl,
-    imageAlt,
-    imagePlaceholder,
-    imageClassName,
-    onImageClick,
-    titlePrefix,
-    title,
-    onTitleClick,
-    titleMeta,
-    subtitle,
-    onSubtitleClick,
-    badges,
-    mediaBadges,
-    description,
-    descriptionAction,
-    detail,
-    actions
-}: {
-    imageUrl?: string;
-    imageAlt?: string;
-    imagePlaceholder?: ReactNode;
-    imageClassName?: string;
-    onImageClick?: () => void;
-    titlePrefix?: ReactNode;
-    title?: ReactNode;
-    onTitleClick?: () => void;
-    titleMeta?: ReactNode;
-    subtitle?: ReactNode;
-    onSubtitleClick?: () => void;
-    badges?: ReactNode;
-    mediaBadges?: ReactNode;
-    description?: ReactNode;
-    descriptionAction?: ReactNode;
-    detail?: ReactNode;
-    actions?: ReactNode;
-}) {
-    const { t } = useTranslation();
-
-    return (
-        <div className="flex shrink-0 flex-col gap-4 md:flex-row md:items-start">
-            <Button
-                type="button"
-                variant="ghost"
-                disabled={!imageUrl || !onImageClick}
-                onClick={onImageClick}
-                className={cn(
-                    'bg-muted aspect-[4/3] h-auto w-40 shrink-0 overflow-hidden rounded-md border p-0 disabled:pointer-events-none',
-                    imageUrl && onImageClick
-                        ? 'cursor-pointer'
-                        : 'cursor-default',
-                    imageClassName
-                )}
-            >
-                {imageUrl ? (
-                    <FadeInImage
-                        src={imageUrl}
-                        alt={imageAlt || ''}
-                        className="size-full object-cover"
-                        fallback={imagePlaceholder}
-                    />
-                ) : (
-                    imagePlaceholder
-                )}
-            </Button>
-
-            <div className="min-w-0 flex-1">
-                <div className="flex items-start gap-3">
-                    <div className="flex min-w-0 flex-1 flex-col gap-2">
-                        <div className="flex flex-col gap-1">
-                            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-lg leading-tight font-semibold break-words">
-                                {titlePrefix}
-                                {onTitleClick ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg font-semibold break-words whitespace-normal"
-                                        onClick={onTitleClick}
-                                    >
-                                        {title}
-                                    </Button>
-                                ) : (
-                                    <span className="min-w-0 break-words">
-                                        {title}
-                                    </span>
-                                )}
-                                {titleMeta}
-                            </div>
-                            {subtitle ? (
-                                onSubtitleClick ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="text-muted-foreground hover:text-primary h-auto justify-start p-0 text-left font-mono text-sm break-all whitespace-normal"
-                                        onClick={onSubtitleClick}
-                                    >
-                                        {subtitle}
-                                    </Button>
-                                ) : (
-                                    <div className="text-muted-foreground font-mono text-sm break-all">
-                                        {subtitle}
-                                    </div>
-                                )
-                            ) : null}
-                        </div>
-
-                        {badges ? (
-                            <div className="flex flex-wrap gap-1.5">
-                                {badges}
-                            </div>
-                        ) : null}
-
-                        {mediaBadges ? (
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                {mediaBadges}
-                            </div>
-                        ) : null}
-
-                        {description ? (
-                            <div className="flex items-start gap-2">
-                                <div className="text-muted-foreground max-h-24 flex-1 overflow-auto text-sm whitespace-pre-wrap">
-                                    {description}
-                                </div>
-                                {descriptionAction ? (
-                                    <div className="shrink-0">
-                                        {descriptionAction}
-                                    </div>
-                                ) : null}
-                            </div>
-                        ) : null}
-
-                        {detail ? (
-                            <div className="text-muted-foreground text-xs">
-                                {isValidElement(detail)
-                                    ? detail
-                                    : userFacingErrorMessage(
-                                          detail,
-                                          t('common.error.failed_to_load_data')
-                                      )}
-                            </div>
-                        ) : null}
-                    </div>
-
-                    {actions ? (
-                        <div className="flex shrink-0 items-center gap-2">
-                            {actions}
-                        </div>
-                    ) : null}
-                </div>
-            </div>
-        </div>
     );
 }
 
@@ -533,28 +375,35 @@ function EntityActionSub({
     );
 }
 
-type EntityRawJsonProps<TValue> = {
-    value?: TValue;
-    valueFactory?: () => TValue;
+type EntityRawJsonProps = {
+    value: Record<string, unknown>;
 };
 
-function EntityRawJson<TValue>({
-    value,
-    valueFactory
-}: EntityRawJsonProps<TValue>) {
+const entityJsonViewStyles = {
+    container: 'entity-json-view',
+    childFieldsContainer: 'entity-json-view-fields',
+    basicChildStyle: 'entity-json-view-row',
+    collapseIcon: 'entity-json-view-collapse',
+    expandIcon: 'entity-json-view-expand',
+    collapsedContent: 'entity-json-view-collapsed',
+    label: 'entity-json-view-label',
+    clickableLabel: 'entity-json-view-clickable-label',
+    nullValue: 'entity-json-view-null',
+    undefinedValue: 'entity-json-view-null',
+    numberValue: 'entity-json-view-number',
+    stringValue: 'entity-json-view-string',
+    booleanValue: 'entity-json-view-boolean',
+    otherValue: 'entity-json-view-value',
+    punctuation: 'entity-json-view-punctuation',
+    quotesForFieldNames: true,
+    stringifyStringValues: true
+};
+
+function EntityRawJson({ value }: EntityRawJsonProps) {
     const { t } = useTranslation();
-
-    const [snapshot, setSnapshot] = useState(() =>
-        valueFactory ? valueFactory() : value
+    const rawValue = Object.fromEntries(
+        Object.entries(value).filter(([key]) => !key.startsWith('$'))
     );
-
-    useEffect(() => {
-        setSnapshot(valueFactory ? valueFactory() : value);
-    }, [value]);
-
-    function refreshJson() {
-        setSnapshot(valueFactory ? valueFactory() : value);
-    }
 
     return (
         <div className="flex flex-col gap-2">
@@ -563,17 +412,24 @@ function EntityRawJson<TValue>({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                        refreshJson();
+                    onClick={async () => {
+                        await copyTextToClipboard(
+                            JSON.stringify(rawValue, null, 2)
+                        );
                     }}
                 >
-                    <RefreshCwIcon data-icon="inline-start" />
-                    {t('common.actions.refresh')}
+                    <CopyIcon data-icon="inline-start" />
+                    {t('common.actions.copy')}
                 </Button>
             </div>
-            <pre className="bg-muted/20 max-h-[55vh] overflow-auto rounded-md border p-3 text-xs">
-                {JSON.stringify(snapshot ?? null, null, 2)}
-            </pre>
+            <div className="bg-muted/20 max-h-[55vh] overflow-auto rounded-md border p-3 text-xs">
+                <JsonView
+                    data={rawValue}
+                    style={entityJsonViewStyles}
+                    shouldExpandNode={collapseAllNested}
+                    clickToExpandNode
+                />
+            </div>
         </div>
     );
 }
@@ -745,7 +601,6 @@ export {
     EntityActionSeparator,
     EntityActionSub,
     EntityBlank,
-    EntityDialogHeader,
     EntityDialogScaffold,
     EntityDialogTabContent,
     EntityDialogTabs,

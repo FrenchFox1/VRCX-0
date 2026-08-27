@@ -1,5 +1,6 @@
 import { MoreHorizontalIcon, ImageIcon, type LucideIcon } from 'lucide-react';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, MouseEvent, ReactNode } from 'react';
+import { useRef } from 'react';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TILE_MOTION, TILE_SELECTED } from '@/lib/selectableTile';
@@ -7,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -44,8 +46,8 @@ export type MediaPreviewOptions = {
     title: string;
 };
 
-export function shortAssetId(value: unknown) {
-    const text = String(value || '').trim();
+export function shortAssetId(value: string) {
+    const text = value.trim();
     if (!text) {
         return '';
     }
@@ -135,10 +137,15 @@ export function MediaAssetTile({
     menuActions,
     className,
     contentClassName,
-    hideContent = false
+    hideContent = false,
+    selectable = false,
+    selected = false,
+    selectionActive = false,
+    selectLabel,
+    onToggleSelect
 }: {
-    title?: unknown;
-    subtitle?: unknown;
+    title?: string;
+    subtitle?: string;
     meta?: MediaAssetMeta | MediaAssetMeta[];
     badges?: Array<MediaAssetBadge | null>;
     imageUrl?: string;
@@ -159,7 +166,13 @@ export function MediaAssetTile({
     className?: string;
     contentClassName?: string;
     hideContent?: boolean;
+    selectable?: boolean;
+    selected?: boolean;
+    selectionActive?: boolean;
+    selectLabel?: string;
+    onToggleSelect?: (checked: boolean, shift: boolean) => void;
 }) {
+    const shiftPressedRef = useRef(false);
     const safeTitle = String(title || '').trim();
     const safeSubtitle = String(subtitle || '').trim();
     const safeMeta = Array.isArray(meta) ? meta : meta ? [meta] : [];
@@ -167,7 +180,16 @@ export function MediaAssetTile({
         (badge): badge is MediaAssetBadge => Boolean(badge)
     );
     const resolvedPrimaryAction = primaryAction?.label ? primaryAction : null;
-    const handleMediaClick = onMediaClick || onPreview;
+    const isSelectionActive = selectable && selectionActive;
+    const previewClick = onMediaClick || onPreview;
+    const handleMediaClick =
+        selectable && isSelectionActive
+            ? (event: MouseEvent<HTMLButtonElement>) => {
+                  onToggleSelect?.(!selected, event.shiftKey);
+              }
+            : previewClick
+              ? () => previewClick()
+              : undefined;
     const imageClassName = cn(
         'size-full',
         imageFit === 'contain' ? 'object-contain' : 'object-cover',
@@ -179,7 +201,7 @@ export function MediaAssetTile({
             size="sm"
             className={cn(
                 'group/tile gap-0 overflow-hidden rounded-lg py-0 transition-colors data-[size=sm]:gap-0 data-[size=sm]:py-0',
-                isCurrent && TILE_SELECTED,
+                (isCurrent || selected) && TILE_SELECTED,
                 className
             )}
         >
@@ -192,7 +214,9 @@ export function MediaAssetTile({
                         TILE_MOTION
                     )}
                     onClick={
-                        imageUrl || renderMedia ? handleMediaClick : undefined
+                        isSelectionActive || imageUrl || renderMedia
+                            ? handleMediaClick
+                            : undefined
                     }
                 >
                     <div
@@ -220,7 +244,36 @@ export function MediaAssetTile({
                         )}
                     </div>
                 </Button>
-                <div className="pointer-events-none absolute top-2 left-2 flex flex-wrap gap-1">
+                {selectable ? (
+                    <span
+                        role="presentation"
+                        className={cn(
+                            'absolute top-2 left-2 z-20 opacity-0 transition-opacity',
+                            'group-has-[:focus-visible]/tile:opacity-100 pointer-fine:group-hover/tile:opacity-100',
+                            (selected || isSelectionActive) && 'opacity-100'
+                        )}
+                        onClickCapture={(event: MouseEvent<HTMLElement>) => {
+                            shiftPressedRef.current = event.shiftKey;
+                        }}
+                    >
+                        <Checkbox
+                            aria-label={selectLabel}
+                            checked={selected}
+                            onCheckedChange={(checked) =>
+                                onToggleSelect?.(
+                                    Boolean(checked),
+                                    shiftPressedRef.current
+                                )
+                            }
+                        />
+                    </span>
+                ) : null}
+                <div
+                    className={cn(
+                        'pointer-events-none absolute top-2 flex flex-wrap gap-1',
+                        selectable ? 'left-9' : 'left-2'
+                    )}
+                >
                     {isCurrent && currentLabel ? (
                         <Badge variant="secondary" className="bg-background/80">
                             {currentLabel}
@@ -237,7 +290,12 @@ export function MediaAssetTile({
                     ))}
                 </div>
                 {mediaHoverLabel ? (
-                    <div className="bg-background/85 text-foreground pointer-events-none absolute top-2 left-2 hidden max-w-[calc(100%-3rem)] rounded-sm px-1.5 py-0.5 text-xs font-medium group-hover/tile:block">
+                    <div
+                        className={cn(
+                            'bg-background/85 text-foreground pointer-events-none absolute top-2 hidden max-w-[calc(100%-3rem)] rounded-sm px-1.5 py-0.5 text-xs font-medium group-hover/tile:block',
+                            selectable ? 'left-9' : 'left-2'
+                        )}
+                    >
                         {mediaHoverLabel}
                     </div>
                 ) : null}

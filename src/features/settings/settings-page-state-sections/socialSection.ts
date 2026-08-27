@@ -1,5 +1,23 @@
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
-import { normalizeCheckedState } from '../settingsValues';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type SocialSectionInput = SettingsSectionInput<
+    | 'prefs'
+    | 'selectedFavoriteFriendGroupLabel'
+    | 'favoriteFriendGroupOptions'
+    | 'remoteFavoriteFriendGroupOptions'
+    | 'localFavoriteFriendGroupOptions'
+    | 'localFavoriteFriendsGroups'
+    | 'commit'
+    | 'addFeedHiddenUser'
+    | 'removeFeedHiddenUser'
+    | 'setRecentActionCooldownEnabledPreference'
+    | 'setRecentActionCooldownMinutesPreference'
+    | 'toggleLocalFavoriteFriendsGroup'
+    | 'setPrefs'
+    | 'saveBoolPreference'
+    | 'savePreferenceValue'
+    | 'normalizeRecentActionCooldownMinutes'
+>;
 
 export function buildSocialSection({
     prefs,
@@ -18,9 +36,8 @@ export function buildSocialSection({
     saveBoolPreference,
     savePreferenceValue,
     normalizeRecentActionCooldownMinutes
-}: BuildSettingsPageStateSectionsInput) {
+}: SocialSectionInput) {
     return {
-        prefs,
         selectedFavoriteFriendGroupLabel,
         favoriteFriendGroupOptions,
         remoteFavoriteFriendGroupOptions,
@@ -34,39 +51,31 @@ export function buildSocialSection({
         setRecentActionCooldownMinutesPreference,
         toggleLocalFavoriteFriendsGroup,
         setPrefs,
-        onHideUnfriendsChange: (checked: unknown) => {
-            saveBoolPreference(
-                'hideUnfriends',
-                'hideUnfriends',
-                normalizeCheckedState(checked)
+        onHideUnfriendsChange: (checked: boolean) => {
+            saveBoolPreference('hideUnfriends', 'hideUnfriends', checked);
+        },
+        onRecentActionCooldownEnabledChange: (checked: boolean) => {
+            savePreferenceValue('recentActionCooldownEnabled', checked, () =>
+                setRecentActionCooldownEnabledPreference(checked)
             );
         },
-        onRecentActionCooldownEnabledChange: (checked: unknown) => {
-            const enabled = normalizeCheckedState(checked);
-            savePreferenceValue('recentActionCooldownEnabled', enabled, () =>
-                setRecentActionCooldownEnabledPreference(enabled)
-            );
-        },
-        onRecentActionCooldownMinutesChange: (value: unknown) => {
+        onRecentActionCooldownMinutesChange: (value: string) => {
             setPrefs((current) => ({
                 ...current,
                 recentActionCooldownMinutes: value
             }));
         },
-        onRecentActionCooldownMinutesBlur: (value: unknown) => {
+        onRecentActionCooldownMinutesBlur: (value: string) => {
             const nextValue = normalizeRecentActionCooldownMinutes(value);
             savePreferenceValue('recentActionCooldownMinutes', nextValue, () =>
                 setRecentActionCooldownMinutesPreference(nextValue)
             );
         },
         onToggleLocalFavoriteFriendsGroup: (
-            groupKey: unknown,
-            checked: unknown
+            groupKey: string,
+            checked: boolean
         ) => {
-            toggleLocalFavoriteFriendsGroup(
-                groupKey,
-                normalizeCheckedState(checked)
-            );
+            toggleLocalFavoriteFriendsGroup(groupKey, checked);
         }
     };
 }

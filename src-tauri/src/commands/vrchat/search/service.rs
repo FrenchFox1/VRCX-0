@@ -1,17 +1,20 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::search::{
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_runtime_host_desktop::vrchat_api::protocol::search::{
     search_groups_get_input, search_groups_strict_get_input, search_instance_short_name_get_input,
     search_users_get_input, search_worlds_get_input,
 };
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 
-use super::types::{VrchatSearchParamsInput, VrchatSearchShortNameInput, VrchatSearchWorldsInput};
+use super::types::{
+    VrchatSearchGroupsInput, VrchatSearchShortNameInput, VrchatSearchUsersInput,
+    VrchatSearchWorldsInput,
+};
 
 async fn execute_search_api(
     state: State<'_, AppState>,
@@ -46,7 +49,7 @@ pub async fn app__vrchat_search_worlds_get(
 #[specta::specta]
 pub async fn app__vrchat_search_users_get(
     state: State<'_, AppState>,
-    input: VrchatSearchParamsInput,
+    input: VrchatSearchUsersInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_search_api(
         state,
@@ -61,7 +64,7 @@ pub async fn app__vrchat_search_users_get(
 #[specta::specta]
 pub async fn app__vrchat_search_groups_get(
     state: State<'_, AppState>,
-    input: VrchatSearchParamsInput,
+    input: VrchatSearchGroupsInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_search_api(
         state,
@@ -76,7 +79,7 @@ pub async fn app__vrchat_search_groups_get(
 #[specta::specta]
 pub async fn app__vrchat_search_groups_strict_get(
     state: State<'_, AppState>,
-    input: VrchatSearchParamsInput,
+    input: VrchatSearchGroupsInput,
 ) -> Result<VrchatApiResponse, AppError> {
     execute_search_api(
         state,

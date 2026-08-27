@@ -60,7 +60,11 @@ describe('gameStateService lifecycle transitions', () => {
             isGameRunning: true,
             isSteamVRRunning: true,
             lastGameStartedAt: '2026-06-08T10:00:00.000Z',
-            lastGameStateChangedAt: '2026-06-08T10:00:00.000Z'
+            lastGameStateChangedAt: '2026-06-08T10:00:00.000Z',
+            generation: 1,
+            gameChanged: true,
+            steamvrChanged: true,
+            changedAt: '2026-06-08T10:00:00.000Z'
         });
 
         expect(useRuntimeStore.getState().gameState).toMatchObject({
@@ -119,6 +123,9 @@ describe('gameStateService lifecycle transitions', () => {
         await handleGameRunningUpdate({
             isGameRunning: false,
             isSteamVRRunning: false,
+            generation: 2,
+            gameChanged: true,
+            steamvrChanged: true,
             changedAt: '2026-06-08T10:00:00.000Z'
         });
 

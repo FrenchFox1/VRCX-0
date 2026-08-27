@@ -8,17 +8,22 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { WorldProfileRecord } from '@/domain/entities/profileEntities';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { parseLocation } from '@/shared/utils/location';
+import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import type { LaunchStoreState } from '@/state/launchStore';
 
 import {
     findGroupOption,
+    normalizeGroupAccessType,
+    normalizeInstanceAccessType,
+    normalizeInstanceRegion,
+    normalizeMinimumAvatarPerformance,
     normalizeNewInstanceSeed
 } from './worldDialogHelpers';
 import {
@@ -46,25 +51,13 @@ import type {
 export type { NewInstanceAfterCreateAction } from './worldNewInstanceTypes';
 
 export function resolveNewInstanceAfterCreateAction(
-    requestedFollowUp: unknown,
+    requestedFollowUp: boolean,
     isGameRunning: boolean
 ): NewInstanceAfterCreateAction {
     if (!requestedFollowUp) {
         return '';
     }
     return isGameRunning ? 'openInGame' : 'selfInvite';
-}
-
-export function isNewInstanceSelfInviteRequest(
-    request: { afterCreateAction?: unknown } | null | undefined
-): boolean {
-    return request?.afterCreateAction === 'selfInvite';
-}
-
-export function isNewInstanceOpenInGameRequest(
-    request: { afterCreateAction?: unknown } | null | undefined
-): boolean {
-    return request?.afterCreateAction === 'openInGame';
 }
 
 interface UseWorldInstanceActionsInput {
@@ -74,6 +67,7 @@ interface UseWorldInstanceActionsInput {
     isGameRunning: boolean;
     profileWorldId: string;
     newInstanceGroups: InstanceGroupOption[];
+    loadNewInstanceGroups: () => Promise<InstanceGroupOption[]>;
     actionStatusRef: MutableRefObject<string>;
     setActionStatus: Dispatch<SetStateAction<string>>;
     isCurrentWorldTarget: (worldId: string, endpoint: string) => boolean;
@@ -87,6 +81,7 @@ export function useWorldInstanceActions({
     isGameRunning,
     profileWorldId,
     newInstanceGroups,
+    loadNewInstanceGroups,
     actionStatusRef,
     setActionStatus,
     isCurrentWorldTarget,
@@ -102,23 +97,31 @@ export function useWorldInstanceActions({
         setNewInstanceRequest(null);
     }, [profileWorldId]);
 
-    async function loadNewInstanceDefaults(seed: unknown = null) {
+    async function loadNewInstanceDefaults(
+        seed: WorldNewInstanceDefaults | null = null
+    ) {
         const [
             accessType,
             region,
             groupId,
             groupAccessType,
+            minimumAvatarPerformance,
             ageGate,
             queueEnabled,
             displayName,
             displayNamePresets,
             instanceName,
-            legacyUserId
+            legacyUserId,
+            groupOptions
         ] = await Promise.all([
             configRepository.getString('instanceDialogAccessType', 'public'),
             configRepository.getString('instanceRegion', 'US West'),
             configRepository.getString('instanceDialogGroupId', ''),
             configRepository.getString('instanceDialogGroupAccessType', 'plus'),
+            configRepository.getString(
+                'instanceDialogMinimumAvatarPerformance',
+                ''
+            ),
             configRepository.getBool('instanceDialogAgeGate', false),
             configRepository.getBool('instanceDialogQueueEnabled', true),
             configRepository.getString(INSTANCE_DIALOG_DISPLAY_NAME_KEY, ''),
@@ -127,41 +130,47 @@ export function useWorldInstanceActions({
                 []
             ),
             configRepository.getString('instanceDialogInstanceName', ''),
-            configRepository.getString('instanceDialogUserId', '')
+            configRepository.getString('instanceDialogUserId', ''),
+            loadNewInstanceGroups()
         ]);
         const seedDefaults = normalizeNewInstanceSeed(seed);
         const selectedGroupId =
             seedDefaults.groupId || normalizeEntityId(groupId) || '';
-        const selectedGroup = findGroupOption(
-            newInstanceGroups,
-            selectedGroupId
-        );
+        const selectedGroup = findGroupOption(groupOptions, selectedGroupId);
         return {
             accessType:
                 seedDefaults.accessType ||
-                accessType ||
+                normalizeInstanceAccessType(accessType) ||
                 (selectedGroupId ? 'group' : 'public'),
-            region: seedDefaults.region || region || 'US West',
+            region:
+                seedDefaults.region ||
+                normalizeInstanceRegion(region) ||
+                'US West',
             groupId: selectedGroupId,
             groupName: selectedGroup?.name || seedDefaults.groupName || '',
             groupAccessType:
-                seedDefaults.groupAccessType || groupAccessType || 'plus',
-            queueEnabled: Boolean(queueEnabled),
-            ageGate: Boolean(ageGate),
-            displayName: displayName || '',
+                seedDefaults.groupAccessType ||
+                normalizeGroupAccessType(groupAccessType) ||
+                'plus',
+            minimumAvatarPerformance: normalizeMinimumAvatarPerformance(
+                minimumAvatarPerformance
+            ),
+            queueEnabled,
+            ageGate,
+            displayName,
             displayNamePresets: normalizeInstanceDialogDisplayNamePresets(
                 displayNamePresets,
                 displayName
             ),
             roleIds: '',
-            instanceName: instanceName || '',
+            instanceName,
             legacyUserId: legacyUserId || currentUserId || ''
         };
     }
 
     async function openNewInstanceDialog(
         requestedFollowUp: boolean = false,
-        seed: unknown = null
+        seed: WorldNewInstanceDefaults | null = null
     ) {
         if (!world?.id || actionStatusRef.current !== 'idle') {
             return;
@@ -216,6 +225,10 @@ export function useWorldInstanceActions({
                 'instanceDialogGroupAccessType',
                 form.groupAccessType || 'plus'
             ),
+            configRepository.setString(
+                'instanceDialogMinimumAvatarPerformance',
+                form.minimumAvatarPerformance
+            ),
             configRepository.setBool(
                 'instanceDialogQueueEnabled',
                 Boolean(form.queueEnabled)
@@ -231,7 +244,7 @@ export function useWorldInstanceActions({
         ]).catch(() => {});
     }
 
-    function saveNewInstanceDisplayNamePreset(value: unknown) {
+    function saveNewInstanceDisplayNamePreset(value: string) {
         const normalized = normalizeInstanceDialogDisplayName(value);
         if (!normalized) {
             return;
@@ -267,9 +280,9 @@ export function useWorldInstanceActions({
             return;
         }
         const shouldSelfInvite =
-            isNewInstanceSelfInviteRequest(newInstanceRequest);
+            newInstanceRequest.afterCreateAction === 'selfInvite';
         const shouldOpenInGame =
-            isNewInstanceOpenInGameRequest(newInstanceRequest);
+            newInstanceRequest.afterCreateAction === 'openInGame';
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
         if (form.accessType === 'group' && !normalizeEntityId(form.groupId)) {
@@ -299,6 +312,10 @@ export function useWorldInstanceActions({
                     'instanceDialogGroupAccessType',
                     form.groupAccessType || 'plus'
                 ),
+                configRepository.setString(
+                    'instanceDialogMinimumAvatarPerformance',
+                    form.minimumAvatarPerformance
+                ),
                 configRepository.setBool(
                     'instanceDialogAgeGate',
                     Boolean(form.ageGate)
@@ -318,11 +335,12 @@ export function useWorldInstanceActions({
             );
             const response = await vrchatInstanceRepository.createInstance({
                 worldId: targetWorldId,
-                ownerId: currentUserId,
+                ownerId: currentUserId || '',
                 accessType: form.accessType || 'public',
                 region: form.region || 'US West',
                 groupId: form.groupId || '',
                 groupAccessType: form.groupAccessType || 'plus',
+                minimumAvatarPerformance: form.minimumAvatarPerformance,
                 queueEnabled: Boolean(form.queueEnabled),
                 ageGate: Boolean(form.ageGate),
                 roleIds: parseRoleIds(form.roleIds),

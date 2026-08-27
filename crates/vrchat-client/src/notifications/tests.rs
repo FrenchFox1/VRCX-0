@@ -207,7 +207,9 @@ fn invite_and_request_invite_photos_build_legacy_upload_requests() {
     let (_, request_invite) = request_invite_photo_input(
         ENDPOINT.into(),
         " usr_target/unsafe ".into(),
-        json!({ "message": "please" }),
+        RequestInviteRequest {
+            request_slot: Some(2),
+        },
         " request-image ".into(),
     )
     .unwrap();
@@ -220,7 +222,10 @@ fn invite_and_request_invite_photos_build_legacy_upload_requests() {
         request_invite.body.as_upload(),
         Some(HttpApiUpload::LegacyImage { image_data, .. }) if image_data == "request-image"
     ));
-    assert_eq!(post_data(&request_invite), json!({ "message": "please" }));
+    assert_eq!(
+        post_data(&request_invite),
+        json!({ "platform": "standalonewindows", "requestSlot": 2 })
+    );
 }
 
 #[test]
@@ -241,8 +246,19 @@ fn required_notification_fields_reject_empty_text() {
     );
     assert!(invite_response_photo_input(ENDPOINT.into(), "note_1".into(), 0, " ".into(),).is_err());
     assert!(invite_photo_input(ENDPOINT.into(), " ".into(), json!({}), "image".into(),).is_err());
-    assert!(
-        request_invite_photo_input(ENDPOINT.into(), "usr_1".into(), json!({}), " ".into(),)
-            .is_err()
-    );
+    assert!(request_invite_photo_input(
+        ENDPOINT.into(),
+        "usr_1".into(),
+        RequestInviteRequest { request_slot: None },
+        " ".into(),
+    )
+    .is_err());
+}
+
+#[test]
+fn request_invite_params_reject_unknown_fields() {
+    assert!(serde_json::from_value::<RequestInviteRequest>(json!({
+        "message": "unsupported",
+    }))
+    .is_err());
 }

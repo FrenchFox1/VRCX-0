@@ -10,11 +10,16 @@ import {
     XIcon,
     type LucideIcon
 } from 'lucide-react';
+import type { ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { ToolbarFilterMenu } from '@/components/layout/ToolbarControls';
+import {
+    isFriendLogType,
+    type FriendLogType
+} from '@/domain/friends/friendLog';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
@@ -27,17 +32,6 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 
 import type { FriendLogRow } from '../friendLogRows';
-
-export const FRIEND_LOG_TYPES = [
-    'Friend',
-    'Unfriend',
-    'FriendRequest',
-    'CancelFriendRequest',
-    'DisplayName',
-    'TrustLevel'
-] as const;
-
-export type FriendLogType = (typeof FRIEND_LOG_TYPES)[number];
 
 const FRIEND_LOG_TYPE_GROUPS = [
     {
@@ -79,26 +73,17 @@ export { DataTableSortButton as SortButton };
 
 export function FriendLogEmptyState({
     title,
-    description
-}: {
-    title: string;
-    description: string;
-}) {
-    return <EmptyState title={title} description={description} />;
+    description,
+    ...props
+}: ComponentProps<typeof EmptyState>) {
+    return <EmptyState {...props} title={title} description={description} />;
 }
 
-function isFriendLogType(type: unknown): type is FriendLogType {
-    return (
-        typeof type === 'string' &&
-        (FRIEND_LOG_TYPES as readonly string[]).includes(type)
-    );
-}
-
-export function friendLogTypeLabel(type: unknown, t: TFunction) {
+export function friendLogTypeLabel(type: string, t: TFunction) {
     return isFriendLogType(type) ? t(`view.friend_log.filters.${type}`) : '';
 }
 
-function FriendLogTypeIcon({ type }: { type: unknown }) {
+function FriendLogTypeIcon({ type }: { type: string }) {
     if (!isFriendLogType(type)) {
         return null;
     }
@@ -108,9 +93,9 @@ function FriendLogTypeIcon({ type }: { type: unknown }) {
     );
 }
 
-export function FriendLogTypeIndicator({ type }: { type: unknown }) {
+export function FriendLogTypeIndicator({ type }: { type: string }) {
     const { t } = useTranslation();
-    const label = friendLogTypeLabel(type, t) || String(type || '');
+    const label = friendLogTypeLabel(type, t) || type;
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">
             <FriendLogTypeIcon type={type} />

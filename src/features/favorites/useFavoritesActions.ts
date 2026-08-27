@@ -1,13 +1,15 @@
-import { useRef, useState } from 'react';
+import { type Dispatch, type SetStateAction, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import type { FavoriteKind } from '@/domain/favorites/types';
+import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
+import type { AvatarCacheOutput } from '@/platform/tauri/bindings';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import type {
-    FavoriteGroup,
+    FavoriteGroupView,
     FavoriteItem,
-    FavoriteKind,
     FavoriteSource
 } from './favoritesTypes';
 import { useFavoritesBulkActions } from './useFavoritesBulkActions';
@@ -48,19 +50,17 @@ export function useFavoritesActions({
     currentInviteLocation: string;
     currentUserId: string;
     currentUserSnapshot: CurrentUserSnapshotState | null;
-    friendsById: Record<string, unknown>;
-    friendsMap: Map<string, unknown>;
+    friendsById: FriendRosterById;
+    friendsMap: Map<string, FriendRecord>;
     kind: FavoriteKind;
-    localGroups: FavoriteGroup[];
+    localGroups: FavoriteGroupView[];
     newLocalGroupName: string;
-    reloadLocalWorldFavorites(): Promise<unknown>;
-    remoteGroups: FavoriteGroup[];
+    reloadLocalWorldFavorites(): Promise<boolean>;
+    remoteGroups: FavoriteGroupView[];
     selectedContentItems: FavoriteItem[];
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    setAvatarHistory(
-        value: unknown[] | ((current: unknown[]) => unknown[])
-    ): void;
+    setAvatarHistory: Dispatch<SetStateAction<AvatarCacheOutput[]>>;
     setAvatarHistoryLoading(value: boolean): void;
     setCreatingLocalGroup(value: boolean): void;
     setExportDialogOpen(value: boolean): void;
@@ -104,7 +104,6 @@ export function useFavoritesActions({
         kind,
         localGroups,
         newLocalGroupName,
-        reloadLocalWorldFavorites,
         refreshing,
         selectedContentItems,
         selectedSource,
@@ -119,8 +118,6 @@ export function useFavoritesActions({
         currentEndpoint,
         kind,
         localGroups,
-        reloadLocalWorldFavorites,
-        refreshFavorites: collectionActions.refreshFavorites,
         remoteFavoritesByObjectId,
         remoteGroups,
         selectedContentItems,

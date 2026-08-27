@@ -8,6 +8,8 @@ import {
     styleName,
     tagsKey
 } from '@/components/dialogs/avatarDetailsModel';
+import type { LoadStatus } from '@/domain/shared/types';
+import type { AvatarUpdateRequest } from '@/platform/tauri/bindings';
 import avatarProfileRepository, {
     type AvatarProfileRecord,
     type AvatarStyleRecord
@@ -46,15 +48,6 @@ function hasOwn(object: unknown, key: PropertyKey) {
     return Object.prototype.hasOwnProperty.call(object, key);
 }
 
-type AvatarDetailsSaveParams = Record<string, unknown> & {
-    id: string;
-    name?: string;
-    description?: string;
-    primaryStyle?: string;
-    secondaryStyle?: string;
-    tags?: string[];
-};
-
 type AvatarDetailsDialogProps = {
     open: boolean;
     avatar?: Partial<AvatarProfileRecord> | null;
@@ -90,7 +83,7 @@ export function AvatarDetailsDialog({
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [saving, setSaving] = useState(false);
-    const [loadStatus, setLoadStatus] = useState('idle');
+    const [loadStatus, setLoadStatus] = useState<LoadStatus>('idle');
     const [styles, setStyles] = useState<AvatarStyleRecord[]>([]);
     const [primaryStyle, setPrimaryStyle] = useState('');
     const [secondaryStyle, setSecondaryStyle] = useState('');
@@ -189,7 +182,7 @@ export function AvatarDetailsDialog({
             return;
         }
 
-        const params: AvatarDetailsSaveParams = { id: avatarId };
+        const params: AvatarUpdateRequest = { id: avatarId };
         const nextAuthorTags = authorTagsFromCsv(authorTags);
         const authorTagsChanged =
             tagsKey(initialAuthorTags) !== tagsKey(nextAuthorTags);
@@ -232,7 +225,7 @@ export function AvatarDetailsDialog({
                 hasOwn(params, 'primaryStyle') ||
                 hasOwn(params, 'secondaryStyle')
                     ? {
-                          ...(avatar?.styles || {}),
+                          ...avatar?.styles,
                           ...(hasOwn(params, 'primaryStyle')
                               ? { primary: primaryStyle }
                               : {}),

@@ -129,14 +129,14 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
             },
             {
                 id: 'type',
-                accessorFn: (row: FeedRow) => String(row?.type || ''),
+                accessorFn: (row: FeedRow) => row.type || '',
                 meta: { label: t('table.feed.type') },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.type')} />
                 ),
                 cell: ({ row }) => {
                     const typeLabel = row.original.type
-                        ? t(`view.feed.filters.${String(row.original.type)}`)
+                        ? t(`view.feed.filters.${row.original.type}`)
                         : '';
                     return (
                         <FeedTypeIndicator

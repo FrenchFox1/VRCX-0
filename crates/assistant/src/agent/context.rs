@@ -1,5 +1,5 @@
 use chrono::{DateTime, Datelike, FixedOffset, Utc};
-use vrcx_0_integrations::llm::ChatMessage;
+use vrcx_0_contracts::llm::ChatMessage;
 
 use crate::entities::Entity;
 use crate::playbook;
@@ -128,12 +128,12 @@ fn known_references_note(surfaced: &[Entity]) -> Option<String> {
 }
 
 fn known_reference_entry(entity: &Entity) -> Option<String> {
-    let kind = clean_reference_text(&entity.kind)?;
+    let kind = entity.kind.as_str();
     let id = clean_reference_text(&entity.id)?;
     let display_name = clean_reference_text(&entity.display_name)?;
     Some(format!(
         "kind={}, id={}, displayName={}",
-        json_string(&kind),
+        json_string(kind),
         json_string(&id),
         json_string(&display_name)
     ))
@@ -190,9 +190,9 @@ mod tests {
         messages
     }
 
-    fn entity(kind: &str, id: &str, display_name: &str) -> Entity {
+    fn entity(id: &str, display_name: &str) -> Entity {
         Entity {
-            kind: kind.into(),
+            kind: crate::entities::EntityKind::User,
             id: id.into(),
             display_name: display_name.into(),
         }
@@ -244,18 +244,13 @@ mod tests {
     fn known_references_note_returns_none_for_empty_or_invalid_entities() {
         assert!(known_references_note(&[]).is_none());
 
-        let note = known_references_note(&[
-            entity("", "usr_1", "Alice"),
-            entity("user", "", "Alice"),
-            entity("user", "usr_1", ""),
-        ]);
+        let note = known_references_note(&[entity("", "Alice"), entity("usr_1", "")]);
         assert!(note.is_none());
     }
 
     #[test]
     fn known_references_note_escapes_and_cleans_entity_fields() {
-        let note =
-            known_references_note(&[entity("user", "usr_1", "Alice \"The\nFirst\"")]).unwrap();
+        let note = known_references_note(&[entity("usr_1", "Alice \"The\nFirst\"")]).unwrap();
 
         assert!(note.contains("kind=\"user\""));
         assert!(note.contains("id=\"usr_1\""));
@@ -266,7 +261,7 @@ mod tests {
     #[test]
     fn known_references_note_caps_entity_count() {
         let entities = (0..20)
-            .map(|index| entity("user", &format!("usr_{index}"), &format!("Friend {index}")))
+            .map(|index| entity(&format!("usr_{index}"), &format!("Friend {index}")))
             .collect::<Vec<_>>();
 
         let note = known_references_note(&entities).unwrap();
@@ -310,7 +305,7 @@ mod tests {
         let assembled = build_context_messages(
             Some("zh-CN"),
             &history,
-            &[entity("user", "usr_1", "Alice")],
+            &[entity("usr_1", "Alice")],
             playbook::classify_keyword("best time to play"),
             DateTime::parse_from_rfc3339("2026-06-28T06:00:00+09:00").unwrap(),
         );

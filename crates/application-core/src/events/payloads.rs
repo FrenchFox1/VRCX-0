@@ -27,7 +27,7 @@ pub struct FriendProfileLoadStatusPayload {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PrintAutoCleanupEvent {
-    pub deleted: usize,
-    pub remaining: usize,
+    pub deleted: u32,
+    pub remaining: u32,
     pub warning: Option<String>,
 }

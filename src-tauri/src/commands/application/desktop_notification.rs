@@ -10,11 +10,8 @@ use crate::state::AppState;
 pub fn app__take_pending_desktop_notification_activation(
     state: State<'_, AppState>,
 ) -> Option<DesktopNotificationActivation> {
-    let auth_scope = state.runtime_context.auth_scope.snapshot();
-    if !auth_scope.active {
-        return None;
-    }
+    let owner_id = state.runtime_host().active_owner_id()?;
     state
-        .pending_desktop_notification_activations
-        .take_for_owner(&auth_scope.current_user_id)
+        .pending_desktop_notification_activations()
+        .take_for_owner(&owner_id)
 }

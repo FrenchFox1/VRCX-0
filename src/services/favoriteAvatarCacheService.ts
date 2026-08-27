@@ -8,7 +8,7 @@ import {
 
 export async function cacheAvatarDetails(
     avatar: unknown,
-    fallbackAvatarId?: unknown
+    fallbackAvatarId?: string
 ): Promise<boolean> {
     const entity = favoriteCachePayload(avatar);
     if (!entity) {
@@ -46,7 +46,7 @@ function reportAvatarCacheError(error: unknown): void {
 
 export function persistAvatarDetails(
     avatar: unknown,
-    fallbackAvatarId?: unknown
+    fallbackAvatarId?: string
 ): void {
     void cacheAvatarDetails(avatar, fallbackAvatarId).catch(
         reportAvatarCacheError

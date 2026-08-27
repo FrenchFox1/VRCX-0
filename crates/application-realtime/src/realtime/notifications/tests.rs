@@ -14,7 +14,7 @@ fn ws(message_type: &str, content: Value) -> RealtimeWsMessagePayload {
 #[test]
 fn notification_v1_routes_projection_and_persistence_filters() {
     let output = apply_notification_ws_message(
-        " usr_self ",
+        &OwnerId::new(" usr_self "),
         "https://api.example.test/api/1",
         7,
         &ws(
@@ -30,7 +30,7 @@ fn notification_v1_routes_projection_and_persistence_filters() {
     )
     .expect("v1 notification output");
 
-    assert_eq!(output.owner_user_id, "usr_self");
+    assert_eq!(output.owner_user_id, OwnerId::new("usr_self"));
     assert_eq!(output.projection.generation, 7);
     assert_eq!(output.persistence.notification_v1_upserts.len(), 1);
     assert_eq!(output.projection.upserts.len(), 1);
@@ -46,7 +46,7 @@ fn notification_v1_routes_projection_and_persistence_filters() {
     assert_eq!(upsert.notification["seen"], json!(false));
 
     let self_sent = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1",
         7,
         &ws(
@@ -63,7 +63,7 @@ fn notification_v1_routes_projection_and_persistence_filters() {
     assert_eq!(self_sent.projection.upserts.len(), 1);
 
     let dotted_type = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1",
         7,
         &ws(
@@ -82,7 +82,7 @@ fn notification_v1_routes_projection_and_persistence_filters() {
 #[test]
 fn notification_v2_routes_seen_and_boop_legacy_fields() {
     let output = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1/",
         7,
         &ws(
@@ -113,7 +113,7 @@ fn notification_v2_routes_seen_and_boop_legacy_fields() {
 #[test]
 fn notification_v2_update_routes_update_and_seen_projection() {
     let output = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1",
         7,
         &ws(
@@ -153,7 +153,7 @@ fn notification_v2_update_routes_update_and_seen_projection() {
 #[test]
 fn notification_terminal_routes_seen_and_expire_ids() {
     let delete = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1",
         7,
         &ws("notification-v2-delete", json!({ "ids": ["a", "", "b"] })),
@@ -165,7 +165,7 @@ fn notification_terminal_routes_seen_and_expire_ids() {
     assert!(delete.projection.clear_menu_if_no_unseen);
 
     let seen = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1",
         7,
         &ws("see-notification", json!("seen_id")),
@@ -175,7 +175,7 @@ fn notification_terminal_routes_seen_and_expire_ids() {
     assert_eq!(seen.projection.seen_ids, vec!["seen_id"]);
 
     let hidden = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1",
         7,
         &ws(
@@ -191,7 +191,7 @@ fn notification_terminal_routes_seen_and_expire_ids() {
     );
 
     let response = apply_notification_ws_message(
-        "usr_self",
+        &OwnerId::new("usr_self"),
         "https://api.example.test/api/1",
         7,
         &ws("response-notification", json!({ "id": "response_id" })),

@@ -15,12 +15,12 @@ type LoginProxySettingsDialogProps = {
     isTesting: boolean;
     open: boolean;
     proxyInput: string;
-    onOpenChange: (open: boolean) => unknown;
-    onProxyEnabledChange: (enabled: boolean) => unknown;
-    onProxyInputChange: (value: string) => unknown;
-    onSave: () => unknown;
-    onSaveAndRestart: () => unknown;
-    onTest: () => unknown;
+    onOpenChange: (open: boolean) => void;
+    onProxyEnabledChange: (enabled: boolean) => void;
+    onProxyInputChange: (value: string) => void;
+    onSave: () => void;
+    onSaveAndRestart: () => void;
+    onTest: () => void;
 };
 
 export function LoginProxySettingsDialog({

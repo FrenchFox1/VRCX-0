@@ -9,7 +9,7 @@ import {
 
 export async function cacheWorldDetails(
     world: unknown,
-    fallbackWorldId?: unknown
+    fallbackWorldId?: string
 ): Promise<boolean> {
     const entity = favoriteCachePayload(world);
     if (!entity) {
@@ -52,7 +52,7 @@ function reportWorldCacheError(error: unknown): void {
 
 export function persistWorldDetails(
     world: unknown,
-    fallbackWorldId?: unknown
+    fallbackWorldId?: string
 ): void {
     void cacheWorldDetails(world, fallbackWorldId).catch(reportWorldCacheError);
 }

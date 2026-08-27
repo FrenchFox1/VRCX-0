@@ -1,10 +1,4 @@
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SqliteErrorCategory {
-    Malformed,
-    DiskFull,
-    Locked,
-    IoError,
-}
+pub use vrcx_0_contracts::SqliteErrorCategory;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -30,6 +24,23 @@ pub enum Error {
     Custom(String),
 }
 
+impl vrcx_0_contracts::ApplicationErrorSource for Error {
+    fn into_application_error(self) -> vrcx_0_contracts::ApplicationErrorPayload {
+        use vrcx_0_contracts::ApplicationErrorPayload;
+
+        match self {
+            Self::Database(message) => ApplicationErrorPayload::Database(message),
+            Self::Sqlite { message, category } => {
+                ApplicationErrorPayload::Sqlite { message, category }
+            }
+            Self::Io(error) => ApplicationErrorPayload::Io(error),
+            Self::Json(error) => ApplicationErrorPayload::Json(error),
+            Self::InvalidData(message) => ApplicationErrorPayload::PersistenceInvalidData(message),
+            Self::Custom(message) => ApplicationErrorPayload::Custom(message),
+        }
+    }
+}
+
 impl Error {
     pub(crate) fn sqlite(error: rusqlite::Error) -> Self {
         Self::Sqlite {
@@ -50,10 +61,7 @@ impl Error {
         Self::database_message(format!("{context}: {error}"), category)
     }
 
-    pub(crate) fn database_message(
-        message: String,
-        category: Option<SqliteErrorCategory>,
-    ) -> Self {
+    pub(crate) fn database_message(message: String, category: Option<SqliteErrorCategory>) -> Self {
         match category {
             Some(category) => Self::Sqlite {
                 message,

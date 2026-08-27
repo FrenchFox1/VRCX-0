@@ -1,7 +1,13 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use std::collections::BTreeMap;
 
-use crate::cache_entities::{upsert_cache_entity, CacheEntityInput};
+use serde::Deserialize;
+use serde_json::Value;
+pub use vrcx_0_contracts::{
+    AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow,
+};
+
+use crate::activity::{activity_iso_from_ms, parse_activity_time_ms};
+use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::{ensure_global_store_tables, ensure_user_store_tables};
 use crate::database::DatabaseService;
@@ -20,39 +26,6 @@ pub struct AvatarTagInput {
     pub color: Value,
 }
 
-#[derive(Clone, Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarCacheOutput {
-    pub id: String,
-    pub author_id: String,
-    pub author_name: String,
-    #[serde(rename = "created_at")]
-    pub created_at: String,
-    pub description: String,
-    pub image_url: String,
-    pub name: String,
-    pub release_status: String,
-    pub thumbnail_image_url: String,
-    #[serde(rename = "updated_at")]
-    pub updated_at: String,
-    pub version: i64,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTimeSpentOutput {
-    pub avatar_id: String,
-    pub time_spent: i64,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTagOutput {
-    pub avatar_id: String,
-    pub tag: String,
-    pub color: Value,
-}
-
 #[derive(Debug, Deserialize, Default, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AvatarTagsPatchInput {
@@ -64,6 +37,13 @@ pub struct AvatarTagsPatchInput {
 
 pub fn avatar_cache_upsert(db: &DatabaseService, entry: CacheEntityInput) -> Result<i64, Error> {
     upsert_cache_entity(db, "cache_avatar", entry)
+}
+
+pub fn avatar_cache_upsert_many(
+    db: &DatabaseService,
+    entries: Vec<CacheEntityInput>,
+) -> Result<u32, Error> {
+    upsert_cache_entities(db, "cache_avatar", entries)
 }
 
 pub fn avatar_cache_get(
@@ -208,6 +188,99 @@ pub fn avatar_history_list(
         )?
         .into_iter()
         .map(|row| cache_entity_from_row(&row))
+        .collect())
+}
+
+pub fn avatar_usage_ranking_windowed(
+    db: &DatabaseService,
+    user_id: String,
+    from_ms: i64,
+    to_ms: i64,
+    limit: i64,
+) -> Result<Vec<AvatarUsageRow>, Error> {
+    let user_prefix = normalize_user_table_prefix(&normalize_text(user_id))?;
+    ensure_user_store_tables(db, &user_prefix)?;
+    ensure_global_store_tables(db)?;
+
+    let rows = db.execute(
+        &format!(
+            "SELECT log.avatar_id, log.started_at, log.ended_at, COALESCE(cache_avatar.name, ''), COALESCE(cache_avatar.thumbnail_image_url, ''), COALESCE(cache_avatar.image_url, '')
+             FROM {user_prefix}_avatar_wear_log AS log
+             LEFT JOIN cache_avatar ON cache_avatar.id = log.avatar_id
+             WHERE log.started_at < @to_iso AND log.ended_at > @from_iso"
+        ),
+        &ParamsBuilder::new()
+            .set("from_iso", activity_iso_from_ms(from_ms))
+            .set("to_iso", activity_iso_from_ms(to_ms))
+            .build(),
+    )?;
+
+    let mut totals: BTreeMap<String, AvatarUsageRow> = BTreeMap::new();
+    for row in rows {
+        let avatar_id = row_string(&row, 0);
+        let Some(started_ms) = parse_activity_time_ms(&row_string(&row, 1)) else {
+            continue;
+        };
+        let Some(ended_ms) = parse_activity_time_ms(&row_string(&row, 2)) else {
+            continue;
+        };
+        let clipped = ended_ms.min(to_ms) - started_ms.max(from_ms);
+        if clipped <= 0 {
+            continue;
+        }
+        let entry = totals
+            .entry(avatar_id.clone())
+            .or_insert_with(|| AvatarUsageRow {
+                avatar_id,
+                name: row_string(&row, 3),
+                thumbnail_image_url: row_string(&row, 4),
+                image_url: row_string(&row, 5),
+                time_spent: 0,
+            });
+        entry.time_spent += clipped;
+    }
+
+    let mut ranked: Vec<AvatarUsageRow> = totals.into_values().collect();
+    ranked.sort_by(|left, right| {
+        right
+            .time_spent
+            .cmp(&left.time_spent)
+            .then_with(|| left.avatar_id.cmp(&right.avatar_id))
+    });
+    ranked.truncate(if limit > 0 { limit as usize } else { 10 });
+    Ok(ranked)
+}
+
+pub fn avatar_usage_ranking(
+    db: &DatabaseService,
+    user_id: String,
+    limit: i64,
+) -> Result<Vec<AvatarUsageRow>, Error> {
+    let user_prefix = normalize_user_table_prefix(&normalize_text(user_id))?;
+    ensure_user_store_tables(db, &user_prefix)?;
+    ensure_global_store_tables(db)?;
+    Ok(db
+        .execute(
+            &format!(
+                "SELECT history.avatar_id, COALESCE(cache_avatar.name, ''), COALESCE(cache_avatar.thumbnail_image_url, ''), COALESCE(cache_avatar.image_url, ''), history.time
+                 FROM {user_prefix}_avatar_history AS history
+                 LEFT JOIN cache_avatar ON cache_avatar.id = history.avatar_id
+                 WHERE history.time > 0
+                 ORDER BY history.time DESC
+                 LIMIT @limit"
+            ),
+            &ParamsBuilder::new()
+                .set("limit", if limit > 0 { limit } else { 10 })
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| AvatarUsageRow {
+            avatar_id: row_string(&row, 0),
+            name: row_string(&row, 1),
+            thumbnail_image_url: row_string(&row, 2),
+            image_url: row_string(&row, 3),
+            time_spent: row_i64(&row, 4),
+        })
         .collect())
 }
 
@@ -478,7 +551,7 @@ pub(crate) fn cache_entity_from_row(row: &[Value]) -> AvatarCacheOutput {
         description: row_string(row, 4),
         image_url: row_string(row, 5),
         name: row_string(row, 6),
-        release_status: row_string(row, 7),
+        release_status: row_string(row, 7).into(),
         thumbnail_image_url: row_string(row, 8),
         updated_at: row_string(row, 9),
         version: row_i64(row, 10),

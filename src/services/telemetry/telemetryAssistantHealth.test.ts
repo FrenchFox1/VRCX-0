@@ -131,6 +131,41 @@ describe('assistant health telemetry', () => {
         });
     });
 
+    it('classifies time window parser failures as invalid arguments', async () => {
+        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const mod = await import('./telemetryAssistantHealth');
+
+        mod.recordAssistantToolError({
+            source: 'get_copresence_summary',
+            summary:
+                'timeWindow must be a relative string or an object with from/to bounds'
+        });
+        mod.recordAssistantToolError({
+            source: 'get_copresence_summary',
+            summary: "unrecognized timeWindow string 'the year 2026'"
+        });
+        mod.recordAssistantToolError({
+            source: 'get_copresence_summary',
+            summary: 'timeWindow calendar year must be between 1000 and 9998'
+        });
+
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
+            type: 'assistantToolError',
+            source: 'get_copresence_summary',
+            summary: 'result=invalid_args'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(2, {
+            type: 'assistantToolError',
+            source: 'get_copresence_summary',
+            summary: 'result=invalid_args'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(3, {
+            type: 'assistantToolError',
+            source: 'get_copresence_summary',
+            summary: 'result=invalid_args'
+        });
+    });
+
     it('forwards assistant turn errors and ignores user cancellations', async () => {
         const { appTelemetryRecordEvent } = mockTelemetryCommand();
         const mod = await import('./telemetryAssistantHealth');

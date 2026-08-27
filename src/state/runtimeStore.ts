@@ -1,12 +1,25 @@
 import { create } from 'zustand';
 
-import type { GroupInstanceRecord } from '@/domain/entities/profileEntities';
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
-import type { DatabaseUpgradeStage } from '@/platform/tauri/bindings';
+import type {
+    AuthenticatedSessionProjection,
+    AppUpdateReleaseSnapshot,
+    BackendRuntimeSnapshot,
+    CapabilityStatus,
+    DatabaseUpgradeStage,
+    FriendProfileBulkLoadStatus,
+    HostCapabilities,
+    MutualGraphFetchStatus,
+    RuntimeOperationStatus,
+    SavedAuthAutoLoginStatus,
+    RuntimeGroupInstancesStatus,
+    VrcStatusSnapshot
+} from '@/platform/tauri/bindings';
 import { MINUTE_MS } from '@/shared/constants/time';
 
 type TaskState = {
-    status: string;
+    status: RuntimeOperationStatus;
     detail: string;
     updatedAt: string | null;
 };
@@ -17,39 +30,24 @@ type RuntimeEventState = {
     lastReceivedAt: string | null;
 };
 
-type TransportState = Record<string, unknown> & {
+type TransportState = {
     websocketConnected: boolean;
     websocketDomain: string;
     lastConnectedAt: string | null;
     lastDisconnectedAt: string | null;
 };
 
-type MutualGraphState = Record<string, unknown> & {
-    runId: number;
-    revision: number;
-    status: string;
-    ownerUserId: string;
-    totalFriends: number;
-    processedFriends: number;
-    currentFriendId: string;
-    fetchedFriends: number;
-    optedOutFriends: number;
-    failedFriends: number;
-    cancelRequested: boolean;
+export type MutualGraphState = Omit<
+    MutualGraphFetchStatus,
+    'startedAt' | 'updatedAt'
+> & {
     startedAt: string | null;
     updatedAt: string | null;
-    finishedAt: string | null;
-    lastError: string | null;
 };
 
-export type FriendProfileLoadStatus =
-    | 'idle'
-    | 'running'
-    | 'cancelling'
-    | 'completed'
-    | 'cancelled';
+export type FriendProfileLoadStatus = FriendProfileBulkLoadStatus;
 
-export type FriendProfileLoadState = Record<string, unknown> & {
+export type FriendProfileLoadState = {
     runId: number;
     status: FriendProfileLoadStatus;
     ownerUserId: string;
@@ -65,7 +63,7 @@ export type FriendProfileLoadState = Record<string, unknown> & {
     finishedAt: string | null;
 };
 
-type InstanceQueueState = Record<string, unknown> & {
+export type InstanceQueueState = {
     active: boolean;
     instanceLocation: string;
     position: number;
@@ -74,44 +72,20 @@ type InstanceQueueState = Record<string, unknown> & {
     updatedAt: string | null;
 };
 
-export type VrcStatusState = Record<string, unknown> & {
-    status: string;
-    indicator: string;
-    summary: string;
+export type NowPlayingState = {
+    url: string | null;
+    name: string | null;
+    source: string | null;
+    displayName: string | null;
+    thumbnailUrl: string | null;
+    length: number | null;
+    position: number;
+    startedAt: string | null;
     updatedAt: string | null;
-    lastFetchedAt: string | null;
-    pollingIntervalMs: number;
-    refreshing: boolean;
-    error: string;
 };
 
-export type CapabilityStatus = {
-    supported: boolean;
-    enabled: boolean;
-    available: boolean;
-    reason?: string;
-};
-
-type HostCapabilitiesState = Record<string, unknown> & {
-    platform: string;
-    arch: string;
-    linuxPackageKind: string;
-    localDatabase: CapabilityStatus;
-    websocketRuntime: CapabilityStatus;
-    gameLogWatcher: CapabilityStatus;
-    runtimeGameLogIngest: CapabilityStatus;
-    runtimeGameLogSideEffects: CapabilityStatus;
-    runtimeGameClientLifecycle: CapabilityStatus;
-    runtimeRealtimeTransport: CapabilityStatus;
-    gameProcessMonitor: CapabilityStatus;
-    vrchatPathDiscovery: CapabilityStatus;
-    steamLibraryDiscovery: CapabilityStatus;
-    steamRuntimeIntegration: CapabilityStatus;
-    registryPrefs: CapabilityStatus;
-    gameLaunch: CapabilityStatus;
-    vrchatLaunchPipe: CapabilityStatus;
-    screenshotCache: CapabilityStatus;
-};
+export type VrcStatusState = VrcStatusSnapshot;
+export type { CapabilityStatus };
 
 export type CurrentUserSnapshotState = Record<string, unknown> & {
     id?: string;
@@ -142,16 +116,14 @@ export type CurrentUserSnapshotState = Record<string, unknown> & {
     activeFriends?: string[];
 };
 
-type UpdateLoopRelease = Record<string, unknown> & {
-    canonicalVersion?: string;
-    currentVersion?: string;
-    latestVersion?: string;
-    publishedAt?: string;
-    title?: string;
+type UpdateLoopRelease = AppUpdateReleaseSnapshot & {
+    currentVersion: string;
+    latestVersion: string;
+    title: string;
 };
 
-type GroupInstancesState = Record<string, unknown> & {
-    status: string;
+type GroupInstancesState = {
+    status: RuntimeGroupInstancesStatus;
     userId: string;
     endpoint: string;
     instances: GroupInstanceRecord[];
@@ -163,18 +135,29 @@ type GroupInstancesState = Record<string, unknown> & {
 
 type RuntimeStore = {
     startup: Record<string, TaskState>;
-    hostCapabilities: HostCapabilitiesState;
-    auth: Record<string, unknown> & {
+    hostCapabilities: HostCapabilities;
+    auth: {
         currentUserId: string | null;
         currentUserDisplayName: string;
         currentUserEndpoint: string;
         currentUserWebsocket: string;
         currentUserSnapshot: CurrentUserSnapshotState | null;
+        lastUserLoggedIn: string | null;
+        savedCredentialCount: number;
+        autoLoginStatus: SavedAuthAutoLoginStatus | 'idle';
+        autoLoginReason: string;
+        autoLoginDelayEnabled: boolean;
+        autoLoginDelaySeconds: number;
     };
-    updateLoop: Record<string, unknown> & {
+    updateLoop: {
         isRunning: boolean;
         tickCount: number;
+        lastTickAt: string | null;
+        lastGameLogSyncAt: string | null;
+        lastGameLogSyncDetail: string;
         hasAvailableUpdate: boolean;
+        lastUpdaterCheckAt: string | null;
+        lastUpdaterCheckDetail: string;
         latestUpdaterRelease: UpdateLoopRelease | null;
         autoDownloadState:
             | 'idle'
@@ -185,11 +168,13 @@ type RuntimeStore = {
         downloadedVersion: string | null;
         downloadProgress: number;
         downloadedBytes: number;
+        autoDownloadStartedAt: string | null;
+        autoDownloadUiVisible: boolean;
     };
     mutualGraph: MutualGraphState;
     friendProfileLoad: FriendProfileLoadState;
     transport: TransportState;
-    gameState: Record<string, unknown> & {
+    gameState: {
         isGameRunning: boolean | null;
         isSteamVRRunning: boolean | null;
         isGameNoVR: boolean;
@@ -207,23 +192,13 @@ type RuntimeStore = {
         lastScreenshotPath: string;
         lastBrowserFocusAt: string | null;
     };
-    nowPlaying: Record<string, unknown> & {
-        url: string;
-        name: string;
-        source: string;
-        displayName: string;
-        thumbnailUrl: string;
-        length: number;
-        position: number;
-        startedAt: string | null;
-        updatedAt: string | null;
-    };
+    nowPlaying: NowPlayingState;
     instanceQueue: InstanceQueueState;
     vrcStatus: VrcStatusState;
     groupInstances: GroupInstancesState;
     systemHosts: Record<string, boolean>;
     changelogTargetVersion: string;
-    databaseUpgrade: Record<string, unknown> & {
+    databaseUpgrade: {
         open: boolean;
         phase: string;
         fromVersion: number;
@@ -239,26 +214,35 @@ type RuntimeStore = {
         failureLogPath: string;
         failedWorkDbPath: string;
     };
+    databaseMaintenanceActive: boolean;
     runtimeEvents: Record<string, RuntimeEventState>;
-    backendRuntime: Record<string, unknown>;
-    shell: Record<string, unknown> & {
+    backendRuntime: BackendRuntimeSnapshot | null;
+    authenticatedSession: AuthenticatedSessionProjection;
+    shell: {
         backendRuntimeSnapshotHydrated: boolean;
         backendRuntimeSessionHydrating: boolean;
     };
-    setStartupTask(task: string, status: string, detail?: string): void;
+    setStartupTask(
+        task: string,
+        status: RuntimeOperationStatus,
+        detail?: string
+    ): void;
     setAuthBootstrap(payload: Partial<RuntimeStore['auth']>): void;
-    setHostCapabilities(payload?: Record<string, unknown> | null): void;
-    setUpdateLoopState(patch: Record<string, unknown>): void;
+    setHostCapabilities(payload?: HostCapabilities | null): void;
+    setUpdateLoopState(patch: Partial<RuntimeStore['updateLoop']>): void;
     setMutualGraphState(patch: Partial<MutualGraphState>): void;
     resetMutualGraphState(): void;
     setFriendProfileLoadState(patch: Partial<FriendProfileLoadState>): void;
     resetFriendProfileLoadState(): void;
     setTransportState(patch: Partial<TransportState>): void;
     recordRuntimeEvent(name: string, payload: unknown): void;
-    setBackendRuntimeSnapshot(snapshot: Record<string, unknown> | null): void;
-    setShellState(patch: Record<string, unknown>): void;
+    setBackendRuntimeSnapshot(snapshot: BackendRuntimeSnapshot | null): void;
+    setAuthenticatedSessionProjection(
+        projection: AuthenticatedSessionProjection
+    ): boolean;
+    setShellState(patch: Partial<RuntimeStore['shell']>): void;
     setGameState(patch: Partial<RuntimeStore['gameState']>): void;
-    setNowPlayingState(patch: Record<string, unknown>): void;
+    setNowPlayingState(patch: Partial<RuntimeStore['nowPlaying']>): void;
     resetNowPlayingState(): void;
     setInstanceQueueState(patch: Partial<InstanceQueueState>): void;
     clearInstanceQueueState(): void;
@@ -266,11 +250,12 @@ type RuntimeStore = {
     setGroupInstancesState(
         patch: Partial<RuntimeStore['groupInstances']>
     ): void;
-    setChangelogTargetVersion(version: unknown): void;
-    setSystemHostOpen(name: string, value: unknown): void;
+    setChangelogTargetVersion(version: string): void;
+    setSystemHostOpen(name: string, value: boolean): void;
     setDatabaseUpgradeState(
         patch: Partial<RuntimeStore['databaseUpgrade']>
     ): void;
+    setDatabaseMaintenanceActive(active: boolean): void;
     resetRuntimeState(): void;
 };
 
@@ -280,6 +265,78 @@ function createTaskState(): TaskState {
         detail: '',
         updatedAt: null
     };
+}
+
+function sameStringList(left: unknown, right: unknown): boolean {
+    if (left === right) {
+        return true;
+    }
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+        return false;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((value, index) => value === right[index]);
+}
+
+function isRosterPlayerLike(
+    value: unknown
+): value is Partial<CurrentInstanceRosterPlayer> {
+    return typeof value === 'object' && value !== null;
+}
+
+function sameRosterPlayers(left: unknown, right: unknown): boolean {
+    if (left === right) {
+        return true;
+    }
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+        return false;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((player, index) => {
+        const other = right[index];
+        if (!isRosterPlayerLike(player) || !isRosterPlayerLike(other)) {
+            return false;
+        }
+        return (
+            player.id === other.id &&
+            player.userId === other.userId &&
+            player.displayName === other.displayName &&
+            player.joinedAt === other.joinedAt &&
+            player.joinedAtMs === other.joinedAtMs &&
+            player.lastDurationMs === other.lastDurationMs &&
+            player.source === other.source
+        );
+    });
+}
+
+function preservedRosterRefs(
+    current: RuntimeStore['gameState'],
+    patch: Partial<RuntimeStore['gameState']>
+): Partial<RuntimeStore['gameState']> {
+    const preserved: Partial<RuntimeStore['gameState']> = {};
+    if (
+        patch.currentLocationPlayerIds &&
+        sameStringList(
+            current.currentLocationPlayerIds,
+            patch.currentLocationPlayerIds
+        )
+    ) {
+        preserved.currentLocationPlayerIds = current.currentLocationPlayerIds;
+    }
+    if (
+        patch.currentLocationPlayers &&
+        sameRosterPlayers(
+            current.currentLocationPlayers,
+            patch.currentLocationPlayers
+        )
+    ) {
+        preserved.currentLocationPlayers = current.currentLocationPlayers;
+    }
+    return preserved;
 }
 
 function createRuntimeEventState(): RuntimeEventState {
@@ -375,27 +432,7 @@ export function createGroupInstancesState(): GroupInstancesState {
     };
 }
 
-const HOST_CAPABILITY_KEYS = Object.freeze([
-    'localDatabase',
-    'websocketRuntime',
-    'gameLogWatcher',
-    'runtimeGameLogIngest',
-    'runtimeGameLogSideEffects',
-    'runtimeGameClientLifecycle',
-    'runtimeRealtimeTransport',
-    'gameProcessMonitor',
-    'vrchatPathDiscovery',
-    'steamLibraryDiscovery',
-    'steamRuntimeIntegration',
-    'registryPrefs',
-    'gameLaunch',
-    'vrchatLaunchPipe',
-    'screenshotCache'
-]);
-
-function createCapabilityStatus(
-    reason: unknown = 'Host capabilities have not loaded.'
-) {
+function createCapabilityStatus(reason: string): CapabilityStatus {
     return {
         supported: false,
         enabled: false,
@@ -404,18 +441,29 @@ function createCapabilityStatus(
     };
 }
 
-function createHostCapabilities(): RuntimeStore['hostCapabilities'] {
-    const capabilities: Partial<RuntimeStore['hostCapabilities']> = {
+export function createUnavailableHostCapabilities(
+    reason: string = 'Host capabilities have not loaded.'
+): HostCapabilities {
+    return {
         platform: 'unknown',
         arch: 'unknown',
-        linuxPackageKind: 'unknown'
+        linuxPackageKind: 'unknown',
+        localDatabase: createCapabilityStatus(reason),
+        websocketRuntime: createCapabilityStatus(reason),
+        gameLogWatcher: createCapabilityStatus(reason),
+        runtimeGameLogIngest: createCapabilityStatus(reason),
+        runtimeGameLogSideEffects: createCapabilityStatus(reason),
+        runtimeGameClientLifecycle: createCapabilityStatus(reason),
+        runtimeRealtimeTransport: createCapabilityStatus(reason),
+        gameProcessMonitor: createCapabilityStatus(reason),
+        vrchatPathDiscovery: createCapabilityStatus(reason),
+        steamLibraryDiscovery: createCapabilityStatus(reason),
+        steamRuntimeIntegration: createCapabilityStatus(reason),
+        registryPrefs: createCapabilityStatus(reason),
+        gameLaunch: createCapabilityStatus(reason),
+        vrchatLaunchPipe: createCapabilityStatus(reason),
+        screenshotCache: createCapabilityStatus(reason)
     };
-
-    for (const key of HOST_CAPABILITY_KEYS) {
-        capabilities[key] = createCapabilityStatus();
-    }
-
-    return capabilities as RuntimeStore['hostCapabilities'];
 }
 
 type RuntimeStoreState = Omit<
@@ -432,6 +480,7 @@ type RuntimeStoreState = Omit<
     | 'recordRuntimeEvent'
     | 'setGameState'
     | 'setBackendRuntimeSnapshot'
+    | 'setAuthenticatedSessionProjection'
     | 'setShellState'
     | 'setNowPlayingState'
     | 'resetNowPlayingState'
@@ -442,6 +491,7 @@ type RuntimeStoreState = Omit<
     | 'setChangelogTargetVersion'
     | 'setSystemHostOpen'
     | 'setDatabaseUpgradeState'
+    | 'setDatabaseMaintenanceActive'
     | 'resetRuntimeState'
 >;
 
@@ -453,7 +503,7 @@ const initialState: RuntimeStoreState = {
         services: createTaskState(),
         updateLoop: createTaskState()
     },
-    hostCapabilities: createHostCapabilities(),
+    hostCapabilities: createUnavailableHostCapabilities(),
     auth: {
         currentUserId: null,
         currentUserDisplayName: '',
@@ -480,7 +530,9 @@ const initialState: RuntimeStoreState = {
         autoDownloadState: 'idle',
         downloadedVersion: null,
         downloadProgress: 0,
-        downloadedBytes: 0
+        downloadedBytes: 0,
+        autoDownloadStartedAt: null,
+        autoDownloadUiVisible: false
     },
     mutualGraph: createMutualGraphState(),
     friendProfileLoad: createFriendProfileLoadState(),
@@ -555,7 +607,12 @@ const initialState: RuntimeStoreState = {
         failureLogPath: '',
         failedWorkDbPath: ''
     },
-    backendRuntime: {},
+    databaseMaintenanceActive: false,
+    backendRuntime: null,
+    authenticatedSession: {
+        revision: 0,
+        session: null
+    },
     shell: {
         backendRuntimeSnapshotHydrated: false,
         backendRuntimeSessionHydrating: false
@@ -579,9 +636,13 @@ const initialState: RuntimeStoreState = {
     }
 };
 
-export const useRuntimeStore = create<RuntimeStore>((set) => ({
+export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
     ...initialState,
-    setStartupTask(task: string, status: string, detail: string = '') {
+    setStartupTask(
+        task: string,
+        status: RuntimeOperationStatus,
+        detail: string = ''
+    ) {
         set((state) => ({
             startup: {
                 ...state.startup,
@@ -615,13 +676,12 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
             };
         });
     },
-    setHostCapabilities(payload?: Record<string, unknown> | null) {
+    setHostCapabilities(payload?: HostCapabilities | null) {
         set({
-            hostCapabilities: (payload ||
-                createHostCapabilities()) as RuntimeStore['hostCapabilities']
+            hostCapabilities: payload || createUnavailableHostCapabilities()
         });
     },
-    setUpdateLoopState(patch: Record<string, unknown>) {
+    setUpdateLoopState(patch: Partial<RuntimeStore['updateLoop']>) {
         set((state) => ({
             updateLoop: {
                 ...state.updateLoop,
@@ -685,17 +745,22 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
         set((state) => ({
             gameState: {
                 ...state.gameState,
-                ...patch
+                ...patch,
+                ...preservedRosterRefs(state.gameState, patch)
             }
         }));
     },
-    setBackendRuntimeSnapshot(snapshot: Record<string, unknown> | null) {
-        set({
-            backendRuntime:
-                snapshot && typeof snapshot === 'object' ? snapshot : {}
-        });
+    setBackendRuntimeSnapshot(snapshot: BackendRuntimeSnapshot | null) {
+        set({ backendRuntime: snapshot });
     },
-    setShellState(patch: Record<string, unknown>) {
+    setAuthenticatedSessionProjection(projection) {
+        if (projection.revision < get().authenticatedSession.revision) {
+            return false;
+        }
+        set({ authenticatedSession: projection });
+        return true;
+    },
+    setShellState(patch: Partial<RuntimeStore['shell']>) {
         set((state) => ({
             shell: {
                 ...state.shell,
@@ -703,7 +768,7 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
             }
         }));
     },
-    setNowPlayingState(patch: Record<string, unknown>) {
+    setNowPlayingState(patch: Partial<RuntimeStore['nowPlaying']>) {
         set((state) => ({
             nowPlaying: {
                 ...state.nowPlaying,
@@ -748,16 +813,16 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
             }
         }));
     },
-    setChangelogTargetVersion(version: unknown) {
+    setChangelogTargetVersion(version: string) {
         set({
-            changelogTargetVersion: String(version || '').trim()
+            changelogTargetVersion: version.trim()
         });
     },
-    setSystemHostOpen(name: string, value: unknown) {
+    setSystemHostOpen(name: string, value: boolean) {
         set((state) => ({
             systemHosts: {
                 ...state.systemHosts,
-                [name]: Boolean(value)
+                [name]: value
             }
         }));
     },
@@ -775,6 +840,9 @@ export const useRuntimeStore = create<RuntimeStore>((set) => ({
                         : state.systemHosts.databaseUpgradeOpen
             }
         }));
+    },
+    setDatabaseMaintenanceActive(active: boolean) {
+        set({ databaseMaintenanceActive: active });
     },
     resetRuntimeState() {
         set(initialState);

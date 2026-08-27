@@ -6,12 +6,12 @@ import { openGroupDialog } from '@/services/dialogService';
 import { normalizeString } from '@/shared/utils/string';
 
 type StaticLocationProps = {
-    location?: unknown;
-    traveling?: unknown;
-    hint?: unknown;
-    grouphint?: unknown;
-    groupHint?: unknown;
-    endpoint?: unknown;
+    location?: string | null;
+    traveling?: string | null;
+    hint?: string | null;
+    grouphint?: string | null;
+    groupHint?: string | null;
+    endpoint?: string;
     disableTooltip?: boolean;
     showInstanceIdInLocation?: boolean;
     showGroupLink?: boolean;

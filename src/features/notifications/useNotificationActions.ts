@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { InviteMessageType } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository, {
     type NotificationResponse
 } from '@/repositories/notificationPersistenceRepository';
@@ -41,16 +42,15 @@ type ConfirmationOptions = {
     skipConfirm?: boolean;
 };
 type InviteResponseSlotPayload = {
-    imageData?: unknown;
+    imageData: string;
     notification: NotificationRow;
-    row?: { slot?: unknown } | null;
+    row: { slot: number };
 };
 
 export function useNotificationActions({
     canInviteFromCurrentLocation,
     currentInviteLocation,
     currentUserId,
-    endpoint,
     notificationTypeLabel,
     reload,
     setBoopReplyRequest,
@@ -59,8 +59,7 @@ export function useNotificationActions({
     canInviteFromCurrentLocation: boolean;
     currentInviteLocation?: string;
     currentUserId?: string;
-    endpoint?: string;
-    notificationTypeLabel: (type: unknown) => string;
+    notificationTypeLabel: (type: string | undefined) => string;
     reload: () => void;
     setBoopReplyRequest: (request: NotificationRow | null) => void;
     setInviteResponseRequest: (request: NotificationDialogRequest) => void;
@@ -223,11 +222,13 @@ export function useNotificationActions({
                     }
                 }
                 await notificationPersistenceRepository.deleteNotification({
-                    id: notification.id,
-                    userId: currentUserId,
-                    version: notification.version
+                    id:
+                        typeof notification.id === 'string'
+                            ? notification.id
+                            : '',
+                    userId: currentUserId
                 });
-                reload();
+                await reload();
                 toast.success(
                     t(
                         'view.notification.success.notification_log_entry_deleted'
@@ -262,11 +263,9 @@ export function useNotificationActions({
                     return;
                 }
                 const acceptResult = await acceptFriendRequestNotification({
-                    currentUserId,
-                    endpoint,
                     notification
                 });
-                reload();
+                await reload();
                 if (acceptResult.status === 'not-found') {
                     return;
                 }
@@ -292,7 +291,7 @@ export function useNotificationActions({
                 );
             }
         },
-        [confirm, currentUserId, endpoint, reload, t]
+        [confirm, reload, t]
     );
 
     const hideNotification = useCallback(
@@ -323,7 +322,7 @@ export function useNotificationActions({
                     currentUserId,
                     notification
                 });
-                reload();
+                await reload();
                 toast.success(
                     t('view.notification.success.notification_declined')
                 );
@@ -337,7 +336,7 @@ export function useNotificationActions({
                 );
             }
         },
-        [confirm, currentUserId, endpoint, notificationTypeLabel, reload, t]
+        [confirm, currentUserId, notificationTypeLabel, reload, t]
     );
 
     const acceptRequestInvite = useCallback(
@@ -386,7 +385,7 @@ export function useNotificationActions({
                     notification,
                     worldId: parsedLocation.worldId
                 });
-                reload();
+                await reload();
                 toast.success(t('message.invite.sent'));
             } catch (error) {
                 toast.error(
@@ -401,14 +400,13 @@ export function useNotificationActions({
             confirm,
             currentInviteLocation,
             currentUserId,
-            endpoint,
             reload,
             t
         ]
     );
 
     const sendInviteResponseWithMessage = useCallback(
-        (notification: NotificationRow, messageType: string) => {
+        (notification: NotificationRow, messageType: InviteMessageType) => {
             if (!currentUserId) {
                 toast.error(
                     t(
@@ -436,30 +434,33 @@ export function useNotificationActions({
                 currentUserId,
                 imageData,
                 notification,
-                responseSlot: row?.slot,
+                responseSlot: row.slot,
                 withUploadTimeout
             });
-            reload();
+            await reload();
             toast.success(
                 result.sentPhoto
                     ? t('view.notifications.toast.invite_response_photo_sent')
                     : t('view.notifications.toast.invite_response_sent')
             );
         },
-        [currentUserId, endpoint, reload, t]
+        [currentUserId, reload, t]
     );
 
     const sendBoopReply = useCallback(
-        async (notification: NotificationRow | null, emojiId: unknown = '') => {
+        async (notification: NotificationRow | null, emojiId: string = '') => {
+            if (!notification) {
+                return;
+            }
             await sendBoopReplyNotification({
                 currentUserId,
                 emojiId,
                 notification
             });
-            reload();
+            await reload();
             toast.success(t('view.notification.success.boop_sent'));
         },
-        [currentUserId, endpoint, reload, t]
+        [currentUserId, reload, t]
     );
 
     const sendNotificationResponse = useCallback(
@@ -481,12 +482,12 @@ export function useNotificationActions({
                     notification,
                     response
                 });
-                reload();
+                await reload();
                 toast.success(
                     t('view.notification.success.notification_response_sent')
                 );
             } catch (error) {
-                reload();
+                await reload();
                 toast.error(
                     error instanceof Error
                         ? error.message
@@ -496,14 +497,7 @@ export function useNotificationActions({
                 );
             }
         },
-        [
-            currentUserId,
-            endpoint,
-            openNotificationLink,
-            reload,
-            setBoopReplyRequest,
-            t
-        ]
+        [currentUserId, openNotificationLink, reload, setBoopReplyRequest, t]
     );
 
     return {

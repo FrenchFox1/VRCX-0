@@ -1,59 +1,60 @@
-import type { FriendRecord } from '@/domain/friends/friendRosterTypes';
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import type { SameInstanceLastLocation } from '@/domain/friends/sameInstanceFriends';
+import type {
+    FriendProfileFields,
+    FriendRecord,
+    FriendRecordInput
+} from '@/domain/friends/types';
+import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import type { parseLocation } from '@/shared/utils/location';
 
 export type TranslationFn = (
     key: string,
     options?: Record<string, unknown>
-) => unknown;
+) => string;
 
-export type FriendLocationRecord = Record<string, unknown> & {
-    $groupName?: unknown;
-    $location?: FriendLocationRecord | null;
-    $location_at?: unknown;
-    $travelingToLocation?: unknown;
-    $travelingToWorld?: unknown;
-    displayName?: unknown;
-    group?: FriendLocationRecord | null;
-    groupName?: unknown;
-    id?: unknown;
-    instanceId?: unknown;
-    instance_id?: unknown;
-    isOffline?: unknown;
-    isPrivate?: unknown;
-    isTraveling?: unknown;
-    location?: unknown;
-    locationName?: unknown;
-    name?: unknown;
-    ref?: FriendLocationRecord | null;
-    shortCode?: unknown;
-    state?: unknown;
-    stateBucket?: unknown;
-    tag?: unknown;
-    travelingToLocation?: unknown;
-    travelingToTime?: unknown;
-    travelingToWorld?: unknown;
-    userId?: unknown;
-    world?: FriendLocationRecord | null;
-    worldId?: unknown;
-    worldName?: unknown;
-    world_id?: unknown;
-};
+export type FriendLocationRecord = FriendRecordInput &
+    Omit<Partial<FriendProfileFields>, '$location' | '$travelingToLocation'> & {
+        $groupName?: string | null;
+        $location?: FriendLocationRecord | null;
+        $travelingToLocation?: FriendLocationRecord | string | null;
+        $travelingToWorld?: string | null;
+        group?: FriendLocationRecord | null;
+        groupName?: string | null;
+        instanceId?: string | null;
+        instance_id?: string | null;
+        isOffline?: boolean | null;
+        isPrivate?: boolean | null;
+        isTraveling?: boolean | null;
+        locationName?: string | null;
+        name?: string | null;
+        ref?: FriendLocationRecord | null;
+        shortCode?: string | null;
+        stateBucket?: string;
+        tag?: string | null;
+        travelingToLocation?: string | null;
+        travelingToTime?: InstanceRosterTimestamp | null;
+        travelingToWorld?: string | null;
+        world?: FriendLocationRecord | null;
+        worldId?: string | null;
+        worldName?: string | null;
+        world_id?: string | null;
+    };
 
 export type FriendLocationFriend = FriendRecord | FriendLocationRecord;
 
 export type FavoriteGroupOption = {
-    key?: unknown;
-    displayName?: unknown;
-    name?: unknown;
+    key?: string;
+    displayName?: string;
+    name?: string;
 };
 
 export type FavoriteGroupLabelsByFriendId = Map<string, string[]>;
 
 export type FavoriteGroupLabelsInput = {
     favoriteFriendGroups?: FavoriteGroupOption[] | null;
-    groupedFavoriteFriendIdsByGroupKey?: Record<string, unknown>;
-    localFriendFavorites?: Record<string, unknown>;
+    groupedFavoriteFriendIdsByGroupKey?: Record<string, string[]>;
+    localFriendFavorites?: FavoriteGroupMap;
     t?: TranslationFn | null;
 };
 

@@ -1,4 +1,4 @@
-use vrcx_0_persistence::config::ConfigRepository;
+use super::storage::AuthCredentialStore;
 
 use super::storage::{
     get_config_bool, get_config_string, read_saved_credentials, remove_config_value,
@@ -8,14 +8,14 @@ use super::types::{
     SavedAuthAutoLoginStatus, SavedAuthSnapshot, SavedCredential, SavedCredentialSnapshot,
     SavedCredentials, SavedLoginParamsSnapshot,
 };
-use crate::Result;
+use vrcx_0_application_core::Result;
 
 const MAX_AUTO_LOGIN_DELAY_SECONDS: i64 = 10;
 const LEGACY_PRIMARY_PASSWORD_KEY: &str = "enablePrimaryPassword";
 const AUTO_LOGIN_DELAY_ENABLED_KEY: &str = "autoLoginDelayEnabled";
 const AUTO_LOGIN_DELAY_SECONDS_KEY: &str = "autoLoginDelaySeconds";
 
-pub fn saved_snapshot(config: &ConfigRepository) -> Result<SavedAuthSnapshot> {
+pub fn saved_snapshot(config: &dyn AuthCredentialStore) -> Result<SavedAuthSnapshot> {
     build_saved_auth_snapshot(config)
 }
 
@@ -126,7 +126,9 @@ fn sorted_redacted_saved_credentials_list(
     values.into_iter().map(SavedCredential::redacted).collect()
 }
 
-pub(super) fn build_saved_auth_snapshot(config: &ConfigRepository) -> Result<SavedAuthSnapshot> {
+pub(super) fn build_saved_auth_snapshot(
+    config: &dyn AuthCredentialStore,
+) -> Result<SavedAuthSnapshot> {
     let mut saved_credentials = read_saved_credentials(config)?;
     let mut last_user_logged_in = get_config_string(config, LAST_USER_LOGGED_IN_KEY, "")?;
     let legacy_primary_password_enabled =

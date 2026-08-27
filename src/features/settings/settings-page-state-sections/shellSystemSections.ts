@@ -1,10 +1,26 @@
 import { settingsTabs } from '../settingsOptions';
-import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSections';
+import type { SettingsSectionInput } from '../settingsPageStateSectionTypes';
+
+type ShellSectionInput = SettingsSectionInput<
+    'activeSettingsTab' | 'setActiveSettingsTab'
+>;
+
+type SystemSectionInput = SettingsSectionInput<
+    | 'savePreferenceValue'
+    | 'saveBoolPreference'
+    | 'setProxyEnabledPreference'
+    | 'setStartAtWindowsStartupPreference'
+    | 'setStartAsMinimizedPreference'
+    | 'setCloseToTrayPreference'
+    | 'setSystemWindowFramePreference'
+    | 'promptAutoLoginDelaySeconds'
+    | 'promptBackgroundModeDelayMinutes'
+>;
 
 export function buildShellSection({
     activeSettingsTab,
     setActiveSettingsTab
-}: BuildSettingsPageStateSectionsInput) {
+}: ShellSectionInput) {
     return {
         activeSettingsTab,
         setActiveSettingsTab,
@@ -13,7 +29,6 @@ export function buildShellSection({
 }
 
 export function buildSystemSection({
-    prefs,
     savePreferenceValue,
     saveBoolPreference,
     setProxyEnabledPreference,
@@ -23,9 +38,8 @@ export function buildSystemSection({
     setSystemWindowFramePreference,
     promptAutoLoginDelaySeconds,
     promptBackgroundModeDelayMinutes
-}: BuildSettingsPageStateSectionsInput) {
+}: SystemSectionInput) {
     return {
-        prefs,
         savePreferenceValue,
         saveBoolPreference,
         setProxyEnabledPreference,

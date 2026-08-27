@@ -28,29 +28,41 @@ describe('InstanceRepository', () => {
         }
     });
 
-    it('reuses a recent instance read unless the caller explicitly forces freshness', async () => {
-        await vrchatInstanceRepository.getInstance({
+    it('coalesces concurrent instance reads without reusing completed results', async () => {
+        const first = vrchatInstanceRepository.getInstance({
             worldId: 'wrld_test',
             instanceId: '12345'
         });
-        await vrchatInstanceRepository.getInstance({
+        const second = vrchatInstanceRepository.getInstance({
             worldId: 'wrld_test',
             instanceId: '12345'
         });
+        await Promise.all([first, second]);
+
         await vrchatInstanceRepository.getInstance({
             worldId: 'wrld_test',
-            instanceId: '12345',
-            force: true
+            instanceId: '12345'
         });
 
         expect(tauriApp.appVrchatInstanceGet).toHaveBeenCalledTimes(2);
     });
 
-    it('replaces a cached instance with the close response', async () => {
-        tauriApp.appVrchatInstanceGet.mockResolvedValue({
-            status: 200,
-            data: JSON.stringify({ id: 'wrld_test:12345', closedAt: null })
-        });
+    it('reads fresh instance state after closing an instance', async () => {
+        tauriApp.appVrchatInstanceGet
+            .mockResolvedValueOnce({
+                status: 200,
+                data: JSON.stringify({
+                    id: 'wrld_test:12345',
+                    closedAt: null
+                })
+            })
+            .mockResolvedValueOnce({
+                status: 200,
+                data: JSON.stringify({
+                    id: 'wrld_test:12345',
+                    closedAt: '2026-08-11T00:00:00.000Z'
+                })
+            });
         tauriApp.appVrchatInstanceClose.mockResolvedValue({
             status: 200,
             data: JSON.stringify({
@@ -74,7 +86,7 @@ describe('InstanceRepository', () => {
         expect(afterClose.json).toMatchObject({
             closedAt: '2026-08-11T00:00:00.000Z'
         });
-        expect(tauriApp.appVrchatInstanceGet).toHaveBeenCalledTimes(1);
+        expect(tauriApp.appVrchatInstanceGet).toHaveBeenCalledTimes(2);
     });
 
     it('maps invite+ instance options to the VRChat create-instance payload', async () => {
@@ -101,13 +113,31 @@ describe('InstanceRepository', () => {
         });
     });
 
+    it('omits the legacy owner id from public instance requests', async () => {
+        await vrchatInstanceRepository.createInstance({
+            worldId: 'wrld_public',
+            ownerId: 'usr_owner',
+            accessType: 'public'
+        });
+
+        expect(tauriApp.appVrchatInstanceCreate).toHaveBeenCalledWith({
+            params: {
+                type: 'public',
+                canRequestInvite: false,
+                worldId: 'wrld_public',
+                region: 'us'
+            }
+        });
+    });
+
     it('maps group-only options without leaking role ids to non-member instances', async () => {
         await vrchatInstanceRepository.createInstance({
             worldId: 'wrld_group',
             accessType: 'group',
             groupId: ' grp_team ',
             groupAccessType: 'plus',
-            queueEnabled: 0,
+            minimumAvatarPerformance: 'Medium',
+            queueEnabled: false,
             roleIds: ['grol_hidden'],
             ageGate: true,
             displayName: 'Raid Night',
@@ -123,6 +153,7 @@ describe('InstanceRepository', () => {
             ownerId: 'grp_team',
             region: 'jp',
             groupAccessType: 'plus',
+            minimumAvatarPerformance: 'Medium',
             queueEnabled: false,
             ageGate: true,
             displayName: 'Raid Night'
@@ -144,6 +175,9 @@ describe('InstanceRepository', () => {
             groupAccessType: 'members',
             roleIds: ['grol_a', 'grol_b']
         });
+        expect(
+            tauriApp.appVrchatInstanceCreate.mock.calls[0][0].params
+        ).not.toHaveProperty('minimumAvatarPerformance');
     });
 
     it('rejects private instance creation before sending an ownerless request', async () => {

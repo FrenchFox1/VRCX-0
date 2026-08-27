@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import feedRepository from '@/repositories/feedRepository';
 import friendLogRepository from '@/repositories/friendLogRepository';
@@ -90,7 +90,7 @@ export function useFeedRows({
     );
     const hiddenUserIds = feedHiddenUsers;
     const searchMode = Boolean(
-        deferredSearchQuery.trim() || dateFrom || dateTo
+        deferredSearchQuery.trim() || scopedUserIds.length || dateFrom || dateTo
     );
 
     useEffect(() => {
@@ -102,27 +102,38 @@ export function useFeedRows({
         setRows([]);
     }, [feedPersistenceDisabled]);
 
-    function createMergeOptionsBuilder({
-        excludedUserIds,
-        favoriteUserIds
-    }: {
-        excludedUserIds: string[];
-        favoriteUserIds: string[];
-    }): FeedLiveMergeOptionsBuilder {
-        return ({ rows }) => ({
-            rows,
-            userId: currentUserId,
-            search: deferredSearchQuery,
-            filters: activeFilters,
-            excludedFavoriteUserIds: excludedUserIds,
-            favoriteUserIds,
-            scopedUserIds,
-            dateFrom: toIsoRangeStart(dateFrom),
-            dateTo: toIsoRangeEnd(dateTo),
+    const createMergeOptionsBuilder = useCallback(
+        ({
+            excludedUserIds,
+            favoriteUserIds
+        }: {
+            excludedUserIds: string[];
+            favoriteUserIds: string[];
+        }): FeedLiveMergeOptionsBuilder =>
+            ({ rows }) => ({
+                rows,
+                userId: currentUserId || '',
+                search: deferredSearchQuery,
+                filters: activeFilters,
+                excludedFavoriteUserIds: excludedUserIds,
+                favoriteUserIds,
+                scopedUserIds,
+                dateFrom: toIsoRangeStart(dateFrom),
+                dateTo: toIsoRangeEnd(dateTo),
+                favoritesOnly,
+                maxRows: maxFeedRows
+            }),
+        [
+            activeFilters,
+            currentUserId,
+            dateFrom,
+            dateTo,
+            deferredSearchQuery,
             favoritesOnly,
-            maxRows: maxFeedRows
-        });
-    }
+            maxFeedRows,
+            scopedUserIds
+        ]
+    );
 
     useEffect(() => {
         lastLiveFeedSequenceRef.current = useFeedLiveStore.getState().version;
@@ -140,12 +151,12 @@ export function useFeedRows({
         }
         friendLogRepository
             .getFriendLogCurrent(normalizedCurrentUserId)
-            .then((entries: unknown) => {
+            .then((entries) => {
                 if (!active) {
                     return;
                 }
                 const nextNamesById: Record<string, string> = {};
-                for (const entry of Array.isArray(entries) ? entries : []) {
+                for (const entry of entries) {
                     const userId = normalizeId(entry?.userId);
                     const displayName = resolveDisplayNameCandidate(
                         entry?.displayName,
@@ -197,7 +208,7 @@ export function useFeedRows({
             .getAllUserStats({
                 userIds: missingUserIds
             })
-            .then((statsRows: unknown) => {
+            .then((statsRows) => {
                 if (!active) {
                     return;
                 }
@@ -272,7 +283,6 @@ export function useFeedRows({
                     scopedUserIds,
                     dateFrom: toIsoRangeStart(dateFrom),
                     dateTo: toIsoRangeEnd(dateTo),
-                    maxEntries: maxFeedRows,
                     favoritesOnly
                 })
                 .then((searchRows) => {
@@ -350,6 +360,7 @@ export function useFeedRows({
             });
     }, [
         activeFilters,
+        createMergeOptionsBuilder,
         currentUserId,
         dateFrom,
         dateTo,
@@ -405,6 +416,7 @@ export function useFeedRows({
         });
     }, [
         activeFilters,
+        createMergeOptionsBuilder,
         currentUserId,
         dateFrom,
         dateTo,

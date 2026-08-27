@@ -1,15 +1,14 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+use std::time::Duration;
 
 use chrono::{Datelike, Local, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
-use vrcx_0_vrchat_client::users::current_user_update_input;
+use vrcx_0_application_core::{AuthenticatedMutationContext, RemoteMutationGate, RuntimeAuthScope};
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
-use crate::{Result, WebClient};
+use crate::{BackgroundRemoteApi, GameStateStore, Result};
 
 use super::presence_facts::BackgroundPresenceFacts;
 use super::shared::{parse_response_json, string_field};
@@ -19,6 +18,7 @@ use vrcx_0_core::json::RawJson;
 const DEFAULT_MIN_STATUS_WRITE_INTERVAL_MS: i64 = 60_000;
 const DEFAULT_MIN_DESCRIPTION_WRITE_INTERVAL_MS: i64 = 60_000;
 const DEFAULT_STABLE_LOCATION_MS: i64 = 30_000;
+const PRESENCE_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct BackgroundPresenceAutomationState {
@@ -58,8 +58,8 @@ impl BackgroundPresenceAutomationState {
 pub struct BackgroundPresenceAutomationResult {
     pub applied: bool,
     pub reason: String,
-    pub patch: Value,
-    pub updated_user: Option<Value>,
+    pub patch: RawJson,
+    pub updated_user: Option<RawJson>,
     pub matched_rule_ids: Vec<String>,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -97,7 +97,7 @@ pub enum PresenceAutomationRuleKind {
 }
 
 pub fn presence_automation_rules_get(
-    config: &ConfigRepository,
+    config: &dyn GameStateStore,
     kind: PresenceAutomationRuleKind,
 ) -> Result<Vec<RawJson>> {
     Ok(
@@ -109,7 +109,7 @@ pub fn presence_automation_rules_get(
 }
 
 pub fn presence_automation_rules_set(
-    config: &ConfigRepository,
+    config: &dyn GameStateStore,
     kind: PresenceAutomationRuleKind,
     rules: Vec<RawJson>,
 ) -> Result<Vec<RawJson>> {
@@ -141,9 +141,10 @@ struct MatchedPresenceRule {
     owned_fields: Vec<String>,
 }
 pub async fn run_background_presence_automation(
-    config: &ConfigRepository,
-    web: &WebClient,
-    db: &DatabaseService,
+    config: &dyn GameStateStore,
+    remote: &dyn BackgroundRemoteApi,
+    auth_scope: &RuntimeAuthScope,
+    remote_mutations: &RemoteMutationGate,
     facts: &BackgroundPresenceFacts,
     state: &mut BackgroundPresenceAutomationState,
 ) -> Result<BackgroundPresenceAutomationResult> {
@@ -161,7 +162,7 @@ pub async fn run_background_presence_automation(
 
     let evaluation = evaluate_presence_rules(facts, &automation_config.rules);
     let effective = build_patch_with_time_restore(facts, &evaluation, state);
-    let changed_patch = changed_patch(&facts.current_user, &effective.patch);
+    let changed_patch = changed_patch(facts.current_user.as_value(), &effective.patch);
     if changed_patch.is_empty() {
         complete_time_restores(state, &effective.pending_snapshot_completions);
         return Ok(presence_result(
@@ -214,12 +215,26 @@ pub async fn run_background_presence_automation(
         ));
     }
 
-    let (_, request) = current_user_update_input(
-        normalize_vrchat_api_endpoint(Some(&facts.endpoint)),
-        facts.current_user_id.clone(),
-        Some(Value::Object(changed_patch.clone())),
+    let mutation =
+        AuthenticatedMutationContext::capture(auth_scope, remote_mutations, "Presence automation")?;
+    if mutation.scope().current_user_id != facts.current_user_id
+        || mutation.scope().endpoint != normalize_vrchat_api_endpoint(Some(&facts.endpoint))
+    {
+        return Err(crate::Error::Custom(
+            "Presence automation authentication scope changed.".into(),
+        ));
+    }
+    let request = remote.prepare_current_user_update(
+        &mutation.scope().endpoint,
+        &mutation.scope().current_user_id,
+        Value::Object(changed_patch.clone()),
     )?;
-    let response = match web.execute_api(request, ApiScope::Vrchat, db).await {
+    let response = match mutation
+        .run_after_wait(PRESENCE_REMOTE_MUTATION_INTERVAL, || async move {
+            remote.send_current_user_update(request).await
+        })
+        .await
+    {
         Ok(response) if (200..=299).contains(&response.status) => response,
         Ok(response) => {
             state.last_error = format!("VRChat API returned HTTP {}", response.status);
@@ -251,7 +266,7 @@ pub async fn run_background_presence_automation(
     complete_time_restores(state, &effective.pending_snapshot_completions);
     let updated_user = parse_response_json(&response.data).unwrap_or_else(|| {
         merge_object_patch(
-            facts.current_user.clone(),
+            facts.current_user.as_value().clone(),
             Value::Object(changed_patch.clone()),
         )
     });
@@ -265,7 +280,9 @@ pub async fn run_background_presence_automation(
     ))
 }
 
-fn load_presence_automation_config(config: &ConfigRepository) -> Result<PresenceAutomationConfig> {
+fn load_presence_automation_config(
+    config: &dyn GameStateStore,
+) -> Result<PresenceAutomationConfig> {
     let time_rules = load_stored_rules(config, "presenceAutomationTimeRules")?;
     let context_rules: Vec<Value> = load_stored_rules(config, "presenceAutomationContextRules")?
         .into_iter()
@@ -545,7 +562,11 @@ fn build_patch_with_time_restore(
             .and_modify(|snapshot| snapshot.automated_value = automated_value.clone())
             .or_insert_with(|| TimeRestoreSnapshot {
                 previous_value: value_to_string(
-                    facts.current_user.get(field).unwrap_or(&Value::Null),
+                    facts
+                        .current_user
+                        .as_value()
+                        .get(field)
+                        .unwrap_or(&Value::Null),
                 ),
                 automated_value,
             });
@@ -556,8 +577,13 @@ fn build_patch_with_time_restore(
             continue;
         }
         if !patch.contains_key(&field)
-            && value_to_string(facts.current_user.get(&field).unwrap_or(&Value::Null))
-                == snapshot.automated_value
+            && value_to_string(
+                facts
+                    .current_user
+                    .as_value()
+                    .get(&field)
+                    .unwrap_or(&Value::Null),
+            ) == snapshot.automated_value
         {
             patch.insert(field.clone(), Value::String(snapshot.previous_value));
         }
@@ -661,25 +687,25 @@ fn complete_time_restores(state: &mut BackgroundPresenceAutomationState, fields:
     }
 }
 
-fn load_stored_rules(config: &ConfigRepository, key: &str) -> Result<Vec<Value>> {
+fn load_stored_rules(config: &dyn GameStateStore, key: &str) -> Result<Vec<Value>> {
     Ok(safe_value_array(
         &config.get_string(key, "[]").unwrap_or_else(|_| "[]".into()),
     ))
 }
 
 fn force_game_running_condition(rule: Value) -> Value {
-    let mut object = rule.as_object().cloned().unwrap_or_default();
-    let conditions: Vec<Value> = object
-        .get("conditions")
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|condition| string_field(condition, "type").as_deref() != Some("isGameRunning"))
-        .collect();
-    let mut next_conditions = vec![json!({ "type": "isGameRunning" })];
-    next_conditions.extend(conditions);
-    object.insert("conditions".into(), Value::Array(next_conditions));
+    let mut object = match rule {
+        Value::Object(object) => object,
+        _ => Map::new(),
+    };
+    let mut conditions = match object.remove("conditions") {
+        Some(Value::Array(conditions)) => conditions,
+        _ => Vec::new(),
+    };
+    conditions
+        .retain(|condition| string_field(condition, "type").as_deref() != Some("isGameRunning"));
+    conditions.insert(0, json!({ "type": "isGameRunning" }));
+    object.insert("conditions".into(), Value::Array(conditions));
     Value::Object(object)
 }
 
@@ -775,25 +801,23 @@ fn presence_result(
     BackgroundPresenceAutomationResult {
         applied,
         reason: reason.into(),
-        patch,
-        updated_user,
+        patch: patch.into(),
+        updated_user: updated_user.map(RawJson::from),
         matched_rule_ids,
     }
 }
 
-fn config_int(config: &ConfigRepository, key: &str, default_value: i64) -> Result<i64> {
+fn config_int(config: &dyn GameStateStore, key: &str, default_value: i64) -> Result<i64> {
     Ok(config
-        .get_raw(key)?
-        .as_deref()
-        .and_then(|value| value.trim().parse::<i64>().ok())
+        .get_string(key, "")?
+        .trim()
+        .parse::<i64>()
+        .ok()
         .unwrap_or(default_value))
 }
 
 fn safe_value_array(value: &str) -> Vec<Value> {
-    serde_json::from_str::<Value>(value)
-        .ok()
-        .and_then(|value| value.as_array().cloned())
-        .unwrap_or_default()
+    serde_json::from_str::<Vec<Value>>(value).unwrap_or_default()
 }
 
 fn array_field<'a>(value: &'a Value, key: &str) -> Vec<&'a Value> {
@@ -836,23 +860,12 @@ fn merge_object_patch(mut current_user: Value, patch: Value) -> Value {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use super::*;
+    use crate::ports::TestGameStateStore;
 
     #[test]
     fn presence_rule_storage_preserves_open_json_fields() {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = std::env::temp_dir().join(format!(
-            "vrcx-0-presence-rules-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&dir).unwrap();
-        let db = Arc::new(DatabaseService::new(&dir.join("VRCX-0.sqlite3")).unwrap());
-        let config = ConfigRepository::new(db);
+        let config = TestGameStateStore::default();
         let rule = json!({
             "id": "future-rule",
             "conditions": [{"type": "futureCondition", "extra": 42}],
@@ -870,9 +883,27 @@ mod tests {
 
         assert_eq!(loaded.len(), 1);
         assert_eq!(loaded[0].as_value(), &rule);
+    }
 
-        drop(config);
-        std::fs::remove_dir_all(&dir).ok();
+    #[test]
+    fn forcing_game_running_reuses_owned_rule_values() {
+        let rule = json!({
+            "conditions": [{"type": "futureCondition", "value": "future-value"}],
+            "actions": {"status": "join me"},
+        });
+        let action_value = rule["actions"]["status"].as_str().unwrap().as_ptr();
+        let condition_value = rule["conditions"][0]["value"].as_str().unwrap().as_ptr();
+
+        let forced = force_game_running_condition(rule);
+
+        assert_eq!(
+            forced["actions"]["status"].as_str().unwrap().as_ptr(),
+            action_value
+        );
+        assert_eq!(
+            forced["conditions"][1]["value"].as_str().unwrap().as_ptr(),
+            condition_value
+        );
     }
 
     #[test]
@@ -948,7 +979,7 @@ mod tests {
         assert_eq!(loaded.scope_key, "https://api.example:usr_1");
 
         let facts = BackgroundPresenceFacts {
-            current_user: json!({ "status": "busy" }),
+            current_user: json!({ "status": "busy" }).into(),
             ..Default::default()
         };
         let effective =

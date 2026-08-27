@@ -1,5 +1,6 @@
-export type FavoriteKind = 'friend' | 'world' | 'avatar';
+import type { FavoriteKind } from '@/domain/favorites/types';
 
+export type FavoriteSearchMode = 'name' | 'tag';
 export type FavoriteSource = 'remote' | 'local' | 'history';
 
 export type FavoriteSeedData = Record<string, unknown> & {
@@ -14,7 +15,7 @@ export type FavoriteSeedData = Record<string, unknown> & {
     worldName?: string;
 };
 
-export type FavoriteGroup = {
+export type FavoriteGroupView = {
     key: string;
     source: FavoriteSource;
     label: string;

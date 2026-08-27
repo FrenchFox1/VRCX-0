@@ -6,24 +6,24 @@ export const RECENT_WINDOW_MS = DAY_MS;
 export const ACTION_REQUIRED_V1_TYPES = new Set<string>(['friendRequest']);
 
 export type NotificationSeenLike = {
-    $isExpired?: unknown;
+    $isExpired?: boolean;
     createdAt?: string | number | null;
     created_at?: string | number | null;
-    expired?: unknown;
+    expired?: boolean;
     expiresAt?: string | null;
-    seen?: unknown;
-    type?: unknown;
-    version?: unknown;
+    seen?: boolean;
+    type?: string;
+    version?: number;
 };
 
 export function isNotificationExpired(
     notification?: NotificationSeenLike | null
 ): boolean {
     if (notification?.$isExpired !== undefined) {
-        return Boolean(notification.$isExpired);
+        return notification.$isExpired;
     }
     if (notification?.expired !== undefined) {
-        return Boolean(notification.expired);
+        return notification.expired;
     }
     if (!notification?.expiresAt) {
         return false;
@@ -38,8 +38,8 @@ export function isUnseenNotification(
     if (!notification) {
         return false;
     }
-    const version = Number(notification.version ?? 1);
-    const type = String(notification.type || '');
+    const version = notification.version ?? 1;
+    const type = notification.type ?? '';
     const isActionRequiredV1 =
         version !== 2 && ACTION_REQUIRED_V1_TYPES.has(type);
     return (

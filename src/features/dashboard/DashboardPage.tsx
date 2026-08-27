@@ -8,7 +8,7 @@ import {
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { PageScaffold } from '@/components/layout/PageScaffold';
+import { EmptyState, PageScaffold } from '@/components/layout/PageScaffold';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -19,17 +19,12 @@ import {
     CardTitle
 } from '@/ui/shadcn/card';
 import { Input } from '@/ui/shadcn/input';
-import {
-    ResizableHandle,
-    ResizablePanel,
-    ResizablePanelGroup
-} from '@/ui/shadcn/resizable';
+import { ResizablePanel, ResizablePanelGroup } from '@/ui/shadcn/resizable';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { DashboardAddRowControl } from './components/DashboardAddRowControl';
-import {
-    DashboardEditorRow,
-    DashboardReadRow
-} from './components/DashboardViewParts';
+import { DashboardEditorWorkspace } from './components/DashboardEditorWorkspace';
+import { DashboardResizeHandle } from './components/DashboardResizeHandle';
+import { DashboardReadRow } from './components/DashboardViewParts';
 import { getDashboardRowKey } from './dashboardConfig';
 import { useDashboardPageController } from './useDashboardPageController';
 
@@ -134,18 +129,37 @@ export function DashboardPage() {
     const rowCount = dashboard.rows?.length || 0;
 
     return (
-        <PageScaffold className="gap-3">
+        <PageScaffold className="gap-2 p-2">
             {editor.isEditing ? (
-                <div className="bg-card flex items-center gap-2 rounded-md border px-3 py-2">
+                <div className="bg-card flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2">
                     <Input
                         value={editor.editName}
                         onChange={(event) =>
                             editor.setEditName(event.target.value)
                         }
                         placeholder={t('view.dashboard.label.dashboard_name')}
-                        className="mx-2 h-7 max-w-52 text-sm"
+                        className="h-8 max-w-64 min-w-0 text-sm"
                     />
-                    <div className="flex gap-2">
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    aria-label={t('common.actions.delete')}
+                                    onClick={actions.deleteCurrentDashboard}
+                                >
+                                    <Trash2Icon data-icon="icon" />
+                                </Button>
+                            }
+                        />
+                        <TooltipContent>
+                            {t('common.actions.delete')}
+                        </TooltipContent>
+                    </Tooltip>
+                    <div className="ml-auto flex gap-2">
                         <Button
                             type="button"
                             variant="secondary"
@@ -157,76 +171,31 @@ export function DashboardPage() {
                         </Button>
                         <Button
                             type="button"
-                            variant="destructive"
                             size="sm"
-                            onClick={actions.deleteCurrentDashboard}
+                            onClick={editor.handleSave}
+                            disabled={editor.isSaving || !editor.isDirty}
                         >
-                            <Trash2Icon data-icon="inline-start" />
-                            {t('common.actions.delete')}
+                            <SaveIcon data-icon="inline-start" />
+                            {t('common.actions.save')}
                         </Button>
                     </div>
-                    <Button
-                        type="button"
-                        className="ml-auto"
-                        size="sm"
-                        onClick={editor.handleSave}
-                        disabled={editor.isSaving}
-                    >
-                        <SaveIcon data-icon="inline-start" />
-                        {t('common.actions.save')}
-                    </Button>
                 </div>
             ) : null}
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {editor.isEditing ? (
-                    <>
-                        {editor.editRows.length ? (
-                            editor.editRows.map((row, rowIndex) => (
-                                <DashboardEditorRow
-                                    key={`edit-row-${rowIndex}`}
-                                    row={row}
-                                    rowIndex={rowIndex}
-                                    onPanelChange={(panelIndex, nextPanel) =>
-                                        editor.handleUpdatePanel(
-                                            rowIndex,
-                                            panelIndex,
-                                            nextPanel
-                                        )
-                                    }
-                                    onPanelRemove={(panelIndex) =>
-                                        editor.handleRemovePanel(
-                                            rowIndex,
-                                            panelIndex
-                                        )
-                                    }
-                                    onRowRemove={() =>
-                                        editor.handleRemoveRow(rowIndex)
-                                    }
-                                    onDirectionChange={(direction) =>
-                                        editor.handleDirectionChange(
-                                            rowIndex,
-                                            direction
-                                        )
-                                    }
-                                />
-                            ))
-                        ) : (
-                            <div className="text-muted-foreground flex min-h-[180px] items-center justify-center rounded-md border border-dashed text-sm">
-                                {t(
-                                    'view.dashboard.action.add_a_row_to_start_building_this_dashboard'
-                                )}
-                            </div>
-                        )}
-
-                        <DashboardAddRowControl
-                            onAddRow={editor.handleAddRow}
-                        />
-                    </>
+                    <DashboardEditorWorkspace
+                        rows={editor.editRows}
+                        onAddRow={editor.handleAddRow}
+                        onDirectionChange={editor.handleDirectionChange}
+                        onPanelChange={editor.handleUpdatePanel}
+                        onPanelRemove={editor.handleRemovePanel}
+                        onRowRemove={editor.handleRemoveRow}
+                    />
                 ) : rowCount ? (
                     <ResizablePanelGroup
                         id={`dashboard-${id}`}
                         orientation="vertical"
-                        className="min-h-0 flex-1"
+                        className="bg-card border-border min-h-0 flex-1 overflow-hidden rounded-md border-2"
                         defaultLayout={dashboardLayout.defaultLayout}
                         onLayoutChanged={dashboardLayout.onLayoutChanged}
                     >
@@ -255,24 +224,27 @@ export function DashboardPage() {
                                         />
                                     </ResizablePanel>
                                     {rowIndex < rowCount - 1 ? (
-                                        <ResizableHandle />
+                                        <DashboardResizeHandle />
                                     ) : null}
                                 </Fragment>
                             );
                         })}
                     </ResizablePanelGroup>
                 ) : (
-                    <div className="text-muted-foreground flex flex-1 items-center justify-center rounded-md border border-dashed">
-                        <div className="flex flex-col items-center gap-3">
-                            <p>{t('dashboard.empty')}</p>
-                            <Button
-                                type="button"
-                                onClick={() => editor.setIsEditing(true)}
-                            >
-                                {t('dashboard.actions.start_editing')}
-                            </Button>
-                        </div>
-                    </div>
+                    <EmptyState
+                        icon={LayoutDashboardIcon}
+                        title={t('empty_state.dashboard_title')}
+                        description={t('empty_state.dashboard_description')}
+                        className="flex-1 rounded-md border"
+                    >
+                        <Button
+                            type="button"
+                            variant="link"
+                            onClick={() => editor.setIsEditing(true)}
+                        >
+                            {t('dashboard.actions.start_editing')}
+                        </Button>
+                    </EmptyState>
                 )}
             </div>
         </PageScaffold>

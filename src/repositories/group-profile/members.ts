@@ -1,4 +1,4 @@
-import type { GroupMemberRow } from '@/domain/entities/profileEntities';
+import type { GroupMemberRow } from '@/domain/entities/group';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -183,7 +183,7 @@ export async function setGroupRepresentation({
     return unwrapVrchatGroupResponse(
         await commands.appVrchatGroupRepresentationSet({
             groupId: normalizedGroupId,
-            isRepresenting: Boolean(isRepresenting)
+            isRepresenting
         }),
         `groups/${encodeURIComponent(normalizedGroupId)}/representation`
     );

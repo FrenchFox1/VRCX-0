@@ -1,4 +1,10 @@
-import { FolderOpenIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import {
+    AppWindowIcon,
+    FolderOpenIcon,
+    MousePointerClickIcon,
+    PlusIcon,
+    Trash2Icon
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -17,6 +23,7 @@ import {
     getCurrentAppLauncherSnapshot,
     subscribeAppLauncherSnapshot
 } from '@/services/appLauncherSnapshotService';
+import { publishToolsStatusUpdated } from '@/shared/constants/tools';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -25,7 +32,14 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Empty, EmptyHeader, EmptyTitle } from '@/ui/shadcn/empty';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle
+} from '@/ui/shadcn/empty';
 import {
     Field,
     FieldDescription,
@@ -48,6 +62,20 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 const MAX_LAUNCH_DELAY_SECONDS = 4_294_967_295;
+const EMPTY_APP_LAUNCHER_ENTRIES: AppLauncherEntry[] = [];
+const APP_LAUNCHER_SCOPES: AppLauncherEntry['scope'][] = [
+    'all',
+    'desktop',
+    'vr'
+];
+const APP_LAUNCHER_RUN_POLICIES: AppLauncherEntry['runPolicy'][] = [
+    'always',
+    'skipIfRunning'
+];
+const APP_LAUNCHER_STOP_POLICIES: AppLauncherEntry['stopPolicy'][] = [
+    'keepRunning',
+    'closeByVrcx'
+];
 
 type AppLauncherDialogProps = {
     open: boolean;
@@ -85,7 +113,7 @@ function createDefaultEntry(
 
 function normalizeEntry(entry: AppLauncherEntry): AppLauncherEntry {
     const runAsAdministrator =
-        entry.kind === 'localApp' && Boolean(entry.runAsAdministrator);
+        entry.kind === 'localApp' && entry.runAsAdministrator;
     return {
         ...entry,
         name: entry.name.trim(),
@@ -107,7 +135,7 @@ function normalizeEntry(entry: AppLauncherEntry): AppLauncherEntry {
     };
 }
 
-function normalizeLaunchDelaySeconds(value: unknown): number {
+function normalizeLaunchDelaySeconds(value: string | number): number {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) {
         return 0;
@@ -140,7 +168,7 @@ function applyPickedTarget(
         runAsAdministrator:
             picked.kind === 'localApp' &&
             entry.kind === 'localApp' &&
-            Boolean(entry.runAsAdministrator),
+            entry.runAsAdministrator,
         processName: picked.processName ?? '',
         workingDirectory:
             picked.kind === 'localApp' ? picked.workingDirectory : null
@@ -187,7 +215,7 @@ export function AppLauncherDialog({
     const [saving, setSaving] = useState(false);
     const [editing, setEditing] = useState<AppLauncherEntry | null>(null);
 
-    const entries = snapshot?.entries ?? [];
+    const entries = snapshot?.entries ?? EMPTY_APP_LAUNCHER_ENTRIES;
     useEffect(() => {
         if (!open) {
             return undefined;
@@ -245,6 +273,7 @@ export function AppLauncherDialog({
         try {
             const next = await appLauncherRepository.setEntries(nextEntries);
             updateSnapshot(next);
+            publishToolsStatusUpdated();
             return next;
         } catch (error) {
             toast.error(
@@ -263,6 +292,7 @@ export function AppLauncherDialog({
         setSaving(true);
         try {
             updateSnapshot(await appLauncherRepository.setEnabled(enabled));
+            publishToolsStatusUpdated();
         } catch (error) {
             toast.error(
                 userFacingErrorMessage(
@@ -373,7 +403,7 @@ export function AppLauncherDialog({
                 <div className="flex shrink-0 flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
                         <Switch
-                            checked={Boolean(snapshot?.enabled)}
+                            checked={snapshot?.enabled ?? false}
                             disabled={loading || saving}
                             onCheckedChange={updateEnabled}
                         />
@@ -399,12 +429,37 @@ export function AppLauncherDialog({
                         {entries.length === 0 ? (
                             <Empty className="min-h-[360px] border-0">
                                 <EmptyHeader>
+                                    {!loading ? (
+                                        <EmptyMedia variant="icon">
+                                            <AppWindowIcon />
+                                        </EmptyMedia>
+                                    ) : null}
                                     <EmptyTitle>
                                         {loading
                                             ? t('dialog.app_launcher.loading')
-                                            : t('dialog.app_launcher.empty')}
+                                            : t(
+                                                  'empty_state.app_launcher_title'
+                                              )}
                                     </EmptyTitle>
+                                    {!loading ? (
+                                        <EmptyDescription>
+                                            {t(
+                                                'empty_state.app_launcher_description'
+                                            )}
+                                        </EmptyDescription>
+                                    ) : null}
                                 </EmptyHeader>
+                                {!loading ? (
+                                    <EmptyContent>
+                                        <Button
+                                            type="button"
+                                            variant="link"
+                                            onClick={addApp}
+                                        >
+                                            {t('dialog.app_launcher.add_app')}
+                                        </Button>
+                                    </EmptyContent>
+                                ) : null}
                             </Empty>
                         ) : (
                             <Table>
@@ -499,8 +554,12 @@ export function AppLauncherDialog({
                                                 </TableCell>
                                                 <TableCell>
                                                     <div
+                                                        role="presentation"
                                                         className="flex justify-end"
                                                         onClick={(event) =>
+                                                            event.stopPropagation()
+                                                        }
+                                                        onKeyDown={(event) =>
                                                             event.stopPropagation()
                                                         }
                                                     >
@@ -580,9 +639,17 @@ function EntryDetailsPanel({
                 <Separator />
                 <Empty className="min-h-[320px] border-0">
                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <MousePointerClickIcon />
+                        </EmptyMedia>
                         <EmptyTitle>
-                            {t('dialog.app_launcher.no_selection')}
+                            {t('empty_state.app_launcher_selection_title')}
                         </EmptyTitle>
+                        <EmptyDescription>
+                            {t(
+                                'empty_state.app_launcher_selection_description'
+                            )}
+                        </EmptyDescription>
                     </EmptyHeader>
                 </Empty>
             </div>
@@ -703,21 +770,21 @@ function EntryDetailsPanel({
                     <ToggleField
                         label={t('dialog.app_launcher.scope')}
                         value={entry.scope}
-                        options={['all', 'desktop', 'vr'].map((value) => ({
+                        options={APP_LAUNCHER_SCOPES.map((value) => ({
                             value,
                             label: t(`dialog.app_launcher.scope_${value}`)
                         }))}
                         onValueChange={(scope) =>
                             onChange({
                                 ...entry,
-                                scope: scope as AppLauncherEntry['scope']
+                                scope
                             })
                         }
                     />
                     <ToggleField
                         label={t('dialog.app_launcher.run')}
                         value={entry.runPolicy}
-                        options={['always', 'skipIfRunning'].map((value) => ({
+                        options={APP_LAUNCHER_RUN_POLICIES.map((value) => ({
                             value,
                             label: t(
                                 `dialog.app_launcher.run_policy_short_${value}`
@@ -726,8 +793,7 @@ function EntryDetailsPanel({
                         onValueChange={(runPolicy) =>
                             onChange({
                                 ...entry,
-                                runPolicy:
-                                    runPolicy as AppLauncherEntry['runPolicy']
+                                runPolicy
                             })
                         }
                     />
@@ -737,19 +803,16 @@ function EntryDetailsPanel({
                             stopPolicyLocked ? 'keepRunning' : entry.stopPolicy
                         }
                         disabled={stopPolicyLocked}
-                        options={['keepRunning', 'closeByVrcx'].map(
-                            (value) => ({
-                                value,
-                                label: t(
-                                    `dialog.app_launcher.stop_policy_short_${value}`
-                                )
-                            })
-                        )}
+                        options={APP_LAUNCHER_STOP_POLICIES.map((value) => ({
+                            value,
+                            label: t(
+                                `dialog.app_launcher.stop_policy_short_${value}`
+                            )
+                        }))}
                         onValueChange={(stopPolicy) =>
                             onChange({
                                 ...entry,
-                                stopPolicy:
-                                    stopPolicy as AppLauncherEntry['stopPolicy']
+                                stopPolicy
                             })
                         }
                     />
@@ -815,7 +878,7 @@ function EntryDetailsPanel({
     );
 }
 
-function ToggleField({
+function ToggleField<Value extends string>({
     label,
     value,
     options,
@@ -823,10 +886,10 @@ function ToggleField({
     onValueChange
 }: {
     label: string;
-    value: string;
-    options: Array<{ value: string; label: string }>;
+    value: Value;
+    options: ReadonlyArray<{ value: Value; label: string }>;
     disabled?: boolean;
-    onValueChange: (value: string) => void;
+    onValueChange: (value: Value) => void;
 }) {
     return (
         <Field data-disabled={disabled || undefined}>
@@ -838,8 +901,11 @@ function ToggleField({
                 disabled={disabled}
                 className="w-full"
                 onValueChange={(next) => {
-                    if (next[0]) {
-                        onValueChange(next[0]);
+                    const selected = options.find(
+                        (option) => option.value === next[0]
+                    );
+                    if (selected) {
+                        onValueChange(selected.value);
                     }
                 }}
             >

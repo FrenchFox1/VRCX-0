@@ -37,7 +37,6 @@ function release({ publishedAt }: { publishedAt: string }) {
 describe('updateService facade', () => {
     it('preserves the public runtime exports', () => {
         expect(Object.keys(updateService).sort()).toEqual([
-            'canInstallUpdatesOnPlatform',
             'confirmInstall',
             'fetchBranchReleases',
             'fetchLatestBranchRelease',
@@ -61,9 +60,7 @@ describe('updateService branch release fetching', () => {
             data: [release({ publishedAt: '2026-06-21T07:00:00Z' })]
         });
 
-        const releases = await updateService.fetchBranchReleases('Stable', {
-            requireInstallerAsset: false
-        });
+        const releases = await updateService.fetchBranchReleases('Stable');
 
         expect(releases).toHaveLength(1);
         expect(releases[0].canonicalVersion).toBe('2.7.0');

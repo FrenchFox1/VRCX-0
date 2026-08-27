@@ -25,11 +25,11 @@ pub use local_game_context::GameLogLocalGameContextSource;
 pub use runtime::{GameLogRuntime, GameLogRuntimeDeps};
 pub use runtime_state::{
     duration_ms, parse_event_time_ms, player_key, world_id_from_location, GameLogProjection,
-    GameLogRuntimeState, PlayerState, RuntimeSnapshot,
+    GameLogRuntimeState, PlayerState, RuntimeSnapshot, RuntimeSnapshotStore,
 };
 pub use sessions_view::{
     game_log_sessions_query, GameLogSessionDto, GameLogSessionEventDto, GameLogSessionMemberDto,
-    GameLogSessionsQueryInput,
+    GameLogSessionPlayerDurationRowDto, GameLogSessionsQueryInput,
 };
 pub use snapshot::{
     player_list_current_snapshot, PlayerListSnapshotContext, PlayerListSnapshotOutput,

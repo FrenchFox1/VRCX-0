@@ -24,11 +24,11 @@ pub struct ScreenshotMetadata {
 #[serde(rename_all = "camelCase")]
 pub struct ScreenshotLibraryScanStatus {
     pub running: bool,
-    pub scanned: usize,
-    pub indexed: usize,
-    pub changed: usize,
-    pub skipped: usize,
-    pub deleted: usize,
+    pub scanned: u32,
+    pub indexed: u32,
+    pub changed: u32,
+    pub skipped: u32,
+    pub deleted: u32,
     pub error: Option<String>,
     pub last_scan_at: Option<String>,
 }
@@ -39,8 +39,8 @@ pub struct ScreenshotFolderInfo {
     pub path: String,
     pub parent_path: Option<String>,
     pub name: String,
-    pub image_count: usize,
-    pub total_image_count: usize,
+    pub image_count: u32,
+    pub total_image_count: u32,
     pub latest_modified_at: Option<i64>,
 }
 
@@ -150,14 +150,9 @@ impl ScreenshotMetadata {
     }
 
     pub fn contains_player_name_lowercase(&self, lowercase_name: &str) -> bool {
-        self.players
-            .iter()
-            .any(|p| {
-                crate::text::contains_lowercase_query_case_insensitive(
-                    &p.display_name,
-                    lowercase_name,
-                )
-            })
+        self.players.iter().any(|p| {
+            crate::text::contains_lowercase_query_case_insensitive(&p.display_name, lowercase_name)
+        })
     }
 }
 

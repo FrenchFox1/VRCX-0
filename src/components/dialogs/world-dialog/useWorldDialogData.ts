@@ -1,7 +1,14 @@
-import { useEffect, useState, type MutableRefObject } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useRef,
+    useState,
+    type MutableRefObject
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import { readWorldCacheInfo } from '@/lib/worldAssetBundle';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -70,6 +77,17 @@ export function useWorldDialogData({
     );
     const [newInstanceGroups, setNewInstanceGroups] =
         useState<WorldDialogNewInstanceGroups>([]);
+    const newInstanceGroupsLoadGenerationRef = useRef(0);
+    const worldAssetUrl =
+        typeof world?.assetUrl === 'string' ? world.assetUrl : undefined;
+    const worldId = world?.id;
+    const worldUnityPackages = world?.unityPackages;
+    const currentWorldTargetMatches = useEffectEvent(isCurrentWorldTarget);
+    const translateWorldDetail = useEffectEvent((key: string) => t(key));
+    const describeWorldLoadError = useEffectEvent(
+        (error: unknown, worldId: string, key: string) =>
+            worldLoadErrorDescription(error, t, worldId, key)
+    );
 
     useEffect(() => {
         setWorld(seedData ? worldProfileRepository.normalize(seedData) : null);
@@ -80,60 +98,66 @@ export function useWorldDialogData({
     }, [profileWorldId]);
 
     useEffect(() => {
-        let active = true;
+        setNewInstanceGroups([]);
+        return () => {
+            newInstanceGroupsLoadGenerationRef.current += 1;
+        };
+    }, [currentUserId]);
 
+    const loadNewInstanceGroups = useCallback(async () => {
+        const generation = ++newInstanceGroupsLoadGenerationRef.current;
         if (!currentUserId) {
             setNewInstanceGroups([]);
-            return () => {
-                active = false;
-            };
+            return [];
         }
 
-        groupProfileRepository
-            .getUserGroups({
+        try {
+            const groups = await groupProfileRepository.getUserGroups({
                 userId: currentUserId
-            })
-            .then((groups) => {
-                if (!active) {
-                    return;
-                }
-                setNewInstanceGroups(
-                    (Array.isArray(groups) ? groups : [])
-                        .filter((group) => groupOptionId(group))
-                        .sort((left, right) =>
-                            normalizeEntityId(left?.name).localeCompare(
-                                normalizeEntityId(right?.name)
-                            )
-                        )
-                );
-            })
-            .catch(() => {
-                if (active) {
-                    setNewInstanceGroups([]);
-                }
             });
-
-        return () => {
-            active = false;
-        };
-    }, [currentEndpoint, currentUserId]);
+            const nextGroups = (Array.isArray(groups) ? groups : [])
+                .filter((group) => groupOptionId(group))
+                .sort((left, right) =>
+                    normalizeEntityId(left?.name).localeCompare(
+                        normalizeEntityId(right?.name)
+                    )
+                );
+            if (newInstanceGroupsLoadGenerationRef.current !== generation) {
+                return [];
+            }
+            setNewInstanceGroups(nextGroups);
+            return nextGroups;
+        } catch {
+            if (newInstanceGroupsLoadGenerationRef.current === generation) {
+                setNewInstanceGroups([]);
+            }
+            return [];
+        }
+    }, [currentUserId]);
 
     useEffect(() => {
         let active = true;
 
-        if (!world?.id) {
+        if (!worldId) {
             setWorldSideData(defaultWorldSideData());
             return () => {
                 active = false;
             };
         }
 
-        const targetWorldId = world.id;
+        const targetWorldId = worldId;
         const targetEndpoint = currentEndpoint;
         Promise.allSettled([
-            readWorldCacheInfo(world, sdkUnityVersion),
+            readWorldCacheInfo(
+                {
+                    id: worldId,
+                    assetUrl: worldAssetUrl,
+                    unityPackages: worldUnityPackages
+                },
+                sdkUnityVersion
+            ),
             getFileAnalysisForUnityPackages({
-                unityPackages: world.unityPackages,
+                unityPackages: worldUnityPackages,
                 sdkUnityVersion,
                 endpoint: targetEndpoint
             })
@@ -141,7 +165,7 @@ export function useWorldDialogData({
             .then(([cacheResult, fileAnalysisResult]) => {
                 if (
                     active &&
-                    isCurrentWorldTarget(targetWorldId, targetEndpoint)
+                    currentWorldTargetMatches(targetWorldId, targetEndpoint)
                 ) {
                     setWorldSideData({
                         cache:
@@ -158,7 +182,7 @@ export function useWorldDialogData({
             .catch(() => {
                 if (
                     active &&
-                    isCurrentWorldTarget(targetWorldId, targetEndpoint)
+                    currentWorldTargetMatches(targetWorldId, targetEndpoint)
                 ) {
                     setWorldSideData(defaultWorldSideData());
                 }
@@ -170,9 +194,11 @@ export function useWorldDialogData({
     }, [
         currentEndpoint,
         sdkUnityVersion,
-        world?.id,
         world?.updatedAt,
-        world?.version
+        world?.version,
+        worldAssetUrl,
+        worldId,
+        worldUnityPackages
     ]);
 
     useEffect(() => {
@@ -182,7 +208,9 @@ export function useWorldDialogData({
             setWorld(null);
             setLoadStatus('error');
             setDetail(
-                t('dialog.world.empty.no_world_id_was_provided_for_this_dialog')
+                translateWorldDetail(
+                    'dialog.world.empty.no_world_id_was_provided_for_this_dialog'
+                )
             );
             return () => {
                 active = false;
@@ -216,9 +244,8 @@ export function useWorldDialogData({
                     setWorld(worldProfileRepository.normalize(seedData));
                     setLoadStatus('ready');
                     setDetail(
-                        worldLoadErrorDescription(
+                        describeWorldLoadError(
                             error,
-                            t,
                             profileWorldId,
                             'dialog.world.error.failed_to_refresh_the_remote_world_snapshot'
                         )
@@ -229,9 +256,8 @@ export function useWorldDialogData({
                 setWorld(null);
                 setLoadStatus('error');
                 setDetail(
-                    worldLoadErrorDescription(
+                    describeWorldLoadError(
                         error,
-                        t,
                         profileWorldId,
                         'dialog.world.error.failed_to_load_the_world_profile'
                     )
@@ -271,7 +297,7 @@ export function useWorldDialogData({
         return () => {
             active = false;
         };
-    }, [profileWorldId]);
+    }, [memoRevisionRef, profileWorldId]);
 
     useEffect(() => {
         let active = true;
@@ -355,6 +381,7 @@ export function useWorldDialogData({
         setHasPersistData,
         worldSideData,
         setWorldSideData,
-        newInstanceGroups
+        newInstanceGroups,
+        loadNewInstanceGroups
     };
 }

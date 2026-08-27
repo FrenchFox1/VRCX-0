@@ -10,6 +10,7 @@ pub mod instances;
 pub mod media;
 pub mod moderation;
 pub mod notifications;
+pub mod query;
 pub mod realtime;
 pub mod search;
 pub mod tools;

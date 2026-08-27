@@ -8,17 +8,21 @@ import type {
     RealtimeNotificationProjectionPayload,
     RealtimeUserProjectionPayload
 } from '@/services/runtime-event-bridge/realtimeProjectionTypes';
+import { isRecord } from '@/shared/utils/record';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
-import { useFriendLogStore } from '@/state/friendLogStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
-import { useUserFactsStore } from '@/state/userFactsStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { buildAvatarWearSnapshotUpdate } from './avatarWearTimeService';
 import { recordCurrentUserSnapshot } from './domainIngestionService';
-import { handleRealtimeInstanceQueueProjection } from './realtimeInstanceQueueService';
+import { handleQueuedInstancePatch } from './realtimeInstanceQueueService';
+import {
+    flushRealtimeRosterUpdates,
+    queueRealtimeFriendRosterUpdate,
+    queueRealtimeUserFactsUpdate
+} from './realtimeRosterUpdateQueue';
 import { pushSharedFeedNotification } from './sharedFeedNotificationService';
 
 type ProjectionRecord = Record<string, unknown>;
@@ -29,10 +33,6 @@ const CURRENT_USER_FRIEND_ARRAY_FIELDS = [
     'activeFriends',
     'offlineFriends'
 ];
-
-function isRecord(value: unknown): value is ProjectionRecord {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function hasOwn(record: ProjectionRecord, key: string): boolean {
     return Object.prototype.hasOwnProperty.call(record, key);
@@ -58,10 +58,7 @@ function getCurrentUserSnapshot(
         : null;
 }
 
-function currentUserDisplayName(
-    snapshot: ProjectionRecord,
-    fallback: unknown = ''
-) {
+function currentUserDisplayName(snapshot: ProjectionRecord, fallback = '') {
     return (
         normalizeUserId(snapshot.displayName) ||
         normalizeUserId(snapshot.username) ||
@@ -104,7 +101,7 @@ function mergeCurrentUserProjectionSnapshot(
     const completeFriendBucketSource =
         getCurrentUserProjectionFriendBucketSource(payload);
     const nextSnapshot: ProjectionRecord = {
-        ...(currentSnapshot || {}),
+        ...currentSnapshot,
         ...source
     };
 
@@ -133,13 +130,13 @@ function handleRealtimeFeedProjection(payload: RealtimeFeedProjectionPayload) {
     if (payload.ownerUserId !== currentUserId) {
         return;
     }
-    const upserts = (payload.upserts ?? []).filter(
+    const upserts = payload.upserts.filter(
         (upsert) => Object.keys(upsert.entry).length > 0
     );
     useFeedLiveStore.getState().pushEntries(upserts, {
         ownerUserId: payload.ownerUserId
     });
-    useFeedLiveStore.getState().pushPatches(payload.patches ?? []);
+    useFeedLiveStore.getState().pushPatches(payload.patches);
     for (const upsert of upserts) {
         pushSharedFeedNotification(upsert.entry).catch((error: unknown) => {
             console.warn(
@@ -197,43 +194,37 @@ async function shouldNotifyInstanceClosed(): Promise<boolean> {
 function handleRealtimeFriendProjection(
     payload: RealtimeFriendProjectionPayload
 ) {
-    for (const userId of payload.removals ?? []) {
-        const normalizedUserId = normalizeUserId(userId);
-        if (!normalizedUserId) {
-            continue;
+    const removalIds = payload.removals
+        .map((userId) => normalizeUserId(userId))
+        .filter(Boolean);
+    if (removalIds.length) {
+        flushRealtimeRosterUpdates();
+        for (const userId of removalIds) {
+            useFriendRosterStore.getState().removeFriend(userId);
         }
-        useFriendRosterStore.getState().removeFriend(normalizedUserId);
     }
 
-    const patchEntries = (payload.patches ?? []).map((patchEntry) => {
+    const patchEntries = payload.patches.map((patchEntry) => {
         const patch = patchEntry.patch;
         return {
             userId: normalizeUserId(
                 patchEntry.userId || patch.id || patch.userId
             ),
             patch,
-            stateBucket: normalizeUserId(
-                patchEntry.stateBucket || patch.stateBucket || patch.state
-            ),
-            stateBucketAuthority: normalizeUserId(
-                patchEntry.stateBucketAuthority || 'explicit'
-            )
+            stateBucketAuthority: patchEntry.stateBucketAuthority
         };
     });
-    if (patchEntries.length) {
-        useFriendRosterStore.getState().applyFriendPatches(patchEntries);
-    }
-
-    if (payload.friendLogChanged) {
-        useShellStore.getState().notifyMenu('friend-log');
-        useFriendLogStore.getState().bumpRevision();
-    }
+    queueRealtimeFriendRosterUpdate(
+        patchEntries,
+        payload.friendLogChanged,
+        payload.locationTimeSnapshot ?? undefined
+    );
 }
 
 export function handleRealtimeUserCacheProjection(
     payload: RealtimeUserProjectionPayload
 ) {
-    useUserFactsStore.getState().replaceUserFacts(payload.users);
+    queueRealtimeUserFactsUpdate(payload.users);
 }
 
 async function handleRealtimeNotificationProjection(
@@ -241,14 +232,14 @@ async function handleRealtimeNotificationProjection(
 ) {
     const store = useVrcNotificationStore.getState();
 
-    if (payload.expiredIds?.length) {
+    if (payload.expiredIds.length) {
         store.expireNotifications(payload.expiredIds);
     }
-    if (payload.seenIds?.length) {
+    if (payload.seenIds.length) {
         store.markNotificationsSeen(payload.seenIds);
     }
 
-    for (const upsert of payload.upserts ?? []) {
+    for (const upsert of payload.upserts) {
         let notification = upsert.notification;
         if (!notification.id) {
             continue;
@@ -323,10 +314,7 @@ function handleRealtimeCurrentUserProjection(
     if (hasOwn(patch, 'queuedInstance')) {
         const queuedInstance = normalizeUserId(patch.queuedInstance);
         if (queuedInstance) {
-            handleRealtimeInstanceQueueProjection({
-                kind: 'update',
-                instanceLocation: queuedInstance
-            });
+            handleQueuedInstancePatch(queuedInstance);
         } else if (useRuntimeStore.getState().instanceQueue.active) {
             useRuntimeStore.getState().clearInstanceQueueState();
         }

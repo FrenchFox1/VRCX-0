@@ -1,11 +1,15 @@
 use vrcx_0_application_core::RuntimeEventPayload;
 
-use crate::{
+use crate::auth::AuthenticatedRuntimePhaseSnapshot;
+use crate::collections::SharedCollectionImportStatus;
+use crate::favorites::FavoriteImportStatus;
+use crate::profile::{
     AppUpdateDownloadProgressPayload, AppUpdateInstalledPayload, AppUpdateStatusSnapshot,
-    AuthenticatedRuntimePhaseSnapshot, BackgroundImageProjection, CommunityThemeProjection,
-    FavoriteImportStatus, GroupBanImportStatus, GroupModerationBatchProgress,
-    MutualGraphFetchStatus, NoteExportStatus, ProfileBackupStatus, ProfileRestoreProgress,
-    SharedCollectionImportStatus,
+    BackgroundImageProjection, CommunityThemeProjection, ProfileBackupStatus,
+    ProfileRestoreProgress,
+};
+use crate::social::{
+    GroupBanImportStatus, GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus,
 };
 
 impl RuntimeEventPayload for AuthenticatedRuntimePhaseSnapshot {

@@ -68,6 +68,39 @@ describe('tauri errors', () => {
         expect(normalizePlatformError(normalized)).toBe(normalized);
     });
 
+    it('preserves structured VRChat API status fields', () => {
+        const rawError = {
+            code: 'vrchat_api',
+            message: 'Missing Credentials',
+            statusCode: 401
+        };
+
+        const normalized = normalizePlatformError(rawError);
+
+        expect(normalized).toBeInstanceOf(PlatformCommandError);
+        expect(normalized).toMatchObject({
+            code: 'vrchat_api',
+            statusCode: 401,
+            cause: rawError
+        });
+    });
+
+    it('preserves stable diagnostic command error codes', () => {
+        const rawError = {
+            code: 'persistence_invalid_data',
+            message: 'invalid snapshot'
+        } satisfies AppErrorPayload;
+
+        const normalized = normalizePlatformError(rawError);
+
+        expect(normalized).toBeInstanceOf(PlatformCommandError);
+        expect(normalized).toMatchObject({
+            code: 'persistence_invalid_data',
+            message: 'invalid snapshot',
+            cause: rawError
+        });
+    });
+
     it('uses a specific name for unavailable platform APIs', () => {
         const error = new PlatformUnavailableError();
 

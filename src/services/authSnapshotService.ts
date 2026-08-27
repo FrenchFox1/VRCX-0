@@ -1,10 +1,11 @@
+import type { RuntimeOperationStatus } from '@/platform/tauri/bindings';
 import authRepository, {
     type SavedAuthSnapshot
 } from '@/repositories/authRepository';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 type AuthStartupTask = {
-    status: string;
+    status: RuntimeOperationStatus;
     detail: string;
 };
 

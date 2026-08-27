@@ -1,16 +1,23 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use futures_util::future::BoxFuture;
 
+use std::{
+    sync::{
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        Arc, Mutex,
+    },
+    time::Duration,
+};
+
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
-use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::{
-    http_api::{normalize_vrchat_api_endpoint, ApiScope},
-    tools::user_note_save_input,
-};
 
-use crate::{
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, WebClient,
+use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
+    WebClient,
 };
+use vrcx_0_core::OwnerId;
 
 pub const NOTE_EXPORT_MAX_ITEMS: usize = 1_000;
 const NOTE_EXPORT_INTERVAL: Duration = Duration::from_secs(2);
@@ -62,10 +69,10 @@ pub struct NoteExportItemStatus {
 pub struct NoteExportStatus {
     pub run_id: String,
     pub status: NoteExportState,
-    pub total: usize,
-    pub processed: usize,
-    pub succeeded: usize,
-    pub failed: usize,
+    pub total: u32,
+    pub processed: u32,
+    pub succeeded: u32,
+    pub failed: u32,
     pub items: Vec<NoteExportItemStatus>,
     pub started_at: Option<String>,
     pub finished_at: Option<String>,
@@ -98,25 +105,52 @@ pub struct NoteExportResult {
     pub last_error: Option<String>,
 }
 
-pub type NoteExportFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
+pub type NoteExportFuture<'a> = BoxFuture<'a, Result<()>>;
 
 pub trait NoteExportActions: Send + Sync {
     fn save_note<'a>(&'a self, user_id: &'a str, note: &'a str) -> NoteExportFuture<'a>;
 }
 
+pub trait NoteExportRemoteRequests: Send + Sync {
+    fn save_note(
+        &self,
+        endpoint: String,
+        user_id: String,
+        note: String,
+    ) -> Result<VrchatApiRequest>;
+}
+
 pub struct VrchatNoteExportActions<'a> {
-    pub db: &'a DatabaseService,
-    pub web: &'a WebClient,
+    pub(crate) web: &'a WebClient,
+    remote_requests: &'a dyn NoteExportRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: &'a RuntimeAuthScopeSnapshot,
     pub event_bus: &'a RuntimeEventBus,
 }
 
+impl<'a> VrchatNoteExportActions<'a> {
+    pub fn new(
+        web: &'a WebClient,
+        remote_requests: &'a dyn NoteExportRemoteRequests,
+        auth_scope: &'a RuntimeAuthScope,
+        expected_scope: &'a RuntimeAuthScopeSnapshot,
+        event_bus: &'a RuntimeEventBus,
+    ) -> Self {
+        Self {
+            web,
+            remote_requests,
+            auth_scope,
+            expected_scope,
+            event_bus,
+        }
+    }
+}
+
 impl NoteExportActions for VrchatNoteExportActions<'_> {
     fn save_note<'a>(&'a self, user_id: &'a str, note: &'a str) -> NoteExportFuture<'a> {
         Box::pin(async move {
-            let (_, request) = user_note_save_input(
-                normalize_vrchat_api_endpoint(Some(&self.expected_scope.endpoint)),
+            let request = self.remote_requests.save_note(
+                self.expected_scope.endpoint.clone(),
                 user_id.to_string(),
                 note.to_string(),
             )?;
@@ -126,10 +160,7 @@ impl NoteExportActions for VrchatNoteExportActions<'_> {
                 .or(request.url.as_deref())
                 .unwrap_or("runtime/note-export")
                 .to_string();
-            let response = self
-                .web
-                .execute_api(request, ApiScope::Vrchat, self.db)
-                .await?;
+            let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
             if let Some(error) = note_save_response_error(response.status, &response.data) {
                 emit_note_export_auth_failure(
                     self.event_bus,
@@ -162,7 +193,7 @@ fn emit_note_export_auth_failure(
         return;
     }
     event_bus.emit_runtime_vrchat_auth_failure(RuntimeVrchatAuthFailurePayload {
-        owner_user_id: scope.current_user_id,
+        owner_user_id: OwnerId::new(scope.current_user_id),
         endpoint: scope.endpoint,
         path: path.to_string(),
         reason: reason.to_string(),
@@ -353,6 +384,233 @@ async fn wait_for_note_export_interval(
     }
 }
 
+#[derive(Clone)]
+pub struct NoteExportRuntime {
+    shared: Arc<NoteExportRuntimeShared>,
+    web: Arc<WebClient>,
+    remote_requests: Arc<dyn NoteExportRemoteRequests>,
+    event_bus: RuntimeEventBus,
+    tasks: TaskSupervisor,
+    auth_scope: RuntimeAuthScope,
+}
+
+struct NoteExportRuntimeShared {
+    state: Mutex<NoteExportRuntimeInner>,
+    generation: AtomicU64,
+}
+
+#[derive(Default)]
+struct NoteExportRuntimeInner {
+    status: NoteExportStatus,
+    cancel: Option<Arc<AtomicBool>>,
+    auth_generation: u64,
+}
+
+impl NoteExportRuntime {
+    pub fn new(
+        web: Arc<WebClient>,
+        remote_requests: Arc<dyn NoteExportRemoteRequests>,
+        event_bus: RuntimeEventBus,
+        tasks: TaskSupervisor,
+        auth_scope: RuntimeAuthScope,
+    ) -> Self {
+        Self {
+            shared: Arc::new(NoteExportRuntimeShared {
+                state: Mutex::new(NoteExportRuntimeInner::default()),
+                generation: AtomicU64::new(0),
+            }),
+            web,
+            remote_requests,
+            event_bus,
+            tasks,
+            auth_scope,
+        }
+    }
+
+    pub fn status(&self) -> NoteExportStatus {
+        self.lock_inner().status.clone()
+    }
+
+    pub fn start(&self, input: NoteExportStartInput) -> Result<NoteExportStatus> {
+        let items = prepare_note_export(input)?;
+        let scope = self.auth_scope.snapshot();
+        if !scope.active || scope.current_user_id.trim().is_empty() {
+            return Err(Error::Custom(
+                "Note export requires an authenticated session.".into(),
+            ));
+        }
+
+        let cancel = Arc::new(AtomicBool::new(false));
+        let status = {
+            let mut inner = self.lock_inner();
+            if is_active_status(inner.status.status) {
+                return Err(Error::Custom(
+                    "Another note export is already active.".into(),
+                ));
+            }
+            let generation = self.shared.generation.fetch_add(1, Ordering::AcqRel) + 1;
+            let status = NoteExportStatus {
+                run_id: format!("note-export-{}-{generation}", Utc::now().timestamp_millis()),
+                status: NoteExportState::Running,
+                total: crate::wire_count(items.len()),
+                items: items
+                    .iter()
+                    .map(|item| NoteExportItemStatus {
+                        user_id: item.user_id.clone(),
+                        display_name: item.display_name.clone(),
+                        note: item.note.clone(),
+                        ..Default::default()
+                    })
+                    .collect(),
+                started_at: Some(Utc::now().to_rfc3339()),
+                ..Default::default()
+            };
+            inner.status = status.clone();
+            inner.cancel = Some(Arc::clone(&cancel));
+            inner.auth_generation = scope.generation;
+            status
+        };
+        self.emit_status(status.clone());
+
+        let runtime = self.clone();
+        let run_id = status.run_id.clone();
+        self.tasks.spawn_cancellable(move |stop_token| async move {
+            let actions = VrchatNoteExportActions::new(
+                runtime.web.as_ref(),
+                runtime.remote_requests.as_ref(),
+                &runtime.auth_scope,
+                &scope,
+                &runtime.event_bus,
+            );
+            let cancel_for_check = Arc::clone(&cancel);
+            let auth_scope_for_check = runtime.auth_scope.clone();
+            let scope_for_check = scope.clone();
+            let runtime_for_progress = runtime.clone();
+            let run_id_for_progress = run_id.clone();
+            let result = run_note_export(
+                &actions,
+                items,
+                move || {
+                    cancel_for_check.load(Ordering::Acquire)
+                        || stop_token.is_stop_requested()
+                        || !auth_scope_for_check
+                            .snapshot()
+                            .generation_matches(&scope_for_check)
+                },
+                move |progress| {
+                    runtime_for_progress.apply_progress(&run_id_for_progress, progress);
+                },
+            )
+            .await;
+            runtime.finish(&run_id, result);
+        });
+
+        Ok(status)
+    }
+
+    pub fn cancel(&self) -> NoteExportStatus {
+        let status = {
+            let mut inner = self.lock_inner();
+            if !is_active_status(inner.status.status) {
+                return inner.status.clone();
+            }
+            if let Some(cancel) = &inner.cancel {
+                cancel.store(true, Ordering::Release);
+            }
+            inner.status.status = NoteExportState::Cancelling;
+            inner.status.clone()
+        };
+        self.emit_status(status.clone());
+        status
+    }
+
+    pub fn cancel_if_scope_mismatch(&self) -> NoteExportStatus {
+        let scope = self.auth_scope.snapshot();
+        let status = {
+            let mut inner = self.lock_inner();
+            if !mark_cancelling_if_scope_mismatch(&mut inner, &scope) {
+                return inner.status.clone();
+            }
+            inner.status.clone()
+        };
+        self.emit_status(status.clone());
+        status
+    }
+
+    fn apply_progress(&self, run_id: &str, progress: NoteExportProgress) {
+        let status = {
+            let mut inner = self.lock_inner();
+            if inner.status.run_id != run_id || !is_active_status(inner.status.status) {
+                return;
+            }
+            inner.status.processed = crate::wire_count(progress.processed);
+            inner.status.succeeded = crate::wire_count(progress.succeeded);
+            inner.status.failed = crate::wire_count(progress.failed);
+            inner.status.items = progress.items;
+            inner.status.last_error = progress.last_error;
+            inner.status.clone()
+        };
+        self.emit_status(status);
+    }
+
+    fn finish(&self, run_id: &str, result: NoteExportResult) {
+        let status = {
+            let mut inner = self.lock_inner();
+            if inner.status.run_id != run_id || !is_active_status(inner.status.status) {
+                return;
+            }
+            inner.status.processed = crate::wire_count(result.processed);
+            inner.status.succeeded = crate::wire_count(result.succeeded);
+            inner.status.failed = crate::wire_count(result.failed);
+            inner.status.items = result.items;
+            inner.status.last_error = result.last_error;
+            inner.status.status = if result.cancelled {
+                NoteExportState::Cancelled
+            } else if result.failed > 0 {
+                NoteExportState::Error
+            } else {
+                NoteExportState::Completed
+            };
+            inner.status.finished_at = Some(Utc::now().to_rfc3339());
+            inner.cancel = None;
+            inner.status.clone()
+        };
+        self.emit_status(status);
+    }
+
+    fn emit_status(&self, status: NoteExportStatus) {
+        self.event_bus.emit(status);
+    }
+
+    fn lock_inner(&self) -> std::sync::MutexGuard<'_, NoteExportRuntimeInner> {
+        self.shared
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+}
+
+fn is_active_status(status: NoteExportState) -> bool {
+    matches!(
+        status,
+        NoteExportState::Running | NoteExportState::Cancelling
+    )
+}
+
+fn mark_cancelling_if_scope_mismatch(
+    inner: &mut NoteExportRuntimeInner,
+    scope: &RuntimeAuthScopeSnapshot,
+) -> bool {
+    if !is_active_status(inner.status.status) || inner.auth_generation == scope.generation {
+        return false;
+    }
+    if let Some(cancel) = &inner.cancel {
+        cancel.store(true, Ordering::Release);
+    }
+    inner.status.status = NoteExportState::Cancelling;
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
@@ -495,5 +753,30 @@ mod tests {
             401,
         );
         assert!(event_bus.take_events_for_test().is_empty());
+    }
+
+    #[test]
+    fn scope_change_marks_active_export_cancelling() {
+        let cancel = Arc::new(AtomicBool::new(false));
+        let mut inner = NoteExportRuntimeInner {
+            status: NoteExportStatus {
+                run_id: "run-1".into(),
+                status: NoteExportState::Running,
+                ..Default::default()
+            },
+            cancel: Some(Arc::clone(&cancel)),
+            auth_generation: 1,
+        };
+
+        assert!(mark_cancelling_if_scope_mismatch(
+            &mut inner,
+            &RuntimeAuthScopeSnapshot {
+                generation: 2,
+                active: true,
+                ..Default::default()
+            }
+        ));
+        assert_eq!(inner.status.status, NoteExportState::Cancelling);
+        assert!(cancel.load(Ordering::Acquire));
     }
 }

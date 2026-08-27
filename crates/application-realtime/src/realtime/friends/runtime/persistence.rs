@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 use std::iter::once_with;
+use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
+use compact_str::CompactString;
 use serde_json::{json, Map, Value};
+use vrcx_0_contracts::realtime::FriendLogUpsert;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
-use vrcx_0_persistence::realtime::FriendLogUpsert;
 
+use crate::realtime::location_predicates::is_real_instance;
 use crate::realtime::RealtimeFriendOutput;
 
 use super::event_patch::{record_string, record_value};
@@ -22,6 +25,34 @@ use feed_entry::{
 struct ResolvedLocationNames {
     world_name: String,
     group_name: String,
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct OfflineFeedPrevious {
+    display_name: CompactString,
+    username: String,
+    location: String,
+    world_name: String,
+    group_name: String,
+    location_updated_at: i64,
+}
+
+impl OfflineFeedPrevious {
+    pub(super) fn from_record(record: &FriendRecord) -> Self {
+        Self {
+            display_name: record.display_name.clone(),
+            username: record.username.clone(),
+            location: record.location.clone(),
+            world_name: record_string(record, "worldName"),
+            group_name: record_string(record, "groupName"),
+            location_updated_at: record.extra.i64_field("locationUpdatedAt").unwrap_or(0),
+        }
+    }
+
+    fn meaningful_name(&self, user_id: &str) -> String {
+        vrcx_0_core::friends::meaningful_display_name(&self.display_name, &self.username, user_id)
+            .unwrap_or_default()
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -118,20 +149,16 @@ pub(super) fn friend_log_upsert(
         target_user_id: user_id.to_string(),
         display_name: display_name(user_id, patch, previous),
         trust_level: first_owned([
-            patch.text_field("$trustLevel"),
-            patch.text_field("trustLevel"),
+            patch.text_field(derived_keys::TRUST_LEVEL),
             previous
-                .map(|previous| record_string(previous, "$trustLevel"))
-                .unwrap_or_default(),
-            previous
-                .map(|previous| record_string(previous, "trustLevel"))
+                .map(|previous| record_string(previous, derived_keys::TRUST_LEVEL))
                 .unwrap_or_default(),
         ]),
         friend_number: patch
-            .i64_field("$friendNumber")
-            .or_else(|| patch.i64_field("friendNumber"))
-            .or_else(|| previous.and_then(|previous| previous.extra.i64_field("$friendNumber")))
-            .or_else(|| previous.and_then(|previous| previous.extra.i64_field("friendNumber")))
+            .i64_field(derived_keys::FRIEND_NUMBER)
+            .or_else(|| {
+                previous.and_then(|previous| previous.extra.i64_field(derived_keys::FRIEND_NUMBER))
+            })
             .unwrap_or(0),
         created_at: created_at.to_string(),
         force_history: false,
@@ -171,10 +198,9 @@ pub(super) fn add_profile_diff_feed_entries(
     let status_changed = changes.has("status");
     let status_description_changed = changes.has("statusDescription");
     let next_status = string_or_previous(patch, previous, "status");
-    let previous_status = previous.status.clone();
     if (status_changed || status_description_changed)
         && next_status != "offline"
-        && previous_status != "offline"
+        && previous.status != "offline"
     {
         output
             .persistence
@@ -186,7 +212,7 @@ pub(super) fn add_profile_diff_feed_entries(
                 display_name: display_name(user_id, patch, Some(previous)),
                 status: next_status,
                 status_description: string_or_previous(patch, previous, "statusDescription"),
-                previous_status,
+                previous_status: &previous.status,
                 previous_status_description: &previous.status_description,
             }));
     }
@@ -304,7 +330,7 @@ pub(super) fn gps_feed_entry(
     {
         return None;
     }
-    let location_names = if is_real_location(&location) {
+    let location_names = if is_real_instance(&location) {
         resolve_location_name(&location, patch, Some(previous))
     } else {
         ResolvedLocationNames {
@@ -355,7 +381,7 @@ pub(super) fn online_feed_entry(
     time: i64,
     created_at: &str,
 ) -> Value {
-    let location_names = if is_real_location(location) {
+    let location_names = if is_real_instance(location) {
         resolve_location_name(location, patch, previous)
     } else {
         ResolvedLocationNames {
@@ -378,12 +404,12 @@ pub(super) fn online_feed_entry(
 pub(super) fn offline_feed_entry(
     user_id: &str,
     current: &FriendRecord,
-    previous: &FriendRecord,
+    previous: &OfflineFeedPrevious,
     created_at: &str,
     timestamp_ms: i64,
 ) -> Value {
     let location = previous.location.clone();
-    let location_names = if is_real_location(&location) {
+    let location_names = if is_real_instance(&location) {
         resolve_record_location_name(&location, current, Some(previous))
     } else {
         ResolvedLocationNames {
@@ -391,14 +417,18 @@ pub(super) fn offline_feed_entry(
             group_name: String::new(),
         }
     };
-    let time = duration_ms(previous, timestamp_ms);
+    let time = if previous.location_updated_at > 0 {
+        timestamp_ms.saturating_sub(previous.location_updated_at)
+    } else {
+        0
+    };
     feed_entry_value(&OfflineFeedEntry {
         created_at,
         entry_type: FeedEntryType::Offline,
         user_id,
         display_name: first_owned([
             meaningful_record_name(current, user_id),
-            meaningful_record_name(previous, user_id),
+            previous.meaningful_name(user_id),
             "Unknown".to_string(),
         ]),
         location: &location,
@@ -423,21 +453,21 @@ pub(super) fn add_location_metadata(
         }
         let previous_location = previous.map(resolve_previous_location).unwrap_or_default();
         let previous_timestamp = previous
-            .and_then(|previous| {
-                previous
-                    .extra
-                    .i64_field("locationUpdatedAt")
-                    .or_else(|| previous.extra.i64_field("$location_at"))
-            })
+            .and_then(|previous| previous.extra.i64_field("locationUpdatedAt"))
             .unwrap_or(0);
         patch.insert("locationUpdatedAt".into(), Value::from(timestamp_ms));
-        patch.insert("$location_at".into(), Value::from(timestamp_ms));
-        patch.insert("$travelingToTime".into(), Value::from(timestamp_ms));
+        patch.insert(
+            derived_keys::TRAVELING_TO_TIME.into(),
+            Value::from(timestamp_ms),
+        );
         patch.insert("travelingToTime".into(), Value::from(timestamp_ms));
-        if is_real_location(&previous_location) {
-            patch.insert("$previousLocation".into(), Value::String(previous_location));
+        if is_real_instance(&previous_location) {
             patch.insert(
-                "$previousLocation_at".into(),
+                derived_keys::PREVIOUS_LOCATION.into(),
+                Value::String(previous_location),
+            );
+            patch.insert(
+                derived_keys::PREVIOUS_LOCATION_UPDATED_AT.into(),
                 Value::from(previous_timestamp),
             );
         }
@@ -445,10 +475,14 @@ pub(super) fn add_location_metadata(
     }
 
     let previous_travel_location = previous
-        .map(|previous| record_string(previous, "$previousLocation"))
+        .map(|previous| record_string(previous, derived_keys::PREVIOUS_LOCATION))
         .unwrap_or_default();
     let previous_location_timestamp = previous
-        .and_then(|previous| previous.extra.i64_field("$previousLocation_at"))
+        .and_then(|previous| {
+            previous
+                .extra
+                .i64_field(derived_keys::PREVIOUS_LOCATION_UPDATED_AT)
+        })
         .unwrap_or(0);
     let returned_to_previous_location =
         !previous_travel_location.is_empty() && previous_travel_location == location;
@@ -458,10 +492,18 @@ pub(super) fn add_location_metadata(
         timestamp_ms
     };
     patch.insert("locationUpdatedAt".into(), Value::from(location_timestamp));
-    patch.insert("$location_at".into(), Value::from(location_timestamp));
-    patch.insert("$previousLocation".into(), Value::String(String::new()));
-    patch.insert("$previousLocation_at".into(), Value::String(String::new()));
-    patch.insert("$travelingToTime".into(), Value::String(String::new()));
+    patch.insert(
+        derived_keys::PREVIOUS_LOCATION.into(),
+        Value::String(String::new()),
+    );
+    patch.insert(
+        derived_keys::PREVIOUS_LOCATION_UPDATED_AT.into(),
+        Value::String(String::new()),
+    );
+    patch.insert(
+        derived_keys::TRAVELING_TO_TIME.into(),
+        Value::String(String::new()),
+    );
     patch.insert("travelingToTime".into(), Value::String(String::new()));
 }
 
@@ -533,7 +575,7 @@ fn resolve_location_name(
 fn resolve_record_location_name(
     location: &str,
     current: &FriendRecord,
-    previous: Option<&FriendRecord>,
+    previous: Option<&OfflineFeedPrevious>,
 ) -> ResolvedLocationNames {
     let parsed = parse_location(location);
     ResolvedLocationNames {
@@ -550,7 +592,7 @@ fn resolve_record_location_name(
                 }))
                 .chain(once_with(|| {
                     previous
-                        .map(|previous| record_string(previous, "worldName"))
+                        .map(|previous| previous.world_name.clone())
                         .unwrap_or_default()
                 }))
                 .chain(once_with(|| parsed.world_id.clone()))
@@ -560,7 +602,7 @@ fn resolve_record_location_name(
             once_with(|| record_string(current, "groupName"))
                 .chain(once_with(|| {
                     previous
-                        .map(|previous| record_string(previous, "groupName"))
+                        .map(|previous| previous.group_name.clone())
                         .unwrap_or_default()
                 }))
                 .chain(once_with(|| parsed.group_id.unwrap_or_default())),
@@ -573,7 +615,7 @@ pub(super) fn resolve_previous_location(previous: &FriendRecord) -> String {
         previous.location.as_str(),
         previous
             .extra
-            .get("$location")
+            .get(derived_keys::LOCATION_PROJECTION)
             .and_then(|location| location.get("tag"))
             .and_then(Value::as_str)
             .unwrap_or(""),
@@ -584,7 +626,7 @@ pub(super) fn resolve_previous_location(previous: &FriendRecord) -> String {
 pub(super) fn resolve_gps_previous_location(previous: &FriendRecord) -> String {
     let previous_location = previous.location.clone();
     if previous_location.eq_ignore_ascii_case("traveling") {
-        return record_string(previous, "$previousLocation");
+        return record_string(previous, derived_keys::PREVIOUS_LOCATION);
     }
     previous_location
 }
@@ -593,7 +635,7 @@ pub(super) fn resolve_gps_duration(previous: &FriendRecord) -> i64 {
     if previous.location.eq_ignore_ascii_case("traveling") {
         let previous_timestamp = previous
             .extra
-            .i64_field("$previousLocation_at")
+            .i64_field(derived_keys::PREVIOUS_LOCATION_UPDATED_AT)
             .unwrap_or(0);
         return if previous_timestamp > 0 {
             Utc::now().timestamp_millis() - previous_timestamp
@@ -605,11 +647,7 @@ pub(super) fn resolve_gps_duration(previous: &FriendRecord) -> i64 {
 }
 
 pub(super) fn duration_ms(previous: &FriendRecord, now_ms: i64) -> i64 {
-    let timestamp = previous
-        .extra
-        .i64_field("locationUpdatedAt")
-        .or_else(|| previous.extra.i64_field("$location_at"))
-        .unwrap_or(0);
+    let timestamp = previous.extra.i64_field("locationUpdatedAt").unwrap_or(0);
     if timestamp > 0 {
         now_ms.saturating_sub(timestamp)
     } else {
@@ -618,23 +656,7 @@ pub(super) fn duration_ms(previous: &FriendRecord, now_ms: i64) -> i64 {
 }
 
 pub(super) fn is_online_state(record: &FriendRecord) -> bool {
-    StateBucket::Online.matches(&record.state_bucket) || StateBucket::Online.matches(&record.state)
-}
-
-pub(super) fn is_real_location(location: &str) -> bool {
-    let location = location.trim().to_ascii_lowercase();
-    if location.is_empty() || location.starts_with("local") {
-        return false;
-    }
-    !matches!(
-        location.as_str(),
-        ":" | "offline"
-            | "offline:offline"
-            | "traveling"
-            | "traveling:traveling"
-            | "private"
-            | "private:private"
-    )
+    StateBucket::Online.matches(&record.state)
 }
 
 pub(super) fn is_private_location(location: &str) -> bool {
@@ -645,5 +667,5 @@ pub(super) fn is_private_location(location: &str) -> bool {
 }
 
 fn is_gps_feed_location(location: &str) -> bool {
-    is_real_location(location) || is_private_location(location)
+    is_real_instance(location) || is_private_location(location)
 }

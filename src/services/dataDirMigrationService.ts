@@ -4,8 +4,7 @@ import {
     type DataDirMigrationActionOutcome,
     type DataDirMigrationMode,
     type DataDirMigrationPlan,
-    type DataDirMigrationResult,
-    type DataDirMigrationStatus
+    type DataDirMigrationResult
 } from '@/platform/tauri/bindings';
 
 export type {
@@ -40,10 +39,6 @@ export function requestDataDirMigration(
 
 export function cancelDataDirMigration(): Promise<DataDirMigrationActionOutcome> {
     return commands.appCancelDataDirMigration();
-}
-
-export function getCurrentDataDirMigrationStatus(): Promise<DataDirMigrationStatus> {
-    return commands.appDataDirMigrationCurrentStatus();
 }
 
 export function takeDataDirMigrationResult(): Promise<DataDirMigrationResult | null> {

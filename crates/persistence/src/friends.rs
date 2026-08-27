@@ -1,120 +1,19 @@
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
+pub use vrcx_0_contracts::friend_log::{
+    FriendLogCurrentEntryInput, FriendLogCurrentOutput, FriendLogDeleteOptionsInput,
+    FriendLogHistoryEntryInput, FriendLogHistoryOutput, FriendLogHistoryQueryInput,
+    FriendLogMutationResult, FriendLogReplaceOptionsInput, FriendLogUpsertOptionsInput,
+};
 
 use crate::common::{
     add_list_params, normalize_text, row_i64, row_string, value_as_i64, ParamsBuilder,
 };
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
+use crate::ownership::OwnerId;
 use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
-
-#[derive(Clone, Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogHistoryEntryInput {
-    #[serde(default)]
-    pub row_id: Value,
-    #[serde(default)]
-    pub created_at: String,
-    #[serde(default)]
-    pub r#type: String,
-    #[serde(default)]
-    pub user_id: String,
-    #[serde(default)]
-    pub display_name: String,
-    #[serde(default)]
-    pub previous_display_name: String,
-    #[serde(default)]
-    pub trust_level: String,
-    #[serde(default)]
-    pub previous_trust_level: String,
-    #[serde(default)]
-    pub friend_number: Value,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogCurrentEntryInput {
-    #[serde(default)]
-    pub user_id: String,
-    #[serde(default)]
-    pub display_name: String,
-    #[serde(default)]
-    pub trust_level: Option<String>,
-    #[serde(default)]
-    pub friend_number: Value,
-}
-
-#[derive(Debug, Deserialize, Default, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogReplaceOptionsInput {
-    #[serde(default)]
-    pub history_entries: Vec<FriendLogHistoryEntryInput>,
-    #[serde(default)]
-    pub added_history_entries: Vec<FriendLogHistoryEntryInput>,
-}
-
-#[derive(Debug, Deserialize, Default, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogDeleteOptionsInput {
-    #[serde(default)]
-    pub history_entries: Vec<FriendLogHistoryEntryInput>,
-}
-
-#[derive(Debug, Deserialize, Default, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogUpsertOptionsInput {
-    #[serde(default)]
-    pub history_entry: Option<FriendLogHistoryEntryInput>,
-    #[serde(default)]
-    pub force_history: bool,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogMutationResult {
-    pub user_id: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub target_user_id: String,
-    pub count: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub inserted: Option<bool>,
-    pub history_count: i64,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogCurrentOutput {
-    pub user_id: String,
-    pub display_name: String,
-    pub trust_level: String,
-    pub friend_number: i64,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogHistoryQueryInput {
-    pub user_id: String,
-    #[serde(default)]
-    pub target_user_id: String,
-    #[serde(default)]
-    pub types: Vec<String>,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct FriendLogHistoryOutput {
-    pub row_id: i64,
-    pub created_at: String,
-    pub r#type: String,
-    pub user_id: String,
-    pub display_name: String,
-    pub previous_display_name: String,
-    pub trust_level: String,
-    pub previous_trust_level: String,
-    pub friend_number: i64,
-}
 
 pub fn friend_log_current_list(
     db: &DatabaseService,
@@ -147,10 +46,10 @@ pub fn friend_log_current_list(
 /// load and materialize the entire friend roster.
 pub fn friend_display_names(
     db: &DatabaseService,
-    owner_user_id: String,
+    owner_user_id: OwnerId,
     user_ids: &[String],
 ) -> Result<HashMap<String, String>, Error> {
-    let owner_user_id = normalize_text(owner_user_id);
+    let owner_user_id = normalize_text(owner_user_id.as_str());
     if owner_user_id.is_empty() || user_ids.is_empty() {
         return Ok(HashMap::new());
     }
@@ -416,21 +315,6 @@ pub fn friend_log_upsert_current(
         inserted: Some(result.0),
         history_count: result.1,
     })
-}
-
-pub fn friend_log_delete_current(
-    db: &DatabaseService,
-    user_id: String,
-    target_user_id: String,
-) -> Result<i64, Error> {
-    let user_prefix = normalize_user_table_prefix(&user_id)?;
-    ensure_realtime_tables(db, &user_prefix)?;
-    db.execute_non_query(
-        &format!("DELETE FROM {user_prefix}_friend_log_current WHERE user_id = @user_id"),
-        &ParamsBuilder::new()
-            .set("user_id", normalize_text(target_user_id))
-            .build(),
-    )
 }
 
 pub fn friend_log_history_add(

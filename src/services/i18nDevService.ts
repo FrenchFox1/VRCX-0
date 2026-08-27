@@ -1,5 +1,6 @@
 import { languageCodes } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 
 import i18n from './i18nService';
 
@@ -35,7 +36,10 @@ export async function loadI18nFromFile(
     const content = await commands.appDevkitReadFile(filePath);
     if (content === lastContent) return;
     lastContent = content;
-    const data = JSON.parse(content) as Record<string, unknown>;
+    const data: unknown = JSON.parse(content);
+    if (!isRecord(data)) {
+        throw new TypeError('Translation file must contain a JSON object');
+    }
     i18n.addResourceBundle(targetLang, 'translation', data, true, true);
     await i18n.changeLanguage(targetLang);
 }

@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { normalizeFavoriteSearchValue as normalizeSearchValue } from './favoritesItems';
+import type { FavoriteKind } from '@/domain/favorites/types';
+
+import {
+    normalizeFavoriteSearchValue as normalizeSearchValue,
+    type FavoriteSortValue
+} from './favoritesItems';
 import {
     buildFavoriteAvatarHistoryGroups,
     buildFavoriteAvatarHistoryItems,
@@ -11,22 +16,27 @@ import {
     buildFavoriteRemoteGroups,
     buildFavoriteRemoteItemsByGroup,
     getFavoritesPageConfig,
-    type FavoriteEntityDetail
+    type FavoritePageEntityDetail
 } from './favoritesPageData';
-import type { FavoriteItem } from './favoritesTypes';
-import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type {
+    FavoriteItem,
+    FavoriteSearchMode,
+    FavoriteSource
+} from './favoritesTypes';
 import type { useFavoritesCollectionsState } from './useFavoritesCollectionsState';
 
 const EMPTY_ITEMS: FavoriteItem[] = [];
 
-function isFavoriteEntityDetail(value: unknown): value is FavoriteEntityDetail {
+function isFavoriteEntityDetail(
+    value: unknown
+): value is FavoritePageEntityDetail {
     return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function normalizeFavoriteDetailMap(
     value: Record<string, unknown> | undefined
-): Record<string, FavoriteEntityDetail | undefined> {
-    const details: Record<string, FavoriteEntityDetail | undefined> = {};
+): Record<string, FavoritePageEntityDetail | undefined> {
+    const details: Record<string, FavoritePageEntityDetail | undefined> = {};
     for (const [id, detail] of Object.entries(value || {})) {
         if (isFavoriteEntityDetail(detail)) {
             details[id] = detail;
@@ -39,11 +49,11 @@ type FavoritesViewDataInputs = ReturnType<
     typeof useFavoritesCollectionsState
 >['viewDataInputs'] & {
     kind: FavoriteKind;
-    searchMode: string;
+    searchMode: FavoriteSearchMode;
     searchQuery: string;
     selectedGroupKey: string;
     selectedSource: FavoriteSource;
-    sortValue: string;
+    sortValue: FavoriteSortValue;
 };
 
 export function useFavoritesViewData({
@@ -141,11 +151,6 @@ export function useFavoritesViewData({
         () => normalizeFavoriteDetailMap(avatarDetailFallbacksById),
         [avatarDetailFallbacksById]
     );
-    const normalizedAvatarHistory = useMemo(
-        () => avatarHistory.filter(isFavoriteEntityDetail),
-        [avatarHistory]
-    );
-
     const remoteItemsByGroup = useMemo(() => {
         return buildFavoriteRemoteItemsByGroup({
             kind,
@@ -213,10 +218,10 @@ export function useFavoritesViewData({
     const avatarHistoryItems = useMemo(() => {
         return buildFavoriteAvatarHistoryItems({
             kind,
-            avatarHistory: normalizedAvatarHistory,
+            avatarHistory,
             t
         });
-    }, [kind, normalizedAvatarHistory, t]);
+    }, [avatarHistory, kind, t]);
 
     const allItems = useMemo(
         () => [

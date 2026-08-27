@@ -4,6 +4,7 @@ import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { LoadStatus } from '@/domain/shared/types';
 import { cn } from '@/lib/utils';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
@@ -19,7 +20,7 @@ type ResolvedAvatarRecord = Record<string, unknown> & {
     name?: string;
 };
 
-type AvatarInfoLineStatus = 'idle' | 'loading' | 'ready' | 'error';
+type AvatarInfoLineStatus = LoadStatus;
 
 type AvatarInfoLineState = {
     avatarName: string;
@@ -29,20 +30,20 @@ type AvatarInfoLineState = {
 };
 
 type AvatarInfoLineStateInput = {
-    avatarName?: unknown;
-    ownerId?: unknown;
+    avatarName?: string;
+    ownerId?: string;
     status?: AvatarInfoLineStatus;
     cacheKey?: string;
 };
 
 type AvatarInfoLineProps = {
-    avatarName?: unknown;
-    avatarTags?: unknown;
+    avatarName?: string | null;
+    avatarTags?: string[] | null;
     compact?: boolean;
-    imageUrl?: unknown;
-    ownerId?: unknown;
+    imageUrl?: string | null;
+    ownerId?: string | null;
     showTags?: boolean;
-    userId?: unknown;
+    userId?: string | null;
 };
 
 function isAvatarRecord(value: unknown): value is ResolvedAvatarRecord {
@@ -66,10 +67,10 @@ async function findAvatarByImageUrl({
     imageUrl,
     avatarName
 }: {
-    imageUrl: unknown;
-    avatarName: unknown;
+    imageUrl: string;
+    avatarName: string;
 }): Promise<ResolvedAvatarRecord | null> {
-    const fileId = extractFileId(String(imageUrl ?? ''));
+    const fileId = extractFileId(imageUrl);
     const query = normalizeId(avatarName) || fileId;
     if (!fileId || query.length < 3) {
         return null;
@@ -100,15 +101,12 @@ async function findAvatarByImageUrl({
     );
 }
 
-function getAvatarInfoLineCacheKey(
-    imageUrl: unknown,
-    endpoint: unknown
-): string {
-    const normalizedImageUrl = String(imageUrl || '').trim();
+function getAvatarInfoLineCacheKey(imageUrl: string, endpoint: string): string {
+    const normalizedImageUrl = imageUrl.trim();
     if (!normalizedImageUrl) {
         return '';
     }
-    return `${String(endpoint || '').trim()}\n${normalizedImageUrl}`;
+    return `${endpoint.trim()}\n${normalizedImageUrl}`;
 }
 
 function normalizeAvatarInfoLineState({
@@ -118,7 +116,7 @@ function normalizeAvatarInfoLineState({
     cacheKey = ''
 }: AvatarInfoLineStateInput = {}): AvatarInfoLineState {
     return {
-        avatarName: typeof avatarName === 'string' ? avatarName.trim() : '',
+        avatarName: avatarName.trim(),
         ownerId: normalizeId(ownerId),
         status,
         cacheKey
@@ -152,20 +150,21 @@ function resolveInitialAvatarInfoLineState({
     ownerId,
     endpoint
 }: {
-    avatarName?: unknown;
-    imageUrl?: unknown;
-    ownerId?: unknown;
-    endpoint?: unknown;
+    avatarName?: string | null;
+    imageUrl?: string | null;
+    ownerId?: string | null;
+    endpoint: string;
 }): AvatarInfoLineState {
-    const hintedName = typeof avatarName === 'string' ? avatarName.trim() : '';
+    const hintedName = avatarName?.trim() ?? '';
     const hintedOwnerId = normalizeId(ownerId);
-    const cacheKey = getAvatarInfoLineCacheKey(imageUrl, endpoint);
+    const cacheKey = getAvatarInfoLineCacheKey(imageUrl ?? '', endpoint);
 
     if (!cacheKey) {
         return normalizeAvatarInfoLineState({
             avatarName: hintedName,
             ownerId: hintedOwnerId,
-            status: 'idle'
+            status: 'idle',
+            cacheKey
         });
     }
 
@@ -180,13 +179,19 @@ function resolveInitialAvatarInfoLineState({
     }
 
     return normalizeAvatarInfoLineState({
-        status: 'loading',
+        status: 'running',
         cacheKey
     });
 }
 
 function isEmptyAvatarTags(value: unknown): boolean {
-    return !(value as { length?: unknown } | null | undefined)?.length;
+    if (typeof value === 'string' || Array.isArray(value)) {
+        return value.length === 0;
+    }
+    if (value && typeof value === 'object' && 'length' in value) {
+        return !value.length;
+    }
+    return true;
 }
 
 function avatarTagsEqual(left: unknown, right: unknown): boolean {
@@ -230,17 +235,20 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     );
 
     useEffect(() => {
-        const hintedName =
-            typeof avatarName === 'string' ? avatarName.trim() : '';
+        const hintedName = avatarName?.trim() ?? '';
         const hintedOwnerId = normalizeId(ownerId);
-        const cacheKey = getAvatarInfoLineCacheKey(imageUrl, currentEndpoint);
+        const resolvedImageUrl = imageUrl?.trim() ?? '';
+        const cacheKey = getAvatarInfoLineCacheKey(
+            resolvedImageUrl,
+            currentEndpoint
+        );
 
         if (!cacheKey) {
             setAvatarInfoLineState(setInfo, {
                 avatarName: hintedName,
                 ownerId: hintedOwnerId,
                 status: 'idle',
-                cacheKey: ''
+                cacheKey
             });
             return undefined;
         }
@@ -262,7 +270,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
                 return current;
             }
             const nextInfo = normalizeAvatarInfoLineState({
-                status: 'loading',
+                status: 'running',
                 cacheKey
             });
             return isSameAvatarInfoLineState(current, nextInfo)
@@ -271,7 +279,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         });
 
         avatarProfileRepository
-            .getAvatarNameFromImageUrl(imageUrl)
+            .getAvatarNameFromImageUrl(resolvedImageUrl)
             .then((nextInfo) => {
                 if (!active) {
                     return;
@@ -314,12 +322,13 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
                 : 'public'
             : '';
     const label =
-        info.status === 'loading'
+        info.status === 'running'
             ? 'Resolving avatar info...'
             : info.avatarName || t('dialog.user.info.unknown_avatar');
 
     async function openAvatarAuthorTarget(): Promise<void> {
-        if (!imageUrl) {
+        const resolvedImageUrl = imageUrl?.trim() ?? '';
+        if (!resolvedImageUrl) {
             return;
         }
 
@@ -331,9 +340,9 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             openAvatarDialog({
                 avatarId: currentUserSnapshot.currentAvatar,
                 title:
-                    currentUserSnapshot.currentAvatarName ||
-                    currentUserSnapshot.avatarName ||
-                    info.avatarName ||
+                    normalizeId(currentUserSnapshot.currentAvatarName) ||
+                    normalizeId(currentUserSnapshot.avatarName) ||
+                    normalizeId(info.avatarName) ||
                     undefined
             });
             return;
@@ -345,7 +354,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             try {
                 const nextInfo =
                     await avatarProfileRepository.getAvatarNameFromImageUrl(
-                        imageUrl
+                        resolvedImageUrl
                     );
                 nextOwnerId = normalizeId(nextInfo?.ownerId);
                 nextAvatarName = nextInfo?.avatarName || nextAvatarName;
@@ -361,7 +370,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
 
         try {
             const avatar = await findAvatarByImageUrl({
-                imageUrl,
+                imageUrl: resolvedImageUrl,
                 avatarName: nextAvatarName
             });
             if (avatar?.id) {

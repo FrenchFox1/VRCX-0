@@ -22,10 +22,7 @@ pub fn app__devkit_read_file(
 
     #[cfg(feature = "devkit")]
     {
-        state
-            .desktop
-            .host_file_access
-            .ensure_read_allowed(&file_path, &state.paths)?;
+        state.runtime_host().ensure_host_read_allowed(&file_path)?;
         Ok(std::fs::read_to_string(&file_path)?)
     }
 }

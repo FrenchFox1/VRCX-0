@@ -6,9 +6,13 @@ use vrcx_0_application_core::{
     RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSupervisor,
 };
 use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_persistence::realtime::{
+    write_realtime_batch, FriendLogUpsert, RealtimePersistenceBatch,
+};
 
 use super::*;
 use crate::test_support::test_runtime;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -36,7 +40,6 @@ fn friend(id: &str, display_name: &str, state_bucket: &str, location: &str) -> F
         id: id.into(),
         display_name: display_name.into(),
         state: state_bucket.into(),
-        state_bucket: state_bucket.into(),
         location: location.into(),
         status: "active".into(),
         ..FriendRecord::default()
@@ -90,6 +93,160 @@ async fn in_process_bridge_returns_structured_read_only_results() {
     assert!(structured["summary"]
         .as_str()
         .is_some_and(|value| !value.is_empty()));
+}
+
+#[tokio::test]
+async fn friend_feed_search_resolves_target_pages_results_and_guards_global_history() {
+    let (_dir, runtime, db) =
+        crate::test_support::test_runtime_with_database("in-process-friend-feed", "usr_owner")
+            .unwrap();
+    write_realtime_batch(
+        db.as_ref(),
+        &OwnerId::new("usr_owner"),
+        &RealtimePersistenceBatch {
+            friend_log_upserts: vec![FriendLogUpsert {
+                target_user_id: "usr_alice".into(),
+                display_name: "Alice".into(),
+                trust_level: "trusted".into(),
+                friend_number: 1,
+                created_at: "2026-08-01T00:00:00.000Z".into(),
+                force_history: false,
+            }],
+            feed_entries: vec![
+                json!({
+                    "created_at": "2026-08-12T10:00:00.000Z",
+                    "type": "Bio",
+                    "userId": "usr_alice",
+                    "displayName": "Alice",
+                    "bio": "new needle text",
+                    "previousBio": "older text",
+                }),
+                json!({
+                    "created_at": "2026-08-11T10:00:00.000Z",
+                    "type": "Bio",
+                    "userId": "usr_alice",
+                    "displayName": "Alice",
+                    "bio": "older needle text",
+                    "previousBio": "oldest text",
+                }),
+                json!({
+                    "created_at": "2026-08-12T11:00:00.000Z",
+                    "type": "Bio",
+                    "userId": "usr_bob",
+                    "displayName": "Bob",
+                    "bio": "other needle text",
+                    "previousBio": "",
+                }),
+            ],
+            ..RealtimePersistenceBatch::default()
+        },
+    )
+    .unwrap();
+    let tools = spawn_in_process_tools(runtime).await.unwrap();
+
+    let first = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([
+                ("query".into(), json!("needle")),
+                ("target".into(), json!("Alice")),
+                ("eventTypes".into(), json!(["bio"])),
+                ("limit".into(), json!(1)),
+            ])),
+        )
+        .await
+        .unwrap();
+    assert!(!first.is_error, "{}", first.text);
+    let first = first.structured.expect("structured friend Feed result");
+    assert_eq!(first["resolvedUser"]["userId"], "usr_alice");
+    assert_eq!(first["rows"].as_array().unwrap().len(), 1);
+    assert_eq!(first["rows"][0]["bio"], "new needle text");
+    assert_eq!(first["truncated"], true);
+    let cursor = first["nextCursor"].as_str().unwrap().to_string();
+
+    let second = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([
+                ("query".into(), json!("needle")),
+                ("target".into(), json!("usr_alice")),
+                ("eventTypes".into(), json!(["bio"])),
+                ("limit".into(), json!(1)),
+                ("cursor".into(), json!(cursor)),
+            ])),
+        )
+        .await
+        .unwrap();
+    assert!(!second.is_error, "{}", second.text);
+    let second = second.structured.expect("structured second page");
+    assert_eq!(second["rows"][0]["bio"], "older needle text");
+    assert_eq!(second["truncated"], false);
+
+    let target_history = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([
+                ("target".into(), json!("usr_alice")),
+                ("eventTypes".into(), json!(["bio"])),
+                (
+                    "timeWindow".into(),
+                    json!({ "from": "2026-08-12T00:00:00Z" }),
+                ),
+            ])),
+        )
+        .await
+        .unwrap();
+    assert!(!target_history.is_error, "{}", target_history.text);
+    let target_history = target_history
+        .structured
+        .expect("structured target history");
+    assert_eq!(target_history["rows"].as_array().unwrap().len(), 1);
+    assert_eq!(target_history["rows"][0]["bio"], "new needle text");
+
+    let string_window = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([
+                ("target".into(), json!("usr_alice")),
+                ("eventTypes".into(), json!(["bio"])),
+                ("timeWindow".into(), json!("all history")),
+            ])),
+        )
+        .await
+        .unwrap();
+    assert!(!string_window.is_error, "{}", string_window.text);
+    assert_eq!(
+        string_window.structured.unwrap()["rows"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+
+    for invalid_time_window in [json!("whenever-ish"), json!({ "from": 7 })] {
+        let invalid = tools
+            .call_tool(
+                "search_friend_feed",
+                Some(Map::from_iter([
+                    ("target".into(), json!("usr_alice")),
+                    ("timeWindow".into(), invalid_time_window),
+                ])),
+            )
+            .await
+            .unwrap();
+        assert!(invalid.is_error);
+        assert!(invalid.text.contains("timeWindow"));
+    }
+
+    let unbounded = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([("query".into(), json!("needle"))])),
+        )
+        .await
+        .unwrap();
+    assert!(unbounded.is_error);
+    assert!(unbounded.text.contains("allHistory=true"));
 }
 
 #[tokio::test]

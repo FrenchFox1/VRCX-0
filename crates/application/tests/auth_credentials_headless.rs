@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use vrcx_0_application::{delete_saved_credential, saved_snapshot};
+use vrcx_0_application::auth::{delete_saved_credential, saved_snapshot};
 use vrcx_0_persistence::{config::ConfigRepository, secrets::init_secrets, DatabaseService};
 
 struct TestDir {
@@ -38,6 +38,8 @@ fn headless_plaintext_passwords_preserve_literal_encrypted_prefixes() {
     let db_path = dir.path.join("VRCX-0.sqlite3");
     let db = Arc::new(DatabaseService::new(&db_path).unwrap());
     let config = ConfigRepository::new(db);
+    let auth_store =
+        vrcx_0_outbound_adapters::LocalAuthCredentialStore::from_repository(config.clone());
     init_secrets(Some([17; 32]), false);
     config
         .set_bool(
@@ -65,7 +67,7 @@ fn headless_plaintext_passwords_preserve_literal_encrypted_prefixes() {
         )
         .unwrap();
 
-    delete_saved_credential(&config, "missing-user".into()).unwrap();
+    delete_saved_credential(&auth_store, "missing-user".into()).unwrap();
     let mut raw = raw_saved_credentials(&config);
     assert_eq!(raw["usr_1"]["loginParams"]["passwordStorage"], "plain");
     assert_eq!(raw["usr_1"]["cookies"], "portable-saved-cookie");
@@ -82,7 +84,7 @@ fn headless_plaintext_passwords_preserve_literal_encrypted_prefixes() {
         .unwrap();
 
     for _ in 0..2 {
-        let snapshot = saved_snapshot(&config).unwrap();
+        let snapshot = saved_snapshot(&auth_store).unwrap();
         assert!(snapshot
             .saved_credentials_list
             .iter()
@@ -115,7 +117,7 @@ fn headless_plaintext_passwords_preserve_literal_encrypted_prefixes() {
         )
         .unwrap();
 
-    assert!(delete_saved_credential(&config, "missing-user".into()).is_err());
+    assert!(delete_saved_credential(&auth_store, "missing-user".into()).is_err());
     assert!(config
         .get_bool(
             vrcx_0_persistence::secrets::CLEANUP_COMPLETED_CONFIG_KEY,

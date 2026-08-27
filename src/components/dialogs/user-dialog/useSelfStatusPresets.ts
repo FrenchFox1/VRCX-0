@@ -1,28 +1,34 @@
-import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { UserStatus } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 
 import {
     maxStatusPresets,
     normalizeSelfStatusInput,
-    statusPresetsConfigKey
+    normalizeSocialStatusPreset,
+    statusPresetsConfigKey,
+    type SocialStatusPreset
 } from './userProfileFields';
 
+export type { SocialStatusPreset } from './userProfileFields';
+
 export type SocialStatusDraft = {
-    status: string;
+    status: UserStatus;
     statusDescription: string;
 };
 
 export function useSelfStatusPresets({
-    socialStatusDraft,
-    t
+    socialStatusDraft
 }: {
     socialStatusDraft: SocialStatusDraft;
-    t: TFunction;
 }) {
-    const [statusPresets, setStatusPresets] = useState<unknown[]>([]);
+    const { t } = useTranslation();
+    const [statusPresets, setStatusPresets] = useState<SocialStatusPreset[]>(
+        []
+    );
 
     useEffect(() => {
         let active = true;
@@ -31,7 +37,9 @@ export function useSelfStatusPresets({
             .getArray<unknown>(statusPresetsConfigKey, [])
             .then((presets) => {
                 if (active) {
-                    setStatusPresets(Array.isArray(presets) ? presets : []);
+                    setStatusPresets(
+                        (presets ?? []).map(normalizeSocialStatusPreset)
+                    );
                 }
             })
             .catch(() => {
@@ -61,17 +69,12 @@ export function useSelfStatusPresets({
             ).slice(0, 32)
         };
         if (
-            statusPresets.some((preset) => {
-                const presetRecord =
-                    preset && typeof preset === 'object'
-                        ? Object.fromEntries(Object.entries(preset))
-                        : {};
-                return (
-                    presetRecord.status === nextPreset.status &&
-                    String(presetRecord.statusDescription || '') ===
+            statusPresets.some(
+                (preset) =>
+                    preset.status === nextPreset.status &&
+                    (preset.statusDescription ?? '') ===
                         nextPreset.statusDescription
-                );
-            })
+            )
         ) {
             toast.info(t('dialog.user.label.status_preset_already_exists'));
             return;

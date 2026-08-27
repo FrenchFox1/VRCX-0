@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { setRightSidebarOpenPreference } from '@/services/preferencesService';
+import { isRecord } from '@/shared/utils/record';
 import { useShellStore } from '@/state/shellStore';
 
 import { getDefaultHiddenSidePanelPath } from './sidePanelRoutes';
@@ -11,10 +12,6 @@ const sidePanelRouteOpenStateEvent =
     'vrcx-main-layout-right-sidebar-route-open-state-change';
 
 type SidePanelRouteOpenState = Record<string, boolean>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function readSidePanelRouteOpenState(): SidePanelRouteOpenState {
     if (typeof window === 'undefined') {

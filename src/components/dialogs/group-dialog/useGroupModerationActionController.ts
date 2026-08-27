@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import type { EntityRecord } from '@/domain/entities/profileEntities';
+import type { EntityRecord } from '@/domain/entities/shared';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { useModalStore } from '@/state/modalStore';
 
@@ -46,7 +46,7 @@ export function useGroupModerationActionController({
             description: label,
             confirmText: action.label,
             cancelText: t('common.actions.cancel'),
-            destructive: Boolean(action.destructive)
+            destructive: action.destructive ?? false
         });
         if (!result.ok) {
             return;

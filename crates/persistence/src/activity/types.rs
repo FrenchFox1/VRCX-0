@@ -1,7 +1,8 @@
+use crate::ownership::OwnerId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum ActivityRefreshMode {
     Full,
@@ -9,7 +10,7 @@ pub enum ActivityRefreshMode {
     Expand,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum ActivityViewKind {
     Activity,
@@ -25,17 +26,17 @@ impl ActivityViewKind {
     }
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityFriendPresenceSliceInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub user_id: String,
     pub from_date_iso: String,
     #[serde(default)]
     pub to_date_iso: String,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityPresenceOutput {
     #[serde(rename = "created_at")]
@@ -43,7 +44,7 @@ pub struct ActivityPresenceOutput {
     pub r#type: String,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySelfSourceBoundsOutput {
     pub first_created_at: String,
@@ -51,7 +52,7 @@ pub struct ActivitySelfSourceBoundsOutput {
     pub count: i64,
 }
 
-#[derive(Clone, Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySyncStateOutput {
     pub user_id: String,
@@ -62,7 +63,7 @@ pub struct ActivitySyncStateOutput {
     pub cached_range_days: i64,
 }
 
-#[derive(Clone, Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySessionOutput {
     pub start: i64,
@@ -71,7 +72,7 @@ pub struct ActivitySessionOutput {
     pub source_revision: String,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySelfSessionsRefreshInput {
     pub user_id: String,
@@ -82,7 +83,7 @@ pub struct ActivitySelfSessionsRefreshInput {
     pub now_ms: Option<i64>,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySelfSessionsRefreshOutput {
     pub sync: ActivitySyncStateOutput,
@@ -90,10 +91,10 @@ pub struct ActivitySelfSessionsRefreshOutput {
     pub source_count: usize,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityBucketCacheQueryInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub target_user_id: String,
     pub range_days: Value,
@@ -102,10 +103,10 @@ pub struct ActivityBucketCacheQueryInput {
     pub exclude_key: String,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityBucketCacheOutput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub target_user_id: String,
     pub range_days: i64,
     pub view_kind: ActivityViewKind,
@@ -118,7 +119,7 @@ pub struct ActivityBucketCacheOutput {
     pub built_at: String,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySyncStateInput {
     #[serde(default)]
@@ -135,7 +136,7 @@ pub struct ActivitySyncStateInput {
     pub cached_range_days: Value,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySessionInput {
     #[serde(default)]
@@ -148,10 +149,10 @@ pub struct ActivitySessionInput {
     pub source_revision: String,
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityBucketCacheInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     #[serde(default)]
     pub target_user_id: String,
     pub range_days: Value,
@@ -175,7 +176,7 @@ pub struct ActivityBucketCacheInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityViewBuildInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub target_user_id: String,
     pub is_self: bool,
     pub range_days: i64,
@@ -201,7 +202,7 @@ pub struct ActivityViewOutput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityOverlapViewBuildInput {
-    pub owner_user_id: String,
+    pub owner_user_id: OwnerId,
     pub current_user_id: String,
     pub target_user_id: String,
     pub range_days: i64,

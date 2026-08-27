@@ -1,4 +1,4 @@
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
+import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import type { FeedFilter, FeedRowOutput } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';
@@ -16,16 +16,18 @@ export const FEED_FILTER_TYPES: readonly FeedFilter[] = Object.freeze([
 ]);
 
 export type FeedFilterType = FeedFilter;
-export type FeedEntry = Record<string, unknown>;
-const FEED_FILTER_TYPE_SET: ReadonlySet<string> = new Set(FEED_FILTER_TYPES);
+
+export function isFeedFilterType(value: unknown): value is FeedFilterType {
+    return FEED_FILTER_TYPES.some((filter) => filter === value);
+}
 
 export interface FeedQueryOptions {
-    userId: unknown;
-    search?: unknown;
-    filters?: unknown[];
-    favoriteUserIds?: unknown[];
-    scopedUserIds?: readonly unknown[];
-    excludedFavoriteUserIds?: unknown[];
+    userId: string;
+    search?: string;
+    filters?: FeedFilter[];
+    favoriteUserIds?: string[];
+    scopedUserIds?: readonly string[];
+    excludedFavoriteUserIds?: string[];
     dateFrom?: string;
     dateTo?: string;
     maxEntries?: number;
@@ -34,11 +36,11 @@ export interface FeedQueryOptions {
 }
 
 export interface FeedLatestQueryOptions {
-    userId: unknown;
-    filters?: unknown[];
-    favoriteUserIds?: unknown[];
-    scopedUserIds?: readonly unknown[];
-    excludedFavoriteUserIds?: unknown[];
+    userId: string;
+    filters?: FeedFilter[];
+    favoriteUserIds?: string[];
+    scopedUserIds?: readonly string[];
+    excludedFavoriteUserIds?: string[];
     favoritesOnly?: boolean;
     maxRows?: number;
 }
@@ -49,44 +51,24 @@ interface FeedReadyState {
     searchLimit: number;
 }
 
-function normalizeUserId(value: unknown): string {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
+function normalizeUserId(value: string): string {
+    return value.trim();
 }
 
-function normalizeUserIdList(value: readonly unknown[] = []): string[] {
+function normalizeUserIdList(value: readonly string[] = []): string[] {
     return Array.from(
-        new Set(
-            (Array.isArray(value) ? value : [])
-                .map((entry) => normalizeUserId(entry))
-                .filter(Boolean)
-        )
+        new Set(value.map((entry) => normalizeUserId(entry)).filter(Boolean))
     );
 }
 
-function normalizeFilterList(filters: unknown[] = []): FeedFilterType[] {
-    if (!Array.isArray(filters)) {
-        return [];
-    }
-
-    return filters.filter((filter, index, source): filter is FeedFilterType => {
-        if (typeof filter !== 'string') {
-            return false;
-        }
-
-        if (!FEED_FILTER_TYPE_SET.has(filter)) {
-            return false;
-        }
-
-        return source.indexOf(filter) === index;
-    });
+function normalizeFilterList(filters: FeedFilter[] = []): FeedFilterType[] {
+    return Array.from(new Set(filters));
 }
 
 class FeedRepository {
     #currentUserId: string = '';
 
-    async #ensureReady(userId: unknown): Promise<FeedReadyState> {
+    async #ensureReady(userId: string): Promise<FeedReadyState> {
         const normalizedUserId = normalizeUserId(userId);
         if (!normalizedUserId) {
             throw new Error('FeedRepository requires a current user id.');
@@ -104,8 +86,8 @@ class FeedRepository {
 
         return {
             normalizedUserId,
-            maxTableSize: Number(maxTableSize),
-            searchLimit: Number(searchLimit)
+            maxTableSize,
+            searchLimit
         };
     }
 
@@ -130,7 +112,7 @@ class FeedRepository {
         const normalizedExcludedFavorites = normalizeUserIdList(
             excludedFavoriteUserIds
         );
-        const normalizedSearch = String(search || '').trim();
+        const normalizedSearch = search.trim();
 
         if (normalizedSearch || dateFrom || dateTo) {
             return feedPersistenceRepository.searchFeedDatabase(
@@ -151,7 +133,8 @@ class FeedRepository {
             normalizedUserId,
             normalizedFilters,
             normalizedFavorites,
-            maxEntries ?? maxTableSize,
+            maxEntries ??
+                (normalizedScoped.length > 0 ? searchLimit : maxTableSize),
             cursor,
             normalizedExcludedFavorites,
             normalizedScoped

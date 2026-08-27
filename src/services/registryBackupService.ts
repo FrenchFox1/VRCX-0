@@ -32,7 +32,7 @@ async function restoreVrcRegistryBackupFromFile(): Promise<boolean> {
     return commands.appRegistryBackupImportFromFile();
 }
 
-async function deleteVrcRegistryFolder(): Promise<unknown> {
+async function deleteVrcRegistryFolder(): Promise<null> {
     requireHostCapability('registryPrefs');
     return commands.appDeleteVrchatRegistryFolder();
 }

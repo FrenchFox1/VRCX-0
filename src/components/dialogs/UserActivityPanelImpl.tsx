@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { getResolvedThemeMode } from '@/services/themeService';
-import { parseLocation } from '@/shared/utils/location';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
@@ -25,10 +24,7 @@ import {
     ActivityEmptyState,
     HeatmapChart
 } from './user-dialog/components/UserActivityPanelParts';
-import {
-    UserActivityOverlapSection,
-    UserActivityTopWorldsSection
-} from './user-dialog/components/UserActivityPanelSections';
+import { UserActivityOverlapSection } from './user-dialog/components/UserActivityPanelSections';
 import {
     getDisplayDayLabels,
     USER_ACTIVITY_HOUR_LABELS
@@ -38,7 +34,6 @@ import type { UserDialogProfileRecord } from './user-dialog/useUserDialogProfile
 
 export type UserActivityPanelProps = {
     profile: UserDialogProfileRecord;
-    isCurrentUser: boolean;
     active?: boolean;
 };
 
@@ -49,19 +44,14 @@ export {
 
 export function UserActivityPanel({
     profile,
-    isCurrentUser,
     active = false
 }: UserActivityPanelProps) {
     const { t } = useTranslation();
-    const locale = useShellStore((state) => state.locale);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
-    const currentUserSnapshot = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot
-    );
     const weekStartsOn = usePreferencesStore((state) => state.weekStartsOn);
     const themeMode = useShellStore((state) => state.themeMode);
     const userId = profile?.id || '';
-    const activityContextKey = `${currentUserId || ''}:${isCurrentUser ? 'self' : 'friend'}:${userId}`;
+    const activityContextKey = `${currentUserId || ''}:${userId}`;
     const isDarkMode = getResolvedThemeMode(themeMode) === 'dark';
     const dayLabels = useMemo(
         () => [
@@ -73,25 +63,19 @@ export function UserActivityPanel({
             t('dialog.user.activity.days.fri'),
             t('dialog.user.activity.days.sat')
         ],
-        [locale, t]
+        [t]
     );
-    const currentHomeLocation = currentUserSnapshot?.homeLocation || '';
-    const currentHomeWorldId =
-        parseLocation(currentHomeLocation).worldId || currentHomeLocation;
     const displayDayLabels = useMemo(
         () => getDisplayDayLabels(dayLabels, weekStartsOn),
         [dayLabels, weekStartsOn]
     );
     const {
         bestOverlapTime,
-        changeExcludeHomeWorld,
         changeExcludeHours,
         changeExcludeRange,
         changePeriod,
-        changeTopWorldsSort,
         error,
         excludeEndHour,
-        excludeHomeWorldEnabled,
         excludeHoursEnabled,
         excludeStartHour,
         filteredEventCount,
@@ -106,22 +90,16 @@ export function UserActivityPanel({
         peakDayText,
         peakTimeText,
         refreshData,
-        selectedPeriod,
-        topWorlds,
-        topWorldsLoading,
-        topWorldsLoadingVisible,
-        topWorldsSortBy
+        selectedPeriod
     } = useUserActivityPanelController({
         active,
         activityContextKey,
-        currentHomeWorldId,
         currentUserId,
         dayLabels,
         failedToLoadMessage: t(
             'dialog.user.activity.failed_to_load',
             'Failed to load activity.'
         ),
-        isCurrentUser,
         userId
     });
     const easterEggTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -373,7 +351,7 @@ export function UserActivityPanel({
                 />
             ) : null}
 
-            {!isCurrentUser && hasAnyData ? (
+            {hasAnyData ? (
                 <UserActivityOverlapSection
                     bestOverlapTime={bestOverlapTime}
                     changeExcludeHours={changeExcludeHours}
@@ -392,20 +370,6 @@ export function UserActivityPanel({
                     overlapPercent={overlapPercent}
                     overlapScaleColors={overlapScaleColors}
                     weekStartsOn={weekStartsOn}
-                />
-            ) : null}
-
-            {isCurrentUser && hasAnyData ? (
-                <UserActivityTopWorldsSection
-                    changeExcludeHomeWorld={changeExcludeHomeWorld}
-                    changeTopWorldsSort={changeTopWorldsSort}
-                    currentHomeWorldId={currentHomeWorldId}
-                    excludeHomeWorldEnabled={excludeHomeWorldEnabled}
-                    loading={loading}
-                    topWorlds={topWorlds}
-                    topWorldsLoading={topWorldsLoading}
-                    topWorldsLoadingVisible={topWorldsLoadingVisible}
-                    topWorldsSortBy={topWorldsSortBy}
                 />
             ) : null}
         </div>

@@ -14,10 +14,10 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
     PROFILE_DECORATION_SLOTS,
-    type ProfileDecorationSlot
+    type ProfileDecorationSlot,
+    type UserDialogProfileAppearanceOverride,
+    type UserDialogProfileAppearanceOverrides
 } from './userDialogProfileAppearance';
-
-const PROFILE_DECORATION_TYPES_PARAM = PROFILE_DECORATION_SLOTS.join(',');
 
 type ItemsBySlot = Record<ProfileDecorationSlot, InventoryItemRecord[]>;
 
@@ -29,7 +29,13 @@ type ProfileDecorationsAuthTarget = {
 
 type ProfileDecorationMutation =
     | {
-          action: 'equip' | 'unequip';
+          action: 'equip';
+          equipSlot: ProfileDecorationSlot;
+          inventoryId: string;
+          item: InventoryItemRecord;
+      }
+    | {
+          action: 'unequip';
           equipSlot: ProfileDecorationSlot;
           inventoryId: string;
       }
@@ -59,6 +65,31 @@ function isProfileDecorationSlot(
     value: unknown
 ): value is ProfileDecorationSlot {
     return PROFILE_DECORATION_SLOTS.some((slot) => slot === value);
+}
+
+function applyDecorationOverrideToItems(
+    itemsBySlot: ItemsBySlot,
+    slot: ProfileDecorationSlot,
+    override: UserDialogProfileAppearanceOverride
+): ItemsBySlot {
+    const selectedInventoryId =
+        override.action === 'equip' ? override.item.id : '';
+    const items = itemsBySlot[slot].map((item) => {
+        let equipSlot = item.equipSlot;
+        if (item.id === selectedInventoryId) {
+            equipSlot = slot;
+        } else if (equipSlot === slot) {
+            equipSlot = '';
+        }
+        return { ...item, equipSlot };
+    });
+    if (
+        override.action === 'equip' &&
+        !items.some((item) => item.id === selectedInventoryId)
+    ) {
+        items.push({ ...override.item, equipSlot: slot });
+    }
+    return { ...itemsBySlot, [slot]: items };
 }
 
 export function useUserDialogProfileDecorations({
@@ -99,6 +130,21 @@ export function useUserDialogProfileDecorations({
     const [loading, setLoading] = useState(false);
     const [pendingKey, setPendingKey] = useState('');
     const pendingRef = useRef(false);
+    const [appearanceOverrideState, setAppearanceOverrideState] = useState<{
+        key: string;
+        value: UserDialogProfileAppearanceOverrides;
+    }>({ key: '', value: {} });
+    const appearanceOverrideStateRef = useRef(appearanceOverrideState);
+    appearanceOverrideStateRef.current = appearanceOverrideState;
+
+    const setAppearanceOverrides = useCallback(
+        (key: string, value: UserDialogProfileAppearanceOverrides) => {
+            const nextState = { key, value };
+            appearanceOverrideStateRef.current = nextState;
+            setAppearanceOverrideState(nextState);
+        },
+        []
+    );
 
     const refresh = useCallback(async () => {
         const target = authTargetRef.current;
@@ -110,9 +156,8 @@ export function useUserDialogProfileDecorations({
         try {
             const { items: rows, truncated } =
                 await mediaRepository.collectInventoryItems({
-                    order: 'newest',
-                    types: PROFILE_DECORATION_TYPES_PARAM,
-                    notFlags: 'ugc',
+                    types: [...PROFILE_DECORATION_SLOTS],
+                    notFlags: ['ugc'],
                     archived: false
                 });
             if (truncated) {
@@ -153,6 +198,12 @@ export function useUserDialogProfileDecorations({
         refresh();
     }, [currentKey, enabled, refresh]);
 
+    useEffect(() => {
+        if (appearanceOverrideStateRef.current.key !== currentKey) {
+            setAppearanceOverrides(currentKey, {});
+        }
+    }, [currentKey, setAppearanceOverrides]);
+
     async function runMutation(
         key: string,
         mutation: ProfileDecorationMutation
@@ -161,8 +212,31 @@ export function useUserDialogProfileDecorations({
         if (!target.userId || pendingRef.current) {
             return;
         }
+        const targetKey = authTargetKey(target);
         pendingRef.current = true;
         setPendingKey(key);
+        let optimisticOverride: UserDialogProfileAppearanceOverride | null =
+            null;
+        let previousOverride: UserDialogProfileAppearanceOverride | undefined;
+        if (mutation.action !== 'background') {
+            optimisticOverride =
+                mutation.action === 'equip'
+                    ? {
+                          action: 'equip',
+                          item: mutation.item,
+                          templateId: mutation.item.templateId?.trim() ?? ''
+                      }
+                    : { action: 'unequip' };
+            const currentOverrides =
+                appearanceOverrideStateRef.current.key === targetKey
+                    ? appearanceOverrideStateRef.current.value
+                    : {};
+            previousOverride = currentOverrides[mutation.equipSlot];
+            setAppearanceOverrides(targetKey, {
+                ...currentOverrides,
+                [mutation.equipSlot]: optimisticOverride
+            });
+        }
         try {
             if (mutation.action === 'background') {
                 await userProfileRepository.updateCurrentUserProfile({
@@ -199,15 +273,32 @@ export function useUserDialogProfileDecorations({
                         : 'dialog.inventory.equipped_success'
                 )
             );
-            await Promise.allSettled([
-                refresh(),
-                refreshCurrentUser({
-                    expectedUserId: target.userId,
-                    expectedEndpoint: target.endpoint,
-                    expectedWebsocket: target.websocket
-                })
-            ]);
+            await refreshCurrentUser({
+                expectedUserId: target.userId,
+                expectedEndpoint: target.endpoint,
+                expectedWebsocket: target.websocket
+            }).catch(() => undefined);
+            if (authTargetKey(authTargetRef.current) === targetKey) {
+                onProfileUpdatedRef.current?.();
+            }
         } catch (error) {
+            if (
+                mutation.action !== 'background' &&
+                optimisticOverride &&
+                appearanceOverrideStateRef.current.key === targetKey &&
+                appearanceOverrideStateRef.current.value[mutation.equipSlot] ===
+                    optimisticOverride
+            ) {
+                const nextOverrides = {
+                    ...appearanceOverrideStateRef.current.value
+                };
+                if (previousOverride) {
+                    nextOverrides[mutation.equipSlot] = previousOverride;
+                } else {
+                    delete nextOverrides[mutation.equipSlot];
+                }
+                setAppearanceOverrides(targetKey, nextOverrides);
+            }
             toast.error(
                 error instanceof Error
                     ? error.message
@@ -231,7 +322,7 @@ export function useUserDialogProfileDecorations({
         if (!mutation || mutation.action !== 'equip') {
             return;
         }
-        runMutation(item.id, mutation);
+        runMutation(item.id, { ...mutation, item });
     }
 
     function unequipSlot(slot: ProfileDecorationSlot) {
@@ -247,9 +338,26 @@ export function useUserDialogProfileDecorations({
     }
 
     const isReady = loadedKey === currentKey;
+    const appearanceOverrides =
+        appearanceOverrideState.key === currentKey
+            ? appearanceOverrideState.value
+            : {};
+    let displayedItemsBySlot = itemsBySlot;
+    for (const slot of PROFILE_DECORATION_SLOTS) {
+        const override = appearanceOverrides[slot];
+        if (override) {
+            displayedItemsBySlot = applyDecorationOverrideToItems(
+                displayedItemsBySlot,
+                slot,
+                override
+            );
+        }
+    }
 
     return {
-        itemsBySlot: enabled && isReady ? itemsBySlot : EMPTY_ITEMS_BY_SLOT,
+        itemsBySlot:
+            enabled && isReady ? displayedItemsBySlot : EMPTY_ITEMS_BY_SLOT,
+        appearanceOverrides,
         loading,
         pendingKey,
         isReady,
@@ -258,3 +366,7 @@ export function useUserDialogProfileDecorations({
         updateBackground
     };
 }
+
+export type UserDialogProfileDecorationsController = ReturnType<
+    typeof useUserDialogProfileDecorations
+>;

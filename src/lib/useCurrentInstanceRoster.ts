@@ -6,6 +6,7 @@ import {
     type CurrentInstanceRosterPlayer
 } from '@/domain/instances/currentInstanceRoster';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { LogLocationSnapshot } from '@/platform/tauri/bindings';
 import { loadCurrentInstanceRoster } from '@/services/currentInstanceRosterService';
 import { recordGameRuntimePresence } from '@/services/domainIngestionService';
 import { parseLocation } from '@/shared/utils/location';
@@ -19,18 +20,18 @@ function createRuntimeContext({
     playerListWorldId,
     source = 'runtime'
 }: {
-    playerListLocation?: unknown;
-    playerListWorldId?: unknown;
+    playerListLocation?: string;
+    playerListWorldId?: string;
     source?: CurrentInstanceRosterContext['source'];
 }): CurrentInstanceRosterContext {
     return {
         createdAt: '',
         groupName: '',
-        location: normalizeString(playerListLocation),
+        location: playerListLocation ?? '',
         playerCount: 0,
         source,
         time: 0,
-        worldId: normalizeString(playerListWorldId),
+        worldId: playerListWorldId ?? '',
         worldName: ''
     };
 }
@@ -48,19 +49,15 @@ export function useCurrentInstanceRoster({
     tailSyncRevision
 }: {
     currentUserEndpoint?: string;
-    currentUserId?: unknown;
+    currentUserId?: string | null;
     currentUserSnapshot?: CurrentUserSnapshot | null;
     isGameRunning: boolean;
-    logLocationSnapshot?: {
-        createdAt?: unknown;
-        location?: unknown;
-        worldName?: unknown;
-    } | null;
-    playerListLocation?: unknown;
-    playerListStartedAt?: unknown;
-    playerListWorldId?: unknown;
-    refreshRevision?: unknown;
-    tailSyncRevision?: unknown;
+    logLocationSnapshot?: LogLocationSnapshot | null;
+    playerListLocation?: string;
+    playerListStartedAt?: string | null;
+    playerListWorldId?: string;
+    refreshRevision?: number;
+    tailSyncRevision?: string | null;
 }) {
     const [loadStatus, setLoadStatus] =
         useState<CurrentInstanceRosterLoadStatus>('idle');
@@ -125,8 +122,8 @@ export function useCurrentInstanceRoster({
 
         loadCurrentInstanceRoster({
             currentLocation: playerListLocation,
-            currentLocationStartedAt: playerListStartedAt,
-            currentUserId
+            currentLocationStartedAt: playerListStartedAt ?? '',
+            currentUserId: currentUserId ?? ''
         })
             .then((result) => {
                 if (!active) {
@@ -134,18 +131,17 @@ export function useCurrentInstanceRoster({
                 }
 
                 const rosterLocation =
-                    result.context.location ||
-                    normalizeString(playerListLocation);
+                    result.context.location || playerListLocation;
                 const players = parseLocation(rosterLocation).isRealInstance
                     ? includeCurrentUserInRoster({
                           currentUserDisplayName: normalizeString(
                               currentUserSnapshot?.displayName ||
                                   currentUserSnapshot?.username
                           ),
-                          currentUserId: normalizeString(currentUserId),
+                          currentUserId: currentUserId ?? '',
                           joinedAt:
                               result.context.createdAt ||
-                              normalizeString(playerListStartedAt),
+                              (playerListStartedAt ?? ''),
                           players: result.players
                       })
                     : result.players;
@@ -158,20 +154,15 @@ export function useCurrentInstanceRoster({
                     logLocationSnapshot.location === nextContext.location
                 ) {
                     nextContext.createdAt =
-                        nextContext.createdAt ||
-                        normalizeString(logLocationSnapshot.createdAt);
+                        nextContext.createdAt || logLocationSnapshot.createdAt;
                     nextContext.worldName =
-                        nextContext.worldName ||
-                        normalizeString(logLocationSnapshot.worldName);
+                        nextContext.worldName || logLocationSnapshot.worldName;
                 }
                 recordGameRuntimePresence({
-                    currentLocation:
-                        nextContext.location ||
-                        normalizeString(playerListLocation),
+                    currentLocation: nextContext.location || playerListLocation,
                     currentLocationPlayers: result.players,
                     currentLocationStartedAt:
-                        nextContext.createdAt ||
-                        normalizeString(playerListStartedAt),
+                        nextContext.createdAt || playerListStartedAt || '',
                     currentUserId,
                     currentUserSnapshot,
                     currentWorldName: nextContext.worldName,

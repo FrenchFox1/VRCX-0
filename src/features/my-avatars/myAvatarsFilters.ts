@@ -1,6 +1,11 @@
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 
-import type { MyAvatarRow, MyAvatarTag } from './myAvatarsTypes';
+import type {
+    MyAvatarRow,
+    MyAvatarTag,
+    MyAvatarsPlatformFilter,
+    MyAvatarsReleaseStatusFilter
+} from './myAvatarsTypes';
 
 export function toggleMyAvatarsTagFilter(
     currentTags: Iterable<string> | null | undefined,
@@ -29,7 +34,7 @@ export function collectMyAvatarTags(avatars: readonly MyAvatarRow[]) {
 
 export function matchesMyAvatarsPlatformFilter(
     avatar: MyAvatarRow,
-    platformFilter: string
+    platformFilter: MyAvatarsPlatformFilter
 ) {
     if (platformFilter === 'all') {
         return true;
@@ -45,9 +50,9 @@ export function matchesMyAvatarsPlatformFilter(
 
 type FilterMyAvatarsInput = {
     avatars: readonly MyAvatarRow[] | null | undefined;
-    searchQuery?: unknown;
-    platformFilter: string;
-    releaseStatusFilter: string;
+    searchQuery?: string;
+    platformFilter: MyAvatarsPlatformFilter;
+    releaseStatusFilter: MyAvatarsReleaseStatusFilter;
     tagFilters?: Set<string>;
 };
 
@@ -58,9 +63,7 @@ export function filterMyAvatars({
     releaseStatusFilter,
     tagFilters
 }: FilterMyAvatarsInput) {
-    const searchValue = String(searchQuery || '')
-        .trim()
-        .toLowerCase();
+    const searchValue = (searchQuery || '').trim().toLowerCase();
     const selectedTags =
         tagFilters instanceof Set ? tagFilters : new Set<string>();
     const avatarRows: readonly MyAvatarRow[] = Array.isArray(avatars)
@@ -93,16 +96,10 @@ export function filterMyAvatars({
         }
 
         return (
-            String(avatar?.name || '')
-                .toLowerCase()
-                .includes(searchValue) ||
-            String(avatar?.description || '')
-                .toLowerCase()
-                .includes(searchValue) ||
+            (avatar.name || '').toLowerCase().includes(searchValue) ||
+            (avatar.description || '').toLowerCase().includes(searchValue) ||
             (avatar?.$tags || []).some((entry) =>
-                String(entry?.tag || '')
-                    .toLowerCase()
-                    .includes(searchValue)
+                (entry.tag || '').toLowerCase().includes(searchValue)
             )
         );
     });

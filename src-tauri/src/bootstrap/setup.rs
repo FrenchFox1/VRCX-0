@@ -20,9 +20,11 @@ use super::adapters::{
 };
 use super::autostart::{apply_autostart_window_state_if_needed, sync_autostart_from_db};
 use super::shared::app_language;
-use super::window::{configure_tray, create_main_window, disable_windows_default_context_menu};
+use super::window::{configure_tray, configure_windows_webview_settings, create_main_window};
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+#[cfg(target_os = "windows")]
+const WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: &str = "--disable-back-forward-cache --disable-domain-reliability --disable-features=AutofillServerCommunication,BackgroundFetch,MediaRouter --disable-file-system --disable-notifications --disable-presentation-api --disable-remote-playback-api --disable-shared-workers --disable-speech-api";
 
 fn should_capture_gui_error(level: &Level, target: &str) -> bool {
     level == &Level::ERROR
@@ -30,14 +32,14 @@ fn should_capture_gui_error(level: &Level, target: &str) -> bool {
 }
 
 pub fn init_error_logging(app_data: Option<PathBuf>) {
-    let Some(app_data) = app_data.or_else(vrcx_0_host::error_log::default_app_data_dir) else {
+    let Some(app_data) = app_data.or_else(vrcx_0_platform::error_log::default_app_data_dir) else {
         return;
     };
 
     let default_panic_hook = std::panic::take_hook();
     let panic_app_data = app_data.clone();
     std::panic::set_hook(Box::new(move |panic_info| {
-        vrcx_0_host::error_log::append_panic_error_log_with_version(
+        vrcx_0_platform::error_log::append_panic_error_log_with_version(
             &panic_app_data,
             panic_info,
             APP_VERSION,
@@ -57,7 +59,7 @@ pub fn init_error_logging(app_data: Option<PathBuf>) {
             tracing_subscriber::fmt::layer()
                 .with_ansi(false)
                 .with_writer(move || {
-                    vrcx_0_host::error_log::ErrorLogWriter::new_with_version(
+                    vrcx_0_platform::error_log::ErrorLogWriter::new_with_version(
                         tracing_app_data.clone(),
                         APP_VERSION,
                     )
@@ -112,12 +114,51 @@ pub fn apply_linux_webkit_workaround() {
     }
 }
 
+pub fn configure_webview2_environment() {
+    #[cfg(target_os = "windows")]
+    {
+        const KEY: &str = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS";
+        let arguments = append_browser_arguments(
+            std::env::var_os(KEY).as_deref(),
+            WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS,
+        );
+        std::env::set_var(KEY, arguments);
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn append_browser_arguments(
+    existing: Option<&std::ffi::OsStr>,
+    additional: &str,
+) -> std::ffi::OsString {
+    let mut arguments = existing.unwrap_or_default().to_os_string();
+    if !arguments.is_empty() {
+        arguments.push(" ");
+    }
+    arguments.push(additional);
+    arguments
+}
+
 fn initialize_app_state(
     app: &tauri::App,
-    app_data_dir: vrcx_0_host::app_paths::AppDataDirResolution,
+    app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
     updater_port: Arc<TauriUpdaterPort>,
 ) -> AppState {
-    let error = match AppState::new(app_data_dir.clone(), updater_port.clone()) {
+    let database_maintenance_cache_dir = match app.path().app_cache_dir() {
+        Ok(path) => Some(path),
+        Err(error) => {
+            tracing::warn!(
+                error = %error,
+                "failed to resolve Tauri cache directory for database maintenance"
+            );
+            None
+        }
+    };
+    let error = match AppState::new(
+        app_data_dir.clone(),
+        database_maintenance_cache_dir.clone(),
+        updater_port.clone(),
+    ) {
         Ok(state) => return state,
         Err(error) => error,
     };
@@ -130,7 +171,7 @@ fn initialize_app_state(
                     quarantined = %quarantined.display(),
                     "local database is corrupted; quarantined it to recreate a fresh database"
                 );
-                match AppState::new(app_data_dir, updater_port) {
+                match AppState::new(app_data_dir, database_maintenance_cache_dir, updater_port) {
                     Ok(state) => {
                         show_blocking_dialog(
                             app,
@@ -165,7 +206,8 @@ fn is_database_corruption_error(error: &AppError) -> bool {
 }
 
 fn quarantine_corrupt_database(app_data: &std::path::Path) -> std::io::Result<PathBuf> {
-    let db_file = vrcx_0_host::app_paths::AppPaths::from_app_data(app_data.to_path_buf()).db_file;
+    let db_file =
+        vrcx_0_platform::app_paths::AppPaths::from_app_data(app_data.to_path_buf()).db_file;
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|elapsed| elapsed.as_secs())
@@ -207,7 +249,7 @@ fn show_blocking_dialog(app: &tauri::App, kind: MessageDialogKind, message: &str
 
 pub fn setup_app_with_data_dir(
     app: &mut tauri::App,
-    app_data_dir: vrcx_0_host::app_paths::AppDataDirResolution,
+    app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let updater_port = Arc::new(TauriUpdaterPort::new(app.handle().clone()));
     let app_state = initialize_app_state(app, app_data_dir, updater_port);
@@ -216,37 +258,36 @@ pub fn setup_app_with_data_dir(
 
     let state = app.state::<AppState>();
     state
-        .desktop
-        .services
+        .runtime_host()
         .set_notification_desktop_notifier(Arc::new(TauriDesktopNotifier::new(
             app.handle().clone(),
         )));
     let _ = state
-        .storage
-        .remove(BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY);
-    state.runtime_context.runtime.record_phase(
+        .runtime_host()
+        .storage_remove(BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY);
+    state.runtime_host().record_lifecycle_phase(
         "appState",
         RuntimeOperationStatus::Completed,
         "Backend AppState initialized.",
     );
-    state.runtime_context.sync.record(
+    state.runtime_host().record_sync(
         "startup",
         RuntimeOperationStatus::Running,
         "Tauri setup is wiring runtime services.",
         0,
     );
-    create_main_window(app.handle(), state.web.proxy_url())?;
-    state.runtime_context.runtime.record_phase(
+    create_main_window(app.handle(), state.runtime_host().proxy_url())?;
+    state.runtime_host().record_lifecycle_phase(
         "mainWindow",
         RuntimeOperationStatus::Completed,
         "Main webview window created.",
     );
 
-    disable_windows_default_context_menu(app.handle());
+    configure_windows_webview_settings(app.handle());
 
     let state = app.state::<AppState>();
     configure_tray(app, &state)?;
-    state.runtime_context.runtime.record_phase(
+    state.runtime_host().record_lifecycle_phase(
         "tray",
         RuntimeOperationStatus::Completed,
         "System tray configured.",
@@ -260,7 +301,7 @@ pub fn setup_app_with_data_dir(
     start_host_services(app.handle(), &state);
     start_mcp_server_if_enabled(app.handle());
     wire_deep_links(app.handle());
-    state.runtime_context.sync.record(
+    state.runtime_host().record_sync(
         "startup",
         RuntimeOperationStatus::Ready,
         "Backend host services are ready.",
@@ -305,14 +346,17 @@ fn queue_deep_link_url(app: &tauri::AppHandle, value: &str) {
         tracing::warn!(url = %value, "ignored deep link before app state was ready");
         return;
     };
-    queue_deep_link_action(&state.pending_deep_links, action, || {
+    queue_deep_link_action(state.pending_deep_links(), action, || {
         let app_handle = app.clone();
-        if let Err(error) = app.run_on_main_thread(move || {
-            show_main_window_for_deep_link(&app_handle);
-            emit_deep_link_arrived(&app_handle);
-        }) {
-            tracing::warn!(error = %error, "failed to schedule deep link window restore");
-        }
+        tauri::async_runtime::spawn(async move {
+            let main_thread_handle = app_handle.clone();
+            if let Err(error) = app_handle.run_on_main_thread(move || {
+                show_main_window_for_deep_link(&main_thread_handle);
+                emit_deep_link_arrived(&main_thread_handle);
+            }) {
+                tracing::warn!(error = %error, "failed to schedule deep link window restore");
+            }
+        });
     });
 }
 
@@ -340,6 +384,8 @@ fn emit_deep_link_arrived(app: &tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::should_capture_gui_error;
+    #[cfg(target_os = "windows")]
+    use super::{append_browser_arguments, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS};
     use tracing::Level;
 
     #[test]
@@ -369,5 +415,30 @@ mod tests {
                 "vrcx_0::bootstrap::adapters"
             ));
         }
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn webview2_browser_arguments_preserve_existing_overrides() {
+        let arguments = append_browser_arguments(
+            Some(std::ffi::OsStr::new("--remote-debugging-port=9222")),
+            WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS,
+        );
+
+        assert_eq!(
+            arguments,
+            std::ffi::OsString::from(format!(
+                "--remote-debugging-port=9222 {WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS}"
+            ))
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn webview2_browser_arguments_do_not_add_a_leading_separator() {
+        assert_eq!(
+            append_browser_arguments(None, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS),
+            std::ffi::OsString::from(WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS)
+        );
     }
 }

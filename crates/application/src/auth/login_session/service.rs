@@ -1,27 +1,33 @@
+use crate::auth::AuthCredentialStore;
 use serde_json::Value;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_vrchat_client::auth::{
-    config_get_input, current_user_get_input, email_otp_verify_input, login_basic_input,
-    otp_verify_input, totp_verify_input,
+use vrcx_0_application_core::vrchat_api::{
+    VrchatApiRequest as HttpApiRequestInput, VrchatApiResponse as HttpApiExecuteResponse,
+    VrchatScope as ApiScope,
 };
-use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiExecuteResponse, HttpApiRequestInput};
+use vrcx_0_contracts::vrchat_api::{classify_vrchat_auth_failure, VrchatAuthFailureKind};
 
 use crate::auth::auth_credentials::saved_credential_login_start_with_api;
-use crate::{
-    auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage},
-    auth_response_error_message, AuthenticatedRuntimeSession, SavedCredentialLoginStartInput,
-    WebClient,
+use crate::auth::{
+    auth_response_error_message,
+    cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage},
+    AuthenticatedRuntimeSession, SavedCredentialLoginStartInput,
 };
+use vrcx_0_application_core::WebClient;
 
 use super::types::{LoginApi, LoginFailureKind, LoginSessionState, TwoFactorMethod};
 
 async fn execute_or_fail(
     api: &dyn LoginApi,
     request: HttpApiRequestInput,
-) -> std::result::Result<HttpApiExecuteResponse, LoginSessionState> {
+) -> std::result::Result<HttpApiExecuteResponse, Box<LoginSessionState>> {
     api.execute(request, ApiScope::Vrchat)
         .await
-        .map_err(|error| LoginSessionState::failed(error.to_string(), LoginFailureKind::Network))
+        .map_err(|error| {
+            Box::new(LoginSessionState::failed(
+                error.to_string(),
+                LoginFailureKind::Network,
+            ))
+        })
 }
 
 fn parse_json_or_fail(
@@ -36,52 +42,21 @@ fn parse_json_or_fail(
 }
 
 fn sort_two_factor_methods(methods: &mut [TwoFactorMethod]) {
-    methods.sort_by_key(|method| TwoFactorMethodKind::from_wire(method).priority());
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum TwoFactorMethodKind {
-    Totp,
-    EmailOtp,
-    Otp,
-    Unsupported,
-}
-
-impl TwoFactorMethodKind {
-    fn from_wire(method: &str) -> Self {
-        match method {
-            "totp" => Self::Totp,
-            "emailOtp" => Self::EmailOtp,
-            "otp" => Self::Otp,
-            _ => Self::Unsupported,
-        }
-    }
-
-    fn priority(self) -> u8 {
-        match self {
-            Self::Totp => 0,
-            Self::EmailOtp => 1,
-            Self::Otp => 2,
-            Self::Unsupported => 3,
-        }
-    }
+    methods.sort_by_key(|method| match method {
+        TwoFactorMethod::Totp => 0,
+        TwoFactorMethod::EmailOtp => 1,
+        TwoFactorMethod::Otp => 2,
+        TwoFactorMethod::Unknown(_) => 3,
+    });
 }
 
 fn classify_status_failure(response: &HttpApiExecuteResponse) -> LoginFailureKind {
-    if response.status == 401 {
-        let message = auth_response_error_message(response, String::new());
-        if message.contains("Invalid Username/Email or Password") {
-            return LoginFailureKind::InvalidCredentials;
-        }
-        if message.contains("Missing Credentials") {
-            return LoginFailureKind::MissingCredentials;
-        }
-        return LoginFailureKind::SessionInvalidated;
+    match classify_vrchat_auth_failure(response) {
+        VrchatAuthFailureKind::InvalidCredentials => LoginFailureKind::InvalidCredentials,
+        VrchatAuthFailureKind::MissingCredentials => LoginFailureKind::MissingCredentials,
+        VrchatAuthFailureKind::SessionInvalidated => LoginFailureKind::SessionInvalidated,
+        VrchatAuthFailureKind::Other => LoginFailureKind::Other,
     }
-    if response.status == 403 {
-        return LoginFailureKind::SessionInvalidated;
-    }
-    LoginFailureKind::Other
 }
 
 fn interpret_login_response(
@@ -110,18 +85,18 @@ fn interpret_login_response(
 }
 
 fn build_basic_login_request(
+    api: &dyn LoginApi,
     endpoint: &str,
     username: String,
     password: String,
 ) -> std::result::Result<HttpApiRequestInput, Box<LoginSessionState>> {
-    login_basic_input(
+    api.basic_login(
         endpoint.to_string(),
         username,
         password,
         "Username is required.",
         "Password is required.",
     )
-    .map(|(_, request)| request)
     .map_err(|error| {
         Box::new(LoginSessionState::failed(
             error.to_string(),
@@ -137,7 +112,7 @@ async fn execute_basic_login(
 ) -> LoginSessionState {
     let response = match execute_or_fail(api, request).await {
         Ok(response) => response,
-        Err(state) => return state,
+        Err(state) => return *state,
     };
 
     interpret_login_response(response, endpoint.to_string())
@@ -150,7 +125,7 @@ pub(super) async fn start_login(
     username: String,
     password: String,
 ) -> LoginSessionState {
-    let request = match build_basic_login_request(endpoint, username, password) {
+    let request = match build_basic_login_request(api, endpoint, username, password) {
         Ok(request) => request,
         Err(state) => return *state,
     };
@@ -164,14 +139,14 @@ pub(super) async fn start_gui_basic_login(
     username: String,
     password: String,
 ) -> LoginSessionState {
-    let request = match build_basic_login_request(endpoint, username, password) {
+    let request = match build_basic_login_request(api, endpoint, username, password) {
         Ok(request) => request,
         Err(state) => return *state,
     };
 
-    let config_response = match execute_or_fail(api, config_get_input(endpoint.to_string())).await {
+    let config_response = match execute_or_fail(api, api.config(endpoint.to_string())).await {
         Ok(response) => response,
-        Err(state) => return state,
+        Err(state) => return *state,
     };
     if config_response.status != 200 {
         let reason = auth_response_error_message(
@@ -189,7 +164,7 @@ pub(super) async fn start_gui_basic_login(
 
 pub(super) async fn start_saved_credential_login(
     api: &dyn LoginApi,
-    config: &ConfigRepository,
+    config: &dyn AuthCredentialStore,
     web: &WebClient,
     endpoint: String,
     user_id: String,
@@ -232,7 +207,7 @@ pub(super) async fn start_cookie_restore(
             ),
             LoginFailureKind::MissingCredentials,
         ),
-        Ok(CookieProbeResult::UserMismatch) => LoginSessionState::failed(
+        Ok(CookieProbeResult::UserMismatch { .. }) => LoginSessionState::failed(
             "The stored browser session belongs to a different account.",
             LoginFailureKind::MissingCredentials,
         ),
@@ -262,13 +237,13 @@ pub(super) async fn respond_to_challenge(
     method: TwoFactorMethod,
     code: String,
 ) -> LoginSessionState {
-    let verify_request = match TwoFactorMethodKind::from_wire(&method) {
-        TwoFactorMethodKind::Totp => totp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethodKind::EmailOtp => email_otp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethodKind::Otp => otp_verify_input(endpoint.to_string(), code),
-        TwoFactorMethodKind::Unsupported => {
+    let verify_request = match method {
+        TwoFactorMethod::Totp => api.verify_totp(endpoint.to_string(), code),
+        TwoFactorMethod::EmailOtp => api.verify_email_otp(endpoint.to_string(), code),
+        TwoFactorMethod::Otp => api.verify_otp(endpoint.to_string(), code),
+        TwoFactorMethod::Unknown(_) => {
             return LoginSessionState::failed(
-                format!("Unsupported 2FA method: {method}"),
+                format!("Unsupported 2FA method: {}", method.as_str()),
                 LoginFailureKind::TwoFactorUnavailable,
             );
         }
@@ -276,7 +251,7 @@ pub(super) async fn respond_to_challenge(
 
     let verify_response = match execute_or_fail(api, verify_request).await {
         Ok(response) => response,
-        Err(state) => return state,
+        Err(state) => return *state,
     };
 
     if verify_response.status != 200 {
@@ -301,10 +276,10 @@ pub(super) async fn respond_to_challenge(
         };
     }
 
-    let user_request = current_user_get_input(endpoint.to_string());
+    let user_request = api.current_user(endpoint.to_string());
     let user_response = match execute_or_fail(api, user_request).await {
         Ok(response) => response,
-        Err(state) => return state,
+        Err(state) => return *state,
     };
 
     if user_response.status != 200 {
@@ -336,7 +311,7 @@ fn extract_two_factor_methods(json: &Value) -> Vec<TwoFactorMethod> {
         .map(|values| {
             values
                 .iter()
-                .filter_map(|value| value.as_str().map(str::to_string))
+                .filter_map(|value| value.as_str().map(TwoFactorMethod::from))
                 .collect()
         })
         .unwrap_or_default()
@@ -355,7 +330,7 @@ fn challenge_from_methods(
     sort_two_factor_methods(&mut methods);
     let Some(mode) = methods
         .iter()
-        .find(|method| TwoFactorMethodKind::from_wire(method) != TwoFactorMethodKind::Unsupported)
+        .find(|method| !matches!(method, TwoFactorMethod::Unknown(_)))
         .cloned()
     else {
         return LoginSessionState::failed(

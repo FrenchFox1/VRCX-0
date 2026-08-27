@@ -1,5 +1,5 @@
 import { CheckIcon, ImageIcon, RefreshCcwIcon, SendIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import mediaRepository from '@/repositories/mediaRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { vrchatDefaultEmojis } from '@/shared/constants/vrchatDefaultEmojis';
+import { isRecord } from '@/shared/utils/record';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -40,10 +41,6 @@ type BoopEmojiDialogProps = {
     onOpenChange: (open: boolean) => void;
     onSend: (emojiId: string) => void | Promise<void>;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-}
 
 function getString(record: Record<string, unknown>, key: string): string {
     const value = record[key];
@@ -163,7 +160,7 @@ export function BoopEmojiDialog({
     const [error, setError] = useState('');
     const requestIdRef = useRef(0);
 
-    async function loadEmojiRows() {
+    const loadEmojiRows = useCallback(async () => {
         if (!open || !isLocalUserVrcPlusSupporter) {
             return;
         }
@@ -204,7 +201,7 @@ export function BoopEmojiDialog({
                 setLoading(false);
             }
         }
-    }
+    }, [isLocalUserVrcPlusSupporter, open]);
 
     useEffect(() => {
         if (open) {
@@ -220,7 +217,7 @@ export function BoopEmojiDialog({
             setSending(false);
             setError('');
         }
-    }, [isLocalUserVrcPlusSupporter, open]);
+    }, [loadEmojiRows, open]);
 
     const selectedEmojiName =
         vrchatDefaultEmojis.find((emoji) => emoji.id === emojiId)?.name ??
@@ -392,7 +389,7 @@ export function BoopEmojiDialog({
                                     </div>
                                 ) : (
                                     <div className="text-muted-foreground flex h-28 items-center justify-center text-sm">
-                                        {t('common.search_no_results')}
+                                        {t('empty_state.search_no_results')}
                                     </div>
                                 )}
                             </TabsContent>

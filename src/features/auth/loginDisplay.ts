@@ -1,3 +1,5 @@
+import type { SavedCredentialSnapshot } from '@/platform/tauri/bindings';
+
 type LoginUserRecord = {
     displayName?: string | null;
     id?: string | null;
@@ -23,7 +25,7 @@ export function getLoginUserDisplayName(
 
 export function shouldShowLegacyMigrationAction(
     isLoading: boolean,
-    savedAccounts: readonly unknown[]
+    savedAccounts: ReadonlyArray<Pick<SavedCredentialSnapshot, 'user'>>
 ): boolean {
     return !isLoading && savedAccounts.length === 0;
 }

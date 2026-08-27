@@ -2,10 +2,12 @@ use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use vrcx_0_application_core::RuntimeOperationStatus;
+use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
+use vrcx_0_core::json::RawJson;
 
 use crate::realtime::friends::{player_joining_feed_entry, PendingOfflineSchedule};
 use crate::realtime::{
@@ -19,6 +21,7 @@ use crate::social_baseline::service::{
 
 use super::state::{ActiveRealtimeContext, PendingFriendBaseline, ScopedFriendLogMutation};
 use super::RealtimeHostRuntime;
+use vrcx_0_core::OwnerId;
 
 enum FriendBaselineSyncMode {
     Direct {
@@ -36,6 +39,7 @@ struct FriendBaselineApplyPlan {
     previous_snapshot: Option<RealtimeFriendSnapshot>,
     schedules: Vec<PendingOfflineSchedule>,
     confirmed_feed_entries: Vec<Value>,
+    location_time_snapshot: Option<Vec<vrcx_0_application_core::FriendLocationTime>>,
 }
 
 impl RealtimeHostRuntime {
@@ -61,16 +65,16 @@ impl RealtimeHostRuntime {
 
     pub fn run_friend_log_current_mutation<T>(
         &self,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
-    ) -> vrcx_0_persistence::Result<T> {
+        mutation: impl FnOnce() -> Result<T>,
+    ) -> Result<T> {
         self.run_friend_log_current_mutation_with_effect(mutation, None)
     }
 
     pub(super) fn run_friend_log_current_mutation_with_effect<T>(
         &self,
-        mutation: impl FnOnce() -> vrcx_0_persistence::Result<T>,
+        mutation: impl FnOnce() -> Result<T>,
         effect: Option<ScopedFriendLogMutation>,
-    ) -> vrcx_0_persistence::Result<T> {
+    ) -> Result<T> {
         let _owner = self.lock_friend_owner();
         let result = mutation();
         if result.is_ok() {
@@ -131,13 +135,14 @@ impl RealtimeHostRuntime {
         };
         let owner = self.lock_friend_owner();
         let feed_persistence_disabled = self.feed_persistence_disabled.load(Ordering::Relaxed);
-        let friend_count = friends_by_id.len();
+        let friend_count = u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX);
         let FriendBaselineApplyPlan {
             result,
             active,
             previous_snapshot,
             schedules: baseline_schedules,
             confirmed_feed_entries,
+            location_time_snapshot,
         } = {
             let mut state = self
                 .state
@@ -210,7 +215,7 @@ impl RealtimeHostRuntime {
                     let roster_order =
                         roster_order_from_friend_records(&pending_snapshot.friends_by_id);
                     reconcile_friend_roster_records(
-                        self.deps.db.as_ref(),
+                        self.deps.store.as_ref(),
                         &pending_snapshot.current_user_id,
                         &pending_snapshot.friends_by_id,
                         roster_order.as_deref(),
@@ -269,7 +274,7 @@ impl RealtimeHostRuntime {
                         .baseline_causal_watermark()
                         .baseline_revision
                         .unwrap_or(0),
-                    friend_count: friends_by_id.len(),
+                    friend_count: u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX),
                 }));
             }
 
@@ -314,12 +319,14 @@ impl RealtimeHostRuntime {
             let result = baseline_effects.result;
             let baseline_schedules = baseline_effects.schedules;
             let confirmed_feed_entries = baseline_effects.confirmed_feed_entries;
+            let location_time_snapshot = baseline_effects.location_time_snapshot;
             FriendBaselineApplyPlan {
                 result,
                 active,
                 previous_snapshot,
                 schedules: baseline_schedules,
                 confirmed_feed_entries,
+                location_time_snapshot,
             }
         };
 
@@ -330,9 +337,15 @@ impl RealtimeHostRuntime {
         } else {
             None
         };
-        let baseline_projection = canonical_snapshot.as_ref().and_then(|snapshot| {
+        let mut baseline_projection = canonical_snapshot.as_ref().and_then(|snapshot| {
             friend_snapshot_diff_projection(previous_snapshot.as_ref(), snapshot)
         });
+        if let Some(location_time_snapshot) = location_time_snapshot {
+            let projection = baseline_projection.get_or_insert_with(|| {
+                FriendProjection::new(result.generation, result.baseline_revision)
+            });
+            projection.location_time_snapshot = Some(location_time_snapshot);
+        }
         drop(previous_snapshot);
         if let Some(snapshot) = canonical_snapshot.as_ref() {
             self.set_activity_friend_user_ids(snapshot.friends_by_id.keys().cloned().collect());
@@ -343,7 +356,7 @@ impl RealtimeHostRuntime {
                 .map(|snapshot| {
                     let roster_order = roster_order_from_friend_records(&snapshot.friends_by_id);
                     reconcile_friend_roster_records(
-                        self.deps.db.as_ref(),
+                        self.deps.store.as_ref(),
                         &snapshot.current_user_id,
                         &snapshot.friends_by_id,
                         roster_order.as_deref(),
@@ -360,11 +373,17 @@ impl RealtimeHostRuntime {
             let mut projection = baseline_projection.unwrap_or_else(|| {
                 FriendProjection::new(result.generation, result.baseline_revision)
             });
-            let mut feed_entries = confirmed_feed_entries.clone();
+            let mut feed_entries = confirmed_feed_entries
+                .iter()
+                .cloned()
+                .map(RawJson::from)
+                .collect::<Vec<_>>();
             feed_entries.append(&mut projection.feed_entries);
             projection.feed_entries = feed_entries;
-            let mut output =
-                RealtimeFriendOutput::from_projection(active.session.user_id.clone(), projection);
+            let mut output = RealtimeFriendOutput::from_projection(
+                OwnerId::new(active.session.user_id.clone()),
+                projection,
+            );
             output.persistence.feed_entries = confirmed_feed_entries;
             self.apply_friend_output_owned(&owner, output);
         }
@@ -374,7 +393,7 @@ impl RealtimeHostRuntime {
         } = reconcile_outcome;
         self.apply_reconciled_friend_feed_entries_owned(
             &owner,
-            &active.session.user_id,
+            &OwnerId::new(active.session.user_id),
             result.generation,
             result.baseline_revision,
             feed_entries,
@@ -382,7 +401,7 @@ impl RealtimeHostRuntime {
         for schedule in baseline_schedules {
             let runtime = Arc::clone(self);
             self.deps.tasks.spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(schedule.delay_ms)).await;
+                tokio::time::sleep(schedule.delay).await;
                 let now = chrono::Utc::now().to_rfc3339();
                 runtime.fire_pending_offline(&schedule.user_id, schedule.token, now);
             });
@@ -449,7 +468,6 @@ fn friend_snapshot_diff_projection(
             continue;
         };
         let previous_record = previous.and_then(|snapshot| snapshot.friends_by_id.get(&user_id));
-        let state_bucket = friend_record_state_bucket(record);
         let changed = !previous_record.is_some_and(|previous_record| previous_record == record);
         if !changed {
             continue;
@@ -463,21 +481,14 @@ fn friend_snapshot_diff_projection(
             .push(crate::realtime::FriendProjectionPatch {
                 user_id,
                 patch: record.clone(),
-                state_bucket,
                 state_bucket_authority: FriendStateBucketAuthority::Explicit,
             });
         if let Some(entry) = joining_entry {
-            projection.feed_entries.push(entry);
+            projection.feed_entries.push(entry.into());
         }
     }
 
     (!projection.patches.is_empty() || !projection.removals.is_empty()).then_some(projection)
-}
-
-fn friend_record_state_bucket(record: &FriendRecord) -> String {
-    vrcx_0_core::friends::normalize_state_bucket(&record.state_bucket)
-        .or_else(|| vrcx_0_core::friends::normalize_state_bucket(&record.state))
-        .unwrap_or_else(|| "offline".to_string())
 }
 
 fn roster_order_from_friend_records(
@@ -488,8 +499,7 @@ fn roster_order_from_friend_records(
         .filter_map(|(user_id, record)| {
             let number = record
                 .extra
-                .get("friendNumber")
-                .or_else(|| record.extra.get("$friendNumber"))
+                .get(derived_keys::FRIEND_NUMBER)
                 .and_then(Value::as_i64)?;
             (number > 0).then(|| (number, user_id.clone()))
         })

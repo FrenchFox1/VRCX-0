@@ -1,5 +1,6 @@
 use super::test_support::*;
 use super::*;
+use crate::ownership::OwnerId;
 
 #[test]
 fn friend_changes_returns_recent_status_events_by_friend() {
@@ -20,7 +21,7 @@ fn friend_changes_returns_recent_status_events_by_friend() {
     let output = get_friend_changes(
         &db,
         FriendChangesInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             target_user_id: None,
             time_window: TimeWindow::all(),
             kind: FriendChangeKind::Status,
@@ -44,7 +45,7 @@ fn friend_changes_returns_recent_status_events_by_friend() {
     let bob = get_friend_changes(
         &db,
         FriendChangesInput {
-            owner_user_id: "usr_self".into(),
+            owner_user_id: OwnerId::new("usr_self"),
             target_user_id: Some("usr_bob".into()),
             time_window: TimeWindow::all(),
             kind: FriendChangeKind::Status,

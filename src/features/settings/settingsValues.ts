@@ -79,7 +79,9 @@ export function normalizeTablePageSizes(input: unknown): number[] {
     return uniqueSorted.length ? uniqueSorted : [...TABLE_PAGE_SIZE_DEFAULTS];
 }
 
-export function buildTablePageSizeOptions(draftSizes: unknown) {
+export function buildTablePageSizeOptions(
+    draftSizes: readonly (string | number)[] | null | undefined
+) {
     return normalizeTablePageSizes([
         ...TABLE_PAGE_SIZE_SUGGESTIONS,
         ...(Array.isArray(draftSizes) ? draftSizes : [])
@@ -88,27 +90,21 @@ export function buildTablePageSizeOptions(draftSizes: unknown) {
 
 export function filterTablePageSizeOptions(
     options: readonly number[] | null | undefined,
-    query: unknown
+    query: string
 ) {
-    const searchTerm = String(query || '').trim();
+    const searchTerm = query.trim();
     if (!searchTerm) {
         return Array.isArray(options) ? options : [];
     }
-    return (Array.isArray(options) ? options : []).filter((size) =>
-        String(size).includes(searchTerm)
-    );
+    return (options ?? []).filter((size) => String(size).includes(searchTerm));
 }
 
-export function parseIntegerInput(value: unknown, fallback: number) {
+export function parseIntegerInput(value: string | number, fallback: number) {
     const parsed = Number.parseInt(String(value), 10);
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-export function normalizeCheckedState(value: unknown): boolean {
-    return value === true;
-}
-
-export function isValidFontFamilyList(value: unknown): boolean {
+export function isValidFontFamilyList(value: string): boolean {
     const normalized = String(value ?? '').trim();
     if (!normalized || normalized.length > MAX_CUSTOM_FONT_FAMILY_LENGTH) {
         return false;
@@ -119,7 +115,7 @@ export function isValidFontFamilyList(value: unknown): boolean {
         .every((entry) => FONT_FAMILY_TOKEN_PATTERN.test(entry.trim()));
 }
 
-export function quoteCssFontFamilyName(value: unknown): string {
+export function quoteCssFontFamilyName(value: string): string {
     const name = String(value ?? '').trim();
     if (!name) {
         return '';

@@ -184,7 +184,7 @@ export function useModerationTableState({
         }
     }, [filteredRowsLength, pagination.pageIndex, pagination.pageSize]);
 
-    function handlePageSizeChange(value: unknown) {
+    function handlePageSizeChange(value: string) {
         const nextPageSize = resolveModerationPageSize(
             value,
             pageSizes,

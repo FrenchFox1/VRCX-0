@@ -1,3 +1,5 @@
+import { isRecord } from '@/shared/utils/record';
+
 import { recordTelemetryEvent } from './telemetryEvent';
 
 type AssistantToolErrorInput = {
@@ -22,10 +24,6 @@ const SAFE_STRING_ARG_KEYS = new Set([
     'time_window',
     'type'
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 function summarizeArgValue(key: string, value: unknown): string {
     if (value === null) {
@@ -91,7 +89,10 @@ function classifyToolResult(summary?: string): string | undefined {
         /\b(invalid|malformed|bad request|schema|argument|arguments|args)\b/.test(
             normalized
         ) ||
-        /\b(missing field|invalid type|unknown variant)\b/.test(normalized)
+        /\b(missing field|invalid type|unknown variant)\b/.test(normalized) ||
+        /\b(unrecognized timewindow|timewindow(?:\.[a-z]+| calendar year)? must be)\b/.test(
+            normalized
+        )
     ) {
         return 'invalid_args';
     }

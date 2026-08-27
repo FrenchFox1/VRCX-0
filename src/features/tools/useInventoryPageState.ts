@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -17,20 +17,22 @@ import {
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import type { GalleryGridDensity } from './galleryDensity';
 import {
+    buildEmojiUploadParams,
     CATEGORY_DEFINITIONS,
     INITIAL_INVENTORY_SUB_TABS,
     getInventoryGridDensityConfig,
     parseEmojiUploadSettings,
     readGridDensityPreference,
     resolveProfileDecorationMutation,
-    sanitizeInventoryGridDensity,
     scopeKey,
     validateImageFile,
     writeGridDensityPreference,
     type InventoryCategory,
     type InventoryTabDefinition,
-    type InventoryUploadTarget
+    type InventoryUploadTarget,
+    type EmojiUploadSettings
 } from './inventoryHelpers';
 
 export { IMAGE_UPLOAD_ACCEPT };
@@ -46,13 +48,7 @@ export type InventoryRow = MediaFileRecord & Partial<InventoryItemRecord>;
 const EMPTY_ROWS_BY_SCOPE: Record<string, InventoryRow[]> = Object.freeze({});
 const EMPTY_LOADING_BY_SCOPE: Record<string, boolean> = Object.freeze({});
 
-type InventoryUploadSettings = {
-    animationStyle: string;
-    fps: number;
-    frames: number;
-    isAnimated: boolean;
-    loopPingPong: boolean;
-};
+type InventoryUploadSettings = EmojiUploadSettings;
 
 type InventoryCropRequest = {
     aspectRatio: number;
@@ -68,8 +64,70 @@ function inventoryAuthTargetKey(authTarget: InventoryAuthTarget) {
     );
 }
 
+function getInventoryAuthTarget(): InventoryAuthTarget {
+    const auth = useRuntimeStore.getState().auth;
+    return {
+        userId: auth.currentUserId || '',
+        endpoint: auth.currentUserEndpoint || '',
+        websocket: auth.currentUserWebsocket || ''
+    };
+}
+
+function isCurrentInventoryAuthTarget(authTarget: InventoryAuthTarget) {
+    const currentAuth = getInventoryAuthTarget();
+    return (
+        currentAuth.userId === authTarget.userId &&
+        currentAuth.endpoint === authTarget.endpoint &&
+        currentAuth.websocket === authTarget.websocket
+    );
+}
+
+async function loadInventoryFileRows(
+    definition: InventoryTabDefinition,
+    authTarget: InventoryAuthTarget
+) {
+    const nextRows: InventoryRow[] = [];
+    for (const tag of definition.fileTags || []) {
+        const { json } = await mediaRepository.getFileList({
+            n: VRCHAT_API_DEFAULT_PAGE_SIZE,
+            tag
+        });
+        if (Array.isArray(json)) {
+            nextRows.push(...json);
+        }
+    }
+    const seen = new Set<string>();
+    return nextRows
+        .filter((row) => {
+            if (!row?.id || seen.has(row.id)) {
+                return false;
+            }
+            seen.add(row.id);
+            return true;
+        })
+        .reverse()
+        .filter(() => isCurrentInventoryAuthTarget(authTarget));
+}
+
+async function loadInventoryRows(definition: InventoryTabDefinition) {
+    if (definition.source === 'empty') {
+        return [];
+    }
+    const { items, truncated } = await mediaRepository.collectInventoryItems({
+        ...definition.params
+    });
+    if (truncated) {
+        console.warn('Inventory listing truncated at the page limit.');
+    }
+    return items;
+}
+
 export function useInventoryPageState() {
     const { t } = useTranslation();
+    const translateRef = useRef(t);
+    useEffect(() => {
+        translateRef.current = t;
+    }, [t]);
     const uploadInputRef = useRef<HTMLInputElement | null>(null);
     const uploadTargetRef = useRef<InventoryUploadTarget | null>(null);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -132,121 +190,65 @@ export function useInventoryPageState() {
     const activeSubTab = activeSubTabs[activeCategory];
     const activeScopeKey = scopeKey(activeCategory, activeSubTab);
 
-    function getAuthTarget() {
-        const auth = useRuntimeStore.getState().auth;
-        return {
-            userId: auth.currentUserId || '',
-            endpoint: auth.currentUserEndpoint || '',
-            websocket: auth.currentUserWebsocket || ''
-        };
+    function changeGridDensity(nextValue: GalleryGridDensity) {
+        setGridDensity(nextValue);
+        writeGridDensityPreference(nextValue);
     }
 
-    function isCurrentAuthTarget(authTarget: InventoryAuthTarget) {
-        const currentAuth = getAuthTarget();
-        return (
-            currentAuth.userId === authTarget.userId &&
-            currentAuth.endpoint === authTarget.endpoint &&
-            currentAuth.websocket === authTarget.websocket
-        );
-    }
-
-    function changeGridDensity(nextValue: unknown) {
-        const nextDensity = sanitizeInventoryGridDensity(nextValue);
-        setGridDensity(nextDensity);
-        writeGridDensityPreference(nextDensity);
-    }
-
-    function setScopeLoading(key: string, value: unknown) {
+    const setScopeLoading = useCallback((key: string, value: boolean) => {
         setLoadingByScope((current) => ({
             ...current,
-            [key]: Boolean(value)
+            [key]: value
         }));
-    }
+    }, []);
 
-    function setScopeRows(key: string, rows: InventoryRow[]) {
+    const setScopeRows = useCallback((key: string, rows: InventoryRow[]) => {
         setRowsByScope((current) => ({
             ...current,
             [key]: rows
         }));
-    }
+    }, []);
 
-    async function loadFileRows(
-        definition: InventoryTabDefinition,
-        authTarget: InventoryAuthTarget
-    ) {
-        const nextRows: InventoryRow[] = [];
-        for (const tag of definition.fileTags || []) {
-            const { json } = await mediaRepository.getFileList({
-                n: VRCHAT_API_DEFAULT_PAGE_SIZE,
-                tag
-            });
-            if (Array.isArray(json)) {
-                nextRows.push(...json);
+    const refreshScope = useCallback(
+        async (
+            category: InventoryCategory = activeCategory,
+            tab: string = activeSubTab
+        ) => {
+            const definition = CATEGORY_DEFINITIONS[category].tabs.find(
+                (entry) => entry.key === tab
+            );
+            if (!definition) {
+                return;
             }
-        }
-        const seen = new Set<string>();
-        return nextRows
-            .filter((row) => {
-                if (!row?.id || seen.has(row.id)) {
-                    return false;
+            const key = scopeKey(category, tab);
+            const authTarget = getInventoryAuthTarget();
+            setScopeLoading(key, true);
+            try {
+                const rows =
+                    definition.source === 'file'
+                        ? await loadInventoryFileRows(definition, authTarget)
+                        : await loadInventoryRows(definition);
+                if (isCurrentInventoryAuthTarget(authTarget)) {
+                    setScopeRows(key, rows);
                 }
-                seen.add(row.id);
-                return true;
-            })
-            .reverse()
-            .filter(() => isCurrentAuthTarget(authTarget));
-    }
-
-    async function loadInventoryRows(definition: InventoryTabDefinition) {
-        if (definition.source === 'empty') {
-            return [];
-        }
-        const { items, truncated } =
-            await mediaRepository.collectInventoryItems({
-                order: 'newest',
-                ...(definition.params || {})
-            });
-        if (truncated) {
-            console.warn('Inventory listing truncated at the page limit.');
-        }
-        return items;
-    }
-
-    async function refreshScope(
-        category: InventoryCategory = activeCategory,
-        tab: string = activeSubTab
-    ) {
-        const definition = CATEGORY_DEFINITIONS[category].tabs.find(
-            (entry) => entry.key === tab
-        );
-        if (!definition) {
-            return;
-        }
-        const key = scopeKey(category, tab);
-        const authTarget = getAuthTarget();
-        setScopeLoading(key, true);
-        try {
-            const rows =
-                definition.source === 'file'
-                    ? await loadFileRows(definition, authTarget)
-                    : await loadInventoryRows(definition);
-            if (isCurrentAuthTarget(authTarget)) {
-                setScopeRows(key, rows);
+            } catch (error) {
+                if (isCurrentInventoryAuthTarget(authTarget)) {
+                    toast.error(
+                        error instanceof Error
+                            ? error.message
+                            : translateRef.current(
+                                  'dialog.inventory.failed_to_load'
+                              )
+                    );
+                }
+            } finally {
+                if (isCurrentInventoryAuthTarget(authTarget)) {
+                    setScopeLoading(key, false);
+                }
             }
-        } catch (error) {
-            if (isCurrentAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('dialog.inventory.failed_to_load')
-                );
-            }
-        } finally {
-            if (isCurrentAuthTarget(authTarget)) {
-                setScopeLoading(key, false);
-            }
-        }
-    }
+        },
+        [activeCategory, activeSubTab, setScopeLoading, setScopeRows]
+    );
 
     useEffect(() => {
         setScopeStateAuthTargetKey(currentAuthTargetKey);
@@ -258,15 +260,15 @@ export function useInventoryPageState() {
     }, [currentAuthTargetKey]);
 
     useEffect(() => {
-        if (currentUserId) {
+        if (currentUserId && currentAuthTargetKey) {
             refreshScope(activeCategory, activeSubTab);
         }
     }, [
-        currentEndpoint,
+        currentAuthTargetKey,
         currentUserId,
-        currentUserWebsocket,
         activeCategory,
-        activeSubTab
+        activeSubTab,
+        refreshScope
     ]);
 
     function beginUpload(target: InventoryUploadTarget) {
@@ -278,39 +280,15 @@ export function useInventoryPageState() {
         uploadInputRef.current?.click();
     }
 
-    function getEmojiUploadParams(settings: InventoryUploadSettings) {
-        const params: Record<string, string | number> = {
-            tag: settings.isAnimated ? 'emojianimated' : 'emoji',
-            animationStyle: String(
-                settings.animationStyle || 'Stop'
-            ).toLowerCase(),
-            maskTag: 'square'
-        };
-        if (settings.isAnimated) {
-            params.frames = Math.min(
-                64,
-                Math.max(2, Number(settings.frames) || 4)
-            );
-            params.framesOverTime = Math.min(
-                64,
-                Math.max(1, Number(settings.fps) || 15)
-            );
-        }
-        if (settings.loopPingPong) {
-            params.loopStyle = 'pingpong';
-        }
-        return params;
-    }
-
     function uploadAsset(
-        target: unknown,
+        target: InventoryUploadTarget,
         base64Body: string,
         settings: InventoryUploadSettings
     ) {
         if (target === 'emojis') {
             return mediaRepository.uploadEmoji(
                 base64Body,
-                getEmojiUploadParams(settings)
+                buildEmojiUploadParams(settings)
             );
         }
         if (target === 'stickers') {
@@ -336,7 +314,7 @@ export function useInventoryPageState() {
         if (!target) {
             return;
         }
-        const authTarget = getAuthTarget();
+        const authTarget = getInventoryAuthTarget();
         const settings =
             target === 'emojis'
                 ? parseEmojiUploadSettings(file.name, {
@@ -371,20 +349,24 @@ export function useInventoryPageState() {
 
     async function confirmCroppedUpload(blob: Blob) {
         const request = cropRequest;
-        if (!request || !blob || !isCurrentAuthTarget(request.authTarget)) {
+        if (
+            !request ||
+            !blob ||
+            !isCurrentInventoryAuthTarget(request.authTarget)
+        ) {
             return;
         }
         const { target, settings, authTarget } = request;
         setUploadingTarget(target ?? '');
         try {
             const base64Body = await readFileAsBase64(blob);
-            if (!isCurrentAuthTarget(authTarget)) {
+            if (!isCurrentInventoryAuthTarget(authTarget)) {
                 return;
             }
             const args = await withUploadTimeout(
                 uploadAsset(target, base64Body, settings)
             );
-            if (!isCurrentAuthTarget(authTarget)) {
+            if (!isCurrentInventoryAuthTarget(authTarget)) {
                 return;
             }
             const key = scopeKey(target, 'custom');
@@ -407,7 +389,7 @@ export function useInventoryPageState() {
             }
             toast.success(t('message.upload.success'));
         } catch (error) {
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message
@@ -421,11 +403,8 @@ export function useInventoryPageState() {
         }
     }
 
-    async function deleteFileAsset(fileId: unknown) {
-        const normalizedFileId =
-            typeof fileId === 'string'
-                ? fileId.trim()
-                : String(fileId ?? '').trim();
+    async function deleteFileAsset(fileId: string) {
+        const normalizedFileId = fileId.trim();
         if (!normalizedFileId) {
             return;
         }
@@ -441,11 +420,11 @@ export function useInventoryPageState() {
         if (!result.ok) {
             return;
         }
-        const authTarget = getAuthTarget();
+        const authTarget = getInventoryAuthTarget();
         setMutatingKey(`file:${normalizedFileId}`);
         try {
             await mediaRepository.deleteFile(normalizedFileId);
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 setRowsByScope((current) => ({
                     ...current,
                     [activeScopeKey]: (current[activeScopeKey] || []).filter(
@@ -455,7 +434,7 @@ export function useInventoryPageState() {
                 toast.success(t('view.tools.success.media_item_deleted'));
             }
         } catch (error) {
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message
@@ -470,23 +449,20 @@ export function useInventoryPageState() {
     }
 
     async function archiveInventoryItem(
-        inventoryId: unknown,
+        inventoryId: string,
         archived: boolean
     ) {
-        const normalizedInventoryId =
-            typeof inventoryId === 'string'
-                ? inventoryId.trim()
-                : String(inventoryId ?? '').trim();
+        const normalizedInventoryId = inventoryId.trim();
         if (!normalizedInventoryId) {
             return;
         }
-        const authTarget = getAuthTarget();
+        const authTarget = getInventoryAuthTarget();
         setMutatingKey(`inventory:${normalizedInventoryId}`);
         try {
             await mediaRepository.updateInventoryItem(normalizedInventoryId, {
                 isArchived: Boolean(archived)
             });
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.success(
                     archived
                         ? t('dialog.inventory.archived_success')
@@ -495,7 +471,7 @@ export function useInventoryPageState() {
                 await refreshScope(activeCategory, activeSubTab);
             }
         } catch (error) {
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message
@@ -509,24 +485,21 @@ export function useInventoryPageState() {
         }
     }
 
-    async function consumeInventoryBundle(inventoryId: unknown) {
-        const normalizedInventoryId =
-            typeof inventoryId === 'string'
-                ? inventoryId.trim()
-                : String(inventoryId ?? '').trim();
+    async function consumeInventoryBundle(inventoryId: string) {
+        const normalizedInventoryId = inventoryId.trim();
         if (!normalizedInventoryId) {
             return;
         }
-        const authTarget = getAuthTarget();
+        const authTarget = getInventoryAuthTarget();
         setMutatingKey(`inventory:${normalizedInventoryId}`);
         try {
             await mediaRepository.consumeInventoryBundle(normalizedInventoryId);
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.success(t('view.tools.label.inventory_bundle_consumed'));
                 await refreshScope(activeCategory, activeSubTab);
             }
         } catch (error) {
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message
@@ -543,7 +516,7 @@ export function useInventoryPageState() {
     }
 
     async function setProfileDecorationEquipped(item: InventoryItemRecord) {
-        const authTarget = getAuthTarget();
+        const authTarget = getInventoryAuthTarget();
         if (inventoryAuthTargetKey(authTarget) !== currentAuthTargetKey) {
             return;
         }
@@ -578,7 +551,7 @@ export function useInventoryPageState() {
                     });
                 }
             } catch (error) {
-                if (isCurrentAuthTarget(authTarget)) {
+                if (isCurrentInventoryAuthTarget(authTarget)) {
                     toast.error(
                         error instanceof Error
                             ? error.message
@@ -589,7 +562,7 @@ export function useInventoryPageState() {
                 }
                 return;
             }
-            if (!isCurrentAuthTarget(authTarget)) {
+            if (!isCurrentInventoryAuthTarget(authTarget)) {
                 return;
             }
 
@@ -609,7 +582,7 @@ export function useInventoryPageState() {
                 })
             ]);
         } finally {
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 profileDecorationMutationPendingRef.current = false;
                 setProfileDecorationMutationPending(false);
                 setMutatingKey((current) =>
@@ -620,28 +593,29 @@ export function useInventoryPageState() {
     }
 
     async function redeemReward() {
-        const authTarget = getAuthTarget();
+        const authTarget = getInventoryAuthTarget();
         const result = await prompt({
             title: t('prompt.redeem.header'),
             description: t('prompt.redeem.description'),
             confirmText: t('prompt.redeem.redeem'),
             cancelText: t('prompt.redeem.cancel')
         });
-        if (!result.ok || !String(result.value || '').trim()) {
+        const code = result.value?.trim();
+        if (!result.ok || !code) {
             return;
         }
-        if (!isCurrentAuthTarget(authTarget)) {
+        if (!isCurrentInventoryAuthTarget(authTarget)) {
             return;
         }
         setMutatingKey('inventory:redeem');
         try {
-            await mediaRepository.redeemReward(result.value);
-            if (isCurrentAuthTarget(authTarget)) {
+            await mediaRepository.redeemReward(code);
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.success(t('prompt.redeem.success'));
                 await refreshScope(activeCategory, activeSubTab);
             }
         } catch (error) {
-            if (isCurrentAuthTarget(authTarget)) {
+            if (isCurrentInventoryAuthTarget(authTarget)) {
                 toast.error(
                     error instanceof Error
                         ? error.message

@@ -21,7 +21,6 @@ pub enum OverlayServiceCommand {
         surface_id: OverlaySurfaceId,
         alpha: f32,
     },
-    SetInteractionActive(bool),
     Stop,
 }
 

@@ -1,4 +1,4 @@
-import { ListXIcon, Trash2Icon, XIcon } from 'lucide-react';
+import { ListXIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,52 +11,96 @@ import { DialogEmptyState } from '@/components/dialogs/previous-instances-table/
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
-import type { PreviousInstanceRow } from '@/features/instance-history/instance-activity/instanceActivityTypes';
+import type { InstanceHistoryEntryRow } from '@/features/instance-history/instance-activity/instanceActivityTypes';
+import type { InstanceHistorySortKey } from '@/features/instance-history/instanceHistoryController';
 import type { InstanceHistoryMode } from '@/features/instance-history/instanceHistoryDayMode';
-import { formatClock, formatDateFilter } from '@/lib/dateTime';
+import { formatClock, formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 
-const SORT_FIELDS = ['date', 'location', 'duration'] as const;
-type SortField = (typeof SORT_FIELDS)[number];
-
 const HEADER_ENTRY_HEIGHT = 28;
 const RECORD_ENTRY_HEIGHT = 36;
+const DAY_GROUPING_MIN_ROWS_PER_DAY = 2;
+
+type InstanceHistoryGrouping = 'none' | 'day' | 'month';
 
 export function rowKey(
-    row: PreviousInstanceRow,
+    row: InstanceHistoryEntryRow,
     fallback: string | number = ''
 ): string {
     return `${rowLocation(row)}:${row?.id || row?.created_at || row?.createdAt || fallback}`;
 }
 
-function dayLabel(row: PreviousInstanceRow): string {
-    return formatDateFilter(row?.created_at || row?.createdAt, 'date');
+function rowTimestamp(row: InstanceHistoryEntryRow): unknown {
+    return row?.created_at || row?.createdAt;
+}
+
+function dayLabel(row: InstanceHistoryEntryRow): string {
+    return formatDateFilter(rowTimestamp(row), 'date');
+}
+
+function monthLabel(row: InstanceHistoryEntryRow): string {
+    return formatDateTime(rowTimestamp(row), {
+        year: 'numeric',
+        month: 'long'
+    });
+}
+
+function shortDateLabel(row: InstanceHistoryEntryRow): string {
+    return formatDateTime(rowTimestamp(row), {
+        month: '2-digit',
+        day: '2-digit'
+    });
+}
+
+function groupLabel(
+    row: InstanceHistoryEntryRow,
+    grouping: InstanceHistoryGrouping
+): string {
+    return grouping === 'month' ? monthLabel(row) : dayLabel(row);
+}
+
+export function resolveGrouping(
+    rows: InstanceHistoryEntryRow[],
+    enabled: boolean
+): InstanceHistoryGrouping {
+    if (!enabled || !rows.length) {
+        return 'none';
+    }
+    const dayLabels = new Set<string>();
+    for (const row of rows) {
+        dayLabels.add(dayLabel(row));
+    }
+    const rowsPerDay = rows.length / dayLabels.size;
+    return rowsPerDay >= DAY_GROUPING_MIN_ROWS_PER_DAY ? 'day' : 'month';
 }
 
 type InstanceHistoryEntry =
     | { key: string; kind: 'header'; label: string }
-    | { key: string; kind: 'row'; row: PreviousInstanceRow; label: string };
+    | { key: string; kind: 'row'; row: InstanceHistoryEntryRow; label: string };
 
 function estimateInstanceHistoryEntrySize(entry: InstanceHistoryEntry): number {
     return entry.kind === 'header' ? HEADER_ENTRY_HEIGHT : RECORD_ENTRY_HEIGHT;
 }
 
 type InstanceHistoryRowProps = {
-    row: PreviousInstanceRow;
+    row: InstanceHistoryEntryRow;
     selected: boolean;
-    onOpenDetails: (row: PreviousInstanceRow) => void;
-    onDeleteRow: (row: PreviousInstanceRow) => void;
+    showDate: boolean;
+    onOpenDetails: (row: InstanceHistoryEntryRow) => void;
+    onDeleteRow: (row: InstanceHistoryEntryRow) => void;
 };
 
 export function InstanceHistoryRow({
     row,
     selected,
+    showDate,
     onOpenDetails,
     onDeleteRow
 }: InstanceHistoryRowProps) {
     const { t } = useTranslation();
     const location = rowLocation(row);
+    const duration = rowDuration(row);
 
     return (
         <div
@@ -74,8 +118,13 @@ export function InstanceHistoryRow({
                 onClick={() => onOpenDetails(row)}
                 className="focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none focus-visible:ring-2"
             >
+                {showDate ? (
+                    <span className="text-muted-foreground w-11 shrink-0 text-xs tabular-nums">
+                        {shortDateLabel(row)}
+                    </span>
+                ) : null}
                 <span className="text-muted-foreground w-11 shrink-0 text-xs tabular-nums">
-                    {formatClock(row?.created_at || row?.createdAt) || '—'}
+                    {formatClock(rowTimestamp(row)) || '—'}
                 </span>
                 <div className="min-w-0 flex-1 text-xs">
                     {location ? (
@@ -92,10 +141,16 @@ export function InstanceHistoryRow({
                     )}
                 </div>
                 <span className="text-muted-foreground text-xs tabular-nums">
-                    {rowDuration(row)}
+                    {duration}
                 </span>
             </button>
-            <div className="bg-muted invisible absolute top-1/2 right-2 z-10 flex -translate-y-1/2 items-center gap-1 rounded-md px-1 group-focus-within:visible group-hover:visible">
+            <div className="bg-popover invisible absolute top-1/2 right-2 z-10 flex -translate-y-1/2 items-center gap-1 rounded-md border px-1.5 py-0.5 shadow-sm group-focus-within:visible group-hover:visible">
+                <span
+                    aria-hidden="true"
+                    className="text-muted-foreground mr-0.5 text-xs tabular-nums"
+                >
+                    {duration}
+                </span>
                 <InstanceActionBar
                     target={{
                         location,
@@ -123,15 +178,14 @@ type InstanceHistoryListProps = {
     mode?: InstanceHistoryMode;
     totalCount?: number;
     filteredCount?: number;
-    visibleRows: PreviousInstanceRow[];
-    selectedRow: PreviousInstanceRow | null;
+    visibleRows: InstanceHistoryEntryRow[];
+    selectedRow: InstanceHistoryEntryRow | null;
     search: string;
     onSearchChange: (value: string) => void;
-    sortKey: string;
-    onOpenDetails: (row: PreviousInstanceRow) => void;
-    onDeleteRow: (row: PreviousInstanceRow) => void;
+    sortKey: InstanceHistorySortKey;
+    onOpenDetails: (row: InstanceHistoryEntryRow) => void;
+    onDeleteRow: (row: InstanceHistoryEntryRow) => void;
     dateActive?: boolean;
-    dateRangeLabel?: string;
     onClearDate?: () => void;
 };
 
@@ -147,24 +201,25 @@ export function InstanceHistoryList({
     onOpenDetails,
     onDeleteRow,
     dateActive = false,
-    dateRangeLabel = '',
     onClearDate
 }: InstanceHistoryListProps) {
     const { t } = useTranslation();
     const isDayMode = mode === 'day';
-    const activeSortKey = SORT_FIELDS.includes(sortKey as SortField)
-        ? (sortKey as SortField)
-        : 'date';
-    const grouped = !isDayMode && activeSortKey === 'date';
     const searchActive = !isDayMode && Boolean(search && search.trim());
     const dayRangeActive = !isDayMode && dateActive;
     const anyFilterActive = searchActive || dayRangeActive;
+    const grouping = useMemo(
+        () => resolveGrouping(visibleRows, !isDayMode && sortKey === 'date'),
+        [isDayMode, sortKey, visibleRows]
+    );
+    const grouped = grouping !== 'none';
+    const showRowDate = !isDayMode && grouping !== 'day';
 
     const entries = useMemo<InstanceHistoryEntry[]>(() => {
         const result: InstanceHistoryEntry[] = [];
         let lastLabel = '';
         visibleRows.forEach((row, index) => {
-            const label = grouped ? dayLabel(row) : '';
+            const label = grouped ? groupLabel(row, grouping) : '';
             if (grouped && label !== lastLabel) {
                 result.push({
                     key: `header:${label}:${index}`,
@@ -181,7 +236,7 @@ export function InstanceHistoryList({
             });
         });
         return result;
-    }, [grouped, visibleRows]);
+    }, [grouped, grouping, visibleRows]);
 
     const {
         getRowRef,
@@ -200,7 +255,7 @@ export function InstanceHistoryList({
             : '';
     const selectionScrollRequestRef = useRef<{
         entries: InstanceHistoryEntry[];
-        selectedRow: PreviousInstanceRow | null;
+        selectedRow: InstanceHistoryEntryRow | null;
     } | null>(null);
 
     useEffect(() => {
@@ -228,34 +283,15 @@ export function InstanceHistoryList({
         <div className="flex h-full min-h-0 flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="text-muted-foreground">
-                    {formatPreviousInstanceCount(filteredCount)}/
-                    {formatPreviousInstanceCount(totalCount)}{' '}
-                    {t(
-                        'dialog.previous_instances.label.recorded_instance_visits'
-                    )}
+                    {filteredCount === totalCount
+                        ? t(
+                              'dialog.previous_instances.label.recorded_instance_visits_count',
+                              {
+                                  count: formatPreviousInstanceCount(totalCount)
+                              }
+                          )
+                        : `${formatPreviousInstanceCount(filteredCount)}/${formatPreviousInstanceCount(totalCount)} ${t('dialog.previous_instances.label.recorded_instance_visits')}`}
                 </span>
-                {searchActive ? (
-                    <button
-                        type="button"
-                        className="bg-card text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md border px-2 py-0.5"
-                        onClick={() => onSearchChange('')}
-                    >
-                        <span className="max-w-32 truncate">{search}</span>
-                        <XIcon className="text-muted-foreground size-3" />
-                    </button>
-                ) : null}
-                {dayRangeActive ? (
-                    <button
-                        type="button"
-                        className="bg-card text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md border px-2 py-0.5"
-                        onClick={() => onClearDate?.()}
-                    >
-                        <span className="max-w-40 truncate">
-                            {dateRangeLabel}
-                        </span>
-                        <XIcon className="text-muted-foreground size-3" />
-                    </button>
-                ) : null}
                 {anyFilterActive ? (
                     <button
                         type="button"
@@ -299,6 +335,7 @@ export function InstanceHistoryList({
                                     ) : (
                                         <InstanceHistoryRow
                                             row={entry.row}
+                                            showDate={showRowDate}
                                             selected={selectedRow === entry.row}
                                             onOpenDetails={onOpenDetails}
                                             onDeleteRow={onDeleteRow}
@@ -316,7 +353,7 @@ export function InstanceHistoryList({
                     )}
                     description={
                         anyFilterActive
-                            ? t('common.search_no_results')
+                            ? t('empty_state.search_no_results')
                             : undefined
                     }
                     action={

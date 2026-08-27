@@ -5,7 +5,7 @@ import {
     openWorldDialog
 } from '@/services/dialogService';
 
-import type { QuickSearchResult } from '../quickSearchCatalog';
+import type { QuickSearchResult } from '../quickSearch';
 
 export function useQuickSearchSelectResult({
     onOpenChange,

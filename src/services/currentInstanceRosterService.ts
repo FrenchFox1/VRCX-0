@@ -10,9 +10,9 @@ import playerListPersistenceRepository, {
 import { normalizeString } from '@/shared/utils/string';
 
 interface LoadCurrentInstanceRosterInput {
-    currentLocation: unknown;
-    currentLocationStartedAt?: unknown;
-    currentUserId?: unknown;
+    currentLocation: string;
+    currentLocationStartedAt?: string;
+    currentUserId?: string;
     runtime?: CurrentInstanceRuntimeRoster;
 }
 

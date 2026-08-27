@@ -7,6 +7,7 @@ import {
     resetPendingUserFactEntries
 } from '@/services/userFactAccessService';
 import { parseLocation } from '@/shared/utils/location';
+import { isRecord } from '@/shared/utils/record';
 import { useInstanceJoinHistoryStore } from '@/state/instanceJoinHistoryStore';
 import { useInstancePresenceStore } from '@/state/instancePresenceStore';
 import { useLocationHintStore } from '@/state/locationHintStore';
@@ -16,27 +17,19 @@ interface RecordKnownUserOptions extends UserFactMergeOptions {
     source?: UserFactSource;
 }
 
-interface FriendPatchInput {
-    endpoint?: unknown;
-    userId?: unknown;
-    patch?: Record<string, unknown>;
-    stateBucket?: unknown;
-    stateBucketAuthority?: unknown;
-}
-
 interface GameRuntimePresenceInput {
-    endpoint?: unknown;
-    currentUserId?: unknown;
+    endpoint?: string;
+    currentUserId?: string | null;
     currentUserSnapshot?: Record<string, unknown> | null;
-    currentLocation?: unknown;
-    currentDestination?: unknown;
-    currentLocationStartedAt?: unknown;
+    currentLocation?: string;
+    currentDestination?: string;
+    currentLocationStartedAt?: string | null;
     currentLocationPlayers?: unknown[];
-    currentWorldName?: unknown;
+    currentWorldName?: string;
 }
 
 interface LocationHintsInput {
-    endpoint?: unknown;
+    endpoint?: string;
     instances?: unknown[];
 }
 
@@ -47,9 +40,7 @@ function text(value: unknown): string {
 }
 
 function record(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : {};
+    return isRecord(value) ? value : {};
 }
 
 function toIngestEntry(
@@ -60,9 +51,7 @@ function toIngestEntry(
         user,
         source: typeof options.source === 'string' ? options.source : 'seed',
         isFriend: Boolean(options.isFriend),
-        isCurrentUser: Boolean(options.isCurrentUser),
-        stateBucket:
-            typeof options.stateBucket === 'string' ? options.stateBucket : ''
+        isCurrentUser: Boolean(options.isCurrentUser)
     };
 }
 
@@ -98,31 +87,6 @@ function recordCurrentUserSnapshot(
         source,
         isCurrentUser: true
     });
-}
-
-function recordFriendPatch({
-    endpoint = '',
-    userId = '',
-    patch = {},
-    stateBucket = ''
-}: FriendPatchInput = {}) {
-    const normalizedUserId = text(userId || patch?.id || patch?.userId);
-    if (!normalizedUserId) {
-        return;
-    }
-    recordKnownUser(
-        {
-            ...patch,
-            id: normalizedUserId,
-            stateBucket
-        },
-        {
-            endpoint,
-            source: 'realtime',
-            isFriend: true,
-            stateBucket
-        }
-    );
 }
 
 function recordGameRuntimePresence({
@@ -175,7 +139,7 @@ function recordGameRuntimePresence({
         source: 'gameRuntime',
         worldName: currentWorldName,
         players: currentLocationPlayers,
-        receivedAt: currentLocationStartedAt
+        receivedAt: text(currentLocationStartedAt)
     });
     useLocationHintStore.getState().upsertLocationHint({
         endpoint,
@@ -230,23 +194,28 @@ function recordLocationHintsFromInstances({
         useLocationHintStore.getState().upsertLocationHint({
             endpoint,
             location,
-            worldId: parsed.worldId || source.worldId,
-            groupId: parsed.groupId || source.groupId,
-            worldName:
+            worldId: parsed.worldId || text(source.worldId),
+            groupId: parsed.groupId || text(source.groupId),
+            worldName: text(
                 source.worldName ||
-                record(source.world).name ||
-                record(source.ref).worldName,
-            groupName:
+                    record(source.world).name ||
+                    record(source.ref).worldName
+            ),
+            groupName: text(
                 source.groupName ||
-                record(source.group).name ||
-                record(source.group).displayName,
-            instanceName:
+                    record(source.group).name ||
+                    record(source.group).displayName
+            ),
+            instanceName: text(
                 source.displayName ||
-                source.instanceDisplayName ||
-                parsed.instanceName,
-            region: parsed.region || source.region,
-            isClosed: source.closedAt || source.closed_at || source.isClosed,
-            ageGate: source.ageGate || parsed.ageGate
+                    source.instanceDisplayName ||
+                    parsed.instanceName
+            ),
+            region: parsed.region || text(source.region),
+            isClosed: Boolean(
+                source.closedAt || source.closed_at || source.isClosed
+            ),
+            ageGate: Boolean(source.ageGate || parsed.ageGate)
         });
         const users = [
             ...(Array.isArray(source.users) ? source.users : []),
@@ -276,20 +245,23 @@ function recordLocationHintsFromInstances({
             endpoint,
             location,
             source: 'instance',
-            ownerUserId: source.ownerId,
-            ownerGroupId: parsed.groupId || source.groupId,
-            worldName:
+            ownerUserId: text(source.ownerId),
+            ownerGroupId: text(parsed.groupId || source.groupId),
+            worldName: text(
                 source.worldName ||
-                record(source.world).name ||
-                record(source.ref).worldName,
-            groupName:
+                    record(source.world).name ||
+                    record(source.ref).worldName
+            ),
+            groupName: text(
                 source.groupName ||
-                record(source.group).name ||
-                record(source.group).displayName,
-            instanceName:
+                    record(source.group).name ||
+                    record(source.group).displayName
+            ),
+            instanceName: text(
                 source.displayName ||
-                source.instanceDisplayName ||
-                parsed.instanceName,
+                    source.instanceDisplayName ||
+                    parsed.instanceName
+            ),
             players: users
         });
     }
@@ -305,7 +277,6 @@ function resetDomainFacts() {
 
 export {
     recordCurrentUserSnapshot,
-    recordFriendPatch,
     recordGameRuntimePresence,
     recordKnownUser,
     recordKnownUsers,

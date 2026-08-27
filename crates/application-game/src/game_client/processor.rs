@@ -1,10 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
+use vrcx_0_contracts::game_log::{GameLogEventEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::LogLocationSnapshot;
-use vrcx_0_persistence::config::{self as config_store, ConfigRepository};
-use vrcx_0_persistence::game_log::{write_batch, GameLogEventEntry, GameLogWriteBatch};
-use vrcx_0_persistence::DatabaseService;
 
 use crate::game_client::actions::{GameClientActions, GameClientDebugLoggingActions};
 use crate::game_client::lifecycle::{plan_crash_relaunch, CrashRelaunchConfig, CrashRelaunchPlan};
@@ -16,7 +14,9 @@ use crate::{
 };
 use crate::{Error, Result};
 use crate::{HostSessionRuntime, RuntimeAuthScope, TaskSupervisor};
+use vrcx_0_application_core::BackendRuntimeStatusPublisher;
 use vrcx_0_core::time::now_iso;
+use vrcx_0_core::OwnerId;
 
 const CRASH_RELAUNCH_MESSAGE: &str = "VRChat crashed, attempting to rejoin last instance.";
 
@@ -68,9 +68,9 @@ impl GameClientWindowActions for NoopGameClientWindowActions {
 
 #[derive(Clone)]
 pub struct GameClientProcessorDeps {
-    pub db: Arc<DatabaseService>,
-    pub config: ConfigRepository,
+    pub(crate) store: Arc<dyn crate::GameStateStore>,
     pub event_bus: RuntimeEventBus,
+    pub backend_status: BackendRuntimeStatusPublisher,
     pub tasks: TaskSupervisor,
     pub session: HostSessionRuntime,
     pub auth_scope: RuntimeAuthScope,
@@ -190,14 +190,13 @@ impl GameClientProcessor {
         }
 
         let config = CrashRelaunchConfig {
-            enabled: config_store::get_bool(&self.deps.db, "relaunchVRChatAfterCrash", false)?,
-            is_game_no_vr: config_store::get_bool(&self.deps.db, "isGameNoVR", false)?,
-            launch_arguments: config_store::get_string(&self.deps.db, "launchArguments", "")?,
-            launch_path_override: config_store::get_string(
-                &self.deps.db,
-                "vrcLaunchPathOverride",
-                "",
-            )?,
+            enabled: self
+                .deps
+                .store
+                .get_bool("relaunchVRChatAfterCrash", false)?,
+            is_game_no_vr: self.deps.store.get_bool("isGameNoVR", false)?,
+            launch_arguments: self.deps.store.get_string("launchArguments", "")?,
+            launch_path_override: self.deps.store.get_string("vrcLaunchPathOverride", "")?,
         };
         let location = self.current_location();
         let closed_gracefully = self.deps.location_source.vrc_closed_gracefully();
@@ -235,16 +234,16 @@ impl GameClientProcessor {
             return Ok(());
         }
         self.deps
-            .config
+            .store
             .set_string("lastGameSessionMs", &session_duration.to_string())?;
         self.deps
-            .config
+            .store
             .set_string("lastGameOfflineAt", &offline_at.to_string())?;
         Ok(())
     }
 
     fn sweep_vrchat_cache_if_enabled(&self) -> Result<()> {
-        if !config_store::get_bool(&self.deps.db, "autoSweepVRChatCache", false)? {
+        if !self.deps.store.get_bool("autoSweepVRChatCache", false)? {
             return Ok(());
         }
         let removed_paths = self.deps.cache_actions.sweep_vrchat_cache();
@@ -339,9 +338,8 @@ impl GameClientProcessor {
 
     fn persist_crash_relaunch_event(&self) -> Result<()> {
         let created_at = now_iso();
-        let affected_count = write_batch(
-            &self.deps.db,
-            &self.deps.auth_scope.snapshot().current_user_id,
+        let affected_count = self.deps.store.write_game_log(
+            &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
             &GameLogWriteBatch {
                 events: vec![GameLogEventEntry {
                     created_at: created_at.clone(),
@@ -350,7 +348,9 @@ impl GameClientProcessor {
                 ..Default::default()
             },
         )?;
-        self.deps.event_bus.emit_game_log_persisted(affected_count);
+        self.deps
+            .backend_status
+            .publish_game_log_persisted(affected_count);
         self.deps
             .event_bus
             .emit_runtime_game_log_event(RuntimeGameLogEventPayload {

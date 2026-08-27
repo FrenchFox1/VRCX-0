@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { openAvatarDialog, openGroupDialog } from '@/services/dialogService';
 import {
     convertFileUrlToImageUrl,
@@ -28,11 +29,15 @@ import type {
     resolvePlatformMeta
 } from './user-dialog/userDialogContentHelpers';
 import { buildUserDialogLocationUsers } from './user-dialog/userDialogLocationUsers';
-import { resolveUserDialogBannerUrl } from './user-dialog/userDialogProfileAppearance';
+import {
+    applyUserDialogProfileAppearanceOverrides,
+    resolveUserDialogBannerUrl
+} from './user-dialog/userDialogProfileAppearance';
 import {
     isOfflineLikeValue,
     normalizedText
 } from './user-dialog/userDialogRows';
+import type { UserDialogLoadStatus } from './user-dialog/userDialogTabService';
 import { buildUserDialogProfileSummary } from './user-dialog/userDialogViewData';
 import { useUserDialogAvatarAuthorAction } from './user-dialog/useUserDialogAvatarAuthorAction';
 import { useUserDialogClipboardActions } from './user-dialog/useUserDialogClipboardActions';
@@ -43,6 +48,7 @@ import type {
     ModerationState
 } from './user-dialog/useUserDialogModerationState';
 import { useUserDialogProfileAppearance } from './user-dialog/useUserDialogProfileAppearance';
+import { useUserDialogProfileDecorations } from './user-dialog/useUserDialogProfileDecorations';
 import type { UserDialogProfileRecord } from './user-dialog/useUserDialogProfileResource';
 import { useUserDialogTabbedRuntimeState } from './user-dialog/useUserDialogRuntimeState';
 import type { useUserDialogSelfActions } from './user-dialog/useUserDialogSelfActions';
@@ -101,11 +107,10 @@ interface UserDialogTabbedViewProps {
         hideUserMemos?: boolean;
     };
     locationPanel: {
-        sameInstanceUsers?: unknown[];
-        dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
-        locationOwnerUser?: unknown;
-        locationOwnerGroup?: unknown;
-        locationInstance?: unknown;
+        sameInstanceUsers?: InstanceRosterRow[];
+        locationOwnerUser?: Record<string, unknown> | null;
+        locationOwnerGroup?: Record<string, unknown> | null;
+        locationInstance?: Record<string, unknown> | null;
         locationFriendCount?: number;
         locationPlayerCount?: number;
         onRefreshLocation?: LocationPanelController['refreshLocationPanel'];
@@ -143,21 +148,31 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 const SELF_PANELS = ['profile-media', 'profile-decorations'] as const;
-const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<string, unknown>();
 type SelfPanel = '' | (typeof SELF_PANELS)[number];
+
+function isSelfPanel(value: string): value is Exclude<SelfPanel, ''> {
+    return SELF_PANELS.some((panel) => panel === value);
+}
 
 const VRC_PLUS_SUMMARY_SNAPSHOT = Object.freeze({ $isVRCPlus: true });
 
-function finiteTabCount(value: unknown) {
-    const count = Number(value);
-    return Number.isFinite(count) && count >= 0 ? count : undefined;
+function finiteTabCount(value: number | undefined) {
+    return value !== undefined && Number.isFinite(value) && value >= 0
+        ? value
+        : undefined;
 }
 
-function loadedTabCount(status: unknown, rows: unknown) {
-    return status === 'ready' && Array.isArray(rows) ? rows.length : undefined;
+function loadedTabCount(
+    status: UserDialogLoadStatus | undefined,
+    rows: readonly unknown[]
+) {
+    return status === 'ready' ? rows.length : undefined;
 }
 
-function resolveTabCount(primary: unknown, fallback: unknown) {
+function resolveTabCount(
+    primary: number | undefined,
+    fallback: number | undefined
+) {
     return finiteTabCount(primary) ?? finiteTabCount(fallback);
 }
 
@@ -185,17 +200,31 @@ export function UserDialogTabbedView({
     const showUserDialogProfileDecorations = usePreferencesStore(
         (state) => state.showUserDialogProfileDecorations
     );
-    const profileAppearance = useUserDialogProfileAppearance({
+    const [selfPanel, setSelfPanel] = useState<SelfPanel>('');
+    const activeSelfPanel: SelfPanel = relationship.isCurrentUser
+        ? selfPanel
+        : '';
+    const canonicalProfileAppearance = useUserDialogProfileAppearance({
         enabled: showUserDialogProfileDecorations,
         profile
     });
+    const profileDecorations = useUserDialogProfileDecorations({
+        enabled: activeSelfPanel === 'profile-decorations',
+        onProfileUpdated: profileControls.onRefresh
+    });
+    const profileAppearance =
+        showUserDialogProfileDecorations && relationship.isCurrentUser
+            ? applyUserDialogProfileAppearanceOverrides(
+                  canonicalProfileAppearance,
+                  profileDecorations.appearanceOverrides
+              )
+            : canonicalProfileAppearance;
     const {
         moderationState,
         extendedModerationState = { interactOff: false, muteChat: false },
         avatarOverrideState = { hideAvatar: false, showAvatar: false },
         isCurrentUser,
         isFriend,
-        isFavorite,
         friendRequestState
     } = relationship;
     const { platform, platformIcon: PlatformIcon } = platformInfo;
@@ -218,7 +247,6 @@ export function UserDialogTabbedView({
     } = presence;
     const {
         sameInstanceUsers = [],
-        dwellEpochsByUserId = EMPTY_DWELL_EPOCHS_BY_USER_ID,
         locationOwnerUser = null,
         locationOwnerGroup = null,
         locationInstance = null,
@@ -266,7 +294,6 @@ export function UserDialogTabbedView({
         openImagePreview,
         previousAvatarSwapTime
     } = useUserDialogTabbedRuntimeState();
-    const [selfPanel, setSelfPanel] = useState<SelfPanel>('');
     const { copyUserText, openDiscordProfile } =
         useUserDialogClipboardActions();
     const currentUserSnapshot = useRuntimeStore(
@@ -295,16 +322,12 @@ export function UserDialogTabbedView({
         previousAvatarSwapTime,
         currentUserHasSharedConnectionsOptOut,
         friendsById,
-        inGameGroupOrder,
-        t
+        inGameGroupOrder
     });
 
     useEffect(() => {
-        if (
-            isCurrentUser &&
-            (SELF_PANELS as readonly string[]).includes(initialAction)
-        ) {
-            setSelfPanel(initialAction as SelfPanel);
+        if (isCurrentUser && isSelfPanel(initialAction)) {
+            setSelfPanel(initialAction);
         }
     }, [initialAction, isCurrentUser]);
 
@@ -435,7 +458,6 @@ export function UserDialogTabbedView({
         () =>
             buildUserDialogLocationUsers({
                 currentUserId,
-                dwellEpochsByUserId,
                 friendsById,
                 locationInstance,
                 locationOwnerGroup,
@@ -447,7 +469,6 @@ export function UserDialogTabbedView({
             }),
         [
             currentUserId,
-            dwellEpochsByUserId,
             friendsById,
             locationInstance,
             locationOwnerGroup,
@@ -485,19 +506,15 @@ export function UserDialogTabbedView({
             )
         }),
         [
-            favoriteWorlds.length,
+            favoriteWorlds,
             isCurrentUser,
             mutualFriendCount,
-            mutualFriends.length,
+            mutualFriends,
             previousInstances.length,
-            profileAvatars.length,
-            profileGroups.length,
-            profileWorlds.length,
-            remoteStatus.mutual,
-            remoteStatus.avatars,
-            remoteStatus['favorite-worlds'],
-            remoteStatus.groups,
-            remoteStatus.worlds,
+            profileAvatars,
+            profileGroups,
+            profileWorlds,
+            remoteStatus,
             remoteTabCounts
         ]
     );
@@ -531,6 +548,10 @@ export function UserDialogTabbedView({
         changeTab('instance-history', { allowHidden: true });
     }
 
+    function openFeed() {
+        changeTab('feed', { allowHidden: true });
+    }
+
     const headerModel = {
         actionStatus,
         avatarOverrideState,
@@ -551,7 +572,6 @@ export function UserDialogTabbedView({
         platform,
         PlatformIcon,
         previousDisplayNames,
-        previousInstances,
         profile,
         profileAppearance,
         profileIconUrl,
@@ -568,6 +588,12 @@ export function UserDialogTabbedView({
     const headerCommands = {
         onAvatarOverride,
         onBoop,
+        onCopyDisplayName: (displayName: string) => {
+            copyUserText(
+                normalizedText(displayName),
+                t('dialog.user.info.display_name')
+            );
+        },
         onCopyUserId: () => {
             copyUserText(normalizedText(profile.id), t('dialog.user.info.id'));
         },
@@ -611,17 +637,6 @@ export function UserDialogTabbedView({
         onReportHacking,
         onShowAvatarAuthor: showAvatarAuthor,
         onShowInstanceHistory: openInstanceHistory,
-        onTitleClick:
-            profile.displayName || profile.username
-                ? () => {
-                      copyUserText(
-                          normalizedText(
-                              profile.displayName || profile.username
-                          ),
-                          t('dialog.user.info.display_name')
-                      );
-                  }
-                : undefined,
         onToggleBadgeShowcased,
         onToggleBadgeVisibility,
         onToggleSelfAvatarCopying,
@@ -642,6 +657,7 @@ export function UserDialogTabbedView({
             hideUserMemos,
             hideUserNotes,
             isCurrentUser,
+            isFriend,
             lastSeen,
             memo,
             friendedAt,
@@ -708,11 +724,6 @@ export function UserDialogTabbedView({
             previousInstances,
             previousInstancesError,
             previousInstancesStatus
-        },
-        json: {
-            isFavorite,
-            isFriend,
-            moderationState
         }
     };
     const tabsCommands = {
@@ -722,6 +733,7 @@ export function UserDialogTabbedView({
         changeWorldOrder,
         changeWorldSort,
         onEditMemo,
+        onOpenFeed: openFeed,
         onOpenInstanceHistory: openInstanceHistory,
         onPreviousInstancesChange,
         onRefreshLocation,
@@ -730,8 +742,6 @@ export function UserDialogTabbedView({
         setMutualSort,
         setSearch
     };
-
-    const activeSelfPanel: SelfPanel = isCurrentUser ? selfPanel : '';
 
     return (
         <EntityDialogScaffold className="gap-3">
@@ -755,7 +765,7 @@ export function UserDialogTabbedView({
                         profile={profile}
                         isVrcPlus={isLocalUserVrcPlusSupporter}
                         onBack={() => setSelfPanel('')}
-                        onProfileUpdated={onRefresh}
+                        controller={profileDecorations}
                     />
                 ) : (
                     <UserDialogTabsSection

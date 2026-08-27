@@ -4,9 +4,17 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache';
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type HttpApiExecuteResponse,
+    type InstanceCreateGroupAccessType,
+    type InstanceCreateMinimumAvatarPerformance,
+    type InstanceCreateRegion,
+    type InstanceCreateRequest,
+    type InstanceCreateType
+} from '@/platform/tauri/bindings';
 import { parseLocation } from '@/shared/utils/location';
-import { normalizeString } from '@/shared/utils/string';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
@@ -17,42 +25,40 @@ type InstanceAccessType =
     | 'friends+'
     | 'invite'
     | 'invite+'
-    | 'group'
-    | string;
+    | 'group';
+
+type InstanceRegion = 'US West' | 'US East' | 'Europe' | 'Japan';
 
 interface InstanceRepositoryOptions {
     force?: boolean;
-    [key: string]: unknown;
 }
 
 interface CreateInstanceOptions extends InstanceRepositoryOptions {
-    worldId?: unknown;
-    ownerId?: unknown;
+    worldId?: string;
+    ownerId?: string;
     accessType?: InstanceAccessType;
-    region?: string;
-    groupId?: unknown;
-    groupAccessType?: string;
-    queueEnabled?: unknown;
+    region?: InstanceRegion;
+    groupId?: string;
+    groupAccessType?: InstanceCreateGroupAccessType;
+    minimumAvatarPerformance?: InstanceCreateMinimumAvatarPerformance | '';
+    queueEnabled?: boolean;
     roleIds?: string[];
-    ageGate?: unknown;
+    ageGate?: boolean;
     displayName?: string;
 }
 
 interface InstanceIdentityOptions extends InstanceRepositoryOptions {
-    worldId?: unknown;
-    instanceId?: unknown;
+    worldId?: string;
+    instanceId?: string;
     shortName?: string;
 }
 
 interface CloseInstanceOptions extends InstanceRepositoryOptions {
-    location?: unknown;
-    hardClose?: unknown;
+    location?: string;
+    hardClose?: boolean;
 }
 
-type VrchatApiResult = {
-    status: number;
-    data: unknown;
-};
+type VrchatApiResult = HttpApiExecuteResponse;
 
 type VrchatInstanceIdentity = {
     worldId: string;
@@ -67,7 +73,7 @@ type VrchatInstanceShortNameResponse = {
     params?: { shortName?: string };
 };
 
-function toApiAccessType(accessType: InstanceAccessType): string {
+function toApiAccessType(accessType: InstanceAccessType): InstanceCreateType {
     if (accessType === 'friends') {
         return 'friends';
     }
@@ -83,7 +89,7 @@ function toApiAccessType(accessType: InstanceAccessType): string {
     return 'public';
 }
 
-function toRegionCode(region: string): string {
+function toRegionCode(region: InstanceRegion): InstanceCreateRegion {
     if (region === 'US East') {
         return 'use';
     }
@@ -94,10 +100,6 @@ function toRegionCode(region: string): string {
         return 'jp';
     }
     return 'us';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
 }
 
 function unwrapVrchatInstanceResponse(
@@ -120,13 +122,14 @@ async function createInstance({
     region = 'US West',
     groupId = '',
     groupAccessType = 'plus',
+    minimumAvatarPerformance = '',
     queueEnabled = true,
     roleIds = [],
     ageGate = false,
     displayName = ''
 }: CreateInstanceOptions = {}) {
-    const normalizedWorldId = normalizeString(worldId);
-    const normalizedOwnerId = normalizeString(ownerId);
+    const normalizedWorldId = worldId?.trim() ?? '';
+    const normalizedOwnerId = ownerId?.trim() ?? '';
     if (!normalizedWorldId) {
         throw new Error(
             'InstanceRepository.createInstance requires a world id.'
@@ -134,26 +137,36 @@ async function createInstance({
     }
 
     const type = toApiAccessType(accessType);
-    const params: QueryParams = {
+    let instanceOwnerId = normalizedOwnerId;
+    if (type === 'public') {
+        instanceOwnerId = '';
+    } else if (type === 'group') {
+        instanceOwnerId = groupId?.trim() ?? '';
+    }
+    const params: InstanceCreateRequest = {
         type,
         canRequestInvite: accessType === 'invite+',
         worldId: normalizedWorldId,
-        ownerId:
-            type === 'group' ? normalizeString(groupId) : normalizedOwnerId,
         region: toRegionCode(region)
     };
 
-    if (!params.ownerId && type !== 'public') {
+    if (!instanceOwnerId && type !== 'public') {
         throw new Error(
             'InstanceRepository.createInstance requires an owner id for private instances.'
         );
     }
+    if (instanceOwnerId) {
+        params.ownerId = instanceOwnerId;
+    }
 
     if (type === 'group') {
-        params.groupAccessType = groupAccessType || 'plus';
-        params.queueEnabled = Boolean(queueEnabled);
-        if (params.groupAccessType === 'members' && Array.isArray(roleIds)) {
+        params.groupAccessType = groupAccessType;
+        params.queueEnabled = queueEnabled;
+        if (groupAccessType === 'members') {
             params.roleIds = roleIds;
+        }
+        if (minimumAvatarPerformance) {
+            params.minimumAvatarPerformance = minimumAvatarPerformance;
         }
         if (ageGate) {
             params.ageGate = true;
@@ -169,7 +182,7 @@ async function createInstance({
             params
         }),
         'instances',
-        params
+        { ...params }
     );
 }
 
@@ -178,8 +191,8 @@ async function getInstance({
     instanceId,
     force = false
 }: InstanceIdentityOptions = {}) {
-    const normalizedWorldId = normalizeString(worldId);
-    const normalizedInstanceId = normalizeString(instanceId);
+    const normalizedWorldId = worldId?.trim() ?? '';
+    const normalizedInstanceId = instanceId?.trim() ?? '';
     if (!normalizedWorldId || !normalizedInstanceId) {
         throw new Error(
             'InstanceRepository.getInstance requires world and instance ids.'
@@ -221,14 +234,14 @@ async function getInstanceShortName({
     shortName = '',
     force = false
 }: InstanceIdentityOptions = {}) {
-    const normalizedWorldId = normalizeString(worldId);
-    const normalizedInstanceId = normalizeString(instanceId);
+    const normalizedWorldId = worldId?.trim() ?? '';
+    const normalizedInstanceId = instanceId?.trim() ?? '';
     if (!normalizedWorldId || !normalizedInstanceId) {
         throw new Error(
             'InstanceRepository.getInstanceShortName requires world and instance ids.'
         );
     }
-    const params = shortName ? { shortName: normalizeString(shortName) } : {};
+    const params = shortName ? { shortName } : {};
     const instance: VrchatInstanceIdentity = {
         worldId: normalizedWorldId,
         instanceId: normalizedInstanceId
@@ -246,10 +259,7 @@ async function getInstanceShortName({
                 await commands.appVrchatInstanceShortNameGet({
                     worldId: normalizedWorldId,
                     instanceId: normalizedInstanceId,
-                    shortName:
-                        typeof params.shortName === 'string'
-                            ? params.shortName
-                            : ''
+                    shortName: params.shortName ?? ''
                 }),
                 `instances/${encodeURIComponent(normalizedWorldId)}:${encodeURIComponent(normalizedInstanceId)}/shortName`,
                 params
@@ -269,8 +279,8 @@ async function selfInvite({
     instanceId,
     shortName = ''
 }: InstanceIdentityOptions = {}) {
-    const normalizedWorldId = normalizeString(worldId);
-    const normalizedInstanceId = normalizeString(instanceId);
+    const normalizedWorldId = worldId?.trim() ?? '';
+    const normalizedInstanceId = instanceId?.trim() ?? '';
     if (!normalizedWorldId || !normalizedInstanceId) {
         throw new Error(
             'InstanceRepository.selfInvite requires world and instance ids.'
@@ -293,19 +303,19 @@ async function closeInstance({
     location,
     hardClose = false
 }: CloseInstanceOptions = {}) {
-    const normalizedLocation = normalizeString(location);
+    const normalizedLocation = location?.trim() ?? '';
     if (!normalizedLocation) {
         throw new Error(
             'InstanceRepository.closeInstance requires a location.'
         );
     }
     const params: { hardClose: boolean } = {
-        hardClose: Boolean(hardClose)
+        hardClose
     };
     const response = unwrapVrchatInstanceResponse(
         await commands.appVrchatInstanceClose({
             location: normalizedLocation,
-            hardClose: Boolean(hardClose)
+            hardClose
         }),
         `instances/${normalizedLocation}`,
         params

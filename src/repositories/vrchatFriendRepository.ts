@@ -1,16 +1,17 @@
 import { commands } from '@/platform/tauri/bindings';
+import type { HttpApiExecuteResponse } from '@/platform/tauri/bindings';
 
 import { unwrapVrchatResponse } from './vrchatRequest';
 
 type FriendRecord = Record<string, unknown> & { id: string };
 
 interface FriendEndpointInput {
-    userId?: unknown;
+    userId?: string;
     isFriend?: boolean | null;
 }
 
 function unwrapVrchatFriendResponse<TJson = unknown>(
-    response: { status: number; data: unknown },
+    response: HttpApiExecuteResponse,
     path: string
 ) {
     return unwrapVrchatResponse<TJson>(response, path, {
@@ -19,10 +20,7 @@ function unwrapVrchatFriendResponse<TJson = unknown>(
 }
 
 async function getUser({ userId, isFriend = null }: FriendEndpointInput) {
-    const normalizedUserId =
-        typeof userId === 'string'
-            ? userId.trim()
-            : String(userId ?? '').trim();
+    const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         throw new Error('VrchatFriendRepository.getUser requires a user id.');
     }

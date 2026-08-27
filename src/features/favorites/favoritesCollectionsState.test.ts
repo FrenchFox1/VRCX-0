@@ -33,13 +33,13 @@ describe('favorites collections state helpers', () => {
                 kind: 'friend',
                 groupedFavoriteFriendIdsByGroupKey: {
                     'friend:group_0': ['usr_a', 'usr_b', ''],
-                    'friend:group_1': ['usr_a', 42]
+                    'friend:group_1': ['usr_a', 'usr_d']
                 },
                 localFriendFavorites: {
-                    Local: ['usr_c', 'usr_b', null]
+                    Local: ['usr_c', 'usr_b']
                 }
             })
-        ).toEqual(['usr_a', 'usr_b', '42', 'usr_c']);
+        ).toEqual(['usr_a', 'usr_b', 'usr_d', 'usr_c']);
 
         expect(
             buildFavoriteFriendFactIds({

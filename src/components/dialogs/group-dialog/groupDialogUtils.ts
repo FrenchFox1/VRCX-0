@@ -2,13 +2,14 @@ import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import type {
     GroupAnnouncementRecord,
     GroupProfileRecord
-} from '@/domain/entities/profileEntities';
+} from '@/domain/entities/group';
 import { formatDateFilter } from '@/lib/dateTime';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import {
     convertFileUrlToImageUrl,
     userImage
 } from '@/services/entityMediaService';
+import { isRecord } from '@/shared/utils/record';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
 export function firstArray<T>(...values: (T[] | null | undefined)[]): T[];
@@ -242,10 +243,6 @@ export function resolveGroupDialogTab(
     return tabs.some((tab) => tab.value === preferred) ? preferred : fallback;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 function eventRows(value: unknown): GroupCalendarEventRecord[] {
     return Array.isArray(value) ? value.filter(isRecord) : [];
 }
@@ -296,7 +293,7 @@ export function normalizeGroupEvent(
         groupId: event?.groupId || fallbackGroupId,
         ownerId: event?.ownerId || event?.groupId || fallbackGroupId,
         userInterest: {
-            ...(event?.userInterest || {}),
+            ...event?.userInterest,
             isFollowing: Boolean(resolvedFollowing)
         },
         title: replaceBioSymbols(event?.title || ''),

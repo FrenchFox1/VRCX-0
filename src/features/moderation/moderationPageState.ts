@@ -1,5 +1,4 @@
 import type {
-    ColumnSizingState,
     SortingState,
     ColumnVisibilityState
 } from '@tanstack/react-table';
@@ -8,10 +7,10 @@ import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
-    sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 import { moderationTypes } from '@/shared/constants/moderation';
+import { isRecord } from '@/shared/utils/record';
 
 import type { ModerationRow } from './moderationPageTypes';
 
@@ -58,21 +57,16 @@ export function writeModerationPersistedState(patch: Record<string, unknown>) {
     writePersistedTableState(MODERATION_STORAGE_KEY, patch);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === 'object');
-}
-
 export function resolveModerationTypeLabel(
-    type: unknown,
+    type: string,
     t: (key: string) => string
 ) {
-    const value = String(type || '');
-    if (!value) {
+    if (!type) {
         return '';
     }
-    const key = `view.moderation.filters.${value}`;
+    const key = `view.moderation.filters.${type}`;
     const label = t(key);
-    return label && label !== key ? label : TYPE_LABELS[value] || value;
+    return label && label !== key ? label : TYPE_LABELS[type] || type;
 }
 
 export function sanitizeModerationSorting(value: unknown): SortingState {
@@ -109,13 +103,12 @@ export function sanitizeModerationColumnVisibility(
     value: unknown
 ): ColumnVisibilityState {
     const visibility: ColumnVisibilityState = {};
-    if (!value || typeof value !== 'object') {
+    if (!isRecord(value)) {
         return visibility;
     }
-    const source = value as Record<string, unknown>;
     for (const columnId of MODERATION_COLUMN_IDS) {
-        if (typeof source[columnId] === 'boolean') {
-            visibility[columnId] = source[columnId];
+        if (typeof value[columnId] === 'boolean') {
+            visibility[columnId] = value[columnId];
         }
     }
     return visibility;
@@ -136,22 +129,11 @@ export function sanitizeModerationColumnOrder(value: unknown): string[] {
     return [...orderedColumns, ...missingColumns];
 }
 
-export function sanitizeModerationColumnSizing(
-    value: unknown
-): ColumnSizingState {
-    return sanitizeTableColumnSizing(value, MODERATION_COLUMN_IDS);
-}
-
 export function resolveModerationPageSize(
     candidate: unknown,
-    allowed: unknown,
-    fallback: unknown = MODERATION_DEFAULT_PAGE_SIZES[1]
+    pageSizes: readonly number[],
+    fallback: number = MODERATION_DEFAULT_PAGE_SIZES[1]
 ): number {
-    const pageSizes = Array.isArray(allowed)
-        ? allowed.filter(
-              (size): size is number => Number.isFinite(size) && size > 0
-          )
-        : MODERATION_DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : MODERATION_DEFAULT_PAGE_SIZES[0];
@@ -167,11 +149,10 @@ export function resolveModerationPageSize(
     if (Number.isFinite(parsed) && parsed > 0) {
         return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
-    const parsedFallback = Number.parseInt(String(fallback), 10);
-    if (pageSizes.includes(parsedFallback)) {
-        return parsedFallback;
+    if (pageSizes.includes(fallback)) {
+        return fallback;
     }
-    return nearestPageSize(Number(fallback) || fallbackPageSize);
+    return nearestPageSize(fallback);
 }
 
 export function normalizeModerationSelectedTypes(value: unknown): string[] {
@@ -190,35 +171,28 @@ export function parseModerationSelectedTypes(value: unknown) {
 
 export function matchesModerationSearch(
     row: ModerationRow,
-    searchQuery: unknown
+    searchQuery: string
 ) {
     if (!searchQuery) {
         return true;
     }
-    const query = String(searchQuery).trim().toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
     if (!query) {
         return true;
     }
     return (
-        String(row?.sourceDisplayName ?? '')
-            .toLowerCase()
-            .includes(query) ||
-        String(row?.targetDisplayName ?? '')
-            .toLowerCase()
-            .includes(query)
+        row.sourceDisplayName.toLowerCase().includes(query) ||
+        row.targetDisplayName.toLowerCase().includes(query)
     );
 }
 
 export function getModerationRowKey(row: ModerationRow) {
-    if (row?.id) {
-        return `${row.id}:${row.type || ''}`;
+    if (row.id) {
+        return `${row.id}:${row.type}`;
     }
-    return [
-        row?.type || '',
-        row?.sourceUserId || '',
-        row?.targetUserId || '',
-        row?.created || ''
-    ].join(':');
+    return [row.type, row.sourceUserId, row.targetUserId, row.created].join(
+        ':'
+    );
 }
 
 export function isSameModerationRow(left: ModerationRow, right: ModerationRow) {

@@ -90,7 +90,7 @@ describe('runtimeBootstrapService', () => {
         mocks.hydrateVrcStatus.mockResolvedValue(undefined);
     });
 
-    it('syncs normalized locale state', () => {
+    it('syncs normalized locale state', async () => {
         useShellStore.getState().setLocale('zh_Hant_TW');
 
         const cleanup = startI18nLanguageSync();
@@ -100,7 +100,9 @@ describe('runtimeBootstrapService', () => {
             'zh-TW'
         );
         expect(mocks.setI18nLanguage).toHaveBeenCalledWith('zh-TW');
-        expect(useShellStore.getState().timeUnitLabels.h).toBe('zh-TW:h');
+        await vi.waitFor(() =>
+            expect(useShellStore.getState().timeUnitLabels.h).toBe('zh-TW:h')
+        );
 
         useShellStore.getState().setLocale('en-US');
 
@@ -109,11 +111,26 @@ describe('runtimeBootstrapService', () => {
             'en'
         );
         expect(mocks.setI18nLanguage).toHaveBeenLastCalledWith('en');
-        expect(useShellStore.getState().timeUnitLabels.h).toBe('en:h');
+        await vi.waitFor(() =>
+            expect(useShellStore.getState().timeUnitLabels.h).toBe('en:h')
+        );
 
         cleanup();
         useShellStore.getState().setLocale('zh_CN');
         expect(mocks.setI18nLanguage).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores a stale locale load that resolves after a newer switch', async () => {
+        useShellStore.getState().setLocale('ja');
+        const cleanup = startI18nLanguageSync();
+
+        useShellStore.getState().setLocale('ko');
+        await vi.waitFor(() =>
+            expect(useShellStore.getState().timeUnitLabels.h).toBe('ko:h')
+        );
+
+        expect(useShellStore.getState().timeUnitLabels.h).toBe('ko:h');
+        cleanup();
     });
 
     it('shares React runtime startup across consumers', async () => {

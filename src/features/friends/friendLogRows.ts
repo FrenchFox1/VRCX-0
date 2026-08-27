@@ -7,8 +7,8 @@ export type FriendLogRow = FriendLogHistoryRow & {
 
 export function sortRows<TRow extends FriendLogRow>(rows: TRow[]): TRow[] {
     return rows.slice().sort((left, right) => {
-        const leftTs = Date.parse(left?.created_at ?? '');
-        const rightTs = Date.parse(right?.created_at ?? '');
+        const leftTs = Date.parse(left.created_at);
+        const rightTs = Date.parse(right.created_at);
         if (
             Number.isFinite(leftTs) &&
             Number.isFinite(rightTs) &&
@@ -17,9 +17,7 @@ export function sortRows<TRow extends FriendLogRow>(rows: TRow[]): TRow[] {
             return rightTs - leftTs;
         }
 
-        const leftId = Number(left?.rowId ?? 0) || 0;
-        const rightId = Number(right?.rowId ?? 0) || 0;
-        return rightId - leftId;
+        return right.rowId - left.rowId;
     });
 }
 
@@ -38,7 +36,7 @@ export function isUserIdLike(value: unknown) {
 // A row's displayName is "dirty" when older builds wrote the raw user id (or an empty value the UI
 // then backfilled with the id) instead of a real name. Treat those as missing so the caller can
 // resolve the real name from another source.
-export function resolveDisplayNameCandidate(value: unknown, userId: unknown) {
+export function resolveDisplayNameCandidate(value: unknown, userId: string) {
     const normalized = normalizeUserId(value);
     if (
         !normalized ||
@@ -51,33 +49,27 @@ export function resolveDisplayNameCandidate(value: unknown, userId: unknown) {
     return normalized;
 }
 
-export function getFriendLogRowKey(
-    row: FriendLogRow | null | undefined,
-    ownerUserId: unknown = ''
-) {
+export function getFriendLogRowKey(row: FriendLogRow, ownerUserId = '') {
     const owner = normalizeUserId(ownerUserId);
-    const rowId = Number(row?.rowId ?? 0) || 0;
+    const rowId = row.rowId;
     if (rowId > 0) {
         return `${owner}:row:${rowId}`;
     }
 
-    return `${owner}:composite:${row?.created_at || ''}:${row?.type || ''}:${row?.userId || ''}`;
+    return `${owner}:composite:${row.created_at}:${row.type}:${row.userId}`;
 }
 
-export function matchesSearch(
-    row: FriendLogRow | null | undefined,
-    searchQuery: unknown
-) {
+export function matchesSearch(row: FriendLogRow, searchQuery: string) {
     if (!searchQuery) {
         return true;
     }
 
-    const query = normalizeUserId(searchQuery).toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
     if (!query) {
         return true;
     }
 
-    return String(row?.resolvedDisplayName ?? row?.displayName ?? '')
+    return (row.resolvedDisplayName ?? row.displayName)
         .toLowerCase()
         .includes(query);
 }

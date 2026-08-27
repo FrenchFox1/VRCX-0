@@ -24,6 +24,31 @@ import {
     showUpdateReadyToast
 } from './UpdateAvailableToastHost';
 
+type UpdateLoopRelease = Parameters<
+    typeof showUpdateAvailableToast
+>[0]['latestUpdaterRelease'];
+
+function updateRelease(
+    overrides: Partial<UpdateLoopRelease> = {}
+): UpdateLoopRelease {
+    return {
+        displayName: 'VRCX-0 2.7.0',
+        tagName: 'v2.7.0',
+        htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
+        publishedAt: '2026-08-20T00:00:00.000Z',
+        body: '',
+        canonicalVersion: '2.7.0',
+        displayVersion: '2.7.0',
+        manifestUrl: '',
+        target: '',
+        updaterType: 'manual',
+        currentVersion: '2.6.0',
+        latestVersion: '2.7.0',
+        title: 'VRCX-0 2.7.0',
+        ...overrides
+    };
+}
+
 describe('showUpdateAvailableToast', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -33,11 +58,7 @@ describe('showUpdateAvailableToast', () => {
         const onUpdate = vi.fn();
 
         showUpdateAvailableToast({
-            latestUpdaterRelease: {
-                latestVersion: '2.7.0',
-                updaterType: 'manual',
-                htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0'
-            },
+            latestUpdaterRelease: updateRelease(),
             t: (key) => key,
             onUpdate
         });
@@ -64,11 +85,7 @@ describe('showUpdateAvailableToast', () => {
         const onUpdate = vi.fn();
 
         showUpdateReadyToast({
-            latestUpdaterRelease: {
-                latestVersion: '2.7.0',
-                canonicalVersion: '2.7.0',
-                updaterType: 'tauri'
-            },
+            latestUpdaterRelease: updateRelease({ updaterType: 'tauri' }),
             t: (key, values) =>
                 values ? `${key}:${JSON.stringify(values)}` : key,
             onUpdate

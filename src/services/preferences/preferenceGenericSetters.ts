@@ -14,7 +14,9 @@ import type { TrustColorKey } from '@/state/preferencesStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import {
     normalizeNavWidth,
-    normalizeTableDensity,
+    type NotificationLayout,
+    type TableDensity,
+    type ThemeMode,
     useShellStore
 } from '@/state/shellStore';
 
@@ -32,12 +34,10 @@ import {
     getCommunityThemeAppearanceThemeMode,
     isCommunityThemeAppearanceControlled,
     normalizeZoomLevel,
-    resolveThemeColor,
-    resolveThemeMode
+    resolveThemeColor
 } from '../themeService';
 import { applyTrustColorClasses } from '../trustColorService';
 import {
-    DEFAULT_NOTIFICATION_LAYOUT,
     DEFAULT_TABLE_PAGE_SIZE,
     DEFAULT_TABLE_PAGE_SIZES
 } from './preferencesConstants';
@@ -68,19 +68,7 @@ import type {
     StringConfigPreferenceKey
 } from './preferencesTypes';
 
-type HiddenVrPanelBoolConfigKey =
-    | 'vrOverlayPanelEnabled'
-    | 'vrOverlayPanelAllFriendsIncludesFavorites';
-type BoolConfigPreferenceInputKey =
-    | BoolConfigPreferenceKey
-    | HiddenVrPanelBoolConfigKey;
-
-const HIDDEN_VR_PANEL_BOOL_CONFIG_KEYS = new Set<string>([
-    'vrOverlayPanelEnabled',
-    'vrOverlayPanelAllFriendsIncludesFavorites'
-]);
-
-export async function setAppLanguagePreference(language: unknown) {
+export async function setAppLanguagePreference(language: string | null) {
     const nextLanguage = normalizeLanguageCode(language);
     useShellStore.getState().setLocale(nextLanguage);
     setDocumentLanguage(nextLanguage);
@@ -103,12 +91,12 @@ export async function setAppLanguagePreference(language: unknown) {
     await appLanguageChanged(nextLanguage);
 }
 
-export async function setThemeModePreference(themeMode: unknown) {
+export async function setThemeModePreference(themeMode: ThemeMode) {
     if (isCommunityThemeAppearanceControlled()) {
         return getCommunityThemeAppearanceThemeMode();
     }
 
-    const nextThemeMode = resolveThemeMode(themeMode);
+    const nextThemeMode = themeMode;
     await configRepository.setString('ThemeMode', nextThemeMode);
     if (nextThemeMode !== 'system' && nextThemeMode !== 'light') {
         await configRepository.setString('lastDarkTheme', nextThemeMode);
@@ -116,7 +104,7 @@ export async function setThemeModePreference(themeMode: unknown) {
     await applyThemeMode(nextThemeMode);
 }
 
-export async function setThemeColorPreference(themeColor: unknown) {
+export async function setThemeColorPreference(themeColor: string) {
     const nextThemeColor = resolveThemeColor(themeColor);
     await configRepository.setString('VRCX_themeColor', nextThemeColor);
     applyThemeColor(nextThemeColor);
@@ -151,14 +139,14 @@ export async function setNavWidthPreference(value: string | number) {
     return width;
 }
 
-export async function setNotificationLayoutPreference(layout: unknown) {
-    const nextLayout =
-        layout === 'table' ? 'table' : DEFAULT_NOTIFICATION_LAYOUT;
-    await configRepository.setString('notificationLayout', nextLayout);
-    useShellStore.getState().setNotificationLayout(nextLayout);
-    patchPreferences({ notificationLayout: nextLayout });
-    publishPreferenceChanged('notificationLayout', nextLayout);
-    return nextLayout;
+export async function setNotificationLayoutPreference(
+    layout: NotificationLayout
+) {
+    await configRepository.setString('notificationLayout', layout);
+    useShellStore.getState().setNotificationLayout(layout);
+    patchPreferences({ notificationLayout: layout });
+    publishPreferenceChanged('notificationLayout', layout);
+    return layout;
 }
 
 export async function setDataTableStripedPreference(value: boolean) {
@@ -169,12 +157,11 @@ export async function setDataTableStripedPreference(value: boolean) {
     publishPreferenceChanged('dataTableStriped', enabled);
 }
 
-export async function setTableDensityPreference(value: unknown) {
-    const density = normalizeTableDensity(value);
-    useShellStore.getState().setTableDensity(density);
-    applyTableDensityClass(density);
-    await configRepository.setString('VRCX_tableDensity', density);
-    patchPreferences({ tableDensity: density });
+export async function setTableDensityPreference(value: TableDensity) {
+    useShellStore.getState().setTableDensity(value);
+    applyTableDensityClass(value);
+    await configRepository.setString('VRCX_tableDensity', value);
+    patchPreferences({ tableDensity: value });
 }
 
 export async function setAccessibleStatusIndicatorsPreference(value: boolean) {
@@ -310,13 +297,9 @@ export async function setSystemWindowFramePreference(value: boolean) {
 }
 
 export async function setBoolConfigPreference(
-    key: BoolConfigPreferenceInputKey,
+    key: BoolConfigPreferenceKey,
     value: boolean
 ) {
-    if (isHiddenVrPanelBoolConfigKey(key)) {
-        patchPreferenceValue(key, false);
-        return;
-    }
     const enabled = value;
     await configRepository.setBool(key, enabled);
     const normalizedKey = normalizePreferenceKey(key);
@@ -369,10 +352,12 @@ export async function setFeedPersistenceDisabledPreference(disabled: boolean) {
     publishPreferenceChanged('feedPersistenceDisabled', disabled);
 }
 
-function isHiddenVrPanelBoolConfigKey(
-    key: BoolConfigPreferenceInputKey
-): key is HiddenVrPanelBoolConfigKey {
-    return HIDDEN_VR_PANEL_BOOL_CONFIG_KEYS.has(key);
+export async function setAvatarFeedPersistenceDisabledPreference(
+    disabled: boolean
+) {
+    await commands.appAvatarFeedPersistenceSetDisabled(disabled);
+    patchPreferenceValue('avatarFeedPersistenceDisabled', disabled);
+    publishPreferenceChanged('avatarFeedPersistenceDisabled', disabled);
 }
 
 export async function setStringConfigPreference(
@@ -449,11 +434,11 @@ export async function setTablePageSizesPreference(value: unknown) {
         currentTablePageSize,
         tablePageSizes
     );
-    const entries: Array<[string, unknown]> = [
+    const entries: Array<[string, string]> = [
         ['VRCX_tablePageSizes', JSON.stringify(tablePageSizes)]
     ];
     if (nextTablePageSize !== currentTablePageSize) {
-        entries.push(['VRCX_tablePageSize', nextTablePageSize]);
+        entries.push(['VRCX_tablePageSize', String(nextTablePageSize)]);
     }
     await configRepository.setMany(entries);
     patchPreferences({
@@ -465,14 +450,6 @@ export async function setTablePageSizesPreference(value: unknown) {
         publishPreferenceChanged('VRCX_tablePageSize', nextTablePageSize);
     }
     return tablePageSizes;
-}
-
-export async function setTablePageSizePreference(value: string | number) {
-    const tablePageSize = normalizeTablePageSize(value);
-    await configRepository.setInt('VRCX_tablePageSize', tablePageSize);
-    patchPreferences({ tablePageSize });
-    publishPreferenceChanged('VRCX_tablePageSize', tablePageSize);
-    return tablePageSize;
 }
 
 export async function getTablePageSizePreference(
@@ -498,8 +475,8 @@ export async function getTablePageSizesPreference(
 export async function setTableLimitsPreference(value: unknown) {
     const tableLimits = normalizeTableLimits(value);
     await configRepository.setMany([
-        ['maxTableSize_v2', tableLimits.maxTableSize],
-        ['searchLimit', tableLimits.searchLimit]
+        ['maxTableSize_v2', String(tableLimits.maxTableSize)],
+        ['searchLimit', String(tableLimits.searchLimit)]
     ]);
     patchPreferences({ tableLimits });
     publishPreferenceChanged('maxTableSize_v2', tableLimits.maxTableSize);
@@ -522,7 +499,7 @@ export async function loadTrustColorPreference() {
 
 export async function setTrustColorPreference(
     key: TrustColorKey,
-    value: unknown
+    value: string
 ) {
     if (
         !Object.prototype.hasOwnProperty.call(TRUST_COLOR_DEFAULTS, key) ||
@@ -550,7 +527,7 @@ export async function resetTrustColorsPreference() {
     return trustColor;
 }
 
-export async function setLocalFavoriteFriendsGroupsPreference(value: unknown) {
+export async function setLocalFavoriteFriendsGroupsPreference(value: string[]) {
     const localFavoriteFriendsGroups = normalizeStringList(value);
     await configRepository.setArray(
         'localFavoriteFriendsGroups',
@@ -564,7 +541,7 @@ export async function setLocalFavoriteFriendsGroupsPreference(value: unknown) {
     return localFavoriteFriendsGroups;
 }
 
-export async function setFeedHiddenUsersPreference(value: unknown) {
+export async function setFeedHiddenUsersPreference(value: string[]) {
     const feedHiddenUsers = normalizeFeedHiddenUsers(value);
     await configRepository.setString(
         'feedHiddenUsers',
@@ -575,7 +552,7 @@ export async function setFeedHiddenUsersPreference(value: unknown) {
     return feedHiddenUsers;
 }
 
-export async function addFeedHiddenUserPreference(userId: unknown) {
+export async function addFeedHiddenUserPreference(userId: string) {
     const current = normalizeFeedHiddenUsers(
         usePreferencesStore.getState().feedHiddenUsers
     );
@@ -586,7 +563,7 @@ export async function addFeedHiddenUserPreference(userId: unknown) {
     return setFeedHiddenUsersPreference([...current, normalizedUserId]);
 }
 
-export async function removeFeedHiddenUserPreference(userId: unknown) {
+export async function removeFeedHiddenUserPreference(userId: string) {
     const [normalizedUserId] = normalizeFeedHiddenUsers([userId]);
     const current = normalizeFeedHiddenUsers(
         usePreferencesStore.getState().feedHiddenUsers

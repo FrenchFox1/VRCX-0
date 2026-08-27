@@ -1,29 +1,9 @@
-type ThemeModeConfig = {
-    isDark: boolean | 'system';
-    name: string;
-};
-
-export const THEME_CONFIG: Record<string, ThemeModeConfig> = {
-    system: {
-        isDark: 'system',
-        name: 'System'
-    },
-    light: {
-        isDark: false,
-        name: 'Light'
-    },
-    dark: {
-        isDark: true,
-        name: 'Dark'
-    }
-};
-
 export const DEFAULT_THEME_COLOR_KEY = 'default';
 
 const neutralForeground = 'var(--color-neutral-50)';
 const darkForeground = 'var(--color-neutral-950)';
 
-type ThemeColorConfig = {
+export type ThemeColorConfig = {
     key: string;
     label: string;
     swatch: string;

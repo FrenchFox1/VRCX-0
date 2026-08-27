@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use compact_str::CompactString;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
@@ -7,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::location::parse_location;
-use vrcx_0_persistence::social_aggregates;
 
 use crate::server::VrcxMcpServer;
 
@@ -49,7 +49,7 @@ fn build_online_friends_output(
 
     let mut rows = friends
         .into_iter()
-        .filter(|friend| normalized_states.contains(&friend.state_bucket))
+        .filter(|friend| normalized_states.contains(friend.state.as_str()))
         .map(|friend| {
             let parsed = parse_location(&friend.location);
             let display_name = friend.display_name_or_id();
@@ -63,13 +63,12 @@ fn build_online_friends_output(
             OnlineFriendRow {
                 user_id: friend.id,
                 display_name,
-                state: friend.state_bucket,
+                state: friend.state,
                 location: include_location.then_some(friend.location),
                 world_id: include_location.then_some(parsed.world_id),
                 world_name: include_location.then_some(world_name),
-                instance_access_type: include_location.then_some(
-                    social_aggregates::normalize_access_bucket(&parsed.access_type),
-                ),
+                instance_access_type: include_location
+                    .then_some(normalize_access_bucket(&parsed.access_type)),
                 status: friend.status,
                 platform: if friend.platform.is_empty() {
                     friend.last_platform
@@ -98,6 +97,15 @@ fn build_online_friends_output(
     }
 }
 
+fn normalize_access_bucket(access_type: &str) -> String {
+    match access_type {
+        "" => "unknown".into(),
+        "invite+" => "invitePlus".into(),
+        "friends+" => "friendsPlus".into(),
+        other => other.to_string(),
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct OnlineFriendsParams {
@@ -118,13 +126,13 @@ struct OnlineFriendsOutput {
 struct OnlineFriendRow {
     user_id: String,
     display_name: String,
-    state: String,
+    state: CompactString,
     location: Option<String>,
     world_id: Option<String>,
     world_name: Option<String>,
     instance_access_type: Option<String>,
-    status: String,
-    platform: String,
+    status: CompactString,
+    platform: CompactString,
 }
 
 fn online_friends_summary(rows: &[OnlineFriendRow]) -> String {
