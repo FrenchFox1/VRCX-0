@@ -26,6 +26,7 @@ sysinfo = "0.39"
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
 tracing = { workspace = true }
+trash = "5"
 url = { workspace = true }
 vrcx-0-core = { path = "../core" }
 vrcx-0-platform = { path = "../platform" }

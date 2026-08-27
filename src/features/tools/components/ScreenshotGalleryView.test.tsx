@@ -10,7 +10,12 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    scrollIntoView: vi.fn()
+    scrollIntoView: vi.fn(),
+    visibleRows: [] as Array<{
+        key: string;
+        top: number;
+        items: Array<{ path: string; fileName: string }>;
+    }>
 }));
 
 vi.mock('react-i18next', async (importOriginal) => ({
@@ -28,14 +33,32 @@ vi.mock('../useScreenshotGalleryGrid', () => ({
         gridMinWidth: 0,
         totalHeight: 0,
         viewportRef: { current: null },
-        visibleRows: []
+        visibleRows: mocks.visibleRows
     })
 }));
 
 vi.mock('./ScreenshotThumbnailGrid', () => ({
-    ScreenshotThumbnailCard: () => null,
+    ScreenshotThumbnailCard: ({
+        item,
+        selected,
+        onToggleSelect
+    }: {
+        item: { path: string };
+        selected?: boolean;
+        onToggleSelect?: (checked: boolean, shift: boolean) => void;
+    }) => (
+        <button
+            type="button"
+            aria-pressed={Boolean(selected)}
+            onClick={() => onToggleSelect?.(!selected, false)}
+        >
+            {item.path}
+        </button>
+    ),
     useScreenshotThumbnailTitleMap: () => new Map()
 }));
+
+import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
 import { ScreenshotGalleryView } from './ScreenshotGalleryView';
 
@@ -91,7 +114,9 @@ describe('ScreenshotGalleryView folder tree', () => {
                 onOpenImage={() => undefined}
                 onRefresh={() => undefined}
                 onSelectFolder={onSelectFolder}
+                onDeleteSelection={() => undefined}
                 onScrollPositionChange={() => undefined}
+                isDeleteRunning={false}
                 restoreScrollTop={0}
             />
         );
@@ -114,5 +139,120 @@ describe('ScreenshotGalleryView folder tree', () => {
 
         fireEvent.click(screen.getByRole('button', { name: '2024-05' }));
         expect(onSelectFolder).toHaveBeenCalledWith(folderTree.folders[1].path);
+    });
+});
+
+function galleryImage(fileName: string): ScreenshotLibraryImage {
+    return {
+        path: `C:\\VRChat\\2026-07\\${fileName}`,
+        folderPath: 'C:\\VRChat\\2026-07',
+        fileName,
+        sizeBytes: 1024,
+        modifiedAt: 1,
+        createdAt: null,
+        width: 1920,
+        height: 1080,
+        worldId: null,
+        worldName: null,
+        capturedAt: null,
+        metadata: null,
+        error: null
+    };
+}
+
+const galleryImages = [
+    galleryImage('a.png'),
+    galleryImage('b.png'),
+    galleryImage('c.png')
+];
+
+function renderGalleryWithImages(onDeleteSelection = vi.fn()) {
+    mocks.visibleRows = [{ key: 'row-0', top: 0, items: galleryImages }];
+    render(
+        <ScreenshotGalleryView
+            folderTree={folderTree}
+            images={galleryImages}
+            isImagesLoading={false}
+            isTreeLoading={false}
+            error=""
+            scanStatus={null}
+            selectedFolder={folderTree.folders[2].path}
+            onOpenImage={() => undefined}
+            onRefresh={() => undefined}
+            onSelectFolder={() => undefined}
+            onScrollPositionChange={() => undefined}
+            onDeleteSelection={onDeleteSelection}
+            isDeleteRunning={false}
+            restoreScrollTop={0}
+        />
+    );
+    return { onDeleteSelection };
+}
+
+describe('ScreenshotGalleryView selection', () => {
+    beforeEach(() => {
+        HTMLElement.prototype.scrollIntoView = mocks.scrollIntoView;
+    });
+
+    afterEach(() => {
+        cleanup();
+        mocks.visibleRows = [];
+    });
+
+    it('shows the selection bar once tiles are selected and hides it when cleared', () => {
+        renderGalleryWithImages();
+
+        expect(
+            screen.queryByText('view.tools.gallery_selection.count:1')
+        ).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: galleryImages[0].path })
+        );
+        expect(
+            screen.getByText('view.tools.gallery_selection.count:1')
+        ).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: galleryImages[1].path })
+        );
+        expect(
+            screen.getByText('view.tools.gallery_selection.count:2')
+        ).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.gallery_selection.select_all'
+            })
+        );
+        expect(
+            screen.getByText('view.tools.gallery_selection.count:3')
+        ).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.gallery_selection.deselect_all'
+            })
+        );
+        expect(
+            screen.queryByText('view.tools.gallery_selection.count:3')
+        ).toBeNull();
+    });
+
+    it('hands the selected paths to the delete callback and clears selection on Escape', () => {
+        const { onDeleteSelection } = renderGalleryWithImages();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: galleryImages[2].path })
+        );
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.delete' })
+        );
+        expect(onDeleteSelection).toHaveBeenCalledWith([galleryImages[2].path]);
+
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(
+            screen.queryByText('view.tools.gallery_selection.count:1')
+        ).toBeNull();
     });
 });

@@ -1976,6 +1976,7 @@
             },
             "loading": {
                 "deleting_metadata": "メタデータを削除中",
+                "deleting_screenshot": "スクリーンショットを削除中",
                 "uploading_screenshot": "ギャラリーにアップロード中",
                 "searching_screenshots": "スクリーンショットを検索中",
                 "resolving_file_list_and_metadata_summaries": "ファイル一覧とメタデータ概要を取得中",
@@ -4713,6 +4714,10 @@
             "copy_image": "画像をコピー",
             "open_folder": "エクスプローラーで表示",
             "delete_metadata": "メタデータを削除",
+            "delete_file": "スクリーンショットを削除",
+            "delete_file_confirm_title": "このスクリーンショットを削除しますか？",
+            "delete_file_confirm_title_bulk": "{count} 件のスクリーンショットを削除しますか？",
+            "delete_file_confirm_description": "ファイルはごみ箱に移動されます。",
             "upload": "ギャラリーにアップロード",
             "search_placeholder": "検索...",
             "search_type_placeholder": "検索タイプ",
@@ -5496,7 +5501,9 @@
         },
         "screenshot_metadata": {
             "deleted": "スクリーンショットのメタデータを削除しました",
-            "delete_failed": "スクリーンショットのメタデータの削除に失敗しました"
+            "delete_failed": "スクリーンショットのメタデータの削除に失敗しました",
+            "file_deleted": "スクリーンショットをごみ箱に移動しました",
+            "file_delete_failed": "スクリーンショットの削除に失敗しました"
         },
         "image": {
             "downloading": "画像をダウンロード中",

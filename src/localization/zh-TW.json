@@ -1980,6 +1980,7 @@
             },
             "loading": {
                 "deleting_metadata": "正在刪除後設資料",
+                "deleting_screenshot": "正在刪除螢幕截圖",
                 "uploading_screenshot": "正在上傳到圖庫",
                 "searching_screenshots": "正在搜尋螢幕截圖",
                 "resolving_file_list_and_metadata_summaries": "正在解析檔案列表和後設資料摘要",
@@ -4719,6 +4720,10 @@
             "copy_image": "複製圖片",
             "open_folder": "開啟資料夾",
             "delete_metadata": "刪除附加資料",
+            "delete_file": "刪除螢幕截圖",
+            "delete_file_confirm_title": "要刪除這張螢幕截圖嗎？",
+            "delete_file_confirm_title_bulk": "要刪除 {count} 張螢幕截圖嗎？",
+            "delete_file_confirm_description": "檔案會移到系統的資源回收筒。",
             "upload": "上傳",
             "search_placeholder": "搜尋",
             "search_type_placeholder": "搜尋類型",
@@ -5504,7 +5509,9 @@
         },
         "screenshot_metadata": {
             "deleted": "刪除截圖附加資料",
-            "delete_failed": "刪除截圖附加資料失敗"
+            "delete_failed": "刪除截圖附加資料失敗",
+            "file_deleted": "螢幕截圖已移到資源回收筒",
+            "file_delete_failed": "刪除螢幕截圖失敗"
         },
         "image": {
             "downloading": "正在下載圖片...",

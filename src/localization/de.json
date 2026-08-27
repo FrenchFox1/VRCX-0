@@ -1980,6 +1980,7 @@
             },
             "loading": {
                 "deleting_metadata": "Metadaten werden gelöscht",
+                "deleting_screenshot": "Screenshot wird gelöscht",
                 "uploading_screenshot": "Wird in die Galerie hochgeladen",
                 "searching_screenshots": "Screenshots werden durchsucht",
                 "resolving_file_list_and_metadata_summaries": "Dateiliste und Metadatenübersicht werden ermittelt",
@@ -4718,6 +4719,10 @@
             "copy_image": "Bild kopieren",
             "open_folder": "Im Explorer anzeigen",
             "delete_metadata": "Metadaten löschen",
+            "delete_file": "Screenshot löschen",
+            "delete_file_confirm_title": "Diesen Screenshot löschen?",
+            "delete_file_confirm_title_bulk": "{count} Screenshot(s) löschen?",
+            "delete_file_confirm_description": "Die Datei wird in den Papierkorb verschoben.",
             "upload": "In Galerie hochladen",
             "search_placeholder": "Suchen",
             "search_type_placeholder": "Suchtyp",
@@ -5503,7 +5508,9 @@
         },
         "screenshot_metadata": {
             "deleted": "Screenshot-Metadaten gelöscht",
-            "delete_failed": "Screenshot-Metadaten konnten nicht gelöscht werden"
+            "delete_failed": "Screenshot-Metadaten konnten nicht gelöscht werden",
+            "file_deleted": "Screenshot in den Papierkorb verschoben",
+            "file_delete_failed": "Screenshot konnte nicht gelöscht werden"
         },
         "image": {
             "downloading": "Bild wird heruntergeladen",

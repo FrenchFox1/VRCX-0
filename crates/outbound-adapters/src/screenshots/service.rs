@@ -28,8 +28,8 @@ mod paths;
 mod thumbnail;
 
 pub use library::{
-    find_screenshots, list_screenshot_folder_images, list_world_screenshots,
-    screenshot_folder_tree, start_screenshot_library_scan,
+    find_screenshots, forget_screenshot_file, list_screenshot_folder_images,
+    list_world_screenshots, screenshot_folder_tree, start_screenshot_library_scan,
 };
 pub use metadata::{
     add_screenshot_metadata, delete_all_screenshot_metadata, extra_screenshot_data,
@@ -77,6 +77,14 @@ pub fn is_screenshot_library_file_path(
     paths::is_png_path(path)
         && is_path_inside_directory(path, root_path.as_ref())
         && !metadata::is_screenshot_content_asset_path(path)
+}
+
+pub fn is_managed_screenshot_file_path(
+    path: impl AsRef<Path>,
+    root_path: impl AsRef<Path>,
+) -> bool {
+    let path = path.as_ref();
+    is_vrchat_screenshot_file_path(path) || is_screenshot_library_file_path(path, root_path)
 }
 
 pub fn is_path_inside_directory(path: &Path, directory: &Path) -> bool {

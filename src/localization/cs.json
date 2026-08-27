@@ -1982,6 +1982,7 @@
             },
             "loading": {
                 "deleting_metadata": "Odstraňování metadat",
+                "deleting_screenshot": "Odstraňování snímku obrazovky",
                 "uploading_screenshot": "Nahrávání do galerie",
                 "searching_screenshots": "Vyhledávání snímků obrazovky",
                 "resolving_file_list_and_metadata_summaries": "Zjišťování seznamu souborů a přehledu metadat",
@@ -4722,6 +4723,10 @@
             "copy_image": "Kopírovat obrázek",
             "open_folder": "Open Folder",
             "delete_metadata": "Smazat metadata",
+            "delete_file": "Smazat snímek obrazovky",
+            "delete_file_confirm_title": "Smazat tento snímek obrazovky?",
+            "delete_file_confirm_title_bulk": "Smazat {count} snímků obrazovky?",
+            "delete_file_confirm_description": "Soubor bude přesunut do koše.",
             "upload": "Upload",
             "search_placeholder": "Hledat",
             "search_type_placeholder": "Typ hledání",
@@ -5507,7 +5512,9 @@
         },
         "screenshot_metadata": {
             "deleted": "Metadata snímku obrazovky smazána",
-            "delete_failed": "Smazání metadat snímku obrazovky se nezdařilo"
+            "delete_failed": "Smazání metadat snímku obrazovky se nezdařilo",
+            "file_deleted": "Snímek obrazovky přesunut do koše",
+            "file_delete_failed": "Smazání snímku obrazovky se nezdařilo"
         },
         "image": {
             "downloading": "Stahování obrázku",

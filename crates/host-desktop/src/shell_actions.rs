@@ -244,6 +244,15 @@ pub fn open_folder_and_select_item(path: &str, is_folder: bool) -> Result<(), Er
     }
 }
 
+pub fn move_to_trash(path: &Path) -> Result<(), Error> {
+    trash::delete(path).map_err(|error| {
+        Error::Custom(format!(
+            "move to trash failed for '{}': {error}",
+            path.display()
+        ))
+    })
+}
+
 pub fn write_string_file(path: &Path, content: &str) -> Result<(), Error> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;

@@ -3,7 +3,8 @@ mod service;
 pub use service::{
     add_screenshot_metadata, can_decode_image, delete_all_screenshot_metadata,
     delete_text_metadata, ensure_screenshot_thumbnail, extra_screenshot_data,
-    find_screenshot_search_results, find_screenshots, get_screenshot_metadata, has_vrcx_metadata,
+    find_screenshot_search_results, find_screenshots, forget_screenshot_file,
+    get_screenshot_metadata, has_vrcx_metadata, is_managed_screenshot_file_path,
     is_path_inside_directory, is_png_file, is_screenshot_library_file_path,
     is_vrchat_screenshot_file_path, last_screenshot, list_screenshot_folder_images,
     list_world_screenshots, read_png_dimensions, screenshot_folder_tree, screenshot_metadata_json,

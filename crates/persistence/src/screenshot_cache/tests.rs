@@ -476,3 +476,31 @@ fn clear_all_removes_metadata_library_and_thumbnail_records() -> Result<()> {
     assert!(cache.thumbnail_cache_entries().is_empty());
     Ok(())
 }
+
+#[test]
+fn delete_screenshot_entry_removes_index_and_metadata_cache_rows() -> Result<()> {
+    let dir = TestDir::new("delete-entry");
+    let cache = open_cache(&dir);
+    let root_str = path_string(&dir.path.join("Screenshots"));
+    cache.bulk_add(&[
+        ("a.png".to_string(), Some("{}".to_string())),
+        ("b.png".to_string(), Some("{}".to_string())),
+    ]);
+    store_entries(
+        &cache,
+        &root_str,
+        &[
+            library_entry(&root_str, "a.png", &root_str, "a.png"),
+            library_entry(&root_str, "b.png", &root_str, "b.png"),
+        ],
+    )?;
+
+    cache.delete_screenshot_entry("a.png")?;
+
+    assert!(!cache.is_cached("a.png"));
+    assert!(cache.is_cached("b.png"));
+    let states = cache.library_file_states(&root_str);
+    assert_eq!(states.len(), 1);
+    assert!(states.contains_key("b.png"));
+    Ok(())
+}
