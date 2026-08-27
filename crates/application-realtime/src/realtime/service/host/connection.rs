@@ -228,6 +228,8 @@ impl RealtimeHostRuntime {
                         generation,
                         0,
                     );
+                    pending_projection.location_time_snapshot =
+                        Some(self.deps.instance_dwell.snapshot());
                     friend_user_ids
                 } else {
                     let Some(friend_user_ids) = self
@@ -266,6 +268,7 @@ impl RealtimeHostRuntime {
         if !pending_projection.patches.is_empty()
             || !pending_projection.removals.is_empty()
             || pending_projection.friend_log_changed
+            || pending_projection.location_time_snapshot.is_some()
         {
             pending_projection.generation = generation;
             pending_projection.baseline_revision = baseline_revision;
