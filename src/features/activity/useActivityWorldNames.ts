@@ -19,7 +19,7 @@ export function useActivityWorldNames(
     const [summaries, setSummaries] = useState<
         Map<string, ActivityWorldSummary>
     >(new Map());
-    const fetchedRef = useRef(new Set<string>());
+    const requestedRef = useRef(new Set<string>());
     const worldIdsKey = worldIds.join(',');
 
     useEffect(() => {
@@ -28,19 +28,14 @@ export function useActivityWorldNames(
             return;
         }
         let active = true;
-        const isActive = () => active;
 
         const merge = (id: string, value: ActivityWorldSummary) => {
-            setSummaries((previous) => {
-                const next = new Map(previous);
-                next.set(id, value);
-                return next;
-            });
+            setSummaries((previous) => new Map(previous).set(id, value));
         };
 
         void commands
             .appWorldSummariesGet(ids)
-            .then(async (localRows) => {
+            .then((localRows) => {
                 if (!active) {
                     return;
                 }
@@ -60,41 +55,38 @@ export function useActivityWorldNames(
                     }
                 }
                 setSummaries((previous) => new Map([...previous, ...resolved]));
-
-                const missing = ids.filter(
-                    (id) => !resolved.has(id) && !fetchedRef.current.has(id)
-                );
-                for (const id of missing) {
-                    fetchedRef.current.add(id);
-                }
-                await resolveMissingEntities({
-                    ids: missing,
-                    isActive,
-                    fetchOne: async (worldId) => {
-                        const profile =
-                            await worldProfileRepository.getWorldProfile({
-                                worldId
-                            });
-                        return profile?.name
-                            ? {
-                                  name: profile.name,
-                                  thumbnailUrl:
-                                      profile.thumbnailImageUrl ||
-                                      profile.imageUrl ||
-                                      '',
-                                  imageUrl:
-                                      profile.imageUrl ||
-                                      profile.thumbnailImageUrl ||
-                                      '',
-                                  authorName: profile.authorName,
-                                  description: profile.description
-                              }
-                            : null;
-                    },
-                    onResolved: merge
-                });
             })
             .catch(() => {});
+
+        const pending = ids.filter((id) => !requestedRef.current.has(id));
+        for (const id of pending) {
+            requestedRef.current.add(id);
+        }
+        void resolveMissingEntities({
+            ids: pending,
+            isActive: () => active,
+            fetchOne: async (worldId) => {
+                const profile = await worldProfileRepository.getWorldProfile({
+                    worldId
+                });
+                return profile?.name
+                    ? {
+                          name: profile.name,
+                          thumbnailUrl:
+                              profile.thumbnailImageUrl ||
+                              profile.imageUrl ||
+                              '',
+                          imageUrl:
+                              profile.imageUrl ||
+                              profile.thumbnailImageUrl ||
+                              '',
+                          authorName: profile.authorName,
+                          description: profile.description
+                      }
+                    : null;
+            },
+            onResolved: merge
+        });
 
         return () => {
             active = false;

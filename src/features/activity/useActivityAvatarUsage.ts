@@ -29,17 +29,14 @@ export function useActivityAvatarUsage(
                 }
                 setRows(ranking);
 
-                const missing = ranking
-                    .filter(
-                        (row) =>
-                            !row.name && !fetchedRef.current.has(row.avatarId)
-                    )
-                    .map((row) => row.avatarId);
-                for (const id of missing) {
+                const pending = ranking
+                    .map((row) => row.avatarId)
+                    .filter((id) => !fetchedRef.current.has(id));
+                for (const id of pending) {
                     fetchedRef.current.add(id);
                 }
                 await resolveMissingEntities({
-                    ids: missing,
+                    ids: pending,
                     isActive,
                     fetchOne: async (avatarId) => {
                         const profile =

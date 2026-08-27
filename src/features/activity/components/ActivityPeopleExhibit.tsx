@@ -1,4 +1,5 @@
 import { UserIcon } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
@@ -86,7 +87,11 @@ export function ActivityPeopleExhibit({
     onOrderChange: (next: ActivityCompanionOrder) => void;
 }) {
     const { t } = useTranslation();
-    const avatarOf = useActivityUserAvatars();
+    const userIds = useMemo(
+        () => people.companions.map((row) => row.userId),
+        [people.companions]
+    );
+    const avatarOf = useActivityUserAvatars(userIds);
     const [lead, ...rest] = people.companions;
 
     if (!lead) {
