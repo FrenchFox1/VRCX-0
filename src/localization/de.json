@@ -4733,6 +4733,10 @@
                 "world_id": "Welt-ID"
             },
             "no_results": "Keine Ergebnisse gefunden",
+            "no_results_description": "Versuche einen anderen Begriff oder wechsle den Suchtyp.",
+            "layout_grid": "Bildraster",
+            "layout_list": "Detailliste",
+            "clear_search": "Suche zurücksetzen",
             "invalid_file": "Ungültige Datei ausgewählt. Bitte wähle einen gültigen VRChat-Screenshot",
             "section_location": "Standort",
             "section_players": "Spieler",
@@ -4752,6 +4756,7 @@
             "folders": "Ordner",
             "scanning": "Screenshots werden gescannt",
             "image_count": "{count} Bilder",
+            "feeling_lucky": "Auf gut Glück!",
             "empty_gallery": "Keine Screenshots in diesem Ordner",
             "empty_gallery_description": "Wähle einen anderen Ordner oder aktualisiere die Screenshot-Bibliothek.",
             "empty_folders": "Keine Screenshot-Ordner",

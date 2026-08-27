@@ -3,6 +3,7 @@ import type {
     PlayerDetail,
     ScreenshotFolderInfo,
     ScreenshotFolderTree,
+    ScreenshotLibraryImage,
     ScreenshotMetadata,
     ScreenshotSearchResult,
     WorldDetail
@@ -101,6 +102,8 @@ export const SCREENSHOT_GALLERY_FOLDER_CONFIG_KEY =
     SCREENSHOT_GALLERY_CONFIG_KEYS.folder;
 export const SCREENSHOT_GALLERY_SCROLL_CONFIG_KEY =
     SCREENSHOT_GALLERY_CONFIG_KEYS.scrollPositions;
+export const SCREENSHOT_SEARCH_LAYOUT_CONFIG_KEY =
+    SCREENSHOT_GALLERY_CONFIG_KEYS.searchLayout;
 export const SCREENSHOT_GALLERY_SCROLL_SAVE_DELAY_MS = 500;
 export const MAX_SCREENSHOT_GALLERY_SCROLL_POSITIONS = 100;
 export const MAX_SCREENSHOT_GALLERY_SCROLL_TOP = 50_000_000;
@@ -462,6 +465,56 @@ export function normalizeScreenshotSearchResult(
         creationDate: result.creationDate || '',
         resolution: width > 0 && height > 0 ? `${width}x${height}` : ''
     });
+}
+
+export function pickRandomScreenshotPath(
+    images: readonly { path: string }[],
+    random: number
+) {
+    if (images.length === 0) {
+        return '';
+    }
+    const index = Math.min(
+        images.length - 1,
+        Math.max(0, Math.floor(random * images.length))
+    );
+    return images[index].path;
+}
+
+function getFolderPathFromPath(path: unknown) {
+    const value = String(path || '');
+    const separatorIndex = Math.max(
+        value.lastIndexOf('/'),
+        value.lastIndexOf('\\')
+    );
+    return separatorIndex > 0 ? value.slice(0, separatorIndex) : '';
+}
+
+export function searchResultToLibraryImage(
+    result: Omit<ScreenshotSearchResult, 'metadata'> & {
+        metadata: ScreenshotMetadata | null;
+    }
+): ScreenshotLibraryImage {
+    const creationTime = result.creationDate
+        ? Date.parse(result.creationDate)
+        : Number.NaN;
+    const createdAt = Number.isNaN(creationTime) ? null : creationTime;
+
+    return {
+        path: result.filePath,
+        folderPath: getFolderPathFromPath(result.filePath),
+        fileName: result.fileName || getFileNameFromPath(result.filePath),
+        sizeBytes: result.fileSizeBytes,
+        modifiedAt: createdAt ?? 0,
+        createdAt,
+        width: result.width,
+        height: result.height,
+        worldId: result.metadata?.world?.id || null,
+        worldName: result.metadata?.world?.name || null,
+        capturedAt: result.metadata?.timestamp || result.creationDate || null,
+        metadata: result.metadata,
+        error: result.metadata?.error || null
+    };
 }
 
 export function buildScreenshotSearchRow(

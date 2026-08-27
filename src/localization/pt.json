@@ -4734,6 +4734,10 @@
                 "world_id": "ID do Mundo"
             },
             "no_results": "Nenhum resultado encontrado",
+            "no_results_description": "Tente outra palavra ou mude o tipo de busca.",
+            "layout_grid": "Grade de imagens",
+            "layout_list": "Lista de detalhes",
+            "clear_search": "Limpar busca",
             "invalid_file": "Arquivo inválido selecionado. Por favor, selecione uma captura de tela válida do VRChat.",
             "section_location": "Localização",
             "section_players": "Usuários",
@@ -4753,6 +4757,7 @@
             "folders": "Pastas",
             "scanning": "Verificando capturas de tela",
             "image_count": "{count} imagens",
+            "feeling_lucky": "Estou com sorte",
             "empty_gallery": "Nenhuma captura de tela nesta pasta",
             "empty_gallery_description": "Selecione outra pasta ou atualize a biblioteca de capturas de tela.",
             "empty_folders": "Nenhuma pasta de capturas de tela",

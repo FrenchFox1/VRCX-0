@@ -4737,6 +4737,10 @@
                 "world_id": "ID světa"
             },
             "no_results": "Nebyly nalezeny žádné výsledky",
+            "no_results_description": "Zkuste jiné slovo nebo změňte typ hledání.",
+            "layout_grid": "Mřížka obrázků",
+            "layout_list": "Seznam detailů",
+            "clear_search": "Vymazat hledání",
             "invalid_file": "Vybraný soubor je neplatný. Vyberte prosím platný snímek obrazovky z VRChatu",
             "section_location": "Lokace",
             "section_players": "Hráči",
@@ -4756,6 +4760,7 @@
             "folders": "Složky",
             "scanning": "Prohledávají se snímky obrazovky",
             "image_count": "{count} obrázků",
+            "feeling_lucky": "Zkusím štěstí",
             "empty_gallery": "V této složce nejsou žádné snímky obrazovky",
             "empty_gallery_description": "Vyberte jinou složku nebo obnovte knihovnu snímků obrazovky.",
             "empty_folders": "Žádné složky se snímky obrazovky",

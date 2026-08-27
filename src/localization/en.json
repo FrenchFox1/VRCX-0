@@ -4733,6 +4733,10 @@
                 "world_id": "World ID"
             },
             "no_results": "No results found",
+            "no_results_description": "Try another keyword, or switch the search type.",
+            "layout_grid": "Image grid",
+            "layout_list": "Detail list",
+            "clear_search": "Clear search",
             "invalid_file": "Invalid file selected. Please select a valid VRChat screenshot",
             "section_location": "Location",
             "section_players": "Players",
@@ -4752,6 +4756,7 @@
             "folders": "Folders",
             "scanning": "Scanning screenshots",
             "image_count": "{count} images",
+            "feeling_lucky": "I'm Feeling Lucky",
             "empty_gallery": "No screenshots in this folder",
             "empty_gallery_description": "Select another folder or refresh the screenshot library.",
             "empty_folders": "No screenshot folders",

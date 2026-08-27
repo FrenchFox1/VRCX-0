@@ -1,13 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
+import configRepository from '@/repositories/configRepository';
 
 import {
     DEFAULT_SCREENSHOT_SEARCH_SORT,
     SCREENSHOT_METADATA_SEARCH_TYPES,
+    SCREENSHOT_SEARCH_LAYOUT_CONFIG_KEY,
     sortScreenshotSearchRows,
     type ScreenshotSearchRow,
     type ScreenshotSearchSort,
     type ScreenshotMetadataSearchType
 } from './screenshotMetadataValues';
+
+export type ScreenshotSearchLayout = 'grid' | 'list';
 
 export function useScreenshotMetadataSearch() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -15,13 +21,33 @@ export function useScreenshotMetadataSearch() {
         ScreenshotMetadataSearchType['value']
     >(SCREENSHOT_METADATA_SEARCH_TYPES[0].value);
     const [searchRows, setSearchRows] = useState<ScreenshotSearchRow[]>([]);
-    const [searchViewMode, setSearchViewMode] = useState<'detail' | 'table'>(
+    const [searchImages, setSearchImages] = useState<ScreenshotLibraryImage[]>(
+        []
+    );
+    const [searchViewMode, setSearchViewMode] = useState<'detail' | 'results'>(
         'detail'
     );
+    const [searchLayout, setSearchLayoutState] =
+        useState<ScreenshotSearchLayout>('grid');
     const [searchSort, setSearchSort] = useState(
         DEFAULT_SCREENSHOT_SEARCH_SORT
     );
     const [selectedPath, setSelectedPath] = useState('');
+
+    useEffect(() => {
+        let active = true;
+        configRepository
+            .getString(SCREENSHOT_SEARCH_LAYOUT_CONFIG_KEY, 'grid')
+            .then((storedLayout) => {
+                if (active && storedLayout === 'list') {
+                    setSearchLayoutState('list');
+                }
+            })
+            .catch(() => {});
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const currentSearchType =
         SCREENSHOT_METADATA_SEARCH_TYPES.find(
@@ -33,14 +59,53 @@ export function useScreenshotMetadataSearch() {
         [searchRows, searchSort]
     );
 
+    const sortedSearchImages = useMemo(() => {
+        const imagesByPath = new Map(
+            searchImages.map((image) => [image.path, image])
+        );
+        return sortedSearchRows.flatMap((row) => {
+            const image = imagesByPath.get(row.filePath);
+            return image ? [image] : [];
+        });
+    }, [searchImages, sortedSearchRows]);
+
     const searchNavigationPaths = useMemo(
         () => sortedSearchRows.map((row) => row.filePath),
         [sortedSearchRows]
     );
     const selectedPathIndex = searchNavigationPaths.indexOf(selectedPath);
 
-    function resetSearchTable({ clearQuery = false } = {}) {
+    function setSearchLayout(layout: ScreenshotSearchLayout) {
+        setSearchLayoutState(layout);
+        configRepository
+            .setString(SCREENSHOT_SEARCH_LAYOUT_CONFIG_KEY, layout)
+            .catch(() => {});
+    }
+
+    function setSearchResults({
+        rows,
+        images
+    }: {
+        rows: ScreenshotSearchRow[];
+        images: ScreenshotLibraryImage[];
+    }) {
+        setSearchRows(rows);
+        setSearchImages(images);
+    }
+
+    function removeSearchPaths(paths: string[]) {
+        const removedPaths = new Set(paths);
+        setSearchRows((current) =>
+            current.filter((row) => !removedPaths.has(row.filePath))
+        );
+        setSearchImages((current) =>
+            current.filter((image) => !removedPaths.has(image.path))
+        );
+    }
+
+    function resetSearchResults({ clearQuery = false } = {}) {
         setSearchRows([]);
+        setSearchImages([]);
         setSelectedPath('');
         if (clearQuery) {
             setSearchQuery('');
@@ -66,7 +131,9 @@ export function useScreenshotMetadataSearch() {
 
     return {
         currentSearchType,
-        resetSearchTable,
+        removeSearchPaths,
+        resetSearchResults,
+        searchLayout,
         searchNavigationPaths,
         searchQuery,
         searchRows,
@@ -75,11 +142,13 @@ export function useScreenshotMetadataSearch() {
         searchViewMode,
         selectedPath,
         selectedPathIndex,
+        setSearchLayout,
         setSearchQuery,
-        setSearchRows,
+        setSearchResults,
         setSearchType,
         setSearchViewMode,
         setSelectedPath,
+        sortedSearchImages,
         sortedSearchRows,
         toggleSearchSort
     };

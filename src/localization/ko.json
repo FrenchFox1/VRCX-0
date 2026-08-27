@@ -4683,6 +4683,10 @@
                 "world_id": "세계 ID"
             },
             "no_results": "검색결과가 없습니다",
+            "no_results_description": "다른 키워드를 쓰거나 검색 유형을 바꿔 보세요.",
+            "layout_grid": "이미지 그리드",
+            "layout_list": "정보 목록",
+            "clear_search": "검색 지우기",
             "section_location": "위치",
             "section_players": "플레이어",
             "section_file_info": "파일 정보",
@@ -4712,6 +4716,7 @@
             "back_to_results": "{count} 결과로 돌아가기",
             "result_count": "{count} 결과",
             "image_count": "{count} 이미지",
+            "feeling_lucky": "I’m Feeling Lucky",
             "empty_folders_description": "VRChat에서 스크린샷을 저장한 후 새로고침하세요."
         },
         "set_avatar_styles": {

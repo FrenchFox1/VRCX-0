@@ -4734,6 +4734,10 @@
                 "world_id": "世界 ID"
             },
             "no_results": "找不到符合的結果",
+            "no_results_description": "換個關鍵字，或切換搜尋類型再試一次。",
+            "layout_grid": "圖片網格",
+            "layout_list": "資訊清單",
+            "clear_search": "清除搜尋",
             "invalid_file": "選擇的檔案無效，請選擇有效的 VRChat 螢幕截圖 ",
             "section_location": "位置",
             "section_players": "用戶",
@@ -4753,6 +4757,7 @@
             "folders": "資料夾",
             "scanning": "正在掃描螢幕截圖",
             "image_count": "{count} 張圖片",
+            "feeling_lucky": "好手氣",
             "empty_gallery": "此資料夾沒有螢幕截圖",
             "empty_gallery_description": "選擇其他資料夾，或重新整理螢幕截圖圖庫。",
             "empty_folders": "沒有螢幕截圖資料夾",

@@ -60,6 +60,7 @@ vi.mock('./ScreenshotThumbnailGrid', () => ({
 
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
+import { useScreenshotBrowseSelection } from '../useScreenshotBrowseSelection';
 import { ScreenshotGalleryView } from './ScreenshotGalleryView';
 
 const folderTree = {
@@ -103,21 +104,11 @@ describe('ScreenshotGalleryView folder tree', () => {
     it('uses one folder row per node and reveals the selected folder', async () => {
         const onSelectFolder = vi.fn();
         const { container } = render(
-            <ScreenshotGalleryView
-                folderTree={folderTree}
+            <GalleryHarness
                 images={[]}
-                isImagesLoading={false}
-                isTreeLoading={false}
-                error=""
-                scanStatus={null}
                 selectedFolder={folderTree.folders[2].path}
-                onOpenImage={() => undefined}
-                onRefresh={() => undefined}
-                onSelectFolder={onSelectFolder}
                 onDeleteSelection={() => undefined}
-                onScrollPositionChange={() => undefined}
-                isDeleteRunning={false}
-                restoreScrollTop={0}
+                onSelectFolder={onSelectFolder}
             />
         );
 
@@ -142,10 +133,13 @@ describe('ScreenshotGalleryView folder tree', () => {
     });
 });
 
-function galleryImage(fileName: string): ScreenshotLibraryImage {
+function galleryImage(
+    folder: string,
+    fileName: string
+): ScreenshotLibraryImage {
     return {
-        path: `C:\\VRChat\\2026-07\\${fileName}`,
-        folderPath: 'C:\\VRChat\\2026-07',
+        path: `${folder}\\${fileName}`,
+        folderPath: folder,
         fileName,
         sizeBytes: 1024,
         modifiedAt: 1,
@@ -160,33 +154,75 @@ function galleryImage(fileName: string): ScreenshotLibraryImage {
     };
 }
 
+const julyFolder = folderTree.folders[2].path;
+const mayFolder = folderTree.folders[1].path;
 const galleryImages = [
-    galleryImage('a.png'),
-    galleryImage('b.png'),
-    galleryImage('c.png')
+    galleryImage(julyFolder, 'a.png'),
+    galleryImage(julyFolder, 'b.png'),
+    galleryImage(julyFolder, 'c.png')
+];
+const mayImages = [
+    galleryImage(mayFolder, 'x.png'),
+    galleryImage(mayFolder, 'y.png')
 ];
 
-function renderGalleryWithImages(onDeleteSelection = vi.fn()) {
-    mocks.visibleRows = [{ key: 'row-0', top: 0, items: galleryImages }];
-    render(
+function GalleryHarness({
+    images,
+    selectedFolder,
+    onDeleteSelection,
+    onSelectFolder = () => undefined
+}: {
+    images: ScreenshotLibraryImage[];
+    selectedFolder: string;
+    onDeleteSelection: (paths: string[]) => void;
+    onSelectFolder?: (folder: string) => void;
+}) {
+    const selection = useScreenshotBrowseSelection(
+        images.map((image) => image.path)
+    );
+    return (
         <ScreenshotGalleryView
             folderTree={folderTree}
-            images={galleryImages}
+            images={images}
             isImagesLoading={false}
             isTreeLoading={false}
             error=""
             scanStatus={null}
-            selectedFolder={folderTree.folders[2].path}
+            selectedFolder={selectedFolder}
             onOpenImage={() => undefined}
             onRefresh={() => undefined}
-            onSelectFolder={() => undefined}
+            onSelectFolder={onSelectFolder}
             onScrollPositionChange={() => undefined}
             onDeleteSelection={onDeleteSelection}
             isDeleteRunning={false}
             restoreScrollTop={0}
+            selection={selection}
         />
     );
-    return { onDeleteSelection };
+}
+
+function renderGalleryWithImages(onDeleteSelection = vi.fn()) {
+    mocks.visibleRows = [{ key: 'row-0', top: 0, items: galleryImages }];
+    const view = render(
+        <GalleryHarness
+            images={galleryImages}
+            selectedFolder={julyFolder}
+            onDeleteSelection={onDeleteSelection}
+        />
+    );
+    return {
+        onDeleteSelection,
+        openFolder(images: ScreenshotLibraryImage[], folder: string) {
+            mocks.visibleRows = [{ key: 'row-0', top: 0, items: images }];
+            view.rerender(
+                <GalleryHarness
+                    images={images}
+                    selectedFolder={folder}
+                    onDeleteSelection={onDeleteSelection}
+                />
+            );
+        }
+    };
 }
 
 describe('ScreenshotGalleryView selection', () => {
@@ -237,6 +273,61 @@ describe('ScreenshotGalleryView selection', () => {
         expect(
             screen.queryByText('view.tools.gallery_selection.count:3')
         ).toBeNull();
+    });
+
+    it('keeps the selection across folders and deletes the combined set', () => {
+        const harness = renderGalleryWithImages();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: galleryImages[0].path })
+        );
+        harness.openFolder(mayImages, mayFolder);
+
+        expect(
+            screen.getByText('view.tools.gallery_selection.count:1')
+        ).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: mayImages[0].path })
+        );
+        expect(
+            screen.getByText('view.tools.gallery_selection.count:2')
+        ).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'common.actions.delete' })
+        );
+        expect(harness.onDeleteSelection).toHaveBeenCalledWith([
+            galleryImages[0].path,
+            mayImages[0].path
+        ]);
+    });
+
+    it('scopes select all to the open folder', () => {
+        const harness = renderGalleryWithImages();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: galleryImages[0].path })
+        );
+        harness.openFolder(mayImages, mayFolder);
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.gallery_selection.select_all'
+            })
+        );
+        expect(
+            screen.getByText('view.tools.gallery_selection.count:3')
+        ).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'view.tools.gallery_selection.deselect_all'
+            })
+        );
+        expect(
+            screen.getByText('view.tools.gallery_selection.count:1')
+        ).toBeTruthy();
     });
 
     it('hands the selected paths to the delete callback and clears selection on Escape', () => {

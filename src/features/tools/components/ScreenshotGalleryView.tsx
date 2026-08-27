@@ -1,9 +1,12 @@
-import { ChevronRightIcon, FolderIcon, RefreshCwIcon } from 'lucide-react';
+import {
+    ChevronRightIcon,
+    DicesIcon,
+    FolderIcon,
+    RefreshCwIcon
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { isEditableTarget } from '@/components/layout/useGlobalKeyboardShortcuts';
-import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import { cn } from '@/lib/utils';
 import type {
     ScreenshotFolderInfo,
@@ -28,13 +31,16 @@ import {
 } from '@/ui/shadcn/collapsible';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
-import { useScreenshotGalleryGrid } from '../useScreenshotGalleryGrid';
+import { pickRandomScreenshotPath } from '../screenshotMetadataValues';
+import { useClearSelectionOnEscape } from '../useClearSelectionOnEscape';
+import type { useScreenshotBrowseSelection } from '../useScreenshotBrowseSelection';
 import { GallerySelectionBar } from './GallerySelectionBar';
 import { EmptyState } from './ScreenshotMetadataParts';
-import {
-    ScreenshotThumbnailCard,
-    useScreenshotThumbnailTitleMap
-} from './ScreenshotThumbnailGrid';
+import { ScreenshotSelectableImageGrid } from './ScreenshotSelectableImageGrid';
+
+type ScreenshotBrowseSelection = ReturnType<
+    typeof useScreenshotBrowseSelection
+>;
 
 type FolderTreeNodeModel = ScreenshotFolderInfo & {
     children: FolderTreeNodeModel[];
@@ -194,68 +200,24 @@ function ScreenshotGalleryGrid({
     images,
     isLoading,
     selectedFolder,
+    hasSelection,
+    selectedKeysSet,
     onOpen,
-    onDeleteSelection,
-    onScrollPositionChange,
-    isDeleteRunning
+    onToggleSelect,
+    onScrollPositionChange
 }: {
     error: string;
     initialScrollTop: number;
     images: ScreenshotLibraryImage[];
     isLoading: boolean;
     selectedFolder: string;
+    hasSelection: boolean;
+    selectedKeysSet: ReadonlySet<string>;
     onOpen: (path: string) => void;
-    onDeleteSelection: (paths: string[]) => void;
+    onToggleSelect: (path: string, checked: boolean, shift: boolean) => void;
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
-    isDeleteRunning: boolean;
 }) {
     const { t } = useTranslation();
-    const {
-        gridColumnCount,
-        gridGap,
-        gridMinWidth,
-        totalHeight,
-        viewportRef,
-        visibleRows
-    } = useScreenshotGalleryGrid({
-        initialScrollTop,
-        items: images,
-        resetKey: selectedFolder
-    });
-    const visibleItems = useMemo(
-        () => visibleRows.flatMap((row) => row.items),
-        [visibleRows]
-    );
-    const titleMap = useScreenshotThumbnailTitleMap(visibleItems);
-    const imagePaths = useMemo(
-        () => images.map((image) => image.path),
-        [images]
-    );
-    const selection = useTileSelectionState({
-        keys: imagePaths,
-        resetToken: selectedFolder
-    });
-    const { clearSelection, hasSelection } = selection;
-    const selectedPaths = useMemo(
-        () => imagePaths.filter((path) => selection.selectedKeysSet.has(path)),
-        [imagePaths, selection.selectedKeysSet]
-    );
-
-    useEffect(() => {
-        if (!hasSelection) {
-            return undefined;
-        }
-        function handleKeyDown(event: KeyboardEvent) {
-            if (event.key !== 'Escape' || isEditableTarget(event.target)) {
-                return;
-            }
-            clearSelection();
-        }
-        window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [clearSelection, hasSelection]);
 
     if (error) {
         return (
@@ -290,65 +252,20 @@ function ScreenshotGalleryGrid({
     }
 
     return (
-        <>
-            <div
-                ref={viewportRef}
-                className="min-h-0 flex-1 overflow-auto p-0.5 pr-1"
-                onScroll={(event) => {
-                    if (selectedFolder) {
-                        onScrollPositionChange?.(
-                            selectedFolder,
-                            event.currentTarget.scrollTop
-                        );
-                    }
-                }}
-            >
-                <div className="relative" style={{ height: totalHeight }}>
-                    {visibleRows.map((row) => (
-                        <div
-                            key={row.key}
-                            className="absolute right-0 left-0 grid"
-                            style={{
-                                top: row.top,
-                                gridTemplateColumns: `repeat(${gridColumnCount}, minmax(${gridMinWidth}px, 1fr))`,
-                                gap: gridGap
-                            }}
-                        >
-                            {row.items.map((item: ScreenshotLibraryImage) => (
-                                <ScreenshotThumbnailCard
-                                    key={item.path}
-                                    item={item}
-                                    onOpen={onOpen}
-                                    title={titleMap.get(item.path)}
-                                    selectable
-                                    selected={selection.selectedKeysSet.has(
-                                        item.path
-                                    )}
-                                    selectionActive={hasSelection}
-                                    selectLabel={`${t('common.actions.select')} ${item.fileName}`}
-                                    onToggleSelect={(checked, shift) =>
-                                        selection.selectItem(
-                                            item.path,
-                                            checked,
-                                            { shift }
-                                        )
-                                    }
-                                />
-                            ))}
-                        </div>
-                    ))}
-                </div>
-            </div>
-            <GallerySelectionBar
-                selectedCount={selectedPaths.length}
-                deletableCount={selectedPaths.length}
-                isAllSelected={selection.isAllSelected}
-                actionsDisabled={isDeleteRunning}
-                onSelectAll={selection.toggleSelectAll}
-                onClearSelection={clearSelection}
-                onDelete={() => onDeleteSelection(selectedPaths)}
-            />
-        </>
+        <ScreenshotSelectableImageGrid
+            images={images}
+            initialScrollTop={initialScrollTop}
+            resetKey={selectedFolder}
+            hasSelection={hasSelection}
+            selectedKeysSet={selectedKeysSet}
+            onOpen={onOpen}
+            onToggleSelect={onToggleSelect}
+            onScrollPositionChange={(scrollTop) => {
+                if (selectedFolder) {
+                    onScrollPositionChange(selectedFolder, scrollTop);
+                }
+            }}
+        />
     );
 }
 
@@ -366,7 +283,8 @@ export function ScreenshotGalleryView({
     onDeleteSelection,
     onScrollPositionChange,
     isDeleteRunning,
-    restoreScrollTop
+    restoreScrollTop,
+    selection
 }: {
     folderTree: ScreenshotFolderTree | null;
     images: ScreenshotLibraryImage[];
@@ -382,9 +300,11 @@ export function ScreenshotGalleryView({
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
     isDeleteRunning: boolean;
     restoreScrollTop: number;
+    selection: ScreenshotBrowseSelection;
 }) {
     const { t } = useTranslation();
     const root = useMemo(() => buildFolderTree(folderTree), [folderTree]);
+    useClearSelectionOnEscape(selection.hasSelection, selection.clearSelection);
 
     return (
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(160px,240px)_minmax(0,1fr)] gap-4 overflow-hidden lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] lg:grid-rows-none xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
@@ -456,11 +376,30 @@ export function ScreenshotGalleryView({
                             {selectedFolder || folderTree?.rootPath || '—'}
                         </div>
                     </div>
-                    <Badge variant="outline">
-                        {t('dialog.screenshot_metadata.image_count', {
-                            count: images.length
-                        })}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={images.length === 0}
+                            onClick={() =>
+                                onOpenImage(
+                                    pickRandomScreenshotPath(
+                                        images,
+                                        Math.random()
+                                    )
+                                )
+                            }
+                        >
+                            <DicesIcon data-icon="inline-start" />
+                            {t('dialog.screenshot_metadata.feeling_lucky')}
+                        </Button>
+                        <Badge variant="outline">
+                            {t('dialog.screenshot_metadata.image_count', {
+                                count: images.length
+                            })}
+                        </Badge>
+                    </div>
                 </div>
                 <ScreenshotGalleryGrid
                     error={error}
@@ -468,10 +407,22 @@ export function ScreenshotGalleryView({
                     images={images}
                     isLoading={isImagesLoading}
                     selectedFolder={selectedFolder}
+                    hasSelection={selection.hasSelection}
+                    selectedKeysSet={selection.selectedKeysSet}
                     onOpen={onOpenImage}
-                    onDeleteSelection={onDeleteSelection}
+                    onToggleSelect={(path, checked, shift) =>
+                        selection.selectItem(path, checked, { shift })
+                    }
                     onScrollPositionChange={onScrollPositionChange}
-                    isDeleteRunning={isDeleteRunning}
+                />
+                <GallerySelectionBar
+                    selectedCount={selection.selectedPaths.length}
+                    deletableCount={selection.selectedPaths.length}
+                    isAllSelected={selection.isAllSelected}
+                    actionsDisabled={isDeleteRunning}
+                    onSelectAll={selection.toggleSelectAll}
+                    onClearSelection={selection.clearSelection}
+                    onDelete={() => onDeleteSelection(selection.selectedPaths)}
                 />
             </section>
         </div>
