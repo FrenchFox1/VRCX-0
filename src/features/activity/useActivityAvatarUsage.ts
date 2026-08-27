@@ -12,7 +12,7 @@ export function useActivityAvatarUsage(
     enabled: boolean
 ): AvatarUsageRow[] {
     const [rows, setRows] = useState<AvatarUsageRow[]>([]);
-    const fetchedRef = useRef(new Set<string>());
+    const resolvedRef = useRef(new Set<string>());
 
     useEffect(() => {
         if (!ownerUserId || !enabled) {
@@ -31,10 +31,7 @@ export function useActivityAvatarUsage(
 
                 const pending = ranking
                     .map((row) => row.avatarId)
-                    .filter((id) => !fetchedRef.current.has(id));
-                for (const id of pending) {
-                    fetchedRef.current.add(id);
-                }
+                    .filter((id) => !resolvedRef.current.has(id));
                 await resolveMissingEntities({
                     ids: pending,
                     isActive,
@@ -46,6 +43,7 @@ export function useActivityAvatarUsage(
                         return profile?.name ? profile : null;
                     },
                     onResolved: (avatarId, profile) => {
+                        resolvedRef.current.add(avatarId);
                         setRows((previous) =>
                             previous.map((row) =>
                                 row.avatarId === avatarId

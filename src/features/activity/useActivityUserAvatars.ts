@@ -11,18 +11,15 @@ export function useActivityUserAvatars(
 ): (userId: string) => string {
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const [fetched, setFetched] = useState<Map<string, string>>(new Map());
-    const requestedRef = useRef(new Set<string>());
+    const resolvedRef = useRef(new Set<string>());
     const userIdsKey = userIds.join(',');
 
     useEffect(() => {
         const ids = (userIdsKey ? userIdsKey.split(',') : []).filter(
-            (userId) => userId && !requestedRef.current.has(userId)
+            (userId) => userId && !resolvedRef.current.has(userId)
         );
         if (ids.length === 0) {
             return;
-        }
-        for (const userId of ids) {
-            requestedRef.current.add(userId);
         }
         let active = true;
 
@@ -33,10 +30,10 @@ export function useActivityUserAvatars(
                 const profile = await userProfileRepository.getUserProfile({
                     userId
                 });
-                const image = userImage(profile, true, '128');
-                return image || null;
+                return userImage(profile, true, '128') || null;
             },
             onResolved: (userId, image) => {
+                resolvedRef.current.add(userId);
                 setFetched((previous) => new Map(previous).set(userId, image));
             }
         });

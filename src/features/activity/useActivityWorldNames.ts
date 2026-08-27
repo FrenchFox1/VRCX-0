@@ -19,7 +19,7 @@ export function useActivityWorldNames(
     const [summaries, setSummaries] = useState<
         Map<string, ActivityWorldSummary>
     >(new Map());
-    const requestedRef = useRef(new Set<string>());
+    const resolvedRef = useRef(new Set<string>());
     const worldIdsKey = worldIds.join(',');
 
     useEffect(() => {
@@ -30,6 +30,7 @@ export function useActivityWorldNames(
         let active = true;
 
         const merge = (id: string, value: ActivityWorldSummary) => {
+            resolvedRef.current.add(id);
             setSummaries((previous) => new Map(previous).set(id, value));
         };
 
@@ -58,10 +59,7 @@ export function useActivityWorldNames(
             })
             .catch(() => {});
 
-        const pending = ids.filter((id) => !requestedRef.current.has(id));
-        for (const id of pending) {
-            requestedRef.current.add(id);
-        }
+        const pending = ids.filter((id) => !resolvedRef.current.has(id));
         void resolveMissingEntities({
             ids: pending,
             isActive: () => active,
