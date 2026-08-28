@@ -39,6 +39,7 @@ export const TELEMETRY_TOOL_KEYS = [
     'presence-invite-requests',
     'group-calendar',
     'group-moderation',
+    'my-groups',
     'discord-names',
     'export-notes',
     'export-friend-list',

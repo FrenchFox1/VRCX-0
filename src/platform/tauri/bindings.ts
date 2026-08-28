@@ -220,6 +220,11 @@ const generatedCommands = {
     ): Promise<BatchMutationResult> {
         return await TAURI_INVOKE('app__avatar_content_tags_batch', { input });
     },
+    async appGroupMembershipBatch(
+        input: GroupMembershipBatchInput
+    ): Promise<GroupMembershipBatchResult> {
+        return await TAURI_INVOKE('app__group_membership_batch', { input });
+    },
     async appGroupModerationBatch(
         input: GroupModerationBatchInput
     ): Promise<GroupModerationBatchResult> {
@@ -2394,6 +2399,12 @@ const generatedCommands = {
             typeInt
         });
     },
+    async appVrchatGroupOrderGet(): Promise<string[]> {
+        return await TAURI_INVOKE('app__vrchat_group_order_get');
+    },
+    async appVrchatGroupOrderSet(groupIds: string[]): Promise<boolean> {
+        return await TAURI_INVOKE('app__vrchat_group_order_set', { groupIds });
+    },
     async appDesktopNotification(
         boldText: string,
         text: string | null,
@@ -3163,6 +3174,7 @@ export type BackendRuntimeEventPayloadMap = {
     favoritesChanged: FavoritesChangedPayload;
     favoriteImportStatus: FavoriteImportStatus;
     groupBanImportStatus: GroupBanImportStatus;
+    groupMembershipBatchProgress: GroupMembershipBatchProgress;
     groupModerationBatchProgress: GroupModerationBatchProgress;
     mutualGraphFetchStatus: MutualGraphFetchStatus;
     screenshotLibraryScanStatus: ScreenshotLibraryScanStatus;
@@ -4222,6 +4234,39 @@ export type GroupMemberPatch = {
 };
 export type GroupMemberSort = 'joinedAt:asc' | 'joinedAt:desc';
 export type GroupMemberVisibility = 'friends' | 'hidden' | 'visible';
+export type GroupMembershipBatchAction =
+    | { type: 'leave' }
+    | { type: 'setVisibility'; visibility: GroupMemberVisibility };
+export type GroupMembershipBatchInput = {
+    expectedOwnerUserId: OwnerId;
+    expectedEndpoint: string;
+    action: GroupMembershipBatchAction;
+    groupIds?: string[];
+};
+export type GroupMembershipBatchItemResult = {
+    groupId: string;
+    state: GroupMembershipBatchItemState;
+    message: string;
+};
+export type GroupMembershipBatchItemState =
+    | 'applied'
+    | 'failed'
+    | 'notAttempted';
+export type GroupMembershipBatchProgress = {
+    ownerUserId: OwnerId;
+    endpoint: string;
+    completed: number;
+    total: number;
+};
+export type GroupMembershipBatchResult = {
+    ownerUserId: OwnerId;
+    endpoint: string;
+    total: number;
+    succeeded: number;
+    failed: number;
+    items: GroupMembershipBatchItemResult[];
+    lastError: string | null;
+};
 export type GroupModerationBatchAction =
     | { type: 'kick' }
     | { type: 'ban' }

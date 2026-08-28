@@ -7,9 +7,10 @@ use vrcx_0_application::favorites::{
 };
 use vrcx_0_application::social::{
     AvatarContentTagsBatchInput, BatchMutationResult, GroupBanImportStartInput,
-    GroupBanImportStatus, GroupModerationBatchInput, GroupModerationBatchResult,
-    InstanceInviteBatchInput, InstanceInviteBatchResult, NotificationMarkSeenBatchInput,
-    NotificationMarkSeenBatchResult, NotificationSyncOutcome,
+    GroupBanImportStatus, GroupMembershipBatchInput, GroupMembershipBatchResult,
+    GroupModerationBatchInput, GroupModerationBatchResult, InstanceInviteBatchInput,
+    InstanceInviteBatchResult, NotificationMarkSeenBatchInput, NotificationMarkSeenBatchResult,
+    NotificationSyncOutcome,
 };
 
 use crate::{error::AppError, state::AppState};
@@ -83,6 +84,15 @@ pub async fn app__avatar_content_tags_batch(
     input: AvatarContentTagsBatchInput,
 ) -> Result<BatchMutationResult, AppError> {
     state.run_avatar_content_tags_batch(input).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__group_membership_batch(
+    state: State<'_, AppState>,
+    input: GroupMembershipBatchInput,
+) -> Result<GroupMembershipBatchResult, AppError> {
+    state.run_group_membership_batch(input).await
 }
 
 #[tauri::command]

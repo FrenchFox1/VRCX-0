@@ -72,6 +72,27 @@ pub fn get_registry_key_string(key: &str) -> Result<String, Error> {
     Ok(val.as_str().unwrap_or("").to_string())
 }
 
+fn group_order_key(user_id: &str) -> String {
+    format!("VRC_GROUP_ORDER_{}", user_id.trim())
+}
+
+pub fn get_group_order(user_id: &str) -> Result<Vec<String>, Error> {
+    let raw = get_registry_key_string(&group_order_key(user_id))?;
+    if raw.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    Ok(serde_json::from_str::<Vec<String>>(&raw).unwrap_or_default())
+}
+
+pub fn set_group_order(user_id: &str, group_ids: &[String]) -> Result<bool, Error> {
+    let key = group_order_key(user_id);
+    let encoded = serde_json::to_string(group_ids)
+        .map_err(|e| Error::Custom(format!("group order encode: {e}")))?;
+    let value = serde_json::Value::String(encoded);
+    validate_registry_entry(&key, &value, 3)?;
+    set_registry_key(&key, &value, 3)
+}
+
 pub fn has_registry_folder() -> Result<bool, Error> {
     #[cfg(target_os = "windows")]
     {

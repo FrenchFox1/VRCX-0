@@ -427,6 +427,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'favoriteImportStatus',
         'favoritesChanged',
         'groupBanImportStatus',
+        'groupMembershipBatchProgress',
         'groupModerationBatchProgress',
         'mutualGraphFetchStatus',
         'screenshotLibraryScanStatus',

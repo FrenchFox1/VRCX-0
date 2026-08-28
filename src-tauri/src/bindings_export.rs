@@ -11,7 +11,8 @@ use vrcx_0_application::profile::{
     ProfileBackupStatus, ProfileRestoreProgress,
 };
 use vrcx_0_application::social::{
-    GroupBanImportStatus, GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus,
+    GroupBanImportStatus, GroupMembershipBatchProgress, GroupModerationBatchProgress,
+    MutualGraphFetchStatus, NoteExportStatus,
 };
 use vrcx_0_application_core::{
     BackendRuntimeTelemetry, FavoritesChangedPayload, FriendProfileLoadStatusPayload,
@@ -67,6 +68,7 @@ struct BackendRuntimeEventPayloadMap {
     favorites_changed: FavoritesChangedPayload,
     favorite_import_status: FavoriteImportStatus,
     group_ban_import_status: GroupBanImportStatus,
+    group_membership_batch_progress: GroupMembershipBatchProgress,
     group_moderation_batch_progress: GroupModerationBatchProgress,
     mutual_graph_fetch_status: MutualGraphFetchStatus,
     screenshot_library_scan_status: ScreenshotLibraryScanStatus,
@@ -168,6 +170,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::frontend_batch::app__favorite_details_hydrate,
             commands::application::frontend_batch::app__favorite_cache_snapshot,
             commands::application::frontend_batch::app__avatar_content_tags_batch,
+            commands::application::frontend_batch::app__group_membership_batch,
             commands::application::frontend_batch::app__group_moderation_batch,
             commands::application::frontend_batch::app__notification_mark_seen_batch,
             commands::application::frontend_batch::app__instance_invite_batch,
@@ -568,6 +571,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::window::app__set_startup,
             commands::host::registry::app__delete_vrchat_registry_folder,
             commands::host::registry::app__set_vrchat_registry_key,
+            commands::host::registry::app__vrchat_group_order_get,
+            commands::host::registry::app__vrchat_group_order_set,
             commands::host::window::app__desktop_notification,
             commands::host::overlay_notifications::app__webhook_send_test,
             commands::host::overlay_notifications::app__webhook_delivery_snapshot_get,

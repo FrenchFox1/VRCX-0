@@ -22,7 +22,8 @@ use vrcx_0_application::discovery::{
 use vrcx_0_application::favorites::FavoriteDetailsRuntime;
 use vrcx_0_application::social::{
     AvatarContentTagsBatchInput, BatchMutationResult, FriendLogNameResolutionCoordinator,
-    FriendLogNameResolutionInput, GroupModerationBatchCoordinator, GroupModerationBatchInput,
+    FriendLogNameResolutionInput, GroupMembershipBatchCoordinator, GroupMembershipBatchInput,
+    GroupMembershipBatchResult, GroupModerationBatchCoordinator, GroupModerationBatchInput,
     GroupModerationBatchResult, InstanceInviteBatchInput, InstanceInviteBatchResult,
     NotificationMarkSeenBatchInput, NotificationMarkSeenBatchResult, NotificationSyncOutcome,
     QuickSearchRuntime, ResolvedFriendLogName, UserDialogTabCountsInput, UserDialogTabCountsOutput,
@@ -43,6 +44,7 @@ pub struct AppState {
     pending_deep_links: PendingDeepLinks,
     pending_desktop_notification_activations: PendingDesktopNotificationActivations,
     favorite_details: FavoriteDetailsRuntime,
+    group_membership_batches: GroupMembershipBatchCoordinator,
     group_moderation_batches: GroupModerationBatchCoordinator,
     friend_log_name_resolutions: FriendLogNameResolutionCoordinator,
     user_dialog_tab_counts: UserDialogTabCountsRuntime,
@@ -74,6 +76,13 @@ impl Drop for MainWindowRebuildGuard<'_> {
 impl AppState {
     pub(crate) fn runtime_host(&self) -> &DesktopRuntimeHostState {
         &self.runtime
+    }
+
+    pub(crate) fn require_active_scope(
+        &self,
+        requirement: &str,
+    ) -> Result<vrcx_0_application_core::RuntimeAuthScopeSnapshot, AppError> {
+        Ok(self.runtime.require_active_scope(requirement)?)
     }
 
     pub(crate) fn mcp_controller(&self) -> &McpServerController {
@@ -125,6 +134,7 @@ impl AppState {
             pending_desktop_notification_activations:
                 PendingDesktopNotificationActivations::default(),
             favorite_details,
+            group_membership_batches: GroupMembershipBatchCoordinator::default(),
             group_moderation_batches: GroupModerationBatchCoordinator::default(),
             friend_log_name_resolutions: FriendLogNameResolutionCoordinator::default(),
             user_dialog_tab_counts: UserDialogTabCountsRuntime::new(),
@@ -235,6 +245,16 @@ impl AppState {
         input: AvatarContentTagsBatchInput,
     ) -> Result<BatchMutationResult, AppError> {
         Ok(self.runtime.run_avatar_content_tags_batch(input).await?)
+    }
+
+    pub async fn run_group_membership_batch(
+        &self,
+        input: GroupMembershipBatchInput,
+    ) -> Result<GroupMembershipBatchResult, AppError> {
+        Ok(self
+            .runtime
+            .run_group_membership_batch(&self.group_membership_batches, input)
+            .await?)
     }
 
     pub async fn run_group_moderation_batch(

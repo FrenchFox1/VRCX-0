@@ -1791,7 +1791,9 @@
                 "calendar": "Calendário",
                 "calendar_description": "Calendário de Eventos do Grupo",
                 "moderation": "Moderação de Grupo",
-                "moderation_description": "Gerencie membros, banimentos, convites e solicitações de entrada dos grupos que você modera."
+                "moderation_description": "Gerencie membros, banimentos, convites e solicitações de entrada dos grupos que você modera.",
+                "my_groups": "Meus grupos",
+                "my_groups_description": "Ordene, oculte e saia dos grupos dos quais você participa."
             },
             "user": {
                 "discord_names_description": "Encontre os nomes de usuário do Discord dos seus amigos do VRChat",
@@ -3403,6 +3405,34 @@
             "avatars": {
                 "all_time": "Todo o período"
             }
+        },
+        "my_groups": {
+            "title": "Meus grupos",
+            "description": "Gerencie os grupos dos quais você participa: a ordem no jogo, quem os vê no seu perfil e de quais sair.",
+            "group_count": "{count} grupo(s)",
+            "edit_mode": "Editar",
+            "exit_edit_mode": "Concluir",
+            "order_hint": "Arraste os grupos para definir a ordem em que aparecem no VRChat.",
+            "order_game_running": "O VRChat está em execução. As mudanças de ordem podem ser sobrescritas ao fechar o jogo.",
+            "order_unavailable": "Não é possível alterar a ordem dos grupos: {reason}",
+            "order_unavailable_reason_fallback": "Não é possível ler as preferências do VRChat neste sistema.",
+            "order_save_failed": "Não foi possível salvar a ordem dos grupos no jogo.",
+            "row_actions": "Ações do grupo",
+            "leave": "Sair",
+            "leave_partial": "Sair de {count}",
+            "leave_owner_locked": "Você não pode sair de um grupo que é seu.",
+            "leave_completed": "Você saiu de {count} grupo(s).",
+            "visibility_completed": "Visibilidade atualizada em {count} grupo(s).",
+            "selected_count": "{count} selecionado(s)",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "A ação falhou.",
+            "batch_failed": "A ação em lote falhou.",
+            "confirm_leave_title": "Sair de {count} grupo(s)?",
+            "confirm_leave_warning": "Sair não pode ser desfeito e entrar de novo pode exigir aprovação.",
+            "confirm_more_groups": "{names} e mais {count}",
+            "empty_title": "Nenhum grupo ainda",
+            "empty_description": "Os grupos dos quais você participar no VRChat aparecerão aqui.",
+            "empty_search": "Nenhum grupo corresponde à sua busca."
         }
     },
     "dialog": {
@@ -3610,7 +3640,8 @@
                     "alphabetical": "Ordem Alfabética",
                     "members": "Membros",
                     "in_game": "Ordem no Jogo"
-                }
+                },
+                "manage": "Gerenciar"
             },
             "worlds": {
                 "header": "Mundos",

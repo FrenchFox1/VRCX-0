@@ -1793,7 +1793,9 @@
                 "calendar": "Kalendář",
                 "calendar_description": "Kalendář skupinových akcí",
                 "moderation": "Moderace skupiny",
-                "moderation_description": "Spravujte členy, zákazy, pozvánky a žádosti o vstup u skupin, které moderujete."
+                "moderation_description": "Spravujte členy, zákazy, pozvánky a žádosti o vstup u skupin, které moderujete.",
+                "my_groups": "Moje skupiny",
+                "my_groups_description": "Seřaďte, skryjte a opusťte skupiny, ve kterých jste."
             },
             "user": {
                 "discord_names_description": "Najděte Discord uživatelská jména svých přátel z VRChat",
@@ -3405,6 +3407,34 @@
             "avatars": {
                 "all_time": "Celé období"
             }
+        },
+        "my_groups": {
+            "title": "Moje skupiny",
+            "description": "Spravujte skupiny, ve kterých jste: pořadí ve hře, viditelnost na profilu a odchod ze skupiny.",
+            "group_count": "Skupin: {count}",
+            "edit_mode": "Upravit",
+            "exit_edit_mode": "Hotovo",
+            "order_hint": "Přetažením skupin nastavíte pořadí, v jakém se zobrazují ve VRChatu.",
+            "order_game_running": "VRChat běží. Změny pořadí mohou být při ukončení hry přepsány.",
+            "order_unavailable": "Pořadí skupin není k dispozici: {reason}",
+            "order_unavailable_reason_fallback": "Nastavení VRChatu v tomto systému nelze načíst.",
+            "order_save_failed": "Pořadí skupin ve hře se nepodařilo uložit.",
+            "row_actions": "Akce skupiny",
+            "leave": "Opustit",
+            "leave_partial": "Opustit {count}",
+            "leave_owner_locked": "Skupinu, kterou vlastníte, nelze opustit.",
+            "leave_completed": "Opuštěno skupin: {count}.",
+            "visibility_completed": "Viditelnost změněna u {count} skupin.",
+            "selected_count": "Vybráno: {count}",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Akce selhala.",
+            "batch_failed": "Hromadná akce selhala.",
+            "confirm_leave_title": "Opustit {count} skupin?",
+            "confirm_leave_warning": "Odchod nelze vrátit zpět a opětovné připojení může vyžadovat schválení.",
+            "confirm_more_groups": "{names} a další {count}",
+            "empty_title": "Zatím žádné skupiny",
+            "empty_description": "Skupiny, do kterých se ve VRChatu přidáte, se zobrazí zde.",
+            "empty_search": "Hledání neodpovídá žádná skupina."
         }
     },
     "dialog": {
@@ -3611,7 +3641,8 @@
                     "alphabetical": "Abecedně",
                     "members": "Členové",
                     "in_game": "Pořadí ve hře"
-                }
+                },
+                "manage": "Spravovat"
             },
             "worlds": {
                 "header": "Světy",

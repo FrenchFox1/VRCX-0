@@ -1,5 +1,8 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router';
 
+import { useDialogStore } from '@/state/dialogStore';
+import { Button } from '@/ui/shadcn/button';
 import {
     Select,
     SelectContent,
@@ -61,6 +64,8 @@ export function UserDialogGroupsTab({
     remainingGroupCountText
 }: UserDialogGroupsTabProps) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const closeDialog = useDialogStore((state) => state.closeDialog);
 
     return (
         <EntityDialogTabContent value="groups" className="flex flex-col gap-2">
@@ -111,6 +116,19 @@ export function UserDialogGroupsTab({
                         </SelectGroup>
                     </SelectContent>
                 </Select>
+                {isCurrentUser ? (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                            closeDialog();
+                            navigate('/tools/my-groups');
+                        }}
+                    >
+                        {t('dialog.user.groups.manage')}
+                    </Button>
+                ) : null}
             </UserDialogSearchHeader>
             {remoteStatus.groups === 'running' || remoteErrors.groups ? (
                 <EntityList

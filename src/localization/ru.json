@@ -1793,7 +1793,9 @@
                 "calendar": "Календарь",
                 "calendar_description": "Календарь групповых мероприятий",
                 "moderation": "Модерация группы",
-                "moderation_description": "Управляйте участниками, банами, приглашениями и заявками на вступление в группы, которые вы модерируете."
+                "moderation_description": "Управляйте участниками, банами, приглашениями и заявками на вступление в группы, которые вы модерируете.",
+                "my_groups": "Мои группы",
+                "my_groups_description": "Сортируйте, скрывайте и покидайте группы, в которых состоите."
             },
             "user": {
                 "discord_names_description": "Найти имена пользователей Discord ваших друзей из VRChat",
@@ -3405,6 +3407,34 @@
             "avatars": {
                 "all_time": "За всё время"
             }
+        },
+        "my_groups": {
+            "title": "Мои группы",
+            "description": "Управляйте группами, в которых вы состоите: порядок в игре, видимость в профиле и выход из группы.",
+            "group_count": "Групп: {count}",
+            "edit_mode": "Изменить",
+            "exit_edit_mode": "Готово",
+            "order_hint": "Перетаскивайте группы, чтобы изменить порядок их отображения в VRChat.",
+            "order_game_running": "VRChat запущен. Изменения порядка могут быть перезаписаны при выходе из игры.",
+            "order_unavailable": "Порядок групп недоступен: {reason}",
+            "order_unavailable_reason_fallback": "В этой системе настройки VRChat недоступны для чтения.",
+            "order_save_failed": "Не удалось сохранить порядок групп в игре.",
+            "row_actions": "Действия с группой",
+            "leave": "Покинуть",
+            "leave_partial": "Покинуть: {count}",
+            "leave_owner_locked": "Нельзя покинуть собственную группу.",
+            "leave_completed": "Покинуто групп: {count}.",
+            "visibility_completed": "Видимость изменена для групп: {count}.",
+            "selected_count": "Выбрано: {count}",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Не удалось выполнить действие.",
+            "batch_failed": "Массовое действие не выполнено.",
+            "confirm_leave_title": "Покинуть группы ({count})?",
+            "confirm_leave_warning": "Выход нельзя отменить, а повторное вступление может потребовать одобрения.",
+            "confirm_more_groups": "{names} и ещё {count}",
+            "empty_title": "Групп пока нет",
+            "empty_description": "Группы, в которые вы вступите в VRChat, появятся здесь.",
+            "empty_search": "Нет групп, соответствующих запросу."
         }
     },
     "dialog": {
@@ -3612,7 +3642,8 @@
                     "alphabetical": "По алфавиту",
                     "members": "Участники",
                     "in_game": "Игровой порядок"
-                }
+                },
+                "manage": "Управление"
             },
             "worlds": {
                 "header": "Миры",

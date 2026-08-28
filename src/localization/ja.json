@@ -1787,7 +1787,9 @@
                 "calendar": "カレンダー",
                 "calendar_description": "グループのイベントカレンダー",
                 "moderation": "グループの管理",
-                "moderation_description": "管理権限を持つグループのメンバー、BAN、招待、参加リクエストを管理します。"
+                "moderation_description": "管理権限を持つグループのメンバー、BAN、招待、参加リクエストを管理します。",
+                "my_groups": "参加中のグループ",
+                "my_groups_description": "参加しているグループの並び順・公開範囲・退出をまとめて管理します。"
             },
             "user": {
                 "discord_names_description": "フレンドの Discord ユーザー名を取得",
@@ -3399,6 +3401,34 @@
             "avatars": {
                 "all_time": "全期間"
             }
+        },
+        "my_groups": {
+            "title": "参加中のグループ",
+            "description": "参加しているグループを整理します。ゲーム内での並び順、プロフィールでの公開範囲、退出をここで変更できます。",
+            "group_count": "グループ {count} 件",
+            "edit_mode": "編集",
+            "exit_edit_mode": "完了",
+            "order_hint": "グループをドラッグして、VRChat 内での表示順を変更します。",
+            "order_game_running": "VRChatが起動中です。並び順の変更はゲーム終了時に上書きされることがあります。",
+            "order_unavailable": "並び順を変更できません：{reason}",
+            "order_unavailable_reason_fallback": "この環境ではVRChatの設定を読み込めません。",
+            "order_save_failed": "ゲーム内の並び順を保存できませんでした。",
+            "row_actions": "グループの操作",
+            "leave": "退出",
+            "leave_partial": "{count} 件を退出",
+            "leave_owner_locked": "自分が所有するグループからは退出できません。",
+            "leave_completed": "{count} 件のグループから退出しました。",
+            "visibility_completed": "{count} 件のグループの公開範囲を変更しました。",
+            "selected_count": "{count} 件を選択中",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "実行できませんでした。",
+            "batch_failed": "一括処理に失敗しました。",
+            "confirm_leave_title": "{count} 件のグループから退出しますか？",
+            "confirm_leave_warning": "退出は取り消せません。再参加には承認が必要な場合があります。",
+            "confirm_more_groups": "{names} ほか {count} 件",
+            "empty_title": "グループがありません",
+            "empty_description": "VRChatで参加したグループがここに表示されます。",
+            "empty_search": "該当するグループはありません。"
         }
     },
     "dialog": {
@@ -3604,7 +3634,8 @@
                     "alphabetical": "アルファベット順",
                     "members": "メンバー数",
                     "in_game": "VRChat 内での表示順"
-                }
+                },
+                "manage": "管理"
             },
             "worlds": {
                 "header": "ワールド",

@@ -1791,7 +1791,9 @@
                 "calendar": "行事曆",
                 "calendar_description": "群組活動行事曆",
                 "moderation": "群組管理",
-                "moderation_description": "管理你擁有管理權限之群組的成員、封鎖、邀請與加入申請。"
+                "moderation_description": "管理你擁有管理權限之群組的成員、封鎖、邀請與加入申請。",
+                "my_groups": "我的群組",
+                "my_groups_description": "排序、隱藏和退出你加入的群組。"
             },
             "user": {
                 "discord_names_description": "尋找你 VRChat 好友的 Discord 用戶名稱",
@@ -3403,6 +3405,34 @@
             "avatars": {
                 "all_time": "全部時間"
             }
+        },
+        "my_groups": {
+            "title": "我的群組",
+            "description": "管理你加入的群組：調整遊戲內順序、設定在個人檔案上的顯示範圍，退出不再需要的群組。",
+            "group_count": "{count} 個群組",
+            "edit_mode": "編輯",
+            "exit_edit_mode": "完成",
+            "order_hint": "拖曳群組，調整 VRChat 中顯示群組的順序。",
+            "order_game_running": "VRChat 正在執行，順序變更可能會在遊戲結束時被覆蓋。",
+            "order_unavailable": "無法調整群組順序：{reason}",
+            "order_unavailable_reason_fallback": "目前系統無法讀取 VRChat 的本機設定。",
+            "order_save_failed": "儲存遊戲內群組順序失敗。",
+            "row_actions": "群組操作",
+            "leave": "退出",
+            "leave_partial": "退出 {count} 個",
+            "leave_owner_locked": "無法退出自己擁有的群組。",
+            "leave_completed": "已退出 {count} 個群組。",
+            "visibility_completed": "已更新 {count} 個群組的顯示範圍。",
+            "selected_count": "已選擇 {count} 個",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "操作失敗。",
+            "batch_failed": "批次操作失敗。",
+            "confirm_leave_title": "退出 {count} 個群組？",
+            "confirm_leave_warning": "退出無法復原，重新加入可能需要審核。",
+            "confirm_more_groups": "{names}，以及另外 {count} 個",
+            "empty_title": "還沒有群組",
+            "empty_description": "你在 VRChat 中加入的群組會顯示在這裡。",
+            "empty_search": "沒有符合的群組。"
         }
     },
     "dialog": {
@@ -3610,7 +3640,8 @@
                     "alphabetical": "依字母順序",
                     "members": "成員",
                     "in_game": "遊戲內順序"
-                }
+                },
+                "manage": "管理"
             },
             "worlds": {
                 "header": "世界",

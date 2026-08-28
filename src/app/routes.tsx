@@ -257,6 +257,15 @@ export const protectedRoutes: AppRouteDefinition[] = [
         )
     },
     {
+        path: '/tools/my-groups',
+        titleKey: 'view.tools.group.my_groups',
+        descriptionKey: 'view.tools.group.my_groups_description',
+        element: lazyRouteElement(
+            () => import('@/features/my-groups/MyGroupsPage'),
+            'MyGroupsPage'
+        )
+    },
+    {
         path: '/tools',
         titleKey: 'app.routes.tools',
         descriptionKey: 'app.routes.tools_landing_route_and_folder_shortcuts',

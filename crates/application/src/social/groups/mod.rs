@@ -1,4 +1,5 @@
 mod group_ban_import;
+mod membership_batch;
 mod moderation_batch;
 mod permissions;
 mod quick_moderation;
@@ -9,6 +10,12 @@ mod user_groups_overview;
 pub use group_ban_import::{
     GroupBanImportActions, GroupBanImportFuture, GroupBanImportItemResult, GroupBanImportItemState,
     GroupBanImportRuntime, GroupBanImportStartInput, GroupBanImportState, GroupBanImportStatus,
+};
+pub use membership_batch::{
+    run_group_membership_batch, GroupMembershipBatchAction, GroupMembershipBatchCoordinator,
+    GroupMembershipBatchInput, GroupMembershipBatchItemResult, GroupMembershipBatchItemState,
+    GroupMembershipBatchProgress, GroupMembershipBatchResult, VrchatGroupMembershipBatchActions,
+    GROUP_MEMBERSHIP_BATCH_MAX_TARGETS,
 };
 pub use moderation_batch::{
     run_group_moderation_batch, GroupModerationBatchAction, GroupModerationBatchCoordinator,

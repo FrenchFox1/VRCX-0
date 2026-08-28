@@ -44,7 +44,8 @@ type ToolAction =
               | 'gallery'
               | 'inventory'
               | 'vrchat-log'
-              | 'group-moderation';
+              | 'group-moderation'
+              | 'my-groups';
       }
     | {
           type: 'app-api';
@@ -363,6 +364,16 @@ const toolDefinitions: ToolDefinition[] = [
         descriptionKey: 'view.tools.group.calendar_description',
         navEligible: true,
         action: { type: 'dialog', dialogKey: 'group-calendar' }
+    },
+    {
+        key: 'my-groups',
+        category: 'group',
+        iconKey: 'users-round',
+        navIcon: 'lucide:UsersRound',
+        titleKey: 'view.tools.group.my_groups',
+        descriptionKey: 'view.tools.group.my_groups_description',
+        navEligible: true,
+        action: { type: 'route', routeName: 'my-groups' }
     },
     {
         key: 'group-moderation',

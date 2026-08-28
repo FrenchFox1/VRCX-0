@@ -1791,7 +1791,9 @@
                 "calendar": "活动日历",
                 "calendar_description": "查看活动日历",
                 "moderation": "群组管理",
-                "moderation_description": "管理你拥有管理权限的群组的成员、封禁、邀请与加入申请。"
+                "moderation_description": "管理你拥有管理权限的群组的成员、封禁、邀请与加入申请。",
+                "my_groups": "我的群组",
+                "my_groups_description": "排序、隐藏和退出你加入的群组。"
             },
             "user": {
                 "discord_names_description": "查找好友的 Discord 名称（如果他们有写上去的话）",
@@ -3403,6 +3405,34 @@
             "avatars": {
                 "all_time": "全部时间"
             }
+        },
+        "my_groups": {
+            "title": "我的群组",
+            "description": "管理你加入的群组：调整游戏内顺序、设置在个人资料上的可见范围，退出不再需要的群组。",
+            "group_count": "{count} 个群组",
+            "edit_mode": "编辑",
+            "exit_edit_mode": "完成",
+            "order_hint": "拖拽群组，调整 VRChat 中显示群组的顺序。",
+            "order_game_running": "VRChat 正在运行，顺序改动可能在游戏退出时被覆盖。",
+            "order_unavailable": "无法调整群组顺序：{reason}",
+            "order_unavailable_reason_fallback": "当前系统无法读取 VRChat 的本地设置。",
+            "order_save_failed": "保存游戏内群组顺序失败。",
+            "row_actions": "群组操作",
+            "leave": "退出",
+            "leave_partial": "退出 {count} 个",
+            "leave_owner_locked": "无法退出自己拥有的群组。",
+            "leave_completed": "已退出 {count} 个群组。",
+            "visibility_completed": "已更新 {count} 个群组的可见范围。",
+            "selected_count": "已选择 {count} 个",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "操作失败。",
+            "batch_failed": "批量操作失败。",
+            "confirm_leave_title": "退出 {count} 个群组？",
+            "confirm_leave_warning": "退出无法撤销，重新加入可能需要审核。",
+            "confirm_more_groups": "{names}，以及另外 {count} 个",
+            "empty_title": "还没有群组",
+            "empty_description": "你在 VRChat 中加入的群组会显示在这里。",
+            "empty_search": "没有匹配的群组。"
         }
     },
     "dialog": {
@@ -3610,7 +3640,8 @@
                     "alphabetical": "字母顺序",
                     "members": "成员数",
                     "in_game": "游戏内顺序"
-                }
+                },
+                "manage": "管理"
             },
             "worlds": {
                 "header": "创建的世界",

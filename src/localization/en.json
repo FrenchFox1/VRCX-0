@@ -1791,7 +1791,9 @@
                 "calendar": "Calendar",
                 "calendar_description": "Group Events Calendar",
                 "moderation": "Group Moderation",
-                "moderation_description": "Manage members, bans, invites, and join requests for groups you moderate."
+                "moderation_description": "Manage members, bans, invites, and join requests for groups you moderate.",
+                "my_groups": "My Groups",
+                "my_groups_description": "Reorder, hide, and leave the groups you joined."
             },
             "user": {
                 "discord_names_description": "Find the Discord usernames of your VRChat friends",
@@ -3403,6 +3405,34 @@
             "avatars": {
                 "all_time": "All time"
             }
+        },
+        "my_groups": {
+            "title": "My Groups",
+            "description": "Manage the groups you joined: their in-game order, who sees them on your profile, and which ones to leave.",
+            "group_count": "{count} group(s)",
+            "edit_mode": "Edit",
+            "exit_edit_mode": "Done",
+            "order_hint": "Drag groups to set the order VRChat shows them in.",
+            "order_game_running": "VRChat is running. Order changes may be overwritten when the game exits.",
+            "order_unavailable": "Group order is unavailable: {reason}",
+            "order_unavailable_reason_fallback": "VRChat preferences cannot be read on this system.",
+            "order_save_failed": "Failed to save the in-game group order.",
+            "row_actions": "Group actions",
+            "leave": "Leave",
+            "leave_partial": "Leave {count}",
+            "leave_owner_locked": "You cannot leave a group you own.",
+            "leave_completed": "Left {count} group(s).",
+            "visibility_completed": "Visibility updated for {count} group(s).",
+            "selected_count": "{count} selected",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Action failed.",
+            "batch_failed": "The batch action failed.",
+            "confirm_leave_title": "Leave {count} group(s)?",
+            "confirm_leave_warning": "Leaving cannot be undone, and rejoining may need approval.",
+            "confirm_more_groups": "{names} and {count} more",
+            "empty_title": "No groups yet",
+            "empty_description": "Groups you join in VRChat show up here.",
+            "empty_search": "No group matches your search."
         }
     },
     "dialog": {
@@ -3609,7 +3639,8 @@
                     "alphabetical": "Alphabetical",
                     "members": "Members",
                     "in_game": "In-Game Order"
-                }
+                },
+                "manage": "Manage"
             },
             "worlds": {
                 "header": "Worlds",

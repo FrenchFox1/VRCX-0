@@ -42,7 +42,7 @@ describe('tool catalog categories', () => {
                 'presence-room-rules',
                 'presence-invite-requests'
             ],
-            group: ['group-calendar', 'group-moderation'],
+            group: ['group-calendar', 'my-groups', 'group-moderation'],
             vrchat: ['vrchat-config', 'launch-options'],
             data: [
                 'profile-backup',

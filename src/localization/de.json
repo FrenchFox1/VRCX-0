@@ -1791,7 +1791,9 @@
                 "calendar": "Kalender",
                 "calendar_description": "Kalender für Gruppen-Events",
                 "moderation": "Gruppenmoderation",
-                "moderation_description": "Verwalte Mitglieder, Sperren, Einladungen und Beitrittsanfragen für Gruppen, die du moderierst."
+                "moderation_description": "Verwalte Mitglieder, Sperren, Einladungen und Beitrittsanfragen für Gruppen, die du moderierst.",
+                "my_groups": "Meine Gruppen",
+                "my_groups_description": "Beigetretene Gruppen sortieren, verbergen und verlassen."
             },
             "user": {
                 "discord_names_description": "Finde die Discord-Benutzernamen deiner VRChat-Freunde",
@@ -3403,6 +3405,34 @@
             "avatars": {
                 "all_time": "Gesamter Zeitraum"
             }
+        },
+        "my_groups": {
+            "title": "Meine Gruppen",
+            "description": "Verwalte die Gruppen, denen du beigetreten bist: die Reihenfolge im Spiel, die Sichtbarkeit in deinem Profil und Austritte.",
+            "group_count": "{count} Gruppe(n)",
+            "edit_mode": "Bearbeiten",
+            "exit_edit_mode": "Fertig",
+            "order_hint": "Ziehe die Gruppen, um ihre Anzeigereihenfolge in VRChat festzulegen.",
+            "order_game_running": "VRChat läuft. Änderungen an der Reihenfolge können beim Beenden des Spiels überschrieben werden.",
+            "order_unavailable": "Gruppenreihenfolge nicht verfügbar: {reason}",
+            "order_unavailable_reason_fallback": "Die VRChat-Einstellungen können auf diesem System nicht gelesen werden.",
+            "order_save_failed": "Die Gruppenreihenfolge konnte nicht gespeichert werden.",
+            "row_actions": "Gruppenaktionen",
+            "leave": "Verlassen",
+            "leave_partial": "{count} verlassen",
+            "leave_owner_locked": "Eigene Gruppen kannst du nicht verlassen.",
+            "leave_completed": "{count} Gruppe(n) verlassen.",
+            "visibility_completed": "Sichtbarkeit für {count} Gruppe(n) geändert.",
+            "selected_count": "{count} ausgewählt",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Aktion fehlgeschlagen.",
+            "batch_failed": "Die Sammelaktion ist fehlgeschlagen.",
+            "confirm_leave_title": "{count} Gruppe(n) verlassen?",
+            "confirm_leave_warning": "Das Verlassen lässt sich nicht rückgängig machen, und ein erneuter Beitritt muss eventuell genehmigt werden.",
+            "confirm_more_groups": "{names} und {count} weitere",
+            "empty_title": "Noch keine Gruppen",
+            "empty_description": "Gruppen, denen du in VRChat beitrittst, erscheinen hier.",
+            "empty_search": "Keine Gruppe passt zur Suche."
         }
     },
     "dialog": {
@@ -3609,7 +3639,8 @@
                     "alphabetical": "Alphabetisch",
                     "members": "Mitglieder",
                     "in_game": "Reihenfolge im Spiel"
-                }
+                },
+                "manage": "Verwalten"
             },
             "worlds": {
                 "header": "Welten",
