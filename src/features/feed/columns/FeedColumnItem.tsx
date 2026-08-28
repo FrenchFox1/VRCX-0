@@ -1,21 +1,21 @@
 import { useTranslation } from 'react-i18next';
 
+import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
+import type {
+    FeedFriendActions,
+    FeedLocationActionPayload,
+    FeedRow
+} from '@/components/feed/feedTypes';
 import { cn } from '@/lib/utils';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { FeedDetailCell } from '../components/FeedDetailCell';
 import {
     FeedUserAvatarButton,
     FeedUserLink
 } from '../components/FeedTableParts';
 import type { FeedColumnDensityConfig } from '../feedColumnsDensity';
 import { resolveFeedColumnTimeDisplay } from '../feedTimeDisplay';
-import type {
-    FeedFriendActions,
-    FeedLocationActionPayload,
-    FeedRow
-} from '../feedTypes';
 
 type FeedColumnItemProps = {
     actions: FeedFriendActions;

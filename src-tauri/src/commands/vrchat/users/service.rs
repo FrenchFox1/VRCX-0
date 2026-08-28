@@ -2,9 +2,7 @@
 
 use tauri::State;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::users::{
-    profile_get_input, user_represented_group_get_input,
-};
+use vrcx_0_vrchat_client::users::{profile_get_input, user_represented_group_get_input};
 
 use crate::error::AppError;
 use crate::state::AppState;

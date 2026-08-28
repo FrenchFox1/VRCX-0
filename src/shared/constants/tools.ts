@@ -1,5 +1,3 @@
-import type { HostCapabilityKey } from '@/services/hostCapabilityService';
-
 type ToolCategoryKey =
     | 'image'
     | 'shortcuts'
@@ -30,6 +28,13 @@ export type ToolDialogKey =
     | 'edit-invite-messages'
     | 'llm-endpoints'
     | 'profile-backup';
+
+export type ToolHostCapabilityKey =
+    | 'gameLaunch'
+    | 'gameProcessMonitor'
+    | 'registryPrefs'
+    | 'screenshotCache'
+    | 'vrchatPathDiscovery';
 
 type ToolAction =
     | {
@@ -73,8 +78,8 @@ interface ToolDefinition {
     titleKey: string;
     descriptionKey: string;
     navEligible: boolean;
-    requiredCapability?: HostCapabilityKey;
-    requiredCapabilities?: HostCapabilityKey[];
+    requiredCapability?: ToolHostCapabilityKey;
+    requiredCapabilities?: ToolHostCapabilityKey[];
     requiredCapabilityMode?: 'supported';
     action: ToolAction;
 }

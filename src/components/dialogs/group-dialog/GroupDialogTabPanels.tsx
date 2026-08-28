@@ -8,11 +8,11 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TranslatableText } from '@/components/translation/TranslatableText';
 import type {
     GroupAnnouncementRecord,
     GroupProfileRecord
 } from '@/domain/entities/group';
-import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateFilter } from '@/lib/dateTime';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';

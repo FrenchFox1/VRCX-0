@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
 import mediaRepository, {
     type InventoryItemRecord,
     type MediaFileRecord
@@ -25,7 +26,6 @@ import {
     getInventoryGridDensityConfig,
     parseEmojiUploadSettings,
     readGridDensityPreference,
-    resolveProfileDecorationMutation,
     scopeKey,
     validateImageFile,
     writeGridDensityPreference,

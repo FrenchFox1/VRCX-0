@@ -7,18 +7,17 @@ import {
     type LocationMetadataEntry
 } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { formatScreenshotDateTime } from '@/lib/dateTime';
 import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
+import { requestScreenshotThumbnail } from '@/services/screenshotThumbnailQueueService';
 import { parseLocation } from '@/shared/utils/location';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
-
-import { formatScreenshotDateTime } from '../screenshotMetadataValues';
-import { requestScreenshotThumbnail } from '../screenshotThumbnailQueue';
 
 function firstText(...values: Array<string | null | undefined>) {
     return values.map((value) => (value ?? '').trim()).find(Boolean);

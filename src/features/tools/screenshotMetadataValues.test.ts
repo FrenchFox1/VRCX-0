@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { formatScreenshotDateTime } from '@/lib/dateTime';
+
 import {
     buildScreenshotSearchRow,
     DEFAULT_SCREENSHOT_SEARCH_SORT,
     formatScreenshotBytes,
-    formatScreenshotDateTime,
     getDroppedScreenshotPath,
     getGalleryFolderPathSet,
     getFileNameFromPath,

@@ -1,7 +1,6 @@
 import { SmileIcon, UserIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { getNotificationImageUrl } from '@/components/hosts/vrc-notification-center/notificationCenterUtils';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
@@ -9,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { getNotificationImageUrl } from '../notificationCenterUtils';
 import { getDiscIcon } from '../notificationRowActions';
 import type { NotificationViewModelEmoji } from '../notificationViewModel';
 

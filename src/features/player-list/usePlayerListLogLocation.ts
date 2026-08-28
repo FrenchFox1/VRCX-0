@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { LogLocationSnapshot } from '@/platform/tauri/bindings';
-import { getCurrentLogLocation } from '@/services/gameLogWatcherService';
+import { getCurrentLogLocation } from '@/repositories/gameLogWatcherRepository';
 
 import { isLiveLocation } from './playerListRows';
 

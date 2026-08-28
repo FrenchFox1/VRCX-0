@@ -3,16 +3,21 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppCellContext, AppRow } from '@/components/data-table/appTable';
-import { cn } from '@/lib/utils';
-import { Button } from '@/ui/shadcn/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
-
 import {
     getFeedRowCreatedAtMs,
     resolveFeedUserDisplayName,
     resolveFeedUserId
-} from '../feedRows';
-import type { FeedColumns, FeedRow, FeedTableMeta } from '../feedTypes';
+} from '@/components/feed/feedRows';
+import { FeedTypeIndicator } from '@/components/feed/FeedTypeIndicator';
+import type {
+    FeedColumns,
+    FeedRow,
+    FeedTableMeta
+} from '@/components/feed/feedTypes';
+import { cn } from '@/lib/utils';
+import { Button } from '@/ui/shadcn/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+
 import {
     FeedDetailCell,
     FeedUserLink,
@@ -20,7 +25,6 @@ import {
     formatTimestampLong,
     formatTimestampParts
 } from './FeedTableParts';
-import { FeedTypeIndicator } from './FeedTypeIndicator';
 
 function ExpanderCell({ row }: { row: AppRow<FeedRow> }) {
     if (!row.getCanExpand()) {

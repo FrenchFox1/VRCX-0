@@ -1,21 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    isEquippedProfileDecoration,
+    resolveInventoryDescription,
+    resolveInventoryImageUrl,
+    resolveInventoryName,
+    resolveInventoryType,
+    resolveProfileDecorationMutation,
+    resolveProfileDecorationPreviewUrl,
+    resolveProfileDecorationTypeLabelKey
+} from '@/domain/entities/inventory';
+
+import {
     buildEmojiUploadParams,
     CATEGORY_DEFINITIONS,
     INITIAL_INVENTORY_SUB_TABS,
     MAX_IMAGE_UPLOAD_BYTES,
     getLatestFileUrl,
     getUsefulDisplayName,
-    isEquippedProfileDecoration,
     parseEmojiUploadSettings,
-    resolveProfileDecorationMutation,
-    resolveProfileDecorationPreviewUrl,
-    resolveProfileDecorationTypeLabelKey,
-    resolveInventoryDescription,
-    resolveInventoryImageUrl,
-    resolveInventoryName,
-    resolveInventoryType,
     sanitizeInventoryGridDensity,
     validateImageFile
 } from './inventoryHelpers';

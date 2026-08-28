@@ -8,6 +8,11 @@ import {
     type DateTimeFormatPreferences,
     type TimeUnitLabels
 } from '@/shared/utils/dateTime';
+import {
+    formatDateTimeValue,
+    formatIsoDateTime,
+    normalizeDateLocale
+} from '@/shared/utils/dateTimeFormatters';
 import { useShellStore } from '@/state/shellStore';
 
 export function formatDateFilter(dateStr: unknown, format: DateFilterFormat) {
@@ -74,6 +79,43 @@ export function formatCompactDateTime(value: unknown) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+export function formatScreenshotDateTime(
+    value: Date | string | number | null | undefined,
+    locale?: string
+) {
+    if (!value) {
+        return '—';
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '—';
+    }
+
+    const {
+        dateHour12,
+        dateIsoFormat,
+        locale: appLocale
+    } = useShellStore.getState();
+
+    if (dateIsoFormat) {
+        return formatIsoDateTime(date);
+    }
+
+    return formatDateTimeValue(
+        date,
+        {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+        },
+        {
+            locale: normalizeDateLocale(locale || appLocale, 'en'),
+            hour12: Boolean(dateHour12),
+            fallback: '—'
+        }
+    );
 }
 
 export function formatClock(

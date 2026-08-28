@@ -34,7 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 import {
     buildCachedInstanceMap,
     resolveCurrentInviteLocation
-} from './vrc-notification-center/notificationCenterUtils';
+} from './notificationCenterUtils';
 
 type InviteResponseSlotPayload = {
     imageData: string;

@@ -11,10 +11,9 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
+import type { FeedRow } from '@/components/feed/feedTypes';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import { FeedPersistenceDisabledIndicator } from '@/features/feed/components/FeedPersistenceDisabledIndicator';
-import { mergeFeedRowsWithSnapshot } from '@/features/feed/feedLiveMerge';
-import type { FeedRow } from '@/features/feed/feedTypes';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import {
     FEED_FILTER_TYPES,
@@ -22,6 +21,7 @@ import {
 } from '@/repositories/feedRepository';
 import type { FeedFilterType } from '@/repositories/feedRepository';
 import feedRepository from '@/repositories/feedRepository';
+import { mergeFeedRowsWithSnapshot } from '@/services/feedLiveMergeService';
 import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';

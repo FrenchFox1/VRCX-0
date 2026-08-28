@@ -4,21 +4,21 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { DialogErrorState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
-import { FeedDetailCell } from '@/features/feed/components/FeedDetailCell';
-import { FeedTypeIndicator } from '@/features/feed/components/FeedTypeIndicator';
-import {
-    mergeFeedRowsWithLiveEntries,
-    prepareFeedRowsForCommit,
-    type FeedLiveMergeOptionsBuilder
-} from '@/features/feed/feedLiveMerge';
-import { buildFeedRoute } from '@/features/feed/feedRouteScope';
-import { getFeedRowId } from '@/features/feed/feedRows';
-import type { FeedLoadStatus, FeedRow } from '@/features/feed/feedTypes';
+import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
+import { getFeedRowId } from '@/components/feed/feedRows';
+import { FeedTypeIndicator } from '@/components/feed/FeedTypeIndicator';
+import type { FeedLoadStatus, FeedRow } from '@/components/feed/feedTypes';
 import {
     formatCompactDateTime,
     formatDateFilterOrFallback
 } from '@/lib/dateTime';
 import feedRepository from '@/repositories/feedRepository';
+import {
+    mergeFeedRowsWithLiveEntries,
+    prepareFeedRowsForCommit,
+    type FeedLiveMergeOptionsBuilder
+} from '@/services/feedLiveMergeService';
+import { buildFeedRoute } from '@/shared/utils/feedRouteScope';
 import { useDialogStore } from '@/state/dialogStore';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';

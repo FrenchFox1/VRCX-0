@@ -9,7 +9,7 @@ import {
     useLocation
 } from 'react-router';
 
-import { GlobalHosts } from '@/components/hosts/GlobalHosts';
+import { GlobalHosts } from '@/app/GlobalHosts';
 import { AppTitleBar } from '@/components/layout/AppTitleBar';
 import { MacNativeMenuActionHost } from '@/components/layout/MacNativeMenuActionHost';
 import { MacOverlayTitleBar } from '@/components/layout/MacOverlayTitleBar';

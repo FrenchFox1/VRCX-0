@@ -358,7 +358,8 @@ mod tests {
 
     #[test]
     fn parses_room_lifecycle_events() {
-        let entering = "2026.06.21 22:10:00 Log        -  [Behaviour] Entering Room: Midnight Rooftop";
+        let entering =
+            "2026.06.21 22:10:00 Log        -  [Behaviour] Entering Room: Midnight Rooftop";
         assert_eq!(
             parse_room_log_event(entering, &entering[34..]),
             Some(RoomLogEvent::Entering {

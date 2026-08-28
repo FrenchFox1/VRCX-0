@@ -26,7 +26,7 @@ vi.mock('react-i18next', async (importOriginal) => ({
     })
 }));
 
-vi.mock('../useScreenshotGalleryGrid', () => ({
+vi.mock('@/components/media/useScreenshotGalleryGrid', () => ({
     useScreenshotGalleryGrid: () => ({
         gridColumnCount: 1,
         gridGap: 0,
@@ -37,7 +37,7 @@ vi.mock('../useScreenshotGalleryGrid', () => ({
     })
 }));
 
-vi.mock('./ScreenshotThumbnailCard', () => ({
+vi.mock('@/components/media/ScreenshotThumbnailCard', () => ({
     ScreenshotThumbnailCard: ({
         item,
         selected,

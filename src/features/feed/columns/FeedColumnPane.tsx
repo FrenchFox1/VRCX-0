@@ -9,6 +9,12 @@ import {
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getFeedRowId } from '@/components/feed/feedRows';
+import type {
+    FeedFriendActions,
+    FeedLocationActionPayload,
+    FeedRow
+} from '@/components/feed/feedTypes';
 import { cn } from '@/lib/utils';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
@@ -23,12 +29,6 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import type { FeedColumnDensityConfig } from '../feedColumnsDensity';
 import type { FeedColumnConfig } from '../feedColumnsState';
-import { getFeedRowId } from '../feedRows';
-import type {
-    FeedFriendActions,
-    FeedLocationActionPayload,
-    FeedRow
-} from '../feedTypes';
 import { FeedColumnItem } from './FeedColumnItem';
 import { useFeedColumnRows } from './useFeedColumnRows';
 

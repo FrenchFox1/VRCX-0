@@ -1,21 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import feedRepository from '@/repositories/feedRepository';
-import friendLogRepository from '@/repositories/friendLogRepository';
-import gameLogRepository from '@/repositories/gameLogRepository';
-import { useFavoriteStore } from '@/state/favoriteStore';
-import { useFeedLiveStore } from '@/state/feedLiveStore';
-import { useFriendLogStore } from '@/state/friendLogStore';
-import { usePreferencesStore } from '@/state/preferencesStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
-import { useSessionStore } from '@/state/sessionStore';
-
-import type { FeedLiveMergeOptionsBuilder } from './feedLiveMerge';
-import {
-    mergeFeedRowsWithLiveEntries,
-    prepareFeedRowsForCommit
-} from './feedLiveMerge';
-import { subscribeFeedLiveMerge } from './feedLiveMergeScheduler';
 import {
     buildFeedFavoriteIdSet as buildFavoriteIdSet,
     normalizeFeedId as normalizeId,
@@ -23,8 +7,28 @@ import {
     resolveFeedUserId,
     toIsoRangeEnd,
     toIsoRangeStart
-} from './feedRows';
-import type { FeedFilterType, FeedLoadStatus, FeedRow } from './feedTypes';
+} from '@/components/feed/feedRows';
+import type {
+    FeedFilterType,
+    FeedLoadStatus,
+    FeedRow
+} from '@/components/feed/feedTypes';
+import feedRepository from '@/repositories/feedRepository';
+import friendLogRepository from '@/repositories/friendLogRepository';
+import gameLogRepository from '@/repositories/gameLogRepository';
+import type { FeedLiveMergeOptionsBuilder } from '@/services/feedLiveMergeService';
+import {
+    mergeFeedRowsWithLiveEntries,
+    prepareFeedRowsForCommit
+} from '@/services/feedLiveMergeService';
+import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFeedLiveStore } from '@/state/feedLiveStore';
+import { useFriendLogStore } from '@/state/friendLogStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
+import { useSessionStore } from '@/state/sessionStore';
+
+import { subscribeFeedLiveMerge } from './feedLiveMergeScheduler';
 
 type UseFeedRowsOptions = {
     activeFilters: FeedFilterType[];

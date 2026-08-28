@@ -10,13 +10,16 @@ import {
     ToolbarSegmented,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
+import {
+    readFeedRouteUserIds,
+    withFeedRouteUserIds
+} from '@/shared/utils/feedRouteScope';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import { FeedColumnsMode } from './columns/FeedColumnsMode';
 import { FeedTableShell } from './components/FeedTableShell';
 import { FeedToolbar } from './components/FeedToolbar';
 import type { FeedViewMode } from './feedColumnsState';
-import { readFeedRouteUserIds, withFeedRouteUserIds } from './feedRouteScope';
 import { useFeedPageController } from './useFeedPageController';
 import { useFeedRowArrivals } from './useFeedRowArrivals';
 import { useFeedViewModeState } from './useFeedViewModeState';

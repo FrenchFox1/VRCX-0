@@ -10,7 +10,7 @@ import type { LucideIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-import { normalizeFeedId } from '../feedRows';
+import { normalizeFeedId } from './feedRows';
 
 const TYPE_ICONS: Record<string, { Icon: LucideIcon; className: string }> = {
     GPS: { Icon: MapPinIcon, className: 'text-sky-500' },

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { FriendListUserLoadDialog } from '@/features/friends/components/FriendListUserLoadDialog';
+import { FriendListUserLoadDialog } from '@/components/dialogs/FriendListUserLoadDialog';
 import {
     cancelFriendProfileLoad,
     minimizeFriendProfileLoadDialog

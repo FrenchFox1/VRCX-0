@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-import { resolveFeedStatusMeta as resolveStatusMeta } from '../feedRows';
+import { resolveFeedStatusMeta as resolveStatusMeta } from './feedRows';
 
 function FeedStatusBadge({
     status,

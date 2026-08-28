@@ -2,14 +2,14 @@ import { ChevronRightIcon, ExternalLinkIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AvatarInfoLine } from '@/components/feed/FeedAvatarInfoLine';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TranslatableText } from '@/components/translation/TranslatableText';
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { UserProfileEntity } from '@/domain/entities/user';
-import { AvatarInfoLine } from '@/features/feed/components/FeedAvatarInfoLine';
-import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { formatDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import {

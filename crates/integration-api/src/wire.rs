@@ -221,11 +221,7 @@ mod tests {
             })
         );
         assert_eq!(
-            serde_json::to_value(ServerMessage::Ping {
-                seq: 3,
-                at: "now",
-            })
-            .unwrap(),
+            serde_json::to_value(ServerMessage::Ping { seq: 3, at: "now" }).unwrap(),
             json!({ "type": "ping", "seq": 3, "at": "now" })
         );
     }

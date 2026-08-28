@@ -71,8 +71,34 @@
                     {
                         "patterns": [
                             {
-                                "group": ["@/features/**", "@/platform/**"],
-                                "message": "Domain and shared modules must not depend on feature or platform adapters."
+                                "group": [
+                                    "@/app/**",
+                                    "@/components/**",
+                                    "@/features/**",
+                                    "@/lib/**",
+                                    "@/platform/**",
+                                    "@/repositories/**",
+                                    "@/services/**",
+                                    "@/state/**",
+                                    "@/ui/**"
+                                ],
+                                "message": "Domain and shared modules must not depend on higher frontend layers."
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["src/components/**/*.{ts,tsx}"],
+            "rules": {
+                "no-restricted-imports": [
+                    "error",
+                    {
+                        "patterns": [
+                            {
+                                "group": ["@/features/**", "**/features/**"],
+                                "message": "Shared components must not depend on feature modules."
                             }
                         ]
                     }

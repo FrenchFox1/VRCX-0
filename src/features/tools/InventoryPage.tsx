@@ -27,6 +27,17 @@ import {
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
+import {
+    isArchivedInventoryItem,
+    isEquippedProfileDecoration,
+    resolveInventoryDescription,
+    resolveInventoryImageUrl,
+    resolveInventoryName,
+    resolveInventoryType,
+    resolveProfileDecorationMutation,
+    resolveProfileDecorationPreviewUrl,
+    resolveProfileDecorationTypeLabelKey
+} from '@/domain/entities/inventory';
 import { formatDateFilter } from '@/lib/dateTime';
 import type {
     InventoryItemRecord,
@@ -72,15 +83,6 @@ import {
     CATEGORY_ORDER,
     getLatestFileUrl,
     getUsefulDisplayName,
-    isArchivedInventoryItem,
-    isEquippedProfileDecoration,
-    resolveInventoryDescription,
-    resolveInventoryImageUrl,
-    resolveInventoryName,
-    resolveInventoryType,
-    resolveProfileDecorationPreviewUrl,
-    resolveProfileDecorationMutation,
-    resolveProfileDecorationTypeLabelKey,
     scopeKey,
     type InventoryCategory,
     type InventorySource

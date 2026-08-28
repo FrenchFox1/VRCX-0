@@ -1,10 +1,10 @@
 import { ArrowRightIcon } from 'lucide-react';
 
-import { resolveFeedLocationForDisplay } from '../feedRows';
-import type { FeedLocationActionPayload, FeedRow } from '../feedTypes';
 import { AvatarInfoLine } from './FeedAvatarInfoLine';
 import { FeedLocationLink } from './FeedLocationLink';
+import { resolveFeedLocationForDisplay } from './feedRows';
 import { FeedStatusBadge } from './FeedStatusBadge';
+import type { FeedLocationActionPayload, FeedRow } from './feedTypes';
 
 type FeedDetailCellProps = {
     loadingHistoryKey?: string;

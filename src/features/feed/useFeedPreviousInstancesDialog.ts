@@ -2,14 +2,13 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import gameLogRepository from '@/repositories/gameLogRepository';
-import { parseLocation } from '@/shared/utils/location';
-
-import { normalizeFeedId as normalizeId } from './feedRows';
+import { normalizeFeedId as normalizeId } from '@/components/feed/feedRows';
 import type {
     FeedLocationActionPayload,
     FeedPreviousInstanceRow
-} from './feedTypes';
+} from '@/components/feed/feedTypes';
+import gameLogRepository from '@/repositories/gameLogRepository';
+import { parseLocation } from '@/shared/utils/location';
 
 export function useFeedPreviousInstancesDialog() {
     const { t } = useTranslation();

@@ -72,10 +72,10 @@ vi.mock('@/state/friendLogStore', () => ({
         selector(mocks.friendLog)
 }));
 
+import type { FeedFilterType, FeedRow } from '@/components/feed/feedTypes';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 
 import { createDeferred, flush, pushLiveEntry } from './feedLiveMergeTestUtils';
-import type { FeedFilterType, FeedRow } from './feedTypes';
 import { useFeedRows } from './useFeedRows';
 
 type FeedRowsProps = {

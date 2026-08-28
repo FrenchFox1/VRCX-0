@@ -95,7 +95,11 @@ mod tests {
     fn authority_requires_loopback_or_an_explicit_lan_port_match() {
         assert!(is_allowed_authority(Some("127.0.0.1:8798"), 8798, false));
         assert!(is_allowed_authority(Some("LOCALHOST:8798"), 8798, false));
-        assert!(!is_allowed_authority(Some("192.168.1.20:8798"), 8798, false));
+        assert!(!is_allowed_authority(
+            Some("192.168.1.20:8798"),
+            8798,
+            false
+        ));
         assert!(is_allowed_authority(Some("192.168.1.20:8798"), 8798, true));
         assert!(!is_allowed_authority(Some("192.168.1.20:8799"), 8798, true));
         assert!(!is_allowed_authority(
@@ -110,10 +114,7 @@ mod tests {
     fn header_values_must_be_valid_text() {
         let mut headers = HeaderMap::new();
         headers.insert("x-valid", "value".parse().unwrap());
-        headers.insert(
-            "x-binary",
-            http::HeaderValue::from_bytes(&[0xff]).unwrap(),
-        );
+        headers.insert("x-binary", http::HeaderValue::from_bytes(&[0xff]).unwrap());
 
         assert_eq!(header_to_str(&headers, "x-valid"), Some("value"));
         assert_eq!(header_to_str(&headers, "x-binary"), None);

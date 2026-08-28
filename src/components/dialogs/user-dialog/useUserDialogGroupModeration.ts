@@ -12,7 +12,7 @@ import {
     getGroupQuickModeration,
     runGroupQuickModerationAction,
     type GroupQuickModerationAction
-} from '@/services/groupQuickModerationService';
+} from '@/repositories/groupQuickModerationRepository';
 
 import {
     createDelayedVisibleController,

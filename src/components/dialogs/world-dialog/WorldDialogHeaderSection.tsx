@@ -23,8 +23,8 @@ import { useTranslation } from 'react-i18next';
 
 import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TranslatableText } from '@/components/translation/TranslatableText';
 import type { WorldProfileRecord } from '@/domain/entities/world';
-import { TranslatableText } from '@/features/translation/components/TranslatableText';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';

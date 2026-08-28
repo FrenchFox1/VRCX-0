@@ -20,11 +20,6 @@ import {
     type LucideIcon
 } from 'lucide-react';
 
-import {
-    canDeclineNotification,
-    getResponseLabel,
-    isNotificationExpired
-} from '@/components/hosts/vrc-notification-center/notificationCenterUtils';
 import type {
     NotificationResponse,
     NotificationRow
@@ -32,6 +27,11 @@ import type {
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { isUnseenNotification } from '@/shared/utils/notificationSeen';
 
+import {
+    canDeclineNotification,
+    getResponseLabel,
+    isNotificationExpired
+} from './notificationCenterUtils';
 import { getNotificationLinkScheme } from './notificationViewModel';
 
 const PERSON_TYPES = new Set<string>([

@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 import { AboutVrcxDialog } from '@/components/about/AboutDialog';
-import { OpenSourceNoticeDialog } from '@/features/settings/components/OpenSourceNoticeDialog';
+import { OpenSourceNoticeDialog } from '@/components/hosts/system-dialogs/OpenSourceNoticeDialog';
 import { cn } from '@/lib/utils';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';

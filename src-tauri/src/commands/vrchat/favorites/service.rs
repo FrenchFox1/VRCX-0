@@ -3,9 +3,7 @@
 use tauri::State;
 use vrcx_0_application_core::vrchat_api::require_text;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::favorites::{
-    favorite_groups_get_input, favorite_worlds_get_input,
-};
+use vrcx_0_vrchat_client::favorites::{favorite_groups_get_input, favorite_worlds_get_input};
 
 use crate::error::AppError;
 use crate::state::AppState;

@@ -1,7 +1,4 @@
-import { DatabaseBackupIcon } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
-
-import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 
 import {
     getToolsByCategory,
@@ -81,7 +78,6 @@ describe('profile backup tool', () => {
                 (definition) => definition.key === 'tool-profile-backup'
             )
         ).toBe(true);
-        expect(getNavIconComponent(tool?.navIcon)).toBe(DatabaseBackupIcon);
     });
 });
 

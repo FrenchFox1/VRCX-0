@@ -12,7 +12,7 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
-vi.mock('@/features/tools/useProfileBackupSettings', () => ({
+vi.mock('@/lib/useProfileBackupSettings', () => ({
     useProfileBackupSettings: () => ({
         settings: {
             autoEnabled: false,
@@ -35,7 +35,7 @@ vi.mock('@/features/tools/useProfileBackupSettings', () => ({
     })
 }));
 
-vi.mock('@/features/tools/useProfileRestoreRollback', () => ({
+vi.mock('@/lib/useProfileRestoreRollback', () => ({
     useProfileRestoreRollback: () => ({
         rollbackState: null,
         cleanupRunning: false,

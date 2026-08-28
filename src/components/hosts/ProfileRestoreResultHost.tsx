@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
     PROFILE_RESTORE_ROLLBACK_TOAST_ID,
     useProfileRestoreRollback
-} from '@/features/tools/useProfileRestoreRollback';
+} from '@/lib/useProfileRestoreRollback';
 import { profileRestoreFailureKey } from '@/services/profileBackupI18n';
 import { takeLastProfileRestoreResult } from '@/services/profileBackupService';
 import { useProfileBackupStore } from '@/state/profileBackupStore';

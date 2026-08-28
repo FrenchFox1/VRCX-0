@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
-
-import { useScreenshotGalleryGrid } from '../useScreenshotGalleryGrid';
 import {
     ScreenshotThumbnailCard,
     useScreenshotThumbnailTitleMap
-} from './ScreenshotThumbnailCard';
+} from '@/components/media/ScreenshotThumbnailCard';
+import { useScreenshotGalleryGrid } from '@/components/media/useScreenshotGalleryGrid';
+import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
 export function ScreenshotSelectableImageGrid({
     images,
