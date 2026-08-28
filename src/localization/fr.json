@@ -478,11 +478,11 @@
         "tray": {
             "open": "Ouvrir VRCX-0",
             "backgroundMode": "Mode arrière-plan",
-            "doNotDisturb": "Do Not Disturb",
-            "doNotDisturbOneHour": "1 hour",
-            "doNotDisturbThreeHours": "3 hours",
-            "doNotDisturbUntilStopped": "Until turned off",
-            "doNotDisturbTurnOff": "Turn off",
+            "doNotDisturb": "Ne pas déranger",
+            "doNotDisturbOneHour": "1 heure",
+            "doNotDisturbThreeHours": "3 heures",
+            "doNotDisturbUntilStopped": "Jusqu'à désactivation",
+            "doNotDisturbTurnOff": "Désactiver",
             "rebuildUi": "Recharger l'interface",
             "disableTheme": "Désactiver le thème",
             "exit": "Quitter"
@@ -2492,6 +2492,12 @@
                     "layout_table": "Page des notifications",
                     "post_update_changelog_prompt": "Afficher les notes de mise à jour après l'installation",
                     "post_update_changelog_prompt_description": "Affiche ce qui est nouveau dans la version installée.",
+                    "do_not_disturb": {
+                        "header": "Ne pas déranger",
+                        "description": "Met en pause les notifications sur le bureau, la synthèse vocale, les popups XSOverlay, OVR Toolkit, et VRCX-0. Les Webhooks, l'activité du poignet et l'historique de notifications continuent.",
+                        "end_on_game_start": "Désactiver au lancement de VRChat",
+                        "end_on_game_start_description": "Only applies when VRChat changes from stopped to running. You can turn Do Not Disturb on again while playing."
+                    },
                     "vr_notifications": {
                         "header": "Notifications de l'overlay VR",
                         "xsoverlay_notifications": "Notifications XSOverlay",
@@ -5798,6 +5804,14 @@
         "add_table_page_size": "Ajouter une taille de page de tableau"
     },
     "status_bar": {
+        "do_not_disturb": "Ne pas déranger",
+        "do_not_disturb_active": "Le mode \"Ne pas déranger\" est activé",
+        "do_not_disturb_until": "Ne pas déranger pendant {time}",
+        "do_not_disturb_one_hour": "Pour 1 heure",
+        "do_not_disturb_three_hours": "Pour 3 heures",
+        "do_not_disturb_until_stopped": "Jusqu'à désactivation",
+        "do_not_disturb_turn_off": "Désactiver le mode \"Ne pas déranger\"",
+        "do_not_disturb_failed": "Échec de l'activation du mode \"Ne pas déranger\"",
         "world_collection_importing": "Importation de la collection de mondes ({progress}/{total})",
         "game": "Jeu",
         "game_stopped": "VRChat n'est pas en cours d'exécution",
