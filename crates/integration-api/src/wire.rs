@@ -1,79 +1,16 @@
 use serde::{Deserialize, Serialize};
-use specta::Type;
 
 use crate::state::{RoomMemberState, RoomState};
 
 pub const PROTOCOL_VERSION: u32 = 1;
 pub(crate) const HEARTBEAT_SECONDS: u64 = 20;
+pub(crate) const SERVER_SCOPES: &[&str] = &["room"];
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct RoomMember {
-    pub user_id: String,
-    pub display_name: String,
-    pub is_self: bool,
-    pub is_friend: bool,
-    pub joined_at: Option<String>,
-    pub languages: Vec<String>,
-    pub note: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct Room {
-    pub location: String,
-    pub world_id: String,
-    pub world_name: String,
-    pub destination: String,
-    pub entered_at: String,
-    pub members: Vec<RoomMember>,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, Type)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ByeReason {
     GameStopped,
     Disabled,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Type)]
-#[serde(tag = "type")]
-#[allow(dead_code)]
-pub enum ServerMessage {
-    #[serde(rename = "hello")]
-    Hello {
-        seq: u64,
-        protocol: u32,
-        app: String,
-        #[serde(rename = "appVersion")]
-        app_version: String,
-        scopes: Vec<String>,
-        #[serde(rename = "heartbeatSec")]
-        heartbeat_sec: u64,
-    },
-    #[serde(rename = "room.snapshot")]
-    RoomSnapshot {
-        seq: u64,
-        at: String,
-        room: Option<Room>,
-    },
-    #[serde(rename = "room.joined")]
-    RoomJoined {
-        seq: u64,
-        at: String,
-        members: Vec<RoomMember>,
-    },
-    #[serde(rename = "room.left")]
-    RoomLeft {
-        seq: u64,
-        at: String,
-        #[serde(rename = "userIds")]
-        user_ids: Vec<String>,
-    },
-    #[serde(rename = "ping")]
-    Ping { seq: u64, at: String },
-    #[serde(rename = "bye")]
-    Bye { reason: ByeReason },
 }
 
 #[derive(Serialize)]
@@ -128,7 +65,18 @@ impl<'a> From<&'a RoomState> for RoomRef<'a> {
 
 #[derive(Serialize)]
 #[serde(tag = "type")]
-pub(crate) enum ServerMessageRef<'a> {
+pub(crate) enum ServerMessage<'a> {
+    #[serde(rename = "hello")]
+    Hello {
+        seq: u64,
+        protocol: u32,
+        app: &'a str,
+        #[serde(rename = "appVersion")]
+        app_version: &'a str,
+        scopes: &'a [&'a str],
+        #[serde(rename = "heartbeatSec")]
+        heartbeat_sec: u64,
+    },
     #[serde(rename = "room.snapshot")]
     Snapshot {
         seq: u64,
@@ -148,6 +96,10 @@ pub(crate) enum ServerMessageRef<'a> {
         #[serde(rename = "userIds")]
         user_ids: &'a [String],
     },
+    #[serde(rename = "ping")]
+    Ping { seq: u64, at: &'a str },
+    #[serde(rename = "bye")]
+    Bye { reason: ByeReason },
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
@@ -165,9 +117,9 @@ mod tests {
 
     #[test]
     fn snapshot_fields_and_null_room_are_stable() {
-        let value = serde_json::to_value(ServerMessage::RoomSnapshot {
+        let value = serde_json::to_value(ServerMessage::Snapshot {
             seq: 1,
-            at: "2026-08-12T09:31:00.000Z".into(),
+            at: "2026-08-12T09:31:00.000Z",
             room: None,
         })
         .unwrap();
@@ -189,9 +141,9 @@ mod tests {
             serde_json::to_value(ServerMessage::Hello {
                 seq: 0,
                 protocol: 1,
-                app: "vrcx-0".into(),
-                app_version: "1.2.3".into(),
-                scopes: vec!["room".into()],
+                app: "vrcx-0",
+                app_version: "1.2.3",
+                scopes: SERVER_SCOPES,
                 heartbeat_sec: 20,
             })
             .unwrap(),
@@ -209,7 +161,7 @@ mod tests {
 
     #[test]
     fn member_fields_are_never_omitted() {
-        let member = RoomMember {
+        let member = RoomMemberState {
             user_id: String::new(),
             display_name: String::new(),
             is_self: false,
@@ -220,7 +172,7 @@ mod tests {
         };
 
         assert_eq!(
-            serde_json::to_value(member).unwrap(),
+            serde_json::to_value(RoomMemberRef::from(&member)).unwrap(),
             json!({
                 "userId": "",
                 "displayName": "",
@@ -253,11 +205,12 @@ mod tests {
 
     #[test]
     fn delta_and_ping_field_names_are_stable() {
+        let user_ids = vec!["usr_a".into()];
         assert_eq!(
-            serde_json::to_value(ServerMessage::RoomLeft {
+            serde_json::to_value(ServerMessage::Left {
                 seq: 2,
-                at: "now".into(),
-                user_ids: vec!["usr_a".into()],
+                at: "now",
+                user_ids: &user_ids,
             })
             .unwrap(),
             json!({
@@ -270,7 +223,7 @@ mod tests {
         assert_eq!(
             serde_json::to_value(ServerMessage::Ping {
                 seq: 3,
-                at: "now".into(),
+                at: "now",
             })
             .unwrap(),
             json!({ "type": "ping", "seq": 3, "at": "now" })
