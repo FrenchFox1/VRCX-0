@@ -33,7 +33,7 @@ Au premier lancement, vos données et paramètres VRCX sont automatiquement
 transférés. Les données originelles ne sont pas modifiées — vous pouvez
 réutiliser VRCX à tout moment.
 
-Le projet VRCX étant désormais en maintenance, VRCX-0 est l'endroit où les
+VRCX est une version stable tandis que VRCX-0 est l'endroit où les
 nouvelles fonctionnalités sont créées.
 
 ## Installation
@@ -68,7 +68,7 @@ L'installation est unique — VRCX-0 se mettra à jour automatiquement.
 
 De plus :
 
-- **IA Sociale** — Un assistant qui vous conseil sur vos relations VRChat :
+- **IA Sociale** — Un assistant qui vous conseille sur vos relations VRChat :
   Demandez avec qui vous jouez le plus, de qui vous éloignez-vous ou bien
   l'heure idéalle pour jouer avec vos amis. Connectez votre propre IA pour
   commencer.
@@ -79,8 +79,7 @@ De plus :
   à chaque compte sont stockés séparément ; ainsi, lorsque vous utilisez
   plusieurs comptes, vos activités ne sont plus regroupées dans un seul fil
   d'actualité.
-- **Sauvegarde et restauration** — Sauvegarde compressée en un clic, avec des
-  sauvegardes automatiques programmées et plusieurs versions ; restaurer grâce
+- **Sauvegarde et restauration** — Sauvegarde compressée en un clic de votre base de données, avec des sauvegardes automatiques programmées et plusieurs versions ; restaurer grâce
   à n'importe quelle sauvegarde
 - **Collection de monde partageable** — Transformez vos mondes préférés en une
   page partageable que d'autres peuvent parcourir, ouvrir ou importer ; permet
@@ -94,12 +93,11 @@ De plus :
 - **Thèmes communautaires** — Parcourez et installez des thèmes à partir d'un
   catalogue, définissez une image d'arrière-plan personnalisée et superposez
   votre propre feuille de style CSS
-- **Notifications** — Bureau, synthèse vocale, overlay VR et webhooks : quatre
+- **Notifications** — Bureau, synthèse vocale, overlay VR et de poignet, ainsi que webhooks : cinq
   canaux configurables indépendamment selon le type d'événement ; les webhooks
   utilisent un format compatible avec Discord
 - Compatible avec la navigation par clavier
-- Intégration par API pour des applications tierces — currently room data,
-  expanding over time
+- Intégration par API pour des applications tierces — données d'instances en temps réel en jeu.
 - Mode "sans tête" pour les configurations avancées — voir `crates/headless`
 
 ## Licence
