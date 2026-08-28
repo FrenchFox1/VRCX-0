@@ -2,6 +2,7 @@ import { StarIcon } from 'lucide-react';
 import { memo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { FeedDateRange } from '@/components/feed/feedTypes';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     toolbarDateRangeTrigger,
@@ -16,7 +17,6 @@ import { Button } from '@/ui/shadcn/button';
 import { Calendar } from '@/ui/shadcn/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 
-import type { FeedDateRange } from '../feedTypes';
 import { FeedPersistenceDisabledIndicator } from './FeedPersistenceDisabledIndicator';
 import { FeedSearchBox } from './FeedSearchBox';
 

@@ -104,6 +104,7 @@ export const routePathByName = Object.freeze({
     'screenshot-metadata': '/tools/screenshot-metadata',
     'vrchat-log': '/tools/vrchat-log',
     'group-moderation': '/tools/group-moderation',
+    'my-groups': '/tools/my-groups',
     'community-themes': '/themes',
     themes: '/themes',
     settings: '/settings'

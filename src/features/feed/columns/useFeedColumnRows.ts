@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+    getFeedRowId,
+    normalizeFeedId as normalizeId
+} from '@/components/feed/feedRows';
+import type { FeedLoadStatus, FeedRow } from '@/components/feed/feedTypes';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
+import type { FeedLiveMergeOptionsBuilder } from '@/services/feedLiveMergeService';
+import {
+    mergeFeedRowsWithLiveEntries,
+    prepareFeedRowsForCommit
+} from '@/services/feedLiveMergeService';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -13,14 +23,7 @@ import {
     buildFeedColumnFavoriteIds
 } from '../feedColumnScope';
 import type { FeedColumnConfig } from '../feedColumnsState';
-import type { FeedLiveMergeOptionsBuilder } from '../feedLiveMerge';
-import {
-    mergeFeedRowsWithLiveEntries,
-    prepareFeedRowsForCommit
-} from '../feedLiveMerge';
 import { subscribeFeedLiveMerge } from '../feedLiveMergeScheduler';
-import { getFeedRowId, normalizeFeedId as normalizeId } from '../feedRows';
-import type { FeedLoadStatus, FeedRow } from '../feedTypes';
 
 const FEED_COLUMN_PAGE_SIZE = 80;
 

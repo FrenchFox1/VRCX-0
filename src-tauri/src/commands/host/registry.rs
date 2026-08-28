@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
-use crate::error::AppError;
-use tauri::AppHandle;
+use crate::{error::AppError, state::AppState};
+use tauri::{AppHandle, State};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use vrcx_0_host_desktop::vrchat_registry;
 
@@ -29,6 +29,28 @@ pub async fn app__delete_vrchat_registry_folder(app_handle: AppHandle) -> Result
         ));
     }
     Ok(vrchat_registry::delete_registry_folder()?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__vrchat_group_order_get(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
+    require_host_capability(HostCapability::RegistryPrefs)?;
+    let scope = state.require_active_scope("Reading the in-game group order")?;
+    Ok(vrchat_registry::get_group_order(&scope.current_user_id)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__vrchat_group_order_set(
+    state: State<'_, AppState>,
+    group_ids: Vec<String>,
+) -> Result<bool, AppError> {
+    require_host_capability(HostCapability::RegistryPrefs)?;
+    let scope = state.require_active_scope("Saving the in-game group order")?;
+    Ok(vrchat_registry::set_group_order(
+        &scope.current_user_id,
+        &group_ids,
+    )?)
 }
 
 #[tauri::command]

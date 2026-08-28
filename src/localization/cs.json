@@ -1793,7 +1793,9 @@
                 "calendar": "Kalendář",
                 "calendar_description": "Kalendář skupinových akcí",
                 "moderation": "Moderace skupiny",
-                "moderation_description": "Spravujte členy, zákazy, pozvánky a žádosti o vstup u skupin, které moderujete."
+                "moderation_description": "Spravujte členy, zákazy, pozvánky a žádosti o vstup u skupin, které moderujete.",
+                "my_groups": "Moje skupiny",
+                "my_groups_description": "Seřaďte, skryjte a opusťte skupiny, ve kterých jste."
             },
             "user": {
                 "discord_names_description": "Najděte Discord uživatelská jména svých přátel z VRChat",
@@ -2042,6 +2044,9 @@
                 "delete_locked": "Všechny vybrané položky jsou zamčené.",
                 "delete_locked_favorite": "V oblíbených - nejprve odeberte z oblíbených",
                 "delete_locked_in_use": "Používá se - nelze smazat",
+                "export_zip": "Exportovat ZIP",
+                "export_grouped": "Zachovat strukturu složek",
+                "export_flat": "Vše do jedné složky",
                 "favorited_toast": "{count} tisků přidáno do oblíbených.",
                 "unfavorited_toast": "{count} tisků odebráno z oblíbených.",
                 "favorite_skipped_toast": "{count} tisků se nepodařilo přidat do oblíbených. Limit je {max}."
@@ -3402,6 +3407,34 @@
             "avatars": {
                 "all_time": "Celé období"
             }
+        },
+        "my_groups": {
+            "title": "Moje skupiny",
+            "description": "Spravujte skupiny, ve kterých jste: pořadí ve hře, viditelnost na profilu a odchod ze skupiny.",
+            "group_count": "Skupin: {count}",
+            "edit_mode": "Upravit",
+            "exit_edit_mode": "Hotovo",
+            "order_hint": "Přetažením skupin nastavíte pořadí, v jakém se zobrazují ve VRChatu.",
+            "order_game_running": "VRChat běží. Změny pořadí mohou být při ukončení hry přepsány.",
+            "order_unavailable": "Pořadí skupin není k dispozici: {reason}",
+            "order_unavailable_reason_fallback": "Nastavení VRChatu v tomto systému nelze načíst.",
+            "order_save_failed": "Pořadí skupin ve hře se nepodařilo uložit.",
+            "row_actions": "Akce skupiny",
+            "leave": "Opustit",
+            "leave_partial": "Opustit {count}",
+            "leave_owner_locked": "Skupinu, kterou vlastníte, nelze opustit.",
+            "leave_completed": "Opuštěno skupin: {count}.",
+            "visibility_completed": "Viditelnost změněna u {count} skupin.",
+            "selected_count": "Vybráno: {count}",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Akce selhala.",
+            "batch_failed": "Hromadná akce selhala.",
+            "confirm_leave_title": "Opustit {count} skupin?",
+            "confirm_leave_warning": "Odchod nelze vrátit zpět a opětovné připojení může vyžadovat schválení.",
+            "confirm_more_groups": "{names} a další {count}",
+            "empty_title": "Zatím žádné skupiny",
+            "empty_description": "Skupiny, do kterých se ve VRChatu přidáte, se zobrazí zde.",
+            "empty_search": "Hledání neodpovídá žádná skupina."
         }
     },
     "dialog": {
@@ -3608,7 +3641,8 @@
                     "alphabetical": "Abecedně",
                     "members": "Členové",
                     "in_game": "Pořadí ve hře"
-                }
+                },
+                "manage": "Spravovat"
             },
             "worlds": {
                 "header": "Světy",
@@ -4761,6 +4795,8 @@
             "scanning": "Prohledávají se snímky obrazovky",
             "image_count": "{count} obrázků",
             "feeling_lucky": "Zkusím štěstí",
+            "exporting_progress": "Exportuji {done}/{total}",
+            "export_finalizing": "Dokončování archivu",
             "empty_gallery": "V této složce nejsou žádné snímky obrazovky",
             "empty_gallery_description": "Vyberte jinou složku nebo obnovte knihovnu snímků obrazovky.",
             "empty_folders": "Žádné složky se snímky obrazovky",
@@ -5518,6 +5554,10 @@
         "screenshot_metadata": {
             "deleted": "Metadata snímku obrazovky smazána",
             "delete_failed": "Smazání metadat snímku obrazovky se nezdařilo",
+            "export_done": "Exportováno snímků: {count}.",
+            "export_partial": "Export dokončen, přeskočeno souborů: {count}.",
+            "export_failed": "Export snímků obrazovky se nezdařil",
+            "export_cancelled": "Export zrušen.",
             "file_deleted": "Snímek obrazovky přesunut do koše",
             "file_delete_failed": "Smazání snímku obrazovky se nezdařilo"
         },

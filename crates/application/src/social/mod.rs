@@ -67,6 +67,12 @@ pub use groups::{
     UserGroupsOverviewInput, UserGroupsOverviewOutput,
 };
 pub use groups::{
+    run_group_membership_batch, GroupMembershipBatchAction, GroupMembershipBatchCoordinator,
+    GroupMembershipBatchInput, GroupMembershipBatchItemResult, GroupMembershipBatchItemState,
+    GroupMembershipBatchProgress, GroupMembershipBatchResult, VrchatGroupMembershipBatchActions,
+    GROUP_MEMBERSHIP_BATCH_MAX_TARGETS,
+};
+pub use groups::{
     run_group_moderation_batch, GroupModerationBatchAction, GroupModerationBatchCoordinator,
     GroupModerationBatchInput, GroupModerationBatchItemResult, GroupModerationBatchItemState,
     GroupModerationBatchProgress, GroupModerationBatchResult, GroupModerationBatchTarget,

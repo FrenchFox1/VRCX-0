@@ -10,7 +10,7 @@ vi.mock('@/repositories/mediaRepository', () => ({
     }
 }));
 
-import { requestScreenshotThumbnail } from './screenshotThumbnailQueue';
+import { requestScreenshotThumbnail } from './screenshotThumbnailQueueService';
 
 function deferred<T>() {
     let resolve!: (value: T) => void;

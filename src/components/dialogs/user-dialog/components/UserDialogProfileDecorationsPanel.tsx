@@ -17,7 +17,7 @@ import {
     resolveInventoryName,
     resolveProfileDecorationPreviewUrl,
     resolveProfileDecorationTypeLabelKey
-} from '@/features/tools/inventoryHelpers';
+} from '@/domain/entities/inventory';
 import { cn } from '@/lib/utils';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 

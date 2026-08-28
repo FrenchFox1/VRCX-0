@@ -18,6 +18,7 @@ tracing = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
 walkdir = { workspace = true }
+zip = { workspace = true }
 vrcx-0-contracts = { path = "../contracts" }
 vrcx-0-application = { path = "../application" }
 vrcx-0-application-activity = { path = "../application-activity" }

@@ -12,7 +12,7 @@ import { act, renderHook } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { FeedRow } from './feedTypes';
+import type { FeedRow } from '@/components/feed/feedTypes';
 
 const mocks = vi.hoisted(() => ({
     rows: [] as FeedRow[]
@@ -99,7 +99,8 @@ vi.mock('./useFeedTableState', () => ({
     }
 }));
 
-import { getFeedRowId } from './feedRows';
+import { getFeedRowId } from '@/components/feed/feedRows';
+
 import { useFeedPageController } from './useFeedPageController';
 
 describe('useFeedPageController', () => {

@@ -1,4 +1,6 @@
-use vrcx_0_core::game_log_parser::{clean_location, GameLogEventKind};
+use vrcx_0_core::game_log_parser::{
+    clean_location, parse_room_log_event, GameLogEventKind, RoomLogEvent,
+};
 
 use super::context::LogContext;
 use super::sink::GameLogParseSink;
@@ -35,19 +37,13 @@ pub(super) fn parse_location(
     content: &str,
     ctx: &mut LogContext,
 ) -> bool {
-    if content.contains("[Behaviour] Entering Room: ") {
-        if let Some(pos) = line.rfind("] Entering Room: ") {
-            ctx.recent_world_name = line[pos + 17..].to_string();
+    match parse_room_log_event(line, content) {
+        Some(RoomLogEvent::Entering { world_name }) => {
+            ctx.recent_world_name = world_name.to_string();
+            true
         }
-        return true;
-    }
-
-    if content.contains("[Behaviour] Joining ")
-        && !content.contains("] Joining or Creating Room: ")
-        && !content.contains("] Joining friend: ")
-    {
-        if let Some(pos) = line.rfind("] Joining ") {
-            let location = clean_location(&line[pos + 10..]);
+        Some(RoomLogEvent::Joining { location }) => {
+            let location = clean_location(location);
             out.push_event(
                 fname,
                 line,
@@ -59,11 +55,10 @@ pub(super) fn parse_location(
             ctx.last_audio_device.clear();
             ctx.video_errors.clear();
             out.set_vrc_closed_gracefully(false);
+            true
         }
-        return true;
+        Some(RoomLogEvent::Left) | None => false,
     }
-
-    false
 }
 
 pub(super) fn parse_location_destination(
@@ -73,7 +68,7 @@ pub(super) fn parse_location_destination(
     content: &str,
     ctx: &mut LogContext,
 ) -> bool {
-    if content.contains("[Behaviour] OnLeftRoom") {
+    if parse_room_log_event(line, content) == Some(RoomLogEvent::Left) {
         out.push_event(
             fname,
             line,

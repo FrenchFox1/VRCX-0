@@ -1,13 +1,48 @@
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
+use vrcx_0_application_core::RuntimeEventBus;
+use vrcx_0_core::screenshots::ScreenshotExportProgress;
+use vrcx_0_core::screenshots::{
+    plan_screenshot_zip_entries, screenshot_export_file_name, ScreenshotZipEntry,
+};
 use vrcx_0_outbound_adapters::screenshots::{
-    self as screenshot, ScreenshotFolderTree, ScreenshotLibraryImage, ScreenshotLibraryScanStatus,
-    ScreenshotSearchResult,
+    self as screenshot, ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
+    ScreenshotLibraryScanStatus, ScreenshotSearchResult,
 };
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
 use vrcx_0_platform::app_paths::AppPaths;
 
 use crate::{HostFileAccess, Result};
+
+pub struct ScreenshotExportPlan {
+    pub entries: Vec<ScreenshotZipEntry>,
+    pub file_name: String,
+    pub total_bytes: u64,
+}
+
+const EXPORT_PROGRESS_THROTTLE: Duration = Duration::from_millis(120);
+
+fn export_timestamp() -> String {
+    chrono::Local::now().format("%Y%m%d-%H%M").to_string()
+}
+
+fn ensure_export_space(output_path: &Path, required_bytes: u64) -> Result<()> {
+    let Some(parent) = output_path.parent() else {
+        return Ok(());
+    };
+    let Ok(available) = fs4::available_space(parent) else {
+        return Ok(());
+    };
+    if available < required_bytes {
+        return Err(crate::Error::Custom(format!(
+            "Not enough free space at the destination: {required_bytes} bytes needed, {available} bytes available."
+        )));
+    }
+    Ok(())
+}
 
 #[derive(Clone)]
 pub struct DesktopScreenshotRuntime {
@@ -15,6 +50,8 @@ pub struct DesktopScreenshotRuntime {
     host_file_access: HostFileAccess,
     paths: AppPaths,
     photos_root: String,
+    event_bus: RuntimeEventBus,
+    export_cancelled: Arc<AtomicBool>,
 }
 
 impl DesktopScreenshotRuntime {
@@ -23,12 +60,15 @@ impl DesktopScreenshotRuntime {
         host_file_access: HostFileAccess,
         paths: AppPaths,
         photos_root: String,
+        event_bus: RuntimeEventBus,
     ) -> Self {
         Self {
             cache,
             host_file_access,
             paths,
             photos_root,
+            event_bus,
+            export_cancelled: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -150,6 +190,92 @@ impl DesktopScreenshotRuntime {
             &self.cache,
             &self.photos_root,
         )?)
+    }
+
+    pub fn plan_export(
+        &self,
+        paths: &[String],
+        group_by_folder: bool,
+    ) -> Result<ScreenshotExportPlan> {
+        self.export_cancelled.store(false, Ordering::Release);
+        if paths.is_empty() {
+            return Err(crate::Error::Custom(
+                "Select at least one screenshot to export.".into(),
+            ));
+        }
+        for path in paths {
+            self.ensure_managed_screenshot(path)?;
+        }
+
+        let entries = plan_screenshot_zip_entries(paths, group_by_folder);
+        if entries.is_empty() {
+            return Err(crate::Error::Custom(
+                "None of the selected screenshots have a usable file name.".into(),
+            ));
+        }
+
+        let total_bytes = screenshot::total_screenshot_export_bytes(&entries);
+        Ok(ScreenshotExportPlan {
+            file_name: screenshot_export_file_name(&export_timestamp(), entries.len()),
+            total_bytes,
+            entries,
+        })
+    }
+
+    pub fn request_export_cancel(&self) {
+        self.export_cancelled.store(true, Ordering::Release);
+    }
+
+    pub fn export_zip(
+        &self,
+        plan: &ScreenshotExportPlan,
+        output_path: &Path,
+    ) -> Result<ScreenshotExportOutcome> {
+        self.host_file_access
+            .ensure_write_allowed(output_path, &self.paths)?;
+        ensure_export_space(output_path, plan.total_bytes)?;
+
+        let total_files = plan.entries.len() as u32;
+        let total_bytes = plan.total_bytes;
+        let last_emit = Mutex::new(Instant::now());
+
+        let outcome = screenshot::write_screenshots_zip(
+            &plan.entries,
+            output_path,
+            &|written_bytes, written_files| {
+                let mut last = last_emit.lock().unwrap();
+                if last.elapsed() < EXPORT_PROGRESS_THROTTLE {
+                    return;
+                }
+                *last = Instant::now();
+                self.event_bus.emit(ScreenshotExportProgress {
+                    running: true,
+                    total_files,
+                    written_files,
+                    total_bytes,
+                    written_bytes,
+                    ..Default::default()
+                });
+            },
+            &|| {
+                self.event_bus.emit(ScreenshotExportProgress {
+                    running: true,
+                    finalizing: true,
+                    total_files,
+                    written_files: total_files,
+                    total_bytes,
+                    written_bytes: total_bytes,
+                    ..Default::default()
+                });
+            },
+            Some(&|| self.export_cancelled.load(Ordering::Acquire)),
+        );
+        self.export_cancelled.store(false, Ordering::Release);
+        Ok(outcome?)
+    }
+
+    pub fn emit_export_progress(&self, progress: ScreenshotExportProgress) {
+        self.event_bus.emit(progress);
     }
 
     pub fn delete_all_metadata(&self) {

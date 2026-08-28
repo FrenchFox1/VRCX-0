@@ -3,7 +3,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { FeedRow } from '../feedTypes';
+import type { FeedRow } from '@/components/feed/feedTypes';
 
 const mocks = vi.hoisted(() => ({
     getAvatarNameFromImageUrl: vi.fn(),
@@ -61,12 +61,12 @@ vi.mock('@/state/runtimeStore', () => ({
         })
 }));
 
-vi.mock('./FeedLocationLink', () => ({
+vi.mock('@/components/feed/FeedLocationLink', () => ({
     FeedLocationLink: () => null
 }));
 
-import { FeedDetailCell } from './FeedDetailCell';
-import { FeedExpandedRow } from './FeedExpandedRow';
+import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
+import { FeedExpandedRow } from '@/features/feed/components/FeedExpandedRow';
 
 const avatarRow: FeedRow = {
     avatarName: '',

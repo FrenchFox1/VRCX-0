@@ -587,6 +587,7 @@ impl DesktopRuntimeHostState {
             desktop.host_file_access.clone(),
             runtime.paths().clone(),
             vrcx_0_host_desktop::vrchat_paths::vrchat_photos_location(),
+            runtime.desktop_assembly().event_bus().clone(),
         );
         let vrchat_api =
             crate::vrchat_api::build_vrchat_api_runtime(crate::vrchat_api::VrchatApiRuntimeDeps {
@@ -1187,6 +1188,27 @@ impl DesktopRuntimeHostState {
                 &vrcx_0_outbound_adapters::VrchatBatchMutationRemoteRequests,
                 self.runtime.desktop_assembly().auth_scope(),
                 expected_scope,
+                self.runtime.desktop_assembly().remote_mutations(),
+            ),
+            input,
+        )
+        .await?)
+    }
+
+    pub async fn run_group_membership_batch(
+        &self,
+        coordinator: &vrcx_0_application::social::GroupMembershipBatchCoordinator,
+        input: vrcx_0_application::social::GroupMembershipBatchInput,
+    ) -> Result<vrcx_0_application::social::GroupMembershipBatchResult> {
+        let expected_scope = self.require_active_scope("Batch action")?;
+        Ok(vrcx_0_application::social::run_group_membership_batch(
+            coordinator,
+            &vrcx_0_application::social::VrchatGroupMembershipBatchActions::new(
+                self.runtime.web_client().as_ref(),
+                &vrcx_0_outbound_adapters::VrchatGroupRemoteRequests,
+                self.runtime.desktop_assembly().auth_scope(),
+                expected_scope,
+                self.runtime.desktop_assembly().event_bus().clone(),
                 self.runtime.desktop_assembly().remote_mutations(),
             ),
             input,

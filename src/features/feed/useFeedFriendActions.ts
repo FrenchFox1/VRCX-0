@@ -2,6 +2,16 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import {
+    canRequestInviteFromFeedFriend,
+    normalizeFeedId as normalizeId,
+    resolveFeedCurrentInviteLocation as resolveCurrentInviteLocation
+} from '@/components/feed/feedRows';
+import type {
+    FeedFriendActionTarget,
+    FeedFriendActions,
+    FeedLocationActionPayload
+} from '@/components/feed/feedTypes';
 import { openWorldDialog } from '@/services/dialogService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import {
@@ -20,17 +30,6 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-
-import {
-    canRequestInviteFromFeedFriend,
-    normalizeFeedId as normalizeId,
-    resolveFeedCurrentInviteLocation as resolveCurrentInviteLocation
-} from './feedRows';
-import type {
-    FeedFriendActionTarget,
-    FeedFriendActions,
-    FeedLocationActionPayload
-} from './feedTypes';
 
 function resolveActionFriendId(friend: FeedFriendActionTarget) {
     return normalizeId(friend?.id || friend?.userId);

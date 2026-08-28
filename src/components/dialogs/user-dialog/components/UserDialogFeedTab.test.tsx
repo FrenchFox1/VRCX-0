@@ -3,7 +3,7 @@
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { FeedRow } from '@/features/feed/feedTypes';
+import type { FeedRow } from '@/components/feed/feedTypes';
 
 import {
     USER_DIALOG_FEED_LIMIT,
@@ -22,16 +22,16 @@ vi.mock('@/repositories/feedRepository', () => ({
     }
 }));
 
-vi.mock('@/features/feed/feedLiveMerge', () => ({
+vi.mock('@/services/feedLiveMergeService', () => ({
     mergeFeedRowsWithLiveEntries: mocks.mergeFeedRowsWithLiveEntries,
     prepareFeedRowsForCommit: mocks.prepareFeedRowsForCommit
 }));
 
-vi.mock('@/features/feed/components/FeedDetailCell', () => ({
+vi.mock('@/components/feed/FeedDetailCell', () => ({
     FeedDetailCell: () => null
 }));
 
-vi.mock('@/features/feed/components/FeedTypeIndicator', () => ({
+vi.mock('@/components/feed/FeedTypeIndicator', () => ({
     FeedTypeIndicator: () => null
 }));
 

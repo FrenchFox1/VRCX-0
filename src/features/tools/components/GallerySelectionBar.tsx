@@ -1,7 +1,21 @@
-import { StarIcon, StarOffIcon, Trash2Icon, XIcon } from 'lucide-react';
+import {
+    FileArchiveIcon,
+    FolderTreeIcon,
+    LayersIcon,
+    StarIcon,
+    StarOffIcon,
+    Trash2Icon,
+    XIcon
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from '@/ui/shadcn/dropdown-menu';
 
 type GallerySelectionBarProps = {
     selectedCount: number;
@@ -11,6 +25,9 @@ type GallerySelectionBarProps = {
     favoriteActions?: {
         onFavorite(): void;
         onUnfavorite(): void;
+    };
+    exportAction?: {
+        onExport(groupByFolder: boolean): void;
     };
     onSelectAll(): void;
     onClearSelection(): void;
@@ -23,6 +40,7 @@ export function GallerySelectionBar({
     isAllSelected,
     actionsDisabled,
     favoriteActions,
+    exportAction,
     onSelectAll,
     onClearSelection,
     onDelete
@@ -74,6 +92,45 @@ export function GallerySelectionBar({
                             {t('view.tools.prints_favorites.unfavorite')}
                         </Button>
                     </>
+                ) : null}
+                {exportAction ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={actionsDisabled}
+                                >
+                                    <FileArchiveIcon data-icon="inline-start" />
+                                    {t(
+                                        'view.tools.gallery_selection.export_zip'
+                                    )}
+                                </Button>
+                            }
+                        />
+                        <DropdownMenuContent
+                            side="top"
+                            align="center"
+                            className="w-auto"
+                        >
+                            <DropdownMenuItem
+                                onClick={() => exportAction.onExport(true)}
+                            >
+                                <FolderTreeIcon data-icon="inline-start" />
+                                {t(
+                                    'view.tools.gallery_selection.export_grouped'
+                                )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => exportAction.onExport(false)}
+                            >
+                                <LayersIcon data-icon="inline-start" />
+                                {t('view.tools.gallery_selection.export_flat')}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 ) : null}
                 <Button
                     type="button"

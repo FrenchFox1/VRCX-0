@@ -3,7 +3,8 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { FeedLoadStatus, FeedRow } from './feedTypes';
+import type { FeedLoadStatus, FeedRow } from '@/components/feed/feedTypes';
+
 import { useFeedRowArrivals } from './useFeedRowArrivals';
 
 function rowsOf(...ids: string[]): FeedRow[] {

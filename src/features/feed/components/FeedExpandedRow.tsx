@@ -2,17 +2,20 @@ import { ArrowRightIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AvatarInfoLine } from '@/components/feed/FeedAvatarInfoLine';
+import { FeedLocationLink } from '@/components/feed/FeedLocationLink';
+import { resolveFeedLocationForDisplay } from '@/components/feed/feedRows';
+import { FeedStatusBadge } from '@/components/feed/FeedStatusBadge';
+import type {
+    FeedLocationActionPayload,
+    FeedRow
+} from '@/components/feed/feedTypes';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { timeToText } from '@/lib/dateTime';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 
-import { resolveFeedLocationForDisplay } from '../feedRows';
-import type { FeedLocationActionPayload, FeedRow } from '../feedTypes';
-import { AvatarInfoLine } from './FeedAvatarInfoLine';
 import { formatDifferenceHtml } from './FeedDifferenceHtml';
-import { FeedLocationLink } from './FeedLocationLink';
-import { FeedStatusBadge } from './FeedStatusBadge';
 
 type FeedExpandedRowProps = {
     loadingHistoryKey: string;

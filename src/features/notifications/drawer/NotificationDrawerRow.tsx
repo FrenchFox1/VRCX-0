@@ -2,14 +2,6 @@ import { CheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-    formatNotificationTime,
-    getNotificationMessage,
-    getSenderName,
-    isNotificationExpired,
-    openSender,
-    shouldShowDeleteLog
-} from '@/components/hosts/vrc-notification-center/notificationCenterUtils';
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import { Badge } from '@/ui/shadcn/badge';
@@ -31,6 +23,14 @@ import {
     NotificationIconDisc,
     NotificationPersonAvatar
 } from '../components/NotificationRowParts';
+import {
+    formatNotificationTime,
+    getNotificationMessage,
+    getSenderName,
+    isNotificationExpired,
+    openSender,
+    shouldShowDeleteLog
+} from '../notificationCenterUtils';
 import { buildOrderedActions, usesAvatar } from '../notificationRowActions';
 import {
     type NotificationActor,

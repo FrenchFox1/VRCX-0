@@ -1,5 +1,80 @@
-export * from './preferences/preferenceGenericSetters';
-export * from './preferences/preferenceIntegrationSetters';
-export * from './preferences/preferenceNotificationSetters';
-export * from './preferences/preferenceSnapshotLoader';
-export type * from './preferences/preferencesTypes';
+export {
+    addFeedHiddenUserPreference,
+    getTablePageSizePreference,
+    getTablePageSizesPreference,
+    loadTrustColorPreference,
+    removeFeedHiddenUserPreference,
+    resetTrustColorsPreference,
+    setAccessibleStatusIndicatorsPreference,
+    setAppLanguagePreference,
+    setAvatarFeedPersistenceDisabledPreference,
+    setBoolConfigPreference,
+    setCloseToTrayPreference,
+    setCropInstancePrintsPreference,
+    setDataTableStripedPreference,
+    setFeedHiddenUsersPreference,
+    setFeedPersistenceDisabledPreference,
+    setGameLogPersistenceDisabledPreference,
+    setIntConfigPreference,
+    setLocalFavoriteFriendsGroupsPreference,
+    setNavbarCollapsedPreference,
+    setNavWidthPreference,
+    setNotificationLayoutPreference,
+    setProxyEnabledPreference,
+    setProxyServerPreference,
+    setRecentActionCooldownEnabledPreference,
+    setRecentActionCooldownMinutesPreference,
+    setRightSidebarOpenPreference,
+    setSaveInstanceEmojiPreference,
+    setSaveInstancePrintsPreference,
+    setSaveInstanceStickersPreference,
+    setScreenshotHelperCopyToClipboardPreference,
+    setScreenshotHelperModifyFilenamePreference,
+    setScreenshotHelperPreference,
+    setShowNewDashboardButtonPreference,
+    setStartAsMinimizedPreference,
+    setStartAtWindowsStartupPreference,
+    setStringConfigPreference,
+    setSystemWindowFramePreference,
+    setTableDensityPreference,
+    setTableLimitsPreference,
+    setTablePageSizesPreference,
+    setThemeColorPreference,
+    setThemeModePreference,
+    setTrustColorPreference,
+    setUserGeneratedContentPathPreference,
+    setZoomLevelPreference
+} from './preferences/preferenceGenericSetters';
+export {
+    setDiscordBoolPreference,
+    setTranslationApiConfigPreference,
+    setTranslationApiEnabledPreference,
+    setYoutubeApiEnabledPreference,
+    setYoutubeApiKeyPreference
+} from './preferences/preferenceIntegrationSetters';
+export {
+    setDesktopNotificationActivityFiltersPreference,
+    setHmdNotificationActivityFiltersPreference,
+    setOverlayActivityFiltersPreference,
+    setTtsNotificationActivityFiltersPreference,
+    setVrNotificationActivityFiltersPreference,
+    setWebhookActivityFiltersPreference,
+    setWristOverlayEnabledPreference
+} from './preferences/preferenceNotificationSetters';
+export { loadPreferenceSnapshot } from './preferences/preferenceSnapshotLoader';
+export type {
+    BoolConfigPreferenceKey,
+    ConfigKeyAlias,
+    ConfigKeyOfType,
+    IntConfigPreferenceKey,
+    IntConfigPreferenceOptions,
+    PreferenceConfigKeyOfType,
+    PreferenceKey,
+    PreferencesSnapshot,
+    ProxyPreferenceOptions,
+    ProxyServerPreferenceOptions,
+    StorePreferenceConfigKey,
+    StringConfigPreferenceKey,
+    TableLimitsPreference,
+    TranslationApiConfigPreferenceInput
+} from './preferences/preferencesTypes';

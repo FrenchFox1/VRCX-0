@@ -1770,7 +1770,9 @@
                 "calendar": "달력",
                 "calendar_description": "그룹 이벤트 캘린더",
                 "moderation": "그룹 중재",
-                "moderation_description": "회원님이 관리하는 그룹의 멤버, 밴, 초대, 가입 요청을 관리하세요."
+                "moderation_description": "회원님이 관리하는 그룹의 멤버, 밴, 초대, 가입 요청을 관리하세요.",
+                "my_groups": "내 그룹",
+                "my_groups_description": "가입한 그룹의 순서, 공개 범위, 탈퇴를 관리합니다."
             },
             "export": {
                 "header": "수출",
@@ -2019,6 +2021,9 @@
                 "delete_locked": "선택한 항목이 모두 잠겨 있습니다.",
                 "delete_locked_favorite": "즐겨찾기를 해제해야 삭제할 수 있습니다",
                 "delete_locked_in_use": "사용 중이라 삭제할 수 없습니다",
+                "export_zip": "ZIP 내보내기",
+                "export_grouped": "폴더 구조 유지",
+                "export_flat": "한 폴더에 모두",
                 "favorited_toast": "인쇄물 {count}개를 즐겨찾기에 추가했습니다.",
                 "unfavorited_toast": "인쇄물 {count}개의 즐겨찾기를 해제했습니다.",
                 "favorite_skipped_toast": "{count}개는 즐겨찾기에 추가하지 못했습니다. 제한은 {max}개입니다."
@@ -3353,6 +3358,34 @@
             "avatars": {
                 "all_time": "전체 기간"
             }
+        },
+        "my_groups": {
+            "title": "내 그룹",
+            "description": "가입한 그룹을 정리합니다. 게임 내 순서, 프로필 공개 범위, 탈퇴를 여기에서 변경할 수 있습니다.",
+            "group_count": "그룹 {count}개",
+            "edit_mode": "편집",
+            "exit_edit_mode": "완료",
+            "order_hint": "그룹을 드래그하여 VRChat에 표시되는 순서를 변경하세요.",
+            "order_game_running": "VRChat이 실행 중입니다. 순서 변경이 게임 종료 시 덮어써질 수 있습니다.",
+            "order_unavailable": "그룹 순서를 변경할 수 없습니다: {reason}",
+            "order_unavailable_reason_fallback": "이 환경에서는 VRChat 설정을 읽을 수 없습니다.",
+            "order_save_failed": "게임 내 그룹 순서를 저장하지 못했습니다.",
+            "row_actions": "그룹 작업",
+            "leave": "탈퇴",
+            "leave_partial": "{count}개 탈퇴",
+            "leave_owner_locked": "소유한 그룹에서는 탈퇴할 수 없습니다.",
+            "leave_completed": "그룹 {count}개에서 탈퇴했습니다.",
+            "visibility_completed": "그룹 {count}개의 공개 범위를 변경했습니다.",
+            "selected_count": "{count}개 선택됨",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "작업에 실패했습니다.",
+            "batch_failed": "일괄 작업에 실패했습니다.",
+            "confirm_leave_title": "그룹 {count}개에서 탈퇴할까요?",
+            "confirm_leave_warning": "탈퇴는 되돌릴 수 없으며, 다시 가입하려면 승인이 필요할 수 있습니다.",
+            "confirm_more_groups": "{names} 외 {count}개",
+            "empty_title": "그룹이 없습니다",
+            "empty_description": "VRChat에서 가입한 그룹이 여기에 표시됩니다.",
+            "empty_search": "검색과 일치하는 그룹이 없습니다."
         }
     },
     "dialog": {
@@ -3556,7 +3589,8 @@
                     "alphabetical": "알파벳순",
                     "members": "회원",
                     "in_game": "게임 내 순서"
-                }
+                },
+                "manage": "관리"
             },
             "worlds": {
                 "header": "월드",
@@ -4717,6 +4751,8 @@
             "result_count": "{count} 결과",
             "image_count": "{count} 이미지",
             "feeling_lucky": "I’m Feeling Lucky",
+            "exporting_progress": "내보내는 중 {done}/{total}",
+            "export_finalizing": "마무리하는 중",
             "empty_folders_description": "VRChat에서 스크린샷을 저장한 후 새로고침하세요."
         },
         "set_avatar_styles": {
@@ -5441,6 +5477,10 @@
         "screenshot_metadata": {
             "deleted": "스크린샷 메타데이터가 삭제되었습니다.",
             "delete_failed": "스크린샷 메타데이터를 삭제하지 못했습니다.",
+            "export_done": "스크린샷 {count}개를 내보냈습니다.",
+            "export_partial": "내보내기 완료, {count}개 파일을 건너뛰었습니다.",
+            "export_failed": "스크린샷을 내보내지 못했습니다",
+            "export_cancelled": "내보내기를 취소했습니다.",
             "file_deleted": "스크린샷을 휴지통으로 옮겼습니다.",
             "file_delete_failed": "스크린샷을 삭제하지 못했습니다."
         },

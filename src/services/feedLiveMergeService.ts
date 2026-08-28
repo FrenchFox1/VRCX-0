@@ -4,13 +4,12 @@ import type {
     FeedLivePatch
 } from '@/domain/feed/live';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
+import type { FeedRowOutput as FeedRow } from '@/platform/tauri/bindings';
 import {
     isFeedFilterType,
     type FeedFilterType
 } from '@/repositories/feedRepository';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
-
-import type { FeedRow } from './feedTypes';
 
 type FeedLiveMergeOptions = {
     rows: FeedRow[];

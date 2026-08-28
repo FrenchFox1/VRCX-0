@@ -14,6 +14,13 @@ pub struct LogLocationSnapshot {
     pub file_name: String,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RoomLogEvent<'a> {
+    Entering { world_name: &'a str },
+    Joining { location: &'a str },
+    Left,
+}
+
 const LOG_TIMESTAMP_LEN: usize = 19;
 const LOG_SEPARATOR_INDEX: usize = 31;
 const LOG_CONTENT_OFFSET: usize = 34;
@@ -33,6 +40,31 @@ pub fn parse_log_line_header(line: &str) -> Option<(chrono::NaiveDateTime, &str)
     let line_date = chrono::NaiveDateTime::parse_from_str(date_str, LOG_TIME_FORMAT).ok()?;
     let content = line.get(LOG_CONTENT_OFFSET..)?;
     Some((line_date, content))
+}
+
+pub fn parse_room_log_event<'a>(line: &'a str, content: &str) -> Option<RoomLogEvent<'a>> {
+    if content.contains("[Behaviour] Entering Room: ") {
+        let position = line.rfind("] Entering Room: ")?;
+        return Some(RoomLogEvent::Entering {
+            world_name: &line[position + 17..],
+        });
+    }
+
+    if content.contains("[Behaviour] OnLeftRoom") {
+        return Some(RoomLogEvent::Left);
+    }
+
+    if content.contains("[Behaviour] Joining ")
+        && !content.contains("] Joining or Creating Room: ")
+        && !content.contains("] Joining friend: ")
+    {
+        let position = line.rfind("] Joining ")?;
+        return Some(RoomLogEvent::Joining {
+            location: &line[position + 10..],
+        });
+    }
+
+    None
 }
 
 fn has_log_timestamp_prefix(bytes: &[u8]) -> bool {
@@ -318,10 +350,47 @@ impl GameLogEventKind {
 
 #[cfg(test)]
 mod tests {
-    use super::{GameLogEvent, GameLogEventKind};
+    use super::{parse_room_log_event, GameLogEvent, GameLogEventKind, RoomLogEvent};
 
     fn row(fields: &[&str]) -> Vec<String> {
         fields.iter().map(|field| (*field).to_string()).collect()
+    }
+
+    #[test]
+    fn parses_room_lifecycle_events() {
+        let entering =
+            "2026.06.21 22:10:00 Log        -  [Behaviour] Entering Room: Midnight Rooftop";
+        assert_eq!(
+            parse_room_log_event(entering, &entering[34..]),
+            Some(RoomLogEvent::Entering {
+                world_name: "Midnight Rooftop",
+            })
+        );
+
+        let joining =
+            "2026.06.21 22:10:05 Log        -  [Behaviour] Joining wrld_abc:123~group(grp_1)";
+        assert_eq!(
+            parse_room_log_event(joining, &joining[34..]),
+            Some(RoomLogEvent::Joining {
+                location: "wrld_abc:123~group(grp_1)",
+            })
+        );
+
+        let left = "2026.06.21 22:17:10 Log        -  [Behaviour] OnLeftRoom";
+        assert_eq!(
+            parse_room_log_event(left, &left[34..]),
+            Some(RoomLogEvent::Left)
+        );
+    }
+
+    #[test]
+    fn excludes_non_location_join_events() {
+        for line in [
+            "2026.06.21 22:10:05 Log        -  [Behaviour] Joining friend: Example User",
+            "2026.06.21 22:10:05 Log        -  [Behaviour] Joining or Creating Room: wrld_abc:123",
+        ] {
+            assert_eq!(parse_room_log_event(line, &line[34..]), None);
+        }
     }
 
     #[test]

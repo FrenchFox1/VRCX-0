@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { getLanguageName } from '@/localization/index';
 
-import { translationErrorI18nKey } from '../types';
-import { useTextTranslation } from '../useTextTranslation';
 import { TranslationAction } from './TranslationAction';
 import { TranslationMeta } from './TranslationMeta';
+import { translationErrorI18nKey } from './types';
+import { useTextTranslation } from './useTextTranslation';
 
 interface TranslatableTextRender {
     action: ReactNode;

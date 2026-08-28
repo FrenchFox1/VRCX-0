@@ -2,10 +2,6 @@ import { CheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-    openSender,
-    shouldShowDeleteLog
-} from '@/components/hosts/vrc-notification-center/notificationCenterUtils';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatClock, formatDateFilter } from '@/lib/dateTime';
@@ -23,6 +19,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { openSender, shouldShowDeleteLog } from '../notificationCenterUtils';
 import {
     buildOrderedActions,
     getNotificationLinkIcon,

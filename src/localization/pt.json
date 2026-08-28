@@ -1791,7 +1791,9 @@
                 "calendar": "Calendário",
                 "calendar_description": "Calendário de Eventos do Grupo",
                 "moderation": "Moderação de Grupo",
-                "moderation_description": "Gerencie membros, banimentos, convites e solicitações de entrada dos grupos que você modera."
+                "moderation_description": "Gerencie membros, banimentos, convites e solicitações de entrada dos grupos que você modera.",
+                "my_groups": "Meus grupos",
+                "my_groups_description": "Ordene, oculte e saia dos grupos dos quais você participa."
             },
             "user": {
                 "discord_names_description": "Encontre os nomes de usuário do Discord dos seus amigos do VRChat",
@@ -2040,6 +2042,9 @@
                 "delete_locked": "Todos os itens selecionados estão bloqueados.",
                 "delete_locked_favorite": "Favorito - remova dos favoritos para excluir",
                 "delete_locked_in_use": "Em uso - não pode ser excluído",
+                "export_zip": "Exportar ZIP",
+                "export_grouped": "Manter a estrutura de pastas",
+                "export_flat": "Tudo em uma pasta",
                 "favorited_toast": "{count} print(s) favoritado(s).",
                 "unfavorited_toast": "{count} print(s) removido(s) dos favoritos.",
                 "favorite_skipped_toast": "{count} print(s) não puderam ser favoritados. O limite é {max}."
@@ -3400,6 +3405,34 @@
             "avatars": {
                 "all_time": "Todo o período"
             }
+        },
+        "my_groups": {
+            "title": "Meus grupos",
+            "description": "Gerencie os grupos dos quais você participa: a ordem no jogo, quem os vê no seu perfil e de quais sair.",
+            "group_count": "{count} grupo(s)",
+            "edit_mode": "Editar",
+            "exit_edit_mode": "Concluir",
+            "order_hint": "Arraste os grupos para definir a ordem em que aparecem no VRChat.",
+            "order_game_running": "O VRChat está em execução. As mudanças de ordem podem ser sobrescritas ao fechar o jogo.",
+            "order_unavailable": "Não é possível alterar a ordem dos grupos: {reason}",
+            "order_unavailable_reason_fallback": "Não é possível ler as preferências do VRChat neste sistema.",
+            "order_save_failed": "Não foi possível salvar a ordem dos grupos no jogo.",
+            "row_actions": "Ações do grupo",
+            "leave": "Sair",
+            "leave_partial": "Sair de {count}",
+            "leave_owner_locked": "Você não pode sair de um grupo que é seu.",
+            "leave_completed": "Você saiu de {count} grupo(s).",
+            "visibility_completed": "Visibilidade atualizada em {count} grupo(s).",
+            "selected_count": "{count} selecionado(s)",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "A ação falhou.",
+            "batch_failed": "A ação em lote falhou.",
+            "confirm_leave_title": "Sair de {count} grupo(s)?",
+            "confirm_leave_warning": "Sair não pode ser desfeito e entrar de novo pode exigir aprovação.",
+            "confirm_more_groups": "{names} e mais {count}",
+            "empty_title": "Nenhum grupo ainda",
+            "empty_description": "Os grupos dos quais você participar no VRChat aparecerão aqui.",
+            "empty_search": "Nenhum grupo corresponde à sua busca."
         }
     },
     "dialog": {
@@ -3607,7 +3640,8 @@
                     "alphabetical": "Ordem Alfabética",
                     "members": "Membros",
                     "in_game": "Ordem no Jogo"
-                }
+                },
+                "manage": "Gerenciar"
             },
             "worlds": {
                 "header": "Mundos",
@@ -4758,6 +4792,8 @@
             "scanning": "Verificando capturas de tela",
             "image_count": "{count} imagens",
             "feeling_lucky": "Estou com sorte",
+            "exporting_progress": "Exportando {done}/{total}",
+            "export_finalizing": "Finalizando o arquivo",
             "empty_gallery": "Nenhuma captura de tela nesta pasta",
             "empty_gallery_description": "Selecione outra pasta ou atualize a biblioteca de capturas de tela.",
             "empty_folders": "Nenhuma pasta de capturas de tela",
@@ -5515,6 +5551,10 @@
         "screenshot_metadata": {
             "deleted": "Metadados de captura de tela excluídos",
             "delete_failed": "Falha ao excluir metadados de captura de tela",
+            "export_done": "{count} captura(s) exportada(s).",
+            "export_partial": "Exportação concluída, {count} arquivo(s) ignorado(s).",
+            "export_failed": "Falha ao exportar as capturas de tela",
+            "export_cancelled": "Exportação cancelada.",
             "file_deleted": "Captura de tela movida para a lixeira",
             "file_delete_failed": "Falha ao excluir a captura de tela"
         },

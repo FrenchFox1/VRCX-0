@@ -1,9 +1,8 @@
 import { useMemo, useRef } from 'react';
 
+import { resolveFeedUserId } from '@/components/feed/feedRows';
+import type { FeedRow, FeedTableMeta } from '@/components/feed/feedTypes';
 import { useKnownUserFacts } from '@/lib/useKnownUser';
-
-import { resolveFeedUserId } from './feedRows';
-import type { FeedRow, FeedTableMeta } from './feedTypes';
 
 type UseFeedTableMetaOptions = Omit<FeedTableMeta, 'knownUsersById'> & {
     rows: FeedRow[];

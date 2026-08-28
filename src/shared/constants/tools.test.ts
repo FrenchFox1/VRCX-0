@@ -1,7 +1,4 @@
-import { DatabaseBackupIcon } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
-
-import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 
 import {
     getToolsByCategory,
@@ -45,7 +42,7 @@ describe('tool catalog categories', () => {
                 'presence-room-rules',
                 'presence-invite-requests'
             ],
-            group: ['group-calendar', 'group-moderation'],
+            group: ['group-calendar', 'my-groups', 'group-moderation'],
             vrchat: ['vrchat-config', 'launch-options'],
             data: [
                 'profile-backup',
@@ -81,7 +78,6 @@ describe('profile backup tool', () => {
                 (definition) => definition.key === 'tool-profile-backup'
             )
         ).toBe(true);
-        expect(getNavIconComponent(tool?.navIcon)).toBe(DatabaseBackupIcon);
     });
 });
 

@@ -1,3 +1,4 @@
+import { formatScreenshotDateTime } from '@/lib/dateTime';
 import type {
     AuthorDetail,
     PlayerDetail,
@@ -9,14 +10,8 @@ import type {
     WorldDetail
 } from '@/platform/tauri/bindings';
 import { SCREENSHOT_GALLERY_CONFIG_KEYS } from '@/repositories/configKeys';
-import {
-    formatDateTimeValue,
-    formatIsoDateTime,
-    normalizeDateLocale
-} from '@/shared/utils/dateTimeFormatters';
 import { isRecord } from '@/shared/utils/record';
 import { parseVrchatScreenshotDateFromFileName } from '@/shared/utils/screenshot';
-import { useShellStore } from '@/state/shellStore';
 
 export const SCREENSHOT_METADATA_SEARCH_TYPES = [
     {
@@ -311,43 +306,6 @@ export function formatScreenshotBytes(bytes: number): string {
 
     const precision = size >= 100 || unitIndex === 0 ? 0 : 1;
     return `${size.toFixed(precision)} ${units[unitIndex]}`;
-}
-
-export function formatScreenshotDateTime(
-    value: Date | string | number | null | undefined,
-    locale?: string
-) {
-    if (!value) {
-        return '—';
-    }
-
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return '—';
-    }
-
-    const {
-        dateHour12,
-        dateIsoFormat,
-        locale: appLocale
-    } = useShellStore.getState();
-
-    if (dateIsoFormat) {
-        return formatIsoDateTime(date);
-    }
-
-    return formatDateTimeValue(
-        date,
-        {
-            dateStyle: 'medium',
-            timeStyle: 'short'
-        },
-        {
-            locale: normalizeDateLocale(locale || appLocale, 'en'),
-            hour12: Boolean(dateHour12),
-            fallback: '—'
-        }
-    );
 }
 
 export function getFileNameFromPath(path: unknown) {

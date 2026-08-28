@@ -13,7 +13,7 @@ import { extractFileId } from '@/shared/utils/fileUtils';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 
-import { normalizeFeedId as normalizeId } from '../feedRows';
+import { normalizeFeedId as normalizeId } from './feedRows';
 
 type ResolvedAvatarRecord = Record<string, unknown> & {
     id?: string;

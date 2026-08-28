@@ -5,7 +5,7 @@ import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import type { TranslationStatus } from '../types';
+import type { TranslationStatus } from './types';
 
 export interface TranslationActionProps {
     density: 'icon' | 'button';

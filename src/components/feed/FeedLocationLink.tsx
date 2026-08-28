@@ -3,8 +3,8 @@ import { cn } from '@/lib/utils';
 import { parseLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { normalizeFeedId as normalizeId } from '../feedRows';
-import type { FeedLocationActionPayload } from '../feedTypes';
+import { normalizeFeedId as normalizeId } from './feedRows';
+import type { FeedLocationActionPayload } from './feedTypes';
 
 type FeedLocationLinkProps = {
     className?: string;

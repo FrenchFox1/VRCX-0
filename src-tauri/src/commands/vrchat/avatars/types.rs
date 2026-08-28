@@ -1,6 +1,6 @@
 use serde::Deserialize;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::avatars::AvatarUpdateRequest;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::query::{
+use vrcx_0_vrchat_client::avatars::AvatarUpdateRequest;
+use vrcx_0_vrchat_client::query::{
     deserialize_nonnegative_i32, AvatarListSort, QueryOrder, ReleaseStatusFilter,
 };
 #[derive(Debug, Deserialize, specta::Type)]

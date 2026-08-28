@@ -73,6 +73,7 @@ import type {
     RuntimeEventName,
     RuntimeEventPayloadMap
 } from './runtime-event-bridge/types';
+import { handleScreenshotExportProgressEvent } from './screenshotExportService';
 import { handleScreenshotLibraryScanStatusEvent } from './screenshotLibraryScanService';
 import {
     handleAppUpdateDownloadProgressEvent,
@@ -185,6 +186,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
 
     if (event.name === 'screenshotLibraryScanStatus') {
         handleScreenshotLibraryScanStatusEvent(event.payload);
+        return;
+    }
+
+    if (event.name === 'screenshotExportProgress') {
+        handleScreenshotExportProgressEvent(event.payload);
         return;
     }
 
@@ -421,9 +427,11 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'favoriteImportStatus',
         'favoritesChanged',
         'groupBanImportStatus',
+        'groupMembershipBatchProgress',
         'groupModerationBatchProgress',
         'mutualGraphFetchStatus',
         'screenshotLibraryScanStatus',
+        'screenshotExportProgress',
         'friendProfileLoadStatus',
         'gameClientEvent',
         'runtimeWorkerError',

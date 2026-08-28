@@ -50,6 +50,7 @@ vi.mock('@/state/preferencesStore', () => ({
     )
 }));
 
+import type { FeedRow } from '@/components/feed/feedTypes';
 import type {
     FavoriteGroupMap,
     FavoriteRecord
@@ -63,7 +64,6 @@ import {
     flush,
     pushLiveEntry
 } from '../feedLiveMergeTestUtils';
-import type { FeedRow } from '../feedTypes';
 import {
     resolveFeedColumnInitialLiveSequence,
     useFeedColumnRows

@@ -1,14 +1,12 @@
 import { toast } from 'sonner';
 
+import { PROFILE_DECORATION_ITEM_TYPES } from '@/domain/entities/inventory';
 import type {
     EmojiUploadParams,
     InventoryItemsCollectInput,
     MediaFileTag
 } from '@/platform/tauri/bindings';
-import type {
-    InventoryItemRecord,
-    MediaFileRecord
-} from '@/repositories/mediaRepository';
+import type { MediaFileRecord } from '@/repositories/mediaRepository';
 import {
     emojiAnimationStyleNames,
     type EmojiAnimationStyleName
@@ -56,42 +54,6 @@ export const INITIAL_INVENTORY_SUB_TABS = Object.freeze({
     items: 'all',
     cosmetics: 'profile-decorations'
 });
-
-const PROFILE_DECORATION_ITEM_TYPES = [
-    'iconFrame',
-    'profileEffect',
-    'nameplateEffect'
-] as const;
-type ProfileDecorationItemType = (typeof PROFILE_DECORATION_ITEM_TYPES)[number];
-export type ProfileDecorationMutation = {
-    action: 'equip' | 'unequip';
-    equipSlot: ProfileDecorationItemType;
-    inventoryId: string;
-};
-
-const PROFILE_DECORATION_TYPE_LABEL_KEYS: Record<
-    ProfileDecorationItemType,
-    string
-> = {
-    iconFrame: 'dialog.inventory.icon_frame',
-    profileEffect: 'dialog.inventory.profile_effect',
-    nameplateEffect: 'dialog.inventory.nameplate_effect'
-};
-
-const PROFILE_DECORATION_PREVIEW_ASSET_TYPES = [
-    'mainAnimation',
-    'introAnimation',
-    'base'
-] as const;
-
-function isProfileDecorationItemType(
-    value: unknown
-): value is ProfileDecorationItemType {
-    return (
-        typeof value === 'string' &&
-        PROFILE_DECORATION_ITEM_TYPES.some((itemType) => itemType === value)
-    );
-}
 
 export const CATEGORY_DEFINITIONS: Record<
     InventoryCategory,
@@ -310,128 +272,6 @@ export function getUsefulDisplayName(
     }
 
     return visibleName;
-}
-
-type InventoryDisplayRecord = Record<string, unknown> & {
-    id?: string;
-    imageUrl?: string;
-    thumbnailUrl?: string;
-    name?: string;
-    description?: string;
-    displayName?: string;
-    itemType?: string;
-    type?: string;
-    isArchived?: boolean;
-    archived?: boolean;
-    item?: InventoryDisplayRecord | null;
-    template?: InventoryDisplayRecord | null;
-    metadata?: (Record<string, unknown> & { imageUrl?: string }) | null;
-};
-
-export function resolveInventoryImageUrl(item: InventoryDisplayRecord) {
-    return String(
-        item?.imageUrl ||
-            item?.thumbnailUrl ||
-            item?.item?.imageUrl ||
-            item?.item?.thumbnailUrl ||
-            item?.template?.imageUrl ||
-            item?.template?.thumbnailUrl ||
-            item?.metadata?.imageUrl ||
-            ''
-    );
-}
-
-export function resolveInventoryName(item: InventoryDisplayRecord) {
-    return String(
-        item?.name ||
-            item?.item?.name ||
-            item?.template?.name ||
-            item?.displayName ||
-            item?.id ||
-            ''
-    );
-}
-
-export function resolveInventoryDescription(item: InventoryDisplayRecord) {
-    return String(
-        item?.description ||
-            item?.item?.description ||
-            item?.template?.description ||
-            ''
-    );
-}
-
-export function resolveInventoryType(item: InventoryDisplayRecord) {
-    return String(item?.itemType || item?.type || item?.item?.type || '');
-}
-
-export function resolveProfileDecorationTypeLabelKey(
-    itemType: unknown
-): string | null {
-    if (!isProfileDecorationItemType(itemType)) {
-        return null;
-    }
-    return PROFILE_DECORATION_TYPE_LABEL_KEYS[itemType];
-}
-
-export function isEquippedProfileDecoration(
-    item: InventoryItemRecord
-): boolean {
-    return (
-        isProfileDecorationItemType(item.itemType) &&
-        item.equipSlot === item.itemType
-    );
-}
-
-export function resolveProfileDecorationMutation(
-    item: InventoryItemRecord,
-    currentUserId: string | null
-): ProfileDecorationMutation | null {
-    const inventoryId = item.id?.trim() ?? '';
-    const normalizedCurrentUserId = currentUserId?.trim() ?? '';
-    const holderId = item.holderId?.trim() ?? '';
-    if (
-        !inventoryId.startsWith('inv_') ||
-        !normalizedCurrentUserId ||
-        !isProfileDecorationItemType(item.itemType) ||
-        !item.equipSlots?.includes(item.itemType) ||
-        !item.flags?.includes('equippable') ||
-        isArchivedInventoryItem(item) ||
-        (holderId && holderId !== normalizedCurrentUserId)
-    ) {
-        return null;
-    }
-
-    return {
-        action: item.equipSlot === item.itemType ? 'unequip' : 'equip',
-        equipSlot: item.itemType,
-        inventoryId
-    };
-}
-
-export function resolveProfileDecorationPreviewUrl(
-    item: InventoryItemRecord
-): string {
-    const assets = Array.isArray(item.metadata?.assets)
-        ? item.metadata.assets
-        : [];
-    for (const assetType of PROFILE_DECORATION_PREVIEW_ASSET_TYPES) {
-        const asset = assets.find(
-            (candidate) =>
-                candidate.type === assetType &&
-                typeof candidate.url === 'string' &&
-                candidate.url.trim()
-        );
-        const url = typeof asset?.url === 'string' ? asset.url.trim() : '';
-        if (url) {
-            return url;
-        }
-    }
-    return resolveInventoryImageUrl(item);
-}
-
-export function isArchivedInventoryItem(item: InventoryDisplayRecord) {
-    return Boolean(item?.isArchived || item?.archived);
 }
 
 export function resolveEmojiStyleName(

@@ -284,7 +284,8 @@ export function ScreenshotGalleryView({
     onScrollPositionChange,
     isDeleteRunning,
     restoreScrollTop,
-    selection
+    selection,
+    onExportSelection
 }: {
     folderTree: ScreenshotFolderTree | null;
     images: ScreenshotLibraryImage[];
@@ -301,6 +302,7 @@ export function ScreenshotGalleryView({
     isDeleteRunning: boolean;
     restoreScrollTop: number;
     selection: ScreenshotBrowseSelection;
+    onExportSelection: (paths: string[], groupByFolder: boolean) => void;
 }) {
     const { t } = useTranslation();
     const root = useMemo(() => buildFolderTree(folderTree), [folderTree]);
@@ -423,6 +425,13 @@ export function ScreenshotGalleryView({
                     onSelectAll={selection.toggleSelectAll}
                     onClearSelection={selection.clearSelection}
                     onDelete={() => onDeleteSelection(selection.selectedPaths)}
+                    exportAction={{
+                        onExport: (groupByFolder) =>
+                            onExportSelection(
+                                selection.selectedPaths,
+                                groupByFolder
+                            )
+                    }}
                 />
             </section>
         </div>

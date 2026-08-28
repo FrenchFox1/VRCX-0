@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 
-import { getFeedRowId } from './feedRows';
-import type { FeedLoadStatus, FeedRow } from './feedTypes';
+import { getFeedRowId } from '@/components/feed/feedRows';
+import type { FeedLoadStatus, FeedRow } from '@/components/feed/feedTypes';
 
 const ARRIVAL_TTL_MS = 4000;
 

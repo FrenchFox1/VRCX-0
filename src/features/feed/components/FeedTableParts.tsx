@@ -11,6 +11,19 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
+import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
+import {
+    canRequestInviteFromFeedFriend,
+    normalizeFeedId as normalizeId,
+    resolveFeedUserDisplayName,
+    resolveFeedUserId,
+    UNKNOWN_FEED_USER_DISPLAY_NAME
+} from '@/components/feed/feedRows';
+import type {
+    FeedFriendActions,
+    FeedFriendActionTarget,
+    FeedRow
+} from '@/components/feed/feedTypes';
 import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
@@ -39,19 +52,6 @@ import {
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 
-import {
-    canRequestInviteFromFeedFriend,
-    normalizeFeedId as normalizeId,
-    resolveFeedUserDisplayName,
-    resolveFeedUserId,
-    UNKNOWN_FEED_USER_DISPLAY_NAME
-} from '../feedRows';
-import type {
-    FeedFriendActions,
-    FeedFriendActionTarget,
-    FeedRow
-} from '../feedTypes';
-import { FeedDetailCell } from './FeedDetailCell';
 import { FeedExpandedRow } from './FeedExpandedRow';
 
 function resolvePresenceLocation(profile: unknown) {

@@ -4,10 +4,10 @@ import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 import { AboutVrcxDialog } from '@/components/about/AboutDialog';
+import { OpenSourceNoticeDialog } from '@/components/hosts/system-dialogs/OpenSourceNoticeDialog';
 import { useDirectAccessAction } from '@/components/layout/directAccessAction';
 import { useRightSidePanelVisibility } from '@/components/layout/useRightSidePanelVisibility';
 import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog';
-import { OpenSourceNoticeDialog } from '@/features/settings/components/OpenSourceNoticeDialog';
 import { commands } from '@/platform/tauri/bindings';
 import { tauriEvents } from '@/platform/tauri/events';
 import { logoutFromReactShell } from '@/services/authExecutionService';

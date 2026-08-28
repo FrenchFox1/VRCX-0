@@ -13,7 +13,8 @@ vi.mock('@/lib/useKnownUser', () => ({
         )
 }));
 
-import type { FeedFriendActions, FeedRow } from './feedTypes';
+import type { FeedFriendActions, FeedRow } from '@/components/feed/feedTypes';
+
 import { useFeedTableMeta } from './useFeedTableMeta';
 
 function createActions(): FeedFriendActions {

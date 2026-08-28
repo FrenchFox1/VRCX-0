@@ -1,3 +1,4 @@
+import { normalizeFeedId as normalizeId } from '@/components/feed/feedRows';
 import type {
     FavoriteGroupMap,
     FavoriteRecord
@@ -7,7 +8,6 @@ import type {
     FeedColumnConfig,
     FeedColumnFavoriteGroupSelection
 } from './feedColumnsState';
-import { normalizeFeedId as normalizeId } from './feedRows';
 
 export {
     buildFeedFavoriteGroupOptions,

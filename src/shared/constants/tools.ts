@@ -1,5 +1,3 @@
-import type { HostCapabilityKey } from '@/services/hostCapabilityService';
-
 type ToolCategoryKey =
     | 'image'
     | 'shortcuts'
@@ -31,6 +29,13 @@ export type ToolDialogKey =
     | 'llm-endpoints'
     | 'profile-backup';
 
+export type ToolHostCapabilityKey =
+    | 'gameLaunch'
+    | 'gameProcessMonitor'
+    | 'registryPrefs'
+    | 'screenshotCache'
+    | 'vrchatPathDiscovery';
+
 type ToolAction =
     | {
           type: 'route';
@@ -39,7 +44,8 @@ type ToolAction =
               | 'gallery'
               | 'inventory'
               | 'vrchat-log'
-              | 'group-moderation';
+              | 'group-moderation'
+              | 'my-groups';
       }
     | {
           type: 'app-api';
@@ -73,8 +79,8 @@ interface ToolDefinition {
     titleKey: string;
     descriptionKey: string;
     navEligible: boolean;
-    requiredCapability?: HostCapabilityKey;
-    requiredCapabilities?: HostCapabilityKey[];
+    requiredCapability?: ToolHostCapabilityKey;
+    requiredCapabilities?: ToolHostCapabilityKey[];
     requiredCapabilityMode?: 'supported';
     action: ToolAction;
 }
@@ -358,6 +364,16 @@ const toolDefinitions: ToolDefinition[] = [
         descriptionKey: 'view.tools.group.calendar_description',
         navEligible: true,
         action: { type: 'dialog', dialogKey: 'group-calendar' }
+    },
+    {
+        key: 'my-groups',
+        category: 'group',
+        iconKey: 'users-round',
+        navIcon: 'lucide:UsersRound',
+        titleKey: 'view.tools.group.my_groups',
+        descriptionKey: 'view.tools.group.my_groups_description',
+        navEligible: true,
+        action: { type: 'route', routeName: 'my-groups' }
     },
     {
         key: 'group-moderation',

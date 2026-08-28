@@ -73,6 +73,7 @@ function renderView(
             onToggleSearchSort={() => undefined}
             onOpenResultPath={() => undefined}
             onDeleteSelection={() => undefined}
+            onExportSelection={() => undefined}
             {...overrides}
         />
     );

@@ -2,15 +2,13 @@ import { ArrowLeftIcon, UserIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
+import { formatScreenshotDateTime } from '@/lib/dateTime';
 import { openUserDialog } from '@/services/dialogService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
 
-import {
-    formatScreenshotBytes,
-    formatScreenshotDateTime
-} from '../screenshotMetadataValues';
+import { formatScreenshotBytes } from '../screenshotMetadataValues';
 import type { NormalizedScreenshotMetadata } from '../screenshotMetadataValues';
 import { EmptyState, MetadataAuthorLink } from './ScreenshotMetadataParts';
 

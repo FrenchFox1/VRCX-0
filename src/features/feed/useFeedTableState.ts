@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 import { usePersistedTableColumnSizing } from '@/components/data-table/dataTablePersistence';
+import type { FeedFilterType } from '@/components/feed/feedTypes';
 import configRepository from '@/repositories/configRepository';
 import { isFeedFilterType } from '@/repositories/feedRepository';
 import {
@@ -23,7 +24,6 @@ import {
     sanitizeFeedSorting as sanitizeSorting,
     writePersistedFeedTableState as writePersistedState
 } from './feedTableState';
-import type { FeedFilterType } from './feedTypes';
 
 type UseFeedTableStateOptions = {
     activeFilters: FeedFilterType[];

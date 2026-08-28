@@ -8,6 +8,7 @@ members = [
     "crates/vrchat-client",
     "crates/vr-overlay",
     "crates/platform",
+    "crates/local-server",
     "crates/host-desktop",
     "crates/media",
     "crates/runtime-event",
@@ -36,6 +37,7 @@ default-members = [
     "crates/vrchat-client",
     "crates/vr-overlay",
     "crates/platform",
+    "crates/local-server",
     "crates/host-desktop",
     "crates/media",
     "crates/runtime-event",
@@ -99,6 +101,7 @@ tracing = "0.1"
 url = "2"
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
+zip = { version = "4", default-features = false }
 zstd = { version = "0.13", features = ["zstdmt"] }
 
 [profile.dev]

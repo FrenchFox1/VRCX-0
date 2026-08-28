@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { resolveProfileDecorationMutation } from '@/features/tools/inventoryHelpers';
+import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
 import mediaRepository, {
     type InventoryItemRecord
 } from '@/repositories/mediaRepository';

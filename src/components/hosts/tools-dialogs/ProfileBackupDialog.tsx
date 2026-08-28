@@ -9,9 +9,9 @@ import { useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useProfileBackupSettings } from '@/features/tools/useProfileBackupSettings';
-import { useProfileRestoreRollback } from '@/features/tools/useProfileRestoreRollback';
 import { formatDateTime } from '@/lib/dateTime';
+import { useProfileBackupSettings } from '@/lib/useProfileBackupSettings';
+import { useProfileRestoreRollback } from '@/lib/useProfileRestoreRollback';
 import {
     profileBackupErrorKey,
     profileBackupPhaseKey

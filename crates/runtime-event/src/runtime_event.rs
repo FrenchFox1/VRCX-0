@@ -21,6 +21,10 @@ runtime_event_payload!(
     vrcx_0_core::screenshots::ScreenshotLibraryScanStatus,
     "screenshotLibraryScanStatus"
 );
+runtime_event_payload!(
+    vrcx_0_core::screenshots::ScreenshotExportProgress,
+    "screenshotExportProgress"
+);
 
 #[cfg(test)]
 mod tests {

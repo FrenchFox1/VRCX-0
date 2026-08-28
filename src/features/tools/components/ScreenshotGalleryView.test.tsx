@@ -26,7 +26,7 @@ vi.mock('react-i18next', async (importOriginal) => ({
     })
 }));
 
-vi.mock('../useScreenshotGalleryGrid', () => ({
+vi.mock('@/components/media/useScreenshotGalleryGrid', () => ({
     useScreenshotGalleryGrid: () => ({
         gridColumnCount: 1,
         gridGap: 0,
@@ -37,7 +37,7 @@ vi.mock('../useScreenshotGalleryGrid', () => ({
     })
 }));
 
-vi.mock('./ScreenshotThumbnailGrid', () => ({
+vi.mock('@/components/media/ScreenshotThumbnailCard', () => ({
     ScreenshotThumbnailCard: ({
         item,
         selected,
@@ -194,6 +194,7 @@ function GalleryHarness({
             onSelectFolder={onSelectFolder}
             onScrollPositionChange={() => undefined}
             onDeleteSelection={onDeleteSelection}
+            onExportSelection={() => undefined}
             isDeleteRunning={false}
             restoreScrollTop={0}
             selection={selection}

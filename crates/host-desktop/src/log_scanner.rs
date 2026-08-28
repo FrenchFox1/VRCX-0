@@ -5,7 +5,8 @@ use std::time::SystemTime;
 
 use chrono::{Local, NaiveDateTime};
 use vrcx_0_core::game_log_parser::{
-    clean_location, convert_log_time_to_iso8601, parse_log_line_header, LogLocationSnapshot,
+    clean_location, convert_log_time_to_iso8601, parse_log_line_header, parse_room_log_event,
+    LogLocationSnapshot, RoomLogEvent,
 };
 
 #[derive(Clone)]
@@ -86,24 +87,12 @@ fn scan_log_file_location_snapshot(path: &Path, file_name: &str) -> Option<LogLo
             continue;
         }
 
-        if content.contains("[Behaviour] Entering Room: ") {
-            if let Some(pos) = trimmed.rfind("] Entering Room: ") {
-                recent_world_name = trimmed[pos + 17..].to_string();
+        match parse_room_log_event(trimmed, content) {
+            Some(RoomLogEvent::Entering { world_name }) => {
+                recent_world_name = world_name.to_string();
             }
-            continue;
-        }
-
-        if content.contains("[Behaviour] OnLeftRoom") {
-            current_location = None;
-            continue;
-        }
-
-        if content.contains("[Behaviour] Joining ")
-            && !content.contains("] Joining or Creating Room: ")
-            && !content.contains("] Joining friend: ")
-        {
-            if let Some(pos) = trimmed.rfind("] Joining ") {
-                let location = clean_location(&trimmed[pos + 10..]);
+            Some(RoomLogEvent::Joining { location }) => {
+                let location = clean_location(location);
                 if !location.is_empty() {
                     current_location = Some(LogLocationSnapshot {
                         location,
@@ -113,6 +102,8 @@ fn scan_log_file_location_snapshot(path: &Path, file_name: &str) -> Option<LogLo
                     });
                 }
             }
+            Some(RoomLogEvent::Left) => current_location = None,
+            None => {}
         }
     }
 

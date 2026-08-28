@@ -28,7 +28,8 @@ export function ScreenshotSearchResultsView({
     isDeleteRunning,
     onToggleSearchSort,
     onOpenResultPath,
-    onDeleteSelection
+    onDeleteSelection,
+    onExportSelection
 }: {
     isSearchLoading: boolean;
     layout: ScreenshotSearchLayout;
@@ -42,6 +43,7 @@ export function ScreenshotSearchResultsView({
     onToggleSearchSort: (key: string) => void;
     onOpenResultPath: (path: string) => void;
     onDeleteSelection: (paths: string[]) => void;
+    onExportSelection: (paths: string[], groupByFolder: boolean) => void;
 }) {
     const { t } = useTranslation();
     const imagePaths = useMemo(
@@ -115,6 +117,10 @@ export function ScreenshotSearchResultsView({
                 onSelectAll={selection.toggleSelectAll}
                 onClearSelection={selection.clearSelection}
                 onDelete={() => onDeleteSelection(selectedPaths)}
+                exportAction={{
+                    onExport: (groupByFolder) =>
+                        onExportSelection(selectedPaths, groupByFolder)
+                }}
             />
         </div>
     );

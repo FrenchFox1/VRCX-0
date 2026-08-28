@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import { canExpandFeedRow, getFeedRowId } from '@/components/feed/feedRows';
 
 import { useFeedColumns } from './components/FeedColumns';
-import { canExpandFeedRow, getFeedRowId } from './feedRows';
 import { resolveFeedPageSize as resolvePageSize } from './feedTableState';
 import { useFeedFilters } from './useFeedFilters';
 import { useFeedFriendActions } from './useFeedFriendActions';

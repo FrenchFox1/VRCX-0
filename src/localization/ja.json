@@ -1787,7 +1787,9 @@
                 "calendar": "カレンダー",
                 "calendar_description": "グループのイベントカレンダー",
                 "moderation": "グループの管理",
-                "moderation_description": "管理権限を持つグループのメンバー、BAN、招待、参加リクエストを管理します。"
+                "moderation_description": "管理権限を持つグループのメンバー、BAN、招待、参加リクエストを管理します。",
+                "my_groups": "参加中のグループ",
+                "my_groups_description": "参加しているグループの並び順・公開範囲・退出をまとめて管理します。"
             },
             "user": {
                 "discord_names_description": "フレンドの Discord ユーザー名を取得",
@@ -2036,6 +2038,9 @@
                 "delete_locked": "選択した項目はすべてロックされています。",
                 "delete_locked_favorite": "お気に入りを解除すると削除できます",
                 "delete_locked_in_use": "使用中のため削除できません",
+                "export_zip": "ZIP で書き出し",
+                "export_grouped": "フォルダー構成を保つ",
+                "export_flat": "すべてまとめる",
                 "favorited_toast": "{count} 件のプリントをお気に入りに追加しました。",
                 "unfavorited_toast": "{count} 件のプリントのお気に入りを解除しました。",
                 "favorite_skipped_toast": "{count} 件はお気に入りにできませんでした。上限は {max} 件です。"
@@ -3396,6 +3401,34 @@
             "avatars": {
                 "all_time": "全期間"
             }
+        },
+        "my_groups": {
+            "title": "参加中のグループ",
+            "description": "参加しているグループを整理します。ゲーム内での並び順、プロフィールでの公開範囲、退出をここで変更できます。",
+            "group_count": "グループ {count} 件",
+            "edit_mode": "編集",
+            "exit_edit_mode": "完了",
+            "order_hint": "グループをドラッグして、VRChat 内での表示順を変更します。",
+            "order_game_running": "VRChatが起動中です。並び順の変更はゲーム終了時に上書きされることがあります。",
+            "order_unavailable": "並び順を変更できません：{reason}",
+            "order_unavailable_reason_fallback": "この環境ではVRChatの設定を読み込めません。",
+            "order_save_failed": "ゲーム内の並び順を保存できませんでした。",
+            "row_actions": "グループの操作",
+            "leave": "退出",
+            "leave_partial": "{count} 件を退出",
+            "leave_owner_locked": "自分が所有するグループからは退出できません。",
+            "leave_completed": "{count} 件のグループから退出しました。",
+            "visibility_completed": "{count} 件のグループの公開範囲を変更しました。",
+            "selected_count": "{count} 件を選択中",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "実行できませんでした。",
+            "batch_failed": "一括処理に失敗しました。",
+            "confirm_leave_title": "{count} 件のグループから退出しますか？",
+            "confirm_leave_warning": "退出は取り消せません。再参加には承認が必要な場合があります。",
+            "confirm_more_groups": "{names} ほか {count} 件",
+            "empty_title": "グループがありません",
+            "empty_description": "VRChatで参加したグループがここに表示されます。",
+            "empty_search": "該当するグループはありません。"
         }
     },
     "dialog": {
@@ -3601,7 +3634,8 @@
                     "alphabetical": "アルファベット順",
                     "members": "メンバー数",
                     "in_game": "VRChat 内での表示順"
-                }
+                },
+                "manage": "管理"
             },
             "worlds": {
                 "header": "ワールド",
@@ -4752,6 +4786,8 @@
             "scanning": "スクリーンショットをスキャン中",
             "image_count": "{count} 枚",
             "feeling_lucky": "I'm Feeling Lucky",
+            "exporting_progress": "書き出し中 {done}/{total}",
+            "export_finalizing": "書き込みを完了しています",
             "empty_gallery": "このフォルダにスクリーンショットはありません",
             "empty_gallery_description": "別のフォルダを選択するか、スクリーンショットライブラリを更新してください。",
             "empty_folders": "スクリーンショットフォルダがありません",
@@ -5507,6 +5543,10 @@
         "screenshot_metadata": {
             "deleted": "スクリーンショットのメタデータを削除しました",
             "delete_failed": "スクリーンショットのメタデータの削除に失敗しました",
+            "export_done": "スクリーンショット {count} 件を書き出しました。",
+            "export_partial": "書き出しが完了しました（{count} 件をスキップ）。",
+            "export_failed": "スクリーンショットの書き出しに失敗しました",
+            "export_cancelled": "書き出しを中止しました。",
             "file_deleted": "スクリーンショットをごみ箱に移動しました",
             "file_delete_failed": "スクリーンショットの削除に失敗しました"
         },

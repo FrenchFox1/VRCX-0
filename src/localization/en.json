@@ -1791,7 +1791,9 @@
                 "calendar": "Calendar",
                 "calendar_description": "Group Events Calendar",
                 "moderation": "Group Moderation",
-                "moderation_description": "Manage members, bans, invites, and join requests for groups you moderate."
+                "moderation_description": "Manage members, bans, invites, and join requests for groups you moderate.",
+                "my_groups": "My Groups",
+                "my_groups_description": "Reorder, hide, and leave the groups you joined."
             },
             "user": {
                 "discord_names_description": "Find the Discord usernames of your VRChat friends",
@@ -2040,6 +2042,9 @@
                 "delete_locked": "Every selected item is locked.",
                 "delete_locked_favorite": "Favorited - unfavorite to delete",
                 "delete_locked_in_use": "In use - cannot delete",
+                "export_zip": "Export ZIP",
+                "export_grouped": "Keep folder structure",
+                "export_flat": "All in one folder",
                 "favorited_toast": "Favorited {count} print(s).",
                 "unfavorited_toast": "Unfavorited {count} print(s).",
                 "favorite_skipped_toast": "{count} print(s) were not favorited. The limit is {max}."
@@ -3400,6 +3405,34 @@
             "avatars": {
                 "all_time": "All time"
             }
+        },
+        "my_groups": {
+            "title": "My Groups",
+            "description": "Manage the groups you joined: their in-game order, who sees them on your profile, and which ones to leave.",
+            "group_count": "{count} group(s)",
+            "edit_mode": "Edit",
+            "exit_edit_mode": "Done",
+            "order_hint": "Drag groups to set the order VRChat shows them in.",
+            "order_game_running": "VRChat is running. Order changes may be overwritten when the game exits.",
+            "order_unavailable": "Group order is unavailable: {reason}",
+            "order_unavailable_reason_fallback": "VRChat preferences cannot be read on this system.",
+            "order_save_failed": "Failed to save the in-game group order.",
+            "row_actions": "Group actions",
+            "leave": "Leave",
+            "leave_partial": "Leave {count}",
+            "leave_owner_locked": "You cannot leave a group you own.",
+            "leave_completed": "Left {count} group(s).",
+            "visibility_completed": "Visibility updated for {count} group(s).",
+            "selected_count": "{count} selected",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Action failed.",
+            "batch_failed": "The batch action failed.",
+            "confirm_leave_title": "Leave {count} group(s)?",
+            "confirm_leave_warning": "Leaving cannot be undone, and rejoining may need approval.",
+            "confirm_more_groups": "{names} and {count} more",
+            "empty_title": "No groups yet",
+            "empty_description": "Groups you join in VRChat show up here.",
+            "empty_search": "No group matches your search."
         }
     },
     "dialog": {
@@ -3606,7 +3639,8 @@
                     "alphabetical": "Alphabetical",
                     "members": "Members",
                     "in_game": "In-Game Order"
-                }
+                },
+                "manage": "Manage"
             },
             "worlds": {
                 "header": "Worlds",
@@ -4757,6 +4791,8 @@
             "scanning": "Scanning screenshots",
             "image_count": "{count} images",
             "feeling_lucky": "I'm Feeling Lucky",
+            "exporting_progress": "Exporting {done}/{total}",
+            "export_finalizing": "Finishing the archive",
             "empty_gallery": "No screenshots in this folder",
             "empty_gallery_description": "Select another folder or refresh the screenshot library.",
             "empty_folders": "No screenshot folders",
@@ -5514,6 +5550,10 @@
         "screenshot_metadata": {
             "deleted": "Screenshot metadata deleted",
             "delete_failed": "Failed to delete screenshot metadata",
+            "export_done": "Exported {count} screenshot(s).",
+            "export_partial": "Export finished, {count} file(s) were skipped.",
+            "export_failed": "Failed to export the screenshots",
+            "export_cancelled": "Export cancelled.",
             "file_deleted": "Screenshot moved to the recycle bin",
             "file_delete_failed": "Failed to delete screenshot"
         },

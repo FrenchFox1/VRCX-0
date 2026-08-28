@@ -1,5 +1,4 @@
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use constant_time_eq::constant_time_eq;
+use vrcx_0_local_server::{generate_token, is_allowed_authority, tokens_match};
 
 use crate::error::McpError;
 use crate::types::ClientConfigSnippets;
@@ -24,9 +23,7 @@ pub enum McpAuthError {
 }
 
 pub fn generate_mcp_token() -> Result<String, McpError> {
-    let mut token_bytes = [0_u8; 32];
-    getrandom::fill(&mut token_bytes)?;
-    Ok(URL_SAFE_NO_PAD.encode(token_bytes))
+    generate_token().map_err(McpError::from)
 }
 
 pub fn authorize_mcp_request(
@@ -49,7 +46,7 @@ pub fn authorize_mcp_request(
         .and_then(|value| value.strip_prefix("Bearer "))
         .ok_or(McpAuthError::MissingBearerToken)?;
 
-    if constant_time_eq(bearer.as_bytes(), policy.token.as_bytes()) {
+    if tokens_match(bearer, &policy.token) {
         Ok(())
     } else {
         Err(McpAuthError::InvalidBearerToken)
@@ -92,34 +89,6 @@ pub fn client_config_snippets(
             "{{\n  \"mcpServers\": {{\n    \"vrcx-0\": {{\n      \"url\": \"{url}\",\n      \"headers\": {{\n        \"Authorization\": \"Bearer {token}\"\n      }}\n    }}\n  }}\n}}"
         ),
     }
-}
-
-fn is_allowed_loopback_authority(authority: Option<&str>, port: u16) -> bool {
-    matches!(
-        authority.map(|value| value.to_ascii_lowercase()),
-        Some(value) if value == format!("127.0.0.1:{port}") || value == format!("localhost:{port}")
-    )
-}
-
-fn is_allowed_authority(authority: Option<&str>, port: u16, allow_lan_connections: bool) -> bool {
-    if is_allowed_loopback_authority(authority, port) {
-        return true;
-    }
-    let Some(authority) = authority else {
-        return false;
-    };
-    allow_lan_connections && authority_has_expected_port(authority, port)
-}
-
-fn authority_has_expected_port(authority: &str, port: u16) -> bool {
-    if authority.contains('@') {
-        return false;
-    }
-    authority
-        .parse::<http::uri::Authority>()
-        .ok()
-        .and_then(|value| value.port_u16())
-        .is_some_and(|value| value == port)
 }
 
 fn is_allowed_loopback_origin(origin: &str, port: u16) -> bool {

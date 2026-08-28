@@ -1791,7 +1791,9 @@
                 "calendar": "活动日历",
                 "calendar_description": "查看活动日历",
                 "moderation": "群组管理",
-                "moderation_description": "管理你拥有管理权限的群组的成员、封禁、邀请与加入申请。"
+                "moderation_description": "管理你拥有管理权限的群组的成员、封禁、邀请与加入申请。",
+                "my_groups": "我的群组",
+                "my_groups_description": "排序、隐藏和退出你加入的群组。"
             },
             "user": {
                 "discord_names_description": "查找好友的 Discord 名称（如果他们有写上去的话）",
@@ -2040,6 +2042,9 @@
                 "delete_locked": "选中的项目均已锁定。",
                 "delete_locked_favorite": "已收藏，取消收藏后才能删除",
                 "delete_locked_in_use": "使用中，无法删除",
+                "export_zip": "导出 ZIP",
+                "export_grouped": "保留文件夹结构",
+                "export_flat": "全部放在一起",
                 "favorited_toast": "已收藏 {count} 个 Print。",
                 "unfavorited_toast": "已取消收藏 {count} 个 Print。",
                 "favorite_skipped_toast": "有 {count} 个 Print 未能收藏，上限为 {max} 个。"
@@ -3400,6 +3405,34 @@
             "avatars": {
                 "all_time": "全部时间"
             }
+        },
+        "my_groups": {
+            "title": "我的群组",
+            "description": "管理你加入的群组：调整游戏内顺序、设置在个人资料上的可见范围，退出不再需要的群组。",
+            "group_count": "{count} 个群组",
+            "edit_mode": "编辑",
+            "exit_edit_mode": "完成",
+            "order_hint": "拖拽群组，调整 VRChat 中显示群组的顺序。",
+            "order_game_running": "VRChat 正在运行，顺序改动可能在游戏退出时被覆盖。",
+            "order_unavailable": "无法调整群组顺序：{reason}",
+            "order_unavailable_reason_fallback": "当前系统无法读取 VRChat 的本地设置。",
+            "order_save_failed": "保存游戏内群组顺序失败。",
+            "row_actions": "群组操作",
+            "leave": "退出",
+            "leave_partial": "退出 {count} 个",
+            "leave_owner_locked": "无法退出自己拥有的群组。",
+            "leave_completed": "已退出 {count} 个群组。",
+            "visibility_completed": "已更新 {count} 个群组的可见范围。",
+            "selected_count": "已选择 {count} 个",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "操作失败。",
+            "batch_failed": "批量操作失败。",
+            "confirm_leave_title": "退出 {count} 个群组？",
+            "confirm_leave_warning": "退出无法撤销，重新加入可能需要审核。",
+            "confirm_more_groups": "{names}，以及另外 {count} 个",
+            "empty_title": "还没有群组",
+            "empty_description": "你在 VRChat 中加入的群组会显示在这里。",
+            "empty_search": "没有匹配的群组。"
         }
     },
     "dialog": {
@@ -3607,7 +3640,8 @@
                     "alphabetical": "字母顺序",
                     "members": "成员数",
                     "in_game": "游戏内顺序"
-                }
+                },
+                "manage": "管理"
             },
             "worlds": {
                 "header": "创建的世界",
@@ -4758,6 +4792,8 @@
             "scanning": "正在扫描截图",
             "image_count": "{count} 张图片",
             "feeling_lucky": "手气不错",
+            "exporting_progress": "正在导出 {done}/{total}",
+            "export_finalizing": "正在收尾写入",
             "empty_gallery": "此文件夹内没有截图",
             "empty_gallery_description": "选择其他文件夹，或刷新图库。",
             "empty_folders": "文件夹为空",
@@ -5515,6 +5551,10 @@
         "screenshot_metadata": {
             "deleted": "已删除图片元数据",
             "delete_failed": "删除图片元数据失败",
+            "export_done": "已导出 {count} 张截图。",
+            "export_partial": "导出完成，跳过了 {count} 个文件。",
+            "export_failed": "导出截图失败",
+            "export_cancelled": "已取消导出。",
             "file_deleted": "截图已移到回收站",
             "file_delete_failed": "删除截图失败"
         },

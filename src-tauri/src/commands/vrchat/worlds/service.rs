@@ -2,7 +2,7 @@
 
 use tauri::State;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_runtime_host_desktop::vrchat_api::protocol::worlds::{
+use vrcx_0_vrchat_client::worlds::{
     world_delete_input, world_list_by_user_get_input, world_persistent_data_delete_input,
     world_persistent_data_exists_input, world_publish_input, world_save_input,
     world_unpublish_input,

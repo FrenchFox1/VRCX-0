@@ -18,11 +18,16 @@ vi.mock('./FeedTableParts', () => ({
     formatTimestampParts: () => ({ date: '', time: '' })
 }));
 
-vi.mock('./FeedTypeIndicator', () => ({
+vi.mock('@/components/feed/FeedTypeIndicator', () => ({
     FeedTypeIndicator: () => null
 }));
 
-import type { FeedFriendActions, FeedRow, FeedTableMeta } from '../feedTypes';
+import type {
+    FeedFriendActions,
+    FeedRow,
+    FeedTableMeta
+} from '@/components/feed/feedTypes';
+
 import { useFeedColumns } from './FeedColumns';
 
 function createActions(): FeedFriendActions {

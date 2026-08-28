@@ -9,8 +9,8 @@ use tokio::sync::broadcast;
 use crate::state::RoomChange;
 use crate::transport::{now_iso, IntegrationApiRouterState, ServerEvent};
 use crate::wire::{
-    ClientMessage, RoomMemberRef, RoomRef, ServerMessage, ServerMessageRef, HEARTBEAT_SECONDS,
-    PROTOCOL_VERSION,
+    ClientMessage, RoomMemberRef, RoomRef, ServerMessage, HEARTBEAT_SECONDS, PROTOCOL_VERSION,
+    SERVER_SCOPES,
 };
 
 const MAX_ACTIVE_CONNECTIONS: u32 = 8;
@@ -34,9 +34,9 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
         &ServerMessage::Hello {
             seq,
             protocol: PROTOCOL_VERSION,
-            app: "vrcx-0".into(),
-            app_version: state.hub.app_version().into(),
-            scopes: vec!["room".into()],
+            app: "vrcx-0",
+            app_version: state.hub.app_version(),
+            scopes: SERVER_SCOPES,
             heartbeat_sec: HEARTBEAT_SECONDS,
         },
     )
@@ -154,9 +154,10 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
             }
             _ = heartbeat.tick() => {
                 seq = seq.saturating_add(1);
+                let at = now_iso();
                 if !send_message(
                     &mut socket,
-                    &ServerMessage::Ping { seq, at: now_iso() },
+                    &ServerMessage::Ping { seq, at: &at },
                 ).await {
                     break;
                 }
@@ -170,7 +171,7 @@ async fn send_change(socket: &mut WebSocket, change: &RoomChange, seq: u64, at: 
         RoomChange::Snapshot(room) => {
             send_message(
                 socket,
-                &ServerMessageRef::Snapshot {
+                &ServerMessage::Snapshot {
                     seq,
                     at,
                     room: Some(RoomRef::from(room.as_ref())),
@@ -181,7 +182,7 @@ async fn send_change(socket: &mut WebSocket, change: &RoomChange, seq: u64, at: 
         RoomChange::Joined(members) => {
             send_message(
                 socket,
-                &ServerMessageRef::Joined {
+                &ServerMessage::Joined {
                     seq,
                     at,
                     members: members.iter().map(RoomMemberRef::from).collect(),
@@ -190,7 +191,7 @@ async fn send_change(socket: &mut WebSocket, change: &RoomChange, seq: u64, at: 
             .await
         }
         RoomChange::Left(user_ids) => {
-            send_message(socket, &ServerMessageRef::Left { seq, at, user_ids }).await
+            send_message(socket, &ServerMessage::Left { seq, at, user_ids }).await
         }
     }
 }
@@ -203,7 +204,7 @@ async fn send_snapshot(
 ) -> bool {
     send_message(
         socket,
-        &ServerMessageRef::Snapshot {
+        &ServerMessage::Snapshot {
             seq,
             at: &at,
             room: room.map(RoomRef::from),

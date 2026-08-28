@@ -14,11 +14,6 @@ import {
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
-import { PageFooter } from '@/components/layout/PageScaffold';
-import { cn } from '@/lib/utils';
-import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
-
 import type {
     FeedColumns,
     FeedLoadStatus,
@@ -26,7 +21,12 @@ import type {
     FeedPaginationSetter,
     FeedRow,
     FeedTableInstance
-} from '../feedTypes';
+} from '@/components/feed/feedTypes';
+import { PageFooter } from '@/components/layout/PageScaffold';
+import { cn } from '@/lib/utils';
+import { Spinner } from '@/ui/shadcn/spinner';
+import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
+
 import { FeedExpandedRow } from './FeedTableParts';
 
 function shouldSkipRowToggle(event: MouseEvent<HTMLTableRowElement>) {

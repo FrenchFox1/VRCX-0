@@ -2040,6 +2040,9 @@
                 "delete_locked": "Tout les éléments sélectionnés sont verouillés.",
                 "delete_locked_favorite": "Favoris - Retirer le des favoris pour le supprimer",
                 "delete_locked_in_use": "Utilisé - ne peut être supprimé",
+                "export_zip": "Exporter en ZIP",
+                "export_grouped": "Conserver la structure des dossiers",
+                "export_flat": "Tout dans un seul dossier",
                 "favorited_toast": "{count} imprimé(s) ajouté(s) aux favoris.",
                 "unfavorited_toast": "Imprimé retiré des favoris",
                 "favorite_skipped_toast": "{count} imprimé(s) n'ont pas été ajoutés aux favoris. La limite est de {max}."
@@ -4756,6 +4759,9 @@
             "folders": "Dossiers",
             "scanning": "Analyse des captures d'écran",
             "image_count": "{count} images",
+            "feeling_lucky": "J'ai de la chance",
+            "exporting_progress": "Exportation {done}/{total}",
+            "export_finalizing": "Finalisation de l'archive",
             "empty_gallery": "Aucune capture d'écran dans ce dossier",
             "empty_gallery_description": "Sélectionnez un autre dossier ou actualisez la bibliothèque de captures d'écran.",
             "empty_folders": "Aucun dossier de captures d'écran",
@@ -5513,8 +5519,10 @@
         "screenshot_metadata": {
             "deleted": "Métadonnées de la capture d'écran supprimées",
             "delete_failed": "Échec de la suppression des métadonnées de la capture d'écran",
-            "file_deleted": "Capture d'écran déplacée dans la corbeille",
-            "file_delete_failed": "Échec de la suppression de la capture d'écran"
+            "export_done": "{count} capture(s) exportée(s).",
+            "export_partial": "Exportation terminée, {count} fichier(s) ignoré(s).",
+            "export_failed": "Échec de l'exportation des captures",
+            "export_cancelled": "Exportation annulée."
         },
         "image": {
             "downloading": "Téléchargement de l'image...",

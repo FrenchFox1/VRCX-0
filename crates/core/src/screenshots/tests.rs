@@ -182,3 +182,54 @@ fn player_helpers_match_exact_ids_and_case_insensitive_name_fragments() {
     assert!(metadata.contains_player_name("bob"));
     assert!(!metadata.contains_player_name("Carol"));
 }
+
+#[test]
+fn zip_entry_plan_groups_by_source_folder_and_keeps_folder_names_unique() {
+    let paths = vec![
+        "C:/A/2026-07/a.png".to_string(),
+        "C:/A/2026-07/b.png".to_string(),
+        "C:/B/2026-07/a.png".to_string(),
+    ];
+
+    let plan = plan_screenshot_zip_entries(&paths, true);
+
+    let entries: Vec<&str> = plan.iter().map(|entry| entry.entry_name.as_str()).collect();
+    assert_eq!(
+        entries,
+        vec!["2026-07/a.png", "2026-07/b.png", "2026-07-2/a.png"]
+    );
+    assert_eq!(plan[2].source_path, "C:/B/2026-07/a.png");
+}
+
+#[test]
+fn zip_entry_plan_flattens_and_deduplicates_file_names() {
+    let paths = vec![
+        "C:/A/2026-07/a.png".to_string(),
+        "C:/B/2026-05/a.png".to_string(),
+        "C:/C/2026-04/a.png".to_string(),
+        "C:/D/2026-03/b.png".to_string(),
+    ];
+
+    let plan = plan_screenshot_zip_entries(&paths, false);
+
+    let entries: Vec<&str> = plan.iter().map(|entry| entry.entry_name.as_str()).collect();
+    assert_eq!(entries, vec!["a.png", "a-2.png", "a-3.png", "b.png"]);
+}
+
+#[test]
+fn zip_entry_plan_skips_paths_without_a_file_name() {
+    let paths = vec!["".to_string(), "C:/A/2026-07/a.png".to_string()];
+
+    let plan = plan_screenshot_zip_entries(&paths, true);
+
+    assert_eq!(plan.len(), 1);
+    assert_eq!(plan[0].entry_name, "2026-07/a.png");
+}
+
+#[test]
+fn export_file_name_is_short_ascii_and_marks_screenshots() {
+    let name = screenshot_export_file_name("20260828-1430", 12);
+
+    assert_eq!(name, "VRCX-0-Shots-20260828-1430-12.zip");
+    assert!(name.is_ascii());
+}

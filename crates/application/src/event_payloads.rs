@@ -9,7 +9,8 @@ use crate::profile::{
     ProfileRestoreProgress,
 };
 use crate::social::{
-    GroupBanImportStatus, GroupModerationBatchProgress, MutualGraphFetchStatus, NoteExportStatus,
+    GroupBanImportStatus, GroupMembershipBatchProgress, GroupModerationBatchProgress,
+    MutualGraphFetchStatus, NoteExportStatus,
 };
 
 impl RuntimeEventPayload for AuthenticatedRuntimePhaseSnapshot {
@@ -42,6 +43,10 @@ impl RuntimeEventPayload for FavoriteImportStatus {
 
 impl RuntimeEventPayload for GroupBanImportStatus {
     const EVENT_NAME: &'static str = "groupBanImportStatus";
+}
+
+impl RuntimeEventPayload for GroupMembershipBatchProgress {
+    const EVENT_NAME: &'static str = "groupMembershipBatchProgress";
 }
 
 impl RuntimeEventPayload for GroupModerationBatchProgress {
