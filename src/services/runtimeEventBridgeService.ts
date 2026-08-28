@@ -164,6 +164,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'notificationDoNotDisturbState') {
+        runtimeStore.setNotificationDoNotDisturb(event.payload);
+        return;
+    }
+
     if (event.name === 'vrcStatus') {
         applyVrcStatusSnapshot(event.payload);
         return;
@@ -390,6 +395,13 @@ async function hydrateAncillaryRuntimeState(): Promise<void> {
         hydrateRuntimeState('Failed to hydrate background image state:', () =>
             initializeBackgroundImage(snapshot.backgroundImageState)
         ),
+        hydrateRuntimeState('Failed to hydrate do not disturb state:', () => {
+            useRuntimeStore
+                .getState()
+                .setNotificationDoNotDisturb(
+                    snapshot.notificationDoNotDisturbState
+                );
+        }),
         hydrateRuntimeState(
             'Failed to hydrate app update download status:',
             async () => {
@@ -416,6 +428,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'backendRuntimeTelemetry',
         'backgroundImageState',
         'communityThemeState',
+        'notificationDoNotDisturbState',
         'gameLogProjection',
         'gameLogPersistenceFallback',
         'gameLogSideEffect',

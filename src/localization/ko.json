@@ -478,6 +478,11 @@
         "tray": {
             "open": "VRCX-0 열기",
             "backgroundMode": "백그라운드 모드",
+            "doNotDisturb": "방해 금지",
+            "doNotDisturbOneHour": "1시간",
+            "doNotDisturbThreeHours": "3시간",
+            "doNotDisturbUntilStopped": "끌 때까지",
+            "doNotDisturbTurnOff": "방해 금지 끄기",
             "rebuildUi": "UI 새로고침",
             "disableTheme": "테마 비활성화",
             "exit": "종료"
@@ -2440,6 +2445,12 @@
                     "layout": "알림 보기",
                     "layout_notification_center": "알림 센터",
                     "layout_table": "알림 페이지",
+                    "do_not_disturb": {
+                        "header": "방해 금지",
+                        "description": "데스크톱 알림, TTS, XSOverlay, OVR Toolkit 및 VRCX-0 HMD 팝업을 일시 중지합니다. Webhook, 손목 활동 및 알림 기록은 계속됩니다.",
+                        "end_on_game_start": "VRChat 시작 시 방해 금지 끄기",
+                        "end_on_game_start_description": "VRChat이 중지 상태에서 실행 상태로 바뀔 때만 적용됩니다. 플레이 중 다시 방해 금지를 켤 수 있습니다."
+                    },
                     "vr_notifications": {
                         "header": "VR 오버레이 알림",
                         "xsoverlay_notifications": "XSOverlay 알림 사용",
@@ -5729,6 +5740,14 @@
         "add_table_page_size": "표 페이지 크기 추가"
     },
     "status_bar": {
+        "do_not_disturb": "방해 금지",
+        "do_not_disturb_active": "방해 금지 사용 중",
+        "do_not_disturb_until": "{time}까지 방해 금지",
+        "do_not_disturb_one_hour": "1시간 동안",
+        "do_not_disturb_three_hours": "3시간 동안",
+        "do_not_disturb_until_stopped": "직접 끌 때까지",
+        "do_not_disturb_turn_off": "방해 금지 끄기",
+        "do_not_disturb_failed": "방해 금지를 변경하지 못했습니다",
         "world_collection_importing": "월드 컬렉션 가져오는 중 ({progress}/{total})",
         "game": "게임",
         "game_last_session": "마지막 세션",

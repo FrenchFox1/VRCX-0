@@ -345,6 +345,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     desktopToast: 'Never',
     afkDesktopToast: false,
     desktopNotificationSound: false,
+    notificationDoNotDisturbEndOnGameStart: true,
     notificationTTS: 'Never',
     notificationTTSNameMode: 'username',
     notificationTTSNickName: false,
@@ -512,6 +513,9 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         desktopToast: String(next.desktopToast || 'Never'),
         afkDesktopToast: normalizeBool(next.afkDesktopToast),
         desktopNotificationSound: normalizeBool(next.desktopNotificationSound),
+        notificationDoNotDisturbEndOnGameStart: normalizeBool(
+            next.notificationDoNotDisturbEndOnGameStart
+        ),
         notificationTTS: String(next.notificationTTS || 'Never'),
         notificationTTSNameMode: normalizeNotificationTtsNameMode(
             next.notificationTTSNameMode,

@@ -24,7 +24,9 @@ use vrcx_0_application_core::{
 use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
 use vrcx_0_core::{proxy::with_remote_dns, realtime::RealtimeWsStatusPayload};
 use vrcx_0_host_desktop::host_capabilities::{is_host_capability_available, HostCapability};
-use vrcx_0_runtime_host_desktop::notification::{DesktopNotificationAction, DesktopNotifier};
+use vrcx_0_runtime_host_desktop::notification::{
+    DesktopNotificationAction, DesktopNotifier, NotificationDoNotDisturbSnapshot,
+};
 use vrcx_0_runtime_host_desktop::RuntimeHostActions;
 
 use crate::state::AppState;
@@ -56,6 +58,13 @@ impl RuntimeEventSink for TauriRuntimeEventSink {
             };
             handle_runtime_auth_failure_recovery(&self.app_handle, &failure);
             handle_runtime_auth_failure_notification(&self.app_handle, &failure);
+        }
+        if event == NotificationDoNotDisturbSnapshot::EVENT_NAME {
+            if let Some(state) = self.app_handle.try_state::<AppState>() {
+                if let Err(error) = super::refresh_tray_menu(&self.app_handle, &state) {
+                    tracing::warn!(error = %error, "failed to refresh tray menu for do not disturb state");
+                }
+            }
         }
         let frontend_event = match event {
             "runtimeGameLogEvent" => "addGameLogEvent",

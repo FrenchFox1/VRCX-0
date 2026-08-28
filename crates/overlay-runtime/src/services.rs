@@ -18,5 +18,7 @@ pub trait VrOverlayRuntimeServices: Send + Sync {
 
     fn overlay_activity(&self) -> OverlayActivityRuntime;
 
+    fn hmd_notifications_allowed(&self) -> bool;
+
     fn game_log_snapshot(&self) -> RuntimeSnapshot;
 }

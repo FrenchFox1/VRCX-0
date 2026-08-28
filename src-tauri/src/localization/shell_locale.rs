@@ -4,6 +4,11 @@ use vrcx_0_i18n::{text as native_text, ShellKey};
 pub(crate) struct TrayLabels {
     pub(crate) open: String,
     pub(crate) background_mode: String,
+    pub(crate) do_not_disturb: String,
+    pub(crate) do_not_disturb_one_hour: String,
+    pub(crate) do_not_disturb_three_hours: String,
+    pub(crate) do_not_disturb_until_stopped: String,
+    pub(crate) do_not_disturb_turn_off: String,
     pub(crate) rebuild_ui: String,
     pub(crate) disable_theme: String,
     pub(crate) exit: String,
@@ -171,6 +176,14 @@ pub(crate) fn tray_labels_for_language(language: &str) -> TrayLabels {
     TrayLabels {
         open: text(language, ShellKey::NativeShellTrayOpen),
         background_mode: text(language, ShellKey::NativeShellTrayBackgroundMode),
+        do_not_disturb: text(language, ShellKey::NativeShellTrayDoNotDisturb),
+        do_not_disturb_one_hour: text(language, ShellKey::NativeShellTrayDoNotDisturbOneHour),
+        do_not_disturb_three_hours: text(language, ShellKey::NativeShellTrayDoNotDisturbThreeHours),
+        do_not_disturb_until_stopped: text(
+            language,
+            ShellKey::NativeShellTrayDoNotDisturbUntilStopped,
+        ),
+        do_not_disturb_turn_off: text(language, ShellKey::NativeShellTrayDoNotDisturbTurnOff),
         rebuild_ui: text(language, ShellKey::NativeShellTrayRebuildUi),
         disable_theme: text(language, ShellKey::NativeShellTrayDisableTheme),
         exit: text(language, ShellKey::NativeShellTrayExit),

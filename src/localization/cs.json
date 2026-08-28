@@ -478,6 +478,11 @@
         "tray": {
             "open": "Otevřít VRCX-0",
             "backgroundMode": "Režim na pozadí",
+            "doNotDisturb": "Nerušit",
+            "doNotDisturbOneHour": "1 hodina",
+            "doNotDisturbThreeHours": "3 hodiny",
+            "doNotDisturbUntilStopped": "Do vypnutí",
+            "doNotDisturbTurnOff": "Vypnout",
             "rebuildUi": "Znovu načíst UI",
             "disableTheme": "Zakázat motiv",
             "exit": "Ukončit"
@@ -2489,6 +2494,12 @@
                     "layout_table": "Stránka oznámení",
                     "post_update_changelog_prompt": "Zobrazit poznámky k aktualizaci po aktualizaci",
                     "post_update_changelog_prompt_description": "Zobrazí novinky po instalaci aktualizace.",
+                    "do_not_disturb": {
+                        "header": "Nerušit",
+                        "description": "Dočasně pozastaví oznámení na ploše, TTS, XSOverlay, OVR Toolkit a vyskakovací oznámení VRCX-0 v headsetu. Webhooky, aktivita na zápěstí a historie oznámení pokračují.",
+                        "end_on_game_start": "Vypnout při spuštění VRChat",
+                        "end_on_game_start_description": "Platí pouze při přechodu VRChat z vypnutého do spuštěného stavu. Během hraní lze režim Nerušit znovu zapnout."
+                    },
                     "vr_notifications": {
                         "header": "Oznámení v překryvné vrstvě VR",
                         "xsoverlay_notifications": "Oznámení XSOverlay",
@@ -5795,6 +5806,14 @@
         "add_table_page_size": "Přidat velikost stránky tabulky"
     },
     "status_bar": {
+        "do_not_disturb": "Nerušit",
+        "do_not_disturb_active": "Režim Nerušit je zapnutý",
+        "do_not_disturb_until": "Nerušit do {time}",
+        "do_not_disturb_one_hour": "Na 1 hodinu",
+        "do_not_disturb_three_hours": "Na 3 hodiny",
+        "do_not_disturb_until_stopped": "Do ručního vypnutí",
+        "do_not_disturb_turn_off": "Vypnout režim Nerušit",
+        "do_not_disturb_failed": "Režim Nerušit se nepodařilo změnit",
         "world_collection_importing": "Importuji kolekci světů ({progress}/{total})",
         "game": "Hra",
         "game_stopped": "VRChat neběží",

@@ -21,7 +21,7 @@ use super::overlay_transport::OverlayNotificationTransport;
 use super::tts::{notification_tts_memo_actor_user_id, send_tts_notification};
 use super::{
     decide_notification_plan, load_preferences, NotificationDeliveryGameState,
-    NotificationDeliveryPlan, NotificationDeliveryPreferences,
+    NotificationDeliveryPlan, NotificationDeliveryPreferences, NotificationDoNotDisturbRuntime,
 };
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::OwnerId;
@@ -51,6 +51,7 @@ pub struct NotificationDispatcherDeps {
     pub desktop: Arc<dyn DesktopNotifier>,
     pub tts: Arc<dyn TtsEngine>,
     pub tasks: TaskSupervisor,
+    pub do_not_disturb: NotificationDoNotDisturbRuntime,
 }
 
 struct NotificationOutputContext {
@@ -58,6 +59,7 @@ struct NotificationOutputContext {
     db: Arc<DatabaseService>,
     desktop: Arc<dyn DesktopNotifier>,
     tts: Arc<dyn TtsEngine>,
+    do_not_disturb: NotificationDoNotDisturbRuntime,
 }
 
 struct NotificationJob {
@@ -127,6 +129,7 @@ impl NotificationDispatcher {
             db: deps.db,
             desktop: deps.desktop,
             tts: deps.tts,
+            do_not_disturb: deps.do_not_disturb,
         });
         let (completion_tx, completion_rx) = mpsc::unbounded_channel();
         let worker_output = Arc::clone(&output);
@@ -152,6 +155,9 @@ impl OverlayActivitySink for NotificationDispatcher {
     fn emit_overlay_activity_snapshot(&self, _snapshot: OverlayActivitySnapshot) {}
 
     fn emit_overlay_activity_delivery(&self, delivery: OverlayActivityDelivery) {
+        if self.output.do_not_disturb.is_active() {
+            return;
+        }
         let preferences = load_preferences(&self.config);
         let game = load_game_state(&self.session, &self.config);
         let plan = decide_notification_plan(&delivery, &preferences, &game);
@@ -281,6 +287,9 @@ fn dispatch_prepared_notification(
     notification: &PreparedNotification,
     output: &NotificationOutputContext,
 ) {
+    if output.do_not_disturb.is_active() {
+        return;
+    }
     if notification.plan.tts {
         let user_memo = notification_tts_memo_actor_user_id(
             &notification.delivery,

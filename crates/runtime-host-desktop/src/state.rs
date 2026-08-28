@@ -20,6 +20,7 @@ use crate::integration_api::{
 };
 use crate::local_data::LocalDataRuntime;
 use crate::media::DesktopMediaRuntime;
+use crate::notification::{NotificationDoNotDisturbMode, NotificationDoNotDisturbSnapshot};
 use crate::profile_backup::DesktopProfileBackupRuntime;
 use crate::screenshot::DesktopScreenshotRuntime;
 use crate::social::DesktopSocialRuntime;
@@ -121,6 +122,7 @@ pub(crate) fn build_desktop_runtime_services_deps(
         session: context.session().clone(),
         world_cache: Arc::clone(context.world_cache()),
         tasks: context.tasks().clone(),
+        event_bus: context.event_bus().clone(),
         overlay_activity: context.overlay_activity(),
         overlay_activity_sinks: context.overlay_activity_sink_registry(),
     }
@@ -296,7 +298,7 @@ impl DesktopRuntimeHostState {
         )?;
         let desktop_services = Arc::new(DesktopRuntimeServices::new(
             build_desktop_runtime_services_deps(builder.desktop_assembly()),
-        ));
+        )?);
         let backend_status = BackendRuntimeStatusPublisher::new(
             builder.backend_runtime().clone(),
             builder.desktop_assembly().event_bus().clone(),
@@ -2061,6 +2063,28 @@ impl DesktopRuntimeHostState {
         ancillary_runtime_snapshot(self).await
     }
 
+    pub fn notification_do_not_disturb_snapshot(&self) -> NotificationDoNotDisturbSnapshot {
+        self.desktop
+            .services
+            .notification_do_not_disturb()
+            .snapshot()
+    }
+
+    pub fn set_notification_do_not_disturb_mode(
+        &self,
+        mode: NotificationDoNotDisturbMode,
+    ) -> Result<NotificationDoNotDisturbSnapshot> {
+        let snapshot = self
+            .desktop
+            .services
+            .notification_do_not_disturb()
+            .set_mode(mode)?;
+        if snapshot.mode != NotificationDoNotDisturbMode::Off {
+            self.desktop.vr_overlay_runtime.clear_hmd_notifications();
+        }
+        Ok(snapshot)
+    }
+
     pub fn reload_overlay_activity_filters(&self) {
         self.desktop.services.reload_overlay_activity_filters();
         self.desktop.vr_overlay_runtime.reconcile_current();
@@ -2313,12 +2337,15 @@ impl DesktopRuntimeProfileExtension {
                 Arc::new(VrOverlayProcessSink {
                     runtime: Arc::clone(&self.desktop.vr_overlay_runtime),
                 });
+            let do_not_disturb_process_sink: Arc<dyn GameProcessEventSink> =
+                Arc::new(self.desktop.services.notification_do_not_disturb());
             let game_process_sinks: Vec<Arc<dyn GameProcessEventSink>> = vec![
                 self.game.session_runtime.clone(),
                 self.game.game_log_runtime.clone(),
                 self.game.game_client_runtime.clone(),
                 state.realtime_runtime().clone(),
                 vr_overlay_process_sink,
+                do_not_disturb_process_sink,
             ];
             self.game.process_monitor.start(
                 HostGameProcessMonitorActions::new(self.game.auto_launch.clone()),

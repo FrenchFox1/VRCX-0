@@ -33,7 +33,10 @@ pub(crate) struct HmdToastState {
 
 impl VrOverlayRuntime {
     pub(crate) fn ingest_hmd_delivery(self: &Arc<Self>, delivery: OverlayActivityDelivery) {
-        if !delivery.hmd || !self.is_hmd_surface_active(self.current_runtime_config()) {
+        if !delivery.hmd
+            || !self.hmd_notifications_allowed()
+            || !self.is_hmd_surface_active(self.current_runtime_config())
+        {
             return;
         }
         let entry = delivery.entry;
@@ -73,7 +76,7 @@ impl VrOverlayRuntime {
 
     fn deliver_hmd_toast(self: &Arc<Self>, entry: OverlayActivityEntry) {
         let config = self.current_runtime_config();
-        if !self.is_hmd_surface_active(config) {
+        if !self.hmd_notifications_allowed() || !self.is_hmd_surface_active(config) {
             return;
         }
         let timeout = Duration::from_millis(config.hmd.timeout_ms);
@@ -129,6 +132,17 @@ impl VrOverlayRuntime {
             queue.clear();
         }
         self.release_hmd_renderer();
+    }
+
+    pub fn clear_hmd_notifications(&self) {
+        self.clear_hmd_toasts();
+        self.reconcile_current();
+    }
+
+    fn hmd_notifications_allowed(&self) -> bool {
+        self.services
+            .as_ref()
+            .is_none_or(|services| services.hmd_notifications_allowed())
     }
 
     pub(crate) fn push_hmd_frame(

@@ -478,6 +478,11 @@
         "tray": {
             "open": "打开 VRCX-0",
             "backgroundMode": "后台模式",
+            "doNotDisturb": "勿扰模式",
+            "doNotDisturbOneHour": "1 小时",
+            "doNotDisturbThreeHours": "3 小时",
+            "doNotDisturbUntilStopped": "持续开启",
+            "doNotDisturbTurnOff": "关闭勿扰",
             "rebuildUi": "重载界面",
             "disableTheme": "禁用主题",
             "exit": "退出"
@@ -2487,6 +2492,12 @@
                     "layout_table": "通知标签页",
                     "post_update_changelog_prompt": "显示更新后的更新内容提示",
                     "post_update_changelog_prompt_description": "升级后首次启动新版本时，在右下角查看更新内容。",
+                    "do_not_disturb": {
+                        "header": "勿扰模式",
+                        "description": "临时暂停桌面通知、TTS、XSOverlay、OVR Toolkit 和 VRCX-0 头显弹窗。Webhook、腕表动态和通知历史仍会继续。",
+                        "end_on_game_start": "启动 VRChat 时关闭勿扰模式",
+                        "end_on_game_start_description": "仅在 VRChat 从未运行变为运行时触发。进入游戏后仍可再次开启勿扰模式。"
+                    },
                     "vr_notifications": {
                         "header": "VR 叠加界面通知",
                         "xsoverlay_notifications": "XSOverlay 通知",
@@ -5796,6 +5807,14 @@
         "add_table_page_size": "添加每页显示行数"
     },
     "status_bar": {
+        "do_not_disturb": "勿扰模式",
+        "do_not_disturb_active": "勿扰模式已开启",
+        "do_not_disturb_until": "勿扰至 {time}",
+        "do_not_disturb_one_hour": "开启 1 小时",
+        "do_not_disturb_three_hours": "开启 3 小时",
+        "do_not_disturb_until_stopped": "持续开启",
+        "do_not_disturb_turn_off": "关闭勿扰模式",
+        "do_not_disturb_failed": "无法更新勿扰模式",
         "world_collection_importing": "正在导入世界收藏（{progress}/{total}）",
         "game": "游戏状态",
         "game_stopped": "VRChat 目前没有运行",

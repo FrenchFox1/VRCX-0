@@ -35,7 +35,9 @@ use vrcx_0_core::screenshots::{ScreenshotExportProgress, ScreenshotLibraryScanSt
 use vrcx_0_host_desktop::tts::TtsVoice;
 use vrcx_0_integration_api::{IntegrationApiStartFailedPayload, IntegrationApiStatus};
 use vrcx_0_mcp::McpServerStatus;
-use vrcx_0_runtime_host_desktop::AppLauncherSnapshotEvent;
+use vrcx_0_runtime_host_desktop::{
+    notification::NotificationDoNotDisturbSnapshot, AppLauncherSnapshotEvent,
+};
 
 use crate::commands;
 
@@ -88,6 +90,7 @@ struct BackendRuntimeEventPayloadMap {
     realtime_projection_sync: RealtimeProjectionSync,
     update_is_game_running: HostSessionProjection,
     integration_api_start_failed: IntegrationApiStartFailedPayload,
+    notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
 }
 
 pub fn builder() -> Builder<tauri::Wry> {
@@ -148,6 +151,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::realtime::app__friend_profile_load_start,
             commands::application::realtime::app__friend_profile_load_cancel,
             commands::application::lifecycle::app__ancillary_runtime_snapshot_get,
+            commands::application::lifecycle::app__notification_do_not_disturb_mode_set,
             commands::application::background_mode::app__start_background_mode,
             commands::application::background_mode::app__backend_runtime_combined_snapshot_get,
             commands::application::background_mode::app__ensure_main_window,

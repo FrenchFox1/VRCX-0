@@ -478,6 +478,11 @@
         "tray": {
             "open": "Abrir VRCX-0",
             "backgroundMode": "Modo en segundo plano",
+            "doNotDisturb": "No molestar",
+            "doNotDisturbOneHour": "1 hora",
+            "doNotDisturbThreeHours": "3 horas",
+            "doNotDisturbUntilStopped": "Hasta desactivarlo",
+            "doNotDisturbTurnOff": "Desactivar",
             "rebuildUi": "Recargar interfaz",
             "disableTheme": "Desactivar tema",
             "exit": "Salir"
@@ -2487,6 +2492,12 @@
                     "layout_table": "Página de notificaciones",
                     "post_update_changelog_prompt": "Mostrar las notas de la actualización tras actualizar",
                     "post_update_changelog_prompt_description": "Muestra las novedades tras instalar una actualización.",
+                    "do_not_disturb": {
+                        "header": "No molestar",
+                        "description": "Pausa temporalmente las notificaciones del escritorio, TTS, XSOverlay, OVR Toolkit y los avisos HMD de VRCX-0. Los webhooks, la actividad de muñeca y el historial de notificaciones continúan.",
+                        "end_on_game_start": "Desactivar al iniciar VRChat",
+                        "end_on_game_start_description": "Solo se aplica cuando VRChat pasa de estar cerrado a ejecutarse. Puedes volver a activar No molestar mientras juegas."
+                    },
                     "vr_notifications": {
                         "header": "Notificaciones del overlay VR",
                         "xsoverlay_notifications": "Notificaciones de XSOverlay",
@@ -5791,6 +5802,14 @@
         "add_table_page_size": "Añadir tamaño de página de tabla"
     },
     "status_bar": {
+        "do_not_disturb": "No molestar",
+        "do_not_disturb_active": "No molestar está activado",
+        "do_not_disturb_until": "No molestar hasta las {time}",
+        "do_not_disturb_one_hour": "Durante 1 hora",
+        "do_not_disturb_three_hours": "Durante 3 horas",
+        "do_not_disturb_until_stopped": "Hasta que lo desactive",
+        "do_not_disturb_turn_off": "Desactivar No molestar",
+        "do_not_disturb_failed": "No se pudo cambiar No molestar",
         "world_collection_importing": "Importando colección de mundos ({progress}/{total})",
         "game": "Juego",
         "game_stopped": "VRChat no se está ejecutando",

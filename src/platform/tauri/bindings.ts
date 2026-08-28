@@ -136,6 +136,13 @@ const generatedCommands = {
     async appAncillaryRuntimeSnapshotGet(): Promise<AncillaryRuntimeSnapshot> {
         return await TAURI_INVOKE('app__ancillary_runtime_snapshot_get');
     },
+    async appNotificationDoNotDisturbModeSet(
+        mode: NotificationDoNotDisturbMode
+    ): Promise<NotificationDoNotDisturbSnapshot> {
+        return await TAURI_INVOKE('app__notification_do_not_disturb_mode_set', {
+            mode
+        });
+    },
     async appStartBackgroundMode(): Promise<BackendRuntimeSnapshot> {
         return await TAURI_INVOKE('app__start_background_mode');
     },
@@ -2807,6 +2814,7 @@ export type AncillaryRuntimeSnapshot = {
     gameClientDebugLoggingStatus: DebugLoggingOutcome | null;
     gameProcessSnapshot: HostSessionProjection | null;
     backgroundImageState: BackgroundImageProjection;
+    notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
 };
 export type AppDataDirSource = 'cli' | 'persisted' | 'default';
 export type AppDataDirState = {
@@ -3194,6 +3202,7 @@ export type BackendRuntimeEventPayloadMap = {
     realtimeProjectionSync: RealtimeProjectionSync;
     updateIsGameRunning: HostSessionProjection;
     integrationApiStartFailed: IntegrationApiStartFailedPayload;
+    notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
 };
 export type BackendRuntimeGameLogStatus =
     | 'idle'
@@ -4926,6 +4935,16 @@ export type NotificationBoopReplyInput = {
     endpoint?: string;
     target: NotificationTarget;
     emojiId?: string;
+};
+export type NotificationDoNotDisturbMode =
+    | 'off'
+    | 'oneHour'
+    | 'threeHours'
+    | 'untilStopped';
+export type NotificationDoNotDisturbSnapshot = {
+    revision: number;
+    mode: NotificationDoNotDisturbMode;
+    endsAt: string | null;
 };
 export type NotificationHideExpireInput = {
     ownerUserId: OwnerId;

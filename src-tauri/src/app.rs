@@ -14,6 +14,7 @@ use vrcx_0_application_core::{
     recommended_tokio_max_blocking_threads, recommended_tokio_worker_threads, BackendRuntimeMode,
     BackendRuntimePhase,
 };
+use vrcx_0_runtime_host_desktop::notification::NotificationDoNotDisturbMode;
 
 fn stop_background_mode_and_show_window(app: &tauri::AppHandle, state: &AppState) {
     if let Err(error) = bootstrap::restore_foreground_window_from_background_mode(app, state) {
@@ -93,6 +94,22 @@ fn start_background_mode_from_shell(app: tauri::AppHandle) {
             tracing::warn!(error = %error, "failed to start background mode from tray");
         }
     });
+}
+
+fn set_do_not_disturb_from_tray(app: &tauri::AppHandle, mode: NotificationDoNotDisturbMode) {
+    let Some(state) = app.try_state::<AppState>() else {
+        return;
+    };
+    if let Err(error) = state
+        .runtime_host()
+        .set_notification_do_not_disturb_mode(mode)
+    {
+        tracing::warn!(error = %error, "failed to update do not disturb mode from tray");
+        return;
+    }
+    if let Err(error) = bootstrap::refresh_tray_menu(app, &state) {
+        tracing::warn!(error = %error, "failed to refresh tray menu after do not disturb update");
+    }
 }
 
 fn install_adaptive_tauri_async_runtime() -> tokio::runtime::Runtime {
@@ -290,6 +307,18 @@ pub fn run() {
             }
             "tray-disable-theme" => {
                 disable_community_theme_from_tray(app);
+            }
+            "tray-dnd-one-hour" => {
+                set_do_not_disturb_from_tray(app, NotificationDoNotDisturbMode::OneHour);
+            }
+            "tray-dnd-three-hours" => {
+                set_do_not_disturb_from_tray(app, NotificationDoNotDisturbMode::ThreeHours);
+            }
+            "tray-dnd-until-stopped" => {
+                set_do_not_disturb_from_tray(app, NotificationDoNotDisturbMode::UntilStopped);
+            }
+            "tray-dnd-turn-off" => {
+                set_do_not_disturb_from_tray(app, NotificationDoNotDisturbMode::Off);
             }
             "tray-rebuild-ui" => {
                 let app_handle = app.clone();

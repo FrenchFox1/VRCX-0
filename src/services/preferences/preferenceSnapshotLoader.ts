@@ -120,6 +120,7 @@ export async function loadPreferenceSnapshot() {
         desktopToast,
         afkDesktopToast,
         desktopNotificationSound,
+        notificationDoNotDisturbEndOnGameStart,
         notificationTTS,
         notificationTTSNickName,
         notificationTTSNameMode,
@@ -255,6 +256,10 @@ export async function loadPreferenceSnapshot() {
         configRepository.getString('desktopToast', 'Never'),
         configRepository.getBool('afkDesktopToast', false),
         configRepository.getBool('desktopNotificationSound', false),
+        configRepository.getBool(
+            'notificationDoNotDisturbEndOnGameStart',
+            true
+        ),
         configRepository.getString('notificationTTS', 'Never'),
         configRepository.getBool('notificationTTSNickName', false),
         configRepository.getString('notificationTTSNameMode', ''),
@@ -462,6 +467,9 @@ export async function loadPreferenceSnapshot() {
         desktopToast: desktopToast || 'Never',
         afkDesktopToast: Boolean(afkDesktopToast),
         desktopNotificationSound: Boolean(desktopNotificationSound),
+        notificationDoNotDisturbEndOnGameStart: Boolean(
+            notificationDoNotDisturbEndOnGameStart
+        ),
         notificationTTS: notificationTTS || 'Never',
         notificationTTSNickName: Boolean(notificationTTSNickName),
         notificationTTSNameMode: normalizeNotificationTtsNameMode(
