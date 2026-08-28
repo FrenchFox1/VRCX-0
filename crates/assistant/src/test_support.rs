@@ -1,22 +1,19 @@
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
+use serde_json::Value;
 use vrcx_0_contracts::llm::ToolDefinition;
-use vrcx_0_persistence::{assistant, config::ConfigRepository, DatabaseService};
+use vrcx_0_core::OwnerId;
 
 use crate::ports::{
     AssistantConfig, AssistantConfigPort, AssistantLlmClientFactory, AssistantLlmClientFactoryPort,
     AssistantLlmClientInput, AssistantLlmClientPort, AssistantLlmError, AssistantMessageInsert,
-    AssistantPortError, AssistantPortResult, AssistantSessionPersistence,
-    AssistantSessionPersistencePort, AssistantSessionRuntimeUpdate, AssistantSessionUpsert,
-    AssistantSqliteErrorCategory, PersistedAssistantMessage, PersistedAssistantSession,
+    AssistantPortError, AssistantPortResult, AssistantSessionPersistencePort,
+    AssistantSessionRuntimeUpdate, AssistantSessionUpsert, PersistedAssistantMessage,
+    PersistedAssistantSession,
 };
-use vrcx_0_core::OwnerId;
 
-static TEST_DATABASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
-
-pub(crate) fn tool_def(name: &str, parameters: serde_json::Value) -> ToolDefinition {
+pub(crate) fn tool_def(name: &str, parameters: Value) -> ToolDefinition {
     ToolDefinition {
         name: name.into(),
         description: String::new(),
@@ -24,33 +21,74 @@ pub(crate) fn tool_def(name: &str, parameters: serde_json::Value) -> ToolDefinit
     }
 }
 
-pub(crate) fn unique_test_database_path(prefix: &str) -> PathBuf {
-    let sequence = TEST_DATABASE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!(
-        "{prefix}-{}-{nonce}-{sequence}",
-        std::process::id()
-    ));
-    std::fs::create_dir_all(&dir).unwrap();
-    dir.join("VRCX-0.sqlite3")
-}
-
-pub(crate) fn test_config_port(prefix: &str) -> AssistantConfig {
-    let db = Arc::new(DatabaseService::new(&unique_test_database_path(prefix)).unwrap());
-    Arc::new(TestAssistantConfigAdapter {
-        config: ConfigRepository::new(db),
-    })
-}
-
-pub(crate) fn test_session_persistence(db: Arc<DatabaseService>) -> AssistantSessionPersistence {
-    Arc::new(TestAssistantSessionPersistenceAdapter { db })
+pub(crate) fn test_config_port() -> AssistantConfig {
+    Arc::new(TestAssistantConfigPort::default())
 }
 
 pub(crate) fn test_llm_factory() -> AssistantLlmClientFactory {
     Arc::new(TestAssistantLlmClientFactory)
+}
+
+#[derive(Default)]
+struct TestAssistantConfigPort {
+    values: Mutex<HashMap<String, Value>>,
+}
+
+impl AssistantConfigPort for TestAssistantConfigPort {
+    fn get_bool(&self, key: &str, default: bool) -> AssistantPortResult<bool> {
+        Ok(self
+            .values
+            .lock()
+            .unwrap()
+            .get(key)
+            .and_then(Value::as_bool)
+            .unwrap_or(default))
+    }
+
+    fn set_bool(&self, key: &str, value: bool) -> AssistantPortResult<()> {
+        self.values
+            .lock()
+            .unwrap()
+            .insert(key.to_string(), Value::Bool(value));
+        Ok(())
+    }
+
+    fn get_string(&self, key: &str, default: &str) -> AssistantPortResult<String> {
+        Ok(self
+            .values
+            .lock()
+            .unwrap()
+            .get(key)
+            .and_then(Value::as_str)
+            .unwrap_or(default)
+            .to_string())
+    }
+
+    fn set_string(&self, key: &str, value: &str) -> AssistantPortResult<()> {
+        self.values
+            .lock()
+            .unwrap()
+            .insert(key.to_string(), Value::String(value.to_string()));
+        Ok(())
+    }
+
+    fn get_json(&self, key: &str, default: Value) -> AssistantPortResult<Value> {
+        Ok(self
+            .values
+            .lock()
+            .unwrap()
+            .get(key)
+            .cloned()
+            .unwrap_or(default))
+    }
+
+    fn set_json(&self, key: &str, value: &Value) -> AssistantPortResult<()> {
+        self.values
+            .lock()
+            .unwrap()
+            .insert(key.to_string(), value.clone());
+        Ok(())
+    }
 }
 
 struct TestAssistantLlmClientFactory;
@@ -64,69 +102,64 @@ impl AssistantLlmClientFactoryPort for TestAssistantLlmClientFactory {
     }
 }
 
-struct TestAssistantConfigAdapter {
-    config: ConfigRepository,
+#[derive(Clone, Default)]
+pub(crate) struct TestAssistantSessionPersistence {
+    state: Arc<Mutex<TestAssistantSessionPersistenceState>>,
 }
 
-impl AssistantConfigPort for TestAssistantConfigAdapter {
-    fn get_bool(&self, key: &str, default: bool) -> AssistantPortResult<bool> {
-        self.config.get_bool(key, default).map_err(port_error)
+#[derive(Default)]
+struct TestAssistantSessionPersistenceState {
+    sessions: HashMap<String, PersistedAssistantSession>,
+    messages: HashMap<String, Vec<PersistedAssistantMessage>>,
+    fail_load_messages: bool,
+    fail_writes: bool,
+}
+
+impl TestAssistantSessionPersistence {
+    pub(crate) fn set_load_messages_failure(&self, fail: bool) {
+        self.state.lock().unwrap().fail_load_messages = fail;
     }
 
-    fn set_bool(&self, key: &str, value: bool) -> AssistantPortResult<()> {
-        self.config.set_bool(key, value).map_err(port_error)
+    pub(crate) fn set_write_failure(&self, fail: bool) {
+        self.state.lock().unwrap().fail_writes = fail;
     }
 
-    fn get_string(&self, key: &str, default: &str) -> AssistantPortResult<String> {
-        self.config.get_string(key, default).map_err(port_error)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> AssistantPortResult<()> {
-        self.config.set_string(key, value).map_err(port_error)
-    }
-
-    fn get_json(
+    pub(crate) fn seed_session(
         &self,
-        key: &str,
-        default: serde_json::Value,
-    ) -> AssistantPortResult<serde_json::Value> {
-        self.config.get_json(key, default).map_err(port_error)
-    }
-
-    fn set_json(&self, key: &str, value: &serde_json::Value) -> AssistantPortResult<()> {
-        self.config.set_json(key, value).map_err(port_error)
+        owner_user_id: &OwnerId,
+        id: &str,
+        title: &str,
+        created_at: &str,
+        updated_at: &str,
+    ) {
+        self.upsert_session(AssistantSessionUpsert {
+            owner_user_id,
+            id,
+            title,
+            created_at,
+            updated_at,
+        })
+        .unwrap();
     }
 }
 
-struct TestAssistantSessionPersistenceAdapter {
-    db: Arc<DatabaseService>,
-}
-
-impl AssistantSessionPersistencePort for TestAssistantSessionPersistenceAdapter {
+impl AssistantSessionPersistencePort for TestAssistantSessionPersistence {
     fn load_sessions(
         &self,
         owner_user_id: &OwnerId,
     ) -> AssistantPortResult<Vec<PersistedAssistantSession>> {
-        assistant::assistant_sessions_load(self.db.as_ref(), owner_user_id)
-            .map(|sessions| {
-                sessions
-                    .into_iter()
-                    .map(|session| PersistedAssistantSession {
-                        owner_user_id: session.owner_user_id,
-                        id: session.id,
-                        title: session.title,
-                        created_at: session.created_at,
-                        updated_at: session.updated_at,
-                        entity_panel_open: session.entity_panel_open,
-                        surfaced_entities: session.surfaced_entities,
-                        endpoint_id: session.endpoint_id,
-                        model: session.model,
-                        allow_writes: session.allow_writes,
-                        playbook_mode: session.playbook_mode,
-                    })
-                    .collect()
-            })
-            .map_err(port_error)
+        let owner_user_id = owner_user_id.as_str().trim();
+        let mut sessions = self
+            .state
+            .lock()
+            .unwrap()
+            .sessions
+            .values()
+            .filter(|session| session_visible_to(session, owner_user_id))
+            .cloned()
+            .collect::<Vec<_>>();
+        sessions.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+        Ok(sessions)
     }
 
     fn load_messages(
@@ -134,32 +167,49 @@ impl AssistantSessionPersistencePort for TestAssistantSessionPersistenceAdapter 
         owner_user_id: &OwnerId,
         session_id: &str,
     ) -> AssistantPortResult<Vec<PersistedAssistantMessage>> {
-        assistant::assistant_session_messages_load(self.db.as_ref(), owner_user_id, session_id)
-            .map(|messages| {
-                messages
-                    .into_iter()
-                    .map(|message| PersistedAssistantMessage {
-                        id: message.id,
-                        seq: message.seq,
-                        role: message.role,
-                        content: message.content,
-                        created_at: message.created_at,
-                    })
-                    .collect()
-            })
-            .map_err(port_error)
+        let state = self.state.lock().unwrap();
+        if state.fail_load_messages {
+            return Err(test_failure("message load failed"));
+        }
+        let visible = state
+            .sessions
+            .get(session_id)
+            .is_some_and(|session| session_visible_to(session, owner_user_id.as_str().trim()));
+        if !visible {
+            return Ok(Vec::new());
+        }
+        let mut messages = state.messages.get(session_id).cloned().unwrap_or_default();
+        messages.sort_by_key(|message| message.seq);
+        Ok(messages)
     }
 
     fn upsert_session(&self, input: AssistantSessionUpsert<'_>) -> AssistantPortResult<()> {
-        assistant::assistant_session_upsert(
-            self.db.as_ref(),
-            input.owner_user_id,
-            input.id,
-            input.title,
-            input.created_at,
-            input.updated_at,
-        )
-        .map_err(port_error)
+        let mut state = self.state.lock().unwrap();
+        if state.fail_writes {
+            return Err(test_failure("session write failed"));
+        }
+        if let Some(session) = state.sessions.get_mut(input.id) {
+            session.title = input.title.to_string();
+            session.updated_at = input.updated_at.to_string();
+        } else {
+            state.sessions.insert(
+                input.id.to_string(),
+                PersistedAssistantSession {
+                    owner_user_id: input.owner_user_id.clone(),
+                    id: input.id.to_string(),
+                    title: input.title.to_string(),
+                    created_at: input.created_at.to_string(),
+                    updated_at: input.updated_at.to_string(),
+                    entity_panel_open: false,
+                    surfaced_entities: "[]".into(),
+                    endpoint_id: String::new(),
+                    model: String::new(),
+                    allow_writes: false,
+                    playbook_mode: "open".into(),
+                },
+            );
+        }
+        Ok(())
     }
 
     fn set_ui_state(
@@ -168,72 +218,72 @@ impl AssistantSessionPersistencePort for TestAssistantSessionPersistenceAdapter 
         entity_panel_open: bool,
         surfaced_entities: &str,
     ) -> AssistantPortResult<()> {
-        assistant::assistant_session_set_ui_state(
-            self.db.as_ref(),
-            session_id,
-            entity_panel_open,
-            surfaced_entities,
-        )
-        .map_err(port_error)
+        let mut state = self.state.lock().unwrap();
+        if state.fail_writes {
+            return Err(test_failure("session UI state write failed"));
+        }
+        if let Some(session) = state.sessions.get_mut(session_id) {
+            session.entity_panel_open = entity_panel_open;
+            session.surfaced_entities = surfaced_entities.to_string();
+        }
+        Ok(())
     }
 
     fn set_runtime(&self, input: AssistantSessionRuntimeUpdate<'_>) -> AssistantPortResult<()> {
-        assistant::assistant_session_set_runtime(
-            self.db.as_ref(),
-            input.id,
-            input.endpoint_id,
-            input.model,
-            input.allow_writes,
-            input.playbook_mode,
-        )
-        .map_err(port_error)
+        let mut state = self.state.lock().unwrap();
+        if state.fail_writes {
+            return Err(test_failure("session runtime write failed"));
+        }
+        if let Some(session) = state.sessions.get_mut(input.id) {
+            session.endpoint_id = input.endpoint_id.unwrap_or_default().to_string();
+            session.model = input.model.unwrap_or_default().to_string();
+            session.allow_writes = input.allow_writes;
+            session.playbook_mode = input.playbook_mode.to_string();
+        }
+        Ok(())
     }
 
     fn delete_session(&self, owner_user_id: &OwnerId, session_id: &str) -> AssistantPortResult<()> {
-        assistant::assistant_session_delete(self.db.as_ref(), owner_user_id, session_id)
-            .map_err(port_error)
+        let mut state = self.state.lock().unwrap();
+        if state.fail_writes {
+            return Err(test_failure("session delete failed"));
+        }
+        let visible = state
+            .sessions
+            .get(session_id)
+            .is_some_and(|session| session_visible_to(session, owner_user_id.as_str().trim()));
+        if visible {
+            state.sessions.remove(session_id);
+            state.messages.remove(session_id);
+        }
+        Ok(())
     }
 
     fn insert_message(&self, input: AssistantMessageInsert<'_>) -> AssistantPortResult<()> {
-        assistant::assistant_message_insert(
-            self.db.as_ref(),
-            input.id,
-            input.session_id,
-            input.seq,
-            input.role,
-            input.content,
-            input.created_at,
-        )
-        .map_err(port_error)
+        let mut state = self.state.lock().unwrap();
+        if state.fail_writes {
+            return Err(test_failure("message write failed"));
+        }
+        let messages = state
+            .messages
+            .entry(input.session_id.to_string())
+            .or_default();
+        messages.retain(|message| message.id != input.id);
+        messages.push(PersistedAssistantMessage {
+            id: input.id.to_string(),
+            seq: input.seq,
+            role: input.role.to_string(),
+            content: input.content.to_string(),
+            created_at: input.created_at.to_string(),
+        });
+        Ok(())
     }
 }
 
-fn port_error(error: vrcx_0_persistence::Error) -> AssistantPortError {
-    match error {
-        vrcx_0_persistence::Error::Database(message) => AssistantPortError::Database {
-            message,
-            sqlite_category: None,
-        },
-        vrcx_0_persistence::Error::Sqlite { message, category } => AssistantPortError::Database {
-            message,
-            sqlite_category: category.map(|category| match category {
-                vrcx_0_persistence::SqliteErrorCategory::Malformed => {
-                    AssistantSqliteErrorCategory::Malformed
-                }
-                vrcx_0_persistence::SqliteErrorCategory::DiskFull => {
-                    AssistantSqliteErrorCategory::DiskFull
-                }
-                vrcx_0_persistence::SqliteErrorCategory::Locked => {
-                    AssistantSqliteErrorCategory::Locked
-                }
-                vrcx_0_persistence::SqliteErrorCategory::IoError => {
-                    AssistantSqliteErrorCategory::IoError
-                }
-            }),
-        },
-        vrcx_0_persistence::Error::Io(error) => AssistantPortError::Io(error.to_string()),
-        vrcx_0_persistence::Error::Json(error) => AssistantPortError::Json(error.to_string()),
-        vrcx_0_persistence::Error::InvalidData(message) => AssistantPortError::InvalidData(message),
-        vrcx_0_persistence::Error::Custom(message) => AssistantPortError::Custom(message),
-    }
+fn session_visible_to(session: &PersistedAssistantSession, owner_user_id: &str) -> bool {
+    session.owner_user_id.as_str().is_empty() || session.owner_user_id.as_str() == owner_user_id
+}
+
+fn test_failure(message: &str) -> AssistantPortError {
+    AssistantPortError::Custom(message.to_string())
 }

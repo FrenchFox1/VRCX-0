@@ -2,12 +2,10 @@
 
 use tauri::State;
 use vrcx_0_application_core::vrchat_api::require_text;
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::favorites::{favorite_groups_get_input, favorite_worlds_get_input};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use super::types::{
     LocalFavoriteGroupInput, LocalFavoriteGroupRenameInput, LocalFavoriteInput,
@@ -15,36 +13,24 @@ use super::types::{
     VrchatFavoriteGroupSaveInput, VrchatFavoriteGroupsInput, VrchatFavoriteWorldsInput,
 };
 
-async fn execute_favorite_api(
-    state: State<'_, AppState>,
-    command: &str,
-    detail: impl Into<String>,
-    input: VrchatApiRequest,
-) -> Result<VrchatApiResponse, AppError> {
-    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
-        .await
-}
-
 #[tauri::command]
 #[specta::specta]
 pub async fn app__vrchat_favorite_worlds_get(
     state: State<'_, AppState>,
     input: VrchatFavoriteWorldsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_favorite_api(
-        state,
-        "app__vrchat_favorite_worlds_get",
-        format!("Getting favorite worlds offset {}.", input.offset),
-        favorite_worlds_get_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .favorite_worlds(
             input.n,
             input.offset,
             input.owner_id,
             input.user_id,
             input.tag,
-        ),
-    )
-    .await
+        )
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -53,18 +39,12 @@ pub async fn app__vrchat_favorite_groups_get(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_favorite_api(
-        state,
-        "app__vrchat_favorite_groups_get",
-        format!("Getting favorite groups offset {}.", input.offset),
-        favorite_groups_get_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.n,
-            input.offset,
-            input.owner_id,
-        ),
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .favorite_groups(input.n, input.offset, input.owner_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

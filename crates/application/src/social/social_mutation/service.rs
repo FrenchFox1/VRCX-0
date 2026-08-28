@@ -506,7 +506,7 @@ async fn execute_vrchat_json_request(
     if request.url.is_none() {
         request.endpoint = Some(auth_scope.endpoint.clone());
     }
-    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
+    let response = deps.remote.send(request, VrchatScope::Vrchat).await?;
     match validate_vrchat_mutation_response(response.status, &response.data) {
         Ok(payload) => Ok(payload),
         Err(error) => {

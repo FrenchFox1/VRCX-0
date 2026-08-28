@@ -67,11 +67,8 @@ impl DesktopMediaRuntime {
     pub fn prepare_media_upload_request(
         &self,
         input: VrchatApiRequest,
-    ) -> Result<VrchatApiRequest> {
-        Ok(application_media::prepare_media_upload_request(
-            &self.media_upload_adapter,
-            input,
-        )?)
+    ) -> vrcx_0_application_core::Result<VrchatApiRequest> {
+        application_media::prepare_media_upload_request(&self.media_upload_adapter, input)
     }
 
     pub fn decode_image_file(
@@ -187,8 +184,8 @@ impl DesktopMediaRuntime {
         )?)
     }
 
-    pub fn ensure_print_deletable(&self, print_id: &str) -> Result<()> {
-        Ok(ensure_print_deletable(&self.print_adapter, print_id)?)
+    pub fn ensure_print_deletable(&self, print_id: &str) -> vrcx_0_application_core::Result<()> {
+        ensure_print_deletable(&self.print_adapter, print_id)
     }
 
     pub async fn collect_inventory_items(

@@ -1,5 +1,3 @@
-use std::sync::{Arc, Barrier};
-
 use crate::config::{
     ASSISTANT_API_KEY_CONFIG_KEY, ASSISTANT_BASE_URL_CONFIG_KEY, ASSISTANT_MODEL_CONFIG_KEY,
 };
@@ -8,29 +6,11 @@ use crate::test_support::{test_config_port, test_llm_factory};
 use super::*;
 
 fn test_config() -> AssistantConfig {
-    test_config_port("vrcx-0-llm-endpoints")
+    test_config_port()
 }
 
 fn test_endpoint_store(config: AssistantConfig, proxy_url: Option<String>) -> EndpointStore {
     EndpointStore::new(config, test_llm_factory(), proxy_url)
-}
-
-#[test]
-fn test_configs_initialize_in_parallel_without_sharing_a_database() {
-    let barrier = Arc::new(Barrier::new(16));
-    let threads = (0..16)
-        .map(|_| {
-            let barrier = barrier.clone();
-            std::thread::spawn(move || {
-                barrier.wait();
-                drop(test_config());
-            })
-        })
-        .collect::<Vec<_>>();
-
-    for thread in threads {
-        thread.join().unwrap();
-    }
 }
 
 #[test]

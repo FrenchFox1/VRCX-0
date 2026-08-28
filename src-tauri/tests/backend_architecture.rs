@@ -28,7 +28,7 @@ fn rust_sources_below(path: &str) -> Vec<PathBuf> {
     sources
 }
 
-fn normal_dependency_names(package_name: &str) -> BTreeSet<String> {
+fn dependency_names(package_name: &str, kind: DependencyKind) -> BTreeSet<String> {
     static METADATA: OnceLock<cargo_metadata::Metadata> = OnceLock::new();
     let metadata = METADATA.get_or_init(|| {
         MetadataCommand::new()
@@ -45,9 +45,17 @@ fn normal_dependency_names(package_name: &str) -> BTreeSet<String> {
     package
         .dependencies
         .iter()
-        .filter(|dependency| dependency.kind == DependencyKind::Normal)
+        .filter(|dependency| dependency.kind == kind)
         .map(|dependency| dependency.name.clone())
         .collect()
+}
+
+fn normal_dependency_names(package_name: &str) -> BTreeSet<String> {
+    dependency_names(package_name, DependencyKind::Normal)
+}
+
+fn development_dependency_names(package_name: &str) -> BTreeSet<String> {
+    dependency_names(package_name, DependencyKind::Development)
 }
 
 fn named_struct_body<'a>(source: &'a str, declaration: &str) -> &'a str {
@@ -72,81 +80,39 @@ fn named_struct_body<'a>(source: &'a str, declaration: &str) -> &'a str {
 }
 
 #[test]
-fn instance_join_command_is_only_an_inbound_adapter() {
+fn vrchat_commands_do_not_access_transport_implementation_directly() {
+    for path in rust_sources_below("src-tauri/src/commands/vrchat") {
+        let source = std::fs::read_to_string(&path).expect("read VRChat command source");
+        for transport in ["VrchatApiRequest", "vrcx_0_vrchat_client"] {
+            assert!(
+                !source.contains(transport),
+                "VRChat transport implementation {transport} leaked into Tauri command {}",
+                path.display()
+            );
+        }
+    }
+}
+
+#[test]
+fn vrchat_remote_adapter_preserves_structured_host_errors() {
     let source = std::fs::read_to_string(workspace_file(
-        "src-tauri/src/commands/vrchat/instances/service.rs",
+        "crates/runtime-host-desktop/src/vrchat_remote.rs",
     ))
-    .expect("read instance command source");
-
-    for forbidden_owner in [
-        "struct TauriInstanceLaunchHttpClient",
-        "struct TauriInstanceLaunchPipe",
-        "fn should_focus_game_window",
-    ] {
-        assert!(
-            !source.contains(forbidden_owner),
-            "instance launch adapter ownership leaked into the Tauri command module: {forbidden_owner}"
-        );
-    }
+    .expect("read desktop VRChat remote adapter");
+    assert!(
+        !source.contains("Error::Custom(error.to_string())"),
+        "desktop VRChat adapter must not flatten structured host errors into strings"
+    );
 }
 
 #[test]
-fn current_user_mutation_commands_are_only_inbound_adapters() {
-    let source = std::fs::read_to_string(workspace_file(
-        "src-tauri/src/commands/vrchat/users/service.rs",
-    ))
-    .expect("read user command source");
-
-    for forbidden_owner in [
-        "AuthenticatedMutationContext::capture",
-        "execute_current_user_api_then_invalidate",
-        "current_user_update_input(",
-        "current_user_badge_update_input(",
-        "current_user_tags_add_input(",
-        "current_user_tags_remove_input(",
-        "profile_update_input(",
-    ] {
-        assert!(
-            !source.contains(forbidden_owner),
-            "current-user mutation ownership leaked into the Tauri command module: {forbidden_owner}"
-        );
-    }
-}
-
-#[test]
-fn generic_vrchat_execution_policy_is_not_owned_by_tauri() {
-    let source =
-        std::fs::read_to_string(workspace_file("src-tauri/src/commands/vrchat/execute.rs"))
-            .expect("read generic VRChat execution adapter");
-    for forbidden_owner in [
-        "AuthenticatedMutationContext::capture",
-        "is_remote_mutation_request",
-        "VRCHAT_REMOTE_MUTATION_INTERVAL",
-        "execute_api_command",
-    ] {
-        assert!(
-            !source.contains(forbidden_owner),
-            "generic VRChat execution policy leaked into Tauri: {forbidden_owner}"
-        );
-    }
-}
-
-#[test]
-fn mcp_and_assistant_do_not_construct_from_complete_host_state() {
-    for path in [
-        "crates/mcp/src/runtime.rs",
-        "crates/assistant/src/runtime.rs",
-    ] {
-        let source = std::fs::read_to_string(workspace_file(path)).expect("read runtime source");
-        assert!(
-            !source.contains("RuntimeHostState"),
-            "runtime depends on the complete host service graph: {path}"
-        );
-        assert!(
-            !source.contains("from_host("),
-            "runtime extracts its own dependencies from the host: {path}"
-        );
-    }
+fn application_remote_facade_uses_explicit_exports() {
+    let source = std::fs::read_to_string(workspace_file("crates/application/src/remote/mod.rs"))
+        .expect("read application remote facade");
+    assert!(
+        !source.contains("pub use input::*"),
+        "application remote facade must explicitly name its public contract"
+    );
 }
 
 #[test]
@@ -158,25 +124,6 @@ fn local_commands_do_not_access_persistence_directly() {
             "local inbound adapter accesses persistence directly: {}",
             path.display()
         );
-    }
-}
-
-#[test]
-fn tauri_commands_do_not_access_outbound_infrastructure_directly() {
-    for path in rust_sources_below("src-tauri/src/commands") {
-        let source = std::fs::read_to_string(&path).expect("read Tauri command source");
-        for dependency in [
-            "vrcx_0_persistence",
-            "vrcx_0_vrchat_client",
-            "vrcx_0_integrations",
-            "vrcx_0_media",
-        ] {
-            assert!(
-                !source.contains(dependency),
-                "Tauri inbound adapter accesses outbound infrastructure {dependency}: {}",
-                path.display()
-            );
-        }
     }
 }
 
@@ -210,40 +157,6 @@ fn owner_lookup_does_not_run_schema_ddl_on_the_read_path() {
         .expect("find owner row lookup body");
     assert!(!lookup.contains("ensure_owner_table"));
     assert!(!lookup.contains("CREATE TABLE"));
-}
-
-#[test]
-fn runtime_session_and_now_playing_state_use_typed_projections() {
-    let session = std::fs::read_to_string(workspace_file(
-        "crates/application-core/src/ports/session.rs",
-    ))
-    .expect("read session projection source");
-    assert!(session.contains("pub struct CurrentUserSnapshot(Arc<Value>)"));
-    assert!(!session.contains("current_user_snapshot: Arc<Value>"));
-
-    let identity = std::fs::read_to_string(workspace_file(
-        "crates/application/src/auth/session_projection.rs",
-    ))
-    .expect("read identity session projection");
-    assert!(identity.contains("current_user_snapshot: CurrentUserSnapshot"));
-    assert!(!identity.contains("current_user_snapshot: Arc<Value>"));
-
-    let desktop =
-        std::fs::read_to_string(workspace_file("crates/runtime-host-desktop/src/context.rs"))
-            .expect("read desktop context state");
-    assert!(desktop.contains("Arc<Mutex<Arc<NowPlayingSnapshot>>>"));
-    assert!(!desktop.contains("Arc<Mutex<Arc<Value>>>"));
-}
-
-#[test]
-fn task_supervisor_closes_registration_before_shutdown_waits() {
-    let source = std::fs::read_to_string(workspace_file(
-        "crates/application-core/src/task_supervisor.rs",
-    ))
-    .expect("read task supervisor source");
-    assert!(source.contains("pub enum TaskSpawnOutcome"));
-    assert!(source.contains("pub struct TaskStopReport"));
-    assert!(source.contains("lifecycle.accepting_tasks = false"));
 }
 
 #[test]
@@ -303,22 +216,6 @@ fn tauri_app_state_keeps_feature_graph_private() {
         );
     }
     assert!(!source.contains("impl Deref for AppState"));
-}
-
-#[test]
-fn openai_translation_coordination_is_application_owned() {
-    let application = std::fs::read_to_string(workspace_file(
-        "crates/application/src/discovery/translation.rs",
-    ))
-    .expect("read translation use case");
-    let command = std::fs::read_to_string(workspace_file(
-        "src-tauri/src/commands/application/translation.rs",
-    ))
-    .expect("read translation command");
-    assert!(application.contains("pub trait OpenAiTranslationPort"));
-    assert!(application.contains("pub async fn complete_translation"));
-    assert!(!command.contains("TranslationDispatch"));
-    assert!(!command.contains("LlmTranslateInput"));
 }
 
 #[test]
@@ -391,16 +288,6 @@ fn desktop_execution_modules_do_not_receive_the_complete_runtime_context() {
 }
 
 #[test]
-fn external_api_transport_errors_reach_diagnostics_and_sync_recording() {
-    let source = std::fs::read_to_string(workspace_file(
-        "crates/runtime-host-desktop/src/external_api.rs",
-    ))
-    .expect("read external API runtime");
-    assert!(source.contains(".and_then(|(status, data)|"));
-    assert!(!source.contains("self.web.execute_external(request).await?"));
-}
-
-#[test]
 fn tauri_commands_only_receive_feature_facades_from_host_state() {
     for path in rust_sources_below("src-tauri/src/commands") {
         let source = std::fs::read_to_string(&path).expect("read Tauri command source");
@@ -410,24 +297,6 @@ fn tauri_commands_only_receive_feature_facades_from_host_state() {
             path.display()
         );
     }
-}
-
-#[test]
-fn application_has_no_system_catch_all_context() {
-    let system_dir = workspace_file("crates/application/src/system");
-    assert!(
-        !system_dir.exists(),
-        "application system catch-all must be decomposed into owning feature contexts: {}",
-        system_dir.display()
-    );
-    let application_root = std::fs::read_to_string(workspace_file("crates/application/src/lib.rs"))
-        .expect("read application root");
-    assert!(
-        !application_root.contains("mod system;")
-            && !application_root.contains("pub mod system;")
-            && !application_root.contains("pub use system::"),
-        "application root must not retain the decomposed system facade"
-    );
 }
 
 #[test]
@@ -546,28 +415,91 @@ fn application_contexts_do_not_expose_concrete_infrastructure_fields() {
 }
 
 #[test]
-fn runtime_event_contract_stays_narrow_for_integration_api() {
-    let dependencies = normal_dependency_names("vrcx-0-runtime-event");
-    let allowed = BTreeSet::from([
-        "serde".to_string(),
-        "specta".to_string(),
-        "vrcx-0-core".to_string(),
-    ]);
-    assert!(
-        dependencies.is_subset(&allowed),
-        "runtime event contract gained dependencies outside {allowed:?}: {dependencies:?}"
-    );
-
-    let integration_api = normal_dependency_names("vrcx-0-integration-api");
-    assert!(
-        integration_api.contains("vrcx-0-runtime-event"),
-        "integration-api must reach runtime event payloads through the narrow contract crate"
-    );
-    for forbidden in ["vrcx-0-contracts", "vrcx-0-application-core", "vrcx-0-core"] {
+fn group_calendar_application_uses_a_semantic_remote_port() {
+    let source = std::fs::read_to_string(workspace_file(
+        "crates/application/src/social/group_calendar.rs",
+    ))
+    .expect("read group calendar application service");
+    assert!(source.contains("pub trait GroupCalendarRemote: Send + Sync"));
+    assert!(!source.contains("GroupCalendarRemoteRequests"));
+    for infrastructure in [
+        "WebClient",
+        "VrchatApiRequest",
+        "VrchatJsonResponse",
+        "execute_api(",
+    ] {
         assert!(
-            !integration_api.contains(forbidden),
-            "integration-api depends on {forbidden}; keep its contract surface narrow"
+            !source.contains(infrastructure),
+            "group calendar application service reaches into remote infrastructure {infrastructure}"
         );
+    }
+}
+
+#[test]
+fn vrc_status_application_uses_a_semantic_remote_port() {
+    let source = std::fs::read_to_string(workspace_file(
+        "crates/application/src/profile/vrc_status.rs",
+    ))
+    .expect("read VRC status application service");
+    assert!(source.contains("pub trait VrcStatusRemote: Send + Sync"));
+    for infrastructure in [
+        "WebClient",
+        "ExternalApiScope",
+        "vrc_status_json_get_input",
+        "execute_external_api(",
+    ] {
+        assert!(
+            !source.contains(infrastructure),
+            "VRC status application service reaches into remote infrastructure {infrastructure}"
+        );
+    }
+}
+
+#[test]
+fn user_dialog_tab_counts_application_uses_a_semantic_source() {
+    let source = std::fs::read_to_string(workspace_file(
+        "crates/application/src/social/user_dialog_tab_counts.rs",
+    ))
+    .expect("read user dialog tab counts application service");
+    assert!(source.contains("pub trait UserDialogTabCountsSource: Send + Sync"));
+    for infrastructure in [
+        "WebClient",
+        "VrchatApiRequest",
+        "VrchatJsonResponse",
+        "execute_api(",
+    ] {
+        assert!(
+            !source.contains(infrastructure),
+            "user dialog tab counts application service reaches into remote infrastructure {infrastructure}"
+        );
+    }
+}
+
+#[test]
+fn application_features_do_not_own_web_transport() {
+    for path in rust_sources_below("crates/application/src") {
+        let source = std::fs::read_to_string(&path).expect("read application source");
+        for infrastructure in ["WebClient", "execute_api(", "execute_external_api("] {
+            assert!(
+                !source.contains(infrastructure),
+                "application feature owns web transport {infrastructure}: {}",
+                path.display()
+            );
+        }
+    }
+}
+
+#[test]
+fn auth_application_uses_semantic_remote_operations() {
+    for path in rust_sources_below("crates/application/src/auth") {
+        let source = std::fs::read_to_string(&path).expect("read auth application source");
+        for transport_contract in ["VrchatApiRequest", "VrchatScope", "AuthRemoteRequests"] {
+            assert!(
+                !source.contains(transport_contract),
+                "auth application owns remote transport contract {transport_contract}: {}",
+                path.display()
+            );
+        }
     }
 }
 
@@ -670,6 +602,257 @@ fn application_crates_do_not_depend_on_outbound_implementations() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn application_business_tests_do_not_depend_on_concrete_storage() {
+    let dependencies = development_dependency_names("vrcx-0-application");
+    for forbidden in ["rusqlite", "vrcx-0-outbound-adapters", "vrcx-0-persistence"] {
+        assert!(
+            !dependencies.contains(forbidden),
+            "application business tests depend on concrete storage {forbidden}"
+        );
+    }
+}
+
+#[test]
+fn runtime_host_context_is_compile_time_private_to_composition() {
+    let composition_root = std::fs::read_to_string(workspace_file("crates/composition/src/lib.rs"))
+        .expect("read composition root");
+    assert!(!composition_root.contains("pub use context::RuntimeHostContext"));
+
+    let context = std::fs::read_to_string(workspace_file("crates/composition/src/context.rs"))
+        .expect("read runtime host context");
+    assert!(context.contains("pub(crate) struct RuntimeHostContext"));
+
+    for path in rust_sources_below("crates/runtime-host-desktop/src") {
+        let source = std::fs::read_to_string(&path).expect("read desktop runtime source");
+        assert!(
+            !source.contains("RuntimeHostContext"),
+            "desktop host names the private composition context: {}",
+            path.display()
+        );
+    }
+}
+
+#[test]
+fn group_instances_owned_projection_marks_remote_entries_as_raw() {
+    let source = std::fs::read_to_string(workspace_file(
+        "crates/application/src/game/background_capabilities/group_instances.rs",
+    ))
+    .expect("read group instances application slice");
+    assert!(source.contains("pub instances: Option<Vec<RawJson>>"));
+    assert!(!source.contains("pub instances: Option<Vec<Value>>"));
+}
+
+#[test]
+fn application_public_remote_json_is_marked_as_an_explicit_raw_boundary() {
+    for root in [
+        "crates/application/src",
+        "crates/application-activity/src",
+        "crates/application-core/src",
+        "crates/application-game/src",
+        "crates/application-realtime/src",
+    ] {
+        for path in rust_sources_below(root) {
+            let source = std::fs::read_to_string(&path).expect("read application source");
+            for line in source.lines() {
+                let line = line.trim_start();
+                assert!(
+                    !(line.starts_with("pub ")
+                        && !line.starts_with("pub fn ")
+                        && !line.starts_with("pub async fn ")
+                        && line.contains(':')
+                        && line.contains("Value")),
+                    "public application JSON fields must use RawJson at their explicit boundary: {}: {line}",
+                    path.display()
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn instance_join_command_is_only_an_inbound_adapter() {
+    let source = std::fs::read_to_string(workspace_file(
+        "src-tauri/src/commands/vrchat/instances/service.rs",
+    ))
+    .expect("read instance command source");
+
+    for forbidden_owner in [
+        "struct TauriInstanceLaunchHttpClient",
+        "struct TauriInstanceLaunchPipe",
+        "fn should_focus_game_window",
+    ] {
+        assert!(
+            !source.contains(forbidden_owner),
+            "instance launch adapter ownership leaked into the Tauri command module: {forbidden_owner}"
+        );
+    }
+}
+
+#[test]
+fn current_user_mutation_commands_are_only_inbound_adapters() {
+    let source = std::fs::read_to_string(workspace_file(
+        "src-tauri/src/commands/vrchat/users/service.rs",
+    ))
+    .expect("read user command source");
+
+    for forbidden_owner in [
+        "AuthenticatedMutationContext::capture",
+        "execute_current_user_api_then_invalidate",
+        "current_user_update_input(",
+        "current_user_badge_update_input(",
+        "current_user_tags_add_input(",
+        "current_user_tags_remove_input(",
+        "profile_update_input(",
+    ] {
+        assert!(
+            !source.contains(forbidden_owner),
+            "current-user mutation ownership leaked into the Tauri command module: {forbidden_owner}"
+        );
+    }
+}
+
+#[test]
+fn mcp_and_assistant_do_not_construct_from_complete_host_state() {
+    for path in [
+        "crates/mcp/src/runtime.rs",
+        "crates/assistant/src/runtime.rs",
+    ] {
+        let source = std::fs::read_to_string(workspace_file(path)).expect("read runtime source");
+        assert!(
+            !source.contains("RuntimeHostState"),
+            "runtime depends on the complete host service graph: {path}"
+        );
+        assert!(
+            !source.contains("from_host("),
+            "runtime extracts its own dependencies from the host: {path}"
+        );
+    }
+}
+
+#[test]
+fn tauri_commands_do_not_access_outbound_infrastructure_directly() {
+    for path in rust_sources_below("src-tauri/src/commands") {
+        let source = std::fs::read_to_string(&path).expect("read Tauri command source");
+        for dependency in [
+            "vrcx_0_persistence",
+            "vrcx_0_vrchat_client",
+            "vrcx_0_integrations",
+            "vrcx_0_media",
+        ] {
+            assert!(
+                !source.contains(dependency),
+                "Tauri inbound adapter accesses outbound infrastructure {dependency}: {}",
+                path.display()
+            );
+        }
+    }
+}
+
+#[test]
+fn runtime_session_and_now_playing_state_use_typed_projections() {
+    let session = std::fs::read_to_string(workspace_file(
+        "crates/application-core/src/ports/session.rs",
+    ))
+    .expect("read session projection source");
+    assert!(session.contains("pub struct CurrentUserSnapshot(Arc<Value>)"));
+    assert!(!session.contains("current_user_snapshot: Arc<Value>"));
+
+    let identity = std::fs::read_to_string(workspace_file(
+        "crates/application/src/auth/session_projection.rs",
+    ))
+    .expect("read identity session projection");
+    assert!(identity.contains("current_user_snapshot: CurrentUserSnapshot"));
+    assert!(!identity.contains("current_user_snapshot: Arc<Value>"));
+
+    let desktop =
+        std::fs::read_to_string(workspace_file("crates/runtime-host-desktop/src/context.rs"))
+            .expect("read desktop context state");
+    assert!(desktop.contains("Arc<Mutex<Arc<NowPlayingSnapshot>>>"));
+    assert!(!desktop.contains("Arc<Mutex<Arc<Value>>>"));
+}
+
+#[test]
+fn task_supervisor_closes_registration_before_shutdown_waits() {
+    let source = std::fs::read_to_string(workspace_file(
+        "crates/application-core/src/task_supervisor.rs",
+    ))
+    .expect("read task supervisor source");
+    assert!(source.contains("pub enum TaskSpawnOutcome"));
+    assert!(source.contains("pub struct TaskStopReport"));
+    assert!(source.contains("lifecycle.accepting_tasks = false"));
+}
+
+#[test]
+fn openai_translation_coordination_is_application_owned() {
+    let application = std::fs::read_to_string(workspace_file(
+        "crates/application/src/discovery/translation.rs",
+    ))
+    .expect("read translation use case");
+    let command = std::fs::read_to_string(workspace_file(
+        "src-tauri/src/commands/application/translation.rs",
+    ))
+    .expect("read translation command");
+    assert!(application.contains("pub trait OpenAiTranslationPort"));
+    assert!(application.contains("pub async fn complete_translation"));
+    assert!(!command.contains("TranslationDispatch"));
+    assert!(!command.contains("LlmTranslateInput"));
+}
+
+#[test]
+fn external_api_transport_errors_reach_diagnostics_and_sync_recording() {
+    let source = std::fs::read_to_string(workspace_file(
+        "crates/runtime-host-desktop/src/external_api.rs",
+    ))
+    .expect("read external API runtime");
+    assert!(source.contains(".and_then(|(status, data)|"));
+    assert!(!source.contains("self.web.execute_external(request).await?"));
+}
+
+#[test]
+fn application_has_no_system_catch_all_context() {
+    let system_dir = workspace_file("crates/application/src/system");
+    assert!(
+        !system_dir.exists(),
+        "application system catch-all must be decomposed into owning feature contexts: {}",
+        system_dir.display()
+    );
+    let application_root = std::fs::read_to_string(workspace_file("crates/application/src/lib.rs"))
+        .expect("read application root");
+    assert!(
+        !application_root.contains("mod system;")
+            && !application_root.contains("pub mod system;")
+            && !application_root.contains("pub use system::"),
+        "application root must not retain the decomposed system facade"
+    );
+}
+
+#[test]
+fn runtime_event_contract_stays_narrow_for_integration_api() {
+    let dependencies = normal_dependency_names("vrcx-0-runtime-event");
+    let allowed = BTreeSet::from([
+        "serde".to_string(),
+        "specta".to_string(),
+        "vrcx-0-core".to_string(),
+    ]);
+    assert!(
+        dependencies.is_subset(&allowed),
+        "runtime event contract gained dependencies outside {allowed:?}: {dependencies:?}"
+    );
+
+    let integration_api = normal_dependency_names("vrcx-0-integration-api");
+    assert!(
+        integration_api.contains("vrcx-0-runtime-event"),
+        "integration-api must reach runtime event payloads through the narrow contract crate"
+    );
+    for forbidden in ["vrcx-0-contracts", "vrcx-0-application-core", "vrcx-0-core"] {
+        assert!(
+            !integration_api.contains(forbidden),
+            "integration-api depends on {forbidden}; keep its contract surface narrow"
+        );
     }
 }
 
@@ -952,67 +1135,10 @@ fn authenticated_session_storage_initialization_uses_an_application_port() {
 }
 
 #[test]
-fn runtime_host_context_is_compile_time_private_to_composition() {
-    let composition_root = std::fs::read_to_string(workspace_file("crates/composition/src/lib.rs"))
-        .expect("read composition root");
-    assert!(!composition_root.contains("pub use context::RuntimeHostContext"));
-
-    let context = std::fs::read_to_string(workspace_file("crates/composition/src/context.rs"))
-        .expect("read runtime host context");
-    assert!(context.contains("pub(crate) struct RuntimeHostContext"));
-
-    for path in rust_sources_below("crates/runtime-host-desktop/src") {
-        let source = std::fs::read_to_string(&path).expect("read desktop runtime source");
-        assert!(
-            !source.contains("RuntimeHostContext"),
-            "desktop host names the private composition context: {}",
-            path.display()
-        );
-    }
-}
-
-#[test]
 fn architecture_dependency_rules_use_cargo_metadata() {
     let source = std::fs::read_to_string(workspace_file("src-tauri/tests/backend_architecture.rs"))
         .expect("read architecture test source");
     assert!(source.contains("cargo_metadata::MetadataCommand"));
     let legacy_helper = ["fn manifest_", "dependency_section("].concat();
     assert!(!source.contains(&legacy_helper));
-}
-
-#[test]
-fn group_instances_owned_projection_marks_remote_entries_as_raw() {
-    let source = std::fs::read_to_string(workspace_file(
-        "crates/application/src/game/background_capabilities/group_instances.rs",
-    ))
-    .expect("read group instances application slice");
-    assert!(source.contains("pub instances: Option<Vec<RawJson>>"));
-    assert!(!source.contains("pub instances: Option<Vec<Value>>"));
-}
-
-#[test]
-fn application_public_remote_json_is_marked_as_an_explicit_raw_boundary() {
-    for root in [
-        "crates/application/src",
-        "crates/application-activity/src",
-        "crates/application-core/src",
-        "crates/application-game/src",
-        "crates/application-realtime/src",
-    ] {
-        for path in rust_sources_below(root) {
-            let source = std::fs::read_to_string(&path).expect("read application source");
-            for line in source.lines() {
-                let line = line.trim_start();
-                assert!(
-                    !(line.starts_with("pub ")
-                        && !line.starts_with("pub fn ")
-                        && !line.starts_with("pub async fn ")
-                        && line.contains(':')
-                        && line.contains("Value")),
-                    "public application JSON fields must use RawJson at their explicit boundary: {}: {line}",
-                    path.display()
-                );
-            }
-        }
-    }
 }

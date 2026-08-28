@@ -12,6 +12,26 @@ use vrcx_0_application_core::{
 const VRCHAT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 pub type VrchatApiFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type VrchatRequestFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+
+pub trait VrchatRequestPort: Send + Sync {
+    fn send(&self, input: VrchatApiRequest, scope: VrchatScope) -> VrchatRequestFuture<'_>;
+}
+
+#[cfg(test)]
+pub(crate) struct TestVrchatRequestPort;
+
+#[cfg(test)]
+impl VrchatRequestPort for TestVrchatRequestPort {
+    fn send(&self, _input: VrchatApiRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+        Box::pin(async {
+            Ok(VrchatApiResponse {
+                status: 200,
+                data: "{}".into(),
+            })
+        })
+    }
+}
 
 pub trait VrchatApiPort: Send + Sync {
     fn execute(

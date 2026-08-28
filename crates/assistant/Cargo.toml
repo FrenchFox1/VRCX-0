@@ -19,6 +19,3 @@ vrcx-0-contracts = { path = "../contracts" }
 vrcx-0-application-core = { path = "../application-core" }
 vrcx-0-core = { path = "../core" }
 vrcx-0-mcp = { path = "../mcp" }
-
-[dev-dependencies]
-vrcx-0-persistence = { path = "../persistence" }

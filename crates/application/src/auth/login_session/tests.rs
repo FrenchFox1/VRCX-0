@@ -6,21 +6,15 @@ use std::sync::{Arc, Mutex};
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde_json::json;
 use tokio::sync::Notify;
-use vrcx_0_application_core::vrchat_api::{
-    VrchatApiRequest as HttpApiRequestInput, VrchatScope as ApiScope,
-};
 use vrcx_0_application_core::RuntimeRealtimeTransportEpoch;
 use vrcx_0_contracts::vrchat_api::vrchat_response;
-
-use vrcx_0_application_core::WebClient;
 
 use super::service::{
     respond_to_challenge, start_cookie_restore, start_gui_basic_login, start_login,
     start_saved_credential_login,
 };
 use super::test_support::{seed_saved_credential, test_env, user_json, FakeLoginApi};
-use crate::auth::test_support::TestAuthRemoteRequests;
-use crate::auth::{AuthCredentialStore, AuthRemoteRequests};
+use crate::auth::{AuthCredentialStore, AuthSessionCookies};
 
 async fn start(api: &dyn LoginApi, username: &str, password: &str) -> LoginSessionState {
     start_login(api, "", username.into(), password.into()).await
@@ -75,7 +69,7 @@ impl PausedLoginApi {
 }
 
 impl LoginApi for PausedLoginApi {
-    fn execute<'a>(&'a self, _input: HttpApiRequestInput, _scope: ApiScope) -> LoginApiFuture<'a> {
+    fn execute(&self, _operation: LoginRemoteOperation) -> LoginApiFuture<'_> {
         Box::pin(async move {
             let call = self.call_count.fetch_add(1, Ordering::SeqCst) + 1;
             let (status, body) = self
@@ -92,44 +86,12 @@ impl LoginApi for PausedLoginApi {
             Ok(vrchat_response(status, body.to_string()))
         })
     }
-
-    fn config(&self, endpoint: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.config(endpoint)
-    }
-    fn current_user(&self, endpoint: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.current_user(endpoint)
-    }
-    fn basic_login(
-        &self,
-        endpoint: String,
-        username: String,
-        password: String,
-        username_required: &'static str,
-        password_required: &'static str,
-    ) -> vrcx_0_application_core::Result<HttpApiRequestInput> {
-        TestAuthRemoteRequests.basic_login(
-            endpoint,
-            username,
-            password,
-            username_required,
-            password_required,
-        )
-    }
-    fn verify_totp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.verify_totp(endpoint, code)
-    }
-    fn verify_email_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.verify_email_otp(endpoint, code)
-    }
-    fn verify_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.verify_otp(endpoint, code)
-    }
 }
 
 async fn start_runtime_basic(
     runtime: &LoginSessionRuntime,
     api: Arc<dyn LoginApi>,
-    web: &WebClient,
+    web: &dyn AuthSessionCookies,
     config: &dyn AuthCredentialStore,
     username: &str,
     save_credentials: bool,
@@ -178,7 +140,7 @@ async fn authenticates_immediately_when_no_two_factor_is_required() {
         }
         other => panic!("expected Authenticated, got {other:?}"),
     }
-    assert_eq!(api.call_paths(), vec!["auth/user"]);
+    assert_eq!(api.call_names(), vec!["basic_login"]);
 }
 
 #[tokio::test]
@@ -207,8 +169,8 @@ async fn totp_challenge_completes_after_a_correct_code() {
         other => panic!("expected Authenticated, got {other:?}"),
     }
     assert_eq!(
-        api.call_paths(),
-        vec!["auth/user", "auth/twofactorauth/totp/verify", "auth/user"]
+        api.call_names(),
+        vec!["basic_login", "verify_totp", "current_user"]
     );
 }
 
@@ -232,11 +194,11 @@ async fn email_otp_is_selected_when_totp_is_not_offered() {
     state = respond(api.as_ref(), state, "emailOtp", "000000").await;
 
     assert!(matches!(state, LoginSessionState::Authenticated { .. }));
-    assert_eq!(api.call_paths()[1], "auth/twofactorauth/emailotp/verify");
+    assert_eq!(api.call_names()[1], "verify_email_otp");
 }
 
 #[tokio::test]
-async fn otp_recovery_code_is_dash_normalized_before_sending() {
+async fn otp_recovery_code_uses_the_otp_verification_operation() {
     let api = Arc::new(FakeLoginApi::new(vec![
         (200, json!({ "requiresTwoFactorAuth": ["totp", "otp"] })),
         (200, json!({})),
@@ -247,8 +209,7 @@ async fn otp_recovery_code_is_dash_normalized_before_sending() {
     let state = respond(api.as_ref(), state, "otp", "123456").await;
 
     assert!(matches!(state, LoginSessionState::Authenticated { .. }));
-    assert_eq!(api.call_paths()[1], "auth/twofactorauth/otp/verify");
-    assert_eq!(api.call_bodies()[1], Some(json!({ "code": "1234-56" })));
+    assert_eq!(api.call_names()[1], "verify_otp");
 }
 
 #[tokio::test]
@@ -267,7 +228,7 @@ async fn unsupported_two_factor_methods_fail_without_sending_a_verification_requ
             ..
         }
     ));
-    assert_eq!(api.call_paths(), vec!["auth/user"]);
+    assert_eq!(api.call_names(), vec!["basic_login"]);
 }
 
 #[tokio::test]
@@ -287,7 +248,7 @@ async fn unsupported_submitted_two_factor_method_is_not_treated_as_totp() {
             ..
         }
     ));
-    assert_eq!(api.call_paths(), vec!["auth/user"]);
+    assert_eq!(api.call_names(), vec!["basic_login"]);
 }
 
 #[tokio::test]
@@ -320,7 +281,7 @@ async fn a_wrong_code_keeps_the_same_challenge_open_for_a_retry() {
 
     state = respond(api.as_ref(), state, "totp", "123456").await;
     assert!(matches!(state, LoginSessionState::Authenticated { .. }));
-    assert_eq!(api.call_paths().len(), 4);
+    assert_eq!(api.call_names().len(), 4);
 }
 
 #[tokio::test]
@@ -338,7 +299,7 @@ async fn two_factor_verification_requires_a_200_response() {
             state,
             LoginSessionState::Challenge { error: Some(_), .. }
         ));
-        assert_eq!(api.call_paths().len(), 2);
+        assert_eq!(api.call_names().len(), 2);
     }
 }
 
@@ -360,7 +321,7 @@ async fn an_auth_rejection_during_two_factor_verification_ends_the_session() {
                 ..
             }
         ));
-        assert_eq!(api.call_paths().len(), 2);
+        assert_eq!(api.call_names().len(), 2);
     }
 }
 
@@ -475,7 +436,7 @@ async fn gui_basic_login_short_circuits_on_an_html_403_config_response() {
         }
         other => panic!("expected Failed, got {other:?}"),
     }
-    assert_eq!(api.call_paths(), vec!["config"]);
+    assert_eq!(api.call_names(), vec!["config"]);
 }
 
 #[tokio::test]
@@ -497,7 +458,7 @@ async fn gui_basic_login_requires_a_200_config_response() {
                 ..
             }
         ));
-        assert_eq!(api.call_paths(), vec!["config"]);
+        assert_eq!(api.call_names(), vec!["config"]);
     }
 }
 
@@ -547,7 +508,7 @@ async fn blank_credentials_fail_before_any_network_call() {
         }
         other => panic!("expected Failed, got {other:?}"),
     }
-    assert!(api.call_paths().is_empty());
+    assert!(api.call_names().is_empty());
 }
 
 #[tokio::test]
@@ -586,14 +547,14 @@ async fn saved_credential_falls_through_both_cookie_probes_to_a_successful_passw
         other => panic!("expected Authenticated, got {other:?}"),
     }
     assert_eq!(
-        api.call_paths(),
+        api.call_names(),
         vec![
             "config",
-            "auth/user",
+            "current_user",
             "config",
-            "auth/user",
+            "current_user",
             "config",
-            "auth/user",
+            "basic_login",
         ]
     );
 }
@@ -676,7 +637,7 @@ async fn saved_credential_short_circuits_on_a_403_cookie_probe() {
         }
         other => panic!("expected Failed, got {other:?}"),
     }
-    assert_eq!(api.call_paths(), vec!["config"]);
+    assert_eq!(api.call_names(), vec!["config"]);
 }
 
 #[tokio::test]
@@ -784,7 +745,7 @@ async fn saved_credential_login_fails_when_no_record_exists() {
         }
         other => panic!("expected Failed, got {other:?}"),
     }
-    assert!(api.call_paths().is_empty());
+    assert!(api.call_names().is_empty());
 }
 
 #[tokio::test]
@@ -802,7 +763,7 @@ async fn cookie_restore_authenticates_from_an_existing_session() {
         }
         other => panic!("expected Authenticated, got {other:?}"),
     }
-    assert_eq!(api.call_paths(), vec!["config", "auth/user"]);
+    assert_eq!(api.call_names(), vec!["config", "current_user"]);
 }
 
 #[tokio::test]
@@ -820,28 +781,28 @@ async fn cookie_restore_short_circuits_on_a_403_config_response() {
         }
         other => panic!("expected Failed, got {other:?}"),
     }
-    assert_eq!(api.call_paths(), vec!["config"]);
+    assert_eq!(api.call_names(), vec!["config"]);
 }
 
 #[tokio::test]
 async fn cookie_restore_requires_200_from_config_and_current_user() {
-    for (responses, expected_paths) in [
+    for (responses, expected_calls) in [
         (vec![(429, json!({}))], vec!["config"]),
         (vec![(500, json!({}))], vec!["config"]),
         (
             vec![(200, json!({})), (429, user_json())],
-            vec!["config", "auth/user"],
+            vec!["config", "current_user"],
         ),
         (
             vec![(200, json!({})), (500, user_json())],
-            vec!["config", "auth/user"],
+            vec!["config", "current_user"],
         ),
     ] {
         let api = Arc::new(FakeLoginApi::new(responses));
         let state = start_cookie_restore(api.as_ref(), "", "").await;
 
         assert!(matches!(state, LoginSessionState::Failed { .. }));
-        assert_eq!(api.call_paths(), expected_paths);
+        assert_eq!(api.call_names(), expected_calls);
     }
 }
 
@@ -1077,7 +1038,7 @@ async fn challenge_attempt_id_rejects_stale_responses_and_cancel_clears_auth_coo
         )
         .await;
     assert_eq!(challenge_attempt_id(&stale_response), attempt_id);
-    assert_eq!(api.call_paths(), vec!["config", "auth/user"]);
+    assert_eq!(api.call_names(), vec!["config", "basic_login"]);
 
     let stale_cancel = runtime
         .cancel("stale-attempt".into(), &web, &|_| Ok(()))

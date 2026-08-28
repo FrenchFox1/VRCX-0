@@ -4,16 +4,15 @@ use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use vrcx_0_application_core::RuntimeOperationStatus;
 
+use futures_util::future::BoxFuture;
 use futures_util::{stream, StreamExt};
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Semaphore;
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
+    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine,
 };
-use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::GroupJson;
 
@@ -27,8 +26,7 @@ const GROUP_PROFILE_CACHE_TTL: Duration = Duration::from_secs(5 * 60);
 
 #[derive(Clone)]
 pub struct GroupCalendarDeps {
-    pub(crate) web: Arc<WebClient>,
-    remote_requests: Arc<dyn GroupCalendarRemoteRequests>,
+    remote: Arc<dyn GroupCalendarRemote>,
     pub auth_scope: RuntimeAuthScope,
     pub diagnostics: RuntimeDiagnostics,
     pub sync: RuntimeSyncEngine,
@@ -36,15 +34,13 @@ pub struct GroupCalendarDeps {
 
 impl GroupCalendarDeps {
     pub fn new(
-        web: Arc<WebClient>,
-        remote_requests: Arc<dyn GroupCalendarRemoteRequests>,
+        remote: Arc<dyn GroupCalendarRemote>,
         auth_scope: RuntimeAuthScope,
         diagnostics: RuntimeDiagnostics,
         sync: RuntimeSyncEngine,
     ) -> Self {
         Self {
-            web,
-            remote_requests,
+            remote,
             auth_scope,
             diagnostics,
             sync,
@@ -52,23 +48,36 @@ impl GroupCalendarDeps {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GroupCalendarPageKind {
     All,
     Following,
     Featured,
 }
 
-pub trait GroupCalendarRemoteRequests: Send + Sync {
-    fn page(
-        &self,
-        endpoint: String,
+#[derive(Clone, Debug)]
+pub struct GroupCalendarPage {
+    pub rows: Vec<RawJson>,
+    pub has_next: Option<bool>,
+}
+
+pub type GroupCalendarRemoteFuture<'a, T> = BoxFuture<'a, Result<T>>;
+pub type GroupCalendarProfileFuture<'a> = BoxFuture<'a, Option<RawJson>>;
+
+pub trait GroupCalendarRemote: Send + Sync {
+    fn page<'a>(
+        &'a self,
+        endpoint: &'a str,
         kind: GroupCalendarPageKind,
-        date: String,
+        date: &'a str,
         n: i32,
         offset: i32,
-    ) -> Result<VrchatApiRequest>;
-    fn group_profile(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest>;
+    ) -> GroupCalendarRemoteFuture<'a, GroupCalendarPage>;
+    fn group_profile<'a>(
+        &'a self,
+        endpoint: &'a str,
+        group_id: &'a str,
+    ) -> GroupCalendarProfileFuture<'a>;
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -197,11 +206,6 @@ async fn load_group_calendar_inner(
     })
 }
 
-struct CalendarPage {
-    rows: Vec<Value>,
-    has_next: Option<bool>,
-}
-
 async fn collect_calendar_pages(
     deps: &GroupCalendarDeps,
     scope: &RuntimeAuthScopeSnapshot,
@@ -212,14 +216,11 @@ async fn collect_calendar_pages(
     for page_index in 0..=CALENDAR_MAX_PAGES {
         ensure_scope_matches(&deps.auth_scope, scope)?;
         let offset = (page_index as i32) * CALENDAR_PAGE_SIZE;
-        let request = deps.remote_requests.page(
-            scope.endpoint.clone(),
-            kind,
-            date.to_string(),
-            CALENDAR_PAGE_SIZE,
-            offset,
-        )?;
-        let page = execute_page(deps, scope, request).await?;
+        let page = deps
+            .remote
+            .page(&scope.endpoint, kind, date, CALENDAR_PAGE_SIZE, offset)
+            .await?;
+        ensure_scope_matches(&deps.auth_scope, scope)?;
         let count = page.rows.len();
         if page_index == CALENDAR_MAX_PAGES {
             if count == 0 {
@@ -229,32 +230,12 @@ async fn collect_calendar_pages(
                 "Group calendar pagination exceeded the safety limit.".into(),
             ));
         }
-        rows.extend(page.rows);
+        rows.extend(page.rows.into_iter().map(RawJson::into_value));
         if page.has_next == Some(false) || count < CALENDAR_PAGE_SIZE as usize {
             return Ok(rows);
         }
     }
     Ok(rows)
-}
-
-async fn execute_page(
-    deps: &GroupCalendarDeps,
-    scope: &RuntimeAuthScopeSnapshot,
-    request: VrchatApiRequest,
-) -> Result<CalendarPage> {
-    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
-    ensure_scope_matches(&deps.auth_scope, scope)?;
-    let response = VrchatJsonResponse {
-        status: response.status,
-        json: serde_json::from_str::<Value>(&response.data)?,
-    };
-    if !(200..300).contains(&response.status) || response.has_error_field() {
-        return Err(Error::Custom(format!(
-            "Group calendar request failed: {}",
-            response.error_message_or("VRChat API request failed")
-        )));
-    }
-    Ok(page_from_payload(&response.json))
 }
 
 async fn fetch_group_profiles(
@@ -306,29 +287,14 @@ async fn fetch_group_profile(
             if !deps.auth_scope.snapshot().generation_matches(&scope) {
                 return None;
             }
-            let request = deps
-                .remote_requests
-                .group_profile(scope.endpoint.clone(), request_group_id)
-                .ok()?;
             let response = deps
-                .web
-                .execute_api(request, VrchatScope::Vrchat)
-                .await
-                .ok()?;
+                .remote
+                .group_profile(&scope.endpoint, &request_group_id)
+                .await;
             if !deps.auth_scope.snapshot().generation_matches(&scope) {
                 return None;
             }
-            let response = VrchatJsonResponse {
-                status: response.status,
-                json: serde_json::from_str::<Value>(&response.data).ok()?,
-            };
-            if !(200..300).contains(&response.status)
-                || response.has_error_field()
-                || !response.json.is_object()
-            {
-                return None;
-            }
-            Some(response.json)
+            response.map(RawJson::into_value).filter(Value::is_object)
         }
     })
     .await?;
@@ -359,33 +325,6 @@ async fn cached_group_profile(auth_scope_generation: u64, group_id: &str) -> Opt
             group_id: group_id.to_string(),
         })
         .await
-}
-
-#[cfg(test)]
-fn rows_from_payload(payload: &Value) -> Vec<Value> {
-    page_from_payload(payload).rows
-}
-
-fn page_from_payload(payload: &Value) -> CalendarPage {
-    if let Some(rows) = payload.as_array() {
-        return CalendarPage {
-            rows: rows.clone(),
-            has_next: None,
-        };
-    }
-    let wrapped = payload.get("json");
-    let rows = payload
-        .get("results")
-        .and_then(Value::as_array)
-        .or_else(|| wrapped.and_then(Value::as_array))
-        .or_else(|| wrapped?.get("results")?.as_array())
-        .cloned()
-        .unwrap_or_default();
-    let has_next = payload
-        .get("hasNext")
-        .or_else(|| wrapped.and_then(|value| value.get("hasNext")))
-        .and_then(Value::as_bool);
-    CalendarPage { rows, has_next }
 }
 
 fn collect_group_ids(rows: &[&Value]) -> Vec<String> {
@@ -442,7 +381,9 @@ fn ensure_scope_matches(
 #[cfg(test)]
 mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
 
+    use futures_util::future::BoxFuture;
     use serde_json::json;
 
     use super::*;
@@ -476,24 +417,6 @@ mod tests {
     }
 
     #[test]
-    fn rows_support_array_and_wrapped_page_shapes() {
-        assert_eq!(rows_from_payload(&json!([{"id": "evt_1"}])).len(), 1);
-        assert_eq!(
-            rows_from_payload(&json!({"results": [{"id": "evt_1"}]})).len(),
-            1
-        );
-        let wrapped = page_from_payload(&json!({
-            "json": {
-                "results": [{"id": "evt_1"}],
-                "hasNext": false
-            }
-        }));
-        assert_eq!(wrapped.rows.len(), 1);
-        assert_eq!(wrapped.has_next, Some(false));
-        assert!(rows_from_payload(&json!({"results": null})).is_empty());
-    }
-
-    #[test]
     fn group_ids_are_deduplicated_across_event_shapes() {
         let rows = [
             json!({"ownerId": "grp_1"}),
@@ -502,5 +425,197 @@ mod tests {
         ];
         let refs = rows.iter().collect::<Vec<_>>();
         assert_eq!(collect_group_ids(&refs), vec!["grp_1", "grp_2"]);
+    }
+
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct PageCall {
+        endpoint: String,
+        kind: GroupCalendarPageKind,
+        date: String,
+        n: i32,
+        offset: i32,
+    }
+
+    #[derive(Default)]
+    struct RecordingGroupCalendarRemote {
+        page_calls: Mutex<Vec<PageCall>>,
+        profile_calls: Mutex<Vec<(String, String)>>,
+    }
+
+    impl GroupCalendarRemote for RecordingGroupCalendarRemote {
+        fn page<'a>(
+            &'a self,
+            endpoint: &'a str,
+            kind: GroupCalendarPageKind,
+            date: &'a str,
+            n: i32,
+            offset: i32,
+        ) -> BoxFuture<'a, Result<GroupCalendarPage>> {
+            Box::pin(async move {
+                self.page_calls.lock().unwrap().push(PageCall {
+                    endpoint: endpoint.to_string(),
+                    kind,
+                    date: date.to_string(),
+                    n,
+                    offset,
+                });
+                let event_id = match kind {
+                    GroupCalendarPageKind::All => "evt_all",
+                    GroupCalendarPageKind::Following => "evt_following",
+                    GroupCalendarPageKind::Featured => "evt_featured",
+                };
+                Ok(GroupCalendarPage {
+                    rows: vec![RawJson::from(json!({
+                        "eventId": event_id,
+                        "ownerId": "grp_semantic_remote"
+                    }))],
+                    has_next: Some(false),
+                })
+            })
+        }
+
+        fn group_profile<'a>(
+            &'a self,
+            endpoint: &'a str,
+            group_id: &'a str,
+        ) -> BoxFuture<'a, Option<RawJson>> {
+            Box::pin(async move {
+                self.profile_calls
+                    .lock()
+                    .unwrap()
+                    .push((endpoint.to_string(), group_id.to_string()));
+                Some(RawJson::from(json!({
+                    "id": group_id,
+                    "name": "Semantic Group"
+                })))
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn calendar_orchestration_uses_semantic_remote_without_web_client() {
+        let remote = Arc::new(RecordingGroupCalendarRemote::default());
+        let auth_scope = RuntimeAuthScope::new();
+        auth_scope.set("usr_calendar", "https://api.example.test/api/1/");
+
+        let snapshot = load_group_calendar(
+            GroupCalendarDeps::new(
+                remote.clone(),
+                auth_scope,
+                RuntimeDiagnostics::new(),
+                RuntimeSyncEngine::new(),
+            ),
+            GroupCalendarInput {
+                date: " 2026-08-28 ".into(),
+                include_featured: true,
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(snapshot.events.len(), 2);
+        assert_eq!(snapshot.events[0]["eventId"], "evt_all");
+        assert_eq!(snapshot.events[1]["eventId"], "evt_featured");
+        assert_eq!(snapshot.following_event_ids, vec!["evt_following"]);
+        assert_eq!(
+            snapshot.group_names.get("grp_semantic_remote"),
+            Some(&"Semantic Group".to_string())
+        );
+
+        let page_calls = remote.page_calls.lock().unwrap();
+        assert_eq!(page_calls.len(), 3);
+        for kind in [
+            GroupCalendarPageKind::All,
+            GroupCalendarPageKind::Following,
+            GroupCalendarPageKind::Featured,
+        ] {
+            assert!(page_calls.contains(&PageCall {
+                endpoint: "https://api.example.test/api/1".into(),
+                kind,
+                date: "2026-08-28".into(),
+                n: CALENDAR_PAGE_SIZE,
+                offset: 0,
+            }));
+        }
+        assert_eq!(
+            remote.profile_calls.lock().unwrap().as_slice(),
+            [(
+                "https://api.example.test/api/1".into(),
+                "grp_semantic_remote".into()
+            )]
+        );
+    }
+
+    #[derive(Default)]
+    struct PagingGroupCalendarRemote {
+        page_calls: Mutex<Vec<(GroupCalendarPageKind, i32)>>,
+    }
+
+    impl GroupCalendarRemote for PagingGroupCalendarRemote {
+        fn page<'a>(
+            &'a self,
+            _endpoint: &'a str,
+            kind: GroupCalendarPageKind,
+            _date: &'a str,
+            _n: i32,
+            offset: i32,
+        ) -> BoxFuture<'a, Result<GroupCalendarPage>> {
+            Box::pin(async move {
+                self.page_calls.lock().unwrap().push((kind, offset));
+                let (rows, has_next) = match (kind, offset) {
+                    (GroupCalendarPageKind::All, 0) => (
+                        (0..CALENDAR_PAGE_SIZE)
+                            .map(|index| RawJson::from(json!({"eventId": format!("evt_{index}")})))
+                            .collect(),
+                        Some(true),
+                    ),
+                    (GroupCalendarPageKind::All, CALENDAR_PAGE_SIZE) => (
+                        vec![RawJson::from(json!({"eventId": "evt_last"}))],
+                        Some(false),
+                    ),
+                    _ => (Vec::new(), Some(false)),
+                };
+                Ok(GroupCalendarPage { rows, has_next })
+            })
+        }
+
+        fn group_profile<'a>(
+            &'a self,
+            _endpoint: &'a str,
+            _group_id: &'a str,
+        ) -> BoxFuture<'a, Option<RawJson>> {
+            Box::pin(async { None })
+        }
+    }
+
+    #[tokio::test]
+    async fn calendar_service_owns_pagination_and_skips_unrequested_featured_pages() {
+        let remote = Arc::new(PagingGroupCalendarRemote::default());
+        let auth_scope = RuntimeAuthScope::new();
+        auth_scope.set("usr_paging", "");
+
+        let snapshot = load_group_calendar(
+            GroupCalendarDeps::new(
+                remote.clone(),
+                auth_scope,
+                RuntimeDiagnostics::new(),
+                RuntimeSyncEngine::new(),
+            ),
+            GroupCalendarInput {
+                date: "2026-08-28".into(),
+                include_featured: false,
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(snapshot.events.len(), 101);
+        let page_calls = remote.page_calls.lock().unwrap();
+        assert!(page_calls.contains(&(GroupCalendarPageKind::All, 0)));
+        assert!(page_calls.contains(&(GroupCalendarPageKind::All, CALENDAR_PAGE_SIZE)));
+        assert!(page_calls.contains(&(GroupCalendarPageKind::Following, 0)));
+        assert!(!page_calls
+            .iter()
+            .any(|(kind, _)| *kind == GroupCalendarPageKind::Featured));
     }
 }

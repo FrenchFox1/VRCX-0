@@ -1,46 +1,192 @@
 use super::*;
 
-#[test]
-fn notification_scan_parser_rejects_invalid_json_and_accepts_empty_rows() {
-    assert!(parse_group_instance_rows("not-json").is_err());
-    assert_eq!(
-        parse_group_instance_rows("[]").unwrap(),
-        Vec::<Value>::new()
-    );
-    assert_eq!(
-        parse_group_instance_rows(r#"{"instances": []}"#).unwrap(),
-        Vec::<Value>::new()
-    );
-    assert!(parse_group_instance_rows(r#"{"error": "temporary"}"#).is_err());
+use std::sync::Mutex;
+use vrcx_0_application_core::Error;
+
+#[derive(Default)]
+struct TestBackgroundGroupRemote {
+    current_user: Value,
+    instances: Vec<Value>,
+    scoped_instances: Vec<Value>,
+    scoped_error: Option<String>,
+    profiles: HashMap<String, Value>,
+    calls: Mutex<Vec<String>>,
 }
 
-#[test]
-fn notification_scan_parser_preserves_full_locations_for_comparison() {
-    let rows = parse_group_instance_rows(
-        r#"{
-            "instances": [
-                {
-                    "location": "wrld_alpha:instance-a~group(grp_saved)~groupAccessType(plus)",
-                    "group": { "id": "grp_saved", "name": "Saved Group" },
-                    "world": { "name": "Alpha World" }
-                },
-                {
-                    "instance": {
-                        "location": "wrld_beta:instance-b~group(grp_saved)~groupAccessType(members)"
-                    }
-                }
-            ]
-        }"#,
-    )
-    .unwrap();
+impl BackgroundGroupRemote for TestBackgroundGroupRemote {
+    fn current_user<'a>(&'a self, endpoint: &'a str) -> BackgroundGroupRemoteFuture<'a, Value> {
+        Box::pin(async move {
+            self.calls
+                .lock()
+                .unwrap()
+                .push(format!("current-user:{endpoint}"));
+            Ok(self.current_user.clone())
+        })
+    }
 
+    fn group_instances<'a>(
+        &'a self,
+        endpoint: &'a str,
+        current_user_id: &'a str,
+    ) -> BackgroundGroupRemoteFuture<'a, Vec<Value>> {
+        Box::pin(async move {
+            self.calls
+                .lock()
+                .unwrap()
+                .push(format!("instances:{endpoint}:{current_user_id}"));
+            Ok(self.instances.clone())
+        })
+    }
+
+    fn group_instances_for_group<'a>(
+        &'a self,
+        endpoint: &'a str,
+        current_user_id: &'a str,
+        group_id: &'a str,
+    ) -> BackgroundGroupRemoteFuture<'a, Vec<Value>> {
+        Box::pin(async move {
+            self.calls.lock().unwrap().push(format!(
+                "group-instances:{endpoint}:{current_user_id}:{group_id}"
+            ));
+            if let Some(error) = &self.scoped_error {
+                return Err(Error::Custom(error.clone()));
+            }
+            Ok(self.scoped_instances.clone())
+        })
+    }
+
+    fn group_profile<'a>(
+        &'a self,
+        endpoint: &'a str,
+        group_id: &'a str,
+    ) -> BackgroundGroupProfileFuture<'a> {
+        Box::pin(async move {
+            self.calls
+                .lock()
+                .unwrap()
+                .push(format!("group-profile:{endpoint}:{group_id}"));
+            self.profiles.get(group_id).cloned()
+        })
+    }
+}
+
+fn test_session() -> BackgroundCapabilitySessionIdentity {
+    BackgroundCapabilitySessionIdentity {
+        current_user_id: "usr_test".into(),
+        endpoint: "https://api.example.test/api/1/".into(),
+        websocket: "wss://pipeline.example.test".into(),
+        auth_scope_generation: 7,
+    }
+}
+
+#[tokio::test]
+async fn current_user_refresh_returns_the_semantic_remote_value() {
+    let remote = TestBackgroundGroupRemote {
+        current_user: json!({ "id": "usr_test", "displayName": "Test User" }),
+        ..Default::default()
+    };
+
+    let current_user = refresh_background_current_user(&remote, &test_session())
+        .await
+        .unwrap();
+
+    assert_eq!(current_user["id"], json!("usr_test"));
+    assert_eq!(current_user["displayName"], json!("Test User"));
     assert_eq!(
-        rows[0]["location"],
-        json!("wrld_alpha:instance-a~group(grp_saved)~groupAccessType(plus)")
+        *remote.calls.lock().unwrap(),
+        vec!["current-user:https://api.example.test/api/1/"]
+    );
+}
+
+#[tokio::test]
+async fn semantic_remote_hydrates_each_group_once_and_preserves_instance_order() {
+    let remote = TestBackgroundGroupRemote {
+        instances: vec![
+            json!({ "id": "instance-a", "groupId": "grp_shared" }),
+            json!({ "id": "instance-b", "ownerId": "grp_shared" }),
+            json!({
+                "id": "instance-c",
+                "group": {
+                    "id": "grp_complete",
+                    "name": "Complete",
+                    "iconUrl": "https://example.test/complete.png"
+                }
+            }),
+        ],
+        profiles: HashMap::from([(
+            "grp_shared".into(),
+            json!({
+                "id": "grp_shared",
+                "name": "Shared Group",
+                "iconUrl": "https://example.test/shared.png"
+            }),
+        )]),
+        ..Default::default()
+    };
+
+    let refresh = refresh_background_group_instances(&remote, &test_session())
+        .await
+        .unwrap();
+
+    assert_eq!(refresh.instances[0].as_value()["id"], json!("instance-a"));
+    assert_eq!(refresh.instances[1].as_value()["id"], json!("instance-b"));
+    assert_eq!(refresh.instances[2].as_value()["id"], json!("instance-c"));
+    assert_eq!(
+        refresh.instances[0].as_value()["group"]["name"],
+        json!("Shared Group")
     );
     assert_eq!(
-        rows[1]["instance"]["location"],
-        json!("wrld_beta:instance-b~group(grp_saved)~groupAccessType(members)")
+        refresh.instances[1].as_value()["group"]["name"],
+        json!("Shared Group")
+    );
+    assert!(!refresh.fetched_at.is_empty());
+    assert_eq!(
+        *remote.calls.lock().unwrap(),
+        vec![
+            "instances:https://api.example.test/api/1/:usr_test",
+            "group-profile:https://api.example.test/api/1/:grp_shared",
+        ]
+    );
+}
+
+#[tokio::test]
+async fn unavailable_group_profile_keeps_a_minimal_group_fallback() {
+    let remote = TestBackgroundGroupRemote {
+        instances: vec![json!({
+            "id": "instance-a",
+            "location": "wrld_test:1~group(grp_unavailable)~groupAccessType(plus)"
+        })],
+        ..Default::default()
+    };
+
+    let refresh = refresh_background_group_instances(&remote, &test_session())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        refresh.instances[0].as_value()["group"],
+        json!({
+            "id": "grp_unavailable",
+            "groupId": "grp_unavailable",
+            "name": "grp_unavailable"
+        })
+    );
+}
+
+#[tokio::test]
+async fn group_scoped_refresh_propagates_the_semantic_remote_error() {
+    let remote = TestBackgroundGroupRemote {
+        scoped_error: Some("saved group instance refresh returned HTTP 503".into()),
+        ..Default::default()
+    };
+
+    let error = refresh_background_group_instances_for_group(&remote, &test_session(), "grp_saved")
+        .await
+        .unwrap_err();
+
+    assert_eq!(
+        error.to_string(),
+        "saved group instance refresh returned HTTP 503"
     );
 }
 

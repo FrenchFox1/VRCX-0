@@ -13,9 +13,8 @@ use super::types::{
     MutualGraphRequestDeps, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
     UserMutualFriendsListInput, UserMutualFriendsListOutput,
 };
-use vrcx_0_application_core::{
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
-};
+use crate::remote::VrchatRequestPort;
+use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::OwnerId;
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
@@ -25,7 +24,7 @@ const MUTUAL_GRAPH_MAX_PAGES: usize = 50;
 const MUTUAL_GRAPH_EMPTY_USER_ID: &str = "usr_00000000-0000-0000-0000-000000000000";
 
 pub(super) struct MutualGraphFetchContext<'a> {
-    pub(super) web: &'a WebClient,
+    pub(super) remote: &'a dyn VrchatRequestPort,
     pub(super) remote_requests: &'a dyn MutualGraphRemoteRequests,
     pub(super) endpoint: &'a str,
     pub(super) cancel_flag: &'a AtomicBool,
@@ -57,7 +56,7 @@ pub async fn refresh_mutual_graph_friend(
     }
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
-        web: deps.web,
+        remote: deps.remote,
         remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
@@ -111,7 +110,7 @@ pub async fn get_user_mutual_friends_list(
     }
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
-        web: deps.web,
+        remote: deps.remote,
         remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
@@ -252,7 +251,7 @@ async fn fetch_mutual_page(
             Ok(request) => request,
             Err(error) => return PageFetchResult::Failed(error.to_string()),
         };
-        let response = match context.web.execute_api(request, VrchatScope::Vrchat).await {
+        let response = match context.remote.send(request, VrchatScope::Vrchat).await {
             Ok(response) => response,
             Err(error) => {
                 if attempt < MUTUAL_GRAPH_MAX_RETRIES {

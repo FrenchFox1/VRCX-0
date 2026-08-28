@@ -45,10 +45,11 @@ impl RuntimeTaskHandle for FinishedTaskHandle {
 fn deps(runtime: &TestRealtimeHostRuntime) -> SocialMutationDeps<'_> {
     static REMOTE_MUTATIONS: OnceLock<RemoteMutationGate> = OnceLock::new();
     static REMOTE_REQUESTS: TestSocialMutationRemoteRequests = TestSocialMutationRemoteRequests;
+    static REMOTE: crate::remote::TestVrchatRequestPort = crate::remote::TestVrchatRequestPort;
     SocialMutationDeps {
         store: runtime.store(),
         remote_requests: &REMOTE_REQUESTS,
-        web: runtime.web_client(),
+        remote: &REMOTE,
         auth_scope: runtime.auth_scope(),
         remote_mutations: REMOTE_MUTATIONS.get_or_init(RemoteMutationGate::default),
         realtime: runtime.runtime(),

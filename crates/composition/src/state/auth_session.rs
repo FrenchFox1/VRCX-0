@@ -33,8 +33,8 @@ impl RuntimeHostState {
         self.runtime_context
             .login_session
             .start(
-                Arc::clone(&self.web),
-                Arc::clone(&self.runtime_context.auth_requests),
+                Arc::clone(&self.runtime_context.login_api),
+                self.runtime_context.auth_cookies.as_ref(),
                 self.runtime_context.auth_credentials.as_ref(),
                 input,
                 &|transition| self.apply_login_transition(transition),
@@ -47,8 +47,8 @@ impl RuntimeHostState {
         self.runtime_context
             .login_session
             .auto_login_start(
-                Arc::clone(&self.web),
-                Arc::clone(&self.runtime_context.auth_requests),
+                Arc::clone(&self.runtime_context.login_api),
+                self.runtime_context.auth_cookies.as_ref(),
                 self.runtime_context.auth_credentials.as_ref(),
                 input,
                 &|transition| self.apply_login_transition(transition),
@@ -65,7 +65,7 @@ impl RuntimeHostState {
             .login_session
             .respond_and_transition(
                 input,
-                self.web.as_ref(),
+                self.runtime_context.auth_cookies.as_ref(),
                 self.runtime_context.auth_credentials.as_ref(),
                 &|transition| self.apply_login_transition(transition),
             )
@@ -75,9 +75,11 @@ impl RuntimeHostState {
     pub async fn cancel_login_session(&self, input: LoginSessionCancelInput) -> LoginSessionState {
         self.runtime_context
             .login_session
-            .cancel(input.attempt_id, self.web.as_ref(), &|transition| {
-                self.apply_login_transition(transition)
-            })
+            .cancel(
+                input.attempt_id,
+                self.runtime_context.auth_cookies.as_ref(),
+                &|transition| self.apply_login_transition(transition),
+            )
             .await
     }
 
@@ -98,7 +100,7 @@ impl RuntimeHostState {
         self.runtime_context
             .login_session
             .end_session(
-                self.web.as_ref(),
+                self.runtime_context.auth_cookies.as_ref(),
                 self.runtime_context.auth_credentials.as_ref(),
                 LoginSessionEndRequest { user_id, kind },
                 &|kind| self.login_session_invalidation_matches(kind),

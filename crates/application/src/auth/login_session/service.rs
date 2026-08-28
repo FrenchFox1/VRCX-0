@@ -1,9 +1,6 @@
 use crate::auth::AuthCredentialStore;
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::{
-    VrchatApiRequest as HttpApiRequestInput, VrchatApiResponse as HttpApiExecuteResponse,
-    VrchatScope as ApiScope,
-};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
 use vrcx_0_contracts::vrchat_api::{classify_vrchat_auth_failure, VrchatAuthFailureKind};
 
 use crate::auth::auth_credentials::saved_credential_login_start_with_api;
@@ -12,22 +9,22 @@ use crate::auth::{
     cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage},
     AuthenticatedRuntimeSession, SavedCredentialLoginStartInput,
 };
-use vrcx_0_application_core::WebClient;
 
-use super::types::{LoginApi, LoginFailureKind, LoginSessionState, TwoFactorMethod};
+use super::types::{
+    AuthSessionCookies, LoginApi, LoginFailureKind, LoginRemoteOperation, LoginSessionState,
+    TwoFactorMethod,
+};
 
 async fn execute_or_fail(
     api: &dyn LoginApi,
-    request: HttpApiRequestInput,
+    operation: LoginRemoteOperation,
 ) -> std::result::Result<HttpApiExecuteResponse, Box<LoginSessionState>> {
-    api.execute(request, ApiScope::Vrchat)
-        .await
-        .map_err(|error| {
-            Box::new(LoginSessionState::failed(
-                error.to_string(),
-                LoginFailureKind::Network,
-            ))
-        })
+    api.execute(operation).await.map_err(|error| {
+        Box::new(LoginSessionState::failed(
+            error.to_string(),
+            LoginFailureKind::Network,
+        ))
+    })
 }
 
 fn parse_json_or_fail(
@@ -84,33 +81,36 @@ fn interpret_login_response(
     authenticated_from_json(json, endpoint)
 }
 
-fn build_basic_login_request(
-    api: &dyn LoginApi,
+fn basic_login_operation(
     endpoint: &str,
     username: String,
     password: String,
-) -> std::result::Result<HttpApiRequestInput, Box<LoginSessionState>> {
-    api.basic_login(
-        endpoint.to_string(),
+) -> std::result::Result<LoginRemoteOperation, Box<LoginSessionState>> {
+    if username.trim().is_empty() {
+        return Err(Box::new(LoginSessionState::failed(
+            "Username is required.",
+            LoginFailureKind::Other,
+        )));
+    }
+    if password.is_empty() {
+        return Err(Box::new(LoginSessionState::failed(
+            "Password is required.",
+            LoginFailureKind::Other,
+        )));
+    }
+    Ok(LoginRemoteOperation::BasicLogin {
+        endpoint: endpoint.to_string(),
         username,
         password,
-        "Username is required.",
-        "Password is required.",
-    )
-    .map_err(|error| {
-        Box::new(LoginSessionState::failed(
-            error.to_string(),
-            LoginFailureKind::Other,
-        ))
     })
 }
 
 async fn execute_basic_login(
     api: &dyn LoginApi,
     endpoint: &str,
-    request: HttpApiRequestInput,
+    operation: LoginRemoteOperation,
 ) -> LoginSessionState {
-    let response = match execute_or_fail(api, request).await {
+    let response = match execute_or_fail(api, operation).await {
         Ok(response) => response,
         Err(state) => return *state,
     };
@@ -125,12 +125,12 @@ pub(super) async fn start_login(
     username: String,
     password: String,
 ) -> LoginSessionState {
-    let request = match build_basic_login_request(api, endpoint, username, password) {
-        Ok(request) => request,
+    let operation = match basic_login_operation(endpoint, username, password) {
+        Ok(operation) => operation,
         Err(state) => return *state,
     };
 
-    execute_basic_login(api, endpoint, request).await
+    execute_basic_login(api, endpoint, operation).await
 }
 
 pub(super) async fn start_gui_basic_login(
@@ -139,12 +139,19 @@ pub(super) async fn start_gui_basic_login(
     username: String,
     password: String,
 ) -> LoginSessionState {
-    let request = match build_basic_login_request(api, endpoint, username, password) {
-        Ok(request) => request,
+    let operation = match basic_login_operation(endpoint, username, password) {
+        Ok(operation) => operation,
         Err(state) => return *state,
     };
 
-    let config_response = match execute_or_fail(api, api.config(endpoint.to_string())).await {
+    let config_response = match execute_or_fail(
+        api,
+        LoginRemoteOperation::Config {
+            endpoint: endpoint.to_string(),
+        },
+    )
+    .await
+    {
         Ok(response) => response,
         Err(state) => return *state,
     };
@@ -159,19 +166,19 @@ pub(super) async fn start_gui_basic_login(
         return LoginSessionState::failed(reason, classify_status_failure(&config_response));
     }
 
-    execute_basic_login(api, endpoint, request).await
+    execute_basic_login(api, endpoint, operation).await
 }
 
 pub(super) async fn start_saved_credential_login(
     api: &dyn LoginApi,
     config: &dyn AuthCredentialStore,
-    web: &WebClient,
+    cookies: &dyn AuthSessionCookies,
     endpoint: String,
     user_id: String,
 ) -> LoginSessionState {
     let response = saved_credential_login_start_with_api(
         config,
-        web,
+        cookies,
         api,
         SavedCredentialLoginStartInput {
             user_id,
@@ -237,10 +244,19 @@ pub(super) async fn respond_to_challenge(
     method: TwoFactorMethod,
     code: String,
 ) -> LoginSessionState {
-    let verify_request = match method {
-        TwoFactorMethod::Totp => api.verify_totp(endpoint.to_string(), code),
-        TwoFactorMethod::EmailOtp => api.verify_email_otp(endpoint.to_string(), code),
-        TwoFactorMethod::Otp => api.verify_otp(endpoint.to_string(), code),
+    let verify_operation = match method {
+        TwoFactorMethod::Totp => LoginRemoteOperation::VerifyTotp {
+            endpoint: endpoint.to_string(),
+            code,
+        },
+        TwoFactorMethod::EmailOtp => LoginRemoteOperation::VerifyEmailOtp {
+            endpoint: endpoint.to_string(),
+            code,
+        },
+        TwoFactorMethod::Otp => LoginRemoteOperation::VerifyOtp {
+            endpoint: endpoint.to_string(),
+            code,
+        },
         TwoFactorMethod::Unknown(_) => {
             return LoginSessionState::failed(
                 format!("Unsupported 2FA method: {}", method.as_str()),
@@ -249,7 +265,7 @@ pub(super) async fn respond_to_challenge(
         }
     };
 
-    let verify_response = match execute_or_fail(api, verify_request).await {
+    let verify_response = match execute_or_fail(api, verify_operation).await {
         Ok(response) => response,
         Err(state) => return *state,
     };
@@ -276,8 +292,14 @@ pub(super) async fn respond_to_challenge(
         };
     }
 
-    let user_request = api.current_user(endpoint.to_string());
-    let user_response = match execute_or_fail(api, user_request).await {
+    let user_response = match execute_or_fail(
+        api,
+        LoginRemoteOperation::CurrentUser {
+            endpoint: endpoint.to_string(),
+        },
+    )
+    .await
+    {
         Ok(response) => response,
         Err(state) => return *state,
     };

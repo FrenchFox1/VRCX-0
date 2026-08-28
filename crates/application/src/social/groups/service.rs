@@ -6,11 +6,11 @@ use super::types::{
     VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
     VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
+use crate::remote::VrchatRequestPort;
 use std::{sync::Arc, time::Duration};
 use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_application_core::RuntimeSyncEngine;
-use vrcx_0_application_core::WebClient;
 use vrcx_0_application_core::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, Result,
 };
@@ -77,7 +77,7 @@ pub trait GroupMembershipRemoteRequests: Send + Sync {
 
 #[derive(Clone)]
 pub struct GroupApiDeps {
-    pub(crate) web: Arc<WebClient>,
+    remote: Arc<dyn VrchatRequestPort>,
     remote_requests: Arc<dyn GroupRemoteRequests>,
     pub diagnostics: RuntimeDiagnostics,
     pub sync: RuntimeSyncEngine,
@@ -87,7 +87,7 @@ pub struct GroupApiDeps {
 
 impl GroupApiDeps {
     pub fn new(
-        web: Arc<WebClient>,
+        remote: Arc<dyn VrchatRequestPort>,
         remote_requests: Arc<dyn GroupRemoteRequests>,
         diagnostics: RuntimeDiagnostics,
         sync: RuntimeSyncEngine,
@@ -95,7 +95,7 @@ impl GroupApiDeps {
         remote_mutations: Arc<RemoteMutationGate>,
     ) -> Self {
         Self {
-            web,
+            remote,
             remote_requests,
             diagnostics,
             sync,
@@ -120,11 +120,11 @@ pub(super) async fn execute_group_api_raw(
         mutation.apply_scope_to_request(&mut input);
         return mutation
             .run_after_wait(GROUP_REMOTE_MUTATION_INTERVAL, || async move {
-                deps.web.execute_api(input, VrchatScope::Vrchat).await
+                deps.remote.send(input, VrchatScope::Vrchat).await
             })
             .await;
     }
-    deps.web.execute_api(input, VrchatScope::Vrchat).await
+    deps.remote.send(input, VrchatScope::Vrchat).await
 }
 
 async fn execute_group_api(

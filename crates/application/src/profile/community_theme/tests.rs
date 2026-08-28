@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use tokio::sync::{Notify, Semaphore};
-use vrcx_0_application_core::{MemoryCookieWebClientPort, RuntimeEventBus, WebClient};
+use vrcx_0_application_core::{Error, RuntimeEventBus};
 
 use super::super::background_image::{
+    BackgroundImageProviderId, BackgroundImageRemote, BackgroundImageRemoteFuture,
     BackgroundImageService, UnavailableBackgroundImageFileResolver,
 };
 use super::*;
@@ -12,6 +13,20 @@ use crate::profile::test_support::MemoryProfileConfigStore;
 struct DelayedCommunityThemeRemote {
     manifest_started: Notify,
     release_manifest: Semaphore,
+}
+
+struct UnavailableBackgroundImageRemote;
+
+impl BackgroundImageRemote for UnavailableBackgroundImageRemote {
+    fn provider_image(
+        &self,
+        _provider_id: BackgroundImageProviderId,
+    ) -> BackgroundImageRemoteFuture<
+        '_,
+        vrcx_0_contracts::background_image::BackgroundImageProviderImage,
+    > {
+        Box::pin(async { Err(Error::Custom("background image remote unavailable".into())) })
+    }
 }
 
 impl DelayedCommunityThemeRemote {
@@ -81,15 +96,14 @@ impl CommunityThemeRemote for DelayedCommunityThemeRemote {
 
 fn test_service(remote: Arc<dyn CommunityThemeRemote>) -> CommunityThemeService {
     let config = Arc::new(MemoryProfileConfigStore::default());
-    let web = Arc::new(WebClient::new(MemoryCookieWebClientPort::default()));
     let event_bus = RuntimeEventBus::new();
     let background_image = BackgroundImageService::new(
         config.clone(),
-        web,
+        Arc::new(UnavailableBackgroundImageRemote),
         event_bus.clone(),
         Arc::new(UnavailableBackgroundImageFileResolver),
     );
-    CommunityThemeService::with_remote(config, remote, event_bus, background_image)
+    CommunityThemeService::new(config, remote, event_bus, background_image)
 }
 
 #[tokio::test]

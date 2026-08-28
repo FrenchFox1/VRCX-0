@@ -216,7 +216,7 @@ async fn execute_vrchat_json_request(
     deps: &ModerationSyncDeps<'_>,
     request: VrchatApiRequest,
 ) -> Result<Value> {
-    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
+    let response = deps.remote.send(request, VrchatScope::Vrchat).await?;
 
     let response = VrchatJsonResponse::from(&response);
     if let Some(failure) = response.failure_or("VRChat moderation request failed") {
@@ -234,7 +234,7 @@ async fn execute_vrchat_mutation(
     mutation.apply_scope_to_request(&mut request);
     let response = mutation
         .run_after_wait(MODERATION_REMOTE_MUTATION_INTERVAL, || async {
-            deps.web.execute_api(request, VrchatScope::Vrchat).await
+            deps.remote.send(request, VrchatScope::Vrchat).await
         })
         .await?;
 

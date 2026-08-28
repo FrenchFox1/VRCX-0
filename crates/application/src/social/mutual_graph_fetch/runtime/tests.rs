@@ -3,7 +3,7 @@ use crate::social::{MutualGraphLinkOutput, MutualGraphMetaOutput, MutualGraphSna
 use serde_json::{json, Value};
 use std::sync::Condvar;
 use vrcx_0_application_core::{
-    NoopWebClientPort, RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
+    RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
 };
 
 struct NoopMutualGraphStore;
@@ -178,7 +178,7 @@ fn fetch_scope_rejects_a_different_owner() {
 
 #[test]
 fn start_emits_a_running_status_before_the_job_is_spawned() {
-    let web = Arc::new(WebClient::new(NoopWebClientPort));
+    let remote = Arc::new(crate::remote::TestVrchatRequestPort);
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_owner", "https://api.example.test/api/1");
     let event_bus = RuntimeEventBus::new();
@@ -195,7 +195,7 @@ fn start_emits_a_running_status_before_the_job_is_spawned() {
             },
             Arc::new(NoopMutualGraphStore),
             Arc::new(NoopMutualGraphRemoteRequests),
-            web,
+            remote,
             auth_scope,
             tasks.clone(),
         )

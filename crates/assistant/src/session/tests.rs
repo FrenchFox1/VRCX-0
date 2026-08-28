@@ -1,16 +1,15 @@
 use super::*;
-use crate::test_support::{test_session_persistence, unique_test_database_path};
-use vrcx_0_persistence::{assistant, DatabaseService};
+use crate::test_support::TestAssistantSessionPersistence;
 
 const TEST_OWNER: &str = "usr_test";
 
-fn test_db() -> Arc<DatabaseService> {
-    Arc::new(DatabaseService::new(&unique_test_database_path("vrcx-0-assistant")).unwrap())
+fn test_persistence() -> TestAssistantSessionPersistence {
+    TestAssistantSessionPersistence::default()
 }
 
 impl SessionStore {
-    fn with_db(db: Arc<DatabaseService>) -> Self {
-        Self::with_persistence(test_session_persistence(db))
+    fn with_test_persistence(persistence: &TestAssistantSessionPersistence) -> Self {
+        Self::with_persistence(Arc::new(persistence.clone()))
     }
 }
 
@@ -23,9 +22,9 @@ fn create_test_session(store: &SessionStore) -> Session {
 
 #[test]
 fn reopened_session_keeps_history_for_followups() {
-    let db = test_db();
+    let persistence = test_persistence();
     let session = {
-        let store = SessionStore::with_db(db.clone());
+        let store = SessionStore::with_test_persistence(&persistence);
         let session = create_test_session(&store);
         store
             .push_message(&session.id, Role::User, "who do I play with?".into())
@@ -38,7 +37,7 @@ fn reopened_session_keeps_history_for_followups() {
 
     // Simulate an app restart: a fresh store over the same database must
     // hydrate the prior turns so the next question is sent with context.
-    let reopened = SessionStore::with_db(db);
+    let reopened = SessionStore::with_test_persistence(&persistence);
     let history = reopened
         .get(&OwnerId::new(TEST_OWNER), &session.id)
         .unwrap()
@@ -53,19 +52,19 @@ fn reopened_session_keeps_history_for_followups() {
 
 #[test]
 fn message_load_failure_retries_without_caching_partial_history() {
-    let db = test_db();
+    let persistence = test_persistence();
     let session_id = {
-        let store = SessionStore::with_db(db.clone());
+        let store = SessionStore::with_test_persistence(&persistence);
         let session = create_test_session(&store);
         assert!(store
             .push_message(&session.id, Role::User, "persisted".into())
             .unwrap());
         session.id
     };
-    let reopened = SessionStore::with_db(db.clone());
+    let reopened = SessionStore::with_test_persistence(&persistence);
     assert_eq!(reopened.list(&OwnerId::new(TEST_OWNER)).len(), 1);
 
-    let _frozen = db.freeze_for_migration().unwrap();
+    persistence.set_load_messages_failure(true);
     assert!(reopened
         .push_message(&session_id, Role::User, "must not append".into())
         .is_err());
@@ -76,7 +75,7 @@ fn message_load_failure_retries_without_caching_partial_history() {
         .contents
         .contains_key(&session_id));
 
-    db.reopen_after_migration_abort().unwrap();
+    persistence.set_load_messages_failure(false);
     let restored = reopened
         .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
@@ -91,7 +90,7 @@ fn message_load_failure_retries_without_caching_partial_history() {
 
 #[test]
 fn session_content_cache_evicts_clean_inactive_histories() {
-    let store = SessionStore::with_db(test_db());
+    let store = SessionStore::with_test_persistence(&test_persistence());
     let mut session_ids = Vec::new();
     for _ in 0..SESSION_CONTENT_CACHE_CAPACITY + 3 {
         session_ids.push(create_test_session(&store).id);
@@ -113,10 +112,10 @@ fn session_content_cache_evicts_clean_inactive_histories() {
 
 #[test]
 fn failed_message_write_is_not_evicted() {
-    let db = test_db();
-    let store = SessionStore::with_db(db.clone());
+    let persistence = test_persistence();
+    let store = SessionStore::with_test_persistence(&persistence);
     let session = create_test_session(&store);
-    let _frozen = db.freeze_for_migration().unwrap();
+    persistence.set_write_failure(true);
 
     assert!(store
         .push_message(&session.id, Role::User, "memory only".into())
@@ -129,13 +128,11 @@ fn failed_message_write_is_not_evicted() {
     assert!(content.write_failed);
     assert_eq!(content.messages[0].content, "memory only");
     drop(state);
-
-    db.reopen_after_migration_abort().unwrap();
 }
 
 #[test]
 fn session_snapshot_keeps_title_and_messages_consistent_during_push() {
-    let store = Arc::new(SessionStore::with_db(test_db()));
+    let store = Arc::new(SessionStore::with_test_persistence(&test_persistence()));
     let session = create_test_session(&store);
     let session_id = session.id.clone();
     let writer_store = Arc::clone(&store);
@@ -166,9 +163,9 @@ fn session_snapshot_keeps_title_and_messages_consistent_during_push() {
 
 #[test]
 fn reopened_session_restores_panel_state() {
-    let db = test_db();
+    let persistence = test_persistence();
     let session_id = {
-        let store = SessionStore::with_db(db.clone());
+        let store = SessionStore::with_test_persistence(&persistence);
         let session = create_test_session(&store);
         store.set_surfaced_entities(
             &session.id,
@@ -182,7 +179,7 @@ fn reopened_session_restores_panel_state() {
     };
 
     // Surfacing entities auto-opens the panel; both must survive a restart.
-    let reopened = SessionStore::with_db(db)
+    let reopened = SessionStore::with_test_persistence(&persistence)
         .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
@@ -194,9 +191,9 @@ fn reopened_session_restores_panel_state() {
 
 #[test]
 fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
-    let db = test_db();
+    let persistence = test_persistence();
     let session_id = {
-        let store = SessionStore::with_db(db.clone());
+        let store = SessionStore::with_test_persistence(&persistence);
         let session = create_test_session(&store);
         store
             .set_runtime(
@@ -214,7 +211,7 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
             .id
     };
 
-    let reopened = SessionStore::with_db(db.clone())
+    let reopened = SessionStore::with_test_persistence(&persistence)
         .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
@@ -224,10 +221,10 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
     assert_eq!(reopened.playbook_mode, PlaybookMode::Guided);
 
     let old_session_id = {
-        let store = SessionStore::with_db(db.clone());
+        let store = SessionStore::with_test_persistence(&persistence);
         create_test_session(&store).id
     };
-    let store = SessionStore::with_db(db);
+    let store = SessionStore::with_test_persistence(&persistence);
     let seeded = store
         .ensure_session_with_runtime(
             &OwnerId::new(TEST_OWNER),
@@ -248,9 +245,9 @@ fn runtime_selection_round_trips_and_lazy_seeds_old_sessions() {
 
 #[test]
 fn empty_surfaced_entities_clear_prior_references() {
-    let db = test_db();
+    let persistence = test_persistence();
     let session_id = {
-        let store = SessionStore::with_db(db.clone());
+        let store = SessionStore::with_test_persistence(&persistence);
         let session = create_test_session(&store);
         store.set_surfaced_entities(
             &session.id,
@@ -270,7 +267,7 @@ fn empty_surfaced_entities_clear_prior_references() {
         session.id
     };
 
-    let reopened = SessionStore::with_db(db)
+    let reopened = SessionStore::with_test_persistence(&persistence)
         .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
@@ -279,15 +276,15 @@ fn empty_surfaced_entities_clear_prior_references() {
 
 #[test]
 fn manual_panel_toggle_persists() {
-    let db = test_db();
+    let persistence = test_persistence();
     let session_id = {
-        let store = SessionStore::with_db(db.clone());
+        let store = SessionStore::with_test_persistence(&persistence);
         let session = create_test_session(&store);
         store.set_entity_panel_open(&session.id, true);
         store.set_entity_panel_open(&session.id, false);
         session.id
     };
-    let reopened = SessionStore::with_db(db)
+    let reopened = SessionStore::with_test_persistence(&persistence)
         .get(&OwnerId::new(TEST_OWNER), &session_id)
         .unwrap()
         .unwrap();
@@ -296,8 +293,8 @@ fn manual_panel_toggle_persists() {
 
 #[test]
 fn owner_switch_hides_other_sessions_and_keeps_shared_legacy_sessions() {
-    let db = test_db();
-    let store = SessionStore::with_db(db.clone());
+    let persistence = test_persistence();
+    let store = SessionStore::with_test_persistence(&persistence);
     let session_a = store
         .create_session_with_runtime(&OwnerId::new("usr_a"), AssistantRuntimeSelection::default());
     let session_b = store
@@ -328,7 +325,7 @@ fn owner_switch_hides_other_sessions_and_keeps_shared_legacy_sessions() {
         .is_none());
 
     store.delete(&OwnerId::new("usr_b"), &session_a.id);
-    assert!(SessionStore::with_db(db)
+    assert!(SessionStore::with_test_persistence(&persistence)
         .get(&OwnerId::new("usr_a"), &session_a.id)
         .unwrap()
         .is_some());
@@ -336,14 +333,11 @@ fn owner_switch_hides_other_sessions_and_keeps_shared_legacy_sessions() {
 
 #[test]
 fn persisted_sessions_load_only_for_the_requested_owner() {
-    let db = test_db();
-    assistant::assistant_session_upsert(&db, &OwnerId::new("usr_a"), "ses_a", "a", "t0", "t0")
-        .unwrap();
-    assistant::assistant_session_upsert(&db, &OwnerId::new("usr_b"), "ses_b", "b", "t0", "t0")
-        .unwrap();
-    assistant::assistant_session_upsert(&db, &OwnerId::new(""), "ses_shared", "shared", "t0", "t0")
-        .unwrap();
-    let store = SessionStore::with_db(db);
+    let persistence = test_persistence();
+    persistence.seed_session(&OwnerId::new("usr_a"), "ses_a", "a", "t0", "t0");
+    persistence.seed_session(&OwnerId::new("usr_b"), "ses_b", "b", "t0", "t0");
+    persistence.seed_session(&OwnerId::new(""), "ses_shared", "shared", "t0", "t0");
+    let store = SessionStore::with_test_persistence(&persistence);
 
     assert!(store.state.lock().unwrap().sessions.is_empty());
 
@@ -373,7 +367,7 @@ fn persisted_sessions_load_only_for_the_requested_owner() {
 
 #[test]
 fn is_current_turn_tracks_the_latest_turn() {
-    let store = SessionStore::with_db(test_db());
+    let store = SessionStore::with_test_persistence(&test_persistence());
     let session = create_test_session(&store);
 
     store.set_active_turn(

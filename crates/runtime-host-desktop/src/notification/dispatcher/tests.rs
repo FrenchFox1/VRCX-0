@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::Mutex;
 
 use crate::notification::{NotificationDeliveryPreferences, NotificationTtsNameMode};
@@ -12,12 +11,13 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_i18n::OverlayMessage;
-use vrcx_0_persistence::{memos::memo_save_user, DatabaseService};
 use vrcx_0_platform::Error;
 
 use vrcx_0_host_desktop::tts::{TtsEngine, TtsVoice};
 
-use crate::notification::tts::{notification_tts_text, send_tts_notification};
+use crate::notification::tts::{
+    notification_tts_memo_actor_user_id, notification_tts_text, send_tts_notification,
+};
 
 use super::{notification_session_identity, OrderedDeliveryBuffer};
 
@@ -65,8 +65,6 @@ fn notification_identity_is_empty_before_the_auth_scope_is_active() {
 
 #[test]
 fn notification_tts_note_mode_replaces_only_first_title() {
-    let (_dir, db) = test_db("tts-note-mode");
-    memo_save_user(&db, "usr_traveler".into(), "Pilot\nsecond line".into()).unwrap();
     let preferences = NotificationDeliveryPreferences {
         notification_tts_name_mode: NotificationTtsNameMode::Note,
         ..NotificationDeliveryPreferences::default()
@@ -75,15 +73,19 @@ fn notification_tts_note_mode_replaces_only_first_title() {
     render.text = "Traveler waved at Traveler".into();
 
     assert_eq!(
-        notification_tts_text(&db, &delivery(), &render, &preferences, OverlayLocale::En),
+        notification_tts_text(
+            &delivery(),
+            &render,
+            &preferences,
+            OverlayLocale::En,
+            Some("Pilot\nsecond line")
+        ),
         "Pilot waved at Traveler"
     );
 }
 
 #[test]
 fn notification_tts_username_and_note_mode_reads_both() {
-    let (_dir, db) = test_db("tts-username-and-note-mode");
-    memo_save_user(&db, "usr_traveler".into(), "Pilot".into()).unwrap();
     let preferences = NotificationDeliveryPreferences {
         notification_tts_name_mode: NotificationTtsNameMode::UsernameAndNote,
         ..NotificationDeliveryPreferences::default()
@@ -91,11 +93,11 @@ fn notification_tts_username_and_note_mode_reads_both() {
 
     assert_eq!(
         notification_tts_text(
-            &db,
             &delivery(),
             &rendered(),
             &preferences,
-            OverlayLocale::En
+            OverlayLocale::En,
+            Some("Pilot")
         ),
         "Traveler, Pilot joined Named World"
     );
@@ -103,7 +105,6 @@ fn notification_tts_username_and_note_mode_reads_both() {
 
 #[test]
 fn notification_tts_text_omits_instance_id_even_when_display_shows_it() {
-    let (_dir, db) = test_db("tts-omits-instance-id");
     let mut delivery = delivery();
     delivery.entry.content.location = "wrld_named:12345~region(use)".into();
     delivery.entry.content.title = OverlayActivityText::literal("Traveler");
@@ -116,13 +117,12 @@ fn notification_tts_text_omits_instance_id_even_when_display_shows_it() {
     let render = render_delivery(&delivery, OverlayLocale::En, true);
 
     assert!(render.text.contains("#12345"));
-    let spoken = notification_tts_text(&db, &delivery, &render, &preferences, OverlayLocale::En);
+    let spoken = notification_tts_text(&delivery, &render, &preferences, OverlayLocale::En, None);
     assert!(!spoken.contains("#12345"));
 }
 
 #[test]
 fn notification_tts_passes_configured_volume_to_engine() {
-    let (_dir, db) = test_db("tts-volume");
     let tts = RecordingTts::default();
     let preferences = NotificationDeliveryPreferences {
         notification_tts_volume: 42,
@@ -131,14 +131,27 @@ fn notification_tts_passes_configured_volume_to_engine() {
 
     send_tts_notification(
         &tts,
-        &db,
         &delivery(),
         &rendered(),
         &preferences,
         OverlayLocale::En,
+        None,
     );
 
     assert_eq!(tts.volumes.lock().unwrap().as_slice(), &[42]);
+}
+
+#[test]
+fn notification_tts_username_mode_does_not_request_a_user_memo() {
+    assert_eq!(
+        notification_tts_memo_actor_user_id(
+            &delivery(),
+            &rendered(),
+            &NotificationDeliveryPreferences::default(),
+            OverlayLocale::En,
+        ),
+        None
+    );
 }
 
 #[derive(Default)]
@@ -193,35 +206,4 @@ fn delivery() -> OverlayActivityDelivery {
         webhook: true,
         tts: false,
     }
-}
-
-struct TestDir {
-    path: PathBuf,
-}
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-desktop-notification-{name}-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
-}
-
-fn test_db(name: &str) -> (TestDir, DatabaseService) {
-    let dir = TestDir::new(name);
-    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
-    (dir, db)
 }

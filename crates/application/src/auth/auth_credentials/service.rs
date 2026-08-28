@@ -1,5 +1,5 @@
 use super::storage::AuthCredentialStore;
-use vrcx_0_application_core::WebClient;
+use crate::auth::AuthSessionCookies;
 
 use super::compat::{
     normalize_text, saved_credential_user_from_value, saved_login_params_from_value,
@@ -31,7 +31,7 @@ pub fn delete_saved_credential(
 
 pub fn record_login_success(
     config: &dyn AuthCredentialStore,
-    web: &WebClient,
+    cookies: &dyn AuthSessionCookies,
     input: LoginSuccessRecordInput,
 ) -> Result<SavedAuthSnapshot> {
     let Some(user) = saved_credential_user_from_value(input.user.as_value(), "") else {
@@ -41,7 +41,7 @@ pub fn record_login_success(
     };
     let user_id = user.id.clone();
     let mut saved_credentials = read_saved_credentials(config)?;
-    let cookies = match web.get_cookies() {
+    let cookies = match cookies.get() {
         cookies if cookies.is_empty() => None,
         cookies => Some(cookies),
     };
@@ -71,12 +71,12 @@ pub fn record_login_success(
 
 pub fn record_logout(
     config: &dyn AuthCredentialStore,
-    web: &WebClient,
+    cookies: &dyn AuthSessionCookies,
     input: LogoutRecordInput,
 ) -> Result<SavedAuthSnapshot> {
     let user_id = normalize_text(input.user_id);
 
-    sync_saved_credential_cookies(config, web, &user_id)?;
+    sync_saved_credential_cookies(config, cookies, &user_id)?;
 
     if input.clear_last_user_logged_in {
         remove_config_value(config, LAST_USER_LOGGED_IN_KEY)?;
@@ -86,7 +86,7 @@ pub fn record_logout(
 
 pub(super) fn sync_saved_credential_cookies(
     config: &dyn AuthCredentialStore,
-    web: &WebClient,
+    cookies: &dyn AuthSessionCookies,
     user_id: &str,
 ) -> Result<()> {
     let user_id = normalize_text(user_id);
@@ -95,7 +95,7 @@ pub(super) fn sync_saved_credential_cookies(
     }
     let mut saved_credentials = read_saved_credentials(config)?;
     if let Some(existing_record) = saved_credentials.get_mut(&user_id) {
-        let cookies = web.get_cookies();
+        let cookies = cookies.get();
         existing_record.cookies = (!cookies.is_empty()).then_some(cookies);
         write_saved_credentials(config, &saved_credentials)?;
     }

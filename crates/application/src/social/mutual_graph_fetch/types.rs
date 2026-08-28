@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use vrcx_0_core::json::RawJson;
 
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope, WebClient};
+use crate::remote::VrchatRequestPort;
+use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope};
 use vrcx_0_core::OwnerId;
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -62,7 +63,7 @@ impl MutualGraphFetchState {
 pub struct MutualGraphRequestDeps<'a> {
     pub(crate) store: &'a dyn MutualGraphStore,
     pub(crate) remote_requests: &'a dyn MutualGraphRemoteRequests,
-    pub(crate) web: &'a WebClient,
+    pub(crate) remote: &'a dyn VrchatRequestPort,
     pub auth_scope: &'a RuntimeAuthScope,
 }
 
@@ -70,13 +71,13 @@ impl<'a> MutualGraphRequestDeps<'a> {
     pub fn new(
         store: &'a dyn MutualGraphStore,
         remote_requests: &'a dyn MutualGraphRemoteRequests,
-        web: &'a WebClient,
+        remote: &'a dyn VrchatRequestPort,
         auth_scope: &'a RuntimeAuthScope,
     ) -> Self {
         Self {
             store,
             remote_requests,
-            web,
+            remote,
             auth_scope,
         }
     }

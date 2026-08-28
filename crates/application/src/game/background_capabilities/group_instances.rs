@@ -1,33 +1,37 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
+use futures_util::future::BoxFuture;
 use futures_util::{stream, StreamExt};
 use serde_json::{json, Map, Value};
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
 use vrcx_0_application_core::BackgroundCapabilitySessionIdentity;
-use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 use vrcx_0_core::{json::RawJson, location::parse_location, vrchat_json::GroupInstanceJson};
 
-use vrcx_0_application_core::{Error, Result, WebClient};
-
-use super::shared::parse_response_json;
+use vrcx_0_application_core::Result;
 
 const GROUP_PROFILE_HYDRATION_CONCURRENCY: usize = 4;
 
-pub trait BackgroundGroupRequests: Send + Sync {
-    fn current_user(&self, endpoint: String) -> Result<VrchatApiRequest>;
-    fn current_user_group_instances(
-        &self,
-        endpoint: String,
-        current_user_id: String,
-    ) -> Result<VrchatApiRequest>;
-    fn current_user_group_instances_for_group(
-        &self,
-        endpoint: String,
-        current_user_id: String,
-        group_id: String,
-    ) -> Result<VrchatApiRequest>;
-    fn group_profile(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest>;
+pub type BackgroundGroupRemoteFuture<'a, T> = BoxFuture<'a, Result<T>>;
+pub type BackgroundGroupProfileFuture<'a> = BoxFuture<'a, Option<Value>>;
+
+pub trait BackgroundGroupRemote: Send + Sync {
+    fn current_user<'a>(&'a self, endpoint: &'a str) -> BackgroundGroupRemoteFuture<'a, Value>;
+    fn group_instances<'a>(
+        &'a self,
+        endpoint: &'a str,
+        current_user_id: &'a str,
+    ) -> BackgroundGroupRemoteFuture<'a, Vec<Value>>;
+    fn group_instances_for_group<'a>(
+        &'a self,
+        endpoint: &'a str,
+        current_user_id: &'a str,
+        group_id: &'a str,
+    ) -> BackgroundGroupRemoteFuture<'a, Vec<Value>>;
+    fn group_profile<'a>(
+        &'a self,
+        endpoint: &'a str,
+        group_id: &'a str,
+    ) -> BackgroundGroupProfileFuture<'a>;
 }
 #[derive(Clone, Debug, Default)]
 pub struct BackgroundGroupInstancesRefresh {
@@ -127,51 +131,21 @@ impl vrcx_0_application_core::RuntimeEventPayload for RuntimeGroupInstancesProje
 }
 
 pub async fn refresh_background_current_user(
-    web: &WebClient,
-    requests: &dyn BackgroundGroupRequests,
+    remote: &dyn BackgroundGroupRemote,
     session: &BackgroundCapabilitySessionIdentity,
 ) -> Result<Value> {
-    let response = web
-        .execute_api(
-            requests.current_user(normalize_vrchat_api_endpoint(Some(&session.endpoint)))?,
-            VrchatScope::Vrchat,
-        )
-        .await?;
-    if !(200..=299).contains(&response.status) {
-        return Err(Error::Custom(format!(
-            "current user refresh returned HTTP {}",
-            response.status
-        )));
-    }
-    parse_response_json(&response.data)
-        .ok_or_else(|| Error::Custom("current user refresh returned invalid JSON".into()))
+    remote.current_user(&session.endpoint).await
 }
 
 pub async fn refresh_background_group_instances(
-    web: &WebClient,
-    requests: &dyn BackgroundGroupRequests,
+    remote: &dyn BackgroundGroupRemote,
     session: &BackgroundCapabilitySessionIdentity,
 ) -> Result<BackgroundGroupInstancesRefresh> {
-    let request = requests.current_user_group_instances(
-        normalize_vrchat_api_endpoint(Some(&session.endpoint)),
-        session.current_user_id.clone(),
-    )?;
-    let response = web.execute_api(request, VrchatScope::Vrchat).await?;
-    if !(200..=299).contains(&response.status) {
-        return Err(Error::Custom(format!(
-            "group instance refresh returned HTTP {}",
-            response.status
-        )));
-    }
+    let instances = remote
+        .group_instances(&session.endpoint, &session.current_user_id)
+        .await?;
     let fetched_at = Utc::now().to_rfc3339();
-    let value = parse_response_json(&response.data).unwrap_or(Value::Null);
-    let instances = value
-        .as_array()
-        .cloned()
-        .or_else(|| value.get("instances").and_then(Value::as_array).cloned())
-        .unwrap_or_default();
-    let instances =
-        hydrate_background_group_instances(web, requests, &session.endpoint, instances).await;
+    let instances = hydrate_background_group_instances(remote, &session.endpoint, instances).await;
     Ok(BackgroundGroupInstancesRefresh {
         instances: instances.into_iter().map(RawJson::from).collect(),
         fetched_at,
@@ -179,52 +153,21 @@ pub async fn refresh_background_group_instances(
 }
 
 pub async fn refresh_background_group_instances_for_group(
-    web: &WebClient,
-    requests: &dyn BackgroundGroupRequests,
+    remote: &dyn BackgroundGroupRemote,
     session: &BackgroundCapabilitySessionIdentity,
     group_id: &str,
 ) -> Result<BackgroundGroupInstancesRefresh> {
-    let response = web
-        .execute_api(
-            requests.current_user_group_instances_for_group(
-                normalize_vrchat_api_endpoint(Some(&session.endpoint)),
-                session.current_user_id.clone(),
-                group_id.to_string(),
-            )?,
-            VrchatScope::Vrchat,
-        )
+    let instances = remote
+        .group_instances_for_group(&session.endpoint, &session.current_user_id, group_id)
         .await?;
-    if !(200..=299).contains(&response.status) {
-        return Err(Error::Custom(format!(
-            "saved group instance refresh returned HTTP {}",
-            response.status
-        )));
-    }
     Ok(BackgroundGroupInstancesRefresh {
-        instances: parse_group_instance_rows(&response.data)?
-            .into_iter()
-            .map(RawJson::from)
-            .collect(),
+        instances: instances.into_iter().map(RawJson::from).collect(),
         fetched_at: Utc::now().to_rfc3339(),
     })
 }
 
-fn parse_group_instance_rows(data: &str) -> Result<Vec<Value>> {
-    let value = parse_response_json(data)
-        .ok_or_else(|| Error::Custom("group instance refresh returned invalid JSON".into()))?;
-    if let Some(instances) = value.as_array() {
-        return Ok(instances.clone());
-    }
-    value
-        .get("instances")
-        .and_then(Value::as_array)
-        .cloned()
-        .ok_or_else(|| Error::Custom("group instance refresh returned unexpected JSON".into()))
-}
-
 async fn hydrate_background_group_instances(
-    web: &WebClient,
-    requests: &dyn BackgroundGroupRequests,
+    remote: &dyn BackgroundGroupRemote,
     endpoint: &str,
     instances: Vec<Value>,
 ) -> Vec<Value> {
@@ -243,34 +186,11 @@ async fn hydrate_background_group_instances(
         return instances;
     }
 
-    let endpoint = normalize_vrchat_api_endpoint(Some(endpoint));
-    let group_fetches = group_ids.into_iter().filter_map(|group_id| {
-        let Ok(request) = requests.group_profile(endpoint.clone(), group_id.clone()) else {
-            return None;
-        };
-        Some(async move {
-            match web.execute_api(request, VrchatScope::Vrchat).await {
-                Ok(response) if (200..=299).contains(&response.status) => {
-                    parse_response_json(&response.data).map(|group| (group_id, group))
-                }
-                Ok(response) => {
-                    tracing::warn!(
-                        group_id,
-                        status = response.status,
-                        "background group instance profile hydration failed"
-                    );
-                    None
-                }
-                Err(error) => {
-                    tracing::warn!(
-                        group_id,
-                        error = %error,
-                        "background group instance profile hydration failed"
-                    );
-                    None
-                }
-            }
-        })
+    let group_fetches = group_ids.into_iter().map(|group_id| async move {
+        remote
+            .group_profile(endpoint, &group_id)
+            .await
+            .map(|group| (group_id, group))
     });
     let groups_by_id: HashMap<String, Value> = stream::iter(group_fetches)
         .buffer_unordered(GROUP_PROFILE_HYDRATION_CONCURRENCY)

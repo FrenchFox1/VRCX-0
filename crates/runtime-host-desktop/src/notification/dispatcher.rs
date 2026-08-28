@@ -18,7 +18,7 @@ use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
 use super::desktop::{send_desktop_notification, DesktopNotificationAction, DesktopNotifier};
 use super::overlay_transport::OverlayNotificationTransport;
-use super::tts::send_tts_notification;
+use super::tts::{notification_tts_memo_actor_user_id, send_tts_notification};
 use super::{
     decide_notification_plan, load_preferences, NotificationDeliveryGameState,
     NotificationDeliveryPlan, NotificationDeliveryPreferences,
@@ -282,13 +282,20 @@ fn dispatch_prepared_notification(
     output: &NotificationOutputContext,
 ) {
     if notification.plan.tts {
-        send_tts_notification(
-            output.tts.as_ref(),
-            output.db.as_ref(),
+        let user_memo = notification_tts_memo_actor_user_id(
             &notification.delivery,
             &notification.render,
             &notification.preferences,
             notification.locale,
+        )
+        .and_then(|actor_user_id| load_user_memo(output.db.as_ref(), actor_user_id));
+        send_tts_notification(
+            output.tts.as_ref(),
+            &notification.delivery,
+            &notification.render,
+            &notification.preferences,
+            notification.locale,
+            user_memo.as_deref(),
         );
     }
     let local_image = notification.local_image.as_deref();
@@ -309,6 +316,21 @@ fn dispatch_prepared_notification(
         &notification.preferences,
         local_image,
     );
+}
+
+fn load_user_memo(db: &DatabaseService, actor_user_id: &str) -> Option<String> {
+    let actor_user_id = actor_user_id.trim();
+    if actor_user_id.is_empty() {
+        return None;
+    }
+    match vrcx_0_persistence::memos::memo_get_user(db, actor_user_id.to_string()) {
+        Ok(Some(memo)) => Some(memo.memo),
+        Ok(None) => None,
+        Err(error) => {
+            tracing::debug!("failed to load TTS nickname memo: {error}");
+            None
+        }
+    }
 }
 
 fn apply_cached_actor_image(

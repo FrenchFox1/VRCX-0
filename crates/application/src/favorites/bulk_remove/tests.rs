@@ -8,10 +8,8 @@ use std::{
     },
 };
 
-use vrcx_0_application_core::NoopWebClientPort;
-
 use super::*;
-use crate::favorites::test_support::{TestFavoriteRemoteRequests, TestFavoriteStore};
+use crate::favorites::test_support::{TestFavoriteRemote, TestFavoriteStore};
 use crate::favorites::FavoriteStore;
 
 struct FakeActions {
@@ -136,8 +134,7 @@ async fn remote_success_then_scope_change_stops_remaining_items() {
 #[tokio::test]
 async fn local_items_are_removed_from_account_scoped_persistence() {
     let store = TestFavoriteStore::default();
-    let remote_requests = TestFavoriteRemoteRequests;
-    let web = WebClient::new(NoopWebClientPort);
+    let remote = TestFavoriteRemote::default();
     let auth_scope = RuntimeAuthScope::new();
     let expected_scope = auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
@@ -153,8 +150,7 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
     let result = remove_favorites_bulk(
         &FavoriteBulkRemoveDeps {
             store: &store,
-            remote_requests: &remote_requests,
-            web: &web,
+            remote: &remote,
             auth_scope: &auth_scope,
             expected_scope,
             remote_mutation_gate: &remote_mutation_gate,
@@ -182,8 +178,7 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
 #[tokio::test]
 async fn selection_chunks_more_than_one_protected_batch() {
     let store = TestFavoriteStore::default();
-    let remote_requests = TestFavoriteRemoteRequests;
-    let web = WebClient::new(NoopWebClientPort);
+    let remote = TestFavoriteRemote::default();
     let auth_scope = RuntimeAuthScope::new();
     let expected_scope = auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
@@ -210,8 +205,7 @@ async fn selection_chunks_more_than_one_protected_batch() {
     let result = remove_favorites_selection(
         &FavoriteBulkRemoveDeps {
             store: &store,
-            remote_requests: &remote_requests,
-            web: &web,
+            remote: &remote,
             auth_scope: &auth_scope,
             expected_scope,
             remote_mutation_gate: &remote_mutation_gate,

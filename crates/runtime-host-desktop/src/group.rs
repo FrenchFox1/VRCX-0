@@ -47,7 +47,9 @@ impl DesktopGroupRuntime {
 
     fn api_deps(&self) -> GroupApiDeps {
         GroupApiDeps::new(
-            Arc::clone(&self.web),
+            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
+                Arc::clone(&self.web),
+            )),
             Arc::new(vrcx_0_outbound_adapters::VrchatGroupRemoteRequests),
             self.diagnostics.clone(),
             self.sync.clone(),
@@ -69,8 +71,9 @@ impl DesktopGroupRuntime {
     pub async fn calendar(&self, input: GroupCalendarInput) -> Result<GroupCalendarSnapshot> {
         Ok(application::load_group_calendar(
             GroupCalendarDeps::new(
-                Arc::clone(&self.web),
-                Arc::new(vrcx_0_outbound_adapters::VrchatGroupCalendarRemoteRequests),
+                Arc::new(vrcx_0_outbound_adapters::VrchatGroupCalendarRemote::new(
+                    Arc::clone(&self.web),
+                )),
                 self.auth_scope.clone(),
                 self.diagnostics.clone(),
                 self.sync.clone(),

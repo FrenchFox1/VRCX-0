@@ -86,7 +86,9 @@ impl McpMutualGraphPort for TauriMcpMutualGraphAdapter {
                 Arc::clone(&self.db),
             )),
             Arc::new(vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests),
-            Arc::clone(&self.web),
+            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
+                Arc::clone(&self.web),
+            )),
             self.auth_scope.clone(),
             self.tasks.clone(),
         )

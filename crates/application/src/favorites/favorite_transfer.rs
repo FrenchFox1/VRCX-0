@@ -11,10 +11,7 @@ use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
 use super::cache_policy::{
     cache_entry_from_entity, cache_write_decision, CacheWriteDecision, FavoriteCacheKind,
 };
-use vrcx_0_application_core::vrchat_api::{execute_api_command, normalize_text, VrchatScope};
-use vrcx_0_application_core::RuntimeDiagnostics;
-use vrcx_0_application_core::RuntimeSyncEngine;
-use vrcx_0_application_core::WebClient;
+use vrcx_0_application_core::vrchat_api::normalize_text;
 use vrcx_0_core::OwnerId;
 
 const FAVORITE_RECOVERED_GROUP: &str = "Recovered";
@@ -144,10 +141,7 @@ pub struct FavoriteTransferSelectionResult {
 
 pub(super) struct FavoriteTransferDeps<'a> {
     pub store: &'a dyn super::FavoriteStore,
-    pub remote_requests: &'a dyn super::FavoriteRemoteRequests,
-    pub(crate) web: &'a WebClient,
-    pub diagnostics: &'a RuntimeDiagnostics,
-    pub sync: &'a RuntimeSyncEngine,
+    pub remote: &'a dyn super::FavoriteRemote,
     pub mutation: AuthenticatedMutationContext<'a>,
 }
 
@@ -649,24 +643,20 @@ async fn delete_remote_favorite(
     item: &FavoriteTransferItem,
 ) -> Result<i64> {
     let object_id = normalize_text(&item.entity_id);
-    let (_, request) = deps
-        .remote_requests
-        .delete(deps.mutation.scope().endpoint.clone(), object_id)?;
     deps.mutation
         .wait_for_remote(FAVORITE_TRANSFER_REMOTE_INTERVAL)
         .await?;
-    let response = execute_api_command(
-        deps.web,
-        deps.diagnostics,
-        deps.sync,
-        (
-            "app__favorites_transfer.delete_remote",
-            "Deleting a remote favorite.",
-        ),
-        request,
-        VrchatScope::Vrchat,
-    )
-    .await?;
+    let (_, response) = deps
+        .remote
+        .delete(
+            deps.mutation.scope().endpoint.clone(),
+            object_id,
+            Some(super::FavoriteRemoteCommand {
+                name: "app__favorites_transfer.delete_remote",
+                detail: "Deleting a remote favorite.".into(),
+            }),
+        )
+        .await?;
     deps.mutation.ensure_current()?;
     ensure_vrchat_response_ok(response.status, &response.data, "delete remote favorite")?;
     Ok(0)
@@ -687,29 +677,24 @@ async fn add_remote_favorite_with_group(
     group: &str,
 ) -> Result<RawJson> {
     let favorite_type = remote_favorite_type(input);
-    let (_, _, request) = deps.remote_requests.add(
-        deps.mutation.scope().endpoint.clone(),
-        super::FavoriteRemoteAddInput {
-            kind: favorite_type,
-            entity_id: normalize_text(&item.entity_id),
-            tags: normalize_text(group),
-        },
-    )?;
     deps.mutation
         .wait_for_remote(FAVORITE_TRANSFER_REMOTE_INTERVAL)
         .await?;
-    let response = execute_api_command(
-        deps.web,
-        deps.diagnostics,
-        deps.sync,
-        (
-            "app__favorites_transfer.add_remote",
-            "Adding a remote favorite.",
-        ),
-        request,
-        VrchatScope::Vrchat,
-    )
-    .await?;
+    let (_, _, response) = deps
+        .remote
+        .add(
+            deps.mutation.scope().endpoint.clone(),
+            super::FavoriteRemoteAddInput {
+                kind: favorite_type,
+                entity_id: normalize_text(&item.entity_id),
+                tags: normalize_text(group),
+            },
+            Some(super::FavoriteRemoteCommand {
+                name: "app__favorites_transfer.add_remote",
+                detail: "Adding a remote favorite.".into(),
+            }),
+        )
+        .await?;
     deps.mutation.ensure_current()?;
     ensure_vrchat_response_ok(response.status, &response.data, "add remote favorite")?;
     Ok(RawJson::from(parse_vrchat_json(&response.data)))
@@ -810,26 +795,21 @@ async fn fetch_online_favorite_index(
     let mut offset = 0_i32;
 
     for _ in 0..FAVORITE_TRANSFER_MAX_PAGES {
-        let request = deps.remote_requests.list(
-            deps.mutation.scope().endpoint.clone(),
-            FAVORITE_TRANSFER_PAGE_SIZE,
-            offset,
-        );
         deps.mutation
             .wait_for_remote(FAVORITE_TRANSFER_REMOTE_INTERVAL)
             .await?;
-        let response = execute_api_command(
-            deps.web,
-            deps.diagnostics,
-            deps.sync,
-            (
-                "app__favorites_transfer.precheck_list",
-                "Loading remote favorites for transfer validation.",
-            ),
-            request,
-            VrchatScope::Vrchat,
-        )
-        .await?;
+        let response = deps
+            .remote
+            .list(
+                deps.mutation.scope().endpoint.clone(),
+                FAVORITE_TRANSFER_PAGE_SIZE,
+                offset,
+                Some(super::FavoriteRemoteCommand {
+                    name: "app__favorites_transfer.precheck_list",
+                    detail: "Loading remote favorites for transfer validation.".into(),
+                }),
+            )
+            .await?;
         deps.mutation.ensure_current()?;
         ensure_vrchat_response_ok(response.status, &response.data, "list online favorites")?;
         let page = parse_vrchat_json(&response.data);
@@ -872,24 +852,19 @@ async fn fetch_favorite_group_capacity(
     deps: &FavoriteTransferDeps<'_>,
     favorite_type: &str,
 ) -> Result<i64> {
-    let request = deps
-        .remote_requests
-        .limits(deps.mutation.scope().endpoint.clone());
     deps.mutation
         .wait_for_remote(FAVORITE_TRANSFER_REMOTE_INTERVAL)
         .await?;
-    let response = execute_api_command(
-        deps.web,
-        deps.diagnostics,
-        deps.sync,
-        (
-            "app__favorites_transfer.precheck_limits",
-            "Loading remote favorite limits for transfer validation.",
-        ),
-        request,
-        VrchatScope::Vrchat,
-    )
-    .await?;
+    let response = deps
+        .remote
+        .limits(
+            deps.mutation.scope().endpoint.clone(),
+            Some(super::FavoriteRemoteCommand {
+                name: "app__favorites_transfer.precheck_limits",
+                detail: "Loading remote favorite limits for transfer validation.".into(),
+            }),
+        )
+        .await?;
     deps.mutation.ensure_current()?;
     ensure_vrchat_response_ok(response.status, &response.data, "get favorite limits")?;
     let limits = parse_vrchat_json(&response.data);

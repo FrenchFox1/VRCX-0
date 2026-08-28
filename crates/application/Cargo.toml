@@ -39,10 +39,6 @@ vrcx-0-application-realtime = { path = "../application-realtime" }
 specta.workspace = true
 
 [dev-dependencies]
-vrcx-0-outbound-adapters = { path = "../outbound-adapters" }
-vrcx-0-persistence = { path = "../persistence" }
 async-trait = { workspace = true }
-image = { workspace = true }
-rusqlite = { workspace = true, features = ["bundled"] }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }
 vrcx-0-application-realtime = { path = "../application-realtime", features = ["test-utils"] }

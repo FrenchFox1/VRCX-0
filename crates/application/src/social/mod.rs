@@ -40,8 +40,9 @@ pub use friend_log_names::{
     FRIEND_LOG_NAME_RESOLUTION_MAX_USERS,
 };
 pub use group_calendar::{
-    load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarPageKind,
-    GroupCalendarRemoteRequests, GroupCalendarSnapshot,
+    load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarPage,
+    GroupCalendarPageKind, GroupCalendarProfileFuture, GroupCalendarRemote,
+    GroupCalendarRemoteFuture, GroupCalendarSnapshot,
 };
 pub use groups::{
     add_member_role, ban_member, block_group, cancel_request, create_post, delete_invite,
@@ -86,7 +87,7 @@ pub use groups::{
 pub use instance_invite_batch::{
     send_instance_invites_batch, InstanceInviteBatchInput, InstanceInviteBatchResult,
     InstanceInviteItemResult, InstanceInviteItemState, InstanceInviteRemoteRequests,
-    VrchatInstanceInviteBatchActions,
+    VrchatInstanceInviteBatchActions, WorldNameFuture, WorldNameResolver,
 };
 pub use moderation_sync::{
     force_refresh_player_moderations, refresh_player_moderations, update_player_moderation,
@@ -168,10 +169,10 @@ pub use social_mutation::{
     SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
 };
 pub use user_dialog_tab_counts::{
-    get_user_dialog_tab_counts, AvatarProviderConfig, AvatarReleaseStatus,
-    UserDialogExternalFuture, UserDialogTabCountsDeps, UserDialogTabCountsInput,
-    UserDialogTabCountsOutput, UserDialogTabCountsRuntime, UserDialogTabCountsSource,
-    DEFAULT_AVATAR_PROVIDER,
+    get_user_dialog_tab_counts, AvatarProviderConfig, AvatarReleaseStatus, UserDialogCountPage,
+    UserDialogFavoriteGroupPage, UserDialogTabCountsDeps, UserDialogTabCountsFuture,
+    UserDialogTabCountsInput, UserDialogTabCountsOutput, UserDialogTabCountsRuntime,
+    UserDialogTabCountsSource, DEFAULT_AVATAR_PROVIDER,
 };
 mod batch_mutation;
 mod instance_invite_batch;

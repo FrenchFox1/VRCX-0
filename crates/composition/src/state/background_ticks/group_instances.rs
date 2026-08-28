@@ -52,13 +52,9 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
             session.current_user_id.clone(),
             session.endpoint.clone(),
         ));
-    match refresh_background_group_instances(
-        context.web.as_ref(),
-        &vrcx_0_outbound_adapters::VrchatBackgroundGroupRequests,
-        &session,
-    )
-    .await
-    {
+    let remote =
+        vrcx_0_outbound_adapters::VrchatBackgroundGroupRemote::new(Arc::clone(context.web));
+    match refresh_background_group_instances(&remote, &session).await {
         Ok(refresh) => {
             if !background_capability_session_matches(context.session_slot, &session) {
                 tracing::warn!("ignored stale background group instance refresh");
@@ -159,16 +155,11 @@ pub(in crate::state) async fn run_background_group_instance_notification_refresh
         "{}\u{1f}{}\u{1f}{}",
         session.current_user_id, session.endpoint, session.auth_scope_generation
     );
+    let remote =
+        vrcx_0_outbound_adapters::VrchatBackgroundGroupRemote::new(Arc::clone(context.web));
     let mut failed = 0usize;
     for group_id in group_ids {
-        match refresh_background_group_instances_for_group(
-            context.web.as_ref(),
-            &vrcx_0_outbound_adapters::VrchatBackgroundGroupRequests,
-            &session,
-            group_id,
-        )
-        .await
-        {
+        match refresh_background_group_instances_for_group(&remote, &session, group_id).await {
             Ok(refresh) => {
                 if !background_capability_session_matches(context.session_slot, &session) {
                     return;

@@ -4,18 +4,14 @@ use vrcx_0_core::derived_keys;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
-use vrcx_0_application_core::{
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
-};
+use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 
 const MY_AVATARS_PAGE_SIZE: i32 = 50;
 const MY_AVATARS_MAX_OFFSET: i32 = 5_000;
 
 pub struct MyAvatarsDeps<'a> {
     pub(crate) store: &'a dyn super::MyAvatarsStore,
-    pub(crate) remote_requests: &'a dyn super::AvatarRemoteRequests,
-    pub(crate) web: &'a WebClient,
+    pub(crate) remote: &'a dyn super::AvatarRemote,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
 }
@@ -23,15 +19,13 @@ pub struct MyAvatarsDeps<'a> {
 impl<'a> MyAvatarsDeps<'a> {
     pub fn new(
         store: &'a dyn super::MyAvatarsStore,
-        remote_requests: &'a dyn super::AvatarRemoteRequests,
-        web: &'a WebClient,
+        remote: &'a dyn super::AvatarRemote,
         auth_scope: &'a RuntimeAuthScope,
         expected_scope: RuntimeAuthScopeSnapshot,
     ) -> Self {
         Self {
             store,
-            remote_requests,
-            web,
+            remote,
             auth_scope,
             expected_scope,
         }
@@ -108,12 +102,12 @@ async fn fetch_my_avatar_pages(
     let mut offset = 0;
 
     while offset <= MY_AVATARS_MAX_OFFSET {
-        let request = deps.remote_requests.my_avatar_page(
-            deps.expected_scope.endpoint.clone(),
-            MY_AVATARS_PAGE_SIZE,
-            offset,
-        )?;
-        let page = execute_json_array(deps, request).await?;
+        ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+        let page = deps
+            .remote
+            .my_avatar_page(&deps.expected_scope.endpoint, MY_AVATARS_PAGE_SIZE, offset)
+            .await?;
+        ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
         let page_len = page.len();
 
         if let Some(target) = target_avatar_id {
@@ -131,37 +125,6 @@ async fn fetch_my_avatar_pages(
     }
 
     Ok(avatars)
-}
-
-async fn execute_json_array(
-    deps: &MyAvatarsDeps<'_>,
-    request: VrchatApiRequest,
-) -> Result<Vec<Value>> {
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
-    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
-    let payload = serde_json::from_str::<Value>(&response.data)
-        .unwrap_or_else(|_| Value::String(response.data.clone()));
-    if response.status >= 400 || payload.get("error").is_some() {
-        return Err(Error::Custom(response_error_message(
-            &payload,
-            response.status,
-        )));
-    }
-    match payload {
-        Value::Array(rows) => Ok(rows),
-        _ => Ok(Vec::new()),
-    }
-}
-
-fn response_error_message(payload: &Value, status: i32) -> String {
-    let detail = payload
-        .get("error")
-        .and_then(|error| error.get("message"))
-        .and_then(Value::as_str)
-        .map(str::to_string)
-        .unwrap_or_else(|| format!("status {status}"));
-    format!("My avatars request failed: {detail}")
 }
 
 fn collect_tags_by_avatar(
@@ -230,7 +193,93 @@ fn ensure_scope_matches(
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Mutex;
+
+    use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+    use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
+
     use super::*;
+
+    struct RecordingMyAvatarsRemote {
+        offsets: Mutex<Vec<i32>>,
+    }
+
+    impl super::super::AvatarRemote for RecordingMyAvatarsRemote {
+        fn moderations<'a>(
+            &'a self,
+            _endpoint: &'a str,
+            _command: &'a str,
+            _detail: &'a str,
+        ) -> super::super::AvatarRemoteFuture<'a, VrchatApiResponse> {
+            Box::pin(async { unreachable!() })
+        }
+
+        fn my_avatar_page<'a>(
+            &'a self,
+            _endpoint: &'a str,
+            _page_size: i32,
+            offset: i32,
+        ) -> super::super::AvatarRemoteFuture<'a, Vec<Value>> {
+            Box::pin(async move {
+                self.offsets.lock().unwrap().push(offset);
+                Ok(vec![json!({ "id": "avtr_semantic", "name": "Semantic" })])
+            })
+        }
+
+        fn mutate<'a>(
+            &'a self,
+            _endpoint: &'a str,
+            _command: &'a str,
+            _detail: &'a str,
+            _mutation: super::super::AvatarRemoteMutation,
+        ) -> super::super::AvatarRemoteFuture<'a, VrchatApiResponse> {
+            Box::pin(async { unreachable!() })
+        }
+    }
+
+    struct RecordingMyAvatarsStore;
+
+    impl super::super::MyAvatarsStore for RecordingMyAvatarsStore {
+        fn avatar_tags(&self) -> Result<Vec<AvatarTagOutput>> {
+            Ok(vec![AvatarTagOutput {
+                avatar_id: "avtr_semantic".into(),
+                tag: "favorite".into(),
+                color: json!("blue"),
+            }])
+        }
+
+        fn avatar_time_spent(&self, owner_user_id: String) -> Result<Vec<AvatarTimeSpentOutput>> {
+            assert_eq!(owner_user_id, "usr_semantic");
+            Ok(vec![AvatarTimeSpentOutput {
+                avatar_id: "avtr_semantic".into(),
+                time_spent: 42,
+            }])
+        }
+    }
+
+    #[tokio::test]
+    async fn my_avatar_orchestration_uses_semantic_remote_pages() {
+        let remote = RecordingMyAvatarsRemote {
+            offsets: Mutex::new(Vec::new()),
+        };
+        let auth_scope = RuntimeAuthScope::new();
+        let expected_scope = auth_scope.set("usr_semantic", "https://api.example.test/api/1/");
+        let avatars = get_my_avatars(
+            &MyAvatarsDeps::new(
+                &RecordingMyAvatarsStore,
+                &remote,
+                &auth_scope,
+                expected_scope,
+            ),
+            MyAvatarsInput::default(),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(remote.offsets.lock().unwrap().as_slice(), [0]);
+        assert_eq!(avatars[0][derived_keys::TIME_SPENT], 42);
+        assert_eq!(avatars[0][derived_keys::TAGS][0]["tag"], "favorite");
+    }
 
     #[test]
     fn live_swap_delta_ignores_invalid_swap_times() {

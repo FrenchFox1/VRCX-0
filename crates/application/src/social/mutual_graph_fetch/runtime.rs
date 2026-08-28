@@ -9,9 +9,9 @@ use vrcx_0_core::OwnerId;
 use std::time::Duration;
 use vrcx_0_core::time::now_iso;
 
+use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
-    WebClient,
 };
 
 use super::request::{
@@ -47,7 +47,7 @@ struct MutualGraphFetchJob {
     friend_ids: Vec<String>,
     store: Arc<dyn MutualGraphStore>,
     remote_requests: Arc<dyn MutualGraphRemoteRequests>,
-    web: Arc<WebClient>,
+    remote: Arc<dyn VrchatRequestPort>,
     auth_scope: RuntimeAuthScope,
     expected_scope: RuntimeAuthScopeSnapshot,
     cancel_flag: Arc<AtomicBool>,
@@ -90,7 +90,7 @@ impl MutualGraphFetchRuntime {
         input: MutualGraphFetchStartInput,
         store: Arc<dyn MutualGraphStore>,
         remote_requests: Arc<dyn MutualGraphRemoteRequests>,
-        web: Arc<WebClient>,
+        remote: Arc<dyn VrchatRequestPort>,
         auth_scope: RuntimeAuthScope,
         tasks: TaskSupervisor,
     ) -> Result<MutualGraphFetchStatus> {
@@ -151,7 +151,7 @@ impl MutualGraphFetchRuntime {
                     friend_ids,
                     store,
                     remote_requests,
-                    web,
+                    remote,
                     auth_scope,
                     expected_scope,
                     cancel_flag,
@@ -203,7 +203,7 @@ impl MutualGraphFetchRuntime {
             friend_ids,
             store,
             remote_requests,
-            web,
+            remote,
             auth_scope,
             expected_scope,
             cancel_flag,
@@ -217,7 +217,7 @@ impl MutualGraphFetchRuntime {
         let mut failed_friend_ids = HashSet::new();
         let mut last_error = None;
         let mut fetch_context = MutualGraphFetchContext {
-            web: web.as_ref(),
+            remote: remote.as_ref(),
             remote_requests: remote_requests.as_ref(),
             endpoint: &endpoint,
             cancel_flag: &cancel_flag,

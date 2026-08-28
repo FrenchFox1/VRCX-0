@@ -33,6 +33,8 @@ mod startup_bootstrap;
 mod state;
 pub mod vr_overlay;
 pub mod vrchat_api;
+mod vrchat_remote;
+mod world_remote;
 
 pub use ancillary_snapshot::AncillaryRuntimeSnapshot;
 pub use app_launcher::AppLauncherSnapshotEvent;
@@ -69,4 +71,5 @@ pub use state::{
     DesktopRuntimeBundle, DesktopRuntimeHostOptions, DesktopRuntimeHostState, GameRuntimeBundle,
     RuntimeJobRecordInput,
 };
+pub use vrchat_remote::DesktopVrchatRemoteFacade;
 pub use vrcx_0_composition::{Error, Result};

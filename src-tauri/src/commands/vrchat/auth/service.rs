@@ -1,10 +1,6 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::auth::{
-    current_user_get_input, file_analysis_get_input, visits_get_input,
-};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -12,19 +8,9 @@ use vrcx_0_application::auth::{
     AutoLoginOutcome, AutoLoginStartInput, LoginSessionCancelInput, LoginSessionEnd,
     LoginSessionRespondInput, LoginSessionStartInput, LoginSessionState, SavedAuthSnapshot,
 };
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use super::types::{VrchatAuthFileAnalysisInput, VrchatAuthSavedCredentialDeleteInput};
-
-async fn execute_auth_api(
-    state: State<'_, AppState>,
-    command: &str,
-    detail: impl Into<String>,
-    input: VrchatApiRequest,
-) -> Result<VrchatApiResponse, AppError> {
-    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
-        .await
-}
 
 #[tauri::command]
 #[specta::specta]
@@ -124,13 +110,12 @@ pub async fn app__vrchat_auth_config_refresh(
 pub async fn app__vrchat_auth_current_user_get(
     state: State<'_, AppState>,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_current_user_get",
-        "Getting current VRChat user.",
-        current_user_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .current_user()
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -138,13 +123,12 @@ pub async fn app__vrchat_auth_current_user_get(
 pub async fn app__vrchat_auth_visits_get(
     state: State<'_, AppState>,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_visits_get",
-        "Getting online visits.",
-        visits_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .visits()
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -153,17 +137,10 @@ pub async fn app__vrchat_auth_file_analysis_get(
     state: State<'_, AppState>,
     input: VrchatAuthFileAnalysisInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (file_id, request) = file_analysis_get_input(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        input.file_id,
-        input.version,
-        input.variant,
-    )?;
-    execute_auth_api(
-        state,
-        "app__vrchat_auth_file_analysis_get",
-        format!("Getting file analysis for {file_id}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .file_analysis(input.file_id, input.version, input.variant)
+        .await
+        .map_err(AppError::from)
 }

@@ -6,8 +6,9 @@ use crate::auth::AuthCredentialStore;
 use serde::{Deserialize, Serialize};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
-use crate::auth::{saved_snapshot, SavedAuthAutoLoginStatus, SavedAuthSnapshot};
-use vrcx_0_application_core::WebClient;
+use crate::auth::{
+    saved_snapshot, AuthSessionCookies, SavedAuthAutoLoginStatus, SavedAuthSnapshot,
+};
 
 use super::runtime::{
     apply_login_failure_cleanup, clear_auth_cookies_and_save, LoginAttemptPolicy,
@@ -104,7 +105,7 @@ impl Default for AutoLoginThrottle {
 pub(super) async fn drive_auto_login(
     api: &dyn LoginApi,
     config: &dyn AuthCredentialStore,
-    web: &WebClient,
+    cookies: &dyn AuthSessionCookies,
     throttle: &AutoLoginThrottle,
     operation: &LoginSessionOperation,
     input: AutoLoginStartInput,
@@ -116,7 +117,7 @@ pub(super) async fn drive_auto_login(
     if !can_attempt {
         let cleanup_result = operation.run_if_current(|| {
             Ok(apply_failure_cleanup(
-                web,
+                cookies,
                 config,
                 &user_id,
                 LoginFailureKind::SessionInvalidated,
@@ -156,7 +157,7 @@ pub(super) async fn drive_auto_login(
     }
 
     operation.run_if_current(|| {
-        clear_auth_cookies_and_save(web);
+        clear_auth_cookies_and_save(cookies);
         Ok(())
     })?;
 
@@ -178,7 +179,7 @@ pub(super) async fn drive_auto_login(
     let saved_state = start_saved_credential_login(
         api,
         config,
-        web,
+        cookies,
         VRCHAT_API_DEFAULT_ENDPOINT.to_string(),
         user_id.clone(),
     )
@@ -202,13 +203,13 @@ fn failure_outcome(
 }
 
 fn apply_failure_cleanup(
-    web: &WebClient,
+    cookies: &dyn AuthSessionCookies,
     config: &dyn AuthCredentialStore,
     user_id: &str,
     kind: LoginFailureKind,
 ) -> vrcx_0_application_core::Result<SavedAuthSnapshot> {
     apply_login_failure_cleanup(
-        web,
+        cookies,
         config,
         &LoginAttemptPolicy::SavedCredential {
             user_id: user_id.to_string(),

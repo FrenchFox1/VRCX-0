@@ -1,10 +1,51 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use serde_json::json;
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Error, Result};
+use vrcx_0_application_core::Result;
 
-use super::{AuthCredentialStore, AuthRemoteRequests, SealedAuthSecret};
+use super::{AuthCredentialStore, AuthSessionCookies, SealedAuthSecret};
+
+#[derive(Default)]
+pub(super) struct MemoryAuthSessionCookies {
+    value: Mutex<String>,
+}
+
+impl MemoryAuthSessionCookies {
+    pub(super) fn get_cookies(&self) -> String {
+        self.get()
+    }
+
+    pub(super) fn set_cookies(&self, cookies: &str) -> Result<()> {
+        self.set(cookies)
+    }
+}
+
+impl AuthSessionCookies for MemoryAuthSessionCookies {
+    fn get(&self) -> String {
+        self.value
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
+    }
+
+    fn set(&self, cookies: &str) -> Result<()> {
+        *self.value.lock().unwrap_or_else(|error| error.into_inner()) = cookies.to_string();
+        Ok(())
+    }
+
+    fn clear(&self) {
+        self.value
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clear();
+    }
+
+    fn clear_auth(&self) {
+        self.clear();
+    }
+
+    fn save(&self) {}
+}
 
 #[derive(Clone, Default)]
 pub(super) struct MemoryAuthCredentialStore {
@@ -67,94 +108,5 @@ impl AuthCredentialStore for MemoryAuthCredentialStore {
     }
     fn is_sealed_secret(&self, _value: &str) -> bool {
         false
-    }
-}
-
-pub(super) struct TestAuthRemoteRequests;
-
-fn request(
-    endpoint: String,
-    method: &str,
-    path: &str,
-    body: Option<serde_json::Value>,
-) -> VrchatApiRequest {
-    VrchatApiRequest {
-        endpoint: Some(endpoint),
-        method: Some(method.to_string()),
-        path: Some(path.to_string()),
-        body: body.map_or_default(vrcx_0_contracts::VrchatRequestBody::Json),
-        ..Default::default()
-    }
-}
-
-impl AuthRemoteRequests for TestAuthRemoteRequests {
-    fn config(&self, endpoint: String) -> VrchatApiRequest {
-        request(endpoint, "GET", "config", None)
-    }
-
-    fn current_user(&self, endpoint: String) -> VrchatApiRequest {
-        request(endpoint, "GET", "auth/user", None)
-    }
-
-    fn basic_login(
-        &self,
-        endpoint: String,
-        username: String,
-        password: String,
-        username_required: &'static str,
-        password_required: &'static str,
-    ) -> Result<VrchatApiRequest> {
-        if username.trim().is_empty() {
-            return Err(Error::Custom(username_required.into()));
-        }
-        if password.is_empty() {
-            return Err(Error::Custom(password_required.into()));
-        }
-        Ok(request(
-            endpoint,
-            "GET",
-            "auth/user",
-            Some(json!({ "username": username, "password": password })),
-        ))
-    }
-
-    fn verify_totp(&self, endpoint: String, code: String) -> VrchatApiRequest {
-        request(
-            endpoint,
-            "POST",
-            "auth/twofactorauth/totp/verify",
-            Some(json!({ "code": code })),
-        )
-    }
-
-    fn verify_email_otp(&self, endpoint: String, code: String) -> VrchatApiRequest {
-        request(
-            endpoint,
-            "POST",
-            "auth/twofactorauth/emailotp/verify",
-            Some(json!({ "code": code })),
-        )
-    }
-
-    fn verify_otp(&self, endpoint: String, code: String) -> VrchatApiRequest {
-        let normalized_code = code.trim().replace(char::is_whitespace, "");
-        let formatted_code = if normalized_code.contains('-') {
-            normalized_code
-        } else {
-            let mut chars = normalized_code.chars();
-            let prefix = chars.by_ref().take(4).collect::<String>();
-            let suffix = chars.collect::<String>();
-            if suffix.is_empty() {
-                prefix
-            } else {
-                format!("{prefix}-{suffix}")
-            }
-        };
-        request(
-            endpoint,
-            "POST",
-            "auth/twofactorauth/otp/verify",
-            Some(json!({ "code": formatted_code })),
-        )
     }
 }

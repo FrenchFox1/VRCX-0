@@ -42,6 +42,6 @@ pub use local_favorites::{
 };
 pub use mutation_coordinator::{FavoriteMutationCoordinator, FavoriteMutationRuntimeDeps};
 pub use remote_favorites::{
-    FavoriteRemoteAddInput, FavoriteRemoteDeleteInput, FavoriteRemoteGroupClearInput,
-    FavoriteRemoteGroupSaveInput, FavoriteRemoteRequests,
+    FavoriteRemote, FavoriteRemoteAddInput, FavoriteRemoteCommand, FavoriteRemoteDeleteInput,
+    FavoriteRemoteFuture, FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
 };

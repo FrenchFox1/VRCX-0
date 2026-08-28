@@ -6,8 +6,9 @@ use vrcx_0_contracts::friend_log::{
     FriendLogMutationResult, FriendLogUpsertOptionsInput,
 };
 
+use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
-use vrcx_0_application_core::{Result, RuntimeAuthScope, WebClient};
+use vrcx_0_application_core::{Result, RuntimeAuthScope};
 use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeStore};
 
 pub trait SocialMutationStore: Send + Sync {
@@ -152,7 +153,7 @@ where
 pub struct SocialMutationDeps<'a> {
     pub(crate) store: &'a dyn SocialMutationStore,
     pub(crate) remote_requests: &'a dyn SocialMutationRemoteRequests,
-    pub(crate) web: &'a WebClient,
+    pub(crate) remote: &'a dyn VrchatRequestPort,
     pub auth_scope: &'a RuntimeAuthScope,
     pub remote_mutations: &'a vrcx_0_application_core::RemoteMutationGate,
     pub realtime: &'a Arc<RealtimeHostRuntime>,
@@ -162,7 +163,7 @@ impl<'a> SocialMutationDeps<'a> {
     pub fn new(
         store: &'a dyn SocialMutationStore,
         remote_requests: &'a dyn SocialMutationRemoteRequests,
-        web: &'a WebClient,
+        remote: &'a dyn VrchatRequestPort,
         auth_scope: &'a RuntimeAuthScope,
         remote_mutations: &'a vrcx_0_application_core::RemoteMutationGate,
         realtime: &'a Arc<RealtimeHostRuntime>,
@@ -170,7 +171,7 @@ impl<'a> SocialMutationDeps<'a> {
         Self {
             store,
             remote_requests,
-            web,
+            remote,
             auth_scope,
             remote_mutations,
             realtime,

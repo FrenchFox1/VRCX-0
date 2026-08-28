@@ -3,7 +3,7 @@ use std::sync::Arc;
 use vrcx_0_application_core::{
     FavoriteChangeScope, FavoritesChangedPayload, RemoteMutationGate, RuntimeAuthScope,
     RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeEventBus, RuntimeOperationStatus,
-    RuntimeSyncEngine, WebClient,
+    RuntimeSyncEngine,
 };
 use vrcx_0_contracts::social_aggregates::{FavoriteLocalInput, FavoriteOutput};
 use vrcx_0_core::FavoriteEntityKind;
@@ -31,18 +31,16 @@ use vrcx_0_core::OwnerId;
 #[derive(Clone)]
 pub struct FavoriteMutationCoordinator {
     store: Arc<dyn super::FavoriteStore>,
-    web: Arc<WebClient>,
+    remote: Arc<dyn super::FavoriteRemote>,
     diagnostics: RuntimeDiagnostics,
     sync: RuntimeSyncEngine,
     event_bus: RuntimeEventBus,
     auth_scope: RuntimeAuthScope,
     remote_mutations: Arc<RemoteMutationGate>,
-    remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
 }
 
 #[derive(Clone)]
 pub struct FavoriteMutationRuntimeDeps {
-    web: Arc<WebClient>,
     diagnostics: RuntimeDiagnostics,
     sync: RuntimeSyncEngine,
     event_bus: RuntimeEventBus,
@@ -52,7 +50,6 @@ pub struct FavoriteMutationRuntimeDeps {
 
 impl FavoriteMutationRuntimeDeps {
     pub fn new(
-        web: Arc<WebClient>,
         diagnostics: RuntimeDiagnostics,
         sync: RuntimeSyncEngine,
         event_bus: RuntimeEventBus,
@@ -60,7 +57,6 @@ impl FavoriteMutationRuntimeDeps {
         remote_mutations: Arc<RemoteMutationGate>,
     ) -> Self {
         Self {
-            web,
             diagnostics,
             sync,
             event_bus,
@@ -73,18 +69,17 @@ impl FavoriteMutationRuntimeDeps {
 impl FavoriteMutationCoordinator {
     pub fn new(
         store: Arc<dyn super::FavoriteStore>,
-        remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
+        remote: Arc<dyn super::FavoriteRemote>,
         runtime: FavoriteMutationRuntimeDeps,
     ) -> Self {
         Self {
             store,
-            web: runtime.web,
+            remote,
             diagnostics: runtime.diagnostics,
             sync: runtime.sync,
             event_bus: runtime.event_bus,
             auth_scope: runtime.auth_scope,
             remote_mutations: runtime.remote_mutations,
-            remote_requests,
         }
     }
 
@@ -102,10 +97,7 @@ impl FavoriteMutationCoordinator {
 
     fn remote_deps(&self, label: &'static str) -> Result<FavoriteRemoteMutationDeps<'_>> {
         Ok(FavoriteRemoteMutationDeps {
-            web: self.web.as_ref(),
-            remote_requests: self.remote_requests.as_ref(),
-            diagnostics: &self.diagnostics,
-            sync: &self.sync,
+            remote: self.remote.as_ref(),
             event_bus: &self.event_bus,
             mutation: self.capture(label)?,
         })
@@ -281,10 +273,7 @@ impl FavoriteMutationCoordinator {
         let result = transfer_favorite_selection(
             &FavoriteTransferDeps {
                 store: self.store.as_ref(),
-                remote_requests: self.remote_requests.as_ref(),
-                web: self.web.as_ref(),
-                diagnostics: &self.diagnostics,
-                sync: &self.sync,
+                remote: self.remote.as_ref(),
                 mutation,
             },
             input,
@@ -340,8 +329,7 @@ impl FavoriteMutationCoordinator {
         let result = remove_favorites_selection(
             &FavoriteBulkRemoveDeps {
                 store: self.store.as_ref(),
-                remote_requests: self.remote_requests.as_ref(),
-                web: self.web.as_ref(),
+                remote: self.remote.as_ref(),
                 auth_scope: &self.auth_scope,
                 expected_scope: expected_scope.clone(),
                 remote_mutation_gate: &self.remote_mutations,

@@ -539,8 +539,7 @@ impl RuntimeHostStateBuilder {
             });
         let favorite_import = FavoriteImportRuntime::new(FavoriteImportRuntimeDeps::new(
             Arc::clone(&self.runtime_context.favorite_store),
-            Arc::clone(&self.runtime_context.favorite_remote_requests),
-            Arc::clone(&self.web),
+            Arc::clone(&self.runtime_context.favorite_remote),
             Arc::clone(&self.runtime_context.world_cache),
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),
@@ -551,7 +550,9 @@ impl RuntimeHostStateBuilder {
         let group_ban_import = GroupBanImportRuntime::new(
             Arc::new(vrcx_0_outbound_adapters::LocalGroupBanImportActions {
                 deps: GroupApiDeps::new(
-                    Arc::clone(&self.web),
+                    Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
+                        Arc::clone(&self.web),
+                    )),
                     Arc::new(vrcx_0_outbound_adapters::VrchatGroupRemoteRequests),
                     self.runtime_context.diagnostics.clone(),
                     self.runtime_context.sync.clone(),
@@ -577,7 +578,9 @@ impl RuntimeHostStateBuilder {
             Arc::new(self.runtime_context.favorite_mutations.clone()),
         );
         let note_export = NoteExportRuntime::new(
-            Arc::clone(&self.web),
+            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
+                Arc::clone(&self.web),
+            )),
             Arc::new(vrcx_0_outbound_adapters::VrchatNoteExportRemoteRequests),
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),

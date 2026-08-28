@@ -29,6 +29,7 @@ struct Fixture {
     auth_scope: RuntimeAuthScope,
     remote_mutations: Arc<RemoteMutationGate>,
     remote_requests: TestSocialMutationRemoteRequests,
+    remote: crate::remote::TestVrchatRequestPort,
 }
 
 fn fixture(name: &str) -> Fixture {
@@ -42,6 +43,7 @@ fn fixture(name: &str) -> Fixture {
         auth_scope,
         remote_mutations,
         remote_requests: TestSocialMutationRemoteRequests,
+        remote: crate::remote::TestVrchatRequestPort,
     }
 }
 
@@ -50,7 +52,7 @@ impl Fixture {
         SocialMutationDeps {
             store: self.runtime.store(),
             remote_requests: &self.remote_requests,
-            web: self.runtime.web_client(),
+            remote: &self.remote,
             auth_scope: &self.auth_scope,
             remote_mutations: self.remote_mutations.as_ref(),
             realtime: self.runtime.runtime(),

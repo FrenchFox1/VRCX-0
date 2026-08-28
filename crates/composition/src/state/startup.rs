@@ -185,8 +185,7 @@ impl RuntimeHostState {
             self.authenticate_cli_interactive(prompt).await
         } else if let Some(session) = authenticated_session {
             current_user_from_cookie(
-                Arc::clone(&self.web),
-                Arc::clone(&self.runtime_context.auth_requests),
+                self.runtime_context.login_api.as_ref(),
                 session.user_id,
                 session.endpoint,
                 session.websocket,

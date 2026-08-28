@@ -2,23 +2,17 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
-use vrcx_0_application_core::vrchat_api::{
-    VrchatApiRequest as HttpApiRequestInput, VrchatApiResponse as HttpApiExecuteResponse,
-    VrchatScope as ApiScope,
-};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
 use vrcx_0_contracts::vrchat_api::vrchat_response;
 
-use crate::auth::test_support::{MemoryAuthCredentialStore, TestAuthRemoteRequests};
-use crate::auth::{
-    record_login_success, AuthCredentialStore, AuthRemoteRequests, LoginSuccessRecordInput,
-};
-use vrcx_0_application_core::{Error, MemoryCookieWebClientPort, Result, WebClient};
+use crate::auth::test_support::{MemoryAuthCredentialStore, MemoryAuthSessionCookies};
+use crate::auth::{record_login_success, AuthCredentialStore, LoginSuccessRecordInput};
+use vrcx_0_application_core::Error;
 
-use super::types::{LoginApi, LoginApiFuture};
+use super::types::{LoginApi, LoginApiFuture, LoginRemoteOperation};
 
 struct RecordedCall {
-    path: String,
-    body: Option<Value>,
+    name: String,
 }
 
 pub(super) struct FakeLoginApi {
@@ -56,31 +50,21 @@ impl FakeLoginApi {
         self
     }
 
-    pub(super) fn call_paths(&self) -> Vec<String> {
+    pub(super) fn call_names(&self) -> Vec<String> {
         self.calls
             .lock()
             .unwrap()
             .iter()
-            .map(|call| call.path.clone())
-            .collect()
-    }
-
-    pub(super) fn call_bodies(&self) -> Vec<Option<Value>> {
-        self.calls
-            .lock()
-            .unwrap()
-            .iter()
-            .map(|call| call.body.clone())
+            .map(|call| call.name.clone())
             .collect()
     }
 }
 
 impl LoginApi for FakeLoginApi {
-    fn execute<'a>(&'a self, input: HttpApiRequestInput, _scope: ApiScope) -> LoginApiFuture<'a> {
+    fn execute(&self, operation: LoginRemoteOperation) -> LoginApiFuture<'_> {
         Box::pin(async move {
             self.calls.lock().unwrap().push(RecordedCall {
-                path: input.path.clone().unwrap_or_default(),
-                body: input.body.as_json().cloned(),
+                name: operation_name(&operation).into(),
             });
             let next = self
                 .responses
@@ -91,42 +75,16 @@ impl LoginApi for FakeLoginApi {
             next.map_err(Error::Custom)
         })
     }
+}
 
-    fn config(&self, endpoint: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.config(endpoint)
-    }
-
-    fn current_user(&self, endpoint: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.current_user(endpoint)
-    }
-
-    fn basic_login(
-        &self,
-        endpoint: String,
-        username: String,
-        password: String,
-        username_required: &'static str,
-        password_required: &'static str,
-    ) -> Result<HttpApiRequestInput> {
-        TestAuthRemoteRequests.basic_login(
-            endpoint,
-            username,
-            password,
-            username_required,
-            password_required,
-        )
-    }
-
-    fn verify_totp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.verify_totp(endpoint, code)
-    }
-
-    fn verify_email_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.verify_email_otp(endpoint, code)
-    }
-
-    fn verify_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        TestAuthRemoteRequests.verify_otp(endpoint, code)
+fn operation_name(operation: &LoginRemoteOperation) -> &'static str {
+    match operation {
+        LoginRemoteOperation::Config { .. } => "config",
+        LoginRemoteOperation::CurrentUser { .. } => "current_user",
+        LoginRemoteOperation::BasicLogin { .. } => "basic_login",
+        LoginRemoteOperation::VerifyTotp { .. } => "verify_totp",
+        LoginRemoteOperation::VerifyEmailOtp { .. } => "verify_email_otp",
+        LoginRemoteOperation::VerifyOtp { .. } => "verify_otp",
     }
 }
 
@@ -159,16 +117,23 @@ impl Drop for TestDir {
     }
 }
 
-pub(super) fn test_env(name: &str) -> (TestDir, MemoryAuthCredentialStore, WebClient, ()) {
+pub(super) fn test_env(
+    name: &str,
+) -> (
+    TestDir,
+    MemoryAuthCredentialStore,
+    MemoryAuthSessionCookies,
+    (),
+) {
     let dir = TestDir::new(name);
     let config = MemoryAuthCredentialStore::default();
-    let web = WebClient::new(MemoryCookieWebClientPort::default());
+    let web = MemoryAuthSessionCookies::default();
     (dir, config, web, ())
 }
 
 pub(super) fn seed_saved_credential(
     config: &dyn AuthCredentialStore,
-    web: &WebClient,
+    web: &MemoryAuthSessionCookies,
     user_id: &str,
 ) {
     record_login_success(
