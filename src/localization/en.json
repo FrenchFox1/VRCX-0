@@ -2987,7 +2987,7 @@
             },
             "label": {
                 "instance_master": "Instance Master",
-                "moderator": "Moderator",
+                "moderator": "Administrator",
                 "favorite": "Favorite",
                 "muted": "Muted",
                 "avatar_interaction_disabled": "Avatar interaction disabled",
@@ -3777,7 +3777,7 @@
                 "visibility_everyone": "Everyone",
                 "visibility_friends": "Friends",
                 "visibility_hidden": "Hidden",
-                "moderator": "Moderator",
+                "moderator": "Administrator",
                 "muted": "Muted",
                 "order_by": "Order By",
                 "group_by": "Group By",
