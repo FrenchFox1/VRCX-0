@@ -10,7 +10,7 @@ use vrcx_0_application_activity::notification::{
     OverlayLocale, RealtimeUserImageResolverSlot, RenderedNotification,
 };
 use vrcx_0_application_activity::{
-    OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot,
+    OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot, OverlayActivitySurface,
 };
 use vrcx_0_application_core::{HostSessionRuntime, ImageCache, RuntimeAuthScope, TaskSupervisor};
 use vrcx_0_host_desktop::tts::TtsEngine;
@@ -155,12 +155,12 @@ impl OverlayActivitySink for NotificationDispatcher {
     fn emit_overlay_activity_snapshot(&self, _snapshot: OverlayActivitySnapshot) {}
 
     fn emit_overlay_activity_delivery(&self, delivery: OverlayActivityDelivery) {
-        if self.output.do_not_disturb.is_active() {
-            return;
-        }
         let preferences = load_preferences(&self.config);
         let game = load_game_state(&self.session, &self.config);
-        let plan = decide_notification_plan(&delivery, &preferences, &game);
+        let plan = plan_allowed_by_do_not_disturb(
+            decide_notification_plan(&delivery, &preferences, &game),
+            &self.output.do_not_disturb,
+        );
         if !plan.has_local_transport() {
             return;
         }
@@ -283,14 +283,39 @@ fn prepare_rendered_notification(
     }
 }
 
+fn plan_without_suppressed_surfaces(
+    plan: NotificationDeliveryPlan,
+    suppresses: impl Fn(OverlayActivitySurface) -> bool,
+) -> NotificationDeliveryPlan {
+    let mut plan = plan;
+    if suppresses(OverlayActivitySurface::Desktop) {
+        plan.desktop = false;
+    }
+    if suppresses(OverlayActivitySurface::Vr) {
+        plan.xs = false;
+        plan.ovrt = false;
+        plan.ovrt_hud = false;
+        plan.ovrt_wrist = false;
+    }
+    if suppresses(OverlayActivitySurface::Tts) {
+        plan.tts = false;
+    }
+    plan
+}
+
+fn plan_allowed_by_do_not_disturb(
+    plan: NotificationDeliveryPlan,
+    do_not_disturb: &NotificationDoNotDisturbRuntime,
+) -> NotificationDeliveryPlan {
+    plan_without_suppressed_surfaces(plan, |surface| do_not_disturb.suppresses(surface))
+}
+
 fn dispatch_prepared_notification(
     notification: &PreparedNotification,
     output: &NotificationOutputContext,
 ) {
-    if output.do_not_disturb.is_active() {
-        return;
-    }
-    if notification.plan.tts {
+    let plan = plan_allowed_by_do_not_disturb(notification.plan, &output.do_not_disturb);
+    if plan.tts {
         let user_memo = notification_tts_memo_actor_user_id(
             &notification.delivery,
             &notification.render,
@@ -308,7 +333,7 @@ fn dispatch_prepared_notification(
         );
     }
     let local_image = notification.local_image.as_deref();
-    if notification.plan.desktop {
+    if plan.desktop {
         send_desktop_notification(
             output.desktop.as_ref(),
             &notification.render,
@@ -320,7 +345,7 @@ fn dispatch_prepared_notification(
         );
     }
     output.overlay_transport.send(
-        notification.plan,
+        plan,
         &notification.render,
         &notification.preferences,
         local_image,

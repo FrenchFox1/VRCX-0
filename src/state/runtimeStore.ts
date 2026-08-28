@@ -765,6 +765,9 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
         set({ backendRuntime: snapshot });
     },
     setNotificationDoNotDisturb(snapshot: NotificationDoNotDisturbSnapshot) {
+        if (snapshot.revision < get().notificationDoNotDisturb.revision) {
+            return;
+        }
         set({ notificationDoNotDisturb: snapshot });
     },
     setAuthenticatedSessionProjection(projection) {

@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Duration, SecondsFormat, Utc};
@@ -11,7 +12,7 @@ use vrcx_0_core::game_process::GameProcessEvent;
 use vrcx_0_persistence::config::ConfigRepository;
 
 const NOTIFICATION_DO_NOT_DISTURB_STATE_CONFIG_KEY: &str = "notificationDoNotDisturbState";
-pub const NOTIFICATION_DO_NOT_DISTURB_END_ON_GAME_START_CONFIG_KEY: &str =
+const NOTIFICATION_DO_NOT_DISTURB_END_ON_GAME_START_CONFIG_KEY: &str =
     "notificationDoNotDisturbEndOnGameStart";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -121,9 +122,15 @@ impl NotificationDoNotDisturbState {
         &mut self,
         event: GameProcessEvent,
         end_on_start: bool,
+        first_process_event: bool,
         now: DateTime<Utc>,
     ) -> bool {
-        if !end_on_start || !event.game_changed || !event.is_game_running || !self.is_active(now) {
+        if first_process_event
+            || !end_on_start
+            || !event.game_changed
+            || !event.is_game_running
+            || !self.is_active(now)
+        {
             return false;
         }
         self.set_mode(NotificationDoNotDisturbMode::Off, now)
@@ -147,6 +154,7 @@ pub struct NotificationDoNotDisturbRuntime {
 
 struct NotificationDoNotDisturbRuntimeInner {
     state: Mutex<NotificationDoNotDisturbState>,
+    seen_game_process_event: AtomicBool,
     config: ConfigRepository,
     event_bus: RuntimeEventBus,
     expiration_changed: Notify,
@@ -176,12 +184,15 @@ impl NotificationDoNotDisturbRuntime {
                     ends_at,
                     Utc::now(),
                 )),
+                seen_game_process_event: AtomicBool::new(false),
                 config,
                 event_bus,
                 expiration_changed: Notify::new(),
             }),
         };
-        runtime.persist_current_state()?;
+        if let Err(error) = runtime.persist_current_state() {
+            tracing::warn!(error = %error, "failed to persist restored do not disturb state");
+        }
         let runtime_for_task = runtime.clone();
         tasks.spawn(async move {
             runtime_for_task.run_expiration_loop().await;
@@ -299,11 +310,17 @@ impl GameProcessEventSink for NotificationDoNotDisturbRuntime {
         &self,
         event: GameProcessEvent,
     ) -> vrcx_0_application_core::Result<()> {
+        let first_process_event = !self
+            .inner
+            .seen_game_process_event
+            .swap(true, Ordering::Relaxed);
         let end_on_start = self.inner.config.get_bool(
             NOTIFICATION_DO_NOT_DISTURB_END_ON_GAME_START_CONFIG_KEY,
             true,
         )?;
-        self.update_state(|state| state.on_game_process_event(event, end_on_start, Utc::now()))?;
+        self.update_state(|state| {
+            state.on_game_process_event(event, end_on_start, first_process_event, Utc::now())
+        })?;
         self.inner.expiration_changed.notify_one();
         Ok(())
     }
@@ -407,9 +424,26 @@ mod tests {
         let mut state = NotificationDoNotDisturbState::default();
         state.set_mode(NotificationDoNotDisturbMode::UntilStopped, now);
 
-        assert!(!state.on_game_process_event(started, false, now));
+        assert!(!state.on_game_process_event(started, false, false, now));
         assert!(state.is_active(now));
-        assert!(state.on_game_process_event(started, true, now));
+        assert!(state.on_game_process_event(started, true, false, now));
+        assert!(!state.is_active(now));
+    }
+
+    #[test]
+    fn the_first_process_event_never_stops_dnd() {
+        let now = now();
+        let already_running = GameProcessEvent {
+            is_game_running: true,
+            is_steamvr_running: true,
+            game_changed: true,
+        };
+        let mut state = NotificationDoNotDisturbState::default();
+        state.set_mode(NotificationDoNotDisturbMode::UntilStopped, now);
+
+        assert!(!state.on_game_process_event(already_running, true, true, now));
+        assert!(state.is_active(now));
+        assert!(state.on_game_process_event(already_running, true, false, now));
         assert!(!state.is_active(now));
     }
 
@@ -430,7 +464,7 @@ mod tests {
         ] {
             let mut state = NotificationDoNotDisturbState::default();
             state.set_mode(NotificationDoNotDisturbMode::UntilStopped, now);
-            assert!(!state.on_game_process_event(event, true, now));
+            assert!(!state.on_game_process_event(event, true, false, now));
             assert!(state.is_active(now));
         }
     }

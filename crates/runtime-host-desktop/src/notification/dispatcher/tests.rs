@@ -19,7 +19,56 @@ use crate::notification::tts::{
     notification_tts_memo_actor_user_id, notification_tts_text, send_tts_notification,
 };
 
-use super::{notification_session_identity, OrderedDeliveryBuffer};
+use super::{
+    notification_session_identity, plan_without_suppressed_surfaces, NotificationDeliveryPlan,
+    OrderedDeliveryBuffer, OverlayActivitySurface,
+};
+
+#[test]
+fn do_not_disturb_clears_only_the_suppressed_transports() {
+    let plan = NotificationDeliveryPlan {
+        desktop: true,
+        xs: true,
+        ovrt: true,
+        ovrt_hud: true,
+        ovrt_wrist: true,
+        tts: true,
+    };
+
+    let suppressed = plan_without_suppressed_surfaces(plan, |surface| {
+        matches!(
+            surface,
+            OverlayActivitySurface::Desktop
+                | OverlayActivitySurface::Vr
+                | OverlayActivitySurface::Tts
+        )
+    });
+    assert_eq!(suppressed, NotificationDeliveryPlan::default());
+    assert!(!suppressed.has_local_transport());
+
+    let vr_only = plan_without_suppressed_surfaces(plan, |surface| {
+        matches!(surface, OverlayActivitySurface::Vr)
+    });
+    assert_eq!(
+        vr_only,
+        NotificationDeliveryPlan {
+            desktop: true,
+            xs: false,
+            ovrt: false,
+            ovrt_hud: false,
+            ovrt_wrist: false,
+            tts: true,
+        }
+    );
+
+    let exempt = plan_without_suppressed_surfaces(plan, |surface| {
+        matches!(
+            surface,
+            OverlayActivitySurface::Wrist | OverlayActivitySurface::Webhook
+        )
+    });
+    assert_eq!(exempt, plan);
+}
 
 #[test]
 fn ordered_delivery_buffer_releases_concurrent_results_in_source_order() {

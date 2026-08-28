@@ -19,8 +19,7 @@ pub use desktop::{
 };
 pub use dispatcher::{NotificationDispatcher, NotificationDispatcherDeps};
 pub use do_not_disturb::{
-    NotificationDoNotDisturbMode, NotificationDoNotDisturbRuntime,
-    NotificationDoNotDisturbSnapshot, NOTIFICATION_DO_NOT_DISTURB_END_ON_GAME_START_CONFIG_KEY,
+    NotificationDoNotDisturbMode, NotificationDoNotDisturbRuntime, NotificationDoNotDisturbSnapshot,
 };
 pub use preferences::{
     config_tts_name_mode, load_preferences, notification_tts_name_mode,
