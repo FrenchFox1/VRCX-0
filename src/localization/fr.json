@@ -478,11 +478,11 @@
         "tray": {
             "open": "Ouvrir VRCX-0",
             "backgroundMode": "Mode arrière-plan",
-            "doNotDisturb": "Do Not Disturb",
-            "doNotDisturbOneHour": "1 hour",
-            "doNotDisturbThreeHours": "3 hours",
-            "doNotDisturbUntilStopped": "Until turned off",
-            "doNotDisturbTurnOff": "Turn off",
+            "doNotDisturb": "Ne pas déranger",
+            "doNotDisturbOneHour": "1 heure",
+            "doNotDisturbThreeHours": "3 heures",
+            "doNotDisturbUntilStopped": "Jusqu'à désactivation",
+            "doNotDisturbTurnOff": "Désactiver",
             "rebuildUi": "Recharger l'interface",
             "disableTheme": "Désactiver le thème",
             "exit": "Quitter"
@@ -1796,7 +1796,9 @@
                 "calendar": "Calendrier",
                 "calendar_description": "Calendrier des évènements du groupe",
                 "moderation": "Modération du groupe",
-                "moderation_description": "Gérez les membres, bannissements, invitations et demandes d'adhésion des groupes que vous modérez."
+                "moderation_description": "Gérez les membres, bannissements, invitations et demandes d'adhésion des groupes que vous modérez.",
+                "my_groups": "Mes groupes",
+                "my_groups_description": "Réorganiser, masquer et quitter les groupes que vous avez rejoint."
             },
             "user": {
                 "discord_names_description": "Trouvez les noms d'utilisateur Discord de vos amis VRChat",
@@ -1985,6 +1987,7 @@
             },
             "loading": {
                 "deleting_metadata": "Suppression des métadonnées",
+                "deleting_screenshot": "Suppression de la capture d'écran",
                 "uploading_screenshot": "Envoi vers la galerie",
                 "searching_screenshots": "Recherche de captures d'écran",
                 "resolving_file_list_and_metadata_summaries": "Résolution de la liste des fichiers et des résumés de métadonnées",
@@ -2489,6 +2492,12 @@
                     "layout_table": "Page des notifications",
                     "post_update_changelog_prompt": "Afficher les notes de mise à jour après l'installation",
                     "post_update_changelog_prompt_description": "Affiche ce qui est nouveau dans la version installée.",
+                    "do_not_disturb": {
+                        "header": "Ne pas déranger",
+                        "description": "Met en pause les notifications sur le bureau, la synthèse vocale, les popups XSOverlay, OVR Toolkit, et VRCX-0. Les Webhooks, l'activité du poignet et l'historique de notifications continuent.",
+                        "end_on_game_start": "Désactiver au lancement de VRChat",
+                        "end_on_game_start_description": "Only applies when VRChat changes from stopped to running. You can turn Do Not Disturb on again while playing."
+                    },
                     "vr_notifications": {
                         "header": "Notifications de l'overlay VR",
                         "xsoverlay_notifications": "Notifications XSOverlay",
@@ -3407,6 +3416,34 @@
             "avatars": {
                 "all_time": "Tout le temps"
             }
+        },
+        "my_groups": {
+            "title": "Mes Groupes",
+            "description": "Gérez les groupes auxquels vous avez rejoint : leur ordre en jeu, qui les voit sur votre profil, et lesquels quitter.",
+            "group_count": "{count} groupe(s)",
+            "edit_mode": "Modifier",
+            "exit_edit_mode": "Terminé",
+            "order_hint": "Glissez les groupes pour définir l'ordre dans lequel VRChat les affiche.",
+            "order_game_running": "VRChat est en cours d'éxecution. l'ordre peut être modifié une fois le jeu fermé.",
+            "order_unavailable": "L'ordre des groupes est indisponible : {reason}",
+            "order_unavailable_reason_fallback": "Les préférences VRChat ne peuvent pas être lues sur ce système.",
+            "order_save_failed": "Échec de l'enregistrement de l'ordre des groupes en jeu.",
+            "row_actions": "Actions de groupe",
+            "leave": "Quitter",
+            "leave_partial": "Quitter {count}",
+            "leave_owner_locked": "Vous ne pouvez pas quitter un groupe que vous possédez.",
+            "leave_completed": "{count} groupe(s) quitté(s).",
+            "visibility_completed": "Visibilité mise à jour pour {count} groupe(s).",
+            "selected_count": "{count} sélectionné(s)",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Action failed.",
+            "batch_failed": "The batch action failed.",
+            "confirm_leave_title": "Quitter {count} groupe(s)?",
+            "confirm_leave_warning": "Quitter est irréversible, et le ré-adhésion peut nécessiter une approbation.",
+            "confirm_more_groups": "{names} et {count} de plus",
+            "empty_title": "Aucun groupe pour le moment",
+            "empty_description": "Les groupes rejoint s'affichent ici.",
+            "empty_search": "Aucun groupe ne correspond à la recherche."
         }
     },
     "dialog": {
@@ -3613,7 +3650,8 @@
                     "alphabetical": "Alphabétique",
                     "members": "Membres",
                     "in_game": "En jeu"
-                }
+                },
+                "manage": "Gérer"
             },
             "worlds": {
                 "header": "Mondes",
@@ -4726,6 +4764,10 @@
             "copy_image": "Copier l'image",
             "open_folder": "Afficher dans l'Explorateur de fichiers",
             "delete_metadata": "Supprimer les métadonnées",
+            "delete_file": "Supprimer la capture d'écran",
+            "delete_file_confirm_title": "Supprimer cette capture d'écran ?",
+            "delete_file_confirm_title_bulk": "Supprimer {count} capture(s) d'écran ?",
+            "delete_file_confirm_description": "Le fichier sera déplacé dans la corbeille.",
             "upload": "Mettre en ligne dans la galerie",
             "search_placeholder": "Rechercher",
             "search_type_placeholder": "Type de recherche",
@@ -4736,6 +4778,10 @@
                 "world_id": "ID du monde"
             },
             "no_results": "Aucun résultat trouvé",
+            "no_results_description": "Essayez un autre clavier ou terme de recherche.",
+            "layout_grid": "Grille d'images",
+            "layout_list": "Liste de détails",
+            "clear_search": "Effacer la recherche",
             "invalid_file": "Fichier sélectionné invalide. Veuillez sélectionner une capture d'écran VRChat valide",
             "section_location": "Emplacement",
             "section_players": "Utilisateurs",
@@ -5516,9 +5562,11 @@
             "deleted": "Métadonnées de la capture d'écran supprimées",
             "delete_failed": "Échec de la suppression des métadonnées de la capture d'écran",
             "export_done": "{count} capture(s) exportée(s).",
-            "export_partial": "Export terminé, {count} fichier(s) ignoré(s).",
-            "export_failed": "Échec de l'export des captures",
-            "export_cancelled": "Export annulé."
+            "export_partial": "Exportation terminée, {count} fichier(s) ignoré(s).",
+            "export_failed": "Échec de l'exportation des captures",
+            "export_cancelled": "Exportation annulée.",
+            "file_deleted": "Capture d'écran déplacée vers la corbeille",
+            "file_delete_failed": "Échec de la suppresion de la capture d'écran"
         },
         "image": {
             "downloading": "Téléchargement de l'image...",
@@ -5758,6 +5806,14 @@
         "add_table_page_size": "Ajouter une taille de page de tableau"
     },
     "status_bar": {
+        "do_not_disturb": "Ne pas déranger",
+        "do_not_disturb_active": "Le mode \"Ne pas déranger\" est activé",
+        "do_not_disturb_until": "Ne pas déranger pendant {time}",
+        "do_not_disturb_one_hour": "Pour 1 heure",
+        "do_not_disturb_three_hours": "Pour 3 heures",
+        "do_not_disturb_until_stopped": "Jusqu'à désactivation",
+        "do_not_disturb_turn_off": "Désactiver le mode \"Ne pas déranger\"",
+        "do_not_disturb_failed": "Échec de l'activation du mode \"Ne pas déranger\"",
         "world_collection_importing": "Importation de la collection de mondes ({progress}/{total})",
         "game": "Jeu",
         "game_stopped": "VRChat n'est pas en cours d'exécution",
