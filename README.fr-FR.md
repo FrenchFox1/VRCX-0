@@ -58,10 +58,10 @@ L'installation est unique — VRCX-0 se mettra à jour automatiquement.
   bien sur un PC bas de gamme que sur un serveur personnel.
 - **Utilisation mémoire 50% à 70% inférieure à VRCX** lors d'une utilisation
   normale
-- le **mode arrière-plan** descend l'utilisation mémoire à une dizaine de Mo
+- le **mode arrière-plan** réduit l'utilisation mémoire à une dizaine de Mo
   tout en maintenant les fonctionnalités essentielles.
 - **Plus petit qu'un bundle d'avatar** — Seulement 10 Mo à installer. Prend un
-  peu plus de 30 Mo sur le disque et environ 10 fois plus petit que VRCX
+  peu plus de 30 Mo sur le disque et est environ 10 fois plus petit que VRCX
 - **Zero problème de migration** — Votre base de données et paramètres VRCX
   sont importés automatiquement ; les données originelles ne sont pas
   modifiées
@@ -79,8 +79,7 @@ De plus :
   à chaque compte sont stockés séparément ; ainsi, lorsque vous utilisez
   plusieurs comptes, vos activités ne sont plus regroupées dans un seul fil
   d'actualité.
-- **Sauvegarde et restauration** — Sauvegarde compressée en un clic de votre base de données, avec des sauvegardes automatiques programmées et plusieurs versions ; restaurer grâce
-  à n'importe quelle sauvegarde
+- **Sauvegarde et restauration** — Sauvegarde compressée en un clic de votre base de données, avec des sauvegardes automatiques programmées et plusieurs versions ; restaurer grâce à n'importe quelle sauvegarde
 - **Collection de monde partageable** — Transformez vos mondes préférés en une
   page partageable que d'autres peuvent parcourir, ouvrir ou importer ; permet
   également de partager des liens vers des mondes et des avatars individuels
