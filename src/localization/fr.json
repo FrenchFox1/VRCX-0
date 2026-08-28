@@ -1791,7 +1791,9 @@
                 "calendar": "Calendrier",
                 "calendar_description": "Calendrier des évènements du groupe",
                 "moderation": "Modération du groupe",
-                "moderation_description": "Gérez les membres, bannissements, invitations et demandes d'adhésion des groupes que vous modérez."
+                "moderation_description": "Gérez les membres, bannissements, invitations et demandes d'adhésion des groupes que vous modérez.",
+                "my_groups": "Mes groupes",
+                "my_groups_description": "Réorganiser, masquer et quitter les groupes que vous avez rejoint."
             },
             "user": {
                 "discord_names_description": "Trouvez les noms d'utilisateur Discord de vos amis VRChat",
