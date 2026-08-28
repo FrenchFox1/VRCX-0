@@ -2129,7 +2129,7 @@
                 "submitting": "A enviar…",
                 "thanks": "Obrigado pelo seu feedback!",
                 "cooldown": "Pode enviar novamente dentro de {{seconds}} s",
-                "more_help": "Precisa de resposta ou quer anexar registos?",
+                "more_help": "Precisa de resposta ou quer anexar registros?",
                 "error_generic": "Não foi possível enviar o feedback. Tente novamente mais tarde."
             },
             "ai": {
@@ -3347,8 +3347,8 @@
                 "daily_average": "Média diária",
                 "active_days": "Dias jogados",
                 "longest_session": "Sessão mais longa",
-                "change_up": "+{percent}% face ao anterior",
-                "change_down": "-{percent}% face ao anterior"
+                "change_up": "+{percent}% em relação ao anterior",
+                "change_down": "-{percent}% em relação ao anterior"
             },
             "unit": {
                 "hours": "h",
@@ -3374,14 +3374,14 @@
                 "group": "Grupo"
             },
             "empty": {
-                "title": "Ainda sem registos",
+                "title": "Ainda sem registros",
                 "description": "Jogue um pouco de VRChat e a atividade aparecerá aqui."
             },
             "error": {
                 "failed_to_load": "Não foi possível carregar a sua atividade"
             },
             "caveat": {
-                "recorded_since": "Registado apenas com a app aberta."
+                "recorded_since": "Registrado apenas com o app aberto."
             },
             "worlds": {
                 "visit_count": "{count} visitas",

@@ -1939,7 +1939,7 @@
             },
             "empty": {
                 "no_current_user_is_available": "현재 사용자가 없습니다",
-                "no_prints_loaded": "로드된 인쇄물 없음",
+                "no_prints_loaded": "로드된 프린트 없음",
                 "no_inventory_items_loaded": "로드된 인벤토리 항목이 없습니다.",
                 "no_player_metadata": "플레이어 메타데이터 없음",
                 "no_screenshot_selected": "선택된 스크린샷이 없습니다."
@@ -1954,7 +1954,7 @@
                 "preview": "미리보기",
                 "refresh_this_tab_to_load_inventory_items": "인벤토리 항목을 로드하려면 이 탭을 새로고침하세요.",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "스크린샷을 로드하여 내장된 월드, 플레이어 및 파일 메타데이터를 검사하세요.",
-                "refresh_this_tab_to_load_your_vrchat_prints": "VRChat 인쇄물을 로드하려면 이 탭을 새로고침하세요."
+                "refresh_this_tab_to_load_your_vrchat_prints": "VRChat 프린트을 로드하려면 이 탭을 새로고침하세요."
             },
             "error": {
                 "dropped_screenshot_path_is_not_available": "삭제된 스크린샷 경로를 사용할 수 없습니다."
@@ -1972,10 +1972,10 @@
                 "browse_for_a_screenshot_load_the_latest_screenshot_or_run_a_metadata_search": "여기에 스크린샷을 드래그 앤 드롭하거나 메타데이터 검색을 실행하세요."
             },
             "toast": {
-                "failed_to_load_prints": "인쇄물을 로드하지 못했습니다.",
+                "failed_to_load_prints": "프린트을 로드하지 못했습니다.",
                 "failed_to_load_inventory": "인벤토리를 로드하지 못했습니다.",
                 "failed_to_delete_media_item": "미디어 항목을 삭제하지 못했습니다.",
-                "failed_to_delete_print": "인쇄물을 삭제하지 못했습니다.",
+                "failed_to_delete_print": "프린트을 삭제하지 못했습니다.",
                 "failed_to_update_profile_media": "프로필 미디어를 업데이트하지 못했습니다.",
                 "failed_to_consume_inventory_bundle": "인벤토리 번들을 사용하지 못했습니다.",
                 "failed_to_redeem_reward": "보상을 사용하지 못했습니다.",
@@ -1984,10 +1984,10 @@
                 "failed_to_pin_tool_to_navigation": "도구를 탐색에 고정하지 못했습니다.",
                 "failed_to_unpin_tool_from_navigation": "탐색에서 도구를 고정 해제하지 못했습니다.",
                 "failed_to_load_value": "{value}을(를) 로드하지 못했습니다.",
-                "failed_to_update_print_favorite": "인쇄물 즐겨찾기를 업데이트하지 못했습니다."
+                "failed_to_update_print_favorite": "프린트 즐겨찾기를 업데이트하지 못했습니다."
             },
             "modal": {
-                "delete_print": "인쇄물 삭제",
+                "delete_print": "프린트 삭제",
                 "delete_value_item": "{value} 항목 삭제"
             },
             "user": {
@@ -2000,16 +2000,16 @@
                 "refresh_this_tab_to_load_value_files": "{value} 파일을 로드하려면 이 탭을 새로 고치세요."
             },
             "prints_favorites": {
-                "favorite": "인쇄물 즐겨찾기",
-                "unfavorite": "인쇄물 즐겨찾기 해제",
+                "favorite": "프린트 즐겨찾기",
+                "unfavorite": "프린트 즐겨찾기 해제",
                 "favorite_badge": "즐겨찾기",
-                "favorited_toast": "인쇄물을 즐겨찾기에 추가했습니다",
-                "unfavorited_toast": "인쇄물 즐겨찾기를 해제했습니다",
-                "favorite_limit_toast": "현재 자동 삭제 제한으로 최대 {max}개의 인쇄물을 즐겨찾기할 수 있습니다.",
-                "cleanup_deleted": "오래된 인쇄물 {count}개를 자동 삭제했습니다. {remaining}개가 남아 있습니다.",
+                "favorited_toast": "프린트을 즐겨찾기에 추가했습니다",
+                "unfavorited_toast": "프린트 즐겨찾기를 해제했습니다",
+                "favorite_limit_toast": "현재 자동 삭제 제한으로 최대 {max}개의 프린트을 즐겨찾기할 수 있습니다.",
+                "cleanup_deleted": "오래된 프린트 {count}개를 자동 삭제했습니다. {remaining}개가 남아 있습니다.",
                 "warning": {
-                    "too_many_favorites": "즐겨찾기 인쇄물 {favorites}개가 제한 {max}개를 {over}개 초과했습니다. 자동 삭제는 즐겨찾기 인쇄물을 삭제하지 않습니다.",
-                    "too_many_favorites_event": "즐겨찾기 인쇄물이 목록을 채우고 있어 자동 삭제가 설정된 제한 이하로 줄이지 못했습니다. {remaining}개가 남아 있습니다."
+                    "too_many_favorites": "즐겨찾기 프린트 {favorites}개가 제한 {max}개를 {over}개 초과했습니다. 자동 삭제는 즐겨찾기 프린트을 삭제하지 않습니다.",
+                    "too_many_favorites_event": "즐겨찾기 프린트이 목록을 채우고 있어 자동 삭제가 설정된 제한 이하로 줄이지 못했습니다. {remaining}개가 남아 있습니다."
                 }
             },
             "gallery_selection": {
@@ -2029,8 +2029,8 @@
                 "export_zip": "ZIP 내보내기",
                 "export_grouped": "폴더 구조 유지",
                 "export_flat": "한 폴더에 모두",
-                "favorited_toast": "인쇄물 {count}개를 즐겨찾기에 추가했습니다.",
-                "unfavorited_toast": "인쇄물 {count}개의 즐겨찾기를 해제했습니다.",
+                "favorited_toast": "프린트 {count}개를 즐겨찾기에 추가했습니다.",
+                "unfavorited_toast": "프린트 {count}개의 즐겨찾기를 해제했습니다.",
                 "favorite_skipped_toast": "{count}개는 즐겨찾기에 추가하지 못했습니다. 제한은 {max}개입니다."
             },
             "prints_filter": {
@@ -2658,9 +2658,9 @@
                     },
                     "save_instance_prints_to_file": {
                         "header": "인스턴스 프린트를 파일에 저장",
-                        "crop": "인쇄물에서 흰색 테두리 자동 제거",
+                        "crop": "프린트에서 흰색 테두리 자동 제거",
                         "header_tooltip": "--enable-sdk-log-levels VRChat 시작 옵션이 필요합니다.",
-                        "description": "생성된 인쇄물을 VRChat Pictures 폴더에 저장하세요."
+                        "description": "생성된 프린트을 VRChat Pictures 폴더에 저장하세요."
                     },
                     "save_instance_stickers_to_file": {
                         "header": "인스턴스 스티커를 파일에 저장",
@@ -2675,7 +2675,7 @@
                         "confirm_yes": "예",
                         "confirm_no": "아니요",
                         "ask": "VRChat Pictures 폴더에서 모든 VRChat 및 VRCX-0 스크린샷 메타데이터를 삭제하시겠습니까?",
-                        "confirm": "모든 스크린샷 메타데이터가 영구적으로 삭제되며 되돌릴 수 없습니다. VRChat Pictures 폴더의 모든 인쇄물, 하위 폴더 및 기타 파일이 포함됩니다. 중요한 사진은 진행하기 전에 백업해 두세요."
+                        "confirm": "모든 스크린샷 메타데이터가 영구적으로 삭제되며 되돌릴 수 없습니다. VRChat Pictures 폴더의 모든 프린트, 하위 폴더 및 기타 파일이 포함됩니다. 중요한 사진은 진행하기 전에 백업해 두세요."
                     },
                     "remote_database": {
                         "header": "원격 아바타 데이터베이스",
@@ -2790,14 +2790,14 @@
                         "folder": "폴더 열기",
                         "set_folder": "폴더 설정",
                         "reset_override": "재설정",
-                        "description": "인쇄물, 스티커 등 VRChat 콘텐츠에 대한 폴더를 열거나 설정하세요."
+                        "description": "프린트, 스티커 등 VRChat 콘텐츠에 대한 폴더를 열거나 설정하세요."
                     },
                     "vrc_registry_backup": "VRChat 레지스트리 백업",
                     "auto_delete_prints": {
-                        "enable": "오래된 VRChat 인쇄물 자동 삭제",
-                        "description": "인쇄물 목록이 제한을 초과하면 즐겨찾기가 아닌 가장 오래된 인쇄물을 삭제합니다.",
+                        "enable": "오래된 VRChat 프린트 자동 삭제",
+                        "description": "프린트 목록이 제한을 초과하면 즐겨찾기가 아닌 가장 오래된 프린트을 삭제합니다.",
                         "limit": "최대 보관 수",
-                        "limit_description": "허용 범위는 30~60입니다. 즐겨찾기 인쇄물은 삭제되지 않습니다. 이 제한보다 최대 5개 적게 즐겨찾기할 수 있습니다."
+                        "limit_description": "허용 범위는 30~60입니다. 즐겨찾기 프린트은 삭제되지 않습니다. 이 제한보다 최대 5개 적게 즐겨찾기할 수 있습니다."
                     }
                 }
             },
@@ -2808,7 +2808,7 @@
                 "screenshot_metadata_removed": "스크린샷 메타데이터가 삭제되었습니다."
             },
             "label": {
-                "existing_saved_prints_cropped": "기존에 저장된 인쇄물이 잘림",
+                "existing_saved_prints_cropped": "기존에 저장된 프린트이 잘림",
                 "favorite_detail_cache": "즐겨찾는 디테일 캐시"
             },
             "loading": {
@@ -2821,14 +2821,14 @@
                 "failed_to_refresh_sqlite_table_sizes": "SQLite 테이블 크기를 새로 고치지 못했습니다.",
                 "failed_to_refresh_online_user_count": "온라인 사용자 수를 새로 고치지 못했습니다.",
                 "failed_to_save_proxy_settings": "프록시 설정을 저장하지 못했습니다.",
-                "failed_to_crop_existing_prints": "기존 인쇄물을 자르지 못했습니다.",
+                "failed_to_crop_existing_prints": "기존 프린트을 자르지 못했습니다.",
                 "failed_to_save_translation_settings": "번역 설정을 저장하지 못했습니다.",
                 "failed_to_fetch_translation_models": "번역 모델을 가져오지 못했습니다.",
                 "failed_to_save_feed_filters": "피드 필터를 저장하지 못했습니다.",
                 "failed_to_refresh_config_json": "JSON 구성을 새로 고치지 못했습니다."
             },
             "modal": {
-                "crop_existing_prints": "기존 인쇄물 자르기",
+                "crop_existing_prints": "기존 프린트 자르기",
                 "crop_already_saved_instance_prints_in_the_config": "이제 구성된 UGC 폴더에서 이미 저장된 인스턴스 인쇄를 자르시겠습니까?",
                 "crop_prints": "자르기 인쇄",
                 "skip": "건너뛰기"
@@ -4601,7 +4601,7 @@
             "icons": "아이콘",
             "emojis": "이모지",
             "stickers": "스티커",
-            "prints": "인쇄물",
+            "prints": "프린트",
             "inventory": "인벤토리",
             "refresh": "새로고침",
             "upload": "업로드",
@@ -4761,7 +4761,7 @@
             "back_to_results": "{count} 결과로 돌아가기",
             "result_count": "{count} 결과",
             "image_count": "{count} 이미지",
-            "feeling_lucky": "I’m Feeling Lucky",
+            "feeling_lucky": "랜덤으로 한 장",
             "exporting_progress": "내보내는 중 {done}/{total}",
             "export_finalizing": "마무리하는 중",
             "empty_folders_description": "VRChat에서 스크린샷을 저장한 후 새로고침하세요."

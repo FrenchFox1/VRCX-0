@@ -4796,7 +4796,7 @@
             "folders": "フォルダ",
             "scanning": "スクリーンショットをスキャン中",
             "image_count": "{count} 枚",
-            "feeling_lucky": "I'm Feeling Lucky",
+            "feeling_lucky": "おまかせで1枚",
             "exporting_progress": "書き出し中 {done}/{total}",
             "export_finalizing": "書き込みを完了しています",
             "empty_gallery": "このフォルダにスクリーンショットはありません",
