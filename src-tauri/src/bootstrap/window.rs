@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tauri::menu::{CheckMenuItem, Menu, MenuItem};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, Submenu};
 use tauri::{Manager, WebviewWindowBuilder};
 
 use crate::error::AppError;
@@ -8,6 +8,7 @@ use crate::state::{AppState, BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY};
 use vrcx_0_application_core::{
     BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeSnapshot, GuiRuntimeMode,
 };
+use vrcx_0_runtime_host_desktop::notification::NotificationDoNotDisturbMode;
 
 use super::adapters::start_host_services;
 use super::notification::{is_background_mode_active, is_community_theme_enabled, tray_labels};
@@ -369,6 +370,7 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
         let labels = tray_labels(state);
         let background_mode_active = is_background_mode_active(state);
         let community_theme_enabled = is_community_theme_enabled(state);
+        let do_not_disturb = state.runtime_host().notification_do_not_disturb_snapshot();
         let open_item = MenuItem::with_id(app, "tray-open", labels.open, true, None::<&str>)?;
         let background_item = CheckMenuItem::with_id(
             app,
@@ -377,6 +379,49 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
             true,
             background_mode_active,
             None::<&str>,
+        )?;
+        let do_not_disturb_one_hour = CheckMenuItem::with_id(
+            app,
+            "tray-dnd-one-hour",
+            labels.do_not_disturb_one_hour,
+            true,
+            do_not_disturb.mode == NotificationDoNotDisturbMode::OneHour,
+            None::<&str>,
+        )?;
+        let do_not_disturb_three_hours = CheckMenuItem::with_id(
+            app,
+            "tray-dnd-three-hours",
+            labels.do_not_disturb_three_hours,
+            true,
+            do_not_disturb.mode == NotificationDoNotDisturbMode::ThreeHours,
+            None::<&str>,
+        )?;
+        let do_not_disturb_until_stopped = CheckMenuItem::with_id(
+            app,
+            "tray-dnd-until-stopped",
+            labels.do_not_disturb_until_stopped,
+            true,
+            do_not_disturb.mode == NotificationDoNotDisturbMode::UntilStopped,
+            None::<&str>,
+        )?;
+        let do_not_disturb_turn_off = MenuItem::with_id(
+            app,
+            "tray-dnd-turn-off",
+            labels.do_not_disturb_turn_off,
+            do_not_disturb.mode != NotificationDoNotDisturbMode::Off,
+            None::<&str>,
+        )?;
+        let do_not_disturb_menu = Submenu::with_id_and_items(
+            app,
+            "tray-dnd",
+            labels.do_not_disturb,
+            true,
+            &[
+                &do_not_disturb_one_hour,
+                &do_not_disturb_three_hours,
+                &do_not_disturb_until_stopped,
+                &do_not_disturb_turn_off,
+            ],
         )?;
         #[cfg(target_os = "linux")]
         let rebuild_ui_item = MenuItem::with_id(
@@ -397,6 +442,7 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
         let menu = Menu::new(app)?;
         menu.append(&open_item)?;
         menu.append(&background_item)?;
+        menu.append(&do_not_disturb_menu)?;
         #[cfg(target_os = "linux")]
         menu.append(&rebuild_ui_item)?;
         if community_theme_enabled {

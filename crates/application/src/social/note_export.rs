@@ -12,10 +12,10 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
 
+use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
     vrchat_api::{VrchatApiRequest, VrchatScope},
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
-    WebClient,
 };
 use vrcx_0_core::OwnerId;
 
@@ -121,7 +121,7 @@ pub trait NoteExportRemoteRequests: Send + Sync {
 }
 
 pub struct VrchatNoteExportActions<'a> {
-    pub(crate) web: &'a WebClient,
+    remote: &'a dyn VrchatRequestPort,
     remote_requests: &'a dyn NoteExportRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: &'a RuntimeAuthScopeSnapshot,
@@ -130,14 +130,14 @@ pub struct VrchatNoteExportActions<'a> {
 
 impl<'a> VrchatNoteExportActions<'a> {
     pub fn new(
-        web: &'a WebClient,
+        remote: &'a dyn VrchatRequestPort,
         remote_requests: &'a dyn NoteExportRemoteRequests,
         auth_scope: &'a RuntimeAuthScope,
         expected_scope: &'a RuntimeAuthScopeSnapshot,
         event_bus: &'a RuntimeEventBus,
     ) -> Self {
         Self {
-            web,
+            remote,
             remote_requests,
             auth_scope,
             expected_scope,
@@ -160,7 +160,7 @@ impl NoteExportActions for VrchatNoteExportActions<'_> {
                 .or(request.url.as_deref())
                 .unwrap_or("runtime/note-export")
                 .to_string();
-            let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
+            let response = self.remote.send(request, VrchatScope::Vrchat).await?;
             if let Some(error) = note_save_response_error(response.status, &response.data) {
                 emit_note_export_auth_failure(
                     self.event_bus,
@@ -387,7 +387,7 @@ async fn wait_for_note_export_interval(
 #[derive(Clone)]
 pub struct NoteExportRuntime {
     shared: Arc<NoteExportRuntimeShared>,
-    web: Arc<WebClient>,
+    remote: Arc<dyn VrchatRequestPort>,
     remote_requests: Arc<dyn NoteExportRemoteRequests>,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
@@ -408,7 +408,7 @@ struct NoteExportRuntimeInner {
 
 impl NoteExportRuntime {
     pub fn new(
-        web: Arc<WebClient>,
+        remote: Arc<dyn VrchatRequestPort>,
         remote_requests: Arc<dyn NoteExportRemoteRequests>,
         event_bus: RuntimeEventBus,
         tasks: TaskSupervisor,
@@ -419,7 +419,7 @@ impl NoteExportRuntime {
                 state: Mutex::new(NoteExportRuntimeInner::default()),
                 generation: AtomicU64::new(0),
             }),
-            web,
+            remote,
             remote_requests,
             event_bus,
             tasks,
@@ -476,7 +476,7 @@ impl NoteExportRuntime {
         let run_id = status.run_id.clone();
         self.tasks.spawn_cancellable(move |stop_token| async move {
             let actions = VrchatNoteExportActions::new(
-                runtime.web.as_ref(),
+                runtime.remote.as_ref(),
                 runtime.remote_requests.as_ref(),
                 &runtime.auth_scope,
                 &scope,

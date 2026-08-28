@@ -11,6 +11,7 @@ import type {
     FriendProfileBulkLoadStatus,
     HostCapabilities,
     MutualGraphFetchStatus,
+    NotificationDoNotDisturbSnapshot,
     RuntimeOperationStatus,
     SavedAuthAutoLoginStatus,
     RuntimeGroupInstancesStatus,
@@ -217,6 +218,7 @@ type RuntimeStore = {
     databaseMaintenanceActive: boolean;
     runtimeEvents: Record<string, RuntimeEventState>;
     backendRuntime: BackendRuntimeSnapshot | null;
+    notificationDoNotDisturb: NotificationDoNotDisturbSnapshot;
     authenticatedSession: AuthenticatedSessionProjection;
     shell: {
         backendRuntimeSnapshotHydrated: boolean;
@@ -237,6 +239,9 @@ type RuntimeStore = {
     setTransportState(patch: Partial<TransportState>): void;
     recordRuntimeEvent(name: string, payload: unknown): void;
     setBackendRuntimeSnapshot(snapshot: BackendRuntimeSnapshot | null): void;
+    setNotificationDoNotDisturb(
+        snapshot: NotificationDoNotDisturbSnapshot
+    ): void;
     setAuthenticatedSessionProjection(
         projection: AuthenticatedSessionProjection
     ): boolean;
@@ -480,6 +485,7 @@ type RuntimeStoreState = Omit<
     | 'recordRuntimeEvent'
     | 'setGameState'
     | 'setBackendRuntimeSnapshot'
+    | 'setNotificationDoNotDisturb'
     | 'setAuthenticatedSessionProjection'
     | 'setShellState'
     | 'setNowPlayingState'
@@ -609,6 +615,11 @@ const initialState: RuntimeStoreState = {
     },
     databaseMaintenanceActive: false,
     backendRuntime: null,
+    notificationDoNotDisturb: {
+        revision: 0,
+        mode: 'off',
+        endsAt: null
+    },
     authenticatedSession: {
         revision: 0,
         session: null
@@ -752,6 +763,12 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
     },
     setBackendRuntimeSnapshot(snapshot: BackendRuntimeSnapshot | null) {
         set({ backendRuntime: snapshot });
+    },
+    setNotificationDoNotDisturb(snapshot: NotificationDoNotDisturbSnapshot) {
+        if (snapshot.revision < get().notificationDoNotDisturb.revision) {
+            return;
+        }
+        set({ notificationDoNotDisturb: snapshot });
     },
     setAuthenticatedSessionProjection(projection) {
         if (projection.revision < get().authenticatedSession.revision) {

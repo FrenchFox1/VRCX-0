@@ -150,6 +150,7 @@ export const ConfigKeys = defineConfigKeys({
     desktopToast: { type: 'string', default: 'Never' },
     afkDesktopToast: { type: 'bool', default: false },
     desktopNotificationSound: { type: 'bool', default: false },
+    notificationDoNotDisturbEndOnGameStart: { type: 'bool', default: true },
     notificationLayout: { type: 'string', default: null },
     notificationTTS: { type: 'string', default: 'Never' },
     notificationTTSVoiceNative: { type: 'string', default: '' },

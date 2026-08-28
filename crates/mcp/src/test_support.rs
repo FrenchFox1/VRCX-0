@@ -101,7 +101,9 @@ impl McpMutualGraphPort for TestMcpMutualGraphAdapter {
                 Arc::clone(&self.db),
             )),
             Arc::new(vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests),
-            Arc::clone(&self.web),
+            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
+                Arc::clone(&self.web),
+            )),
             self.auth_scope.clone(),
             self.tasks.clone(),
         )
@@ -537,9 +539,12 @@ fn test_runtime_with_database_and_event_bus(
         Arc::new(vrcx_0_outbound_adapters::LocalFavoriteStore::new(
             Arc::clone(&db),
         )),
-        Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemoteRequests),
-        FavoriteMutationRuntimeDeps::new(
+        Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemote::new(
             Arc::clone(&web),
+            diagnostics.clone(),
+            sync.clone(),
+        )),
+        FavoriteMutationRuntimeDeps::new(
             diagnostics,
             sync.clone(),
             event_bus.clone(),

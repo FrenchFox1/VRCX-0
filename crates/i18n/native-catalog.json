@@ -353,6 +353,26 @@
                     "source": "nativeShell.tray.backgroundMode"
                 },
                 {
+                    "key": "nativeShell.tray.doNotDisturb",
+                    "source": "nativeShell.tray.doNotDisturb"
+                },
+                {
+                    "key": "nativeShell.tray.doNotDisturbOneHour",
+                    "source": "nativeShell.tray.doNotDisturbOneHour"
+                },
+                {
+                    "key": "nativeShell.tray.doNotDisturbThreeHours",
+                    "source": "nativeShell.tray.doNotDisturbThreeHours"
+                },
+                {
+                    "key": "nativeShell.tray.doNotDisturbUntilStopped",
+                    "source": "nativeShell.tray.doNotDisturbUntilStopped"
+                },
+                {
+                    "key": "nativeShell.tray.doNotDisturbTurnOff",
+                    "source": "nativeShell.tray.doNotDisturbTurnOff"
+                },
+                {
                     "key": "nativeShell.tray.rebuildUi",
                     "source": "nativeShell.tray.rebuildUi"
                 },

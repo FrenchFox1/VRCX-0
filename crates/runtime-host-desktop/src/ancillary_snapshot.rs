@@ -9,6 +9,7 @@ use vrcx_0_application_core::HostSessionProjection;
 use vrcx_0_application_game::DebugLoggingOutcome;
 use vrcx_0_host_desktop::host_capabilities::{is_host_capability_available, HostCapability};
 
+use crate::notification::NotificationDoNotDisturbSnapshot;
 use crate::state::DesktopRuntimeHostState;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -23,6 +24,7 @@ pub struct AncillaryRuntimeSnapshot {
     pub game_client_debug_logging_status: Option<DebugLoggingOutcome>,
     pub game_process_snapshot: Option<HostSessionProjection>,
     pub background_image_state: BackgroundImageProjection,
+    pub notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
 }
 
 pub async fn ancillary_runtime_snapshot(
@@ -55,5 +57,6 @@ pub async fn ancillary_runtime_snapshot(
         game_client_debug_logging_status: state.game_client_debug_logging_status(),
         game_process_snapshot,
         background_image_state: state.background_image_projection(),
+        notification_do_not_disturb_state: state.notification_do_not_disturb_snapshot(),
     }
 }

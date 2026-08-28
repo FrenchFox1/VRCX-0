@@ -478,6 +478,11 @@
         "tray": {
             "open": "VRCX-0 öffnen",
             "backgroundMode": "Hintergrundmodus",
+            "doNotDisturb": "Nicht stören",
+            "doNotDisturbOneHour": "1 Stunde",
+            "doNotDisturbThreeHours": "3 Stunden",
+            "doNotDisturbUntilStopped": "Bis zum Ausschalten",
+            "doNotDisturbTurnOff": "Ausschalten",
             "rebuildUi": "UI neu laden",
             "disableTheme": "Theme deaktivieren",
             "exit": "Beenden"
@@ -2487,6 +2492,12 @@
                     "layout_table": "Benachrichtigungsseite",
                     "post_update_changelog_prompt": "Update-Hinweise nach Aktualisierung anzeigen",
                     "post_update_changelog_prompt_description": "Zeigt die Neuerungen nach einer Aktualisierung an.",
+                    "do_not_disturb": {
+                        "header": "Nicht stören",
+                        "description": "Pausiert vorübergehend Desktop-Benachrichtigungen, TTS, XSOverlay, OVR Toolkit und HMD-Einblendungen von VRCX-0. Webhooks, Handgelenk-Aktivitäten und der Benachrichtigungsverlauf laufen weiter.",
+                        "end_on_game_start": "Beim Start von VRChat ausschalten",
+                        "end_on_game_start_description": "Gilt nur, wenn VRChat vom beendeten in den laufenden Zustand wechselt. Während des Spielens kann „Nicht stören“ erneut aktiviert werden."
+                    },
                     "vr_notifications": {
                         "header": "VR-Overlay-Benachrichtigungen",
                         "xsoverlay_notifications": "XSOverlay-Benachrichtigungen",
@@ -5791,6 +5802,14 @@
         "add_table_page_size": "Seitengröße für Tabellen hinzufügen"
     },
     "status_bar": {
+        "do_not_disturb": "Nicht stören",
+        "do_not_disturb_active": "„Nicht stören“ ist aktiv",
+        "do_not_disturb_until": "Nicht stören bis {time}",
+        "do_not_disturb_one_hour": "Für 1 Stunde",
+        "do_not_disturb_three_hours": "Für 3 Stunden",
+        "do_not_disturb_until_stopped": "Bis ich es ausschalte",
+        "do_not_disturb_turn_off": "„Nicht stören“ ausschalten",
+        "do_not_disturb_failed": "„Nicht stören“ konnte nicht geändert werden",
         "world_collection_importing": "Welten-Sammlung wird importiert ({progress}/{total})",
         "game": "Spiel",
         "game_stopped": "VRChat läuft nicht",

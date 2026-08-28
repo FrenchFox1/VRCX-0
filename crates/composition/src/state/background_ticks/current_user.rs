@@ -34,13 +34,8 @@ pub(in crate::state) async fn run_background_current_user_refresh(
         );
         return;
     };
-    match refresh_background_current_user(
-        web.as_ref(),
-        &vrcx_0_outbound_adapters::VrchatBackgroundGroupRequests,
-        &session,
-    )
-    .await
-    {
+    let remote = vrcx_0_outbound_adapters::VrchatBackgroundGroupRemote::new(Arc::clone(web));
+    match refresh_background_current_user(&remote, &session).await {
         Ok(updated_user) => {
             let accepted = realtime_runtime
                 .sync_current_user_snapshot(

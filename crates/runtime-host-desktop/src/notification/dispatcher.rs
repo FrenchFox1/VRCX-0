@@ -10,7 +10,7 @@ use vrcx_0_application_activity::notification::{
     OverlayLocale, RealtimeUserImageResolverSlot, RenderedNotification,
 };
 use vrcx_0_application_activity::{
-    OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot,
+    OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot, OverlayActivitySurface,
 };
 use vrcx_0_application_core::{HostSessionRuntime, ImageCache, RuntimeAuthScope, TaskSupervisor};
 use vrcx_0_host_desktop::tts::TtsEngine;
@@ -18,10 +18,10 @@ use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
 use super::desktop::{send_desktop_notification, DesktopNotificationAction, DesktopNotifier};
 use super::overlay_transport::OverlayNotificationTransport;
-use super::tts::send_tts_notification;
+use super::tts::{notification_tts_memo_actor_user_id, send_tts_notification};
 use super::{
     decide_notification_plan, load_preferences, NotificationDeliveryGameState,
-    NotificationDeliveryPlan, NotificationDeliveryPreferences,
+    NotificationDeliveryPlan, NotificationDeliveryPreferences, NotificationDoNotDisturbRuntime,
 };
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::OwnerId;
@@ -51,6 +51,7 @@ pub struct NotificationDispatcherDeps {
     pub desktop: Arc<dyn DesktopNotifier>,
     pub tts: Arc<dyn TtsEngine>,
     pub tasks: TaskSupervisor,
+    pub do_not_disturb: NotificationDoNotDisturbRuntime,
 }
 
 struct NotificationOutputContext {
@@ -58,6 +59,7 @@ struct NotificationOutputContext {
     db: Arc<DatabaseService>,
     desktop: Arc<dyn DesktopNotifier>,
     tts: Arc<dyn TtsEngine>,
+    do_not_disturb: NotificationDoNotDisturbRuntime,
 }
 
 struct NotificationJob {
@@ -127,6 +129,7 @@ impl NotificationDispatcher {
             db: deps.db,
             desktop: deps.desktop,
             tts: deps.tts,
+            do_not_disturb: deps.do_not_disturb,
         });
         let (completion_tx, completion_rx) = mpsc::unbounded_channel();
         let worker_output = Arc::clone(&output);
@@ -154,7 +157,10 @@ impl OverlayActivitySink for NotificationDispatcher {
     fn emit_overlay_activity_delivery(&self, delivery: OverlayActivityDelivery) {
         let preferences = load_preferences(&self.config);
         let game = load_game_state(&self.session, &self.config);
-        let plan = decide_notification_plan(&delivery, &preferences, &game);
+        let plan = plan_allowed_by_do_not_disturb(
+            decide_notification_plan(&delivery, &preferences, &game),
+            &self.output.do_not_disturb,
+        );
         if !plan.has_local_transport() {
             return;
         }
@@ -277,22 +283,57 @@ fn prepare_rendered_notification(
     }
 }
 
+fn plan_without_suppressed_surfaces(
+    plan: NotificationDeliveryPlan,
+    suppresses: impl Fn(OverlayActivitySurface) -> bool,
+) -> NotificationDeliveryPlan {
+    let mut plan = plan;
+    if suppresses(OverlayActivitySurface::Desktop) {
+        plan.desktop = false;
+    }
+    if suppresses(OverlayActivitySurface::Vr) {
+        plan.xs = false;
+        plan.ovrt = false;
+        plan.ovrt_hud = false;
+        plan.ovrt_wrist = false;
+    }
+    if suppresses(OverlayActivitySurface::Tts) {
+        plan.tts = false;
+    }
+    plan
+}
+
+fn plan_allowed_by_do_not_disturb(
+    plan: NotificationDeliveryPlan,
+    do_not_disturb: &NotificationDoNotDisturbRuntime,
+) -> NotificationDeliveryPlan {
+    plan_without_suppressed_surfaces(plan, |surface| do_not_disturb.suppresses(surface))
+}
+
 fn dispatch_prepared_notification(
     notification: &PreparedNotification,
     output: &NotificationOutputContext,
 ) {
-    if notification.plan.tts {
-        send_tts_notification(
-            output.tts.as_ref(),
-            output.db.as_ref(),
+    let plan = plan_allowed_by_do_not_disturb(notification.plan, &output.do_not_disturb);
+    if plan.tts {
+        let user_memo = notification_tts_memo_actor_user_id(
             &notification.delivery,
             &notification.render,
             &notification.preferences,
             notification.locale,
+        )
+        .and_then(|actor_user_id| load_user_memo(output.db.as_ref(), actor_user_id));
+        send_tts_notification(
+            output.tts.as_ref(),
+            &notification.delivery,
+            &notification.render,
+            &notification.preferences,
+            notification.locale,
+            user_memo.as_deref(),
         );
     }
     let local_image = notification.local_image.as_deref();
-    if notification.plan.desktop {
+    if plan.desktop {
         send_desktop_notification(
             output.desktop.as_ref(),
             &notification.render,
@@ -304,11 +345,26 @@ fn dispatch_prepared_notification(
         );
     }
     output.overlay_transport.send(
-        notification.plan,
+        plan,
         &notification.render,
         &notification.preferences,
         local_image,
     );
+}
+
+fn load_user_memo(db: &DatabaseService, actor_user_id: &str) -> Option<String> {
+    let actor_user_id = actor_user_id.trim();
+    if actor_user_id.is_empty() {
+        return None;
+    }
+    match vrcx_0_persistence::memos::memo_get_user(db, actor_user_id.to_string()) {
+        Ok(Some(memo)) => Some(memo.memo),
+        Ok(None) => None,
+        Err(error) => {
+            tracing::debug!("failed to load TTS nickname memo: {error}");
+            None
+        }
+    }
 }
 
 fn apply_cached_actor_image(

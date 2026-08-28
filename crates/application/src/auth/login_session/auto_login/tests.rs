@@ -8,7 +8,7 @@ use super::super::types::TwoFactorMethod;
 async fn drive_test_auto_login(
     api: Arc<dyn LoginApi>,
     config: &dyn AuthCredentialStore,
-    web: &WebClient,
+    web: &dyn AuthSessionCookies,
     throttle: &AutoLoginThrottle,
     input: AutoLoginStartInput,
 ) -> AutoLoginDrive {
@@ -118,7 +118,7 @@ async fn cookie_restore_success_never_attempts_saved_credential() {
         outcome,
         AutoLoginOutcome::Session(LoginSessionState::Authenticated { .. })
     ));
-    assert_eq!(api.call_paths(), vec!["config", "auth/user"]);
+    assert_eq!(api.call_names(), vec!["config", "current_user"]);
 }
 
 #[tokio::test]
@@ -153,8 +153,8 @@ async fn cookie_restore_for_another_user_falls_back_to_the_target_account() {
             if session.user_id == "usr_saved"
     ));
     assert_eq!(
-        api.call_paths(),
-        vec!["config", "auth/user", "config", "auth/user"]
+        api.call_names(),
+        vec!["config", "current_user", "config", "current_user"]
     );
 }
 
@@ -251,10 +251,10 @@ async fn config_missing_credentials_also_falls_back_to_the_saved_account() {
         AutoLoginOutcome::Session(LoginSessionState::Authenticated { ref session, .. })
             if session.user_id == "usr_123"
     ));
-    assert_eq!(api.call_paths().first().map(String::as_str), Some("config"));
+    assert_eq!(api.call_names().first().map(String::as_str), Some("config"));
     assert_eq!(
-        api.call_paths().last().map(String::as_str),
-        Some("auth/user")
+        api.call_names().last().map(String::as_str),
+        Some("basic_login")
     );
 }
 
@@ -358,7 +358,7 @@ async fn config_missing_credentials_without_a_saved_login_reports_expired() {
         outcome,
         AutoLoginOutcome::Terminal(AutoLoginTerminalOutcome::Expired { .. })
     ));
-    assert_eq!(api.call_paths(), vec!["config"]);
+    assert_eq!(api.call_names(), vec!["config"]);
 }
 
 #[tokio::test]
@@ -389,7 +389,7 @@ async fn a_non_missing_credentials_cookie_failure_never_attempts_a_fallback() {
         }
         other => panic!("expected Failed, got {other:?}"),
     }
-    assert_eq!(api.call_paths(), vec!["config"]);
+    assert_eq!(api.call_names(), vec!["config"]);
 }
 
 #[tokio::test]
@@ -423,7 +423,7 @@ async fn throttled_attempt_clears_auth_cookies_and_last_user() {
                 AutoLoginOutcome::Terminal(AutoLoginTerminalOutcome::Throttled { .. })
             )
     ));
-    assert!(api.call_paths().is_empty());
+    assert!(api.call_names().is_empty());
     assert_eq!(
         config
             .get_string("lastUserLoggedIn", "")

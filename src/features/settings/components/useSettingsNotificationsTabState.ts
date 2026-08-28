@@ -13,6 +13,8 @@ export function useSettingsNotificationsTabState() {
             desktopToast: state.desktopToast,
             afkDesktopToast: state.afkDesktopToast,
             desktopNotificationSound: state.desktopNotificationSound,
+            notificationDoNotDisturbEndOnGameStart:
+                state.notificationDoNotDisturbEndOnGameStart,
             notificationTTS: state.notificationTTS,
             notificationTTSVoiceNative: state.notificationTTSVoiceNative,
             notificationTTSVolume: state.notificationTTSVolume,
@@ -62,6 +64,13 @@ export function useSettingsNotificationsTabState() {
             saveBoolPreference(
                 'desktopNotificationSound',
                 'desktopNotificationSound',
+                enabled
+            );
+        },
+        onNotificationDoNotDisturbEndOnGameStartChange: (enabled: boolean) => {
+            saveBoolPreference(
+                'notificationDoNotDisturbEndOnGameStart',
+                'notificationDoNotDisturbEndOnGameStart',
                 enabled
             );
         },

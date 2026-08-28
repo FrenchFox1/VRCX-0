@@ -1,54 +1,31 @@
 use std::cmp::Ordering;
 use std::collections::VecDeque;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering as AtomicOrdering};
+use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use chrono::{FixedOffset, NaiveDate, TimeZone};
 use vrcx_0_application_core::{
-    Error, MemoryCookieWebClientPort, RuntimeBackgroundJobs, RuntimeEventBus, TaskSupervisor,
-    UpdaterCheckRequest, UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle,
-    UpdaterMetadata, UpdaterPort, UpdaterProgressCallback, WebClient,
+    Error, RuntimeBackgroundJobs, RuntimeEventBus, TaskSupervisor, UpdaterCheckRequest,
+    UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
+    UpdaterPort, UpdaterProgressCallback,
 };
 
 use super::release::{
     compare_release_versions, is_preview_build_label, is_release_newer_than_current,
     normalize_release, parse_preview_badge_timestamp_ms, parse_preview_build_timestamp_ms,
-    parse_release_version, GitHubRelease, GitHubReleaseAsset, TOKYO_UTC_OFFSET_SECONDS,
+    parse_release_version, TOKYO_UTC_OFFSET_SECONDS,
 };
 use super::{
-    up_to_date_outcome, AppUpdateBuildInfo, AppUpdateDeliveryKind, AppUpdateDownloadPhase,
-    AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot,
-    DownloadState,
+    run_check_inner, up_to_date_outcome, AppUpdateBuildInfo, AppUpdateCatalogAsset,
+    AppUpdateCatalogRelease, AppUpdateCheckContext, AppUpdateDeliveryKind, AppUpdateDownloadPhase,
+    AppUpdateReleaseCatalogFuture, AppUpdateReleaseCatalogPort, AppUpdateReleaseSnapshot,
+    AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot, DownloadState,
 };
 use crate::profile::test_support::MemoryProfileConfigStore;
 
 const TEST_UPDATE_VERSION: &str = "2.15.0";
-static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
-
-struct TestDir {
-    path: PathBuf,
-}
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = TEMP_COUNTER.fetch_add(1, AtomicOrdering::Relaxed);
-        let path = std::env::temp_dir().join(format!(
-            "vrcx-0-app-update-{name}-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&path).expect("create app update test directory");
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
-}
 
 #[derive(Clone, Copy)]
 enum InstallOutcome {
@@ -121,10 +98,21 @@ impl UpdaterPort for MockUpdaterPort {
 }
 
 struct AppUpdateTestContext {
-    _dir: TestDir,
     runtime: AppUpdateRuntime,
     port: Arc<MockUpdaterPort>,
     event_bus: RuntimeEventBus,
+}
+
+#[derive(Default)]
+struct TestAppUpdateReleaseCatalog {
+    releases: Vec<AppUpdateCatalogRelease>,
+}
+
+impl AppUpdateReleaseCatalogPort for TestAppUpdateReleaseCatalog {
+    fn list_releases(&self) -> AppUpdateReleaseCatalogFuture<'_> {
+        let releases = self.releases.clone();
+        Box::pin(async move { Ok(releases) })
+    }
 }
 
 fn updater_metadata() -> UpdaterMetadata {
@@ -166,25 +154,21 @@ fn up_to_date_outcome_keeps_the_checked_release() {
 }
 
 fn app_update_test_context(
-    name: &str,
     install_outcomes: impl IntoIterator<Item = InstallOutcome>,
 ) -> AppUpdateTestContext {
-    app_update_test_context_with_update_check(name, install_outcomes, false)
+    app_update_test_context_with_update_check(install_outcomes, false)
 }
 
 fn app_update_test_context_with_update_check(
-    name: &str,
     install_outcomes: impl IntoIterator<Item = InstallOutcome>,
     update_check_disabled: bool,
 ) -> AppUpdateTestContext {
-    let dir = TestDir::new(name);
     let config = Arc::new(MemoryProfileConfigStore::default());
-    let web = Arc::new(WebClient::new(MemoryCookieWebClientPort::default()));
     let event_bus = RuntimeEventBus::new();
     let port = Arc::new(MockUpdaterPort::new(install_outcomes));
     let updater_port: Arc<dyn UpdaterPort> = port.clone();
     let runtime = AppUpdateRuntime::new(AppUpdateRuntimeDeps {
-        web,
+        release_catalog: Arc::new(TestAppUpdateReleaseCatalog::default()),
         config,
         event_bus: event_bus.clone(),
         background_jobs: RuntimeBackgroundJobs::new(),
@@ -210,7 +194,6 @@ fn app_update_test_context_with_update_check(
     }
 
     AppUpdateTestContext {
-        _dir: dir,
         runtime,
         port,
         event_bus,
@@ -218,8 +201,33 @@ fn app_update_test_context_with_update_check(
 }
 
 #[tokio::test]
+async fn update_check_uses_semantic_release_catalog_without_a_web_client() {
+    let release_catalog = TestAppUpdateReleaseCatalog {
+        releases: vec![release("v2.15.0", false, Vec::new())],
+    };
+    let updater: Arc<dyn UpdaterPort> = Arc::new(MockUpdaterPort::new([]));
+    let context = AppUpdateCheckContext {
+        release_catalog: &release_catalog,
+        app_version: "2.14.0",
+        build_label: "stable",
+        build_badge: "",
+        target: None,
+        port: &updater,
+        proxy: None,
+    };
+
+    let outcome = run_check_inner(&context).await.unwrap();
+
+    assert!(outcome.has_available_update);
+    assert_eq!(
+        outcome.release.unwrap().canonical_version,
+        TEST_UPDATE_VERSION
+    );
+}
+
+#[tokio::test]
 async fn disabled_build_skips_update_check() {
-    let context = app_update_test_context_with_update_check("disabled-check", [], true);
+    let context = app_update_test_context_with_update_check([], true);
 
     let snapshot = context.runtime.check_now().await;
 
@@ -245,7 +253,7 @@ fn error_progress_event_count(event_bus: &RuntimeEventBus) -> usize {
 
 #[test]
 fn download_progress_coalesces_chunk_bursts_and_keeps_boundaries() {
-    let context = app_update_test_context("progress-coalescing", []);
+    let context = app_update_test_context([]);
     context.runtime.with_download_state(|state| {
         *state = DownloadState {
             phase: AppUpdateDownloadPhase::Downloading,
@@ -298,16 +306,20 @@ fn download_progress_coalesces_chunk_bursts_and_keeps_boundaries() {
     assert_eq!(context.runtime.download_status().percent, 100);
 }
 
-fn asset(name: &str, state: &str, url: &str) -> GitHubReleaseAsset {
-    GitHubReleaseAsset {
+fn asset(name: &str, state: &str, url: &str) -> AppUpdateCatalogAsset {
+    AppUpdateCatalogAsset {
         state: Some(state.into()),
         name: Some(name.into()),
         browser_download_url: Some(url.into()),
     }
 }
 
-fn release(tag_name: &str, prerelease: bool, assets: Vec<GitHubReleaseAsset>) -> GitHubRelease {
-    GitHubRelease {
+fn release(
+    tag_name: &str,
+    prerelease: bool,
+    assets: Vec<AppUpdateCatalogAsset>,
+) -> AppUpdateCatalogRelease {
+    AppUpdateCatalogRelease {
         tag_name: Some(tag_name.into()),
         assets,
         html_url: Some("https://github.com/Map1en/VRCX-0/releases/tag/v1.2.3".into()),
@@ -437,10 +449,8 @@ fn is_release_newer_than_current_compares_canonical_versions() {
 
 #[tokio::test]
 async fn install_redownloads_once_after_an_invalid_artifact_without_flashing_error() {
-    let context = app_update_test_context(
-        "retry-invalid",
-        [InstallOutcome::ArtifactInvalid, InstallOutcome::Success],
-    );
+    let context =
+        app_update_test_context([InstallOutcome::ArtifactInvalid, InstallOutcome::Success]);
 
     let metadata = context
         .runtime
@@ -456,13 +466,10 @@ async fn install_redownloads_once_after_an_invalid_artifact_without_flashing_err
 
 #[tokio::test]
 async fn install_reports_an_error_when_the_retried_artifact_is_still_invalid() {
-    let context = app_update_test_context(
-        "retry-invalid-twice",
-        [
-            InstallOutcome::ArtifactInvalid,
-            InstallOutcome::ArtifactInvalid,
-        ],
-    );
+    let context = app_update_test_context([
+        InstallOutcome::ArtifactInvalid,
+        InstallOutcome::ArtifactInvalid,
+    ]);
 
     assert!(matches!(
         context.runtime.install(TEST_UPDATE_VERSION).await,
@@ -475,7 +482,7 @@ async fn install_reports_an_error_when_the_retried_artifact_is_still_invalid() {
 
 #[tokio::test]
 async fn install_does_not_redownload_after_an_installer_error() {
-    let context = app_update_test_context("installer-error", [InstallOutcome::OtherError]);
+    let context = app_update_test_context([InstallOutcome::OtherError]);
 
     assert!(matches!(
         context.runtime.install(TEST_UPDATE_VERSION).await,
@@ -488,7 +495,7 @@ async fn install_does_not_redownload_after_an_installer_error() {
 
 #[tokio::test]
 async fn background_download_is_forced_without_a_saved_preference() {
-    let context = app_update_test_context("forced-background", []);
+    let context = app_update_test_context([]);
 
     context
         .runtime
@@ -508,7 +515,7 @@ async fn background_download_is_forced_without_a_saved_preference() {
 
 #[tokio::test]
 async fn background_download_does_not_replace_an_installing_flight() {
-    let context = app_update_test_context("installing-flight", []);
+    let context = app_update_test_context([]);
     context.runtime.with_download_state(|state| {
         *state = DownloadState {
             phase: AppUpdateDownloadPhase::Installing,

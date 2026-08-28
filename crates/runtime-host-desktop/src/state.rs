@@ -20,10 +20,12 @@ use crate::integration_api::{
 };
 use crate::local_data::LocalDataRuntime;
 use crate::media::DesktopMediaRuntime;
+use crate::notification::{NotificationDoNotDisturbMode, NotificationDoNotDisturbSnapshot};
 use crate::profile_backup::DesktopProfileBackupRuntime;
 use crate::screenshot::DesktopScreenshotRuntime;
 use crate::social::DesktopSocialRuntime;
 use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
+use crate::vrchat_remote::DesktopVrchatRemoteFacade;
 use crate::{
     DesktopDatabaseUpgradeRuntime, DesktopLegacyMigrationRuntime, DesktopRuntimeServices,
     GameClientHostRuntime, GameClientHostRuntimeDeps, GameLogEventSink, GameLogHostRuntime,
@@ -51,7 +53,7 @@ use vrcx_0_application::profile::{
     AppUpdateBuildInfo, AppUpdateRuntime, AppUpdateRuntimeDeps, BackgroundImageService,
     CommunityThemeService, DatabaseUpgradeRuntime,
 };
-use vrcx_0_application::remote::VrchatApiRuntime;
+use vrcx_0_application::remote::WorldRemoteRuntime;
 use vrcx_0_application::social::{
     CurrentUserMutationRuntime, GroupBanImportStartInput, GroupBanImportStatus,
 };
@@ -120,6 +122,7 @@ pub(crate) fn build_desktop_runtime_services_deps(
         session: context.session().clone(),
         world_cache: Arc::clone(context.world_cache()),
         tasks: context.tasks().clone(),
+        event_bus: context.event_bus().clone(),
         overlay_activity: context.overlay_activity(),
         overlay_activity_sinks: context.overlay_activity_sink_registry(),
     }
@@ -219,7 +222,8 @@ pub struct DesktopRuntimeHostState {
     social: DesktopSocialRuntime,
     media: DesktopMediaRuntime,
     screenshots: DesktopScreenshotRuntime,
-    vrchat_api: VrchatApiRuntime,
+    vrchat_remote: DesktopVrchatRemoteFacade,
+    worlds: WorldRemoteRuntime,
     vrchat_config: VrchatConfigRuntime,
     database_upgrade: DesktopDatabaseUpgradeRuntime,
     legacy_migration: DesktopLegacyMigrationRuntime,
@@ -294,7 +298,7 @@ impl DesktopRuntimeHostState {
         )?;
         let desktop_services = Arc::new(DesktopRuntimeServices::new(
             build_desktop_runtime_services_deps(builder.desktop_assembly()),
-        ));
+        )?);
         let backend_status = BackendRuntimeStatusPublisher::new(
             builder.backend_runtime().clone(),
             builder.desktop_assembly().event_bus().clone(),
@@ -352,7 +356,9 @@ impl DesktopRuntimeHostState {
                 Arc::clone(builder.storage()),
             ));
         let app_update = AppUpdateRuntime::new(AppUpdateRuntimeDeps::new(
-            Arc::clone(builder.web_client()),
+            Arc::new(vrcx_0_outbound_adapters::GitHubReleaseCatalogAdapter::new(
+                Arc::clone(builder.web_client()),
+            )),
             Arc::clone(&profile_config),
             builder.desktop_assembly().event_bus().clone(),
             builder.desktop_assembly().background_jobs().clone(),
@@ -423,7 +429,11 @@ impl DesktopRuntimeHostState {
         let auto_launch = AutoAppLaunchManager::new(app_launcher_enabled, app_launcher_entries);
         let background_image = BackgroundImageService::new(
             Arc::clone(&profile_config),
-            Arc::clone(builder.web_client()),
+            Arc::new(
+                vrcx_0_outbound_adapters::ExternalBackgroundImageRemote::new(Arc::clone(
+                    builder.web_client(),
+                )),
+            ),
             builder.desktop_assembly().event_bus().clone(),
             Arc::new(
                 crate::background_image::HostBackgroundImageFileResolver::new(
@@ -433,7 +443,9 @@ impl DesktopRuntimeHostState {
         );
         let community_theme = CommunityThemeService::new(
             Arc::clone(&profile_config),
-            Arc::clone(builder.web_client()),
+            Arc::new(vrcx_0_outbound_adapters::ExternalCommunityThemeRemote::new(
+                Arc::clone(builder.web_client()),
+            )),
             builder.desktop_assembly().event_bus().clone(),
             background_image.clone(),
         );
@@ -597,6 +609,17 @@ impl DesktopRuntimeHostState {
                 diagnostics: runtime.desktop_assembly().diagnostics().clone(),
                 sync: runtime.desktop_assembly().sync().clone(),
             });
+        let worlds = crate::world_remote::build_world_remote_runtime(
+            crate::world_remote::WorldRemoteRuntimeDeps {
+                auth_scope: runtime.desktop_assembly().auth_scope().clone(),
+                remote_mutations: Arc::clone(runtime.desktop_assembly().remote_mutations()),
+                web: Arc::clone(runtime.desktop_assembly().web_client()),
+                diagnostics: runtime.desktop_assembly().diagnostics().clone(),
+                sync: runtime.desktop_assembly().sync().clone(),
+                world_cache: Arc::clone(runtime.desktop_assembly().world_cache()),
+            },
+        );
+        let vrchat_remote = DesktopVrchatRemoteFacade::new(vrchat_api.clone(), media.clone());
         let vrchat_config = VrchatConfigRuntime::new(
             vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT.into(),
             Arc::new(vrcx_0_outbound_adapters::VrchatConfigAdapter::new(
@@ -678,7 +701,8 @@ impl DesktopRuntimeHostState {
             social,
             media,
             screenshots,
-            vrchat_api,
+            vrchat_remote,
+            worlds,
             vrchat_config,
             database_upgrade,
             legacy_migration,
@@ -870,6 +894,14 @@ impl DesktopRuntimeHostState {
         &self.avatars
     }
 
+    pub fn worlds(&self) -> &WorldRemoteRuntime {
+        &self.worlds
+    }
+
+    pub fn vrchat_remote(&self) -> &DesktopVrchatRemoteFacade {
+        &self.vrchat_remote
+    }
+
     pub fn local_data(&self) -> &LocalDataRuntime {
         &self.local_data
     }
@@ -884,28 +916,6 @@ impl DesktopRuntimeHostState {
 
     pub fn groups(&self) -> &DesktopGroupRuntime {
         &self.groups
-    }
-
-    pub async fn execute_world_mutation(
-        &self,
-        command: &str,
-        detail: impl Into<String>,
-        input: vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
-        let response = self
-            .vrchat_api
-            .execute(
-                command,
-                detail,
-                input,
-                vrcx_0_application_core::vrchat_api::VrchatScope::Vrchat,
-            )
-            .await?;
-        self.runtime
-            .desktop_assembly()
-            .world_cache()
-            .hydrate_response(&response);
-        Ok(response)
     }
 
     pub async fn get_user_via_cache(
@@ -1091,8 +1101,11 @@ impl DesktopRuntimeHostState {
             Arc::new(vrcx_0_outbound_adapters::LocalFavoriteStore::new(
                 Arc::clone(self.runtime.database()),
             )),
-            Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemoteRequests),
-            Arc::clone(self.runtime.web_client()),
+            Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemote::new(
+                Arc::clone(self.runtime.web_client()),
+                self.runtime.desktop_assembly().diagnostics().clone(),
+                self.runtime.desktop_assembly().sync().clone(),
+            )),
             self.runtime.desktop_assembly().auth_scope().clone(),
             Arc::clone(self.runtime.desktop_assembly().world_cache()),
         )
@@ -1111,10 +1124,16 @@ impl DesktopRuntimeHostState {
                 )),
                 Arc::new(vrcx_0_outbound_adapters::VrchatQuickSearchRemoteRequests),
                 avatar_adapter.clone(),
-                avatar_adapter,
+                Arc::new(vrcx_0_outbound_adapters::VrchatAvatarRemote::new(
+                    Arc::clone(self.runtime.web_client()),
+                    self.runtime.desktop_assembly().diagnostics().clone(),
+                    self.runtime.desktop_assembly().sync().clone(),
+                )),
                 Arc::clone(self.runtime.desktop_assembly().world_cache()),
             ),
-            Arc::clone(self.runtime.web_client()),
+            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
+                Arc::clone(self.runtime.web_client()),
+            )),
             self.runtime.desktop_assembly().auth_scope().clone(),
             self.runtime.desktop_assembly().diagnostics().clone(),
             self.runtime.desktop_assembly().sync().clone(),
@@ -1184,7 +1203,9 @@ impl DesktopRuntimeHostState {
         let expected_scope = self.require_active_scope("Batch action")?;
         Ok(vrcx_0_application::social::run_avatar_content_tags_batch(
             &vrcx_0_application::social::VrchatBatchMutationActions::new(
-                self.runtime.web_client().as_ref(),
+                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
+                    self.runtime.web_client(),
+                )),
                 &vrcx_0_outbound_adapters::VrchatBatchMutationRemoteRequests,
                 self.runtime.desktop_assembly().auth_scope(),
                 expected_scope,
@@ -1204,7 +1225,9 @@ impl DesktopRuntimeHostState {
         Ok(vrcx_0_application::social::run_group_membership_batch(
             coordinator,
             &vrcx_0_application::social::VrchatGroupMembershipBatchActions::new(
-                self.runtime.web_client().as_ref(),
+                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
+                    self.runtime.web_client(),
+                )),
                 &vrcx_0_outbound_adapters::VrchatGroupRemoteRequests,
                 self.runtime.desktop_assembly().auth_scope(),
                 expected_scope,
@@ -1225,7 +1248,9 @@ impl DesktopRuntimeHostState {
         Ok(vrcx_0_application::social::run_group_moderation_batch(
             coordinator,
             &vrcx_0_application::social::VrchatGroupModerationBatchActions::new(
-                self.runtime.web_client().as_ref(),
+                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
+                    self.runtime.web_client(),
+                )),
                 &vrcx_0_outbound_adapters::VrchatGroupModerationRemoteRequests,
                 self.runtime.desktop_assembly().auth_scope(),
                 expected_scope,
@@ -1262,12 +1287,17 @@ impl DesktopRuntimeHostState {
         let expected_scope = self.require_active_scope("Batch action")?;
         Ok(vrcx_0_application::social::send_instance_invites_batch(
             &vrcx_0_application::social::VrchatInstanceInviteBatchActions::new(
-                self.runtime.web_client().as_ref(),
+                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
+                    self.runtime.web_client(),
+                )),
                 &vrcx_0_outbound_adapters::VrchatInstanceInviteRemoteRequests,
                 self.runtime.desktop_assembly().auth_scope(),
                 expected_scope,
                 self.runtime.desktop_assembly().remote_mutations(),
-                self.runtime.desktop_assembly().world_cache().as_ref(),
+                &vrcx_0_outbound_adapters::CachedWorldNameResolver::new(
+                    Arc::clone(self.runtime.desktop_assembly().world_cache()),
+                    Arc::clone(self.runtime.web_client()),
+                ),
             ),
             input,
         )
@@ -1302,7 +1332,6 @@ impl DesktopRuntimeHostState {
                         Arc::clone(self.runtime.web_client()),
                     ),
                 ),
-                Arc::clone(self.runtime.web_client()),
                 self.runtime.desktop_assembly().auth_scope().clone(),
             ),
             input,
@@ -1991,10 +2020,6 @@ impl DesktopRuntimeHostState {
         &self.screenshots
     }
 
-    pub fn vrchat_api(&self) -> &VrchatApiRuntime {
-        &self.vrchat_api
-    }
-
     pub fn vrchat_config(&self) -> &VrchatConfigRuntime {
         &self.vrchat_config
     }
@@ -2036,6 +2061,28 @@ impl DesktopRuntimeHostState {
 
     pub async fn ancillary_runtime_snapshot(&self) -> AncillaryRuntimeSnapshot {
         ancillary_runtime_snapshot(self).await
+    }
+
+    pub fn notification_do_not_disturb_snapshot(&self) -> NotificationDoNotDisturbSnapshot {
+        self.desktop
+            .services
+            .notification_do_not_disturb()
+            .snapshot()
+    }
+
+    pub fn set_notification_do_not_disturb_mode(
+        &self,
+        mode: NotificationDoNotDisturbMode,
+    ) -> Result<NotificationDoNotDisturbSnapshot> {
+        let snapshot = self
+            .desktop
+            .services
+            .notification_do_not_disturb()
+            .set_mode(mode)?;
+        if snapshot.mode != NotificationDoNotDisturbMode::Off {
+            self.desktop.vr_overlay_runtime.clear_hmd_notifications();
+        }
+        Ok(snapshot)
     }
 
     pub fn reload_overlay_activity_filters(&self) {
@@ -2290,12 +2337,15 @@ impl DesktopRuntimeProfileExtension {
                 Arc::new(VrOverlayProcessSink {
                     runtime: Arc::clone(&self.desktop.vr_overlay_runtime),
                 });
+            let do_not_disturb_process_sink: Arc<dyn GameProcessEventSink> =
+                Arc::new(self.desktop.services.notification_do_not_disturb());
             let game_process_sinks: Vec<Arc<dyn GameProcessEventSink>> = vec![
                 self.game.session_runtime.clone(),
                 self.game.game_log_runtime.clone(),
                 self.game.game_client_runtime.clone(),
                 state.realtime_runtime().clone(),
                 vr_overlay_process_sink,
+                do_not_disturb_process_sink,
             ];
             self.game.process_monitor.start(
                 HostGameProcessMonitorActions::new(self.game.auto_launch.clone()),

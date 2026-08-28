@@ -1,6 +1,5 @@
 pub mod auth;
 pub mod avatars;
-pub mod execute;
 pub mod favorites;
 pub mod friends;
 pub mod groups;

@@ -1,43 +1,16 @@
 use std::cmp::Ordering;
 
 use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
-use serde::Deserialize;
 
-use super::{AppUpdateDeliveryKind, AppUpdateReleaseSnapshot};
+use super::{
+    AppUpdateCatalogAsset, AppUpdateCatalogRelease, AppUpdateDeliveryKind, AppUpdateReleaseSnapshot,
+};
 
 const PREVIEW_LABELS: [&str; 2] = ["preview", "test"];
 pub(super) const TOKYO_UTC_OFFSET_SECONDS: i32 = 9 * 3600;
 const MAX_MAJOR_VERSION: u32 = 99;
 const MAX_MINOR_VERSION: u32 = 999;
 const MAX_PATCH_VERSION: u32 = 999;
-
-#[derive(Debug, Clone, Deserialize, Default)]
-pub(super) struct GitHubReleaseAsset {
-    #[serde(default)]
-    pub(super) state: Option<String>,
-    #[serde(default)]
-    pub(super) name: Option<String>,
-    #[serde(default)]
-    pub(super) browser_download_url: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Default)]
-pub(super) struct GitHubRelease {
-    #[serde(default)]
-    pub(super) tag_name: Option<String>,
-    #[serde(default)]
-    pub(super) assets: Vec<GitHubReleaseAsset>,
-    #[serde(default)]
-    pub(super) html_url: Option<String>,
-    #[serde(default)]
-    pub(super) name: Option<String>,
-    #[serde(default)]
-    pub(super) prerelease: bool,
-    #[serde(default)]
-    pub(super) published_at: Option<String>,
-    #[serde(default)]
-    pub(super) body: Option<String>,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct ParsedReleaseVersion {
@@ -177,7 +150,7 @@ fn manifest_asset_name_for_target(target: &str) -> Option<&'static str> {
     }
 }
 
-fn resolve_manifest_asset(assets: &[GitHubReleaseAsset], target: &str) -> Option<String> {
+fn resolve_manifest_asset(assets: &[AppUpdateCatalogAsset], target: &str) -> Option<String> {
     let manifest_name = manifest_asset_name_for_target(target)?;
     assets
         .iter()
@@ -190,7 +163,7 @@ fn resolve_manifest_asset(assets: &[GitHubReleaseAsset], target: &str) -> Option
 }
 
 pub(super) fn normalize_release(
-    release: &GitHubRelease,
+    release: &AppUpdateCatalogRelease,
     target: Option<&str>,
     require_installer_asset: bool,
 ) -> Option<AppUpdateReleaseSnapshot> {

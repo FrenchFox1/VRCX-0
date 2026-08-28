@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Mutex as AsyncMutex;
 use vrcx_0_application_core::{
-    vrchat_api::{normalize_text, VrchatApiRequest, VrchatScope},
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient, WorldCache,
+    vrchat_api::{normalize_text, VrchatApiResponse},
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WorldCache,
 };
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::response_error_message;
@@ -54,8 +54,7 @@ pub struct FavoriteDetailsHydrateOutput {
 
 struct FavoriteDetailsHydrateDeps<'a> {
     store: &'a dyn super::FavoriteStore,
-    remote_requests: &'a dyn super::FavoriteRemoteRequests,
-    web: &'a WebClient,
+    remote: &'a dyn super::FavoriteRemote,
     auth_scope: &'a RuntimeAuthScope,
     expected_scope: RuntimeAuthScopeSnapshot,
 }
@@ -75,8 +74,7 @@ struct FavoriteWorldCacheState {
 
 struct FavoriteDetailsRuntimeInner {
     store: Arc<dyn super::FavoriteStore>,
-    remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
-    web: Arc<WebClient>,
+    remote: Arc<dyn super::FavoriteRemote>,
     auth_scope: RuntimeAuthScope,
     world_cache: Arc<WorldCache>,
     world_cache_state: Mutex<Option<FavoriteWorldCacheState>>,
@@ -91,16 +89,14 @@ pub struct FavoriteDetailsRuntime {
 impl FavoriteDetailsRuntime {
     pub fn new(
         store: Arc<dyn super::FavoriteStore>,
-        remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
-        web: Arc<WebClient>,
+        remote: Arc<dyn super::FavoriteRemote>,
         auth_scope: RuntimeAuthScope,
         world_cache: Arc<WorldCache>,
     ) -> Self {
         Self {
             inner: Arc::new(FavoriteDetailsRuntimeInner {
                 store,
-                remote_requests,
-                web,
+                remote,
                 auth_scope,
                 world_cache,
                 world_cache_state: Mutex::new(None),
@@ -127,8 +123,7 @@ impl FavoriteDetailsRuntime {
     ) -> Result<FavoriteDetailsHydrateOutput> {
         let deps = FavoriteDetailsHydrateDeps {
             store: self.inner.store.as_ref(),
-            remote_requests: self.inner.remote_requests.as_ref(),
-            web: self.inner.web.as_ref(),
+            remote: self.inner.remote.as_ref(),
             auth_scope: &self.inner.auth_scope,
             expected_scope,
         };
@@ -168,8 +163,7 @@ impl FavoriteDetailsRuntime {
 
         let deps = FavoriteDetailsHydrateDeps {
             store: self.inner.store.as_ref(),
-            remote_requests: self.inner.remote_requests.as_ref(),
-            web: self.inner.web.as_ref(),
+            remote: self.inner.remote.as_ref(),
             auth_scope: &self.inner.auth_scope,
             expected_scope,
         };
@@ -308,17 +302,13 @@ async fn probe_missing_world_details(
 }
 
 async fn probe_world(deps: &FavoriteDetailsHydrateDeps<'_>, id: &str) -> Result<WorldProbeOutcome> {
-    let request = match deps
-        .remote_requests
-        .world(deps.expected_scope.endpoint.clone(), id.to_string())
+    match execute_json(
+        deps,
+        deps.remote
+            .world(deps.expected_scope.endpoint.clone(), id.to_string()),
+    )
+    .await
     {
-        Ok((_, request)) => request,
-        Err(error) => {
-            tracing::warn!("failed to build world availability probe for {id}: {error}");
-            return Ok(WorldProbeOutcome::Failed);
-        }
-    };
-    match execute_json(deps, request).await {
         Ok((status, payload)) => Ok(classify_world_probe(status, payload)),
         Err(error) => {
             ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
@@ -391,15 +381,19 @@ async fn fetch_favorite_world_entities(
     let mut entities = Vec::new();
     let mut offset = 0_i32;
     for _ in 0..FAVORITE_DETAILS_MAX_PAGES {
-        let request = deps.remote_requests.favorite_worlds(
-            deps.expected_scope.endpoint.clone(),
-            FAVORITE_DETAILS_PAGE_SIZE,
-            offset,
-            String::new(),
-            String::new(),
-            String::new(),
-        );
-        let rows = execute_page(deps, request, "favorite world detail sync").await?;
+        let rows = execute_page(
+            deps,
+            deps.remote.favorite_worlds(
+                deps.expected_scope.endpoint.clone(),
+                FAVORITE_DETAILS_PAGE_SIZE,
+                offset,
+                String::new(),
+                String::new(),
+                String::new(),
+            ),
+            "favorite world detail sync",
+        )
+        .await?;
         let page_len = rows.len();
         entities.extend(rows);
         if page_len < FAVORITE_DETAILS_PAGE_SIZE as usize {
@@ -420,13 +414,17 @@ async fn fetch_favorite_avatar_entities(
     for tag in tags {
         let mut offset = 0_i32;
         for _ in 0..FAVORITE_DETAILS_MAX_PAGES {
-            let request = deps.remote_requests.favorite_avatars(
-                deps.expected_scope.endpoint.clone(),
-                FAVORITE_DETAILS_PAGE_SIZE,
-                offset,
-                tag.clone(),
-            );
-            let rows = execute_page(deps, request, "favorite avatar detail sync").await?;
+            let rows = execute_page(
+                deps,
+                deps.remote.favorite_avatars(
+                    deps.expected_scope.endpoint.clone(),
+                    FAVORITE_DETAILS_PAGE_SIZE,
+                    offset,
+                    tag.clone(),
+                ),
+                "favorite avatar detail sync",
+            )
+            .await?;
             let page_len = rows.len();
             merge_avatar_rows(rows, &mut seen_ids, &mut entities);
             if page_len < FAVORITE_DETAILS_PAGE_SIZE as usize {
@@ -440,10 +438,10 @@ async fn fetch_favorite_avatar_entities(
 
 async fn execute_json(
     deps: &FavoriteDetailsHydrateDeps<'_>,
-    request: VrchatApiRequest,
+    response: super::FavoriteRemoteFuture<'_, VrchatApiResponse>,
 ) -> Result<(i32, Value)> {
     ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
-    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
+    let response = response.await?;
     ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
     let payload = serde_json::from_str::<Value>(&response.data)
         .unwrap_or_else(|_| Value::String(response.data.clone()));
@@ -452,10 +450,10 @@ async fn execute_json(
 
 async fn execute_page(
     deps: &FavoriteDetailsHydrateDeps<'_>,
-    request: VrchatApiRequest,
+    response: super::FavoriteRemoteFuture<'_, VrchatApiResponse>,
     action: &str,
 ) -> Result<Vec<Value>> {
-    let (status, payload) = execute_json(deps, request).await?;
+    let (status, payload) = execute_json(deps, response).await?;
     if status >= 400 || payload.get("error").is_some() {
         return Err(Error::Custom(response_error_message(
             &payload, status, action,

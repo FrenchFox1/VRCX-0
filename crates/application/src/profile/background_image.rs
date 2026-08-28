@@ -2,14 +2,12 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use chrono::Utc;
+use futures_util::future::BoxFuture;
 use serde_json::{json, Value};
 use tokio::sync::Notify;
 use vrcx_0_application_core::sleep_until_due_or_stopped;
 use vrcx_0_application_core::RuntimeEventBus;
 use vrcx_0_application_core::TaskStopToken;
-use vrcx_0_application_core::WebClient;
-use vrcx_0_contracts::external_api::{self, ExternalApiScope};
 use vrcx_0_contracts::{background_image as protocol, ConfigMutation};
 use vrcx_0_core::time::now_iso;
 
@@ -22,8 +20,8 @@ mod types;
 
 use helpers::{
     assert_selected_files_available, community_theme_appearance_active, current_utc_date_key,
-    ensure_provider_status, file_name_from_path, files_source, folder_source, is_snapshot_fresh,
-    mode_as_str, normalize_custom_source, normalize_custom_source_struct, normalize_mode,
+    file_name_from_path, files_source, folder_source, is_snapshot_fresh, mode_as_str,
+    normalize_custom_source, normalize_custom_source_struct, normalize_mode,
     normalize_provider_snapshot, projection_update_is_current, random_custom_image_index,
     rotation_delay, DEFAULT_ROTATION_INTERVAL_MINUTES, MAX_ROTATION_INTERVAL_MINUTES,
     MIN_ROTATION_INTERVAL_MINUTES,
@@ -33,6 +31,15 @@ pub use types::{
     BackgroundImageFileResolver, BackgroundImageMode, BackgroundImageProjection,
     BackgroundImageProviderId, BackgroundImageSnapshot, UnavailableBackgroundImageFileResolver,
 };
+
+pub type BackgroundImageRemoteFuture<'a, T> = BoxFuture<'a, Result<T>>;
+
+pub trait BackgroundImageRemote: Send + Sync {
+    fn provider_image(
+        &self,
+        provider_id: BackgroundImageProviderId,
+    ) -> BackgroundImageRemoteFuture<'_, protocol::BackgroundImageProviderImage>;
+}
 
 #[cfg(test)]
 mod tests;
@@ -54,7 +61,7 @@ const KEY_COMMUNITY_THEME_CSS_SNAPSHOT: &str = "VRCX_communityThemeCssSnapshot";
 
 struct BackgroundImageServiceInner {
     config: Arc<dyn ProfileConfigStore>,
-    web: Arc<WebClient>,
+    remote: Arc<dyn BackgroundImageRemote>,
     event_bus: RuntimeEventBus,
     resolver: Arc<dyn BackgroundImageFileResolver>,
     projection: Mutex<BackgroundImageProjection>,
@@ -71,14 +78,14 @@ pub struct BackgroundImageService {
 impl BackgroundImageService {
     pub fn new(
         config: Arc<dyn ProfileConfigStore>,
-        web: Arc<WebClient>,
+        remote: Arc<dyn BackgroundImageRemote>,
         event_bus: RuntimeEventBus,
         resolver: Arc<dyn BackgroundImageFileResolver>,
     ) -> Self {
         Self {
             inner: Arc::new(BackgroundImageServiceInner {
                 config,
-                web,
+                remote,
                 event_bus,
                 resolver,
                 projection: Mutex::new(BackgroundImageProjection {
@@ -226,64 +233,11 @@ impl BackgroundImageService {
         ))
     }
 
-    async fn fetch_provider_json(&self, url: &str) -> Result<(i32, String)> {
-        let response = self
-            .inner
-            .web
-            .execute_external_api(
-                external_api::background_image_get_input(url),
-                ExternalApiScope::BackgroundImage,
-            )
-            .await?;
-        Ok((response.status, response.data))
-    }
-
     async fn fetch_provider_image(
         &self,
         provider_id: BackgroundImageProviderId,
     ) -> Result<protocol::BackgroundImageProviderImage> {
-        let date_key = current_utc_date_key();
-        match provider_id {
-            BackgroundImageProviderId::NasaEpic => {
-                let (status, body) = self
-                    .fetch_provider_json(protocol::NASA_EPIC_METADATA_URL)
-                    .await?;
-                ensure_provider_status(status)?;
-                protocol::parse_nasa_epic_response(&body)
-                    .map_err(|error| Error::Custom(error.to_string()))
-            }
-            BackgroundImageProviderId::AicPublicDomain => {
-                let (status, body) = self
-                    .fetch_provider_json(protocol::AIC_PUBLIC_DOMAIN_SEARCH_URL)
-                    .await?;
-                ensure_provider_status(status)?;
-                protocol::parse_aic_response(&body, &date_key)
-                    .map_err(|error| Error::Custom(error.to_string()))
-            }
-            BackgroundImageProviderId::NasaApodSafe => {
-                let today = Utc::now();
-                for offset in 0..=protocol::NASA_APOD_IMAGE_LOOKBACK_DAYS {
-                    let date = (today - chrono::Duration::days(offset as i64))
-                        .format("%Y-%m-%d")
-                        .to_string();
-                    let (status, body) = self
-                        .fetch_provider_json(&protocol::nasa_apod_request_url(&date))
-                        .await?;
-                    if status == 404 {
-                        continue;
-                    }
-                    ensure_provider_status(status)?;
-                    if let Some(image) = protocol::parse_nasa_apod_response(&body, &date_key)
-                        .map_err(|error| Error::Custom(error.to_string()))?
-                    {
-                        return Ok(image);
-                    }
-                }
-                Err(Error::Custom(
-                    "NASA APOD did not return a copyright-free image in the recent archive.".into(),
-                ))
-            }
-        }
+        self.inner.remote.provider_image(provider_id).await
     }
 
     async fn resolve_provider_snapshot(

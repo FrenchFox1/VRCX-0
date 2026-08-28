@@ -3,6 +3,7 @@ mod remote;
 mod service;
 mod types;
 
+pub use remote::{CommunityThemeRemote, CommunityThemeRemoteFuture};
 pub use service::CommunityThemeService;
 pub use types::{
     CommunityThemeAuthor, CommunityThemeCatalog, CommunityThemeConfigureInput,
@@ -10,8 +11,6 @@ pub use types::{
     CommunityThemeStatsById, CommunityThemeStatsEntry,
 };
 
-#[cfg(test)]
-use remote::{CommunityThemeRemote, CommunityThemeRemoteFuture};
 #[cfg(test)]
 use vrcx_0_contracts::community_theme_protocol as protocol;
 

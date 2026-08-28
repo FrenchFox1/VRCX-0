@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
+use crate::{Error, Result};
 use serde_json::Value;
 use vrcx_0_application::avatars::{
-    self as application, AvatarModerationDeps, AvatarModerationRuntime, AvatarRemoteMutationDeps,
-    AvatarSelectionMutationOutcome, MyAvatarByIdInput, MyAvatarsDeps, MyAvatarsInput,
+    self as application, AvatarModerationDeps, AvatarModerationRuntime, AvatarRemote,
+    AvatarRemoteMutation, AvatarRemoteMutationDeps, AvatarSelectionMutationOutcome,
+    MyAvatarByIdInput, MyAvatarsDeps, MyAvatarsInput,
 };
+use vrcx_0_application::remote::AvatarUpdateRequest as ApplicationAvatarUpdateRequest;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     AuthenticatedMutationContext, AvatarCache, RemoteMutationGate, RuntimeAuthScope,
@@ -15,20 +18,11 @@ use vrcx_0_application_realtime::{
     CURRENT_USER_FALLBACK_AVATAR_RESPONSE_AUTHORITY_FIELDS,
 };
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::avatars::{
-    avatar_delete_input, avatar_impostor_create_input, avatar_impostor_delete_input,
-    avatar_moderation_delete_input, avatar_moderation_send_input, avatar_save_input,
-    avatar_select_fallback_input, avatar_select_input, AvatarUpdateRequest,
-};
-
-use crate::{Error, Result};
 
 #[derive(Clone)]
 pub struct DesktopAvatarRuntime {
     application_adapter: vrcx_0_outbound_adapters::LocalAvatarApplicationAdapter,
-    web: Arc<WebClient>,
-    diagnostics: RuntimeDiagnostics,
-    sync: RuntimeSyncEngine,
+    remote: Arc<dyn AvatarRemote>,
     realtime: Arc<RealtimeHostRuntime>,
     avatar_cache: Arc<AvatarCache>,
     avatar_moderation: AvatarModerationRuntime,
@@ -51,11 +45,14 @@ impl DesktopAvatarRuntime {
     ) -> Self {
         let application_adapter =
             vrcx_0_outbound_adapters::LocalAvatarApplicationAdapter::new(Arc::clone(&db));
-        Self {
-            application_adapter,
+        let remote = Arc::new(vrcx_0_outbound_adapters::VrchatAvatarRemote::new(
             web,
             diagnostics,
             sync,
+        ));
+        Self {
+            application_adapter,
+            remote,
             realtime,
             avatar_cache,
             avatar_moderation,
@@ -67,9 +64,7 @@ impl DesktopAvatarRuntime {
     fn mutation_deps(&self) -> Result<AvatarRemoteMutationDeps<'_>> {
         Ok(AvatarRemoteMutationDeps::new(
             &self.application_adapter,
-            &self.web,
-            &self.diagnostics,
-            &self.sync,
+            self.remote.as_ref(),
             &self.realtime,
             &self.avatar_cache,
             &self.avatar_moderation,
@@ -84,13 +79,7 @@ impl DesktopAvatarRuntime {
     pub async fn moderations(&self) -> Result<VrchatApiResponse> {
         Ok(application::get_avatar_moderations(
             &self.avatar_moderation,
-            AvatarModerationDeps::new(
-                &self.application_adapter,
-                self.web.as_ref(),
-                &self.diagnostics,
-                &self.sync,
-                &self.auth_scope,
-            ),
+            AvatarModerationDeps::new(self.remote.as_ref(), &self.auth_scope),
             "app__vrchat_avatar_moderations_get",
             "Getting avatar moderations.",
         )
@@ -99,14 +88,15 @@ impl DesktopAvatarRuntime {
 
     pub async fn select(&self, avatar_id: String) -> Result<AvatarSelectionMutationOutcome> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_select_input(deps.mutation.scope().endpoint.clone(), avatar_id)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::select_avatar(
             &deps,
             "app__vrchat_avatar_select",
             format!("Selecting avatar {avatar_id}."),
-            request,
+            AvatarRemoteMutation::Select {
+                avatar_id,
+                fallback: false,
+            },
             CURRENT_USER_AVATAR_RESPONSE_AUTHORITY_FIELDS,
         )
         .await?)
@@ -117,14 +107,15 @@ impl DesktopAvatarRuntime {
         avatar_id: String,
     ) -> Result<AvatarSelectionMutationOutcome> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_select_fallback_input(deps.mutation.scope().endpoint.clone(), avatar_id)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::select_avatar(
             &deps,
             "app__vrchat_avatar_select_fallback",
             format!("Selecting fallback avatar {avatar_id}."),
-            request,
+            AvatarRemoteMutation::Select {
+                avatar_id,
+                fallback: true,
+            },
             CURRENT_USER_FALLBACK_AVATAR_RESPONSE_AUTHORITY_FIELDS,
         )
         .await?)
@@ -133,88 +124,78 @@ impl DesktopAvatarRuntime {
     pub async fn save(
         &self,
         avatar_id: String,
-        params: AvatarUpdateRequest,
+        params: ApplicationAvatarUpdateRequest,
     ) -> Result<VrchatApiResponse> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_save_input(deps.mutation.scope().endpoint.clone(), avatar_id, params)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::save_avatar(
             &deps,
             "app__vrchat_avatar_save",
             format!("Saving avatar {avatar_id}."),
-            request,
+            AvatarRemoteMutation::Save { avatar_id, params },
         )
         .await?)
     }
 
     pub async fn delete(&self, avatar_id: String) -> Result<VrchatApiResponse> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_delete_input(deps.mutation.scope().endpoint.clone(), avatar_id)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::delete_avatar(
             &deps,
             avatar_id.clone(),
             "app__vrchat_avatar_delete",
             format!("Deleting avatar {avatar_id}."),
-            request,
+            AvatarRemoteMutation::Delete {
+                avatar_id: avatar_id.clone(),
+            },
         )
         .await?)
     }
 
     pub async fn create_impostor(&self, avatar_id: String) -> Result<VrchatApiResponse> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_impostor_create_input(deps.mutation.scope().endpoint.clone(), avatar_id)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::execute_avatar_remote_mutation(
             &deps,
             "app__vrchat_avatar_impostor_create",
             format!("Creating avatar impostor for {avatar_id}."),
-            request,
+            AvatarRemoteMutation::CreateImpostor { avatar_id },
         )
         .await?)
     }
 
     pub async fn delete_impostor(&self, avatar_id: String) -> Result<VrchatApiResponse> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_impostor_delete_input(deps.mutation.scope().endpoint.clone(), avatar_id)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::execute_avatar_remote_mutation(
             &deps,
             "app__vrchat_avatar_impostor_delete",
             format!("Deleting avatar impostor for {avatar_id}."),
-            request,
+            AvatarRemoteMutation::DeleteImpostor { avatar_id },
         )
         .await?)
     }
 
     pub async fn send_moderation(&self, avatar_id: String) -> Result<VrchatApiResponse> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_moderation_send_input(deps.mutation.scope().endpoint.clone(), avatar_id)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::execute_avatar_moderation_mutation(
             &deps,
             "app__vrchat_avatar_moderation_send",
             format!("Sending avatar moderation block for {avatar_id}."),
-            request,
+            AvatarRemoteMutation::SendModeration { avatar_id },
         )
         .await?)
     }
 
     pub async fn delete_moderation(&self, avatar_id: String) -> Result<VrchatApiResponse> {
         let deps = self.mutation_deps()?;
-        let (avatar_id, request) =
-            avatar_moderation_delete_input(deps.mutation.scope().endpoint.clone(), avatar_id)
-                .map_err(vrcx_0_application_core::Error::from)?;
+        let avatar_id = avatar_id.trim().to_string();
         Ok(application::execute_avatar_moderation_mutation(
             &deps,
             "app__vrchat_avatar_moderation_delete",
             format!("Deleting avatar moderation block for {avatar_id}."),
-            request,
+            AvatarRemoteMutation::DeleteModeration { avatar_id },
         )
         .await?)
     }
@@ -228,8 +209,7 @@ impl DesktopAvatarRuntime {
         }
         Ok(MyAvatarsDeps::new(
             &self.application_adapter,
-            &self.application_adapter,
-            self.web.as_ref(),
+            self.remote.as_ref(),
             &self.auth_scope,
             expected_scope,
         ))

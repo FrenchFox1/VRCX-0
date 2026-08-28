@@ -7,10 +7,11 @@ use vrcx_0_application_activity::notification::{
 };
 use vrcx_0_application_activity::{
     OverlayActivityRuntime, OverlayActivitySink, OverlayActivitySinkRegistry,
+    OverlayActivitySurface,
 };
 use vrcx_0_application_core::{
-    FriendProjection, HostSessionRuntime, ImageCache, RuntimeAuthScope, TaskSupervisor, WebClient,
-    WorldCache,
+    FriendProjection, HostSessionRuntime, ImageCache, RuntimeAuthScope, RuntimeEventBus,
+    TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogSideEffectEvent, GameLogSideEffectObserver, NowPlayingSnapshot, RuntimeSnapshot,
@@ -26,7 +27,7 @@ use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 use crate::host_actions::RuntimeHost;
 use crate::notification::{
     seed_hmd_notifications_default, DesktopNotifier, DesktopNotifierSlot, NotificationDispatcher,
-    NotificationDispatcherDeps,
+    NotificationDispatcherDeps, NotificationDoNotDisturbRuntime,
 };
 
 const AVATAR_PREFETCH_MAX_PATCHES: usize = 8;
@@ -41,6 +42,7 @@ pub(crate) struct DesktopRuntimeServicesDeps {
     pub session: HostSessionRuntime,
     pub world_cache: Arc<WorldCache>,
     pub tasks: TaskSupervisor,
+    pub event_bus: RuntimeEventBus,
     pub overlay_activity: OverlayActivityRuntime,
     pub overlay_activity_sinks: OverlayActivitySinkRegistry,
 }
@@ -56,6 +58,7 @@ pub struct DesktopRuntimeServices {
     tasks: TaskSupervisor,
     overlay_activity: OverlayActivityRuntime,
     overlay_activity_sinks: OverlayActivitySinkRegistry,
+    notification_do_not_disturb: NotificationDoNotDisturbRuntime,
     pub host: RuntimeHost,
     tts: Arc<dyn TtsEngine>,
     notification_desktop_notifier: DesktopNotifierSlot,
@@ -66,13 +69,18 @@ pub struct DesktopRuntimeServices {
 }
 
 impl DesktopRuntimeServices {
-    pub(crate) fn new(deps: DesktopRuntimeServicesDeps) -> Self {
+    pub(crate) fn new(deps: DesktopRuntimeServicesDeps) -> vrcx_0_application_core::Result<Self> {
         if let Err(error) = seed_hmd_notifications_default(&deps.config) {
             tracing::warn!(error = %error, "failed to seed HMD notification preference");
         }
         let tts: Arc<dyn TtsEngine> = Arc::new(SystemTtsEngine::new());
         let notification_desktop_notifier = DesktopNotifierSlot::default();
         let realtime_user_image_resolver = RealtimeUserImageResolverSlot::default();
+        let notification_do_not_disturb = NotificationDoNotDisturbRuntime::new(
+            deps.config.clone(),
+            deps.event_bus,
+            deps.tasks.clone(),
+        )?;
         let notification_sink: Arc<dyn OverlayActivitySink> =
             Arc::new(NotificationDispatcher::new(NotificationDispatcherDeps {
                 session: deps.session.clone(),
@@ -84,9 +92,10 @@ impl DesktopRuntimeServices {
                 desktop: Arc::new(notification_desktop_notifier.clone()),
                 tts: Arc::clone(&tts),
                 tasks: deps.tasks.clone(),
+                do_not_disturb: notification_do_not_disturb.clone(),
             }));
         deps.overlay_activity_sinks.add(notification_sink);
-        Self {
+        Ok(Self {
             web: deps.web,
             image_cache: deps.image_cache,
             config: deps.config,
@@ -97,6 +106,7 @@ impl DesktopRuntimeServices {
             tasks: deps.tasks,
             overlay_activity: deps.overlay_activity,
             overlay_activity_sinks: deps.overlay_activity_sinks,
+            notification_do_not_disturb,
             host: RuntimeHost::new(),
             tts,
             notification_desktop_notifier,
@@ -104,7 +114,7 @@ impl DesktopRuntimeServices {
             realtime_user_image_resolver_owner: Mutex::new(None),
             game_log_snapshot: RuntimeSnapshotStore::default(),
             now_playing: Arc::new(Mutex::new(Arc::new(NowPlayingSnapshot::default()))),
-        }
+        })
     }
 
     pub fn reload_overlay_activity_filters(&self) {
@@ -157,6 +167,10 @@ impl DesktopRuntimeServices {
 
     pub fn tts(&self) -> Arc<dyn TtsEngine> {
         Arc::clone(&self.tts)
+    }
+
+    pub fn notification_do_not_disturb(&self) -> NotificationDoNotDisturbRuntime {
+        self.notification_do_not_disturb.clone()
     }
 
     fn observe_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {
@@ -267,6 +281,12 @@ impl VrOverlayRuntimeServices for DesktopRuntimeServices {
 
     fn overlay_activity(&self) -> OverlayActivityRuntime {
         self.overlay_activity.clone()
+    }
+
+    fn hmd_notifications_allowed(&self) -> bool {
+        !self
+            .notification_do_not_disturb
+            .suppresses(OverlayActivitySurface::Hmd)
     }
 
     fn game_log_snapshot(&self) -> RuntimeSnapshot {

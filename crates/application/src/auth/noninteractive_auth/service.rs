@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
 use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
-use vrcx_0_application_core::WebClient;
 use vrcx_0_contracts::vrchat_api::vrchat_auth_error_message;
 use vrcx_0_core::json::{JsonExt, RawJson};
 use vrcx_0_core::vrchat_endpoints::{
@@ -11,7 +8,7 @@ use vrcx_0_core::vrchat_endpoints::{
 };
 
 use crate::auth::cookie_session::{probe_cookie_session, CookieProbeResult, CookieProbeStage};
-use crate::auth::{LoginApi, WebClientLoginApi};
+use crate::auth::LoginApi;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -57,14 +54,12 @@ pub enum CookieSessionProbe {
 }
 
 pub async fn probe_current_user_from_cookie(
-    web: Arc<WebClient>,
-    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
+    api: &dyn LoginApi,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, requests);
-    probe_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
+    probe_current_user_from_cookie_with_api(api, user_id, endpoint, websocket).await
 }
 
 pub(crate) async fn probe_current_user_from_cookie_with_api(
@@ -83,14 +78,12 @@ pub(crate) async fn probe_current_user_from_cookie_with_api(
 }
 
 pub async fn probe_saved_current_user_from_cookie(
-    web: Arc<WebClient>,
-    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
+    api: &dyn LoginApi,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<CookieSessionProbe, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, requests);
-    probe_saved_current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
+    probe_saved_current_user_from_cookie_with_api(api, user_id, endpoint, websocket).await
 }
 
 pub(crate) async fn probe_saved_current_user_from_cookie_with_api(
@@ -135,14 +128,12 @@ fn map_fallback_probe(
 }
 
 pub async fn current_user_from_cookie(
-    web: Arc<WebClient>,
-    requests: Arc<dyn crate::auth::AuthRemoteRequests>,
+    api: &dyn LoginApi,
     user_id: String,
     endpoint: String,
     websocket: String,
 ) -> std::result::Result<AuthenticatedRuntimeSession, NonInteractiveAuthError> {
-    let api = WebClientLoginApi::new(web, requests);
-    current_user_from_cookie_with_api(&api, user_id, endpoint, websocket).await
+    current_user_from_cookie_with_api(api, user_id, endpoint, websocket).await
 }
 
 pub(crate) async fn current_user_from_cookie_with_api(

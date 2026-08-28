@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vrcx_0_vrchat_client::tools::{CalendarListParams, InviteMessageType};
+use vrcx_0_application::remote::{CalendarListParams, InviteMessageType};
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

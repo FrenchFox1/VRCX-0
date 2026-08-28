@@ -44,6 +44,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { DoNotDisturbMenu } from './DoNotDisturbMenu';
 import {
     AppUptimeValue,
     ClockValue,
@@ -877,6 +878,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                 </PopoverContent>
                             </Popover>
                         ) : null}
+                        <DoNotDisturbMenu />
                         <Tooltip>
                             <TooltipTrigger
                                 render={

@@ -1,15 +1,6 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::media::{
-    asset_upload_input, avatar_gallery_image_upload_input, file_delete_input, files_get_input,
-    inventory_bundle_consume_input, inventory_item_equip_input, inventory_item_update_input,
-    inventory_items_get_input, inventory_slot_unequip_input, inventory_template_get_input,
-    print_delete_input, print_get_input, print_upload_input, prints_get_input, reward_redeem_input,
-    sticker_upload_input, tagged_image_upload_input, user_inventory_item_get_input,
-    MediaAssetUploadRequest,
-};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -17,8 +8,9 @@ use vrcx_0_application::media::{
     InventoryItemsCollectInput, InventoryItemsCollectOutput, LegacyEntityImageKind,
     LegacyEntityImageUploadInput,
 };
+use vrcx_0_application::remote::MediaAssetUploadRequest;
 use vrcx_0_application::social::{PrintFavoriteBulkResult, PrintFavoriteState};
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use super::types::{
     VrchatMediaAvatarGalleryImageUploadInput, VrchatMediaEmojiUploadInput, VrchatMediaFileIdInput,
@@ -29,32 +21,6 @@ use super::types::{
     VrchatMediaProfileDecorationUnequipInput, VrchatMediaRewardRedeemInput,
     VrchatMediaUserInventoryItemInput, VrchatPrintFavoriteSetInput, VrchatPrintFavoritesSetInput,
 };
-
-async fn execute_media_api(
-    state: State<'_, AppState>,
-    command: &str,
-    detail: impl Into<String>,
-    input: VrchatApiRequest,
-) -> Result<VrchatApiResponse, AppError> {
-    super::super::execute::execute_vrchat_api(
-        state,
-        command,
-        detail,
-        input,
-        VrchatScope::VrchatMedia,
-    )
-    .await
-}
-
-fn prepare_media_upload_request(
-    state: &AppState,
-    input: VrchatApiRequest,
-) -> Result<VrchatApiRequest, AppError> {
-    Ok(state
-        .runtime_host()
-        .media()
-        .prepare_media_upload_request(input)?)
-}
 
 async fn run_legacy_entity_image_upload(
     state: State<'_, AppState>,
@@ -84,13 +50,12 @@ pub async fn app__vrchat_media_files_get(
     state: State<'_, AppState>,
     input: VrchatMediaFilesInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state,
-        "app__vrchat_media_files_get",
-        "Getting media files.",
-        files_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .media_files(input.params)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -99,14 +64,12 @@ pub async fn app__vrchat_media_file_delete(
     state: State<'_, AppState>,
     input: VrchatMediaFileIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let file_id = input.file_id.clone();
-    execute_media_api(
-        state,
-        "app__vrchat_media_file_delete",
-        format!("Deleting media file {file_id}."),
-        file_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.file_id)?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .delete_media_file(input.file_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -115,21 +78,12 @@ pub async fn app__vrchat_media_gallery_image_upload(
     state: State<'_, AppState>,
     input: VrchatMediaImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state.clone(),
-        "app__vrchat_media_gallery_image_upload",
-        "Uploading gallery image.",
-        prepare_media_upload_request(
-            &state,
-            tagged_image_upload_input(
-                VRCHAT_API_DEFAULT_ENDPOINT.into(),
-                input.image_data,
-                "gallery",
-                false,
-            )?,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .upload_gallery_image(input.image_data)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -138,20 +92,12 @@ pub async fn app__vrchat_media_avatar_gallery_image_upload(
     state: State<'_, AppState>,
     input: VrchatMediaAvatarGalleryImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state.clone(),
-        "app__vrchat_media_avatar_gallery_image_upload",
-        "Uploading avatar gallery image.",
-        prepare_media_upload_request(
-            &state,
-            avatar_gallery_image_upload_input(
-                VRCHAT_API_DEFAULT_ENDPOINT.into(),
-                input.image_data,
-                input.avatar_id,
-            )?,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .upload_avatar_gallery_image(input.image_data, input.avatar_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -160,21 +106,12 @@ pub async fn app__vrchat_media_vrc_plus_icon_upload(
     state: State<'_, AppState>,
     input: VrchatMediaImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state.clone(),
-        "app__vrchat_media_vrc_plus_icon_upload",
-        "Uploading VRC+ icon.",
-        prepare_media_upload_request(
-            &state,
-            tagged_image_upload_input(
-                VRCHAT_API_DEFAULT_ENDPOINT.into(),
-                input.image_data,
-                "icon",
-                true,
-            )?,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .upload_vrc_plus_icon(input.image_data)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -183,22 +120,12 @@ pub async fn app__vrchat_media_emoji_upload(
     state: State<'_, AppState>,
     input: VrchatMediaEmojiUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state.clone(),
-        "app__vrchat_media_emoji_upload",
-        "Uploading emoji.",
-        prepare_media_upload_request(
-            &state,
-            vrcx_0_vrchat_client::media::image_upload_input(
-                VRCHAT_API_DEFAULT_ENDPOINT.into(),
-                "file/image",
-                input.image_data,
-                input.params,
-                true,
-            )?,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .upload_emoji(input.image_data, input.params)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -207,16 +134,12 @@ pub async fn app__vrchat_media_sticker_upload(
     state: State<'_, AppState>,
     input: VrchatMediaImageUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state.clone(),
-        "app__vrchat_media_sticker_upload",
-        "Uploading sticker.",
-        prepare_media_upload_request(
-            &state,
-            sticker_upload_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.image_data)?,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .upload_sticker(input.image_data)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -225,21 +148,12 @@ pub async fn app__vrchat_media_print_upload(
     state: State<'_, AppState>,
     input: VrchatMediaPrintUploadInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state.clone(),
-        "app__vrchat_media_print_upload",
-        "Uploading print.",
-        prepare_media_upload_request(
-            &state,
-            print_upload_input(
-                VRCHAT_API_DEFAULT_ENDPOINT.into(),
-                input.image_data,
-                input.crop_white_border,
-                input.params,
-            )?,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .upload_print(input.image_data, input.crop_white_border, input.params)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -248,16 +162,12 @@ pub async fn app__vrchat_media_asset_upload(
     state: State<'_, AppState>,
     input: MediaAssetUploadRequest,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (asset_kind, request) = asset_upload_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input)?;
-    let request = prepare_media_upload_request(&state, request)?;
-
-    execute_media_api(
-        state,
-        "app__vrchat_media_asset_upload",
-        format!("Uploading media asset {asset_kind}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .upload_media_asset(input)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -266,14 +176,12 @@ pub async fn app__vrchat_media_prints_get(
     state: State<'_, AppState>,
     input: VrchatMediaPrintsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let user_id = input.user_id.clone();
-    execute_media_api(
-        state,
-        "app__vrchat_media_prints_get",
-        format!("Getting prints for user {user_id}."),
-        prints_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id, input.n)?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .prints(input.user_id, input.n)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -282,14 +190,12 @@ pub async fn app__vrchat_media_print_get(
     state: State<'_, AppState>,
     input: VrchatMediaPrintIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let print_id = input.print_id.clone();
-    execute_media_api(
-        state,
-        "app__vrchat_media_print_get",
-        format!("Getting print {print_id}."),
-        print_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.print_id)?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .print(input.print_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -298,18 +204,12 @@ pub async fn app__vrchat_media_print_delete(
     state: State<'_, AppState>,
     input: VrchatMediaPrintIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let print_id = input.print_id.clone();
     state
         .runtime_host()
-        .media()
-        .ensure_print_deletable(&print_id)?;
-    execute_media_api(
-        state,
-        "app__vrchat_media_print_delete",
-        format!("Deleting print {print_id}."),
-        print_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.print_id)?,
-    )
-    .await
+        .vrchat_remote()
+        .delete_print(input.print_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -350,13 +250,12 @@ pub async fn app__vrchat_media_inventory_items_get(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryItemsInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state,
-        "app__vrchat_media_inventory_items_get",
-        "Getting inventory items.",
-        inventory_items_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.params),
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .inventory_items(input.params)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -378,17 +277,12 @@ pub async fn app__vrchat_media_inventory_template_get(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryTemplateInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let inventory_template_id = input.inventory_template_id.clone();
-    execute_media_api(
-        state,
-        "app__vrchat_media_inventory_template_get",
-        format!("Getting inventory template {inventory_template_id}."),
-        inventory_template_get_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.inventory_template_id,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .inventory_template(input.inventory_template_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -397,19 +291,12 @@ pub async fn app__vrchat_media_profile_decoration_equip(
     state: State<'_, AppState>,
     input: VrchatMediaProfileDecorationEquipInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let inventory_id = input.inventory_id.clone();
-    let request = inventory_item_equip_input(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        input.inventory_id,
-        input.equip_slot,
-    )?;
-    execute_media_api(
-        state,
-        "app__vrchat_media_profile_decoration_equip",
-        format!("Equipping profile decoration {inventory_id}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .equip_profile_decoration(input.inventory_id, input.equip_slot)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -418,18 +305,12 @@ pub async fn app__vrchat_media_profile_decoration_unequip(
     state: State<'_, AppState>,
     input: VrchatMediaProfileDecorationUnequipInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let equip_slot = input.equip_slot;
-    let request = inventory_slot_unequip_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), equip_slot)?;
-    execute_media_api(
-        state,
-        "app__vrchat_media_profile_decoration_unequip",
-        format!(
-            "Unequipping profile decoration slot {}.",
-            equip_slot.as_str()
-        ),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .unequip_profile_decoration(input.equip_slot)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -438,18 +319,12 @@ pub async fn app__vrchat_media_user_inventory_item_get(
     state: State<'_, AppState>,
     input: VrchatMediaUserInventoryItemInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let inventory_id = input.inventory_id.clone();
-    execute_media_api(
-        state,
-        "app__vrchat_media_user_inventory_item_get",
-        format!("Getting inventory item {inventory_id}."),
-        user_inventory_item_get_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.user_id,
-            input.inventory_id,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .user_inventory_item(input.user_id, input.inventory_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -458,18 +333,12 @@ pub async fn app__vrchat_media_inventory_item_update(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryItemUpdateInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let inventory_id = input.inventory_id.clone();
-    execute_media_api(
-        state,
-        "app__vrchat_media_inventory_item_update",
-        format!("Updating inventory item {inventory_id}."),
-        inventory_item_update_input(
-            VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            input.inventory_id,
-            input.params,
-        )?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .update_inventory_item(input.inventory_id, input.params)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -478,14 +347,12 @@ pub async fn app__vrchat_media_inventory_bundle_consume(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryItemInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let inventory_id = input.inventory_id.clone();
-    execute_media_api(
-        state,
-        "app__vrchat_media_inventory_bundle_consume",
-        format!("Consuming inventory bundle {inventory_id}."),
-        inventory_bundle_consume_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.inventory_id)?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .consume_inventory_bundle(input.inventory_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -494,13 +361,12 @@ pub async fn app__vrchat_media_reward_redeem(
     state: State<'_, AppState>,
     input: VrchatMediaRewardRedeemInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_media_api(
-        state,
-        "app__vrchat_media_reward_redeem",
-        "Redeeming reward.",
-        reward_redeem_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.code)?,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .redeem_reward(input.code)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

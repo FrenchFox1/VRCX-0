@@ -30,6 +30,7 @@ type SettingsNotificationsPrefs = Pick<
     | 'afkDesktopToast'
     | 'desktopNotificationSound'
     | 'desktopToast'
+    | 'notificationDoNotDisturbEndOnGameStart'
     | 'notificationTTS'
     | 'notificationTTSNameMode'
     | 'notificationTTSNickName'
@@ -47,6 +48,7 @@ type SettingsNotificationsTabContentProps = {
     onDesktopNotificationSoundChange: (checked: boolean) => void;
     onDesktopToastChange: (value: string) => void;
     onNotificationTtsModeChange: (value: string) => void;
+    onNotificationDoNotDisturbEndOnGameStartChange: (checked: boolean) => void;
     onNotificationTtsNameModeChange: (value: string) => void;
     onNotificationTtsTestChange: (value: string) => void;
     onNotificationTtsTestVisibleChange: (visible: boolean) => void;
@@ -78,6 +80,7 @@ export function SettingsNotificationsTabContent({
     onAfkDesktopToastChange,
     onDesktopNotificationSoundChange,
     onNotificationTtsModeChange,
+    onNotificationDoNotDisturbEndOnGameStartChange,
     onNotificationTtsVoiceChange,
     onNotificationTtsVolumeChange,
     onNotificationTtsNameModeChange,
@@ -99,6 +102,30 @@ export function SettingsNotificationsTabContent({
 
     return (
         <SettingsTabContent value="notifications">
+            <SettingsGroup
+                title={t(
+                    'view.settings.notifications.notifications.do_not_disturb.header'
+                )}
+                description={t(
+                    'view.settings.notifications.notifications.do_not_disturb.description'
+                )}
+            >
+                <Field
+                    label={t(
+                        'view.settings.notifications.notifications.do_not_disturb.end_on_game_start'
+                    )}
+                    description={t(
+                        'view.settings.notifications.notifications.do_not_disturb.end_on_game_start_description'
+                    )}
+                >
+                    <Switch
+                        checked={prefs.notificationDoNotDisturbEndOnGameStart}
+                        onCheckedChange={
+                            onNotificationDoNotDisturbEndOnGameStartChange
+                        }
+                    />
+                </Field>
+            </SettingsGroup>
             <SettingsGroup
                 title={t(
                     'view.settings.notifications.notifications.desktop_notifications.header'

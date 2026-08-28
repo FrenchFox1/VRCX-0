@@ -143,6 +143,11 @@ impl DesktopVrOverlayRuntime {
         self.runtime.reconcile_current();
     }
 
+    pub fn clear_hmd_notifications(&self) {
+        #[cfg(any(windows, target_os = "linux"))]
+        self.runtime.clear_hmd_notifications();
+    }
+
     pub fn stop_detached(&self) {
         #[cfg(any(windows, target_os = "linux"))]
         self.runtime.stop_detached();

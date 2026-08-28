@@ -4,12 +4,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use moka::future::Cache;
-use vrcx_0_application_core::vrchat_api::{
-    execute_api_command, VrchatApiRequest, VrchatApiResponse, VrchatScope,
-};
-use vrcx_0_application_core::{
-    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
-};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::vrchat_endpoints::{normalize_vrchat_api_endpoint, VRCHAT_API_DEFAULT_ENDPOINT};
 
 use vrcx_0_application_core::{Error, Result};
@@ -33,28 +29,13 @@ pub struct AvatarModerationRuntime {
 
 #[derive(Clone, Copy)]
 pub struct AvatarModerationDeps<'a> {
-    pub(crate) remote_requests: &'a dyn super::AvatarRemoteRequests,
-    pub(crate) web: &'a WebClient,
-    pub diagnostics: &'a RuntimeDiagnostics,
-    pub sync: &'a RuntimeSyncEngine,
+    pub(crate) remote: &'a dyn super::AvatarRemote,
     pub auth_scope: &'a RuntimeAuthScope,
 }
 
 impl<'a> AvatarModerationDeps<'a> {
-    pub fn new(
-        remote_requests: &'a dyn super::AvatarRemoteRequests,
-        web: &'a WebClient,
-        diagnostics: &'a RuntimeDiagnostics,
-        sync: &'a RuntimeSyncEngine,
-        auth_scope: &'a RuntimeAuthScope,
-    ) -> Self {
-        Self {
-            remote_requests,
-            web,
-            diagnostics,
-            sync,
-            auth_scope,
-        }
+    pub fn new(remote: &'a dyn super::AvatarRemote, auth_scope: &'a RuntimeAuthScope) -> Self {
+        Self { remote, auth_scope }
     }
 }
 
@@ -116,32 +97,21 @@ pub async fn get_avatar_moderations(
     command: &str,
     detail: impl Into<String>,
 ) -> Result<VrchatApiResponse> {
+    let detail = detail.into();
     let scope = deps.auth_scope.snapshot();
     if !scope.active || scope.current_user_id.trim().is_empty() {
-        return execute_api_command(
-            deps.web,
-            deps.diagnostics,
-            deps.sync,
-            (command, detail),
-            deps.remote_requests
-                .avatar_moderations(VRCHAT_API_DEFAULT_ENDPOINT.into())?,
-            VrchatScope::Vrchat,
-        )
-        .await;
+        return deps
+            .remote
+            .moderations(VRCHAT_API_DEFAULT_ENDPOINT, command, &detail)
+            .await;
     }
     let key = runtime.cache_key(&scope);
     let request_endpoint = scope.endpoint.clone();
     let response = runtime
         .resolve(key, move || async move {
-            execute_api_command(
-                deps.web,
-                deps.diagnostics,
-                deps.sync,
-                (command, detail),
-                deps.remote_requests.avatar_moderations(request_endpoint)?,
-                VrchatScope::Vrchat,
-            )
-            .await
+            deps.remote
+                .moderations(&request_endpoint, command, &detail)
+                .await
         })
         .await?;
     if !deps.auth_scope.snapshot().generation_matches(&scope) {
@@ -156,9 +126,9 @@ pub async fn execute_avatar_moderation_mutation(
     deps: &super::AvatarRemoteMutationDeps<'_>,
     command: &str,
     detail: String,
-    request: VrchatApiRequest,
+    mutation: super::AvatarRemoteMutation,
 ) -> Result<VrchatApiResponse> {
-    let response = super::execute_avatar_remote_mutation(deps, command, detail, request).await?;
+    let response = super::execute_avatar_remote_mutation(deps, command, detail, mutation).await?;
     if (200..300).contains(&response.status) {
         deps.avatar_moderation.invalidate();
     }

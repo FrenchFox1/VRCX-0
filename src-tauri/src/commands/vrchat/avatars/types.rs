@@ -1,7 +1,7 @@
 use serde::Deserialize;
-use vrcx_0_vrchat_client::avatars::AvatarUpdateRequest;
-use vrcx_0_vrchat_client::query::{
-    deserialize_nonnegative_i32, AvatarListSort, QueryOrder, ReleaseStatusFilter,
+use vrcx_0_application::remote::{
+    deserialize_nonnegative_i32, AvatarListSort, AvatarUpdateRequest, QueryOrder,
+    ReleaseStatusFilter,
 };
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

@@ -6,9 +6,9 @@ use futures_util::future::{BoxFuture, FutureExt, Shared};
 use serde_json::Value;
 use tokio::sync::Mutex as AsyncMutex;
 use vrcx_0_application_core::{
-    sleep_until_due_or_stopped, RuntimeEventBus, TaskSupervisor, VrcStatusSnapshot, WebClient,
+    sleep_until_due_or_stopped, RuntimeEventBus, TaskSupervisor, VrcStatusSnapshot,
 };
-use vrcx_0_contracts::external_api::{self, ExternalApiScope};
+use vrcx_0_core::json::RawJson;
 use vrcx_0_core::time::now_iso;
 
 use vrcx_0_application_core::{Error, Result};
@@ -20,8 +20,15 @@ const ISSUE_FALLBACK_STATUS: &str = "VRChat Server Issues";
 
 type SharedRefresh = Shared<BoxFuture<'static, std::result::Result<VrcStatusSnapshot, String>>>;
 
+pub type VrcStatusRemoteFuture<'a> = BoxFuture<'a, Result<RawJson>>;
+
+pub trait VrcStatusRemote: Send + Sync {
+    fn status(&self) -> VrcStatusRemoteFuture<'_>;
+    fn summary(&self) -> VrcStatusRemoteFuture<'_>;
+}
+
 struct VrcStatusServiceInner {
-    web: Arc<WebClient>,
+    remote: Arc<dyn VrcStatusRemote>,
     event_bus: RuntimeEventBus,
     snapshot: Mutex<VrcStatusSnapshot>,
     refresh_in_flight: AsyncMutex<Option<(u64, SharedRefresh)>>,
@@ -35,10 +42,10 @@ pub struct VrcStatusService {
 }
 
 impl VrcStatusService {
-    pub fn new(web: Arc<WebClient>, event_bus: RuntimeEventBus) -> Self {
+    pub fn new(remote: Arc<dyn VrcStatusRemote>, event_bus: RuntimeEventBus) -> Self {
         Self {
             inner: Arc::new(VrcStatusServiceInner {
-                web,
+                remote,
                 event_bus,
                 snapshot: Mutex::new(VrcStatusSnapshot {
                     polling_interval_ms: OK_POLL_MS,
@@ -140,12 +147,12 @@ impl VrcStatusService {
     }
 
     async fn fetch_snapshot(&self) -> Result<VrcStatusSnapshot> {
-        let status = self.fetch_json("status.json").await?;
-        let description = text_at(&status, &["status", "description"]);
-        let indicator = text_at(&status, &["status", "indicator"]);
-        let updated_at = optional_text_at(&status, &["page", "updated_at"]);
-        let summary = match self.fetch_json("summary.json").await {
-            Ok(summary) => summarize_components(&summary),
+        let status = self.inner.remote.status().await?;
+        let description = text_at(status.as_value(), &["status", "description"]);
+        let indicator = text_at(status.as_value(), &["status", "indicator"]);
+        let updated_at = optional_text_at(status.as_value(), &["page", "updated_at"]);
+        let summary = match self.inner.remote.summary().await {
+            Ok(summary) => summarize_components(summary.as_value()),
             Err(error) => {
                 tracing::warn!(error = %error, "failed to fetch VRChat status summary");
                 SummaryIssue::default()
@@ -180,24 +187,6 @@ impl VrcStatusService {
             refreshing: false,
             error: String::new(),
         })
-    }
-
-    async fn fetch_json(&self, path: &str) -> Result<Value> {
-        let response = self
-            .inner
-            .web
-            .execute_external_api(
-                external_api::vrc_status_json_get_input(path),
-                ExternalApiScope::VrcStatus,
-            )
-            .await?;
-        if response.status != 200 {
-            return Err(Error::Custom(format!(
-                "VRChat status request failed ({}).",
-                response.status
-            )));
-        }
-        serde_json::from_str(&response.data).map_err(Error::from)
     }
 
     fn update_snapshot(&self, update: impl FnOnce(&mut VrcStatusSnapshot)) -> VrcStatusSnapshot {
@@ -302,9 +291,63 @@ fn indicator_severity(indicator: &str) -> u8 {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering as TestOrdering};
+
     use serde_json::json;
+    use vrcx_0_core::json::RawJson;
 
     use super::*;
+
+    struct RecordingVrcStatusRemote {
+        status_calls: AtomicUsize,
+        summary_calls: AtomicUsize,
+    }
+
+    impl VrcStatusRemote for RecordingVrcStatusRemote {
+        fn status(&self) -> BoxFuture<'_, Result<RawJson>> {
+            self.status_calls.fetch_add(1, TestOrdering::SeqCst);
+            Box::pin(async {
+                Ok(RawJson::from(json!({
+                    "status": {
+                        "description": ALL_SYSTEMS_OPERATIONAL,
+                        "indicator": "none"
+                    },
+                    "page": { "updated_at": "2026-08-28T00:00:00Z" }
+                })))
+            })
+        }
+
+        fn summary(&self) -> BoxFuture<'_, Result<RawJson>> {
+            self.summary_calls.fetch_add(1, TestOrdering::SeqCst);
+            Box::pin(async {
+                Ok(RawJson::from(json!({
+                    "components": [
+                        { "name": "API", "status": "degraded_performance" },
+                        { "name": "Website", "status": "operational" }
+                    ]
+                })))
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn refresh_uses_semantic_remote_without_web_client() {
+        let remote = Arc::new(RecordingVrcStatusRemote {
+            status_calls: AtomicUsize::new(0),
+            summary_calls: AtomicUsize::new(0),
+        });
+        let service = VrcStatusService::new(remote.clone(), RuntimeEventBus::new());
+
+        let snapshot = service.refresh().await.unwrap();
+
+        assert_eq!(snapshot.status, ISSUE_FALLBACK_STATUS);
+        assert_eq!(snapshot.indicator, "minor");
+        assert_eq!(snapshot.summary, "API");
+        assert_eq!(snapshot.updated_at.as_deref(), Some("2026-08-28T00:00:00Z"));
+        assert_eq!(snapshot.polling_interval_ms, ISSUE_POLL_MS);
+        assert_eq!(remote.status_calls.load(TestOrdering::SeqCst), 1);
+        assert_eq!(remote.summary_calls.load(TestOrdering::SeqCst), 1);
+    }
 
     #[test]
     fn summary_uses_strongest_component_indicator_and_names() {

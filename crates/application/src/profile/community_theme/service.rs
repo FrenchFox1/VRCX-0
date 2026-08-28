@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use sha2::{Digest, Sha256};
 use tokio::sync::Mutex as AsyncMutex;
-use vrcx_0_application_core::{RuntimeEventBus, WebClient};
+use vrcx_0_application_core::RuntimeEventBus;
 use vrcx_0_contracts::community_theme_protocol as protocol;
 use vrcx_0_contracts::ConfigMutation;
 use vrcx_0_core::time::now_iso;
@@ -17,7 +17,7 @@ use super::persistence::{
     override_state_mutations, projection_from_state, CommunityThemeInstalledRecord,
     KEY_LEGACY_CATALOG_URL, KEY_OVERRIDE_ENABLED,
 };
-use super::remote::{protocol_error, CommunityThemeRemote, WebCommunityThemeRemote};
+use super::remote::{protocol_error, CommunityThemeRemote};
 use super::types::{
     CommunityThemeCatalog, CommunityThemeConfigureInput, CommunityThemeInstallMetadata,
     CommunityThemeProjection, CommunityThemeStatsById,
@@ -42,20 +42,6 @@ pub struct CommunityThemeService {
 
 impl CommunityThemeService {
     pub fn new(
-        config: Arc<dyn ProfileConfigStore>,
-        web: Arc<WebClient>,
-        event_bus: RuntimeEventBus,
-        background_image: BackgroundImageService,
-    ) -> Self {
-        Self::with_remote(
-            config,
-            Arc::new(WebCommunityThemeRemote { web }),
-            event_bus,
-            background_image,
-        )
-    }
-
-    pub(super) fn with_remote(
         config: Arc<dyn ProfileConfigStore>,
         remote: Arc<dyn CommunityThemeRemote>,
         event_bus: RuntimeEventBus,

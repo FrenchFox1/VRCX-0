@@ -8,16 +8,15 @@ use serde_json::{Map, Value};
 use vrcx_0_application_core::{
     vrchat_api::{VrchatApiRequest, VrchatScope},
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeOperationStatus,
-    RuntimeSyncEngine, WebClient, WorldCache,
+    RuntimeSyncEngine, WorldCache,
 };
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
 use vrcx_0_contracts::{VrchatJsonResponse, WorldSummaryOutput};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;
 
-use crate::avatars::{
-    get_my_avatars, AvatarRemoteRequests, MyAvatarsDeps, MyAvatarsInput, MyAvatarsStore,
-};
+use crate::avatars::{get_my_avatars, AvatarRemote, MyAvatarsDeps, MyAvatarsInput, MyAvatarsStore};
+use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::OwnerId;
 
@@ -38,8 +37,8 @@ struct QuickSearchRuntimeInner {
     detail_store: Arc<dyn QuickSearchDetailStore>,
     remote_requests: Arc<dyn QuickSearchRemoteRequests>,
     avatar_store: Arc<dyn MyAvatarsStore>,
-    avatar_remote_requests: Arc<dyn AvatarRemoteRequests>,
-    web: Arc<WebClient>,
+    avatar_remote: Arc<dyn AvatarRemote>,
+    remote: Arc<dyn VrchatRequestPort>,
     auth_scope: RuntimeAuthScope,
     diagnostics: RuntimeDiagnostics,
     sync: RuntimeSyncEngine,
@@ -185,7 +184,7 @@ pub struct QuickSearchSources {
     detail_store: Arc<dyn QuickSearchDetailStore>,
     remote_requests: Arc<dyn QuickSearchRemoteRequests>,
     avatar_store: Arc<dyn MyAvatarsStore>,
-    avatar_remote_requests: Arc<dyn AvatarRemoteRequests>,
+    avatar_remote: Arc<dyn AvatarRemote>,
     world_cache: Arc<WorldCache>,
 }
 
@@ -194,14 +193,14 @@ impl QuickSearchSources {
         detail_store: Arc<dyn QuickSearchDetailStore>,
         remote_requests: Arc<dyn QuickSearchRemoteRequests>,
         avatar_store: Arc<dyn MyAvatarsStore>,
-        avatar_remote_requests: Arc<dyn AvatarRemoteRequests>,
+        avatar_remote: Arc<dyn AvatarRemote>,
         world_cache: Arc<WorldCache>,
     ) -> Self {
         Self {
             detail_store,
             remote_requests,
             avatar_store,
-            avatar_remote_requests,
+            avatar_remote,
             world_cache,
         }
     }
@@ -210,7 +209,7 @@ impl QuickSearchSources {
 impl QuickSearchRuntime {
     pub fn new(
         sources: QuickSearchSources,
-        web: Arc<WebClient>,
+        remote: Arc<dyn VrchatRequestPort>,
         auth_scope: RuntimeAuthScope,
         diagnostics: RuntimeDiagnostics,
         sync: RuntimeSyncEngine,
@@ -220,8 +219,8 @@ impl QuickSearchRuntime {
                 detail_store: sources.detail_store,
                 remote_requests: sources.remote_requests,
                 avatar_store: sources.avatar_store,
-                avatar_remote_requests: sources.avatar_remote_requests,
-                web,
+                avatar_remote: sources.avatar_remote,
+                remote,
                 auth_scope,
                 diagnostics,
                 sync,
@@ -457,8 +456,7 @@ async fn load_quick_search_remote_catalog(
 ) -> QuickSearchRemoteCatalog {
     let my_avatars_deps = MyAvatarsDeps {
         store: runtime.avatar_store.as_ref(),
-        remote_requests: runtime.avatar_remote_requests.as_ref(),
-        web: runtime.web.as_ref(),
+        remote: runtime.avatar_remote.as_ref(),
         auth_scope: &runtime.auth_scope,
         expected_scope: scope.clone(),
     };
@@ -590,10 +588,7 @@ async fn execute_rows(
     scope: &RuntimeAuthScopeSnapshot,
     request: VrchatApiRequest,
 ) -> Result<Vec<Value>> {
-    let response = runtime
-        .web
-        .execute_api(request, VrchatScope::Vrchat)
-        .await?;
+    let response = runtime.remote.send(request, VrchatScope::Vrchat).await?;
     ensure_scope_matches(&runtime.auth_scope, scope)?;
     let response = VrchatJsonResponse {
         status: response.status,

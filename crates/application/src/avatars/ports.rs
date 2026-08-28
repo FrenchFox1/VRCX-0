@@ -1,4 +1,6 @@
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
+use futures_util::future::BoxFuture;
+use serde_json::Value;
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 
@@ -16,12 +18,53 @@ pub trait AvatarCacheStore: Send + Sync {
     fn remove_cached_avatar(&self, avatar_id: String) -> Result<()>;
 }
 
-pub trait AvatarRemoteRequests: Send + Sync {
-    fn avatar_moderations(&self, endpoint: String) -> Result<VrchatApiRequest>;
-    fn my_avatar_page(
-        &self,
-        endpoint: String,
+#[derive(Clone, Debug)]
+pub enum AvatarRemoteMutation {
+    Select {
+        avatar_id: String,
+        fallback: bool,
+    },
+    Save {
+        avatar_id: String,
+        params: crate::remote::AvatarUpdateRequest,
+    },
+    Delete {
+        avatar_id: String,
+    },
+    CreateImpostor {
+        avatar_id: String,
+    },
+    DeleteImpostor {
+        avatar_id: String,
+    },
+    SendModeration {
+        avatar_id: String,
+    },
+    DeleteModeration {
+        avatar_id: String,
+    },
+}
+
+pub type AvatarRemoteFuture<'a, T> = BoxFuture<'a, Result<T>>;
+
+pub trait AvatarRemote: Send + Sync {
+    fn moderations<'a>(
+        &'a self,
+        endpoint: &'a str,
+        command: &'a str,
+        detail: &'a str,
+    ) -> AvatarRemoteFuture<'a, VrchatApiResponse>;
+    fn my_avatar_page<'a>(
+        &'a self,
+        endpoint: &'a str,
         page_size: i32,
         offset: i32,
-    ) -> Result<VrchatApiRequest>;
+    ) -> AvatarRemoteFuture<'a, Vec<Value>>;
+    fn mutate<'a>(
+        &'a self,
+        endpoint: &'a str,
+        command: &'a str,
+        detail: &'a str,
+        mutation: AvatarRemoteMutation,
+    ) -> AvatarRemoteFuture<'a, VrchatApiResponse>;
 }

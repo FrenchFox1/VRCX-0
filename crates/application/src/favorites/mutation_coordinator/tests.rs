@@ -1,139 +1,15 @@
 use std::sync::Arc;
 
 use serde_json::json;
-use vrcx_0_application_core::NoopWebClientPort;
 use vrcx_0_contracts::social_aggregates::{FavoriteAction, FavoriteLocalInput};
 
 use super::*;
-use crate::favorites::test_support::TestFavoriteStore;
+use crate::favorites::test_support::{TestFavoriteRemote, TestFavoriteStore};
 use crate::favorites::{
-    FavoriteBulkRemoveItem, FavoriteBulkRemoveSource, FavoriteRemoteRequests, FavoriteStore,
-    FavoriteTransferInput, FavoriteTransferItem, FavoriteTransferLocation, FavoriteTransferMode,
-    FavoriteTransferSource, FavoriteTransferTarget,
+    FavoriteBulkRemoveItem, FavoriteBulkRemoveSource, FavoriteStore, FavoriteTransferInput,
+    FavoriteTransferItem, FavoriteTransferLocation, FavoriteTransferMode, FavoriteTransferSource,
+    FavoriteTransferTarget,
 };
-
-struct TestFavoriteRemoteRequests;
-
-impl FavoriteRemoteRequests for TestFavoriteRemoteRequests {
-    fn list(
-        &self,
-        _endpoint: String,
-        _n: i32,
-        _offset: i32,
-    ) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
-        Default::default()
-    }
-
-    fn limits(&self, _endpoint: String) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
-        Default::default()
-    }
-
-    fn favorite_worlds(
-        &self,
-        _endpoint: String,
-        _n: i32,
-        _offset: i32,
-        _owner_id: String,
-        _user_id: String,
-        _tag: String,
-    ) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
-        Default::default()
-    }
-
-    fn favorite_avatars(
-        &self,
-        _endpoint: String,
-        _n: i32,
-        _offset: i32,
-        _tag: String,
-    ) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
-        Default::default()
-    }
-
-    fn world(
-        &self,
-        _endpoint: String,
-        world_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
-        Ok((world_id, Default::default()))
-    }
-
-    fn avatar(
-        &self,
-        _endpoint: String,
-        avatar_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
-        Ok((avatar_id, Default::default()))
-    }
-
-    fn user(
-        &self,
-        _endpoint: String,
-        user_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
-        Ok((user_id, Default::default()))
-    }
-
-    fn add(
-        &self,
-        _endpoint: String,
-        input: FavoriteRemoteAddInput,
-    ) -> Result<(
-        String,
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
-        Ok((
-            input.kind.as_str().to_string(),
-            input.entity_id,
-            Default::default(),
-        ))
-    }
-
-    fn delete(
-        &self,
-        _endpoint: String,
-        object_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
-        Ok((object_id, Default::default()))
-    }
-
-    fn save_group(
-        &self,
-        _endpoint: String,
-        _current_user_id: String,
-        input: FavoriteRemoteGroupSaveInput,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
-        Ok((input.group, Default::default()))
-    }
-
-    fn clear_group(
-        &self,
-        _endpoint: String,
-        _current_user_id: String,
-        input: FavoriteRemoteGroupClearInput,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
-        Ok((input.group, Default::default()))
-    }
-}
 
 struct Harness {
     coordinator: FavoriteMutationCoordinator,
@@ -143,15 +19,13 @@ struct Harness {
 
 fn harness(_name: &str) -> Harness {
     let store = Arc::new(TestFavoriteStore::default());
-    let web = Arc::new(WebClient::new(NoopWebClientPort));
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
     let event_bus = RuntimeEventBus::new();
     let coordinator = FavoriteMutationCoordinator::new(
         Arc::clone(&store) as Arc<dyn FavoriteStore>,
-        Arc::new(TestFavoriteRemoteRequests),
+        Arc::new(TestFavoriteRemote::default()),
         FavoriteMutationRuntimeDeps::new(
-            web,
             RuntimeDiagnostics::new(),
             RuntimeSyncEngine::new(),
             event_bus.clone(),
@@ -395,4 +269,42 @@ fn import_completion_emits_only_for_successful_import_writes() {
     assert_eq!(events[0].payload["local"], false);
     assert_eq!(events[0].payload["remote"], true);
     assert_eq!(events[0].payload["requiresRefresh"], true);
+}
+
+#[tokio::test]
+async fn remote_group_clear_rejects_scope_replaced_while_request_is_in_flight() {
+    let store = Arc::new(TestFavoriteStore::default());
+    let auth_scope = RuntimeAuthScope::new();
+    auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
+    let event_bus = RuntimeEventBus::new();
+    let coordinator = FavoriteMutationCoordinator::new(
+        Arc::clone(&store) as Arc<dyn FavoriteStore>,
+        Arc::new(TestFavoriteRemote::replacing_scope_on_clear(
+            auth_scope.clone(),
+        )),
+        FavoriteMutationRuntimeDeps::new(
+            RuntimeDiagnostics::new(),
+            RuntimeSyncEngine::new(),
+            event_bus.clone(),
+            auth_scope,
+            Arc::new(RemoteMutationGate::default()),
+        ),
+    );
+
+    let error = coordinator
+        .clear_remote_group(
+            "Remote favorite mutation",
+            FavoriteRemoteGroupClearInput {
+                kind: vrcx_0_application_core::VrchatFavoriteType::World,
+                group: "worlds1".into(),
+            },
+        )
+        .await
+        .unwrap_err();
+
+    assert_eq!(
+        error.to_string(),
+        "Remote favorite mutation authentication scope changed."
+    );
+    assert!(event_bus.take_events_for_test().is_empty());
 }

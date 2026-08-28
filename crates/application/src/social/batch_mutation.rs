@@ -7,10 +7,11 @@ use serde_json::Value;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::response_error_message;
 
+use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
     is_remote_mutation_request,
     vrchat_api::{VrchatApiRequest, VrchatScope},
-    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
+    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
 };
 
 pub const BATCH_MUTATION_MAX_ITEMS: usize = 1_000;
@@ -118,7 +119,7 @@ pub trait BatchMutationRemoteRequests: Send + Sync {
 }
 
 pub struct VrchatBatchMutationActions<'a> {
-    pub(crate) web: &'a WebClient,
+    remote: &'a dyn VrchatRequestPort,
     remote_requests: &'a dyn BatchMutationRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
@@ -127,14 +128,14 @@ pub struct VrchatBatchMutationActions<'a> {
 
 impl<'a> VrchatBatchMutationActions<'a> {
     pub fn new(
-        web: &'a WebClient,
+        remote: &'a dyn VrchatRequestPort,
         remote_requests: &'a dyn BatchMutationRemoteRequests,
         auth_scope: &'a RuntimeAuthScope,
         expected_scope: RuntimeAuthScopeSnapshot,
         remote_mutation_gate: &'a RemoteMutationGate,
     ) -> Self {
         Self {
-            web,
+            remote,
             remote_requests,
             auth_scope,
             expected_scope,
@@ -153,7 +154,7 @@ impl VrchatBatchMutationActions<'_> {
             ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
             request.endpoint = Some(self.expected_scope.endpoint.clone());
         }
-        let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
+        let response = self.remote.send(request, VrchatScope::Vrchat).await?;
         ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
         let payload = serde_json::from_str::<Value>(&response.data)
             .unwrap_or_else(|_| Value::String(response.data.clone()));

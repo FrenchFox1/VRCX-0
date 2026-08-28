@@ -478,6 +478,11 @@
         "tray": {
             "open": "Open VRCX-0",
             "backgroundMode": "Background Mode",
+            "doNotDisturb": "Do Not Disturb",
+            "doNotDisturbOneHour": "1 hour",
+            "doNotDisturbThreeHours": "3 hours",
+            "doNotDisturbUntilStopped": "Until turned off",
+            "doNotDisturbTurnOff": "Turn off",
             "rebuildUi": "Reload UI",
             "disableTheme": "Disable Theme",
             "exit": "Exit"
@@ -2487,6 +2492,12 @@
                     "layout_table": "Notifications Page",
                     "post_update_changelog_prompt": "Show update notes after updating",
                     "post_update_changelog_prompt_description": "Show what's new after an update is installed.",
+                    "do_not_disturb": {
+                        "header": "Do Not Disturb",
+                        "description": "Temporarily pauses desktop notifications, TTS, XSOverlay, OVR Toolkit, and VRCX-0 HMD popups. Webhooks, wrist activity, and notification history continue.",
+                        "end_on_game_start": "Turn off when VRChat starts",
+                        "end_on_game_start_description": "Only applies when VRChat changes from stopped to running. You can turn Do Not Disturb on again while playing."
+                    },
                     "vr_notifications": {
                         "header": "VR Overlay Notifications",
                         "xsoverlay_notifications": "XSOverlay Notifications",
@@ -5795,6 +5806,14 @@
         "add_table_page_size": "Add table page size"
     },
     "status_bar": {
+        "do_not_disturb": "Do Not Disturb",
+        "do_not_disturb_active": "Do Not Disturb is on",
+        "do_not_disturb_until": "Do Not Disturb until {time}",
+        "do_not_disturb_one_hour": "For 1 hour",
+        "do_not_disturb_three_hours": "For 3 hours",
+        "do_not_disturb_until_stopped": "Until I turn it off",
+        "do_not_disturb_turn_off": "Turn off Do Not Disturb",
+        "do_not_disturb_failed": "Failed to update Do Not Disturb",
         "world_collection_importing": "Importing world collection ({progress}/{total})",
         "game": "Game",
         "game_stopped": "VRChat is not running",

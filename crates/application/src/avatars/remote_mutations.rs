@@ -1,10 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use serde::Serialize;
-use vrcx_0_application_core::{
-    vrchat_api::{execute_api_command, VrchatApiRequest, VrchatApiResponse, VrchatScope},
-    AvatarCache, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
-};
+use vrcx_0_application_core::{vrchat_api::VrchatApiResponse, AvatarCache};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 
 use vrcx_0_application_core::{AuthenticatedMutationContext, Result};
@@ -13,9 +10,7 @@ const AVATAR_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 pub struct AvatarRemoteMutationDeps<'a> {
     pub(crate) store: &'a dyn super::AvatarCacheStore,
-    pub(crate) web: &'a WebClient,
-    pub diagnostics: &'a RuntimeDiagnostics,
-    pub sync: &'a RuntimeSyncEngine,
+    pub(crate) remote: &'a dyn super::AvatarRemote,
     pub realtime: &'a Arc<RealtimeHostRuntime>,
     pub avatar_cache: &'a Arc<AvatarCache>,
     pub avatar_moderation: &'a super::AvatarModerationRuntime,
@@ -26,9 +21,7 @@ impl<'a> AvatarRemoteMutationDeps<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         store: &'a dyn super::AvatarCacheStore,
-        web: &'a WebClient,
-        diagnostics: &'a RuntimeDiagnostics,
-        sync: &'a RuntimeSyncEngine,
+        remote: &'a dyn super::AvatarRemote,
         realtime: &'a Arc<RealtimeHostRuntime>,
         avatar_cache: &'a Arc<AvatarCache>,
         avatar_moderation: &'a super::AvatarModerationRuntime,
@@ -36,9 +29,7 @@ impl<'a> AvatarRemoteMutationDeps<'a> {
     ) -> Self {
         Self {
             store,
-            web,
-            diagnostics,
-            sync,
+            remote,
             realtime,
             avatar_cache,
             avatar_moderation,
@@ -58,20 +49,14 @@ pub async fn execute_avatar_remote_mutation(
     deps: &AvatarRemoteMutationDeps<'_>,
     command: &str,
     detail: String,
-    mut request: VrchatApiRequest,
+    mutation: super::AvatarRemoteMutation,
 ) -> Result<VrchatApiResponse> {
-    deps.mutation.apply_scope_to_request(&mut request);
+    let endpoint = deps.mutation.scope().endpoint.clone();
     deps.mutation
         .run_after_wait(AVATAR_REMOTE_MUTATION_INTERVAL, || async move {
-            execute_api_command(
-                deps.web,
-                deps.diagnostics,
-                deps.sync,
-                (command, detail),
-                request,
-                VrchatScope::Vrchat,
-            )
-            .await
+            deps.remote
+                .mutate(&endpoint, command, &detail, mutation)
+                .await
         })
         .await
 }
@@ -80,23 +65,18 @@ pub async fn select_avatar(
     deps: &AvatarRemoteMutationDeps<'_>,
     command: &str,
     detail: String,
-    mut request: VrchatApiRequest,
+    mutation: super::AvatarRemoteMutation,
     response_authority_fields: &[&str],
 ) -> Result<AvatarSelectionMutationOutcome> {
-    deps.mutation.apply_scope_to_request(&mut request);
+    let endpoint = deps.mutation.scope().endpoint.clone();
     let (expectation, response) = deps
         .mutation
         .run_after_wait(AVATAR_REMOTE_MUTATION_INTERVAL, || async move {
             let expectation = deps.realtime.capture_current_user_refresh_expectation();
-            let response = execute_api_command(
-                deps.web,
-                deps.diagnostics,
-                deps.sync,
-                (command, detail),
-                request,
-                VrchatScope::Vrchat,
-            )
-            .await?;
+            let response = deps
+                .remote
+                .mutate(&endpoint, command, &detail, mutation)
+                .await?;
             Ok((expectation, response))
         })
         .await?;
@@ -121,9 +101,9 @@ pub async fn save_avatar(
     deps: &AvatarRemoteMutationDeps<'_>,
     command: &str,
     detail: String,
-    request: VrchatApiRequest,
+    mutation: super::AvatarRemoteMutation,
 ) -> Result<VrchatApiResponse> {
-    let response = execute_avatar_remote_mutation(deps, command, detail, request).await?;
+    let response = execute_avatar_remote_mutation(deps, command, detail, mutation).await?;
     if (200..300).contains(&response.status) {
         if let Ok(avatar) = serde_json::from_str::<serde_json::Value>(&response.data) {
             let scope = deps.mutation.scope();
@@ -139,9 +119,9 @@ pub async fn delete_avatar(
     avatar_id: String,
     command: &str,
     detail: String,
-    request: VrchatApiRequest,
+    mutation: super::AvatarRemoteMutation,
 ) -> Result<VrchatApiResponse> {
-    let response = execute_avatar_remote_mutation(deps, command, detail, request).await?;
+    let response = execute_avatar_remote_mutation(deps, command, detail, mutation).await?;
     if (200..300).contains(&response.status) {
         let scope = deps.mutation.scope();
         deps.avatar_cache

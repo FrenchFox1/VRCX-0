@@ -1,18 +1,15 @@
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use vrcx_0_application_core::RuntimeOperationStatus;
 
+use futures_util::future::BoxFuture;
 use serde::Serialize;
-use serde_json::Value;
 use tokio::sync::Notify;
-use vrcx_0_contracts::external_api::{self, ExternalApiScope};
 
 use vrcx_0_application_core::sleep_until_due_or_stopped;
 use vrcx_0_application_core::RuntimeEventBus;
 use vrcx_0_application_core::TaskSupervisor;
-use vrcx_0_application_core::WebClient;
 use vrcx_0_application_core::{Error, Result, RuntimeBackgroundJobs};
 use vrcx_0_application_core::{
     UpdaterCheckRequest, UpdaterDownloadProgress, UpdaterMetadata, UpdaterPort,
@@ -28,10 +25,9 @@ mod tests;
 
 use self::release::{
     is_release_newer_than_current, is_stable_release_newer_than_preview_build, normalize_release,
-    parse_preview_build_timestamp_ms, version_sort_key, GitHubRelease,
+    parse_preview_build_timestamp_ms, version_sort_key,
 };
 
-const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/Map1en/VRCX-0/releases";
 const APP_UPDATE_CHECK_JOB: &str = "appUpdateCheck";
 
 fn load_updater_proxy_url(config: &dyn ProfileConfigStore) -> Option<String> {
@@ -50,6 +46,30 @@ const CONFIG_AUTO_INSTALL_ON_STARTUP: &str = "autoInstallUpdatesOnStartup";
 pub enum AppUpdateDeliveryKind {
     Tauri,
     Manual,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct AppUpdateCatalogAsset {
+    pub state: Option<String>,
+    pub name: Option<String>,
+    pub browser_download_url: Option<String>,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct AppUpdateCatalogRelease {
+    pub tag_name: Option<String>,
+    pub assets: Vec<AppUpdateCatalogAsset>,
+    pub html_url: Option<String>,
+    pub name: Option<String>,
+    pub prerelease: bool,
+    pub published_at: Option<String>,
+    pub body: Option<String>,
+}
+
+pub type AppUpdateReleaseCatalogFuture<'a> = BoxFuture<'a, Result<Vec<AppUpdateCatalogRelease>>>;
+
+pub trait AppUpdateReleaseCatalogPort: Send + Sync {
+    fn list_releases(&self) -> AppUpdateReleaseCatalogFuture<'_>;
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -102,7 +122,7 @@ pub struct AppUpdateBuildInfo {
 pub type AppUpdateTargetResolver = Arc<dyn Fn() -> Option<String> + Send + Sync>;
 
 pub struct AppUpdateCheckContext<'a> {
-    pub(crate) web: &'a WebClient,
+    pub(crate) release_catalog: &'a dyn AppUpdateReleaseCatalogPort,
     pub app_version: &'a str,
     pub build_label: &'a str,
     pub build_badge: &'a str,
@@ -147,40 +167,12 @@ fn update_available_outcome(
     }
 }
 
-async fn fetch_releases(web: &WebClient) -> Result<Vec<GitHubRelease>> {
-    let mut headers = HashMap::new();
-    headers.insert(
-        "Accept".to_string(),
-        "application/vnd.github+json".to_string(),
-    );
-    let input = external_api::github_releases_get_input(GITHUB_RELEASES_URL, headers);
-    let response = web
-        .execute_external_api(input, ExternalApiScope::UpdateRelease)
-        .await?;
-    if response.status != 200 {
-        return Err(Error::Custom(format!(
-            "GitHub release request failed ({}).",
-            response.status
-        )));
-    }
-
-    let value: Value = serde_json::from_str(&response.data)?;
-    if let Some(message) = value.get("message").and_then(Value::as_str) {
-        return Err(Error::Custom(message.to_string()));
-    }
-    let releases = match value {
-        Value::Array(_) => serde_json::from_value::<Vec<GitHubRelease>>(value)?,
-        other => vec![serde_json::from_value::<GitHubRelease>(other)?],
-    };
-    Ok(releases)
-}
-
 async fn fetch_latest_release(
-    web: &WebClient,
+    release_catalog: &dyn AppUpdateReleaseCatalogPort,
     target: Option<&str>,
     require_installer_asset: bool,
 ) -> Result<Option<AppUpdateReleaseSnapshot>> {
-    let releases = fetch_releases(web).await?;
+    let releases = release_catalog.list_releases().await?;
     let mut normalized: Vec<AppUpdateReleaseSnapshot> = releases
         .iter()
         .filter(|release| !release.prerelease)
@@ -196,7 +188,7 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
     if let Some(preview_build_timestamp_ms) =
         parse_preview_build_timestamp_ms(context.build_label, context.build_badge)
     {
-        let release = fetch_latest_release(context.web, context.target, false).await?;
+        let release = fetch_latest_release(context.release_catalog, context.target, false).await?;
         return Ok(
             match release.filter(|release| {
                 is_stable_release_newer_than_preview_build(release, preview_build_timestamp_ms)
@@ -211,7 +203,7 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
     }
 
     if let Some(target) = context.target {
-        let release = fetch_latest_release(context.web, Some(target), true).await?;
+        let release = fetch_latest_release(context.release_catalog, Some(target), true).await?;
         let Some(release) = release else {
             return Ok(no_update_outcome("No newer installable release was found."));
         };
@@ -248,7 +240,7 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
         });
     }
 
-    let release = fetch_latest_release(context.web, None, false).await?;
+    let release = fetch_latest_release(context.release_catalog, None, false).await?;
     Ok(match release {
         Some(release) if is_release_newer_than_current(&release, context.app_version) => {
             update_available_outcome(
@@ -372,7 +364,7 @@ pub struct AppUpdateInstalledPayload {
 }
 
 struct AppUpdateRuntimeInner {
-    web: Arc<WebClient>,
+    release_catalog: Arc<dyn AppUpdateReleaseCatalogPort>,
     config: Arc<dyn ProfileConfigStore>,
     event_bus: RuntimeEventBus,
     background_jobs: RuntimeBackgroundJobs,
@@ -389,7 +381,7 @@ struct AppUpdateRuntimeInner {
 }
 
 pub struct AppUpdateRuntimeDeps {
-    pub(crate) web: Arc<WebClient>,
+    pub release_catalog: Arc<dyn AppUpdateReleaseCatalogPort>,
     pub(crate) config: Arc<dyn ProfileConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub background_jobs: RuntimeBackgroundJobs,
@@ -402,7 +394,7 @@ pub struct AppUpdateRuntimeDeps {
 impl AppUpdateRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        web: Arc<WebClient>,
+        release_catalog: Arc<dyn AppUpdateReleaseCatalogPort>,
         config: Arc<dyn ProfileConfigStore>,
         event_bus: RuntimeEventBus,
         background_jobs: RuntimeBackgroundJobs,
@@ -412,7 +404,7 @@ impl AppUpdateRuntimeDeps {
         tasks: TaskSupervisor,
     ) -> Self {
         Self {
-            web,
+            release_catalog,
             config,
             event_bus,
             background_jobs,
@@ -433,7 +425,7 @@ impl AppUpdateRuntime {
     pub fn new(deps: AppUpdateRuntimeDeps) -> Self {
         Self {
             inner: Arc::new(AppUpdateRuntimeInner {
-                web: deps.web,
+                release_catalog: deps.release_catalog,
                 config: deps.config,
                 event_bus: deps.event_bus,
                 background_jobs: deps.background_jobs,
@@ -916,7 +908,7 @@ impl AppUpdateRuntime {
         let target = (self.inner.target_resolver)();
         let proxy = load_updater_proxy_url(self.inner.config.as_ref());
         let context = AppUpdateCheckContext {
-            web: &self.inner.web,
+            release_catalog: self.inner.release_catalog.as_ref(),
             app_version: &self.inner.build.app_version,
             build_label: &self.inner.build.build_label,
             build_badge: &self.inner.build.build_badge,

@@ -478,6 +478,11 @@
         "tray": {
             "open": "Abrir VRCX-0",
             "backgroundMode": "Modo em segundo plano",
+            "doNotDisturb": "Não incomodar",
+            "doNotDisturbOneHour": "1 hora",
+            "doNotDisturbThreeHours": "3 horas",
+            "doNotDisturbUntilStopped": "Até desativar",
+            "doNotDisturbTurnOff": "Desativar",
             "rebuildUi": "Recarregar interface",
             "disableTheme": "Desativar tema",
             "exit": "Sair"
@@ -2124,7 +2129,7 @@
                 "submitting": "A enviar…",
                 "thanks": "Obrigado pelo seu feedback!",
                 "cooldown": "Pode enviar novamente dentro de {{seconds}} s",
-                "more_help": "Precisa de resposta ou quer anexar registos?",
+                "more_help": "Precisa de resposta ou quer anexar registros?",
                 "error_generic": "Não foi possível enviar o feedback. Tente novamente mais tarde."
             },
             "ai": {
@@ -2487,6 +2492,12 @@
                     "layout_table": "Página de notificações",
                     "post_update_changelog_prompt": "Mostrar notas de atualização após atualizar",
                     "post_update_changelog_prompt_description": "Mostra as novidades após a instalação de uma atualização.",
+                    "do_not_disturb": {
+                        "header": "Não incomodar",
+                        "description": "Pausa temporariamente as notificações do ambiente de trabalho, TTS, XSOverlay, OVR Toolkit e os avisos HMD do VRCX-0. Os webhooks, a atividade no pulso e o histórico de notificações continuam.",
+                        "end_on_game_start": "Desativar ao iniciar o VRChat",
+                        "end_on_game_start_description": "Aplica-se apenas quando o VRChat passa de fechado para em execução. Pode voltar a ativar Não incomodar durante o jogo."
+                    },
                     "vr_notifications": {
                         "header": "Notificações do Overlay de VR",
                         "xsoverlay_notifications": "Notificações do XSOverlay",
@@ -3336,8 +3347,8 @@
                 "daily_average": "Média diária",
                 "active_days": "Dias jogados",
                 "longest_session": "Sessão mais longa",
-                "change_up": "+{percent}% face ao anterior",
-                "change_down": "-{percent}% face ao anterior"
+                "change_up": "+{percent}% em relação ao anterior",
+                "change_down": "-{percent}% em relação ao anterior"
             },
             "unit": {
                 "hours": "h",
@@ -3363,14 +3374,14 @@
                 "group": "Grupo"
             },
             "empty": {
-                "title": "Ainda sem registos",
+                "title": "Ainda sem registros",
                 "description": "Jogue um pouco de VRChat e a atividade aparecerá aqui."
             },
             "error": {
                 "failed_to_load": "Não foi possível carregar a sua atividade"
             },
             "caveat": {
-                "recorded_since": "Registado apenas com a app aberta."
+                "recorded_since": "Registrado apenas com o app aberto."
             },
             "worlds": {
                 "visit_count": "{count} visitas",
@@ -5792,6 +5803,14 @@
         "add_table_page_size": "Adicionar tamanho de página da tabela"
     },
     "status_bar": {
+        "do_not_disturb": "Não incomodar",
+        "do_not_disturb_active": "Não incomodar está ativo",
+        "do_not_disturb_until": "Não incomodar até {time}",
+        "do_not_disturb_one_hour": "Durante 1 hora",
+        "do_not_disturb_three_hours": "Durante 3 horas",
+        "do_not_disturb_until_stopped": "Até eu desativar",
+        "do_not_disturb_turn_off": "Desativar Não incomodar",
+        "do_not_disturb_failed": "Não foi possível alterar Não incomodar",
         "world_collection_importing": "Importando coleção de mundos ({progress}/{total})",
         "game": "Jogo",
         "game_stopped": "VRChat não está em execução",

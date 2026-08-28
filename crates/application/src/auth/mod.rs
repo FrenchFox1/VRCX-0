@@ -30,12 +30,11 @@ pub use background_auth_recovery::{
     BackgroundAuthRecoveryFuture, BackgroundAuthRecoveryOrchestrator,
 };
 pub use login_session::{
-    AuthRemoteRequests, AutoLoginOutcome, AutoLoginStartInput, AutoLoginTerminalOutcome,
-    LoginFailureKind, LoginRuntimeTransition, LoginSessionCancelInput, LoginSessionEnd,
-    LoginSessionEndRequest, LoginSessionRespondInput, LoginSessionRuntime, LoginSessionStartInput,
-    LoginSessionState, TwoFactorMethod,
+    AuthSessionCookies, AutoLoginOutcome, AutoLoginStartInput, AutoLoginTerminalOutcome, LoginApi,
+    LoginApiFuture, LoginFailureKind, LoginRemoteOperation, LoginRuntimeTransition,
+    LoginSessionCancelInput, LoginSessionEnd, LoginSessionEndRequest, LoginSessionRespondInput,
+    LoginSessionRuntime, LoginSessionStartInput, LoginSessionState, TwoFactorMethod,
 };
-pub(crate) use login_session::{LoginApi, WebClientLoginApi};
 pub use noninteractive_auth::{
     auth_response_error_message, current_user_from_cookie, parse_current_user_response,
     probe_current_user_from_cookie, probe_saved_current_user_from_cookie,

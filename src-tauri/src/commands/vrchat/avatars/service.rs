@@ -1,12 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::avatars::{
-    avatar_file_get_input, avatar_gallery_get_input, avatar_list_by_user_get_input,
-    avatar_styles_get_input, AvatarListByUserGetInput,
-};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -16,31 +11,18 @@ use super::types::{
     VrchatAvatarModerationInput, VrchatAvatarSaveInput,
 };
 
-async fn execute_avatar_api(
-    state: State<'_, AppState>,
-    command: &str,
-    detail: impl Into<String>,
-    input: VrchatApiRequest,
-) -> Result<VrchatApiResponse, AppError> {
-    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
-        .await
-}
-
 #[tauri::command]
 #[specta::specta]
 pub async fn app__vrchat_avatar_gallery_get(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (avatar_id, request) =
-        avatar_gallery_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.avatar_id)?;
-    execute_avatar_api(
-        state,
-        "app__vrchat_avatar_gallery_get",
-        format!("Getting avatar gallery for {avatar_id}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .avatar_gallery(input.avatar_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -49,23 +31,20 @@ pub async fn app__vrchat_avatar_list_by_user_get(
     state: State<'_, AppState>,
     input: VrchatAvatarListByUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (display_user, request) = avatar_list_by_user_get_input(AvatarListByUserGetInput {
-        endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        user_id: input.user_id,
-        user: input.user,
-        n: input.n,
-        offset: input.offset,
-        sort: input.sort,
-        order: input.order,
-        release_status: input.release_status,
-    })?;
-    execute_avatar_api(
-        state,
-        "app__vrchat_avatar_list_by_user_get",
-        format!("Getting avatars for {display_user}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .avatars_by_user(
+            input.user_id,
+            input.user,
+            input.n,
+            input.offset,
+            input.sort,
+            input.order,
+            input.release_status,
+        )
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -73,13 +52,12 @@ pub async fn app__vrchat_avatar_list_by_user_get(
 pub async fn app__vrchat_avatar_styles_get(
     state: State<'_, AppState>,
 ) -> Result<VrchatApiResponse, AppError> {
-    execute_avatar_api(
-        state,
-        "app__vrchat_avatar_styles_get",
-        "Getting avatar styles.",
-        avatar_styles_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .avatar_styles()
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -96,15 +74,12 @@ pub async fn app__vrchat_avatar_file_get(
     state: State<'_, AppState>,
     input: VrchatAvatarFileInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (file_id, request) =
-        avatar_file_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.file_id)?;
-    execute_avatar_api(
-        state,
-        "app__vrchat_avatar_file_get",
-        format!("Getting file {file_id}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .avatar_file(input.file_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

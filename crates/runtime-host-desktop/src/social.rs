@@ -33,6 +33,7 @@ pub struct DesktopSocialRuntime {
     moderation_sync_store: vrcx_0_outbound_adapters::LocalModerationSyncStore,
     moderation_sync_remote_requests: vrcx_0_outbound_adapters::VrchatModerationSyncRemoteRequests,
     web: Arc<WebClient>,
+    remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
     auth_scope: RuntimeAuthScope,
     remote_mutations: Arc<RemoteMutationGate>,
     realtime: Arc<RealtimeHostRuntime>,
@@ -66,6 +67,7 @@ impl DesktopSocialRuntime {
             vrcx_0_outbound_adapters::LocalMediaUploadAdapter::new(Arc::clone(&web));
         let moderation_sync_store =
             vrcx_0_outbound_adapters::LocalModerationSyncStore::new(Arc::clone(&db));
+        let remote = vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(&web));
         Self {
             db,
             realtime_store,
@@ -76,6 +78,7 @@ impl DesktopSocialRuntime {
             moderation_sync_remote_requests:
                 vrcx_0_outbound_adapters::VrchatModerationSyncRemoteRequests,
             web,
+            remote,
             auth_scope,
             remote_mutations,
             realtime,
@@ -92,7 +95,7 @@ impl DesktopSocialRuntime {
         ModerationSyncDeps::new(
             &self.moderation_sync_store,
             &self.moderation_sync_remote_requests,
-            &self.web,
+            &self.remote,
             &self.auth_scope,
             self.remote_mutations.as_ref(),
         )
@@ -102,7 +105,7 @@ impl DesktopSocialRuntime {
         SocialMutationDeps::new(
             self.realtime_store.as_ref(),
             &self.social_mutation_remote_requests,
-            &self.web,
+            &self.remote,
             &self.auth_scope,
             &self.remote_mutations,
             &self.realtime,

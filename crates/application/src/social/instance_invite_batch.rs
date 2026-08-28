@@ -8,10 +8,10 @@ use serde_json::json;
 use serde_json::Value;
 use vrcx_0_core::location::parse_location;
 
+use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
     vrchat_api::{VrchatApiRequest, VrchatScope},
-    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient,
-    WorldCache,
+    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
 };
 
 const INSTANCE_INVITE_MAX_RETRIES: usize = 3;
@@ -127,31 +127,37 @@ pub trait InstanceInviteRemoteRequests: Send + Sync {
     ) -> Result<VrchatApiRequest>;
 }
 
+pub type WorldNameFuture<'a> = BoxFuture<'a, Option<String>>;
+
+pub trait WorldNameResolver: Send + Sync {
+    fn resolve<'a>(&'a self, endpoint: &'a str, world_id: &'a str) -> WorldNameFuture<'a>;
+}
+
 pub struct VrchatInstanceInviteBatchActions<'a> {
-    pub(crate) web: &'a WebClient,
+    remote: &'a dyn VrchatRequestPort,
     remote_requests: &'a dyn InstanceInviteRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
     pub remote_mutation_gate: &'a RemoteMutationGate,
-    pub world_cache: &'a WorldCache,
+    world_names: &'a dyn WorldNameResolver,
 }
 
 impl<'a> VrchatInstanceInviteBatchActions<'a> {
     pub fn new(
-        web: &'a WebClient,
+        remote: &'a dyn VrchatRequestPort,
         remote_requests: &'a dyn InstanceInviteRemoteRequests,
         auth_scope: &'a RuntimeAuthScope,
         expected_scope: RuntimeAuthScopeSnapshot,
         remote_mutation_gate: &'a RemoteMutationGate,
-        world_cache: &'a WorldCache,
+        world_names: &'a dyn WorldNameResolver,
     ) -> Self {
         Self {
-            web,
+            remote,
             remote_requests,
             auth_scope,
             expected_scope,
             remote_mutation_gate,
-            world_cache,
+            world_names,
         }
     }
 }
@@ -169,8 +175,8 @@ impl VrchatInstanceInviteBatchActions<'_> {
             ));
         }
         let response = self
-            .web
-            .execute_api(request, VrchatScope::Vrchat)
+            .remote
+            .send(request, VrchatScope::Vrchat)
             .await
             .map_err(InstanceInviteRemoteError::terminal)?;
         let request_failed = !(200..300).contains(&response.status);
@@ -257,12 +263,8 @@ pub async fn send_instance_invites_batch(
     let (mut context, targets) = normalize_input(input, &actions.expected_scope.current_user_id)?;
     if context.world_name == context.world_id {
         if let Some(world_name) = actions
-            .world_cache
-            .resolve_name(
-                actions.web,
-                &actions.expected_scope.endpoint,
-                &context.world_id,
-            )
+            .world_names
+            .resolve(&actions.expected_scope.endpoint, &context.world_id)
             .await
         {
             context.world_name = world_name;

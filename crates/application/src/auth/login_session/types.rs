@@ -1,104 +1,50 @@
 use futures_util::future::BoxFuture;
 
-use std::sync::Arc;
-
 use serde::Serialize;
-use vrcx_0_application_core::vrchat_api::{
-    VrchatApiRequest as HttpApiRequestInput, VrchatApiResponse as HttpApiExecuteResponse,
-    VrchatScope as ApiScope,
-};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
 pub use vrcx_0_core::TwoFactorMethod;
 
 use crate::auth::{AuthenticatedRuntimeSession, SavedAuthSnapshot};
-use vrcx_0_application_core::{Result, WebClient};
+use vrcx_0_application_core::Result;
 
-pub(crate) type LoginApiFuture<'a> = BoxFuture<'a, Result<HttpApiExecuteResponse>>;
+pub type LoginApiFuture<'a> = BoxFuture<'a, Result<HttpApiExecuteResponse>>;
 
-pub(crate) trait LoginApi: Send + Sync {
-    fn execute<'a>(&'a self, input: HttpApiRequestInput, scope: ApiScope) -> LoginApiFuture<'a>;
-    fn config(&self, endpoint: String) -> HttpApiRequestInput;
-    fn current_user(&self, endpoint: String) -> HttpApiRequestInput;
-    fn basic_login(
-        &self,
+pub enum LoginRemoteOperation {
+    Config {
+        endpoint: String,
+    },
+    CurrentUser {
+        endpoint: String,
+    },
+    BasicLogin {
         endpoint: String,
         username: String,
         password: String,
-        username_required: &'static str,
-        password_required: &'static str,
-    ) -> Result<HttpApiRequestInput>;
-    fn verify_totp(&self, endpoint: String, code: String) -> HttpApiRequestInput;
-    fn verify_email_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput;
-    fn verify_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput;
-}
-
-pub trait AuthRemoteRequests: Send + Sync {
-    fn config(&self, endpoint: String) -> HttpApiRequestInput;
-    fn current_user(&self, endpoint: String) -> HttpApiRequestInput;
-    fn basic_login(
-        &self,
+    },
+    VerifyTotp {
         endpoint: String,
-        username: String,
-        password: String,
-        username_required: &'static str,
-        password_required: &'static str,
-    ) -> Result<HttpApiRequestInput>;
-    fn verify_totp(&self, endpoint: String, code: String) -> HttpApiRequestInput;
-    fn verify_email_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput;
-    fn verify_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput;
-}
-
-pub(crate) struct WebClientLoginApi {
-    web: Arc<WebClient>,
-    requests: Arc<dyn AuthRemoteRequests>,
-}
-
-impl WebClientLoginApi {
-    pub(crate) fn new(web: Arc<WebClient>, requests: Arc<dyn AuthRemoteRequests>) -> Self {
-        Self { web, requests }
-    }
-}
-
-impl LoginApi for WebClientLoginApi {
-    fn execute<'a>(&'a self, input: HttpApiRequestInput, scope: ApiScope) -> LoginApiFuture<'a> {
-        Box::pin(async move { self.web.execute_api(input, scope).await })
-    }
-
-    fn config(&self, endpoint: String) -> HttpApiRequestInput {
-        self.requests.config(endpoint)
-    }
-
-    fn current_user(&self, endpoint: String) -> HttpApiRequestInput {
-        self.requests.current_user(endpoint)
-    }
-
-    fn basic_login(
-        &self,
+        code: String,
+    },
+    VerifyEmailOtp {
         endpoint: String,
-        username: String,
-        password: String,
-        username_required: &'static str,
-        password_required: &'static str,
-    ) -> Result<HttpApiRequestInput> {
-        self.requests.basic_login(
-            endpoint,
-            username,
-            password,
-            username_required,
-            password_required,
-        )
-    }
+        code: String,
+    },
+    VerifyOtp {
+        endpoint: String,
+        code: String,
+    },
+}
 
-    fn verify_totp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        self.requests.verify_totp(endpoint, code)
-    }
+pub trait LoginApi: Send + Sync {
+    fn execute(&self, operation: LoginRemoteOperation) -> LoginApiFuture<'_>;
+}
 
-    fn verify_email_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        self.requests.verify_email_otp(endpoint, code)
-    }
-
-    fn verify_otp(&self, endpoint: String, code: String) -> HttpApiRequestInput {
-        self.requests.verify_otp(endpoint, code)
-    }
+pub trait AuthSessionCookies: Send + Sync {
+    fn get(&self) -> String;
+    fn set(&self, cookies: &str) -> Result<()>;
+    fn clear(&self);
+    fn clear_auth(&self);
+    fn save(&self);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]

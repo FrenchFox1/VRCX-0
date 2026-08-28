@@ -105,9 +105,12 @@ fn test_server(
         Arc::new(vrcx_0_outbound_adapters::LocalFavoriteStore::new(
             Arc::clone(&db),
         )),
-        Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemoteRequests),
-        FavoriteMutationRuntimeDeps::new(
+        Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemote::new(
             Arc::clone(&web),
+            diagnostics.clone(),
+            sync.clone(),
+        )),
+        FavoriteMutationRuntimeDeps::new(
             diagnostics,
             sync.clone(),
             event_bus.clone(),

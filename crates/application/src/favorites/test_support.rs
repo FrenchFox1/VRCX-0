@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Error, Result};
+use vrcx_0_application_core::{vrchat_api::VrchatApiResponse, Error, Result, RuntimeAuthScope};
 use vrcx_0_contracts::{
     social_aggregates::{FavoriteAction, FavoriteLocalInput, FavoriteOutput},
     CacheEntityInput, FavoriteRow,
@@ -9,87 +9,143 @@ use vrcx_0_contracts::{
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 
 use super::{
-    FavoriteCacheKind, FavoriteMoveResult, FavoriteRemoteAddInput, FavoriteRemoteGroupClearInput,
-    FavoriteRemoteGroupSaveInput, FavoriteRemoteRequests, FavoriteStore,
+    FavoriteCacheKind, FavoriteMoveResult, FavoriteRemote, FavoriteRemoteAddInput,
+    FavoriteRemoteCommand, FavoriteRemoteFuture, FavoriteRemoteGroupClearInput,
+    FavoriteRemoteGroupSaveInput, FavoriteStore,
 };
 
-pub(super) struct TestFavoriteRemoteRequests;
+#[derive(Default)]
+pub(super) struct TestFavoriteRemote {
+    replace_scope_on_clear: Option<RuntimeAuthScope>,
+}
 
-impl FavoriteRemoteRequests for TestFavoriteRemoteRequests {
-    fn list(&self, _endpoint: String, _n: i32, _offset: i32) -> VrchatApiRequest {
-        VrchatApiRequest::default()
+impl TestFavoriteRemote {
+    pub(super) fn replacing_scope_on_clear(scope: RuntimeAuthScope) -> Self {
+        Self {
+            replace_scope_on_clear: Some(scope),
+        }
+    }
+}
+
+fn response(data: &str) -> VrchatApiResponse {
+    VrchatApiResponse {
+        status: 200,
+        data: data.into(),
+    }
+}
+
+impl FavoriteRemote for TestFavoriteRemote {
+    fn list<'a>(
+        &'a self,
+        _endpoint: String,
+        _n: i32,
+        _offset: i32,
+        _command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+        Box::pin(async { Ok(response("[]")) })
     }
 
-    fn limits(&self, _endpoint: String) -> VrchatApiRequest {
-        VrchatApiRequest::default()
+    fn limits<'a>(
+        &'a self,
+        _endpoint: String,
+        _command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+        Box::pin(async { Ok(response("{}")) })
     }
 
-    fn favorite_worlds(
-        &self,
+    fn favorite_worlds<'a>(
+        &'a self,
         _endpoint: String,
         _n: i32,
         _offset: i32,
         _owner_id: String,
         _user_id: String,
         _tag: String,
-    ) -> VrchatApiRequest {
-        VrchatApiRequest::default()
+    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+        Box::pin(async { Ok(response("[]")) })
     }
 
-    fn favorite_avatars(
-        &self,
+    fn favorite_avatars<'a>(
+        &'a self,
         _endpoint: String,
         _n: i32,
         _offset: i32,
         _tag: String,
-    ) -> VrchatApiRequest {
-        VrchatApiRequest::default()
+    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+        Box::pin(async { Ok(response("[]")) })
     }
 
-    fn world(&self, _endpoint: String, world_id: String) -> Result<(String, VrchatApiRequest)> {
-        Ok((world_id, VrchatApiRequest::default()))
+    fn world<'a>(
+        &'a self,
+        _endpoint: String,
+        world_id: String,
+    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+        Box::pin(async move { Ok(response(&format!(r#"{{"id":"{world_id}"}}"#))) })
     }
 
-    fn avatar(&self, _endpoint: String, avatar_id: String) -> Result<(String, VrchatApiRequest)> {
-        Ok((avatar_id, VrchatApiRequest::default()))
+    fn avatar<'a>(
+        &'a self,
+        _endpoint: String,
+        avatar_id: String,
+    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+        Box::pin(async move { Ok(response(&format!(r#"{{"id":"{avatar_id}"}}"#))) })
     }
 
-    fn user(&self, _endpoint: String, user_id: String) -> Result<(String, VrchatApiRequest)> {
-        Ok((user_id, VrchatApiRequest::default()))
+    fn user<'a>(
+        &'a self,
+        _endpoint: String,
+        user_id: String,
+    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+        Box::pin(async move { Ok(response(&format!(r#"{{"id":"{user_id}"}}"#))) })
     }
 
-    fn add(
-        &self,
+    fn add<'a>(
+        &'a self,
         _endpoint: String,
         input: FavoriteRemoteAddInput,
-    ) -> Result<(String, String, VrchatApiRequest)> {
-        Ok((
-            input.kind.as_str().to_string(),
-            input.entity_id,
-            VrchatApiRequest::default(),
-        ))
+        _command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, (String, String, VrchatApiResponse)> {
+        Box::pin(async move {
+            let kind = input.kind.as_str().to_string();
+            let entity_id = input.entity_id;
+            let data = serde_json::json!({"id": "fvrt_test", "favoriteId": entity_id});
+            Ok((kind, entity_id, response(&data.to_string())))
+        })
     }
 
-    fn delete(&self, _endpoint: String, object_id: String) -> Result<(String, VrchatApiRequest)> {
-        Ok((object_id, VrchatApiRequest::default()))
+    fn delete<'a>(
+        &'a self,
+        _endpoint: String,
+        object_id: String,
+        _command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)> {
+        Box::pin(async move { Ok((object_id, response("{}"))) })
     }
 
-    fn save_group(
-        &self,
+    fn save_group<'a>(
+        &'a self,
         _endpoint: String,
         _current_user_id: String,
         input: FavoriteRemoteGroupSaveInput,
-    ) -> Result<(String, VrchatApiRequest)> {
-        Ok((input.group, VrchatApiRequest::default()))
+        _command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)> {
+        Box::pin(async move { Ok((input.group, response("{}"))) })
     }
 
-    fn clear_group(
-        &self,
+    fn clear_group<'a>(
+        &'a self,
         _endpoint: String,
         _current_user_id: String,
         input: FavoriteRemoteGroupClearInput,
-    ) -> Result<(String, VrchatApiRequest)> {
-        Ok((input.group, VrchatApiRequest::default()))
+        _command: Option<FavoriteRemoteCommand>,
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)> {
+        let replace_scope_on_clear = self.replace_scope_on_clear.clone();
+        Box::pin(async move {
+            if let Some(scope) = replace_scope_on_clear {
+                scope.set("usr_other", "https://api.vrchat.cloud/api/1");
+            }
+            Ok((input.group, response("{}")))
+        })
     }
 }
 

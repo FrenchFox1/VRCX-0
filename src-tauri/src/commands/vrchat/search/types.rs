@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vrcx_0_vrchat_client::search::{GroupSearchParams, UserSearchParams, WorldSearchParams};
+use vrcx_0_application::remote::{GroupSearchParams, UserSearchParams, WorldSearchParams};
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

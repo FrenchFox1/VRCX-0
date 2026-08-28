@@ -13,8 +13,5 @@ pub use runtime::{
     LoginRuntimeTransition, LoginSessionCancelInput, LoginSessionEnd, LoginSessionEndRequest,
     LoginSessionRespondInput, LoginSessionRuntime, LoginSessionStartInput,
 };
-pub use types::AuthRemoteRequests;
-#[cfg(test)]
-pub(crate) use types::LoginApiFuture;
-pub(crate) use types::{LoginApi, WebClientLoginApi};
+pub use types::{AuthSessionCookies, LoginApi, LoginApiFuture, LoginRemoteOperation};
 pub use types::{LoginFailureKind, LoginSessionState, TwoFactorMethod};

@@ -478,6 +478,11 @@
         "tray": {
             "open": "Ouvrir VRCX-0",
             "backgroundMode": "Mode arrière-plan",
+            "doNotDisturb": "Do Not Disturb",
+            "doNotDisturbOneHour": "1 hour",
+            "doNotDisturbThreeHours": "3 hours",
+            "doNotDisturbUntilStopped": "Until turned off",
+            "doNotDisturbTurnOff": "Turn off",
             "rebuildUi": "Recharger l'interface",
             "disableTheme": "Désactiver le thème",
             "exit": "Quitter"

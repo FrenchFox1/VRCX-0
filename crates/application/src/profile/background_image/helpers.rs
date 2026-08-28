@@ -40,20 +40,6 @@ pub(super) fn community_theme_appearance_active(config: &dyn ProfileConfigStore)
         .is_empty())
 }
 
-pub(super) fn ensure_provider_status(status: i32) -> Result<()> {
-    if status == 429 {
-        return Err(Error::Custom(
-            "Background Image provider rate limit reached.".into(),
-        ));
-    }
-    if !(200..300).contains(&status) {
-        return Err(Error::Custom(format!(
-            "Failed to load Background Image provider: {status}"
-        )));
-    }
-    Ok(())
-}
-
 pub(super) fn mode_as_str(mode: BackgroundImageMode) -> &'static str {
     match mode {
         BackgroundImageMode::Off => "off",

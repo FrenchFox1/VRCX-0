@@ -1,6 +1,4 @@
-use std::path::PathBuf;
-
-use crate::auth::test_support::MemoryAuthCredentialStore;
+use crate::auth::test_support::{MemoryAuthCredentialStore, MemoryAuthSessionCookies};
 use crate::auth::AuthCredentialStore;
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde_json::json;
@@ -11,30 +9,6 @@ use super::super::storage::{
 };
 use super::super::types::LoginSuccessRecordInput;
 use super::record_login_success;
-use vrcx_0_application_core::{MemoryCookieWebClientPort, WebClient};
-
-struct TestDir {
-    path: PathBuf,
-}
-
-impl TestDir {
-    fn new(name: &str) -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("vrcx-0-{name}-{}-{nonce}", std::process::id()));
-        std::fs::create_dir_all(&path).unwrap();
-        Self { path }
-    }
-}
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.path);
-    }
-}
 
 fn contains_secret_key(value: &serde_json::Value) -> bool {
     match value {
@@ -48,7 +22,6 @@ fn contains_secret_key(value: &serde_json::Value) -> bool {
 
 #[test]
 fn saved_snapshot_redacts_passwords_and_cookies() -> vrcx_0_application_core::Result<()> {
-    let _dir = TestDir::new("auth-snapshot-redacted");
     let config = MemoryAuthCredentialStore::default();
     config.set_string(
         SAVED_CREDENTIALS_KEY,
@@ -99,16 +72,15 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> vrcx_0_application_core::Re
     Ok(())
 }
 
-fn test_web_client(_dir: &TestDir) -> vrcx_0_application_core::Result<WebClient> {
-    Ok(WebClient::new(MemoryCookieWebClientPort::default()))
+fn test_cookie_store() -> MemoryAuthSessionCookies {
+    MemoryAuthSessionCookies::default()
 }
 
 #[test]
 fn record_login_success_with_save_credentials_captures_live_cookies(
 ) -> vrcx_0_application_core::Result<()> {
-    let dir = TestDir::new("login-success-save-live-cookies");
     let config = MemoryAuthCredentialStore::default();
-    let web = test_web_client(&dir)?;
+    let web = test_cookie_store();
     let cookie_payload = B64.encode(
         serde_json::to_vec(&json!([
             {"Name": "auth", "Value": "new-account", "Domain": ".vrchat.cloud", "Path": "/"},
@@ -145,9 +117,8 @@ fn record_login_success_with_save_credentials_captures_live_cookies(
 #[test]
 fn record_login_success_without_save_credentials_does_not_persist_a_new_entry(
 ) -> vrcx_0_application_core::Result<()> {
-    let dir = TestDir::new("login-success-no-save");
     let config = MemoryAuthCredentialStore::default();
-    let web = test_web_client(&dir)?;
+    let web = test_cookie_store();
 
     record_login_success(
         &config,
@@ -176,9 +147,8 @@ fn record_login_success_without_save_credentials_does_not_persist_a_new_entry(
 #[test]
 fn record_login_success_without_save_credentials_refreshes_an_existing_record_in_place(
 ) -> vrcx_0_application_core::Result<()> {
-    let dir = TestDir::new("login-success-refresh-existing");
     let config = MemoryAuthCredentialStore::default();
-    let web = test_web_client(&dir)?;
+    let web = test_cookie_store();
 
     config.set_string(
         SAVED_CREDENTIALS_KEY,
@@ -222,7 +192,7 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
     );
     assert!(
         record.cookies.is_none(),
-        "cookies must be synced from the live WebClient, which has none in this test"
+        "cookies must be synced from the live cookie store, which has none in this test"
     );
     Ok(())
 }
@@ -230,7 +200,6 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
 #[test]
 fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
 ) -> vrcx_0_application_core::Result<()> {
-    let _dir = TestDir::new("auth-typed-legacy-decode");
     let config = MemoryAuthCredentialStore::default();
     config.set_string(
         SAVED_CREDENTIALS_KEY,

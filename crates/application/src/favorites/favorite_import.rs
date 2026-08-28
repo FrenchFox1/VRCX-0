@@ -11,8 +11,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    FavoriteEntityKind, TaskStopToken, VrchatFavoriteType,
+    vrchat_api::VrchatApiResponse, FavoriteEntityKind, TaskStopToken, VrchatFavoriteType,
 };
 use vrcx_0_contracts::CacheEntityInput;
 use vrcx_0_core::json::RawJson;
@@ -23,7 +22,7 @@ use super::local_favorites::read_config_string_array;
 
 use vrcx_0_application_core::{
     Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
-    TaskSupervisor, WebClient, WorldCache,
+    TaskSupervisor, WorldCache,
 };
 
 use super::local_favorites::local_group_config_key;
@@ -143,8 +142,7 @@ impl Default for FavoriteImportStatus {
 pub struct FavoriteImportRuntime {
     shared: Arc<FavoriteImportRuntimeShared>,
     store: Arc<dyn super::FavoriteStore>,
-    remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
-    web: Arc<WebClient>,
+    remote: Arc<dyn super::FavoriteRemote>,
     world_cache: Arc<WorldCache>,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
@@ -155,8 +153,7 @@ pub struct FavoriteImportRuntime {
 
 pub struct FavoriteImportRuntimeDeps {
     pub store: Arc<dyn super::FavoriteStore>,
-    pub remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
-    pub(crate) web: Arc<WebClient>,
+    pub remote: Arc<dyn super::FavoriteRemote>,
     pub world_cache: Arc<WorldCache>,
     pub event_bus: RuntimeEventBus,
     pub tasks: TaskSupervisor,
@@ -169,8 +166,7 @@ impl FavoriteImportRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         store: Arc<dyn super::FavoriteStore>,
-        remote_requests: Arc<dyn super::FavoriteRemoteRequests>,
-        web: Arc<WebClient>,
+        remote: Arc<dyn super::FavoriteRemote>,
         world_cache: Arc<WorldCache>,
         event_bus: RuntimeEventBus,
         tasks: TaskSupervisor,
@@ -180,8 +176,7 @@ impl FavoriteImportRuntimeDeps {
     ) -> Self {
         Self {
             store,
-            remote_requests,
-            web,
+            remote,
             world_cache,
             event_bus,
             tasks,
@@ -219,8 +214,7 @@ impl FavoriteImportRuntime {
                 generation: AtomicU64::new(0),
             }),
             store: deps.store,
-            remote_requests: deps.remote_requests,
-            web: deps.web,
+            remote: deps.remote,
             world_cache: deps.world_cache,
             event_bus: deps.event_bus,
             tasks: deps.tasks,
@@ -422,26 +416,24 @@ impl FavoriteImportRuntime {
         id: &str,
     ) -> Result<Option<RawJson>> {
         ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
-        let request = match kind {
+        let response = match kind {
             FavoriteImportKind::Avatar => {
-                self.remote_requests
-                    .avatar(scope.endpoint.clone(), id.to_string())?
-                    .1
+                self.remote
+                    .avatar(scope.endpoint.clone(), id.to_string())
+                    .await?
             }
             FavoriteImportKind::World => {
-                self.remote_requests
-                    .world(scope.endpoint.clone(), id.to_string())?
-                    .1
+                self.remote
+                    .world(scope.endpoint.clone(), id.to_string())
+                    .await?
             }
             FavoriteImportKind::Friend => {
-                self.remote_requests
-                    .user(scope.endpoint.clone(), id.to_string())?
-                    .1
+                self.remote
+                    .user(scope.endpoint.clone(), id.to_string())
+                    .await?
             }
         };
-        let payload = self
-            .execute_json(scope, request, "favorite import profile lookup")
-            .await?;
+        let payload = self.parse_response(scope, response, "favorite import profile lookup")?;
         let response_id = payload
             .get("id")
             .and_then(Value::as_str)
@@ -505,20 +497,23 @@ impl FavoriteImportRuntime {
                 let favorite_type = target.favorite_type.ok_or_else(|| {
                     Error::Custom("Remote favorite import requires a favorite type.".into())
                 })?;
-                let (_, _, request) = self.remote_requests.add(
-                    scope.endpoint.clone(),
-                    super::FavoriteRemoteAddInput {
-                        kind: favorite_type,
-                        entity_id: id.to_string(),
-                        tags: target.group.clone(),
-                    },
-                )?;
                 self.remote_mutations
                     .wait(scope, FAVORITE_IMPORT_INTERVAL)
                     .await;
                 ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
-                self.execute_json(scope, request, "favorite import remote add")
+                let (_, _, response) = self
+                    .remote
+                    .add(
+                        scope.endpoint.clone(),
+                        super::FavoriteRemoteAddInput {
+                            kind: favorite_type,
+                            entity_id: id.to_string(),
+                            tags: target.group.clone(),
+                        },
+                        None,
+                    )
                     .await?;
+                self.parse_response(scope, response, "favorite import remote add")?;
                 remote_ids.insert(id.to_string());
             }
         }
@@ -542,14 +537,17 @@ impl FavoriteImportRuntime {
                 return Err(Error::Custom("Favorite import was cancelled.".into()));
             }
             ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
-            let request = self.remote_requests.list(
-                scope.endpoint.clone(),
-                FAVORITE_IMPORT_PAGE_SIZE,
-                offset,
-            );
-            let payload = self
-                .execute_json(scope, request, "favorite import remote validation")
+            let response = self
+                .remote
+                .list(
+                    scope.endpoint.clone(),
+                    FAVORITE_IMPORT_PAGE_SIZE,
+                    offset,
+                    None,
+                )
                 .await?;
+            let payload =
+                self.parse_response(scope, response, "favorite import remote validation")?;
             let rows = payload.as_array().cloned().unwrap_or_default();
             let page_len = rows.len();
             for row in rows {
@@ -584,14 +582,12 @@ impl FavoriteImportRuntime {
         }
     }
 
-    async fn execute_json(
+    fn parse_response(
         &self,
         scope: &RuntimeAuthScopeSnapshot,
-        request: VrchatApiRequest,
+        response: VrchatApiResponse,
         action: &str,
     ) -> Result<Value> {
-        ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
-        let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
         ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
         let payload = serde_json::from_str::<Value>(&response.data)
             .unwrap_or_else(|_| Value::String(response.data.clone()));

@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
+use crate::{VrchatLoginApi, WebAuthSessionCookies};
 use vrcx_0_application::auth::{
     probe_current_user_from_cookie, probe_saved_current_user_from_cookie, record_login_success,
     record_logout, saved_credential_login_start, saved_credential_session_data, saved_snapshot,
-    AuthCredentialStore, AuthRemoteRequests, LoginSuccessRecordInput, LogoutRecordInput,
+    AuthCredentialStore, AuthSessionCookies, LoginApi, LoginSuccessRecordInput, LogoutRecordInput,
     NonInteractiveAuthActions, NonInteractiveAuthProbeFuture, NonInteractiveAuthResponseFuture,
     SavedAuthSnapshot, SavedCredentialLoginStartInput, SavedCredentialSessionData,
 };
@@ -11,19 +12,19 @@ use vrcx_0_application_core::{Result, WebClient};
 
 pub struct LocalNonInteractiveAuthActions {
     web: Arc<WebClient>,
-    requests: Arc<dyn AuthRemoteRequests>,
+    api: Arc<dyn LoginApi>,
+    cookies: WebAuthSessionCookies,
     credentials: Arc<dyn AuthCredentialStore>,
 }
 
 impl LocalNonInteractiveAuthActions {
-    pub fn new(
-        web: Arc<WebClient>,
-        requests: Arc<dyn AuthRemoteRequests>,
-        credentials: Arc<dyn AuthCredentialStore>,
-    ) -> Self {
+    pub fn new(web: Arc<WebClient>, credentials: Arc<dyn AuthCredentialStore>) -> Self {
+        let api = Arc::new(VrchatLoginApi::new(Arc::clone(&web)));
+        let cookies = WebAuthSessionCookies::new(Arc::clone(&web));
         Self {
             web,
-            requests,
+            api,
+            cookies,
             credentials,
         }
     }
@@ -48,15 +49,13 @@ impl NonInteractiveAuthActions for LocalNonInteractiveAuthActions {
         endpoint: String,
         websocket: String,
     ) -> NonInteractiveAuthProbeFuture<'a> {
-        let web = Arc::clone(&self.web);
-        let requests = Arc::clone(&self.requests);
         Box::pin(async move {
-            probe_current_user_from_cookie(web, requests, user_id, endpoint, websocket).await
+            probe_current_user_from_cookie(self.api.as_ref(), user_id, endpoint, websocket).await
         })
     }
 
     fn restore_cookies(&self, cookies: &str) -> Result<()> {
-        self.web.set_cookies(cookies)
+        self.cookies.set(cookies)
     }
 
     fn probe_saved_current_user<'a>(
@@ -65,10 +64,9 @@ impl NonInteractiveAuthActions for LocalNonInteractiveAuthActions {
         endpoint: String,
         websocket: String,
     ) -> NonInteractiveAuthProbeFuture<'a> {
-        let web = Arc::clone(&self.web);
-        let requests = Arc::clone(&self.requests);
         Box::pin(async move {
-            probe_saved_current_user_from_cookie(web, requests, user_id, endpoint, websocket).await
+            probe_saved_current_user_from_cookie(self.api.as_ref(), user_id, endpoint, websocket)
+                .await
         })
     }
 
@@ -76,23 +74,27 @@ impl NonInteractiveAuthActions for LocalNonInteractiveAuthActions {
         &'a self,
         input: SavedCredentialLoginStartInput,
     ) -> NonInteractiveAuthResponseFuture<'a> {
-        let web = Arc::clone(&self.web);
-        let requests = Arc::clone(&self.requests);
         Box::pin(async move {
-            saved_credential_login_start(self.credentials.as_ref(), web, requests, input).await
+            saved_credential_login_start(
+                self.credentials.as_ref(),
+                &self.cookies,
+                self.api.as_ref(),
+                input,
+            )
+            .await
         })
     }
 
     fn record_login_success(&self, input: LoginSuccessRecordInput) -> Result<()> {
-        record_login_success(self.credentials.as_ref(), self.web.as_ref(), input).map(|_| ())
+        record_login_success(self.credentials.as_ref(), &self.cookies, input).map(|_| ())
     }
 
     fn clear_browser_session(&self) {
-        self.web.clear_cookies();
-        self.web.save_cookies();
+        self.cookies.clear();
+        self.cookies.save();
     }
 
     fn record_logout(&self, input: LogoutRecordInput) -> Result<()> {
-        record_logout(self.credentials.as_ref(), self.web.as_ref(), input).map(|_| ())
+        record_logout(self.credentials.as_ref(), &self.cookies, input).map(|_| ())
     }
 }

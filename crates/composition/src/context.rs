@@ -2,11 +2,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use vrcx_0_application::auth::{
-    AuthCredentialStore, AuthRemoteRequests, LoginSessionRuntime, NonInteractiveAuthRuntime,
+    AuthCredentialStore, AuthSessionCookies, LoginApi, LoginSessionRuntime,
+    NonInteractiveAuthRuntime,
 };
 use vrcx_0_application::avatars::AvatarModerationRuntime;
 use vrcx_0_application::favorites::{
-    FavoriteMutationCoordinator, FavoriteMutationRuntimeDeps, FavoriteRemoteRequests, FavoriteStore,
+    FavoriteMutationCoordinator, FavoriteMutationRuntimeDeps, FavoriteRemote, FavoriteStore,
 };
 use vrcx_0_application::profile::VrcStatusService;
 use vrcx_0_application::social::{
@@ -56,11 +57,12 @@ pub(crate) struct RuntimeHostContext {
     pub(crate) remote_mutations: Arc<RemoteMutationGate>,
     pub(crate) favorite_mutations: FavoriteMutationCoordinator,
     pub(crate) favorite_store: Arc<dyn FavoriteStore>,
-    pub(crate) favorite_remote_requests: Arc<dyn FavoriteRemoteRequests>,
+    pub(crate) favorite_remote: Arc<dyn FavoriteRemote>,
     pub(crate) vrc_status: VrcStatusService,
     pub(crate) login_session: LoginSessionRuntime,
     pub(crate) auth_credentials: Arc<dyn AuthCredentialStore>,
-    pub(crate) auth_requests: Arc<dyn AuthRemoteRequests>,
+    pub(crate) login_api: Arc<dyn LoginApi>,
+    pub(crate) auth_cookies: Arc<dyn AuthSessionCookies>,
     pub(crate) noninteractive_auth: NonInteractiveAuthRuntime,
     pub(crate) avatar_cache: Arc<AvatarCache>,
     pub(crate) avatar_moderation: AvatarModerationRuntime,
@@ -237,12 +239,15 @@ impl RuntimeHostContext {
         let auth_credentials: Arc<dyn AuthCredentialStore> = Arc::new(
             vrcx_0_outbound_adapters::LocalAuthCredentialStore::from_repository(config.clone()),
         );
-        let auth_requests: Arc<dyn AuthRemoteRequests> =
-            Arc::new(vrcx_0_outbound_adapters::VrchatAuthRemoteRequests);
+        let login_api: Arc<dyn LoginApi> = Arc::new(vrcx_0_outbound_adapters::VrchatLoginApi::new(
+            Arc::clone(&web),
+        ));
+        let auth_cookies: Arc<dyn AuthSessionCookies> = Arc::new(
+            vrcx_0_outbound_adapters::WebAuthSessionCookies::new(Arc::clone(&web)),
+        );
         let noninteractive_auth = NonInteractiveAuthRuntime::new(Arc::new(
             vrcx_0_outbound_adapters::LocalNonInteractiveAuthActions::new(
                 Arc::clone(&web),
-                Arc::clone(&auth_requests),
                 Arc::clone(&auth_credentials),
             ),
         ));
@@ -287,7 +292,12 @@ impl RuntimeHostContext {
             monitor: webhook_delivery_monitor.clone(),
             tasks: tasks.clone(),
         });
-        let vrc_status = VrcStatusService::new(Arc::clone(&web), event_bus.clone());
+        let vrc_status = VrcStatusService::new(
+            Arc::new(vrcx_0_outbound_adapters::VrcStatusRemoteAdapter::new(
+                Arc::clone(&web),
+            )),
+            event_bus.clone(),
+        );
         overlay_activity_sinks.add(Arc::new(NotificationWebhookSink::new(
             NotificationWebhookSinkDeps {
                 session: session.clone(),
@@ -310,13 +320,16 @@ impl RuntimeHostContext {
         let favorite_store: Arc<dyn FavoriteStore> = Arc::new(
             vrcx_0_outbound_adapters::LocalFavoriteStore::new(Arc::clone(&db)),
         );
-        let favorite_remote_requests: Arc<dyn FavoriteRemoteRequests> =
-            Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemoteRequests);
+        let favorite_remote: Arc<dyn FavoriteRemote> =
+            Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemote::new(
+                Arc::clone(&web),
+                diagnostics.clone(),
+                sync.clone(),
+            ));
         let favorite_mutations = FavoriteMutationCoordinator::new(
             Arc::clone(&favorite_store),
-            Arc::clone(&favorite_remote_requests),
+            Arc::clone(&favorite_remote),
             FavoriteMutationRuntimeDeps::new(
-                Arc::clone(&web),
                 diagnostics.clone(),
                 sync.clone(),
                 event_bus.clone(),
@@ -343,11 +356,12 @@ impl RuntimeHostContext {
             remote_mutations,
             favorite_mutations,
             favorite_store,
-            favorite_remote_requests,
+            favorite_remote,
             vrc_status,
             login_session: LoginSessionRuntime::new(),
             auth_credentials,
-            auth_requests,
+            login_api,
+            auth_cookies,
             noninteractive_auth,
             avatar_cache,
             avatar_moderation: AvatarModerationRuntime::new(),

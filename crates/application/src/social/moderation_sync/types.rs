@@ -1,13 +1,14 @@
+use crate::remote::VrchatRequestPort;
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::RemoteMutationGate;
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope, WebClient};
+use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope};
 use vrcx_0_core::text::normalize_text;
 use vrcx_0_core::OwnerId;
 
 pub struct ModerationSyncDeps<'a> {
     pub(crate) store: &'a dyn ModerationSyncStore,
     pub(crate) remote_requests: &'a dyn ModerationSyncRemoteRequests,
-    pub(crate) web: &'a WebClient,
+    pub(crate) remote: &'a dyn VrchatRequestPort,
     pub auth_scope: &'a RuntimeAuthScope,
     pub remote_mutations: &'a RemoteMutationGate,
 }
@@ -16,14 +17,14 @@ impl<'a> ModerationSyncDeps<'a> {
     pub fn new(
         store: &'a dyn ModerationSyncStore,
         remote_requests: &'a dyn ModerationSyncRemoteRequests,
-        web: &'a WebClient,
+        remote: &'a dyn VrchatRequestPort,
         auth_scope: &'a RuntimeAuthScope,
         remote_mutations: &'a RemoteMutationGate,
     ) -> Self {
         Self {
             store,
             remote_requests,
-            web,
+            remote,
             auth_scope,
             remote_mutations,
         }

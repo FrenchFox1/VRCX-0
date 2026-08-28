@@ -1,27 +1,15 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::users::{profile_get_input, user_represented_group_get_input};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use super::types::{
     VrchatCurrentUserBadgeInput, VrchatCurrentUserProfileUpdateInput, VrchatCurrentUserTagsInput,
     VrchatCurrentUserUpdateInput, VrchatUserInput, VrchatUserProfileInput,
 };
-
-async fn execute_user_read_api(
-    state: State<'_, AppState>,
-    command: &str,
-    detail: impl Into<String>,
-    input: VrchatApiRequest,
-) -> Result<VrchatApiResponse, AppError> {
-    super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
-        .await
-}
 
 #[tauri::command]
 #[specta::specta]
@@ -29,18 +17,12 @@ pub async fn app__vrchat_user_profile_get(
     state: State<'_, AppState>,
     input: VrchatUserProfileInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) = profile_get_input(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        input.user_id,
-        input.as_self,
-    )?;
-    execute_user_read_api(
-        state,
-        "app__vrchat_user_profile_get",
-        format!("Getting profile for user {user_id}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .user_profile(input.user_id, input.as_self)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -75,15 +57,12 @@ pub async fn app__vrchat_user_represented_group_get(
     state: State<'_, AppState>,
     input: VrchatUserInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (user_id, request) =
-        user_represented_group_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.user_id)?;
-    execute_user_read_api(
-        state,
-        "app__vrchat_user_represented_group_get",
-        format!("Getting represented group for user {user_id}."),
-        request,
-    )
-    .await
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .user_represented_group(input.user_id)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

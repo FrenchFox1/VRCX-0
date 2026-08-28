@@ -5,9 +5,8 @@ use std::{collections::HashSet, time::Duration};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
     Error, FavoriteEntityKind, RemoteMutationGate, Result, RuntimeAuthScope,
-    RuntimeAuthScopeSnapshot, WebClient,
+    RuntimeAuthScopeSnapshot,
 };
 use vrcx_0_core::OwnerId;
 
@@ -74,8 +73,7 @@ pub struct FavoriteBulkRemoveResult {
 
 pub(super) struct FavoriteBulkRemoveDeps<'a> {
     pub store: &'a dyn super::FavoriteStore,
-    pub remote_requests: &'a dyn super::FavoriteRemoteRequests,
-    pub(crate) web: &'a WebClient,
+    pub remote: &'a dyn super::FavoriteRemote,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
     pub remote_mutation_gate: &'a RemoteMutationGate,
@@ -117,12 +115,12 @@ impl VrchatFavoriteBulkRemoveActions<'_> {
         )
     }
 
-    async fn execute_remote(&self, request: VrchatApiRequest) -> Result<RemoteRemoveOutcome> {
+    async fn execute_remote(&self, object_id: String) -> Result<RemoteRemoveOutcome> {
         self.ensure_scope()?;
-        let response = self
+        let (_, response) = self
             .deps
-            .web
-            .execute_api(request, VrchatScope::Vrchat)
+            .remote
+            .delete(self.deps.expected_scope.endpoint.clone(), object_id, None)
             .await?;
         let fallback_payload = Value::String(response.data.clone());
         if !(200..300).contains(&response.status) {
@@ -171,13 +169,7 @@ impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
         &'a self,
         item: &'a FavoriteBulkRemoveItem,
     ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>> {
-        Box::pin(async move {
-            let (_, request) = self.deps.remote_requests.delete(
-                self.deps.expected_scope.endpoint.clone(),
-                item.entity_id.clone(),
-            )?;
-            self.execute_remote(request).await
-        })
+        Box::pin(async move { self.execute_remote(item.entity_id.clone()).await })
     }
 
     fn scope_matches(&self) -> bool {

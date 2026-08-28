@@ -478,6 +478,11 @@
         "tray": {
             "open": "Открыть VRCX-0",
             "backgroundMode": "Фоновый режим",
+            "doNotDisturb": "Не беспокоить",
+            "doNotDisturbOneHour": "1 час",
+            "doNotDisturbThreeHours": "3 часа",
+            "doNotDisturbUntilStopped": "До отключения",
+            "doNotDisturbTurnOff": "Отключить",
             "rebuildUi": "Перезагрузить интерфейс",
             "disableTheme": "Отключить тему",
             "exit": "Выход"
@@ -2489,6 +2494,12 @@
                     "layout_table": "Уведомления Стр.",
                     "post_update_changelog_prompt": "Показывать список изменений после обновления",
                     "post_update_changelog_prompt_description": "Показывает нововведения после установки обновления.",
+                    "do_not_disturb": {
+                        "header": "Не беспокоить",
+                        "description": "Временно приостанавливает уведомления рабочего стола, TTS, XSOverlay, OVR Toolkit и всплывающие уведомления VRCX-0 в шлеме. Вебхуки, лента на запястье и история уведомлений продолжают работать.",
+                        "end_on_game_start": "Отключать при запуске VRChat",
+                        "end_on_game_start_description": "Срабатывает только при переходе VRChat из остановленного состояния в запущенное. Режим можно снова включить во время игры."
+                    },
                     "vr_notifications": {
                         "header": "VR Уведомления о накладных расходах",
                         "xsoverlay_notifications": "XSOverlay Уведомления",
@@ -5796,6 +5807,14 @@
         "add_table_page_size": "Добавить размер страницы таблицы"
     },
     "status_bar": {
+        "do_not_disturb": "Не беспокоить",
+        "do_not_disturb_active": "Режим «Не беспокоить» включён",
+        "do_not_disturb_until": "Не беспокоить до {time}",
+        "do_not_disturb_one_hour": "На 1 час",
+        "do_not_disturb_three_hours": "На 3 часа",
+        "do_not_disturb_until_stopped": "До ручного отключения",
+        "do_not_disturb_turn_off": "Отключить режим «Не беспокоить»",
+        "do_not_disturb_failed": "Не удалось изменить режим «Не беспокоить»",
         "world_collection_importing": "Импорт коллекции миров ({progress}/{total})",
         "game": "Игра",
         "game_stopped": "VRChat не работает",

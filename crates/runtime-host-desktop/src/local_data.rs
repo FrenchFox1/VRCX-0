@@ -107,6 +107,7 @@ pub struct LocalDataRuntime {
     mutual_graph_fetch: MutualGraphFetchRuntime,
     mutual_graph_store: Arc<vrcx_0_outbound_adapters::LocalMutualGraphStore>,
     mutual_graph_remote_requests: Arc<vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests>,
+    mutual_graph_remote: Arc<vrcx_0_outbound_adapters::VrchatRequestAdapter>,
 }
 
 impl LocalDataRuntime {
@@ -126,6 +127,9 @@ impl LocalDataRuntime {
         let mutual_graph_store = Arc::new(vrcx_0_outbound_adapters::LocalMutualGraphStore::new(
             Arc::clone(&db),
         ));
+        let mutual_graph_remote = Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
+            Arc::clone(&web),
+        ));
         Self {
             db,
             profile_config,
@@ -141,6 +145,7 @@ impl LocalDataRuntime {
             mutual_graph_remote_requests: Arc::new(
                 vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests,
             ),
+            mutual_graph_remote,
         }
     }
 
@@ -334,7 +339,7 @@ impl LocalDataRuntime {
             input,
             self.mutual_graph_store.clone(),
             self.mutual_graph_remote_requests.clone(),
-            Arc::clone(&self.web),
+            self.mutual_graph_remote.clone(),
             self.auth_scope.clone(),
             self.tasks.clone(),
         )
@@ -348,7 +353,7 @@ impl LocalDataRuntime {
             MutualGraphRequestDeps::new(
                 self.mutual_graph_store.as_ref(),
                 self.mutual_graph_remote_requests.as_ref(),
-                self.web.as_ref(),
+                self.mutual_graph_remote.as_ref(),
                 &self.auth_scope,
             ),
             input,
@@ -364,7 +369,7 @@ impl LocalDataRuntime {
             MutualGraphRequestDeps::new(
                 self.mutual_graph_store.as_ref(),
                 self.mutual_graph_remote_requests.as_ref(),
-                self.web.as_ref(),
+                self.mutual_graph_remote.as_ref(),
                 &self.auth_scope,
             ),
             input,

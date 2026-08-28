@@ -478,6 +478,11 @@
         "tray": {
             "open": "VRCX-0 を開く",
             "backgroundMode": "バックグラウンドモード",
+            "doNotDisturb": "通知を一時停止",
+            "doNotDisturbOneHour": "1時間",
+            "doNotDisturbThreeHours": "3時間",
+            "doNotDisturbUntilStopped": "オフにするまで",
+            "doNotDisturbTurnOff": "一時停止を解除",
             "rebuildUi": "UI を再読み込み",
             "disableTheme": "テーマを無効化",
             "exit": "終了"
@@ -2483,6 +2488,12 @@
                     "layout_table": "通知タブ",
                     "post_update_changelog_prompt": "更新後に更新内容の通知を表示",
                     "post_update_changelog_prompt_description": "アップデート後に更新内容を表示します。",
+                    "do_not_disturb": {
+                        "header": "通知を一時停止",
+                        "description": "デスクトップ通知、TTS、XSOverlay、OVR Toolkit、VRCX-0 のHMDポップアップを一時停止します。Webhook、リスト表示、通知履歴は引き続き更新されます。",
+                        "end_on_game_start": "VRChatの起動時に一時停止を解除",
+                        "end_on_game_start_description": "VRChatが停止中から起動中に変わったときだけ解除します。プレイ中にもう一度一時停止することもできます。"
+                    },
                     "vr_notifications": {
                         "header": "VR オーバーレイ通知",
                         "xsoverlay_notifications": "XSOverlay で通知する",
@@ -4785,7 +4796,7 @@
             "folders": "フォルダ",
             "scanning": "スクリーンショットをスキャン中",
             "image_count": "{count} 枚",
-            "feeling_lucky": "I'm Feeling Lucky",
+            "feeling_lucky": "おまかせで1枚",
             "exporting_progress": "書き出し中 {done}/{total}",
             "export_finalizing": "書き込みを完了しています",
             "empty_gallery": "このフォルダにスクリーンショットはありません",
@@ -5788,6 +5799,14 @@
         "add_table_page_size": "1ページあたりの表示数を追加"
     },
     "status_bar": {
+        "do_not_disturb": "通知を一時停止",
+        "do_not_disturb_active": "通知を一時停止中",
+        "do_not_disturb_until": "{time}まで通知を一時停止",
+        "do_not_disturb_one_hour": "1時間",
+        "do_not_disturb_three_hours": "3時間",
+        "do_not_disturb_until_stopped": "オフにするまで",
+        "do_not_disturb_turn_off": "一時停止を解除",
+        "do_not_disturb_failed": "通知の一時停止を変更できませんでした",
         "world_collection_importing": "ワールドコレクションをインポート中（{progress}/{total}）",
         "game": "VRChat",
         "game_stopped": "VRChat は実行されていません",
