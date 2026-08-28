@@ -3405,6 +3405,34 @@
             "avatars": {
                 "all_time": "Tout le temps"
             }
+        },
+        "my_groups": {
+            "title": "Mes Groupes",
+            "description": "Gérez les groupes auxquels vous avez rejoint : leur ordre en jeu, qui les voit sur votre profil, et lesquels quitter.",
+            "group_count": "{count} groupe(s)",
+            "edit_mode": "Modifier",
+            "exit_edit_mode": "Terminé",
+            "order_hint": "Glissez les groupes pour définir l'ordre dans lequel VRChat les affiche.",
+            "order_game_running": "VRChat est en cours d'éxecution. l'ordre peut être modifié une fois le jeu fermé.",
+            "order_unavailable": "L'ordre des groupes est indisponible : {reason}",
+            "order_unavailable_reason_fallback": "Les préférences VRChat ne peuvent pas être lues sur ce système.",
+            "order_save_failed": "Échec de l'enregistrement de l'ordre des groupes en jeu.",
+            "row_actions": "Actions de groupe",
+            "leave": "Quitter",
+            "leave_partial": "Quitter {count}",
+            "leave_owner_locked": "Vous ne pouvez pas quitter un groupe que vous possédez.",
+            "leave_completed": "{count} groupe(s) quitté(s).",
+            "visibility_completed": "Visibilité mise à jour pour {count} groupe(s).",
+            "selected_count": "{count} sélectionné(s)",
+            "batch_progress": "{current}/{total}",
+            "batch_item_failed": "Action failed.",
+            "batch_failed": "The batch action failed.",
+            "confirm_leave_title": "Quitter {count} groupe(s)?",
+            "confirm_leave_warning": "Quitter est irréversible, et le ré-adhésion peut nécessiter une approbation.",
+            "confirm_more_groups": "{names} et {count} de plus",
+            "empty_title": "Aucun groupe pour le moment",
+            "empty_description": "Les groupes rejoint s'affichent ici.",
+            "empty_search": "Aucun groupe ne correspond à la recherche."
         }
     },
     "dialog": {
@@ -3611,7 +3639,8 @@
                     "alphabetical": "Alphabétique",
                     "members": "Membres",
                     "in_game": "En jeu"
-                }
+                },
+                "manage": "Gérer"
             },
             "worlds": {
                 "header": "Mondes",
