@@ -1980,6 +1980,7 @@
             },
             "loading": {
                 "deleting_metadata": "Suppression des métadonnées",
+                "deleting_screenshot": "Suppression de la capture d'écran",
                 "uploading_screenshot": "Envoi vers la galerie",
                 "searching_screenshots": "Recherche de captures d'écran",
                 "resolving_file_list_and_metadata_summaries": "Résolution de la liste des fichiers et des résumés de métadonnées",
@@ -4718,6 +4719,10 @@
             "copy_image": "Copier l'image",
             "open_folder": "Afficher dans l'Explorateur de fichiers",
             "delete_metadata": "Supprimer les métadonnées",
+            "delete_file": "Supprimer la capture d'écran",
+            "delete_file_confirm_title": "Supprimer cette capture d'écran ?",
+            "delete_file_confirm_title_bulk": "Supprimer {count} capture(s) d'écran ?",
+            "delete_file_confirm_description": "Le fichier sera déplacé dans la corbeille.",
             "upload": "Mettre en ligne dans la galerie",
             "search_placeholder": "Rechercher",
             "search_type_placeholder": "Type de recherche",
@@ -4728,6 +4733,10 @@
                 "world_id": "ID du monde"
             },
             "no_results": "Aucun résultat trouvé",
+            "no_results_description": "Essayez un autre clavier ou terme de recherche.",
+            "layout_grid": "Grille d'images",
+            "layout_list": "Liste de détails",
+            "clear_search": "Effacer la recherche",
             "invalid_file": "Fichier sélectionné invalide. Veuillez sélectionner une capture d'écran VRChat valide",
             "section_location": "Emplacement",
             "section_players": "Utilisateurs",
@@ -4747,7 +4756,6 @@
             "folders": "Dossiers",
             "scanning": "Analyse des captures d'écran",
             "image_count": "{count} images",
-            "feeling_lucky": "J'ai de la chance",
             "empty_gallery": "Aucune capture d'écran dans ce dossier",
             "empty_gallery_description": "Sélectionnez un autre dossier ou actualisez la bibliothèque de captures d'écran.",
             "empty_folders": "Aucun dossier de captures d'écran",
@@ -5504,7 +5512,9 @@
         },
         "screenshot_metadata": {
             "deleted": "Métadonnées de la capture d'écran supprimées",
-            "delete_failed": "Échec de la suppression des métadonnées de la capture d'écran"
+            "delete_failed": "Échec de la suppression des métadonnées de la capture d'écran",
+            "file_deleted": "Capture d'écran déplacée dans la corbeille",
+            "file_delete_failed": "Échec de la suppression de la capture d'écran"
         },
         "image": {
             "downloading": "Téléchargement de l'image...",
