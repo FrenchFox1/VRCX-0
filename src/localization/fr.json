@@ -5564,7 +5564,9 @@
             "export_done": "{count} capture(s) exportée(s).",
             "export_partial": "Exportation terminée, {count} fichier(s) ignoré(s).",
             "export_failed": "Échec de l'exportation des captures",
-            "export_cancelled": "Exportation annulée."
+            "export_cancelled": "Exportation annulée.",
+            "file_deleted": "Capture d'écran déplacée vers la corbeille",
+            "file_delete_failed": "Échec de la suppresion de la capture d'écran"
         },
         "image": {
             "downloading": "Téléchargement de l'image...",
