@@ -3980,8 +3980,10 @@
                 "platform": "Plateforme",
                 "restrictions": "Restrictions",
                 "last_visited": "Dernière visite",
-                "visit_count": "Nombre de visites",
+                "visit_count": "Visites",
                 "time_spent": "Temps passé",
+                "friends_visited": "Amis qui ont visité",
+                "friends_last_visited": "Dernière visite d'un ami",
                 "persistent_data": "Données persistantes",
                 "cache_size": "Taille du cache"
             },
