@@ -36,9 +36,9 @@ import { Card, CardContent } from '@/ui/shadcn/card';
 import {
     InputGroup,
     InputGroupAddon,
-    InputGroupInput,
     InputGroupText
 } from '@/ui/shadcn/input-group';
+import { NumberField, NumberFieldInput } from '@/ui/shadcn/number-field';
 import {
     Select,
     SelectContent,
@@ -419,8 +419,10 @@ export function BackgroundImageSection() {
         }
     }
 
-    async function commitRotationIntervalDraft() {
-        const value = Number(rotationIntervalDraft);
+    async function commitRotationIntervalDraft(
+        committedValue = rotationIntervalDraft
+    ) {
+        const value = Number(committedValue);
         if (
             !Number.isInteger(value) ||
             value < MIN_ROTATION_INTERVAL_MINUTES ||
@@ -628,30 +630,46 @@ export function BackgroundImageSection() {
                                 </Select>
                                 {rotationChoice === 'custom' ? (
                                     <InputGroup className="w-32">
-                                        <InputGroupInput
-                                            type="number"
+                                        <NumberField
                                             min={MIN_ROTATION_INTERVAL_MINUTES}
                                             max={MAX_ROTATION_INTERVAL_MINUTES}
                                             step={1}
+                                            allowOutOfRange
                                             disabled={loading}
-                                            value={rotationIntervalDraft}
-                                            onChange={(event) =>
+                                            value={
+                                                rotationIntervalDraft === ''
+                                                    ? null
+                                                    : Number(
+                                                          rotationIntervalDraft
+                                                      )
+                                            }
+                                            onValueChange={(value) =>
                                                 setRotationIntervalDraft(
-                                                    event.currentTarget.value
+                                                    value === null
+                                                        ? ''
+                                                        : String(value)
                                                 )
                                             }
-                                            onBlur={() => {
-                                                void commitRotationIntervalDraft();
+                                            onValueCommitted={(value) => {
+                                                void commitRotationIntervalDraft(
+                                                    value === null
+                                                        ? ''
+                                                        : String(value)
+                                                );
                                             }}
-                                            onKeyDown={(event) => {
-                                                if (event.key === 'Enter') {
-                                                    event.currentTarget.blur();
-                                                }
-                                            }}
-                                            aria-label={t(
-                                                'view.background_image.settings.rotation'
-                                            )}
-                                        />
+                                        >
+                                            <NumberFieldInput
+                                                className="text-left"
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter') {
+                                                        event.currentTarget.blur();
+                                                    }
+                                                }}
+                                                aria-label={t(
+                                                    'view.background_image.settings.rotation'
+                                                )}
+                                            />
+                                        </NumberField>
                                         <InputGroupAddon align="inline-end">
                                             <InputGroupText>
                                                 {t(

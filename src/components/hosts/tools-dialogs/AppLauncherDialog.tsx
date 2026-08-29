@@ -48,6 +48,13 @@ import {
     FieldLabel
 } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
@@ -820,21 +827,24 @@ function EntryDetailsPanel({
                         <FieldLabel>
                             {t('dialog.app_launcher.delay_seconds')}
                         </FieldLabel>
-                        <Input
-                            type="number"
+                        <NumberField
                             min={0}
                             max={MAX_LAUNCH_DELAY_SECONDS}
                             value={entry.launchDelaySeconds}
-                            onChange={(event) =>
+                            onValueChange={(value) =>
                                 onChange({
                                     ...entry,
                                     launchDelaySeconds:
-                                        normalizeLaunchDelaySeconds(
-                                            event.target.value
-                                        )
+                                        normalizeLaunchDelaySeconds(value ?? 0)
                                 })
                             }
-                        />
+                        >
+                            <NumberFieldGroup>
+                                <NumberFieldDecrement />
+                                <NumberFieldInput />
+                                <NumberFieldIncrement />
+                            </NumberFieldGroup>
+                        </NumberField>
                     </Field>
                     {entry.kind === 'localApp' ? (
                         <Field>

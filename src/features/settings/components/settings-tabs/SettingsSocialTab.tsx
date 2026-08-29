@@ -28,6 +28,13 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Switch } from '@/ui/shadcn/switch';
@@ -183,23 +190,29 @@ export function SettingsSocialTab() {
                             }
                         />
                         {prefs.recentActionCooldownEnabled ? (
-                            <Input
-                                type="number"
+                            <NumberField
                                 min={1}
                                 max={MINUTES_PER_DAY}
-                                className="w-28"
+                                allowOutOfRange
+                                className="w-36"
                                 value={prefs.recentActionCooldownMinutes}
-                                onChange={(event) =>
+                                onValueChange={(value) =>
                                     onRecentActionCooldownMinutesChange(
-                                        event.target.value
+                                        value === null ? '' : String(value)
                                     )
                                 }
-                                onBlur={(event) =>
+                                onValueCommitted={(value) =>
                                     onRecentActionCooldownMinutesBlur(
-                                        event.target.value
+                                        value === null ? '' : String(value)
                                     )
                                 }
-                            />
+                            >
+                                <NumberFieldGroup>
+                                    <NumberFieldDecrement />
+                                    <NumberFieldInput />
+                                    <NumberFieldIncrement />
+                                </NumberFieldGroup>
+                            </NumberField>
                         ) : null}
                     </div>
                 </Field>
