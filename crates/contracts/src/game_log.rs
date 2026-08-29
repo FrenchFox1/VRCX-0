@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use vrcx_0_core::json::RawJson;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 pub enum GameLogWriteKind {
@@ -129,14 +128,6 @@ pub struct GameLogWriteBatch {
     pub resource_loads: Vec<GameLogResourceLoadEntry>,
     pub events: Vec<GameLogEventEntry>,
     pub externals: Vec<GameLogExternalEntry>,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct GameLogQueryInput {
-    pub kind: String,
-    #[serde(default)]
-    pub params: RawJson,
 }
 
 impl GameLogWriteBatch {

@@ -939,7 +939,7 @@ const generatedCommands = {
             entry
         });
     },
-    async appGameLogQuery(query: GameLogQueryInput): Promise<JsonValue> {
+    async appGameLogQuery(query: GameLogQuery): Promise<GameLogQueryOutput> {
         return await TAURI_INVOKE('app__game_log_query', { query });
     },
     async appGameLogPreviousInstancesByGroupId(
@@ -4227,6 +4227,13 @@ export type GameClientEvent =
     | { kind: 'crashRelaunchDecision'; payload: CrashRelaunchDecisionPayload }
     | { kind: 'debugLoggingOutcome'; payload: DebugLoggingOutcome }
     | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameLogAllUserStatsOutput = {
+    lastSeen: string;
+    userId: string;
+    timeSpent: number;
+    joinCount: number;
+    displayName: string;
+};
 export type GameLogEntryDeleteKind =
     | 'VideoPlay'
     | 'ResourceLoad'
@@ -4234,9 +4241,50 @@ export type GameLogEntryDeleteKind =
     | 'ImageLoad'
     | 'Event'
     | 'External';
+export type GameLogInstanceJoinOutput = {
+    created_at: string;
+    location: string;
+};
+export type GameLogInstancePlayerEventOutput = {
+    rowId: number;
+    created_at: string;
+    displayName: string;
+    userId: string;
+    time: number;
+    type: string;
+};
+export type GameLogInstanceTimeOutput = { location: string; time: number };
+export type GameLogJoinCountOutput = { joinCount: number; userId: string };
+export type GameLogJoinLeaveRangeOutput = {
+    created_at: string;
+    type: string;
+    displayName: string;
+    userId: string;
+};
+export type GameLogLastGroupVisitOutput = { created_at: string };
+export type GameLogLastSeenOutput = { created_at: string; userId: string };
+export type GameLogLastVisitOutput = { created_at: string; worldId: string };
+export type GameLogLocationBeforeOutput = {
+    created_at: string;
+    location: string;
+    worldId: string;
+    worldName: string;
+    groupName: string;
+};
+export type GameLogOnlineSessionOutput = { created_at: string; time: number };
 export type GameLogPersistenceFallbackPayload = {
     attemptedRowCount: number;
     error: string;
+};
+export type GameLogPlayerDetailOutput = {
+    created_at: string;
+    display_name: string;
+    user_id: string;
+    time: number;
+};
+export type GameLogPreviousDisplayNameOutput = {
+    created_at: string;
+    displayName: string;
 };
 export type GameLogPreviousInstanceGroupOutput = {
     created_at: string;
@@ -4264,7 +4312,157 @@ export type GameLogProjection = {
     lastGameLogAt: string;
     lastGameLogType: string;
 };
-export type GameLogQueryInput = { kind: string; params?: RawJson };
+export type GameLogQuery =
+    | {
+          kind: 'recentDatabase';
+          params: { dateOffset?: string; maxTableSize?: number | null };
+      }
+    | {
+          kind: 'rowsByLocation';
+          params: {
+              instanceId?: string;
+              currentUserId?: string;
+              filters?: string[];
+              vipList?: string[];
+              maxEntries?: number | null;
+              maxRows?: number | null;
+          };
+      }
+    | {
+          kind: 'lookupRows';
+          params: {
+              filters?: string[];
+              vipList?: string[];
+              maxEntries?: number | null;
+              maxRows?: number | null;
+          };
+      }
+    | {
+          kind: 'searchRows';
+          params: {
+              search?: string;
+              currentUserId?: string;
+              filters?: string[];
+              vipList?: string[];
+              maxEntries?: number | null;
+              maxRows?: number | null;
+          };
+      }
+    | {
+          kind: 'lastVisit';
+          params: { worldId?: string; currentWorldMatch?: boolean };
+      }
+    | { kind: 'visitCount'; params: { worldId?: string } }
+    | { kind: 'timeSpentInWorld'; params: { worldId?: string } }
+    | { kind: 'lastGroupVisit'; params: { groupId?: string } }
+    | {
+          kind: 'lastSeen';
+          params: {
+              userId?: string;
+              displayName?: string;
+              inCurrentWorld?: boolean;
+          };
+      }
+    | { kind: 'joinCount'; params: { userId?: string; displayName?: string } }
+    | { kind: 'timeSpent'; params: { userId?: string; displayName?: string } }
+    | {
+          kind: 'userStats';
+          params: {
+              userId?: string;
+              displayName?: string;
+              inCurrentWorld?: boolean;
+          };
+      }
+    | {
+          kind: 'allUserStats';
+          params: { userIds?: string[]; displayNames?: string[] };
+      }
+    | { kind: 'lastDate'; params: Record<string, never> }
+    | { kind: 'playersFromInstanceRows'; params: { location?: string } }
+    | { kind: 'locationBeforeOrAt'; params: { createdAt?: string } }
+    | {
+          kind: 'joinLeaveRange';
+          params: {
+              location?: string;
+              afterDate?: string;
+              beforeDate?: string;
+          };
+      }
+    | { kind: 'playerDetailFromInstance'; params: { location?: string } }
+    | { kind: 'previousDisplayNamesByUserId'; params: { userId?: string } }
+    | { kind: 'instanceTimes'; params: Record<string, never> }
+    | { kind: 'onlineSessions'; params: { fromDate?: string; toDate?: string } }
+    | {
+          kind: 'onlineSessionsAfter';
+          params: { afterCreatedAt?: string; inclusive?: boolean };
+      }
+    | {
+          kind: 'instanceJoinHistory';
+          params: { userId?: string; createdAt?: string };
+      }
+    | { kind: 'worldNameByWorldId'; params: { worldId?: string } }
+    | { kind: 'userIdFromDisplayName'; params: { displayName?: string } }
+    | { kind: 'previousInstancesByGroupId'; params: { groupId?: string } }
+    | { kind: 'previousInstancesByWorldId'; params: { worldId?: string } };
+export type GameLogQueryOutput =
+    | { kind: 'recentDatabase'; value: GameLogRowOutput[] }
+    | { kind: 'rowsByLocation'; value: GameLogRowOutput[] }
+    | { kind: 'lookupRows'; value: GameLogRowOutput[] }
+    | { kind: 'searchRows'; value: GameLogRowOutput[] }
+    | { kind: 'lastVisit'; value: GameLogLastVisitOutput }
+    | { kind: 'visitCount'; value: GameLogVisitCountOutput }
+    | { kind: 'timeSpentInWorld'; value: GameLogWorldTimeSpentOutput }
+    | { kind: 'lastGroupVisit'; value: GameLogLastGroupVisitOutput }
+    | { kind: 'lastSeen'; value: GameLogLastSeenOutput }
+    | { kind: 'joinCount'; value: GameLogJoinCountOutput }
+    | { kind: 'timeSpent'; value: GameLogUserTimeSpentOutput }
+    | { kind: 'userStats'; value: GameLogUserStatsOutput }
+    | { kind: 'allUserStats'; value: GameLogAllUserStatsOutput[] }
+    | { kind: 'lastDate'; value: string }
+    | {
+          kind: 'playersFromInstanceRows';
+          value: GameLogInstancePlayerEventOutput[];
+      }
+    | { kind: 'locationBeforeOrAt'; value: GameLogLocationBeforeOutput | null }
+    | { kind: 'joinLeaveRange'; value: GameLogJoinLeaveRangeOutput[] }
+    | { kind: 'playerDetailFromInstance'; value: GameLogPlayerDetailOutput[] }
+    | {
+          kind: 'previousDisplayNamesByUserId';
+          value: GameLogPreviousDisplayNameOutput[];
+      }
+    | { kind: 'instanceTimes'; value: GameLogInstanceTimeOutput[] }
+    | { kind: 'onlineSessions'; value: GameLogOnlineSessionOutput[] }
+    | { kind: 'onlineSessionsAfter'; value: GameLogOnlineSessionOutput[] }
+    | { kind: 'instanceJoinHistory'; value: GameLogInstanceJoinOutput[] }
+    | { kind: 'worldNameByWorldId'; value: string }
+    | { kind: 'userIdFromDisplayName'; value: string }
+    | {
+          kind: 'previousInstancesByGroupId';
+          value: GameLogPreviousInstanceGroupOutput[];
+      }
+    | {
+          kind: 'previousInstancesByWorldId';
+          value: GameLogPreviousInstanceWorldOutput[];
+      };
+export type GameLogRowOutput = {
+    rowId: number;
+    created_at: string;
+    type: string;
+    displayName?: string | null;
+    userId?: string | null;
+    location?: string | null;
+    instanceId?: string | null;
+    worldId?: string | null;
+    worldName?: string | null;
+    groupName?: string | null;
+    time?: number | null;
+    videoUrl?: string | null;
+    videoName?: string | null;
+    videoId?: string | null;
+    resourceUrl?: string | null;
+    data?: string | null;
+    message?: string | null;
+};
 export type GameLogSessionDto = {
     id?: number | null;
     created_at: string;
@@ -4318,6 +4516,19 @@ export type GameLogSideEffectEvent =
     | { kind: 'screenshotProcessed'; payload: ScreenshotProcessedPayload }
     | { kind: 'gameNoVR'; payload: GameNoVrPayload }
     | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameLogUserStatsOutput = {
+    timeSpent: number;
+    lastSeen: string;
+    joinCount: number;
+    userId: string;
+    previousDisplayNames: GameLogPreviousDisplayNameOutput[];
+};
+export type GameLogUserTimeSpentOutput = { timeSpent: number; userId: string };
+export type GameLogVisitCountOutput = { visitCount: number; worldId: string };
+export type GameLogWorldTimeSpentOutput = {
+    timeSpent: number;
+    worldId: string;
+};
 export type GameLogWriteKind =
     | 'Location'
     | 'LocationTime'

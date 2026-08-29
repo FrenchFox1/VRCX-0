@@ -65,9 +65,22 @@ pub fn strict_row_i64(row: &[serde_json::Value], index: usize) -> Result<i64, Er
     }
 }
 
-pub fn strict_row_json(
+pub fn strict_row_optional_string(
     row: &[serde_json::Value],
     index: usize,
-) -> Result<serde_json::Value, Error> {
-    Ok(strict_row_value(row, index)?.clone())
+) -> Result<Option<String>, Error> {
+    match strict_row_value(row, index)? {
+        serde_json::Value::Null => Ok(None),
+        _ => strict_row_string(row, index).map(Some),
+    }
+}
+
+pub fn strict_row_optional_i64(
+    row: &[serde_json::Value],
+    index: usize,
+) -> Result<Option<i64>, Error> {
+    match strict_row_value(row, index)? {
+        serde_json::Value::Null => Ok(None),
+        _ => strict_row_i64(row, index).map(Some),
+    }
 }

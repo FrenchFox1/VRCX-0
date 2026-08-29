@@ -27,8 +27,11 @@ pub use types::{
     GameLogEntryDeleteKind, GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry,
     GameLogJoinLeaveSnapshot, GameLogLocationEntry, GameLogLocationTimeUpdate,
     GameLogPortalSpawnEntry, GameLogPreviousInstanceGroupOutput,
-    GameLogPreviousInstanceWorldOutput, GameLogQueryInput, GameLogResourceLoadEntry,
-    GameLogVideoPlayEntry, GameLogWriteBatch, GameLogWriteKind, PreviousInstanceEventRow,
-    SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
+    GameLogPreviousInstanceWorldOutput, GameLogResourceLoadEntry, GameLogVideoPlayEntry,
+    GameLogWriteBatch, GameLogWriteKind, PreviousInstanceEventRow, SessionEventRow,
+    SessionLocationSegmentRow, SessionPlayerDurationRow,
+};
+pub use vrcx_0_contracts::game_log_query::{
+    GameLogAllUserStatsOutput, GameLogQuery, GameLogQueryOutput, GameLogRowOutput,
 };
 pub use write::write_batch;

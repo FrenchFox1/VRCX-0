@@ -1,5 +1,10 @@
 import {
     commands,
+    type GameLogAllUserStatsOutput,
+    type GameLogQuery,
+    type GameLogQueryOutput,
+    type GameLogRowOutput,
+    type GameLogUserStatsOutput,
     type GameLogWriteKind,
     type InstanceHistoryEntryOutput
 } from '@/platform/tauri/bindings';
@@ -15,7 +20,6 @@ import {
 
 type GameLogKind = Extract<GameLogWriteKind, 'Event' | 'External'>;
 
-type GameLogParams = Record<string, unknown>;
 type GameLogEntry = Record<string, unknown>;
 
 type GameLogUserIdentity = {
@@ -44,158 +48,12 @@ type InstancePlayerAggregate = {
     count: number;
 };
 
-type GameLogPlayerEventRow = {
-    created_at: string;
-    displayName: string;
-    location?: string;
-    rowId: number;
-    time?: number;
-    type: string;
-    userId: string;
-};
+export type GameLogDatabaseRow = GameLogRowOutput;
 
-type GameLogPlayerDetailRow = {
-    created_at: string;
-    display_name: string;
-    time: number;
-    user_id: string;
-};
-
-type GameLogJoinLeaveRangeRow = {
-    created_at: string;
-    displayName: string;
-    type: string;
-    userId: string;
-};
-
-type GameLogOnlineSessionRow = {
-    created_at: string;
-    time: number;
-};
-
-type GameLogPreviousDisplayNameRow = {
-    created_at: string;
-    displayName: string;
-};
-
-export type GameLogDatabaseRow = {
-    rowId?: number;
-    type?: string;
-    created_at?: string;
-    displayName?: string;
-    userId?: string;
-    location?: string;
-    instanceId?: string;
-    worldId?: string;
-    worldName?: string;
-    groupName?: string;
-    time?: number;
-    videoUrl?: string;
-    videoName?: string;
-    videoId?: string;
-    data?: string;
-    message?: string;
-    resourceUrl?: string;
-};
-
-type GameLogLocationResult = {
-    created_at: string;
-    worldId: string;
-};
-
-type GameLogVisitCountResult = {
-    visitCount: number;
-    worldId: string;
-};
-
-type GameLogTimeSpentResult = {
-    timeSpent: number;
-    worldId?: string;
-    userId?: string;
-};
-
-type GameLogLastGroupVisitResult = {
-    created_at: string;
-};
-
-type GameLogLastSeenResult = {
-    created_at: string;
-    userId: string;
-};
-
-type GameLogJoinCountResult = {
-    joinCount: number;
-    userId: string;
-};
-
-type GameLogUserStatsQueryResult = {
-    joinCount: number;
-    lastSeen: string;
-    previousDisplayNames: GameLogPreviousDisplayNameRow[];
-    timeSpent: number;
-    userId: string;
-};
-
-export type GameLogAllUserStatsRow = Omit<
-    GameLogUserStatsQueryResult,
-    'previousDisplayNames'
-> & {
-    displayName: string;
-};
-
-type GameLogLocationBeforeResult = {
-    created_at: string;
-    location: string;
-    worldId: string;
-    worldName: string;
-    groupName: string;
-};
-
-type GameLogInstanceTimeRow = {
-    location: string;
-    time: number;
-};
-
-type GameLogInstanceJoinHistoryRow = {
-    created_at: string;
-    location: string;
-};
-
-type GameLogQueryResultMap = {
-    recentDatabase: GameLogDatabaseRow[];
-    lastVisit: GameLogLocationResult;
-    visitCount: GameLogVisitCountResult;
-    timeSpentInWorld: GameLogTimeSpentResult;
-    lastGroupVisit: GameLogLastGroupVisitResult;
-    lastSeen: GameLogLastSeenResult;
-    joinCount: GameLogJoinCountResult;
-    timeSpent: GameLogTimeSpentResult;
-    allUserStats: GameLogAllUserStatsRow[];
-    rowsByLocation: GameLogDatabaseRow[];
-    lookupRows: GameLogDatabaseRow[];
-    searchRows: GameLogDatabaseRow[];
-    playersFromInstanceRows: GameLogPlayerEventRow[];
-    locationBeforeOrAt: GameLogLocationBeforeResult | null;
-    playerDetailFromInstance: GameLogPlayerDetailRow[];
-    joinLeaveRange: GameLogJoinLeaveRangeRow[];
-    previousDisplayNamesByUserId: GameLogPreviousDisplayNameRow[];
-    instanceTimes: GameLogInstanceTimeRow[];
-    onlineSessions: GameLogOnlineSessionRow[];
-    onlineSessionsAfter: GameLogOnlineSessionRow[];
-    instanceJoinHistory: GameLogInstanceJoinHistoryRow[];
-    userIdFromDisplayName: string;
-    userStats: GameLogUserStatsQueryResult;
-    worldNameByWorldId: string;
-};
-
-type GameLogArrayQueryKind = {
-    [
-        K in keyof GameLogQueryResultMap
-    ]: GameLogQueryResultMap[K] extends unknown[] ? K : never;
-}[keyof GameLogQueryResultMap];
+export type GameLogAllUserStatsRow = GameLogAllUserStatsOutput;
 
 type GameLogUserStatsResult = Omit<
-    GameLogUserStatsQueryResult,
+    GameLogUserStatsOutput,
     'previousDisplayNames'
 > & {
     previousDisplayNames: Map<string, string>;
@@ -224,31 +82,30 @@ function addGameLogEntries(
     );
 }
 
-async function queryGameLog<K extends keyof GameLogQueryResultMap>(
+type GameLogQueryParamsByKind = {
+    [K in GameLogQuery['kind']]: Extract<GameLogQuery, { kind: K }>['params'];
+};
+
+type GameLogQueryValueByKind = {
+    [K in GameLogQueryOutput['kind']]: Extract<
+        GameLogQueryOutput,
+        { kind: K }
+    >['value'];
+};
+
+async function queryGameLog<K extends keyof GameLogQueryValueByKind>(
     kind: K,
-    params?: GameLogParams
-): Promise<GameLogQueryResultMap[K]>;
-async function queryGameLog(
-    kind: string,
-    params?: GameLogParams
-): Promise<unknown>;
-async function queryGameLog(kind: string, params: GameLogParams = {}) {
-    return commands.appGameLogQuery({
+    params: GameLogQueryParamsByKind[K]
+): Promise<GameLogQueryValueByKind[K]> {
+    const output = await commands.appGameLogQuery({
         kind,
         params
-    });
-}
-
-async function queryGameLogRows<K extends GameLogArrayQueryKind>(
-    kind: K,
-    params?: GameLogParams
-): Promise<GameLogQueryResultMap[K]> {
-    const rows = await queryGameLog(kind, params);
-    return (Array.isArray(rows) ? rows : []) as GameLogQueryResultMap[K];
+    } as GameLogQuery);
+    return output.value as GameLogQueryValueByKind[K];
 }
 
 function normalizeGameLogUserStats(
-    result: GameLogUserStatsQueryResult
+    result: GameLogUserStatsOutput
 ): GameLogUserStatsResult {
     const ref: GameLogUserStatsResult = {
         ...result,
@@ -317,7 +174,7 @@ const gameLog = {
         var date = new Date();
         date.setDate(date.getDate() - 1);
         var dateOffset = date.toJSON();
-        return queryGameLogRows('recentDatabase', {
+        return queryGameLog('recentDatabase', {
             dateOffset,
             maxTableSize
         });
@@ -390,7 +247,7 @@ const gameLog = {
     },
 
     async getAllUserStats(userIds: string[], displayNames: string[]) {
-        return queryGameLogRows('allUserStats', {
+        return queryGameLog('allUserStats', {
             userIds,
             displayNames
         });
@@ -410,7 +267,7 @@ const gameLog = {
             maxRows?: number;
         } = {}
     ) {
-        return queryGameLogRows('rowsByLocation', {
+        return queryGameLog('rowsByLocation', {
             instanceId,
             filters,
             vipList,
@@ -426,7 +283,7 @@ const gameLog = {
         maxEntries: number = DEFAULT_MAX_TABLE_SIZE,
         maxRows: number = maxEntries
     ) {
-        return queryGameLogRows('lookupRows', {
+        return queryGameLog('lookupRows', {
             filters,
             vipList,
             maxEntries,
@@ -450,7 +307,7 @@ const gameLog = {
                 maxRows
             });
         }
-        return queryGameLogRows('searchRows', {
+        return queryGameLog('searchRows', {
             search,
             filters,
             vipList,
@@ -528,7 +385,7 @@ const gameLog = {
 
     async getPlayersFromInstance(location: string) {
         var players = new Map<string, InstancePlayerAggregate>();
-        const rows = await queryGameLogRows('playersFromInstanceRows', {
+        const rows = await queryGameLog('playersFromInstanceRows', {
             location
         });
         for (const rowData of rows) {
@@ -583,7 +440,7 @@ const gameLog = {
         afterDate: string,
         beforeDate: string
     ) {
-        const rows = await queryGameLogRows('joinLeaveRange', {
+        const rows = await queryGameLog('joinLeaveRange', {
             location,
             afterDate,
             beforeDate
@@ -592,7 +449,7 @@ const gameLog = {
     },
 
     async getPlayerDetailFromInstance(location: string) {
-        const rows = await queryGameLogRows('playerDetailFromInstance', {
+        const rows = await queryGameLog('playerDetailFromInstance', {
             location
         });
         return rows;
@@ -600,7 +457,7 @@ const gameLog = {
 
     async getPreviousDisplayNamesByUserId(ref: GameLogUserIdentity) {
         var data = new Map<string, string>();
-        const rows = await queryGameLogRows('previousDisplayNamesByUserId', {
+        const rows = await queryGameLog('previousDisplayNamesByUserId', {
             userId: ref.id
         });
         for (const row of rows) {
@@ -615,7 +472,7 @@ const gameLog = {
 
     async getGameLogInstancesTime() {
         var instances = new Map<string, number>();
-        const rows = await queryGameLogRows('instanceTimes');
+        const rows = await queryGameLog('instanceTimes', {});
         for (const dbRow of rows) {
             var time = 0;
             var location = dbRow.location;
@@ -649,7 +506,7 @@ const gameLog = {
             ).toISOString();
         }
 
-        const rows = await queryGameLogRows('onlineSessions', params);
+        const rows = await queryGameLog('onlineSessions', params);
         return rows;
     },
 
@@ -657,7 +514,7 @@ const gameLog = {
         afterCreatedAt: string,
         inclusive: boolean = false
     ) {
-        return queryGameLogRows('onlineSessionsAfter', {
+        return queryGameLog('onlineSessionsAfter', {
             afterCreatedAt,
             inclusive
         });
@@ -670,7 +527,7 @@ const gameLog = {
     async getInstanceJoinHistory(currentUserId: string = '') {
         var oneWeekAgo = new Date(Date.now() - 604800000).toJSON();
         var instances = new Map<string, number>();
-        const rows = await queryGameLogRows('instanceJoinHistory', {
+        const rows = await queryGameLog('instanceJoinHistory', {
             userId: normalizeCurrentUserId(currentUserId),
             createdAt: oneWeekAgo
         });

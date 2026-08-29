@@ -1,56 +1,58 @@
 use super::*;
 
-pub(crate) fn game_log_row_from_unified_row(row: &[Value]) -> Result<Value, Error> {
+pub(crate) fn game_log_row_from_unified_row(row: &[Value]) -> Result<GameLogRowOutput, Error> {
     let event_type = strict_row_string(row, 2)?;
-    let mut object = serde_json::Map::new();
-    object.insert("rowId".into(), strict_row_json(row, 0)?);
-    object.insert("created_at".into(), strict_row_json(row, 1)?);
-    object.insert("type".into(), Value::String(event_type.clone()));
+    let mut output = GameLogRowOutput {
+        row_id: strict_row_i64(row, 0)?,
+        created_at: strict_row_string(row, 1)?,
+        r#type: event_type.clone(),
+        ..GameLogRowOutput::default()
+    };
     match event_type.as_str() {
         "Location" => {
-            object.insert("location".into(), strict_row_json(row, 4)?);
-            object.insert("worldId".into(), strict_row_json(row, 7)?);
-            object.insert("worldName".into(), strict_row_json(row, 8)?);
-            object.insert("time".into(), strict_row_json(row, 6)?);
-            object.insert("groupName".into(), strict_row_json(row, 9)?);
+            output.location = strict_row_optional_string(row, 4)?;
+            output.world_id = strict_row_optional_string(row, 7)?;
+            output.world_name = strict_row_optional_string(row, 8)?;
+            output.time = strict_row_optional_i64(row, 6)?;
+            output.group_name = strict_row_optional_string(row, 9)?;
         }
         "OnPlayerJoined" | "OnPlayerLeft" => {
-            object.insert("displayName".into(), strict_row_json(row, 3)?);
-            object.insert("location".into(), strict_row_json(row, 4)?);
-            object.insert("userId".into(), strict_row_json(row, 5)?);
-            object.insert("time".into(), strict_row_json(row, 6)?);
+            output.display_name = strict_row_optional_string(row, 3)?;
+            output.location = strict_row_optional_string(row, 4)?;
+            output.user_id = strict_row_optional_string(row, 5)?;
+            output.time = strict_row_optional_i64(row, 6)?;
         }
         "PortalSpawn" => {
-            object.insert("displayName".into(), strict_row_json(row, 3)?);
-            object.insert("location".into(), strict_row_json(row, 4)?);
-            object.insert("userId".into(), strict_row_json(row, 5)?);
-            object.insert("instanceId".into(), strict_row_json(row, 10)?);
-            object.insert("worldName".into(), strict_row_json(row, 8)?);
+            output.display_name = strict_row_optional_string(row, 3)?;
+            output.location = strict_row_optional_string(row, 4)?;
+            output.user_id = strict_row_optional_string(row, 5)?;
+            output.instance_id = strict_row_optional_string(row, 10)?;
+            output.world_name = strict_row_optional_string(row, 8)?;
         }
         "VideoPlay" => {
-            object.insert("videoUrl".into(), strict_row_json(row, 11)?);
-            object.insert("videoName".into(), strict_row_json(row, 12)?);
-            object.insert("videoId".into(), strict_row_json(row, 13)?);
-            object.insert("location".into(), strict_row_json(row, 4)?);
-            object.insert("displayName".into(), strict_row_json(row, 3)?);
-            object.insert("userId".into(), strict_row_json(row, 5)?);
+            output.video_url = strict_row_optional_string(row, 11)?;
+            output.video_name = strict_row_optional_string(row, 12)?;
+            output.video_id = strict_row_optional_string(row, 13)?;
+            output.location = strict_row_optional_string(row, 4)?;
+            output.display_name = strict_row_optional_string(row, 3)?;
+            output.user_id = strict_row_optional_string(row, 5)?;
         }
         "Event" => {
-            object.insert("data".into(), strict_row_json(row, 16)?);
+            output.data = strict_row_optional_string(row, 16)?;
         }
         "External" => {
-            object.insert("message".into(), strict_row_json(row, 17)?);
-            object.insert("displayName".into(), strict_row_json(row, 3)?);
-            object.insert("userId".into(), strict_row_json(row, 5)?);
-            object.insert("location".into(), strict_row_json(row, 4)?);
+            output.message = strict_row_optional_string(row, 17)?;
+            output.display_name = strict_row_optional_string(row, 3)?;
+            output.user_id = strict_row_optional_string(row, 5)?;
+            output.location = strict_row_optional_string(row, 4)?;
         }
         "StringLoad" | "ImageLoad" => {
-            object.insert("resourceUrl".into(), strict_row_json(row, 14)?);
-            object.insert("location".into(), strict_row_json(row, 4)?);
+            output.resource_url = strict_row_optional_string(row, 14)?;
+            output.location = strict_row_optional_string(row, 4)?;
         }
         _ => {}
     }
-    Ok(Value::Object(object))
+    Ok(output)
 }
 
 pub(crate) fn game_log_base_columns(include_extra: bool) -> &'static str {

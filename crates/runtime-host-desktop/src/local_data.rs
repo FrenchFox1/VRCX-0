@@ -56,7 +56,7 @@ pub use vrcx_0_persistence::friends::{
 };
 pub use vrcx_0_persistence::game_log::{
     GameLogEntryDeleteKind, GameLogPreviousInstanceGroupOutput, GameLogPreviousInstanceWorldOutput,
-    GameLogQueryInput, GameLogWriteKind,
+    GameLogQuery, GameLogQueryOutput, GameLogWriteKind,
 };
 pub use vrcx_0_persistence::local_moderation::LocalModerationOutput;
 pub use vrcx_0_persistence::maintenance::{
@@ -752,7 +752,7 @@ impl LocalDataRuntime {
         )
     }
 
-    pub fn game_log_query(&self, query: GameLogQueryInput) -> Result<Value> {
+    pub fn game_log_query(&self, query: GameLogQuery) -> Result<GameLogQueryOutput> {
         Ok(vrcx_0_persistence::game_log::game_log_query(
             self.db.as_ref(),
             &self.current_owner(),

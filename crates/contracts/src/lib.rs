@@ -11,6 +11,7 @@ pub mod feed;
 pub mod feed_live;
 pub mod friend_log;
 pub mod game_log;
+pub mod game_log_query;
 mod legacy_migration;
 pub mod llm;
 mod media;

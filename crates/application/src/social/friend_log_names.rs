@@ -10,6 +10,7 @@ use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 use vrcx_0_application_realtime::{
     RealtimeHostRuntime, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,
 };
+use vrcx_0_contracts::game_log_query::GameLogAllUserStatsOutput;
 
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::OwnerId;
@@ -24,7 +25,11 @@ pub trait FriendLogNameStore: Send + Sync {
         owner_user_id: &OwnerId,
         user_ids: &[String],
     ) -> Result<HashMap<String, String>>;
-    fn game_log_user_stats(&self, owner_user_id: &OwnerId, user_ids: &[String]) -> Result<Value>;
+    fn game_log_user_stats(
+        &self,
+        owner_user_id: &OwnerId,
+        user_ids: &[String],
+    ) -> Result<Vec<GameLogAllUserStatsOutput>>;
 }
 
 pub struct FriendLogNameResolutionDeps<'a> {
@@ -224,23 +229,13 @@ fn merge_game_log_names(
     user_ids: &[String],
     names: &mut HashMap<String, String>,
 ) -> Result<()> {
-    let value =
-        store.game_log_user_stats(&OwnerId::new(scope.current_user_id.clone()), user_ids)?;
-    for row in value.as_array().into_iter().flatten() {
-        let user_id = row
-            .get("userId")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .trim();
+    let rows = store.game_log_user_stats(&OwnerId::new(scope.current_user_id.clone()), user_ids)?;
+    for row in rows {
+        let user_id = row.user_id.trim();
         if user_id.is_empty() || names.contains_key(user_id) {
             continue;
         }
-        if let Some(display_name) = normalize_display_name(
-            row.get("displayName")
-                .and_then(Value::as_str)
-                .unwrap_or_default(),
-            user_id,
-        ) {
+        if let Some(display_name) = normalize_display_name(&row.display_name, user_id) {
             names.insert(user_id.to_string(), display_name);
         }
     }

@@ -18,7 +18,10 @@ import gameLogRepository from './gameLogPersistenceRepository';
 describe('gameLogPersistenceRepository', () => {
     beforeEach(() => {
         tauriMock.commands.appGameLogQuery.mockReset();
-        tauriMock.commands.appGameLogQuery.mockResolvedValue([]);
+        tauriMock.commands.appGameLogQuery.mockResolvedValue({
+            kind: 'lookupRows',
+            value: []
+        });
         tauriMock.commands.appGameLogPreviousInstancesByGroupId.mockReset();
         tauriMock.commands.appGameLogPreviousInstancesByGroupId.mockResolvedValue(
             []
@@ -131,40 +134,43 @@ describe('gameLogPersistenceRepository', () => {
     });
 
     it('keeps the first join time and tracks the last leave time for instance players', async () => {
-        tauriMock.commands.appGameLogQuery.mockResolvedValueOnce([
-            {
-                rowId: 1,
-                created_at: '2026-01-01T12:00:00.000Z',
-                displayName: 'Ava',
-                userId: 'usr_ava',
-                time: 0,
-                type: 'OnPlayerJoined'
-            },
-            {
-                rowId: 2,
-                created_at: '2026-01-01T12:07:00.000Z',
-                displayName: 'Ava',
-                userId: 'usr_ava',
-                time: 420_000,
-                type: 'OnPlayerLeft'
-            },
-            {
-                rowId: 3,
-                created_at: '2026-01-01T12:10:00.000Z',
-                displayName: 'Ava',
-                userId: 'usr_ava',
-                time: 0,
-                type: 'OnPlayerJoined'
-            },
-            {
-                rowId: 4,
-                created_at: '2026-01-01T12:12:00.000Z',
-                displayName: 'Ava',
-                userId: 'usr_ava',
-                time: 120_000,
-                type: 'OnPlayerLeft'
-            }
-        ]);
+        tauriMock.commands.appGameLogQuery.mockResolvedValueOnce({
+            kind: 'playersFromInstanceRows',
+            value: [
+                {
+                    rowId: 1,
+                    created_at: '2026-01-01T12:00:00.000Z',
+                    displayName: 'Ava',
+                    userId: 'usr_ava',
+                    time: 0,
+                    type: 'OnPlayerJoined'
+                },
+                {
+                    rowId: 2,
+                    created_at: '2026-01-01T12:07:00.000Z',
+                    displayName: 'Ava',
+                    userId: 'usr_ava',
+                    time: 420_000,
+                    type: 'OnPlayerLeft'
+                },
+                {
+                    rowId: 3,
+                    created_at: '2026-01-01T12:10:00.000Z',
+                    displayName: 'Ava',
+                    userId: 'usr_ava',
+                    time: 0,
+                    type: 'OnPlayerJoined'
+                },
+                {
+                    rowId: 4,
+                    created_at: '2026-01-01T12:12:00.000Z',
+                    displayName: 'Ava',
+                    userId: 'usr_ava',
+                    time: 120_000,
+                    type: 'OnPlayerLeft'
+                }
+            ]
+        });
 
         const players =
             await gameLogRepository.getPlayersFromInstance('wrld_test:12345');
