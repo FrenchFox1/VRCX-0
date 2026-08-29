@@ -198,6 +198,14 @@ const feed = {
             vipList,
             maxEntries
         });
+    },
+
+    async getWorldFriendVisits(worldId: string) {
+        const normalizedWorldId = normalizeString(worldId);
+        if (!normalizedWorldId) {
+            return null;
+        }
+        return commands.appWorldFriendVisits(normalizedWorldId);
     }
 };
 

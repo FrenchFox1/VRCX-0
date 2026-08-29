@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import type { EntityRecord } from '@/domain/entities/shared';
 import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
 import { readWorldCacheInfo } from '@/lib/worldAssetBundle';
+import feedPersistenceRepository from '@/repositories/feedPersistenceRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
@@ -31,6 +32,10 @@ type WorldDialogNewInstanceGroups = Awaited<
 
 export type WorldPreviousInstances = Awaited<
     ReturnType<typeof gameLogRepository.getPreviousInstancesByWorldId>
+>;
+
+export type WorldFriendVisits = Awaited<
+    ReturnType<typeof feedPersistenceRepository.getWorldFriendVisits>
 >;
 
 export type WorldWorldSideData = {
@@ -71,6 +76,7 @@ export function useWorldDialogData({
     const [memo, setMemo] = useState('');
     const [previousInstances, setPreviousInstances] =
         useState<WorldPreviousInstances>([]);
+    const [friendVisits, setFriendVisits] = useState<WorldFriendVisits>(null);
     const [hasPersistData, setHasPersistData] = useState(false);
     const [worldSideData, setWorldSideData] = useState<WorldWorldSideData>(() =>
         defaultWorldSideData()
@@ -367,6 +373,34 @@ export function useWorldDialogData({
         };
     }, [profileWorldId]);
 
+    useEffect(() => {
+        let active = true;
+
+        if (!profileWorldId) {
+            setFriendVisits(null);
+            return () => {
+                active = false;
+            };
+        }
+
+        feedPersistenceRepository
+            .getWorldFriendVisits(profileWorldId)
+            .then((visits) => {
+                if (active) {
+                    setFriendVisits(visits);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setFriendVisits(null);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [profileWorldId]);
+
     return {
         world,
         setWorld,
@@ -377,6 +411,7 @@ export function useWorldDialogData({
         setMemo,
         previousInstances,
         setPreviousInstances,
+        friendVisits,
         hasPersistData,
         setHasPersistData,
         worldSideData,

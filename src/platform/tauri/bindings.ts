@@ -1048,6 +1048,11 @@ const generatedCommands = {
     async appWorldGet(input: WorldGetInput): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__world_get', { input });
     },
+    async appWorldFriendVisits(
+        worldId: string
+    ): Promise<WorldFriendVisitsOutput> {
+        return await TAURI_INVOKE('app__world_friend_visits', { worldId });
+    },
     async appFavoriteList(kind: FavoriteEntityKind): Promise<FavoriteRow[]> {
         return await TAURI_INVOKE('app__favorite_list', { kind });
     },
@@ -6268,6 +6273,17 @@ export type WorldDetail = {
     id?: string;
     name?: string | null;
     instanceId?: string;
+};
+export type WorldFriendVisitRow = {
+    userId: string;
+    displayName: string;
+    visitCount: number;
+    lastVisitedAt: string;
+};
+export type WorldFriendVisitsOutput = {
+    friendCount: number;
+    lastVisitedAt: string;
+    friends: WorldFriendVisitRow[];
 };
 export type WorldGetInput = {
     worldId?: string;

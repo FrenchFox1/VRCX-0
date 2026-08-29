@@ -36,6 +36,7 @@ import type {
     WorldDialogTabModel,
     WorldWorldScreenshots
 } from './WorldDialogTabbedView';
+import { friendVisitSummary } from './worldDialogUtils';
 import {
     InstanceUserTiles,
     WorldInstancesEmptyState,
@@ -181,6 +182,7 @@ export function WorldDialogTabPanels({
         currentUserId,
         displayInstanceRows,
         favoriteRate,
+        friendVisits,
         hasPersistData,
         isInstanceLocation,
         lastVisitedInstance,
@@ -536,6 +538,31 @@ export function WorldDialogTabPanels({
                                 : '—'
                         }
                     />
+                    {friendVisits && friendVisits.friendCount > 0 ? (
+                        <>
+                            <EntityInfoBlock
+                                label={t('dialog.world.info.friends_visited')}
+                                wide
+                            >
+                                <span className="block truncate text-sm leading-snug font-medium">
+                                    {String(friendVisits.friendCount)}
+                                </span>
+                                <span className="text-muted-foreground block truncate text-xs leading-snug">
+                                    {friendVisitSummary(friendVisits)}
+                                </span>
+                            </EntityInfoBlock>
+                            <EntityInfoBlock
+                                label={t(
+                                    'dialog.world.info.friends_last_visited'
+                                )}
+                                value={formatDateFilterOrFallback(
+                                    friendVisits.lastVisitedAt,
+                                    'long',
+                                    WORLD_DATE_FALLBACKS
+                                )}
+                            />
+                        </>
+                    ) : null}
                     <EntityInfoBlock
                         label={t('dialog.world.info.version')}
                         value={world.version ? String(world.version) : '—'}

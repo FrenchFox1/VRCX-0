@@ -30,7 +30,10 @@ import {
     EntityDialogTwoColumnLayout
 } from '../EntityDialogScaffold';
 import { useWorldDialogCurrentInstance } from './useWorldDialogCurrentInstance';
-import type { WorldPreviousInstances } from './useWorldDialogData';
+import type {
+    WorldFriendVisits,
+    WorldPreviousInstances
+} from './useWorldDialogData';
 import {
     useWorldDialogInstanceData,
     type WorldDialogInstanceDetailTarget
@@ -111,6 +114,7 @@ export interface WorldDialogTabModel {
     currentUserId: string | null;
     displayInstanceRows: WorldDialogDisplayInstanceRows;
     favoriteRate: number;
+    friendVisits: WorldFriendVisits;
     hasPersistData: boolean;
     isInstanceLocation: boolean;
     lastVisitedInstance: WorldPreviousInstances[number] | undefined;
@@ -150,6 +154,7 @@ type WorldDialogTabbedViewProps = {
         normalizedWorldId: string;
         openNonce?: number;
         previousInstances?: WorldPreviousInstances;
+        friendVisits?: WorldFriendVisits;
     };
     permissions: {
         isInstanceLocation: boolean;
@@ -200,7 +205,8 @@ export function WorldDialogTabbedView({
         actionStatus,
         normalizedWorldId,
         openNonce = 0,
-        previousInstances = []
+        previousInstances = [],
+        friendVisits = null
     } = resource;
     const {
         isInstanceLocation,
@@ -537,6 +543,7 @@ export function WorldDialogTabbedView({
         currentUserId,
         displayInstanceRows,
         favoriteRate,
+        friendVisits,
         hasPersistData,
         isInstanceLocation,
         lastVisitedInstance,

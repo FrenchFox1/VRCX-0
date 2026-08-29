@@ -380,3 +380,20 @@ fn feed_search_matches(row: &Value, search: &str) -> bool {
     .iter()
     .any(|value| value.to_uppercase().contains(&query))
 }
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WorldFriendVisitsOutput {
+    pub friend_count: i64,
+    pub last_visited_at: String,
+    pub friends: Vec<WorldFriendVisitRow>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WorldFriendVisitRow {
+    pub user_id: String,
+    pub display_name: String,
+    pub visit_count: i64,
+    pub last_visited_at: String,
+}
