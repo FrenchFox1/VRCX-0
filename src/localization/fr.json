@@ -2987,7 +2987,7 @@
             },
             "label": {
                 "instance_master": "Maître de l'instance",
-                "moderator": "Administrateur",
+                "moderator": "Équipe VRChat",
                 "favorite": "Favori",
                 "muted": "Microphone désactivé",
                 "avatar_interaction_disabled": "Interaction d'avatar désactivée",
@@ -3777,7 +3777,7 @@
                 "visibility_everyone": "Tout le monde",
                 "visibility_friends": "Amis",
                 "visibility_hidden": "Masqué",
-                "moderator": "Administrateur",
+                "moderator": "Équipe VRChat",
                 "muted": "Microphone désactivé",
                 "order_by": "Trier par",
                 "group_by": "Grouper par",
