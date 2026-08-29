@@ -507,7 +507,7 @@ export function InventoryPage() {
                     className="min-h-0 flex-1"
                 >
                     <TabsList
-                        variant="line"
+                        variant="underline"
                         className="flex h-auto w-full flex-wrap justify-start"
                     >
                         {CATEGORY_ORDER.map((category) => (

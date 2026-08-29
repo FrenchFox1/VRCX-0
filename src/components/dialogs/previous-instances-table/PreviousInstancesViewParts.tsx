@@ -675,7 +675,7 @@ export function PreviousInstanceDetailsPanel({
                     className="flex min-h-0 shrink-0 flex-col"
                 >
                     <div className="flex items-center justify-between gap-3">
-                        <TabsList variant="line">
+                        <TabsList variant="underline">
                             <TabsTrigger value="players">
                                 {t('dialog.previous_instances.table_view')}
                             </TabsTrigger>
