@@ -16,6 +16,7 @@ use vrcx_0_contracts::telemetry::{
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
 use super::event::TelemetryClientEvent;
+use super::scale::{db_size_bucket, row_bucket, TelemetryDatabaseScale};
 
 const TELEMETRY_INSTALL_ID_CONFIG_KEY: &str = "telemetryInstallId";
 const TELEMETRY_BASIC_INFO_REPORTED_VERSION_CONFIG_KEY: &str = "telemetryBasicInfoReportedVersion";
@@ -78,6 +79,7 @@ pub trait TelemetryEnvironment: Send + Sync {
     fn system_locale(&self) -> Option<String>;
     fn timezone(&self) -> Option<String>;
     fn system_theme_category(&self) -> String;
+    fn database_scale(&self) -> TelemetryDatabaseScale;
 }
 
 #[derive(Clone)]
@@ -552,6 +554,7 @@ impl TelemetryRuntime {
     }
 
     fn config_snapshot(&self) -> TelemetryConfigSnapshot {
+        let scale = self.inner.environment.database_scale();
         TelemetryConfigSnapshot {
             background_mode_enabled: self.config_bool("backgroundModeEnabled", false),
             wrist_overlay_enabled: self.config_bool("wristOverlayEnabled", false),
@@ -568,6 +571,10 @@ impl TelemetryRuntime {
                 &self.config_string("avatarAutoCleanup", "Off"),
             ),
             theme_mode: self.theme_category(),
+            db_size_bucket: db_size_bucket(scale.db_bytes),
+            feed_rows_bucket: row_bucket(scale.feed_rows),
+            gamelog_rows_bucket: row_bucket(scale.gamelog_rows),
+            friend_log_rows_bucket: row_bucket(scale.friend_log_rows),
         }
     }
 

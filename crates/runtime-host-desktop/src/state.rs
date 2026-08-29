@@ -338,6 +338,7 @@ impl DesktopRuntimeHostState {
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             environment: Arc::new(vrcx_0_outbound_adapters::LocalTelemetryEnvironment::new(
                 builder.desktop_assembly().config().clone(),
+                Arc::clone(builder.desktop_assembly().database()),
                 builder.paths().app_data.clone(),
                 Arc::new(|| {
                     vrcx_0_host_desktop::system_theme::current_system_theme_category()

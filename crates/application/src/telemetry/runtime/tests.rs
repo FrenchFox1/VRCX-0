@@ -8,6 +8,7 @@ struct FakeEnvironment {
     values: Mutex<HashMap<String, String>>,
     errors: Mutex<Vec<TelemetryClientErrorInput>>,
     unavailable: AtomicBool,
+    scale: Mutex<TelemetryDatabaseScale>,
 }
 
 impl FakeEnvironment {
@@ -88,6 +89,10 @@ impl TelemetryEnvironment for FakeEnvironment {
 
     fn timezone(&self) -> Option<String> {
         Some("UTC".into())
+    }
+
+    fn database_scale(&self) -> TelemetryDatabaseScale {
+        *self.scale.lock().unwrap()
     }
 
     fn system_theme_category(&self) -> String {
