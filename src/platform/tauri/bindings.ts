@@ -3933,6 +3933,131 @@ export type FeedLatestQueryInput = {
     favoritesOnly?: boolean;
     maxRows: number;
 };
+export type FeedLiveEntry =
+    | {
+          type: 'Online';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          worldName: string;
+          groupName: string;
+          time?: number | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Offline';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          worldName: string;
+          groupName: string;
+          time?: number | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'GPS';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          worldName: string;
+          previousLocation: string;
+          time: number;
+          groupName: string;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Status';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          status: string;
+          statusDescription: string;
+          previousStatus: string;
+          previousStatusDescription: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Bio';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          bio: string;
+          previousBio: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Avatar';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          ownerId: string;
+          previousOwnerId: string;
+          avatarName: string;
+          previousAvatarName: string;
+          currentAvatarImageUrl: string;
+          currentAvatarThumbnailImageUrl: string;
+          previousCurrentAvatarImageUrl: string;
+          previousCurrentAvatarThumbnailImageUrl: string;
+          currentAvatarTags?: string[] | null;
+          previousCurrentAvatarTags?: string[] | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'TrustLevel';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          trustLevel: string;
+          previousTrustLevel: string;
+          friendNumber: number;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Friend';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Unfriend';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'OnPlayerJoining';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          travelingToLocation: string;
+          worldName?: string | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'instance.closed';
+          created_at: string;
+          id: string;
+          location: string;
+          message: string;
+          worldName?: string | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      };
 export type FeedQueryMode = 'search' | 'lookup' | 'instance';
 export type FeedReadModelOutput = {
     rows: FeedRowOutput[];
@@ -4058,7 +4183,7 @@ export type FriendProjection = {
     baselineRevision: number;
     patches?: FriendProjectionPatch[];
     removals?: string[];
-    feedEntries?: RawJson[];
+    feedEntries?: FeedLiveEntry[];
     locationTimeSnapshot?: FriendLocationTime[] | null;
     friendLogChanged: boolean;
 };
@@ -5388,7 +5513,7 @@ export type RealtimeFeedProjection = {
     upserts?: RealtimeFeedUpsert[];
     patches?: RealtimeFeedPatch[];
 };
-export type RealtimeFeedUpsert = { sequence: number; entry: RawJson };
+export type RealtimeFeedUpsert = { sequence: number; entry: FeedLiveEntry };
 export type RealtimeInstanceClosedProjection = {
     generation: number;
     notification: RawJson;

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { onlineFeedEntry } from '@/components/feed/feedLiveTestEntries';
+
 const serviceMocks = vi.hoisted(() => ({
     configRepository: {
         getString: vi.fn()
@@ -118,13 +120,12 @@ describe('realtimePresenceService projection boundary', () => {
             ],
             removals: [],
             feedEntries: [
-                {
+                onlineFeedEntry({
                     created_at: '2026-05-15T00:00:00Z',
-                    type: 'Online',
                     userId: 'usr_friend',
                     displayName: 'Friend',
                     location: 'wrld_1:123'
-                }
+                })
             ],
             friendLogChanged: true
         });
@@ -210,10 +211,10 @@ describe('realtimePresenceService projection boundary', () => {
             upserts: [
                 {
                     sequence: 11,
-                    entry: {
-                        type: 'Online',
-                        userId: 'usr_friend'
-                    }
+                    entry: onlineFeedEntry({
+                        userId: 'usr_friend',
+                        ownerUserId: 'usr_self'
+                    })
                 }
             ],
             patches: []

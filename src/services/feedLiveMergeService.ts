@@ -2,7 +2,7 @@ import type {
     FeedLiveEntry,
     FeedLiveEntryPayload,
     FeedLivePatch
-} from '@/domain/feed/live';
+} from '@/components/feed/feedLiveTypes';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import type { FeedRowOutput as FeedRow } from '@/platform/tauri/bindings';
 import {
@@ -63,64 +63,73 @@ function optionalStringList(value: unknown): string[] | undefined {
 }
 
 function liveEntryRow(entry: FeedLiveEntryPayload): FeedRow {
-    return {
-        rowId: optionalNumber(entry.rowId ?? entry.row_id),
-        sourceRank: optionalNumber(entry.sourceRank ?? entry.source_rank),
-        created_at: optionalText(entry.created_at ?? entry.createdAt),
-        userId: optionalText(entry.userId ?? entry.user_id),
-        displayName: optionalText(entry.displayName ?? entry.display_name),
+    const row: FeedRow = {
+        created_at: optionalText(entry.created_at),
         type: optionalText(entry.type),
-        location: optionalText(entry.location),
-        worldName: optionalText(entry.worldName ?? entry.world_name),
-        previousLocation: optionalText(
-            entry.previousLocation ?? entry.previous_location
-        ),
-        time: optionalNumber(entry.time),
-        groupName: optionalText(entry.groupName ?? entry.group_name),
-        status: optionalText(entry.status),
-        statusDescription: optionalText(
-            entry.statusDescription ?? entry.status_description
-        ),
-        previousStatus: optionalText(
-            entry.previousStatus ?? entry.previous_status
-        ),
-        previousStatusDescription: optionalText(
-            entry.previousStatusDescription ?? entry.previous_status_description
-        ),
-        bio: optionalText(entry.bio),
-        previousBio: optionalText(entry.previousBio ?? entry.previous_bio),
-        ownerId: optionalText(entry.ownerId ?? entry.owner_id),
-        avatarName: optionalText(entry.avatarName ?? entry.avatar_name),
-        currentAvatarImageUrl: optionalText(
-            entry.currentAvatarImageUrl ?? entry.current_avatar_image_url
-        ),
-        currentAvatarThumbnailImageUrl: optionalText(
-            entry.currentAvatarThumbnailImageUrl ??
-                entry.current_avatar_thumbnail_image_url
-        ),
-        currentAvatarTags: optionalStringList(
-            entry.currentAvatarTags ?? entry.current_avatar_tags
-        ),
-        previousOwnerId: optionalText(
-            entry.previousOwnerId ?? entry.previous_owner_id
-        ),
-        previousAvatarName: optionalText(
-            entry.previousAvatarName ?? entry.previous_avatar_name
-        ),
-        previousCurrentAvatarImageUrl: optionalText(
-            entry.previousCurrentAvatarImageUrl ??
-                entry.previous_current_avatar_image_url
-        ),
-        previousCurrentAvatarThumbnailImageUrl: optionalText(
-            entry.previousCurrentAvatarThumbnailImageUrl ??
-                entry.previous_current_avatar_thumbnail_image_url
-        ),
-        previousCurrentAvatarTags: optionalStringList(
-            entry.previousCurrentAvatarTags ??
-                entry.previous_current_avatar_tags
-        ),
-        ownerUserId: optionalText(entry.ownerUserId ?? entry.owner_user_id)
+        ownerUserId: optionalText(entry.ownerUserId)
     };
+    if (entry.type !== 'instance.closed') {
+        row.userId = optionalText(entry.userId);
+        row.displayName = optionalText(entry.displayName);
+    }
+    switch (entry.type) {
+        case 'Online':
+        case 'Offline':
+            row.location = optionalText(entry.location);
+            row.worldName = optionalText(entry.worldName);
+            row.groupName = optionalText(entry.groupName);
+            row.time = optionalNumber(entry.time);
+            break;
+        case 'GPS':
+            row.location = optionalText(entry.location);
+            row.worldName = optionalText(entry.worldName);
+            row.previousLocation = optionalText(entry.previousLocation);
+            row.groupName = optionalText(entry.groupName);
+            row.time = optionalNumber(entry.time);
+            break;
+        case 'Status':
+            row.status = optionalText(entry.status);
+            row.statusDescription = optionalText(entry.statusDescription);
+            row.previousStatus = optionalText(entry.previousStatus);
+            row.previousStatusDescription = optionalText(
+                entry.previousStatusDescription
+            );
+            break;
+        case 'Bio':
+            row.bio = optionalText(entry.bio);
+            row.previousBio = optionalText(entry.previousBio);
+            break;
+        case 'Avatar':
+            row.ownerId = optionalText(entry.ownerId);
+            row.previousOwnerId = optionalText(entry.previousOwnerId);
+            row.avatarName = optionalText(entry.avatarName);
+            row.previousAvatarName = optionalText(entry.previousAvatarName);
+            row.currentAvatarImageUrl = optionalText(
+                entry.currentAvatarImageUrl
+            );
+            row.currentAvatarThumbnailImageUrl = optionalText(
+                entry.currentAvatarThumbnailImageUrl
+            );
+            row.previousCurrentAvatarImageUrl = optionalText(
+                entry.previousCurrentAvatarImageUrl
+            );
+            row.previousCurrentAvatarThumbnailImageUrl = optionalText(
+                entry.previousCurrentAvatarThumbnailImageUrl
+            );
+            row.currentAvatarTags = optionalStringList(entry.currentAvatarTags);
+            row.previousCurrentAvatarTags = optionalStringList(
+                entry.previousCurrentAvatarTags
+            );
+            break;
+        case 'OnPlayerJoining':
+        case 'instance.closed':
+            row.location = optionalText(entry.location);
+            row.worldName = optionalText(entry.worldName);
+            break;
+        default:
+            break;
+    }
+    return row;
 }
 
 function feedRowContentKey(row: FeedRow): string {

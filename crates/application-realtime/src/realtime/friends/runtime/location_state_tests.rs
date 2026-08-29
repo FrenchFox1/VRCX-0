@@ -109,7 +109,7 @@ mod tests {
 
         let patch = &output.projection.patches[0].patch;
         assert_eq!(output.projection.patches[0].patch.state, "online");
-        assert_eq!(output.persistence.feed_entries[0]["type"], "GPS");
+        assert_eq!(output.persistence.feed_entries[0].to_json()["type"], "GPS");
         assert_eq!(patch.state, "online");
         assert_eq!(patch.location, "wrld_2:456");
     }

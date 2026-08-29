@@ -6,7 +6,7 @@ import type {
     FeedLiveEntry,
     FeedLivePatch,
     FeedLiveEntryPayload
-} from '@/domain/feed/live';
+} from '@/components/feed/feedLiveTypes';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -54,25 +54,62 @@ function feedLiveMaxEntries() {
         : PERSISTED_FEED_LIVE_MAX_ENTRIES;
 }
 
-export function feedEntryCorrectionId(row: FeedLiveEntryPayload): string {
-    if (row?.id != null) {
-        return `id:${row.id}`;
+export function feedEntryCorrectionId(entry: FeedLiveEntryPayload): string {
+    if (entry.type === 'instance.closed') {
+        return `id:${entry.id}`;
     }
-    const rowId = row?.rowId ?? row?.row_id;
-    if (rowId != null) {
-        const sourceRank = row?.sourceRank ?? row?.source_rank;
-        if (sourceRank != null) {
-            return `row:${row?.type ?? ''}:${sourceRank}:${rowId}`;
+    const location = feedEntryLocation(entry);
+    return `${entry.type}:${entry.created_at}:${entry.userId}:${location}:`;
+}
+
+function feedEntryLocation(entry: FeedLiveEntryPayload): string {
+    switch (entry.type) {
+        case 'Online':
+        case 'Offline':
+        case 'GPS':
+        case 'OnPlayerJoining':
+        case 'instance.closed':
+            return entry.location;
+        default:
+            return '';
+    }
+}
+
+function applyFeedEntryPatch(
+    entry: FeedLiveEntryPayload,
+    patch: FeedEntryPatch
+): FeedLiveEntryPayload {
+    let next = entry;
+    if (patch.displayName !== undefined && next.type !== 'instance.closed') {
+        next = { ...next, displayName: patch.displayName };
+    }
+    if (patch.worldName !== undefined) {
+        switch (next.type) {
+            case 'Online':
+            case 'Offline':
+            case 'GPS':
+            case 'OnPlayerJoining':
+            case 'instance.closed':
+                next = { ...next, worldName: patch.worldName };
+                break;
+            default:
+                break;
         }
-        return `row:${row?.type ?? ''}:${rowId}`;
     }
-    const type = row?.type ?? '';
-    const createdAt = row?.created_at ?? row?.createdAt ?? '';
-    const userId = row?.userId ?? row?.user_id ?? row?.senderUserId ?? '';
-    const details = isRecord(row?.details) ? row.details : {};
-    const location = row?.location ?? details.location ?? '';
-    const message = row?.message ?? '';
-    return `${type}:${createdAt}:${userId}:${location}:${message}`;
+    if (patch.displayLocation !== undefined) {
+        switch (next.type) {
+            case 'Online':
+            case 'Offline':
+            case 'GPS':
+            case 'OnPlayerJoining':
+            case 'instance.closed':
+                next = { ...next, displayLocation: patch.displayLocation };
+                break;
+            default:
+                break;
+        }
+    }
+    return next;
 }
 
 function nonEmptyFeedPatch(fields: FeedEntryPatchInput): FeedEntryPatch {
@@ -113,7 +150,7 @@ export const useFeedLiveStore = create<FeedLiveStoreState>((set) => ({
                 .map((entry) => ({
                     sequence: entry.sequence,
                     ownerUserId,
-                    entry: { ...entry.entry, ownerUserId }
+                    entry: entry.entry
                 }));
             if (!appended.length) {
                 return state;
@@ -157,10 +194,7 @@ export const useFeedLiveStore = create<FeedLiveStoreState>((set) => ({
                     }
                     return {
                         ...entry,
-                        entry: {
-                            ...entry.entry,
-                            ...patch
-                        }
+                        entry: applyFeedEntryPatch(entry.entry, patch)
                     };
                 });
             }

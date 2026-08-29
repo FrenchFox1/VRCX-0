@@ -89,7 +89,7 @@ mod tests {
                 .persistence
                 .feed_entries
                 .iter()
-                .filter(|entry| entry["type"] == "TrustLevel")
+                .filter(|entry| entry.to_json()["type"] == "TrustLevel")
                 .count(),
             1
         );
@@ -98,7 +98,7 @@ mod tests {
                 .projection
                 .feed_entries
                 .iter()
-                .filter(|entry| entry["type"] == "TrustLevel")
+                .filter(|entry| entry.to_json()["type"] == "TrustLevel")
                 .count(),
             1
         );
@@ -120,7 +120,7 @@ mod tests {
                 .persistence
                 .feed_entries
                 .iter()
-                .all(|entry| entry["type"] != "TrustLevel"));
+                .all(|entry| entry.to_json()["type"] != "TrustLevel"));
         }
     }
 

@@ -1,6 +1,6 @@
 use serde_json::{json, Value};
 use vrcx_0_application_core::{
-    FriendProjection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
+    FeedLiveEntry, FriendProjection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
     RealtimeInstanceQueueProjection, RealtimeNotificationProjection,
 };
 
@@ -22,7 +22,7 @@ impl OverlayActivityRuntime {
         projection
             .feed_entries
             .iter()
-            .filter_map(|entry| friend_feed_candidate(entry.as_value()))
+            .filter_map(friend_feed_candidate)
             .filter_map(|candidate| self.ingest_candidate(candidate))
             .collect()
     }
@@ -103,24 +103,21 @@ impl OverlayActivityRuntime {
     }
 }
 
-fn friend_feed_candidate(value: &Value) -> Option<OverlayActivityCandidate> {
-    let activity_type = value.trimmed_text("type");
+fn friend_feed_candidate(entry: &FeedLiveEntry) -> Option<OverlayActivityCandidate> {
+    let activity_type = entry.entry_type().to_string();
     known_definition_for_type(&activity_type)?;
-    let created_at = first_non_empty_owned([
-        value.trimmed_field("created_at").unwrap_or_default(),
-        value.trimmed_field("createdAt").unwrap_or_default(),
-    ]);
-    let user_id = value.trimmed_text("userId");
-    let current_instance = activity_type == "OnPlayerJoining";
+    let created_at = entry.created_at().trim().to_string();
+    let user_id = entry.user_id().trim().to_string();
+    let current_instance = matches!(entry, FeedLiveEntry::OnPlayerJoining { .. });
     Some(OverlayActivityCandidate {
         source_id: format!("friend-feed:{activity_type}:{user_id}:{created_at}"),
         activity_type,
         created_at,
         actor_user_id: user_id.clone(),
-        actor_display_name: value.trimmed_text("displayName"),
+        actor_display_name: entry.display_name().trim().to_string(),
         current_instance,
         favorite_subject: OverlayActivityFavoriteSubject::UserId(user_id.clone()),
-        payload: value.clone().into(),
+        payload: entry.to_json().into(),
     })
 }
 

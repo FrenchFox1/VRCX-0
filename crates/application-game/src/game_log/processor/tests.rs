@@ -696,14 +696,19 @@ fn game_log_presence_enables_current_instance_gps_surface_filtering() -> Result<
     assert!(joined[0].vr);
     assert!(joined[0].hmd);
     overlay.ingest_friend_projection(&FriendProjection {
-        feed_entries: vec![serde_json::json!({
-            "type": "GPS",
-            "created_at": chrono::Utc::now().to_rfc3339(),
-            "userId": "usr_selected",
-            "displayName": "Selected Friend",
-            "location": "wrld_current:123"
-        })
-        .into()],
+        feed_entries: vec![vrcx_0_application_core::FeedLiveEntry::Gps {
+            created_at: chrono::Utc::now().to_rfc3339(),
+            user_id: "usr_selected".into(),
+            display_name: "Selected Friend".into(),
+            location: "wrld_current:123".into(),
+            world_name: String::new(),
+            previous_location: String::new(),
+            time: 0,
+            group_name: String::new(),
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        }],
         ..FriendProjection::new(0, 0)
     });
 

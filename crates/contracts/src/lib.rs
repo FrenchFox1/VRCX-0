@@ -8,6 +8,7 @@ mod entity_cache;
 pub mod external_api;
 mod favorites;
 pub mod feed;
+pub mod feed_live;
 pub mod friend_log;
 pub mod game_log;
 mod legacy_migration;

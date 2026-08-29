@@ -1,5 +1,6 @@
 import { act } from '@testing-library/react';
 
+import { onlineFeedEntry } from '@/components/feed/feedLiveTestEntries';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 
 export type Deferred<T> = {
@@ -30,13 +31,11 @@ export function pushLiveEntry(id: string, sequence?: number): void {
             [
                 {
                     sequence: sequence ?? state.version + 1,
-                    entry: {
-                        id,
-                        type: 'Online',
+                    entry: onlineFeedEntry({
                         userId: `usr_${id}`,
                         displayName: id,
                         created_at: `2026-08-11T00:00:${String(state.version).padStart(2, '0')}Z`
-                    }
+                    })
                 }
             ],
             { ownerUserId: 'usr_self' }

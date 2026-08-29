@@ -1,4 +1,5 @@
 use serde::Serialize;
+pub use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::{RawJson, RawJsonObject};
 
@@ -35,7 +36,7 @@ pub struct FriendProjection {
     #[serde(default)]
     pub removals: Vec<String>,
     #[serde(default)]
-    pub feed_entries: Vec<RawJson>,
+    pub feed_entries: Vec<FeedLiveEntry>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location_time_snapshot: Option<Vec<FriendLocationTime>>,
     pub friend_log_changed: bool,

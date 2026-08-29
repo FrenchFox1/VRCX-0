@@ -3,6 +3,7 @@ use std::sync::{Arc, Barrier};
 
 use chrono::DateTime;
 use serde_json::json;
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::activity::{
     activity_bucket_cache_get, activity_bucket_cache_upsert,
@@ -86,6 +87,39 @@ fn replace_self_session(db: &DatabaseService, user_id: &str, start: &str, end: &
     .unwrap();
 }
 
+fn presence_entry(user_id: &str, created_at: &str, kind: &str) -> FeedLiveEntry {
+    let created_at = created_at.to_string();
+    let user_id = user_id.to_string();
+    let display_name = "Friend".to_string();
+    match kind {
+        "Online" => FeedLiveEntry::Online {
+            created_at,
+            user_id,
+            display_name,
+            location: String::new(),
+            world_name: String::new(),
+            group_name: String::new(),
+            time: None,
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        },
+        "Offline" => FeedLiveEntry::Offline {
+            created_at,
+            user_id,
+            display_name,
+            location: String::new(),
+            world_name: String::new(),
+            group_name: String::new(),
+            time: None,
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        },
+        other => panic!("unsupported presence feed entry type: {other}"),
+    }
+}
+
 fn add_presence(
     db: &DatabaseService,
     owner_user_id: &str,
@@ -97,16 +131,7 @@ fn add_presence(
         db,
         &OwnerId::new(owner_user_id),
         &RealtimePersistenceBatch {
-            feed_entries: vec![json!({
-                "created_at": created_at,
-                "userId": target_user_id,
-                "displayName": "Friend",
-                "type": kind,
-                "location": "",
-                "worldName": "",
-                "time": 0,
-                "groupName": ""
-            })],
+            feed_entries: vec![presence_entry(target_user_id, created_at, kind)],
             ..RealtimePersistenceBatch::default()
         },
     )

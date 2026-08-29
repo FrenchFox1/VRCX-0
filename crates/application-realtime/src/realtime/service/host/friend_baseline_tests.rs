@@ -297,7 +297,10 @@ fn host_watermark_preserves_pending_created_after_capture() -> Result<()> {
             .friends
             .fire_pending_offline("usr_friend", token, "2026-05-15T00:03:00Z".into())
             .expect("the original pending timer should remain active");
-        assert_eq!(fired.persistence.feed_entries[0]["type"], "Offline");
+        assert_eq!(
+            fired.persistence.feed_entries[0].to_json()["type"],
+            "Offline"
+        );
     }
     Ok(())
 }
@@ -859,10 +862,16 @@ fn reconcile_records_and_projects_trust_only_change_once() -> Result<()> {
     );
     assert!(outcome.changed);
     assert_eq!(outcome.feed_entries.len(), 1);
-    assert_eq!(outcome.feed_entries[0]["type"], "TrustLevel");
-    assert_eq!(outcome.feed_entries[0]["trustLevel"], "Trusted User");
-    assert_eq!(outcome.feed_entries[0]["previousTrustLevel"], "Known User");
-    assert_eq!(outcome.feed_entries[0]["friendNumber"], 7);
+    assert_eq!(outcome.feed_entries[0].to_json()["type"], "TrustLevel");
+    assert_eq!(
+        outcome.feed_entries[0].to_json()["trustLevel"],
+        "Trusted User"
+    );
+    assert_eq!(
+        outcome.feed_entries[0].to_json()["previousTrustLevel"],
+        "Known User"
+    );
+    assert_eq!(outcome.feed_entries[0].to_json()["friendNumber"], 7);
     assert!(
         !reconcile_friend_roster_records(
             &db,
@@ -1627,18 +1636,13 @@ fn apply_friend_profile_refresh_updates_existing_friend_only() -> Result<()> {
 fn friend_projection_clears_feed_entries_when_persistence_fails() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("friend-persist-failure-clears-feed")?;
-    let feed_entry = json!({
-        "created_at": "2026-06-21T00:00:00.000Z",
-        "type": "NewFeedType",
-        "userId": "usr_friend",
-        "displayName": "Friend"
-    });
+    let feed_entry = unwritable_feed_entry("2026-06-21T00:00:00.000Z");
 
     let mut output = RealtimeFriendOutput::from_projection(
         OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
-            feed_entries: vec![feed_entry.clone().into()],
+            feed_entries: vec![feed_entry.clone()],
             ..FriendProjection::new(7, 0)
         },
     );
@@ -1712,7 +1716,10 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
     else {
         panic!("first friend-delete should produce an output");
     };
-    first.persistence.feed_entries[0]["type"] = json!("NewFeedType");
+    first
+        .persistence
+        .feed_entries
+        .push(unwritable_feed_entry("2026-05-15T00:00:01Z"));
     runtime.runtime().apply_friend_output(*first);
 
     assert_eq!(
@@ -1757,19 +1764,14 @@ fn disabled_feed_persistence_keeps_projection_and_other_batch_writes() -> Result
         .into_iter()
         .enumerate()
         .map(|(index, entry_type)| {
-            json!({
-                "created_at": format!("2026-06-21T00:00:0{index}.000Z"),
-                "type": entry_type,
-                "userId": "usr_friend",
-                "displayName": "Friend"
-            })
+            feed_entry_of(entry_type, &format!("2026-06-21T00:00:0{index}.000Z"))
         })
         .collect::<Vec<_>>();
     let mut output = RealtimeFriendOutput::from_projection(
         OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
-            feed_entries: feed_entries.iter().cloned().map(Into::into).collect(),
+            feed_entries: feed_entries.clone(),
             ..FriendProjection::new(7, 0)
         },
     );
@@ -1819,17 +1821,12 @@ fn disabled_feed_persistence_keeps_projection_and_other_batch_writes() -> Result
     .is_empty());
 
     runtime.runtime().set_feed_persistence_disabled(false)?;
-    let enabled_entry = json!({
-        "created_at": "2026-06-21T00:00:10.000Z",
-        "type": "Online",
-        "userId": "usr_friend",
-        "displayName": "Friend"
-    });
+    let enabled_entry = feed_entry_of("Online", "2026-06-21T00:00:10.000Z");
     let mut enabled_output = RealtimeFriendOutput::from_projection(
         OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
-            feed_entries: vec![enabled_entry.clone().into()],
+            feed_entries: vec![enabled_entry.clone()],
             ..FriendProjection::new(7, 0)
         },
     );
@@ -1852,32 +1849,41 @@ fn disabled_avatar_feed_persistence_keeps_feed_and_activity_delivery() -> Result
     runtime
         .runtime()
         .set_avatar_feed_persistence_disabled(true)?;
-    let avatar_entry = json!({
-        "created_at": "2026-06-21T00:00:00.000Z",
-        "type": "Avatar",
-        "userId": "usr_friend",
-        "displayName": "Friend",
-        "ownerId": "usr_author",
-        "avatarName": "New Avatar",
-        "currentAvatarImageUrl": "https://avatar.example/new.png",
-        "currentAvatarThumbnailImageUrl": "https://avatar.example/new-thumb.png",
-        "previousCurrentAvatarImageUrl": "https://avatar.example/old.png",
-        "previousCurrentAvatarThumbnailImageUrl": "https://avatar.example/old-thumb.png"
-    });
-    let gps_entry = json!({
-        "created_at": "2026-06-21T00:00:01.000Z",
-        "type": "GPS",
-        "userId": "usr_friend",
-        "displayName": "Friend",
-        "location": "wrld_test:instance",
-        "worldName": "Test World"
-    });
+    let avatar_entry = FeedLiveEntry::Avatar {
+        created_at: "2026-06-21T00:00:00.000Z".into(),
+        user_id: "usr_friend".into(),
+        display_name: "Friend".into(),
+        owner_id: "usr_author".into(),
+        previous_owner_id: String::new(),
+        avatar_name: "New Avatar".into(),
+        previous_avatar_name: String::new(),
+        current_avatar_image_url: "https://avatar.example/new.png".into(),
+        current_avatar_thumbnail_image_url: "https://avatar.example/new-thumb.png".into(),
+        previous_current_avatar_image_url: "https://avatar.example/old.png".into(),
+        previous_current_avatar_thumbnail_image_url: "https://avatar.example/old-thumb.png".into(),
+        current_avatar_tags: None,
+        previous_current_avatar_tags: None,
+        owner_user_id: String::new(),
+    };
+    let gps_entry = FeedLiveEntry::Gps {
+        created_at: "2026-06-21T00:00:01.000Z".into(),
+        user_id: "usr_friend".into(),
+        display_name: "Friend".into(),
+        location: "wrld_test:instance".into(),
+        world_name: "Test World".into(),
+        previous_location: String::new(),
+        time: 0,
+        group_name: String::new(),
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    };
     let feed_entries = vec![avatar_entry, gps_entry];
     let mut output = RealtimeFriendOutput::from_projection(
         OwnerId::new(active_session.user_id.clone()),
         FriendProjection {
             generation: 7,
-            feed_entries: feed_entries.iter().cloned().map(Into::into).collect(),
+            feed_entries: feed_entries.clone(),
             ..FriendProjection::new(7, 0)
         },
     );
@@ -1921,7 +1927,7 @@ fn disabled_avatar_feed_persistence_keeps_feed_and_activity_delivery() -> Result
     assert!(activity_projections[0]
         .feed_entries
         .iter()
-        .any(|entry| entry["type"] == "Avatar"));
+        .any(|entry| matches!(entry, FeedLiveEntry::Avatar { .. })));
 
     let events = runtime.runtime().deps.event_bus.take_events_for_test();
     let feed_projection = events
@@ -1943,14 +1949,7 @@ fn changing_avatar_feed_persistence_keeps_existing_live_entries() -> Result<()> 
     runtime.runtime().emit_feed_entries(
         7,
         &OwnerId::new(active_session.user_id.clone()),
-        vec![json!({
-            "created_at": "2026-06-21T00:00:00.000Z",
-            "type": "Avatar",
-            "userId": "usr_friend",
-            "displayName": "Friend",
-            "avatarName": "Transient Avatar"
-        })
-        .into()],
+        vec![transient_avatar_entry("2026-06-21T00:00:00.000Z")],
     );
 
     runtime

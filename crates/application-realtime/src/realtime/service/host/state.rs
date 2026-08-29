@@ -9,6 +9,7 @@ use vrcx_0_application_core::{
     PrintCleanupInputSink, RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus,
     RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
@@ -122,7 +123,7 @@ pub(super) struct ActiveRealtimeContext {
 pub(super) struct PendingFriendBaseline {
     pub(super) session: RealtimeSessionContext,
     pub(super) friends_by_id: HashMap<String, FriendRecord>,
-    pub(super) feed_entries: Vec<Value>,
+    pub(super) feed_entries: Vec<FeedLiveEntry>,
     pub(super) projection: FriendProjection,
 }
 

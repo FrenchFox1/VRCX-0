@@ -1,4 +1,5 @@
 use serde_json::{json, Value};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::FriendLogDelete;
 use vrcx_0_core::derived_keys;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
@@ -133,13 +134,7 @@ fn apply_friend_event_with_source(
         FriendEventKind::Location => apply_location(state, &mut output, content, now)?,
     }
 
-    let mut feed_entries = output
-        .persistence
-        .feed_entries
-        .iter()
-        .cloned()
-        .map(vrcx_0_core::json::RawJson::from)
-        .collect::<Vec<_>>();
+    let mut feed_entries = output.persistence.feed_entries.clone();
     feed_entries.append(&mut output.projection.feed_entries);
     output.projection.feed_entries = feed_entries;
     if output.projection.patches.is_empty()
@@ -720,8 +715,15 @@ fn add_gps_feed_entry_if_not_repeated(
     let Some(entry) = gps_feed_entry(user_id, patch, previous, &now.iso) else {
         return;
     };
-    let location = entry.text_field("location");
-    let previous_location = entry.text_field("previousLocation");
+    let FeedLiveEntry::Gps {
+        location,
+        previous_location,
+        ..
+    } = &entry
+    else {
+        return;
+    };
+    let (location, previous_location) = (location.clone(), previous_location.clone());
     let crosses_private_boundary =
         is_private_location(&location) || is_private_location(&previous_location);
     if !crosses_private_boundary
@@ -808,7 +810,7 @@ pub(super) fn apply_record_patch_to_state(
         &transition.next,
         created_at,
     ) {
-        output.projection.feed_entries.push(entry.into());
+        output.projection.feed_entries.push(entry);
     }
 
     let friend_was_added = match state.baseline.as_mut() {

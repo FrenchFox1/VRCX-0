@@ -1,49 +1,62 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { FeedLiveEntry, FeedLivePatch } from '@/domain/feed/live';
+import {
+    gpsFeedEntry,
+    instanceClosedFeedEntry,
+    onlineFeedEntry,
+    statusFeedEntry
+} from '@/components/feed/feedLiveTestEntries';
+import type {
+    FeedLiveEntry,
+    FeedLiveEntryPayload,
+    FeedLivePatch
+} from '@/components/feed/feedLiveTypes';
 
 import { feedEntryCorrectionId, useFeedLiveStore } from './feedLiveStore';
 import { usePreferencesStore } from './preferencesStore';
 
 const goldenFeedEntryCorrectionIds = [
     {
-        input: {
-            id: 'feed-entry-1',
-            type: 'GPS',
-            rowId: '10',
-            sourceRank: '2'
-        },
-        expected: 'id:feed-entry-1'
+        input: instanceClosedFeedEntry({
+            id: 'instance.closed:wrld_world:123:2026-06-21T00:00:00.000Z'
+        }),
+        expected: 'id:instance.closed:wrld_world:123:2026-06-21T00:00:00.000Z'
     },
     {
-        input: { type: 'GPS', rowId: '10', sourceRank: '2' },
-        expected: 'row:GPS:2:10'
-    },
-    {
-        input: { type: 'Online', row_id: '11', source_rank: '3' },
-        expected: 'row:Online:3:11'
-    },
-    {
-        input: {
-            type: 'invite',
+        input: gpsFeedEntry({
             created_at: '2026-06-21T00:00:00.000Z',
-            userId: 'usr_sender',
-            details: { location: 'wrld_world:123' },
-            message: 'Join me'
-        },
-        expected:
-            'invite:2026-06-21T00:00:00.000Z:usr_sender:wrld_world:123:Join me'
+            userId: 'usr_location',
+            location: 'wrld_world:123'
+        }),
+        expected: 'GPS:2026-06-21T00:00:00.000Z:usr_location:wrld_world:123:'
+    },
+    {
+        input: statusFeedEntry({
+            created_at: '2026-06-21T00:00:00.000Z',
+            userId: 'usr_friend',
+            status: 'active',
+            previousStatus: 'join me'
+        }),
+        expected: 'Status:2026-06-21T00:00:00.000Z:usr_friend::'
     }
 ];
 
-function upsert(sequence: number, id: string): FeedLiveEntry {
-    return { sequence, entry: { id } };
+function actorUserId(entry: FeedLiveEntryPayload): string {
+    return entry.type === 'instance.closed' ? '' : entry.userId;
 }
 
-function patch(sequence: number, id: string): FeedLivePatch {
+function actorDisplayName(entry: FeedLiveEntryPayload): string {
+    return entry.type === 'instance.closed' ? '' : entry.displayName;
+}
+
+function upsert(sequence: number, userId: string): FeedLiveEntry {
+    return { sequence, entry: onlineFeedEntry({ userId }) };
+}
+
+function patch(sequence: number, userId: string): FeedLivePatch {
     return {
         sequence,
-        id: `id:${id}`,
+        id: feedEntryCorrectionId(onlineFeedEntry({ userId })),
         fields: { displayName: `Name ${sequence}` }
     };
 }
@@ -75,12 +88,11 @@ describe('feedLiveStore', () => {
 
         const state = useFeedLiveStore.getState();
         expect(state.entries.map((entry) => entry.sequence)).toEqual([7, 9]);
-        expect(state.entries.map((entry) => entry.entry.id)).toEqual([
+        expect(state.entries.map((entry) => actorUserId(entry.entry))).toEqual([
             'a',
             'b'
         ]);
         expect(state.entries[1].ownerUserId).toBe('usr_owner');
-        expect(state.entries[1].entry.ownerUserId).toBe('usr_owner');
         expect(state.version).toBe(9);
     });
 
@@ -90,14 +102,14 @@ describe('feedLiveStore', () => {
             .getState()
             .pushEntries([
                 upsert(4, 'old'),
-                { sequence: 0, entry: { id: 'invalid' } },
+                { sequence: 0, entry: onlineFeedEntry({ userId: 'invalid' }) },
                 upsert(6, 'b'),
                 null,
                 undefined
             ]);
 
         const state = useFeedLiveStore.getState();
-        expect(state.entries.map((entry) => entry.entry.id)).toEqual([
+        expect(state.entries.map((entry) => actorUserId(entry.entry))).toEqual([
             'a',
             'b'
         ]);
@@ -144,12 +156,12 @@ describe('feedLiveStore', () => {
 
         const state = useFeedLiveStore.getState();
         expect(state.version).toBe(12);
-        expect(state.entries.map((entry) => entry.entry.id)).toEqual([
+        expect(state.entries.map((entry) => actorUserId(entry.entry))).toEqual([
             'a',
             'b'
         ]);
         expect(state.entries[0].sequence).toBe(10);
-        expect(state.entries[0].entry.displayName).toBe('Name 12');
+        expect(actorDisplayName(state.entries[0].entry)).toBe('Name 12');
         expect(state.patches).toEqual([patch(12, 'a')]);
     });
 

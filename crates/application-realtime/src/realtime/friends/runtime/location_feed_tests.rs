@@ -99,7 +99,7 @@ mod tests {
         else {
             panic!("first friend-location should produce an output");
         };
-        assert_eq!(first.persistence.feed_entries[0]["type"], "GPS");
+        assert_eq!(first.persistence.feed_entries[0].to_json()["type"], "GPS");
 
         let RealtimeFriendApplyResult::Output(second) =
             runtime.apply_ws_message(&RealtimeWsMessagePayload {
@@ -160,7 +160,7 @@ mod tests {
             panic!("arrival should produce an output");
         };
         assert_eq!(
-            arrived.persistence.feed_entries[0]["location"],
+            arrived.persistence.feed_entries[0].to_json()["location"],
             "wrld_current:456"
         );
 
@@ -190,15 +190,27 @@ mod tests {
             panic!("private status update should produce an output");
         };
         assert_eq!(private.persistence.feed_entries.len(), 2);
-        assert_eq!(private.persistence.feed_entries[0]["type"], "GPS");
-        assert_eq!(private.persistence.feed_entries[0]["location"], "private");
-        assert_eq!(private.persistence.feed_entries[0]["worldName"], "");
-        assert_eq!(private.persistence.feed_entries[0]["groupName"], "");
+        assert_eq!(private.persistence.feed_entries[0].to_json()["type"], "GPS");
         assert_eq!(
-            private.persistence.feed_entries[0]["previousLocation"],
+            private.persistence.feed_entries[0].to_json()["location"],
+            "private"
+        );
+        assert_eq!(
+            private.persistence.feed_entries[0].to_json()["worldName"],
+            ""
+        );
+        assert_eq!(
+            private.persistence.feed_entries[0].to_json()["groupName"],
+            ""
+        );
+        assert_eq!(
+            private.persistence.feed_entries[0].to_json()["previousLocation"],
             "wrld_current:456"
         );
-        assert_eq!(private.persistence.feed_entries[1]["type"], "Status");
+        assert_eq!(
+            private.persistence.feed_entries[1].to_json()["type"],
+            "Status"
+        );
         assert_eq!(private.projection.patches[0].patch.location, "private");
         assert_eq!(
             private.projection.patches[0].patch.extra["$location"]["isPrivate"],
@@ -211,16 +223,22 @@ mod tests {
             panic!("visible status update should produce an output");
         };
         assert_eq!(restored.persistence.feed_entries.len(), 2);
-        assert_eq!(restored.persistence.feed_entries[0]["type"], "GPS");
         assert_eq!(
-            restored.persistence.feed_entries[0]["location"],
+            restored.persistence.feed_entries[0].to_json()["type"],
+            "GPS"
+        );
+        assert_eq!(
+            restored.persistence.feed_entries[0].to_json()["location"],
             "wrld_current:456"
         );
         assert_eq!(
-            restored.persistence.feed_entries[0]["previousLocation"],
+            restored.persistence.feed_entries[0].to_json()["previousLocation"],
             "private"
         );
-        assert_eq!(restored.persistence.feed_entries[1]["type"], "Status");
+        assert_eq!(
+            restored.persistence.feed_entries[1].to_json()["type"],
+            "Status"
+        );
         assert_eq!(
             restored.projection.patches[0].patch.extra["$location"]["worldId"],
             "wrld_current"
@@ -360,9 +378,12 @@ mod tests {
         };
         assert!(first.persistence.feed_entries.is_empty());
         assert_eq!(first.projection.feed_entries.len(), 1);
-        assert_eq!(first.projection.feed_entries[0]["type"], "OnPlayerJoining");
         assert_eq!(
-            first.projection.feed_entries[0]["travelingToLocation"],
+            first.projection.feed_entries[0].to_json()["type"],
+            "OnPlayerJoining"
+        );
+        assert_eq!(
+            first.projection.feed_entries[0].to_json()["travelingToLocation"],
             "wrld_current:456"
         );
 
@@ -418,9 +439,18 @@ mod tests {
         };
 
         assert_eq!(output.persistence.feed_entries.len(), 1);
-        assert_eq!(output.persistence.feed_entries[0]["type"], "Online");
+        assert_eq!(
+            output.persistence.feed_entries[0].to_json()["type"],
+            "Online"
+        );
         assert_eq!(output.projection.feed_entries.len(), 2);
-        assert_eq!(output.projection.feed_entries[0]["type"], "Online");
-        assert_eq!(output.projection.feed_entries[1]["type"], "OnPlayerJoining");
+        assert_eq!(
+            output.projection.feed_entries[0].to_json()["type"],
+            "Online"
+        );
+        assert_eq!(
+            output.projection.feed_entries[1].to_json()["type"],
+            "OnPlayerJoining"
+        );
     }
 }

@@ -9,14 +9,14 @@ pub use vrcx_0_application_core::{
     RealtimeUserProjection,
 };
 use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
-use vrcx_0_core::json::RawJson;
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeFeedUpsert {
     pub sequence: i64,
-    pub entry: RawJson,
+    pub entry: FeedLiveEntry,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]

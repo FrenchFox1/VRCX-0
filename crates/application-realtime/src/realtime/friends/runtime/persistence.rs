@@ -5,6 +5,7 @@ use vrcx_0_core::derived_keys;
 use chrono::Utc;
 use compact_str::CompactString;
 use serde_json::{json, Map, Value};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::FriendLogUpsert;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 
@@ -16,11 +17,7 @@ use super::utils::{first_non_empty, first_owned, parse_location, string_or_previ
 
 mod feed_entry;
 
-use feed_entry::{
-    feed_duration_ms, feed_entry_value, AvatarFeedEntry, BioFeedEntry, FeedEntryType,
-    FriendRelationshipFeedEntry, GpsFeedEntry, OfflineFeedEntry, OnlineFeedEntry,
-    PlayerJoiningFeedEntry, StatusFeedEntry, TrustLevelFeedEntry,
-};
+use feed_entry::{feed_avatar_tags, feed_duration_ms};
 
 struct ResolvedLocationNames {
     world_name: String,
@@ -62,10 +59,25 @@ pub(super) enum FriendRelationshipFeedKind {
 }
 
 impl FriendRelationshipFeedKind {
-    fn feed_type(self) -> FeedEntryType {
+    fn feed_entry(
+        self,
+        created_at: String,
+        user_id: String,
+        display_name: String,
+    ) -> FeedLiveEntry {
         match self {
-            Self::Friend => FeedEntryType::Friend,
-            Self::Unfriend => FeedEntryType::Unfriend,
+            Self::Friend => FeedLiveEntry::Friend {
+                created_at,
+                user_id,
+                display_name,
+                owner_user_id: String::new(),
+            },
+            Self::Unfriend => FeedLiveEntry::Unfriend {
+                created_at,
+                user_id,
+                display_name,
+                owner_user_id: String::new(),
+            },
         }
     }
 }
@@ -172,16 +184,16 @@ pub(crate) fn trust_level_feed_entry(
     trust_level: &str,
     previous_trust_level: &str,
     friend_number: i64,
-) -> Value {
-    feed_entry_value(&TrustLevelFeedEntry {
-        created_at,
-        entry_type: FeedEntryType::TrustLevel,
-        user_id,
-        display_name,
-        trust_level,
-        previous_trust_level,
+) -> FeedLiveEntry {
+    FeedLiveEntry::TrustLevel {
+        created_at: created_at.to_string(),
+        user_id: user_id.to_string(),
+        display_name: display_name.to_string(),
+        trust_level: trust_level.to_string(),
+        previous_trust_level: previous_trust_level.to_string(),
         friend_number,
-    })
+        owner_user_id: String::new(),
+    }
 }
 
 pub(super) fn add_profile_diff_feed_entries(
@@ -202,32 +214,26 @@ pub(super) fn add_profile_diff_feed_entries(
         && next_status != "offline"
         && previous.status != "offline"
     {
-        output
-            .persistence
-            .feed_entries
-            .push(feed_entry_value(&StatusFeedEntry {
-                created_at,
-                entry_type: FeedEntryType::Status,
-                user_id,
-                display_name: display_name(user_id, patch, Some(previous)),
-                status: next_status,
-                status_description: string_or_previous(patch, previous, "statusDescription"),
-                previous_status: &previous.status,
-                previous_status_description: &previous.status_description,
-            }));
+        output.persistence.feed_entries.push(FeedLiveEntry::Status {
+            created_at: created_at.to_string(),
+            user_id: user_id.to_string(),
+            display_name: display_name(user_id, patch, Some(previous)),
+            status: next_status,
+            status_description: string_or_previous(patch, previous, "statusDescription"),
+            previous_status: previous.status.to_string(),
+            previous_status_description: previous.status_description.to_string(),
+            owner_user_id: String::new(),
+        });
     }
     if changes.has("bio") && !patch.text_field("bio").is_empty() && !previous.bio.is_empty() {
-        output
-            .persistence
-            .feed_entries
-            .push(feed_entry_value(&BioFeedEntry {
-                created_at,
-                entry_type: FeedEntryType::Bio,
-                user_id,
-                display_name: display_name(user_id, patch, Some(previous)),
-                bio: patch.text_field("bio"),
-                previous_bio: &previous.bio,
-            }));
+        output.persistence.feed_entries.push(FeedLiveEntry::Bio {
+            created_at: created_at.to_string(),
+            user_id: user_id.to_string(),
+            display_name: display_name(user_id, patch, Some(previous)),
+            bio: patch.text_field("bio"),
+            previous_bio: previous.bio.clone(),
+            owner_user_id: String::new(),
+        });
     }
     let avatar_image_changed =
         changes.has("currentAvatarImageUrl") || changes.has("currentAvatarThumbnailImageUrl");
@@ -244,60 +250,56 @@ pub(super) fn add_profile_diff_feed_entries(
         previous.current_avatar_thumbnail_image_url.clone(),
     ]);
     if should_write_avatar && !previous_avatar.is_empty() && !current_avatar.is_empty() {
-        let current_avatar_tags = changes
-            .get("currentAvatarTags")
-            .map(|change| change.next.clone())
-            .or_else(|| previous.extra.get("currentAvatarTags").cloned())
-            .unwrap_or_else(|| json!([]));
-        let previous_avatar_tags = changes
-            .get("currentAvatarTags")
-            .map(|change| change.previous.clone())
-            .or_else(|| previous.extra.get("currentAvatarTags").cloned())
-            .unwrap_or_else(|| json!([]));
-        output
-            .persistence
-            .feed_entries
-            .push(feed_entry_value(&AvatarFeedEntry {
-                created_at,
-                entry_type: FeedEntryType::Avatar,
-                user_id,
-                display_name: display_name(user_id, patch, Some(previous)),
-                owner_id: first_owned([
-                    patch.text_field("currentAvatarAuthorId"),
-                    patch.text_field("authorId"),
-                    previous.current_avatar_author_id.clone(),
-                    record_string(previous, "authorId"),
-                ]),
-                previous_owner_id: first_owned([
-                    previous.current_avatar_author_id.clone(),
-                    record_string(previous, "authorId"),
-                ]),
-                avatar_name: first_owned([
-                    patch.text_field("currentAvatarName"),
-                    patch.text_field("avatarName"),
-                    previous.current_avatar_name.clone(),
-                    record_string(previous, "avatarName"),
-                ]),
-                previous_avatar_name: first_owned([
-                    previous.current_avatar_name.clone(),
-                    record_string(previous, "avatarName"),
-                ]),
-                current_avatar_image_url: string_or_previous(
-                    patch,
-                    previous,
-                    "currentAvatarImageUrl",
-                ),
-                current_avatar_thumbnail_image_url: string_or_previous(
-                    patch,
-                    previous,
-                    "currentAvatarThumbnailImageUrl",
-                ),
-                previous_current_avatar_image_url: &previous.current_avatar_image_url,
-                previous_current_avatar_thumbnail_image_url: &previous
-                    .current_avatar_thumbnail_image_url,
-                current_avatar_tags,
-                previous_current_avatar_tags: previous_avatar_tags,
-            }));
+        let current_avatar_tags = feed_avatar_tags(
+            changes
+                .get("currentAvatarTags")
+                .map(|change| &change.next)
+                .or_else(|| previous.extra.get("currentAvatarTags")),
+        );
+        let previous_avatar_tags = feed_avatar_tags(
+            changes
+                .get("currentAvatarTags")
+                .map(|change| &change.previous)
+                .or_else(|| previous.extra.get("currentAvatarTags")),
+        );
+        output.persistence.feed_entries.push(FeedLiveEntry::Avatar {
+            created_at: created_at.to_string(),
+            user_id: user_id.to_string(),
+            display_name: display_name(user_id, patch, Some(previous)),
+            owner_id: first_owned([
+                patch.text_field("currentAvatarAuthorId"),
+                patch.text_field("authorId"),
+                previous.current_avatar_author_id.clone(),
+                record_string(previous, "authorId"),
+            ]),
+            previous_owner_id: first_owned([
+                previous.current_avatar_author_id.clone(),
+                record_string(previous, "authorId"),
+            ]),
+            avatar_name: first_owned([
+                patch.text_field("currentAvatarName"),
+                patch.text_field("avatarName"),
+                previous.current_avatar_name.clone(),
+                record_string(previous, "avatarName"),
+            ]),
+            previous_avatar_name: first_owned([
+                previous.current_avatar_name.clone(),
+                record_string(previous, "avatarName"),
+            ]),
+            current_avatar_image_url: string_or_previous(patch, previous, "currentAvatarImageUrl"),
+            current_avatar_thumbnail_image_url: string_or_previous(
+                patch,
+                previous,
+                "currentAvatarThumbnailImageUrl",
+            ),
+            previous_current_avatar_image_url: previous.current_avatar_image_url.clone(),
+            previous_current_avatar_thumbnail_image_url: previous
+                .current_avatar_thumbnail_image_url
+                .clone(),
+            current_avatar_tags,
+            previous_current_avatar_tags: previous_avatar_tags,
+            owner_user_id: String::new(),
+        });
     }
 }
 
@@ -307,13 +309,12 @@ pub(super) fn friend_relationship_feed_entry(
     patch: &Value,
     previous: Option<&FriendRecord>,
     created_at: &str,
-) -> Value {
-    feed_entry_value(&FriendRelationshipFeedEntry {
-        created_at,
-        entry_type: relationship.feed_type(),
-        user_id,
-        display_name: display_name(user_id, patch, previous),
-    })
+) -> FeedLiveEntry {
+    relationship.feed_entry(
+        created_at.to_string(),
+        user_id.to_string(),
+        display_name(user_id, patch, previous),
+    )
 }
 
 pub(super) fn gps_feed_entry(
@@ -321,7 +322,7 @@ pub(super) fn gps_feed_entry(
     patch: &Value,
     previous: &FriendRecord,
     created_at: &str,
-) -> Option<Value> {
+) -> Option<FeedLiveEntry> {
     let previous_location = resolve_gps_previous_location(previous);
     let location = patch.text_field("location");
     if !is_gps_feed_location(&previous_location)
@@ -338,17 +339,19 @@ pub(super) fn gps_feed_entry(
             group_name: String::new(),
         }
     };
-    Some(feed_entry_value(&GpsFeedEntry {
-        created_at,
-        entry_type: FeedEntryType::Gps,
-        user_id,
+    Some(FeedLiveEntry::Gps {
+        created_at: created_at.to_string(),
+        user_id: user_id.to_string(),
         display_name: display_name(user_id, patch, Some(previous)),
         location,
         world_name: location_names.world_name,
         previous_location,
-        time: json!(resolve_gps_duration(previous)),
+        time: resolve_gps_duration(previous),
         group_name: location_names.group_name,
-    }))
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    })
 }
 
 pub(crate) fn player_joining_feed_entry(
@@ -356,21 +359,24 @@ pub(crate) fn player_joining_feed_entry(
     was_traveling: bool,
     current: &FriendRecord,
     created_at: &str,
-) -> Option<Value> {
+) -> Option<FeedLiveEntry> {
     if was_traveling
         || !parse_location(&current.location).is_traveling
         || current.traveling_to_location.trim().is_empty()
     {
         return None;
     }
-    Some(feed_entry_value(&PlayerJoiningFeedEntry {
-        created_at,
-        entry_type: FeedEntryType::OnPlayerJoining,
-        user_id,
-        display_name: &current.display_name,
-        location: &current.location,
-        traveling_to_location: &current.traveling_to_location,
-    }))
+    Some(FeedLiveEntry::OnPlayerJoining {
+        created_at: created_at.to_string(),
+        user_id: user_id.to_string(),
+        display_name: current.display_name.to_string(),
+        location: current.location.clone(),
+        traveling_to_location: current.traveling_to_location.clone(),
+        world_name: None,
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    })
 }
 
 pub(super) fn online_feed_entry(
@@ -380,7 +386,7 @@ pub(super) fn online_feed_entry(
     location: &str,
     time: i64,
     created_at: &str,
-) -> Value {
+) -> FeedLiveEntry {
     let location_names = if is_real_instance(location) {
         resolve_location_name(location, patch, previous)
     } else {
@@ -389,16 +395,18 @@ pub(super) fn online_feed_entry(
             group_name: String::new(),
         }
     };
-    feed_entry_value(&OnlineFeedEntry {
-        created_at,
-        entry_type: FeedEntryType::Online,
-        user_id,
+    FeedLiveEntry::Online {
+        created_at: created_at.to_string(),
+        user_id: user_id.to_string(),
         display_name: display_name(user_id, patch, previous),
-        location,
+        location: location.to_string(),
         world_name: location_names.world_name,
         group_name: location_names.group_name,
         time: feed_duration_ms(time),
-    })
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    }
 }
 
 pub(super) fn offline_feed_entry(
@@ -407,7 +415,7 @@ pub(super) fn offline_feed_entry(
     previous: &OfflineFeedPrevious,
     created_at: &str,
     timestamp_ms: i64,
-) -> Value {
+) -> FeedLiveEntry {
     let location = previous.location.clone();
     let location_names = if is_real_instance(&location) {
         resolve_record_location_name(&location, current, Some(previous))
@@ -422,20 +430,22 @@ pub(super) fn offline_feed_entry(
     } else {
         0
     };
-    feed_entry_value(&OfflineFeedEntry {
-        created_at,
-        entry_type: FeedEntryType::Offline,
-        user_id,
+    FeedLiveEntry::Offline {
+        created_at: created_at.to_string(),
+        user_id: user_id.to_string(),
         display_name: first_owned([
             meaningful_record_name(current, user_id),
             previous.meaningful_name(user_id),
             "Unknown".to_string(),
         ]),
-        location: &location,
+        location,
         world_name: location_names.world_name,
         group_name: location_names.group_name,
         time: feed_duration_ms(time),
-    })
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    }
 }
 
 pub(super) fn add_location_metadata(

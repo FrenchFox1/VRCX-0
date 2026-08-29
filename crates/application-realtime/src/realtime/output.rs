@@ -1,5 +1,5 @@
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
-use vrcx_0_core::json::RawJson;
 
 use super::projection::{
     FriendProjection, RealtimeCurrentUserProjection, RealtimeInstanceClosedProjection,
@@ -51,9 +51,9 @@ pub struct RealtimeCurrentUserOutput {
     pub timer_action: PendingOfflineTimerAction,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RealtimeInstanceClosedOutput {
     pub projection: RealtimeInstanceClosedProjection,
-    pub feed_entry: RawJson,
+    pub feed_entry: FeedLiveEntry,
     pub persistence: RealtimePersistenceBatch,
 }
