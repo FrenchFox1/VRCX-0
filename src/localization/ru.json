@@ -2740,9 +2740,9 @@
                         "enable_tooltip": "Подает видеозаголовки для использования с GameLog и продолжительность накладок"
                     },
                     "translation_api": {
-                        "header": "Использовать перевод содержания",
+                        "header": "Перевод содержимого",
                         "enable": "Включить",
-                        "translation_api_key": "Перевод API Спецификация",
+                        "translation_api_key": "Конфигурация поставщика",
                         "enable_tooltip": "Переведите биоматериалы пользователей и описание мира по запросу."
                     },
                     "screenshot_helper": {
@@ -4867,8 +4867,8 @@
             "msg_test_failed": "Неверно YouTube API ключ"
         },
         "translation_api": {
-            "header": "Биоперевод API",
-            "description": "Введите ваш ключ API Google Translate",
+            "header": "Конфигурация поставщика перевода",
+            "description": "Выберите и настройте поставщика, используемого для перевода содержимого.",
             "guide": "Руководство",
             "mode": "Поставщик",
             "mode_google": "Google",
@@ -4882,9 +4882,9 @@
             "openai": {
                 "model": "Название модели",
                 "prompt_optional": "Промпт (необязательно)",
-                "prompt_optional_description": "Необязательный системный промпт для OpenAI-совместимых API перевода.",
+                "prompt_optional_description": "Необязательный системный промпт. Обязательно включите переменную целевого языка {targetLang}.",
                 "connection": "LLM Эндпоинт",
-                "connection_description": "Используется OpenAI-совместимым переводом.",
+                "connection_description": "Поддерживаются только OpenAI-совместимые эндпоинты.",
                 "connection_placeholder": "Выберите эндпоинт",
                 "reasoning_effort": "Уровень рассуждений",
                 "reasoning_effort_provider_default": "По умолчанию провайдера"
