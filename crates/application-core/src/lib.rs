@@ -60,7 +60,7 @@ pub use event_bus::{
     RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
 };
 pub use events::{
-    FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, FriendProjection,
+    FeedLiveEntry, FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, FriendProjection,
     FriendProjectionPatch, FriendStateBucketAuthority, PrintAutoCleanupEvent,
     RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeEntryCorrectionFields,
     RealtimeEntryCorrectionStream, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,

@@ -72,6 +72,7 @@ vi.mock('@/state/friendLogStore', () => ({
         selector(mocks.friendLog)
 }));
 
+import { gpsFeedEntry } from '@/components/feed/feedLiveTestEntries';
 import type { FeedFilterType, FeedRow } from '@/components/feed/feedTypes';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 
@@ -171,7 +172,7 @@ describe('useFeedRows', () => {
         expect(mocks.queryFeedLatest).toHaveBeenCalledTimes(1);
     });
 
-    it('normalizes snake-case fields on realtime entries', async () => {
+    it('projects every field of a realtime entry onto its row', async () => {
         const { result } = renderFeedRows();
         await flush();
 
@@ -180,15 +181,14 @@ describe('useFeedRows', () => {
                 [
                     {
                         sequence: 1,
-                        entry: {
-                            type: 'GPS',
-                            user_id: 'usr_snake',
-                            display_name: 'Snake Friend',
-                            createdAt: '2026-05-15T00:00:00Z',
+                        entry: gpsFeedEntry({
+                            created_at: '2026-05-15T00:00:00Z',
+                            userId: 'usr_gps',
+                            displayName: 'GPS Friend',
                             location: 'wrld_1:instance',
-                            world_name: 'Snake World',
-                            time: '1500'
-                        }
+                            worldName: 'GPS World',
+                            time: 1500
+                        })
                     }
                 ],
                 { ownerUserId: 'usr_self' }
@@ -197,9 +197,9 @@ describe('useFeedRows', () => {
         await flush();
 
         expect(result.current.rows[0]).toMatchObject({
-            userId: 'usr_snake',
-            displayName: 'Snake Friend',
-            worldName: 'Snake World',
+            userId: 'usr_gps',
+            displayName: 'GPS Friend',
+            worldName: 'GPS World',
             time: 1500
         });
     });

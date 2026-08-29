@@ -3,16 +3,15 @@ use std::path::PathBuf;
 use crate::database::DatabaseService;
 use crate::game_log::{
     game_log_instance_delete, game_log_query, get_game_log_events, get_game_log_locations,
-    previous_instance_event_rows_query,
+    previous_instance_event_rows_query, GameLogQuery, GameLogQueryOutput,
 };
 use crate::Error;
 use serde_json::json;
-use vrcx_0_core::json::RawJson;
 
 use super::super::tables::ensure_game_log_tables;
 use super::super::types::{
     GameLogEventEntry, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogPortalSpawnEntry,
-    GameLogQueryInput, GameLogResourceLoadEntry, GameLogWriteBatch,
+    GameLogResourceLoadEntry, GameLogWriteBatch,
 };
 use super::{
     insert_event, insert_join_leave, insert_location, insert_portal_spawn, insert_resource_load,
@@ -327,17 +326,18 @@ fn account_scoped_reads_include_shared_rows_and_machine_cursor_stays_global() ->
     let online_sessions = game_log_query(
         db,
         &OwnerId::new("usr_a"),
-        GameLogQueryInput {
-            kind: "onlineSessions".into(),
-            params: RawJson::from(json!({})),
+        GameLogQuery::OnlineSessions {
+            from_date: String::new(),
+            to_date: String::new(),
         },
     )?;
+    let GameLogQueryOutput::OnlineSessions(sessions) = online_sessions else {
+        panic!("online session query returns online sessions");
+    };
     assert_eq!(
-        online_sessions
-            .as_array()
-            .unwrap()
+        sessions
             .iter()
-            .filter_map(|row| row.get("created_at").and_then(serde_json::Value::as_str))
+            .map(|row| row.created_at.as_str())
             .collect::<Vec<_>>(),
         vec!["2026-05-14T05:00:00.000Z", "2026-05-14T06:00:00.000Z"]
     );
@@ -434,16 +434,16 @@ fn local_query_negative_limits_are_clamped_to_zero() -> Result<(), Error> {
     let result = game_log_query(
         db,
         &OwnerId::new("usr_test"),
-        GameLogQueryInput {
-            kind: "recentDatabase".into(),
-            params: RawJson::from(json!({
-                "dateOffset": "-365 day",
-                "maxTableSize": -1
-            })),
+        GameLogQuery::RecentDatabase {
+            date_offset: "-365 day".into(),
+            max_table_size: Some(-1),
         },
     )?;
 
-    assert_eq!(result.as_array().map(Vec::len), Some(0));
+    let GameLogQueryOutput::RecentDatabase(rows) = result else {
+        panic!("recent database query returns recent rows");
+    };
+    assert_eq!(rows.len(), 0);
     Ok(())
 }
 

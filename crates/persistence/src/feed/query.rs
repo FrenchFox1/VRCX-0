@@ -580,35 +580,12 @@ fn value_opt_i64(value: Option<&Value>) -> Option<i64> {
     }
 }
 
-fn value_opt_string_list(value: Option<&Value>) -> Option<Vec<String>> {
-    Some(
-        value?
-            .as_array()?
-            .iter()
-            .filter(|item| !item.is_null())
-            .map(value_as_string)
-            .collect(),
-    )
-}
-
 fn row_opt_string(row: &[Value], index: usize) -> Option<String> {
     value_opt_string(row.get(index))
 }
 
 fn row_opt_i64(row: &[Value], index: usize) -> Option<i64> {
     value_opt_i64(row.get(index))
-}
-
-fn entry_opt_string(entry: &Value, keys: &[&str]) -> Option<String> {
-    value_opt_string(feed_entry_value(entry, keys))
-}
-
-fn entry_opt_i64(entry: &Value, keys: &[&str]) -> Option<i64> {
-    value_opt_i64(feed_entry_value(entry, keys))
-}
-
-fn entry_opt_string_list(entry: &Value, keys: &[&str]) -> Option<Vec<String>> {
-    value_opt_string_list(feed_entry_value(entry, keys))
 }
 
 fn feed_row_from_unified_row(row: &[Value]) -> FeedRowOutput {
@@ -641,72 +618,6 @@ fn feed_row_from_unified_row(row: &[Value]) -> FeedRowOutput {
         previous_current_avatar_thumbnail_image_url: row_opt_string(row, 22),
         previous_current_avatar_tags: None,
         owner_user_id: None,
-    }
-}
-
-fn feed_row_from_value(entry: &Value) -> FeedRowOutput {
-    FeedRowOutput {
-        row_id: entry_opt_i64(entry, &["rowId", "row_id"]),
-        source_rank: entry_opt_i64(entry, &["sourceRank", "source_rank"]),
-        created_at: entry_opt_string(entry, &["created_at", "createdAt"]),
-        user_id: entry_opt_string(entry, &["userId", "user_id"]),
-        display_name: entry_opt_string(entry, &["displayName", "display_name"]),
-        r#type: entry_opt_string(entry, &["type"]),
-        location: entry_opt_string(entry, &["location"]),
-        world_name: entry_opt_string(entry, &["worldName", "world_name"]),
-        previous_location: entry_opt_string(entry, &["previousLocation", "previous_location"]),
-        time: entry_opt_i64(entry, &["time"]),
-        group_name: entry_opt_string(entry, &["groupName", "group_name"]),
-        status: entry_opt_string(entry, &["status"]),
-        status_description: entry_opt_string(entry, &["statusDescription", "status_description"]),
-        previous_status: entry_opt_string(entry, &["previousStatus", "previous_status"]),
-        previous_status_description: entry_opt_string(
-            entry,
-            &["previousStatusDescription", "previous_status_description"],
-        ),
-        bio: entry_opt_string(entry, &["bio"]),
-        previous_bio: entry_opt_string(entry, &["previousBio", "previous_bio"]),
-        owner_id: entry_opt_string(entry, &["ownerId", "owner_id"]),
-        avatar_name: entry_opt_string(entry, &["avatarName", "avatar_name"]),
-        current_avatar_image_url: entry_opt_string(
-            entry,
-            &["currentAvatarImageUrl", "current_avatar_image_url"],
-        ),
-        current_avatar_thumbnail_image_url: entry_opt_string(
-            entry,
-            &[
-                "currentAvatarThumbnailImageUrl",
-                "current_avatar_thumbnail_image_url",
-            ],
-        ),
-        current_avatar_tags: entry_opt_string_list(
-            entry,
-            &["currentAvatarTags", "current_avatar_tags"],
-        ),
-        previous_owner_id: entry_opt_string(entry, &["previousOwnerId", "previous_owner_id"]),
-        previous_avatar_name: entry_opt_string(
-            entry,
-            &["previousAvatarName", "previous_avatar_name"],
-        ),
-        previous_current_avatar_image_url: entry_opt_string(
-            entry,
-            &[
-                "previousCurrentAvatarImageUrl",
-                "previous_current_avatar_image_url",
-            ],
-        ),
-        previous_current_avatar_thumbnail_image_url: entry_opt_string(
-            entry,
-            &[
-                "previousCurrentAvatarThumbnailImageUrl",
-                "previous_current_avatar_thumbnail_image_url",
-            ],
-        ),
-        previous_current_avatar_tags: entry_opt_string_list(
-            entry,
-            &["previousCurrentAvatarTags", "previous_current_avatar_tags"],
-        ),
-        owner_user_id: entry_opt_string(entry, &["ownerUserId", "owner_user_id"]),
     }
 }
 
@@ -761,12 +672,6 @@ fn literal_like_pattern(value: &str) -> String {
         escaped.push(character);
     }
     format!("%{escaped}%")
-}
-
-fn feed_entry_value<'a>(entry: &'a Value, keys: &[&str]) -> Option<&'a Value> {
-    let object = entry.as_object()?;
-    keys.iter()
-        .find_map(|key| object.get(*key).filter(|value| !value.is_null()))
 }
 
 fn feed_row_key(row: &FeedRowOutput) -> String {
@@ -835,8 +740,8 @@ fn merge_feed_rows_with_live(
         .filter(|entry| entry.sequence > min_live_sequence)
     {
         max_sequence = max_sequence.max(live_entry.sequence);
-        if matcher.matches(live_entry.entry.as_value()) {
-            matching_entries.push(feed_row_from_value(live_entry.entry.as_value()));
+        if matcher.matches(&live_entry.entry) {
+            matching_entries.push(FeedRowOutput::from(&live_entry.entry));
         }
     }
 

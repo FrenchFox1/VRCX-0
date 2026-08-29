@@ -1,18 +1,16 @@
 use std::collections::VecDeque;
 use std::sync::atomic::Ordering;
 
-use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryMatcher, FeedReadModelOutput,
     FeedRowOutput, FeedSearchQueryInput,
 };
-use vrcx_0_core::json::RawJson;
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 
 use crate::realtime::{
     RealtimeEntryCorrectionFields, RealtimeFeedPatch, RealtimeFeedProjection, RealtimeFeedUpsert,
 };
-use crate::world_enrich::feed_entry_correction_id;
 
 use super::RealtimeHostRuntime;
 use vrcx_0_core::OwnerId;
@@ -22,7 +20,7 @@ const FEED_LIVE_CACHE_MAX_ENTRIES: usize = 10_000;
 #[derive(Clone, Debug)]
 struct CachedFeedEntry {
     sequence: i64,
-    entry: RawJson,
+    entry: FeedLiveEntry,
 }
 
 #[derive(Default)]
@@ -49,18 +47,12 @@ impl FeedLiveCache {
     fn push_entries(
         &mut self,
         owner_user_id: &OwnerId,
-        entries: Vec<RawJson>,
+        entries: Vec<FeedLiveEntry>,
     ) -> Vec<RealtimeFeedUpsert> {
         self.prepare_owner(owner_user_id);
         let mut upserts = Vec::new();
         for mut entry in entries {
-            let Some(object) = entry.as_object_mut() else {
-                continue;
-            };
-            object.insert(
-                "ownerUserId".into(),
-                Value::String(owner_user_id.to_string()),
-            );
+            entry.set_owner_user_id(owner_user_id.to_string());
             self.sequence = self.sequence.saturating_add(1);
             let sequence = self.sequence;
             self.entries.push_back(CachedFeedEntry {
@@ -85,24 +77,26 @@ impl FeedLiveCache {
             return None;
         }
         let mut changed_indices = Vec::new();
-        for (index, entry) in self.entries.iter_mut().enumerate() {
-            let Some(object) = entry.entry.as_object_mut() else {
-                continue;
-            };
-            if feed_entry_correction_id(object) != id {
+        for (index, cached) in self.entries.iter_mut().enumerate() {
+            if cached.entry.correction_id() != id {
                 continue;
             }
             let mut changed = false;
-            for (key, value) in [
-                ("displayName", fields.display_name.as_ref()),
-                ("worldName", fields.world_name.as_ref()),
-                ("displayLocation", fields.display_location.as_ref()),
-            ] {
-                let Some(value) = value else {
-                    continue;
-                };
-                if object.get(key).and_then(Value::as_str) != Some(value) {
-                    object.insert(key.into(), Value::String(value.clone()));
+            if let Some(display_name) = fields.display_name.as_ref() {
+                if cached.entry.display_name() != display_name {
+                    cached.entry.set_display_name(display_name.clone());
+                    changed = true;
+                }
+            }
+            if let Some(world_name) = fields.world_name.as_ref() {
+                if cached.entry.world_name() != world_name {
+                    cached.entry.set_world_name(world_name.clone());
+                    changed = true;
+                }
+            }
+            if let Some(display_location) = fields.display_location.as_ref() {
+                if cached.entry.display_location() != Some(display_location.as_str()) {
+                    cached.entry.set_display_location(display_location.clone());
                     changed = true;
                 }
             }
@@ -151,7 +145,7 @@ impl RealtimeHostRuntime {
         &self,
         generation: u64,
         owner_user_id: &OwnerId,
-        entries: Vec<RawJson>,
+        entries: Vec<FeedLiveEntry>,
     ) {
         if entries.is_empty() {
             return;
@@ -273,12 +267,56 @@ impl RealtimeHostRuntime {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use vrcx_0_contracts::feed::{FeedFilter, FeedLatestQueryInput, FeedLiveQueryMatcher};
+    use vrcx_0_contracts::feed_live::FeedLiveEntry;
     use vrcx_0_core::OwnerId;
 
     use super::FeedLiveCache;
     use crate::realtime::RealtimeEntryCorrectionFields;
+
+    fn gps_entry(created_at: &str) -> FeedLiveEntry {
+        FeedLiveEntry::Gps {
+            created_at: created_at.to_string(),
+            user_id: "usr_friend".into(),
+            display_name: "Friend".into(),
+            location: "wrld_1:1".into(),
+            world_name: String::new(),
+            previous_location: String::new(),
+            time: 0,
+            group_name: String::new(),
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        }
+    }
+
+    fn online_entry(created_at: &str) -> FeedLiveEntry {
+        FeedLiveEntry::Online {
+            created_at: created_at.to_string(),
+            user_id: "usr_friend".into(),
+            display_name: "Friend".into(),
+            location: "wrld_2:1".into(),
+            world_name: String::new(),
+            group_name: String::new(),
+            time: None,
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        }
+    }
+
+    fn status_entry(created_at: &str) -> FeedLiveEntry {
+        FeedLiveEntry::Status {
+            created_at: created_at.to_string(),
+            user_id: "usr_friend".into(),
+            display_name: "Friend".into(),
+            status: "active".into(),
+            status_description: String::new(),
+            previous_status: "join me".into(),
+            previous_status_description: String::new(),
+            owner_user_id: String::new(),
+        }
+    }
 
     fn latest_matcher(
         user_id: &str,
@@ -299,26 +337,19 @@ mod tests {
     #[test]
     fn cache_owns_sequences_entries_and_corrections() {
         let mut cache = FeedLiveCache::default();
+        let first = gps_entry("2026-05-14T00:00:01Z");
         let upserts = cache.push_entries(
             &OwnerId::new("usr_self"),
-            vec![
-                json!({
-                    "id": "first",
-                    "type": "GPS",
-                    "worldName": "wrld_1"
-                })
-                .into(),
-                json!({ "id": "second", "type": "Online" }).into(),
-            ],
+            vec![first.clone(), online_entry("2026-05-14T00:00:02Z")],
         );
 
         assert_eq!(upserts[0].sequence, 1);
         assert_eq!(upserts[1].sequence, 2);
-        assert_eq!(upserts[0].entry.as_value()["ownerUserId"], "usr_self");
+        assert_eq!(upserts[0].entry.owner_user_id(), "usr_self");
 
         let correction_sequence = cache.patch_entry(
             &OwnerId::new("usr_self"),
-            "id:first",
+            &first.correction_id(),
             &RealtimeEntryCorrectionFields {
                 display_name: None,
                 world_name: Some("Resolved World".into()),
@@ -332,7 +363,7 @@ mod tests {
         assert_eq!(watermark, 3);
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[0].sequence, 3);
-        assert_eq!(entries[0].entry.as_value()["worldName"], "Resolved World");
+        assert_eq!(entries[0].entry.world_name(), "Resolved World");
         assert_eq!(entries[1].sequence, 2);
     }
 
@@ -341,12 +372,12 @@ mod tests {
         let mut cache = FeedLiveCache::default();
         cache.push_entries(
             &OwnerId::new("usr_first"),
-            vec![json!({ "id": "old", "type": "GPS" }).into()],
+            vec![gps_entry("2026-05-14T00:00:01Z")],
         );
 
         let upserts = cache.push_entries(
             &OwnerId::new("usr_second"),
-            vec![json!({ "id": "new", "type": "GPS" }).into()],
+            vec![gps_entry("2026-05-14T00:00:02Z")],
         );
         let matcher = latest_matcher("usr_second", Vec::new(), 10);
         let (entries, watermark) = cache.snapshot_matching(&OwnerId::new("usr_second"), &matcher);
@@ -354,7 +385,7 @@ mod tests {
         assert_eq!(upserts[0].sequence, 1);
         assert_eq!(watermark, 1);
         assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].entry.as_value()["id"], "new");
+        assert_eq!(entries[0].entry.created_at(), "2026-05-14T00:00:02Z");
         assert!(cache
             .snapshot_matching(&OwnerId::new("usr_first"), &matcher)
             .0
@@ -367,10 +398,10 @@ mod tests {
         cache.push_entries(
             &OwnerId::new("usr_self"),
             vec![
-                json!({ "id": "gps-old", "type": "GPS" }).into(),
-                json!({ "id": "status", "type": "Status" }).into(),
-                json!({ "id": "gps-middle", "type": "GPS" }).into(),
-                json!({ "id": "gps-new", "type": "GPS" }).into(),
+                gps_entry("2026-05-14T00:00:01Z"),
+                status_entry("2026-05-14T00:00:02Z"),
+                gps_entry("2026-05-14T00:00:03Z"),
+                gps_entry("2026-05-14T00:00:04Z"),
             ],
         );
         let matcher = latest_matcher("usr_self", vec![FeedFilter::Gps], 2);
@@ -379,7 +410,7 @@ mod tests {
 
         assert_eq!(watermark, 4);
         assert_eq!(entries.len(), 2);
-        assert_eq!(entries[0].entry.as_value()["id"], "gps-middle");
-        assert_eq!(entries[1].entry.as_value()["id"], "gps-new");
+        assert_eq!(entries[0].entry.created_at(), "2026-05-14T00:00:03Z");
+        assert_eq!(entries[1].entry.created_at(), "2026-05-14T00:00:04Z");
     }
 }

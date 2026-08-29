@@ -2,17 +2,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_core::json::RawJson;
 
 use crate::realtime::{UserQueryCachePolicy, UserQueryKind, UserQueryOptions};
 use crate::world_enrich::{self, PendingWorldNameResolution};
 
 use super::message_dispatch::json_string_field;
 use super::{
-    RealtimeCurrentUserOutput, RealtimeEntryCorrectionStream, RealtimeHostRuntime,
-    RealtimeInstanceQueueProjection, RealtimeNotificationOutput, RealtimeNotificationProjection,
-    RealtimeNotificationUpsert, RealtimePersistenceBatch, Value,
+    RealtimeCurrentUserOutput, RealtimeHostRuntime, RealtimeInstanceQueueProjection,
+    RealtimeNotificationOutput, RealtimeNotificationProjection, RealtimeNotificationUpsert,
+    RealtimePersistenceBatch, Value,
 };
 use vrcx_0_core::OwnerId;
 
@@ -23,13 +23,11 @@ const NOTIFICATION_USERNAME_RESOLVE_RETRY_DELAY: Duration = Duration::from_milli
 impl RealtimeHostRuntime {
     pub(super) fn enrich_projection_world_names(
         &self,
-        entries: &mut [RawJson],
+        entries: &mut [FeedLiveEntry],
     ) -> Vec<PendingWorldNameResolution> {
         let mut unresolved_world_ids = Vec::new();
         for entry in entries {
-            if let Some(pending) =
-                self.enrich_world_name_for_entry(entry, RealtimeEntryCorrectionStream::Feed)
-            {
+            if let Some(pending) = world_enrich::enrich_feed_entry(&self.world_cache, entry, true) {
                 unresolved_world_ids.push(pending);
             }
         }
@@ -42,9 +40,10 @@ impl RealtimeHostRuntime {
     ) -> Vec<PendingWorldNameResolution> {
         let mut unresolved_world_ids = Vec::new();
         for upsert in &mut projection.upserts {
-            if let Some(pending) = self.enrich_world_name_for_entry(
+            if let Some(pending) = world_enrich::enrich_notification_world_name(
+                &self.world_cache,
                 &mut upsert.notification,
-                RealtimeEntryCorrectionStream::Notification,
+                true,
             ) {
                 unresolved_world_ids.push(pending);
             }
@@ -381,8 +380,9 @@ impl RealtimeHostRuntime {
     ) -> Vec<PendingWorldNameResolution> {
         let mut unresolved_world_ids = Vec::new();
         for entry in &mut persistence.feed_entries {
-            if let Some(world_id) = self.enrich_world_name(entry) {
-                unresolved_world_ids.push(PendingWorldNameResolution::cache_only(world_id));
+            if let Some(pending) = world_enrich::enrich_feed_entry(&self.world_cache, entry, false)
+            {
+                unresolved_world_ids.push(PendingWorldNameResolution::cache_only(pending.world_id));
             }
         }
         for notification in &mut persistence.notification_v1_upserts {
@@ -404,7 +404,12 @@ impl RealtimeHostRuntime {
     }
 
     pub(super) fn enrich_world_name(&self, value: &mut Value) -> Option<String> {
-        world_enrich::enrich_world_name(&self.world_cache, value, None)
+        world_enrich::enrich_notification_world_name(&self.world_cache, value, false)
+            .map(|pending| pending.world_id)
+    }
+
+    pub(super) fn enrich_feed_entry_world_name(&self, entry: &mut FeedLiveEntry) -> Option<String> {
+        world_enrich::enrich_feed_entry(&self.world_cache, entry, false)
             .map(|pending| pending.world_id)
     }
 
@@ -422,14 +427,6 @@ impl RealtimeHostRuntime {
         if let Some(world_name) = self.world_cache.get_name(world_id) {
             projection.world_name = world_name;
         }
-    }
-
-    pub(super) fn enrich_world_name_for_entry(
-        &self,
-        value: &mut Value,
-        stream: RealtimeEntryCorrectionStream,
-    ) -> Option<PendingWorldNameResolution> {
-        world_enrich::enrich_world_name(&self.world_cache, value, Some(stream))
     }
 
     pub(super) fn enrich_current_user_location_output(
@@ -729,11 +726,6 @@ fn notification_id(value: &Value) -> String {
     } else {
         id
     }
-}
-
-#[cfg(test)]
-pub(super) fn feed_entry_correction_id(object: &serde_json::Map<String, Value>) -> String {
-    world_enrich::feed_entry_correction_id(object)
 }
 
 fn sanitize_world_name_fields(object: &mut serde_json::Map<String, Value>) {

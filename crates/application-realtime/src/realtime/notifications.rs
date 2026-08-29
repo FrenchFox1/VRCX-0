@@ -1,4 +1,5 @@
 use serde_json::{json, Map, Value};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::{NotificationExpiration, NotificationV2Update};
 use vrcx_0_core::json::{text_of, JsonExt};
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
@@ -196,8 +197,17 @@ pub(crate) fn apply_instance_closed_ws_event(
         content.text_field("location"),
     ]);
     let created_at = payload.received_at.clone();
+    let id = format!(
+        "instance.closed:{}:{}",
+        if location.is_empty() {
+            "unknown"
+        } else {
+            &location
+        },
+        created_at
+    );
     let notification = json!({
-        "id": format!("instance.closed:{}:{}", if location.is_empty() { "unknown" } else { &location }, created_at),
+        "id": id,
         "type": "instance.closed",
         "location": location,
         "message": "Instance Closed",
@@ -209,7 +219,16 @@ pub(crate) fn apply_instance_closed_ws_event(
             generation,
             notification: notification.clone().into(),
         },
-        feed_entry: notification.clone().into(),
+        feed_entry: FeedLiveEntry::InstanceClosed {
+            created_at: created_at.clone(),
+            id,
+            location: location.clone(),
+            message: "Instance Closed".to_string(),
+            world_name: None,
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        },
         persistence: vrcx_0_contracts::realtime::RealtimePersistenceBatch {
             notification_v1_upserts: vec![notification],
             ..vrcx_0_contracts::realtime::RealtimePersistenceBatch::default()

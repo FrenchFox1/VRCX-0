@@ -6,6 +6,7 @@ use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry, GameLogLocationTimeUpdate};
 use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::trust::trust_level_changed;
 
 use super::schema::{ensure_realtime_tables, normalize_user_table_prefix};
@@ -68,12 +69,6 @@ pub fn write_realtime_batch(
             counts.add_realtime_rows(delete_friend_log_current(tx, &user_prefix, entry)?);
         }
         for entry in &batch.feed_entries {
-            if matches!(
-                entry_string(entry, "type").as_str(),
-                "TrustLevel" | "Friend" | "Unfriend"
-            ) {
-                continue;
-            }
             counts.add_realtime_rows(insert_feed_entry(tx, &user_prefix, entry)?);
         }
         for entry in &batch.notification_v1_upserts {
@@ -111,28 +106,30 @@ pub fn write_realtime_batch(
 }
 
 fn validate_friend_log_backed_feed_entries(batch: &RealtimePersistenceBatch) -> Result<(), Error> {
-    for entry in batch
-        .feed_entries
-        .iter()
-        .filter(|entry| entry_string(entry, "type") == "TrustLevel")
-    {
-        let created_at = entry_string(entry, "created_at");
-        let user_id = normalize_user_id(&entry_string(entry, "userId"));
-        let display_name = entry_string(entry, "displayName");
-        let trust_level = entry_string(entry, "trustLevel");
-        let previous_trust_level = entry_string(entry, "previousTrustLevel");
-        let friend_number = entry_i64(entry, "friendNumber");
+    for entry in &batch.feed_entries {
+        let FeedLiveEntry::TrustLevel {
+            created_at,
+            user_id,
+            display_name,
+            trust_level,
+            previous_trust_level,
+            friend_number,
+            ..
+        } = entry
+        else {
+            continue;
+        };
+        let user_id = normalize_user_id(user_id);
         let valid = !created_at.is_empty()
             && !user_id.is_empty()
             && !trust_level.is_empty()
             && !previous_trust_level.is_empty()
-            && entry.get("friendNumber").is_some()
             && batch.friend_log_upserts.iter().any(|upsert| {
                 normalize_user_id(&upsert.target_user_id) == user_id
                     && upsert.created_at.trim() == created_at
                     && upsert.display_name.trim() == display_name.trim()
                     && upsert.trust_level.trim() == trust_level.trim()
-                    && upsert.friend_number == friend_number
+                    && upsert.friend_number == *friend_number
             });
         if !valid {
             return Err(Error::InvalidData(
@@ -352,75 +349,134 @@ fn add_friend_log_history(
 fn insert_feed_entry(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,
-    entry: &Value,
+    entry: &FeedLiveEntry,
 ) -> Result<u64, Error> {
-    let entry_type = entry_string(entry, "type");
-    let affected = match entry_type.as_str() {
-        "GPS" => tx.execute_non_query(
+    let affected = match entry {
+        FeedLiveEntry::Gps {
+            created_at,
+            user_id,
+            display_name,
+            location,
+            world_name,
+            previous_location,
+            time,
+            group_name,
+            ..
+        } => tx.execute_non_query(
             &format!("INSERT OR IGNORE INTO {user_prefix}_feed_gps (created_at, user_id, display_name, location, world_name, previous_location, time, group_name) VALUES (@created_at, @user_id, @display_name, @location, @world_name, @previous_location, @time, @group_name)"),
             &ParamsBuilder::new()
-                .set("created_at", entry_string(entry, "created_at"))
-                .set("user_id", entry_string(entry, "userId"))
-                .set("display_name", entry_string(entry, "displayName"))
-                .set("location", entry_string(entry, "location"))
-                .set("world_name", entry_string(entry, "worldName"))
-                .set("previous_location", entry_string(entry, "previousLocation"))
-                .set("time", entry_i64(entry, "time"))
-                .set("group_name", entry_string(entry, "groupName"))
+                .set("created_at", created_at.clone())
+                .set("user_id", user_id.clone())
+                .set("display_name", display_name.clone())
+                .set("location", location.clone())
+                .set("world_name", world_name.clone())
+                .set("previous_location", previous_location.clone())
+                .set("time", *time)
+                .set("group_name", group_name.clone())
                 .build(),
         )?,
-        "Online" | "Offline" => tx.execute_non_query(
+        FeedLiveEntry::Online {
+            created_at,
+            user_id,
+            display_name,
+            location,
+            world_name,
+            group_name,
+            time,
+            ..
+        }
+        | FeedLiveEntry::Offline {
+            created_at,
+            user_id,
+            display_name,
+            location,
+            world_name,
+            group_name,
+            time,
+            ..
+        } => tx.execute_non_query(
             &format!("INSERT OR IGNORE INTO {user_prefix}_feed_online_offline (created_at, user_id, display_name, type, location, world_name, time, group_name) VALUES (@created_at, @user_id, @display_name, @type, @location, @world_name, @time, @group_name)"),
             &ParamsBuilder::new()
-                .set("created_at", entry_string(entry, "created_at"))
-                .set("user_id", entry_string(entry, "userId"))
-                .set("display_name", entry_string(entry, "displayName"))
-                .set("type", entry_type)
-                .set("location", entry_string(entry, "location"))
-                .set("world_name", entry_string(entry, "worldName"))
-                .set("time", entry_i64(entry, "time"))
-                .set("group_name", entry_string(entry, "groupName"))
+                .set("created_at", created_at.clone())
+                .set("user_id", user_id.clone())
+                .set("display_name", display_name.clone())
+                .set("type", entry.entry_type())
+                .set("location", location.clone())
+                .set("world_name", world_name.clone())
+                .set("time", time.unwrap_or(0))
+                .set("group_name", group_name.clone())
                 .build(),
         )?,
-        "Status" => tx.execute_non_query(
+        FeedLiveEntry::Status {
+            created_at,
+            user_id,
+            display_name,
+            status,
+            status_description,
+            previous_status,
+            previous_status_description,
+            ..
+        } => tx.execute_non_query(
             &format!("INSERT OR IGNORE INTO {user_prefix}_feed_status (created_at, user_id, display_name, status, status_description, previous_status, previous_status_description) VALUES (@created_at, @user_id, @display_name, @status, @status_description, @previous_status, @previous_status_description)"),
             &ParamsBuilder::new()
-                .set("created_at", entry_string(entry, "created_at"))
-                .set("user_id", entry_string(entry, "userId"))
-                .set("display_name", entry_string(entry, "displayName"))
-                .set("status", entry_string(entry, "status"))
-                .set("status_description", entry_string(entry, "statusDescription"))
-                .set("previous_status", entry_string(entry, "previousStatus"))
-                .set("previous_status_description", entry_string(entry, "previousStatusDescription"))
+                .set("created_at", created_at.clone())
+                .set("user_id", user_id.clone())
+                .set("display_name", display_name.clone())
+                .set("status", status.clone())
+                .set("status_description", status_description.clone())
+                .set("previous_status", previous_status.clone())
+                .set("previous_status_description", previous_status_description.clone())
                 .build(),
         )?,
-        "Bio" => tx.execute_non_query(
+        FeedLiveEntry::Bio {
+            created_at,
+            user_id,
+            display_name,
+            bio,
+            previous_bio,
+            ..
+        } => tx.execute_non_query(
             &format!("INSERT OR IGNORE INTO {user_prefix}_feed_bio (created_at, user_id, display_name, bio, previous_bio) VALUES (@created_at, @user_id, @display_name, @bio, @previous_bio)"),
             &ParamsBuilder::new()
-                .set("created_at", entry_string(entry, "created_at"))
-                .set("user_id", entry_string(entry, "userId"))
-                .set("display_name", entry_string(entry, "displayName"))
-                .set("bio", entry_string(entry, "bio"))
-                .set("previous_bio", entry_string(entry, "previousBio"))
+                .set("created_at", created_at.clone())
+                .set("user_id", user_id.clone())
+                .set("display_name", display_name.clone())
+                .set("bio", bio.clone())
+                .set("previous_bio", previous_bio.clone())
                 .build(),
         )?,
-        "Avatar" => tx.execute_non_query(
+        FeedLiveEntry::Avatar {
+            created_at,
+            user_id,
+            display_name,
+            owner_id,
+            avatar_name,
+            current_avatar_image_url,
+            current_avatar_thumbnail_image_url,
+            previous_current_avatar_image_url,
+            previous_current_avatar_thumbnail_image_url,
+            ..
+        } => tx.execute_non_query(
             &format!("INSERT OR IGNORE INTO {user_prefix}_feed_avatar (created_at, user_id, display_name, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url) VALUES (@created_at, @user_id, @display_name, @owner_id, @avatar_name, @current_avatar_image_url, @current_avatar_thumbnail_image_url, @previous_current_avatar_image_url, @previous_current_avatar_thumbnail_image_url)"),
             &ParamsBuilder::new()
-                .set("created_at", entry_string(entry, "created_at"))
-                .set("user_id", entry_string(entry, "userId"))
-                .set("display_name", entry_string(entry, "displayName"))
-                .set("owner_id", entry_string(entry, "ownerId"))
-                .set("avatar_name", entry_string(entry, "avatarName"))
-                .set("current_avatar_image_url", entry_string(entry, "currentAvatarImageUrl"))
-                .set("current_avatar_thumbnail_image_url", entry_string(entry, "currentAvatarThumbnailImageUrl"))
-                .set("previous_current_avatar_image_url", entry_string(entry, "previousCurrentAvatarImageUrl"))
-                .set("previous_current_avatar_thumbnail_image_url", entry_string(entry, "previousCurrentAvatarThumbnailImageUrl"))
+                .set("created_at", created_at.clone())
+                .set("user_id", user_id.clone())
+                .set("display_name", display_name.clone())
+                .set("owner_id", owner_id.clone())
+                .set("avatar_name", avatar_name.clone())
+                .set("current_avatar_image_url", current_avatar_image_url.clone())
+                .set("current_avatar_thumbnail_image_url", current_avatar_thumbnail_image_url.clone())
+                .set("previous_current_avatar_image_url", previous_current_avatar_image_url.clone())
+                .set("previous_current_avatar_thumbnail_image_url", previous_current_avatar_thumbnail_image_url.clone())
                 .build(),
         )?,
-        other => {
+        FeedLiveEntry::TrustLevel { .. }
+        | FeedLiveEntry::Friend { .. }
+        | FeedLiveEntry::Unfriend { .. } => return Ok(0),
+        FeedLiveEntry::OnPlayerJoining { .. } | FeedLiveEntry::InstanceClosed { .. } => {
             return Err(Error::InvalidData(format!(
-                "Unknown realtime feed entry type: {other}"
+                "Unknown realtime feed entry type: {}",
+                entry.entry_type()
             )));
         }
     };
@@ -809,10 +865,6 @@ fn entry_string(entry: &Value, key: &str) -> String {
                 .map(ToString::to_string)
                 .unwrap_or_default()
         })
-}
-
-fn entry_i64(entry: &Value, key: &str) -> i64 {
-    entry.get(key).and_then(value_to_i64).unwrap_or(0)
 }
 
 fn value_to_i64(value: &Value) -> Option<i64> {

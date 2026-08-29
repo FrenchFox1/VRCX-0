@@ -939,7 +939,7 @@ const generatedCommands = {
             entry
         });
     },
-    async appGameLogQuery(query: GameLogQueryInput): Promise<JsonValue> {
+    async appGameLogQuery(query: GameLogQuery): Promise<GameLogQueryOutput> {
         return await TAURI_INVOKE('app__game_log_query', { query });
     },
     async appGameLogPreviousInstancesByGroupId(
@@ -1047,6 +1047,11 @@ const generatedCommands = {
     },
     async appWorldGet(input: WorldGetInput): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__world_get', { input });
+    },
+    async appWorldFriendVisits(
+        worldId: string
+    ): Promise<WorldFriendVisitsOutput> {
+        return await TAURI_INVOKE('app__world_friend_visits', { worldId });
     },
     async appFavoriteList(kind: FavoriteEntityKind): Promise<FavoriteRow[]> {
         return await TAURI_INVOKE('app__favorite_list', { kind });
@@ -3928,6 +3933,131 @@ export type FeedLatestQueryInput = {
     favoritesOnly?: boolean;
     maxRows: number;
 };
+export type FeedLiveEntry =
+    | {
+          type: 'Online';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          worldName: string;
+          groupName: string;
+          time?: number | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Offline';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          worldName: string;
+          groupName: string;
+          time?: number | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'GPS';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          worldName: string;
+          previousLocation: string;
+          time: number;
+          groupName: string;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Status';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          status: string;
+          statusDescription: string;
+          previousStatus: string;
+          previousStatusDescription: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Bio';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          bio: string;
+          previousBio: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Avatar';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          ownerId: string;
+          previousOwnerId: string;
+          avatarName: string;
+          previousAvatarName: string;
+          currentAvatarImageUrl: string;
+          currentAvatarThumbnailImageUrl: string;
+          previousCurrentAvatarImageUrl: string;
+          previousCurrentAvatarThumbnailImageUrl: string;
+          currentAvatarTags?: string[] | null;
+          previousCurrentAvatarTags?: string[] | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'TrustLevel';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          trustLevel: string;
+          previousTrustLevel: string;
+          friendNumber: number;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Friend';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'Unfriend';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          ownerUserId: string;
+      }
+    | {
+          type: 'OnPlayerJoining';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          location: string;
+          travelingToLocation: string;
+          worldName?: string | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      }
+    | {
+          type: 'instance.closed';
+          created_at: string;
+          id: string;
+          location: string;
+          message: string;
+          worldName?: string | null;
+          worldId?: string | null;
+          displayLocation?: string | null;
+          ownerUserId: string;
+      };
 export type FeedQueryMode = 'search' | 'lookup' | 'instance';
 export type FeedReadModelOutput = {
     rows: FeedRowOutput[];
@@ -4053,7 +4183,7 @@ export type FriendProjection = {
     baselineRevision: number;
     patches?: FriendProjectionPatch[];
     removals?: string[];
-    feedEntries?: RawJson[];
+    feedEntries?: FeedLiveEntry[];
     locationTimeSnapshot?: FriendLocationTime[] | null;
     friendLogChanged: boolean;
 };
@@ -4097,6 +4227,13 @@ export type GameClientEvent =
     | { kind: 'crashRelaunchDecision'; payload: CrashRelaunchDecisionPayload }
     | { kind: 'debugLoggingOutcome'; payload: DebugLoggingOutcome }
     | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameLogAllUserStatsOutput = {
+    lastSeen: string;
+    userId: string;
+    timeSpent: number;
+    joinCount: number;
+    displayName: string;
+};
 export type GameLogEntryDeleteKind =
     | 'VideoPlay'
     | 'ResourceLoad'
@@ -4104,9 +4241,50 @@ export type GameLogEntryDeleteKind =
     | 'ImageLoad'
     | 'Event'
     | 'External';
+export type GameLogInstanceJoinOutput = {
+    created_at: string;
+    location: string;
+};
+export type GameLogInstancePlayerEventOutput = {
+    rowId: number;
+    created_at: string;
+    displayName: string;
+    userId: string;
+    time: number;
+    type: string;
+};
+export type GameLogInstanceTimeOutput = { location: string; time: number };
+export type GameLogJoinCountOutput = { joinCount: number; userId: string };
+export type GameLogJoinLeaveRangeOutput = {
+    created_at: string;
+    type: string;
+    displayName: string;
+    userId: string;
+};
+export type GameLogLastGroupVisitOutput = { created_at: string };
+export type GameLogLastSeenOutput = { created_at: string; userId: string };
+export type GameLogLastVisitOutput = { created_at: string; worldId: string };
+export type GameLogLocationBeforeOutput = {
+    created_at: string;
+    location: string;
+    worldId: string;
+    worldName: string;
+    groupName: string;
+};
+export type GameLogOnlineSessionOutput = { created_at: string; time: number };
 export type GameLogPersistenceFallbackPayload = {
     attemptedRowCount: number;
     error: string;
+};
+export type GameLogPlayerDetailOutput = {
+    created_at: string;
+    display_name: string;
+    user_id: string;
+    time: number;
+};
+export type GameLogPreviousDisplayNameOutput = {
+    created_at: string;
+    displayName: string;
 };
 export type GameLogPreviousInstanceGroupOutput = {
     created_at: string;
@@ -4134,7 +4312,157 @@ export type GameLogProjection = {
     lastGameLogAt: string;
     lastGameLogType: string;
 };
-export type GameLogQueryInput = { kind: string; params?: RawJson };
+export type GameLogQuery =
+    | {
+          kind: 'recentDatabase';
+          params: { dateOffset?: string; maxTableSize?: number | null };
+      }
+    | {
+          kind: 'rowsByLocation';
+          params: {
+              instanceId?: string;
+              currentUserId?: string;
+              filters?: string[];
+              vipList?: string[];
+              maxEntries?: number | null;
+              maxRows?: number | null;
+          };
+      }
+    | {
+          kind: 'lookupRows';
+          params: {
+              filters?: string[];
+              vipList?: string[];
+              maxEntries?: number | null;
+              maxRows?: number | null;
+          };
+      }
+    | {
+          kind: 'searchRows';
+          params: {
+              search?: string;
+              currentUserId?: string;
+              filters?: string[];
+              vipList?: string[];
+              maxEntries?: number | null;
+              maxRows?: number | null;
+          };
+      }
+    | {
+          kind: 'lastVisit';
+          params: { worldId?: string; currentWorldMatch?: boolean };
+      }
+    | { kind: 'visitCount'; params: { worldId?: string } }
+    | { kind: 'timeSpentInWorld'; params: { worldId?: string } }
+    | { kind: 'lastGroupVisit'; params: { groupId?: string } }
+    | {
+          kind: 'lastSeen';
+          params: {
+              userId?: string;
+              displayName?: string;
+              inCurrentWorld?: boolean;
+          };
+      }
+    | { kind: 'joinCount'; params: { userId?: string; displayName?: string } }
+    | { kind: 'timeSpent'; params: { userId?: string; displayName?: string } }
+    | {
+          kind: 'userStats';
+          params: {
+              userId?: string;
+              displayName?: string;
+              inCurrentWorld?: boolean;
+          };
+      }
+    | {
+          kind: 'allUserStats';
+          params: { userIds?: string[]; displayNames?: string[] };
+      }
+    | { kind: 'lastDate'; params: Record<string, never> }
+    | { kind: 'playersFromInstanceRows'; params: { location?: string } }
+    | { kind: 'locationBeforeOrAt'; params: { createdAt?: string } }
+    | {
+          kind: 'joinLeaveRange';
+          params: {
+              location?: string;
+              afterDate?: string;
+              beforeDate?: string;
+          };
+      }
+    | { kind: 'playerDetailFromInstance'; params: { location?: string } }
+    | { kind: 'previousDisplayNamesByUserId'; params: { userId?: string } }
+    | { kind: 'instanceTimes'; params: Record<string, never> }
+    | { kind: 'onlineSessions'; params: { fromDate?: string; toDate?: string } }
+    | {
+          kind: 'onlineSessionsAfter';
+          params: { afterCreatedAt?: string; inclusive?: boolean };
+      }
+    | {
+          kind: 'instanceJoinHistory';
+          params: { userId?: string; createdAt?: string };
+      }
+    | { kind: 'worldNameByWorldId'; params: { worldId?: string } }
+    | { kind: 'userIdFromDisplayName'; params: { displayName?: string } }
+    | { kind: 'previousInstancesByGroupId'; params: { groupId?: string } }
+    | { kind: 'previousInstancesByWorldId'; params: { worldId?: string } };
+export type GameLogQueryOutput =
+    | { kind: 'recentDatabase'; value: GameLogRowOutput[] }
+    | { kind: 'rowsByLocation'; value: GameLogRowOutput[] }
+    | { kind: 'lookupRows'; value: GameLogRowOutput[] }
+    | { kind: 'searchRows'; value: GameLogRowOutput[] }
+    | { kind: 'lastVisit'; value: GameLogLastVisitOutput }
+    | { kind: 'visitCount'; value: GameLogVisitCountOutput }
+    | { kind: 'timeSpentInWorld'; value: GameLogWorldTimeSpentOutput }
+    | { kind: 'lastGroupVisit'; value: GameLogLastGroupVisitOutput }
+    | { kind: 'lastSeen'; value: GameLogLastSeenOutput }
+    | { kind: 'joinCount'; value: GameLogJoinCountOutput }
+    | { kind: 'timeSpent'; value: GameLogUserTimeSpentOutput }
+    | { kind: 'userStats'; value: GameLogUserStatsOutput }
+    | { kind: 'allUserStats'; value: GameLogAllUserStatsOutput[] }
+    | { kind: 'lastDate'; value: string }
+    | {
+          kind: 'playersFromInstanceRows';
+          value: GameLogInstancePlayerEventOutput[];
+      }
+    | { kind: 'locationBeforeOrAt'; value: GameLogLocationBeforeOutput | null }
+    | { kind: 'joinLeaveRange'; value: GameLogJoinLeaveRangeOutput[] }
+    | { kind: 'playerDetailFromInstance'; value: GameLogPlayerDetailOutput[] }
+    | {
+          kind: 'previousDisplayNamesByUserId';
+          value: GameLogPreviousDisplayNameOutput[];
+      }
+    | { kind: 'instanceTimes'; value: GameLogInstanceTimeOutput[] }
+    | { kind: 'onlineSessions'; value: GameLogOnlineSessionOutput[] }
+    | { kind: 'onlineSessionsAfter'; value: GameLogOnlineSessionOutput[] }
+    | { kind: 'instanceJoinHistory'; value: GameLogInstanceJoinOutput[] }
+    | { kind: 'worldNameByWorldId'; value: string }
+    | { kind: 'userIdFromDisplayName'; value: string }
+    | {
+          kind: 'previousInstancesByGroupId';
+          value: GameLogPreviousInstanceGroupOutput[];
+      }
+    | {
+          kind: 'previousInstancesByWorldId';
+          value: GameLogPreviousInstanceWorldOutput[];
+      };
+export type GameLogRowOutput = {
+    rowId: number;
+    created_at: string;
+    type: string;
+    displayName?: string | null;
+    userId?: string | null;
+    location?: string | null;
+    instanceId?: string | null;
+    worldId?: string | null;
+    worldName?: string | null;
+    groupName?: string | null;
+    time?: number | null;
+    videoUrl?: string | null;
+    videoName?: string | null;
+    videoId?: string | null;
+    resourceUrl?: string | null;
+    data?: string | null;
+    message?: string | null;
+};
 export type GameLogSessionDto = {
     id?: number | null;
     created_at: string;
@@ -4188,6 +4516,19 @@ export type GameLogSideEffectEvent =
     | { kind: 'screenshotProcessed'; payload: ScreenshotProcessedPayload }
     | { kind: 'gameNoVR'; payload: GameNoVrPayload }
     | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameLogUserStatsOutput = {
+    timeSpent: number;
+    lastSeen: string;
+    joinCount: number;
+    userId: string;
+    previousDisplayNames: GameLogPreviousDisplayNameOutput[];
+};
+export type GameLogUserTimeSpentOutput = { timeSpent: number; userId: string };
+export type GameLogVisitCountOutput = { visitCount: number; worldId: string };
+export type GameLogWorldTimeSpentOutput = {
+    timeSpent: number;
+    worldId: string;
+};
 export type GameLogWriteKind =
     | 'Location'
     | 'LocationTime'
@@ -5383,7 +5724,7 @@ export type RealtimeFeedProjection = {
     upserts?: RealtimeFeedUpsert[];
     patches?: RealtimeFeedPatch[];
 };
-export type RealtimeFeedUpsert = { sequence: number; entry: RawJson };
+export type RealtimeFeedUpsert = { sequence: number; entry: FeedLiveEntry };
 export type RealtimeInstanceClosedProjection = {
     generation: number;
     notification: RawJson;
@@ -6268,6 +6609,17 @@ export type WorldDetail = {
     id?: string;
     name?: string | null;
     instanceId?: string;
+};
+export type WorldFriendVisitRow = {
+    userId: string;
+    displayName: string;
+    visitCount: number;
+    lastVisitedAt: string;
+};
+export type WorldFriendVisitsOutput = {
+    friendCount: number;
+    lastVisitedAt: string;
+    friends: WorldFriendVisitRow[];
 };
 export type WorldGetInput = {
     worldId?: string;

@@ -6,8 +6,8 @@ use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline};
-use vrcx_0_core::json::RawJson;
 
 use crate::realtime::friends::{player_joining_feed_entry, PendingOfflineSchedule};
 use crate::realtime::{
@@ -38,7 +38,7 @@ struct FriendBaselineApplyPlan {
     active: ActiveRealtimeContext,
     previous_snapshot: Option<RealtimeFriendSnapshot>,
     schedules: Vec<PendingOfflineSchedule>,
-    confirmed_feed_entries: Vec<Value>,
+    confirmed_feed_entries: Vec<FeedLiveEntry>,
     location_time_snapshot: Option<Vec<vrcx_0_application_core::FriendLocationTime>>,
 }
 
@@ -373,11 +373,7 @@ impl RealtimeHostRuntime {
             let mut projection = baseline_projection.unwrap_or_else(|| {
                 FriendProjection::new(result.generation, result.baseline_revision)
             });
-            let mut feed_entries = confirmed_feed_entries
-                .iter()
-                .cloned()
-                .map(RawJson::from)
-                .collect::<Vec<_>>();
+            let mut feed_entries = confirmed_feed_entries.clone();
             feed_entries.append(&mut projection.feed_entries);
             projection.feed_entries = feed_entries;
             let mut output = RealtimeFriendOutput::from_projection(
@@ -484,7 +480,7 @@ fn friend_snapshot_diff_projection(
                 state_bucket_authority: FriendStateBucketAuthority::Explicit,
             });
         if let Some(entry) = joining_entry {
-            projection.feed_entries.push(entry.into());
+            projection.feed_entries.push(entry);
         }
     }
 

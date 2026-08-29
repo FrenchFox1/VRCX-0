@@ -1,11 +1,15 @@
+import type {
+    FeedLiveEntryPayload,
+    FeedLivePatch
+} from '@/components/feed/feedLiveTypes';
 import type { UserProfileEntity } from '@/domain/entities/user';
-import type { FeedLiveEntryPayload, FeedLivePatch } from '@/domain/feed/live';
 import type {
     FriendProjection,
     FriendProjectionPatch,
     RealtimeCurrentUserProjection,
     RealtimeEntryCorrection,
     RealtimeFeedProjection,
+    RealtimeFeedUpsert,
     RealtimeInstanceClosedProjection,
     RealtimeNotificationProjection,
     RealtimeNotificationUpsert,
@@ -37,10 +41,7 @@ export type RealtimeFeedProjectionPayload = Omit<
     RealtimeFeedProjection,
     'upserts' | 'patches'
 > & {
-    upserts: Array<{
-        sequence: number;
-        entry: FeedLiveEntryPayload;
-    }>;
+    upserts: RealtimeFeedUpsert[];
     patches: FeedLivePatch[];
 };
 

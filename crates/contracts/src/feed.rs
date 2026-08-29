@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use vrcx_0_core::json::RawJson;
 use vrcx_0_core::text::normalize_text;
+
+use crate::feed_live::FeedLiveEntry;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -114,8 +114,7 @@ pub struct FeedSearchQueryInput {
 #[serde(rename_all = "camelCase")]
 pub struct FeedLiveEntryInput {
     pub sequence: i64,
-    #[serde(default)]
-    pub entry: RawJson,
+    pub entry: FeedLiveEntry,
 }
 
 #[derive(Debug, Serialize, specta::Type)]
@@ -260,17 +259,12 @@ impl FeedLiveQueryMatcher {
         }
     }
 
-    pub fn matches(&self, row: &Value) -> bool {
-        if !row.is_object() {
-            return false;
-        }
-
-        let entry_type = feed_entry_string(row, &["type"]);
-        let Some(entry_filter) = FeedFilter::from_event_type(&entry_type) else {
+    pub fn matches(&self, entry: &FeedLiveEntry) -> bool {
+        let Some(entry_filter) = entry.filter() else {
             return false;
         };
 
-        let owner_user_id = feed_entry_string(row, &["ownerUserId", "owner_user_id"]);
+        let owner_user_id = entry.owner_user_id();
         if !owner_user_id.is_empty() && owner_user_id != self.current_user_id {
             return false;
         }
@@ -278,33 +272,33 @@ impl FeedLiveQueryMatcher {
             return false;
         }
 
-        let user_id = feed_entry_string(row, &["userId", "user_id"]);
-        if self.favorites_only && (user_id.is_empty() || !self.favorite_user_ids.contains(&user_id))
+        let user_id = entry.user_id();
+        if self.favorites_only && (user_id.is_empty() || !self.favorite_user_ids.contains(user_id))
         {
             return false;
         }
-        if !self.scoped_user_ids.is_empty() && !self.scoped_user_ids.contains(&user_id) {
+        if !self.scoped_user_ids.is_empty() && !self.scoped_user_ids.contains(user_id) {
             return false;
         }
-        if !user_id.is_empty() && self.excluded_user_ids.contains(&user_id) {
+        if !user_id.is_empty() && self.excluded_user_ids.contains(user_id) {
             return false;
         }
 
-        let created_at = feed_entry_string(row, &["created_at", "createdAt"]);
+        let created_at = entry.created_at();
         if !self.date_from.trim().is_empty()
             && !created_at.is_empty()
-            && created_at.as_str() < self.date_from.as_str()
+            && created_at < self.date_from.as_str()
         {
             return false;
         }
         if !self.date_to.trim().is_empty()
             && !created_at.is_empty()
-            && created_at.as_str() > self.date_to.as_str()
+            && created_at > self.date_to.as_str()
         {
             return false;
         }
 
-        feed_search_matches(row, &self.search)
+        feed_search_matches(entry, &self.search)
     }
 
     pub fn max_rows(&self) -> Option<usize> {
@@ -325,25 +319,14 @@ fn normalize_user_ids(user_ids: &[String]) -> HashSet<String> {
         .collect()
 }
 
-fn feed_entry_string(entry: &Value, keys: &[&str]) -> String {
-    let Some(object) = entry.as_object() else {
-        return String::new();
-    };
-    keys.iter()
-        .find_map(|key| object.get(*key).filter(|value| !value.is_null()))
-        .map(|value| vrcx_0_core::json::text_of(Some(value)))
-        .unwrap_or_default()
-}
-
-fn feed_search_matches(row: &Value, search: &str) -> bool {
+fn feed_search_matches(entry: &FeedLiveEntry, search: &str) -> bool {
     let query = search.trim().to_uppercase();
     if query.is_empty() {
         return true;
     }
 
-    if feed_entry_string(row, &["type"]) == "Avatar" {
-        let user_id = feed_entry_string(row, &["userId", "user_id"]);
-        let owner_id = feed_entry_string(row, &["ownerId", "owner_id"]);
+    if let Some(owner_id) = entry.avatar_owner_id() {
+        let user_id = entry.user_id();
         if !user_id.is_empty()
             && !owner_id.is_empty()
             && ((query == "PRIVATE" && user_id == owner_id)
@@ -354,29 +337,30 @@ fn feed_search_matches(row: &Value, search: &str) -> bool {
     }
 
     if (query.starts_with("WRLD_") || query.starts_with("GRP_"))
-        && feed_entry_string(row, &["location"])
-            .to_uppercase()
-            .contains(&query)
+        && entry.location().to_uppercase().contains(&query)
     {
         return true;
     }
 
-    [
-        feed_entry_string(row, &["displayName", "display_name"]),
-        feed_entry_string(row, &["worldName", "world_name"]),
-        feed_entry_string(row, &["groupName", "group_name"]),
-        feed_entry_string(row, &["status"]),
-        feed_entry_string(row, &["statusDescription", "status_description"]),
-        feed_entry_string(row, &["previousStatus", "previous_status"]),
-        feed_entry_string(
-            row,
-            &["previousStatusDescription", "previous_status_description"],
-        ),
-        feed_entry_string(row, &["bio"]),
-        feed_entry_string(row, &["previousBio", "previous_bio"]),
-        feed_entry_string(row, &["avatarName", "avatar_name"]),
-        feed_entry_string(row, &["message"]),
-    ]
-    .iter()
-    .any(|value| value.to_uppercase().contains(&query))
+    entry
+        .search_fields()
+        .iter()
+        .any(|value| value.to_uppercase().contains(&query))
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WorldFriendVisitsOutput {
+    pub friend_count: i64,
+    pub last_visited_at: String,
+    pub friends: Vec<WorldFriendVisitRow>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WorldFriendVisitRow {
+    pub user_id: String,
+    pub display_name: String,
+    pub visit_count: i64,
+    pub last_visited_at: String,
 }

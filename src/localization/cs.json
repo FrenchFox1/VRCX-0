@@ -2740,9 +2740,9 @@
                         "enable_tooltip": "Načítá názvy videí pro použití v GameLogu a délku pro ukazatel průběhu v overlayi"
                     },
                     "translation_api": {
-                        "header": "Povolit překlad obsahu",
+                        "header": "Překlad obsahu",
                         "enable": "Povolit",
-                        "translation_api_key": "API klíč pro překlad",
+                        "translation_api_key": "Konfigurace poskytovatele",
                         "enable_tooltip": "Na vyžádání přeloží uživatelská bio a popisy světů."
                     },
                     "screenshot_helper": {
@@ -3983,9 +3983,11 @@
                 "release_status": "Stav zveřejnění",
                 "platform": "Platforma",
                 "restrictions": "Omezení",
-                "last_visited": "Naposledy navštíveno",
-                "visit_count": "Počet návštěv",
-                "time_spent": "Strávený čas",
+                "last_visited": "Má poslední návštěva",
+                "visit_count": "Mé návštěvy",
+                "time_spent": "Můj strávený čas",
+                "friends_visited": "Přátelé, kteří tu byli",
+                "friends_last_visited": "Poslední návštěva přítele",
                 "persistent_data": "Trvalá data",
                 "cache_size": "Velikost mezipaměti"
             },
@@ -4866,8 +4868,8 @@
             "msg_test_failed": "Neplatný klíč YouTube API"
         },
         "translation_api": {
-            "header": "API pro překlad bia",
-            "description": "Zadejte svůj klíč Google Translate API",
+            "header": "Konfigurace poskytovatele překladu",
+            "description": "Vyberte a nakonfigurujte poskytovatele používaného pro překlad obsahu.",
             "guide": "Návod",
             "mode": "Poskytovatel",
             "mode_google": "Google Translate",
@@ -4881,9 +4883,9 @@
             "openai": {
                 "model": "Název modelu",
                 "prompt_optional": "Prompt (volitelné)",
-                "prompt_optional_description": "Volitelný systémový prompt pro překladová API kompatibilní s OpenAI.",
+                "prompt_optional_description": "Volitelný systémový prompt. Nezapomeňte zahrnout proměnnou cílového jazyka {targetLang}.",
                 "connection": "LLM endpoint",
-                "connection_description": "Používá se překladem kompatibilním s OpenAI.",
+                "connection_description": "Podporovány jsou pouze endpointy kompatibilní s OpenAI.",
                 "connection_placeholder": "Vyberte endpoint",
                 "reasoning_effort": "Úroveň uvažování",
                 "reasoning_effort_provider_default": "Výchozí nastavení poskytovatele"

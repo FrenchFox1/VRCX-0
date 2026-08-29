@@ -31,6 +31,8 @@ export type GameLogRow = GameLogDatabaseRow & {
     isFriend?: boolean;
 };
 
+export type GameLogRowView = Partial<GameLogRow>;
+
 export type GameLogSessionMember = GeneratedGameLogSessionMember & {
     isFriend?: boolean;
 };

@@ -2,8 +2,8 @@ use serde_json::Value;
 use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
 
 use crate::realtime::{
-    RealtimeCurrentUserOutput, RealtimeEntryCorrectionStream, RealtimeInstanceQueueProjection,
-    RealtimeNotificationOutput, RealtimeNotificationProjection, RealtimeNotificationUpsert,
+    RealtimeCurrentUserOutput, RealtimeInstanceQueueProjection, RealtimeNotificationOutput,
+    RealtimeNotificationProjection, RealtimeNotificationUpsert,
 };
 #[cfg(test)]
 use crate::social_baseline::service::friend_log_relationship_candidates;

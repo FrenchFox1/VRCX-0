@@ -2,7 +2,7 @@ import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { parseLocation } from '@/shared/utils/location';
 
 import type {
-    GameLogRow,
+    GameLogRowView,
     GameLogSession,
     GameLogSessionEvent,
     GameLogSessionMember
@@ -49,7 +49,7 @@ export function buildGameLogFavoriteIdSet(
     return ids;
 }
 
-export function describeGameLogDetail(row: GameLogRow | null | undefined) {
+export function describeGameLogDetail(row: GameLogRowView | null | undefined) {
     switch (normalizeGameLogId(row?.type)) {
         case 'Location':
             return {
@@ -106,7 +106,9 @@ export function describeGameLogDetail(row: GameLogRow | null | undefined) {
     }
 }
 
-export function resolveGameLogWorldTarget(row: GameLogRow | null | undefined) {
+export function resolveGameLogWorldTarget(
+    row: GameLogRowView | null | undefined
+) {
     if (row?.type === 'PortalSpawn') {
         const portalLocation =
             normalizeGameLogId(row?.instanceId) ||
@@ -130,19 +132,21 @@ export function resolveGameLogWorldTarget(row: GameLogRow | null | undefined) {
     return parseLocation(directInstance).worldId ? directInstance : '';
 }
 
-export function resolveGameLogWorldId(row: GameLogRow | null | undefined) {
+export function resolveGameLogWorldId(row: GameLogRowView | null | undefined) {
     const target = resolveGameLogWorldTarget(row);
     return parseLocation(target).worldId || normalizeGameLogId(row?.worldId);
 }
 
 export function shouldLinkGameLogPrimaryDetailToWorld(
-    row: GameLogRow | null | undefined
+    row: GameLogRowView | null | undefined
 ) {
     const type = normalizeGameLogId(row?.type);
     return type === 'Location' || type === 'PortalSpawn';
 }
 
-export function getGameLogLocationTarget(row: GameLogRow | null | undefined) {
+export function getGameLogLocationTarget(
+    row: GameLogRowView | null | undefined
+) {
     if (normalizeGameLogId(row?.type) === 'PortalSpawn') {
         return (
             normalizeGameLogId(row?.instanceId) ||
@@ -154,7 +158,9 @@ export function getGameLogLocationTarget(row: GameLogRow | null | undefined) {
     );
 }
 
-export function getGameLogExternalTarget(row: GameLogRow | null | undefined) {
+export function getGameLogExternalTarget(
+    row: GameLogRowView | null | undefined
+) {
     const type = normalizeGameLogId(row?.type);
     if (type === 'VideoPlay') {
         if (row?.videoId === 'LSMedia' || row?.videoId === 'PopcornPalace') {
@@ -170,7 +176,7 @@ export function getGameLogExternalTarget(row: GameLogRow | null | undefined) {
     return '';
 }
 
-export function getGameLogCopyTarget(row: GameLogRow | null | undefined) {
+export function getGameLogCopyTarget(row: GameLogRowView | null | undefined) {
     const type = normalizeGameLogId(row?.type);
     if (GAME_LOG_DETAILLESS_TYPES.has(type)) {
         return '';
@@ -191,12 +197,12 @@ export function getGameLogCopyTarget(row: GameLogRow | null | undefined) {
     return normalizeGameLogId(row?.data || row?.message);
 }
 
-export function canDeleteGameLogRow(row: GameLogRow | null | undefined) {
+export function canDeleteGameLogRow(row: GameLogRowView | null | undefined) {
     const type = normalizeGameLogId(row?.type);
     return Boolean(type && !GAME_LOG_UNACTIONABLE_TYPES.has(type));
 }
 
-export function getGameLogRowKey(row: GameLogRow | null | undefined) {
+export function getGameLogRowKey(row: GameLogRowView | null | undefined) {
     return [
         row?.type,
         row?.created_at,

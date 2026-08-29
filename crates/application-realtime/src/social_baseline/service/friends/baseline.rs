@@ -3,6 +3,7 @@ use vrcx_0_core::derived_keys;
 
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::friend_log::{FriendLogCurrentEntryInput, FriendLogReplaceOptionsInput};
 use vrcx_0_contracts::realtime::{FriendLogDelete, FriendLogUpsert, RealtimePersistenceBatch};
 use vrcx_0_core::friends::FriendRecord;
@@ -411,7 +412,7 @@ pub(crate) fn apply_friend_roster_baseline_sync_outcome_and_take_friends(
 #[derive(Default)]
 pub(crate) struct FriendRosterReconcileOutcome {
     pub(crate) changed: bool,
-    pub(crate) feed_entries: Vec<Value>,
+    pub(crate) feed_entries: Vec<FeedLiveEntry>,
 }
 
 fn init_friend_roster_records(

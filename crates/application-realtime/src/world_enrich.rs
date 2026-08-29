@@ -3,6 +3,7 @@ pub(crate) use vrcx_0_core::location::is_meaningful_world_name;
 use vrcx_0_core::location::{format_display_location, parse_location, world_id_from_location};
 
 use vrcx_0_application_core::{RealtimeEntryCorrectionStream, WorldCache};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::text::{first_non_empty, first_non_empty_owned};
 
 #[derive(Clone, Debug)]
@@ -28,10 +29,62 @@ pub(crate) struct PendingEntryCorrection {
     pub(crate) group_name: String,
 }
 
-pub(crate) fn enrich_world_name(
+pub(crate) fn enrich_feed_entry(
+    world_cache: &WorldCache,
+    entry: &mut FeedLiveEntry,
+    emit_correction: bool,
+) -> Option<PendingWorldNameResolution> {
+    let top_level_name = entry.world_name().to_string();
+    let top_level_is_meaningful = is_meaningful_world_name(&top_level_name);
+
+    let mut unresolved_world_id = None;
+    let world_id = first_world_id([entry.world_id(), top_level_name.as_str(), entry.location()]);
+    let world_name = if top_level_is_meaningful {
+        Some(top_level_name)
+    } else if world_id.is_empty() {
+        None
+    } else {
+        match world_cache.get_name(&world_id) {
+            Some(world_name) => Some(world_name),
+            None => {
+                unresolved_world_id = Some(world_id.clone());
+                None
+            }
+        }
+    };
+
+    if let Some(world_name) = world_name {
+        if !top_level_is_meaningful {
+            entry.set_world_name(world_name);
+        }
+        if !world_id.is_empty() && entry.world_id().is_empty() {
+            entry.set_world_id(world_id);
+        }
+    }
+    let display_location =
+        resolved_display_location(entry.location(), entry.world_name(), entry.group_name());
+    if !display_location.is_empty() {
+        entry.set_display_location(display_location);
+    }
+    unresolved_world_id.map(|world_id| PendingWorldNameResolution {
+        world_id,
+        entry: emit_correction.then(|| feed_pending_entry_correction(entry)),
+    })
+}
+
+fn feed_pending_entry_correction(entry: &FeedLiveEntry) -> PendingEntryCorrection {
+    PendingEntryCorrection {
+        stream: RealtimeEntryCorrectionStream::Feed,
+        id: entry.correction_id(),
+        location: entry.location().to_string(),
+        group_name: entry.group_name().to_string(),
+    }
+}
+
+pub(crate) fn enrich_notification_world_name(
     world_cache: &WorldCache,
     value: &mut Value,
-    stream: Option<RealtimeEntryCorrectionStream>,
+    emit_correction: bool,
 ) -> Option<PendingWorldNameResolution> {
     let object = value.as_object_mut()?;
     let top_level_name = object_string(object, "worldName");
@@ -73,7 +126,9 @@ pub(crate) fn enrich_world_name(
     apply_display_location(object);
     unresolved_world_id.map(|world_id| PendingWorldNameResolution {
         world_id,
-        entry: stream.and_then(|stream| pending_entry_correction(object, stream)),
+        entry: emit_correction
+            .then(|| notification_pending_entry_correction(object))
+            .flatten(),
     })
 }
 
@@ -84,40 +139,6 @@ pub(crate) fn resolved_display_location(
 ) -> String {
     let parsed = parse_location(location);
     format_display_location(&parsed, world_name, group_name)
-}
-
-pub(crate) fn feed_entry_correction_id(object: &serde_json::Map<String, Value>) -> String {
-    let id = object_str(object, "id");
-    if !id.is_empty() {
-        return format!("id:{id}");
-    }
-    let row_id = first_non_empty([object_str(object, "rowId"), object_str(object, "row_id")]);
-    if !row_id.is_empty() {
-        let source_rank = first_non_empty([
-            object_str(object, "sourceRank"),
-            object_str(object, "source_rank"),
-        ]);
-        let entry_type = object_str(object, "type");
-        if !source_rank.is_empty() {
-            return format!("row:{entry_type}:{source_rank}:{row_id}");
-        }
-        return format!("row:{entry_type}:{row_id}");
-    }
-    let entry_type = object_str(object, "type");
-    let created_at = first_non_empty([
-        object_str(object, "created_at"),
-        object_str(object, "createdAt"),
-    ]);
-    let user_id = first_non_empty([
-        object_str(object, "userId"),
-        object_str(object, "senderUserId"),
-    ]);
-    let location = first_non_empty([
-        object_str(object, "location"),
-        nested_object_str(object, &["details", "location"]),
-    ]);
-    let message = object_str(object, "message");
-    format!("{entry_type}:{created_at}:{user_id}:{location}:{message}")
 }
 
 fn notification_world_id_from_object(object: &serde_json::Map<String, Value>) -> String {
@@ -132,16 +153,12 @@ fn notification_world_id_from_object(object: &serde_json::Map<String, Value>) ->
     ])
 }
 
-fn pending_entry_correction(
+fn notification_pending_entry_correction(
     object: &serde_json::Map<String, Value>,
-    stream: RealtimeEntryCorrectionStream,
 ) -> Option<PendingEntryCorrection> {
-    let id = match stream {
-        RealtimeEntryCorrectionStream::Feed => feed_entry_correction_id(object),
-        RealtimeEntryCorrectionStream::Notification => notification_id_from_object(object),
-    };
+    let id = notification_id_from_object(object);
     (!id.trim().is_empty()).then(|| PendingEntryCorrection {
-        stream,
+        stream: RealtimeEntryCorrectionStream::Notification,
         id,
         location: first_non_empty_owned([
             object_str(object, "location"),

@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import type { WorldFriendVisitsOutput } from '@/platform/tauri/bindings';
 import { isRecord } from '@/shared/utils/record';
 
 type WorldDialogTab = { value: string };
@@ -142,4 +143,19 @@ export function visibleWorldTags(world: WorldProfileRecord, t: TFunction) {
     }
 
     return { warnings, restrictions };
+}
+
+const FRIEND_VISIT_NAME_PREVIEW_LIMIT = 3;
+
+export function friendVisitSummary(visits: WorldFriendVisitsOutput) {
+    const names = visits.friends
+        .slice(0, FRIEND_VISIT_NAME_PREVIEW_LIMIT)
+        .map((row) => row.displayName)
+        .filter(Boolean);
+    if (!names.length) {
+        return '';
+    }
+    const overflow = visits.friendCount - names.length;
+    const preview = names.join(', ');
+    return overflow > 0 ? `${preview} +${overflow}` : preview;
 }

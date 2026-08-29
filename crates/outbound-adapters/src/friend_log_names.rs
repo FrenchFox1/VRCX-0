@@ -1,8 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use serde_json::{json, Value};
 use vrcx_0_application::social::FriendLogNameStore;
-use vrcx_0_core::json::RawJson;
+use vrcx_0_contracts::game_log_query::{
+    GameLogAllUserStatsOutput, GameLogQuery, GameLogQueryOutput,
+};
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::DatabaseService;
 
@@ -31,15 +32,19 @@ impl FriendLogNameStore for LocalFriendLogNameStore {
         &self,
         owner_user_id: &OwnerId,
         user_ids: &[String],
-    ) -> crate::Result<Value> {
-        vrcx_0_persistence::game_log::game_log_query(
+    ) -> crate::Result<Vec<GameLogAllUserStatsOutput>> {
+        let output = vrcx_0_persistence::game_log::game_log_query(
             &self.db,
             owner_user_id,
-            vrcx_0_persistence::game_log::GameLogQueryInput {
-                kind: "allUserStats".into(),
-                params: RawJson::from(json!({ "userIds": user_ids })),
+            GameLogQuery::AllUserStats {
+                user_ids: user_ids.to_vec(),
+                display_names: Vec::new(),
             },
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::map_persistence_error)?;
+        match output {
+            GameLogQueryOutput::AllUserStats(rows) => Ok(rows),
+            _ => Ok(Vec::new()),
+        }
     }
 }

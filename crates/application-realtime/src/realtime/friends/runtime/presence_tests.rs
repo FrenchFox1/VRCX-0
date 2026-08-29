@@ -54,19 +54,19 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .filter(|entry| entry["type"] == "TrustLevel")
+            .filter(|entry| entry.to_json()["type"] == "TrustLevel")
             .collect::<Vec<_>>();
         assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0]["userId"], "usr_friend");
-        assert_eq!(entries[0]["displayName"], "Friend");
-        assert_eq!(entries[0]["trustLevel"], "Trusted User");
-        assert_eq!(entries[0]["previousTrustLevel"], "User");
+        assert_eq!(entries[0].to_json()["userId"], "usr_friend");
+        assert_eq!(entries[0].to_json()["displayName"], "Friend");
+        assert_eq!(entries[0].to_json()["trustLevel"], "Trusted User");
+        assert_eq!(entries[0].to_json()["previousTrustLevel"], "User");
         assert_eq!(
             output
                 .projection
                 .feed_entries
                 .iter()
-                .filter(|entry| entry["type"] == "TrustLevel")
+                .filter(|entry| entry.to_json()["type"] == "TrustLevel")
                 .count(),
             1
         );
@@ -118,7 +118,10 @@ mod tests {
         };
 
         assert_eq!(output.projection.patches[0].patch.state, "online");
-        assert_eq!(output.persistence.feed_entries[0]["type"], "Online");
+        assert_eq!(
+            output.persistence.feed_entries[0].to_json()["type"],
+            "Online"
+        );
     }
 
     #[test]
@@ -167,7 +170,7 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .all(|entry| entry["type"] != "Friend"));
+            .all(|entry| entry.to_json()["type"] != "Friend"));
         assert!(!second.projection.friend_log_changed);
         assert!(std::sync::Arc::ptr_eq(
             &friend_user_ids,
@@ -340,7 +343,7 @@ mod tests {
                     .persistence
                     .feed_entries
                     .iter()
-                    .all(|entry| entry["type"] != "TrustLevel"));
+                    .all(|entry| entry.to_json()["type"] != "TrustLevel"));
             }
         }
     }
@@ -396,7 +399,7 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .all(|entry| entry["type"] != "TrustLevel"));
+            .all(|entry| entry.to_json()["type"] != "TrustLevel"));
         assert_eq!(
             runtime.snapshot().unwrap().friends_by_id["usr_friend"].extra["$trustLevel"],
             "Trusted User"
@@ -711,10 +714,16 @@ mod tests {
             panic!("friend-delete should produce an output");
         };
 
-        assert_eq!(output.persistence.feed_entries[0]["type"], "Unfriend");
-        assert_eq!(output.persistence.feed_entries[0]["userId"], "usr_removed");
         assert_eq!(
-            output.persistence.feed_entries[0]["displayName"],
+            output.persistence.feed_entries[0].to_json()["type"],
+            "Unfriend"
+        );
+        assert_eq!(
+            output.persistence.feed_entries[0].to_json()["userId"],
+            "usr_removed"
+        );
+        assert_eq!(
+            output.persistence.feed_entries[0].to_json()["displayName"],
             "Removed Friend"
         );
 
@@ -900,7 +909,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(fired.projection.patches[0].patch.state, "offline");
-        assert_eq!(fired.persistence.feed_entries[0]["type"], "Offline");
+        assert_eq!(
+            fired.persistence.feed_entries[0].to_json()["type"],
+            "Offline"
+        );
     }
 
     #[test]
@@ -1186,7 +1198,10 @@ mod tests {
         else {
             panic!("first location should produce an output");
         };
-        assert_eq!(first_location.persistence.feed_entries[0]["type"], "GPS");
+        assert_eq!(
+            first_location.persistence.feed_entries[0].to_json()["type"],
+            "GPS"
+        );
 
         let RealtimeFriendApplyResult::Output(pending) =
             runtime.apply_ws_message(&RealtimeWsMessagePayload {
@@ -1225,7 +1240,10 @@ mod tests {
             deleted.persistence.friend_log_deletes[0].target_user_id,
             "usr_friend"
         );
-        assert_eq!(deleted.persistence.feed_entries[0]["type"], "Unfriend");
+        assert_eq!(
+            deleted.persistence.feed_entries[0].to_json()["type"],
+            "Unfriend"
+        );
         assert!(!runtime
             .snapshot()
             .expect("baseline snapshot")
@@ -1272,6 +1290,6 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .any(|entry| entry["type"] == "GPS"));
+            .any(|entry| entry.to_json()["type"] == "GPS"));
     }
 }

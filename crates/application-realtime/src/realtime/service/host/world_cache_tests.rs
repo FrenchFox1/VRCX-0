@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use super::test_support::*;
 use super::*;
-use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_application_core::{
+    RealtimeEntryCorrectionStream, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
+};
 use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy)]
@@ -29,14 +31,7 @@ impl RuntimeTaskHandle for FinishedWorldCacheTaskHandle {
 #[test]
 fn enrich_projection_world_names_returns_unresolved_world_ids() -> Result<()> {
     let (_dir, runtime, _active_session) = runtime_with_active_session("world-name-enrichment")?;
-    let mut entries = vec![json!({
-        "type": "GPS",
-        "created_at": "2026-06-21T00:00:00.000Z",
-        "userId": "usr_location",
-        "location": "wrld_missing:123",
-        "worldName": "wrld_missing"
-    })
-    .into()];
+    let mut entries = vec![gps_world_entry("wrld_missing")];
 
     let unresolved_world_ids = runtime
         .runtime()
@@ -50,58 +45,63 @@ fn enrich_projection_world_names_returns_unresolved_world_ids() -> Result<()> {
         entry.id,
         "GPS:2026-06-21T00:00:00.000Z:usr_location:wrld_missing:123:"
     );
-    assert_eq!(entries[0]["worldName"], "wrld_missing");
+    assert_eq!(entries[0].world_name(), "wrld_missing");
     Ok(())
+}
+
+fn gps_world_entry(world_id: &str) -> FeedLiveEntry {
+    FeedLiveEntry::Gps {
+        created_at: "2026-06-21T00:00:00.000Z".into(),
+        user_id: "usr_location".into(),
+        display_name: String::new(),
+        location: format!("{world_id}:123"),
+        world_name: world_id.into(),
+        previous_location: String::new(),
+        time: 0,
+        group_name: String::new(),
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    }
 }
 
 #[test]
 fn feed_entry_correction_id_matches_frontend_golden_vectors() {
     let vectors = [
         (
-            json!({
-                "id": "feed-entry-1",
-                "type": "GPS",
-                "rowId": "10",
-                "sourceRank": "2"
-            }),
-            "id:feed-entry-1",
+            FeedLiveEntry::InstanceClosed {
+                created_at: "2026-06-21T00:00:00.000Z".into(),
+                id: "instance.closed:wrld_world:123:2026-06-21T00:00:00.000Z".into(),
+                location: "wrld_world:123".into(),
+                message: "Instance Closed".into(),
+                world_name: None,
+                world_id: None,
+                display_location: None,
+                owner_user_id: String::new(),
+            },
+            "id:instance.closed:wrld_world:123:2026-06-21T00:00:00.000Z",
         ),
         (
-            json!({
-                "type": "GPS",
-                "rowId": "10",
-                "sourceRank": "2"
-            }),
-            "row:GPS:2:10",
+            gps_world_entry("wrld_world"),
+            "GPS:2026-06-21T00:00:00.000Z:usr_location:wrld_world:123:",
         ),
         (
-            json!({
-                "type": "Online",
-                "row_id": "11",
-                "source_rank": "3"
-            }),
-            "row:Online:3:11",
-        ),
-        (
-            json!({
-                "type": "invite",
-                "created_at": "2026-06-21T00:00:00.000Z",
-                "userId": "usr_sender",
-                "details": {
-                    "location": "wrld_world:123"
-                },
-                "message": "Join me"
-            }),
-            "invite:2026-06-21T00:00:00.000Z:usr_sender:wrld_world:123:Join me",
+            FeedLiveEntry::Status {
+                created_at: "2026-06-21T00:00:00.000Z".into(),
+                user_id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                status: "active".into(),
+                status_description: String::new(),
+                previous_status: "join me".into(),
+                previous_status_description: String::new(),
+                owner_user_id: String::new(),
+            },
+            "Status:2026-06-21T00:00:00.000Z:usr_friend::",
         ),
     ];
 
-    for (input, expected) in vectors {
-        let object = input.as_object().unwrap();
-        assert_eq!(
-            super::enrichment::feed_entry_correction_id(object),
-            expected
-        );
+    for (entry, expected) in vectors {
+        assert_eq!(entry.correction_id(), expected);
     }
 }
 
@@ -176,14 +176,7 @@ fn resolved_feed_world_name_patches_the_rust_cache_and_emits_feed_projection() -
     runtime.runtime().emit_feed_entries(
         7,
         &OwnerId::new("usr_self"),
-        vec![json!({
-            "type": "GPS",
-            "created_at": "2026-06-21T00:00:00.000Z",
-            "userId": "usr_location",
-            "location": "wrld_pending:123",
-            "worldName": "wrld_pending"
-        })
-        .into()],
+        vec![gps_world_entry("wrld_pending")],
     );
     runtime.runtime().deps.event_bus.take_events_for_test();
     {

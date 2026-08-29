@@ -1,22 +1,31 @@
 use std::collections::HashMap;
 
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::common::{
-    add_list_params, normalize_text, object_field, object_field_string, query_param_bool,
-    query_param_i64, query_param_string, query_param_string_array, row_i64, row_json, row_string,
-    strict_row_json, strict_row_string, value_as_i64, ParamsBuilder,
+    add_list_params, normalize_text, object_field, object_field_string, row_i64, row_string,
+    strict_row_i64, strict_row_optional_i64, strict_row_optional_string, strict_row_string,
+    value_as_i64, ParamsBuilder,
 };
 use crate::database::DatabaseService;
 use crate::ownership::owner_id_for_filter;
 use crate::Error;
+use vrcx_0_contracts::game_log_query::{
+    GameLogAllUserStatsOutput, GameLogInstanceJoinOutput, GameLogInstancePlayerEventOutput,
+    GameLogInstanceTimeOutput, GameLogJoinCountOutput, GameLogJoinLeaveRangeOutput,
+    GameLogLastGroupVisitOutput, GameLogLastSeenOutput, GameLogLastVisitOutput,
+    GameLogLocationBeforeOutput, GameLogOnlineSessionOutput, GameLogPlayerDetailOutput,
+    GameLogPreviousDisplayNameOutput, GameLogQuery, GameLogQueryOutput, GameLogRowOutput,
+    GameLogUserStatsOutput, GameLogUserTimeSpentOutput, GameLogVisitCountOutput,
+    GameLogWorldTimeSpentOutput,
+};
 
 use super::{
     ensure_game_log_tables, get_previous_instances_by_group_id, get_previous_instances_by_world_id,
     write_batch as write_game_log_batch, GameLogEntryDeleteKind, GameLogEventEntry,
     GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogLocationTimeUpdate,
-    GameLogPortalSpawnEntry, GameLogQueryInput, GameLogResourceLoadEntry, GameLogVideoPlayEntry,
-    GameLogWriteBatch, GameLogWriteKind,
+    GameLogPortalSpawnEntry, GameLogResourceLoadEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
+    GameLogWriteKind,
 };
 
 mod mutations;

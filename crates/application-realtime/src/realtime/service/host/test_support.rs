@@ -11,6 +11,8 @@ pub(super) use vrcx_0_contracts::feed::{
     FeedFilter, FeedLatestQueryInput, FeedQueryMode, FeedRowsQueryInput, FeedSearchQueryInput,
 };
 #[cfg(test)]
+pub(super) use vrcx_0_contracts::feed_live::FeedLiveEntry;
+#[cfg(test)]
 pub(super) use vrcx_0_contracts::friend_log::FriendLogHistoryQueryInput;
 #[cfg(test)]
 pub(super) use vrcx_0_contracts::notifications::NotificationListQueryInput;
@@ -640,4 +642,108 @@ fn runtime_with_active_session_game_context(
         },
         active_session,
     ))
+}
+
+#[cfg(test)]
+pub(super) fn feed_entry_of(entry_type: &str, created_at: &str) -> FeedLiveEntry {
+    let created_at = created_at.to_string();
+    let user_id = "usr_friend".to_string();
+    let display_name = "Friend".to_string();
+    match entry_type {
+        "GPS" => FeedLiveEntry::Gps {
+            created_at,
+            user_id,
+            display_name,
+            location: String::new(),
+            world_name: String::new(),
+            previous_location: String::new(),
+            time: 0,
+            group_name: String::new(),
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        },
+        "Online" => FeedLiveEntry::Online {
+            created_at,
+            user_id,
+            display_name,
+            location: String::new(),
+            world_name: String::new(),
+            group_name: String::new(),
+            time: None,
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        },
+        "Offline" => FeedLiveEntry::Offline {
+            created_at,
+            user_id,
+            display_name,
+            location: String::new(),
+            world_name: String::new(),
+            group_name: String::new(),
+            time: None,
+            world_id: None,
+            display_location: None,
+            owner_user_id: String::new(),
+        },
+        "Status" => FeedLiveEntry::Status {
+            created_at,
+            user_id,
+            display_name,
+            status: String::new(),
+            status_description: String::new(),
+            previous_status: String::new(),
+            previous_status_description: String::new(),
+            owner_user_id: String::new(),
+        },
+        "Bio" => FeedLiveEntry::Bio {
+            created_at,
+            user_id,
+            display_name,
+            bio: String::new(),
+            previous_bio: String::new(),
+            owner_user_id: String::new(),
+        },
+        "Avatar" => FeedLiveEntry::Avatar {
+            created_at,
+            user_id,
+            display_name,
+            owner_id: String::new(),
+            previous_owner_id: String::new(),
+            avatar_name: String::new(),
+            previous_avatar_name: String::new(),
+            current_avatar_image_url: String::new(),
+            current_avatar_thumbnail_image_url: String::new(),
+            previous_current_avatar_image_url: String::new(),
+            previous_current_avatar_thumbnail_image_url: String::new(),
+            current_avatar_tags: None,
+            previous_current_avatar_tags: None,
+            owner_user_id: String::new(),
+        },
+        other => panic!("unsupported test feed entry type: {other}"),
+    }
+}
+
+#[cfg(test)]
+pub(super) fn transient_avatar_entry(created_at: &str) -> FeedLiveEntry {
+    let mut entry = feed_entry_of("Avatar", created_at);
+    if let FeedLiveEntry::Avatar { avatar_name, .. } = &mut entry {
+        *avatar_name = "Transient Avatar".to_string();
+    }
+    entry
+}
+
+#[cfg(test)]
+pub(super) fn unwritable_feed_entry(created_at: &str) -> FeedLiveEntry {
+    FeedLiveEntry::InstanceClosed {
+        created_at: created_at.to_string(),
+        id: format!("instance.closed:wrld_1:123:{created_at}"),
+        location: "wrld_1:123".into(),
+        message: "Instance Closed".into(),
+        world_name: None,
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    }
 }

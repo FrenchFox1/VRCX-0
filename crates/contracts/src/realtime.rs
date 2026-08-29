@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::feed_live::FeedLiveEntry;
 use crate::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -57,7 +58,7 @@ pub struct RealtimePersistenceBatch {
     #[serde(default)]
     pub friend_log_deletes: Vec<FriendLogDelete>,
     #[serde(default)]
-    pub feed_entries: Vec<Value>,
+    pub feed_entries: Vec<FeedLiveEntry>,
     #[serde(default)]
     pub notification_v1_upserts: Vec<Value>,
     #[serde(default)]

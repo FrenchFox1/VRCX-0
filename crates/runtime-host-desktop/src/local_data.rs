@@ -56,7 +56,7 @@ pub use vrcx_0_persistence::friends::{
 };
 pub use vrcx_0_persistence::game_log::{
     GameLogEntryDeleteKind, GameLogPreviousInstanceGroupOutput, GameLogPreviousInstanceWorldOutput,
-    GameLogQueryInput, GameLogWriteKind,
+    GameLogQuery, GameLogQueryOutput, GameLogWriteKind,
 };
 pub use vrcx_0_persistence::local_moderation::LocalModerationOutput;
 pub use vrcx_0_persistence::maintenance::{
@@ -70,6 +70,7 @@ pub use vrcx_0_persistence::notifications::{
     NotificationListItemOutput, NotificationListQueryInput,
 };
 pub use vrcx_0_persistence::player_list::InstanceActivityRowOutput;
+pub use vrcx_0_persistence::social_aggregates::{WorldFriendVisitRow, WorldFriendVisitsOutput};
 pub use vrcx_0_persistence::worlds::WorldSummaryOutput;
 
 #[derive(Debug, serde::Deserialize, specta::Type)]
@@ -751,7 +752,7 @@ impl LocalDataRuntime {
         )
     }
 
-    pub fn game_log_query(&self, query: GameLogQueryInput) -> Result<Value> {
+    pub fn game_log_query(&self, query: GameLogQuery) -> Result<GameLogQueryOutput> {
         Ok(vrcx_0_persistence::game_log::game_log_query(
             self.db.as_ref(),
             &self.current_owner(),
@@ -778,6 +779,16 @@ impl LocalDataRuntime {
     ) -> Result<Vec<GameLogPreviousInstanceWorldOutput>> {
         Ok(
             vrcx_0_persistence::game_log::get_previous_instances_by_world_id(
+                self.db.as_ref(),
+                &self.current_owner(),
+                &world_id,
+            )?,
+        )
+    }
+
+    pub fn world_friend_visits(&self, world_id: String) -> Result<WorldFriendVisitsOutput> {
+        Ok(
+            vrcx_0_persistence::social_aggregates::get_world_friend_visits(
                 self.db.as_ref(),
                 &self.current_owner(),
                 &world_id,

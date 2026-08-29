@@ -7,6 +7,7 @@ use vrcx_0_core::derived_keys;
 use chrono::Utc;
 use compact_str::CompactString;
 use serde_json::{json, Value};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::{FriendRecord, FriendRosterBaseline, StateBucket};
 use vrcx_0_core::realtime::{RealtimeSessionContext, RealtimeWsMessagePayload};
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
@@ -50,7 +51,7 @@ pub(crate) struct PendingOfflineSchedule {
 pub(crate) struct FriendBaselineEffects {
     pub(crate) result: FriendBaselineResult,
     pub(crate) schedules: Vec<PendingOfflineSchedule>,
-    pub(crate) confirmed_feed_entries: Vec<Value>,
+    pub(crate) confirmed_feed_entries: Vec<FeedLiveEntry>,
     pub(crate) location_time_snapshot: Option<Vec<FriendLocationTime>>,
 }
 
@@ -768,13 +769,7 @@ impl RealtimeFriendsRuntime {
             &now_iso,
             Utc::now().timestamp_millis(),
         ));
-        output.projection.feed_entries = output
-            .persistence
-            .feed_entries
-            .iter()
-            .cloned()
-            .map(vrcx_0_core::json::RawJson::from)
-            .collect();
+        output.projection.feed_entries = output.persistence.feed_entries.clone();
         record_output_friend_state_sequence(&mut state, &output);
         Some(output)
     }

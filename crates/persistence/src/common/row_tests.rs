@@ -132,15 +132,3 @@ fn strict_row_i64_rejects_non_scalar_value() {
     let row = vec![json!([1])];
     assert!(strict_row_i64(&row, 0).is_err());
 }
-
-#[test]
-fn strict_row_json_errors_on_missing_column_but_passes_through_present_null() {
-    let missing: Vec<serde_json::Value> = vec![];
-    assert!(strict_row_json(&missing, 0).is_err());
-
-    let present = vec![json!(null)];
-    assert_eq!(
-        strict_row_json(&present, 0).unwrap(),
-        serde_json::Value::Null
-    );
-}

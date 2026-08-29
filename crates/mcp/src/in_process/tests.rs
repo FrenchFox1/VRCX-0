@@ -12,7 +12,25 @@ use vrcx_0_persistence::realtime::{
 
 use super::*;
 use crate::test_support::test_runtime;
+use vrcx_0_application_core::FeedLiveEntry;
 use vrcx_0_core::OwnerId;
+
+fn bio_feed_entry(
+    created_at: &str,
+    user_id: &str,
+    display_name: &str,
+    bio: &str,
+    previous_bio: &str,
+) -> FeedLiveEntry {
+    FeedLiveEntry::Bio {
+        created_at: created_at.into(),
+        user_id: user_id.into(),
+        display_name: display_name.into(),
+        bio: bio.into(),
+        previous_bio: previous_bio.into(),
+        owner_user_id: String::new(),
+    }
+}
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -113,30 +131,27 @@ async fn friend_feed_search_resolves_target_pages_results_and_guards_global_hist
                 force_history: false,
             }],
             feed_entries: vec![
-                json!({
-                    "created_at": "2026-08-12T10:00:00.000Z",
-                    "type": "Bio",
-                    "userId": "usr_alice",
-                    "displayName": "Alice",
-                    "bio": "new needle text",
-                    "previousBio": "older text",
-                }),
-                json!({
-                    "created_at": "2026-08-11T10:00:00.000Z",
-                    "type": "Bio",
-                    "userId": "usr_alice",
-                    "displayName": "Alice",
-                    "bio": "older needle text",
-                    "previousBio": "oldest text",
-                }),
-                json!({
-                    "created_at": "2026-08-12T11:00:00.000Z",
-                    "type": "Bio",
-                    "userId": "usr_bob",
-                    "displayName": "Bob",
-                    "bio": "other needle text",
-                    "previousBio": "",
-                }),
+                bio_feed_entry(
+                    "2026-08-12T10:00:00.000Z",
+                    "usr_alice",
+                    "Alice",
+                    "new needle text",
+                    "older text",
+                ),
+                bio_feed_entry(
+                    "2026-08-11T10:00:00.000Z",
+                    "usr_alice",
+                    "Alice",
+                    "older needle text",
+                    "oldest text",
+                ),
+                bio_feed_entry(
+                    "2026-08-12T11:00:00.000Z",
+                    "usr_bob",
+                    "Bob",
+                    "other needle text",
+                    "",
+                ),
             ],
             ..RealtimePersistenceBatch::default()
         },

@@ -5,7 +5,7 @@ use vrcx_0_application_core::{Result, RuntimeOperationStatus};
 use super::state::{ActiveRealtimeContext, FriendOwnerGuard};
 use serde_json::Value;
 use vrcx_0_application_core::LocalGameContextSnapshot;
-use vrcx_0_core::json::RawJson;
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::user_facts::UserFactMergeOptions;
 
 use crate::realtime::{
@@ -99,13 +99,13 @@ impl RealtimeHostRuntime {
         owner_user_id: &OwnerId,
         generation: u64,
         baseline_revision: u64,
-        feed_entries: Vec<Value>,
+        feed_entries: Vec<FeedLiveEntry>,
     ) {
         if feed_entries.is_empty() {
             return;
         }
         let mut projection = FriendProjection::new(generation, baseline_revision);
-        projection.feed_entries = feed_entries.into_iter().map(RawJson::from).collect();
+        projection.feed_entries = feed_entries;
         if !self.is_friend_projection_current(&projection) {
             self.friends
                 .clear_baseline_if_revision(projection.generation, projection.baseline_revision);
@@ -149,7 +149,7 @@ impl RealtimeHostRuntime {
             output
                 .persistence
                 .feed_entries
-                .retain(|entry| entry.get("type").and_then(Value::as_str) != Some("Avatar"));
+                .retain(|entry| !matches!(entry, FeedLiveEntry::Avatar { .. }));
         }
         let mut world_name_fetch_ids =
             self.enrich_projection_world_names(&mut projection.feed_entries);
@@ -175,9 +175,9 @@ impl RealtimeHostRuntime {
                     .record_failure("realtimeFriends", error.to_string());
                 if !feed_persistence_disabled {
                     if avatar_feed_persistence_disabled {
-                        projection.feed_entries.retain(|entry| {
-                            entry.get("type").and_then(Value::as_str) == Some("Avatar")
-                        });
+                        projection
+                            .feed_entries
+                            .retain(|entry| matches!(entry, FeedLiveEntry::Avatar { .. }));
                     } else {
                         projection.feed_entries.clear();
                     }
@@ -259,19 +259,16 @@ impl RealtimeHostRuntime {
         };
         let current_user_id = current_user_id.trim();
         projection.feed_entries.retain(|entry| {
-            if !is_player_joining_entry(entry) {
+            let FeedLiveEntry::OnPlayerJoining {
+                user_id,
+                traveling_to_location,
+                ..
+            } = entry
+            else {
                 return true;
-            }
-            let user_id = entry
-                .get("userId")
-                .and_then(Value::as_str)
-                .map(str::trim)
-                .unwrap_or_default();
-            let destination = entry
-                .get("travelingToLocation")
-                .and_then(Value::as_str)
-                .map(str::trim)
-                .unwrap_or_default();
+            };
+            let user_id = user_id.trim();
+            let destination = traveling_to_location.trim();
             is_game_running
                 && !current_location.is_empty()
                 && destination == current_location
@@ -416,7 +413,7 @@ impl RealtimeHostRuntime {
         let mut feed_entry = output.feed_entry;
         let generation = projection.generation;
         self.enrich_world_name(&mut projection.notification);
-        self.enrich_world_name(&mut feed_entry);
+        self.enrich_feed_entry_world_name(&mut feed_entry);
         if let Some(location) = projection
             .notification
             .get("location")
@@ -456,6 +453,6 @@ impl RealtimeHostRuntime {
     }
 }
 
-fn is_player_joining_entry(entry: &RawJson) -> bool {
-    entry.get("type").and_then(Value::as_str) == Some("OnPlayerJoining")
+fn is_player_joining_entry(entry: &FeedLiveEntry) -> bool {
+    matches!(entry, FeedLiveEntry::OnPlayerJoining { .. })
 }

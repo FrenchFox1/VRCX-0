@@ -44,37 +44,6 @@ pub(crate) fn add_list_params(
         .collect()
 }
 
-pub(crate) fn query_param_string(params: &Value, key: &str) -> String {
-    params
-        .get(key)
-        .map(value_as_string)
-        .unwrap_or_default()
-        .trim()
-        .to_string()
-}
-
-pub(crate) fn query_param_i64(params: &Value, key: &str, fallback: i64) -> i64 {
-    params.get(key).map(value_as_i64).unwrap_or(fallback)
-}
-
-pub(crate) fn query_param_bool(params: &Value, key: &str) -> bool {
-    params.get(key).and_then(Value::as_bool).unwrap_or(false)
-}
-
-pub(crate) fn query_param_string_array(params: &Value, key: &str) -> Vec<String> {
-    params
-        .get(key)
-        .and_then(Value::as_array)
-        .map(|values| {
-            values
-                .iter()
-                .map(value_as_string)
-                .filter(|value| !value.trim().is_empty())
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
 pub(crate) fn object_field<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
     value.as_object().and_then(|object| object.get(key))
 }

@@ -6,7 +6,7 @@ type SharedFeedNotificationEntry = Record<string, unknown> & {
     type?: string;
     userId?: string;
     displayName?: string;
-    worldName?: string;
+    worldName?: string | null;
     avatarName?: string;
     videoName?: string;
     notyName?: string;

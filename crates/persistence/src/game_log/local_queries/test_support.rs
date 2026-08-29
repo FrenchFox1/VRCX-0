@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
-use serde_json::Value;
-use vrcx_0_core::json::RawJson;
+use serde_json::{json, Value};
 
 use super::*;
 use crate::ownership::OwnerId;
@@ -46,14 +45,12 @@ pub(super) fn query(
     kind: &str,
     params: serde_json::Value,
 ) -> Result<Value, Error> {
-    game_log_query(
-        db,
-        &OwnerId::new("usr_test"),
-        GameLogQueryInput {
-            kind: kind.into(),
-            params: RawJson::from(params),
-        },
-    )
+    let query: GameLogQuery = serde_json::from_value(json!({ "kind": kind, "params": params }))?;
+    let output = game_log_query(db, &OwnerId::new("usr_test"), query)?;
+    Ok(serde_json::to_value(output)?
+        .get_mut("value")
+        .map(Value::take)
+        .unwrap_or(Value::Null))
 }
 
 pub(super) fn rows(value: Value) -> Vec<Value> {

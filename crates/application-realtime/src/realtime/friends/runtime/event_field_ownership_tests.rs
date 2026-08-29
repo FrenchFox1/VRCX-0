@@ -100,7 +100,7 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .any(|entry| entry["type"] == "Online"));
+            .any(|entry| entry.to_json()["type"] == "Online"));
 
         let friend = snapshot_friend(&runtime);
         assert_eq!(friend.state, "online");
@@ -137,7 +137,7 @@ mod tests {
             .projection
             .feed_entries
             .iter()
-            .any(|entry| entry["type"] == "OnPlayerJoining"));
+            .any(|entry| entry.to_json()["type"] == "OnPlayerJoining"));
 
         let friend = snapshot_friend(&runtime);
         assert_eq!(friend.location, "traveling");
@@ -183,7 +183,7 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .any(|entry| entry["type"] == "GPS"));
+            .any(|entry| entry.to_json()["type"] == "GPS"));
 
         let friend = snapshot_friend(&runtime);
         assert_eq!(friend.location, "wrld_new:2~region(jp)");
@@ -284,7 +284,7 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .any(|entry| entry["type"] == "GPS"));
+            .any(|entry| entry.to_json()["type"] == "GPS"));
 
         assert_eq!(snapshot_friend(&runtime).location, "wrld_new:2~region(jp)");
     }
@@ -419,7 +419,8 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .any(|entry| entry["type"] == "Friend" && entry["displayName"] == "Added"));
+            .any(|entry| entry.to_json()["type"] == "Friend"
+                && entry.to_json()["displayName"] == "Added"));
 
         assert_eq!(snapshot_friend(&runtime).state, "offline");
     }
@@ -443,7 +444,7 @@ mod tests {
             .persistence
             .feed_entries
             .iter()
-            .any(|entry| entry["type"] == "Unfriend"));
+            .any(|entry| entry.to_json()["type"] == "Unfriend"));
 
         assert!(!runtime
             .snapshot()

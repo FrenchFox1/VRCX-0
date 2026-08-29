@@ -107,6 +107,10 @@ vi.mock('../trustColorService', () => ({
     applyTrustColorClasses: mocks.applyTrustColorClasses
 }));
 
+import {
+    avatarFeedEntry,
+    onlineFeedEntry
+} from '@/components/feed/feedLiveTestEntries';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import {
     DEFAULT_PREFERENCES,
@@ -257,7 +261,7 @@ describe('preferenceGenericSetters', () => {
     it('clears live Feed only after the backend persistence switch succeeds', async () => {
         useFeedLiveStore
             .getState()
-            .pushEntries([{ sequence: 1, entry: { id: 'before-switch' } }]);
+            .pushEntries([{ sequence: 1, entry: onlineFeedEntry() }]);
 
         await setFeedPersistenceDisabledPreference(true);
 
@@ -271,7 +275,7 @@ describe('preferenceGenericSetters', () => {
     it('keeps the Feed preference and live entries when the backend switch fails', async () => {
         useFeedLiveStore
             .getState()
-            .pushEntries([{ sequence: 1, entry: { id: 'kept' } }]);
+            .pushEntries([{ sequence: 1, entry: onlineFeedEntry() }]);
         mocks.appFeedPersistenceSetDisabled.mockRejectedValueOnce(
             new Error('switch failed')
         );
@@ -290,7 +294,7 @@ describe('preferenceGenericSetters', () => {
         useFeedLiveStore.getState().pushEntries([
             {
                 sequence: 1,
-                entry: { id: 'avatar-change', type: 'Avatar' }
+                entry: avatarFeedEntry()
             }
         ]);
 

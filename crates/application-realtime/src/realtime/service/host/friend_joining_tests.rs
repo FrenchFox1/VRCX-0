@@ -14,15 +14,17 @@ fn joining_output(
         FriendProjection {
             generation: 7,
             baseline_revision,
-            feed_entries: vec![json!({
-                "created_at": "2026-07-13T10:00:00Z",
-                "type": "OnPlayerJoining",
-                "userId": "usr_friend",
-                "displayName": "Friend",
-                "location": "traveling",
-                "travelingToLocation": destination,
-            })
-            .into()],
+            feed_entries: vec![FeedLiveEntry::OnPlayerJoining {
+                created_at: "2026-07-13T10:00:00Z".into(),
+                user_id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                location: "traveling".into(),
+                traveling_to_location: destination.into(),
+                world_name: None,
+                world_id: None,
+                display_location: None,
+                owner_user_id: String::new(),
+            }],
             ..FriendProjection::new(7, baseline_revision)
         },
     )
@@ -97,8 +99,8 @@ fn player_joining_only_reaches_overlay_for_current_instance_absent_player() -> R
         .flat_map(|projection| projection.feed_entries)
         .collect::<Vec<_>>();
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0]["type"], "OnPlayerJoining");
-    assert_eq!(entries[0]["userId"], "usr_friend");
+    assert_eq!(entries[0].to_json()["type"], "OnPlayerJoining");
+    assert_eq!(entries[0].to_json()["userId"], "usr_friend");
     let events = runtime.runtime().deps.event_bus.take_events_for_test();
     assert!(events
         .iter()
@@ -146,8 +148,8 @@ fn initial_traveling_baseline_emits_player_joining() -> Result<()> {
         .flat_map(|projection| projection.feed_entries)
         .collect::<Vec<_>>();
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0]["type"], "OnPlayerJoining");
-    assert_eq!(entries[0]["userId"], "usr_friend");
+    assert_eq!(entries[0].to_json()["type"], "OnPlayerJoining");
+    assert_eq!(entries[0].to_json()["userId"], "usr_friend");
     let events = runtime.runtime().deps.event_bus.take_events_for_test();
     let projection = events
         .iter()

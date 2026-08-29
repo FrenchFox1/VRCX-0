@@ -4,6 +4,8 @@ use std::sync::Mutex;
 
 use serde_json::{json, Value};
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
+
 use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryMatcher, FeedQueryMode,
     FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput, FeedSearchQueryInput,
@@ -29,7 +31,7 @@ struct TestRealtimeStoreState {
     config: HashMap<String, Value>,
     current: HashMap<String, Vec<FriendLogCurrentOutput>>,
     history: HashMap<String, Vec<FriendLogHistoryOutput>>,
-    feeds: HashMap<String, Vec<Value>>,
+    feeds: HashMap<String, Vec<FeedLiveEntry>>,
     notifications_v1: HashMap<String, Vec<Value>>,
     notifications_v2: HashMap<String, Vec<Value>>,
     game_world_names: HashMap<String, String>,
@@ -90,9 +92,9 @@ impl TestRealtimeStore {
             .filter(|entry| matcher.matches(entry))
             .filter(|entry| match query.mode {
                 FeedQueryMode::Search | FeedQueryMode::Lookup => true,
-                FeedQueryMode::Instance => !value_string(entry, &["location"]).is_empty(),
+                FeedQueryMode::Instance => !entry.location().is_empty(),
             })
-            .map(feed_row_from_value)
+            .map(FeedRowOutput::from)
             .collect::<Vec<_>>();
         rows.reverse();
         if query.max_entries > 0 {
@@ -393,27 +395,15 @@ impl RealtimeStore for TestRealtimeStore {
         if owner.as_str().contains('!') {
             return Err(Error::Custom("invalid test owner id".into()));
         }
-        if let Some(entry_type) = batch
-            .feed_entries
-            .iter()
-            .map(|entry| value_string(entry, &["type"]))
-            .find(|entry_type| {
-                !matches!(
-                    entry_type.as_str(),
-                    "GPS"
-                        | "Online"
-                        | "Offline"
-                        | "Status"
-                        | "Bio"
-                        | "Avatar"
-                        | "TrustLevel"
-                        | "Friend"
-                        | "Unfriend"
-                )
-            })
-        {
+        if let Some(entry) = batch.feed_entries.iter().find(|entry| {
+            matches!(
+                entry,
+                FeedLiveEntry::OnPlayerJoining { .. } | FeedLiveEntry::InstanceClosed { .. }
+            )
+        }) {
             return Err(Error::Custom(format!(
-                "Unknown realtime feed entry type: {entry_type}"
+                "Unknown realtime feed entry type: {}",
+                entry.entry_type()
             )));
         }
         let mut state = self.lock()?;
@@ -428,9 +418,7 @@ impl RealtimeStore for TestRealtimeStore {
         let feeds = state.feeds.entry(owner_id.clone()).or_default();
         for entry in &batch.feed_entries {
             let mut entry = entry.clone();
-            if let Some(object) = entry.as_object_mut() {
-                object.insert("ownerUserId".into(), Value::String(owner_id.clone()));
-            }
+            entry.set_owner_user_id(owner_id.clone());
             feeds.push(entry);
             affected = affected.saturating_add(1);
         }
@@ -560,8 +548,8 @@ impl TestRealtimeStore {
         let state = self.state.lock().expect("test store lock");
         let mut rows = live_entries
             .iter()
-            .filter(|entry| matcher.matches(entry.entry.as_value()))
-            .map(|entry| feed_row_from_value(entry.entry.as_value()))
+            .filter(|entry| matcher.matches(&entry.entry))
+            .map(|entry| FeedRowOutput::from(&entry.entry))
             .collect::<Vec<_>>();
         if include_persisted_rows {
             rows.extend(
@@ -572,7 +560,7 @@ impl TestRealtimeStore {
                     .flatten()
                     .rev()
                     .filter(|entry| matcher.matches(entry))
-                    .map(feed_row_from_value),
+                    .map(FeedRowOutput::from),
             );
         }
         let mut seen = std::collections::HashSet::new();
@@ -843,81 +831,6 @@ fn value_bool(value: &Value, keys: &[&str]) -> bool {
     matches!(text.as_str(), "true" | "1")
 }
 
-fn feed_row_from_value(value: &Value) -> FeedRowOutput {
-    FeedRowOutput {
-        row_id: None,
-        source_rank: None,
-        created_at: nonempty(value_string(value, &["created_at", "createdAt"])),
-        user_id: nonempty(value_string(value, &["userId", "user_id"])),
-        display_name: nonempty(value_string(value, &["displayName", "display_name"])),
-        r#type: nonempty(value_string(value, &["type"])),
-        location: nonempty(value_string(value, &["location"])),
-        world_name: nonempty(value_string(value, &["worldName", "world_name"])),
-        previous_location: nonempty(value_string(
-            value,
-            &["previousLocation", "previous_location"],
-        )),
-        time: value.get("time").and_then(Value::as_i64),
-        group_name: nonempty(value_string(value, &["groupName", "group_name"])),
-        status: nonempty(value_string(value, &["status"])),
-        status_description: nonempty(value_string(
-            value,
-            &["statusDescription", "status_description"],
-        )),
-        previous_status: nonempty(value_string(value, &["previousStatus", "previous_status"])),
-        previous_status_description: nonempty(value_string(
-            value,
-            &["previousStatusDescription", "previous_status_description"],
-        )),
-        bio: nonempty(value_string(value, &["bio"])),
-        previous_bio: nonempty(value_string(value, &["previousBio", "previous_bio"])),
-        owner_id: nonempty(value_string(value, &["ownerId", "owner_id"])),
-        avatar_name: nonempty(value_string(value, &["avatarName", "avatar_name"])),
-        current_avatar_image_url: nonempty(value_string(
-            value,
-            &["currentAvatarImageUrl", "current_avatar_image_url"],
-        )),
-        current_avatar_thumbnail_image_url: nonempty(value_string(
-            value,
-            &[
-                "currentAvatarThumbnailImageUrl",
-                "current_avatar_thumbnail_image_url",
-            ],
-        )),
-        current_avatar_tags: value
-            .get("currentAvatarTags")
-            .and_then(Value::as_array)
-            .map(|values| values.iter().map(|value| text_of(Some(value))).collect()),
-        previous_owner_id: nonempty(value_string(
-            value,
-            &["previousOwnerId", "previous_owner_id"],
-        )),
-        previous_avatar_name: nonempty(value_string(
-            value,
-            &["previousAvatarName", "previous_avatar_name"],
-        )),
-        previous_current_avatar_image_url: nonempty(value_string(
-            value,
-            &[
-                "previousCurrentAvatarImageUrl",
-                "previous_current_avatar_image_url",
-            ],
-        )),
-        previous_current_avatar_thumbnail_image_url: nonempty(value_string(
-            value,
-            &[
-                "previousCurrentAvatarThumbnailImageUrl",
-                "previous_current_avatar_thumbnail_image_url",
-            ],
-        )),
-        previous_current_avatar_tags: value
-            .get("previousCurrentAvatarTags")
-            .and_then(Value::as_array)
-            .map(|values| values.iter().map(|value| text_of(Some(value))).collect()),
-        owner_user_id: nonempty(value_string(value, &["ownerUserId", "owner_user_id"])),
-    }
-}
-
 fn notification_from_value(value: &Value, version: i64) -> NotificationListItemOutput {
     let created_at = value_string(value, &["createdAt", "created_at"]);
     NotificationListItemOutput {
@@ -942,8 +855,4 @@ fn notification_from_value(value: &Value, version: i64) -> NotificationListItemO
         details: value.get("details").cloned().unwrap_or_else(|| json!({})),
         expired: value_bool(value, &["expired"]),
     }
-}
-
-fn nonempty(value: String) -> Option<String> {
-    (!value.is_empty()).then_some(value)
 }

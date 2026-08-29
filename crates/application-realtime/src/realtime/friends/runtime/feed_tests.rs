@@ -50,8 +50,14 @@ mod tests {
             panic!("friend-update should produce an output");
         };
 
-        assert_eq!(output.persistence.feed_entries[0]["type"], "Status");
-        assert_eq!(output.projection.feed_entries[0]["type"], "Status");
+        assert_eq!(
+            output.persistence.feed_entries[0].to_json()["type"],
+            "Status"
+        );
+        assert_eq!(
+            output.projection.feed_entries[0].to_json()["type"],
+            "Status"
+        );
     }
 
     #[test]
@@ -160,7 +166,10 @@ mod tests {
         else {
             panic!("first friend-update should produce an output");
         };
-        assert_eq!(first.persistence.feed_entries[0]["type"], "Status");
+        assert_eq!(
+            first.persistence.feed_entries[0].to_json()["type"],
+            "Status"
+        );
 
         let RealtimeFriendApplyResult::Output(second) =
             runtime.apply_ws_message(&RealtimeWsMessagePayload {
@@ -245,10 +254,22 @@ mod tests {
             panic!("second friend-update should produce an output");
         };
 
-        assert_eq!(first.persistence.feed_entries[0]["type"], "Status");
-        assert_eq!(first.persistence.feed_entries[0]["status"], "join me");
-        assert_eq!(second.persistence.feed_entries[0]["type"], "Status");
-        assert_eq!(second.persistence.feed_entries[0]["status"], "active");
+        assert_eq!(
+            first.persistence.feed_entries[0].to_json()["type"],
+            "Status"
+        );
+        assert_eq!(
+            first.persistence.feed_entries[0].to_json()["status"],
+            "join me"
+        );
+        assert_eq!(
+            second.persistence.feed_entries[0].to_json()["type"],
+            "Status"
+        );
+        assert_eq!(
+            second.persistence.feed_entries[0].to_json()["status"],
+            "active"
+        );
     }
 
     #[test]
@@ -307,13 +328,16 @@ mod tests {
             panic!("friend-update should produce an output");
         };
 
-        assert_eq!(output.persistence.feed_entries[0]["type"], "Avatar");
         assert_eq!(
-            output.persistence.feed_entries[0]["currentAvatarTags"],
+            output.persistence.feed_entries[0].to_json()["type"],
+            "Avatar"
+        );
+        assert_eq!(
+            output.persistence.feed_entries[0].to_json()["currentAvatarTags"],
             json!(["author_tag_avatar_featured", "author_tag_avatar_pc"])
         );
         assert_eq!(
-            output.persistence.feed_entries[0]["previousCurrentAvatarTags"],
+            output.persistence.feed_entries[0].to_json()["previousCurrentAvatarTags"],
             json!(["author_tag_avatar_featured"])
         );
     }
@@ -368,7 +392,10 @@ mod tests {
         else {
             panic!("first avatar update should produce an output");
         };
-        assert_eq!(first.persistence.feed_entries[0]["type"], "Avatar");
+        assert_eq!(
+            first.persistence.feed_entries[0].to_json()["type"],
+            "Avatar"
+        );
 
         let RealtimeFriendApplyResult::Output(second) =
             runtime.apply_ws_message(&RealtimeWsMessagePayload {

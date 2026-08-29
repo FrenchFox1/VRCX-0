@@ -12,6 +12,69 @@ use super::{
     NotificationV2Update, RealtimePersistenceBatch, SelfProfileField, SelfProfileLogEntry,
 };
 use crate::ownership::OwnerId;
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
+
+fn online_entry(created_at: &str, location: &str, world_name: &str) -> FeedLiveEntry {
+    FeedLiveEntry::Online {
+        created_at: created_at.into(),
+        user_id: "usr_friend".into(),
+        display_name: "Friend".into(),
+        location: location.into(),
+        world_name: world_name.into(),
+        group_name: String::new(),
+        time: None,
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    }
+}
+
+fn relationship_entry(created_at: &str, unfriend: bool) -> FeedLiveEntry {
+    let created_at = created_at.to_string();
+    let user_id = "usr_friend".to_string();
+    let display_name = "Friend".to_string();
+    if unfriend {
+        FeedLiveEntry::Unfriend {
+            created_at,
+            user_id,
+            display_name,
+            owner_user_id: String::new(),
+        }
+    } else {
+        FeedLiveEntry::Friend {
+            created_at,
+            user_id,
+            display_name,
+            owner_user_id: String::new(),
+        }
+    }
+}
+
+fn trust_level_entry(created_at: &str, friend_number: i64) -> FeedLiveEntry {
+    FeedLiveEntry::TrustLevel {
+        created_at: created_at.into(),
+        user_id: "usr_friend".into(),
+        display_name: "Friend".into(),
+        trust_level: "Trusted User".into(),
+        previous_trust_level: "Known User".into(),
+        friend_number,
+        owner_user_id: String::new(),
+    }
+}
+
+fn untabled_entry(created_at: &str) -> FeedLiveEntry {
+    FeedLiveEntry::OnPlayerJoining {
+        created_at: created_at.into(),
+        user_id: "usr_friend".into(),
+        display_name: "Friend".into(),
+        location: "traveling".into(),
+        traveling_to_location: "wrld_1:123".into(),
+        world_name: None,
+        world_id: None,
+        display_location: None,
+        owner_user_id: String::new(),
+    }
+}
 
 struct TestDir {
     path: PathBuf,
@@ -78,16 +141,7 @@ fn writes_friend_log_and_feed_rows() -> Result<(), crate::Error> {
                 created_at: "2026-05-15T00:00:00Z".into(),
                 force_history: false,
             }],
-            feed_entries: vec![json!({
-                "created_at": "2026-05-15T00:00:00Z",
-                "type": "Online",
-                "userId": "usr_friend",
-                "displayName": "Friend",
-                "location": "wrld_1:123",
-                "worldName": "wrld_1",
-                "time": 0,
-                "groupName": ""
-            })],
+            feed_entries: vec![online_entry("2026-05-15T00:00:00Z", "wrld_1:123", "wrld_1")],
             ..RealtimePersistenceBatch::default()
         },
     )?;
@@ -206,12 +260,7 @@ fn friend_and_unfriend_feed_markers_are_skipped_not_persisted_as_feed_rows(
                 created_at: "2026-05-15T00:00:00Z".into(),
                 force_history: false,
             }],
-            feed_entries: vec![json!({
-                "created_at": "2026-05-15T00:00:00Z",
-                "type": "Friend",
-                "userId": "usr_friend",
-                "displayName": "Friend",
-            })],
+            feed_entries: vec![relationship_entry("2026-05-15T00:00:00Z", false)],
             ..RealtimePersistenceBatch::default()
         },
     )?;
@@ -229,12 +278,7 @@ fn friend_and_unfriend_feed_markers_are_skipped_not_persisted_as_feed_rows(
                 target_user_id: "usr_friend".into(),
                 created_at: "2026-05-15T00:00:01Z".into(),
             }],
-            feed_entries: vec![json!({
-                "created_at": "2026-05-15T00:00:01Z",
-                "type": "Unfriend",
-                "userId": "usr_friend",
-                "displayName": "Friend",
-            })],
+            feed_entries: vec![relationship_entry("2026-05-15T00:00:01Z", true)],
             ..RealtimePersistenceBatch::default()
         },
     )?;
@@ -463,10 +507,7 @@ fn failed_trust_batch_rolls_back_current_and_history() -> Result<(), crate::Erro
                 created_at: "2026-05-15T00:00:01Z".into(),
                 force_history: false,
             }],
-            feed_entries: vec![json!({
-                "created_at": "2026-05-15T00:00:01Z",
-                "type": "InvalidTrustFeed"
-            })],
+            feed_entries: vec![untabled_entry("2026-05-15T00:00:01Z")],
             ..RealtimePersistenceBatch::default()
         },
     );
@@ -552,7 +593,7 @@ fn blank_display_name_persists_unknown_not_user_id() -> Result<(), crate::Error>
 }
 
 #[test]
-fn rejects_invalid_realtime_feed_entry_type() {
+fn rejects_feed_entry_types_without_a_database_table() {
     let dir = TestDir::new("realtime-invalid-feed");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
 
@@ -560,10 +601,7 @@ fn rejects_invalid_realtime_feed_entry_type() {
         &db,
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
-            feed_entries: vec![json!({
-                "created_at": "2026-05-15T00:00:00Z",
-                "type": "UnknownFeedType",
-            })],
+            feed_entries: vec![untabled_entry("2026-05-15T00:00:00Z")],
             ..RealtimePersistenceBatch::default()
         },
     )
@@ -581,15 +619,7 @@ fn rejects_trust_feed_without_matching_friend_log_upsert() {
         &db,
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
-            feed_entries: vec![json!({
-                "created_at": "2026-05-15T00:00:00Z",
-                "type": "TrustLevel",
-                "userId": "usr_friend",
-                "displayName": "Friend",
-                "trustLevel": "Trusted User",
-                "previousTrustLevel": "Known User",
-                "friendNumber": 7
-            })],
+            feed_entries: vec![trust_level_entry("2026-05-15T00:00:00Z", 7)],
             ..RealtimePersistenceBatch::default()
         },
     )
@@ -615,11 +645,7 @@ fn rolls_back_friend_log_rows_when_later_feed_entry_fails() -> Result<(), crate:
                 created_at: "2026-05-15T00:00:00Z".into(),
                 force_history: false,
             }],
-            feed_entries: vec![json!({
-                "created_at": "2026-05-15T00:00:01Z",
-                "type": "NewFeedType",
-                "userId": "usr_friend",
-            })],
+            feed_entries: vec![untabled_entry("2026-05-15T00:00:01Z")],
             ..RealtimePersistenceBatch::default()
         },
     )

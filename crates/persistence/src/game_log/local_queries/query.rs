@@ -1,8 +1,80 @@
 use super::*;
 use crate::ownership::OwnerId;
 
-fn non_negative_query_param_i64(params: &Value, key: &str, default_value: i64) -> i64 {
-    query_param_i64(params, key, default_value).max(0)
+fn non_negative_limit(requested: Option<i64>, default_value: i64) -> i64 {
+    requested.unwrap_or(default_value).max(0)
+}
+
+fn normalized_list(values: &[String]) -> Vec<String> {
+    values
+        .iter()
+        .filter(|value| !value.trim().is_empty())
+        .cloned()
+        .collect()
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RowQueryMode {
+    ByLocation,
+    Lookup,
+    Search,
+}
+
+impl RowQueryMode {
+    fn of(query: &GameLogQuery) -> Self {
+        match query {
+            GameLogQuery::RowsByLocation { .. } => Self::ByLocation,
+            GameLogQuery::LookupRows { .. } => Self::Lookup,
+            _ => Self::Search,
+        }
+    }
+
+    fn filters(self, query: &GameLogQuery) -> &[String] {
+        match query {
+            GameLogQuery::RowsByLocation { filters, .. }
+            | GameLogQuery::LookupRows { filters, .. }
+            | GameLogQuery::SearchRows { filters, .. } => filters,
+            _ => &[],
+        }
+    }
+
+    fn vip_list(self, query: &GameLogQuery) -> &[String] {
+        match query {
+            GameLogQuery::RowsByLocation { vip_list, .. }
+            | GameLogQuery::LookupRows { vip_list, .. }
+            | GameLogQuery::SearchRows { vip_list, .. } => vip_list,
+            _ => &[],
+        }
+    }
+
+    fn limits(self, query: &GameLogQuery) -> (Option<i64>, Option<i64>) {
+        match query {
+            GameLogQuery::RowsByLocation {
+                max_entries,
+                max_rows,
+                ..
+            }
+            | GameLogQuery::LookupRows {
+                max_entries,
+                max_rows,
+                ..
+            }
+            | GameLogQuery::SearchRows {
+                max_entries,
+                max_rows,
+                ..
+            } => (*max_entries, *max_rows),
+            _ => (None, None),
+        }
+    }
+
+    fn output(self, rows: Vec<GameLogRowOutput>) -> GameLogQueryOutput {
+        match self {
+            Self::ByLocation => GameLogQueryOutput::RowsByLocation(rows),
+            Self::Lookup => GameLogQueryOutput::LookupRows(rows),
+            Self::Search => GameLogQueryOutput::SearchRows(rows),
+        }
+    }
 }
 
 fn limit_usize(limit: i64) -> usize {
@@ -49,38 +121,34 @@ fn location_filter_sql(instance_id: &str, db_params: &mut HashMap<String, Value>
 pub fn game_log_query(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
-    query: GameLogQueryInput,
-) -> Result<Value, Error> {
-    let params = query.params.into_value();
-    let kind = normalize_text(&query.kind);
-    if kind == "previousInstancesByGroupId" {
-        let group_id = query_param_string(&params, "groupId");
-        return serde_json::to_value(get_previous_instances_by_group_id(
-            db,
-            owner_user_id,
-            &group_id,
-        )?)
-        .map_err(Error::from);
+    query: GameLogQuery,
+) -> Result<GameLogQueryOutput, Error> {
+    if let GameLogQuery::PreviousInstancesByGroupId { group_id } = &query {
+        return Ok(GameLogQueryOutput::PreviousInstancesByGroupId(
+            get_previous_instances_by_group_id(db, owner_user_id, group_id.trim())?,
+        ));
     }
-    if kind == "previousInstancesByWorldId" {
-        let world_id = query_param_string(&params, "worldId");
-        return serde_json::to_value(get_previous_instances_by_world_id(
-            db,
-            owner_user_id,
-            &world_id,
-        )?)
-        .map_err(Error::from);
+    if let GameLogQuery::PreviousInstancesByWorldId { world_id } = &query {
+        return Ok(GameLogQueryOutput::PreviousInstancesByWorldId(
+            get_previous_instances_by_world_id(db, owner_user_id, world_id.trim())?,
+        ));
     }
 
     ensure_game_log_tables(db)?;
     let owner_id = owner_id_for_filter(db, owner_user_id)?;
-    match kind.as_str() {
-        "recentDatabase" => {
-            let date_offset = query_param_string(&params, "dateOffset");
-            let limit = non_negative_query_param_i64(&params, "maxTableSize", 500);
+    match query {
+        GameLogQuery::PreviousInstancesByGroupId { .. }
+        | GameLogQuery::PreviousInstancesByWorldId { .. } => {
+            unreachable!("previous-instance queries return before the table gate")
+        }
+        GameLogQuery::RecentDatabase {
+            date_offset,
+            max_table_size,
+        } => {
+            let limit = non_negative_limit(max_table_size, 500);
             let mut rows = Vec::new();
             let recent_params = scoped_params(owner_id)
-                .set("date_offset", date_offset)
+                .set("date_offset", date_offset.trim())
                 .set("limit", limit)
                 .build();
             for descriptor in GAME_LOG_RECENT_DESCRIPTORS {
@@ -88,33 +156,25 @@ pub fn game_log_query(
                     rows.push(game_log_row_from_unified_row(&row)?);
                 }
             }
-            rows.sort_by(|left, right| {
-                let left_date = left
-                    .get("created_at")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default();
-                let right_date = right
-                    .get("created_at")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default();
-                left_date.cmp(right_date)
-            });
+            rows.sort_by(|left, right| left.created_at.cmp(&right.created_at));
             let limit = limit_usize(limit);
             if rows.len() > limit {
                 rows.drain(0..rows.len() - limit);
             }
-            Ok(Value::Array(rows))
+            Ok(GameLogQueryOutput::RecentDatabase(rows))
         }
-        "rowsByLocation" | "lookupRows" | "searchRows" => {
-            let mode = kind.as_str();
-            let include_extra = mode != "rowsByLocation";
-            let filters = query_param_string_array(&params, "filters");
+        GameLogQuery::RowsByLocation { .. }
+        | GameLogQuery::LookupRows { .. }
+        | GameLogQuery::SearchRows { .. } => {
+            let mode = RowQueryMode::of(&query);
+            let include_extra = mode != RowQueryMode::ByLocation;
+            let filters = normalized_list(mode.filters(&query));
             let flags = game_log_filter_flags(&filters, include_extra);
-            let vip_list = query_param_string_array(&params, "vipList");
+            let vip_list = normalized_list(mode.vip_list(&query));
             let mut db_params = scoped_param_map(owner_id);
-            let max_entries = non_negative_query_param_i64(&params, "maxEntries", 500);
-            let max_rows =
-                non_negative_query_param_i64(&params, "maxRows", max_entries).min(max_entries);
+            let (requested_entries, requested_rows) = mode.limits(&query);
+            let max_entries = non_negative_limit(requested_entries, 500);
+            let max_rows = non_negative_limit(requested_rows, max_entries).min(max_entries);
             db_params.insert("@limit".into(), Value::from(max_rows));
             db_params.insert("@per_table".into(), Value::from(max_entries));
             let vip_placeholders = add_list_params(&mut db_params, &vip_list, "vip");
@@ -125,12 +185,17 @@ pub fn game_log_query(
             };
             let mut selects = Vec::new();
 
-            if mode == "rowsByLocation" {
-                let instance_id = query_param_string(&params, "instanceId");
+            if let GameLogQuery::RowsByLocation {
+                instance_id,
+                current_user_id,
+                ..
+            } = &query
+            {
+                let instance_id = instance_id.trim().to_string();
                 let location_filter = location_filter_sql(&instance_id, &mut db_params);
                 db_params.insert(
                     "@current_user_id".into(),
-                    Value::String(query_param_string(&params, "currentUserId")),
+                    Value::String(current_user_id.trim().to_string()),
                 );
                 if flags.location {
                     selects.push(game_log_location_union_select(
@@ -177,7 +242,7 @@ pub fn game_log_query(
                         include_extra,
                     ));
                 }
-            } else if mode == "lookupRows" {
+            } else if mode == RowQueryMode::Lookup {
                 if flags.location {
                     selects.push(game_log_location_union_select("1=1", include_extra));
                 }
@@ -230,11 +295,19 @@ pub fn game_log_query(
                     ));
                 }
             } else {
-                let search = query_param_string(&params, "search");
+                let GameLogQuery::SearchRows {
+                    search,
+                    current_user_id,
+                    ..
+                } = &query
+                else {
+                    unreachable!("row query mode is exhaustive");
+                };
+                let search = search.trim();
                 db_params.insert("@search_like".into(), Value::String(format!("%{search}%")));
                 db_params.insert(
                     "@current_user_id".into(),
-                    Value::String(query_param_string(&params, "currentUserId")),
+                    Value::String(current_user_id.trim().to_string()),
                 );
                 if flags.location {
                     selects.push(game_log_location_union_select(
@@ -295,10 +368,9 @@ pub fn game_log_query(
                 }
             }
 
-            if selects.is_empty() {
-                return Ok(Value::Array(Vec::new()));
-            }
-            Ok(Value::Array(
+            let rows = if selects.is_empty() {
+                Vec::new()
+            } else {
                 db.execute(
                     &format!(
                         "SELECT {} FROM ({}) ORDER BY created_at DESC, id DESC LIMIT @limit",
@@ -309,16 +381,16 @@ pub fn game_log_query(
                 )?
                 .into_iter()
                 .map(|row| game_log_row_from_unified_row(&row))
-                .collect::<Result<Vec<_>, _>>()?,
-            ))
-        }
-        "lastVisit" => {
-            let world_id = query_param_string(&params, "worldId");
-            let count = if query_param_bool(&params, "currentWorldMatch") {
-                2
-            } else {
-                1
+                .collect::<Result<Vec<_>, _>>()?
             };
+            Ok(mode.output(rows))
+        }
+        GameLogQuery::LastVisit {
+            world_id,
+            current_world_match,
+        } => {
+            let world_id = world_id.trim().to_string();
+            let count = if current_world_match { 2 } else { 1 };
             let row = db
                 .execute(
                     "SELECT created_at, world_id FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id ORDER BY id DESC LIMIT @count",
@@ -329,12 +401,16 @@ pub fn game_log_query(
                 )?
                 .last()
                 .cloned();
-            Ok(row
-                .map(|row| json!({ "created_at": row_json(&row, 0), "worldId": row_json(&row, 1) }))
-                .unwrap_or_else(|| json!({ "created_at": "", "worldId": "" })))
+            Ok(GameLogQueryOutput::LastVisit(
+                row.map(|row| GameLogLastVisitOutput {
+                    created_at: row_string(&row, 0),
+                    world_id: row_string(&row, 1),
+                })
+                .unwrap_or_default(),
+            ))
         }
-        "visitCount" => {
-            let world_id = query_param_string(&params, "worldId");
+        GameLogQuery::VisitCount { world_id } => {
+            let world_id = world_id.trim().to_string();
             let count = db
                 .execute(
                     "SELECT COUNT(DISTINCT location) FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id",
@@ -343,10 +419,13 @@ pub fn game_log_query(
                 .first()
                 .map(|row| row_i64(row, 0))
                 .unwrap_or(0);
-            Ok(json!({ "visitCount": count, "worldId": world_id }))
+            Ok(GameLogQueryOutput::VisitCount(GameLogVisitCountOutput {
+                visit_count: count,
+                world_id,
+            }))
         }
-        "timeSpentInWorld" => {
-            let world_id = query_param_string(&params, "worldId");
+        GameLogQuery::TimeSpentInWorld { world_id } => {
+            let world_id = world_id.trim().to_string();
             let time_spent = db
                 .execute(
                     "SELECT COALESCE(SUM(time), 0) FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id",
@@ -355,10 +434,15 @@ pub fn game_log_query(
                 .first()
                 .map(|row| row_i64(row, 0))
                 .unwrap_or(0);
-            Ok(json!({ "timeSpent": time_spent, "worldId": world_id }))
+            Ok(GameLogQueryOutput::TimeSpentInWorld(
+                GameLogWorldTimeSpentOutput {
+                    time_spent,
+                    world_id,
+                },
+            ))
         }
-        "lastGroupVisit" => {
-            let group_id = query_param_string(&params, "groupId");
+        GameLogQuery::LastGroupVisit { group_id } => {
+            let group_id = group_id.trim();
             let created_at = db
                 .execute(
                     "SELECT created_at FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND location LIKE @group_id ORDER BY id DESC LIMIT 1",
@@ -369,16 +453,18 @@ pub fn game_log_query(
                 .first()
                 .map(|row| row_string(row, 0))
                 .unwrap_or_default();
-            Ok(json!({ "created_at": created_at }))
+            Ok(GameLogQueryOutput::LastGroupVisit(
+                GameLogLastGroupVisitOutput { created_at },
+            ))
         }
-        "lastSeen" => {
-            let user_id = query_param_string(&params, "userId");
-            let display_name = query_param_string(&params, "displayName");
-            let count = if query_param_bool(&params, "inCurrentWorld") {
-                2
-            } else {
-                1
-            };
+        GameLogQuery::LastSeen {
+            user_id,
+            display_name,
+            in_current_world,
+        } => {
+            let user_id = user_id.trim().to_string();
+            let display_name = display_name.trim().to_string();
+            let count = if in_current_world { 2 } else { 1 };
             let row = db
                 .execute(
                     "SELECT created_at, user_id FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND (user_id = @user_id OR display_name = @display_name) ORDER BY id DESC LIMIT @count",
@@ -390,19 +476,27 @@ pub fn game_log_query(
                 )?
                 .last()
                 .cloned();
-            Ok(row
-                .map(|row| {
+            Ok(GameLogQueryOutput::LastSeen(
+                row.map(|row| {
                     let row_user_id = row_string(&row, 1);
-                    json!({
-                        "created_at": row_json(&row, 0),
-                        "userId": if row_user_id.is_empty() { user_id } else { row_user_id }
-                    })
+                    GameLogLastSeenOutput {
+                        created_at: row_string(&row, 0),
+                        user_id: if row_user_id.is_empty() {
+                            user_id
+                        } else {
+                            row_user_id
+                        },
+                    }
                 })
-                .unwrap_or_else(|| json!({ "created_at": "", "userId": "" })))
+                .unwrap_or_default(),
+            ))
         }
-        "joinCount" => {
-            let user_id = query_param_string(&params, "userId");
-            let display_name = query_param_string(&params, "displayName");
+        GameLogQuery::JoinCount {
+            user_id,
+            display_name,
+        } => {
+            let user_id = user_id.trim().to_string();
+            let display_name = display_name.trim().to_string();
             let count = db
                 .execute(
                     "SELECT COUNT(DISTINCT location) FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND (type = 'OnPlayerJoined') AND (user_id = @user_id OR display_name = @display_name)",
@@ -414,11 +508,17 @@ pub fn game_log_query(
                 .first()
                 .map(|row| row_i64(row, 0))
                 .unwrap_or(0);
-            Ok(json!({ "joinCount": count, "userId": user_id }))
+            Ok(GameLogQueryOutput::JoinCount(GameLogJoinCountOutput {
+                join_count: count,
+                user_id,
+            }))
         }
-        "timeSpent" => {
-            let user_id = query_param_string(&params, "userId");
-            let display_name = query_param_string(&params, "displayName");
+        GameLogQuery::TimeSpent {
+            user_id,
+            display_name,
+        } => {
+            let user_id = user_id.trim().to_string();
+            let display_name = display_name.trim().to_string();
             let time_spent = db
                 .execute(
                     "SELECT COALESCE(SUM(time), 0)
@@ -434,16 +534,19 @@ pub fn game_log_query(
                 .first()
                 .map(|row| row_i64(row, 0))
                 .unwrap_or(0);
-            Ok(json!({ "timeSpent": time_spent, "userId": user_id }))
+            Ok(GameLogQueryOutput::TimeSpent(GameLogUserTimeSpentOutput {
+                time_spent,
+                user_id,
+            }))
         }
-        "userStats" => {
-            let user_id = query_param_string(&params, "userId");
-            let display_name = query_param_string(&params, "displayName");
-            let count = if query_param_bool(&params, "inCurrentWorld") {
-                2
-            } else {
-                1
-            };
+        GameLogQuery::UserStats {
+            user_id,
+            display_name,
+            in_current_world,
+        } => {
+            let user_id = user_id.trim().to_string();
+            let display_name = display_name.trim().to_string();
+            let count = if in_current_world { 2 } else { 1 };
             let last_seen = db
                 .execute(
                     "SELECT created_at FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND (user_id = @user_id OR display_name = @display_name) ORDER BY id DESC LIMIT @count",
@@ -486,24 +589,27 @@ pub fn game_log_query(
                     .set("display_name", display_name)
                     .build(),
             )? {
-                previous_names.push(json!({
-                    "displayName": row_json(&row, 0),
-                    "created_at": row_json(&row, 1)
-                }));
+                previous_names.push(GameLogPreviousDisplayNameOutput {
+                    display_name: row_string(&row, 0),
+                    created_at: row_string(&row, 1),
+                });
             }
-            Ok(json!({
-                "timeSpent": stats.as_ref().map(|row| row_i64(row, 0)).unwrap_or(0),
-                "lastSeen": last_seen,
-                "joinCount": stats.as_ref().map(|row| row_i64(row, 1)).unwrap_or(0),
-                "userId": user_id,
-                "previousDisplayNames": previous_names
+            Ok(GameLogQueryOutput::UserStats(GameLogUserStatsOutput {
+                time_spent: stats.as_ref().map(|row| row_i64(row, 0)).unwrap_or(0),
+                last_seen,
+                join_count: stats.as_ref().map(|row| row_i64(row, 1)).unwrap_or(0),
+                user_id,
+                previous_display_names: previous_names,
             }))
         }
-        "allUserStats" => {
-            let user_ids = query_param_string_array(&params, "userIds");
-            let display_names = query_param_string_array(&params, "displayNames");
+        GameLogQuery::AllUserStats {
+            user_ids,
+            display_names,
+        } => {
+            let user_ids = normalized_list(&user_ids);
+            let display_names = normalized_list(&display_names);
             if user_ids.is_empty() && display_names.is_empty() {
-                return Ok(Value::Array(Vec::new()));
+                return Ok(GameLogQueryOutput::AllUserStats(Vec::new()));
             }
             let mut db_params = scoped_param_map(owner_id);
             let mut clauses = Vec::new();
@@ -519,7 +625,7 @@ pub fn game_log_query(
                     name_placeholders.join(", ")
                 ));
             }
-            Ok(Value::Array(
+            Ok(GameLogQueryOutput::AllUserStats(
                 db.execute(
                     &format!(
                         "SELECT
@@ -544,19 +650,17 @@ pub fn game_log_query(
                     &db_params,
                 )?
                 .into_iter()
-                .map(|row| {
-                    json!({
-                        "lastSeen": row_json(&row, 0),
-                        "userId": row_json(&row, 1),
-                        "timeSpent": row_json(&row, 2),
-                        "joinCount": row_json(&row, 3),
-                        "displayName": row_json(&row, 4)
-                    })
+                .map(|row| GameLogAllUserStatsOutput {
+                    last_seen: row_string(&row, 0),
+                    user_id: row_string(&row, 1),
+                    time_spent: row_i64(&row, 2),
+                    join_count: row_i64(&row, 3),
+                    display_name: row_string(&row, 4),
                 })
                 .collect(),
             ))
         }
-        "lastDate" => {
+        GameLogQuery::LastDate {} => {
             let mut dates = Vec::new();
             for table in [
                 "gamelog_location",
@@ -579,32 +683,31 @@ pub fn game_log_query(
                 }
             }
             dates.sort();
-            Ok(Value::String(dates.pop().unwrap_or_default()))
+            Ok(GameLogQueryOutput::LastDate(
+                dates.pop().unwrap_or_default(),
+            ))
         }
-        "playersFromInstanceRows" => {
-            let location = query_param_string(&params, "location");
-            Ok(Value::Array(
+        GameLogQuery::PlayersFromInstanceRows { location } => {
+            Ok(GameLogQueryOutput::PlayersFromInstanceRows(
                 db
                     .execute(
                         "SELECT id, created_at, display_name, user_id, time, type FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND location = @location ORDER BY id ASC",
-                        &scoped_params(owner_id).set("location", location).build(),
+                        &scoped_params(owner_id).set("location", location.trim()).build(),
                     )?
                     .into_iter()
-                    .map(|row| {
-                        json!({
-                            "rowId": row_json(&row, 0),
-                            "created_at": row_json(&row, 1),
-                            "displayName": row_json(&row, 2),
-                            "userId": row_json(&row, 3),
-                            "time": row_i64(&row, 4),
-                            "type": row_json(&row, 5)
-                        })
+                    .map(|row| GameLogInstancePlayerEventOutput {
+                        row_id: row_i64(&row, 0),
+                        created_at: row_string(&row, 1),
+                        display_name: row_string(&row, 2),
+                        user_id: row_string(&row, 3),
+                        time: row_i64(&row, 4),
+                        r#type: row_string(&row, 5),
                     })
                     .collect(),
             ))
         }
-        "locationBeforeOrAt" => {
-            let created_at = query_param_string(&params, "createdAt");
+        GameLogQuery::LocationBeforeOrAt { created_at } => {
+            let created_at = created_at.trim().to_string();
             let row = db
                 .execute(
                     "SELECT created_at, location, world_id, world_name, group_name
@@ -619,23 +722,25 @@ pub fn game_log_query(
                 )?
                 .first()
                 .cloned();
-            Ok(row
-                .map(|row| {
-                    json!({
-                        "created_at": row_json(&row, 0),
-                        "location": row_json(&row, 1),
-                        "worldId": row_json(&row, 2),
-                        "worldName": row_json(&row, 3),
-                        "groupName": row_json(&row, 4)
-                    })
-                })
-                .unwrap_or(Value::Null))
+            Ok(GameLogQueryOutput::LocationBeforeOrAt(row.map(|row| {
+                GameLogLocationBeforeOutput {
+                    created_at: row_string(&row, 0),
+                    location: row_string(&row, 1),
+                    world_id: row_string(&row, 2),
+                    world_name: row_string(&row, 3),
+                    group_name: row_string(&row, 4),
+                }
+            })))
         }
-        "joinLeaveRange" => {
-            let location = query_param_string(&params, "location");
-            let after_date = query_param_string(&params, "afterDate");
-            let before_date = query_param_string(&params, "beforeDate");
-            Ok(Value::Array(
+        GameLogQuery::JoinLeaveRange {
+            location,
+            after_date,
+            before_date,
+        } => {
+            let location = location.trim().to_string();
+            let after_date = after_date.trim().to_string();
+            let before_date = before_date.trim().to_string();
+            Ok(GameLogQueryOutput::JoinLeaveRange(
                 db.execute(
                     "SELECT created_at, type, display_name, user_id
                          FROM gamelog_join_leave
@@ -651,20 +756,18 @@ pub fn game_log_query(
                         .build(),
                 )?
                 .into_iter()
-                .map(|row| {
-                    json!({
-                        "created_at": row_json(&row, 0),
-                        "type": row_json(&row, 1),
-                        "displayName": row_json(&row, 2),
-                        "userId": row_json(&row, 3)
-                    })
+                .map(|row| GameLogJoinLeaveRangeOutput {
+                    created_at: row_string(&row, 0),
+                    r#type: row_string(&row, 1),
+                    display_name: row_string(&row, 2),
+                    user_id: row_string(&row, 3),
                 })
                 .collect(),
             ))
         }
-        "playerDetailFromInstance" => {
-            let location = query_param_string(&params, "location");
-            Ok(Value::Array(
+        GameLogQuery::PlayerDetailFromInstance { location } => {
+            let location = location.trim().to_string();
+            Ok(GameLogQueryOutput::PlayerDetailFromInstance(
                 db.execute(
                     "SELECT created_at, display_name, user_id, time
                          FROM gamelog_join_leave
@@ -674,20 +777,18 @@ pub fn game_log_query(
                     &scoped_params(owner_id).set("location", location).build(),
                 )?
                 .into_iter()
-                .map(|row| {
-                    json!({
-                        "created_at": row_json(&row, 0),
-                        "display_name": row_json(&row, 1),
-                        "user_id": row_json(&row, 2),
-                        "time": row_i64(&row, 3)
-                    })
+                .map(|row| GameLogPlayerDetailOutput {
+                    created_at: row_string(&row, 0),
+                    display_name: row_string(&row, 1),
+                    user_id: row_string(&row, 2),
+                    time: row_i64(&row, 3),
                 })
                 .collect(),
             ))
         }
-        "previousDisplayNamesByUserId" => {
-            let user_id = query_param_string(&params, "userId");
-            Ok(Value::Array(
+        GameLogQuery::PreviousDisplayNamesByUserId { user_id } => {
+            let user_id = user_id.trim().to_string();
+            Ok(GameLogQueryOutput::PreviousDisplayNamesByUserId(
                 db.execute(
                     "SELECT created_at, display_name
                          FROM gamelog_join_leave
@@ -697,27 +798,28 @@ pub fn game_log_query(
                     &scoped_params(owner_id).set("user_id", user_id).build(),
                 )?
                 .into_iter()
-                .map(|row| {
-                    json!({
-                        "created_at": row_json(&row, 0),
-                        "displayName": row_json(&row, 1)
-                    })
+                .map(|row| GameLogPreviousDisplayNameOutput {
+                    created_at: row_string(&row, 0),
+                    display_name: row_string(&row, 1),
                 })
                 .collect(),
             ))
         }
-        "instanceTimes" => Ok(Value::Array(
+        GameLogQuery::InstanceTimes {} => Ok(GameLogQueryOutput::InstanceTimes(
             db.execute(
                 "SELECT location, time FROM gamelog_location WHERE owner_id IN (0, @owner_id)",
                 &scoped_params(owner_id).build(),
             )?
             .into_iter()
-            .map(|row| json!({ "location": row_json(&row, 0), "time": row_i64(&row, 1) }))
+            .map(|row| GameLogInstanceTimeOutput {
+                location: row_string(&row, 0),
+                time: row_i64(&row, 1),
+            })
             .collect(),
         )),
-        "onlineSessions" => {
-            let from_date = query_param_string(&params, "fromDate");
-            let to_date = query_param_string(&params, "toDate");
+        GameLogQuery::OnlineSessions { from_date, to_date } => {
+            let from_date = from_date.trim().to_string();
+            let to_date = to_date.trim().to_string();
             let mut rows = Vec::new();
             if !from_date.is_empty() {
                 if let Some(row) = db
@@ -728,7 +830,10 @@ pub fn game_log_query(
                     .first()
                     .cloned()
                 {
-                    rows.push(json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }));
+                    rows.push(GameLogOnlineSessionOutput {
+                        created_at: row_string(&row, 0),
+                        time: row_i64(&row, 1),
+                    });
                 }
             }
             let mut clauses = vec!["owner_id IN (0, @owner_id)"];
@@ -746,72 +851,75 @@ pub fn game_log_query(
                 &format!("SELECT created_at, time FROM gamelog_location {date_clause} ORDER BY created_at"),
                 &db_params,
             )? {
-                rows.push(json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }));
+                rows.push(GameLogOnlineSessionOutput {
+                    created_at: row_string(&row, 0),
+                    time: row_i64(&row, 1),
+                });
             }
-            Ok(Value::Array(rows))
+            Ok(GameLogQueryOutput::OnlineSessions(rows))
         }
-        "onlineSessionsAfter" => {
-            let after = query_param_string(&params, "afterCreatedAt");
-            let op = if query_param_bool(&params, "inclusive") {
-                ">="
-            } else {
-                ">"
-            };
-            Ok(Value::Array(
+        GameLogQuery::OnlineSessionsAfter {
+            after_created_at,
+            inclusive,
+        } => {
+            let after = after_created_at.trim().to_string();
+            let op = if inclusive { ">=" } else { ">" };
+            Ok(GameLogQueryOutput::OnlineSessionsAfter(
                 db
                     .execute(
                         &format!("SELECT created_at, time FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND created_at {op} @after ORDER BY created_at"),
                         &scoped_params(owner_id).set("after", after).build(),
                     )?
                     .into_iter()
-                    .map(|row| json!({ "created_at": row_json(&row, 0), "time": row_i64(&row, 1) }))
+                    .map(|row| GameLogOnlineSessionOutput {
+                        created_at: row_string(&row, 0),
+                        time: row_i64(&row, 1),
+                    })
                     .collect(),
             ))
         }
-        "instanceJoinHistory" => {
-            let user_id = query_param_string(&params, "userId");
-            let created_at = query_param_string(&params, "createdAt");
-            Ok(Value::Array(
+        GameLogQuery::InstanceJoinHistory {
+            user_id,
+            created_at,
+        } => {
+            Ok(GameLogQueryOutput::InstanceJoinHistory(
                 db
                     .execute(
                         "SELECT created_at, location FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND user_id = @user_id AND created_at > @created_at ORDER BY created_at DESC",
                         &scoped_params(owner_id)
-                            .set("user_id", user_id)
-                            .set("created_at", created_at)
+                            .set("user_id", user_id.trim())
+                            .set("created_at", created_at.trim())
                             .build(),
                     )?
                     .into_iter()
-                    .map(|row| json!({ "created_at": row_json(&row, 0), "location": row_json(&row, 1) }))
+                    .map(|row| GameLogInstanceJoinOutput {
+                        created_at: row_string(&row, 0),
+                        location: row_string(&row, 1),
+                    })
                     .collect(),
             ))
         }
-        "worldNameByWorldId" => {
-            let world_id = query_param_string(&params, "worldId");
+        GameLogQuery::WorldNameByWorldId { world_id } => {
             let world_name = db
                 .execute(
                     "SELECT world_name FROM gamelog_location WHERE owner_id IN (0, @owner_id) AND world_id = @world_id ORDER BY id DESC LIMIT 1",
-                    &scoped_params(owner_id).set("world_id", world_id).build(),
+                    &scoped_params(owner_id).set("world_id", world_id.trim()).build(),
                 )?
                 .first()
                 .map(|row| row_string(row, 0))
                 .unwrap_or_default();
-            Ok(Value::String(world_name))
+            Ok(GameLogQueryOutput::WorldNameByWorldId(world_name))
         }
-        "userIdFromDisplayName" => {
-            let display_name = query_param_string(&params, "displayName");
+        GameLogQuery::UserIdFromDisplayName { display_name } => {
             let user_id = db
                 .execute(
                     "SELECT user_id FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id) AND display_name = @display_name AND user_id != '' ORDER BY id DESC LIMIT 1",
-                    &scoped_params(owner_id).set("display_name", display_name).build(),
+                    &scoped_params(owner_id).set("display_name", display_name.trim()).build(),
                 )?
                 .first()
                 .map(|row| row_string(row, 0))
                 .unwrap_or_default();
-            Ok(Value::String(user_id))
+            Ok(GameLogQueryOutput::UserIdFromDisplayName(user_id))
         }
-        _ => Err(Error::Custom(format!(
-            "Unknown game log query: {}",
-            query.kind
-        ))),
     }
 }

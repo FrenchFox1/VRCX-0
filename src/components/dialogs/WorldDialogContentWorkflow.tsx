@@ -130,6 +130,7 @@ export function WorldDialogContentWorkflow({
         setMemo,
         previousInstances,
         setPreviousInstances,
+        friendVisits,
         hasPersistData,
         setHasPersistData,
         worldSideData,
@@ -357,7 +358,8 @@ export function WorldDialogContentWorkflow({
                     actionStatus,
                     normalizedWorldId,
                     openNonce,
-                    previousInstances
+                    previousInstances,
+                    friendVisits
                 }}
                 permissions={{
                     isInstanceLocation,

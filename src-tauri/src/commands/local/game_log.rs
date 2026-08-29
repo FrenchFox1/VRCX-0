@@ -13,7 +13,7 @@ use vrcx_0_application_game::{
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability_supported, HostCapability};
 use vrcx_0_runtime_host_desktop::local_data::{
     GameLogEntryDeleteKind, GameLogPreviousInstanceGroupOutput, GameLogPreviousInstanceWorldOutput,
-    GameLogQueryInput, GameLogWriteKind,
+    GameLogQuery, GameLogQueryOutput, GameLogWriteKind,
 };
 
 #[tauri::command]
@@ -87,8 +87,8 @@ pub fn app__game_log_instance_delete_by_location(
 #[specta::specta]
 pub fn app__game_log_query(
     state: State<'_, AppState>,
-    query: GameLogQueryInput,
-) -> Result<Value, AppError> {
+    query: GameLogQuery,
+) -> Result<GameLogQueryOutput, AppError> {
     state
         .runtime_host()
         .local_data()

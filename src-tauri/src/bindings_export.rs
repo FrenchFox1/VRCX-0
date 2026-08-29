@@ -323,6 +323,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::mutual_graph::app__mutual_graph_friend_refresh,
             commands::local::mutual_graph::app__user_mutual_friends_list_get,
             commands::local::worlds::app__world_get,
+            commands::local::worlds::app__world_friend_visits,
             commands::local::favorites::app__favorite_list,
             commands::local::favorites::app__favorite_local_snapshot,
             commands::local::favorites::app__saved_group_favorites_get,
