@@ -205,6 +205,7 @@ export function VrcNotificationCenterHost() {
             >
                 <SheetContent
                     side="right"
+                    variant="inset"
                     showCloseButton={false}
                     className="flex w-full! flex-col gap-0 p-0 sm:max-w-[40rem]!"
                 >
