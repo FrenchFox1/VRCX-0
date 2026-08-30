@@ -11,6 +11,16 @@
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
+    --surface-interactive: color-mix(
+        in oklch,
+        var(--background) 96%,
+        var(--foreground)
+    );
+    --surface-interactive-hover: color-mix(
+        in oklch,
+        var(--background) 93%,
+        var(--foreground)
+    );
     --object-surface: oklch(0.985 0.002 285);
     --object-surface-hover: oklch(0.983 0.003 285);
     --motion-fast: 120ms;
@@ -30,6 +40,8 @@
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(0.985 0 0);
     --border: oklch(0.922 0 0);
+    --border-subtle: color-mix(in oklch, var(--border) 60%, transparent);
+    --border-hover: color-mix(in oklch, var(--foreground) 15%, transparent);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
     --radius: 0.625rem;
@@ -129,6 +141,16 @@
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
+    --surface-interactive: color-mix(
+        in oklch,
+        var(--card) 98%,
+        var(--foreground)
+    );
+    --surface-interactive-hover: color-mix(
+        in oklch,
+        var(--card) 94%,
+        var(--foreground)
+    );
     --object-surface: oklch(0.205 0.003 285);
     --object-surface-hover: oklch(0.235 0.004 285);
     --popover: oklch(0.205 0 0);
@@ -186,6 +208,8 @@
     --color-foreground: var(--foreground);
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
+    --color-surface-interactive: var(--surface-interactive);
+    --color-surface-interactive-hover: var(--surface-interactive-hover);
     --color-object-surface: var(--object-surface);
     --color-object-surface-hover: var(--object-surface-hover);
     --color-popover: var(--popover);
@@ -201,6 +225,8 @@
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
     --color-border: var(--border);
+    --color-border-subtle: var(--border-subtle);
+    --color-border-hover: var(--border-hover);
     --color-input: var(--input);
     --color-ring: var(--ring);
     --color-sidebar: var(--sidebar);
