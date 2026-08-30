@@ -4874,7 +4874,7 @@
             "header": "翻訳サービスプロバイダー設定",
             "description": "コンテンツの翻訳に使用するプロバイダーを選択して設定します。",
             "guide": "設定方法",
-            "mode": "翻訳サービスプロバイダ",
+            "mode": "翻訳サービスプロバイダー",
             "mode_google": "Google 翻訳",
             "mode_deepl": "DeepL Free API",
             "test": "テスト",
