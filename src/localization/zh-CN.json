@@ -922,6 +922,14 @@
                 "Avatar": "模型变动",
                 "Bio": "简介变更"
             },
+            "toolbar": {
+                "all_types": "全部",
+                "type_summary": "类型：{types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "仅已分组好友",
+                "view_summary": "视图：{view}",
+                "view_label": "视图"
+            },
             "modes": {
                 "table": "表格",
                 "columns": "分栏"

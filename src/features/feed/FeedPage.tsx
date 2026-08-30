@@ -1,15 +1,9 @@
-import { Columns3Icon, TableIcon } from 'lucide-react';
-import { useCallback, useMemo, type ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
 import { PageBody, PageScaffold } from '@/components/layout/PageScaffold';
-import {
-    ToolbarSegmented,
-    type ToolbarSegmentOption
-} from '@/components/layout/ToolbarControls';
 import {
     readFeedRouteUserIds,
     withFeedRouteUserIds
@@ -27,37 +21,6 @@ import { useFeedViewModeState } from './useFeedViewModeState';
 type FeedPageProps = {
     embedded?: boolean;
 };
-
-function FeedViewModeToggle({
-    onValueChange,
-    value
-}: {
-    onValueChange(value: FeedViewMode): void;
-    value: FeedViewMode;
-}) {
-    const { t } = useTranslation();
-    const options: ToolbarSegmentOption<FeedViewMode>[] = [
-        {
-            value: 'table',
-            label: t('view.feed.modes.table'),
-            icon: TableIcon
-        },
-        {
-            value: 'columns',
-            label: t('view.feed.modes.columns'),
-            icon: Columns3Icon
-        }
-    ];
-
-    return (
-        <ToolbarSegmented
-            iconOnly
-            value={value}
-            onValueChange={onValueChange}
-            options={options}
-        />
-    );
-}
 
 export function FeedPage({ embedded = false }: FeedPageProps = {}) {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -88,12 +51,6 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
             setViewMode(value);
         },
         [embedded, searchParams, setSearchParams, setViewMode]
-    );
-    const modeToggle = (
-        <FeedViewModeToggle
-            value={effectiveViewMode}
-            onValueChange={setEffectiveViewMode}
-        />
     );
     const setRouteScopedUserIds = useCallback(
         (userIds: readonly string[]) => {
@@ -127,14 +84,14 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
                     <FeedColumnsMode
                         columns={columns}
                         density={density}
-                        modeToggle={modeToggle}
+                        onViewModeChange={setEffectiveViewMode}
                         onColumnsChange={setColumns}
                         onDensityChange={setDensity}
                     />
                 </PageBody>
             ) : (
                 <FeedTableMode
-                    modeToggle={modeToggle}
+                    onViewModeChange={setEffectiveViewMode}
                     routeScopedUserIds={routeScopedUserIds}
                     setRouteScopedUserIds={setRouteScopedUserIds}
                 />
@@ -144,11 +101,11 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
 }
 
 function FeedTableMode({
-    modeToggle,
+    onViewModeChange,
     routeScopedUserIds,
     setRouteScopedUserIds
 }: {
-    modeToggle: ReactNode;
+    onViewModeChange(value: FeedViewMode): void;
     routeScopedUserIds: readonly string[];
     setRouteScopedUserIds(userIds: readonly string[]): void;
 }) {
@@ -196,7 +153,6 @@ function FeedTableMode({
             filters.deferredSearchQuery.trim() ||
             filters.deferredScopedUserIds.length
         );
-    const columnsMenu = <TableColumnVisibilityMenu table={table} />;
     const filterModel = useMemo(
         () => ({
             activeFilters,
@@ -241,6 +197,7 @@ function FeedTableMode({
                 setRouteScopedUserIds(userIds);
             },
             onSearchDraftChange: setSearchDraft,
+            onFeedFiltersChange: setFeedFilters,
             onToggleFavoritesOnly: () =>
                 setFavoritesOnly((current) => !current),
             onToggleFeedFilter: toggleFeedFilter
@@ -264,10 +221,10 @@ function FeedTableMode({
     return (
         <>
             <FeedToolbar
-                columnsMenu={columnsMenu}
+                viewMenu={<TableColumnVisibilityMenu table={table} />}
+                onViewModeChange={onViewModeChange}
                 filterModel={filterModel}
                 filterCommands={filterCommands}
-                modeToggle={modeToggle}
                 isSearching={isSearching}
             />
             <PageBody>

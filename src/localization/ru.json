@@ -922,6 +922,14 @@
                 "Avatar": "Аватар",
                 "Bio": "Био"
             },
+            "toolbar": {
+                "all_types": "Все",
+                "type_summary": "Тип: {types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "Только друзья в группах",
+                "view_summary": "Вид: {view}",
+                "view_label": "Вид"
+            },
             "modes": {
                 "table": "Таблица",
                 "columns": "Колонки"

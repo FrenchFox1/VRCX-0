@@ -922,6 +922,14 @@
                 "Avatar": "角色",
                 "Bio": "自我介紹"
             },
+            "toolbar": {
+                "all_types": "全部",
+                "type_summary": "類型：{types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "僅已分組好友",
+                "view_summary": "檢視：{view}",
+                "view_label": "檢視"
+            },
             "modes": {
                 "table": "表格",
                 "columns": "分欄"

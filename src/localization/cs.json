@@ -922,6 +922,14 @@
                 "Avatar": "Avatar",
                 "Bio": "Bio"
             },
+            "toolbar": {
+                "all_types": "Vše",
+                "type_summary": "Typ: {types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "Jen přátelé ve skupinách",
+                "view_summary": "Zobrazení: {view}",
+                "view_label": "Zobrazení"
+            },
             "modes": {
                 "table": "Tabulka",
                 "columns": "Sloupce"
