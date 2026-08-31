@@ -4124,7 +4124,9 @@ export type FriendLocationTime = {
     userId: string;
     location: string;
     sinceMs: number | null;
+    source: FriendLocationTimeSource;
 };
+export type FriendLocationTimeSource = 'gameLog' | 'realtime';
 export type FriendLogCurrentOutput = {
     userId: string;
     displayName: string;
