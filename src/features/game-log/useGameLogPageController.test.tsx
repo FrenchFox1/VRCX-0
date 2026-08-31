@@ -301,7 +301,7 @@ describe('useGameLogPageController', () => {
         expect(mocks.rows[24].isFriend).toBeUndefined();
     });
 
-    it('leaves session annotations and duration data intact when switching modes', () => {
+    it('keeps the original session tree and updates shared affinity when switching modes', () => {
         const { result, rerender } = renderHook(useGameLogPageController);
         act(() => result.current.table.lastPage());
         mocks.viewMode = 'sessions';
@@ -331,16 +331,25 @@ describe('useGameLogPageController', () => {
         rerender();
 
         expect(result.current.table.getCoreRowModel().rows).toHaveLength(0);
-        expect(result.current.annotations.annotatedSessions).toHaveLength(1);
+        expect(result.current.rowsState.sessions).toBe(mocks.sessions);
         expect(
-            result.current.annotations.annotatedSessions[0].events[0]
-        ).toMatchObject({
-            isFavorite: true,
-            isFriend: true
-        });
+            result.current.annotations.affinity.favoriteIdSet.has('usr_1')
+        ).toBe(true);
         expect(
-            result.current.annotations.annotatedSessions[0].playerDurationRows
-        ).toBe(mocks.sessions[0].playerDurationRows);
-        expect(mocks.sessions[0].events[0].isFriend).toBeUndefined();
+            result.current.annotations.affinity.friendIdSet.has('usr_1')
+        ).toBe(true);
+        expect(mocks.sessions[0].events[0]).not.toHaveProperty('isFriend');
+
+        const affinity = result.current.annotations.affinity;
+        rerender();
+        expect(result.current.annotations.affinity).toBe(affinity);
+
+        mocks.favorites.favoriteFriendIds = [];
+        mocks.friends.friendsById = {};
+        rerender();
+        expect(result.current.rowsState.sessions).toBe(mocks.sessions);
+        expect(result.current.annotations.affinity.favoriteIdSet.size).toBe(0);
+        expect(result.current.annotations.affinity.friendIdSet.size).toBe(0);
+        expect(mocks.sessions[0].events[0].isFavorite).toBeUndefined();
     });
 });

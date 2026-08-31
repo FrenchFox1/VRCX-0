@@ -84,6 +84,7 @@ vi.mock('./GameLogSessionEventRow', () => ({
     SessionEventGroups: () => null
 }));
 
+import { GameLogSessionAffinityContext } from '../gameLogSessionAffinity';
 import { GameLogSessionsView } from './GameLogSessionsView';
 
 describe('GameLogSessionsView', () => {
@@ -100,7 +101,7 @@ describe('GameLogSessionsView', () => {
             ['usr_dan', 'Dan']
         ];
 
-        render(
+        const sessionView = (
             <GameLogSessionsView
                 isGameRunning={false}
                 sessions={[
@@ -117,12 +118,21 @@ describe('GameLogSessionsView', () => {
                             type: 'OnPlayerJoined',
                             created_at: `2026-08-10T00:0${index}:00.000Z`,
                             userId,
-                            displayName,
-                            isFriend: true
+                            displayName
                         }))
                     }
                 ]}
             />
+        );
+        const view = render(
+            <GameLogSessionAffinityContext
+                value={{
+                    favoriteIdSet: new Set(['usr_dan']),
+                    friendIdSet: new Set(friends.map(([userId]) => userId))
+                }}
+            >
+                {sessionView}
+            </GameLogSessionAffinityContext>
         );
 
         expect(
@@ -138,6 +148,31 @@ describe('GameLogSessionsView', () => {
                 `https://example.test/${userId}.png`
             );
         }
+        expect(
+            within(hoverCard)
+                .getAllByRole('listitem')
+                .map((row) => row.textContent)
+        ).toEqual(['DDan', 'AAlice', 'BBob', 'CCarla']);
+
+        view.rerender(
+            <GameLogSessionAffinityContext
+                value={{
+                    favoriteIdSet: new Set(['usr_bob']),
+                    friendIdSet: new Set(['usr_alice', 'usr_bob'])
+                }}
+            >
+                {sessionView}
+            </GameLogSessionAffinityContext>
+        );
+        expect(screen.queryByRole('button', { name: '4 friends' })).toBeNull();
+        expect(screen.queryByTestId('friends-hover-card')).toBeNull();
+        expect(screen.getByLabelText('2 friends')).not.toBeNull();
+        expect(screen.queryByRole('button', { name: 'Dan' })).toBeNull();
+        expect(
+            within(screen.getByLabelText('2 friends'))
+                .getAllByRole('button')
+                .map((button) => button.getAttribute('aria-label'))
+        ).toEqual(['Bob', 'Alice']);
     });
 
     it('uses the batched duration rows without querying each session', () => {
@@ -168,7 +203,19 @@ describe('GameLogSessionsView', () => {
                         events: []
                     }
                 ]}
-            />
+            />,
+            {
+                wrapper: ({ children }) => (
+                    <GameLogSessionAffinityContext
+                        value={{
+                            favoriteIdSet: new Set(),
+                            friendIdSet: new Set()
+                        }}
+                    >
+                        {children}
+                    </GameLogSessionAffinityContext>
+                )
+            }
         );
 
         expect(screen.getByText(/2m/)).not.toBeNull();

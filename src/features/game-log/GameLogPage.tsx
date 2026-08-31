@@ -14,6 +14,7 @@ import { GameLogSessionsView } from './components/GameLogSessionsView';
 import { GameLogEmptyState } from './components/GameLogTableParts';
 import { GameLogTableShell } from './components/GameLogTableShell';
 import { GameLogToolbar } from './components/GameLogToolbar';
+import { GameLogSessionAffinityContext } from './gameLogSessionAffinity';
 import { useGameLogPageController } from './useGameLogPageController';
 
 export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
@@ -32,7 +33,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
         table,
         tableState
     } = useGameLogPageController();
-    const hasSessions = annotations.annotatedSessions.length > 0;
+    const hasSessions = rowsState.sessions.length > 0;
     const hasRows = rowsState.rows.length > 0;
     const hasActiveFilters = Boolean(
         filters.deferredSearchQuery.trim() ||
@@ -111,21 +112,25 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                         />
                     ) : filters.viewMode === 'sessions' ? (
                         hasSessions ? (
-                            <GameLogSessionsView
-                                sessions={annotations.annotatedSessions}
-                                isGameRunning={isGameRunning}
-                                hasMore={hasMoreSessions}
-                                isLoadingMore={isLoadingMoreSessions}
-                                autoFill={
-                                    Boolean(
-                                        filters.deferredSearchQuery.trim()
-                                    ) &&
-                                    !filters.sessionDateFrom &&
-                                    !filters.sessionDateTo
-                                }
-                                autoFillKey={`${filters.deferredSearchQuery}:${filters.sessionDateFrom}:${filters.sessionDateTo}:${filters.queryFilterTypes.join(',')}:${filters.favoritesOnly}`}
-                                onLoadMore={tableState.loadMoreSessions}
-                            />
+                            <GameLogSessionAffinityContext
+                                value={annotations.affinity}
+                            >
+                                <GameLogSessionsView
+                                    sessions={rowsState.sessions}
+                                    isGameRunning={isGameRunning}
+                                    hasMore={hasMoreSessions}
+                                    isLoadingMore={isLoadingMoreSessions}
+                                    autoFill={
+                                        Boolean(
+                                            filters.deferredSearchQuery.trim()
+                                        ) &&
+                                        !filters.sessionDateFrom &&
+                                        !filters.sessionDateTo
+                                    }
+                                    autoFillKey={`${filters.deferredSearchQuery}:${filters.sessionDateFrom}:${filters.sessionDateTo}:${filters.queryFilterTypes.join(',')}:${filters.favoritesOnly}`}
+                                    onLoadMore={tableState.loadMoreSessions}
+                                />
+                            </GameLogSessionAffinityContext>
                         ) : (
                             <GameLogEmptyState
                                 icon={emptyIcon}

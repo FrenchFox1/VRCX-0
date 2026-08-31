@@ -47,8 +47,7 @@ export function useGameLogPageController() {
         return sortedRows.slice(start, start + pagination.pageSize);
     }, [sortedRows, pagination.pageIndex, pagination.pageSize]);
     const annotations = useGameLogAnnotations({
-        rows: pageRows,
-        sessions: rowsState.sessions
+        rows: pageRows
     });
     const rowActions = useGameLogRowActions({
         removeRowByKey: rowsState.removeRowByKey
@@ -98,13 +97,7 @@ export function useGameLogPageController() {
         setPagination((current) =>
             current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
         );
-    }, [
-        rowsState.rows,
-        sorting,
-        annotations.favoriteIdSet,
-        annotations.friendIdSet,
-        setPagination
-    ]);
+    }, [rowsState.rows, sorting, annotations.affinity, setPagination]);
 
     useEffect(() => {
         const maxPageIndex = Math.max(

@@ -43,6 +43,7 @@ import {
     resolveGameLogSessionDuration as resolveSessionDuration,
     resolveGameLogWorldTarget as resolveWorldTarget
 } from '../gameLogRows';
+import { useGameLogSessionAffinity } from '../gameLogSessionAffinity';
 import { buildGameLogSessionDurationDetails } from '../gameLogSessionDurations';
 import type { GameLogSession, GameLogSessionEvent } from '../gameLogTypes';
 import { SessionEventGroups } from './GameLogSessionEventRow';
@@ -317,6 +318,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
     onOpenChange
 }: GameLogSessionSegmentProps) {
     const { t } = useTranslation();
+    const { favoriteIdSet, friendIdSet } = useGameLogSessionAffinity();
     const worldTarget = resolveWorldTarget(session);
     const durationMs = resolveSessionDuration(session);
     const sessionStartedAt = Date.parse(session?.created_at || '');
@@ -356,8 +358,13 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
         session.created_at || ''
     );
     const sessionFriends = useMemo(
-        () => collectGameLogSessionFriends(session?.events ?? []),
-        [session?.events]
+        () =>
+            collectGameLogSessionFriends(
+                session?.events ?? [],
+                favoriteIdSet,
+                friendIdSet
+            ),
+        [session?.events, favoriteIdSet, friendIdSet]
     );
     const durationByKey = playerDurationDetails.durationByKey;
     const handleOpenChange = (nextOpen: boolean) => {

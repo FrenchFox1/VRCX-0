@@ -49,7 +49,7 @@ vi.mock('./useGameLogPageController', () => ({
     useGameLogPageController: () => ({
         annotations: {
             annotatedRows: [{ id: 1 }],
-            annotatedSessions: []
+            affinity: { favoriteIdSet: new Set(), friendIdSet: new Set() }
         },
         filters: {
             deferredSearchQuery: '',
@@ -79,7 +79,8 @@ vi.mock('./useGameLogPageController', () => ({
             gameLogDisabled: true,
             isFavoritesLoaded: true,
             loadStatus: 'ready',
-            rows: [{ rowId: 1 }, { rowId: 2 }]
+            rows: [{ rowId: 1 }, { rowId: 2 }],
+            sessions: []
         },
         table: {},
         tableState: {
