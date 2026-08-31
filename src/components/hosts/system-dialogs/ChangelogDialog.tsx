@@ -209,7 +209,17 @@ export function ChangelogDialog({
         t('dialog.change_log.latest_release');
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={(nextOpen) => {
+                if (!nextOpen && !open) {
+                    setLatestRelease(null);
+                    setEntries([]);
+                    setNote('');
+                }
+            }}
+        >
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>{t('dialog.change_log.header')}</DialogTitle>
