@@ -38,21 +38,23 @@ export function useFeedRowArrivals(
         const isFullQueryPath =
             loadStatus !== 'ready' || previousLoadStatus !== 'ready';
         const isFirstLoad = seenIds.size === 0;
+        const nextSeenIds = new Set<string>();
 
-        if (isFullQueryPath || isFirstLoad) {
-            for (const row of rows) {
-                seenIds.add(getFeedRowId(row));
-            }
-        } else {
-            for (const row of rows) {
-                const id = getFeedRowId(row);
-                if (!seenIds.has(id)) {
-                    seenIds.add(id);
-                    arrivedAt.set(id, now);
-                    changed = true;
-                }
+        for (const row of rows) {
+            const id = getFeedRowId(row);
+            nextSeenIds.add(id);
+            if (!isFullQueryPath && !isFirstLoad && !seenIds.has(id)) {
+                arrivedAt.set(id, now);
+                changed = true;
             }
         }
+        for (const id of arrivedAt.keys()) {
+            if (!nextSeenIds.has(id)) {
+                arrivedAt.delete(id);
+                changed = true;
+            }
+        }
+        seenIdsRef.current = nextSeenIds;
     }
 
     if (changed) {

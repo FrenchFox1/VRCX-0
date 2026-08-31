@@ -95,4 +95,28 @@ describe('useFeedRowArrivals', () => {
 
         expect([...result.current]).toEqual([]);
     });
+
+    it('forgets removed rows and drops their active highlights', () => {
+        const { result, rerender } = renderArrivals(rowsOf('a', 'b'), 'ready');
+
+        rerender({ rows: rowsOf('c', 'b'), loadStatus: 'ready' });
+        expect([...result.current]).toEqual(['::c:']);
+
+        rerender({ rows: rowsOf('a', 'b'), loadStatus: 'ready' });
+        expect([...result.current]).toEqual(['::a:']);
+    });
+
+    it('does not highlight historical rows when switching queries', () => {
+        const { result, rerender } = renderArrivals(rowsOf('a'), 'ready');
+        rerender({ rows: rowsOf('b', 'a'), loadStatus: 'ready' });
+        expect([...result.current]).toEqual(['::b:']);
+
+        rerender({ rows: rowsOf('b', 'a'), loadStatus: 'running' });
+        rerender({ rows: rowsOf('c', 'd'), loadStatus: 'ready' });
+        expect([...result.current]).toEqual([]);
+
+        rerender({ rows: rowsOf('c', 'd'), loadStatus: 'running' });
+        rerender({ rows: rowsOf('a', 'b'), loadStatus: 'ready' });
+        expect([...result.current]).toEqual([]);
+    });
 });

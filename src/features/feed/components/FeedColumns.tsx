@@ -3,11 +3,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppCellContext, AppRow } from '@/components/data-table/appTable';
-import {
-    getFeedRowCreatedAtMs,
-    resolveFeedUserDisplayName,
-    resolveFeedUserId
-} from '@/components/feed/feedRows';
+import { resolveFeedUserId } from '@/components/feed/feedRows';
 import { FeedTypeIndicator } from '@/components/feed/FeedTypeIndicator';
 import type {
     FeedColumns,
@@ -18,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { getFeedTableSortValue } from '../feedTableRows';
 import {
     FeedDetailCell,
     FeedUserLink,
@@ -127,7 +124,8 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
             },
             {
                 id: 'created_at',
-                accessorFn: getFeedRowCreatedAtMs,
+                accessorFn: (row: FeedRow) =>
+                    getFeedTableSortValue(row, 'created_at', meta),
                 meta: { label: t('table.feed.date') },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.date')} />
@@ -136,7 +134,8 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
             },
             {
                 id: 'type',
-                accessorFn: (row: FeedRow) => row.type || '',
+                accessorFn: (row: FeedRow) =>
+                    getFeedTableSortValue(row, 'type', meta),
                 meta: { label: t('table.feed.type') },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.type')} />
@@ -155,14 +154,8 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
             },
             {
                 id: 'displayName',
-                accessorFn: (row: FeedRow) => {
-                    const userId = resolveFeedUserId(row);
-                    return resolveFeedUserDisplayName(
-                        row,
-                        meta.knownUsersById[userId],
-                        meta.friendLogNamesById[userId]
-                    );
-                },
+                accessorFn: (row: FeedRow) =>
+                    getFeedTableSortValue(row, 'displayName', meta),
                 meta: { label: t('table.feed.user') },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.user')} />
