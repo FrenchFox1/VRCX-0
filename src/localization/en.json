@@ -422,6 +422,13 @@
             "m": "m",
             "s": "s"
         },
+        "time_units_short": {
+            "y": "y",
+            "d": "d",
+            "h": "h",
+            "m": "m",
+            "s": "s"
+        },
         "days": {
             "sunday": "Sunday",
             "monday": "Monday",

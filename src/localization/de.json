@@ -422,6 +422,13 @@
             "m": "Min",
             "s": "Sek"
         },
+        "time_units_short": {
+            "y": "J",
+            "d": "T",
+            "h": "h",
+            "m": "min",
+            "s": "s"
+        },
         "days": {
             "sunday": "Sonntag",
             "monday": "Montag",

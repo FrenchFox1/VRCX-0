@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -47,7 +47,11 @@ vi.mock('./FriendLocationCard', () => ({
     )
 }));
 
-import { FriendsLocationCardItem } from './FriendsLocationsViewParts';
+import {
+    FriendsLocationCardItem,
+    FriendsLocationsCollapsibleGroupHeader,
+    FriendsLocationsSectionHeader
+} from './FriendsLocationsViewParts';
 
 function friendAt(location: string): FriendRecord {
     return {
@@ -68,6 +72,53 @@ function friendAt(location: string): FriendRecord {
         $platform: ''
     };
 }
+
+describe('FriendsLocations section headings', () => {
+    afterEach(cleanup);
+
+    it('keeps static headings static and exposes the collapsible group state', () => {
+        const section = {
+            key: 'private',
+            groupKey: 'private',
+            title: 'Private rooms',
+            description: '',
+            friends: [friendAt('private')],
+            worldId: '',
+            groupId: '',
+            collapsed: false
+        };
+        const onToggle = vi.fn();
+        const { getByRole, getByText, queryByRole, rerender } = render(
+            <FriendsLocationsSectionHeader
+                section={section}
+                onOpenWorld={vi.fn()}
+                onOpenGroup={vi.fn()}
+            />
+        );
+        expect(getByText('Private rooms')).toBeTruthy();
+        expect(getByText('1')).toBeTruthy();
+        expect(queryByRole('button')).toBeNull();
+
+        rerender(
+            <FriendsLocationsCollapsibleGroupHeader
+                section={section}
+                onToggle={onToggle}
+            />
+        );
+        const header = getByRole('button', { name: 'Private rooms 1' });
+        expect(header.getAttribute('aria-expanded')).toBe('true');
+        fireEvent.click(header);
+        expect(onToggle).toHaveBeenCalledWith('private');
+
+        rerender(
+            <FriendsLocationsCollapsibleGroupHeader
+                section={{ ...section, collapsed: true }}
+                onToggle={onToggle}
+            />
+        );
+        expect(header.getAttribute('aria-expanded')).toBe('false');
+    });
+});
 
 describe('FriendsLocationCardItem', () => {
     afterEach(() => {

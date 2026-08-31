@@ -751,7 +751,7 @@ export function useFriendsLocationsPageDerivedState({
                 (cardGridMinWidth + cardGridGap)
         ) || 1
     );
-    const sectionHeaderGap = cardGridGap;
+    const sectionHeaderGap = 4;
     const virtualRows = useMemo<FriendsLocationsVirtualRow[]>(() => {
         const rows: FriendsLocationsVirtualRow[] = [];
         for (const section of visibleSections) {
@@ -768,7 +768,7 @@ export function useFriendsLocationsPageDerivedState({
                 rows.push({
                     type: 'group-header',
                     key: `group-header:${section.key}`,
-                    height: 42,
+                    height: 40,
                     section
                 });
                 if (section.collapsed) {
@@ -787,7 +787,7 @@ export function useFriendsLocationsPageDerivedState({
                 rows.push({
                     type: 'header',
                     key: `header:${section.key}`,
-                    height: 48,
+                    height: 40,
                     section
                 });
             }
