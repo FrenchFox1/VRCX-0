@@ -59,22 +59,6 @@ export function useFriendLogColumns({
                         label={t('table.friendLog.date')}
                     />
                 ),
-                sortFn: (rowA, rowB) => {
-                    const leftTs = Date.parse(rowA.original?.created_at ?? '');
-                    const rightTs = Date.parse(rowB.original?.created_at ?? '');
-                    if (
-                        Number.isFinite(leftTs) &&
-                        Number.isFinite(rightTs) &&
-                        leftTs !== rightTs
-                    ) {
-                        return leftTs - rightTs;
-                    }
-
-                    return (
-                        (Number(rowA.original?.rowId ?? 0) || 0) -
-                        (Number(rowB.original?.rowId ?? 0) || 0)
-                    );
-                },
                 cell: ({ row }) => {
                     const createdAt = row.original?.created_at || '';
                     return (
@@ -112,11 +96,6 @@ export function useFriendLogColumns({
                 size: 260,
                 minSize: 80,
                 meta: { stretch: true },
-                accessorFn: (row) =>
-                    row?.resolvedDisplayName ||
-                    row?.displayName ||
-                    row?.userId ||
-                    '',
                 enableSorting: false,
                 header: () => t('table.friendLog.user'),
                 cell: ({ row }) => renderUserCell(row.original)
@@ -128,7 +107,6 @@ export function useFriendLogColumns({
                 maxSize: 64,
                 enableResizing: false,
                 enableSorting: false,
-                accessorFn: (row) => getFriendLogRowKey(row, rowsOwnerUserId),
                 header: () => t('table.friendLog.action'),
                 cell: ({ row }) => {
                     const rowKey = getFriendLogRowKey(

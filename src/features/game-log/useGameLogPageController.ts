@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useGameLogColumns } from './components/GameLogColumns';
-import { sortGameLogTableRows } from './gameLogTableRows';
 import { useGameLogAnnotations } from './useGameLogAnnotations';
 import { useGameLogFilters } from './useGameLogFilters';
 import { useGameLogPreviousInstancesDialog } from './useGameLogPreviousInstancesDialog';
@@ -39,7 +39,7 @@ export function useGameLogPageController() {
     });
     const { pagination, setPagination, sorting } = tableState;
     const sortedRows = useMemo(
-        () => sortGameLogTableRows(rowsState.rows, sorting),
+        () => sortTableRowsByDateAndType(rowsState.rows, sorting),
         [rowsState.rows, sorting]
     );
     const pageRows = useMemo(() => {
