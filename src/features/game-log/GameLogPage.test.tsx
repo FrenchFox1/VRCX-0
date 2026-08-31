@@ -58,7 +58,7 @@ vi.mock('./useGameLogPageController', () => ({
             refreshGameLog: vi.fn(),
             sessionDateFrom: '',
             sessionDateTo: '',
-            viewMode: 'rows'
+            viewMode: 'table'
         },
         hasMoreSessions: false,
         isError: false,
@@ -78,7 +78,8 @@ vi.mock('./useGameLogPageController', () => ({
             detail: '',
             gameLogDisabled: true,
             isFavoritesLoaded: true,
-            loadStatus: 'ready'
+            loadStatus: 'ready',
+            rows: [{ rowId: 1 }, { rowId: 2 }]
         },
         table: {},
         tableState: {
@@ -104,7 +105,7 @@ describe('GameLogPage', () => {
                 'New records are not saved; history remains available.'
             )
         ).toBeTruthy();
-        expect(screen.getByText('History rows: 1')).toBeTruthy();
+        expect(screen.getByText('History rows: 2')).toBeTruthy();
         expect(
             screen.getByTestId('toolbar').getAttribute('data-can-refresh')
         ).toBe('true');

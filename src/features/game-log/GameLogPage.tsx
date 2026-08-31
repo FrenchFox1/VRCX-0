@@ -33,7 +33,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
         tableState
     } = useGameLogPageController();
     const hasSessions = annotations.annotatedSessions.length > 0;
-    const hasRows = annotations.annotatedRows.length > 0;
+    const hasRows = rowsState.rows.length > 0;
     const hasActiveFilters = Boolean(
         filters.deferredSearchQuery.trim() ||
         filters.favoritesOnly ||
@@ -143,7 +143,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                     ) : hasRows ? (
                         <GameLogTableShell
                             table={table}
-                            rows={annotations.annotatedRows}
+                            rows={rowsState.rows}
                             pageCount={pageCount}
                             pageSizes={tableState.pageSizes}
                             setPagination={tableState.setPagination}

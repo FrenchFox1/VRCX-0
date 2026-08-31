@@ -71,6 +71,8 @@ export function useGameLogAnnotations({
 
     return {
         annotatedRows,
-        annotatedSessions
+        annotatedSessions,
+        favoriteIdSet,
+        friendIdSet
     };
 }

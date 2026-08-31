@@ -97,32 +97,6 @@ export function useGameLogColumns({
                         label={t('table.gameLog.date')}
                     />
                 ),
-                sortFn: (rowA, rowB) => {
-                    const leftTs = Date.parse(
-                        String(rowA.original?.created_at ?? '')
-                    );
-                    const rightTs = Date.parse(
-                        String(rowB.original?.created_at ?? '')
-                    );
-                    if (
-                        Number.isFinite(leftTs) &&
-                        Number.isFinite(rightTs) &&
-                        leftTs !== rightTs
-                    ) {
-                        return leftTs - rightTs;
-                    }
-
-                    return (
-                        (Number.parseInt(
-                            String(rowA.original?.rowId ?? 0),
-                            10
-                        ) || 0) -
-                        (Number.parseInt(
-                            String(rowB.original?.rowId ?? 0),
-                            10
-                        ) || 0)
-                    );
-                },
                 cell: ({ row }) => <DateCell row={row} />
             },
             {
