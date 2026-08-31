@@ -102,12 +102,10 @@ describe('export dialog data lifetime', () => {
                 )
         ).toBe(true);
         act(() =>
-            useFriendRosterStore
-                .getState()
-                .applyFriendPatch({
-                    userId: 'usr_one',
-                    patch: { displayName: 'Changed' }
-                })
+            useFriendRosterStore.getState().applyFriendPatch({
+                userId: 'usr_one',
+                patch: { displayName: 'Changed' }
+            })
         );
         expect(mocks.getUserMemoMap).toHaveBeenCalledTimes(1);
         view.rerender(
