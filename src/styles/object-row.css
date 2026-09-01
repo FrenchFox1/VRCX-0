@@ -68,11 +68,7 @@
 
     @media (hover: hover) and (pointer: fine) {
         .object-row:hover {
-            border-color: color-mix(
-                in oklab,
-                var(--foreground) 15%,
-                transparent
-            );
+            border-color: var(--border-hover);
             background: var(--object-surface-hover);
         }
 

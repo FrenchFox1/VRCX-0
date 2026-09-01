@@ -126,9 +126,9 @@ export function MyGroupCard({
                 {...attributes}
                 {...listeners}
                 type="button"
-                variant="outline"
+                variant="ghost"
                 className={cn(
-                    'h-full w-full min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-lg p-0 text-left font-normal whitespace-normal transition-colors',
+                    'object-row border-border bg-object-surface hover:bg-object-surface-hover dark:hover:bg-object-surface-hover h-full w-full min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-lg p-0 text-left font-normal whitespace-normal',
                     !dragDisabled &&
                         'cursor-grab touch-none active:cursor-grabbing',
                     selected && TILE_SELECTED
@@ -165,7 +165,7 @@ export function MyGroupCard({
                     ) : null}
                 </div>
                 <div className="flex h-12 min-w-0 items-start gap-2 px-2.5 pb-2.5">
-                    <span className="bg-muted relative z-10 -mt-4 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border shadow-sm">
+                    <span className="bg-muted relative z-10 -mt-4 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border">
                         {iconUrl ? (
                             <FadeInImage
                                 src={iconUrl}

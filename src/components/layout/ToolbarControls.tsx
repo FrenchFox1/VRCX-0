@@ -64,6 +64,7 @@ export function ToolbarSearch({
     onClear,
     onCommit,
     commitOnBlur = true,
+    disabled = false,
     placeholder,
     ariaLabel,
     trailing,
@@ -74,6 +75,7 @@ export function ToolbarSearch({
     onClear?: () => void;
     onCommit?: () => void;
     commitOnBlur?: boolean;
+    disabled?: boolean;
     placeholder?: string;
     ariaLabel?: string;
     trailing?: ReactNode;
@@ -91,6 +93,7 @@ export function ToolbarSearch({
                 value={value}
                 placeholder={resolvedPlaceholder}
                 aria-label={ariaLabel ?? resolvedPlaceholder}
+                disabled={disabled}
                 onChange={(event) => onValueChange(event.target.value)}
                 onBlur={commitOnBlur ? onCommit : undefined}
                 onKeyDown={(event) => {
@@ -106,6 +109,7 @@ export function ToolbarSearch({
                             type="button"
                             size="icon-xs"
                             aria-label={t('common.actions.clear')}
+                            disabled={disabled}
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => {
                                 if (onClear) {
