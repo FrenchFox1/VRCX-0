@@ -46,10 +46,6 @@ export function MyGroupsSelectionBar({
 }) {
     const { t } = useTranslation();
 
-    if (selectedCount === 0) {
-        return null;
-    }
-
     return (
         <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-2">
             <div className="bg-popover text-popover-foreground pointer-events-auto flex max-w-full flex-wrap items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm shadow-lg">
@@ -84,6 +80,7 @@ export function MyGroupsSelectionBar({
                                         type="button"
                                         size="sm"
                                         variant="ghost"
+                                        disabled={selectedCount === 0}
                                     >
                                         <EyeIcon data-icon="inline-start" />
                                         {t('dialog.group.actions.visibility')}
@@ -126,6 +123,7 @@ export function MyGroupsSelectionBar({
                             variant="ghost"
                             className="rounded-full"
                             aria-label={t('common.actions.clear')}
+                            disabled={selectedCount === 0}
                             onClick={onClearSelection}
                         >
                             <XIcon data-icon="icon" />

@@ -248,7 +248,7 @@ export function MyGroupsPage() {
                                 <div
                                     className={cn(
                                         'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2 p-0.5',
-                                        selectedGroups.length && 'pb-14'
+                                        state.editMode && 'pb-14'
                                     )}
                                 >
                                     {state.visibleGroups.map((group, index) => {
@@ -314,7 +314,7 @@ export function MyGroupsPage() {
                     />
                 )}
             </PageBody>
-            {state.editMode ? (
+            {state.editMode && state.visibleGroups.length > 0 ? (
                 <MyGroupsSelectionBar
                     selectedCount={selectedGroups.length}
                     leavableCount={leavableSelected.length}
