@@ -17,7 +17,13 @@ import type { DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
-import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
+import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
+import {
+    ToolbarActions,
+    ToolbarSegmented,
+    ToolbarStatus,
+    ToolbarViews
+} from '@/components/layout/ToolbarControls';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -189,93 +195,113 @@ export function ScreenshotSearchToolbar({
     const { t } = useTranslation();
 
     return (
-        <div className="my-2 flex flex-col gap-2 lg:flex-row lg:items-center">
-            <InputGroup className="min-w-0 flex-1 lg:max-w-sm">
-                <InputGroupAddon>
-                    <SearchIcon />
-                </InputGroupAddon>
-                <InputGroupInput
-                    value={searchQuery}
-                    placeholder={t(
-                        'dialog.screenshot_metadata.search_placeholder'
-                    )}
-                    onChange={(event) =>
-                        onSearchQueryChange(event.target.value)
-                    }
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            onSearch();
-                        }
-                    }}
-                />
-                <InputGroupAddon align="inline-end">
-                    <KeyboardShortcut keys="Enter" />
-                </InputGroupAddon>
-            </InputGroup>
-            <Select
-                value={searchType}
-                items={SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => ({
-                    value: type.value,
-                    label: t(type.labelKey)
-                }))}
-                onValueChange={onSearchTypeChange}
-            >
-                <SelectTrigger className="w-full lg:w-52">
-                    <SelectValue
-                        placeholder={t(
-                            'dialog.screenshot_metadata.search_type_placeholder'
-                        )}
-                    />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectGroup>
-                        {SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                                {t(type.labelKey)}
-                            </SelectItem>
-                        ))}
-                    </SelectGroup>
-                </SelectContent>
-            </Select>
-            <Button onClick={onSearch}>{t('common.actions.search')}</Button>
-            {showResultControls ? (
-                <>
-                    {searchRowsCount > 0 ? (
-                        <span className="text-xs whitespace-pre-wrap">
-                            {t('dialog.screenshot_metadata.result_count', {
-                                count: searchRowsCount
-                            })}
-                        </span>
+        <PageToolbar>
+            <PageToolbarRow>
+                <ToolbarViews className="min-w-0 flex-wrap">
+                    {showResultControls ? (
+                        <>
+                            {searchRowsCount > 0 ? (
+                                <ToolbarStatus>
+                                    {t(
+                                        'dialog.screenshot_metadata.result_count',
+                                        {
+                                            count: searchRowsCount
+                                        }
+                                    )}
+                                </ToolbarStatus>
+                            ) : null}
+                            <ToolbarSegmented
+                                iconOnly
+                                value={searchLayout}
+                                onValueChange={onSearchLayoutChange}
+                                options={SEARCH_LAYOUT_OPTIONS.map(
+                                    (option) => ({
+                                        value: option.value,
+                                        label: t(option.labelKey),
+                                        icon: option.icon
+                                    })
+                                )}
+                            />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={onClearSearch}
+                            >
+                                <XIcon data-icon="inline-start" />
+                                {t('dialog.screenshot_metadata.clear_search')}
+                            </Button>
+                        </>
+                    ) : searchNavigationCount && selectedPathIndex >= 0 ? (
+                        <ToolbarStatus>
+                            {selectedPathIndex + 1}/{searchNavigationCount}
+                        </ToolbarStatus>
                     ) : null}
-                    <div className="flex items-center gap-2 lg:ml-auto">
-                        <ToolbarSegmented
-                            iconOnly
-                            value={searchLayout}
-                            onValueChange={onSearchLayoutChange}
-                            options={SEARCH_LAYOUT_OPTIONS.map((option) => ({
-                                value: option.value,
-                                label: t(option.labelKey),
-                                icon: option.icon
-                            }))}
+                </ToolbarViews>
+
+                <ToolbarActions className="w-full max-w-full flex-wrap justify-end sm:ml-auto sm:w-auto">
+                    <InputGroup className="min-w-48 flex-1 sm:w-72 sm:flex-none">
+                        <InputGroupAddon>
+                            <SearchIcon />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                            value={searchQuery}
+                            placeholder={t(
+                                'dialog.screenshot_metadata.search_placeholder'
+                            )}
+                            aria-label={t(
+                                'dialog.screenshot_metadata.search_placeholder'
+                            )}
+                            onChange={(event) =>
+                                onSearchQueryChange(event.target.value)
+                            }
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    onSearch();
+                                }
+                            }}
                         />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClearSearch}
-                        >
-                            <XIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.clear_search')}
-                        </Button>
-                    </div>
-                </>
-            ) : searchNavigationCount && selectedPathIndex >= 0 ? (
-                <span className="text-xs whitespace-pre-wrap">
-                    {selectedPathIndex + 1}/{searchNavigationCount}
-                </span>
-            ) : null}
-        </div>
+                        <InputGroupAddon align="inline-end">
+                            <KeyboardShortcut keys="Enter" />
+                        </InputGroupAddon>
+                    </InputGroup>
+                    <Select
+                        value={searchType}
+                        items={SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => ({
+                            value: type.value,
+                            label: t(type.labelKey)
+                        }))}
+                        onValueChange={onSearchTypeChange}
+                    >
+                        <SelectTrigger className="w-full sm:w-52">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialog.screenshot_metadata.search_type_placeholder'
+                                )}
+                            />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {SCREENSHOT_METADATA_SEARCH_TYPES.map(
+                                    (type) => (
+                                        <SelectItem
+                                            key={type.value}
+                                            value={type.value}
+                                        >
+                                            {t(type.labelKey)}
+                                        </SelectItem>
+                                    )
+                                )}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={onSearch}>
+                        {t('common.actions.search')}
+                    </Button>
+                </ToolbarActions>
+            </PageToolbarRow>
+        </PageToolbar>
     );
 }
 
