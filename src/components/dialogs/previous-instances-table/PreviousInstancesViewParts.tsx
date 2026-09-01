@@ -70,6 +70,7 @@ import {
     playerLeaveMs,
     playerDisplayName,
     playerUserId,
+    previousInstanceVisitWindow,
     rowDuration,
     rowLocation,
     rowOwnerUserId
@@ -396,6 +397,7 @@ export function PreviousInstanceDetailsPanel({
         (state) => state.localFriendFavoritesList
     );
     const instanceStartMs = createdTime(row);
+    const visitWindow = previousInstanceVisitWindow(row);
     const [detailsViewMode, setDetailsViewMode] = useState('players');
     const [infoData, setInfoData] = useState<{
         status: LoadStatus;
@@ -839,6 +841,7 @@ export function PreviousInstanceDetailsPanel({
                                 >
                                     <PreviousInstanceInfoChart
                                         rows={infoData.details}
+                                        visitWindow={visitWindow}
                                     />
                                 </TabsContent>
                             </div>
