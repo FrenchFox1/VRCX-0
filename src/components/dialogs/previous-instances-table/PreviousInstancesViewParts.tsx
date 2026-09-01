@@ -585,21 +585,14 @@ export function PreviousInstanceDetailsPanel({
                 description={t(
                     'dialog.previous_instances.description.select_an_instance_row_to_view_its_details'
                 )}
-                className={className}
+                className={cn('border-0', className)}
             />
         );
     }
 
     return (
-        <div
-            className={[
-                'flex min-h-0 flex-col gap-3 overflow-hidden',
-                className
-            ]
-                .filter(Boolean)
-                .join(' ')}
-        >
-            <PageToolbar className="pb-0">
+        <div className={cn('flex min-h-0 flex-col overflow-hidden', className)}>
+            <PageToolbar>
                 <PageToolbarRow className="items-center">
                     {onBack ? (
                         <PageBackButton
@@ -633,31 +626,33 @@ export function PreviousInstanceDetailsPanel({
                     </div>
                 </PageToolbarRow>
             </PageToolbar>
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pr-1">
-                <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-                    <div>
-                        <span className="text-muted-foreground">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+                <dl className="flex shrink-0 flex-wrap gap-x-10 gap-y-3 text-sm">
+                    <div className="min-w-0">
+                        <dt className="text-muted-foreground text-xs">
                             {t('table.previous_instances.date')}
-                        </span>
-                        <div>
+                        </dt>
+                        <dd className="mt-1 truncate font-medium tabular-nums">
                             {formatDateFilterOrFallback(
                                 row?.created_at || row?.createdAt,
                                 'long',
                                 { empty: '—', invalid: '—' }
                             )}
-                        </div>
+                        </dd>
                     </div>
-                    <div>
-                        <span className="text-muted-foreground">
+                    <div className="min-w-0">
+                        <dt className="text-muted-foreground text-xs">
                             {t('table.previous_instances.time')}
-                        </span>
-                        <div>{rowDuration(row)}</div>
+                        </dt>
+                        <dd className="mt-1 font-medium tabular-nums">
+                            {rowDuration(row)}
+                        </dd>
                     </div>
-                    <div>
-                        <span className="text-muted-foreground">
+                    <div className="min-w-0">
+                        <dt className="text-muted-foreground text-xs">
                             {t('table.previous_instances.instance_creator')}
-                        </span>
-                        <div>
+                        </dt>
+                        <dd className="mt-1 min-w-0 font-medium">
                             {rowOwnerUserId(row) ? (
                                 <InstanceOwnerCell
                                     userId={rowOwnerUserId(row)}
@@ -668,15 +663,15 @@ export function PreviousInstanceDetailsPanel({
                                     {'—'}
                                 </span>
                             )}
-                        </div>
+                        </dd>
                     </div>
-                </div>
+                </dl>
                 <Tabs
                     value={detailsViewMode}
                     onValueChange={setDetailsViewMode}
-                    className="flex min-h-0 shrink-0 flex-col"
+                    className="min-h-0 shrink-0 gap-0"
                 >
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex shrink-0 items-center justify-between gap-3">
                         <TabsList variant="underline">
                             <TabsTrigger value="players">
                                 {t('dialog.previous_instances.table_view')}
@@ -716,9 +711,9 @@ export function PreviousInstanceDetailsPanel({
                             >
                                 <TabsContent
                                     value="players"
-                                    className="mt-2 min-h-0"
+                                    className="max-h-[32vh] min-h-0 overflow-auto pt-2"
                                 >
-                                    <div className="max-h-[32vh] min-h-0 overflow-auto rounded-md border">
+                                    <div className="min-h-0">
                                         <Table>
                                             <TableHeader className="vrcx-0-table-header sticky top-0">
                                                 <TableRow>
@@ -837,7 +832,7 @@ export function PreviousInstanceDetailsPanel({
                                 </TabsContent>
                                 <TabsContent
                                     value="timeline"
-                                    className="mt-2 max-h-[52vh] overflow-auto rounded-md border p-2"
+                                    className="max-h-[52vh] min-h-0 overflow-auto pt-2"
                                 >
                                     <PreviousInstanceInfoChart
                                         rows={infoData.details}
