@@ -303,6 +303,10 @@ impl RuntimeHostActions for TauriRuntimeHostActions {
             let _ = window.set_focus();
         }
     }
+
+    fn set_tray_icon_notification(&self, notify: bool) {
+        crate::commands::host::window::set_tray_icon_notification(&self.app_handle, notify);
+    }
 }
 
 #[derive(Clone)]

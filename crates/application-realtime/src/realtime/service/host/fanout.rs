@@ -310,6 +310,9 @@ impl RealtimeHostRuntime {
                     "Realtime notification projection persisted by Rust.",
                     0,
                 );
+                if let Some(observer) = &self.deps.notification_projection_observer {
+                    observer.observe_realtime_notification_projection(&projection);
+                }
             }
             Err(error) => {
                 tracing::warn!("Realtime notification persistence failed: {error}");

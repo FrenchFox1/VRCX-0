@@ -90,11 +90,6 @@ const generatedCommands = {
     async appIsGameRunning(): Promise<boolean> {
         return await TAURI_INVOKE('app__is_game_running');
     },
-    async appSetGameClientRuntimeState(currentLocation: string): Promise<void> {
-        await TAURI_INVOKE('app__set_game_client_runtime_state', {
-            currentLocation
-        });
-    },
     async appStartGame(launchArguments: string): Promise<boolean> {
         return await TAURI_INVOKE('app__start_game', { launchArguments });
     },
@@ -194,6 +189,9 @@ const generatedCommands = {
         input: FavoriteImportStartInput
     ): Promise<FavoriteImportStatus> {
         return await TAURI_INVOKE('app__favorite_import_start', { input });
+    },
+    async appFavoriteImportStatus(): Promise<FavoriteImportStatus> {
+        return await TAURI_INVOKE('app__favorite_import_status');
     },
     async appFavoriteImportCancel(): Promise<FavoriteImportStatus> {
         return await TAURI_INVOKE('app__favorite_import_cancel');
@@ -2818,6 +2816,7 @@ export type AncillaryRuntimeSnapshot = {
     appUpdateDownloadStatus: AppUpdateDownloadStatusSnapshot;
     gameClientDebugLoggingStatus: DebugLoggingOutcome | null;
     gameProcessSnapshot: HostSessionProjection | null;
+    nowPlaying: NowPlayingSnapshot;
     backgroundImageState: BackgroundImageProjection;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
 };
@@ -5410,6 +5409,24 @@ export type NowPlayingPayload = {
     videoName?: string | null;
     videoId?: string | null;
     updatedAt: string;
+};
+export type NowPlayingSnapshot = {
+    url: string;
+    name: string;
+    source: string;
+    displayName: string;
+    userId?: string | null;
+    location?: string | null;
+    thumbnailUrl: string;
+    length: number;
+    position: number;
+    startedAt: string | null;
+    created_at?: string | null;
+    type?: string | null;
+    videoUrl?: string | null;
+    videoName?: string | null;
+    videoId?: string | null;
+    updatedAt: string | null;
 };
 export type OverlayActivityCategory =
     | 'actionRequired'

@@ -117,8 +117,13 @@ pub fn app__language_changed(app_handle: AppHandle, language: String) -> Result<
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__set_tray_icon_notification(app_handle: AppHandle, notify: Option<bool>) {
-    let notify = notify.unwrap_or(false);
+pub fn app__set_tray_icon_notification(state: State<'_, AppState>, notify: Option<bool>) {
+    state
+        .runtime_host()
+        .set_frontend_tray_notification(notify.unwrap_or(false));
+}
+
+pub(crate) fn set_tray_icon_notification(app_handle: &AppHandle, notify: bool) {
     if let Some(tray) = app_handle.tray_by_id("main") {
         if let Some(icon) = tray_icon_image(notify) {
             let _ = tray.set_icon(Some(tauri::image::Image::new(

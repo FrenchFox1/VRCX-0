@@ -125,6 +125,8 @@ pub(crate) fn build_desktop_runtime_services_deps(
         event_bus: context.event_bus().clone(),
         overlay_activity: context.overlay_activity(),
         overlay_activity_sinks: context.overlay_activity_sink_registry(),
+        notification_projection_observers: context
+            .realtime_notification_projection_observer_registry(),
     }
 }
 
@@ -746,16 +748,14 @@ impl DesktopRuntimeHostState {
         self.game.process_monitor.is_game_running()
     }
 
-    pub fn set_game_client_runtime_state(&self, current_location: &str) {
-        self.game
-            .game_client_runtime
-            .set_runtime_state(current_location);
-    }
-
     pub fn current_log_location_snapshot(
         &self,
     ) -> Option<vrcx_0_application_game::LogLocationSnapshot> {
         self.game.log_watcher.current_location_snapshot()
+    }
+
+    pub fn now_playing_snapshot(&self) -> vrcx_0_application_game::NowPlayingSnapshot {
+        self.desktop.services.now_playing().as_ref().clone()
     }
 
     pub fn set_game_log_persistence_disabled(&self, disabled: bool) -> Result<()> {
@@ -1051,6 +1051,10 @@ impl DesktopRuntimeHostState {
         Ok(self.runtime.favorite_import().start(input)?)
     }
 
+    pub fn favorite_import_status(&self) -> FavoriteImportStatus {
+        self.runtime.favorite_import().status()
+    }
+
     pub fn favorite_import_cancel(&self) -> FavoriteImportStatus {
         self.runtime.favorite_import().cancel()
     }
@@ -1268,7 +1272,7 @@ impl DesktopRuntimeHostState {
         input: vrcx_0_application::social::NotificationMarkSeenBatchInput,
     ) -> Result<vrcx_0_application::social::NotificationMarkSeenBatchResult> {
         let expected_scope = self.require_active_scope("Batch action")?;
-        Ok(vrcx_0_application::social::mark_notifications_seen_batch(
+        let result = vrcx_0_application::social::mark_notifications_seen_batch(
             &vrcx_0_outbound_adapters::LocalNotificationMarkSeenActions::new(
                 self.runtime.database().as_ref(),
                 self.runtime.web_client().as_ref(),
@@ -1278,7 +1282,9 @@ impl DesktopRuntimeHostState {
             ),
             input,
         )
-        .await?)
+        .await?;
+        self.refresh_tray_notification();
+        Ok(result)
     }
 
     pub async fn send_instance_invites_batch(
@@ -1309,14 +1315,16 @@ impl DesktopRuntimeHostState {
         &self,
     ) -> Result<vrcx_0_application::social::NotificationSyncOutcome> {
         let expected_scope = self.require_active_scope("Batch action")?;
-        Ok(vrcx_0_application::social::sync_notifications(
+        let result = vrcx_0_application::social::sync_notifications(
             &vrcx_0_application::social::NotificationSyncDeps::new(
                 &self.notification_sync,
                 self.runtime.desktop_assembly().auth_scope(),
                 expected_scope,
             ),
         )
-        .await?)
+        .await?;
+        self.refresh_tray_notification();
+        Ok(result)
     }
 
     pub async fn user_dialog_tab_counts(
@@ -1763,6 +1771,14 @@ impl DesktopRuntimeHostState {
         A: crate::RuntimeHostActions + 'static,
     {
         self.desktop.services.host.set_actions(actions);
+    }
+
+    pub fn set_frontend_tray_notification(&self, notify: bool) {
+        self.desktop.services.set_frontend_tray_notification(notify);
+    }
+
+    pub fn refresh_tray_notification(&self) {
+        self.desktop.services.refresh_tray_notification();
     }
 
     pub fn start_data_services(&self) {

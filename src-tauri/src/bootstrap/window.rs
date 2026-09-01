@@ -153,6 +153,7 @@ pub async fn start_background_mode_for_current_session(
         && current.phase == BackendRuntimePhase::Running
     {
         show_background_mode_started_notification(app, state);
+        state.runtime_host().set_frontend_tray_notification(false);
         super::destroy_main_window_for_background_mode(app);
     }
     let _ = refresh_tray_menu(app, state);
