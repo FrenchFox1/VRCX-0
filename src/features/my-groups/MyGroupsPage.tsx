@@ -247,7 +247,7 @@ export function MyGroupsPage() {
                             >
                                 <div
                                     className={cn(
-                                        'grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2 p-0.5',
+                                        'grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2 p-0.5',
                                         state.editMode && 'pb-14'
                                     )}
                                 >
