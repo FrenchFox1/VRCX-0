@@ -27,6 +27,7 @@ export type StatusPreset = SocialStatusPreset;
 type ContextMenuItemComponent = ComponentType<{
     children?: ReactNode;
     checked?: boolean;
+    closeOnClick?: boolean;
     disabled?: boolean;
     onClick?: () => void;
 }>;
@@ -146,6 +147,7 @@ export function CurrentUserActionItems({
                                 <CheckboxItem
                                     key={`${item}:${index}`}
                                     checked={friend?.statusDescription === item}
+                                    closeOnClick
                                     onClick={() => {
                                         onSetStatusDescription?.(String(item));
                                     }}
