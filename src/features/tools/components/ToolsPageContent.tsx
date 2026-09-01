@@ -33,9 +33,9 @@ import { useTranslation } from 'react-i18next';
 
 import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 import {
-    PageHeader,
     PageScaffold,
-    PageTitle
+    PageToolbar,
+    PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import type { ToolDefinition } from '@/shared/constants/tools';
@@ -552,9 +552,8 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
             className="flex-1"
             style={{ overflowY: 'auto' }}
         >
-            <PageHeader className="flex-row items-center justify-between gap-3">
-                <PageTitle>{label('view.tools.header')}</PageTitle>
-                <div className="flex flex-wrap items-center justify-end gap-2">
+            <PageToolbar className="px-1.5">
+                <PageToolbarRow className="justify-end">
                     <Button
                         type="button"
                         variant={isQuickAccessEditing ? 'secondary' : 'outline'}
@@ -567,8 +566,8 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
                             ? label('view.tools.quick_access.done')
                             : label('view.tools.quick_access.edit')}
                     </Button>
-                </div>
-            </PageHeader>
+                </PageToolbarRow>
+            </PageToolbar>
 
             <div className="flex flex-col gap-4 px-1 pb-4">
                 <DndContext

@@ -25,10 +25,7 @@ import {
     EmptyState,
     LoadingState,
     PageBody,
-    PageDescription,
-    PageHeader,
     PageScaffold,
-    PageTitle,
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
@@ -39,6 +36,7 @@ import {
     ToolbarStatus,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { cn } from '@/lib/utils';
 import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
@@ -110,14 +108,7 @@ export function MyGroupsPage() {
 
     return (
         <PageScaffold className="relative">
-            <PageHeader className="pb-2">
-                <PageTitle className="text-balance">
-                    {t('view.my_groups.title')}
-                </PageTitle>
-                <PageDescription className="max-w-3xl text-pretty">
-                    {t('view.my_groups.description')}
-                </PageDescription>
-            </PageHeader>
+            <ToolPageHeader toolKey="my-groups" />
             <PageToolbar>
                 <PageToolbarRow>
                     <ToolbarViews className="min-w-0 flex-wrap">

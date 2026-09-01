@@ -17,15 +17,7 @@ import type { DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
-import {
-    PageBackButton,
-    PageHeader,
-    PageToolbar,
-    PageToolbarRow,
-    PageTitle
-} from '@/components/layout/PageScaffold';
 import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -81,47 +73,13 @@ const SEARCH_LAYOUT_OPTIONS = [
     }
 ] as const;
 
-export function ScreenshotMetadataHeader({
-    backLabel,
-    title,
-    deleting,
-    uploading,
-    deletingLabel,
-    uploadingLabel,
-    onBack
-}: {
-    backLabel: string;
-    title: string;
-    deleting: boolean;
-    uploading: boolean;
-    deletingLabel: string;
-    uploadingLabel: string;
-    onBack: () => void;
-}) {
-    return (
-        <PageToolbar>
-            <PageToolbarRow className="items-center">
-                <PageBackButton label={backLabel} onClick={onBack} />
-                <PageHeader className="min-w-0 p-0">
-                    <PageTitle>{title}</PageTitle>
-                </PageHeader>
-                {deleting ? (
-                    <Badge variant="outline">{deletingLabel}</Badge>
-                ) : null}
-                {uploading ? (
-                    <Badge variant="outline">{uploadingLabel}</Badge>
-                ) : null}
-            </PageToolbarRow>
-        </PageToolbar>
-    );
-}
-
 export function ScreenshotDetailActions({
     metadata,
     isVrcPlusSupporter,
     isUploadingScreenshot,
     isDeletingMetadata,
     isDeletingFile,
+    onBackToGallery,
     onOpenFolder,
     onCopyImage,
     onUpload,
@@ -133,6 +91,7 @@ export function ScreenshotDetailActions({
     isUploadingScreenshot: boolean;
     isDeletingMetadata: boolean;
     isDeletingFile: boolean;
+    onBackToGallery: () => void;
     onOpenFolder: () => void;
     onCopyImage: () => void;
     onUpload: () => void;
@@ -143,6 +102,10 @@ export function ScreenshotDetailActions({
 
     return (
         <div className="mb-2 flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" onClick={onBackToGallery}>
+                <ArrowLeftIcon data-icon="inline-start" />
+                {t('dialog.screenshot_metadata.gallery')}
+            </Button>
             <Button
                 variant="outline"
                 size="sm"
