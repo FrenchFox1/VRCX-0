@@ -2511,7 +2511,8 @@
                 },
                 "friend_log": {
                     "header": "Záznam přátel",
-                    "hide_unfriends": "Skrýt odebrané přátele"
+                    "hide_unfriends": "Skrýt odebrané přátele",
+                    "show_notification_dot": "Zobrazit oznamovací tečku záznamu přátel"
                 }
             },
             "notifications": {

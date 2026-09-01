@@ -2509,7 +2509,8 @@
                 },
                 "friend_log": {
                     "header": "好友日志",
-                    "hide_unfriends": "隐藏 “删除好友” （或被删好友）事件"
+                    "hide_unfriends": "隐藏 “删除好友” （或被删好友）事件",
+                    "show_notification_dot": "显示好友日志通知红点"
                 }
             },
             "notifications": {

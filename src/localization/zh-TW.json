@@ -2509,7 +2509,8 @@
                 },
                 "friend_log": {
                     "header": "好友紀錄",
-                    "hide_unfriends": "隱藏解除好友"
+                    "hide_unfriends": "隱藏解除好友",
+                    "show_notification_dot": "顯示好友紀錄通知紅點"
                 }
             },
             "notifications": {

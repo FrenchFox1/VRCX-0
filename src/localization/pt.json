@@ -2509,7 +2509,8 @@
                 },
                 "friend_log": {
                     "header": "Log de Amigos",
-                    "hide_unfriends": "Ocultar Amizades Desfeitas"
+                    "hide_unfriends": "Ocultar Amizades Desfeitas",
+                    "show_notification_dot": "Mostrar ponto de notificação do Log de Amigos"
                 }
             },
             "notifications": {

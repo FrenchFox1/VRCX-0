@@ -2511,7 +2511,8 @@
                 },
                 "friend_log": {
                     "header": "Журнал Друзей",
-                    "hide_unfriends": "Скрыть Не друзей"
+                    "hide_unfriends": "Скрыть Не друзей",
+                    "show_notification_dot": "Показывать индикатор уведомлений журнала друзей"
                 }
             },
             "notifications": {

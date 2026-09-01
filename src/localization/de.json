@@ -2509,7 +2509,8 @@
                 },
                 "friend_log": {
                     "header": "Freundesverlauf",
-                    "hide_unfriends": "Entfreundungen ausblenden"
+                    "hide_unfriends": "Entfreundungen ausblenden",
+                    "show_notification_dot": "Benachrichtigungspunkt für Freundesverlauf anzeigen"
                 }
             },
             "notifications": {

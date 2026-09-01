@@ -2509,7 +2509,8 @@
                 },
                 "friend_log": {
                     "header": "Friend History",
-                    "hide_unfriends": "Hide Unfriend Events"
+                    "hide_unfriends": "Hide Unfriend Events",
+                    "show_notification_dot": "Show Friend History Notification Dot"
                 }
             },
             "notifications": {

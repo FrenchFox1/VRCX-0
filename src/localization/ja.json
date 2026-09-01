@@ -2505,7 +2505,8 @@
                 },
                 "friend_log": {
                     "header": "フレンドログ",
-                    "hide_unfriends": "フレンド解除を非表示にする"
+                    "hide_unfriends": "フレンド解除を非表示にする",
+                    "show_notification_dot": "フレンドログの通知ドットを表示"
                 }
             },
             "notifications": {

@@ -228,6 +228,7 @@ export const ConfigKeys = defineConfigKeys({
     hidePrivateFromFeed: { type: 'bool', default: false },
     hideDevicesFromFeed: { type: 'bool', default: false },
     hideUptimeFromFeed: { type: 'bool', default: false },
+    friendLogNotificationDot: { type: 'bool', default: true },
     hideUnfriends: { type: 'bool', default: false },
     pcUptimeOnFeed: { type: 'bool', default: false },
     minimalFeed: { type: 'bool', default: false },

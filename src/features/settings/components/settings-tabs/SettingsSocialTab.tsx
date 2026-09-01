@@ -65,6 +65,7 @@ export function SettingsSocialTab() {
         useShallow((state) => ({
             recentActionCooldownEnabled: state.recentActionCooldownEnabled,
             recentActionCooldownMinutes: state.recentActionCooldownMinutes,
+            friendLogNotificationDot: state.friendLogNotificationDot,
             hideUnfriends: state.hideUnfriends
         }))
     );
@@ -76,6 +77,7 @@ export function SettingsSocialTab() {
         localFavoriteFriendsGroups,
         feedHiddenUsers = [],
         onAddFeedHiddenUser,
+        onFriendLogNotificationDotChange,
         onHideUnfriendsChange,
         onRemoveFeedHiddenUser,
         onRecentActionCooldownEnabledChange,
@@ -220,6 +222,16 @@ export function SettingsSocialTab() {
             <SettingsGroup
                 title={t('view.settings.appearance.friend_log.header')}
             >
+                <Field
+                    label={t(
+                        'view.settings.appearance.friend_log.show_notification_dot'
+                    )}
+                >
+                    <Switch
+                        checked={prefs.friendLogNotificationDot}
+                        onCheckedChange={onFriendLogNotificationDotChange}
+                    />
+                </Field>
                 <Field
                     label={t(
                         'view.settings.appearance.friend_log.hide_unfriends'

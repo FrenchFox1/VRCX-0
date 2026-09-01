@@ -2509,7 +2509,8 @@
                 },
                 "friend_log": {
                     "header": "Registro de amigos",
-                    "hide_unfriends": "Ocultar eliminaciones de amistad"
+                    "hide_unfriends": "Ocultar eliminaciones de amistad",
+                    "show_notification_dot": "Mostrar punto de notificación del registro de amigos"
                 }
             },
             "notifications": {

@@ -2464,7 +2464,8 @@
                 },
                 "friend_log": {
                     "header": "친구 이력",
-                    "hide_unfriends": "친구 끊기 이벤트 숨기기"
+                    "hide_unfriends": "친구 끊기 이벤트 숨기기",
+                    "show_notification_dot": "친구 이력 알림 점 표시"
                 }
             },
             "notifications": {
