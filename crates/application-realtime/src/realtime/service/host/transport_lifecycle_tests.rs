@@ -640,6 +640,66 @@ fn pending_baseline_start_emits_initial_location_time_snapshot() -> Result<()> {
 }
 
 #[test]
+fn game_start_in_another_instance_republishes_remote_friend_timers() -> Result<()> {
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("game-start-remote-friend-timers")?;
+    let active = active_transport(&runtime);
+    runtime.runtime().sync_friend_snapshot(
+        active_session,
+        Some(active.generation),
+        HashMap::from([
+            (
+                "usr_a".to_string(),
+                FriendRecord {
+                    id: "usr_a".into(),
+                    state: "online".into(),
+                    location: "wrld_friends:1".into(),
+                    ..FriendRecord::default()
+                },
+            ),
+            (
+                "usr_b".to_string(),
+                FriendRecord {
+                    id: "usr_b".into(),
+                    state: "online".into(),
+                    location: "wrld_friends:1".into(),
+                    ..FriendRecord::default()
+                },
+            ),
+        ]),
+    )?;
+    runtime.take_events_for_test();
+
+    vrcx_0_contracts::InstanceRosterObserver::on_game_running(
+        runtime.runtime().deps.instance_dwell.as_ref(),
+        true,
+    );
+    let mut own_roster = local_friend_roster(1_000);
+    own_roster.location = "wrld_self:2".into();
+    own_roster.members.clear();
+    runtime
+        .runtime()
+        .deps
+        .instance_dwell
+        .observe_roster(&own_roster);
+    runtime.runtime().emit_friend_location_time_snapshot();
+
+    let events = runtime.take_events_for_test();
+    let projection = events
+        .iter()
+        .find(|event| event.name == "realtimeFriendProjection")
+        .expect("game start should preserve a publishable friend timer snapshot");
+    let timers = projection.payload["locationTimeSnapshot"]
+        .as_array()
+        .expect("location time snapshot");
+    assert_eq!(timers.len(), 2);
+    assert!(timers
+        .iter()
+        .all(|timer| { timer["location"] == "wrld_friends:1" && timer["sinceMs"].is_number() }));
+    Ok(())
+}
+
+#[test]
 fn baseline_friend_cache_seed_preserves_profile_and_friend_fields() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("baseline-friend-cache-open-fields")?;

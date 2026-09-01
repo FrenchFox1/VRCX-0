@@ -631,6 +631,28 @@ mod tests {
     }
 
     #[test]
+    fn game_start_in_another_instance_preserves_remote_friend_timers() {
+        let registry = InstanceDwellRegistry::new();
+        for (user_id, observed_ms) in [("usr_a", 1_000), ("usr_b", 2_000)] {
+            registry.observe_friend_record(
+                user_id,
+                &friend(user_id, "online", "wrld_friends:1"),
+                observed_ms,
+            );
+        }
+        vrcx_0_contracts::InstanceRosterObserver::on_game_running(&registry, false);
+        let before = registry.snapshot();
+
+        vrcx_0_contracts::InstanceRosterObserver::on_game_running(&registry, true);
+        registry.observe_roster(&roster("wrld_self:2", &[]));
+
+        assert_eq!(registry.snapshot(), before);
+        assert!(before
+            .iter()
+            .all(|entry| entry.source == FriendLocationTimeSource::Realtime));
+    }
+
+    #[test]
     fn local_roster_overrides_conflicting_remote_presence() {
         let registry = InstanceDwellRegistry::new();
         registry.observe_friend_record(
