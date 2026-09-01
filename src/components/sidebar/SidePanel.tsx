@@ -411,7 +411,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                         >
                                                             {item.label}
                                                         </span>
-                                                        <span className="shrink-0 tabular-nums">
+                                                        <span className="text-muted-foreground shrink-0 text-[11px] leading-none font-medium tabular-nums">
                                                             {item.countLabel}
                                                         </span>
                                                     </TabsTrigger>
