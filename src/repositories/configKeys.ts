@@ -93,6 +93,7 @@ export const ConfigKeys = defineConfigKeys({
     backgroundImageProviderId: { type: 'string', default: 'nasa-epic' },
     backgroundImageSnapshots: { type: 'string', default: '{}' },
     backgroundImageCustomSource: { type: 'string', default: '{}' },
+    backgroundImageDecorationUrl: { type: 'string', default: '' },
     officialBackgroundEnabled: { type: 'bool', default: false },
     officialBackgroundProviderId: { type: 'string', default: 'nasa-epic' },
     officialBackgroundSnapshots: { type: 'string', default: '{}' },

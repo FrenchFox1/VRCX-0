@@ -3330,7 +3330,8 @@
             },
             "mode": {
                 "daily": "每日图片",
-                "custom": "本地图片"
+                "custom": "本地图片",
+                "decoration": "装饰背景"
             },
             "rotation": {
                 "minutes": "分钟",

@@ -3283,7 +3283,8 @@
             },
             "mode": {
                 "daily": "일일 이미지",
-                "custom": "로컬 이미지"
+                "custom": "로컬 이미지",
+                "decoration": "프로필 장식"
             },
             "rotation": {
                 "minutes": "분",

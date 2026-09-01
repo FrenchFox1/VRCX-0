@@ -3330,7 +3330,8 @@
             },
             "mode": {
                 "daily": "Imagem diária",
-                "custom": "Imagem local"
+                "custom": "Imagem local",
+                "decoration": "Decoração de perfil"
             },
             "rotation": {
                 "minutes": "min",

@@ -3332,7 +3332,8 @@
             },
             "mode": {
                 "daily": "Denní obrázek",
-                "custom": "Místní obrázek"
+                "custom": "Místní obrázek",
+                "decoration": "Dekorace profilu"
             },
             "rotation": {
                 "minutes": "min",

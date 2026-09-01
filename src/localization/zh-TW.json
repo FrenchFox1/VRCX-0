@@ -3330,7 +3330,8 @@
             },
             "mode": {
                 "daily": "每日圖片",
-                "custom": "本機圖片"
+                "custom": "本機圖片",
+                "decoration": "裝飾背景"
             },
             "rotation": {
                 "minutes": "分鐘",

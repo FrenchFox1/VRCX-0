@@ -46,7 +46,8 @@ function toCssString(value: string): string {
 }
 
 export function buildBackgroundImageCss(
-    snapshot: BackgroundImageSnapshot
+    snapshot: Pick<BackgroundImageSnapshot, 'imageUrl'>,
+    opaqueBase = false
 ): string {
     return `:root {
   --vrcx-0-wallpaper-image: url(${toCssString(snapshot.imageUrl)});
@@ -55,7 +56,7 @@ export function buildBackgroundImageCss(
   --vrcx-0-wallpaper-repeat: no-repeat;
   --vrcx-0-wallpaper-opacity: 1;
   --vrcx-0-wallpaper-filter: saturate(1.08) contrast(0.96);
-  --vrcx-0-app-surface: transparent;
+  --vrcx-0-app-surface: ${opaqueBase ? 'var(--background)' : 'transparent'};
   --vrcx-0-titlebar-surface: color-mix(in oklch, var(--background) 38%, transparent);
   --vrcx-0-main-surface: transparent;
   --vrcx-0-main-content-surface: color-mix(in oklch, var(--background) 20%, transparent);
@@ -158,10 +159,11 @@ function waitForBackgroundImageTransition(): Promise<void> {
 }
 
 async function applyBackgroundImageSnapshot(
-    snapshot: BackgroundImageSnapshot,
-    generation: number
+    snapshot: Pick<BackgroundImageSnapshot, 'imageUrl'>,
+    generation: number,
+    opaqueBase: boolean
 ): Promise<void> {
-    const cssText = buildBackgroundImageCss(snapshot);
+    const cssText = buildBackgroundImageCss(snapshot, opaqueBase);
     const transitionLayer = getBackgroundImageTransitionLayer();
     if (
         appliedImageUrl === null ||
@@ -196,7 +198,8 @@ async function applyBackgroundImageSnapshot(
 }
 
 function transitionToBackgroundImage(
-    snapshot: BackgroundImageSnapshot
+    snapshot: Pick<BackgroundImageSnapshot, 'imageUrl'>,
+    opaqueBase: boolean
 ): Promise<void> {
     if (appliedImageUrl === snapshot.imageUrl) {
         return Promise.resolve();
@@ -207,13 +210,15 @@ function transitionToBackgroundImage(
 
     transitionGeneration += 1;
     const generation = transitionGeneration;
-    const promise = applyBackgroundImageSnapshot(snapshot, generation).finally(
-        () => {
-            if (pendingTransition?.promise === promise) {
-                pendingTransition = undefined;
-            }
+    const promise = applyBackgroundImageSnapshot(
+        snapshot,
+        generation,
+        opaqueBase
+    ).finally(() => {
+        if (pendingTransition?.promise === promise) {
+            pendingTransition = undefined;
         }
-    );
+    });
     pendingTransition = {
         imageUrl: snapshot.imageUrl,
         promise
@@ -265,9 +270,13 @@ export async function syncBackgroundImageAppearance(
 ): Promise<void> {
     const state = useBackgroundImageStore.getState();
     const suppressCommunityLayers = state.enabled;
-    const shouldApply = state.enabled && state.snapshot !== null;
-    if (shouldApply && state.snapshot) {
-        await transitionToBackgroundImage(state.snapshot);
+    const source = state.decorationImageUrl
+        ? { imageUrl: state.decorationImageUrl }
+        : state.snapshot;
+    const isDecoration = Boolean(state.decorationImageUrl);
+    const shouldApply = state.enabled && source !== null;
+    if (shouldApply && source) {
+        await transitionToBackgroundImage(source, isDecoration);
     } else {
         clearBackgroundImageAppearance();
     }
