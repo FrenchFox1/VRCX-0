@@ -1,14 +1,12 @@
 import {
     BellIcon,
     CompassIcon,
-    MoonIcon,
     PanelLeftIcon,
     PanelLeftOpenIcon,
     PanelRightIcon,
     PanelRightOpenIcon,
     SearchIcon,
-    SparklesIcon,
-    SunIcon
+    SparklesIcon
 } from 'lucide-react';
 import {
     type ComponentProps,
@@ -28,6 +26,7 @@ import {
     setNavbarCollapsedPreference,
     setThemeModePreference
 } from '@/services/preferencesService';
+import { useResolvedThemeMode } from '@/services/themeService';
 import {
     openOrInstallLatestAvailableUpdate,
     shouldShowUpdateUi
@@ -44,8 +43,9 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
+import { AnimatedThemeToggler } from '@/ui/shadcn/animated-theme-toggler';
 import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
+import { Button, buttonVariants } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -172,7 +172,7 @@ export function useTitleBarActions(
         shouldShowUpdateUi(state.updateLoop)
     );
     const navbarOpen = useShellStore((state) => state.sidebarOpen);
-    const themeMode = useShellStore((state) => state.themeMode);
+    const resolvedThemeMode = useResolvedThemeMode();
     const communityThemeEnabled = useCommunityThemeStore(
         (state) => state.enabled
     );
@@ -395,21 +395,36 @@ export function useTitleBarActions(
                 <SparklesIcon data-icon="icon" />
             </TitleBarButton>
             {themeToggleVisible ? (
-                <TitleBarButton
-                    label={themeToggleLabel}
-                    className="size-7 min-w-7 rounded-md px-0"
-                    onClick={() => {
-                        setThemeModePreference(
-                            themeMode === 'light' ? 'dark' : 'light'
-                        );
-                    }}
-                >
-                    {themeMode === 'light' ? (
-                        <MoonIcon data-icon="icon" />
-                    ) : (
-                        <SunIcon data-icon="icon" />
-                    )}
-                </TitleBarButton>
+                <Tooltip>
+                    <TooltipTrigger
+                        render={
+                            <span className="inline-flex">
+                                <AnimatedThemeToggler
+                                    theme={resolvedThemeMode}
+                                    onThemeChange={(nextThemeMode) => {
+                                        void setThemeModePreference(
+                                            nextThemeMode
+                                        ).catch((error: unknown) => {
+                                            console.warn(
+                                                'Theme mode change failed:',
+                                                error
+                                            );
+                                        });
+                                    }}
+                                    aria-label={themeToggleLabel}
+                                    className={cn(
+                                        buttonVariants({
+                                            variant: 'ghost',
+                                            size: 'icon-sm'
+                                        }),
+                                        'text-muted-foreground hover:bg-muted/40 hover:text-foreground size-7 min-w-7 rounded-md px-0'
+                                    )}
+                                />
+                            </span>
+                        }
+                    />
+                    <TooltipContent>{themeToggleLabel}</TooltipContent>
+                </Tooltip>
             ) : null}
             <TitleBarButton
                 label={leftSidebarLabel}
