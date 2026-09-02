@@ -514,6 +514,7 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
             <AppNavFooter
                 sidebarOpen={sidebarOpen}
+                settingsActive={location.pathname === routePathByName.settings}
                 onNavigateSettings={() => navigate(routePathByName.settings)}
                 onToggleSidebar={() =>
                     setNavbarCollapsedPreference(sidebarOpen)

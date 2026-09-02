@@ -36,6 +36,7 @@ type ShellStore = {
     dateHour12: boolean;
     timeUnitLabels: TimeUnitLabels;
     notifiedMenus: string[];
+    lastSettingsTab: string;
     vrcUnseenNotificationCount: number;
     trayIconNotify: boolean;
     taskbarIconNotify: boolean;
@@ -62,6 +63,7 @@ type ShellStore = {
         dateHour12: boolean;
     }): void;
     setTimeUnitLabels(labels: TimeUnitLabels): void;
+    setLastSettingsTab(lastSettingsTab: string): void;
     setVrcUnseenNotificationCount(unseenCount: number): void;
     updateTrayIconNotification(force?: boolean): void;
     notifyMenu(index: string): void;
@@ -87,6 +89,7 @@ type ShellStoreState = Omit<
     | 'setZoomLevel'
     | 'setDatePreferences'
     | 'setTimeUnitLabels'
+    | 'setLastSettingsTab'
     | 'setVrcUnseenNotificationCount'
     | 'updateTrayIconNotification'
     | 'notifyMenu'
@@ -113,6 +116,7 @@ const initialState: ShellStoreState = {
     dateHour12: false,
     timeUnitLabels: DEFAULT_TIME_UNIT_LABELS,
     notifiedMenus: [],
+    lastSettingsTab: 'system',
     vrcUnseenNotificationCount: 0,
     trayIconNotify: false,
     taskbarIconNotify: false
@@ -233,6 +237,9 @@ export const useShellStore = create<ShellStore>((set, get) => ({
     },
     setTimeUnitLabels(labels) {
         set({ timeUnitLabels: labels });
+    },
+    setLastSettingsTab(lastSettingsTab) {
+        set({ lastSettingsTab });
     },
     setVrcUnseenNotificationCount(unseenCount) {
         set({ vrcUnseenNotificationCount: unseenCount });

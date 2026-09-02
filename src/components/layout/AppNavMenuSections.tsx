@@ -138,10 +138,12 @@ function AppNavMenuContent({
 
 function AppNavFooter({
     sidebarOpen,
+    settingsActive,
     onNavigateSettings,
     onToggleSidebar
 }: {
     sidebarOpen: boolean;
+    settingsActive: boolean;
     onNavigateSettings: () => void;
     onToggleSidebar: () => void;
 }) {
@@ -153,6 +155,7 @@ function AppNavFooter({
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         type="button"
+                        isActive={settingsActive}
                         tooltip={t('nav_tooltip.settings')}
                         onClick={onNavigateSettings}
                     >
