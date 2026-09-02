@@ -1,6 +1,7 @@
 import {
     BellIcon,
     CompassIcon,
+    KeyboardIcon,
     PanelLeftIcon,
     PanelLeftOpenIcon,
     PanelRightIcon,
@@ -20,6 +21,7 @@ import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
+import { ShortcutHintPanel } from '@/components/keyboard/ShortcutHintPanel';
 import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog';
 import { cn } from '@/lib/utils';
 import {
@@ -69,6 +71,9 @@ export function TitleBarButton({
 }: Omit<ComponentProps<typeof Button>, 'aria-label' | 'type' | 'variant'> & {
     label: string;
 }) {
+    const shortcutHintsVisible = useShellStore(
+        (state) => state.shortcutHintsVisible
+    );
     return (
         <Tooltip>
             <TooltipTrigger
@@ -89,7 +94,9 @@ export function TitleBarButton({
                     </Button>
                 }
             />
-            <TooltipContent>{label}</TooltipContent>
+            <TooltipContent hidden={shortcutHintsVisible}>
+                {label}
+            </TooltipContent>
         </Tooltip>
     );
 }
@@ -172,6 +179,9 @@ export function useTitleBarActions(
         shouldShowUpdateUi(state.updateLoop)
     );
     const navbarOpen = useShellStore((state) => state.sidebarOpen);
+    const shortcutHintsVisible = useShellStore(
+        (state) => state.shortcutHintsVisible
+    );
     const resolvedThemeMode = useResolvedThemeMode();
     const communityThemeEnabled = useCommunityThemeStore(
         (state) => state.enabled
@@ -302,7 +312,7 @@ export function useTitleBarActions(
     const actions = isSessionReady ? (
         <div
             className={cn(
-                'flex h-full min-w-0 shrink-0 items-center gap-1',
+                'relative flex h-full min-w-0 shrink-0 items-center gap-1',
                 actionsClassName
             )}
         >
@@ -349,7 +359,7 @@ export function useTitleBarActions(
                             </Button>
                         }
                     />
-                    <TooltipContent>
+                    <TooltipContent hidden={shortcutHintsVisible}>
                         {formatTitleBarShortcutLabel(
                             quickSearchLabel,
                             quickSearchShortcutLabel
@@ -423,7 +433,9 @@ export function useTitleBarActions(
                             </span>
                         }
                     />
-                    <TooltipContent>{themeToggleLabel}</TooltipContent>
+                    <TooltipContent hidden={shortcutHintsVisible}>
+                        {themeToggleLabel}
+                    </TooltipContent>
                 </Tooltip>
             ) : null}
             <TitleBarButton
@@ -450,6 +462,53 @@ export function useTitleBarActions(
                     <PanelRightOpenIcon data-icon="icon" />
                 )}
             </TitleBarButton>
+            {shortcutHintsVisible ? (
+                <ShortcutHintPanel
+                    className="motion-safe:slide-in-from-top-1 absolute top-[calc(100%+0.5rem)] right-1 origin-top-right"
+                    groups={[
+                        [
+                            {
+                                icon: <SearchIcon />,
+                                id: 'titlebar-quick-search',
+                                keys: 'K',
+                                label: quickSearchLabel
+                            },
+                            {
+                                icon: <CompassIcon />,
+                                id: 'titlebar-direct-access',
+                                keys: 'D',
+                                label: directAccessLabel
+                            },
+                            {
+                                icon: navbarOpen ? (
+                                    <PanelLeftIcon />
+                                ) : (
+                                    <PanelLeftOpenIcon />
+                                ),
+                                id: 'titlebar-left-sidebar',
+                                keys: 'B',
+                                label: leftSidebarLabel
+                            },
+                            {
+                                icon: rightSidebarOpen ? (
+                                    <PanelRightIcon />
+                                ) : (
+                                    <PanelRightOpenIcon />
+                                ),
+                                id: 'titlebar-right-sidebar',
+                                keys: ['Shift', 'B'],
+                                label: rightSidebarLabel
+                            },
+                            {
+                                icon: <KeyboardIcon />,
+                                id: 'titlebar-keyboard-shortcuts',
+                                keys: '/',
+                                label: t('app_menu.keyboard_shortcuts')
+                            }
+                        ]
+                    ]}
+                />
+            ) : null}
         </div>
     ) : null;
 

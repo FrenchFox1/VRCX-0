@@ -37,6 +37,7 @@ type ShellStore = {
     timeUnitLabels: TimeUnitLabels;
     notifiedMenus: string[];
     lastSettingsTab: string;
+    shortcutHintsVisible: boolean;
     vrcUnseenNotificationCount: number;
     trayIconNotify: boolean;
     taskbarIconNotify: boolean;
@@ -64,6 +65,7 @@ type ShellStore = {
     }): void;
     setTimeUnitLabels(labels: TimeUnitLabels): void;
     setLastSettingsTab(lastSettingsTab: string): void;
+    setShortcutHintsVisible(visible: boolean): void;
     setVrcUnseenNotificationCount(unseenCount: number): void;
     updateTrayIconNotification(force?: boolean): void;
     notifyMenu(index: string): void;
@@ -90,6 +92,7 @@ type ShellStoreState = Omit<
     | 'setDatePreferences'
     | 'setTimeUnitLabels'
     | 'setLastSettingsTab'
+    | 'setShortcutHintsVisible'
     | 'setVrcUnseenNotificationCount'
     | 'updateTrayIconNotification'
     | 'notifyMenu'
@@ -117,6 +120,7 @@ const initialState: ShellStoreState = {
     timeUnitLabels: DEFAULT_TIME_UNIT_LABELS,
     notifiedMenus: [],
     lastSettingsTab: 'system',
+    shortcutHintsVisible: false,
     vrcUnseenNotificationCount: 0,
     trayIconNotify: false,
     taskbarIconNotify: false
@@ -240,6 +244,9 @@ export const useShellStore = create<ShellStore>((set, get) => ({
     },
     setLastSettingsTab(lastSettingsTab) {
         set({ lastSettingsTab });
+    },
+    setShortcutHintsVisible(shortcutHintsVisible) {
+        set({ shortcutHintsVisible });
     },
     setVrcUnseenNotificationCount(unseenCount) {
         set({ vrcUnseenNotificationCount: unseenCount });
