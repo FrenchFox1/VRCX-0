@@ -318,12 +318,16 @@ export function ResizableTableCell<TData extends RowData>({
     style?: CSSProperties;
 }) {
     const columnDnd = useDataTableColumnDnd();
+    const resolvedClassName = cn(
+        cell.column.columnDef.meta?.tableCellClassName,
+        className
+    );
 
     if (columnDnd.enabled && isColumnReorderable(cell?.column)) {
         return (
             <SortableResizableTableCell
                 cell={cell}
-                className={className}
+                className={resolvedClassName}
                 style={style}
             />
         );
@@ -331,7 +335,7 @@ export function ResizableTableCell<TData extends RowData>({
 
     return (
         <TableCell
-            className={cn(DATA_TABLE_CELL_CLASS_NAME, className)}
+            className={cn(DATA_TABLE_CELL_CLASS_NAME, resolvedClassName)}
             style={style}
         >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}

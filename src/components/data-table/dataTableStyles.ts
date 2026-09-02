@@ -11,7 +11,7 @@ export const DATA_TABLE_CELL_CLASS_NAME =
     'px-[var(--vrcx-0-table-cell-padding-inline)] py-[var(--vrcx-0-table-cell-padding-block)]';
 
 export const DATA_TABLE_CONTROL_CELL_CLASS_NAME =
-    '!py-[var(--vrcx-0-table-control-cell-padding-block)]';
+    '!py-[var(--vrcx-0-table-control-cell-padding-block)] text-clip';
 
 export const DATA_TABLE_NUMERIC_HEADER_CLASS_NAME = 'text-right';
 
