@@ -114,9 +114,9 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
         () => [
             {
                 id: 'expander',
-                size: 50,
-                minSize: 50,
-                maxSize: 50,
+                size: 40,
+                minSize: 40,
+                maxSize: 40,
                 enableResizing: false,
                 enableSorting: false,
                 enableHiding: false,
