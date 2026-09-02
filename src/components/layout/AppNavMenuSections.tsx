@@ -43,7 +43,7 @@ function AppNavCreateDashboardHeader({
                         type="button"
                         tooltip={t('dashboard.new_dashboard')}
                         disabled={disabled}
-                        className="border-primary/40 text-primary hover:bg-primary/10 border border-dashed"
+                        className="text-sidebar-foreground/65 border border-dashed"
                         onClick={() => {
                             onCreateDashboard();
                         }}
