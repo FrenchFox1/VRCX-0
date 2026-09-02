@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
+import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
@@ -440,6 +441,8 @@ export function FriendLocationCard({
     const isDense = resolvedDensityConfig.layout === 'item';
     const resolvedWorldActionLabel =
         worldActionLabel || t('view.friend_list.label.world');
+    const launchLocation = normalizeLocationValue(rawLocation);
+    const launchShortName = parseLocation(launchLocation).shortName || '';
     const locationLineClampClass = resolveLineClampClass(
         resolvedDensityConfig.locationLineClamp
     );
@@ -754,16 +757,16 @@ export function FriendLocationCard({
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
+                <LaunchModeContextMenuGroup
+                    disabled={!canUseFriendLocation}
+                    errorMessage={t(
+                        'view.friends.toast.failed_to_launch_instance'
+                    )}
+                    location={launchLocation}
+                    shortName={launchShortName}
+                />
+                <ContextMenuSeparator />
                 <ContextMenuGroup>
-                    <ContextMenuItem
-                        disabled={!canUseFriendLocation}
-                        onClick={() => {
-                            onLaunchLocation?.();
-                        }}
-                    >
-                        <ExternalLinkIcon />
-                        {t('dialog.launch.open_ingame')}
-                    </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
                         onClick={() => {

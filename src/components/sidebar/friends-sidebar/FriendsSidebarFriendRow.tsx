@@ -59,7 +59,6 @@ type FriendRowModel = {
 
 type FriendRowCommands = {
     onOpen?: () => void;
-    onLaunch?: (location: string) => void;
     onSelfInvite?: (location: string) => void;
     onInvite?: (friend: SidebarFriendRecord) => void;
     onRequestInvite?: (friend: SidebarFriendRecord) => void;
@@ -112,7 +111,6 @@ export function FriendRow({
     } = rowModel || {};
     const {
         onOpen,
-        onLaunch,
         onSelfInvite,
         onInvite,
         onRequestInvite,
@@ -286,7 +284,6 @@ export function FriendRow({
                         canRequestInvite={canRequestInvite}
                         canBoop={canBoop}
                         onOpen={onOpen}
-                        onLaunch={onLaunch}
                         onSelfInvite={onSelfInvite}
                         onInvite={onInvite}
                         onRequestInvite={onRequestInvite}

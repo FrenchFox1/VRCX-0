@@ -179,7 +179,6 @@ export function FriendsSidebar({
         applyCurrentUserStatusPreset,
         changeCurrentUserStatus,
         editCurrentUserSocialStatus,
-        launchFriendLocation,
         openFriend,
         requestFriendInvite,
         selfInviteToFriendLocation,
@@ -752,7 +751,6 @@ export function FriendsSidebar({
     const friendRowCommands = {
         onOpenFriend: openFriend,
         onToggleSection: toggleSection,
-        onLaunch: launchFriendLocation,
         onSelfInvite: selfInviteToFriendLocation,
         onInvite: sendFriendInvite,
         onRequestInvite: requestFriendInvite,

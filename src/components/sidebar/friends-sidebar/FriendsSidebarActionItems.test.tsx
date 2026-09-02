@@ -2,6 +2,10 @@ import type { PropsWithChildren } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/services/launchService', () => ({
+    launchVrchat: vi.fn()
+}));
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
