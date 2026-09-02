@@ -52,7 +52,13 @@ export function useGlobalKeyboardShortcuts() {
 
             if (key === '/') {
                 event.preventDefault();
-                setSystemHostOpen('keyboardShortcutsOpen', true);
+                const keyboardShortcutsOpen =
+                    useRuntimeStore.getState().systemHosts
+                        .keyboardShortcutsOpen;
+                setSystemHostOpen(
+                    'keyboardShortcutsOpen',
+                    !keyboardShortcutsOpen
+                );
                 return;
             }
 
