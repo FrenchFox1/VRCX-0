@@ -128,7 +128,7 @@ export function MyGroupCard({
                 type="button"
                 variant="ghost"
                 className={cn(
-                    'object-row border-border bg-object-surface hover:bg-object-surface-hover dark:hover:bg-object-surface-hover h-full w-full min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-lg p-0 text-left font-normal whitespace-normal',
+                    'object-row bg-object-surface hover:bg-object-surface-hover dark:hover:bg-object-surface-hover h-full w-full min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-lg border-[var(--object-border)] p-0 text-left font-normal whitespace-normal hover:border-[var(--object-border-hover)]',
                     !dragDisabled &&
                         'cursor-grab touch-none active:cursor-grabbing',
                     selected && TILE_SELECTED
@@ -181,10 +181,10 @@ export function MyGroupCard({
                         )}
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="text-foreground block truncate text-sm leading-tight font-medium">
+                        <span className="object-row__title block truncate text-sm leading-tight">
                             {group.name || groupId}
                         </span>
-                        <span className="text-muted-foreground block truncate text-xs leading-tight">
+                        <span className="object-row__meta block truncate leading-tight">
                             {subtitle}
                         </span>
                     </span>

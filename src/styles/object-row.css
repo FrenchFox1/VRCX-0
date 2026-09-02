@@ -3,9 +3,10 @@
         position: relative;
         min-width: 0;
         overflow: hidden;
-        border: 1px solid var(--border);
+        border: 1px solid var(--object-border);
         border-radius: var(--radius-lg);
         background: var(--object-surface);
+        color: var(--content-secondary);
         transition-property:
             background-color, border-color, box-shadow, opacity;
         transition-duration: var(--motion-fast);
@@ -59,6 +60,18 @@
         pointer-events: none;
     }
 
+    .object-row__title {
+        color: var(--content-primary);
+        font-weight: 500;
+    }
+
+    .object-row__meta {
+        color: var(--content-tertiary);
+        font-size: 0.75rem;
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+    }
+
     .object-row__context-action {
         opacity: 1;
         transition-property: color, background-color, opacity;
@@ -68,7 +81,7 @@
 
     @media (hover: hover) and (pointer: fine) {
         .object-row:hover {
-            border-color: var(--border-hover);
+            border-color: var(--object-border-hover);
             background: var(--object-surface-hover);
         }
 

@@ -9,6 +9,10 @@ import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
 
 const sidePanelStorageKey = 'vrcx-main-layout-right-sidebar-width';
 
+function getResponsiveSidePanelWidth(preferredWidth: number): string {
+    return `max(var(--vrcx-0-side-panel-min-width), min(${preferredWidth}px, calc(100% - var(--vrcx-0-main-content-preferred-min-width) - var(--vrcx-0-side-panel-resizer-width))))`;
+}
+
 function clampSidePanelWidth(value: string | number | null) {
     const width = Number.parseInt(String(value ?? ''), 10);
     if (!Number.isFinite(width)) {
@@ -70,7 +74,8 @@ export function AppShellLayout() {
         const nextWidth = clampSidePanelWidth(width);
         sidePanelWidthRef.current = nextWidth;
         if (sidePanelElementRef.current) {
-            sidePanelElementRef.current.style.width = `${nextWidth}px`;
+            sidePanelElementRef.current.style.width =
+                getResponsiveSidePanelWidth(nextWidth);
         }
         return nextWidth;
     }
@@ -145,13 +150,17 @@ export function AppShellLayout() {
                     {sidePanelVisible ? (
                         <>
                             <div
-                                className="hover:bg-border z-20 w-1 shrink-0 cursor-ew-resize bg-transparent select-none"
+                                className="hover:bg-border z-20 w-(--vrcx-0-side-panel-resizer-width) shrink-0 cursor-ew-resize bg-transparent select-none"
                                 onPointerDown={startSidePanelResize}
                             />
                             <SidePanel
                                 ref={sidePanelElementRef}
-                                className="w-full shrink-0"
-                                style={{ width: sidePanelWidth }}
+                                className="shrink-0"
+                                style={{
+                                    width: getResponsiveSidePanelWidth(
+                                        sidePanelWidth
+                                    )
+                                }}
                             />
                         </>
                     ) : null}

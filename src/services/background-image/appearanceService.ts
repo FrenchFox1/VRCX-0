@@ -56,6 +56,9 @@ export function buildBackgroundImageCss(
   --vrcx-0-wallpaper-repeat: no-repeat;
   --vrcx-0-wallpaper-opacity: 1;
   --vrcx-0-wallpaper-filter: saturate(1.08) contrast(0.96);
+  --surface-shell: color-mix(in oklch, var(--background) 38%, transparent);
+  --surface-panel: color-mix(in oklch, var(--background) 46%, transparent);
+  --surface-raised: color-mix(in oklch, var(--background) 52%, transparent);
   --vrcx-0-app-surface: ${opaqueBase ? 'var(--background)' : 'transparent'};
   --vrcx-0-titlebar-surface: color-mix(in oklch, var(--background) 38%, transparent);
   --vrcx-0-main-surface: transparent;
@@ -76,7 +79,7 @@ export function buildBackgroundImageCss(
 
 [data-slot='dialog-footer'],
 [data-slot='card-footer'] {
-  background: color-mix(in oklch, var(--muted) 34%, transparent);
+  background: color-mix(in oklch, var(--background) 34%, transparent);
 }
 
 [data-slot='card'] {

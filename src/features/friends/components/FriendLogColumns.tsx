@@ -4,7 +4,11 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
-import { DATA_TABLE_CONTROL_CELL_CLASS_NAME } from '@/components/data-table/DataTableView';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -54,6 +58,9 @@ export function useFriendLogColumns({
                 id: 'created_at',
                 size: 120,
                 accessorFn: (row) => row?.created_at || '',
+                meta: {
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -96,7 +103,10 @@ export function useFriendLogColumns({
                 id: 'displayName',
                 size: 260,
                 minSize: 80,
-                meta: { stretch: true },
+                meta: {
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
                 enableSorting: false,
                 header: () => t('table.friendLog.user'),
                 cell: ({ row }) => renderUserCell(row.original)

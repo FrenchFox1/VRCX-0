@@ -22,7 +22,8 @@ import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButto
 import {
     DATA_TABLE_CONTROL_CELL_CLASS_NAME,
     DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
-    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { timeToText } from '@/lib/dateTime';
@@ -392,7 +393,8 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                 enableHiding: false,
                 meta: {
                     label: t('table.playerList.displayName'),
-                    stretch: true
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => row.displayName,
                 header: ({ column }) => (

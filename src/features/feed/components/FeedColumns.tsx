@@ -4,7 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import type { AppCellContext, AppRow } from '@/components/data-table/appTable';
 import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
-import { DATA_TABLE_CONTROL_CELL_CLASS_NAME } from '@/components/data-table/DataTableView';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { resolveFeedUserId } from '@/components/feed/feedRows';
 import { FeedTypeIndicator } from '@/components/feed/FeedTypeIndicator';
 import type {
@@ -55,13 +59,9 @@ function DateCell({ row }: { row: AppRow<FeedRow> }) {
         <Tooltip>
             <TooltipTrigger
                 render={
-                    <span className="text-sm font-normal tabular-nums">
-                        <span className="text-muted-foreground/80">{date}</span>
-                        {time ? (
-                            <span className="text-foreground/75 ml-1">
-                                {time}
-                            </span>
-                        ) : null}
+                    <span className="text-sm">
+                        <span>{date}</span>
+                        {time ? <span className="ml-1">{time}</span> : null}
                     </span>
                 }
             />
@@ -96,14 +96,12 @@ function DetailCell({ row, table }: AppCellContext<FeedRow>) {
     }
 
     return (
-        <div className="text-foreground/80 font-normal">
-            <FeedDetailCell
-                loadingHistoryKey={meta.loadingPreviousInstancesKey}
-                onNewInstance={meta.actions.openFeedNewInstance}
-                onOpenPreviousInstances={meta.onOpenPreviousInstances}
-                row={row.original}
-            />
-        </div>
+        <FeedDetailCell
+            loadingHistoryKey={meta.loadingPreviousInstancesKey}
+            onNewInstance={meta.actions.openFeedNewInstance}
+            onOpenPreviousInstances={meta.onOpenPreviousInstances}
+            row={row.original}
+        />
     );
 }
 
@@ -131,7 +129,10 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 id: 'created_at',
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'created_at', meta),
-                meta: { label: t('table.feed.date') },
+                meta: {
+                    label: t('table.feed.date'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.date')} />
                 ),
@@ -161,7 +162,10 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 id: 'displayName',
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'displayName', meta),
-                meta: { label: t('table.feed.user') },
+                meta: {
+                    label: t('table.feed.user'),
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.user')} />
                 ),

@@ -123,11 +123,11 @@ export const BrowseHistoryCard = memo(function BrowseHistoryCard({
                 <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-2.5 pr-8">
                     <div className="flex items-center gap-1.5">
                         <Icon className="text-muted-foreground size-3 shrink-0" />
-                        <span className="truncate text-[13px] leading-tight font-medium">
+                        <span className="object-row__title truncate text-[13px] leading-tight">
                             {title}
                         </span>
                     </div>
-                    <p className="text-muted-foreground truncate text-[11px] leading-tight tabular-nums">
+                    <p className="object-row__meta truncate text-[11px] leading-tight">
                         {formatClock(item.lastViewedAt)}
                         {item.viewCount > 1 ? ` · ×${item.viewCount}` : ''}
                     </p>

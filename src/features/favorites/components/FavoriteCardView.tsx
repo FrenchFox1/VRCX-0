@@ -233,7 +233,7 @@ export function FavoriteCardView({
                 <div className="flex min-w-0 flex-1 flex-col justify-center px-2.5">
                     <div className="flex min-w-0 items-center gap-1.5">
                         <span
-                            className="truncate font-medium"
+                            className="object-row__title truncate"
                             style={
                                 item.titleColor
                                     ? { color: item.titleColor }
@@ -251,7 +251,7 @@ export function FavoriteCardView({
                             <LockIcon className="text-muted-foreground size-4 shrink-0" />
                         ) : null}
                     </div>
-                    <div className="text-muted-foreground truncate text-xs">
+                    <div className="object-row__meta truncate">
                         {showPlayerCountBadge ? (
                             <>
                                 <span className="inline-flex items-baseline gap-1">

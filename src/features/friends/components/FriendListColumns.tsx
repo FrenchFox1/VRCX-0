@@ -7,8 +7,10 @@ import type { AppColumnDef } from '@/components/data-table/appTable';
 import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
 import {
     DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
     DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
-    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
@@ -192,7 +194,8 @@ export function useFriendListColumns({
                 enableHiding: false,
                 meta: {
                     label: t('table.friendList.displayName'),
-                    stretch: true
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => row?.displayName || '',
                 enableSorting: false,
@@ -426,7 +429,10 @@ export function useFriendListColumns({
                 id: 'lastSeen',
                 accessorFn: (row) => row?.$lastSeen || '',
                 size: 180,
-                meta: { label: t('table.friendList.lastSeen') },
+                meta: {
+                    label: t('table.friendList.lastSeen'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -485,7 +491,10 @@ export function useFriendListColumns({
                 id: 'lastActivity',
                 accessorFn: (row) => textValue(row?.last_activity),
                 size: 200,
-                meta: { label: t('table.friendList.lastActivity') },
+                meta: {
+                    label: t('table.friendList.lastActivity'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -504,7 +513,10 @@ export function useFriendListColumns({
                 id: 'lastLogin',
                 accessorFn: (row) => textValue(row?.last_login),
                 size: 200,
-                meta: { label: t('table.friendList.lastLogin') },
+                meta: {
+                    label: t('table.friendList.lastLogin'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -523,7 +535,10 @@ export function useFriendListColumns({
                 id: 'dateJoined',
                 accessorFn: (row) => textValue(row?.date_joined),
                 size: 140,
-                meta: { label: t('table.friendList.dateJoined') },
+                meta: {
+                    label: t('table.friendList.dateJoined'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}

@@ -8,14 +8,20 @@ export const DATA_TABLE_HEAD_CLASS_NAME =
     'h-[var(--vrcx-0-table-header-height)] px-[var(--vrcx-0-table-cell-padding-inline)] text-xs text-[var(--vrcx-0-table-header-foreground)]';
 
 export const DATA_TABLE_CELL_CLASS_NAME =
-    'px-[var(--vrcx-0-table-cell-padding-inline)] py-[var(--vrcx-0-table-cell-padding-block)]';
+    'text-content-secondary px-[var(--vrcx-0-table-cell-padding-inline)] py-[var(--vrcx-0-table-cell-padding-block)] font-normal';
+
+export const DATA_TABLE_PRIMARY_CELL_CLASS_NAME =
+    'text-content-primary font-medium';
+
+export const DATA_TABLE_METADATA_CELL_CLASS_NAME =
+    'text-content-tertiary font-normal tabular-nums';
 
 export const DATA_TABLE_CONTROL_CELL_CLASS_NAME =
-    '!py-[var(--vrcx-0-table-control-cell-padding-block)] text-clip';
+    'text-content-tertiary !py-[var(--vrcx-0-table-control-cell-padding-block)] text-clip';
 
 export const DATA_TABLE_NUMERIC_HEADER_CLASS_NAME = 'text-right';
 
-export const DATA_TABLE_NUMERIC_CELL_CLASS_NAME = 'text-right tabular-nums';
+export const DATA_TABLE_NUMERIC_CELL_CLASS_NAME = `${DATA_TABLE_METADATA_CELL_CLASS_NAME} text-right`;
 
 export const DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME =
     'vrcx-0-table-header sticky top-0 right-0 z-20';
