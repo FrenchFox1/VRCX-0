@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
+import { DATA_TABLE_CONTROL_CELL_CLASS_NAME } from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -107,6 +108,9 @@ export function useFriendLogColumns({
                 maxSize: 64,
                 enableResizing: false,
                 enableSorting: false,
+                meta: {
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => t('table.friendLog.action'),
                 cell: ({ row }) => {
                     const rowKey = getFriendLogRowKey(

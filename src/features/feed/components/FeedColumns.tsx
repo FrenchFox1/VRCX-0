@@ -3,6 +3,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppCellContext, AppRow } from '@/components/data-table/appTable';
+import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import { DATA_TABLE_CONTROL_CELL_CLASS_NAME } from '@/components/data-table/DataTableView';
 import { resolveFeedUserId } from '@/components/feed/feedRows';
 import { FeedTypeIndicator } from '@/components/feed/FeedTypeIndicator';
 import type {
@@ -118,7 +120,10 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 enableResizing: false,
                 enableSorting: false,
                 enableHiding: false,
-                meta: { label: '' },
+                meta: {
+                    label: '',
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => null,
                 cell: ({ row }) => <ExpanderCell row={row} />
             },
@@ -178,9 +183,9 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 enableHiding: false,
                 meta: { label: t('table.feed.detail'), stretch: true },
                 header: () => (
-                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.feed.detail')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 minSize: 100,
                 cell: DetailCell

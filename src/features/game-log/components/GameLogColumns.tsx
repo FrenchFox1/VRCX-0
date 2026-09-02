@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import type { AppRow } from '@/components/data-table/appTable';
+import { DATA_TABLE_CONTROL_CELL_CLASS_NAME } from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { openWorldDialog } from '@/services/dialogService';
 import { openExternalLink } from '@/services/entityMediaService';
@@ -350,6 +351,9 @@ export function useGameLogColumns({
                 minSize: 90,
                 maxSize: 90,
                 enableResizing: false,
+                meta: {
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => t('table.gameLog.action'),
                 enableSorting: false,
                 cell: ({ row }) => {

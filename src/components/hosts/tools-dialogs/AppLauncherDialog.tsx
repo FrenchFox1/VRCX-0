@@ -9,6 +9,13 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DataTableCell,
+    DataTableHead,
+    DataTableHeaderRow,
+    DataTableRow
+} from '@/components/data-table/DataTableView';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import type {
@@ -58,14 +65,7 @@ import {
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 const MAX_LAUNCH_DELAY_SECONDS = 4_294_967_295;
@@ -432,7 +432,7 @@ export function AppLauncherDialog({
                 </div>
 
                 <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px] gap-3">
-                    <ScrollArea className="min-h-0 rounded-lg border">
+                    <ScrollArea className="app-data-table min-h-0 rounded-lg border">
                         {entries.length === 0 ? (
                             <Empty className="min-h-[360px] border-0">
                                 <EmptyHeader>
@@ -471,23 +471,23 @@ export function AppLauncherDialog({
                         ) : (
                             <Table>
                                 <TableHeader>
-                                    <TableRow>
-                                        <TableHead>
+                                    <DataTableHeaderRow>
+                                        <DataTableHead>
                                             {t('dialog.app_launcher.name')}
-                                        </TableHead>
-                                        <TableHead className="w-24">
+                                        </DataTableHead>
+                                        <DataTableHead className="w-24">
                                             {t('dialog.app_launcher.scope')}
-                                        </TableHead>
-                                        <TableHead>
+                                        </DataTableHead>
+                                        <DataTableHead>
                                             {t('dialog.app_launcher.target')}
-                                        </TableHead>
-                                        <TableHead className="w-44">
+                                        </DataTableHead>
+                                        <DataTableHead className="w-44">
                                             {t('dialog.app_launcher.policy')}
-                                        </TableHead>
-                                        <TableHead className="w-16 text-right">
+                                        </DataTableHead>
+                                        <DataTableHead className="w-16 text-right">
                                             {t('dialog.app_launcher.actions')}
-                                        </TableHead>
-                                    </TableRow>
+                                        </DataTableHead>
+                                    </DataTableHeaderRow>
                                 </TableHeader>
                                 <TableBody>
                                     {entries.map((entry) => {
@@ -498,14 +498,18 @@ export function AppLauncherDialog({
                                             entry.id
                                         );
                                         return (
-                                            <TableRow
+                                            <DataTableRow
                                                 key={entry.id}
                                                 className={cn(
                                                     'cursor-pointer',
-                                                    selected && 'bg-muted/50',
                                                     !entry.enabled &&
                                                         'opacity-60'
                                                 )}
+                                                data-state={
+                                                    selected
+                                                        ? 'selected'
+                                                        : undefined
+                                                }
                                                 onClick={() =>
                                                     setEditing({
                                                         ...entry,
@@ -513,7 +517,7 @@ export function AppLauncherDialog({
                                                     })
                                                 }
                                             >
-                                                <TableCell className="min-w-0">
+                                                <DataTableCell className="min-w-0">
                                                     <div className="flex min-w-0 flex-col gap-0.5">
                                                         <span className="truncate font-medium">
                                                             {entry.name}
@@ -533,16 +537,16 @@ export function AppLauncherDialog({
                                                             </span>
                                                         ) : null}
                                                     </div>
-                                                </TableCell>
-                                                <TableCell>
+                                                </DataTableCell>
+                                                <DataTableCell>
                                                     {t(
                                                         `dialog.app_launcher.scope_${entry.scope}`
                                                     )}
-                                                </TableCell>
-                                                <TableCell className="max-w-80 truncate font-mono text-xs">
+                                                </DataTableCell>
+                                                <DataTableCell className="max-w-80 truncate font-mono text-xs">
                                                     {shortTarget(entry)}
-                                                </TableCell>
-                                                <TableCell>
+                                                </DataTableCell>
+                                                <DataTableCell>
                                                     <div className="flex flex-col gap-1 text-xs">
                                                         <span>
                                                             {t(
@@ -558,8 +562,13 @@ export function AppLauncherDialog({
                                                                 : ''}
                                                         </span>
                                                     </div>
-                                                </TableCell>
-                                                <TableCell>
+                                                </DataTableCell>
+                                                <DataTableCell
+                                                    className={cn(
+                                                        DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+                                                        'text-right'
+                                                    )}
+                                                >
                                                     <div
                                                         role="presentation"
                                                         className="flex justify-end"
@@ -587,8 +596,8 @@ export function AppLauncherDialog({
                                                             <Trash2Icon />
                                                         </Button>
                                                     </div>
-                                                </TableCell>
-                                            </TableRow>
+                                                </DataTableCell>
+                                            </DataTableRow>
                                         );
                                     })}
                                 </TableBody>

@@ -126,6 +126,44 @@
         var(--background) 94%,
         var(--foreground)
     );
+    --vrcx-0-table-header-foreground: var(--muted-foreground);
+    --vrcx-0-table-row-hover-surface: color-mix(
+        in oklch,
+        var(--background) 93%,
+        var(--foreground)
+    );
+    --vrcx-0-table-row-selected-surface: color-mix(
+        in oklab,
+        var(--vrcx-0-table-surface) 88%,
+        var(--primary)
+    );
+    --vrcx-0-table-row-selected-hover-surface: color-mix(
+        in oklab,
+        var(--vrcx-0-table-surface) 82%,
+        var(--primary)
+    );
+    --vrcx-0-table-row-expanded-surface: color-mix(
+        in oklch,
+        var(--background) 96%,
+        var(--foreground)
+    );
+    --vrcx-0-table-row-striped-surface: color-mix(
+        in oklch,
+        var(--background) 98.5%,
+        var(--foreground)
+    );
+    --vrcx-0-table-divider: var(--border-subtle);
+    --vrcx-0-table-sticky-edge: color-mix(
+        in oklch,
+        var(--foreground) 14%,
+        transparent
+    );
+    --vrcx-0-table-header-height: 2.5rem;
+    --vrcx-0-table-row-height: 2.5rem;
+    --vrcx-0-table-cell-padding-inline: 0.75rem;
+    --vrcx-0-table-cell-padding-block: 0.5rem;
+    --vrcx-0-table-control-cell-padding-block: 0.25rem;
+    --vrcx-0-table-row-focus: color-mix(in oklch, var(--ring) 70%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -133,6 +171,11 @@
         color-scheme: dark;
         --background: oklch(0.145 0 0);
         --foreground: oklch(0.985 0 0);
+        --vrcx-0-table-row-striped-surface: color-mix(
+            in oklch,
+            var(--background) 97%,
+            var(--foreground)
+        );
     }
 }
 
@@ -189,6 +232,11 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
+    --vrcx-0-table-row-striped-surface: color-mix(
+        in oklch,
+        var(--background) 97%,
+        var(--foreground)
+    );
 }
 
 :root[data-theme-color]:not([data-theme-color='default']) {
@@ -592,12 +640,62 @@
         background: var(--vrcx-0-statusbar-surface);
     }
 
+    .app-data-table,
     .vrcx-0-data-table {
         background: var(--vrcx-0-table-surface);
+        border-color: var(--vrcx-0-table-divider);
+    }
+
+    .app-data-table {
+        font-variant-numeric: tabular-nums;
     }
 
     .vrcx-0-table-header {
         background: var(--vrcx-0-table-header-surface);
+    }
+
+    .vrcx-0-data-table [data-slot='table-head'].sticky.right-0,
+    .vrcx-0-data-table [data-slot='table-cell'].sticky.right-0 {
+        box-shadow: -1px 0 var(--vrcx-0-table-sticky-edge);
+    }
+
+    .vrcx-0-data-table [data-slot='table-cell'].vrcx-0-table-sticky-action {
+        background: var(--vrcx-0-table-surface);
+    }
+
+    .vrcx-0-data-table
+        [data-vrcx-0-table-row]:hover
+        > [data-slot='table-cell'].vrcx-0-table-sticky-action {
+        background: var(--vrcx-0-table-row-hover-surface);
+    }
+
+    .vrcx-0-data-table
+        [data-vrcx-0-table-row][data-state='selected']
+        > [data-slot='table-cell'].vrcx-0-table-sticky-action {
+        background: var(--vrcx-0-table-row-selected-surface);
+    }
+
+    .vrcx-0-data-table
+        [data-vrcx-0-table-row][data-state='selected']:hover
+        > [data-slot='table-cell'].vrcx-0-table-sticky-action {
+        background: var(--vrcx-0-table-row-selected-hover-surface);
+    }
+
+    .vrcx-0-data-table
+        [data-vrcx-0-table-row][data-state='expanded']
+        > [data-slot='table-cell'].vrcx-0-table-sticky-action,
+    .vrcx-0-data-table
+        [data-vrcx-0-table-row]:has([aria-expanded='true'])
+        > [data-slot='table-cell'].vrcx-0-table-sticky-action {
+        background: var(--vrcx-0-table-row-expanded-surface);
+    }
+
+    .is-compact-table {
+        --vrcx-0-table-header-height: 2rem;
+        --vrcx-0-table-row-height: 2rem;
+        --vrcx-0-table-cell-padding-inline: 0.5rem;
+        --vrcx-0-table-cell-padding-block: 0.25rem;
+        --vrcx-0-table-control-cell-padding-block: 0;
     }
 
     i.x-user-status,
@@ -649,23 +747,27 @@
         mask: url('../assets/masks/busy.svg') center / contain no-repeat;
     }
 
-    .is-compact-table [data-slot='table'] {
-        @apply text-xs;
-    }
-
-    .is-compact-table [data-slot='table-head'] {
-        @apply h-8 px-2.5;
-    }
-
-    .is-compact-table [data-slot='table-cell'] {
-        @apply py-1;
+    .is-striped-table
+        .app-data-table
+        [data-slot='table-body']
+        > :is([data-slot='table-row'], [data-vrcx-0-table-row]):nth-child(
+            even
+        ):not(:hover):not([data-state='selected']):not(
+            [data-state='expanded']
+        ):not(:has([aria-expanded='true'])) {
+        background: var(--vrcx-0-table-row-striped-surface);
     }
 
     .is-striped-table
         .app-data-table
         [data-slot='table-body']
-        [data-slot='table-row']:nth-child(even) {
-        @apply bg-muted/20;
+        > :is([data-slot='table-row'], [data-vrcx-0-table-row]):nth-child(
+            even
+        ):not(:hover):not([data-state='selected']):not(
+            [data-state='expanded']
+        ):not(:has([aria-expanded='true']))
+        > [data-slot='table-cell'].vrcx-0-table-sticky-action {
+        background: var(--vrcx-0-table-row-striped-surface);
     }
 
     .reduce-effects *,

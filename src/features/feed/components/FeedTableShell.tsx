@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
+    DataTableCell,
     DataTableColumnSortableContext,
     DataTableEmptyRow,
     DataTableHeader,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
@@ -25,7 +27,7 @@ import type {
 import { PageFooter } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 
 import { FeedExpandedRow } from './FeedTableParts';
 
@@ -79,7 +81,7 @@ export function FeedTableShell({
 
     return (
         <>
-            <DataTableSurface className="border-border/70">
+            <DataTableSurface>
                 <DataTableScrollArea>
                     <DataTableColumnDndProvider table={table}>
                         <Table
@@ -92,9 +94,8 @@ export function FeedTableShell({
                                 {table.getRowModel().rows.length > 0 ? (
                                     table.getRowModel().rows.map((row) => (
                                         <Fragment key={row.id}>
-                                            <TableRow
+                                            <DataTableRow
                                                 className={cn(
-                                                    'border-border/40 hover:bg-muted/35 h-9',
                                                     row.getCanExpand() &&
                                                         'cursor-pointer',
                                                     arrivals.has(row.id) &&
@@ -126,14 +127,13 @@ export function FeedTableShell({
                                                             <ResizableTableCell
                                                                 key={cell.id}
                                                                 cell={cell}
-                                                                className="px-2 py-1"
                                                             />
                                                         ))}
                                                 </DataTableColumnSortableContext>
-                                            </TableRow>
+                                            </DataTableRow>
                                             {row.getIsExpanded() ? (
-                                                <TableRow className="border-border/40 bg-muted/20">
-                                                    <TableCell
+                                                <DataTableRow data-state="expanded">
+                                                    <DataTableCell
                                                         colSpan={
                                                             row.getVisibleCells()
                                                                 .length
@@ -151,8 +151,8 @@ export function FeedTableShell({
                                                             }
                                                             row={row.original}
                                                         />
-                                                    </TableCell>
-                                                </TableRow>
+                                                    </DataTableCell>
+                                                </DataTableRow>
                                             ) : null}
                                         </Fragment>
                                     ))

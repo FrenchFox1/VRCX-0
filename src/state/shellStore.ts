@@ -119,9 +119,6 @@ const initialState: ShellStoreState = {
 };
 
 export function normalizeTableDensity(value: unknown): TableDensity {
-    if (value === 'comfortable') {
-        return 'standard';
-    }
     return value === 'standard' || value === 'compact' ? value : 'standard';
 }
 

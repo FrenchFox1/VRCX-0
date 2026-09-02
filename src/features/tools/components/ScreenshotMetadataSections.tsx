@@ -16,6 +16,15 @@ import {
 import type { DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DataTableCell,
+    DataTableHead,
+    DataTableHeaderRow,
+    DataTableRow
+} from '@/components/data-table/DataTableView';
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
@@ -45,14 +54,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 
 import {
     SCREENSHOT_METADATA_SEARCH_TYPES,
@@ -323,19 +325,19 @@ export function ScreenshotMetadataResultsTable({
     const { t } = useTranslation();
 
     return (
-        <div className="min-h-0 flex-1 overflow-auto">
-            <Table className="app-data-table">
+        <div className="app-data-table min-h-0 flex-1 overflow-auto">
+            <Table>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead>
+                    <DataTableHeaderRow>
+                        <DataTableHead>
                             <SearchSortHead
                                 label={t('dialog.screenshot_metadata.col_date')}
                                 sortKey="dateTime"
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
                             />
-                        </TableHead>
-                        <TableHead>
+                        </DataTableHead>
+                        <DataTableHead>
                             <SearchSortHead
                                 label={t(
                                     'dialog.screenshot_metadata.col_world'
@@ -344,9 +346,9 @@ export function ScreenshotMetadataResultsTable({
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
                             />
-                        </TableHead>
+                        </DataTableHead>
                         {currentSearchType.index <= 1 ? (
-                            <TableHead>
+                            <DataTableHead>
                                 <SearchSortHead
                                     label={t(
                                         'dialog.screenshot_metadata.col_match'
@@ -355,9 +357,9 @@ export function ScreenshotMetadataResultsTable({
                                     sort={searchSort}
                                     onToggle={onToggleSearchSort}
                                 />
-                            </TableHead>
+                            </DataTableHead>
                         ) : null}
-                        <TableHead>
+                        <DataTableHead>
                             <SearchSortHead
                                 label={t(
                                     'dialog.screenshot_metadata.col_author'
@@ -366,8 +368,10 @@ export function ScreenshotMetadataResultsTable({
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
                             />
-                        </TableHead>
-                        <TableHead>
+                        </DataTableHead>
+                        <DataTableHead
+                            className={DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}
+                        >
                             <SearchSortHead
                                 label={t(
                                     'dialog.screenshot_metadata.col_players'
@@ -375,17 +379,18 @@ export function ScreenshotMetadataResultsTable({
                                 sortKey="playerCount"
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
+                                className="ml-auto"
                             />
-                        </TableHead>
-                        <TableHead>
+                        </DataTableHead>
+                        <DataTableHead>
                             {t('dialog.screenshot_metadata.col_resolution')}
-                        </TableHead>
-                        <TableHead className="w-8" />
-                    </TableRow>
+                        </DataTableHead>
+                        <DataTableHead className="w-8" />
+                    </DataTableHeaderRow>
                 </TableHeader>
                 <TableBody>
                     {sortedSearchRows.map((row) => (
-                        <TableRow
+                        <DataTableRow
                             key={row.filePath}
                             data-state={
                                 row.filePath === selectedPath
@@ -393,20 +398,24 @@ export function ScreenshotMetadataResultsTable({
                                     : undefined
                             }
                         >
-                            <TableCell>{row.dateLabel}</TableCell>
-                            <TableCell>{row.world}</TableCell>
+                            <DataTableCell>{row.dateLabel}</DataTableCell>
+                            <DataTableCell>{row.world}</DataTableCell>
                             {currentSearchType.index <= 1 ? (
-                                <TableCell>{row.match}</TableCell>
+                                <DataTableCell>{row.match}</DataTableCell>
                             ) : null}
-                            <TableCell>{row.author}</TableCell>
-                            <TableCell>
+                            <DataTableCell>{row.author}</DataTableCell>
+                            <DataTableCell
+                                className={DATA_TABLE_NUMERIC_CELL_CLASS_NAME}
+                            >
                                 <span className="inline-flex items-center gap-1">
                                     <UsersIcon className="text-muted-foreground size-3" />
                                     {row.playerCount}
                                 </span>
-                            </TableCell>
-                            <TableCell>{row.resolution}</TableCell>
-                            <TableCell className="text-right">
+                            </DataTableCell>
+                            <DataTableCell>{row.resolution}</DataTableCell>
+                            <DataTableCell
+                                className={`${DATA_TABLE_CONTROL_CELL_CLASS_NAME} text-right`}
+                            >
                                 <Button
                                     type="button"
                                     variant="ghost"
@@ -416,8 +425,8 @@ export function ScreenshotMetadataResultsTable({
                                 >
                                     <ArrowRightIcon data-icon="inline-start" />
                                 </Button>
-                            </TableCell>
-                        </TableRow>
+                            </DataTableCell>
+                        </DataTableRow>
                     ))}
                 </TableBody>
             </Table>

@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import type { RowData } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -40,6 +40,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableHead,
     TableHeader,
     TableRow
 } from '@/ui/shadcn/table';
@@ -55,6 +56,12 @@ import {
     sanitizeTableColumnOrder,
     usePersistedDataTableLayout
 } from './dataTablePersistence';
+import {
+    DATA_TABLE_CELL_CLASS_NAME,
+    DATA_TABLE_HEADER_ROW_CLASS_NAME,
+    DATA_TABLE_HEAD_CLASS_NAME,
+    DATA_TABLE_ROW_CLASS_NAME
+} from './dataTableStyles';
 import { ResizableTableCell, ResizableTableHead } from './ResizableTableParts';
 import {
     getColumnOrder,
@@ -63,6 +70,14 @@ import {
     getStretchColumnId
 } from './tableColumnLayout';
 import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu';
+
+export {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DATA_TABLE_STICKY_ACTION_CELL_CLASS_NAME,
+    DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME
+} from './dataTableStyles';
 
 function moveColumnByDrag<TData extends RowData>(
     table: AppTable<TData>,
@@ -256,7 +271,7 @@ export function DataTableHeader<TData extends RowData>({
                     key={headerGroup.id}
                     table={table}
                 >
-                    <TableRow>
+                    <DataTableHeaderRow>
                         {headerGroup.headers.map((header) => (
                             <ResizableTableHead
                                 key={header.id}
@@ -265,7 +280,7 @@ export function DataTableHeader<TData extends RowData>({
                                 style={getHeaderStyle?.(header.column, header)}
                             />
                         ))}
-                    </TableRow>
+                    </DataTableHeaderRow>
                 </DataTableColumnSortableContext>
             ))}
         </TableHeader>
@@ -303,6 +318,55 @@ export function DataTableSurface({
     );
 }
 
+export function DataTableRow({
+    className = '',
+    ...props
+}: ComponentProps<typeof TableRow>) {
+    return (
+        <TableRow
+            {...props}
+            data-vrcx-0-table-row=""
+            className={cn(DATA_TABLE_ROW_CLASS_NAME, className)}
+        />
+    );
+}
+
+export function DataTableHeaderRow({
+    className = '',
+    ...props
+}: ComponentProps<typeof TableRow>) {
+    return (
+        <TableRow
+            {...props}
+            className={cn(DATA_TABLE_HEADER_ROW_CLASS_NAME, className)}
+        />
+    );
+}
+
+export function DataTableHead({
+    className = '',
+    ...props
+}: ComponentProps<typeof TableHead>) {
+    return (
+        <TableHead
+            {...props}
+            className={cn(DATA_TABLE_HEAD_CLASS_NAME, className)}
+        />
+    );
+}
+
+export function DataTableCell({
+    className = '',
+    ...props
+}: ComponentProps<typeof TableCell>) {
+    return (
+        <TableCell
+            {...props}
+            className={cn(DATA_TABLE_CELL_CLASS_NAME, className)}
+        />
+    );
+}
+
 export function DataTableScrollArea({
     className = '',
     children
@@ -332,8 +396,8 @@ export function DataTableEmptyRow({
     children: ReactNode;
 }) {
     return (
-        <TableRow>
-            <TableCell
+        <DataTableRow>
+            <DataTableCell
                 colSpan={colSpan}
                 className={cn(
                     'text-muted-foreground h-24 text-center',
@@ -341,8 +405,8 @@ export function DataTableEmptyRow({
                 )}
             >
                 {children}
-            </TableCell>
-        </TableRow>
+            </DataTableCell>
+        </DataTableRow>
     );
 }
 
@@ -546,7 +610,7 @@ export function DataTableView<TData extends RowData>({
                         <TableBody>
                             {table.getRowModel().rows.length > 0 ? (
                                 table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id}>
+                                    <DataTableRow key={row.id}>
                                         <DataTableColumnSortableContext
                                             table={table}
                                         >
@@ -559,7 +623,7 @@ export function DataTableView<TData extends RowData>({
                                                     />
                                                 ))}
                                         </DataTableColumnSortableContext>
-                                    </TableRow>
+                                    </DataTableRow>
                                 ))
                             ) : (
                                 <DataTableEmptyRow
