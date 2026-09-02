@@ -525,7 +525,7 @@ export function FriendLocationCard({
                 <span className="text-muted-foreground shrink-0 text-xs leading-4 font-normal tabular-nums">
                     <FriendInstanceTimer
                         epoch={instanceEpoch}
-                        traveling={isCardTraveling}
+                        traveling={false}
                         format={isDense ? 'short' : 'default'}
                     />
                 </span>
