@@ -723,6 +723,8 @@
         "notification_center": "通知センター",
         "show_friends_sidebar": "フレンドサイドバーを表示",
         "hide_friends_sidebar": "フレンドサイドバーを非表示",
+        "enter_sidebar_mode": "サイドバーモード",
+        "restore_full_window": "通常のウィンドウに戻す",
         "zoom_in": "拡大",
         "zoom_out": "縮小",
         "reset_zoom": "ズームをリセット",

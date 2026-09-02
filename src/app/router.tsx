@@ -17,8 +17,13 @@ import { useGlobalKeyboardShortcuts } from '@/components/layout/useGlobalKeyboar
 import { WindowResizeHandles } from '@/components/layout/WindowResizeHandles';
 import { cn } from '@/lib/utils';
 import { recordRouteEnter } from '@/services/telemetry/telemetryPageReach';
+import {
+    initializeWindowDisplayMode,
+    restoreNormalWindowModeForIntent
+} from '@/services/windowModeService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
+import { useShellStore } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 
 import { RouteErrorBoundary } from './RouteErrorBoundary';
@@ -101,10 +106,24 @@ function AppRouterContent() {
     );
     const isMacHost = hostPlatform === 'macos';
     const { pathname } = useLocation();
+    const windowDisplayMode = useShellStore((state) => state.windowDisplayMode);
     useGlobalKeyboardShortcuts();
+    useEffect(() => {
+        void initializeWindowDisplayMode().catch((error: unknown) => {
+            console.warn(
+                'Failed to initialize the window display mode:',
+                error
+            );
+        });
+    }, []);
     useEffect(() => {
         recordRouteEnter(pathname);
     }, [pathname]);
+    useEffect(() => {
+        if (pathname === '/login' && windowDisplayMode === 'sidebar') {
+            restoreNormalWindowModeForIntent();
+        }
+    }, [pathname, windowDisplayMode]);
     useEffect(() => {
         if (!isMacHost) {
             return undefined;

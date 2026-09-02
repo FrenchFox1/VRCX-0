@@ -723,6 +723,8 @@
         "notification_center": "Центр уведомления",
         "show_friends_sidebar": "Показать боковую панель друзей",
         "hide_friends_sidebar": "Скрыть боковую панель друзей",
+        "enter_sidebar_mode": "Режим боковой панели",
+        "restore_full_window": "Вернуться к полному окну",
         "zoom_in": "Увеличить",
         "zoom_out": "Уменьшить",
         "reset_zoom": "Перезагрузить",

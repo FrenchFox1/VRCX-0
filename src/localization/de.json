@@ -723,6 +723,8 @@
         "notification_center": "Benachrichtigungszentrale",
         "show_friends_sidebar": "Freundesleiste anzeigen",
         "hide_friends_sidebar": "Freundesleiste ausblenden",
+        "enter_sidebar_mode": "Seitenleistenmodus",
+        "restore_full_window": "Zum vollständigen Fenster zurückkehren",
         "zoom_in": "Vergrößern",
         "zoom_out": "Verkleinern",
         "reset_zoom": "Zoom zurücksetzen",

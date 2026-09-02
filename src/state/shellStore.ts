@@ -17,6 +17,38 @@ const MAX_NAV_WIDTH = 480;
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type TableDensity = 'standard' | 'compact';
 export type NotificationLayout = 'notification-center' | 'table';
+export type WindowDisplayMode = 'normal' | 'sidebar';
+
+const WINDOW_DISPLAY_MODE_STORAGE_KEY = 'vrcx-main-window-display-mode';
+
+function loadWindowDisplayMode(): WindowDisplayMode {
+    if (typeof window === 'undefined') {
+        return 'normal';
+    }
+    try {
+        return window.localStorage.getItem(WINDOW_DISPLAY_MODE_STORAGE_KEY) ===
+            'sidebar'
+            ? 'sidebar'
+            : 'normal';
+    } catch {
+        return 'normal';
+    }
+}
+
+function saveWindowDisplayMode(windowDisplayMode: WindowDisplayMode): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    try {
+        window.localStorage.setItem(
+            WINDOW_DISPLAY_MODE_STORAGE_KEY,
+            windowDisplayMode
+        );
+    } catch {
+        return;
+    }
+}
+
 type ShellStore = {
     sidebarOpen: boolean;
     rightSidebarOpen: boolean;
@@ -26,6 +58,7 @@ type ShellStore = {
     themeColor: string;
     tableDensity: TableDensity;
     notificationLayout: NotificationLayout;
+    windowDisplayMode: WindowDisplayMode;
     notificationIconDot: boolean;
     taskbarIconDot: boolean;
     displayVRCPlusIconsAsAvatar: boolean;
@@ -51,6 +84,7 @@ type ShellStore = {
     setThemeColor(themeColor: string): void;
     setTableDensity(tableDensity: TableDensity): void;
     setNotificationLayout(notificationLayout: NotificationLayout): void;
+    setWindowDisplayMode(windowDisplayMode: WindowDisplayMode): void;
     setNotificationIconDot(notificationIconDot: boolean): void;
     setTaskbarIconDot(taskbarIconDot: boolean): void;
     setAppearancePreferences(options?: {
@@ -85,6 +119,7 @@ type ShellStoreState = Omit<
     | 'setThemeColor'
     | 'setTableDensity'
     | 'setNotificationLayout'
+    | 'setWindowDisplayMode'
     | 'setNotificationIconDot'
     | 'setTaskbarIconDot'
     | 'setAppearancePreferences'
@@ -109,6 +144,7 @@ const initialState: ShellStoreState = {
     themeColor: DEFAULT_THEME_COLOR_KEY,
     tableDensity: 'standard',
     notificationLayout: 'notification-center',
+    windowDisplayMode: loadWindowDisplayMode(),
     notificationIconDot: true,
     taskbarIconDot: true,
     displayVRCPlusIconsAsAvatar: true,
@@ -205,6 +241,10 @@ export const useShellStore = create<ShellStore>((set, get) => ({
     setNotificationLayout(notificationLayout) {
         set({ notificationLayout });
         get().updateTrayIconNotification(true);
+    },
+    setWindowDisplayMode(windowDisplayMode) {
+        saveWindowDisplayMode(windowDisplayMode);
+        set({ windowDisplayMode });
     },
     setNotificationIconDot(notificationIconDot) {
         set({ notificationIconDot });

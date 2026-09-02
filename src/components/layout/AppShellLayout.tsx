@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 
 import { SidePanel } from '@/components/sidebar/SidePanel';
+import { cn } from '@/lib/utils';
+import { restoreNormalWindowModeForIntent } from '@/services/windowModeService';
+import { useShellStore } from '@/state/shellStore';
 
 import { AppSidebar } from './AppSidebar';
 import { AppStatusBar } from './AppStatusBar';
@@ -37,11 +40,15 @@ function loadSidePanelWidth() {
 export function AppShellLayout() {
     const location = useLocation();
     const { sidePanelOpen } = useRightSidePanelVisibility(location.pathname);
+    const sidebarWindowMode = useShellStore(
+        (state) => state.windowDisplayMode === 'sidebar'
+    );
     const [sidePanelWidth, setSidePanelWidth] = useState(loadSidePanelWidth);
     const sidePanelWidthRef = useRef(sidePanelWidth);
     const sidePanelElementRef = useRef<HTMLDivElement | null>(null);
     const resizeCleanupRef = useRef<((commit?: boolean) => void) | null>(null);
-    const sidePanelVisible = sidePanelOpen;
+    const previousPathnameRef = useRef(location.pathname);
+    const sidePanelVisible = sidebarWindowMode || sidePanelOpen;
 
     useEffect(() => {
         sidePanelWidthRef.current = sidePanelWidth;
@@ -65,10 +72,18 @@ export function AppShellLayout() {
     }, []);
 
     useEffect(() => {
-        if (!sidePanelVisible) {
+        if (!sidePanelVisible || sidebarWindowMode) {
             resizeCleanupRef.current?.(false);
         }
-    }, [sidePanelVisible]);
+    }, [sidePanelVisible, sidebarWindowMode]);
+
+    useEffect(() => {
+        const previousPathname = previousPathnameRef.current;
+        previousPathnameRef.current = location.pathname;
+        if (sidebarWindowMode && previousPathname !== location.pathname) {
+            restoreNormalWindowModeForIntent();
+        }
+    }, [location.pathname, sidebarWindowMode]);
 
     function applySidePanelWidth(width: number) {
         const nextWidth = clampSidePanelWidth(width);
@@ -135,7 +150,7 @@ export function AppShellLayout() {
     }
 
     return (
-        <AppSidebar>
+        <AppSidebar sidebarWindowMode={sidebarWindowMode}>
             <div
                 data-vrcx-0-surface="main-shell"
                 className="vrcx-0-main-shell flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
@@ -143,29 +158,42 @@ export function AppShellLayout() {
                 <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
                     <div
                         data-vrcx-0-surface="main-content"
-                        className="vrcx-0-main-content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+                        className={cn(
+                            'vrcx-0-main-content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+                            sidebarWindowMode && 'hidden'
+                        )}
                     >
                         <Outlet />
                     </div>
                     {sidePanelVisible ? (
                         <>
-                            <div
-                                className="hover:bg-border z-20 w-(--vrcx-0-side-panel-resizer-width) shrink-0 cursor-ew-resize bg-transparent select-none"
-                                onPointerDown={startSidePanelResize}
-                            />
+                            {sidebarWindowMode ? null : (
+                                <div
+                                    className="hover:bg-border z-20 w-(--vrcx-0-side-panel-resizer-width) shrink-0 cursor-ew-resize bg-transparent select-none"
+                                    onPointerDown={startSidePanelResize}
+                                />
+                            )}
                             <SidePanel
                                 ref={sidePanelElementRef}
-                                className="shrink-0"
+                                sidebarWindowMode={sidebarWindowMode}
+                                className={cn(
+                                    'shrink-0',
+                                    sidebarWindowMode && 'min-w-0'
+                                )}
                                 style={{
-                                    width: getResponsiveSidePanelWidth(
-                                        sidePanelWidth
-                                    )
+                                    width: sidebarWindowMode
+                                        ? '100%'
+                                        : getResponsiveSidePanelWidth(
+                                              sidePanelWidth
+                                          )
                                 }}
                             />
                         </>
                     ) : null}
                 </div>
-                <AppStatusBar />
+                <AppStatusBar
+                    className={sidebarWindowMode ? 'hidden' : undefined}
+                />
             </div>
         </AppSidebar>
     );

@@ -632,6 +632,10 @@
         background: var(--vrcx-0-titlebar-surface);
     }
 
+    .vrcx-0-titlebar[data-window-sidebar-mode='true'] {
+        background: var(--vrcx-0-side-panel-surface);
+    }
+
     .vrcx-0-main-shell {
         background: var(--vrcx-0-main-surface);
     }

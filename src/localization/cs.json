@@ -723,6 +723,8 @@
         "notification_center": "Centrum oznámení",
         "show_friends_sidebar": "Zobrazit postranní panel přátel",
         "hide_friends_sidebar": "Skrýt postranní panel přátel",
+        "enter_sidebar_mode": "Režim postranního panelu",
+        "restore_full_window": "Zpět do celého okna",
         "zoom_in": "Přiblížit",
         "zoom_out": "Oddálit",
         "reset_zoom": "Obnovit přiblížení",

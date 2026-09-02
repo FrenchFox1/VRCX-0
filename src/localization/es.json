@@ -723,6 +723,8 @@
         "notification_center": "Centro de notificaciones",
         "show_friends_sidebar": "Mostrar barra lateral de amigos",
         "hide_friends_sidebar": "Ocultar barra lateral de amigos",
+        "enter_sidebar_mode": "Modo de barra lateral",
+        "restore_full_window": "Volver a la ventana completa",
         "zoom_in": "Acercar",
         "zoom_out": "Alejar",
         "reset_zoom": "Restablecer zoom",

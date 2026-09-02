@@ -723,6 +723,8 @@
         "notification_center": "通知中心",
         "show_friends_sidebar": "显示好友侧栏",
         "hide_friends_sidebar": "隐藏好友侧栏",
+        "enter_sidebar_mode": "侧栏模式",
+        "restore_full_window": "返回完整窗口",
         "zoom_in": "放大",
         "zoom_out": "缩小",
         "reset_zoom": "重置缩放",

@@ -4,6 +4,7 @@ import {
     KeyboardIcon,
     PanelLeftIcon,
     PanelLeftOpenIcon,
+    PanelRightDashedIcon,
     PanelRightIcon,
     PanelRightOpenIcon,
     SearchIcon,
@@ -33,6 +34,10 @@ import {
     openOrInstallLatestAvailableUpdate,
     shouldShowUpdateUi
 } from '@/services/updateInstallService';
+import {
+    enterSidebarWindowMode,
+    restoreNormalWindowMode
+} from '@/services/windowModeService';
 import { getBuildBadgeLabel } from '@/shared/buildLabel';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
@@ -135,6 +140,7 @@ function formatTitleBarShortcutLabel(value: string, shortcutLabel: string) {
 interface TitleBarActionsResult {
     isSessionReady: boolean;
     actions: ReactNode;
+    sidebarWindowModeButton: ReactNode;
     quickSearchDialog: ReactNode;
     openQuickSearch: () => void;
     openDirectAccessFromClipboard: () => void;
@@ -179,6 +185,9 @@ export function useTitleBarActions(
         shouldShowUpdateUi(state.updateLoop)
     );
     const navbarOpen = useShellStore((state) => state.sidebarOpen);
+    const sidebarWindowMode = useShellStore(
+        (state) => state.windowDisplayMode === 'sidebar'
+    );
     const shortcutHintsVisible = useShellStore(
         (state) => state.shortcutHintsVisible
     );
@@ -221,10 +230,36 @@ export function useTitleBarActions(
     const directAccessShortcutLabel = getTitleBarShortcutLabel(isMacHost, 'D');
     const quickSearchLabel = t('app_menu.quick_search');
     const directAccessLabel = t('prompt.direct_access_omni.header');
+    const sidebarWindowModeLabel = sidebarWindowMode
+        ? t('app_menu.restore_full_window')
+        : t('app_menu.enter_sidebar_mode');
 
     const openQuickSearch = useCallback(() => {
         setQuickSearchOpen(true);
     }, []);
+
+    const toggleSidebarWindowMode = useCallback(() => {
+        const transition = sidebarWindowMode
+            ? restoreNormalWindowMode()
+            : enterSidebarWindowMode();
+        void transition.catch((error: unknown) => {
+            console.warn('Failed to change the window display mode:', error);
+        });
+    }, [sidebarWindowMode]);
+
+    const sidebarWindowModeButton = (
+        <TitleBarButton
+            label={sidebarWindowModeLabel}
+            aria-pressed={sidebarWindowMode}
+            className={cn(
+                'ml-1 size-7 min-w-7 rounded-md px-0',
+                sidebarWindowMode && 'bg-muted/50 text-foreground'
+            )}
+            onClick={toggleSidebarWindowMode}
+        >
+            <PanelRightDashedIcon data-icon="icon" />
+        </TitleBarButton>
+    );
 
     useEffect(() => {
         if (!isSessionReady) {
@@ -462,6 +497,7 @@ export function useTitleBarActions(
                     <PanelRightOpenIcon data-icon="icon" />
                 )}
             </TitleBarButton>
+            {sidebarWindowModeButton}
             {shortcutHintsVisible ? (
                 <ShortcutHintPanel
                     className="motion-safe:slide-in-from-top-1 absolute top-[calc(100%+0.5rem)] right-1 origin-top-right"
@@ -527,6 +563,7 @@ export function useTitleBarActions(
         openDirectAccessFromClipboard,
         openNotificationCenter: openVrcNotificationCenter,
         toggleRightSidebar,
-        rightSidebarOpen
+        rightSidebarOpen,
+        sidebarWindowModeButton
     };
 }

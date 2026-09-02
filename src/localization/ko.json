@@ -720,6 +720,8 @@
         "notification_center": "알림 센터",
         "show_friends_sidebar": "친구 사이드바 표시",
         "hide_friends_sidebar": "친구 사이드바 숨기기",
+        "enter_sidebar_mode": "사이드바 모드",
+        "restore_full_window": "전체 창으로 돌아가기",
         "zoom_in": "확대",
         "zoom_out": "축소",
         "reset_zoom": "줌 재설정",

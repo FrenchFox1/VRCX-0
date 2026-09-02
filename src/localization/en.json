@@ -723,6 +723,8 @@
         "notification_center": "Notification Center",
         "show_friends_sidebar": "Show Friends Sidebar",
         "hide_friends_sidebar": "Hide Friends Sidebar",
+        "enter_sidebar_mode": "Sidebar Mode",
+        "restore_full_window": "Return to Full Window",
         "zoom_in": "Zoom In",
         "zoom_out": "Zoom Out",
         "reset_zoom": "Reset Zoom",
