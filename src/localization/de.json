@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "Bis zum Ausschalten",
             "doNotDisturbTurnOff": "Ausschalten",
             "rebuildUi": "UI neu laden",
+            "sidebarMode": "Seitenleistenmodus",
             "disableTheme": "Theme deaktivieren",
             "exit": "Beenden"
         },
@@ -806,6 +807,12 @@
             "presets": "Voreinstellungen"
         },
         "settings": {
+            "auto_hide": {
+                "label": "Automatisch ausblenden, wenn am Desktoprand angedockt",
+                "description": "Ziehe das Seitenleistenfenster an den oberen, linken oder rechten Desktoprand. Es wird ausgeblendet, sobald du den Mauszeiger wegbewegst. Fahre über den Rand oder öffne es über das Tray-Symbol, um es wieder einzublenden.",
+                "save_failed": "Die Einstellung zum automatischen Ausblenden konnte nicht gespeichert werden.",
+                "paused": "Das automatische Ausblenden wurde wegen eines Fensterfehlers pausiert. Öffne das Fenster erneut über das Tray-Symbol oder wechsle erneut in den Seitenleistenmodus, um es noch einmal zu versuchen."
+            },
             "display": "Anzeige",
             "sort": "Sortieren",
             "advanced": "Erweitert",

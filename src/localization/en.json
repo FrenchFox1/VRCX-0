@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "Until turned off",
             "doNotDisturbTurnOff": "Turn off",
             "rebuildUi": "Reload UI",
+            "sidebarMode": "Sidebar mode",
             "disableTheme": "Disable Theme",
             "exit": "Exit"
         },
@@ -806,6 +807,12 @@
             "presets": "Presets"
         },
         "settings": {
+            "auto_hide": {
+                "label": "Auto-hide when docked to a desktop edge",
+                "description": "Drag the sidebar window to the top or either side of the desktop. Move the pointer away to hide it; hover over that edge or use the tray to bring it back.",
+                "save_failed": "Could not save the auto-hide setting.",
+                "paused": "Auto-hide paused after a window error. Reopen the window from the tray or re-enter sidebar mode to retry."
+            },
             "display": "Display",
             "sort": "Sort",
             "advanced": "Advanced",

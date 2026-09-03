@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "Até desativar",
             "doNotDisturbTurnOff": "Desativar",
             "rebuildUi": "Recarregar interface",
+            "sidebarMode": "Modo barra lateral",
             "disableTheme": "Desativar tema",
             "exit": "Sair"
         },
@@ -806,6 +807,12 @@
             "presets": "Predefinições"
         },
         "settings": {
+            "auto_hide": {
+                "label": "Ocultar automaticamente quando encostada a uma borda da área de trabalho",
+                "description": "Arraste a janela da barra lateral para a borda superior, esquerda ou direita da área de trabalho. Ela será ocultada ao afastar o ponteiro. Passe o ponteiro pela borda ou abra pela bandeja para exibi-la novamente.",
+                "save_failed": "Não foi possível salvar a configuração de ocultação automática.",
+                "paused": "A ocultação automática foi pausada após um erro na janela. Abra a janela novamente pela bandeja ou entre de novo no modo de barra lateral para tentar novamente."
+            },
             "display": "Exibição",
             "sort": "Ordenar",
             "advanced": "Avançado",

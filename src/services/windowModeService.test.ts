@@ -7,6 +7,7 @@ import type { WindowGeometry } from '@/platform/tauri/webview';
 import type { WindowAnimationBounds } from './windowModeAnimation';
 
 const mocks = vi.hoisted(() => ({
+    suspendSidebarAutoHide: vi.fn<(suspended: boolean) => Promise<void>>(),
     getWindowGeometry: vi.fn<() => Promise<WindowGeometry | null>>(),
     maximizeWindow: vi.fn<() => Promise<void>>(),
     unmaximizeWindow: vi.fn<() => Promise<void>>(),
@@ -40,12 +41,18 @@ vi.mock('./windowModeAnimation', () => ({
     animateWindowBounds: mocks.animateWindowBounds
 }));
 
+vi.mock('./sidebarAutoHideService', () => ({
+    suspendSidebarAutoHide: mocks.suspendSidebarAutoHide
+}));
+
 import { useShellStore } from '@/state/shellStore';
 
 import {
     enterSidebarWindowMode,
     initializeWindowDisplayMode,
-    restoreNormalWindowMode
+    leaveSidebarWindowModeForLogin,
+    restoreNormalWindowMode,
+    restoreSidebarWindowModeAfterLogin
 } from './windowModeService';
 
 const storedValues = new Map<string, string>();
@@ -87,6 +94,7 @@ beforeEach(() => {
     window.localStorage.clear();
     useShellStore.setState({ windowDisplayMode: 'normal' });
     Object.values(mocks).forEach((mock) => mock.mockReset());
+    mocks.suspendSidebarAutoHide.mockResolvedValue(undefined);
     mocks.getWindowGeometry.mockResolvedValue(null);
     mocks.maximizeWindow.mockResolvedValue(undefined);
     mocks.unmaximizeWindow.mockResolvedValue(undefined);
@@ -100,6 +108,64 @@ beforeEach(() => {
 });
 
 describe('windowModeService', () => {
+    it('reveals and suspends auto-hide before reading geometry, then resumes it', async () => {
+        useShellStore.setState({ windowDisplayMode: 'sidebar' });
+        mocks.getWindowGeometry.mockResolvedValue(createGeometry());
+
+        await restoreNormalWindowMode();
+
+        expect(mocks.suspendSidebarAutoHide.mock.calls).toEqual([
+            [true],
+            [false]
+        ]);
+        expect(
+            mocks.suspendSidebarAutoHide.mock.invocationCallOrder[0]
+        ).toBeLessThan(mocks.getWindowGeometry.mock.invocationCallOrder[0]);
+        expect(
+            mocks.suspendSidebarAutoHide.mock.invocationCallOrder[1]
+        ).toBeGreaterThan(
+            mocks.animateWindowBounds.mock.invocationCallOrder[0]
+        );
+    });
+
+    it('keeps sidebar mode when revealing the edge-hidden window fails', async () => {
+        useShellStore.setState({ windowDisplayMode: 'sidebar' });
+        mocks.suspendSidebarAutoHide.mockRejectedValueOnce(
+            new Error('reveal failed')
+        );
+
+        await expect(restoreNormalWindowMode()).rejects.toThrow(
+            'reveal failed'
+        );
+
+        expect(useShellStore.getState().windowDisplayMode).toBe('sidebar');
+        expect(mocks.getWindowGeometry).not.toHaveBeenCalled();
+        expect(mocks.suspendSidebarAutoHide.mock.calls).toEqual([
+            [true],
+            [false]
+        ]);
+    });
+
+    it('does not fail an already restored window when resuming auto-hide fails', async () => {
+        useShellStore.setState({ windowDisplayMode: 'sidebar' });
+        mocks.getWindowGeometry.mockResolvedValue(createGeometry());
+        mocks.suspendSidebarAutoHide
+            .mockResolvedValueOnce(undefined)
+            .mockRejectedValueOnce(new Error('resume failed'));
+        const warning = vi
+            .spyOn(console, 'warn')
+            .mockImplementation(() => undefined);
+        try {
+            await expect(restoreNormalWindowMode()).resolves.toBeUndefined();
+            expect(useShellStore.getState().windowDisplayMode).toBe('normal');
+            expect(warning).toHaveBeenCalledWith(
+                'Failed to resume sidebar auto-hide:',
+                expect.any(Error)
+            );
+        } finally {
+            warning.mockRestore();
+        }
+    });
     it('captures the normal bounds and right-anchors the initial sidebar width', async () => {
         mocks.getWindowGeometry
             .mockResolvedValueOnce(createGeometry())
@@ -116,7 +182,7 @@ describe('windowModeService', () => {
         expect(mocks.setWindowSizeConstraints).toHaveBeenCalledWith({
             minWidth: 320,
             minHeight: 240,
-            maxWidth: 800
+            maxWidth: 600
         });
         expect(mocks.setWindowBounds).toHaveBeenCalledWith({
             width: 480,
@@ -215,7 +281,7 @@ describe('windowModeService', () => {
         expect(mocks.setWindowSizeConstraints).toHaveBeenLastCalledWith({
             minWidth: 320,
             minHeight: 240,
-            maxWidth: 800
+            maxWidth: 600
         });
     });
 
@@ -245,25 +311,25 @@ describe('windowModeService', () => {
         expect(mocks.setWindowSizeConstraints).toHaveBeenLastCalledWith({
             minWidth: 320,
             minHeight: 240,
-            maxWidth: 800
+            maxWidth: 600
         });
     });
 
-    it('reuses a previously dragged sidebar width up to the 800px limit', async () => {
+    it('reuses a previously dragged sidebar width up to the 600px limit', async () => {
         window.localStorage.setItem('vrcx-main-window-sidebar-width', '1200');
         mocks.getWindowGeometry
             .mockResolvedValueOnce(createGeometry())
             .mockResolvedValueOnce(
                 createGeometry({
-                    innerSize: { width: 800, height: 800 },
-                    outerSize: { width: 816, height: 838 }
+                    innerSize: { width: 600, height: 800 },
+                    outerSize: { width: 616, height: 838 }
                 })
             );
 
         await enterSidebarWindowMode(360);
 
         expect(mocks.setWindowBounds).toHaveBeenCalledWith(
-            expect.objectContaining({ width: 800, height: 800 })
+            expect.objectContaining({ width: 600, height: 800 })
         );
     });
 
@@ -305,7 +371,7 @@ describe('windowModeService', () => {
         expect(mocks.setWindowSizeConstraints).toHaveBeenCalledWith({
             minWidth: 320,
             minHeight: 240,
-            maxWidth: 800
+            maxWidth: 600
         });
     });
 
@@ -322,5 +388,43 @@ describe('windowModeService', () => {
             x: 820,
             y: 100
         });
+    });
+});
+
+describe('remembered window display mode', () => {
+    it('persists a user requested switch out of sidebar mode', async () => {
+        useShellStore.getState().setWindowDisplayMode('sidebar');
+        mocks.getWindowGeometry.mockResolvedValue(createGeometry());
+
+        await restoreNormalWindowMode();
+
+        expect(
+            window.localStorage.getItem('vrcx-main-window-display-mode')
+        ).toBe('normal');
+    });
+
+    it('keeps the remembered sidebar mode while the login screen needs the full window', async () => {
+        useShellStore.getState().setWindowDisplayMode('sidebar');
+        mocks.getWindowGeometry.mockResolvedValue(createGeometry());
+
+        leaveSidebarWindowModeForLogin();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(useShellStore.getState().windowDisplayMode).toBe('normal');
+        expect(
+            window.localStorage.getItem('vrcx-main-window-display-mode')
+        ).toBe('sidebar');
+
+        restoreSidebarWindowModeAfterLogin();
+        expect(useShellStore.getState().windowDisplayMode).toBe('sidebar');
+    });
+
+    it('does nothing after login when sidebar mode was never suspended', () => {
+        useShellStore.getState().setWindowDisplayMode('normal');
+
+        restoreSidebarWindowModeAfterLogin();
+
+        expect(useShellStore.getState().windowDisplayMode).toBe('normal');
     });
 });

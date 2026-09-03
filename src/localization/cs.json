@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "Do vypnutí",
             "doNotDisturbTurnOff": "Vypnout",
             "rebuildUi": "Znovu načíst UI",
+            "sidebarMode": "Režim postranního panelu",
             "disableTheme": "Zakázat motiv",
             "exit": "Ukončit"
         },
@@ -806,6 +807,12 @@
             "presets": "Předvolby"
         },
         "settings": {
+            "auto_hide": {
+                "label": "Automaticky skrývat, když je okno ukotvené u okraje plochy",
+                "description": "Přetáhněte okno postranního panelu k hornímu, levému nebo pravému okraji plochy. Po oddálení ukazatele se skryje. Najeďte na tento okraj nebo okno otevřete z oznamovací oblasti.",
+                "save_failed": "Nastavení automatického skrývání se nepodařilo uložit.",
+                "paused": "Automatické skrývání bylo pozastaveno kvůli chybě okna. Zkuste okno znovu otevřít z oznamovací oblasti nebo znovu přejít do režimu postranního panelu."
+            },
             "display": "Zobrazení",
             "sort": "Řazení",
             "advanced": "Pokročilé",

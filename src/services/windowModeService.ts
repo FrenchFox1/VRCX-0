@@ -1,15 +1,17 @@
 import { tauriClient } from '@/platform/tauri/client';
+import { tauriEvents } from '@/platform/tauri/events';
 import type { WindowGeometry, WindowWorkArea } from '@/platform/tauri/webview';
 import { isRecord } from '@/shared/utils/record';
 import { useShellStore } from '@/state/shellStore';
 
+import { suspendSidebarAutoHide } from './sidebarAutoHideService';
 import {
     animateWindowBounds,
     type WindowAnimationBounds
 } from './windowModeAnimation';
 
 const SIDEBAR_WINDOW_MIN_WIDTH = 320;
-const SIDEBAR_WINDOW_MAX_WIDTH = 800;
+const SIDEBAR_WINDOW_MAX_WIDTH = 600;
 const DEFAULT_SIDEBAR_WINDOW_WIDTH = 360;
 
 const NORMAL_WINDOW_MIN_HEIGHT = 240;
@@ -309,40 +311,51 @@ async function restoreCapturedSidebarWindow(
     }
 }
 
+async function resumeSidebarAutoHide(): Promise<void> {
+    await suspendSidebarAutoHide(false).catch((error: unknown) => {
+        console.warn('Failed to resume sidebar auto-hide:', error);
+    });
+}
+
 export function initializeWindowDisplayMode(): Promise<void> {
     return queueWindowModeTransition(async () => {
-        if (useShellStore.getState().windowDisplayMode === 'sidebar') {
-            let geometry: WindowGeometry | null = null;
-            try {
-                await tauriClient.webview.unmaximizeWindow();
-                geometry = await tauriClient.webview.getWindowGeometry();
-            } finally {
-                await applySidebarWindowConstraints();
-            }
-            if (!geometry) {
-                return;
-            }
-            const currentWidth =
-                geometry.innerSize.width / geometry.scaleFactor;
-            if (
-                currentWidth >= SIDEBAR_WINDOW_MIN_WIDTH &&
-                currentWidth <= SIDEBAR_WINDOW_MAX_WIDTH
-            ) {
-                return;
-            }
-            const targetWidth =
-                readSidebarWindowWidth() ??
-                clamp(
-                    currentWidth,
-                    SIDEBAR_WINDOW_MIN_WIDTH,
-                    SIDEBAR_WINDOW_MAX_WIDTH
+        await suspendSidebarAutoHide(true);
+        try {
+            if (useShellStore.getState().windowDisplayMode === 'sidebar') {
+                let geometry: WindowGeometry | null = null;
+                try {
+                    await tauriClient.webview.unmaximizeWindow();
+                    geometry = await tauriClient.webview.getWindowGeometry();
+                } finally {
+                    await applySidebarWindowConstraints();
+                }
+                if (!geometry) {
+                    return;
+                }
+                const currentWidth =
+                    geometry.innerSize.width / geometry.scaleFactor;
+                if (
+                    currentWidth >= SIDEBAR_WINDOW_MIN_WIDTH &&
+                    currentWidth <= SIDEBAR_WINDOW_MAX_WIDTH
+                ) {
+                    return;
+                }
+                const targetWidth =
+                    readSidebarWindowWidth() ??
+                    clamp(
+                        currentWidth,
+                        SIDEBAR_WINDOW_MIN_WIDTH,
+                        SIDEBAR_WINDOW_MAX_WIDTH
+                    );
+                await tauriClient.webview.setWindowBounds(
+                    resolveSidebarWindowTarget(geometry, targetWidth).bounds
                 );
-            await tauriClient.webview.setWindowBounds(
-                resolveSidebarWindowTarget(geometry, targetWidth).bounds
-            );
-            return;
+                return;
+            }
+            await applyNormalWindowConstraints();
+        } finally {
+            await resumeSidebarAutoHide();
         }
-        await applyNormalWindowConstraints();
     });
 }
 
@@ -358,6 +371,7 @@ export function enterSidebarWindowMode(
         let initialWasMaximized = false;
         let capturedNormalGeometry: WindowGeometry | null = null;
         try {
+            await suspendSidebarAutoHide(true);
             const initialGeometry =
                 await tauriClient.webview.getWindowGeometry();
             if (!initialGeometry) {
@@ -423,19 +437,22 @@ export function enterSidebarWindowMode(
                 }
             }
             throw error;
+        } finally {
+            await resumeSidebarAutoHide();
         }
     });
 }
 
-export function restoreNormalWindowMode(): Promise<void> {
+export function restoreNormalWindowMode(remember = true): Promise<void> {
     if (useShellStore.getState().windowDisplayMode === 'normal') {
         return Promise.resolve();
     }
-    useShellStore.getState().setWindowDisplayMode('normal');
+    useShellStore.getState().setWindowDisplayMode('normal', remember);
 
     return queueWindowModeTransition(async () => {
         let compactGeometry: WindowGeometry | null = null;
         try {
+            await suspendSidebarAutoHide(true);
             compactGeometry = await tauriClient.webview.getWindowGeometry();
             if (!compactGeometry) {
                 throw new Error('Unable to read the current window geometry.');
@@ -493,12 +510,49 @@ export function restoreNormalWindowMode(): Promise<void> {
                 );
             }
         } catch (error) {
-            useShellStore.getState().setWindowDisplayMode('sidebar');
+            useShellStore.getState().setWindowDisplayMode('sidebar', remember);
             await restoreCapturedSidebarWindow(compactGeometry).catch(
                 () => undefined
             );
             throw error;
+        } finally {
+            await resumeSidebarAutoHide();
         }
+    });
+}
+
+let sidebarModeSuspendedForLogin = false;
+
+export function leaveSidebarWindowModeForLogin(): void {
+    if (useShellStore.getState().windowDisplayMode !== 'sidebar') {
+        return;
+    }
+    sidebarModeSuspendedForLogin = true;
+    void restoreNormalWindowMode(false).catch((error: unknown) => {
+        console.warn('Failed to restore the full window:', error);
+    });
+}
+
+export function restoreSidebarWindowModeAfterLogin(): void {
+    if (!sidebarModeSuspendedForLogin) {
+        return;
+    }
+    sidebarModeSuspendedForLogin = false;
+    void enterSidebarWindowMode().catch((error: unknown) => {
+        console.warn('Failed to return to the sidebar window:', error);
+    });
+}
+
+export function subscribeSidebarModeToggle(): Promise<() => void> {
+    return tauriEvents.subscribe('sidebarModeToggleRequested', () => {
+        const sidebar =
+            useShellStore.getState().windowDisplayMode === 'sidebar';
+        const transition = sidebar
+            ? restoreNormalWindowMode()
+            : enterSidebarWindowMode();
+        void transition.catch((error: unknown) => {
+            console.warn('Failed to toggle the sidebar window mode:', error);
+        });
     });
 }
 

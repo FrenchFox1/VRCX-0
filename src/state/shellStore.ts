@@ -84,7 +84,10 @@ type ShellStore = {
     setThemeColor(themeColor: string): void;
     setTableDensity(tableDensity: TableDensity): void;
     setNotificationLayout(notificationLayout: NotificationLayout): void;
-    setWindowDisplayMode(windowDisplayMode: WindowDisplayMode): void;
+    setWindowDisplayMode(
+        windowDisplayMode: WindowDisplayMode,
+        remember?: boolean
+    ): void;
     setNotificationIconDot(notificationIconDot: boolean): void;
     setTaskbarIconDot(taskbarIconDot: boolean): void;
     setAppearancePreferences(options?: {
@@ -242,8 +245,10 @@ export const useShellStore = create<ShellStore>((set, get) => ({
         set({ notificationLayout });
         get().updateTrayIconNotification(true);
     },
-    setWindowDisplayMode(windowDisplayMode) {
-        saveWindowDisplayMode(windowDisplayMode);
+    setWindowDisplayMode(windowDisplayMode, remember = true) {
+        if (remember) {
+            saveWindowDisplayMode(windowDisplayMode);
+        }
         set({ windowDisplayMode });
     },
     setNotificationIconDot(notificationIconDot) {

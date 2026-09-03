@@ -80,7 +80,11 @@ export function AppShellLayout() {
     useEffect(() => {
         const previousPathname = previousPathnameRef.current;
         previousPathnameRef.current = location.pathname;
-        if (sidebarWindowMode && previousPathname !== location.pathname) {
+        if (
+            sidebarWindowMode &&
+            previousPathname !== '/' &&
+            previousPathname !== location.pathname
+        ) {
             restoreNormalWindowModeForIntent();
         }
     }, [location.pathname, sidebarWindowMode]);

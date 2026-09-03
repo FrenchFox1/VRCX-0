@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "Hasta desactivarlo",
             "doNotDisturbTurnOff": "Desactivar",
             "rebuildUi": "Recargar interfaz",
+            "sidebarMode": "Modo barra lateral",
             "disableTheme": "Desactivar tema",
             "exit": "Salir"
         },
@@ -806,6 +807,12 @@
             "presets": "Preajustes"
         },
         "settings": {
+            "auto_hide": {
+                "label": "Ocultar automáticamente al acoplarla a un borde del escritorio",
+                "description": "Arrastra la ventana de la barra lateral al borde superior, izquierdo o derecho del escritorio. Se ocultará al alejar el puntero. Pasa el puntero por ese borde o ábrela desde la bandeja para volver a mostrarla.",
+                "save_failed": "No se pudo guardar el ajuste de ocultación automática.",
+                "paused": "La ocultación automática se pausó por un error de la ventana. Ábrela de nuevo desde la bandeja o vuelve a entrar en el modo de barra lateral para reintentarlo."
+            },
             "display": "Visualización",
             "sort": "Ordenar",
             "advanced": "Avanzado",

@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "持续开启",
             "doNotDisturbTurnOff": "关闭勿扰",
             "rebuildUi": "重载界面",
+            "sidebarMode": "侧栏模式",
             "disableTheme": "禁用主题",
             "exit": "退出"
         },
@@ -806,6 +807,12 @@
             "presets": "预设"
         },
         "settings": {
+            "auto_hide": {
+                "label": "停靠在桌面边缘时自动隐藏",
+                "description": "将侧栏窗口拖到桌面顶部或两侧，移开鼠标自动隐藏，悬停边缘展开。也可从托盘唤回。",
+                "save_failed": "无法保存自动隐藏设置。",
+                "paused": "窗口操作失败，自动隐藏已暂停。从托盘重新打开窗口或重新进入侧栏模式即可重试。"
+            },
             "display": "显示",
             "sort": "排序",
             "advanced": "高级",

@@ -2339,6 +2339,24 @@ const generatedCommands = {
     async appOpenDevtools(): Promise<null> {
         return await TAURI_INVOKE('app__open_devtools');
     },
+    async appGetSidebarAutoHide(): Promise<SidebarAutoHideSnapshot> {
+        return await TAURI_INVOKE('app__get_sidebar_auto_hide');
+    },
+    async appSetSidebarAutoHide(enabled: boolean): Promise<boolean> {
+        return await TAURI_INVOKE('app__set_sidebar_auto_hide', { enabled });
+    },
+    async appSetSidebarAutoHideContext(
+        context: SidebarAutoHideContext
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__set_sidebar_auto_hide_context', {
+            context
+        });
+    },
+    async appSuspendSidebarAutoHide(suspended: boolean): Promise<null> {
+        return await TAURI_INVOKE('app__suspend_sidebar_auto_hide', {
+            suspended
+        });
+    },
     async appRestartApplication(): Promise<null> {
         return await TAURI_INVOKE('app__restart_application');
     },
@@ -6061,6 +6079,13 @@ export type SharedCollectionImportStatus = {
     finishedAt: string | null;
     lastError: string | null;
 };
+export type SidebarAutoHideContext = {
+    sidebarMode: boolean;
+    blocked: boolean;
+    reducedMotion: boolean;
+    frameInset: number;
+};
+export type SidebarAutoHideSnapshot = { enabled: boolean; failed: boolean };
 export type SocialBaselineRefreshOutput = {
     stale: boolean;
     friendCount: number;

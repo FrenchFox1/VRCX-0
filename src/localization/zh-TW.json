@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "持續開啟",
             "doNotDisturbTurnOff": "關閉勿擾",
             "rebuildUi": "重新載入用戶介面",
+            "sidebarMode": "側欄模式",
             "disableTheme": "停用佈景主題",
             "exit": "退出"
         },
@@ -806,6 +807,12 @@
             "presets": "預設"
         },
         "settings": {
+            "auto_hide": {
+                "label": "停駐在桌面邊緣時自動隱藏",
+                "description": "將側欄視窗拖到桌面頂端或兩側，移開滑鼠後自動隱藏，停留在邊緣即可展開。也可從系統匣開啟。",
+                "save_failed": "無法儲存自動隱藏設定。",
+                "paused": "視窗操作失敗，自動隱藏已暫停。請從系統匣重新開啟視窗，或重新進入側欄模式以重試。"
+            },
             "display": "顯示",
             "sort": "排序",
             "advanced": "進階",

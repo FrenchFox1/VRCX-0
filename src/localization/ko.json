@@ -501,6 +501,7 @@
             "doNotDisturbUntilStopped": "끌 때까지",
             "doNotDisturbTurnOff": "방해 금지 끄기",
             "rebuildUi": "UI 새로고침",
+            "sidebarMode": "사이드바 모드",
             "disableTheme": "테마 비활성화",
             "exit": "종료"
         },
@@ -804,6 +805,12 @@
             "presets": "프리셋"
         },
         "settings": {
+            "auto_hide": {
+                "label": "바탕 화면 가장자리에 붙여 두면 자동으로 숨기기",
+                "description": "사이드바 창을 바탕 화면 위쪽이나 양옆으로 드래그하세요. 포인터를 옮기면 숨겨지고, 해당 가장자리에 올리거나 트레이에서 열면 다시 표시됩니다.",
+                "save_failed": "자동 숨기기 설정을 저장하지 못했습니다.",
+                "paused": "창 작업 오류로 자동 숨기기가 일시 중지되었습니다. 트레이에서 창을 다시 열거나 사이드바 모드로 다시 전환하면 재시도합니다."
+            },
             "display": "디스플레이",
             "sort": "정렬",
             "advanced": "고급",

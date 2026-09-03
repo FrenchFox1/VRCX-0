@@ -14,16 +14,18 @@ import { AppTitleBar } from '@/components/layout/AppTitleBar';
 import { MacNativeMenuActionHost } from '@/components/layout/MacNativeMenuActionHost';
 import { MacOverlayTitleBar } from '@/components/layout/MacOverlayTitleBar';
 import { useGlobalKeyboardShortcuts } from '@/components/layout/useGlobalKeyboardShortcuts';
+import { useSidebarAutoHide } from '@/components/layout/useSidebarAutoHide';
 import { WindowResizeHandles } from '@/components/layout/WindowResizeHandles';
 import { cn } from '@/lib/utils';
 import { recordRouteEnter } from '@/services/telemetry/telemetryPageReach';
 import {
     initializeWindowDisplayMode,
-    restoreNormalWindowModeForIntent
+    leaveSidebarWindowModeForLogin,
+    restoreSidebarWindowModeAfterLogin,
+    subscribeSidebarModeToggle
 } from '@/services/windowModeService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
-import { useShellStore } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 
 import { RouteErrorBoundary } from './RouteErrorBoundary';
@@ -106,8 +108,27 @@ function AppRouterContent() {
     );
     const isMacHost = hostPlatform === 'macos';
     const { pathname } = useLocation();
-    const windowDisplayMode = useShellStore((state) => state.windowDisplayMode);
     useGlobalKeyboardShortcuts();
+    useSidebarAutoHide();
+    useEffect(() => {
+        let disposed = false;
+        let unsubscribe: (() => void) | undefined;
+        void subscribeSidebarModeToggle()
+            .then((dispose) => {
+                if (disposed) {
+                    dispose();
+                    return;
+                }
+                unsubscribe = dispose;
+            })
+            .catch((error: unknown) => {
+                console.warn('Failed to watch the sidebar mode toggle:', error);
+            });
+        return () => {
+            disposed = true;
+            unsubscribe?.();
+        };
+    }, []);
     useEffect(() => {
         void initializeWindowDisplayMode().catch((error: unknown) => {
             console.warn(
@@ -120,10 +141,12 @@ function AppRouterContent() {
         recordRouteEnter(pathname);
     }, [pathname]);
     useEffect(() => {
-        if (pathname === '/login' && windowDisplayMode === 'sidebar') {
-            restoreNormalWindowModeForIntent();
+        if (pathname === '/login') {
+            leaveSidebarWindowModeForLogin();
+        } else {
+            restoreSidebarWindowModeAfterLogin();
         }
-    }, [pathname, windowDisplayMode]);
+    }, [pathname]);
     useEffect(() => {
         if (!isMacHost) {
             return undefined;
