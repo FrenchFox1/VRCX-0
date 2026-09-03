@@ -109,7 +109,7 @@ export function ToolbarSearch({
                 }}
             />
             {value || trailing ? (
-                <InputGroupAddon align="inline-end" className="gap-1">
+                <InputGroupAddon align="inline-end" className="gap-1 py-0">
                     {value ? (
                         <InputGroupButton
                             type="button"

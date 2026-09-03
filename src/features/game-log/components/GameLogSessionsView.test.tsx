@@ -104,6 +104,9 @@ describe('GameLogSessionsView', () => {
         const sessionView = (
             <GameLogSessionsView
                 isGameRunning={false}
+                defaultOpen
+                sessionOpenOverrides={new Map()}
+                onSessionOpenChange={vi.fn()}
                 sessions={[
                     {
                         id: 1,
@@ -179,6 +182,9 @@ describe('GameLogSessionsView', () => {
         render(
             <GameLogSessionsView
                 isGameRunning={false}
+                defaultOpen
+                sessionOpenOverrides={new Map()}
+                onSessionOpenChange={vi.fn()}
                 sessions={[
                     {
                         id: 1,

@@ -16,6 +16,7 @@ import { GameLogTableShell } from './components/GameLogTableShell';
 import { GameLogToolbar } from './components/GameLogToolbar';
 import { GameLogSessionAffinityContext } from './gameLogSessionAffinity';
 import { useGameLogPageController } from './useGameLogPageController';
+import { useGameLogSessionExpansion } from './useGameLogSessionExpansion';
 
 export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
@@ -35,6 +36,15 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
     } = useGameLogPageController();
     const hasSessions = rowsState.sessions.length > 0;
     const hasRows = rowsState.rows.length > 0;
+    const sessionsVisible =
+        filters.viewMode === 'sessions' &&
+        hasSessions &&
+        !isLoading &&
+        !isError;
+    const sessionExpansion = useGameLogSessionExpansion(
+        rowsState.sessions,
+        sessionsVisible
+    );
     const hasActiveFilters = Boolean(
         filters.deferredSearchQuery.trim() ||
         filters.favoritesOnly ||
@@ -61,7 +71,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
 
     return (
         <PageScaffold embedded={embedded}>
-            <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
                 <GameLogToolbar
                     detail={
                         rowsState.detail
@@ -78,10 +88,15 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                         onRefresh: filters.refreshGameLog
                     }}
                     table={table}
+                    sessionControls={{
+                        allOpen: sessionExpansion.allSessionsOpen,
+                        canToggle: sessionsVisible,
+                        onToggle: sessionExpansion.toggleAll
+                    }}
                 />
 
                 {rowsState.gameLogDisabled ? (
-                    <Alert>
+                    <Alert className="mb-3">
                         <AlertTitle>
                             {t('view.game_log.label.game_log_is_disabled')}
                         </AlertTitle>
@@ -117,6 +132,13 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                             >
                                 <GameLogSessionsView
                                     sessions={rowsState.sessions}
+                                    defaultOpen={sessionExpansion.defaultOpen}
+                                    sessionOpenOverrides={
+                                        sessionExpansion.sessionOpenOverrides
+                                    }
+                                    onSessionOpenChange={
+                                        sessionExpansion.onSessionOpenChange
+                                    }
                                     isGameRunning={isGameRunning}
                                     hasMore={hasMoreSessions}
                                     isLoadingMore={isLoadingMoreSessions}
