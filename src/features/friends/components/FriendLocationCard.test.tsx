@@ -12,6 +12,10 @@ import { getFriendsLocationsDensityConfig } from '../friendsLocationsDensity';
 import { FriendLocationCard } from './FriendLocationCard';
 
 vi.mock('react-i18next', () => ({
+    initReactI18next: {
+        type: '3rdParty',
+        init: () => {}
+    },
     useTranslation: () => ({ t: (key: string) => key })
 }));
 vi.mock('@/components/Location', () => ({
